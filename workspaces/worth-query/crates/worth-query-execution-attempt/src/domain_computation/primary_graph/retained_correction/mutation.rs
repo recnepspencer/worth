@@ -110,11 +110,13 @@ impl CorrectionMaterialOwner {
     pub fn ensure_capture(
         &self,
         material: MaterialCapture,
+        world_commit_ordinal: u64,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         self.settle(request)?;
+        let original = material.original;
         {
-            let state = self.state();
+            let mut state = self.state();
             let key = (material.original, material.member);
             if let Some(existing) = state.catalog.material.get(&key) {
                 let capture = match &existing.body {
@@ -125,28 +127,32 @@ impl CorrectionMaterialOwner {
                         return Err(Denial::Unavailable)
                     }
                 };
-                return if **capture == material {
-                    Ok(())
-                } else {
-                    Err(Denial::OriginalMismatch)
-                };
+                if **capture != material {
+                    return Err(Denial::OriginalMismatch);
+                }
+                state.world_ordinals.insert(original, world_commit_ordinal);
+                self.retain_world_ordinal(world_commit_ordinal);
+                return Ok(());
             }
         }
-        self.publish(
+        self.publish_with_ordinal(
             MaterialRecord::Capture {
                 material: Box::new(material),
             },
+            Some((original, world_commit_ordinal)),
             request,
         )
     }
     pub fn ensure_ready(
         &self,
         material: MaterialReady,
+        world_commit_ordinal: u64,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         self.settle(request)?;
+        let original = material.original;
         {
-            let state = self.state();
+            let mut state = self.state();
             let existing = state
                 .catalog
                 .material
@@ -154,11 +160,12 @@ impl CorrectionMaterialOwner {
                 .ok_or(Denial::Unavailable)?;
             match &existing.body {
                 MaterialBody::Ready { ready, .. } => {
-                    return if **ready == material {
-                        Ok(())
-                    } else {
-                        Err(Denial::OriginalMismatch)
+                    if **ready != material {
+                        return Err(Denial::OriginalMismatch);
                     }
+                    state.world_ordinals.insert(original, world_commit_ordinal);
+                    self.retain_world_ordinal(world_commit_ordinal);
+                    return Ok(());
                 }
                 MaterialBody::Captured(_) => {}
                 MaterialBody::Expired { .. } | MaterialBody::Abandoned => {
@@ -166,10 +173,11 @@ impl CorrectionMaterialOwner {
                 }
             }
         }
-        self.publish(
+        self.publish_with_ordinal(
             MaterialRecord::Ready {
                 material: Box::new(material),
             },
+            Some((original, world_commit_ordinal)),
             request,
         )
     }

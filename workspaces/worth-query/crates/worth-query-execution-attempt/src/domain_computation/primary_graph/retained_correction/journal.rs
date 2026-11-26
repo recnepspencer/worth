@@ -8,6 +8,17 @@ impl MaterialPublication<'_> {
         record: MaterialRecord,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
+        self.publish_with_ordinal(record, None, request)
+    }
+    pub(super) fn publish_with_ordinal(
+        &self,
+        record: MaterialRecord,
+        pending_ordinal: Option<(
+            worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+            u64,
+        )>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Denial> {
         let medium = self.owner.medium()?;
         self.finish_pending(medium.as_ref(), request)?;
         {
@@ -29,6 +40,7 @@ impl MaterialPublication<'_> {
                     .map_err(Denial::Execution)?,
             );
             state.pending = Some(Arc::new(frame));
+            state.pending_world_ordinal = pending_ordinal;
         }
         self.finish_pending(medium.as_ref(), request)
     }
@@ -46,16 +58,27 @@ impl MaterialPublication<'_> {
                     return proof.consume(|committed| {
                         Self::admit_subject(medium, &frame, committed.subject())?;
                         let mut state = self.owner.state();
-                        let change = state.catalog.fold(&frame)?;
+                        let (change, terminal) = state.catalog.fold_with_terminal(&frame)?;
                         state.pins.committed(change, medium.authority());
                         state.pending = None;
+                        if let Some((original, ordinal)) = state.pending_world_ordinal.take() {
+                            state.world_ordinals.insert(original, ordinal);
+                            self.owner.retain_world_ordinal(ordinal);
+                        }
+                        if let Some(ordinal) =
+                            terminal.and_then(|original| state.world_ordinals.remove(&original))
+                        {
+                            self.owner.release_world_ordinal(ordinal);
+                        }
                         Ok(())
-                    })
+                    });
                 }
                 Outcome::ProvenNoEffect(proof) => {
                     Self::admit_subject(medium, &frame, proof.subject())?;
                     medium.acknowledge_no_effect(proof)?;
-                    self.owner.state().pending = None;
+                    let mut state = self.owner.state();
+                    state.pending = None;
+                    state.pending_world_ordinal = None;
                     return Err(Denial::PublicationNoEffect);
                 }
                 Outcome::Pending => {

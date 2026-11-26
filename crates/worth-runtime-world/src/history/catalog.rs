@@ -108,6 +108,8 @@ pub(super) struct CompositeHistoryCatalogState {
     // Reservation allocates the eventual stable slot before owner effects.
     // Only a populated slot is an installed occurrence.
     entries: HashMap<CompositeCommitIdentity, Arc<OnceLock<CompositeHistoryCatalogEntry>>>,
+    by_ordinal: HashMap<u64, CompositeCommitIdentity>,
+    externally_retained_ordinals: HashSet<u64>,
     inspection_order: BTreeSet<CompositeCommitIdentity>,
     publication_revision: Arc<PublicationRevision>,
     reservations: HashMap<CompositeCommitIdentity, HistoryReservationMetadata>,
@@ -136,6 +138,8 @@ impl CompositeHistoryCatalog {
                 owner,
                 limits: contract,
                 entries: HashMap::new(),
+                by_ordinal: HashMap::new(),
+                externally_retained_ordinals: HashSet::new(),
                 inspection_order: BTreeSet::new(),
                 publication_revision: Arc::new(PublicationRevision::default()),
                 reservations: HashMap::new(),

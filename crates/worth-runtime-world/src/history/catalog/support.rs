@@ -72,6 +72,7 @@ pub(super) fn release_reservation(
         .remove(identity)
         .is_some_and(|slot| slot.get().is_none()));
     assert!(state.inspection_order.remove(identity));
+    assert!(state.by_ordinal.remove(&identity.ordinal()).is_some());
     state.publication_revision.advance();
     lock_index(&state.reachability).release_reservation(identity);
     state.metadata.release_reservation(&reservation);
@@ -156,6 +157,10 @@ pub(super) fn detach_installed(
         .remove(identity)
         .expect("prevalidated candidate remains installed during reclamation");
     assert!(state.inspection_order.remove(identity));
+    assert!(state.by_ordinal.remove(&identity.ordinal()).is_some());
+    state
+        .externally_retained_ordinals
+        .remove(&identity.ordinal());
     state.publication_revision.advance();
     let installed = entry.get().expect("prevalidated installed slot");
     let parent = effective_parent(state, installed.commit());

@@ -35,6 +35,47 @@ pub(super) struct SplicedParent {
 }
 
 impl CompositeHistoryCatalog {
+    /// Records World commit ordinals held by external durable subsystems (e.g.
+    /// active correction material) so interior retirement skips them in O(1)
+    /// without keeping them in the dirty frontier. Commits already fenced in
+    /// `state.retiring` are skipped so durable retirement settlement cannot be
+    /// invalidated mid-publication.
+    pub(crate) fn retain_external_history_ordinals(&self, ordinals: &[u64]) {
+        if ordinals.is_empty() {
+            return;
+        }
+        let mut state = lock_state(&self.state);
+        for &ordinal in ordinals {
+            if state
+                .by_ordinal
+                .get(&ordinal)
+                .is_some_and(|commit| state.retiring.contains(commit))
+            {
+                continue;
+            }
+            state.externally_retained_ordinals.insert(ordinal);
+        }
+    }
+
+    /// Releases externally retained World commit ordinals and marks any still-
+    /// installed, non-retiring commits dirty so a later retirement pass
+    /// reclaims them.
+    pub(crate) fn release_external_history_ordinals(&self, ordinals: &[u64]) {
+        if ordinals.is_empty() {
+            return;
+        }
+        let mut state = lock_state(&self.state);
+        for &ordinal in ordinals {
+            if state.externally_retained_ordinals.remove(&ordinal)
+                && let Some(commit) = state.by_ordinal.get(&ordinal).cloned()
+                && !state.retiring.contains(&commit)
+                && installed(&state, &commit).is_some()
+            {
+                lock_index(&state.reachability).mark_changed(&commit);
+            }
+        }
+    }
+
     /// Automatic owner-wide retirement visits only changed reachability slots.
     /// Returned payloads must be dropped after releasing the catalog lock.
     pub(crate) fn retire_changed_history(&self) -> RetiredHistoryEntries {

@@ -104,6 +104,7 @@ impl WorthQueryPrimaryGraphProvider {
                     .map(|preimage| preimage.content().clone())
                     .unwrap_or_default(),
             },
+            opened.reserved_commit_identity().ordinal(),
             request,
         )
     }

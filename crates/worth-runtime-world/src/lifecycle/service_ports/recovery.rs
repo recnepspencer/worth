@@ -41,6 +41,16 @@ impl RuntimeWorldRecoveryPort {
             .map_err(crate::history::HistoryReclamationDenial::OwnerUnavailable)?
             .retire_changed_history_with_request(execution)
     }
+    pub fn retain_external_history_ordinals(&self, ordinals: &[u64]) {
+        if let Ok(service) = self.service() {
+            service.retain_external_history_ordinals(ordinals);
+        }
+    }
+    pub fn release_external_history_ordinals(&self, ordinals: &[u64]) {
+        if let Ok(service) = self.service() {
+            service.release_external_history_ordinals(ordinals);
+        }
+    }
     pub fn release_retired_branch_history(
         &self,
         from: &crate::identity::CompositeCommitIdentity,

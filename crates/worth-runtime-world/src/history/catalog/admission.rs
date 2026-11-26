@@ -134,6 +134,10 @@ impl CompositeHistoryCatalog {
         // slots; it never asks either lookup index to allocate after effects.
         let slots = super::slots::ReservedHistorySlots::reserve(&mut state, &identity);
         assert!(state.inspection_order.insert(identity.clone()));
+        assert!(state
+            .by_ordinal
+            .insert(identity.ordinal(), identity.clone())
+            .is_none());
         state.publication_revision.advance();
         state.metadata.reserve_confirmed(preview);
         counters::lock_counters(&state.counters).record_metadata_reservation();
@@ -242,6 +246,10 @@ impl CompositeHistoryCatalog {
         }
         let slots = super::slots::ReservedHistorySlots::reserve(&mut state, &identity);
         assert!(state.inspection_order.insert(identity.clone()));
+        assert!(state
+            .by_ordinal
+            .insert(identity.ordinal(), identity.clone())
+            .is_none());
         state.metadata.reserve_confirmed(preview);
         state.metadata.promote(reservation_charge, commit_charge);
         counters::lock_counters(&state.counters).record_metadata_promotion();

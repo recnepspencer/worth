@@ -132,3 +132,104 @@ fn manual_ancestry_scope_and_owner_wide_changed_scope_remain_distinct() {
     assert!(catalog.lookup(sibling_head.identity()).is_some());
     assert!(catalog.lookup(commits[1].identity()).is_some());
 }
+
+#[test]
+fn external_history_ordinals_defer_interior_retirement_in_o1_until_released() {
+    let (fixture, commits) = linear_history(4);
+    let catalog = CompositeHistoryCatalog::new(
+        commits[0].identity().owner_identity(),
+        history_contract(4, u64::MAX),
+    );
+    for commit in &commits {
+        catalog
+            .append(commit.clone(), fixture.history_pins(commit))
+            .unwrap();
+    }
+    let _head = catalog.protect_explicit_commit(&commits[3]).unwrap();
+    let retained_ordinal = commits[1].identity().ordinal();
+    catalog.retain_external_history_ordinals(&[retained_ordinal]);
+
+    // Single durable pass with BOTH excluded (`commits[1]`) and non-excluded
+    // (`commits[0]`, `commits[2]`) eligible commits skips `commits[1]`.
+    let pending = catalog.begin_durable_retire_changed_history();
+    assert_eq!(pending.remaining().len(), 2);
+    assert!(!pending.remaining().contains(commits[1].identity()));
+    // Abort once via ProvenNoEffect and re-begin cleanly.
+    pending.release_remaining_proven_no_effect();
+    let mut pending = catalog.begin_durable_retire_changed_history();
+    assert_eq!(pending.remaining().len(), 2);
+    let retired = pending.commit_next(2);
+    assert_eq!(retired.len(), 2);
+    drop(retired);
+    drop(pending);
+
+    assert!(catalog.lookup(commits[0].identity()).is_none());
+    assert!(catalog.lookup(commits[1].identity()).is_some());
+    assert!(catalog.lookup(commits[2].identity()).is_none());
+    assert!(catalog.lookup(commits[3].identity()).is_some());
+
+    // Spliced ancestry crosses the retired gap (`commits[2]`) and lands on `commits[1]`
+    // with generation span 2, stopping cleanly because `commits[0]` is retired.
+    let trace = catalog
+        .trace_ancestry(commits[3].identity().clone(), NonZeroUsize::new(4).unwrap())
+        .unwrap();
+    assert_eq!(trace.visited_count(), 2);
+    assert_eq!(trace.generations_to(1), Some(2));
+    assert!(trace.crossed_retired_history());
+    drop(trace);
+
+    // Unchanged externally retained commits do NOT stay in the dirty frontier (O(1) cost).
+    let lookups_before = catalog.counters().reachability_lookups();
+    assert!(catalog.retire_changed_history().is_empty());
+    assert!(catalog
+        .begin_durable_retire_changed_history()
+        .remaining()
+        .is_empty());
+    assert_eq!(
+        catalog.counters().reachability_lookups(),
+        lookups_before,
+        "externally retained commits must not churn the dirty frontier"
+    );
+
+    // Releasing the external ordinal wakes the commit once so durable retirement reclaims it.
+    catalog.release_external_history_ordinals(&[retained_ordinal]);
+    let mut pending_released = catalog.begin_durable_retire_changed_history();
+    assert_eq!(
+        pending_released.remaining(),
+        std::slice::from_ref(commits[1].identity())
+    );
+    let retired_after_release = pending_released.commit_next(1);
+    assert_eq!(retired_after_release.len(), 1);
+    drop(retired_after_release);
+    drop(pending_released);
+    assert_eq!(catalog.len(), 1);
+    assert!(catalog.lookup(commits[1].identity()).is_none());
+    assert!(catalog.lookup(commits[3].identity()).is_some());
+}
+
+#[test]
+fn retaining_external_ordinal_respects_durable_retiring_fence() {
+    let (fixture, commits) = linear_history(3);
+    let catalog = CompositeHistoryCatalog::new(
+        commits[0].identity().owner_identity(),
+        history_contract(3, u64::MAX),
+    );
+    for commit in &commits {
+        catalog
+            .append(commit.clone(), fixture.history_pins(commit))
+            .unwrap();
+    }
+    let _head = catalog.protect_explicit_commit(&commits[2]).unwrap();
+    let mut pending = catalog.begin_durable_retire_changed_history();
+    assert_eq!(pending.remaining().len(), 2);
+    // Attempting to retain an ordinal already fenced in `state.retiring` must
+    // be ignored so `commit_next` settles cleanly without violating the fence.
+    catalog.retain_external_history_ordinals(&[commits[1].identity().ordinal()]);
+    let retired = pending.commit_next(2);
+    assert_eq!(retired.len(), 2);
+    drop(retired);
+    drop(pending);
+    assert_eq!(catalog.len(), 1);
+    assert!(catalog.lookup(commits[1].identity()).is_none());
+    assert!(catalog.lookup(commits[2].identity()).is_some());
+}

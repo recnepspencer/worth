@@ -12,7 +12,10 @@ use worth_foundational::facade::{
 mod tests;
 pub mod validation;
 /// One writer's material: its publication attempt and coupled-group member.
-pub type MaterialKey = (Original, crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember);
+pub type MaterialKey = (
+    Original,
+    crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember,
+);
 #[derive(Clone, Debug)]
 pub struct MaterialMetadata {
     pub program: [u8; 32],
@@ -118,6 +121,12 @@ impl MaterialCatalog {
         &mut self,
         frame: &QueryCorrectionMaterialFrame,
     ) -> Result<super::pins::MaterialPinChange, Denial> {
+        self.fold_with_terminal(frame).map(|(change, _)| change)
+    }
+    pub(super) fn fold_with_terminal(
+        &mut self,
+        frame: &QueryCorrectionMaterialFrame,
+    ) -> Result<(super::pins::MaterialPinChange, Option<Original>), Denial> {
         let record = MaterialRecord::decode(frame)?;
         if frame.home() != self.home {
             return Err(Denial::ForeignHome);
@@ -130,6 +139,7 @@ impl MaterialCatalog {
         }
         self.validate(&record, frame.position())?;
         let change = super::pins::MaterialPinChange::from_record(&record, self);
+        let mut terminal = None;
         match record {
             MaterialRecord::Capture { material } => {
                 let capture: Arc<MaterialCapture> = Arc::from(material);
@@ -223,6 +233,7 @@ impl MaterialCatalog {
                 );
             }
             MaterialRecord::Abandon { original } => {
+                terminal = Some(original);
                 if let super::pins::MaterialPinChange::Release(identity) = change {
                     let pin = self
                         .pins
@@ -235,6 +246,7 @@ impl MaterialCatalog {
                 }
             }
             MaterialRecord::Expire { original } => {
+                terminal = Some(original);
                 for (_, entry) in self.original_entries_mut(original) {
                     let MaterialBody::Ready { ready, .. } = &entry.body else {
                         unreachable!("validated available material")
@@ -249,7 +261,7 @@ impl MaterialCatalog {
         self.digest = frame.digest();
         self.payload_digest = frame.payload_digest();
         self.generation = frame.publication_generation().get();
-        Ok(change)
+        Ok((change, terminal))
     }
     /// Every member's material of one publication attempt, in member order.
     pub fn original_entries(
