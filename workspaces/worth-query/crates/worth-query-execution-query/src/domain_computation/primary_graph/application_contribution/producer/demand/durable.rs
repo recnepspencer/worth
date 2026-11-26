@@ -76,50 +76,95 @@ impl<S: ApplicationSchema, F: WorthQueryProducerOutputFamily<S>>
         {
             return Err(unavailable());
         }
+        let recorded_basis = recording.basis();
+        let mut basis_override = None;
         let _pin_guard = match runtime
             .runtime
             .recovered_outputs
             .try_retain_obligation_basis_in_flight(
-                recording.basis,
+                recorded_basis,
                 std::sync::Arc::clone(&recording.history),
             ) {
             Some(guard) => guard,
             None => {
-                let observation = self
+                let resolved = self
                     .retained_program_basis
                     .as_ref()
                     .cloned()
                     .or_else(|| readmission.retained_program_basis())
                     .and_then(|basis| {
                         let commit = basis.selected_commit();
-                        (commit.owner_identity().durable() == Some(recording.basis.owner())
-                            && commit.ordinal() == recording.basis.ordinal())
+                        (commit.owner_identity().durable() == Some(recorded_basis.owner())
+                            && commit.ordinal() == recorded_basis.ordinal())
                         .then(|| basis.product_observation().clone())
                     })
                     .map(Ok)
                     .unwrap_or_else(|| {
                         runtime.readmit_output_observation(
                             &execution,
-                            recording.basis,
+                            recorded_basis,
                             &recording.branch,
                         )
-                    })?;
-                runtime
-                    .runtime
-                    .recovered_outputs
-                    .pin_obligation_basis_in_flight(
-                        recording.basis,
-                        observation,
-                        std::sync::Arc::clone(&recording.history),
-                    )
+                    });
+                match resolved {
+                    Ok(observation) => runtime
+                        .runtime
+                        .recovered_outputs
+                        .pin_obligation_basis_in_flight(
+                            recorded_basis,
+                            observation,
+                            std::sync::Arc::clone(&recording.history),
+                        ),
+                    Err(denial)
+                        if denial.kind()
+                            == WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+                            && !readmission.durable_pending() =>
+                    {
+                        let observation = runtime.observe_live_output_branch_head(
+                            &execution,
+                            &recording.branch,
+                            recording.lifecycle,
+                            recorded_basis.owner(),
+                        )?;
+                        let live_basis = DurableCompositeCommitIdentity::from_recorded(
+                            recorded_basis.owner(),
+                            observation.selected_commit().ordinal(),
+                        );
+                        basis_override = Some(live_basis);
+                        runtime
+                            .runtime
+                            .recovered_outputs
+                            .try_retain_obligation_basis_in_flight(
+                                live_basis,
+                                std::sync::Arc::clone(&recording.history),
+                            )
+                            .unwrap_or_else(|| {
+                                runtime
+                                    .runtime
+                                    .recovered_outputs
+                                    .pin_obligation_basis_in_flight(
+                                        live_basis,
+                                        observation,
+                                        std::sync::Arc::clone(&recording.history),
+                                    )
+                            })
+                    }
+                    Err(denial) => return Err(denial),
+                }
             }
         };
         let position = readmission
-            .retain_durable(&execution, Vec::new(), Vec::new(), Vec::new())?
+            .retain_durable(
+                &execution,
+                basis_override,
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+            )?
             .ok_or_else(unavailable)?;
         Ok(WorthQueryOriginalOutputDemand {
             position,
-            basis: recording.basis,
+            basis: recording.basis(),
         })
     }
 
@@ -142,7 +187,7 @@ impl<S: ApplicationSchema, F: WorthQueryProducerOutputFamily<S>>
         let recorded = recording.capture()?;
         if recording.revision != row.revision
             || recording.query != row.query
-            || recording.basis != row.basis
+            || recording.basis() != row.basis
             || recording.branch != row.branch
             || recorded.root != row.root
             || recorded.parameters != row.parameters

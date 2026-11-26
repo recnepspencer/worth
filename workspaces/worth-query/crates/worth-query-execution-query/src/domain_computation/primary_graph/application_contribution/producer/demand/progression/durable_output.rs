@@ -26,6 +26,30 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         else {
             return Ok(());
         };
+        let (record_commit, branch_name) = match &source {
+            Some(Source::Committed(receipt)) => {
+                let publication = receipt.committed_product_publication();
+                (
+                    publication.composite_commit().clone(),
+                    Some(publication.product_branch().name().as_str().to_owned()),
+                )
+            }
+            Some(Source::Recovered(publication)) => {
+                let publication = publication.view().committed_product_publication();
+                (
+                    publication.composite_commit().clone(),
+                    Some(publication.product_branch().name().as_str().to_owned()),
+                )
+            }
+            Some(Source::Stable(stable)) => {
+                let observation = stable.observation();
+                (
+                    observation.selected_commit().clone(),
+                    Some(observation.branch_identity().name().as_str().to_owned()),
+                )
+            }
+            None => (basis.clone(), None),
+        };
         if let Some(source) = source {
             let lineage = self
                 .runtime
@@ -61,23 +85,40 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                 0
             };
         }
-        let payload =
-            checkpoint::accepted_output::encode(&identity, execution.allocation_policy())
-                .map_err(|_| unavailable())?;
-        let observation = self
-            .on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
-                occurrence.ok_or_else(unavailable)?,
-            ))
-            .select_with_request(execution)
-            .map_err(|cause| {
-                WorthQueryOutputDemandDenial::product_selection(cause, "accepted output retention")
-            })?;
+        let payload = checkpoint::accepted_output::encode(&identity, execution.allocation_policy())
+            .map_err(|_| unavailable())?;
+        let branch = match branch_name {
+            Some(branch) => branch,
+            None => {
+                let observation = self
+                    .on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
+                        occurrence.ok_or_else(unavailable)?,
+                    ))
+                    .select_with_request(execution)
+                    .map_err(|cause| {
+                        WorthQueryOutputDemandDenial::product_selection(
+                            cause,
+                            "accepted output retention",
+                        )
+                    })?;
+                observation
+                    .product()
+                    .observation()
+                    .branch_identity()
+                    .name()
+                    .as_str()
+                    .to_owned()
+            }
+        };
+        let Some(owner) = record_commit.owner_identity().durable() else {
+            return Ok(());
+        };
         let commit = worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(
-            basis.owner_identity().durable().expect("durable checked"),
-            basis.ordinal(),
+            owner,
+            record_commit.ordinal(),
         );
         support.lifecycle().record_accepted_output(execution, crate::domain_computation::primary_graph::query_obligations::QueryAcceptedOutputRecord {
-            commit, branch: observation.product().observation().branch_identity().name().as_str().to_owned(), producer: identity.producer.as_ref().clone(),
+            commit, branch, producer: identity.producer.as_ref().clone(),
             scope: (identity.scope.partition_id(),identity.scope.local_slot(),identity.scope.generation()), partition: identity.source_partition, payload,
         }).map_err(|cause| WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::ObligationPublication(cause), "accepted output retention"))
     }
@@ -96,7 +137,11 @@ impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let lineage_lock = self.runtime.primary_provider.graph_ref().output_lineage_ref();
+        let lineage_lock = self
+            .runtime
+            .primary_provider
+            .graph_ref()
+            .output_lineage_ref();
         if !lineage_lock
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

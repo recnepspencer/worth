@@ -22,6 +22,7 @@ struct PerformedMember {
     source: WorthQueryObservedSourceEpoch,
     input: CapturedDecisionInput,
     performed: bool,
+    accepted: bool,
     published_at: u64,
 }
 
@@ -63,7 +64,7 @@ impl PerformedMembers {
     pub fn performed_keys(&self) -> impl Iterator<Item = &WorthQueryOutputDemandKey> {
         self.entries
             .iter()
-            .filter(|entry| entry.performed)
+            .filter(|entry| entry.performed || entry.accepted)
             .map(|entry| entry.successor.as_deref().unwrap_or(&entry.key))
     }
 
@@ -141,6 +142,7 @@ impl PerformedMembers {
             source,
             input: CapturedDecisionInput::Uncaptured,
             performed: false,
+            accepted: false,
             published_at: 0,
         });
         Ok(Some(FreshReadiness { member: index }))

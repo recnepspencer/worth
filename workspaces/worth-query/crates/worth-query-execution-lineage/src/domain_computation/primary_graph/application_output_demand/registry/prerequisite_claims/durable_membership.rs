@@ -18,6 +18,7 @@ impl PreparedPrerequisiteClaims {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         lineage: &std::sync::Mutex<crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage>,
+        fallback_observation: &worth_runtime_world::facade::ProductBranchObservation,
         mut readmit_observation: impl FnMut(
             DurableCompositeCommitIdentity,
             &str,
@@ -84,16 +85,73 @@ impl PreparedPrerequisiteClaims {
                     .collect::<Result<Vec<_>, _>>()?
             };
             let mut _pin_guards = Vec::new();
+            let mut basis_override = None;
             if let Some(recording) = snapshot.source.recording.get()
                 && let Some(pins) = recording.history.basis_pins.get()
             {
-                let mut required = Vec::with_capacity(1 + snapshot.performed.len());
-                required.push(recording.basis);
-                required.extend(snapshot.performed.iter().copied());
-                _pin_guards.reserve(required.len());
-                for commit in required {
+                let recorded_basis = recording.basis();
+                _pin_guards.reserve(1 + snapshot.performed.len());
+                let basis_guard = match pins
+                    .try_retain_in_flight(recorded_basis, Arc::clone(&recording.history))
+                {
+                    Some(guard) => guard,
+                    None => {
+                        let resolved = snapshot
+                            .source
+                            .retained_program_basis()
+                            .and_then(|basis| {
+                                let selected = basis.selected_commit();
+                                (selected.owner_identity().durable()
+                                    == Some(recorded_basis.owner())
+                                    && selected.ordinal() == recorded_basis.ordinal())
+                                .then(|| basis.product_observation().clone())
+                            })
+                            .map(Ok)
+                            .unwrap_or_else(|| {
+                                readmit_observation(recorded_basis, &recording.branch)
+                            });
+                        match resolved {
+                            Ok(observation) => pins.pin_in_flight(
+                                recorded_basis,
+                                observation,
+                                Arc::clone(&recording.history),
+                            ),
+                            Err(denial)
+                                if denial.kind()
+                                    == WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+                                    && !snapshot.source.durable_pending()
+                                    && fallback_observation.branch_identity().name().as_str()
+                                        == recording.branch
+                                    && fallback_observation.lifecycle_incarnation().ordinal()
+                                        == recording.lifecycle
+                                    && fallback_observation.owner_identity().durable()
+                                        == Some(recorded_basis.owner()) =>
+                            {
+                                let live_basis = DurableCompositeCommitIdentity::from_recorded(
+                                    recorded_basis.owner(),
+                                    fallback_observation.selected_commit().ordinal(),
+                                );
+                                basis_override = Some(live_basis);
+                                pins.try_retain_in_flight(
+                                    live_basis,
+                                    Arc::clone(&recording.history),
+                                )
+                                .unwrap_or_else(|| {
+                                    pins.pin_in_flight(
+                                        live_basis,
+                                        fallback_observation.clone(),
+                                        Arc::clone(&recording.history),
+                                    )
+                                })
+                            }
+                            Err(denial) => return Err(denial),
+                        }
+                    }
+                };
+                _pin_guards.push(basis_guard);
+                for commit in &snapshot.performed {
                     let guard = match pins
-                        .try_retain_in_flight(commit, Arc::clone(&recording.history))
+                        .try_retain_in_flight(*commit, Arc::clone(&recording.history))
                     {
                         Some(guard) => guard,
                         None => {
@@ -108,9 +166,9 @@ impl PreparedPrerequisiteClaims {
                                 })
                                 .map(Ok)
                                 .unwrap_or_else(|| {
-                                    readmit_observation(commit, &recording.branch)
+                                    readmit_observation(*commit, &recording.branch)
                                 })?;
-                            pins.pin_in_flight(commit, observation, Arc::clone(&recording.history))
+                            pins.pin_in_flight(*commit, observation, Arc::clone(&recording.history))
                         }
                     };
                     _pin_guards.push(guard);
@@ -118,6 +176,7 @@ impl PreparedPrerequisiteClaims {
             }
             snapshot.source.retain_durable(
                 execution,
+                basis_override,
                 snapshot.performed,
                 prerequisites,
                 checkpoints,

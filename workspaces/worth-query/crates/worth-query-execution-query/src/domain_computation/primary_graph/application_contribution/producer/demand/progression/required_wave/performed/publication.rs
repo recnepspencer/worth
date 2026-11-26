@@ -25,6 +25,10 @@ impl<'record> PublicationHandoff<'record> {
 }
 
 impl PerformedMembers {
+    pub fn mark_accepted(&mut self, readiness: PublicationReadiness) {
+        self.entries[readiness.member].accepted = true;
+    }
+
     pub fn publication<'record>(
         &'record mut self,
         readiness: PublicationReadiness,
@@ -38,6 +42,7 @@ impl PerformedMembers {
             .checked_add(1)
             .expect("bounded positive publication work leaves a finite generation");
         self.entries[readiness.member].published_at = self.commit_generation;
+        self.entries[readiness.member].accepted = true;
         let performed = &mut self.entries[readiness.member].performed;
         let receipt = receipt.record_publication(|| mark(PublishedMember { performed }));
         PublicationHandoff {
