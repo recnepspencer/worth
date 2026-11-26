@@ -8,6 +8,7 @@ use super::*;
 
 mod group_reads;
 mod pending_reads;
+pub(super) use pending_reads::ReadOwner;
 
 /// Every candidate name read this assembly's decisions retained.
 #[derive(Default)]

@@ -370,6 +370,7 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
         *self.consumed.borrow_mut() = worth_execution::ExecutionOrderedMap::default();
         self.reopens.borrow_mut().clear();
         *self.alignments.borrow_mut() = Default::default();
+        *self.candidate_reads.borrow_mut() = Default::default();
         self.successors.set(0);
         self.superseding.set(false);
         let prepared = self
