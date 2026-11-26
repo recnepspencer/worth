@@ -48,17 +48,24 @@ pub(in crate::physical_runtime) struct RecordFramePorts {
 }
 
 impl RecordFramePorts {
-    pub(in crate::physical_runtime::record_serving) fn invalidate_released_arena_range(
+    pub(in crate::physical_runtime::record_serving) fn drain_writeback_fence(
         &self,
         range: worth_store_physical_format::ExtentArenaRange,
-    ) -> Result<(), PhysicalResidencyDenial> {
-        self.pool.invalidate_clean_range(
-            worth_store_physical_format::RecordArtifactFile::ExtentArena {
-                arena: range.arena().get(),
-            },
-            range.offset(),
-            range.length(),
-        )
+        barrier: worth_store_buffer_pool::ArenaReuseBarrier,
+        reuse: worth_store_physical_format::ExtentAllocationGeneration,
+    ) -> Result<
+        worth_store_physical_format::ArenaExtentFrameIdentity,
+        worth_store_buffer_pool::WritebackFenceDrainDenial,
+    > {
+        self.pool.drain_writeback_fence(range, barrier, reuse)
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn certification_active_arena_generation(
+        &self,
+        range: worth_store_physical_format::ExtentArenaRange,
+    ) -> worth_store_physical_format::ExtentAllocationGeneration {
+        self.pool.active_arena_generation(range)
     }
 
     pub(in crate::physical_runtime) fn store_identity(

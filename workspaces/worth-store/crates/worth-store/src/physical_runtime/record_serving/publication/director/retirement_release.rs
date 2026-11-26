@@ -28,8 +28,17 @@ enum ReleaseProgress {
     Recovered(crate::physical_runtime::PhysicalMutationIdentity),
     Prepared(ReleaseCandidate),
     IntentDurable(ReleaseCandidate, DurableMaintenanceReceipt),
-    RootPublished { allocator_update: bool },
-    CompletionDurable { allocator_update: bool },
+    RootPublished {
+        allocator_update: bool,
+    },
+    /// `reuse` is the range's next allocation generation, read from the
+    /// durable free-space root and completion record; `drained` records that
+    /// `WritebackFenceDrain` already admitted it at that generation.
+    CompletionDurable {
+        allocator_update: bool,
+        reuse: worth_store_physical_format::ExtentAllocationGeneration,
+        drained: bool,
+    },
     InspectionRequired,
 }
 
@@ -159,8 +168,8 @@ impl RecordPublicationDirector {
             ReleaseProgress::RootPublished { allocator_update } => {
                 state.progress = ReleaseProgress::RootPublished { allocator_update };
             }
-            ReleaseProgress::CompletionDurable { allocator_update } => {
-                state.progress = ReleaseProgress::CompletionDurable { allocator_update };
+            progress @ ReleaseProgress::CompletionDurable { .. } => {
+                state.progress = progress;
             }
             other => {
                 state.progress = other;
@@ -181,21 +190,41 @@ impl RecordPublicationDirector {
                 displaced.bytes,
                 Some(state.release),
             );
-            self.wal
+            let receipt = self
+                .wal
                 .append_scheduled_maintenance_receipt(&completion)
                 .map_err(maintenance_denial)?;
-            state.progress = ReleaseProgress::CompletionDurable { allocator_update };
+            let reuse =
+                worth_store_physical_format::ExtentAllocationGeneration::at_durable_barrier(
+                    state.release.candidate_generation(),
+                    receipt.interval().2,
+                )
+                .ok_or(PhysicalRetirementDenial::WalPlan)?;
+            state.progress = ReleaseProgress::CompletionDurable {
+                allocator_update,
+                reuse,
+                drained: false,
+            };
         }
-        if matches!(
-            state.progress,
-            ReleaseProgress::CompletionDurable {
-                allocator_update: true
+        if let ReleaseProgress::CompletionDurable {
+            allocator_update: true,
+            reuse,
+            drained,
+        } = &mut state.progress
+            && let crate::physical_runtime::durability::RetiredArtifact::Extent { range, .. } =
+                displaced.artifact
+        {
+            if !*drained {
+                self.residency
+                    .drain_writeback_fence(
+                        range,
+                        worth_store_buffer_pool::ArenaReuseBarrier::CompletedRetirement,
+                        *reuse,
+                    )
+                    .map_err(drain_denial)?;
+                *drained = true;
             }
-        ) && matches!(
-            displaced.artifact,
-            crate::physical_runtime::durability::RetiredArtifact::Extent { .. }
-        ) {
-            self.admit_completed_extent_release(displaced)?;
+            self.admit_completed_extent_release(range)?;
         }
         self.root_owner.complete_displaced(displaced.artifact);
         // Dropping this lease admits ordinary publication only after completion
@@ -205,18 +234,11 @@ impl RecordPublicationDirector {
         Ok(())
     }
 
+    /// Barrier 4: only after durable completion and `WritebackFenceDrain`.
     fn admit_completed_extent_release(
         &self,
-        displaced: DisplacedArtifact,
+        range: worth_store_physical_format::ExtentArenaRange,
     ) -> Result<(), PhysicalRetirementDenial> {
-        let crate::physical_runtime::durability::RetiredArtifact::Extent { range, .. } =
-            displaced.artifact
-        else {
-            return Err(PhysicalRetirementDenial::Retained);
-        };
-        self.residency
-            .invalidate_released_arena_range(range)
-            .map_err(|_| PhysicalRetirementDenial::Waiting)?;
         let preparation = self.preparation.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(owner) = &preparation.arenas {
             owner
@@ -246,6 +268,22 @@ fn maintenance_denial(denial: ScheduledMaintenanceDenial) -> PhysicalRetirementD
         ScheduledMaintenanceDenial::Write => PhysicalRetirementDenial::WalWrite,
         ScheduledMaintenanceDenial::Sync => PhysicalRetirementDenial::WalSync,
         ScheduledMaintenanceDenial::Finish => PhysicalRetirementDenial::WalFinish,
+    }
+}
+
+/// In-flight writebacks and busy frames clear on their own; a generation that
+/// does not advance means the durable barrier sequence regressed.
+fn drain_denial(
+    denial: worth_store_buffer_pool::WritebackFenceDrainDenial,
+) -> PhysicalRetirementDenial {
+    use worth_store_buffer_pool::WritebackFenceDrainDenial as Denial;
+    match denial {
+        Denial::PoolClosed | Denial::WritebackInFlight { .. } | Denial::FrameBusy(_) => {
+            PhysicalRetirementDenial::Waiting
+        }
+        Denial::BarrierIncomplete(_) | Denial::GenerationNotAdvanced { .. } => {
+            PhysicalRetirementDenial::ArenaReleaseInvalid
+        }
     }
 }
 

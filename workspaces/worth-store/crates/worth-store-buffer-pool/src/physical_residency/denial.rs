@@ -10,6 +10,10 @@ pub enum PhysicalResidencyDenial {
     WriteBackExceedsDirtyPosture,
     WriteBackFrameNotDirty,
     WriteBackFrameAlreadyClaimed,
+    /// A `WritebackFenceDrain` fences the frame's arena range.
+    WriteBackRangeFenced,
+    /// The frame or request names an arena generation that is no longer active.
+    StaleArenaGeneration,
     WriteBackReceiptMismatch,
     CandidateCleanAuthorityMismatch,
     WritebackCleanAuthorityMismatch,

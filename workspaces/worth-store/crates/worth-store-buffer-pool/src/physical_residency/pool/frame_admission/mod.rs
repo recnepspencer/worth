@@ -101,6 +101,7 @@ impl PoolInner {
                 artifact_posture: FrameArtifactPosture::Fragment,
                 resident_generation: None,
                 integrity_validation: None,
+                arena_generation: state.arena_generations.generation_for(key.coordinate),
             },
         );
         state

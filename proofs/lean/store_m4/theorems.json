@@ -3,7 +3,8 @@
     "StoreM4",
     "StoreM4.PinSafety",
     "StoreM4.GCPinSafety",
-    "StoreM4.ChunkedCoverage"
+    "StoreM4.ChunkedCoverage",
+    "StoreM4.ExtentGenerationSafety"
   ],
   "allowed_axioms": [],
   "theorems": [
@@ -74,6 +75,26 @@
     {
       "name": "StoreM4.ChunkedCoverage.ChunkedCoverageAndSummarySound",
       "type": "(∀ c total slot, 0 < c → slot < total → (∃ r ∈ StoreM4.ChunkedCoverage.fixedPartition c total, r.contains slot) ∧ (∀ k₁ k₂, (StoreM4.ChunkedCoverage.fixedChunk c total k₁).contains slot → (StoreM4.ChunkedCoverage.fixedChunk c total k₂).contains slot → k₁ = k₂)) ∧ (∀ (V α : Type) (hash : List (Nat × List V) → α) (p : StoreM4.ChunkedCoverage.PhysicalChunk V) (newLocator : Nat), hash (StoreM4.ChunkedCoverage.canonical (StoreM4.ChunkedCoverage.consolidate p newLocator)) = hash (StoreM4.ChunkedCoverage.canonical p)) ∧ (∀ (R K : Type) [DecidableEq K] (keys : R → List K) (k : K) (chunks : List (StoreM4.ChunkedCoverage.SummarizedChunk R K)), (∀ ch ∈ chunks, ch.summary = StoreM4.ChunkedCoverage.derive keys ch.records) → StoreM4.ChunkedCoverage.prunedScan keys k chunks = StoreM4.ChunkedCoverage.fullScan keys k chunks)"
+    },
+    {
+      "name": "StoreM4.ExtentGenerationSafety.AddressReuseGenerationAndWriteFenceSound",
+      "type": "∀ s : StoreM4.ExtentGenerationSafety.Sys, StoreM4.ExtentGenerationSafety.Reachable s → (∀ w ∈ s.inflight, ∀ e ∈ s.seen, e.range.overlaps w.range → ¬ w.gen.lt e.gen) ∧ (∀ f ∈ s.frames, ∀ e ∈ s.seen, e.range.overlaps f.range → ¬ f.gen.lt e.gen) ∧ (∀ (r : StoreM4.ExtentGenerationSafety.Range), ∀ h ∈ s.history, h.lt s.nextGen ∧ ¬ StoreM4.ExtentGenerationSafety.lookupMatches ⟨r, s.nextGen⟩ r h)"
+    },
+    {
+      "name": "StoreM4.ExtentGenerationSafety.Reachable.inv",
+      "type": "∀ {s : StoreM4.ExtentGenerationSafety.Sys}, StoreM4.ExtentGenerationSafety.Reachable s → StoreM4.ExtentGenerationSafety.Inv s"
+    },
+    {
+      "name": "StoreM4.ExtentGenerationSafety.guard_generation_holds",
+      "type": "∀ {s : StoreM4.ExtentGenerationSafety.Sys}, StoreM4.ExtentGenerationSafety.Reachable s → ∀ (r : StoreM4.ExtentGenerationSafety.Range), ∀ e ∈ s.seen, e.range.overlaps r → e.gen.lt s.nextGen"
+    },
+    {
+      "name": "StoreM4.ExtentGenerationSafety.M10_without_drain_paused_writeback_clobbers",
+      "type": "StoreM4.ExtentGenerationSafety.Inv StoreM4.ExtentGenerationSafety.unfencedAdmitWitness ∧ ∃ w ∈ (StoreM4.ExtentGenerationSafety.unfencedAdmitWitness.admitRange ⟨1, 4, 2⟩).inflight, ¬ StoreM4.ExtentGenerationSafety.current (StoreM4.ExtentGenerationSafety.unfencedAdmitWitness.admitRange ⟨1, 4, 2⟩) w"
+    },
+    {
+      "name": "StoreM4.ExtentGenerationSafety.M10_without_cancel_epoch_advance_aliases",
+      "type": "let first := StoreM4.ExtentGenerationSafety.init.admitNoAdvance ⟨1, 0, 8⟩; let reopened : StoreM4.ExtentGenerationSafety.Sys := { first with seen := [], inflight := [], frames := [] }; let reused := reopened.admitNoAdvance ⟨1, 0, 8⟩; reused.rootGen = StoreM4.ExtentGenerationSafety.init.rootGen ∧ ∃ stale ∈ first.history, ∃ live ∈ reused.seen, StoreM4.ExtentGenerationSafety.lookupMatches live ⟨1, 0, 8⟩ stale"
     }
   ]
 }

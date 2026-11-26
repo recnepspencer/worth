@@ -42,8 +42,6 @@ mod operation_allocation;
 mod pin_lease_pressure;
 #[path = "tests/pressure_limits/mod.rs"]
 mod pressure_limits;
-#[path = "tests/range_invalidation.rs"]
-mod range_invalidation;
 #[path = "tests/recovery_admission.rs"]
 mod recovery_admission;
 #[path = "tests/shutdown.rs"]
@@ -54,6 +52,8 @@ mod speculation;
 mod speculation_limits;
 #[path = "tests/writeback_claim_exclusion.rs"]
 mod writeback_claim_exclusion;
+#[path = "tests/writeback_fence_drain.rs"]
+mod writeback_fence_drain;
 #[path = "tests/writeback_range_posture.rs"]
 mod writeback_range_posture;
 

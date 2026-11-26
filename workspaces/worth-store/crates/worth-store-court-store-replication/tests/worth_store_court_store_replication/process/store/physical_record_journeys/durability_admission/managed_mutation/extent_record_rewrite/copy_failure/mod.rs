@@ -59,11 +59,37 @@ fn unstarted_final_copy_wal_does_not_fence_root_or_prevent_durable_cancellation(
         submission.cancel_extent_copy().unwrap(),
         worth_store::physical_runtime::PhysicalExtentCopyResolutionProgress::AwaitingCheckpoint { .. }
     ));
-    let checkpoint = checkpoint_copy_cancellation(&serving);
+    let checkpoint = checkpoint_copy_cancellation(&serving, 234);
     assert_eq!(
         submission.finalize_extent_copy(&checkpoint).unwrap(),
         worth_store::physical_runtime::PhysicalExtentCopyResolutionProgress::Resolved
     );
     completed(prepare(&serving, placement, [233; 32], b"after-copy-resolution").execute());
+    serving.close();
+}
+
+/// S8b: a cancelled candidate extent re-enters the allocator through
+/// `WritebackFenceDrain` once a checkpoint covers its cancellation, at a
+/// strictly newer generation although no root was published, and the extent
+/// that reuses the range never observes the cancelled candidate's bytes.
+#[test]
+fn cancelled_candidate_extent_reuses_at_newer_generation_without_root_publication() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("store");
+    let serving = serving_from_initialization(&root);
+    let (_, placement, _) = configuration();
+    let payload = extent_payload();
+    let appended = completed(prepare(&serving, placement, [240; 32], &payload).execute());
+    let persisted = appended.persisted_records()[0];
+    let record = appended.into_acknowledgment().record_ids().next().unwrap();
+    let reissued = cancel_copy_without_root_publication(&serving, persisted, 241);
+    assert!(reissued > worth_store_physical_format::ExtentAllocationGeneration::OPENED);
+
+    let reuse = vec![0x5a; payload.len()];
+    let reused = completed(prepare(&serving, placement, [247; 32], &reuse).execute());
+    let reused = reused.into_acknowledgment().record_ids().next().unwrap();
+    assert_eq!(read_record(&serving, record), payload);
+    assert_eq!(read_record(&serving, reused), reuse);
+    assert_eq!(newest_arena_generation(&serving), reissued);
     serving.close();
 }

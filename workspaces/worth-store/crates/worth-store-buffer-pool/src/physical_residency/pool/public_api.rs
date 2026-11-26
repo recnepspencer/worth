@@ -46,6 +46,7 @@ impl PhysicalResidencyPool {
                     active_candidate_publications: 0,
                     recovery_operation_bytes_ceiling: u64::MAX,
                     dirty_generation: PhysicalDirtyGeneration::GENESIS,
+                    arena_generations: Default::default(),
                     accepting: true,
                     closed: false,
                 }),
@@ -221,6 +222,7 @@ impl PhysicalResidencyPool {
             ),
             bytes: claimed.resident_bytes,
             range_postures: claimed.range_postures,
+            arena_identities: claimed.arena_identities,
             armed: true,
         })
     }

@@ -221,6 +221,7 @@ impl PoolInner {
             ));
         }
         self.reserve_frame_space(&mut state, scope, u64::from(key.coordinate.length()))?;
+        let arena_generation = state.arena_generations.generation_for(key.coordinate);
         state.frames.insert(
             key.coordinate,
             FrameEntry {
@@ -243,6 +244,7 @@ impl PoolInner {
                 },
                 resident_generation: None,
                 integrity_validation: None,
+                arena_generation,
             },
         );
         state

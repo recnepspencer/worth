@@ -1,9 +1,10 @@
 #![doc = include_str!("physical_residency/compile_fail_proofs.md")]
 #![forbid(unsafe_code)]
 
+mod allocation_generation_guard;
 mod physical_residency;
 pub use physical_residency::{
-    BufferPoolQueueDeclarationContext, BufferPoolQueueGroupingScope,
+    ArenaReuseBarrier, BufferPoolQueueDeclarationContext, BufferPoolQueueGroupingScope,
     BufferPoolQueueWriteDurability, BufferPoolReadQueueExecutionDeclaration,
     BufferPoolReadQueueExecutionKind, BufferPoolWritebackQueueExecutionDeclaration,
     CandidateFrameCleanAuthority, CleanFrameIntegrityValidationDenial, DirtyPhysicalFrame,
@@ -28,7 +29,7 @@ pub use physical_residency::{
     PhysicalResidencyPressureDenial, PhysicalResidencyShutdown, PhysicalResidentFrameGeneration,
     PhysicalSpeculativeWorkKind, PhysicalWritebackClaim, PhysicalWritebackRangePosture,
     PrefetchResidencyGrant, ReadAheadFrameGrant, ReadAheadResidencyGrant,
-    WriteBehindResidencyGrant,
+    WriteBehindResidencyGrant, WritebackFenceDrainDenial,
 };
 pub use physical_residency::{
     PhysicalResidencyRetirementDenial, RetiredOperationAllocation, RetiredPhysicalFrame,

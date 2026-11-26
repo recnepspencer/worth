@@ -5,8 +5,9 @@ use super::obligation::CopyObligation;
 use crate::physical_runtime::durability::ScheduledMaintenanceDenial;
 use crate::physical_runtime::record_serving::{RecordAppendDenial, RecordAppendError};
 use crate::physical_runtime::{CompletedPhysicalCheckpoint, PhysicalMutationProvenNoEffectCause};
+use worth_store_buffer_pool::{ArenaReuseBarrier, WritebackFenceDrainDenial};
 use worth_store_physical_format::{
-    PhysicalExtentCopyRecord, PhysicalExtentCopyResolution,
+    ExtentAllocationGeneration, PhysicalExtentCopyRecord, PhysicalExtentCopyResolution,
     PhysicalExtentCopyResolutionKind as Kind,
 };
 
@@ -160,6 +161,21 @@ impl RecordPublicationDirector {
             });
         }
         if resolution.kind() == Kind::Cancelled {
+            // Path B: the cancellation's own durable WAL record advances the
+            // fence sequence even when no root was published since the intent.
+            let (intent, _, _) = state.intent.ok_or_else(damaged)?;
+            let reuse = ExtentAllocationGeneration::at_durable_barrier(
+                source.root().generation(),
+                resolution.end_lsn(),
+            )
+            .ok_or_else(damaged)?;
+            self.residency
+                .drain_writeback_fence(
+                    intent.destination().arena_range(),
+                    ArenaReuseBarrier::CheckpointCoveredCancel,
+                    reuse,
+                )
+                .map_err(cancelled_drain_error)?;
             self.settle_durably_cancelled_copy_binding(&state)?;
             state
                 .reservation
@@ -255,5 +271,19 @@ impl RecordPublicationDirector {
             Ok(_) | Err(crate::physical_runtime::durability::PhysicalMutationPreSealCancellationDenial::GroupSealed) => Ok(()),
             Err(_) => Err(damaged()),
         }
+    }
+}
+
+/// Busy writebacks or frames are retried like an uncovered checkpoint; a
+/// regressed generation means the durable barrier sequence is damaged.
+fn cancelled_drain_error(denial: WritebackFenceDrainDenial) -> RecordAppendError {
+    match denial {
+        WritebackFenceDrainDenial::PoolClosed
+        | WritebackFenceDrainDenial::WritebackInFlight { .. }
+        | WritebackFenceDrainDenial::FrameBusy(_) => {
+            RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure)
+        }
+        WritebackFenceDrainDenial::BarrierIncomplete(_)
+        | WritebackFenceDrainDenial::GenerationNotAdvanced { .. } => damaged(),
     }
 }

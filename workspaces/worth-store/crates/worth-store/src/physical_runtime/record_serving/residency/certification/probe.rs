@@ -205,6 +205,15 @@ impl PhysicalResidencyCertification {
         self.residency.counters()
     }
 
+    /// The newest arena generation `WritebackFenceDrain` admitted over `range`
+    /// in this residency incarnation.
+    pub fn active_arena_generation(
+        &self,
+        range: worth_store_physical_format::ExtentArenaRange,
+    ) -> worth_store_physical_format::ExtentAllocationGeneration {
+        self.residency.active_arena_generation(range)
+    }
+
     pub fn allocation_trace(&self) -> super::super::PhysicalResidencyAllocationTrace {
         self.residency.allocation_trace()
     }

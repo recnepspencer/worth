@@ -12,6 +12,7 @@ mod pressure;
 mod retirement;
 mod speculation;
 mod work_kind;
+mod writeback_fence;
 mod writeback_range_posture;
 
 pub use denial::PhysicalResidencyDenial;
@@ -73,6 +74,7 @@ pub use speculation::{
     WriteBehindResidencyGrant,
 };
 pub use work_kind::PhysicalSpeculativeWorkKind;
+pub use writeback_fence::{ArenaReuseBarrier, WritebackFenceDrainDenial};
 pub use writeback_range_posture::PhysicalWritebackRangePosture;
 
 #[cfg(test)]

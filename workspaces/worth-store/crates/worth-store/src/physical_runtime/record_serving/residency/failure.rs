@@ -39,6 +39,8 @@ pub enum PhysicalRecordResidencyFailureReason {
     WritebackExceedsDirtyPosture,
     WritebackFrameNotDirty,
     WritebackFrameAlreadyClaimed,
+    WritebackRangeFenced,
+    StaleArenaGeneration,
     WritebackReceiptMismatch,
     CandidateCleanAuthorityMismatch,
     WritebackCleanAuthorityMismatch,
@@ -116,6 +118,12 @@ impl PhysicalRecordResidencyFailure {
             }
             PhysicalResidencyDenial::WriteBackFrameAlreadyClaimed => {
                 PhysicalRecordResidencyFailureReason::WritebackFrameAlreadyClaimed
+            }
+            PhysicalResidencyDenial::WriteBackRangeFenced => {
+                PhysicalRecordResidencyFailureReason::WritebackRangeFenced
+            }
+            PhysicalResidencyDenial::StaleArenaGeneration => {
+                PhysicalRecordResidencyFailureReason::StaleArenaGeneration
             }
             PhysicalResidencyDenial::WriteBackReceiptMismatch => {
                 PhysicalRecordResidencyFailureReason::WritebackReceiptMismatch
@@ -265,6 +273,8 @@ impl From<PhysicalResidencyDenial> for PhysicalRecordResidencyFailure {
             PhysicalResidencyDenial::WriteBackExceedsDirtyPosture
             | PhysicalResidencyDenial::WriteBackFrameNotDirty
             | PhysicalResidencyDenial::WriteBackFrameAlreadyClaimed
+            | PhysicalResidencyDenial::WriteBackRangeFenced
+            | PhysicalResidencyDenial::StaleArenaGeneration
             | PhysicalResidencyDenial::WriteBackReceiptMismatch => {
                 PhysicalRecordResidencyFailureKind::WritebackStateConflict
             }

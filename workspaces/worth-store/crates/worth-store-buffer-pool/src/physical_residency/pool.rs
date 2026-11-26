@@ -26,6 +26,7 @@ use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, RecordArtifactFile, RecordFrameCoordinate,
 };
 
+mod arena_generation_ledger;
 mod bounded_frame_admission;
 mod candidate_admission;
 mod dirty_generation_capture;
@@ -38,10 +39,10 @@ mod integrity_validation;
 mod operation_accounting;
 mod pin_lifecycle;
 mod public_api;
-mod range_invalidation;
 mod recovery_admission;
 mod retirement;
 mod writeback_claim;
+mod writeback_fence_drain;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PhysicalFrameKey {
@@ -199,6 +200,7 @@ struct PoolState {
     active_candidate_publications: u32,
     recovery_operation_bytes_ceiling: u64,
     dirty_generation: PhysicalDirtyGeneration,
+    arena_generations: arena_generation_ledger::ArenaGenerationLedger,
     accepting: bool,
     closed: bool,
 }
@@ -220,6 +222,8 @@ struct FrameEntry {
     artifact_posture: FrameArtifactPosture,
     resident_generation: Option<PhysicalResidentFrameGeneration>,
     integrity_validation: Option<CleanFrameIntegrityValidationRecord>,
+    /// The arena allocation generation at admission; the range is the coordinate.
+    arena_generation: Option<worth_store_physical_format::ExtentAllocationGeneration>,
 }
 
 impl FrameEntry {
@@ -227,6 +231,17 @@ impl FrameEntry {
         PhysicalFrameRemoval::new(self.allocation_scope, self.bytes, self.pins)
             .with_dirty(self.dirty)
             .with_candidate(self.origin.is_candidate())
+    }
+
+    fn arena_identity(
+        &self,
+        coordinate: RecordFrameCoordinate,
+    ) -> Option<worth_store_physical_format::ArenaExtentFrameIdentity> {
+        let range = arena_generation_ledger::arena_range(coordinate)?;
+        let generation = self.arena_generation?;
+        Some(worth_store_physical_format::ArenaExtentFrameIdentity::new(
+            range, generation,
+        ))
     }
 
     fn invalidate_integrity_validation(&mut self) {

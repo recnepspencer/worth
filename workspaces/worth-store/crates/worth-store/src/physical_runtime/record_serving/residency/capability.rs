@@ -44,13 +44,20 @@ impl PhysicalResidencyWorkPort {
     > {
         self.source.read_fresh_exact(coordinate)
     }
-    pub(in crate::physical_runtime::record_serving) fn invalidate_released_arena_range(
+    /// `WritebackFenceDrain` before any freed or cancelled arena range returns
+    /// to the allocator.
+    pub(in crate::physical_runtime::record_serving) fn drain_writeback_fence(
         &self,
         range: worth_store_physical_format::ExtentArenaRange,
-    ) -> Result<(), worth_store_buffer_pool::PhysicalResidencyDenial> {
+        barrier: worth_store_buffer_pool::ArenaReuseBarrier,
+        reuse: worth_store_physical_format::ExtentAllocationGeneration,
+    ) -> Result<
+        worth_store_physical_format::ArenaExtentFrameIdentity,
+        worth_store_buffer_pool::WritebackFenceDrainDenial,
+    > {
         self.access
             .frame_ports
-            .invalidate_released_arena_range(range)
+            .drain_writeback_fence(range, barrier, reuse)
     }
 
     pub(in crate::physical_runtime::record_serving) fn store_identity(
@@ -235,6 +242,16 @@ impl PhysicalResidencyWorkPort {
             allocation,
             declaration,
         )
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime::record_serving) fn active_arena_generation(
+        &self,
+        range: worth_store_physical_format::ExtentArenaRange,
+    ) -> worth_store_physical_format::ExtentAllocationGeneration {
+        self.access
+            .frame_ports
+            .certification_active_arena_generation(range)
     }
 
     #[cfg(feature = "certification-test-authority")]
