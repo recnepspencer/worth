@@ -4,8 +4,10 @@
 //! Committed reads answer from the branch's derived name index at the
 //! proposal's basis commit. Proposed reads overlay the commit's own names,
 //! previewed once, on first need, by the commit's naming authority
-//! ([`preview_commit_names`]). A refused preview is kept: the owner refuses
-//! the commit with that exact naming denial ([`ProposalNameSource::naming_denial`]).
+//! ([`preview_commit_names`]), only while the branch's naming basis is still
+//! the proposal's basis. A refused or stale preview is kept: the owner
+//! refuses the commit with that exact naming denial, or with a retryable
+//! stale-basis conflict ([`ProposalNameSource::settle`]).
 
 use std::sync::OnceLock;
 
@@ -38,7 +40,37 @@ pub struct ProposalNameSource<'a> {
     naming: &'a LineageNamingBasisBinding,
     schema: &'a RelationalSchemaRegistry,
     proposal: ProposalNameInputs<'a>,
-    pending: OnceLock<Result<PendingCommitNames, LineageNameDenial>>,
+    pending: OnceLock<NamePreview>,
+}
+
+/// What one proposal's name preview settled to.
+#[derive(Debug)]
+pub enum NamePreview {
+    Names(PendingCommitNames),
+    Refused(LineageNameDenial),
+    /// The branch's naming basis holds a later commit's lineage than the
+    /// proposal's basis: a preview there would read another commit's names,
+    /// so it never runs.
+    Stale {
+        basis: Option<CommitId>,
+        latest: CommitId,
+    },
+}
+
+/// A settled preview, carried into a later step of the same proposal whose
+/// applied state is unchanged, so its names are not minted twice.
+#[derive(Debug, Default)]
+pub struct ProposalNameCarry(Option<NamePreview>);
+
+impl ProposalNameCarry {
+    /// This carry when `unchanged`; otherwise nothing.
+    pub fn kept_while(self, unchanged: bool) -> Self {
+        if unchanged {
+            self
+        } else {
+            Self(None)
+        }
+    }
 }
 
 /// The applied proposal, its branch and basis commit.
@@ -50,6 +82,7 @@ pub struct ProposalNameInputs<'a> {
     pub version_id: contracts::identity::data::primitives::VersionId,
     pub outcome: &'a worth_relational_mutation::internal_port::authority::mutation::execution::MutationApplyOutcome,
     pub naming_plan: Option<&'a contracts::lineage::data::CommitNamingPlan>,
+    pub graph_selection: Option<&'a worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelection>,
 }
 
 impl<'a> ProposalNameSource<'a> {
@@ -57,38 +90,44 @@ impl<'a> ProposalNameSource<'a> {
         naming: &'a LineageNamingBasisBinding,
         schema: &'a RelationalSchemaRegistry,
         proposal: ProposalNameInputs<'a>,
+        carry: ProposalNameCarry,
     ) -> Self {
+        let pending = OnceLock::new();
+        if let Some(preview) = carry.0 {
+            let _ = pending.set(preview);
+        }
         Self {
             naming,
             schema,
             proposal,
-            pending: OnceLock::new(),
+            pending,
         }
     }
 
-    /// Settles a validation step that read these names: a naming denial a
-    /// proposed read met refuses the commit ahead of that step's verdict,
-    /// exactly as finalization would refuse it.
+    /// Settles a validation step that read these names (`settle_step`) and
+    /// returns the preview to carry into the proposal's next step.
     pub fn settle<T>(
         self,
         step: Result<T, TransactionCommitError>,
-    ) -> Result<T, TransactionCommitError> {
-        match self.naming_denial() {
-            Some(denial) => Err(TransactionCommitError::lineage_name_denial(denial)),
-            None => step,
-        }
-    }
-
-    /// The naming denial a proposed read met, which the commit refuses with.
-    pub fn naming_denial(&self) -> Option<LineageNameDenial> {
-        self.pending.get()?.as_ref().err().cloned()
+    ) -> (Result<T, TransactionCommitError>, ProposalNameCarry) {
+        let preview = self.pending.into_inner();
+        (
+            settle_step(preview.as_ref(), step),
+            ProposalNameCarry(preview),
+        )
     }
 
     fn pending(&self) -> Result<&PendingCommitNames, Denial> {
         let preview = self.pending.get_or_init(|| {
             let basis = self.naming.read_guard(self.proposal.branch.clone());
+            if let Some(latest) = basis.latest_event_commit()
+                && !naming_basis_current(Some(latest), self.proposal.basis)
+            {
+                let basis = self.proposal.basis;
+                return NamePreview::Stale { basis, latest };
+            }
             let outcome = self.proposal.outcome;
-            preview_commit_names(CommitNamePreviewInput {
+            let preview = preview_commit_names(CommitNamePreviewInput {
                 staged: self.proposal.staged,
                 version_id: self.proposal.version_id,
                 changed_records: &outcome.effect.publication.changed_records,
@@ -98,11 +137,55 @@ impl<'a> ProposalNameSource<'a> {
                 scheme_registry: self.schema.persistent_name_schemes(),
                 schema_registry: Some(self.schema),
                 basis: &basis,
-            })
+                graph_selection: self.proposal.graph_selection,
+            });
+            preview.map_or_else(NamePreview::Refused, NamePreview::Names)
         });
-        preview
-            .as_ref()
-            .map_err(|denial| Denial::Naming(denial.clone()))
+        match preview {
+            NamePreview::Names(names) => Ok(names),
+            NamePreview::Refused(denial) => Err(Denial::Naming(denial.clone())),
+            NamePreview::Stale { .. } => Err(Denial::StaleBasis),
+        }
+    }
+}
+
+/// Whether a branch naming basis whose latest lineage commit is `latest`
+/// is still the basis of a proposal at `basis`: nothing after it.
+pub fn naming_basis_current(latest: Option<CommitId>, basis: Option<CommitId>) -> bool {
+    latest.is_none_or(|latest| basis.is_some_and(|basis| latest <= basis))
+}
+
+/// A step that read the proposal's names, settled against what its preview
+/// met. A cancellation or execution stop stays the step's own. Otherwise a
+/// refused naming plan refuses with its exact naming denial, and a stale
+/// basis with a retryable stale-basis conflict, ahead of any verdict that
+/// read rests on.
+pub fn settle_step<T>(
+    preview: Option<&NamePreview>,
+    step: Result<T, TransactionCommitError>,
+) -> Result<T, TransactionCommitError> {
+    use contracts::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+    use contracts::transactions::data::outcomes::{commit_conflict, conflict_class};
+    if matches!(
+        step,
+        Err(TransactionCommitError::Interrupted { .. } | TransactionCommitError::Execution { .. })
+    ) {
+        return step;
+    }
+    match preview {
+        Some(NamePreview::Refused(denial)) => {
+            Err(TransactionCommitError::lineage_name_denial(denial.clone()))
+        }
+        Some(NamePreview::Stale { basis, latest }) => Err(TransactionCommitError::conflict(
+            commit_conflict::CommitConflict::new(
+                conflict_class::ConflictClass::StaleValidationBasis {
+                    detail: format!(
+                        "branch names advanced to commit {latest:?} past proposal basis {basis:?}"
+                    ),
+                },
+            ),
+        )),
+        Some(NamePreview::Names(_)) | None => step,
     }
 }
 
@@ -144,15 +227,20 @@ struct ProposalNames<'v> {
 
 impl CustomInvariantNameView for ProposalNames<'_> {
     fn record_name(&self, record: LineageRecordTarget) -> RecordName {
-        match self.pending.and_then(|pending| pending.record_name(record)) {
-            Some(PendingRecordName::Named(name)) => return RecordName::Named(name),
-            Some(PendingRecordName::Ended) => return RecordName::Ended,
-            None => {}
+        let pending = self.pending.and_then(|pending| pending.record_name(record));
+        if let Some(PendingRecordName::Named(name)) = pending {
+            return RecordName::Named(name);
         }
-        match self.committed.map(|view| view.name_of_record(record)) {
+        let committed = match self.committed.map(|view| view.name_of_record(record)) {
             Some(PersistentNameOfRecord::Live { name, .. }) => RecordName::Named(name),
             Some(PersistentNameOfRecord::Ended { .. }) => RecordName::Ended,
             Some(PersistentNameOfRecord::Unnamed) | None => RecordName::Unnamed,
+        };
+        // A record the commit retires ends the name it carried; one it never
+        // carried a name stays unnamed.
+        match (pending, committed) {
+            (Some(PendingRecordName::Ended), RecordName::Named(_)) => RecordName::Ended,
+            (_, committed) => committed,
         }
     }
 
@@ -189,7 +277,9 @@ impl crate::authority::commit::phases::applied_mutation::AppliedDraftCustody {
         lineage: crate::authority::commit::lineage_preparation::LineagePreparationAuthority<'a>,
         input: &'a impl crate::authority::commit::pipeline::publication_validation::DraftValidationInput,
         naming_plan: Option<&'a contracts::lineage::data::CommitNamingPlan>,
+        plan: worth_relational_mutation::internal_port::authority::commit::semantic_plan::meaning::RelationalSemanticPlan<'a>,
         identity: &worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
+        carry: ProposalNameCarry,
     ) -> ProposalNameSource<'a> {
         let proposal = ProposalNameInputs {
             branch: input.target_branch().clone(),
@@ -198,7 +288,12 @@ impl crate::authority::commit::phases::applied_mutation::AppliedDraftCustody {
             version_id: identity.proposed_version_id(),
             outcome: &self.outcome,
             naming_plan,
+            graph_selection: plan.graph_selection(),
         };
-        ProposalNameSource::new(lineage.naming, lineage.schema, proposal)
+        ProposalNameSource::new(lineage.naming, lineage.schema, proposal, carry)
     }
 }
+
+#[cfg(test)]
+#[path = "invariant_names_tests.rs"]
+mod tests;

@@ -18,6 +18,8 @@ pub mod selection_continuity;
 pub mod staged_effects;
 
 #[cfg(test)]
+mod commit_name_preview_continuity_tests;
+#[cfg(test)]
 mod commit_name_preview_tests;
 #[cfg(test)]
 mod mint_order_tests;

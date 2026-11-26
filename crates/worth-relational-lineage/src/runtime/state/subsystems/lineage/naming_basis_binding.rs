@@ -55,6 +55,15 @@ impl BranchNamingBasisGuard<'_> {
         self.guard.name_indexes.read(&self.branch_id)
     }
 
+    /// The latest commit whose lineage events this branch's naming basis
+    /// holds; `None` before its first. A basis read for a proposal is only
+    /// that proposal's basis while this is at or before the proposal's commit.
+    pub fn latest_event_commit(&self) -> Option<CommitId> {
+        self.guard
+            .branch_naming_state(&self.branch_id)
+            .and_then(|state| state.latest_event_commit())
+    }
+
     /// The guarded branch's group state; `None` before its first group
     /// lineage, and a refusal while it is unavailable.
     pub fn group_state(

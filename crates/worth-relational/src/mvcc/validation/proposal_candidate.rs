@@ -184,7 +184,9 @@ pub(super) fn validate(
         round.lineage_preparation_authority(),
         &validation_input,
         validation_input.naming_plan(),
+        prepared.plan.view(),
         &identity,
+        Default::default(),
     );
     let authority = runtime.invariant_authority().with_names(&names);
     let pending = authority.begin_proposed_state(
@@ -208,7 +210,8 @@ pub(super) fn validate(
             )
         },
     );
-    let pending = names.settle(pending)?;
+    let (pending, carried) = names.settle(pending);
+    let pending = pending?;
     mutation.prepare_aggregate(execution, round, selected, prepared.plan.view().commands())?;
     let aggregate_admission = mutation.complete_aggregate_draft(
         execution,
@@ -228,7 +231,9 @@ pub(super) fn validate(
         round.lineage_preparation_authority(),
         &validation_input,
         validation_input.naming_plan(),
+        prepared.plan.view(),
         &identity,
+        carried.kept_while(aggregate_admission.is_none()),
     );
     let authority = runtime.invariant_authority().with_names(&names);
     let invariants = authority.enforce_proposed_state(
@@ -243,7 +248,7 @@ pub(super) fn validate(
         execution,
         &control,
     );
-    let invariants = names.settle(invariants)?;
+    let invariants = names.settle(invariants).0?;
     Ok(storage.fill(PreparedProposalRound {
         prepared,
         mutation,

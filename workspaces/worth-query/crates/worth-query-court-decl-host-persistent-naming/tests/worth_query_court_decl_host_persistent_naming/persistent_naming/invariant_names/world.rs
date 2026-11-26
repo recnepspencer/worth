@@ -24,6 +24,7 @@ impl ApplicationProgramDefinition<Schema> for WatchProgram {
 }
 
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, WatchProgram>;
+pub type DocumentOf<'a> = WorthQueryApplicationHistoryDocument<'a, Schema, History>;
 
 /// One live watched world, its operator's request and its watch.
 pub struct WatchWorld {

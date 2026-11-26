@@ -773,17 +773,26 @@ replay:
   an unnamed kind's records always do. `committed()` reads the branch's names
   at the proposal's basis and never sees the proposal's own births.
   `proposed()` also reads the names the commit under evaluation gives its
-  records (plain births, split pieces, merge results kept in place or minted
-  new, a coupled producer's outputs) and ends (retired, split and merged-away
-  parents), as Relational's own naming authority validates and mints them: a
+  records (plain births, split pieces, merge results kept in place, kept onto
+  a new record or minted new, a coupled producer's outputs, a birth that
+  restores a retired name, and a `HistoryDocument` undo, redo or checkout's
+  rematerialized records) and ends (every record the commit retires, postured
+  or not), as Relational's own naming authority validates and mints them: a
   pending birth answers with the exact name and `RecordedNameBirth` the
   commit records, and its same-commit references are admitted by kind, so
   `decode_discriminator::<D>()` refuses `NameKindMismatch` for a reference of
   another kind. When the commit's naming plan is refused (`MissingBirth`,
   `DuplicateBirth`, an invalid posture), the read refuses
-  `WorthQueryInvariantNameDenial::Names` and the commit refuses with that
-  exact naming denial (`persistent_name_refusal()`), whatever the rule
-  decides. Each read is charged to the invariant's work budget.
+  `WorthQueryInvariantNameDenial::Names(CustomInvariantNameReadDenial::Naming(..))`
+  and the commit refuses with that exact naming denial
+  (`persistent_name_refusal()`), whatever the rule decides; a cancellation or
+  execution stop stays the step's own. If the branch's names move past the
+  proposal's basis before the preview, the read refuses `StaleBasis` and the
+  commit refuses with a retryable stale-basis conflict instead. Each read is
+  charged to the invariant's work budget (`WorkExhausted`).
+  `CustomInvariantNameReadDenial` is exported from
+  `host::application_invariants`, so a host matches every refusal without
+  another crate.
 - Relations are read the same way. `reader.relation_name_of(&relation)`
   takes the handle the decision reader's own traversal returned
   (`relations_from` / `relations_to`), never a raw relation identity, and

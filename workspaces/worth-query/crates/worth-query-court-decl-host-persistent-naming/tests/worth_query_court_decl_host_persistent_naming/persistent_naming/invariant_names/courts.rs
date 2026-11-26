@@ -7,13 +7,14 @@ use super::*;
 use crate::persistent_naming::outputs::sculpt::{Keeper, Step};
 use crate::persistent_naming::outputs::{birth, keys, piece, read, SidedCut};
 use worth_query_decl::facade::application_naming::NameRef;
+use worth_query_host::facade::application_naming::ExecutionNameReadDenial;
 
 /// The member the watch evaluated under `key`.
 pub struct Evaluated {
-    pub proposed: Result<WorthQueryName<Member>, String>,
-    pub birth: Option<Result<RecordedNameBirth<Member>, String>>,
-    pub committed: Option<Result<WorthQueryName<Member>, String>>,
-    pub committed_birth: Option<Result<RecordedNameBirth<Member>, String>>,
+    pub proposed: Named,
+    pub birth: Option<Born>,
+    pub committed: Option<Named>,
+    pub committed_birth: Option<Born>,
 }
 
 pub fn evaluated(seen: &[Seen], key: &str) -> Evaluated {
@@ -54,7 +55,7 @@ fn planned_too(seen: &[Seen], key: &str) {
     assert_eq!(names(Phase::Planned), names(Phase::Evaluated), "`{key}`");
 }
 
-pub fn gone(seen: &[Seen], key: &str) -> (Result<WorthQueryName<Member>, String>, bool, String) {
+pub fn gone(seen: &[Seen], key: &str) -> (Named, bool, String) {
     seen.iter()
         .find_map(|seen| match seen {
             Seen::Gone {
@@ -68,7 +69,7 @@ pub fn gone(seen: &[Seen], key: &str) -> (Result<WorthQueryName<Member>, String>
         .unwrap_or_else(|| panic!("the watch sees `{key}` gone: {seen:?}"))
 }
 
-fn birth_of(seen: &Evaluated) -> &RecordedNameBirth<Member> {
+pub fn birth_of(seen: &Evaluated) -> &RecordedNameBirth<Member> {
     match &seen.birth {
         Some(Ok(birth)) => birth,
         other => panic!("the proposed birth reads: {other:?}"),
@@ -76,12 +77,15 @@ fn birth_of(seen: &Evaluated) -> &RecordedNameBirth<Member> {
 }
 
 /// The committed view never sees a birth only the proposal records.
-fn unseen_in_committed(seen: &Evaluated) {
+pub fn unseen_in_committed(seen: &Evaluated) {
     assert_eq!(seen.committed, None, "the record is new");
-    match &seen.committed_birth {
-        Some(Err(refusal)) => assert!(refusal.contains("UnknownName"), "{refusal}"),
-        other => panic!("committed() must not see a pending birth: {other:?}"),
-    }
+    assert_eq!(
+        seen.committed_birth,
+        Some(Err(WorthQueryInvariantNameDenial::Read(
+            ExecutionNameReadDenial::UnknownName
+        ))),
+        "committed() must not see a pending birth"
+    );
 }
 
 #[test]

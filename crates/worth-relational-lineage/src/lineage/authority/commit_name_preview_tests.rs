@@ -18,8 +18,9 @@ use crate::contracts::transactions::data::primitives::RecordRef;
 use crate::runtime::state::subsystems::lineage_identity::LineageIdentityAllocator;
 use worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState;
 
-fn preview(
+pub(super) fn preview(
     staged: &WorkingState,
+    version_id: VersionId,
     changed: &[RecordRef],
     input: &LineageCommitPostureInput,
 ) -> Result<super::PendingCommitNames, crate::contracts::lineage::data::LineageNameDenial> {
@@ -31,7 +32,7 @@ fn preview(
     let symbols = crate::contracts::symbols::data::string_interner::StringInterner::default();
     preview_commit_names(CommitNamePreviewInput {
         staged,
-        version_id: VersionId(1),
+        version_id,
         changed_records: changed,
         created_entities: &CommitCreatedEntityBindings::from_owner_map(BTreeMap::new(), &symbols),
         created_relations: &CommitCreatedRelationBindings::from_owner_map(
@@ -42,6 +43,7 @@ fn preview(
         scheme_registry: &input.scheme_registry,
         schema_registry: None,
         basis: input,
+        graph_selection: None,
     })
 }
 
@@ -74,7 +76,7 @@ fn a_preview_names_each_record_with_the_birth_finalization_records() {
         RecordRef::Entity(other),
         RecordRef::Relation(seam),
     ];
-    let names = preview(&staged, &changed, &input).expect("the births validate");
+    let names = preview(&staged, VersionId(1), &changed, &input).expect("the births validate");
     let finalized = finalize_postures_in_working_state_for_test(
         &LineageIdentityAllocator::new(),
         &mut staged,
@@ -138,7 +140,7 @@ fn a_preview_refuses_exactly_what_finalization_refuses() {
         ..LineageCommitPostureInput::default()
     };
     let changed = [RecordRef::Entity(first), RecordRef::Entity(second)];
-    let refused = preview(&staged, &changed, &input).expect_err("the births collide");
+    let refused = preview(&staged, VersionId(1), &changed, &input).expect_err("the births collide");
     let Err(finalized) = finalize_postures_in_working_state_for_test(
         &LineageIdentityAllocator::new(),
         &mut staged,

@@ -6,7 +6,10 @@
 //! [`validate_commit_postures`], exactly as finalization does. So a pending
 //! birth answers with the identity and canonical parts finalization records,
 //! and a plan finalization refuses is refused here with the same typed
-//! [`LineageNameDenial`]. Nothing is reserved, allocated or written.
+//! [`LineageNameDenial`]. An owned-graph selection (`HistoryDocument` undo,
+//! redo and checkout) derives its continuity through the same
+//! `selection_continuity` plan finalization runs. Nothing is reserved,
+//! allocated or written.
 
 use std::collections::BTreeMap;
 
@@ -25,6 +28,9 @@ use worth_relational_storage::internal_port::storage::overlay::working_state::Wo
 
 use super::commit_finalization::resolve_commit_naming_plan;
 use super::posture_validation::{validate_commit_postures, ValidatedPosture};
+use super::selection_continuity::preview_selection;
+use super::staged_effects::is_retired_in_commit;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelection;
 
 /// The proposed state of one commit, as its naming authority sees it.
 pub struct CommitNamePreviewInput<'a> {
@@ -37,6 +43,8 @@ pub struct CommitNamePreviewInput<'a> {
     pub scheme_registry: &'a InstalledPersistentNameSchemeRegistry,
     pub schema_registry: Option<&'a RelationalSchemaRegistry>,
     pub basis: &'a dyn LineageBasisView,
+    /// The owned-graph selection the commit performs, if any.
+    pub graph_selection: Option<&'a CanonicalOwnedGraphSelection>,
 }
 
 /// What the commit does to one record's name.
@@ -119,7 +127,7 @@ pub fn preview_commit_names(
         }
         None => Vec::new(),
     };
-    let validated = validate_commit_postures(
+    let mut validated = validate_commit_postures(
         input.staged,
         input.version_id,
         input.changed_records,
@@ -128,6 +136,16 @@ pub fn preview_commit_names(
         input.basis,
         &postures,
     )?;
+    let selection_retired = match input.graph_selection {
+        Some(selection) => preview_selection(
+            input.staged,
+            input.basis,
+            input.schema_registry,
+            selection,
+            &mut validated,
+        )?,
+        None => Vec::new(),
+    };
     let mut names = PendingCommitNames::default();
     for claim in &postures {
         match claim {
@@ -150,8 +168,12 @@ pub fn preview_commit_names(
             LineagePostureClaim::Create { .. } | LineagePostureClaim::Preserve { .. } => {}
         }
     }
+    // Continued and restored names, including births a retired name's
+    // identity classifies as restores and a selection's rematerializations.
     for posture in &validated.postures {
-        if let ValidatedPosture::Regenerate { target, name, .. } = posture {
+        if let ValidatedPosture::Regenerate { target, name, .. }
+        | ValidatedPosture::Restore { target, name, .. } = posture
+        {
             names.name(*target, *name);
         }
     }
@@ -159,6 +181,21 @@ pub fn preview_commit_names(
         names.name(target, birth.identity());
         names.births.insert(*birth.identity().as_bytes(), birth);
     }
+    // Every record the commit retires ends its name, postured or not: an
+    // unpostured delete or replace, a cascaded relation, a selection's
+    // retirement. A record the commit also names keeps that name.
+    let retired = input.changed_records.iter().map(|record| match record {
+        RecordRef::Entity(id) => LineageRecordTarget::Entity(*id),
+        RecordRef::Relation(id) => LineageRecordTarget::Relation(*id),
+    });
+    for target in retired {
+        if is_retired_in_commit(input.staged, target, input.version_id) {
+            names.end(target);
+        }
+    }
+    selection_retired
+        .into_iter()
+        .for_each(|target| names.end(target));
     Ok(names)
 }
 

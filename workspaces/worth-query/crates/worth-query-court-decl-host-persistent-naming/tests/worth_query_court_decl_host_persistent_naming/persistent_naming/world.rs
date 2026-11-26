@@ -128,6 +128,16 @@ pub fn attach_as<H>(host: &Host) -> WorthQueryApplicationHistoryDocument<'_, Sch
 where
     H: ApplicationHistoryBinding<Schema, Access = query::model::Read>,
 {
+    attach_in(host)
+}
+/// Attaches history `H` to a fork of `host`'s current world, on program `P`.
+pub fn attach_in<H, P>(
+    host: &WorthQueryProgramApplicationRuntime<Schema, P>,
+) -> WorthQueryApplicationHistoryDocument<'_, Schema, H>
+where
+    H: ApplicationHistoryBinding<Schema, Access = query::model::Read>,
+    P: ApplicationProgramDefinition<Schema>,
+{
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     host.with_host_advancement(|phase| {

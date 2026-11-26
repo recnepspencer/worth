@@ -18,9 +18,12 @@ use worth_query_host::facade::application_invariants::{
     WorthQueryApplicationInvariantFieldBinding, WorthQueryApplicationInvariantReadView,
     WorthQueryApplicationInvariantRule, WorthQueryApplicationInvariantSchemaResolver,
     WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantVerdict,
+    WorthQueryInvariantNameDenial,
 };
 
+mod continuity;
 mod courts;
+mod history;
 mod refusals;
 mod world;
 pub use world::WatchWorld;
@@ -74,26 +77,29 @@ pub enum Phase {
     Evaluated,
 }
 
+pub type Named = Result<WorthQueryName<Member>, WorthQueryInvariantNameDenial>;
+pub type Born = Result<RecordedNameBirth<Member>, WorthQueryInvariantNameDenial>;
+
 /// What `NameWatch` saw of one record in one phase.
 #[derive(Clone, Debug)]
 pub enum Seen {
     Member {
         phase: Phase,
         key: String,
-        /// `proposed().name_of`, or the debug form of its refusal.
-        proposed: Result<WorthQueryName<Member>, String>,
+        /// `proposed().name_of`.
+        proposed: Named,
         /// `proposed().birth_of` of that name.
-        birth: Option<Result<RecordedNameBirth<Member>, String>>,
+        birth: Option<Born>,
         /// `committed().name_of` of the same record; `None` when the record
         /// is not in the committed view.
-        committed: Option<Result<WorthQueryName<Member>, String>>,
+        committed: Option<Named>,
         /// `committed().birth_of` of the proposed name.
-        committed_birth: Option<Result<RecordedNameBirth<Member>, String>>,
+        committed_birth: Option<Born>,
     },
     /// A member the commit deletes: read in the committed view only.
     Gone {
         key: String,
-        committed: Result<WorthQueryName<Member>, String>,
+        committed: Named,
         /// Whether the proposed view still observes the record.
         reobserved: bool,
         /// `proposed().name_of` handed the committed view's handle.
@@ -233,7 +239,7 @@ impl WorthQueryApplicationInvariantRule<Schema> for Rule {
                 .unwrap_or_default();
             let seen = Seen::Gone {
                 key,
-                committed: committed.name_of(entity).map_err(debug),
+                committed: committed.name_of(entity),
                 reobserved: proposed.reobserve_entity(&self.member, entity)?.is_some(),
                 cross_view: debug(proposed.name_of(entity).unwrap_err()),
             };
@@ -272,14 +278,14 @@ impl Rule {
         let committed_birth = name.as_ref().ok().map(|name| committed.birth_of(name));
         let committed = committed
             .reobserve_entity(&self.member, member)?
-            .map(|before| committed.name_of(&before).map_err(debug));
+            .map(|before| committed.name_of(&before));
         Ok(Seen::Member {
             phase,
             key,
-            proposed: name.map_err(debug),
-            birth: birth.map(|birth| birth.map_err(debug)),
+            proposed: name,
+            birth,
             committed,
-            committed_birth: committed_birth.map(|birth| birth.map_err(debug)),
+            committed_birth,
         })
     }
 }

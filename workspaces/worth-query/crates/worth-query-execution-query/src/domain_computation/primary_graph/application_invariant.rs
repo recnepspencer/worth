@@ -14,6 +14,9 @@ pub use worth_query_execution_lineage::facade::primary_graph::application_invari
     WorthQueryInvariantRefusalDecodeDenial,
 };
 pub use worth_relational::facade::runtime::CustomInvariantInterruption;
+/// Why an invariant could not read the commit's persistent names at all,
+/// carried by `WorthQueryInvariantNameDenial::Names`.
+pub use worth_relational::facade::runtime::CustomInvariantNameReadDenial;
 
 pub mod content_fields;
 mod prepared_scope;

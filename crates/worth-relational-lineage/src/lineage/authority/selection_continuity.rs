@@ -76,6 +76,26 @@ pub(super) fn selection_postures(
         .map_err(TransactionCommitError::lineage_name_denial)
 }
 
+/// A name preview's view of the selection: appends the same derived postures
+/// `selection_postures` does and returns every record the selection retires.
+/// Refuses with the same naming denial finalization would.
+///
+/// Complexity: as `selection_postures`.
+pub(super) fn preview_selection(
+    staged: &WorkingState,
+    basis: &dyn LineageBasisView,
+    schema: Option<&RelationalSchemaRegistry>,
+    selection: &CanonicalOwnedGraphSelection,
+    validated: &mut ValidatedPostureBatch,
+) -> Result<Vec<LineageRecordTarget>, LineageNameDenial> {
+    let transition = SelectionTransition::of(selection);
+    if let Some(refusal) = caller_plan_refusal(validated, &transition, selection.model()) {
+        return Err(refusal);
+    }
+    plan(staged, basis, schema, &transition, validated)?;
+    Ok(transition.retired)
+}
+
 fn caller_plan_refusal(
     validated: &ValidatedPostureBatch,
     transition: &SelectionTransition,

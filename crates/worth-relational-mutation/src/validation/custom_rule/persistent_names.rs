@@ -50,6 +50,9 @@ pub enum CustomInvariantNameReadDenial {
     IndexUnavailable(String),
     /// The commit's naming plan is refused; the commit refuses with this.
     Naming(LineageNameDenial),
+    /// The branch's names moved past the proposal's basis; the commit
+    /// refuses with a retryable stale-basis conflict.
+    StaleBasis,
     /// The invariant's work budget is spent.
     WorkExhausted,
 }
@@ -151,3 +154,7 @@ impl<'runtime> super::CustomInvariantExecutionContext<'runtime> {
         self.names.posture(CustomInvariantNamePosture::Proposed)
     }
 }
+
+#[cfg(test)]
+#[path = "persistent_names_tests.rs"]
+mod tests;

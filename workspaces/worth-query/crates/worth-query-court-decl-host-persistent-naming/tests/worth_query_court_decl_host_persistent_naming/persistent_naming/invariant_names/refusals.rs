@@ -9,6 +9,7 @@ use crate::persistent_naming::outputs::{birth, keys, naming_refusal, piece, read
 use worth_query_decl::facade::application_naming::{
     ApplicationNameDiscriminator, ApplicationNameDiscriminatorDecodeDenial, NameBirthDecodeDenial,
 };
+use worth_query_host::facade::application_invariants::CustomInvariantNameReadDenial;
 use worth_query_host::facade::application_naming::LineageNameDenial;
 
 /// The wire form of `CutAlong`, misdeclaring its seam as a member.
@@ -145,8 +146,11 @@ fn a_missing_birth_refuses_the_commit_with_its_exact_naming_denial() {
         "{outcome:?}"
     );
     let watched = evaluated(&world.take(), "bare");
+    // A host matches the names refusal exhaustively through Host's own exports.
     match &watched.proposed {
-        Err(read) => assert!(read.contains("MissingBirth"), "{read}"),
+        Err(WorthQueryInvariantNameDenial::Names(CustomInvariantNameReadDenial::Naming(
+            LineageNameDenial::MissingBirth { .. },
+        ))) => {}
         other => panic!("the read refuses with the plan's denial: {other:?}"),
     }
     assert!(!world.live("bare"));
