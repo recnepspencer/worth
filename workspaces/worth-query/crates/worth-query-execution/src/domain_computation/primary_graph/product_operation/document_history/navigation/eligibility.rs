@@ -18,6 +18,7 @@ use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleI
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
@@ -216,6 +217,14 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     let execution = phase
         .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
         .map_err(Denial::Stopped)?;
+    // The navigation's single trusted reading, shared with its progression;
+    // installed invariants judge the preflight at that instant.
+    let clock = application.inner.runtime.authorization_clock_ref();
+    let control = worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted();
+    let control = match phase.settle_admitted_at(|| clock.admission_timestamp()) {
+        Ok(admitted_at) => control.with_admission_time(admitted_at),
+        Err(_) => control,
+    };
     // This real admission on C catches medium/schema/source eligibility before
     // fork. Actual preparation later repeats admission on the new C-derived target.
     application
@@ -249,9 +258,10 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                     )
                     .map_err(Denial::OwnedGraph)?;
                 let transaction = native
-                    .begin_branch_transaction(
+                    .begin_branch_transaction_with_control(
                         current.product().relational_basis(),
                         RelationalTransactionIntent::ordinary(),
+                        control.clone(),
                     )
                     .map_err(Denial::Transaction)?;
                 let prepared = super::output_custody::prepare(
