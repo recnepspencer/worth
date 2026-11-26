@@ -94,6 +94,7 @@ pub(in crate::physical_runtime) struct RecordPublicationDirector {
     arena_evacuation: Mutex<Option<arena_evacuation::ArenaEvacuationProgress>>,
     extent_copy: Mutex<Option<extent_copy::ExtentCopySession>>,
     copy_obligation: Mutex<Option<extent_copy::SharedCopyObligation>>,
+    selected_pin_carry: Mutex<Option<selected_manifest_pins::CarriedManifestRoster>>,
     mutations: Arc<crate::physical_runtime::PhysicalMutationRuntimeOwner>,
     #[cfg(feature = "certification-test-authority")]
     retirement_intent_gate: retirement::RetirementIntentGate,
@@ -238,6 +239,7 @@ impl RecordPublicationDirector {
             arena_evacuation: Mutex::new(None),
             extent_copy: Mutex::new(None),
             copy_obligation: Mutex::new(None),
+            selected_pin_carry: Mutex::new(None),
             mutations: crate::physical_runtime::PhysicalMutationRuntimeOwner::new(director.clone()),
             #[cfg(feature = "certification-test-authority")]
             retirement_intent_gate: retirement::RetirementIntentGate::new(),

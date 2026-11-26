@@ -2,7 +2,8 @@
   "imports": [
     "StoreM4",
     "StoreM4.PinSafety",
-    "StoreM4.GCPinSafety"
+    "StoreM4.GCPinSafety",
+    "StoreM4.ChunkedCoverage"
   ],
   "allowed_axioms": [],
   "theorems": [
@@ -41,6 +42,38 @@
     {
       "name": "StoreM4.GCPinSafety.expire_completes_when_drained",
       "type": "∀ (t : StoreM4.PinSafety.PinTable) (e : StoreM4.PinSafety.PinEntry), StoreM4.GCPinSafety.Reachable t → e ∈ t → e.state = StoreM4.PinSafety.LeaseState.expiring → e.activeReaderLoans = 0 → e.liveChildPins = 0 → ∃ t', StoreM4.GCPinSafety.leaseExpire t e.id = some t' ∧ ∀ e' ∈ t', e'.id = e.id → e'.state = StoreM4.PinSafety.LeaseState.expired"
+    },
+    {
+      "name": "StoreM4.ChunkedCoverage.fixed_partition_covers_each_slot_once",
+      "type": "∀ (c total slot : Nat), 0 < c → slot < total → (∃ r ∈ StoreM4.ChunkedCoverage.fixedPartition c total, r.contains slot) ∧ (∀ k₁ k₂, (StoreM4.ChunkedCoverage.fixedChunk c total k₁).contains slot → (StoreM4.ChunkedCoverage.fixedChunk c total k₂).contains slot → k₁ = k₂)"
+    },
+    {
+      "name": "StoreM4.ChunkedCoverage.consolidate_preserves_canonical",
+      "type": "∀ {V : Type} (p : StoreM4.ChunkedCoverage.PhysicalChunk V) (newLocator : Nat), StoreM4.ChunkedCoverage.canonical (StoreM4.ChunkedCoverage.consolidate p newLocator) = StoreM4.ChunkedCoverage.canonical p"
+    },
+    {
+      "name": "StoreM4.ChunkedCoverage.semantic_commitment_consolidation_invariant",
+      "type": "∀ {V α : Type} (hash : List (Nat × List V) → α) (p : StoreM4.ChunkedCoverage.PhysicalChunk V) (newLocator : Nat), hash (StoreM4.ChunkedCoverage.canonical (StoreM4.ChunkedCoverage.consolidate p newLocator)) = hash (StoreM4.ChunkedCoverage.canonical p)"
+    },
+    {
+      "name": "StoreM4.ChunkedCoverage.semantic_root_consolidation_invariant",
+      "type": "∀ {V α β : Type} (hash : List (Nat × List V) → α) (root : List α → β) (chunks : List (StoreM4.ChunkedCoverage.PhysicalChunk V)) (newLocator : StoreM4.ChunkedCoverage.PhysicalChunk V → Nat), root ((chunks.map fun p => StoreM4.ChunkedCoverage.consolidate p (newLocator p)).map (hash ∘ StoreM4.ChunkedCoverage.canonical)) = root (chunks.map (hash ∘ StoreM4.ChunkedCoverage.canonical))"
+    },
+    {
+      "name": "StoreM4.ChunkedCoverage.pruned_scan_agrees_with_full_scan",
+      "type": "∀ {R K : Type} [inst : DecidableEq K] (keys : R → List K) (k : K) (chunks : List (StoreM4.ChunkedCoverage.SummarizedChunk R K)), (∀ ch ∈ chunks, ch.summary = StoreM4.ChunkedCoverage.derive keys ch.records) → StoreM4.ChunkedCoverage.prunedScan keys k chunks = StoreM4.ChunkedCoverage.fullScan keys k chunks"
+    },
+    {
+      "name": "StoreM4.ChunkedCoverage.omitted_key_violates_derivation",
+      "type": "∀ {R K : Type} (keys : R → List K) (k : K) (ch : StoreM4.ChunkedCoverage.SummarizedChunk R K), (∃ r ∈ ch.records, k ∈ keys r) → k ∉ ch.summary → ch.summary ≠ StoreM4.ChunkedCoverage.derive keys ch.records"
+    },
+    {
+      "name": "StoreM4.ChunkedCoverage.omitted_key_breaks_pruned_scan",
+      "type": "∀ {R K : Type} [inst : DecidableEq K] (keys : R → List K) (k : K) (ch : StoreM4.ChunkedCoverage.SummarizedChunk R K), (∃ r ∈ ch.records, k ∈ keys r) → k ∉ ch.summary → StoreM4.ChunkedCoverage.prunedScan keys k [ch] ≠ StoreM4.ChunkedCoverage.fullScan keys k [ch]"
+    },
+    {
+      "name": "StoreM4.ChunkedCoverage.ChunkedCoverageAndSummarySound",
+      "type": "(∀ c total slot, 0 < c → slot < total → (∃ r ∈ StoreM4.ChunkedCoverage.fixedPartition c total, r.contains slot) ∧ (∀ k₁ k₂, (StoreM4.ChunkedCoverage.fixedChunk c total k₁).contains slot → (StoreM4.ChunkedCoverage.fixedChunk c total k₂).contains slot → k₁ = k₂)) ∧ (∀ (V α : Type) (hash : List (Nat × List V) → α) (p : StoreM4.ChunkedCoverage.PhysicalChunk V) (newLocator : Nat), hash (StoreM4.ChunkedCoverage.canonical (StoreM4.ChunkedCoverage.consolidate p newLocator)) = hash (StoreM4.ChunkedCoverage.canonical p)) ∧ (∀ (R K : Type) [DecidableEq K] (keys : R → List K) (k : K) (chunks : List (StoreM4.ChunkedCoverage.SummarizedChunk R K)), (∀ ch ∈ chunks, ch.summary = StoreM4.ChunkedCoverage.derive keys ch.records) → StoreM4.ChunkedCoverage.prunedScan keys k chunks = StoreM4.ChunkedCoverage.fullScan keys k chunks)"
     }
   ]
 }

@@ -8,19 +8,27 @@ use worth_store_physical_format::{
 };
 
 use super::RecordPublicationDirector;
-use crate::physical_runtime::record_serving::{
-    PhysicalRecordId, PhysicalRecordReader, RecordByteLimit, RecordCountLimit, RecordReadLimits,
-    RecordScanOutcome, RecordScanRequest,
-};
+use crate::physical_runtime::record_serving::PhysicalRecordReader;
 
 #[path = "selected_manifest_pins/budget.rs"]
 mod budget;
+#[path = "selected_manifest_pins/carried.rs"]
+mod carried;
 #[path = "selected_manifest_pins/read_deferred.rs"]
 mod deferred_read;
+#[path = "selected_manifest_pins/delta_scan.rs"]
+mod delta_scan;
+#[path = "selected_manifest_pins/full_scan.rs"]
+mod full_scan;
 
 pub(in crate::physical_runtime) use budget::checkpoint_pin_scan_bytes;
 use budget::{checkpoint_pin_scan_bound, PinScanBound};
-use deferred_read::read_deferred;
+pub(in crate::physical_runtime::record_serving::publication::director) use carried::CarriedManifestRoster;
+use delta_scan::delta_scan;
+use full_scan::full_scan;
+#[path = "selected_manifest_pins/roster_admission.rs"]
+mod roster_admission;
+use roster_admission::{charge_roster_growth, RosterLimits};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::physical_runtime) struct SelectedBlobManifestPin {
@@ -90,8 +98,12 @@ impl SelectedBlobManifestPins {
 }
 
 impl RecordPublicationDirector {
-    /// Captures a protected selected root and reads its canonical C.5 routes.
-    /// Failure leaves checkpoint publication unavailable; it cannot erase pins.
+    /// Captures a protected selected root and derives its canonical C.5
+    /// manifest roster. A roster carried from this director's previous
+    /// selection is advanced by the routing delta alone (`O(touched)`); a
+    /// cold director, another routing tree or an older root rebuilds by full
+    /// scan. Failure leaves checkpoint publication unavailable; it cannot
+    /// erase pins.
     pub(in crate::physical_runtime) fn selected_blob_manifest_pins(
         &self,
         maximum_pins: usize,
@@ -105,16 +117,24 @@ impl RecordPublicationDirector {
             .upgrade()
             .ok_or(SelectedBlobManifestPinDenial::RootUnavailable)?;
         let root_cell = root.root_cell();
+        let tree_identity = root.tree_identity();
         // The roster is held by the standing capture reservation, whose
         // envelope includes this exact bound; the scan takes no pool bytes.
         let PinScanBound {
             scratch_bytes,
-            roster_bytes: roster_budget,
+            roster_bytes,
         } = checkpoint_pin_scan_bound(
             maximum_pins,
             memory_budget,
             u64::from(self.format.declaration().page_size().bytes()),
         )?;
+        let limits = RosterLimits {
+            store: self.durability.store_identity().bytes(),
+            selected_root_generation: root_cell.generation().get(),
+            maximum_pins,
+            memory_budget: roster_bytes,
+            scratch_bytes,
+        };
         let reader = PhysicalRecordReader {
             execution: crate::physical_runtime::instance::PhysicalStoreWorkRuntime::execution(
                 &runtime,
@@ -135,72 +155,42 @@ impl RecordPublicationDirector {
             .try_reserve_exact(scratch_bytes)
             .map_err(|_| SelectedBlobManifestPinDenial::BudgetExceeded)?;
         scratch.resize(scratch_bytes, 0);
-        let mut scan = reader
-            .scan_rebuild(
-                RecordScanRequest::from_start()
-                    .with_batch_limit(RecordCountLimit::new(1).expect("one selected route"))
-                    .with_payload_limit(
-                        RecordByteLimit::new(scratch_bytes as u32)
-                            .expect("control frame limit is nonzero"),
-                    ),
-            )
-            .map_err(|_| SelectedBlobManifestPinDenial::ScanUnavailable)?;
-        let mut pins = Vec::new();
-        let mut attempts = HashSet::new();
-        loop {
-            let (complete, deferred) = match scan
-                .read_next_into(&mut scratch)
-                .map_err(|_| SelectedBlobManifestPinDenial::ScanUnavailable)?
-            {
-                RecordScanOutcome::Completed(_) => break,
-                RecordScanOutcome::Batch(batch) => {
-                    let row = &batch.records()[0];
-                    let record = row.record_id().persisted();
-                    let deferred = if let Some(bytes) = batch.payload(0) {
-                        observe_manifest(
-                            bytes,
-                            record,
-                            self.durability.store_identity().bytes(),
-                            root_cell.generation().get(),
-                            maximum_pins,
-                            roster_budget,
-                            scratch_bytes,
-                            &mut pins,
-                            &mut attempts,
-                        )?;
-                        None
-                    } else {
-                        Some((record, row.declared_payload_bytes()))
-                    };
-                    (batch.is_complete(), deferred)
-                }
-            };
-            if let Some((record, bytes)) = deferred {
-                if bytes <= scratch_bytes as u64 {
-                    let used = read_deferred(scan.protected_reader(), record, bytes, &mut scratch)?;
-                    observe_manifest(
-                        &scratch[..used],
-                        record,
-                        self.durability.store_identity().bytes(),
-                        root_cell.generation().get(),
-                        maximum_pins,
-                        roster_budget,
-                        scratch_bytes,
-                        &mut pins,
-                        &mut attempts,
-                    )?;
-                } else if is_oversized_manifest(scan.protected_reader(), record)? {
-                    return Err(SelectedBlobManifestPinDenial::BudgetExceeded);
-                }
-            }
-            if complete {
-                break;
-            }
-        }
+        let carried = self.carried_roster_for(root_cell, tree_identity);
+        let pins = match &carried {
+            Some(carried) => delta_scan(reader, carried, limits, &mut scratch)?,
+            None => full_scan(reader, limits, &mut scratch)?,
+        };
+        self.carry_roster(CarriedManifestRoster {
+            root: root_cell,
+            tree_identity,
+            pins: pins.clone(),
+        });
         Ok(SelectedBlobManifestPins {
             root: root_cell,
             pins,
         })
+    }
+
+    fn carried_roster_for(
+        &self,
+        current: RootPublicationCell,
+        tree_identity: u64,
+    ) -> Option<CarriedManifestRoster> {
+        let carry = self
+            .selected_pin_carry
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        carry
+            .as_ref()
+            .filter(|carried| carried.carries_to(current, tree_identity))
+            .cloned()
+    }
+
+    fn carry_roster(&self, roster: CarriedManifestRoster) {
+        *self
+            .selected_pin_carry
+            .lock()
+            .unwrap_or_else(|error| error.into_inner()) = Some(roster);
     }
 }
 
@@ -227,40 +217,18 @@ fn observe_manifest(
         .map(|raw| u16::from_le_bytes([raw[0], raw[1]]) as usize)
         .filter(|count| (1..=MAXIMUM_DROP_SET_RECORDS).contains(count))
         .ok_or(SelectedBlobManifestPinDenial::MalformedManifest)?;
-    if pins.len() >= maximum_pins {
-        return Err(SelectedBlobManifestPinDenial::BudgetExceeded);
-    }
-    let next = pins.len() + 1;
     let temporary = count
         .checked_mul(std::mem::size_of::<PersistedRecordIdentity>())
         .and_then(|bytes| bytes.checked_mul(2))
         .ok_or(SelectedBlobManifestPinDenial::BudgetExceeded)?;
-    let pin_capacity = pins.capacity().max(next.saturating_mul(4));
-    // HashSet's bucket array includes control bytes and may grow ahead of len.
-    // Four 32-byte buckets per entry conservatively covers its growth and
-    // avoids a per-insert tree allocation with an opaque node layout.
-    let attempt_capacity = attempts.capacity().max(next.saturating_mul(4));
-    let charged = scratch_bytes
-        .checked_add(temporary)
-        .and_then(|bytes| {
-            bytes.checked_add(
-                pin_capacity.checked_mul(std::mem::size_of::<SelectedBlobManifestPin>())?,
-            )
-        })
-        .and_then(|bytes| bytes.checked_add(attempt_capacity.checked_mul(32)?))
-        // Binding compaction copies one 32-byte material per pin. Include a
-        // conservative second array for allocator growth at the handoff.
-        .and_then(|bytes| bytes.checked_add(next.checked_mul(64)?))
-        .and_then(|bytes| bytes.checked_add(std::mem::size_of::<HashSet<[u8; 16]>>()))
-        .ok_or(SelectedBlobManifestPinDenial::BudgetExceeded)?;
-    if charged as u64 > memory_budget {
-        return Err(SelectedBlobManifestPinDenial::BudgetExceeded);
-    }
-    pins.try_reserve_exact(1)
-        .map_err(|_| SelectedBlobManifestPinDenial::BudgetExceeded)?;
-    attempts
-        .try_reserve(1)
-        .map_err(|_| SelectedBlobManifestPinDenial::BudgetExceeded)?;
+    charge_roster_growth(
+        pins,
+        attempts,
+        temporary,
+        maximum_pins,
+        memory_budget,
+        scratch_bytes,
+    )?;
     let decoded =
         decode_blob_record(bytes).map_err(|_| SelectedBlobManifestPinDenial::MalformedManifest)?;
     let (manifest_store, attempt, basis_digest) = match decoded {
@@ -327,30 +295,9 @@ fn manifest_count_offset(bytes: &[u8]) -> Result<usize, SelectedBlobManifestPinD
         .ok_or(SelectedBlobManifestPinDenial::MalformedManifest)
 }
 
-fn is_oversized_manifest(
-    reader: &PhysicalRecordReader,
-    record: PersistedRecordIdentity,
-) -> Result<bool, SelectedBlobManifestPinDenial> {
-    let mut stream = reader
-        .open(
-            PhysicalRecordId::from_persisted(record),
-            RecordReadLimits::new(RecordByteLimit::new(u32::MAX).expect("nonzero byte limit")),
-        )
-        .map_err(|_| SelectedBlobManifestPinDenial::ReadUnavailable)?;
-    let mut prefix = [0_u8; 9];
-    let mut used = 0;
-    while used < prefix.len() {
-        let read = stream
-            .read_next(&mut prefix[used..])
-            .map_err(|_| SelectedBlobManifestPinDenial::ReadUnavailable)?;
-        if read == 0 {
-            return Err(SelectedBlobManifestPinDenial::ReadUnavailable);
-        }
-        used += read;
-    }
-    Ok(&prefix[..8] == b"WRC11BLB" && is_manifest_kind(Some(prefix[8])))
-}
-
+#[cfg(test)]
+#[path = "selected_manifest_pins/carried_tests.rs"]
+mod carried_tests;
 #[cfg(test)]
 #[path = "selected_manifest_pins/tests.rs"]
 mod tests;
