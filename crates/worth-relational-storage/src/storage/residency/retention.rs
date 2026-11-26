@@ -261,7 +261,7 @@ impl RelationalRegionRetention {
     }
 
     pub fn fork(&self) -> Self {
-        let mut fork = self.clone();
+        let mut fork = Self::new(self.cell.clone(), self.authority.clone());
         fork.clear_pins_on_write = true;
         fork
     }

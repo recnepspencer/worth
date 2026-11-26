@@ -142,3 +142,123 @@ fn borrows_pinning_the_working_set_refuse_new_reads_until_released() {
         "releasing the borrows restores service"
     );
 }
+
+#[test]
+fn fresh_budgeted_runtime_reports_residency_pressure_before_reopen() {
+    use worth_relational::facade::config::RelationalRuntimeProfile;
+    use worth_relational::facade::runtime::RelationalRuntimeApi;
+    use worth_testkit_relational::durable_publication::schema;
+
+    let runtime = RelationalRuntimeApi::builder()
+        .profile(RelationalRuntimeProfile::CertificationCore)
+        .schema_registry(schema())
+        .residency_budget(budget(1024 * 1024, 1024 * 1024))
+        .build()
+        .unwrap();
+    let snapshot = runtime
+        .residency_pressure()
+        .expect("freshly opened budgeted runtime exposes residency pressure");
+    assert_eq!(snapshot.head_resident_bytes, 0);
+    assert_eq!(snapshot.head_borrowed_bytes, 0);
+    assert_eq!(snapshot.historical_resident_bytes, 0);
+    assert_eq!(snapshot.historical_borrowed_bytes, 0);
+}
+
+#[test]
+fn aborted_main_write_and_retention_inspection_release_mirror_borrows() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let request = &ExecutionRequest::serial(&host);
+    let home = cold_home(request);
+    let head = head_region_bytes(request, &home);
+    let ceiling = (u64::from(REGIONS) + 8) * head * 4;
+    let runtime = reopen(request, &home, budget(ceiling, ceiling));
+
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let mut transaction = runtime
+        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
+        .unwrap();
+    let mut batch = WorkerIntentBatch::new("aborted-main");
+    for entity in &home.entities[..3] {
+        batch = batch.push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
+            UpdateEntityFieldsIntent {
+                entity_id: *entity,
+                fields: field_patch("name", "name", "aborted"),
+            },
+        )));
+    }
+    transaction
+        .push_batch(batch, request.allocation_policy())
+        .unwrap();
+    let prepared = runtime
+        .prepare_branch_transaction(request, transaction)
+        .unwrap();
+    drop(prepared);
+    drop(basis);
+    assert_eq!(
+        pressure(&runtime).head_borrowed_bytes,
+        0,
+        "aborted main write must not permanently pin mirror owner slots"
+    );
+
+    let _plan = runtime.retention().inspect_plan(request).unwrap();
+    let after_inspect = pressure(&runtime);
+    assert_eq!(
+        after_inspect.head_borrowed_bytes, 0,
+        "read-only retention inspection must release mirror Full borrows"
+    );
+    assert_eq!(after_inspect.historical_borrowed_bytes, 0);
+
+    let forked = runtime.fork().unwrap();
+    assert_eq!(pressure(&forked).head_borrowed_bytes, 0);
+    drop(forked);
+    assert_eq!(pressure(&runtime).head_borrowed_bytes, 0);
+}
+
+#[test]
+fn repeated_historical_visibility_cache_hits_preserve_reads_and_release_borrows() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let request = &ExecutionRequest::serial(&host);
+    let home = cold_home(request);
+    let head = head_region_bytes(request, &home);
+    let ceiling = (u64::from(REGIONS) + 8) * head * 4;
+    let runtime = reopen(request, &home, budget(ceiling, ceiling));
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let version = basis.observation().version_id();
+    drop(basis);
+
+    let first = runtime
+        .read_truth()
+        .try_read_version(request, version)
+        .unwrap()
+        .unwrap();
+    assert_eq!(first.entities().len(), REGIONS as usize);
+    drop(first);
+    let after_first = pressure(&runtime);
+    assert_eq!(
+        after_first.head_borrowed_bytes, 0,
+        "cache-miss historical read must not pin leases in VisibilityCache"
+    );
+    assert_eq!(after_first.historical_borrowed_bytes, 0);
+
+    let second = runtime
+        .read_truth()
+        .try_read_version(request, version)
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        second.entities().len(),
+        REGIONS as usize,
+        "cache-hit historical read must retain its demanded basis residency"
+    );
+    drop(second);
+    let after_second = pressure(&runtime);
+    assert_eq!(
+        after_second.head_borrowed_bytes, 0,
+        "cache-hit historical read must not leak leases into VisibilityCache"
+    );
+    assert_eq!(after_second.historical_borrowed_bytes, 0);
+}

@@ -239,4 +239,18 @@ impl SnapshotState {
             ..self
         }
     }
+
+    /// The same pins read through `basis`, the historical selection they were
+    /// derived from, whose residency the caller already demanded.
+    pub fn within_historical(self, basis: HistoricalVisibilityBasis) -> Self {
+        debug_assert_eq!(
+            /* Proof: cache keys bind the exact historical selection, so a state resolved for a basis shares its key. */
+            self.basis.key(),
+            VisibilitySnapshotStateKey::historical(&basis)
+        );
+        Self {
+            basis: SnapshotStateBasis::Historical(basis),
+            ..self
+        }
+    }
 }

@@ -134,9 +134,11 @@ impl ReadmittedRegionDirectory {
         let configured_snapshot = (!directory.manifest.schemas.is_empty())
             .then(|| {
                 configured_schema
-                    .snapshot_for_compilation(contracts::schema::compilation_control::SchemaCompilationControl::Request(
-                        *request,
-                    ))
+                    .snapshot_for_compilation(
+                        contracts::schema::compilation_control::SchemaCompilationControl::Request(
+                            *request,
+                        ),
+                    )
                     .map_err(RelationalRecoveryStop::Request)
             })
             .transpose()?;
@@ -205,7 +207,7 @@ impl ReadmittedRegionDirectory {
             working_set: None,
         })
     }
-    /// Bind every cold cell this directory readmits to pool of ccountant.
+    /// Bind every cold cell this directory readmits to the pool of `accountant`.
     pub(crate) fn with_working_set(mut self, working_set: Option<RegionWorkingSet>) -> Self {
         self.working_set = working_set;
         self

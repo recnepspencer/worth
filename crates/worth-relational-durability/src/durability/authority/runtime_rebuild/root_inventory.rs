@@ -76,7 +76,7 @@ impl RecoveredRootInventory {
         Ok(inventory)
     }
 
-    /// Bind historical root images this inventory readmits to ccountant.
+    /// Bind historical root images this inventory readmits to `accountant`.
     pub fn with_historical_working_set(
         mut self,
         accountant: Option<Arc<worth_relational_storage::internal_port::storage::residency::working_set::WorkingSetAccountant>>,

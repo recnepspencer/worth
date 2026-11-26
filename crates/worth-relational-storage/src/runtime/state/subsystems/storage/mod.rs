@@ -44,7 +44,7 @@ pub struct StorageSubsystem {
 }
 
 impl StorageSubsystem {
-    /// The working-set authority for udget, created once per runtime.
+    /// The working-set authority for `budget`, created once per runtime.
     pub fn working_set(
         &self,
         budget: Option<crate::storage::residency::working_set::ResidencyBudget>,
@@ -102,13 +102,22 @@ impl StorageSubsystem {
         crate::storage::residency::RelationalResidencyDemandFailure,
     > {
         loop {
-            // The writer admits targets from the mirror's own custody.
-            let mirror = self.partitions.read().edition.clone();
-            mirror.demand_all(execution, symbols)?;
+            // Borrow Full custody outside the write lock without pinning mirror
+            // `owner` slots; unedited partitions release their leases on drop.
+            let mirror = self.partitions.read().edition.acquired();
+            let mut leases = std::collections::BTreeMap::new();
+            for (id, region) in mirror.cells() {
+                let lease = region.borrow_full(
+                    execution,
+                    crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+                )?;
+                lease.admit_symbols(execution, symbols)?;
+                leases.insert(id, lease);
+            }
             drop(mirror);
             match self
                 .edit(copy_counters, PartitionEditionCopyLane::Ordinary)
-                .accept_resident(symbols)
+                .accept_resident(symbols, leases)
             {
                 Ok(writer) => return Ok(writer),
                 Err(writer) => drop(writer),
@@ -126,6 +135,7 @@ impl StorageSubsystem {
         self.partitions
             .read()
             .edition
+            .acquired()
             .shared_partition(partition_id)
             .expect("test fixture admits a resident partition")
     }

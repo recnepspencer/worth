@@ -46,7 +46,9 @@ impl IndexAuthority<'_> {
         if let Err(refusal) = self.demand_build_index_image(execution, &request) {
             return refusal;
         }
-        if let Err(failure) = basis.demand_all_full(execution, &self.runtime.services.symbols) {
+        let build_basis = basis.for_operation();
+        if let Err(failure) = build_basis.demand_all_full(execution, &self.runtime.services.symbols)
+        {
             return super::build_residency::refused(&request, failure.into());
         }
         let projection = match self.runtime.read_truth().project_observation(&observation) {

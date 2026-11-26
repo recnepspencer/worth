@@ -34,10 +34,10 @@ impl MirrorResidencyDemandBinding {
         branch == &self.main_branch
     }
 
-    /// The mirror's own edition: publication demands admit into its entries'
-    /// owner slots, from which the writer then admits its edit targets.
+    /// An operation-scoped view of the mirror's edition: demands hold leases
+    /// only for this caller and never pin the mirror's own `owner` slots.
     pub fn edition(&self) -> super::PartitionEdition {
-        self.partitions.read().edition.clone()
+        self.partitions.read().edition.acquired()
     }
 
     pub fn admit_current_target(
@@ -47,7 +47,7 @@ impl MirrorResidencyDemandBinding {
         Option<super::ResidentMirrorTarget>,
         crate::storage::residency::RelationalResidencyDemandFailure,
     > {
-        Ok(self.partitions.write().admit_current_target(id)?)
+        Ok(self.partitions.read().prepare_current_target(id)?)
     }
 
     pub fn demand_head(
@@ -60,9 +60,9 @@ impl MirrorResidencyDemandBinding {
         if branch != &self.main_branch {
             return Ok(());
         }
-        // Publication admits these targets from the mirror's own custody, which
-        // the mirror retains as its edit targets; readers never share it.
-        let edition = self.partitions.read().edition.clone();
+        // Pre-edit demands use an operation-scoped edition so read-only
+        // validation partitions and aborted writes release their borrows cleanly.
+        let edition = self.partitions.read().edition.acquired();
         let source = edition.with_symbol_admission(symbols);
         for id in ids {
             crate::storage::overlay::CurrentPartitionAccess::demand_head_partition(
@@ -81,7 +81,7 @@ impl MirrorResidencyDemandBinding {
         if branch != &self.main_branch {
             return Ok(());
         }
-        let edition = self.partitions.read().edition.clone();
+        let edition = self.partitions.read().edition.acquired();
         for id in ids {
             edition.demand_partition_with_symbols(execution, symbols, id)?;
         }
