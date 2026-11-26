@@ -3,9 +3,9 @@ use crate::application_capability::{
 };
 use crate::application_schema::fragment::RecordSelection;
 use crate::application_schema::{
-    ApplicationEntityMarkerIdentity, ApplicationIdentityScalarValueBinding,
-    ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationPrincipalBindingRef,
-    ApplicationSchema, ApplicationStructuredValueBinding,
+    ApplicationIdentityScalarValueBinding, ApplicationOperationMarkerIdentity,
+    ApplicationOperationRef, ApplicationPrincipalBindingRef, ApplicationSchema,
+    ApplicationStructuredValueBinding,
 };
 
 use super::ApplicationMutationSourceExpectation;
@@ -22,8 +22,6 @@ type MutationScopeFieldRef<Schema, Binding> =
 pub trait ApplicationMutationBinding<Schema>: Sized + 'static
 where
     Schema: ApplicationSchema,
-    <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope:
-        ApplicationEntityMarkerIdentity<Schema>,
 {
     /// Everything the input serializes takes part in the canonical input
     /// identity; a field serde skips does not, so none may be skipped.

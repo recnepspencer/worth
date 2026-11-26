@@ -5,6 +5,7 @@
 mod posix_rule;
 mod system_zone;
 mod tzif;
+mod windows_zone;
 
 use std::time::{SystemTime, UNIX_EPOCH};
 use worth_foundational::facade::{CanonicalDate, CanonicalTimestamp};
@@ -119,15 +120,37 @@ impl WorthQueryTimeZone {
         })
     }
 
-    /// Reads the operating system's zone: the `TZ` environment variable (see
-    /// [`Self::from_tz_variable`]) or else `/etc/localtime`. This is file I/O;
-    /// load once and keep the zone. A non-Unicode `TZ` is malformed.
+    /// Reads the operating system's zone: the `TZ` environment variable, as
+    /// [`Self::from_tz_environment`] resolves it. This is file or registry
+    /// I/O; load once and keep the zone. A non-Unicode `TZ` is malformed.
     pub fn load_system() -> Result<Self, WorthQueryLocalCalendarDenial> {
         system_zone::load()
     }
 
+    /// Resolves a `TZ` environment value, or `None` when `TZ` is unset, which
+    /// is the platform's default zone: `/etc/localtime` on Unix-like systems
+    /// and the registry's current zone on Windows (see
+    /// [`Self::from_windows_registry_query`]). A missing default is refused,
+    /// never UTC.
+    pub fn from_tz_environment(value: Option<&str>) -> Result<Self, WorthQueryLocalCalendarDenial> {
+        system_zone::from_environment(value)
+    }
+
+    /// Parses the output of
+    /// `reg query HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation`,
+    /// the Windows default zone [`Self::load_system`] reads when `TZ` is
+    /// unset: `Bias`, `StandardBias`, `DaylightBias`, `StandardStart` and
+    /// `DaylightStart` become a yearly rule, and a zone without daylight time
+    /// (or with `DynamicDaylightTimeDisabled`) a fixed offset. Like Windows'
+    /// own current-zone record, the yearly rule applies to every year.
+    pub fn from_windows_registry_query(
+        export: &str,
+    ) -> Result<Self, WorthQueryLocalCalendarDenial> {
+        windows_zone::from_registry_query(export)
+    }
+
     /// Resolves a `TZ`-format value as `tzset(3)` does: empty is UTC, `:`
-    /// alone is `/etc/localtime`, `:name` is only a zone file or zone database
+    /// alone is the platform default, `:name` is only a zone file or zone database
     /// name (`:America/Denver`), and a bare value is a zone file or database
     /// name, else a POSIX rule (`MST7MDT,M3.2.0,M11.1.0`). Reads files; a
     /// missing file never falls back to UTC.

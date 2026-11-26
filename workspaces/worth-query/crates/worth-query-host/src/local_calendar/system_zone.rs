@@ -1,5 +1,6 @@
 //! Operating-system zone boundary: the `TZ` environment variable, the zone
-//! database under `/usr/share/zoneinfo`, and `/etc/localtime`.
+//! database under `/usr/share/zoneinfo`, and the platform's default zone:
+//! `/etc/localtime`, or on Windows the registry's zone record.
 use super::posix_rule::PosixRule;
 use super::{WorthQueryLocalCalendarDenial as Denial, WorthQueryTimeZone};
 use std::env::VarError;
@@ -13,21 +14,38 @@ const MAX_TZIF_BYTES: u64 = 1 << 20;
 
 pub(super) fn load() -> Result<WorthQueryTimeZone, Denial> {
     match std::env::var("TZ") {
-        Ok(variable) => from_variable(&variable),
-        Err(VarError::NotPresent) => read_zone_file(Path::new(LOCALTIME)),
+        Ok(variable) => from_environment(Some(&variable)),
+        Err(VarError::NotPresent) => from_environment(None),
         Err(VarError::NotUnicode(_)) => Err(Denial::MalformedZone),
     }
 }
 
-/// Resolves a `TZ` value as `tzset(3)` does: empty is UTC; `:` alone is
-/// `/etc/localtime`; `:name` is only a zone file or database name; a bare
+/// A `TZ` value, or the platform default when `TZ` is unset.
+pub(super) fn from_environment(variable: Option<&str>) -> Result<WorthQueryTimeZone, Denial> {
+    variable.map_or_else(platform_default, from_variable)
+}
+
+/// The zone the operating system is set to when `TZ` names none.
+#[cfg(not(windows))]
+fn platform_default() -> Result<WorthQueryTimeZone, Denial> {
+    read_zone_file(Path::new(LOCALTIME))
+}
+
+/// The zone the operating system is set to when `TZ` names none.
+#[cfg(windows)]
+fn platform_default() -> Result<WorthQueryTimeZone, Denial> {
+    super::windows_zone::load()
+}
+
+/// Resolves a `TZ` value as `tzset(3)` does: empty is UTC; `:` alone is the
+/// platform default; `:name` is only a zone file or database name; a bare
 /// value is a zone file or database name, else a POSIX rule.
 pub(super) fn from_variable(variable: &str) -> Result<WorthQueryTimeZone, Denial> {
     if variable.is_empty() {
         return Ok(WorthQueryTimeZone::UTC);
     }
     let (name, file_only) = match variable.strip_prefix(':') {
-        Some("") => return read_zone_file(Path::new(LOCALTIME)),
+        Some("") => return platform_default(),
         Some(name) => (name, true),
         None => (variable, false),
     };

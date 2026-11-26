@@ -43,6 +43,13 @@ pub(super) const MISSING_ITEM: Summary = Summary::with_message(
     Category::NotFound,
     "That item could not be found. It may have been removed.",
 );
+/// A scope or key matched several entities: the app scoped by a field that
+/// is not unique, a declaration defect rather than a user error.
+pub(super) const AMBIGUOUS_KEY: Summary = Summary::with_message(
+    Category::Internal,
+    "More than one item matches that key, so the app can't tell which one you meant. \
+     Please report this problem.",
+);
 pub(super) const ALREADY_EXISTS: Summary = Summary::with_message(
     Category::Conflict,
     "Something with that name or key already exists. Choose a different one.",

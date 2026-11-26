@@ -6,6 +6,8 @@ mod domain_refusal_dx;
 mod local_calendar_dx;
 #[path = "worth_query_court_decl_host_macros/macros/mod.rs"]
 mod macros;
+#[path = "worth_query_court_decl_host_macros/multi_operation_dx/mod.rs"]
+mod multi_operation_dx;
 #[path = "worth_query_court_decl_host_macros/recurring_rule_dx/mod.rs"]
 mod recurring_rule_dx;
 #[path = "worth_query_court_decl_host_macros/scope_access_dx/mod.rs"]
