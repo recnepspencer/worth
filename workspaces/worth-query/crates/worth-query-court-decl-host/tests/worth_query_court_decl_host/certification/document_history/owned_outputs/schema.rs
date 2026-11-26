@@ -62,6 +62,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
             dst::fixture::UndoCreateE2,
             dst::fixture::UndoRetireE1,
             dst::fixture::UndoRetireE2,
+            dst::fixture::UndoCreateE1Numeric,
         ),
     );
 }

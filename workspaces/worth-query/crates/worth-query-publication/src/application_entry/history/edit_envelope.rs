@@ -12,7 +12,7 @@ use worth_query_declaration::facade::{
     application_aftermath::{ApplicationCorrectionBinding, ApplicationInverseBinding},
     application_operation::{
         ApplicationMutationAdmissionBinding, ApplicationMutationBinding, ApplicationMutationInputScope,
-        ApplicationMutationIntent, ApplicationMutationScopeResolution,
+        ApplicationMutationIntent, ApplicationMutationOutputPosture, ApplicationMutationScopeResolution,
     },
     application_history::ApplicationHistoryModelDomain,
     application_program::ApplicationProgramDefinition,
@@ -116,13 +116,18 @@ where
     /// retirement in a stage after the corrective one is postponed on public
     /// #369 (it refuses `LaterStageRetirementPostponed`). A correction step
     /// cannot itself be corrected: a corrective binding declares no
-    /// correction, so selecting it refuses `SourceNotCorrectable`; reapply is
-    /// future work. The step's reversal fact follows navigation: a move
+    /// correction, so selecting it refuses `SourceNotCorrectable`. Reapply
+    /// cannot reach a document at all: this takes only a reversal request
+    /// (`corrections().reverse(..)`), and `corrections().reapply(..)` builds a
+    /// different type, so a history reapplication does not compile (ruling
+    /// 8a.2; history reapply is future work). The step's reversal fact follows navigation: a move
     /// retires the facts of the steps it leaves and restores those of the
     /// steps it enters. A correction needs an owned-model-graph history: any
     /// other model domain refuses `CorrectionRequiresOwnedModelGraph` before
     /// anything else, and navigation refuses again across a recorded
-    /// correction (defense in depth).
+    /// correction (defense in depth). Only an authored `retire_created` or
+    /// `restore_retired` records (ruling 8a.2); any other correction refuses
+    /// `UnsupportedHistoryCorrection` at open.
     pub fn correction_envelope<'request, 'program, C, P, R>(
         self,
         program: &'program WorthQueryProgramApplicationRuntime<S, P>,
@@ -171,6 +176,10 @@ where
         } else if domain != Ok(ApplicationHistoryModelDomain::OwnedModelGraph) {
             Some(WorthQueryApplicationHistoryDenial::Document(
                 WorthQueryDocumentHistoryDenial::CorrectionRequiresOwnedModelGraph,
+            ))
+        } else if !supported_history_correction::<S, C>() {
+            Some(WorthQueryApplicationHistoryDenial::Document(
+                WorthQueryDocumentHistoryDenial::UnsupportedHistoryCorrection,
             ))
         } else if !std::ptr::eq(runtime, corrections.application)
             || !std::ptr::eq(runtime, program.runtime())
@@ -276,4 +285,20 @@ where
         f.debug_struct("WorthQueryHistoryEditEnvelope")
             .finish_non_exhaustive()
     }
+}
+
+/// Ruling 8a.2: an authored `retire_created` (its source creates, cascades
+/// included) or `restore_retired` (its source retires). A correction with no
+/// authored identity, a live-owner member correspondence, or a preserving
+/// source is not one.
+fn supported_history_correction<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>() -> bool {
+    C::authored_identity()
+        .and_then(|authored| authored.declaration().ok())
+        .is_some_and(|declared| {
+            declared.live_member_owner().is_none()
+                && matches!(
+                    declared.parts().source_posture,
+                    ApplicationMutationOutputPosture::Create | ApplicationMutationOutputPosture::Retire
+                )
+        })
 }

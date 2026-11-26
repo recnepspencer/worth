@@ -207,8 +207,8 @@ impl super::driver::System for Document<'_> {
     fn act(&mut self, action: &Action) -> Outcome {
         let outcome = match action {
             Action::Envelope { key, intent: Intent::Edit(stages), stop } => self.envelope(*key, stages, *stop),
-            Action::Envelope { key, intent: Intent::Correction { source, entity, stages }, .. } => {
-                self.correct(*key, *source, *entity, stages)
+            Action::Envelope { key, intent: Intent::Correction { source, entity, stages }, stop } => {
+                self.correct(*key, *source, *entity, stages, *stop)
             }
             Action::Refused { key, cause } => {
                 let document = self.take();

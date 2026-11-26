@@ -136,7 +136,7 @@ impl<'a, 'p, 's, 'h, S: ApplicationSchema>
                         crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Correction(
                             Box::new(Denial::RecordedOutcomeUnavailable)))
                 })?;
-                this.key = format!("{}#history-attempt:{attempt}", this.key);
+                this.history_attempt = Some(attempt.to_owned());
                 // The source was selected on the document branch; select it
                 // again on the candidate, whose incarnation the disclosure
                 // binds (plan §10.1 step 4).
@@ -160,6 +160,7 @@ impl<'a, 'p, 's, 'h, S: ApplicationSchema>
                 },
                 key: this.key,
                 limits: this.limits,
+                history_attempt: this.history_attempt,
             };
             let principal = request.correction.request.principal;
             let scope = request.correction.request.scope;

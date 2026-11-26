@@ -4,9 +4,13 @@
 
 /// `$module::{Intent, Binding, Operation, Born, Handler}`: creates member
 /// `$key` with the intent's value, owned by model `a`. `$owner` is the
-/// member that must be live first.
+/// member that must be live first. `$idempotency` is the binding's key
+/// type (`String` unless named).
 macro_rules! birth_binding {
     ($module:ident, $operation:ident, $key:literal, $owner:expr, $identity:literal) => {
+        birth_binding!($module, $operation, $key, $owner, $identity, String);
+    };
+    ($module:ident, $operation:ident, $key:literal, $owner:expr, $identity:literal, $idempotency:ident) => {
         pub mod $module {
             use super::*;
             #[derive(Clone, Debug, WorthValue)]
@@ -25,7 +29,7 @@ macro_rules! birth_binding {
             }
             worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
                 identity $identity, input Input, operation $operation, result member_edit::ResultBinding,
-                idempotency String, identity $identity, decision WorthQueryInvariantMutationTarget<Schema, Model>, denial RefusalBinding,
+                idempotency $idempotency, identity $identity, decision WorthQueryInvariantMutationTarget<Schema, Model>, denial RefusalBinding,
                 handler identity $identity, program required, outputs Outputs,
                 principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
                 scope ModelKey, field ModelKey::at("ModelKey"), value scope,

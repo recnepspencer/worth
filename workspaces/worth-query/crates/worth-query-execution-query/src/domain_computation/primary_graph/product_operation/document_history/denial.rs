@@ -78,6 +78,12 @@ pub enum WorthQueryDocumentHistoryDenial {
     /// Refused when the envelope opens, before anything else; the document
     /// is returned unchanged.
     CorrectionRequiresOwnedModelGraph,
+    /// Spec-owner ruling 8a.2: Phase 2 records only an authored
+    /// `retire_created` (with its owned-subgraph cascades) or
+    /// `restore_retired`. A correction with no authored identity, or with
+    /// another one (live-owner members, preserve), refuses when the envelope
+    /// opens, before anything else; the document is returned unchanged.
+    UnsupportedHistoryCorrection,
     /// The step metadata exceeds the installed `maximum_step_metadata_bytes`.
     StepMetadataTooLarge {
         length: usize,

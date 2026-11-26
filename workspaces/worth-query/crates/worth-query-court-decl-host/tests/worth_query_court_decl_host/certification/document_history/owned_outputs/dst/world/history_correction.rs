@@ -1,6 +1,6 @@
 //! A correction of a recorded stage, recorded by the document as one step.
 use super::super::fixture::envelope::Executed;
-use super::super::fixture::history_correction::correction_envelope;
+use super::super::fixture::history_correction::{correction_envelope, correction_envelope_limited};
 use super::*;
 
 /// What one history correction did, for the S2 courts.
@@ -9,6 +9,8 @@ pub enum Corrected {
     Recorded(u32),
     AlreadyRecorded(u32),
     Refused(String),
+    /// The request stopped; nothing recorded.
+    Stopped,
 }
 
 impl Document<'_> {
@@ -50,15 +52,118 @@ impl Document<'_> {
     /// `document.correction_envelope` under model key `key`, with `coupled`
     /// resolved against the branch's live members after it.
     pub fn correct_recorded(&mut self, key: u32, source: u32, entity: usize, coupled: &Stages) -> Corrected {
-        let (receipt, undo) = self
+        self.correct_recorded_with(key, source, entity, None, coupled)
+    }
+
+    /// [`Document::correct_recorded`] with `undo` as the correction binding
+    /// instead of the one the source's stage declares: a mismatched binding
+    /// whose head pass refuses, for the single-stage refusal courts.
+    pub fn correct_recorded_as(&mut self, key: u32, source: u32, entity: usize, undo: Undo) -> Corrected {
+        self.correct_recorded_with(key, source, entity, Some(undo), &[super::super::reference::Stage::Skip; 2])
+    }
+
+    /// [`Document::correct_recorded`] (single stage) whose correction request
+    /// walks at most `limit` ancestors.
+    pub fn correct_recorded_within(&mut self, key: u32, source: u32, entity: usize, limit: std::num::NonZeroUsize) -> Corrected {
+        let key = self.key(key);
+        self.correct_recorded_via(key, source, entity, Some(limit), false, None)
+    }
+
+    /// Record `e1`'s creation by the `u64`-keyed creation under the numeric
+    /// key `key`, as a correction source of [`Self::correct_recorded_numeric`].
+    pub fn create_numeric(&mut self, key: u64) -> Outcome {
+        let document = self.take();
+        let outcome = match super::super::fixture::history_correction::numeric_creation(self.host, document, self.branch, key) {
+            Executed::Recorded { document, step, receipts } => {
+                self.document = Some(document);
+                let node = self.number(&step.id());
+                for (entity, receipt) in receipts {
+                    self.sources.insert((node, entity), (receipt, Undo::Create(entity)));
+                }
+                Outcome::Recorded { node }
+            }
+            Executed::AlreadyRecorded { document, step } => {
+                self.document = Some(document);
+                Outcome::AlreadyRecorded { node: self.number(&step.id()) }
+            }
+            Executed::Refused { denial, .. } => panic!("the numeric creation must record: {denial:?}"),
+            Executed::Unselectable { .. } => unreachable!("an edit envelope selects no correction source"),
+        };
+        self.follow();
+        outcome
+    }
+
+    /// [`Document::correct_recorded`] (single stage) through the correction
+    /// whose source and inverse bindings key by `u64`, under the numeric key
+    /// `key`.
+    pub fn correct_recorded_numeric(&mut self, key: u64, source: u32, entity: usize) -> Corrected {
+        self.correct_recorded_via(key.to_string(), source, entity, None, true, None)
+    }
+
+    /// [`Self::correct_recorded_numeric`] under a request that stops at
+    /// consult `stop`.
+    pub fn correct_recorded_numeric_stopping(&mut self, key: u64, source: u32, entity: usize, stop: u32) -> Corrected {
+        self.correct_recorded_via(key.to_string(), source, entity, None, true, Some(stop))
+    }
+
+    fn correct_recorded_via(
+        &mut self,
+        key: String,
+        source: u32,
+        entity: usize,
+        limit: Option<std::num::NonZeroUsize>,
+        numeric: bool,
+        stop: Option<u32>,
+    ) -> Corrected {
+        let (receipt, undo) = self.sources.get(&(source, entity)).cloned().expect("a recorded creation or retirement");
+        let document = self.take();
+        let corrected = match correction_envelope_limited(
+            self.host, document, self.branch, key, &receipt, undo, &[], stop, limit, numeric,
+        ) {
+            Executed::Recorded { document, step, .. } => {
+                self.document = Some(document);
+                let node = self.number(&step.id());
+                self.reversed.insert(node, entity);
+                Corrected::Recorded(node)
+            }
+            Executed::AlreadyRecorded { document, step } => {
+                self.document = Some(document);
+                Corrected::AlreadyRecorded(self.number(&step.id()))
+            }
+            Executed::Refused { document, denial } => {
+                self.document = Some(document);
+                match classify(&denial, stop.is_some()) {
+                    Some(Outcome::Stopped) => Corrected::Stopped,
+                    _ => Corrected::Refused(format!("{denial:?}")),
+                }
+            }
+            Executed::Unselectable { document, denial } => {
+                self.document = Some(document);
+                Corrected::Refused(denial)
+            }
+        };
+        self.follow();
+        corrected
+    }
+
+    fn correct_recorded_with(
+        &mut self,
+        key: u32,
+        source: u32,
+        entity: usize,
+        binding: Option<Undo>,
+        coupled: &Stages,
+    ) -> Corrected {
+        let (receipt, declared) = self
             .sources
             .get(&(source, entity))
             .cloned()
             .unwrap_or_else(|| panic!("k{key}: step {source} has no envelope receipt for entity {entity}"));
+        let undo = binding.unwrap_or(declared);
         let before = read_entities(self.host, self.branch).map(|entity| entity.is_some());
         let calls = calls(coupled, before);
         let document = self.take();
-        let corrected = match correction_envelope(self.host, document, self.branch, self.key(key), &receipt, undo, &calls) {
+        let corrected = match correction_envelope(self.host, document, self.branch, self.key(key), &receipt, undo, &calls, None) {
             Executed::Recorded { document, step, receipts } => {
                 self.document = Some(document);
                 let node = self.number(&step.id());
@@ -89,7 +194,7 @@ impl Document<'_> {
     /// The correction envelope (S2): the source stage is reversed as the
     /// document's next step, with the coupled stages after it, through
     /// `document.correction_envelope`.
-    pub(super) fn correct(&mut self, key: u32, source: u32, entity: usize, coupled: &Stages) -> Outcome {
+    pub(super) fn correct(&mut self, key: u32, source: u32, entity: usize, coupled: &Stages, stop: Option<u32>) -> Outcome {
         // A source stage with no corrective binding (model `Correctable`):
         // a `set` stage is named and refuses at selection; a step with no
         // stage on `entity` has no source member a caller could name, so
@@ -113,6 +218,7 @@ impl Document<'_> {
             &receipt,
             undo,
             &calls,
+            stop,
         );
         match corrected {
             Executed::Recorded { document, step, receipts } => {
@@ -134,7 +240,7 @@ impl Document<'_> {
             }
             Executed::Refused { document, denial } => {
                 self.document = Some(document);
-                classify(&denial, false)
+                classify(&denial, stop.is_some())
                     .unwrap_or_else(|| panic!("k{key}: a correction refusal the model does not name: {denial:?}"))
             }
         }

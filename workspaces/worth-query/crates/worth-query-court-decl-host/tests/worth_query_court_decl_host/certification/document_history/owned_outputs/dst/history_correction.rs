@@ -1,6 +1,7 @@
 //! S2 courts: a correction recorded by the document as one step
 //! (`document.correction_envelope`, plan §S2, §10.1 and §11.1).
 use super::reference::{Action, Intent, Outcome, Stage, Stages, E1, E2};
+use super::fixture::envelope::Undo;
 use super::world::Corrected;
 use super::*;
 
@@ -237,3 +238,131 @@ fn a_correction_envelope_on_a_scope_record_history_refuses_at_open() {
     drop(source);
     owned.release();
 }
+
+/// A single-stage correction whose head pass refuses refuses typed, never
+/// `Envelope(Empty)` (review r1 blocker 1). Here the restore binding is
+/// offered for a creation: the head pass derives no meaning, and the
+/// document records nothing.
+#[test]
+fn a_refused_head_pass_refuses_typed_through_the_single_stage_path() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = created(&host, &[E1]);
+    let corrected = document.correct_recorded_as(2, 1, E1, Undo::Retire(E1));
+    assert!(matches!(&corrected, Corrected::Refused(text) if text.starts_with("Correction(")), "{corrected:?}");
+    assert_eq!(document.observe(4).current, Some(1), "nothing recorded");
+    document.release();
+}
+
+/// On a diverged head the head read comes first, whatever the head pass
+/// said: `HeadDiverged` (the as-built order refinement (w) encodes).
+#[test]
+fn a_refused_head_pass_on_a_diverged_head_refuses_head_diverged() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = created(&host, &[E1]);
+    assert_eq!(document.act(&Action::OutOfBand([Stage::Skip, Stage::Set(1)])), Outcome::OutOfBand);
+    let corrected = document.correct_recorded_as(2, 1, E1, Undo::Retire(E1));
+    assert!(matches!(&corrected, Corrected::Refused(text) if text.contains("HeadDiverged")), "{corrected:?}");
+    document.release();
+}
+
+/// A correction request that may walk fewer ancestors than its source lies
+/// back refuses at the head pass, typed, through the single-stage path.
+#[test]
+fn a_head_pass_past_its_ancestor_limit_refuses_typed() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = created(&host, &[E1]);
+    for key in 2..=4 {
+        let set = Action::Envelope { key, intent: Intent::Edit([Stage::Set(key as u64), Stage::Skip]), stop: None };
+        assert_eq!(document.act(&set), Outcome::Recorded { node: key });
+    }
+    let corrected = document.correct_recorded_within(5, 1, E1, std::num::NonZeroUsize::MIN);
+    assert!(matches!(&corrected, Corrected::Refused(text) if text.starts_with("Correction(")), "{corrected:?}");
+    assert_eq!(document.observe(4).current, Some(4), "nothing recorded");
+    document.release();
+}
+
+/// A correction whose inverse binding keys by `u64` records through the
+/// document under a numeric key, and the same key answers the recorded step
+/// (review r1 blocker 2): the per-attempt identity goes into the command key
+/// only, never into the caller's idempotency key.
+#[test]
+fn a_numerically_keyed_correction_records_through_the_document() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = world::Document::attach(&host);
+    assert_eq!(document.create_numeric(5), Outcome::Recorded { node: 1 });
+    let corrected = document.correct_recorded_numeric(7, 1, E1);
+    assert!(matches!(corrected, Corrected::Recorded(2)), "{corrected:?}");
+    let observed = document.observe(4);
+    assert_eq!(observed.current, Some(2));
+    assert_eq!(observed.branch.as_ref().map(|branch| branch.live), Some([false, false]));
+    let replay = document.correct_recorded_numeric(7, 1, E1);
+    assert!(matches!(replay, Corrected::AlreadyRecorded(2)), "{replay:?}");
+    document.release();
+}
+
+/// Stop points for [`a_correction_stopped_anywhere_retries_under_the_same_key_and_records`],
+/// spread as the stopped-request sweep spreads them (public #406/#409): each
+/// point is shifted back by a rotating quarter of the stride, so the stops
+/// reach every phase of a stride.
+const STOP_POINTS: usize = 8;
+
+fn stop_point(consults: usize, stride: usize, point: usize) -> usize {
+    let quarter = (1 + point + point / 4) % 4;
+    consults - point * stride - quarter * stride / 4
+}
+
+/// A correction stopped anywhere in its envelope records nothing, and the
+/// same key then records the step: the retry's command key composes the
+/// document's attempt identity (plan §10.1 step 5), so it never meets the
+/// parked attempt's reversal. The correction is the `u64`-keyed one, so the
+/// caller's key must also reach `inverse_key` untouched (review r1 blockers
+/// 2 and 4). Even stops are maintained before the retry; odd ones are not.
+#[test]
+fn a_correction_stopped_anywhere_retries_under_the_same_key_and_records() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    fn numeric(host: &fixture::reads::Host) -> world::Document<'_> {
+        let mut document = world::Document::attach(host);
+        assert_eq!(document.create_numeric(5), Outcome::Recorded { node: 1 });
+        document
+    }
+    let mut probe = numeric(&host);
+    let unstopped = probe.correct_recorded_numeric_stopping(7, 1, E1, u32::MAX);
+    assert!(matches!(unstopped, Corrected::Recorded(2)), "{unstopped:?}");
+    probe.release();
+    let consults = fixture::history_correction::last_correction_consults();
+    assert!(consults >= 4 * STOP_POINTS, "{consults} consults");
+    let stride = consults / STOP_POINTS;
+    let mut stopped = 0;
+    for point in 0..STOP_POINTS {
+        let stop_at = stop_point(consults, stride, point);
+        let mut document = numeric(&host);
+        let attempt = document.correct_recorded_numeric_stopping(7, 1, E1, stop_at as u32);
+        match attempt {
+            Corrected::Stopped => {
+                stopped += 1;
+                let observed = document.observe(4);
+                assert_eq!(observed.current, Some(1), "stop at {stop_at}: nothing recorded");
+                assert_eq!(observed.branch.as_ref().map(|branch| branch.live), Some([true, false]), "stop at {stop_at}");
+            }
+            // A stop after the step committed returns it.
+            Corrected::Recorded(2) => {}
+            other => panic!("stop at {stop_at}: {other:?}"),
+        }
+        if point % 2 == 0 {
+            let maintained = document.act(&Action::Maintain);
+            assert!(matches!(maintained, Outcome::Released | Outcome::NoPendingRelease), "stop at {stop_at}: {maintained:?}");
+        }
+        let retry = document.correct_recorded_numeric(7, 1, E1);
+        let expected = if matches!(attempt, Corrected::Stopped) { "Recorded(2)" } else { "AlreadyRecorded(2)" };
+        assert_eq!(format!("{retry:?}"), expected, "stop at {stop_at}");
+        assert_eq!(document.observe(4).branch.as_ref().map(|branch| branch.live), Some([false, false]), "stop at {stop_at}");
+        document.release();
+    }
+    assert!(stopped * 2 >= STOP_POINTS, "most stops must land inside the envelope: {stopped}/{STOP_POINTS}");
+}
+

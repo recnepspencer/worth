@@ -40,7 +40,7 @@ where
         history: impl FnOnce(
             &mut EnvelopeContext<'_, S>,
             &WorthQueryAdvancementPhase<'_>,
-            CapturedEnvelopeIntent,
+            Option<CapturedEnvelopeIntent>,
             Option<Result<CorrectionSource, WorthQueryApplicationCorrectionDenial>>,
         ) -> ControlFlow<()>,
     ) -> Result<WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeExecutionDenial>
@@ -104,15 +104,19 @@ where
                         corrective.source
                     })
                 });
-                let Some(first_operation) = first_operation else {
-                    return Ok(Some(WorthQueryEditEnvelopeOutcome::Empty));
+                // A refused head pass still goes to the history owner, which
+                // reads the head first (HeadDiverged) and then refuses the
+                // correction typed: the as-built order, never `Empty`.
+                let captured = match first_operation {
+                    Some(first_operation) => Some(CapturedEnvelopeIntent {
+                        key: *key.identity(),
+                        intent: key.intent(context.order, &intents).map_err(intent_denial)?,
+                        first_operation,
+                    }),
+                    None if matches!(head, Some(Err(_))) => None,
+                    None => return Ok(Some(WorthQueryEditEnvelopeOutcome::Empty)),
                 };
-                let intent = key.intent(context.order, &intents).map_err(intent_denial)?;
-                let captured = CapturedEnvelopeIntent {
-                    key: *key.identity(),
-                    intent,
-                    first_operation,
-                };
+                let intent = captured.as_ref().map(|captured| captured.intent.clone());
                 if let ControlFlow::Break(()) = history(context, phase, captured, head) {
                     // Nothing ran. The history owner holds the reason and reports it.
                     return Ok(Some(WorthQueryEditEnvelopeOutcome::Unseen));
@@ -132,6 +136,7 @@ where
                     .map(|entry| entry.intent())
                     .collect::<Vec<_>>();
                 let candidate = key.intent(context.order, &intents).map_err(intent_denial)?;
+                let intent = intent.expect("a refused head pass never reaches the candidate");
                 if candidate.identity() != intent.identity() {
                     return Err(WorthQueryEditEnvelopeExecutionDenial::envelope(
                         P::IDENTITY.as_str(),

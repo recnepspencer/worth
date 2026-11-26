@@ -73,6 +73,7 @@ worth_query_structured_value_binding!(pub RefusalBinding for Refusal { identity:
 
 birth_binding!(create_e1, DstCreateE1, "e1", None, "owned-outputs.dst.create-e1.v1");
 birth_binding!(create_e2, DstCreateE2, "e2", Some("e1"), "owned-outputs.dst.create-e2.v1");
+birth_binding!(create_e1_numeric, DstCreateE1Numeric, "e1", None, "owned-outputs.dst.create-e1-numeric.v1", u64);
 birth_binding!(restore_e1, DstRestoreE1, "e1", None, "owned-outputs.dst.restore-e1.v1");
 birth_binding!(restore_e2, DstRestoreE2, "e2", Some("e1"), "owned-outputs.dst.restore-e2.v1");
 set_binding!(set_e1, DstSetE1, "e1", "owned-outputs.dst.set-e1.v1");
@@ -81,8 +82,11 @@ death_binding!(retire_e1, DstRetireE1, "e1", Some("e2"), "owned-outputs.dst.reti
 death_binding!(retire_e2, DstRetireE2, "e2", None, "owned-outputs.dst.retire-e2.v1");
 death_binding!(despawn_e1, DstDespawnE1, "e1", Some("e2"), "owned-outputs.dst.despawn-e1.v1");
 death_binding!(despawn_e2, DstDespawnE2, "e2", None, "owned-outputs.dst.despawn-e2.v1");
+death_binding!(despawn_e1_numeric, DstDespawnE1Numeric, "e1", Some("e2"), "owned-outputs.dst.despawn-e1-numeric.v1", u64);
 undo_create!(UndoCreateE1, create_e1, despawn_e1, "owned-outputs.dst.undo-create-e1.v1");
 undo_create!(UndoCreateE2, create_e2, despawn_e2, "owned-outputs.dst.undo-create-e2.v1");
+// `e1`'s creation under a `u64` key, reversed under one (review r1 blocker 2).
+undo_create!(UndoCreateE1Numeric, create_e1_numeric, despawn_e1_numeric, "owned-outputs.dst.undo-create-e1-numeric.v1", numeric);
 undo_retire!(UndoRetireE1, retire_e1, restore_e1, "owned-outputs.dst.undo-retire-e1.v1");
 undo_retire!(UndoRetireE2, retire_e2, restore_e2, "owned-outputs.dst.undo-retire-e2.v1");
 
@@ -99,11 +103,12 @@ pub fn declare(schema: ApplicationSchemaDeclarationBuilder<Schema>) -> Applicati
             )*
         };
     }
-    let schema = declared!(schema, set_e1, set_e2, despawn_e1, despawn_e2, restore_e1, restore_e2);
+    let schema = declared!(schema, set_e1, set_e2, despawn_e1, despawn_e2, despawn_e1_numeric, restore_e1, restore_e2);
     let schema = family::dst::dst_use::declare(family::dst::dst_b::declare(family::dst::dst_a::declare(schema)));
     schema
         .application_mutation_binding::<create_e1::Binding>()
         .application_mutation_binding::<create_e2::Binding>()
+        .application_mutation_binding::<create_e1_numeric::Binding>()
         .application_mutation_binding::<retire_e1::Binding>()
         .application_mutation_binding::<retire_e2::Binding>()
 }
@@ -115,12 +120,14 @@ pub fn history(
     definition
         .operation::<create_e1::Binding>("dst set e1")
         .operation::<create_e2::Binding>("dst set e2")
+        .operation::<create_e1_numeric::Binding>("dst set e1")
         .operation::<set_e1::Binding>("dst set e1")
         .operation::<set_e2::Binding>("dst set e2")
         .operation::<retire_e1::Binding>("dst retire e1")
         .operation::<retire_e2::Binding>("dst retire e2")
         .operation::<despawn_e1::Binding>("dst undo-create e1")
         .operation::<despawn_e2::Binding>("dst undo-create e2")
+        .operation::<despawn_e1_numeric::Binding>("dst undo-create e1")
         .operation::<restore_e1::Binding>("dst undo-retire e1")
         .operation::<restore_e2::Binding>("dst undo-retire e2")
 }
@@ -158,8 +165,8 @@ pub fn install(
             $(setup.handler::<$module::Binding, _>($module::Handler)?;)*
         };
     }
-    handlers!(create_e1, create_e2, restore_e1, restore_e2, set_e1, set_e2);
-    handlers!(retire_e1, retire_e2, despawn_e1, despawn_e2);
+    handlers!(create_e1, create_e2, create_e1_numeric, restore_e1, restore_e2, set_e1, set_e2);
+    handlers!(retire_e1, retire_e2, despawn_e1, despawn_e2, despawn_e1_numeric);
     family::dst::dst_a::install(setup)?;
     family::dst::dst_b::install(setup)?;
     family::dst::dst_use::install(setup)
@@ -174,7 +181,7 @@ pub fn actions(
             $entry$(.action::<$module::Binding, Completion>().finish_action())*
         };
     }
-    actions!(entry, create_e1, create_e2, restore_e1, restore_e2, set_e1, set_e2, retire_e1, retire_e2, despawn_e1, despawn_e2)
+    actions!(entry, create_e1, create_e2, create_e1_numeric, restore_e1, restore_e2, set_e1, set_e2, retire_e1, retire_e2, despawn_e1, despawn_e2, despawn_e1_numeric)
 }
 
 /// The program action of one binding.

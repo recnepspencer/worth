@@ -109,6 +109,12 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
                 &self.request.key,
             )
             .map_err(Denial::Derivation)?;
+        let command_key = match &self.request.history_attempt {
+            Some(attempt) => target
+                .history_attempt_command_key(&access, &command_key, attempt)
+                .map_err(Denial::Derivation)?,
+            None => command_key,
+        };
         let inverse_key = C::inverse_key(&self.request.key).map_err(|cause| {
             Denial::Mutation(WorthQueryApplicationRequestMutationDenial::Identity(
                 ApplicationMutationIdentityDenial::Key(cause),

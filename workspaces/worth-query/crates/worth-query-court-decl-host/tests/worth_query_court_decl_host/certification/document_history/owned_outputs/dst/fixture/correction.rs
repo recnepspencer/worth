@@ -7,9 +7,21 @@
 //! cascade role on the source binding today; it cannot span two stages, so
 //! S1 leaves it out and S2 settles it.
 
-/// The input recovery every correction shares.
+/// The input recovery every correction shares; the inverse and
+/// reapplication keys are `inverse:<key>` and `reapply:<key>` unless
+/// `$inverse_key` and `$reapplication_key` replace them.
 macro_rules! recovery {
     ($source:ty, $inverse:ty) => {
+        recovery!(@ $source, $inverse,
+            fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
+                Ok(format!("inverse:{key}"))
+            }
+            fn reapplication_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
+                Ok(format!("reapply:{key}"))
+            }
+        );
+    };
+    (@ $source:ty, $inverse:ty, $inverse_key:item $reapplication_key:item) => {
         fn recover_source_input(
             bytes: &[u8],
             expected: CanonicalDigestId,
@@ -30,12 +42,8 @@ macro_rules! recovery {
         > {
             ApplicationEncodedInput::decode_retained_with_seed(bytes, expected, bounds, CanonicalValueSeed::<$inverse>::new(bounds))
         }
-        fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
-            Ok(format!("inverse:{key}"))
-        }
-        fn reapplication_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
-            Ok(format!("reapply:{key}"))
-        }
+        $inverse_key
+        $reapplication_key
         fn visit<V: ApplicationCorrectionVisitor<Schema>>(
             dispatch: ApplicationCorrectionDispatch<Schema, Self, V>,
         ) -> V::Output {
@@ -56,15 +64,34 @@ macro_rules! recovery {
 }
 
 /// `$name` reverses `$create`'s creation of one member through `$despawn`.
+///
+/// With `numeric`, the source and inverse bindings key by `u64` and the
+/// caller's key must be an unsigned decimal integer (review r1 blocker 2).
 macro_rules! undo_create {
+    ($name:ident, $create:ident, $despawn:ident, $identity:literal, numeric) => {
+        undo_create!(@ $name, $create, $despawn, $identity, [@ $create::Intent, $despawn::Intent,
+            fn inverse_key(key: &str) -> Result<u64, ApplicationValueEncodeDenial> {
+                key.parse().map_err(|_| ApplicationValueEncodeDenial::CodecRejected {
+                    binding_identity: worth_query_decl::facade::portable_identity::WorthQueryPortableTypeIdentity::declared($identity),
+                    reason: "numeric DST correction keys are unsigned decimal integers",
+                })
+            }
+            fn reapplication_key(key: &str) -> Result<u64, ApplicationValueEncodeDenial> {
+                Self::inverse_key(key)
+            }
+        ]);
+    };
     ($name:ident, $create:ident, $despawn:ident, $identity:literal) => {
+        undo_create!(@ $name, $create, $despawn, $identity, [$create::Intent, $despawn::Intent]);
+    };
+    (@ $name:ident, $create:ident, $despawn:ident, $identity:literal, [$($recovery:tt)*]) => {
         pub struct $name;
         impl ApplicationCorrectionBinding<Schema> for $name {
             const IDENTITY: &'static str = $identity;
             type Source = $create::Binding;
             type InverseIntent = $despawn::Intent;
             type Disclosure = query::model::Binding;
-            recovery!($create::Intent, $despawn::Intent);
+            recovery!($($recovery)*);
             fn source_definition(
             ) -> ApplicationOperationDefinitionBuilder<Schema, $create::Operation, $create::Intent, true, false>
             {

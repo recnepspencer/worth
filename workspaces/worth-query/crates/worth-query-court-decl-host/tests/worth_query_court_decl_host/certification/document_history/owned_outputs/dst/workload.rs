@@ -157,7 +157,9 @@ impl Scenario {
                 Op::Stopped { stages: [Skip, Set(2)], at: 900 },
                 Op::Maintain,
                 Op::Maintain,
-                delete(Some(700)),
+                // The leaf's creation, so the retry can record: e1's
+                // reversal refuses while e2 lives (refinement (p)).
+                Op::Correction { pick: 0, entity: E2, on_line: true, cascade: false, stop: Some(700) },
                 Op::RetryStopped,
             ],
         }
