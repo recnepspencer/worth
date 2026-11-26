@@ -48,17 +48,39 @@ pub(in crate::physical_runtime) struct RecordFramePorts {
 }
 
 impl RecordFramePorts {
-    pub(in crate::physical_runtime::record_serving) fn invalidate_released_arena_range(
+    pub(in crate::physical_runtime::record_serving) fn drain_writeback_fence(
         &self,
         range: worth_store_physical_format::ExtentArenaRange,
+        barrier: worth_store_buffer_pool::ArenaReuseBarrier,
+        reuse: worth_store_physical_format::ExtentAllocationGeneration,
+    ) -> Result<
+        worth_store_physical_format::ArenaExtentFrameIdentity,
+        worth_store_buffer_pool::WritebackFenceDrainDenial,
+    > {
+        self.pool.drain_writeback_fence(range, barrier, reuse)
+    }
+
+    pub(in crate::physical_runtime) fn seed_arena_generation_floor(
+        &self,
+        floor: worth_store_physical_format::ExtentAllocationGeneration,
+    ) {
+        self.pool.seed_arena_generation_floor(floor);
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn require_arena_frame_identity(
+        &self,
+        key: worth_store_buffer_pool::PhysicalFrameKey,
+        expected: worth_store_physical_format::ArenaExtentFrameIdentity,
     ) -> Result<(), PhysicalResidencyDenial> {
-        self.pool.invalidate_clean_range(
-            worth_store_physical_format::RecordArtifactFile::ExtentArena {
-                arena: range.arena().get(),
-            },
-            range.offset(),
-            range.length(),
-        )
+        self.pool.require_arena_frame_identity(key, expected)
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn certification_active_arena_generation(
+        &self,
+        range: worth_store_physical_format::ExtentArenaRange,
+    ) -> worth_store_physical_format::ExtentAllocationGeneration {
+        self.pool.active_arena_generation(range)
     }
 
     pub(in crate::physical_runtime) fn store_identity(

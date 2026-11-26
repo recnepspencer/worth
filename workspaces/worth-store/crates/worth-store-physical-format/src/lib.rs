@@ -65,8 +65,8 @@ pub use access::grammar::{
     UnsupportedPhysicalLayoutAccess,
 };
 pub use arena_frame::{
-    ExtentArenaFrameLayout, ExtentArenaId, ExtentArenaRange, ExtentChunkFrame,
-    EXTENT_ARENA_MANIFEST_FRAME_BYTES,
+    ArenaExtentFrameIdentity, ExtentAllocationGeneration, ExtentArenaFrameLayout, ExtentArenaId,
+    ExtentArenaRange, ExtentChunkFrame, EXTENT_ARENA_MANIFEST_FRAME_BYTES,
 };
 pub use backup_bundle::{
     backup_canonical_artifact_closure_digest, BackupBundleArtifactCoverage,

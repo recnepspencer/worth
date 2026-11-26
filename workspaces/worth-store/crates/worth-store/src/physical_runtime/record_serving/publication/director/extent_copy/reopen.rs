@@ -141,6 +141,7 @@ impl RecordPublicationDirector {
             published_root: publication.map(|(generation, _)| generation),
             resolution,
             inspection: false,
+            drained: false,
             resolution_requested: recovered
                 .resolution()
                 .map(|(resolution, _)| resolution.kind()),

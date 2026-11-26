@@ -133,6 +133,7 @@ impl RecordPublicationDirector {
                 published_root: None,
                 resolution: None,
                 inspection: false,
+                drained: false,
                 resolution_requested: None,
             },
         )));

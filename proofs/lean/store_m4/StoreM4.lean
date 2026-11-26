@@ -1,3 +1,4 @@
 import StoreM4.PinSafety
 import StoreM4.GCPinSafety
 import StoreM4.ChunkedCoverage
+import StoreM4.ExtentGenerationSafety

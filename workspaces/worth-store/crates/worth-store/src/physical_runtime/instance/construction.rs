@@ -197,6 +197,19 @@ impl PhysicalStoreInstanceParts {
                 }),
             };
         let reopened = durability_reopen.install(durability);
+        if let Ok(
+            crate::physical_runtime::durability::ReopenedPhysicalBindingCompaction::NamespaceDurable(
+                reopened_checkpoint,
+            ),
+        ) = &checkpoint_custody.checkpoint
+            && let Some(floor) =
+                worth_store_physical_format::ExtentAllocationGeneration::at_durable_barrier(
+                    bootstrap.current_root.generation(),
+                    reopened_checkpoint.wal_cutoff_lsn_exclusive(),
+                )
+        {
+            frame_ports.seed_arena_generation_floor(floor);
+        }
         prepared_work.admit_publication_residue(
             retirement_residue::PublicationResidueAdmission::classify(&bootstrap, &reopened),
         );

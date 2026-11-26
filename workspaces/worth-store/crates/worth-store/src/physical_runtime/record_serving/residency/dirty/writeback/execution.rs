@@ -12,7 +12,9 @@ use super::{
     },
     AdmittedPhysicalWriteback, FrameWritebackPort,
 };
-use crate::physical_runtime::record_serving::residency::scheduled_writeback::PhysicalScheduledWriteback;
+use crate::physical_runtime::record_serving::residency::scheduled_writeback::{
+    PhysicalScheduledWriteback, PhysicalScheduledWritebackAdmissionDenial,
+};
 
 impl FrameWritebackPort {
     pub(in crate::physical_runtime::record_serving) fn execute(
@@ -23,6 +25,20 @@ impl FrameWritebackPort {
         if let Err(denial) = PhysicalScheduledWriteback::validate(&claim, work.queue_plan()) {
             return Err(PhysicalWritebackTransitionFailure::new(
                 PhysicalWritebackFailureCause::WritebackAdmission(denial),
+                dirty,
+            ));
+        }
+        let arena_identity = claim.arena_identity(0);
+        let claimed_frame = claim.frames()[0];
+        if let Some(identity) = arena_identity
+            && let Err(denial) = self
+                .frame_ports
+                .require_arena_frame_identity(claimed_frame, identity)
+        {
+            return Err(PhysicalWritebackTransitionFailure::new(
+                PhysicalWritebackFailureCause::WritebackAdmission(
+                    PhysicalScheduledWritebackAdmissionDenial::Residency(denial),
+                ),
                 dirty,
             ));
         }
@@ -46,7 +62,12 @@ impl FrameWritebackPort {
         }
         let settled_success = settlement.effect_fate() == PhysicalWorkEffectFate::WriteCompleted
             && settlement.recovery() != PhysicalWorkRecoveryDisposition::InspectionRequired;
-        let cleaned = if settled_success {
+        let identity_current = arena_identity.is_none_or(|identity| {
+            self.frame_ports
+                .require_arena_frame_identity(claimed_frame, identity)
+                .is_ok()
+        });
+        let cleaned = if settled_success && identity_current {
             completion
                 .map(|completion| {
                     completion

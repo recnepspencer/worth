@@ -40,6 +40,7 @@ impl PoolInner {
             self.reject_bounded_completion(&mut state, key, identity, rejection)
                 .expect_err("generation exhaustion rejects bounded completion")
         })?;
+        let arena_generation = state.arena_generations.generation_for(coordinate);
         state.frames.resolve_bounded(
             key,
             coordinate,
@@ -59,6 +60,7 @@ impl PoolInner {
                 artifact_posture: FrameArtifactPosture::CompleteResident,
                 resident_generation: Some(resident_generation),
                 integrity_validation: None,
+                arena_generation,
             },
         );
         state.accounting.resolve_bounded_frame(

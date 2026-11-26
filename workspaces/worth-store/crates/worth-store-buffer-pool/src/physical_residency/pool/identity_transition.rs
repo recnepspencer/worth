@@ -151,6 +151,7 @@ impl PoolInner {
             .frames
             .remove(&source.coordinate)
             .expect("validated source remains resident");
+        entry.arena_generation = state.arena_generations.generation_for(target.coordinate);
         entry.invalidate_integrity_validation();
         state.frames.insert(target.coordinate, entry);
         state.append_evictable(target.coordinate);

@@ -82,6 +82,12 @@ fn validate_transition(
     if !state.accepting {
         return Err(PoolInner::deny(state, PhysicalResidencyDenial::PoolClosed));
     }
+    if state.arena_generations.fences(key.coordinate) {
+        return Err(PoolInner::deny(
+            state,
+            PhysicalResidencyDenial::WriteBackRangeFenced,
+        ));
+    }
     if state.accounting.dirty_frames() >= owner.limits.dirty_frames() {
         let current = u64::from(state.accounting.dirty_frames());
         return Err(owner.pressure(
@@ -131,6 +137,12 @@ fn validate_clean_frame(
 ) -> Result<(), PhysicalResidencyDenial> {
     if !state.accepting {
         return Err(PoolInner::deny(state, PhysicalResidencyDenial::PoolClosed));
+    }
+    if state.arena_generations.fences(key.coordinate) {
+        return Err(PoolInner::deny(
+            state,
+            PhysicalResidencyDenial::WriteBackRangeFenced,
+        ));
     }
     let Some(entry) = state.frames.get(&key.coordinate) else {
         return Err(PoolInner::deny(

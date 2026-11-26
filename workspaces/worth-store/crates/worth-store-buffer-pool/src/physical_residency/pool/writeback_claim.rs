@@ -45,6 +45,7 @@ impl PoolInner {
             frames: request.frames,
             resident_bytes: request.resident_bytes,
             range_postures: request.range_postures,
+            arena_identities: request.arena_identities,
         })
     }
 
@@ -132,6 +133,18 @@ impl PoolInner {
                     PhysicalResidencyDenial::WriteBackFrameAlreadyClaimed,
                 ));
             }
+            if state.arena_generations.fences(frame.coordinate) {
+                return Err(Self::deny(
+                    state,
+                    PhysicalResidencyDenial::WriteBackRangeFenced,
+                ));
+            }
+            if entry.arena_generation != state.arena_generations.generation_for(frame.coordinate) {
+                return Err(Self::deny(
+                    state,
+                    PhysicalResidencyDenial::StaleArenaGeneration,
+                ));
+            }
             let FrameState::Resident(bytes) = &entry.state else {
                 return Err(Self::deny(
                     state,
@@ -162,6 +175,10 @@ impl PoolInner {
         range_postures
             .try_reserve_exact(frames.len())
             .map_err(|_| Self::deny(state, PhysicalResidencyDenial::AllocationFailed))?;
+        let mut arena_identities = Vec::new();
+        arena_identities
+            .try_reserve_exact(frames.len())
+            .map_err(|_| Self::deny(state, PhysicalResidencyDenial::AllocationFailed))?;
         for frame in frames {
             let entry = state
                 .frames
@@ -173,11 +190,13 @@ impl PoolInner {
             owned_frames.push(*frame);
             resident_bytes.push(Arc::clone(bytes));
             range_postures.push(entry.origin.writeback_range_posture(frame.coordinate));
+            arena_identities.push(entry.arena_identity(frame.coordinate));
         }
         Ok(PreparedWritebackClaim {
             frames: owned_frames.into_boxed_slice(),
             resident_bytes,
             range_postures,
+            arena_identities,
         })
     }
 
@@ -280,10 +299,12 @@ struct PreparedWritebackClaim {
     frames: Box<[PhysicalFrameKey]>,
     resident_bytes: Vec<Arc<Vec<u8>>>,
     range_postures: Vec<crate::PhysicalWritebackRangePosture>,
+    arena_identities: Vec<Option<worth_store_physical_format::ArenaExtentFrameIdentity>>,
 }
 
 pub(super) struct ClaimedWritebackFrames {
     pub(super) frames: Box<[PhysicalFrameKey]>,
     pub(super) resident_bytes: Vec<Arc<Vec<u8>>>,
     pub(super) range_postures: Vec<crate::PhysicalWritebackRangePosture>,
+    pub(super) arena_identities: Vec<Option<worth_store_physical_format::ArenaExtentFrameIdentity>>,
 }

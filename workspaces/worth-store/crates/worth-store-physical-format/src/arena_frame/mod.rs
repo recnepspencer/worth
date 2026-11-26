@@ -1,7 +1,9 @@
+mod allocation_generation;
 mod chunk_frame;
 mod geometry;
 mod range;
 
+pub use allocation_generation::{ArenaExtentFrameIdentity, ExtentAllocationGeneration};
 pub use chunk_frame::ExtentChunkFrame;
 pub use geometry::ExtentArenaFrameLayout;
 pub use range::{ExtentArenaId, ExtentArenaRange};

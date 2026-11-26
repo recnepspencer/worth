@@ -12,6 +12,7 @@ pub struct PhysicalWritebackClaim {
     pub(crate) writebehind: WriteBehindResidencyGrant,
     pub(crate) bytes: Vec<Arc<Vec<u8>>>,
     pub(crate) range_postures: Vec<crate::PhysicalWritebackRangePosture>,
+    pub(crate) arena_identities: Vec<Option<worth_store_physical_format::ArenaExtentFrameIdentity>>,
     pub(crate) armed: bool,
 }
 
@@ -26,6 +27,15 @@ impl PhysicalWritebackClaim {
 
     pub fn range_posture(&self, index: usize) -> Option<crate::PhysicalWritebackRangePosture> {
         self.range_postures.get(index).copied()
+    }
+
+    /// The arena allocation identity the claimed frame carried at admission;
+    /// `None` for frames outside an extent arena.
+    pub fn arena_identity(
+        &self,
+        index: usize,
+    ) -> Option<worth_store_physical_format::ArenaExtentFrameIdentity> {
+        self.arena_identities.get(index).copied().flatten()
     }
 
     pub fn store_identity(
