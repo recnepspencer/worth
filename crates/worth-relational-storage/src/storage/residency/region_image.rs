@@ -141,6 +141,24 @@ impl<'bytes> RelationalRegionImage<'bytes> {
         schema_carrier_digest: [u8; 32],
         kind: RelationalRegionImageKind,
     ) -> Result<Self, Cause> {
+        Self::decode_body(
+            checkpoint,
+            bytes,
+            locator,
+            partition_id,
+            schema_carrier_digest,
+            kind,
+        )
+    }
+
+    fn decode_body(
+        checkpoint: &mut dyn FnMut(u64, u64) -> Result<(), Cause>,
+        bytes: &'bytes [u8],
+        locator: RelationalDurableMemberLocator,
+        partition_id: PartitionId,
+        schema_carrier_digest: [u8; 32],
+        kind: RelationalRegionImageKind,
+    ) -> Result<Self, Cause> {
         checkpoint(1, 0)?;
         if bytes.len() as u64 != locator.length
             || <[u8; 32]>::from(Sha256::digest(bytes)) != locator.sha256
@@ -250,19 +268,16 @@ mod version_tests {
     fn obsolete_and_future_region_grammars_refuse_with_their_typed_version() {
         let decode_err = |bytes: &[u8]| {
             let loc = crate::storage::data::member_frame::locator(bytes);
-            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|l| {
-                RelationalRegionImage::decode(
-                    l,
-                    &mut |_, _| Ok(()),
-                    bytes,
-                    loc,
-                    PartitionId(0),
-                    [0; 32],
-                    RelationalRegionImageKind::Head,
-                )
-                .err()
-                .unwrap()
-            })
+            RelationalRegionImage::decode_body(
+                &mut |_, _| Ok(()),
+                bytes,
+                loc,
+                PartitionId(0),
+                [0; 32],
+                RelationalRegionImageKind::Head,
+            )
+            .err()
+            .unwrap()
         };
         for (frame, found) in [(&b"WORTH-REL-REG7\n"[..], 7), (&b"WORTH-REL-REG9\n"[..], 9)] {
             let bytes = [frame, &[0; 40]].concat();
