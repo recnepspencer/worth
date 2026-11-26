@@ -354,6 +354,7 @@
 //! let forged = WorthQueryDependentPairReadContext::new();
 //! ```
 
+mod access_fragment_contract;
 mod application_home;
 mod background;
 pub mod facade;

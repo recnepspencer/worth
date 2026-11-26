@@ -18,8 +18,10 @@ impl RecoveryReplaySchedule {
     pub fn prepare(plan: &RecoveryPlan, history: &HistorySubsystem) -> Self {
         let mut commits = plan.tail_log.clone();
         commits.sort_by_key(|commit| commit.position());
+        // Resident commits and the tail; parents inside the cold checkpoint
+        // base are answered by the history on demand (`G7`).
         let available_commit_ids = history
-            .commit_artifacts()
+            .resident_commit_artifacts()
             .into_iter()
             .map(|artifact| artifact.commit_id())
             .chain(

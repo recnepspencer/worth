@@ -123,6 +123,7 @@ pub use durability::{
     PhysicalMutationRequestFingerprint, PhysicalMutationRootPreparationFailure,
     PhysicalMutationShutdown, PhysicalMutationTerminalObservation,
     PhysicalNamespaceDurableCheckpointGeneration, PhysicalQueuePerformanceExpectation,
+    PhysicalReclaimBudget, PhysicalReclaimPass, PhysicalReclaimPassEnd,
     PhysicalRecoveryAllocationAdmission, PhysicalRecoveryAttemptBindingFact,
     PhysicalRecoveryCheckpointBasis, PhysicalRecoveryCompletedMutationFact,
     PhysicalRecoveryOperationFact, PhysicalRecoveryOperationFate,
@@ -389,7 +390,6 @@ pub mod production {
         PhysicalMutationPauseGate,
     };
 }
-
 pub use worth_store_physical_backend::{
     BackendCapabilityAdmissionDenial, PhysicalDurabilityAdmissionBasis,
 };

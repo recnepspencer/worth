@@ -4,6 +4,16 @@ use crate::physical_runtime::durability::retention::{
 };
 use crate::physical_runtime::{PhysicalMutationIdentity, PhysicalRetirementDenial};
 
+/// Atomic outcome of selecting, checking reach/budget, and claiming the next
+/// displaced artifact under the publication-state lock.
+pub(in crate::physical_runtime) enum RetirementClaim {
+    Claimed(DisplacedArtifact),
+    SkippedCompleted,
+    BudgetExhausted,
+    Absent,
+    Denied(PhysicalRetirementDenial),
+}
+
 impl PhysicalCurrentRootOwner {
     pub(in crate::physical_runtime) fn restore_displaced(
         &self,
@@ -100,31 +110,40 @@ impl PhysicalCurrentRootOwner {
             .remove(&identity);
     }
 
-    /// Claims the next displaced generation only while no protected root still
-    /// names it and the published tail has already moved on.
+    /// Atomically selects the oldest displaced generation not held by any
+    /// durable pin or live in-process registration, checks coverage,
+    /// unresolved obligations and `admits(bytes)`, and claims it under the
+    /// publication-state lock.
     ///
     /// The publication-state lock is the same lock a new reader takes before
-    /// registration, so a capture cannot land between this check and the claim.
-    pub(in crate::physical_runtime) fn claim_retirement(
+    /// registration, so a capture or pin expiry cannot land between selection,
+    /// budget admission, and claim.
+    pub(in crate::physical_runtime) fn claim_retirement_within_budget(
         &self,
-    ) -> Result<Option<DisplacedArtifact>, PhysicalRetirementDenial> {
+        admits: impl Fn(u64) -> bool,
+    ) -> RetirementClaim {
         let state = self.lock_publication_state();
         let Some(displaced) = self
             .publication
-            .next_displaced_where(|displaced| !pinned(self, displaced))
+            .next_displaced_where(|displaced| !protected(self, displaced))
         else {
-            return Err(match self.publication.next_displaced() {
-                Some(_) => PhysicalRetirementDenial::Protected,
-                None => PhysicalRetirementDenial::Absent,
-            });
+            return match self.publication.next_displaced() {
+                Some(_) => RetirementClaim::Denied(PhysicalRetirementDenial::Protected),
+                None => RetirementClaim::Absent,
+            };
         };
         if let Some(denial) = retirement_blocked(self, &state, &displaced, None) {
-            return Err(denial);
+            return RetirementClaim::Denied(denial);
+        }
+        if !admits(displaced.bytes) {
+            return RetirementClaim::BudgetExhausted;
         }
         match self.publication.claim_displaced(displaced.artifact) {
-            GarbageClaim::Completed => Ok(None),
-            GarbageClaim::Absent => Err(PhysicalRetirementDenial::Absent),
-            GarbageClaim::Claimed(_) | GarbageClaim::AlreadyClaimed(_) => Ok(Some(displaced)),
+            GarbageClaim::Completed => RetirementClaim::SkippedCompleted,
+            GarbageClaim::Absent => RetirementClaim::Absent,
+            GarbageClaim::Claimed(_) | GarbageClaim::AlreadyClaimed(_) => {
+                RetirementClaim::Claimed(displaced)
+            }
         }
     }
 
@@ -187,64 +206,41 @@ impl PhysicalCurrentRootOwner {
     }
 }
 
-/// Whether a durable root pin holds `displaced`, by the same per-artifact rule
-/// live readers use. Pins are a leaf lock under the current-root lock.
-fn pinned(owner: &PhysicalCurrentRootOwner, displaced: &DisplacedArtifact) -> bool {
-    let pins = owner.read_protection.pins();
-    match displaced.artifact {
-        RetiredArtifact::Segment {
-            segment,
-            generation,
-        } => {
-            pins.protects_root(displaced.source_root)
-                || pins.protects_inline_segment(segment, generation)
-        }
-        RetiredArtifact::Extent { .. } => pins.protects_root_at_or_below(displaced.source_root),
-        RetiredArtifact::Arena { .. } => {
-            pins.protects_root_at_or_below(displaced.source_root.saturating_sub(1))
-        }
-    }
+/// Whether any durable root pin or live in-process registration holds
+/// `displaced`, decided by the verified planner over the artifact's window.
+/// Both protection locks are leaf locks under the current-root lock.
+fn protected(owner: &PhysicalCurrentRootOwner, displaced: &DisplacedArtifact) -> bool {
+    use crate::physical_runtime::durability::{ProtectedReachSet, ReclaimCandidate, plan_reclaim};
+    let candidate = ReclaimCandidate::of(displaced);
+    let mut reach = ProtectedReachSet::default();
+    owner
+        .read_protection
+        .project_reach(candidate.window(), &mut reach);
+    plan_reclaim(&candidate, &reach, true, false) == Some(PhysicalRetirementDenial::Protected)
 }
 
+/// Every retirement admission goes through the verified reclaim planner: the
+/// registry and durable pins project their reach for this candidate's window,
+/// a published successor root that no longer reads it is canonical coverage,
+/// and any other pending root-changing publication is an unresolved obligation.
 fn retirement_blocked(
     owner: &PhysicalCurrentRootOwner,
     state: &PhysicalCurrentRootState,
     displaced: &DisplacedArtifact,
     own: Option<&crate::physical_runtime::durability::PendingPublicationLease>,
 ) -> Option<PhysicalRetirementDenial> {
-    let protected = match displaced.artifact {
-        RetiredArtifact::Segment {
-            segment,
-            generation,
-        } => {
-            owner.read_protection.protects_root(displaced.source_root)
-                || owner
-                    .read_protection
-                    .protects_inline_segment(segment, generation)
-        }
-        // Every root from the one that placed the extent generation through the
-        // rewrite's source root reads it, so any reader at or below blocks.
-        RetiredArtifact::Extent { .. } => owner
-            .read_protection
-            .protects_root_at_or_below(displaced.source_root),
-        RetiredArtifact::Arena { .. } => owner
-            .read_protection
-            .protects_root_at_or_below(displaced.source_root.saturating_sub(1)),
-    };
-    if protected {
-        return Some(PhysicalRetirementDenial::Protected);
-    }
-    if still_published(state, displaced) {
-        return Some(PhysicalRetirementDenial::Retained);
-    }
+    use crate::physical_runtime::durability::{ProtectedReachSet, ReclaimCandidate, plan_reclaim};
+    let candidate = ReclaimCandidate::of(displaced);
+    let mut reach = ProtectedReachSet::default();
+    owner
+        .read_protection
+        .project_reach(candidate.window(), &mut reach);
+    let covered = !still_published(state, displaced);
     let unresolved = own.map_or_else(
         || owner.publication.pending_len() > 0,
         |lease| owner.publication.pending_except(lease),
     );
-    if unresolved {
-        return Some(PhysicalRetirementDenial::Unresolved);
-    }
-    None
+    plan_reclaim(&candidate, &reach, covered, unresolved)
 }
 
 fn still_published(state: &PhysicalCurrentRootState, displaced: &DisplacedArtifact) -> bool {

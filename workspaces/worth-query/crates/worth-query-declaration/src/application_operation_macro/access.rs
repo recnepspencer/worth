@@ -14,13 +14,15 @@ macro_rules! __worth_query_operation_access {
             fn declare_access(
                 schema: $crate::facade::application_schema::ApplicationSchemaDeclarationBuilder<$Schema>,
             ) -> $crate::facade::application_schema::ApplicationSchemaDeclarationBuilder<$Schema> {
-                let operation = Self::reference::<$Schema>();
-                $(let schema = $crate::__worth_query_operation_access!(
-                    @register $kind schema operation [$($Member)*]
-                );)*
-                let _ = operation;
-                $(let schema = { let $schema = schema; let $operation = operation; $inherited };)?
-                schema
+                schema.operation_access_set(|schema| {
+                    let operation = Self::reference::<$Schema>();
+                    $(let schema = $crate::__worth_query_operation_access!(
+                        @register $kind schema operation [$($Member)*]
+                    );)*
+                    let _ = operation;
+                    $(let schema = { let $schema = schema; let $operation = operation; $inherited };)?
+                    schema
+                })
             }
         }
     };
@@ -34,12 +36,14 @@ macro_rules! __worth_query_operation_access {
             fn declare_access(
                 schema: $crate::facade::application_schema::ApplicationSchemaDeclarationBuilder<$Schema>,
             ) -> $crate::facade::application_schema::ApplicationSchemaDeclarationBuilder<$Schema> {
-                let operation = Self::reference();
-                $( let schema = $crate::__worth_query_operation_access!(
-                    @register $kind schema operation [$($Member)*]
-                ); )*
-                let _ = operation;
-                schema
+                schema.operation_access_set(|schema| {
+                    let operation = Self::reference();
+                    $( let schema = $crate::__worth_query_operation_access!(
+                        @register $kind schema operation [$($Member)*]
+                    ); )*
+                    let _ = operation;
+                    schema
+                })
             }
         }
     };

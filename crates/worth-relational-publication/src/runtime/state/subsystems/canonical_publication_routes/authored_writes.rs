@@ -38,7 +38,7 @@ impl super::RelationalCanonicalPublicationRoutes {
             self.checkpoint_catalog
                 .read()
                 .unwrap_or_else(|p| p.into_inner())
-                .get(&commit)
+                .artifact(commit)
                 .map(|artifact| artifact.envelope_residency())
         })
     }

@@ -4,6 +4,7 @@ pub mod branches;
 pub use admission_projection::CapturedRelationalCheckpointAdmissionImage;
 pub mod canonical;
 pub mod capture;
+pub mod commit_members;
 pub mod contracts;
 pub mod covered_prefix;
 pub mod current_metadata;

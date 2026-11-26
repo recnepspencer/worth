@@ -1,11 +1,11 @@
 //! Original performed branch transitions share the exact chronology fold.
 use super::*;
 use worth_relational_contracts::internal_port as contracts;
-impl<'a> Fold<'a> {
+impl Fold {
     pub(super) fn transition(
         &mut self,
         main: &BranchId,
-        entry: &'a TransitionOriginalRecord,
+        entry: &TransitionOriginalRecord,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Refusal> {
         if let Transition::RetainedFork {
@@ -18,8 +18,8 @@ impl<'a> Fold<'a> {
         {
             // The source must still be live; the forked head is the exact
             // historical observation the source held at the recorded axes.
-            let current = self.current.get(&source).ok_or(Refusal::Malformed)?;
-            if self.current.get(&target).is_some()
+            let current = self.current.get(source).ok_or(Refusal::Malformed)?;
+            if self.current.get(target).is_some()
                 || current.removed
                 || current.lifecycle != Lifecycle::Live
             {
@@ -55,10 +55,10 @@ impl<'a> Fold<'a> {
         {
             let mut state = self
                 .current
-                .get(&source)
+                .get(source)
                 .cloned()
                 .ok_or(Refusal::Malformed)?;
-            if self.current.get(&target).is_some()
+            if self.current.get(target).is_some()
                 || state.removed
                 || state.lifecycle != Lifecycle::Live
                 || state.generation != *source_generation
@@ -75,7 +75,7 @@ impl<'a> Fold<'a> {
         let branch = entry.transition.branch();
         let mut state = self
             .current
-            .get(&branch)
+            .get(branch)
             .cloned()
             .ok_or(Refusal::Malformed)?;
         let (generation, truth) = match &entry.transition {
@@ -124,7 +124,7 @@ impl<'a> Fold<'a> {
             }
             Transition::Delete { head_commit, .. } => {
                 if branch == main
-                    || state.commit.map(|index| index.commit.commit_id) != *head_commit
+                    || state.commit.as_deref().map(|index| index.commit.commit_id) != *head_commit
                 {
                     return Err(Refusal::Malformed);
                 }

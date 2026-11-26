@@ -28,8 +28,8 @@ pub(in crate::physical_runtime::record_serving) use data_image::ExistingDataFram
 #[cfg(feature = "certification-test-authority")]
 pub use director::CertificationPhysicalRecordSubmission;
 pub(in crate::physical_runtime) use director::{
-    checkpoint_pin_scan_bytes, AdmittedPublicationRetention, RecordPublicationDirector,
-    RecordPublicationFoundation, SelectedBlobManifestPins,
+    AdmittedPublicationRetention, BoundedRetirementStep, RecordPublicationDirector,
+    RecordPublicationFoundation, SelectedBlobManifestPins, checkpoint_pin_scan_bytes,
 };
 pub use director::{
     InlineArtifactRewritePlanDenial, PhysicalArenaEvacuationPreparationOutcome,
@@ -37,8 +37,8 @@ pub use director::{
 };
 pub(in crate::physical_runtime::record_serving) use durable_data_plan::materialize_durable_data;
 pub(in crate::physical_runtime::record_serving) use durable_preparation::{
-    prepare_canonical_payload, record_append_scope_identity, CanonicalPayloadPreparationError,
-    CanonicalRecordAppendPayload,
+    CanonicalPayloadPreparationError, CanonicalRecordAppendPayload, prepare_canonical_payload,
+    record_append_scope_identity,
 };
 pub use durable_preparation::{
     PhysicalManifestCapacityTransition, PhysicalMutationAdmissionDisposition,
@@ -62,7 +62,7 @@ pub(in crate::physical_runtime) use root_candidate::{
 };
 pub use root_candidate::{RootPublicationCandidatePlan, RootPublicationPlanningMembers};
 pub(in crate::physical_runtime::record_serving) use root_candidate_writes::{
-    write_root_candidate_artifacts, RootCandidateWriteFailure,
+    RootCandidateWriteFailure, write_root_candidate_artifacts,
 };
 pub(in crate::physical_runtime) use root_candidate_writes::{
     RootCandidateWriteFailureKind, RootCandidateWriteFailurePosture,

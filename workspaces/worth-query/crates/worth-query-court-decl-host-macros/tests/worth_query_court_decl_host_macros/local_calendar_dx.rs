@@ -200,10 +200,19 @@ fn tz_values_route_like_tzset_without_a_utc_fallback() {
         WorthQueryTimeZone::from_tz_variable(""),
         Ok(WorthQueryTimeZone::UTC)
     );
-    // `:` alone names /etc/localtime, never UTC.
+    // `:` alone names the platform default, as an unset `TZ` does; never UTC.
     assert_eq!(
         WorthQueryTimeZone::from_tz_variable(":"),
+        WorthQueryTimeZone::from_tz_environment(None)
+    );
+    #[cfg(not(windows))]
+    assert_eq!(
+        WorthQueryTimeZone::from_tz_environment(None),
         WorthQueryTimeZone::from_tz_variable("/etc/localtime")
+    );
+    assert_eq!(
+        WorthQueryTimeZone::from_tz_environment(Some("EST5")),
+        WorthQueryTimeZone::from_tz_variable("EST5")
     );
     // A bare value falls back to a POSIX rule; a `:` value is a file only.
     let eastern = WorthQueryTimeZone::from_tz_variable("EST5").unwrap();
@@ -216,4 +225,126 @@ fn tz_values_route_like_tzset_without_a_utc_fallback() {
     ));
     assert_eq!(WorthQueryTimeZone::from_tz_variable(":EST5"), not_found);
     assert_eq!(WorthQueryTimeZone::from_tz_variable(":invalid"), not_found);
+}
+
+/// `reg query HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation`
+/// output with the given values; names and types are never localized.
+fn registry(
+    bias: &str,
+    daylight_bias: &str,
+    standard: &str,
+    daylight: &str,
+    extra: &str,
+) -> String {
+    format!(
+        "\r\nHKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation\r\n\
+         \x20   ActiveTimeBias    REG_DWORD    {bias}\r\n\
+         \x20   Bias    REG_DWORD    {bias}\r\n\
+         \x20   DaylightBias    REG_DWORD    {daylight_bias}\r\n\
+         \x20   DaylightName    REG_SZ    @tzres.dll,-191\r\n\
+         \x20   DaylightStart    REG_BINARY    {daylight}\r\n\
+         \x20   StandardBias    REG_DWORD    0x0\r\n\
+         \x20   StandardName    REG_SZ    @tzres.dll,-192\r\n\
+         \x20   StandardStart    REG_BINARY    {standard}\r\n\
+         \x20   TimeZoneKeyName    REG_SZ    Some Standard Time\r\n{extra}\r\n"
+    )
+}
+
+/// Mountain Standard Time: UTC-7, daylight from the second Sunday of March
+/// 02:00 to the first Sunday of November 02:00.
+fn mountain(extra: &str) -> String {
+    registry(
+        "0x1a4",
+        "0xffffffc4",
+        "00000B00000001000200000000000000",
+        "00000300000002000200000000000000",
+        extra,
+    )
+}
+
+#[test]
+fn a_windows_registry_zone_yields_its_yearly_rule_without_tz() {
+    let zone = WorthQueryTimeZone::from_windows_registry_query(&mountain(
+        "    DynamicDaylightTimeDisabled    REG_DWORD    0x0",
+    ))
+    .unwrap();
+    let offset = |instant| zone.offset_at(instant).seconds_east();
+    assert_eq!(offset(at(2026, 1, 15, 12, 0)), -25_200);
+    assert_eq!(offset(at(2026, 7, 1, 12, 0)), -21_600);
+    // 2026-03-08 02:00 MST is 09:00 UTC; 2026-11-01 02:00 MDT is 08:00 UTC.
+    assert_eq!(offset(at(2026, 3, 8, 8, 59)), -25_200);
+    assert_eq!(offset(at(2026, 3, 8, 9, 0)), -21_600);
+    assert_eq!(offset(at(2026, 11, 1, 7, 59)), -21_600);
+    assert_eq!(offset(at(2026, 11, 1, 8, 0)), -25_200);
+    assert_eq!(zone.date_at(at(2026, 7, 2, 3, 0)), Ok(date(2026, 7, 1)));
+
+    // Southern hemisphere: AUS Eastern, UTC+10, daylight October to April.
+    let sydney = WorthQueryTimeZone::from_windows_registry_query(&registry(
+        "0xfffffda8",
+        "0xffffffc4",
+        "00000400000001000300000000000000",
+        "00000A00000001000200000000000000",
+        "",
+    ))
+    .unwrap();
+    assert_eq!(
+        sydney.offset_at(at(2026, 1, 15, 0, 0)).seconds_east(),
+        39_600
+    );
+    assert_eq!(
+        sydney.offset_at(at(2026, 7, 1, 0, 0)).seconds_east(),
+        36_000
+    );
+}
+
+#[test]
+fn a_windows_zone_without_daylight_time_is_fixed_and_a_malformed_record_refused() {
+    let zeros = "00000000000000000000000000000000";
+    let china = registry("0xfffffe20", "0xffffffc4", zeros, zeros, "");
+    let china = WorthQueryTimeZone::from_windows_registry_query(&china).unwrap();
+    for month in [1, 7] {
+        assert_eq!(
+            china.offset_at(at(2026, month, 1, 0, 0)).seconds_east(),
+            28_800
+        );
+    }
+    // Daylight adjustment switched off in Settings keeps standard time.
+    let disabled = WorthQueryTimeZone::from_windows_registry_query(&mountain(
+        "    DynamicDaylightTimeDisabled    REG_DWORD    0x1",
+    ))
+    .unwrap();
+    assert_eq!(
+        disabled.offset_at(at(2026, 7, 1, 12, 0)).seconds_east(),
+        -25_200
+    );
+
+    let malformed = Err(WorthQueryLocalCalendarDenial::MalformedZone);
+    let dated = registry(
+        "0x1a4",
+        "0xffffffc4",
+        "EA070B00000001000200000000000000",
+        "EA070300000002000200000000000000",
+        "",
+    );
+    let bad_month = registry(
+        "0x1a4",
+        "0xffffffc4",
+        "00000D00000001000200000000000000",
+        "00000300000002000200000000000000",
+        "",
+    );
+    for export in [
+        dated,
+        bad_month,
+        mountain("").replace("Bias    REG_DWORD", "Bias    REG_SZ"),
+    ] {
+        assert_eq!(
+            WorthQueryTimeZone::from_windows_registry_query(&export),
+            malformed
+        );
+    }
+    assert_eq!(
+        WorthQueryTimeZone::from_windows_registry_query(""),
+        malformed
+    );
 }

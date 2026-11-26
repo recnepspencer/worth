@@ -77,10 +77,49 @@ pub(crate) fn kill_child(seam: u8) -> (tempfile::TempDir, PathBuf) {
     (directory, root)
 }
 
+pub(crate) const REALLOCATE: &str = "C11_EXTENT_RELEASE_REALLOCATE";
+pub(crate) const REALLOCATED_BYTE: u8 = 151;
+
+/// S7: reopen, settle the interrupted release, reallocate its exact range at
+/// `g'`, write it, and die before any clean close.
+pub(crate) fn kill_after_reallocation(
+    directory: &Path,
+) -> worth_store_physical_format::PersistedRecordIdentity {
+    spawn_until_reached(directory, 0, &[RESUME, REALLOCATE]);
+    let bytes = std::fs::read(directory.join("reallocated")).unwrap();
+    worth_store_physical_format::PersistedRecordIdentity::new(
+        bytes[..16].try_into().unwrap(),
+        u64::from_le_bytes(bytes[16..24].try_into().unwrap()),
+    )
+    .unwrap()
+}
+
+pub(crate) fn reallocate_then_park(marker: &Path, root: &Path) -> ! {
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_open(root);
+    serving
+        .retire_displaced_segment()
+        .expect("recovery settles the interrupted completion");
+    let (_, placement, _) = configuration();
+    let replacement = vec![REALLOCATED_BYTE; EXTENT_PAYLOAD_BYTES];
+    let appended = completed(prepare(&serving, placement, [152; 32], &replacement).execute());
+    let identity = appended.persisted_records()[0];
+    let mut bytes = identity.allocation_epoch().to_vec();
+    bytes.extend_from_slice(&identity.ordinal().to_le_bytes());
+    std::fs::write(marker.join("reallocated"), bytes).unwrap();
+    std::fs::write(marker.join("reached"), b"1").unwrap();
+    loop {
+        std::thread::park();
+    }
+}
+
 pub(crate) fn kill_at_existing(directory: &Path, seam: u8, resume: bool) {
+    spawn_until_reached(directory, seam, if resume { &[RESUME] } else { &[] });
+}
+
+fn spawn_until_reached(directory: &Path, seam: u8, flags: &[&str]) {
     let mut command = std::process::Command::new(std::env::current_exe().unwrap());
-    if resume {
-        command.env(RESUME, "1");
+    for flag in flags {
+        command.env(flag, "1");
     }
     let mut child = command
         .args(["--exact", CHILD, "--ignored", "--nocapture"])

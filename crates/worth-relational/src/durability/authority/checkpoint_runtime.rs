@@ -20,7 +20,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         policy.check_live()?;
         crate::execution::check_request(execution)
             .map_err(crate::durability::data::RelationalNativeCheckpointCaptureDenial::Request)?;
-        let basis = self.capture_checkpoint_basis()?;
+        let basis = self.capture_checkpoint_basis(false)?;
         self.encode_native_capture(basis, execution, policy, artifact_policy)
     }
 
@@ -55,7 +55,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         execution.check_live().map_err(|stop| {
             crate::durability::data::RelationalRecoveryStop::Request(stop.into())
         })?;
-        let captured = self.capture_checkpoint_basis()?.demand_memory_image(
+        let captured = self.capture_checkpoint_basis(true)?.demand_memory_image(
             &self.runtime.services.symbols,
             &self.runtime.lineage,
             execution,
@@ -63,8 +63,11 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         self.finalize_captured_checkpoint(captured, execution)
     }
 
+    /// `whole` selects every commit (the expanded memory image); a native
+    /// capture selects resident commits and carries the cold prefix (`G7`).
     pub(crate) fn capture_checkpoint_basis(
         &self,
+        whole: bool,
     ) -> Result<super::checkpoint_capture::CapturedCheckpointBasis, DurabilityError> {
         let checkpoint_routes = self.runtime.history.canonical_checkpoint_gate();
         let selection = checkpoint_routes
@@ -74,6 +77,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
             self.runtime,
             &checkpoint_routes,
             selection,
+            whole,
         )
     }
 

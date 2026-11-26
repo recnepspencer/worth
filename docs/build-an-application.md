@@ -1054,6 +1054,66 @@ Edit the access clause when adding a field or relation. The generated Rust
 capabilities and schema registration follow that declaration; native admission
 checks the handler's actual reads and effects against it.
 
+#### Reuse access with fragments
+
+When several operations share the same access, such as every stock posting
+reading a bin and writing its on-hand balance, declare that list once with
+`worth_query_access_fragment!` and include it by path. The fragment holds the
+same `kind: [..];` clauses as an `access` block, including `include` of other
+fragments:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. posting.rs
+use worth_query_decl::facade::worth_query_access_fragment;
+
+worth_query_access_fragment! {
+    /// Every stock posting resolves its bin and moves its balance.
+    stock_posting_access {
+        read_entities: [crate::schema::Bin, crate::schema::StockBalance];
+        read_fields: [crate::schema::BinFacts::bin_key(), crate::schema::StockBalanceFacts::on_hand()];
+        writes: [crate::schema::StockBalanceFacts::on_hand()];
+        creates: [crate::schema::StockMovement];
+        links: [crate::schema::BalanceMovements];
+    }
+}
+pub(crate) use stock_posting_access;
+
+// moves.rs: the fragment alone, through the action derive.
+#[derive(Clone, Debug, Serialize, Deserialize, WorthQueryAction)]
+#[worth_query(/* .. */ access(include: [super::posting::stock_posting_access];))]
+pub struct MoveStock { /* .. */ }
+
+// transfers.rs: the fragment plus this operation's own access.
+worth_query_operation!(pub Transfer for StockSchema, input TransferInput;
+    access {
+        include: [super::posting::stock_posting_access];
+        read_fields: [TransferFacts::transfer_id()];
+        writes: [TransferFacts::status()];
+    }
+);
+```
+
+Each include expands in place, so an operation gets exactly the Rust
+capabilities and schema projection it would get from writing the clauses
+inline; nothing is registered at runtime and handlers are still checked
+against the result. Re-export a fragment after its definition
+(`pub(crate) use name;`) to include it from sibling modules. Paths written
+inside a fragment, member paths and nested includes alike, resolve where the
+fragment is *included*, so write them `crate::`-qualified (or import them in
+every including module).
+
+An operation's declared access is a set. Field reads, writes and expectations
+(`read_fields`, `writes`, `expects_version`, `expects_fact`) may repeat across
+fragments and inline clauses and register once. Entity, relation and effect
+members (`read_entities`, `read_relations`, `creates`, `deletes`, `links`,
+`unlinks`, `emits`) each implement a Rust capability trait for the including
+operation, so one operation names each of them once across everything it
+includes, directly or through nested fragments; a repeat is a conflicting-impl
+(`E0119`) compile error. The
+[access fragment court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/access_fragment_dx/mod.rs)
+installs three actions sharing one fragment from sibling modules.
+
 For a [declarative operation body](../workspaces/worth-query/docs/authoring/scope-field-operation-bodies.md),
 the body derives its installed footprint from the authored statements. See the
 [schema and access examples](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/declared_operation/tests.rs)
@@ -1510,9 +1570,61 @@ definition provides:
 | Required runtime contracts | `WorthQueryFeatureDefinition::contracts` projects requirements into contribution installation |
 | Runtime configuration | `WorthQueryFeatureDefinition::Configuration` and `configure` carry actual handlers and role runtimes into the existing setup owner |
 
-Compose definitions as typed tuples when appropriate. The application still
-chooses its contributions, feature membership, connections and domain
-configuration explicitly. Supply the handlers and readiness predicates as
+Compose definitions as typed tuples when appropriate. A flat tuple of 2 to 12
+definitions is itself a definition, so an application split into several
+features names them once, `feature_definition: (Orders, Stock, Billing,
+Shipping, Admin)`, and configures them from the matching tuple of runtimes,
+without nesting pairs. The application still chooses its contributions,
+feature membership, connections and domain configuration explicitly.
+
+Build a feature's runtime by member name when it has more than a few actions.
+`Runtime::builder()` starts with no handler; each handler-taking `action`
+member adds a setter named after its field, and `build()` refuses the first
+action still lacking a handler with the same
+`WorthQueryPrimaryGraphInstallationDenial` installation would return:
+
+```rust,ignore
+let stock = StockRuntime::builder()
+    .receive(ReceiveHandler::new(&catalog))
+    .ship(ShipHandler)
+    .recount(RecountHandler)
+    .build()?;
+let config = WorthQueryHomeConfig::new(build, ((orders, stock, billing),));
+```
+
+Required pairs are `builder(..)` arguments. The positional `Runtime::new(..)`
+remains for existing callers, and `Runtime::default()` exists when every
+handler is `Default`. Neither form makes the application's Clippy report
+`too_many_arguments`, however many actions the feature has.
+
+Declare a commit-time invariant inside the feature with an `invariant` member.
+`definition` is the marker's `ApplicationInvariantDefinition` and `rule` the
+factory that resolves the rule from the schema resolver; the member declares
+the invariant and installs its rule, so no hand-written feature definition is
+needed:
+
+```rust,ignore
+worth_query_application_contribution! {
+    pub feature StockActions<StockSchema> for StockFeature => StockRuntime {
+        action ship(ShipLotBinding, LotShipped, ShipLotHandler) {};
+        invariant(BinCapacity) {
+            definition: bin_capacity::definition();
+            rule: bin_capacity::resolve;
+        };
+    }
+}
+```
+
+The program still lists the rule in `rules:`. A query declared with a
+`query(Binding)` member and scoped on a field of its own root must scope by a
+key: a `unique` field, or an immutable `read_only` identity. A mutable,
+non-unique field such as a status is refused when the schema is built, with
+`ApplicationSchemaDeclarationDenial::RootScopedQueryRequiresKeyField` naming
+the binding, query and field; to list the roots sharing a value, scope on
+another entity or filter by a parameter. Reusable access lists are not a
+contribution member: declare them once with `worth_query_access_fragment!` and
+`include` them in each action's `access(..)` block
+([§2.1](#reuse-access-with-fragments)). Supply the handlers and readiness predicates as
 runtime values, then execute actions through authorized application requests.
 Keep domain and numerical types in their own crates.
 
@@ -1722,8 +1834,10 @@ also names `::worth_query_host`.
   (with forwarded `access(..)` and inline capabilities such as `reads(Task)`),
   contextual mutation binding and optional source-completion `delivery`, with
   identities from `namespace`. Exactly one scope is declared: a field marked
-  `scope = Alias`, struct-level `principal_scope = Alias`, or struct-level
-  `scope = Alias, scope_value = path::to::fn`. With `body`, `result` defaults
+  `scope = Alias`, struct-level `principal_scope = Alias`, struct-level
+  `scope = Alias, scope_value = path::to::fn`, or, for a fixed-duty action
+  that always writes the same entity, `scope = Alias, scope_const = expr`.
+  With `body`, `result` defaults
   to `UnitApplicationValueBinding`, `decision` defaults to
   `WorthQueryOperationBodyDecision<Schema, ScopeEntity>`, and `access` defaults
   to reading the selected scope field (all overridable). `validate = path::to::check`

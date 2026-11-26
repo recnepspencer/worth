@@ -196,13 +196,26 @@ impl<T: ResidentPage> ResidentPageCache<T> {
         source: &dyn ChunkMemberSource,
         locator: RelationalDurableMemberLocator,
     ) -> Result<Arc<T>, Cause> {
+        self.page_checked(source, locator, |_| Ok(()))
+    }
+
+    /// As [`Self::page`], running `admit` before admitting a newly faulted page
+    /// into the cache so an unadmitted page never consumes working-set budget.
+    pub fn page_checked(
+        &self,
+        source: &dyn ChunkMemberSource,
+        locator: RelationalDurableMemberLocator,
+        admit: impl FnOnce(&T) -> Result<(), Cause>,
+    ) -> Result<Arc<T>, Cause> {
         let tick = self.next_tick();
         if let Some(page) = self.lock().touch(locator, tick) {
+            admit(&page)?;
             return Ok(page);
         }
         let loaded = load_member(&self.accountant, source, locator)?;
         let page = Arc::new(T::decode(&loaded.bytes, locator)?);
         drop(loaded);
+        admit(&page)?;
         let charge = self.reserve_resident(page.resident_bytes())?;
         let tick = self.next_tick();
         let mut slots = self.lock();

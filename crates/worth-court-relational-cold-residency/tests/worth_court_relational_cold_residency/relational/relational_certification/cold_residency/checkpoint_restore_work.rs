@@ -143,7 +143,11 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     let mut recovered = memory_runtime();
     let outcome = recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &native, worth_testkit_relational::cold_recovery::members_source(&native))
+        .restore_native_checkpoint(
+            execution,
+            &native,
+            worth_testkit_relational::cold_recovery::members_source(&native),
+        )
         .unwrap();
     let work = outcome.checkpoint_restore_work.unwrap();
     assert_eq!(work.native_bytes_read, Some(native.bytes().len()));
@@ -204,7 +208,11 @@ fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
     let mut recovered = memory_runtime();
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &native, worth_testkit_relational::cold_recovery::members_source(&native))
+        .restore_native_checkpoint(
+            execution,
+            &native,
+            worth_testkit_relational::cold_recovery::members_source(&native),
+        )
         .unwrap();
     let readmitted = read_native(&capture(execution, &recovered));
     for commit_id in [

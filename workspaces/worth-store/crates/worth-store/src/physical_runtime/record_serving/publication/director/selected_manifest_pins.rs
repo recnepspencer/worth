@@ -14,6 +14,9 @@ use crate::physical_runtime::record_serving::PhysicalRecordReader;
 mod budget;
 #[path = "selected_manifest_pins/carried.rs"]
 mod carried;
+#[cfg(feature = "certification-test-authority")]
+#[path = "selected_manifest_pins/cutover_audit.rs"]
+mod cutover_audit;
 #[path = "selected_manifest_pins/read_deferred.rs"]
 mod deferred_read;
 #[path = "selected_manifest_pins/delta_scan.rs"]
@@ -97,6 +100,14 @@ impl SelectedBlobManifestPins {
     }
 }
 
+struct SelectedRosterInputs {
+    root: RootPublicationCell,
+    tree_identity: u64,
+    limits: RosterLimits,
+    reader: PhysicalRecordReader,
+    scratch: Vec<u8>,
+}
+
 impl RecordPublicationDirector {
     /// Captures a protected selected root and derives its canonical C.5
     /// manifest roster. A roster carried from this director's previous
@@ -109,6 +120,35 @@ impl RecordPublicationDirector {
         maximum_pins: usize,
         memory_budget: u64,
     ) -> Result<SelectedBlobManifestPins, SelectedBlobManifestPinDenial> {
+        let mut selected = self.selected_roster_inputs(maximum_pins, memory_budget)?;
+        let carried = self.carried_roster_for(selected.root, selected.tree_identity);
+        let (pins, _) = match &carried {
+            Some(carried) => delta_scan(
+                selected.reader,
+                carried,
+                selected.limits,
+                &mut selected.scratch,
+            )?,
+            None => full_scan(selected.reader, selected.limits, &mut selected.scratch)?,
+        };
+        self.carry_roster(CarriedManifestRoster {
+            root: selected.root,
+            tree_identity: selected.tree_identity,
+            pins: pins.clone(),
+        });
+        Ok(SelectedBlobManifestPins {
+            root: selected.root,
+            pins,
+        })
+    }
+
+    /// One protected capture of the selected root, with its roster bound,
+    /// reader and scan scratch.
+    fn selected_roster_inputs(
+        &self,
+        maximum_pins: usize,
+        memory_budget: u64,
+    ) -> Result<SelectedRosterInputs, SelectedBlobManifestPinDenial> {
         let (root, protection) = self
             .capture_read_root()
             .map_err(|_| SelectedBlobManifestPinDenial::RootUnavailable)?;
@@ -155,19 +195,12 @@ impl RecordPublicationDirector {
             .try_reserve_exact(scratch_bytes)
             .map_err(|_| SelectedBlobManifestPinDenial::BudgetExceeded)?;
         scratch.resize(scratch_bytes, 0);
-        let carried = self.carried_roster_for(root_cell, tree_identity);
-        let pins = match &carried {
-            Some(carried) => delta_scan(reader, carried, limits, &mut scratch)?,
-            None => full_scan(reader, limits, &mut scratch)?,
-        };
-        self.carry_roster(CarriedManifestRoster {
+        Ok(SelectedRosterInputs {
             root: root_cell,
             tree_identity,
-            pins: pins.clone(),
-        });
-        Ok(SelectedBlobManifestPins {
-            root: root_cell,
-            pins,
+            limits,
+            reader,
+            scratch,
         })
     }
 

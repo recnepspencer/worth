@@ -61,7 +61,11 @@ fn restore(
     let mut recovered = memory_runtime();
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, native, worth_testkit_relational::cold_recovery::members_source(native))
+        .restore_native_checkpoint(
+            execution,
+            native,
+            worth_testkit_relational::cold_recovery::members_source(native),
+        )
         .unwrap();
     recovered
 }

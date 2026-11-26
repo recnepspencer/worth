@@ -29,6 +29,7 @@ pub(in super::super) fn restore_checkpoint_state(
             &directory,
             selected_checkpoint_acknowledged,
             work,
+            original_schemas.cloned().map(std::sync::Arc::new),
         )?;
         restored
             .indexes
@@ -95,11 +96,24 @@ fn install_cold_directory(
     directory: &std::sync::Arc<crate::durability::data::RelationalCheckpointDirectory>,
     selected_checkpoint_acknowledged: bool,
     work: &mut CheckpointRestoreWork,
+    original_schemas: Option<std::sync::Arc<super::super::original_schemas::OriginalSchemaGraph>>,
 ) -> Result<
     crate::durability::checkpoints::region_directory::ReadmittedSchemas,
     RelationalRecoveryStop,
 > {
     crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+    let working_set = restored
+        .partitions
+        .working_set(restored.config.storage.residency_budget);
+    if let Some(accountant) = &working_set {
+        directory
+            .commit_index()
+            .bind_working_set(accountant.clone());
+    }
+    restored
+        .durability
+        .checkpoint_selection()
+        .set_working_set(working_set.clone());
     if directory.admission_image.is_some() {
         let owner = crate::durability::checkpoint_admission::CheckpointAdmissionOwner::bind(
             directory, execution,
@@ -120,10 +134,9 @@ fn install_cold_directory(
         checkpoint,
         directory,
         work,
-        restored
-            .partitions
-            .working_set(restored.config.storage.residency_budget)
-            .as_ref(),
+        working_set.as_ref(),
+        restored.durability.checkpoint_selection(),
+        original_schemas,
     )?;
     let history = restore_canonical_routes(
         &restored.history,
@@ -145,6 +158,7 @@ fn install_cold_directory(
         checkpoint,
         directory,
         prepared.has_naming_schemes,
+        state.history.cold_commit_catalog(),
     )?;
     // Only an acknowledged selected checkpoint becomes the selection owner;
     // an unacknowledged directory restores data without claiming selection.
@@ -244,7 +258,7 @@ fn restore_canonical_routes(
     if install_catalog {
         history
             .canonical_checkpoint_gate()
-            .install_checkpoint_catalog(history.commit_artifacts());
+            .install_checkpoint_catalog(history.checkpoint_catalog_parts());
     }
     Ok(history)
 }

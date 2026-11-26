@@ -42,6 +42,20 @@ fn an_action_without_exactly_one_scope_or_with_a_malformed_key_is_refused() {
         ),
         (
             format!(
+                "#[worth_query(scope = TaskKey, scope_const = 7, scope_value = rules::inbox)] \
+                 {HEADER} struct Rename {{ task: u64 }}"
+            ),
+            "not both",
+        ),
+        (
+            format!(
+                "#[worth_query(scope_const = 7, principal_scope = Owner)] {HEADER} \
+                 struct Rename {{ task: u64 }}"
+            ),
+            "exactly one scope",
+        ),
+        (
+            format!(
                 "#[worth_query(scope_column = \"Key\")] {HEADER} \
                  struct Rename {{ #[worth_query(scope = TaskKey)] task: u64 }}"
             ),
@@ -153,6 +167,18 @@ fn a_scope_value_function_and_body_defaults_and_typed_inputs_expand_cleanly() {
     assert!(expanded
         .contains("scope TaskKey , field < TaskKey > :: at (\"TaskKey\") , value rules :: inbox"));
     assert!(!expanded.contains("worth_query_scope"));
+
+    let constant_scope = syn::parse_str(&format!(
+        "#[worth_query(scope = DutyKey, scope_const = duty::RECEIVING)] {HEADER} \
+         struct OpenDock;"
+    ))
+    .unwrap();
+    let expanded = expand(&constant_scope).unwrap().to_string();
+    assert!(
+        expanded.contains("value OpenDock :: worth_query_scope"),
+        "{expanded}"
+    );
+    assert!(expanded.contains("{ duty :: RECEIVING }"), "{expanded}");
 
     let body_default = syn::parse_str(
         "#[worth_query(schema = Schema, context = Ctx, namespace = NS, \
@@ -299,4 +325,34 @@ fn a_scope_value_function_and_body_defaults_and_typed_inputs_expand_cleanly() {
         ));
         assert!(err.contains("container rewrites"), "{bad_attr}: {err}");
     }
+}
+
+#[test]
+fn an_access_block_forwards_fragment_includes_with_or_without_inline_clauses() {
+    let header = "#[worth_query(schema = Schema, context = Ctx, namespace = NS, input = In, \
+                  operation = Op, binding = Bind, result = R, decision = D, \
+                  scope = Key, scope_value = rules::key";
+    let included_only = syn::parse_str(&format!(
+        "{header}, access(include: [super::posting::stock_access];))] struct Move {{ bin: u64 }}"
+    ))
+    .unwrap();
+    let expanded = expand(&included_only).unwrap().to_string();
+    assert!(
+        expanded.contains("access { include : [super :: posting :: stock_access] ; }"),
+        "{expanded}"
+    );
+
+    let combined = syn::parse_str(&format!(
+        "{header}, access(include: [posting::a, posting::b]; read_entities: [Bin]; \
+         writes: [BinFacts::label()];))] struct Relabel {{ bin: u64 }}"
+    ))
+    .unwrap();
+    let expanded = expand(&combined).unwrap().to_string();
+    assert!(
+        expanded.contains(
+            "access { include : [posting :: a , posting :: b] ; read_entities : [Bin] ; \
+             writes : [BinFacts :: label ()] ; }"
+        ),
+        "{expanded}"
+    );
 }

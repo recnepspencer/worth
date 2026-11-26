@@ -37,7 +37,35 @@ enum DayRule {
     MonthWeekDay { month: u8, week: u8, weekday: u8 },
 }
 
+/// A yearly `Mm.w.d` transition at a local second of its day, as Windows
+/// zone records store them (`week` 5 is the month's last such weekday).
+#[derive(Clone, Copy, Debug)]
+pub(super) struct MonthWeekDayTransition {
+    pub(super) month: u8,
+    pub(super) week: u8,
+    pub(super) weekday: u8,
+    pub(super) local_second: i64,
+}
+
 impl PosixRule {
+    /// Standard time with a yearly daylight period from `start` (in standard
+    /// time) to `end` (in daylight time), the rule `std,Mm.w.d/t,Mm.w.d/t`.
+    pub(super) fn month_week_day(
+        standard: WorthQueryUtcOffset,
+        daylight: WorthQueryUtcOffset,
+        start: MonthWeekDayTransition,
+        end: MonthWeekDayTransition,
+    ) -> Result<Self, Denial> {
+        Ok(Self {
+            standard,
+            daylight: Some(Daylight {
+                offset: daylight,
+                start: start.transition()?,
+                end: end.transition()?,
+            }),
+        })
+    }
+
     pub(super) fn parse(text: &str) -> Result<Self, Denial> {
         let mut cursor = RuleCursor(text.as_bytes());
         cursor.name()?;
@@ -104,6 +132,26 @@ impl PosixRule {
         } else {
             self.standard
         }
+    }
+}
+
+impl MonthWeekDayTransition {
+    /// The same bounds `Mm.w.d/time` parsing admits.
+    fn transition(self) -> Result<Transition, Denial> {
+        let admitted = (1..=12).contains(&self.month)
+            && (1..=5).contains(&self.week)
+            && self.weekday <= 6
+            && self.local_second.abs() <= 167 * 3_600;
+        admitted
+            .then_some(Transition {
+                day: DayRule::MonthWeekDay {
+                    month: self.month,
+                    week: self.week,
+                    weekday: self.weekday,
+                },
+                local_second: self.local_second,
+            })
+            .ok_or(Denial::MalformedZone)
     }
 }
 

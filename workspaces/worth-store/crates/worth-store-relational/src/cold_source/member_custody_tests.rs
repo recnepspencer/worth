@@ -107,13 +107,29 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
         before,
         "retention never reads member bytes"
     );
+    // S6: bounded Store reclamation runs between every replacement; live
+    // `retain_members` custody keeps its member's bytes reachable (`M5`).
+    let reclaim = || {
+        let budget = worth_store::physical_runtime::PhysicalReclaimBudget::new(2, u64::MAX);
+        for _ in 0..64 {
+            let pass = serving.reclaim_within_budget(budget);
+            assert!(pass.retired_artifacts <= budget.max_artifacts());
+            if pass.end != worth_store::physical_runtime::PhysicalReclaimPassEnd::BudgetExhausted {
+                return;
+            }
+        }
+        panic!("bounded reclamation passes must converge");
+    };
     replace();
+    reclaim();
     assert_eq!(source.read_member(locator, 1 << 20).unwrap(), bytes);
     drop(custody);
     replace();
+    reclaim();
     assert_eq!(source.read_member(locator, 1 << 20).unwrap(), bytes);
     drop(last);
     replace();
+    reclaim();
     assert_eq!(
         source.read_member(locator, 1 << 20),
         Err(Cause::MissingMember)

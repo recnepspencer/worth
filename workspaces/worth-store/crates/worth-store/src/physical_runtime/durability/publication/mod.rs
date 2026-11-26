@@ -20,12 +20,12 @@ pub(in crate::physical_runtime) use current_root_owner::{
     TerminalHeadRetirementAdmissionDenial,
 };
 pub(in crate::physical_runtime) use maintenance::{
-    publish_manifest_residue_candidate, publish_retirement_candidate,
     NamespaceDurableManifestResidueRoot, NamespaceDurableRetirementRoot,
+    publish_manifest_residue_candidate, publish_retirement_candidate,
 };
 #[cfg(feature = "certification-test-authority")]
 pub(in crate::physical_runtime) use maintenance::{
-    publish_tier_epoch_candidate, NamespaceDurableTierEpochRoot,
+    NamespaceDurableTierEpochRoot, publish_tier_epoch_candidate,
 };
 pub(in crate::physical_runtime) use terminal_head_retirement_authority::TerminalHeadRetirementAuthority;
 
@@ -39,8 +39,8 @@ pub(in crate::physical_runtime) use current_root_owner::{
     PhysicalBlobSessionClaimDenial, PhysicalBlobTerminalAdmissionDenial, PhysicalCurrentRootOwner,
     PhysicalReclaimAttempt, PhysicalReconciledReclaimDescriptorFate,
     PreparedRecoveredCheckpointCustody, ReleaseCertificateCapacityLease, ReleaseHeadCapacityCharge,
-    ReleasedDropSourceCaptureDenial, SelectedCheckpointCustodySnapshot, SelectedOriginalDropProof,
-    SelectedReleaseHeadBasis, ServingCheckpointCustody,
+    ReleasedDropSourceCaptureDenial, RetirementClaim, SelectedCheckpointCustodySnapshot,
+    SelectedOriginalDropProof, SelectedReleaseHeadBasis, ServingCheckpointCustody,
 };
 pub use current_root_owner::{
     CompletedPhysicalRootPublication, IndeterminatePhysicalCurrentRootAdvance,

@@ -117,6 +117,12 @@ impl Membership {
         matches!(self, Self::Paged(_))
     }
 
+    /// Whether listing a kind would fault cold directory pages: paged and not
+    /// yet made resident by an edit.
+    pub(super) fn needs_cold_pages(&self) -> bool {
+        matches!(self, Self::Paged(paged) if paged.resident().is_none())
+    }
+
     pub(super) fn has_kind(&self, kind: KindId) -> bool {
         match self {
             Self::Resident(resident) => resident.has_kind(kind),

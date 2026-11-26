@@ -181,6 +181,14 @@ pub(super) struct PagedIds<'a, K> {
     _domain: std::marker::PhantomData<K>,
 }
 
+impl<K> PagedIds<'_, K> {
+    /// Whether the iterator still borrows directory pages through its cursor.
+    #[cfg(test)]
+    pub(super) fn holds_cursor(&self) -> bool {
+        self.cursor.is_some()
+    }
+}
+
 impl<K: Copy> Iterator for PagedIds<'_, K> {
     type Item = Result<RecordId<K>, Cause>;
 
@@ -208,10 +216,12 @@ impl<K: Copy> Iterator for PagedIds<'_, K> {
             }
             Ok(None) => {
                 self.done = true;
+                self.cursor = None;
                 None
             }
             Err(cause) => {
                 self.done = true;
+                self.cursor = None;
                 Some(Err(cause))
             }
         }

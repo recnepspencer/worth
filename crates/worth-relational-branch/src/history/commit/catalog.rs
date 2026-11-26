@@ -99,6 +99,12 @@ impl RelationalCommitCatalog {
     }
 
     /// Source preparation and allocation already completed outside the ledger.
+    pub fn replace_source_recovery(&mut self, artifact: Arc<RelationalCommitArtifact>) {
+        self.materializations.fetch_add(1, Ordering::Relaxed);
+        self.entries.insert(artifact.commit_id(), artifact);
+    }
+
+    /// Source preparation and allocation already completed outside the ledger.
     pub fn install_source_recovery(
         &mut self,
         expected: Option<&Arc<RelationalCommitArtifact>>,
@@ -226,6 +232,19 @@ impl RelationalCommitCatalog {
 
     pub fn len(&self) -> usize {
         self.entries.len()
+    }
+
+    /// Membership without counting a lookup.
+    pub fn contains(&self, commit_id: CommitId) -> bool {
+        self.entries.contains_key(&commit_id)
+    }
+
+    /// Versions of the resident entries, for counter floors.
+    pub fn max_version(&self) -> Option<VersionId> {
+        self.entries
+            .values()
+            .map(|artifact| artifact.version_id())
+            .max()
     }
 
     pub fn is_empty(&self) -> bool {

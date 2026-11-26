@@ -103,25 +103,36 @@ fn resolve_retained_commit_refs(
     Ok(envelopes)
 }
 
-pub fn patch_stream_commits_after(
+pub fn try_patch_stream_commits_after(
     history: &RelationalPublicationHistory,
     after_position: Option<PatchStreamPosition>,
     max_commits: usize,
-) -> Vec<PatchStreamCommitRef> {
+) -> Result<
+    Vec<PatchStreamCommitRef>,
+    contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+> {
     let start = after_position
         .map(std::ops::Bound::Excluded)
         .unwrap_or(std::ops::Bound::Unbounded);
     let mut entries = history
-        .recorded_patch_positions_after(after_position, max_commits)
+        .try_recorded_patch_positions_after(after_position, max_commits)?
         .into_iter()
         .collect::<std::collections::BTreeMap<_, _>>();
     entries.extend(history.canonical_patch_routes_after(after_position, max_commits));
-    entries
+    Ok(entries
         .range((start, std::ops::Bound::Unbounded))
         .map(|(position, commit_id)| PatchStreamCommitRef {
             position: *position,
             commit_id: *commit_id,
         })
         .take(max_commits)
-        .collect()
+        .collect())
+}
+
+pub fn patch_stream_commits_after(
+    history: &RelationalPublicationHistory,
+    after_position: Option<PatchStreamPosition>,
+    max_commits: usize,
+) -> Vec<PatchStreamCommitRef> {
+    try_patch_stream_commits_after(history, after_position, max_commits).unwrap_or_default()
 }

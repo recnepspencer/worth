@@ -47,6 +47,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             .validate(&self.member_provenance.fragments.catalog)?;
         self.principal_fields
             .validate(&self.member_provenance, &self.members)?;
+        self.root_scope_keys.validate(&self.members)?;
         self.member_provenance
             .fragments
             .validate(self.member_provenance.field_bindings())?;

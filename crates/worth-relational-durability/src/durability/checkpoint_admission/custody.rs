@@ -10,7 +10,7 @@ use crate::durability::data::RelationalCheckpointDirectory;
 use worth_relational_storage::internal_port::durability::medium::checkpoint_acknowledgement_denial::RelationalCheckpointAcknowledgementDenial as Ack;
 use branch::history::commit::index_entry::RelationalCommitIndexEntry;
 use std::sync::{Arc, Weak};
-use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 
 #[derive(Debug, Clone)]
 pub struct CheckpointAdmissionOwner(Arc<AdmissionCustody>);
@@ -48,19 +48,14 @@ impl CheckpointAdmissionOwner {
             .as_ref()
             .ok_or(Refusal::MissingArtifact)?;
         let selected = SelectedCheckpointSource::retain(&directory.source, request)?;
-        let owner = AdmissionCustody::retain(&selected, request)?;
-        let mut rows = ExecutionOrderedMap::default();
-        for entry in &directory.manifest.commits {
+        let owner = AdmissionCustody::retain(&selected, directory.manifest.commits.len(), request)?;
+        // G7: admit only the O(branches) inline selected heads at reopen; every
+        // other covered commit row is verified and cached lazily on first demand.
+        for entry in &directory.manifest.commits.heads {
             let row =
                 super::admit_row::admit_row(directory, entry, Arc::downgrade(&owner), request)?;
-            rows.insert_cloned_native_for_request(&entry.commit.commit_id, &row, *request)
-                .map_err(|cause| {
-                    contracts::durability::checkpoint_admission::refusal::native_stop(
-                        contracts::durability::data::recovery_stop::map_stop(cause),
-                    )
-                })?;
+            owner.cache_row(entry.commit.commit_id, row);
         }
-        owner.install_rows(rows)?;
         directory
             .admission_owner
             .set(DirectoryAdmissionIdentity {
@@ -98,8 +93,30 @@ impl CheckpointAdmissionOwner {
             .ok_or(Refusal::CapacityOverflow)?;
         contracts::durability::data::recovery_stop::account_work(request, units)
             .map_err(contracts::durability::checkpoint_admission::refusal::native_stop)?;
-        owner.commit(entry, directory.manifest.covered_position)
+        resolve_commit(directory, &owner, entry, Some(request))
     }
+}
+fn resolve_commit(
+    directory: &Arc<RelationalCheckpointDirectory>,
+    owner: &Arc<AdmissionCustody>,
+    entry: &RelationalCommitIndexEntry,
+    request: Option<&ExecutionRequest<'_, '_>>,
+) -> Result<Option<CheckpointAdmittedCommit>, Refusal> {
+    if let Some(row) = owner.cached_commit(entry)? {
+        return Ok(Some(row));
+    }
+    if entry.position > directory.manifest.covered_position {
+        return Ok(None);
+    }
+    let row = match request {
+        Some(request) => {
+            super::admit_row::admit_row(directory, entry, Arc::downgrade(owner), request)?
+        }
+        None => {
+            super::admit_row::admit_row_without_request(directory, entry, Arc::downgrade(owner))?
+        }
+    };
+    Ok(Some(owner.cache_row(entry.commit.commit_id, row)))
 }
 impl CheckpointAdmissionBinding {
     pub(super) fn capture_directory(&self) -> Result<Arc<RelationalCheckpointDirectory>, Refusal> {
@@ -119,18 +136,17 @@ impl CheckpointAdmissionBinding {
         &self,
         entry: &RelationalCommitIndexEntry,
     ) -> Result<Option<CheckpointAdmittedCommit>, Refusal> {
-        let directory = self.directory.snapshot().ok_or(Refusal::OwnerUnavailable)?;
-        if !directory
-            .admission_owner
-            .get()
-            .and_then(DirectoryAdmissionIdentity::owner)
-            .is_some_and(|actual| Arc::ptr_eq(&actual, &self.owner.0))
-        {
-            return Err(Refusal::OwnerUnavailable);
-        }
-        self.owner
-            .0
-            .commit(entry, directory.manifest.covered_position)
+        let directory = self.capture_directory()?;
+        resolve_commit(&directory, &self.owner.0, entry, None)
+    }
+
+    pub(crate) fn commit_for_request(
+        &self,
+        entry: &RelationalCommitIndexEntry,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Option<CheckpointAdmittedCommit>, Refusal> {
+        let directory = self.capture_directory()?;
+        resolve_commit(&directory, &self.owner.0, entry, Some(request))
     }
     pub(crate) fn matches_source(
         &self,

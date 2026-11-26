@@ -130,8 +130,8 @@ fn original_custody(empty: bool, retire: bool) {
         .pop()
         .unwrap();
     assert!(
-        original.medium.member_read_digests().is_empty(),
-        "discovery must perform zero protected member reads"
+        original.medium.non_index_member_read_digests().is_empty(),
+        "discovery must perform zero canonical body reads"
     );
     let selected = runtime
         .history
@@ -145,7 +145,7 @@ fn original_custody(empty: bool, retire: bool) {
         .readmit_associated_effect(execution, &subject)
         .unwrap();
     assert_eq!(
-        original.medium.member_read_digests(),
+        original.medium.non_index_member_read_digests(),
         vec![selected_sha],
         "readmission must read only the selected commit member"
     );

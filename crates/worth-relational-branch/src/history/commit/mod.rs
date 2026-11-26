@@ -16,8 +16,10 @@ pub use catalog::{RelationalCommitCatalogAppendDenial, RelationalCommitCatalogEn
 pub use identity::RelationalCommitIdentity;
 pub use parentage::{RelationalCommitParentage, RelationalCommitParentageDenial};
 
+pub mod cold_catalog;
 pub mod envelope_residency;
 pub mod index_entry;
+pub mod paged_index;
 pub use envelope_residency::{RelationalCommitEnvelopeResidency, RetiredCanonicalPlacement};
 pub use index_entry::RelationalCommitIndexEntry;
 

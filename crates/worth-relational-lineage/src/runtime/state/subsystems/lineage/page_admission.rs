@@ -1,6 +1,5 @@
 //! Bind cold page placement and admit each verified page into its runtime once.
 use super::{event_residency, node_residency, LineageSubsystem, ResidentLineageEventPage};
-use crate::contracts::history::data::commit_receipt::RelationalCommitReceipt;
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::lineage::data::events::LineageEventRecord;
@@ -22,7 +21,7 @@ impl PreparedLineageColdPages {
         nodes: &[RelationalCheckpointPage],
         events: &[RelationalCheckpointLineageEventPage],
         source: &Arc<dyn RelationalDurableColdSource>,
-        commits: impl Iterator<Item = RelationalCommitReceipt>,
+        commits: event_residency::LineageCommitBinding,
     ) -> Result<Self, RelationalStorageUnavailable> {
         let nodes = node_residency::RuntimeLineageNodeResidency::new(nodes, source)?;
         let events = event_residency::RuntimeLineageEventResidency::new(events, source, commits)?;

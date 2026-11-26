@@ -12,6 +12,7 @@ pub(in super::super) fn capture(
     runtime: &RelationalRuntime,
     routes: &crate::runtime::RelationalCanonicalPublicationRoutes,
     selection: crate::runtime::PerformedCheckpointSelection,
+    whole: bool,
 ) -> Result<CapturedCheckpointBasis, DurabilityError> {
     let (record_identity, carried_record_identity) =
         match runtime.record_identity.unchanged_paged_identity() {
@@ -32,7 +33,20 @@ pub(in super::super) fn capture(
     runtime.run_index_generation_reclamation_pass();
     let envelopes = selection.positioned_snapshot();
     let selected_directory = runtime.durability.checkpoint_selection().snapshot();
-    let artifacts = runtime.history.commit_artifacts();
+    let artifacts = match whole {
+        true => runtime.history.try_commit_artifacts(),
+        false => runtime.history.try_resident_commit_artifacts(),
+    }
+    .map_err(|cause| {
+        DurabilityError::from(
+            worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailable {
+                subject: worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageSubject::Envelope(
+                    crate::publication::patch::data::PatchStreamPosition(0),
+                ),
+                cause,
+            },
+        )
+    })?;
     let lineage_basis = super::super::checkpoint_lineage_basis::capture(
         &artifacts,
         selected_directory
@@ -82,7 +96,8 @@ pub(in super::super) fn capture(
                 directory
                     .manifest
                     .commits
-                    .last()
+                    .tail
+                    .as_ref()
                     .map(|entry| entry.commit.clone())
             })
         }),

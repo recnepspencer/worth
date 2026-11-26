@@ -162,6 +162,7 @@ pub struct ApplicationSchemaDeclarationBuilder<Schema> {
     contributions: Vec<AuthoredApplicationSchemaContribution>,
     pub(super) member_provenance: ApplicationSchemaMemberProvenance,
     pub(super) principal_fields: super::principal_fields::PrincipalFieldExpectations,
+    pub(super) root_scope_keys: super::root_scope_keys::RootScopeKeyExpectations,
     pub(super) correction_fields: super::correction_fields::CorrectionFieldExpectations,
     pub(super) mutation_references: super::mutation_references::MutationReferences,
     pub(super) feature_owner: Option<String>,
@@ -217,6 +218,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             correction_fields: Default::default(),
             mutation_references: Default::default(),
             principal_fields: Default::default(),
+            root_scope_keys: Default::default(),
             feature_owner: None,
             refusal: None,
             _schema: PhantomData,
@@ -244,6 +246,23 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     pub(super) fn push_derived_member(&mut self, member: ApplicationSchemaMember) {
         if !self.members.contains(&member) {
             self.members.push(member);
+        }
+    }
+
+    /// Keeps the first of each operation access member appended since `first`.
+    /// One operation's declared access is a set, so a read, program or
+    /// precondition repeated across its included fragments registers once.
+    pub(super) fn retain_first_operation_access_since(&mut self, first: usize) {
+        let appended = self.members.split_off(first.min(self.members.len()));
+        for member in appended {
+            let repeated = member.is_operation_access()
+                && self
+                    .members
+                    .get(first..)
+                    .is_some_and(|set| set.contains(&member));
+            if !repeated {
+                self.members.push(member);
+            }
         }
     }
 
@@ -291,6 +310,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             correction_fields: Default::default(),
             mutation_references: Default::default(),
             principal_fields: Default::default(),
+            root_scope_keys: Default::default(),
             feature_owner: None,
             refusal: None,
             _schema: PhantomData,

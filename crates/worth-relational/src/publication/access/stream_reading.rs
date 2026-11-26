@@ -20,21 +20,43 @@ pub(crate) fn read_patch_stream(
     }
     let latest_position = runtime.history().latest_patch_stream_position();
     let latest_commit_id = runtime.history().latest_canonical_commit_id();
-    if let Some(after_position) = request.after_position
-        && !runtime
-            .history()
-            .contains_patch_stream_position(after_position)
-    {
-        return Err(PatchStreamReadError {
-            class: PatchStreamReadErrorClass::UnknownResumePosition,
-            detail: format!("unknown patch stream resume position {}", after_position.0),
-        });
+    if let Some(after_position) = request.after_position {
+        let recorded = runtime
+            .history
+            .try_recorded_commit_at_patch_position(after_position)
+            .map_err(|cause| storage_refused(after_position, cause))?;
+        let exists = recorded.is_some()
+            || runtime
+                .history
+                .canonical_envelope_at_patch(after_position)
+                .is_some();
+        if !exists {
+            return Err(PatchStreamReadError {
+                class: PatchStreamReadErrorClass::UnknownResumePosition,
+                detail: format!("unknown patch stream resume position {}", after_position.0),
+            });
+        }
     }
-    let references =
-        runtime.patch_stream_commits_after(request.after_position, request.max_commits);
+    let references = crate::publication::canonical_history::try_patch_stream_commits_after(
+        &runtime.history,
+        request.after_position,
+        request.max_commits,
+    )
+    .map_err(|cause| {
+        storage_refused(
+            request
+                .after_position
+                .unwrap_or(crate::publication::patch::data::PatchStreamPosition(0)),
+            cause,
+        )
+    })?;
     let mut patches = Vec::with_capacity(references.len());
     for reference in references {
-        let envelope = match runtime.history.commit_artifact(reference.commit_id) {
+        let envelope = match runtime
+            .history
+            .try_commit_artifact(reference.commit_id)
+            .map_err(|cause| storage_refused(reference.position, cause))?
+        {
             Some(artifact) => artifact.demand_envelope(execution, 1 << 30)
                 .map_err(|failure| read_refused(failure.into()))?.clone(),
             None => crate::publication::retained_canonical_envelope_at_position(&runtime.history, runtime.durability.canonical_coverage(), reference.position, None)
@@ -57,6 +79,20 @@ pub(crate) fn read_patch_stream(
         latest_commit_id,
         patches,
     })
+}
+
+fn storage_refused(
+    position: crate::publication::patch::data::PatchStreamPosition,
+    cause: crate::storage::data::RelationalStorageUnavailableCause,
+) -> PatchStreamReadError {
+    read_refused(
+        crate::execution::denial_cause::RelationalExecutionDenialCause::StorageUnavailable(
+            worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailable {
+                subject: worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageSubject::Envelope(position),
+                cause,
+            },
+        ),
+    )
 }
 
 fn read_refused(

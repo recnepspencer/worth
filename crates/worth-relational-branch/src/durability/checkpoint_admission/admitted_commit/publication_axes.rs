@@ -4,12 +4,6 @@ use crate::branch::basis_descriptor::RelationalBranchBasisPosture;
 use crate::branch::reference::observation::{
     relational_branch_observation, RelationalBranchReferenceObservation,
 };
-use worth_relational_contracts::internal_port::branch::reference_checkpoint_data::CANONICAL_RUNTIME_INSTANCE_ID;
-use worth_relational_contracts::internal_port::branch::target::{
-    RelationalBranchRootDescriptor, RelationalBranchTarget,
-};
-use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
-use worth_relational_contracts::internal_port::branch::version::RelationalBranchVersion;
 use crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload;
 use crate::history::data::BranchId;
 use worth_execution::ExecutionRequest;
@@ -17,6 +11,12 @@ use worth_foundational::facade::{
     NativeCheckpointBranchReference as Reference, NativeCheckpointBranchTarget as Target,
 };
 use worth_foundational::{FoundationalBranchReferenceGeneration, FoundationalBranchTarget};
+use worth_relational_contracts::internal_port::branch::reference_checkpoint_data::CANONICAL_RUNTIME_INSTANCE_ID;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
+use worth_relational_contracts::internal_port::branch::target::{
+    RelationalBranchRootDescriptor, RelationalBranchTarget,
+};
+use worth_relational_contracts::internal_port::branch::version::RelationalBranchVersion;
 
 pub struct DecodedPublicationAxes {
     pub predecessor_branch: BranchId,

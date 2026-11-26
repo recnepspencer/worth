@@ -1,5 +1,7 @@
 //! Complete feature members lower through the existing declaration and Host owners.
+mod lowering;
 mod members;
+mod runtime;
 
 /// Declares one complete static feature definition.
 ///
@@ -27,6 +29,20 @@ mod members;
 /// definition and its binding in one entry. The generated definition also
 /// implements `Registration<Schema>`, so it can be placed directly in a
 /// contribution's `Members` tuple without a separate wrapper struct.
+/// An `invariant(Marker) { definition: expr; rule: factory; };` member declares
+/// an application invariant and installs its rule in one entry: `definition`
+/// is the marker's `ApplicationInvariantDefinition`, and `rule` the factory
+/// resolving the rule from the schema resolver, so no hand-written feature
+/// definition is needed to attach a commit-time invariant.
+///
+/// The generated runtime is built by member name, which suits features with
+/// many actions: `Runtime::builder().ship(ShipHandler).receive(ReceiveHandler).build()?`.
+/// Each handler-taking action gets a setter named after its field; `build()`
+/// refuses an action still lacking a handler with the installation denial.
+/// Required pairs are arguments of `builder(..)`. The positional
+/// `Runtime::new(..)` remains, and `Default` exists when every handler is
+/// `Default`. Action fields must therefore not be named `new`, `builder`,
+/// `build` or `default`.
 /// A complete definition cannot substitute an operation-only roster for typed members.
 /// ```compile_fail
 /// use worth_query_execution::facade::declaration::{application_program::*, application_schema::*};

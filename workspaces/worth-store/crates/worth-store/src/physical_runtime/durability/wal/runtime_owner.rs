@@ -9,10 +9,10 @@ use crate::physical_runtime::{PhysicalSignalProfileIdentity, RuntimeIdentity};
 
 use super::preparation_admission::{AdmittedWalPreparedMutation, PhysicalWalPreparationAdmission};
 use super::{
+    PhysicalWalAppendDeclaration, PhysicalWalReservationDenial,
     inventory::{
         PhysicalWalSegmentInventory, ReopenedPhysicalWalInventory, ReopenedWalPublicationGroup,
     },
-    PhysicalWalAppendDeclaration, PhysicalWalReservationDenial,
 };
 
 #[derive(Clone)]
@@ -243,6 +243,17 @@ impl PhysicalWalRuntimeOwner {
             .copied()
             .filter(|entry| entry.holds_at(state.reopened_checkpoint_cutoff))
             .collect()
+    }
+
+    /// The extent-fence sequence a reopened arena-generation floor seeds at:
+    /// the reopened durable WAL frontier (never below the checkpoint cutoff),
+    /// which every pre-crash Path A or Path B barrier sequence is at or below.
+    pub(in crate::physical_runtime) fn reopened_arena_floor_sequence(&self) -> u64 {
+        let state = self.shared.lock().unwrap_or_else(|e| e.into_inner());
+        state
+            .durable_lsn_end
+            .map_or(0, LogSequenceNumber::get)
+            .max(state.reopened_checkpoint_cutoff)
     }
 
     pub(in crate::physical_runtime) fn take_reopened_publication_groups(

@@ -8,13 +8,17 @@
 //! ResultBinding`, `decision = Decision`, optional `outputs = Outputs`, the
 //! flags `body` (the handler is the operation's authored body) and `program`
 //! (execution requires the application program), the forwarded `access(..)`
-//! block, inline capability lists such as `reads(Task)` and an optional
+//! block (which may `include: [path::to::fragment];` clauses shared through
+//! `worth_query_access_fragment!`), inline capability lists such as
+//! `reads(Task)` and an optional
 //! `validate = path::to::check`, the input binding's capture-time validator
 //! (`fn(&Self) -> Result<(), &'static str>`).
 //!
 //! Exactly one scope: a field marked `#[worth_query(scope = Selection)]`
 //! (`column = ".."` for an override), `principal_scope = Selection`, or
-//! `scope = Selection, scope_value = path::to::value` on the input struct.
+//! `scope = Selection, scope_value = path::to::value` on the input struct, or
+//! `scope = Selection, scope_const = expr` for a fixed-duty action whose scope
+//! value is the same constant for every input.
 //!
 //! With `body`, the input binding retains its canonical input
 //! (`capture_input`), which authored-body input selectors require. The derive

@@ -57,9 +57,12 @@ impl WorldSelectionReplay {
                 .ok_or_else(|| {
                     corrupt("World component has no selected Native checkpoint source")
                 })?;
-            let admitted = inputs.checkpoint.admitted_commit(&entry)?.ok_or_else(|| {
-                corrupt("World component lacks an admitted Native checkpoint row")
-            })?;
+            let admitted = inputs
+                .checkpoint
+                .admitted_commit_for_request(&entry, request)?
+                .ok_or_else(|| {
+                    corrupt("World component lacks an admitted Native checkpoint row")
+                })?;
             if !inputs
                 .checkpoint
                 .matches_admitted_source(&admitted, &source)

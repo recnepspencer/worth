@@ -248,12 +248,106 @@ fn killed_extent_release_rejects_conflicting_candidate_without_publishing() {
     drop(directory);
 }
 
+/// S7 / `M9`: crash after the durable intent; crash again inside recovery's
+/// own resume after `RecoverResumeFreeSpaceRoot` and before
+/// `RecoverResumeReclaimComplete`; reopen, settle completion, reallocate the
+/// exact range at `g'` and write it; crash once more. Reopen proves the
+/// completion settled exactly once, `g'` keeps its bytes, and the range is
+/// never free again.
+#[test]
+fn chained_crash_inside_release_resume_never_double_frees_the_reallocated_range() {
+    let (directory, root) = kill_child(1);
+    let intent = produced_retirement_payloads(&root);
+    assert_eq!(intent.len(), 1);
+    let range = intent[0].arena_range.unwrap();
+    let candidate = intent[0].release_roots.unwrap()[1];
+    std::fs::remove_file(directory.path().join("reached")).unwrap();
+    kill_at_existing(directory.path(), 4, true);
+    assert_eq!(
+        produced_retirement_payloads(&root).len(),
+        1,
+        "killed before RecoverResumeReclaimComplete"
+    );
+    let catalog = std::fs::read(root.join("families/records/bootstrap.catalog")).unwrap();
+    assert_eq!(
+        u64::from_le_bytes(catalog[64..72].try_into().unwrap()),
+        candidate,
+        "the resumed free-space root is published"
+    );
+    std::fs::remove_file(directory.path().join("reached")).unwrap();
+    let identity = kill_after_reallocation(directory.path());
+    let settled = produced_retirement_payloads(&root);
+    assert_eq!(settled.len(), 2, "one intent and exactly one completion");
+    assert_eq!(settled[1].action, IndependentRetirementAction::Completion);
+    let route = current_extent_route(&root, identity);
+    assert_eq!(
+        [route.arena, route.offset, route.length],
+        range,
+        "g' reuses the exact range"
+    );
+    let serving = worth_store_testkit_store::physical_record_journeys::serving_from_open(&root);
+    let mut scan = serving
+        .records()
+        .unwrap()
+        .scan(worth_store::physical_runtime::RecordScanRequest::from_start())
+        .unwrap();
+    let mut scratch = vec![0_u8; 1 << 16];
+    let mut reallocated = None;
+    while let worth_store::physical_runtime::RecordScanOutcome::Batch(batch) =
+        scan.read_next_into(&mut scratch).unwrap()
+    {
+        reallocated =
+            reallocated.or(batch
+                .records()
+                .iter()
+                .map(|row| row.record_id())
+                .find(|record| {
+                    record.allocation_epoch() == identity.allocation_epoch()
+                        && record.ordinal() == identity.ordinal()
+                }));
+        if batch.is_complete() {
+            break;
+        }
+    }
+    let reallocated = reallocated.expect("the reallocated g' record survives the crash");
+    assert_eq!(
+        read_record(&serving, reallocated),
+        vec![REALLOCATED_BYTE; EXTENT_PAYLOAD_BYTES],
+        "g' bytes survive the crash"
+    );
+    assert!(matches!(
+        serving.retire_displaced_segment(),
+        Ok(()) | Err(PhysicalRetirementDenial::Absent)
+    ));
+    assert_eq!(
+        produced_retirement_payloads(&root).len(),
+        2,
+        "no second release"
+    );
+    let (_, placement, _) = configuration();
+    let fresh = completed(prepare(&serving, placement, [153; 32], &extent_payload()).execute());
+    let fresh = current_extent_route(&root, fresh.persisted_records()[0]);
+    assert!(
+        fresh.arena != range[0]
+            || fresh.offset >= range[1] + range[2]
+            || fresh.offset + fresh.length <= range[1],
+        "the live g' range is never handed out again"
+    );
+    serving.close();
+    assert_eq!(current_extent_route(&root, identity), route);
+    crate::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::crash::post_reopen::assert_clean_arena_accounting(&root);
+    drop(directory);
+}
+
 #[test]
 #[ignore = "spawned as a producer and killed at a real release boundary"]
 fn extent_release_child() {
     let marker = std::path::PathBuf::from(std::env::var_os(MARKER).unwrap());
     let seam: u8 = std::env::var(SEAM).unwrap().parse().unwrap();
     let root = marker.join("store");
+    if std::env::var_os(REALLOCATE).is_some() {
+        reallocate_then_park(&marker, &root);
+    }
     let serving = if std::env::var_os(RESUME).is_some() {
         worth_store_testkit_store::physical_record_journeys::serving_from_open(&root)
     } else {

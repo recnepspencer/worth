@@ -161,6 +161,24 @@ impl<T> RootPinCore<T> {
         self.kernel.is_root_protected_at_or_below(root)
     }
 
+    /// A non-expired pin root at or below `root`, witnessing the verified
+    /// kernel's protection answer. Transitive ancestors stay non-expired while
+    /// a live child overlays them, so they witness here too.
+    pub(crate) fn protected_root_at_or_below(&self, root: u64) -> Option<u64> {
+        if !self.kernel.is_root_protected_at_or_below(root) {
+            return None;
+        }
+        let witness = self.attachments.keys().find_map(|pin| {
+            self.kernel
+                .record(*pin)
+                .filter(|record| record.state != PinLifecycleState::Expired)
+                .map(|record| record.root_id)
+                .filter(|pinned| *pinned <= root)
+        });
+        // The kernel answered; never weaken it if no attachment names the root.
+        Some(witness.unwrap_or(root))
+    }
+
     /// Whether any non-expired pin's attachment satisfies `matches`.
     pub(crate) fn any_live(&self, matches: impl Fn(&T) -> bool) -> bool {
         self.attachments.iter().any(|(pin, entry)| {

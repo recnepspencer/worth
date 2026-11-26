@@ -12,6 +12,7 @@ use crate::physical_runtime::{
 };
 
 mod capture;
+mod reach_projection;
 mod reclaim_guard;
 mod retained_snapshot;
 mod retirement;
@@ -236,62 +237,6 @@ impl RootProtectionRegistry {
         )
     }
 
-    pub(in crate::physical_runtime) fn protects_root(&self, generation: u64) -> bool {
-        let read = {
-            let mut state = self
-                .state
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
-            state.index_probes = state.index_probes.saturating_add(1);
-            let (visited, protected) = state.roots.contains(&generation);
-            state.examined_entries = state.examined_entries.saturating_add(visited);
-            protected
-        };
-        read || self.pins.protects_root(generation)
-    }
-
-    /// True when a live reader holds any root at or below generation.
-    ///
-    /// A displaced extent generation is readable from every root between the
-    /// one that placed it and the rewrite's source root. No index names that
-    /// span, so the scan is counted and bounded by the retained-root limit.
-    pub(in crate::physical_runtime) fn protects_root_at_or_below(&self, generation: u64) -> bool {
-        let read = {
-            let mut state = self
-                .state
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
-            state.index_probes = state.index_probes.saturating_add(1);
-            let (visited, protected) = state.roots.any_key(|root| *root <= generation);
-            state.examined_entries = state.examined_entries.saturating_add(visited);
-            protected
-        };
-        read || self.pins.protects_root_at_or_below(generation)
-    }
-
-    /// True when a live reader still names this inline segment as its tail.
-    ///
-    /// The lookup is the tail index. It does not walk protected roots or the
-    /// published graph.
-    pub(in crate::physical_runtime) fn protects_inline_segment(
-        &self,
-        segment_id: u64,
-        generation: u64,
-    ) -> bool {
-        let read = {
-            let mut state = self
-                .state
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
-            state.index_probes = state.index_probes.saturating_add(1);
-            let (visited, count) = state.inline_tails.consult(&(segment_id, generation));
-            let protected = count.is_some_and(|roots| *roots > 0);
-            state.examined_entries = state.examined_entries.saturating_add(visited);
-            protected
-        };
-        read || self.pins.protects_inline_segment(segment_id, generation)
-    }
-
     pub(super) fn root_acquisitions(&self, binding: PhysicalProtectedRootObservation) -> u32 {
         if binding.runtime() != self.runtime {
             return 0;
@@ -343,10 +288,17 @@ mod counted {
             (visited, value.is_some())
         }
 
-        /// Charges every stored key as visited, whether or not the scan stops early.
-        pub(super) fn any_key(&self, matches: impl Fn(&K) -> bool) -> (u64, bool) {
+        /// One stored key satisfying `matches`. Charges every stored key as
+        /// visited, whether or not the scan stops early.
+        pub(super) fn find_key(&self, matches: impl Fn(&K) -> bool) -> (u64, Option<K>)
+        where
+            K: Copy,
+        {
             let visited = self.entries.len() as u64;
-            (visited, self.entries.keys().any(matches))
+            (
+                visited,
+                self.entries.keys().copied().find(|key| matches(key)),
+            )
         }
 
         pub(super) fn any_entry(&self, mut matches: impl FnMut(&K, &V) -> bool) -> (u64, bool) {

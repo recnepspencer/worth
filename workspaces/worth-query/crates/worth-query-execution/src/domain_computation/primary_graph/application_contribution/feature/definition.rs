@@ -21,6 +21,8 @@ pub trait WorthQueryApplicationManagedIndexRegistration<S: ApplicationSchema>:
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>;
 }
 
+/// The runtime half of a feature definition. A tuple of 2 to 12 definitions
+/// is one definition configured from the tuple of their configurations.
 pub trait WorthQueryFeatureDefinition<S: ApplicationSchema>:
     ApplicationFeatureDefinition<S>
 {
@@ -33,24 +35,56 @@ pub trait WorthQueryFeatureDefinition<S: ApplicationSchema>:
         setup: &mut WorthQueryApplicationContributionSetup<'_, S>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>;
 }
-impl<S, A, B> WorthQueryFeatureDefinition<S> for (A, B)
-where
-    S: ApplicationSchema,
-    A: WorthQueryFeatureDefinition<S>,
-    B: WorthQueryFeatureDefinition<S>,
-{
-    type Configuration = (A::Configuration, B::Configuration);
-    fn contracts(
-        contracts: &mut WorthQueryApplicationContributionContracts<S>,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        A::contracts(contracts)?;
-        B::contracts(contracts)
-    }
-    fn configure(
-        (a, b): Self::Configuration,
-        setup: &mut WorthQueryApplicationContributionSetup<'_, S>,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        A::configure(a, setup)?;
-        B::configure(b, setup)
-    }
+/// One tuple arity. Configuration is the flat tuple of member
+/// configurations, so `(A, B, C)` takes `(a, b, c)`.
+macro_rules! feature_definition_tuple {
+    ($(($Member:ident, $configuration:ident)),+) => {
+        impl<S, $($Member),+> WorthQueryFeatureDefinition<S> for ($($Member,)+)
+        where
+            S: ApplicationSchema,
+            $($Member: WorthQueryFeatureDefinition<S>,)+
+        {
+            type Configuration = ($($Member::Configuration,)+);
+            fn contracts(
+                contracts: &mut WorthQueryApplicationContributionContracts<S>,
+            ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+                $($Member::contracts(contracts)?;)+
+                Ok(())
+            }
+            fn configure(
+                ($($configuration,)+): Self::Configuration,
+                setup: &mut WorthQueryApplicationContributionSetup<'_, S>,
+            ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+                $($Member::configure($configuration, setup)?;)+
+                Ok(())
+            }
+        }
+    };
 }
+
+/// Every arity from the full list down to a pair, matching the declaration
+/// tuples of `ApplicationFeatureDefinition`.
+macro_rules! feature_definition_tuples {
+    ($first:tt, $second:tt) => {
+        feature_definition_tuple!($first, $second);
+    };
+    ($first:tt $(, $rest:tt)+) => {
+        feature_definition_tuple!($first $(, $rest)+);
+        feature_definition_tuples!($($rest),+);
+    };
+}
+
+feature_definition_tuples!(
+    (A, a),
+    (B, b),
+    (C, c),
+    (D, d),
+    (E, e),
+    (F, f),
+    (G, g),
+    (H, h),
+    (I, i),
+    (J, j),
+    (K, k),
+    (L, l)
+);

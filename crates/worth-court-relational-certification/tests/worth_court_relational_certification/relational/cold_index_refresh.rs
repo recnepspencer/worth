@@ -169,6 +169,7 @@ fn reopened(execution: &ExecutionRequest<'_, '_>) -> Reopened {
         reads: Default::default(),
         member_reads: Default::default(),
         paged_reads: Default::default(),
+        commit_page_reads: Default::default(),
         commit_reads: Default::default(),
         commits_damaged: Default::default(),
         failed_member: Default::default(),

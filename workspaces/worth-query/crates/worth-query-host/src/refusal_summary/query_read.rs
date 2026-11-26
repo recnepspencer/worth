@@ -9,8 +9,8 @@ use worth_query_execution::facade::primary_graph::{
 };
 
 use super::request::{
-    BAD_INPUT, BUSY, CANCELLED, CAPACITY, INTERNAL, MISSING_ITEM, PERMISSION, STALE, STORAGE,
-    TIMED_OUT,
+    AMBIGUOUS_KEY, BAD_INPUT, BUSY, CANCELLED, CAPACITY, INTERNAL, MISSING_ITEM, PERMISSION, STALE,
+    STORAGE, TIMED_OUT,
 };
 use super::stops::{authorization, native, projection, session};
 use super::summary::{WorthQueryRefusalSummary as Summary, WorthQueryUserFacingRefusal};
@@ -145,6 +145,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryEntityResolutionDenial {
         match self.kind() {
             Resolve::Stopped(cause) => native(&cause),
             Resolve::Refused(Refused::UnknownEntity) => MISSING_ITEM,
+            Resolve::Refused(Refused::AmbiguousEntity) => AMBIGUOUS_KEY,
             Resolve::Refused(Refused::EqualityIndexUnavailable) => BUSY,
             Resolve::Refused(Refused::CorruptIdentityIndex) => STORAGE,
             Resolve::Refused(
@@ -159,7 +160,6 @@ impl WorthQueryUserFacingRefusal for WorthQueryEntityResolutionDenial {
                 | Refused::PrimaryGraphNotInstalled
                 | Refused::FieldNotInstalled
                 | Refused::ValueEncodingRejected
-                | Refused::AmbiguousEntity
                 | Refused::InvalidCandidateLimit
                 | Refused::ForeignResolutionTruth,
             ) => INTERNAL,

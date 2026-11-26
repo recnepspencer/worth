@@ -23,7 +23,11 @@ fn assert_destination_refused_unchanged(
     let checkpoint = capture(execution, target);
     let error = target
         .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(execution, native, worth_testkit_relational::cold_recovery::members_source(native))
+        .restore_native_checkpoint_for_codec_transition_with_authority(
+            execution,
+            native,
+            worth_testkit_relational::cold_recovery::members_source(native),
+        )
         .expect_err("bound destination must be refused");
     let RelationalRecoveryStop::Durability(error) = error else {
         panic!("destination refusal must retain its durability classification")
@@ -56,7 +60,11 @@ fn fresh_destination_publication_binding_refuses_then_unbound_retry_restores() {
     drop(publication);
     let (_, recovered) = target
         .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(execution, &native, worth_testkit_relational::cold_recovery::members_source(&native))
+        .restore_native_checkpoint_for_codec_transition_with_authority(
+            execution,
+            &native,
+            worth_testkit_relational::cold_recovery::members_source(&native),
+        )
         .unwrap();
     assert!(recovered.codec_transition_pending());
     assert_ne!(target.runtime_instance_id(), instance);
@@ -101,7 +109,11 @@ fn fresh_destination_preparation_port_remains_usable_and_unbound_retry_restores(
     drop(preparation);
     let (_, recovered) = target
         .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(execution, &native, worth_testkit_relational::cold_recovery::members_source(&native))
+        .restore_native_checkpoint_for_codec_transition_with_authority(
+            execution,
+            &native,
+            worth_testkit_relational::cold_recovery::members_source(&native),
+        )
         .unwrap();
     assert!(recovered.codec_transition_pending());
 }
@@ -127,7 +139,11 @@ fn fresh_destination_actual_weak_state_binding_refuses_without_closing_settlemen
     drop(settlement);
     let (_, recovered) = target
         .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(execution, &native, worth_testkit_relational::cold_recovery::members_source(&native))
+        .restore_native_checkpoint_for_codec_transition_with_authority(
+            execution,
+            &native,
+            worth_testkit_relational::cold_recovery::members_source(&native),
+        )
         .unwrap();
     assert!(recovered.codec_transition_pending());
 }
@@ -215,7 +231,11 @@ fn empty_destination_retained_native_basis_refuses_then_drop_allows_funded_retry
     drop(selected);
     let (_, recovered) = target
         .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(execution, &native, worth_testkit_relational::cold_recovery::members_source(&native))
+        .restore_native_checkpoint_for_codec_transition_with_authority(
+            execution,
+            &native,
+            worth_testkit_relational::cold_recovery::members_source(&native),
+        )
         .unwrap();
     assert!(recovered.codec_transition_pending());
 }

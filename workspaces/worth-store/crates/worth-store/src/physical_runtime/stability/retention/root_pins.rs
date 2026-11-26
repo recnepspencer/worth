@@ -143,20 +143,43 @@ impl RootPinTable {
         !state.restored || query(&state.core)
     }
 
-    pub(in crate::physical_runtime) fn protects_root(&self, generation: u64) -> bool {
-        self.protects(|core| core.protects_root(generation))
-    }
-
     pub(in crate::physical_runtime) fn protects_root_at_or_below(&self, generation: u64) -> bool {
         self.protects(|core| core.protects_root_at_or_below(generation))
     }
 
-    pub(in crate::physical_runtime) fn protects_inline_segment(
+    /// Projects every pin that reaches `window`; unrestored pins reach all.
+    pub(in crate::physical_runtime) fn project_reach(
         &self,
-        segment: u64,
-        generation: u64,
-    ) -> bool {
-        self.protects(|core| core.any_live(|root| root.inline_tail == Some((segment, generation))))
+        window: crate::physical_runtime::durability::ReachWindow,
+        reach: &mut crate::physical_runtime::durability::ProtectedReachSet,
+    ) {
+        use crate::physical_runtime::durability::ReachWindow;
+        let state = self.lock();
+        if !state.restored {
+            reach.protect_all_roots();
+            return;
+        }
+        match window {
+            ReachWindow::Root {
+                generation,
+                inline_tail,
+            } => {
+                if state.core.protects_root(generation) {
+                    reach.protect_root(generation);
+                }
+                if state
+                    .core
+                    .any_live(|root| root.inline_tail == Some(inline_tail))
+                {
+                    reach.protect_inline_tail(inline_tail.0, inline_tail.1);
+                }
+            }
+            ReachWindow::RootsAtOrBelow(generation) => {
+                if let Some(root) = state.core.protected_root_at_or_below(generation) {
+                    reach.protect_root(root);
+                }
+            }
+        }
     }
 
     /// Pin `root` in memory. The caller holds the current-root lock.

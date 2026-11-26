@@ -160,7 +160,8 @@ fn durable_source_entry(
     RelationalRecoveryStop,
 >{
     let artifact = history
-        .commit_artifact(commit_id)
+        .try_commit_artifact(commit_id)
+        .map_err(|cause| crate::durability::data::commit_index_access::stop(commit_id.0, cause))?
         .ok_or_else(|| corrupt("recorded component has no actual catalog source"))?;
     let (entry, source) = artifact
         .envelope_residency()

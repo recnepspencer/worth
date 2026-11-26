@@ -73,6 +73,58 @@ pub(super) fn admit_row(
     )
 }
 
+/// Request-free on-demand row verification for settled-receipt repair paths.
+pub(super) fn admit_row_without_request(
+    directory: &Arc<RelationalCheckpointDirectory>,
+    entry: &RelationalCommitIndexEntry,
+    owner: Weak<AdmissionCustody>,
+) -> Result<CheckpointAdmittedCommit, Refusal> {
+    let image = directory
+        .admission_image
+        .as_ref()
+        .ok_or(Refusal::MissingArtifact)?
+        .selected_image();
+    let row = image
+        .row(entry.commit.commit_id)
+        .ok_or(Refusal::InvalidProjectedMeaning)?;
+    if row.key.position != entry.position.0 {
+        return Err(Refusal::InvalidProjectedMeaning);
+    }
+    let coordinates = Coordinates {
+        receipt: &entry.commit,
+        position: entry.position,
+        digest: CanonicalDigestId::new(entry.payload_digest),
+        roots: &entry.root,
+    };
+    require_encoded_unfunded(&coordinates, image.group(&row.groups[3]))?;
+    require_encoded_unfunded(&entry.association_discovery, image.group(&row.groups[2]))?;
+    let schema: Schema = decode_fixed_unfunded(image.group(&row.groups[4]))?;
+    let visibility: Visibility = decode_fixed_unfunded(image.group(&row.groups[5]))?;
+    let authority = directory
+        .source_schemas
+        .get()
+        .and_then(|catalog| catalog.rows.get(schema.carrier.bytes()))
+        .cloned()
+        .ok_or(Refusal::InvalidProjectedMeaning)?;
+    if schema.version != entry.schema_version
+        || authority.descriptor_semantics_version() != schema.semantics
+        || authority.authority_digest() != *visibility.schema.bytes()
+        || entry.root.schema_root() != visibility.schema.bytes()
+        || entry.root.truth_root() != visibility.storage.bytes()
+        || visibility.correctness != 0
+    {
+        return Err(Refusal::InvalidProjectedMeaning);
+    }
+    let index = RetainedCanonicalIndex::copy_cold(entry, readmit_journal_commit);
+    Ok(CheckpointAdmittedCommit::retain_unfunded(
+        owner,
+        image.clone(),
+        index,
+        authority,
+        RelationalBranchVisibilityCommitment::from_checkpoint(*visibility.commitment.bytes()),
+    ))
+}
+
 #[derive(Serialize)]
 struct Coordinates<'a> {
     receipt: &'a contracts::history::data::commit_receipt::RelationalCommitReceipt,
@@ -107,5 +159,23 @@ fn decode_fixed<'a, T: Deserialize<'a>>(
     }
     contracts::durability::data::recovery_stop::account_work(request, bytes.len() as u64)
         .map_err(contracts::durability::checkpoint_admission::refusal::native_stop)?;
+    rmp_serde::from_slice(bytes).map_err(|_| Refusal::InvalidProjectedMeaning)
+}
+
+fn require_encoded_unfunded(value: &impl Serialize, actual: &[u8]) -> Result<(), Refusal> {
+    let expected = rmp_serde::to_vec_named(
+        &worth_relational_branch::internal_port::durability::checkpoint_admission::binary_encoding::BinaryFixedArrays(value),
+    )
+    .map_err(|_| Refusal::InvalidProjectedMeaning)?;
+    if expected.as_slice() != actual {
+        return Err(Refusal::InvalidProjectedMeaning);
+    }
+    Ok(())
+}
+
+fn decode_fixed_unfunded<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, Refusal> {
+    if bytes.len() > 512 {
+        return Err(Refusal::InvalidProjectedMeaning);
+    }
     rmp_serde::from_slice(bytes).map_err(|_| Refusal::InvalidProjectedMeaning)
 }

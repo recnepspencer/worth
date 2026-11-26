@@ -1,5 +1,7 @@
 mod admission;
 mod profile;
+mod reclaim_budget;
+mod reclaim_plan;
 mod retired_artifact;
 mod retirement;
 mod retirement_release;
@@ -11,6 +13,10 @@ pub(in crate::physical_runtime) use admission::{
     RetainedByteLease, WalPublicationReservation,
 };
 pub(in crate::physical_runtime) use profile::PhysicalRetentionProfile;
+pub use reclaim_budget::{PhysicalReclaimBudget, PhysicalReclaimPass, PhysicalReclaimPassEnd};
+pub(in crate::physical_runtime) use reclaim_plan::{
+    checkpoint_covers, plan_reclaim, ProtectedReachSet, ReachWindow, ReclaimCandidate,
+};
 pub(in crate::physical_runtime) use retired_artifact::RetiredArtifact;
 pub(in crate::physical_runtime::durability) use retirement::note_retirement_hold;
 pub use retirement::PhysicalRetirementDenial;

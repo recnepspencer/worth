@@ -1,4 +1,5 @@
 mod access;
+mod access_fragment;
 mod capabilities;
 #[cfg(test)]
 mod inline_capability_tests;
@@ -18,6 +19,10 @@ mod inline_capability_tests;
 /// completed operation definition with explicit effect/aftermath policy.
 /// Schema-generic operations use the same access categories. An inherited
 /// projection may append access owned by an existing sealed capability family.
+/// `include: [fragment, ..];` expands access clauses shared through
+/// `worth_query_access_fragment!` in place; the declared access is a set, so a
+/// field-valued member repeated across fragments and inline clauses registers
+/// once.
 ///
 /// Compile-time capabilities may follow the input or its `access` block
 /// inline: `input InputBinding; access { .. }; reads [Member, ..];
@@ -34,9 +39,9 @@ macro_rules! worth_query_operation {
         $(; inherited_access: |$schema:ident, $operation:ident| $inherited:block $(;)?)?
     ) => {
         $crate::worth_query_operation!($vis $Operation for $Schema: $Binding, input $InputBinding);
-        $crate::__worth_query_operation_access!(@generic
-            $Operation for $Schema: $Binding; { $($access)* }
-            $(; inherited_access: |$schema, $operation| $inherited)?
+        $crate::__worth_query_operation_access_flatten!([] { $($access)* }
+            (@generic $Operation for $Schema: $Binding;)
+            ($(; inherited_access: |$schema, $operation| $inherited)?)
         );
     };
     (
@@ -45,8 +50,8 @@ macro_rules! worth_query_operation {
         access { $($access:tt)* }
     ) => {
         $crate::worth_query_operation!($vis $Operation for $Schema, input $InputBinding);
-        $crate::__worth_query_operation_access!(
-            $Operation for $Schema, input $InputBinding; { $($access)* }
+        $crate::__worth_query_operation_access_flatten!([] { $($access)* }
+            ($Operation for $Schema, input $InputBinding;) ()
         );
     };
     ($vis:vis $Operation:ident for $Schema:ident: $Binding:path, input $InputBinding:path;

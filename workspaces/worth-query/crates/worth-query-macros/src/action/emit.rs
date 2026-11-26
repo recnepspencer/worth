@@ -117,6 +117,11 @@ fn mutation_binding(input: &DeriveInput, action: &ActionDeclaration) -> TokenStr
         } => quote! {
             scope #selection, field <#selection>::at(#column), value #function,
         },
+        Scope::Const {
+            selection, column, ..
+        } => quote! {
+            scope #selection, field <#selection>::at(#column), value #intent::worth_query_scope,
+        },
     };
     quote! {
         #decl::worth_query_mutation_binding!(
@@ -128,19 +133,32 @@ fn mutation_binding(input: &DeriveInput, action: &ActionDeclaration) -> TokenStr
     }
 }
 
-/// The scope field's value for the binding's field scope. A field whose type
-/// differs from the selection's value fails to compile at that field's type.
+/// The scope value for the binding's field scope: the marked field's value or
+/// the declared constant. A value whose type differs from the selection's
+/// fails to compile at that field's type or constant expression.
 fn scope_value(input: &DeriveInput, action: &ActionDeclaration) -> Option<TokenStream> {
-    let Scope::Field {
-        member,
-        value,
-        selection,
-        ..
-    } = &action.scope
-    else {
-        return None;
-    };
     let (frag, intent) = (fragment(), &input.ident);
+    let (member, value, selection) = match &action.scope {
+        Scope::Field {
+            member,
+            value,
+            selection,
+            ..
+        } => (member, value, selection),
+        Scope::Const {
+            selection, value, ..
+        } => {
+            return Some(quote! {
+                impl #intent {
+                    #[doc(hidden)]
+                    fn worth_query_scope(_: &Self) -> <#selection as #frag::RecordSelection>::Value {
+                        #value
+                    }
+                }
+            });
+        }
+        Scope::Principal { .. } | Scope::Value { .. } => return None,
+    };
     let read = quote_spanned!(value.span()=> ::core::clone::Clone::clone(&input.#member));
     // The read is spanned to the field so a non-`Clone` type is refused there;
     // a `Copy` field must not then report `clone_on_copy` in the application.

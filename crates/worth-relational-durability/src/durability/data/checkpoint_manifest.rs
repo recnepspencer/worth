@@ -203,6 +203,9 @@ impl RelationalCheckpointManifestDraft {
         for page in &self.record_identity.pages {
             insert(*page)?;
         }
+        for page in self.commits.page_members() {
+            insert(page)?;
+        }
         drop(insert);
         let mut output =
             worth_execution::ExecutionRequestArrayBuilder::allocate(*request, members.len())

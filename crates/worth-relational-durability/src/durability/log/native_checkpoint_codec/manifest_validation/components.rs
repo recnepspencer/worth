@@ -10,6 +10,7 @@ use worth_relational_branch::internal_port::branch::basis_descriptor::{
 pub(super) fn validate(manifest: &RelationalCheckpointManifest) -> Result<(), DurabilityError> {
     let commits = manifest
         .commits
+        .heads
         .iter()
         .map(|entry| (entry.commit.commit_id, entry))
         .collect::<BTreeMap<_, _>>();

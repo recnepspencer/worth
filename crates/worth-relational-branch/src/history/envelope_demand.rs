@@ -29,14 +29,11 @@ pub struct CanonicalHistoryRead<'a> {
 
 impl CanonicalHistoryRead<'_> {
     pub fn receipt_for_version(self, version: VersionId) -> Option<RelationalCommitReceipt> {
-        self.branch
-            .commit_artifact_for_version(version)
-            .map(|artifact| artifact.receipt())
-            .or_else(|| {
-                self.performed
-                    .by_version(version)
-                    .map(|envelope| envelope.commit.clone())
-            })
+        self.branch.commit_receipt_for_version(version).or_else(|| {
+            self.performed
+                .by_version(version)
+                .map(|envelope| envelope.commit.clone())
+        })
     }
 
     pub fn latest_patch_stream_position(self) -> Option<PatchStreamPosition> {
@@ -54,15 +51,10 @@ impl CanonicalHistoryRead<'_> {
                     .or_else(|| {
                         self.branch
                             .recorded_commit_at_patch_position(position)
-                            .and_then(|commit| self.branch.commit_artifact(commit))
-                            .map(|artifact| artifact.receipt())
+                            .and_then(|commit| self.branch.commit_receipt(commit))
                     })
             })
-            .or_else(|| {
-                self.branch
-                    .latest_commit_artifact()
-                    .map(|artifact| artifact.receipt())
-            })
+            .or_else(|| self.branch.latest_commit_receipt())
     }
 
     pub fn canonical_envelope(self, commit: CommitId) -> Option<Arc<CanonicalCommitEnvelope>> {
@@ -78,7 +70,17 @@ impl CanonicalHistoryRead<'_> {
         commit: CommitId,
     ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, RelationalExecutionDenialCause> {
         crate::execution::check_request(execution)?;
-        match self.branch.commit_artifact(commit) {
+        let artifact = self.branch.try_commit_artifact(commit).map_err(|cause| {
+            RelationalExecutionDenialCause::StorageUnavailable(
+                crate::storage::data::RelationalStorageUnavailable {
+                    subject: crate::storage::data::RelationalStorageSubject::Envelope(
+                        PatchStreamPosition(0),
+                    ),
+                    cause,
+                },
+            )
+        })?;
+        match artifact {
             Some(artifact) => artifact
                 .demand_envelope(execution, 1 << 30)
                 .map(Some)

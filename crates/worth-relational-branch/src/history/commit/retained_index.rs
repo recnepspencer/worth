@@ -92,6 +92,18 @@ impl RetainedCanonicalIndex {
             _memory: memory,
         })))
     }
+    /// An index copy faulted from a cold commit page outside any request:
+    /// its bytes live in the page cache's accounting until the copy drops.
+    pub fn copy_cold(
+        entry: &RelationalCommitIndexEntry,
+        journal_readmission: JournalCommitReadmission,
+    ) -> Self {
+        Self(Arc::new(Backing {
+            entry: entry.clone(),
+            journal_readmission,
+            _memory: None,
+        }))
+    }
     pub fn copy_original(
         entry: &RelationalCommitIndexEntry,
         request: &ExecutionRequest<'_, '_>,

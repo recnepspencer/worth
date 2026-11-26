@@ -13,6 +13,7 @@ pub(in crate::physical_runtime) use clean_reopen::{
 };
 mod construction;
 mod displaced;
+pub(in crate::physical_runtime) use displaced::RetirementClaim;
 mod maintenance;
 mod pending_publication;
 mod reclaim;

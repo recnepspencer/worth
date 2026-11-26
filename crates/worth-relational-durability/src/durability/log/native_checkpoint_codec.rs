@@ -65,6 +65,7 @@ pub mod complete_encoding;
 pub(crate) use complete_encoding::encode_complete;
 pub mod checkpoint_wire;
 pub mod cold_checkpoint;
+pub(crate) mod commit_pages;
 pub mod dictionary_capture;
 pub mod expanded_checkpoint;
 pub(crate) mod identity_pages;

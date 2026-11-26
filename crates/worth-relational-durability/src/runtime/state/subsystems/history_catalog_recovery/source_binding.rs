@@ -28,7 +28,6 @@ pub fn synchronize_recovered_source_commit(
     let roots = artifact.roots().clone();
     history.with_ledger_mut(|ledger| {
         ledger
-            .commit_catalog
             .install_source_recovery(prepared.expected.as_ref(), Arc::clone(artifact))
             .map_err(RelationalHistoryRecoveryDenial::Catalog)?;
         ledger
