@@ -36,6 +36,11 @@ pub fn select_root_window(
     )?;
     order_collection(contract, governance, "root", &mut keys, &mut work)?;
     let ordering = admitted_ordering(contract, governance, "root")?;
+    if ordering.is_empty() {
+        // No declared ordering: the total order is root identity alone, which
+        // the boundary search below relies on, whatever order selection used.
+        keys.sort_unstable_by_key(WorthQueryApplicationProjectionNode::entity_id);
+    }
     let start = match window.boundary() {
         Some(boundary) => first_following(
             &keys,

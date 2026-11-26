@@ -85,6 +85,8 @@ where
 
     /// [`Self::with_session`] on the session's call worker, for any other
     /// session call (a snapshot's queries, a paged walk, `query_result`, ...).
+    /// Never `wait` inside `body` on another call of this session: it would
+    /// queue behind `body` on the same worker and never run.
     pub fn spawn_with_session<R>(
         &self,
         body: impl FnOnce(&WorthQueryHostSession<'_, Schema, Program>) -> R + Send + 'static,

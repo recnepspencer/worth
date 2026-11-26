@@ -9,7 +9,7 @@
 /// raised, so each caller fails closed with its own typed outcome.
 #[expect(
     clippy::disallowed_methods,
-    reason = "host background dispatch: one owned-session call worker and one Home commit notifier, named and owner-scoped"
+    reason = "host-background-dispatch thread-builder=1: one owned-session call worker and one Home commit notifier, named and owner-scoped"
 )]
 pub(crate) fn spawn_named(name: &str, body: impl FnOnce() + Send + 'static) -> std::io::Result<()> {
     std::thread::Builder::new()

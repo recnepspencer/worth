@@ -247,6 +247,14 @@ fn select_root_window_roots(
     tree_materialization::root_window::RootWindowSelection,
     WorthQueryApplicationReadExecutionDenial,
 > {
+    // Orbit (anchor-forward) and component (whole-set metadata) selections
+    // are not windowable; the request layer refuses them first.
+    if plan.contract.orbit().is_some() || plan.contract.component_selection().is_some() {
+        return Err(read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
+            plan.name,
+        ));
+    }
     if plan.contract.cardinality() != ApplicationQueryCardinality::Many {
         return Err(read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::CardinalityMismatch,

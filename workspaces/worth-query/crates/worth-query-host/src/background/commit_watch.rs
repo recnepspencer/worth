@@ -54,8 +54,10 @@ pub enum WorthQueryCommitWatchDenial {
 
 /// Keeps one commit callback registered; dropping it unregisters the callback.
 ///
-/// Dropping never blocks: a callback already running finishes, and none starts
-/// afterwards. Dropping it from inside its own callback is allowed.
+/// Dropping never blocks: a callback already running finishes, and one the
+/// notifier had already picked up for the current commit may still start once
+/// as the guard drops; none starts for a later commit. Dropping it from inside
+/// its own callback is allowed.
 #[must_use = "the callback is unregistered as soon as the guard drops"]
 pub struct WorthQueryCommitWatchGuard {
     registry: Arc<CommitWatchRegistry>,
