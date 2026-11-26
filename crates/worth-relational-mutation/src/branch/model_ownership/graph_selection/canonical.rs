@@ -39,8 +39,6 @@ impl RelationalOwnedModelGraphSelection {
         for &id in &self.companions().restore {
             let kind = entities
                 .selected_basis()
-                .owner_inner()
-                .root
                 .get_current_partition(id.partition_id)
                 .and_then(|region| region.entity(id))
                 .filter(|slot| slot.is_live())
