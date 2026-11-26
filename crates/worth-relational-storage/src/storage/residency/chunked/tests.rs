@@ -4,6 +4,7 @@ mod member_store;
 mod chunk_partition;
 mod consolidation_invariance;
 mod paged_directory_reopen;
+mod placement_hardening;
 mod region_placement;
 mod sealing_refusals;
 mod single_slot_fanout;

@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use super::canonical_read::ChunkResidency;
 use super::chunk_directory::RegionChunkDirectory;
-use super::cold_member_port::ColdMemberSource;
+use super::cold_member_port::{ColdMemberSource, ConfinedMemberSource};
 use super::member_io::ChunkMemberSource;
 use super::region_placement::{RegionChunkPlacement, REGION_CHUNK_LAYOUT};
 use super::slot_range::SlotDomain;
@@ -34,7 +34,7 @@ pub enum RecordedChunkScan {
 pub struct RecordedRegionChunks {
     directory: RegionChunkDirectory,
     residency: ChunkResidency,
-    source: ColdMemberSource,
+    source: ConfinedMemberSource<ColdMemberSource>,
 }
 
 impl RecordedRegionChunks {
@@ -46,13 +46,17 @@ impl RecordedRegionChunks {
         pool: ResidencyPoolKind,
     ) -> Result<Self, Cause> {
         let directory = placement.admit().map_err(|_| Cause::IntegrityMismatch)?;
-        Ok(Self {
-            directory,
-            residency: ChunkResidency::new(accountant, pool),
-            source: ColdMemberSource::with_custody(
+        let source = ConfinedMemberSource::new(
+            ColdMemberSource::with_custody(
                 custody,
                 REGION_CHUNK_LAYOUT.max_chunk_image_bytes as u64,
             ),
+            placement.members.clone(),
+        );
+        Ok(Self {
+            directory,
+            residency: ChunkResidency::new(accountant, pool),
+            source,
         })
     }
 

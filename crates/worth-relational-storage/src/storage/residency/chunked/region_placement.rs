@@ -99,10 +99,22 @@ impl RegionChunkPlacement {
             if !bound.into_iter().all(|member| held(&member)) {
                 return Err(ChunkPlacementRefusal::Roster);
             }
-            let pages = continuation.map_or(0, |root| {
-                root.entry_count.saturating_mul(3).saturating_add(1)
-            });
-            reachable = reachable.saturating_add(2).saturating_add(pages);
+            let pages = match continuation {
+                None => 0,
+                Some(root) => {
+                    if root.entry_count == 0 {
+                        return Err(ChunkPlacementRefusal::Roster);
+                    }
+                    root.entry_count
+                        .checked_mul(3)
+                        .and_then(|n| n.checked_add(1))
+                        .ok_or(ChunkPlacementRefusal::Roster)?
+                }
+            };
+            reachable = reachable
+                .checked_add(2)
+                .and_then(|n| n.checked_add(pages))
+                .ok_or(ChunkPlacementRefusal::Roster)?;
         }
         if self.members.len() as u64 > reachable {
             return Err(ChunkPlacementRefusal::Roster);
@@ -120,6 +132,19 @@ impl RegionChunkPlacement {
         source: &dyn ChunkMemberSource,
         sink: &mut dyn ChunkMemberSink,
     ) -> Result<Self, ChunkVerificationRefusal> {
+        let matches_self =
+            directory.entity_slots() == self.entity_domain
+                && directory.relation_slots() == self.relation_domain
+                && directory.chunks().len() == self.chunks.len()
+                && directory.chunks().iter().zip(&self.chunks).all(
+                    |(bound, (semantic, binding))| {
+                        bound.semantic() == semantic && bound.binding() == binding
+                    },
+                )
+                && directory.root_semantic_merkle() == self.root_semantic_merkle;
+        if !matches_self {
+            return Err(ChunkVerificationRefusal::RangeMismatch);
+        }
         let mut consolidated = directory.clone();
         for chunk in directory.chunks() {
             let candidate = flatten_history_image(

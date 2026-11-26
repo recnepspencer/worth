@@ -97,3 +97,49 @@ fn a_cold_cell_scans_its_recorded_chunks_without_materializing_the_region() {
     drop(chunks);
     assert_eq!(active.load(Ordering::SeqCst), 0, "custody retires cleanly");
 }
+
+#[test]
+fn recorded_chunks_confines_reads_to_admitted_roster_and_exports_without_fallback() {
+    use worth_relational_storage::internal_port::storage::data::checkpoint_member::RelationalCheckpointMember;
+    let fixture = region_with_history();
+    let cold = fixture.cold.clone();
+    let cell = RelationalRegionResidency::cold(cold.clone()).unwrap();
+    let carried = cold
+        .chunks
+        .members
+        .iter()
+        .map(|&locator| RelationalCheckpointMember::Carried { locator })
+        .collect::<Vec<_>>();
+    let exports = cell.checkpoint_export_sources(&carried, None).unwrap();
+    assert_eq!(exports.len(), cold.chunks.members.len());
+    for locator in &cold.chunks.members {
+        let (_, export_source) = exports.get(locator).expect("chunk member exported");
+        let bytes = export_source.read_member(*locator, locator.length).unwrap();
+        assert_eq!(bytes.len() as u64, locator.length);
+    }
+    let accountant = WorkingSetAccountant::new(ResidencyBudget {
+        head_working_set_bytes: 1 << 20,
+        historical_working_set_bytes: 1 << 20,
+        max_in_flight_fill_bytes: 1 << 20,
+        streaming_window_bytes: 4096,
+    });
+    cell.bind_working_set(&accountant, ResidencyPoolKind::Head)
+        .unwrap();
+    let chunks = cell.recorded_chunks().unwrap();
+    // `cold.head` exists in the cell's backing source, but is outside the
+    // admitted chunk roster and must be refused as Damaged.
+    let mut buf = [0_u8; 16];
+    assert_eq!(
+        chunks.source().read_range(cold.head, 0, &mut buf),
+        Err(Cause::Damaged)
+    );
+    // Once a cell latches proven damage, `recorded_chunks()` surfaces that
+    // terminal damage instead of serving chunks or `SourceUnavailable`.
+    fixture.source.corrupt.store(true, Ordering::SeqCst);
+    let (_, export_source) = exports
+        .get(&cold.chunks.members[0])
+        .expect("chunk member exported");
+    let _ = export_source.read_member(cold.chunks.members[0], cold.chunks.members[0].length);
+    let damaged = cell.recorded_chunks().err().unwrap();
+    assert_eq!(damaged.cause, Cause::IntegrityMismatch);
+}

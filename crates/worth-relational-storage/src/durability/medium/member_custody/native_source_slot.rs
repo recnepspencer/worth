@@ -28,6 +28,14 @@ impl NativeSourceMemberState {
             custody: self.custody.retain_serving(),
         }
     }
+    pub fn try_retain_serving(&self) -> Option<Self> {
+        let source = self.source.clone()?;
+        let custody = self.custody.try_retain_serving()?;
+        Some(Self {
+            source: Some(source),
+            custody,
+        })
+    }
     /// Clone only this original token share under the containing lock; invoke
     /// its non-consuming provider preflight after releasing that lock.
     pub fn preflight_snapshot(

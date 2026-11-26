@@ -151,23 +151,32 @@ pub(in crate::internal_port::storage::residency) fn capture(
     let directory = directory
         .portable(lane, request)
         .map_err(|error| error.into_failure(partition.partition_id))?;
-    let chunks =
-        super::super::chunked::region_projection::seal_region_chunks(partition, &mut |_, _| {
-            request
-                .consult()
-                .map_err(|cause| Stop::Request(cause.into()))
+    let chunks = lane
+        .recover(request, |_lane, work| {
+            super::super::chunked::region_projection::seal_region_chunks(
+                partition,
+                &mut |units, bytes| work.prepare(units, bytes),
+            )
         })
-        .map_err(|error| match error {
-            super::super::chunked::region_projection::RegionChunkCaptureError::Stop(stop) => stop,
-            super::super::chunked::region_projection::RegionChunkCaptureError::Unavailable(
-                cause,
-            ) => crate::storage::data::RelationalStorageUnavailable {
-                subject: crate::storage::data::RelationalStorageSubject::Region(
-                    partition.partition_id,
-                ),
-                cause,
+        .map_err(|error| -> Stop {
+            match error {
+                super::super::chunked::region_projection::RegionChunkCaptureError::Stop(
+                    refusal,
+                ) => crate::storage::residency::record_directory::maintenance::DirectoryError::Admission(
+                    refusal,
+                )
+                .into_failure(partition.partition_id)
+                .into(),
+                super::super::chunked::region_projection::RegionChunkCaptureError::Unavailable(
+                    cause,
+                ) => crate::storage::data::RelationalStorageUnavailable {
+                    subject: crate::storage::data::RelationalStorageSubject::Region(
+                        partition.partition_id,
+                    ),
+                    cause,
+                }
+                .into(),
             }
-            .into(),
         })?;
     Ok(Captured {
         chunks,

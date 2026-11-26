@@ -16,6 +16,7 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 use super::cold_member_port::CollectedMembers;
+use super::member_io::ChunkMemberSink;
 use super::region_placement::{RegionChunkPlacement, REGION_CHUNK_LAYOUT};
 use super::sealing::{seal_chunk_image, ChunkSealRefusal, ChunkSealRequest};
 use super::semantic_entry::root_semantic_merkle;
@@ -42,17 +43,26 @@ pub enum RegionChunkCaptureError<E> {
     Unavailable(Cause),
 }
 
-/// Seals `partition`'s chunks. `charge(units, bytes)` admits one unit per
-/// chunk and slot before sealing it, then the retained member bytes.
+impl<E> From<E> for RegionChunkCaptureError<E> {
+    fn from(stop: E) -> Self {
+        Self::Stop(stop)
+    }
+}
+
+/// Seals `partition`'s chunks. `charge(units, bytes)` admits work units per
+/// chunk, occupied slot and outgoing adjacency edge before sealing, and admits
+/// each new member's bytes incrementally before storing it.
 pub fn seal_region_chunks<E>(
     partition: &PartitionState,
     charge: &mut dyn FnMut(u64, u64) -> Result<(), E>,
 ) -> Result<SealedRegionChunks, RegionChunkCaptureError<E>> {
-    let mut sink = CollectedMembers::default();
     let mut chunks = Vec::new();
     let mut pass = DomainPass {
-        charge,
-        sink: &mut sink,
+        sink: ChargingSink {
+            collected: CollectedMembers::default(),
+            charge,
+            stop: None,
+        },
         chunks: &mut chunks,
     };
     let entity_domain = pass.seal(
@@ -61,12 +71,7 @@ pub fn seal_region_chunks<E>(
         Some(&partition.adjacency),
     )?;
     let relation_domain = pass.seal(SlotDomain::Relation, &partition.relation_arena, None)?;
-    let bytes = sink
-        .members
-        .iter()
-        .map(|(_, bytes)| bytes.len() as u64)
-        .sum();
-    charge(0, bytes).map_err(RegionChunkCaptureError::Stop)?;
+    let sink = pass.sink.collected;
     let entries = chunks
         .iter()
         .map(|(semantic, _)| semantic.clone())
@@ -98,9 +103,31 @@ pub fn seal_refusal_cause(refusal: ChunkSealRefusal) -> Cause {
     }
 }
 
-struct DomainPass<'p, E> {
+struct ChargingSink<'p, E> {
+    collected: CollectedMembers,
     charge: &'p mut dyn FnMut(u64, u64) -> Result<(), E>,
-    sink: &'p mut CollectedMembers,
+    stop: Option<E>,
+}
+
+impl<E> ChunkMemberSink for ChargingSink<'_, E> {
+    fn put(
+        &mut self,
+        locator: RelationalDurableMemberLocator,
+        bytes: Vec<u8>,
+    ) -> Result<(), Cause> {
+        if self.collected.contains(&locator) {
+            return Ok(());
+        }
+        if let Err(stop) = (self.charge)(0, bytes.len() as u64) {
+            self.stop = Some(stop);
+            return Err(Cause::MemoryExhausted);
+        }
+        self.collected.put(locator, bytes)
+    }
+}
+
+struct DomainPass<'p, E> {
+    sink: ChargingSink<'p, E>,
     chunks: &'p mut Vec<(
         super::semantic_entry::ChunkSemanticEntry,
         super::locator_binding::ChunkLocatorBinding,
@@ -115,10 +142,13 @@ impl<E> DomainPass<'_, E> {
         arena: &RecordArena<K>,
         adjacency: Option<&SparseAdjacencyTable>,
     ) -> Result<u64, RegionChunkCaptureError<E>> {
-        let domain_slots = arena
-            .occupied_slots_iter()
-            .last()
-            .map_or(0, |slot| slot as u64 + 1);
+        let domain_slots = match arena.occupied_slots_iter().last() {
+            None => 0,
+            Some(slot) => u64::try_from(slot)
+                .ok()
+                .and_then(|s| s.checked_add(1))
+                .ok_or(RegionChunkCaptureError::Unavailable(Cause::Damaged))?,
+        };
         let mut occupied = arena
             .occupied_slots_iter()
             .map(|slot| slot as u64)
@@ -128,7 +158,24 @@ impl<E> DomainPass<'_, E> {
             while let Some(slot) = occupied.next_if(|slot| slot_range.contains(*slot)) {
                 slots.push(slot);
             }
-            (self.charge)(slots.len() as u64 + 1, 0).map_err(RegionChunkCaptureError::Stop)?;
+            let mut work_units = (slots.len() as u64).saturating_add(1);
+            if let Some(table) = adjacency {
+                for &slot in &slots {
+                    if let Some(set) = usize::try_from(slot).ok().and_then(|i| table.get(i)) {
+                        for _ in set.kind_memberships(AdjacencyKindBasis::Current) {
+                            work_units = work_units.saturating_add(1);
+                            if work_units >= 1024 {
+                                (self.sink.charge)(work_units, 0)
+                                    .map_err(RegionChunkCaptureError::Stop)?;
+                                work_units = 0;
+                            }
+                        }
+                    }
+                }
+            }
+            if work_units > 0 {
+                (self.sink.charge)(work_units, 0).map_err(RegionChunkCaptureError::Stop)?;
+            }
             let heads = slots
                 .iter()
                 .map(|slot| head_version(arena, *slot))
@@ -149,7 +196,7 @@ impl<E> DomainPass<'_, E> {
                         }),
                 ),
             });
-            let sealed = seal_chunk_image(
+            let sealed = match seal_chunk_image(
                 ChunkSealRequest {
                     layout: REGION_CHUNK_LAYOUT,
                     domain,
@@ -158,9 +205,18 @@ impl<E> DomainPass<'_, E> {
                     slots: Box::new(projections),
                     claimed: None,
                 },
-                self.sink,
-            )
-            .map_err(|refusal| RegionChunkCaptureError::Unavailable(seal_refusal_cause(refusal)))?;
+                &mut self.sink,
+            ) {
+                Ok(sealed) => sealed,
+                Err(refusal) => {
+                    if let Some(stop) = self.sink.stop.take() {
+                        return Err(RegionChunkCaptureError::Stop(stop));
+                    }
+                    return Err(RegionChunkCaptureError::Unavailable(seal_refusal_cause(
+                        refusal,
+                    )));
+                }
+            };
             self.chunks.push((sealed.semantic, sealed.binding));
         }
         Ok(domain_slots)

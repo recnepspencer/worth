@@ -8,6 +8,7 @@ impl RelationalRegionResidency {
     /// cell's own retained member custody, never by materializing the region.
     /// Refuses unbacked or unbound cells and cells whose source has retired.
     pub fn recorded_chunks(&self) -> Result<RecordedRegionChunks, RelationalStorageUnavailable> {
+        self.check_damage()?;
         let unavailable = |cause| RelationalStorageUnavailable {
             subject: RelationalStorageSubject::Region(self.partition_id),
             cause,
@@ -26,8 +27,7 @@ impl RelationalRegionResidency {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .physical
             .as_ref()
-            .filter(|physical| physical.source().is_some())
-            .map(|physical| physical.retain_serving())
+            .and_then(|physical| physical.try_retain_serving())
             .ok_or_else(|| unavailable(Cause::SourceUnavailable))?;
         RecordedRegionChunks::open(&cold.chunks, custody, &binding.accountant, binding.pool)
             .map_err(unavailable)

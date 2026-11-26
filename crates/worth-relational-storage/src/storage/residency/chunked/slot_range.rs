@@ -105,6 +105,7 @@ pub fn fixed_partition(total_slots: u64, chunk_slots: u64) -> impl Iterator<Item
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct EncodedSlotRange {
     start_slot_inclusive: u64,
     end_slot_exclusive: u64,
