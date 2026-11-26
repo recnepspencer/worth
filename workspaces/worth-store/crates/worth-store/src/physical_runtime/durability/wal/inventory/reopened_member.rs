@@ -89,6 +89,20 @@ impl ReopenedPhysicalWalMember {
         }))
     }
 
+    /// Unit courts supply the verified frame facts WAL inventory would decode.
+    #[cfg(test)]
+    pub(in crate::physical_runtime::durability) fn from_verified_parts(
+        lsn_range: WalLsnRange,
+        persisted_binding: &[u8],
+        redo_digest: [u8; 32],
+    ) -> Self {
+        Self {
+            lsn_range,
+            persisted_binding: persisted_binding.into(),
+            redo_digest,
+        }
+    }
+
     pub(in crate::physical_runtime::durability) const fn lsn_range(&self) -> WalLsnRange {
         self.lsn_range
     }

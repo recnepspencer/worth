@@ -103,15 +103,7 @@ impl PhysicalMutationIdempotencyRegistry {
     fn pending_binding_count(&self) -> usize {
         self.bindings
             .values()
-            .filter(|state| {
-                matches!(
-                    state,
-                    PhysicalMutationIdempotencyBindingState::Unsealed(_)
-                        | PhysicalMutationIdempotencyBindingState::GroupSealed { .. }
-                        | PhysicalMutationIdempotencyBindingState::RebuiltUnresolved { .. }
-                        | PhysicalMutationIdempotencyBindingState::WalBound { .. }
-                )
-            })
+            .filter(|state| state.holds_pending_capacity())
             .count()
     }
 }

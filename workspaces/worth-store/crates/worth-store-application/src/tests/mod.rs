@@ -6,3 +6,4 @@ pub(crate) mod native_schema;
 mod physical_holders;
 mod program;
 mod source_format_predecessors;
+mod uncheckpointed_reopen;

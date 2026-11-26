@@ -18,10 +18,22 @@ pub(in crate::physical_runtime::durability::mutation::idempotency) fn binding(
         .registry
         .issue_key(PhysicalMutationIdempotencyMaterial::new([109; 32]))
         .unwrap();
-    let mutation = mutation(&fixture, 31);
+    let binding = single_member(&fixture, key, 17, 31, 3);
+    (fixture, binding)
+}
+
+/// One complete single-member group whose WAL member spans `[start, start+1)`.
+pub(in crate::physical_runtime::durability::mutation::idempotency) fn single_member(
+    fixture: &RegistryFixture,
+    key: super::super::super::PhysicalMutationIdempotencyKey,
+    payload: u8,
+    operation: u64,
+    start: u64,
+) -> PersistedPhysicalMutationAttemptBinding {
+    let mutation = mutation(fixture, operation);
     let member_identity = PhysicalWalMemberIdentity::for_mutation(mutation);
     let group = PhysicalDurabilityGroupMemberBinding::from_reopened(
-        PhysicalDurabilityGroupIdentity::from_reopened([113; 32]),
+        PhysicalDurabilityGroupIdentity::from_reopened([payload; 32]),
         member_identity,
         NonZeroU32::new(1).unwrap(),
         NonZeroU32::new(1).unwrap(),
@@ -32,10 +44,14 @@ pub(in crate::physical_runtime::durability::mutation::idempotency) fn binding(
         ),
     )
     .unwrap();
-    let range = WalLsnRange::new(LogSequenceNumber::new(3), LogSequenceNumber::new(4)).unwrap();
+    let range = WalLsnRange::new(
+        LogSequenceNumber::new(start),
+        LogSequenceNumber::new(start + 1),
+    )
+    .unwrap();
     let mut binding = PersistedPhysicalMutationAttemptBinding {
         key,
-        fingerprint: fingerprint(&fixture, 17),
+        fingerprint: fingerprint(fixture, payload),
         mutation,
         group,
         member: PhysicalWalMemberBasis::new(member_identity, mutation, range),
@@ -43,5 +59,5 @@ pub(in crate::physical_runtime::durability::mutation::idempotency) fn binding(
         bytes: Box::default(),
     };
     binding.bytes = binding.encode().into_boxed_slice();
-    (fixture, binding)
+    binding
 }
