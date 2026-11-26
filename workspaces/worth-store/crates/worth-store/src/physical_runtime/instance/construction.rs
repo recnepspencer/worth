@@ -197,16 +197,15 @@ impl PhysicalStoreInstanceParts {
                 }),
             };
         let reopened = durability_reopen.install(durability);
-        if let Ok(
-            crate::physical_runtime::durability::ReopenedPhysicalBindingCompaction::NamespaceDurable(
-                reopened_checkpoint,
-            ),
-        ) = &checkpoint_custody.checkpoint
-            && let Some(floor) =
-                worth_store_physical_format::ExtentAllocationGeneration::at_durable_barrier(
-                    bootstrap.current_root.generation(),
-                    reopened_checkpoint.wal_cutoff_lsn_exclusive(),
-                )
+        // Seed from the reopened durable WAL frontier, with or without a
+        // recent checkpoint, so no post-reopen generation rewinds below a
+        // pre-crash barrier; the WAL owner caps it below unresolved Path B
+        // retries.
+        if let Some(floor) =
+            worth_store_physical_format::ExtentAllocationGeneration::at_durable_barrier(
+                bootstrap.current_root.generation(),
+                reopened.wal.reopened_arena_floor_sequence(),
+            )
         {
             frame_ports.seed_arena_generation_floor(floor);
         }

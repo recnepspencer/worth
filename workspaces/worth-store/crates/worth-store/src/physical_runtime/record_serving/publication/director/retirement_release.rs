@@ -59,6 +59,14 @@ impl RecordPublicationDirector {
             .is_some()
     }
 
+    pub(super) fn pending_extent_release_bytes(&self) -> Option<u64> {
+        self.retirement_release
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_ref()
+            .map(|pending| pending.displaced.bytes)
+    }
+
     pub(super) fn commit_extent_release_intent(
         &self,
     ) -> Result<DisplacedArtifact, PhysicalRetirementDenial> {
@@ -161,8 +169,13 @@ impl RecordPublicationDirector {
                     }
                     return Err(denial);
                 }
+                // This process published the free-space root, so it alone
+                // returns the range after completion and the fence drain.
+                let plan = crate::reclamation_plan_validator::resume_release(
+                    crate::reclamation_plan_validator::ReleaseBarrier::IntentDurable,
+                );
                 state.progress = ReleaseProgress::RootPublished {
-                    allocator_update: true,
+                    allocator_update: plan.admit_to_allocator,
                 };
             }
             ReleaseProgress::RootPublished { allocator_update } => {

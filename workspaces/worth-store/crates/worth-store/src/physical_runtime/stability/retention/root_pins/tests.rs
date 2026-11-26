@@ -1,5 +1,6 @@
 //! Reclaim projection of durable pins: per-root protection, never a global veto.
 use super::super::RootProtectionRegistry;
+use crate::physical_runtime::durability::{ProtectedReachSet, ReachWindow};
 use crate::physical_runtime::lifecycle::LifecycleCoordinator;
 use crate::physical_runtime::stability::PhysicalReadProtectionPolicy;
 use crate::physical_runtime::RuntimeIdentity;
@@ -22,6 +23,27 @@ fn registry() -> (LifecycleCoordinator, RootProtectionRegistry) {
     (lifecycle, registry)
 }
 
+fn reaches(registry: &RootProtectionRegistry, window: ReachWindow) -> bool {
+    let mut reach = ProtectedReachSet::default();
+    registry.project_reach(window, &mut reach);
+    reach.len() > 0
+}
+
+/// A segment's window: exactly `generation`, with a tail no root names.
+fn protects_root(registry: &RootProtectionRegistry, generation: u64) -> bool {
+    reaches(
+        registry,
+        ReachWindow::Root {
+            generation,
+            inline_tail: (u64::MAX, u64::MAX),
+        },
+    )
+}
+
+fn protects_root_at_or_below(registry: &RootProtectionRegistry, generation: u64) -> bool {
+    reaches(registry, ReachWindow::RootsAtOrBelow(generation))
+}
+
 fn root(generation: u64) -> DurablePhysicalRootManifest {
     DurablePhysicalRootManifest::builder(generation, 1, 2, 1)
         .admit()
@@ -36,19 +58,19 @@ fn a_pin_protects_exactly_what_a_reader_of_its_root_protects() {
         .pin(&root(5), None, RETAIN, Vec::new())
         .unwrap();
     // Segments: only the pinned root itself; unrelated roots still retire.
-    assert!(registry.protects_root(5));
-    assert!(!registry.protects_root(4));
-    assert!(!registry.protects_root(6));
+    assert!(protects_root(&registry, 5));
+    assert!(!protects_root(&registry, 4));
+    assert!(!protects_root(&registry, 6));
     // Extents/arenas: any source root at or above the pinned root reads it.
-    assert!(registry.protects_root_at_or_below(5));
-    assert!(registry.protects_root_at_or_below(9));
-    assert!(!registry.protects_root_at_or_below(4));
+    assert!(protects_root_at_or_below(&registry, 5));
+    assert!(protects_root_at_or_below(&registry, 9));
+    assert!(!protects_root_at_or_below(&registry, 4));
     // Expiry releases exactly that protection.
     assert_eq!(registry.pins().expire(pin), Ok(RootPinState::Expiring));
-    assert!(registry.protects_root(5), "Expiring still protects");
+    assert!(protects_root(&registry, 5), "Expiring still protects");
     assert_eq!(registry.pins().expire(pin), Ok(RootPinState::Expired));
-    assert!(!registry.protects_root(5));
-    assert!(!registry.protects_root_at_or_below(9));
+    assert!(!protects_root(&registry, 5));
+    assert!(!protects_root_at_or_below(&registry, 9));
 }
 
 #[test]
@@ -61,21 +83,30 @@ fn a_live_child_keeps_its_expiring_parent_root_protected() {
         .unwrap();
     assert_eq!(pins.expire(parent), Ok(RootPinState::Expiring));
     assert_eq!(pins.expire(parent), Ok(RootPinState::Expiring));
-    assert!(registry.protects_root(3), "parent overlay stays reachable");
+    assert!(
+        protects_root(&registry, 3),
+        "parent overlay stays reachable"
+    );
     assert_eq!(pins.loan(parent).unwrap_err(), RootPinDenial::LeaseExpired);
     assert_eq!(pins.expire(child), Ok(RootPinState::Expiring));
     assert_eq!(pins.expire(child), Ok(RootPinState::Expired));
     assert_eq!(pins.expire(parent), Ok(RootPinState::Expired));
-    assert!(!registry.protects_root(3) && !registry.protects_root(7));
+    assert!(!protects_root(&registry, 3) && !protects_root(&registry, 7));
 }
 
 #[test]
 fn an_unrestored_pin_table_protects_every_root_and_admits_no_pin() {
     let (_lifecycle, registry) = registry();
     registry.pins().mark_unrestored();
-    assert!(registry.protects_root(1));
-    assert!(registry.protects_root_at_or_below(0));
-    assert!(registry.protects_inline_segment(1, 1));
+    assert!(protects_root(&registry, 1));
+    assert!(protects_root_at_or_below(&registry, 0));
+    assert!(reaches(
+        &registry,
+        ReachWindow::Root {
+            generation: u64::MAX,
+            inline_tail: (1, 1),
+        }
+    ));
     assert_eq!(
         registry.pins().pin(&root(2), None, RETAIN, Vec::new()),
         Err(RootPinDenial::PinsUnavailable)

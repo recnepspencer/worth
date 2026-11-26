@@ -100,11 +100,8 @@ impl RecordPublicationDirector {
         checkpoint: &crate::physical_runtime::CompletedPhysicalCheckpoint,
     ) -> Result<(), PhysicalRetirementDenial> {
         let captured = checkpoint.basis().source().root().generation();
-        let covered = match displaced.artifact {
-            RetiredArtifact::Arena { .. } => captured >= displaced.source_root,
-            _ => captured > displaced.source_root,
-        };
-        if !covered {
+        // Canonical coverage before prune, decided by the verified planner.
+        if !crate::physical_runtime::durability::checkpoint_covers(&displaced, captured) {
             return Err(PhysicalRetirementDenial::Checkpoint);
         }
         if matches!(

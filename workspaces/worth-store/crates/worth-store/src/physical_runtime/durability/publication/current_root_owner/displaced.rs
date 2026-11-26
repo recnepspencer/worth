@@ -128,6 +128,16 @@ impl PhysicalCurrentRootOwner {
         }
     }
 
+    /// Bytes of the displaced artifact the next claim would take: the oldest
+    /// unpinned one, else the oldest one (whose claim is then refused).
+    pub(in crate::physical_runtime) fn next_retirement_bytes(&self) -> Option<u64> {
+        let _state = self.lock_publication_state();
+        self.publication
+            .next_displaced_where(|displaced| !pinned(self, displaced))
+            .or_else(|| self.publication.next_displaced())
+            .map(|displaced| displaced.bytes)
+    }
+
     pub(in crate::physical_runtime) fn blocked_retirement(
         &self,
         displaced: &DisplacedArtifact,
@@ -187,64 +197,42 @@ impl PhysicalCurrentRootOwner {
     }
 }
 
-/// Whether a durable root pin holds `displaced`, by the same per-artifact rule
-/// live readers use. Pins are a leaf lock under the current-root lock.
+/// Whether a durable root pin holds `displaced`, by the same verified planner
+/// and per-artifact window live readers use. Pins are a leaf lock under the
+/// current-root lock.
 fn pinned(owner: &PhysicalCurrentRootOwner, displaced: &DisplacedArtifact) -> bool {
-    let pins = owner.read_protection.pins();
-    match displaced.artifact {
-        RetiredArtifact::Segment {
-            segment,
-            generation,
-        } => {
-            pins.protects_root(displaced.source_root)
-                || pins.protects_inline_segment(segment, generation)
-        }
-        RetiredArtifact::Extent { .. } => pins.protects_root_at_or_below(displaced.source_root),
-        RetiredArtifact::Arena { .. } => {
-            pins.protects_root_at_or_below(displaced.source_root.saturating_sub(1))
-        }
-    }
+    use crate::physical_runtime::durability::{plan_reclaim, ProtectedReachSet, ReclaimCandidate};
+    let candidate = ReclaimCandidate::of(displaced);
+    let mut reach = ProtectedReachSet::default();
+    owner
+        .read_protection
+        .pins()
+        .project_reach(candidate.window(), &mut reach);
+    plan_reclaim(&candidate, &reach, true, false) == Some(PhysicalRetirementDenial::Protected)
 }
 
+/// Every retirement admission goes through the verified reclaim planner: the
+/// registry and durable pins project their reach for this candidate's window,
+/// a published successor root that no longer reads it is canonical coverage,
+/// and any other pending root-changing publication is an unresolved obligation.
 fn retirement_blocked(
     owner: &PhysicalCurrentRootOwner,
     state: &PhysicalCurrentRootState,
     displaced: &DisplacedArtifact,
     own: Option<&crate::physical_runtime::durability::PendingPublicationLease>,
 ) -> Option<PhysicalRetirementDenial> {
-    let protected = match displaced.artifact {
-        RetiredArtifact::Segment {
-            segment,
-            generation,
-        } => {
-            owner.read_protection.protects_root(displaced.source_root)
-                || owner
-                    .read_protection
-                    .protects_inline_segment(segment, generation)
-        }
-        // Every root from the one that placed the extent generation through the
-        // rewrite's source root reads it, so any reader at or below blocks.
-        RetiredArtifact::Extent { .. } => owner
-            .read_protection
-            .protects_root_at_or_below(displaced.source_root),
-        RetiredArtifact::Arena { .. } => owner
-            .read_protection
-            .protects_root_at_or_below(displaced.source_root.saturating_sub(1)),
-    };
-    if protected {
-        return Some(PhysicalRetirementDenial::Protected);
-    }
-    if still_published(state, displaced) {
-        return Some(PhysicalRetirementDenial::Retained);
-    }
+    use crate::physical_runtime::durability::{plan_reclaim, ProtectedReachSet, ReclaimCandidate};
+    let candidate = ReclaimCandidate::of(displaced);
+    let mut reach = ProtectedReachSet::default();
+    owner
+        .read_protection
+        .project_reach(candidate.window(), &mut reach);
+    let covered = !still_published(state, displaced);
     let unresolved = own.map_or_else(
         || owner.publication.pending_len() > 0,
         |lease| owner.publication.pending_except(lease),
     );
-    if unresolved {
-        return Some(PhysicalRetirementDenial::Unresolved);
-    }
-    None
+    plan_reclaim(&candidate, &reach, covered, unresolved)
 }
 
 fn still_published(state: &PhysicalCurrentRootState, displaced: &DisplacedArtifact) -> bool {

@@ -30,11 +30,7 @@ impl RecordPublicationDirector {
             }
         };
         let captured = checkpoint.basis().source().root().generation();
-        let checkpoint_covers_source = match displaced.artifact {
-            RetiredArtifact::Arena { .. } => captured >= displaced.source_root,
-            _ => captured > displaced.source_root,
-        };
-        if !checkpoint_covers_source {
+        if !crate::physical_runtime::durability::checkpoint_covers(&displaced, captured) {
             self.revert_retirement_claim(displaced.artifact);
             return Err(PhysicalRetirementDenial::Retained);
         }
@@ -42,6 +38,17 @@ impl RecordPublicationDirector {
         self.pause_retirement_kill(1);
         self.finish_retirement(displaced, &checkpoint)?;
         Ok(Some(displaced))
+    }
+}
+
+impl RecordPublicationDirector {
+    /// Bytes of the artifact the next retirement would process: a pending
+    /// extent release resumes first, otherwise the next displaced claim.
+    pub(in crate::physical_runtime) fn next_reclaim_bytes(&self) -> Option<u64> {
+        if let Some(bytes) = self.pending_extent_release_bytes() {
+            return Some(bytes);
+        }
+        self.root_owner.next_retirement_bytes()
     }
 }
 

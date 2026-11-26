@@ -245,6 +245,30 @@ impl PhysicalWalRuntimeOwner {
             .collect()
     }
 
+    /// The extent-fence sequence a reopened arena-generation floor seeds at:
+    /// the reopened durable WAL frontier (never below the checkpoint cutoff),
+    /// which every pre-crash Path A or Path B barrier sequence is at or below,
+    /// capped strictly below each recovered, still-unresolved cancelled copy's
+    /// resolution end so that copy's post-reopen Path B drain still advances.
+    pub(in crate::physical_runtime) fn reopened_arena_floor_sequence(&self) -> u64 {
+        let state = self.shared.lock().unwrap_or_else(|e| e.into_inner());
+        let frontier = state
+            .durable_lsn_end
+            .map_or(0, LogSequenceNumber::get)
+            .max(state.reopened_checkpoint_cutoff);
+        state
+            .copy_obligations
+            .iter()
+            .filter(|entry| entry.holds_at(state.reopened_checkpoint_cutoff))
+            .filter_map(|entry| entry.resolution())
+            .filter(|(resolution, _)| {
+                resolution.kind()
+                    == worth_store_physical_format::PhysicalExtentCopyResolutionKind::Cancelled
+            })
+            .map(|(_, end)| end.saturating_sub(1))
+            .fold(frontier, u64::min)
+    }
+
     pub(in crate::physical_runtime) fn take_reopened_publication_groups(
         &self,
     ) -> Vec<ReopenedWalPublicationGroup> {

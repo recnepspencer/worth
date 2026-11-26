@@ -8,6 +8,7 @@ use crate::physical_runtime::record_serving::{
     },
     RetirementCandidateRetryScope,
 };
+use crate::reclamation_plan_validator::{resume_release, ReleaseBarrier};
 use worth_store_physical_format::RecordArtifactFile;
 
 mod evidence;
@@ -100,9 +101,11 @@ impl RecordPublicationDirector {
         if source.generation() >= state.release.candidate_generation() {
             self.verify_released_root(state, &allocation)?;
             // Bootstrap already loaded the published free index; the range may
-            // even have been reused since. Never release it a second time.
+            // even have been reused since. The verified resume plan never
+            // releases it a second time (`M9`).
+            let plan = resume_release(ReleaseBarrier::FreeSpacePublished);
             state.progress = ReleaseProgress::RootPublished {
-                allocator_update: false,
+                allocator_update: plan.admit_to_allocator,
             };
             return Ok(());
         }

@@ -1,3 +1,7 @@
+#[path = "bounded_reclamation/mod.rs"]
+pub(crate) mod bounded_reclamation;
+#[path = "carried_cutover/mod.rs"]
+pub(crate) mod carried_cutover;
 #[path = "extent_record_rewrite/mod.rs"]
 pub(crate) mod extent_record_rewrite;
 #[path = "root_pin_retention/mod.rs"]

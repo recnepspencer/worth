@@ -1,7 +1,8 @@
 //! Full rebuild of a selected root's manifest roster over every C.5 route.
 //!
 //! The cold path: a director with no carried roster, another routing tree, or
-//! an older root reads every selected route once.
+//! an older root reads every selected route once and reports how many it
+//! read: the `O(total_routes)` cost a carried delta avoids.
 
 use std::collections::HashSet;
 
@@ -20,7 +21,7 @@ pub(super) fn full_scan(
     reader: PhysicalRecordReader,
     limits: RosterLimits,
     scratch: &mut [u8],
-) -> Result<Vec<SelectedBlobManifestPin>, SelectedBlobManifestPinDenial> {
+) -> Result<(Vec<SelectedBlobManifestPin>, u64), SelectedBlobManifestPinDenial> {
     let scratch_bytes = scratch.len();
     let mut scan = reader
         .scan_rebuild(
@@ -34,6 +35,7 @@ pub(super) fn full_scan(
         .map_err(|_| SelectedBlobManifestPinDenial::ScanUnavailable)?;
     let mut pins = Vec::new();
     let mut attempts = HashSet::new();
+    let mut routes = 0_u64;
     loop {
         let (complete, deferred) = match scan
             .read_next_into(scratch)
@@ -41,6 +43,7 @@ pub(super) fn full_scan(
         {
             RecordScanOutcome::Completed(_) => break,
             RecordScanOutcome::Batch(batch) => {
+                routes += 1;
                 let row = &batch.records()[0];
                 let record = row.record_id().persisted();
                 let deferred = if let Some(bytes) = batch.payload(0) {
@@ -64,7 +67,7 @@ pub(super) fn full_scan(
             break;
         }
     }
-    Ok(pins)
+    Ok((pins, routes))
 }
 
 fn is_oversized_manifest(

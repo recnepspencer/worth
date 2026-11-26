@@ -199,6 +199,25 @@ fn cancelled_writeback_claim_discards_unpinned_dirty_frame_and_stale_gen_never_p
     );
     drop(allocation);
     let paused = writeback_claim(&pool, &[key]);
+    // A non-advancing generation is refused before the in-flight check, so
+    // even an overlapping paused writeback never lets it install a fence.
+    assert_eq!(
+        pool.drain_writeback_fence(
+            range(0, 64),
+            ArenaReuseBarrier::CompletedRetirement,
+            generation(4, 20)
+        ),
+        Err(WritebackFenceDrainDenial::GenerationNotAdvanced {
+            proposed: generation(4, 20),
+            active: generation(4, 20),
+        })
+    );
+    let unfenced = candidate_allocation(&pool, 1);
+    pool.materialize_dirty_candidate(&unfenced, arena_key(identity, 32), |b| b.fill(9))
+        .expect("a terminal generation refusal leaves the range unfenced")
+        .discard_candidate()
+        .unwrap();
+    drop(unfenced);
     assert_eq!(
         pool.drain_writeback_fence(
             range(0, 64),

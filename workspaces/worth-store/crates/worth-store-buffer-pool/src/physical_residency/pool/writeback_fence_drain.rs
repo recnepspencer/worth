@@ -3,8 +3,8 @@ use super::arena_generation_ledger::{
 };
 use super::*;
 use crate::allocation_generation_guard::{
-    active_generation, can_admit_for_reuse, frame_lookup_matches, ranges_overlap, GuardIdentity,
-    GuardRange, ReuseBarrier,
+    active_generation, can_admit_for_reuse, exceeds_seen_generations, frame_lookup_matches,
+    ranges_overlap, GuardIdentity, GuardRange, ReuseBarrier,
 };
 use crate::{ArenaReuseBarrier, WritebackFenceDrainDenial};
 use worth_store_physical_format::{
@@ -15,9 +15,12 @@ impl PhysicalResidencyPool {
     /// `WritebackFenceDrain`: the only door that returns an arena range to
     /// allocator reuse. It fences new writeback claims overlapping `range`,
     /// refuses while any overlapping claim is in flight or any overlapping
-    /// frame is not clean and unpinned, then evicts the overlapping clean
-    /// frames and records `next` as the range's generation, all under one pool
-    /// lock. `next` must exceed every generation seen on an overlapping range.
+    /// frame is pinned, claimed or not resident, then removes every
+    /// overlapping frame (clean frames, and unpinned unclaimed dirty frames
+    /// whose bytes the durable reuse barrier made obsolete, which are
+    /// discarded rather than written) and records `next` as the range's
+    /// generation, all under one pool lock. `next` must exceed every
+    /// generation seen on an overlapping range.
     pub fn drain_writeback_fence(
         &self,
         range: ExtentArenaRange,
@@ -67,17 +70,18 @@ impl PhysicalResidencyPool {
         }
         if !admissible {
             state.accounting.deny();
-            if !in_flight.is_empty() {
-                // Only fence when waiting on in-flight writebacks (never on a
-                // terminal `GenerationNotAdvanced` refusal).
-                state.arena_generations.fence(range);
-                return Err(WritebackFenceDrainDenial::WritebackInFlight {
-                    overlapping: u32::try_from(in_flight.len()).unwrap_or(u32::MAX),
+            // A non-advancing generation is terminal: refuse it before any
+            // fence, even while an overlapping writeback happens to be in
+            // flight.
+            if !exceeds_seen_generations(freed, &seen, guard_generation(next)) {
+                return Err(WritebackFenceDrainDenial::GenerationNotAdvanced {
+                    proposed: next,
+                    active: physical_generation(active_generation(freed, &seen)),
                 });
             }
-            return Err(WritebackFenceDrainDenial::GenerationNotAdvanced {
-                proposed: next,
-                active: physical_generation(active_generation(freed, &seen)),
+            state.arena_generations.fence(range);
+            return Err(WritebackFenceDrainDenial::WritebackInFlight {
+                overlapping: u32::try_from(in_flight.len()).unwrap_or(u32::MAX),
             });
         }
         let artifact = RecordArtifactFile::ExtentArena {

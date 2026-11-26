@@ -24,12 +24,16 @@ pub use retention::PhysicalRetirementDenial;
 pub(in crate::physical_runtime) use retention::RetainedByteLease;
 pub use retention::RetirementReleaseProjection;
 pub(in crate::physical_runtime) use retention::WalPublicationReservation;
+pub(in crate::physical_runtime) use retention::{
+    checkpoint_covers, plan_reclaim, ProtectedReachSet, ReachWindow, ReclaimCandidate,
+};
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use retention::{decode_retirement, payload_is_retirement};
 pub(in crate::physical_runtime) use retention::{
     encode_retirement, unresolved_retirement_holds, unresolved_retirements, DisplacedArtifact,
     RetiredArtifact, RetirementRecord, RetirementRemovalPermit,
 };
+pub use retention::{PhysicalReclaimBudget, PhysicalReclaimPass, PhysicalReclaimPassEnd};
 mod settlement;
 mod wal;
 pub(in crate::physical_runtime) use wal::DurableMaintenanceReceipt;
