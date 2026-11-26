@@ -20,6 +20,9 @@ pub struct ImmutableCheckpointMemberSource {
     pub damaged: AtomicBool,
     pub reads: AtomicUsize,
     pub member_reads: std::sync::Mutex<Vec<RelationalDurableMemberLocator>>,
+    /// CHK24 paged record-identity pages (chunk-member frames), counted
+    /// apart so the counters above keep their record/index meaning.
+    pub paged_reads: AtomicUsize,
     pub commit_reads: std::sync::Mutex<Vec<PatchStreamPosition>>,
     pub commits_damaged: AtomicBool,
     pub failed_member: std::sync::Mutex<Option<RelationalDurableMemberLocator>>,
@@ -248,6 +251,7 @@ impl ImmutableCheckpointMemberSource {
             damaged: AtomicBool::new(false),
             reads: AtomicUsize::new(0),
             member_reads: Default::default(),
+            paged_reads: Default::default(),
             commit_reads: Default::default(),
             commits_damaged: AtomicBool::new(false),
             failed_member: Default::default(),
@@ -290,6 +294,12 @@ impl ImmutableCheckpointMemberSource {
         if let Some(position) = self.canonical_members.get(&locator) {
             self.canonical_member_reads.lock().unwrap().push(locator);
             self.observe_canonical_read(*position)?;
+        } else if self
+            .members
+            .get(&locator)
+            .is_some_and(|bytes| bytes.bytes().starts_with(b"WORTH-REL-CHUNK1\n"))
+        {
+            self.paged_reads.fetch_add(1, Ordering::Relaxed);
         } else {
             self.reads.fetch_add(1, Ordering::Relaxed);
             self.member_reads.lock().unwrap().push(locator);

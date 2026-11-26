@@ -172,7 +172,7 @@ impl<Schema: ApplicationSchema, Program: 'static> DirectoryHomeGuard<Schema, Pro
     }
 
     /// Publish a real Directory Home checkpoint and extract the exact Native
-    /// `WORTH-REL-CHK23` frame referenced by the `home.checkpoint` manifest for
+    /// `WORTH-REL-CHK24` frame referenced by the `home.checkpoint` manifest for
     /// the returned generation.
     pub fn capture_native_checkpoint_frame(&self) -> Vec<u8> {
         let lease = directory_lease();
@@ -208,7 +208,10 @@ impl<Schema: ApplicationSchema, Program: 'static> Deref for DirectoryHomeGuard<S
     type Target = WorthQueryProgramApplicationRuntime<Schema, Program>;
 
     fn deref(&self) -> &Self::Target {
-        self.home.as_ref().expect("directory Home is open").runtime()
+        self.home
+            .as_ref()
+            .expect("directory Home is open")
+            .runtime()
     }
 }
 

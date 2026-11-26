@@ -103,7 +103,13 @@ fn complete_empty_archive_and_initial_installation_preserve_unused_original_sche
     let execution = ExecutionRequest::serial(&host);
     let complete = runtime
         .complete_checkpoint_service()
-        .prepare(&execution, RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
+        .prepare(
+            &execution,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let held = budget.charged_memory_bytes();
     assert!(held > 0);
@@ -135,7 +141,7 @@ fn complete_empty_archive_and_initial_installation_preserve_unused_original_sche
     let decoded: Captured = rmp_serde::from_slice(
         checkpoint
             .bytes()
-            .strip_prefix(b"WORTH-REL-CHK23\n")
+            .strip_prefix(b"WORTH-REL-CHK24\n")
             .unwrap(),
     )
     .unwrap();

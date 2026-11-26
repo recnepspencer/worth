@@ -117,6 +117,7 @@ pub mod checkpoint_symbol_buckets;
 pub mod history_member_directory;
 pub mod member_frame;
 pub mod record_identity_image;
+pub mod record_identity_pages;
 pub mod symbol_page_readmission;
 pub mod symbol_page_roster;
 pub mod symbol_residency;

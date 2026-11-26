@@ -23,6 +23,12 @@ pub enum RecoveryFailureClass {
         found: u16,
         supported: u16,
     },
+    /// The native checkpoint frame names an obsolete (or future) checkpoint
+    /// grammar. Refused before any body byte is parsed: no dual-format reader.
+    UnsupportedCheckpointVersion {
+        found: u16,
+        supported: u16,
+    },
     /// A canonical commit artifact a medium returned did not readmit.
     CorruptCanonicalArtifact,
     /// A medium's tail skipped or repeated a position after the checkpoint.
@@ -248,6 +254,7 @@ impl DurabilityError {
             }
             RecoveryFailureClass::CorruptCheckpoint
             | RecoveryFailureClass::UnsupportedBranchRootImageVersion { .. }
+            | RecoveryFailureClass::UnsupportedCheckpointVersion { .. }
             | RecoveryFailureClass::CorruptCanonicalArtifact
             | RecoveryFailureClass::NonContiguousCanonicalTail
             | RecoveryFailureClass::CorruptBranchTransitionArtifact

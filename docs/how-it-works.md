@@ -373,6 +373,17 @@ Canonical commit payloads reference schema by digest and include projection mate
 on transitions. Self-contained checkpoint and artifact exports retain the vocabulary
 needed for cold readmission. Branch-root image version 5 and canonical artifact
 version 7 refuse prior encodings before admitting their different commitments.
+Native checkpoints are `CHK24` frames whose region members are `REG8` images. An
+earlier frame such as `CHK23` or `REG7` is refused before any body byte is read,
+with the typed `RecoveryFailureClass::UnsupportedCheckpointVersion` or
+`RelationalStorageUnavailableCause::UnsupportedRegionImageVersion`; there is no
+dual-format reader. A `CHK24` manifest keeps the record-identity allocator's four
+tables (generation high-water marks, reusable slots, pending reservations and
+append frontiers) as content-addressed paged directories and retains only their
+fixed-size roots. Reopen reads none of their pages. The first allocation, replay
+or reclamation in a partition faults that partition's rows through the runtime's
+working set, so reopen memory for the allocator does not grow with record count,
+outstanding reservations or partition count, and slot reuse stays exact.
 
 Transaction reads carry the effective record forward over appended staged mutations.
 Their immutable staged-history handle provides `iter()`, `len()` and `is_empty()`;

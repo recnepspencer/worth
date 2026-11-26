@@ -6,20 +6,46 @@ use worth_relational_contracts::internal_port::durability::data::recovery_errors
     DurabilityError, RecoveryFailureClass,
 };
 
-// This grammar joins authenticated Original-member inventory and binary digests
-// with current custody, kind counts and exact index bases. Neither parent
-// grammar (CHK18 or CHK20.1), nor master's distinct CHK21, is an input format.
-pub const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK23\n";
+// CHK24 is the single clean cutover from CHK23: the eager record-identity
+// tables are stored as content-addressed paged members. No earlier grammar is
+// an input format.
+pub const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK24\n";
+pub const CHECKPOINT_VERSION: u16 = 24;
+const CHECKPOINT_FAMILY: &[u8] = b"WORTH-REL-CHK";
+
 fn checkpoint_payload(bytes: &[u8]) -> Result<&[u8], DurabilityError> {
-    bytes.strip_prefix(CHECKPOINT_MAGIC).ok_or_else(|| {
-        DurabilityError::new(
+    if let Some(payload) = bytes.strip_prefix(CHECKPOINT_MAGIC) {
+        return Ok(payload);
+    }
+    Err(match framed_checkpoint_version(bytes) {
+        Some(found) => DurabilityError::new(
+            RecoveryFailureClass::UnsupportedCheckpointVersion {
+                found,
+                supported: CHECKPOINT_VERSION,
+            },
+            format!(
+                "native checkpoint frame CHK{found} is not supported; CHK{CHECKPOINT_VERSION} required"
+            ),
+        ),
+        None => DurabilityError::new(
             RecoveryFailureClass::UnsupportedLegacySemantics,
             format!(
                 "unsupported native checkpoint frame; {} required",
                 String::from_utf8_lossy(CHECKPOINT_MAGIC).trim_end()
             ),
-        )
+        ),
     })
+}
+
+/// The major version of a `WORTH-REL-CHK<major>[.<minor>]\n` frame.
+fn framed_checkpoint_version(bytes: &[u8]) -> Option<u16> {
+    let label = bytes.strip_prefix(CHECKPOINT_FAMILY)?;
+    let end = label.iter().take(12).position(|byte| *byte == b'\n')?;
+    let major = label[..end].split(|byte| *byte == b'.').next()?;
+    if major.is_empty() || !major.iter().all(u8::is_ascii_digit) {
+        return None;
+    }
+    std::str::from_utf8(major).ok()?.parse().ok()
 }
 
 pub mod checkpoint_decoding;
@@ -30,6 +56,7 @@ pub mod checkpoint_wire;
 pub mod cold_checkpoint;
 pub mod dictionary_capture;
 pub mod expanded_checkpoint;
+pub(crate) mod identity_pages;
 pub mod lineage_event_capture;
 pub mod lineage_event_directory;
 pub mod manifest_capture;

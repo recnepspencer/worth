@@ -35,6 +35,24 @@ impl RecordIdentitySubsystem {
                 remaining: staged.live.len() + staged.cancelled.len(),
             });
         }
+        for (class, record) in live
+            .iter()
+            .map(|entry| (entry.class(), entry.record()))
+            .chain(
+                cancelled
+                    .iter()
+                    .map(|entry| (entry.class(), entry.record())),
+            )
+        {
+            let partition_id = record_partition(record);
+            state.fault(class, partition_id).map_err(|cause| {
+                RecordAllocationDenial::IdentityPageUnavailable {
+                    class,
+                    partition_id,
+                    cause,
+                }
+            })?;
+        }
         // A reservation a checkpoint captured in flight is restored pending;
         // its evidence is checked against that reservation, not the block.
         let restored =

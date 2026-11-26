@@ -73,7 +73,7 @@ pub(super) fn read_native(checkpoint: &RelationalNativeCheckpoint) -> Directory 
     rmp_serde::from_slice::<Wire>(
         checkpoint
             .bytes()
-            .strip_prefix(b"WORTH-REL-CHK23\n")
+            .strip_prefix(b"WORTH-REL-CHK24\n")
             .unwrap(),
     )
     .unwrap()

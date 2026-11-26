@@ -129,7 +129,7 @@ fn recovered_indexes(
     let payload = image
         .checkpoint()
         .bytes()
-        .strip_prefix(b"WORTH-REL-CHK23\n")
+        .strip_prefix(b"WORTH-REL-CHK24\n")
         .unwrap();
     let member = rmp_serde::from_slice(crate::messagepack_value_spans::field(
         crate::messagepack_value_spans::field(payload, "manifest"),
@@ -319,7 +319,13 @@ fn complete_fold_matches_original_relation_delete_with_snapshot_and_replay_pins(
     // No ordinary checkpoint is promoted and no expected root is injected.
     let complete = runtime
         .complete_checkpoint_service()
-        .prepare(&execution, RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
+        .prepare(
+            &execution,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let image = partition_image(
         complete.checkpoint(),

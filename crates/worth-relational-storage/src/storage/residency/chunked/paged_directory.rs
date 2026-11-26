@@ -26,6 +26,7 @@ pub use page::DirectoryPage;
 
 /// The fixed-size descriptor a checkpoint manifest retains for a directory.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PagedDirectoryRoot {
     pub root_page: RelationalDurableMemberLocator,
     pub entry_count: u64,

@@ -130,7 +130,7 @@ fn reopened(execution: &ExecutionRequest<'_, '_>) -> Reopened {
     let manifest = rmp_serde::from_slice::<Checkpoint>(
         checkpoint
             .bytes()
-            .strip_prefix(b"WORTH-REL-CHK23\n")
+            .strip_prefix(b"WORTH-REL-CHK24\n")
             .unwrap(),
     )
     .unwrap()
@@ -168,6 +168,7 @@ fn reopened(execution: &ExecutionRequest<'_, '_>) -> Reopened {
         damaged: Default::default(),
         reads: Default::default(),
         member_reads: Default::default(),
+        paged_reads: Default::default(),
         commit_reads: Default::default(),
         commits_damaged: Default::default(),
         failed_member: Default::default(),

@@ -79,6 +79,13 @@ pub enum RecordAllocationDenial {
         planned: usize,
         live: usize,
     },
+    /// A paged record-identity page of this partition could not be faulted
+    /// from the checkpoint; nothing was reserved.
+    IdentityPageUnavailable {
+        class: RecordAllocationClass,
+        partition_id: PartitionId,
+        cause: crate::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+    },
 }
 
 impl RecordAllocationDenial {
@@ -154,7 +161,8 @@ impl RecordAllocationDenial {
             Self::ReplayEvidenceBlockBroken { .. }
             | Self::ReplayCancelledSlotInvalid { .. }
             | Self::LiveAllocationUnknown { .. }
-            | Self::LiveAllocationOrderDiverged { .. } => {
+            | Self::LiveAllocationOrderDiverged { .. }
+            | Self::IdentityPageUnavailable { .. } => {
                 format!("coupled record allocation evidence refused: {self:?}")
             }
         }

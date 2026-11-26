@@ -350,7 +350,10 @@ fn recorded_component_checkpoint_refuses_chk15_before_source_admission() {
     .unwrap_err();
     assert_eq!(
         expect_durability_failure(stop).class,
-        crate::durability::data::RecoveryFailureClass::UnsupportedLegacySemantics
+        crate::durability::data::RecoveryFailureClass::UnsupportedCheckpointVersion {
+            found: 15,
+            supported: 24,
+        }
     );
 }
 

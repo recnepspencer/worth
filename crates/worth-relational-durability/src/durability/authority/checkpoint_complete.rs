@@ -9,6 +9,7 @@ pub mod covered_prefix;
 pub mod current_metadata;
 pub mod destination_members;
 pub mod draft;
+pub mod identity_members;
 pub mod metadata;
 pub mod original_image;
 pub mod prepare;

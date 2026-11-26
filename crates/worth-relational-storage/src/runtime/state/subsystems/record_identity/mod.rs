@@ -2,6 +2,7 @@ pub mod allocation_batch;
 pub mod allocation_source;
 pub mod checkpoint_snapshot;
 pub mod observation;
+pub mod paged_base;
 pub mod partition_frontier;
 pub use allocation_batch::MutationRecordAllocations;
 pub use observation::{
@@ -15,6 +16,8 @@ pub mod recovery;
 mod replay_gaps;
 pub mod reservation;
 
+#[cfg(test)]
+mod paged_reopen_tests;
 #[cfg(test)]
 mod replay_block_tests;
 #[cfg(test)]
@@ -50,6 +53,13 @@ struct RecordIdentityState {
     replay_slots: BTreeMap<RecordFrontierKey, std::collections::BTreeSet<usize>>,
     /// Append slots tail replay skipped, which a later commit may publish (#389).
     replay_gaps: replay_gaps::ReplayGaps,
+    /// `CHK24` checkpoint tables this allocator reopened from, if any.
+    paged: Option<Arc<paged_base::PagedIdentityBase>>,
+    /// Partitions whose checkpoint rows are merged into the maps above.
+    faulted: std::collections::BTreeSet<RecordFrontierKey>,
+    /// Recovery released every unowned checkpoint reservation; unfaulted
+    /// partitions apply that release when they fault.
+    base_pending_released: bool,
 }
 
 /// One durable commit's allocation evidence, staged for its replay.
@@ -86,6 +96,17 @@ impl RecordIdentitySubsystem {
         }
     }
 
+    /// An allocator reopened from `CHK24` paged tables. Nothing is read until
+    /// a partition is first used.
+    pub fn from_paged(base: paged_base::PagedIdentityBase) -> Self {
+        Self {
+            state: Arc::new(Mutex::new(RecordIdentityState {
+                paged: Some(Arc::new(base)),
+                ..RecordIdentityState::default()
+            })),
+        }
+    }
+
     pub fn admit_reclaimed(&self, reclaimed: ReclaimedRecordSlot) {
         self.lock().admit_reclaimed(reclaimed);
     }
@@ -96,6 +117,13 @@ impl RecordIdentitySubsystem {
         partition_id: PartitionId,
     ) -> Result<(RecordSlotReservation, u32, RecordAllocationOrigin), RecordAllocationDenial> {
         let mut state = self.lock();
+        state.fault(class, partition_id).map_err(|cause| {
+            RecordAllocationDenial::IdentityPageUnavailable {
+                class,
+                partition_id,
+                cause,
+            }
+        })?;
         let reusable = state
             .reusable
             .lower_bound(&(class, partition_id, 0))
@@ -170,7 +198,7 @@ impl RecordIdentitySubsystem {
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, RecordIdentityState> {
-        self.state.lock().expect(/* Proof: The identity mutex protects only native checked reservations and container updates, with no user code or fallible I/O under its guard; overflow returns before mutation. */ "record identity lock poisoned")
+        self.state.lock().expect(/* Proof: The identity mutex protects only native checked reservations, container updates and bounded paged-table faults that refuse with a typed cause before mutation; no user code runs under its guard. */ "record identity lock poisoned")
     }
 }
 
@@ -218,6 +246,7 @@ impl RecordIdentitySubsystem {
         }
         let next_slots = state.next_slots.clone();
         let generation_high_water = state.generation_high_water.clone();
+        let (paged, faulted) = (state.paged.clone(), state.faulted.clone());
         drop(state);
         Ok((
             Self {
@@ -229,6 +258,10 @@ impl RecordIdentitySubsystem {
                     staged_replay_allocations: None,
                     replay_slots: BTreeMap::new(),
                     replay_gaps: Default::default(),
+                    paged,
+                    faulted,
+                    // The fork owns no checkpoint reservation either.
+                    base_pending_released: true,
                 })),
             },
             reservation,

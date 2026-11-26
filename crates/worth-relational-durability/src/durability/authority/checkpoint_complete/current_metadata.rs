@@ -7,12 +7,12 @@ use worth_relational_branch::internal_port::branch::registry::checkpoint_capture
 use worth_relational_branch::internal_port::runtime::state::subsystems::history::HistorySubsystem;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::RecordIdentitySubsystem;
-use worth_relational_storage::internal_port::storage::data::record_identity_image::DurableRecordIdentityState;
+use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::paged_base::FrozenRecordIdentity;
 
 pub struct FrozenCurrentCheckpointMetadata {
     pub branches: CheckpointBranchMetadata,
     pub components: CapturedCompleteComponents,
-    pub identity: DurableRecordIdentityState,
+    pub identity: FrozenRecordIdentity,
     pub main_cell: usize,
 }
 impl FrozenCurrentCheckpointMetadata {
@@ -47,7 +47,7 @@ impl FrozenCurrentCheckpointMetadata {
             .ok_or(Denial::OriginalAuthorityUnavailable)?;
         let components = capture_complete(history, request, &branches)?;
         let identity = record_identity
-            .checkpoint_identity_for_request(request)
+            .frozen_checkpoint_identity_for_request(request)
             .map_err(contracts::durability::data::native_checkpoint_capture_denial::capture_stop)?;
         Ok(Self {
             branches,

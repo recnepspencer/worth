@@ -18,8 +18,9 @@ use worth_testkit_relational::{
 };
 
 mod shared_members;
+mod unknown_fields;
 
-const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK23\n";
+const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK24\n";
 
 fn original(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -94,7 +95,11 @@ fn rewritten(
     let envelope = fields(&bytes[CHECKPOINT_MAGIC.len()..]);
     let checkpoint = map(envelope["manifest"], |stored| {
         if allocator {
-            let value = map(&stored["record_identity"], edit);
+            // CHK24 keeps the allocator's paged-directory roots in the manifest.
+            let value = map(&stored["record_identity"], |identity| {
+                let roots = map(&identity["roots"], edit);
+                identity.insert("roots".into(), roots);
+            });
             stored.insert("record_identity".into(), value);
         } else {
             edit(stored);
@@ -174,12 +179,21 @@ fn inspection_compares_every_native_model_value_as_original_bytes() {
         }
     }
     let checkpoint = fields(envelope["manifest"]);
-    for (key, old) in fields(checkpoint["record_identity"]) {
-        if matches!(key.as_str(), "append_frontiers" | "generation_high_water") {
+    let identity = fields(checkpoint["record_identity"]);
+    let mut compared = 0;
+    for (key, old) in fields(identity["roots"]) {
+        if matches!(
+            key.as_str(),
+            "append_frontiers" | "generation_high_water" | "partition_high_water"
+        ) {
             continue;
         }
-        let equivalent =
-            wider(old).expect("allocator model fields have an equivalent wider encoding");
+        // An absent table has no wider encoding; a present root does.
+        let Some(equivalent) = wider(old) else {
+            assert_eq!(old, [0xc0], "allocator root {key}");
+            continue;
+        };
+        compared += 1;
         let after = rewritten(before.bytes(), true, |fields| {
             fields.insert(key.clone(), equivalent);
         });
@@ -189,32 +203,11 @@ fn inspection_compares_every_native_model_value_as_original_bytes() {
             "ignored allocator model field {key}"
         );
     }
+    assert!(
+        compared > 0,
+        "the fixture carries a reusable or pending table"
+    );
 }
-#[test]
-fn inspection_refuses_unknown_root_allocator_and_row_fields() {
-    let host = request();
-    let execution = ExecutionRequest::serial(&host);
-    let (before, _) = original(&execution);
-    for allocator in [false, true] {
-        let after = rewritten(before.bytes(), allocator, |fields| {
-            fields.insert("future_field".into(), vec![0xc0]);
-        });
-        assert!(RelationalNativeCheckpoint::inspect_bytes(&execution, &after).is_err());
-    }
-    for key in ["append_frontiers", "generation_high_water"] {
-        let after = rewritten(before.bytes(), true, |fields| {
-            let mut rows: Vec<serde_json::Value> = rmp_serde::from_slice(&fields[key]).unwrap();
-            assert!(!rows.is_empty());
-            rows[0]["future_field"] = true.into();
-            fields.insert(key.into(), rmp_serde::to_vec_named(&rows).unwrap());
-        });
-        assert!(
-            RelationalNativeCheckpoint::inspect_bytes(&execution, &after).is_err(),
-            "unknown field in {key} row"
-        );
-    }
-}
-
 #[test]
 fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
     let host = request();
@@ -223,7 +216,11 @@ fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
     let mut control = World::empty_runtime(0);
     control
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &original, worth_testkit_relational::cold_recovery::members_source(&original))
+        .restore_native_checkpoint(
+            &execution,
+            &original,
+            worth_testkit_relational::cold_recovery::members_source(&original),
+        )
         .unwrap();
     assert!(control.history().immutable_commit_count() > 0);
     for owner in [
@@ -241,6 +238,11 @@ fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
         let bytes = rewritten(original.bytes(), allocator, |fields| {
             if matches!(owner, "manifest" | "record_identity") {
                 fields.insert("future_field".into(), vec![0xc0]);
+            } else if allocator {
+                let root = map(&fields[owner], |root| {
+                    root.insert("future_field".into(), vec![0xc0]);
+                });
+                fields.insert(owner.into(), root);
             } else {
                 let rows = rewrite_row(&fields[owner], 0, |row| {
                     row.insert("future_field".into(), vec![0xc0]);
@@ -260,7 +262,11 @@ worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::Extern
             .unwrap();
         let denied = target
             .durability_recovery()
-            .restore_native_checkpoint(&execution, &checkpoint, worth_testkit_relational::cold_recovery::members_source(&checkpoint))
+            .restore_native_checkpoint(
+                &execution,
+                &checkpoint,
+                worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+            )
             .unwrap_err();
         let RelationalRecoveryStop::Durability(error) = denied else {
             panic!("wrong restore refusal: {denied:?}")

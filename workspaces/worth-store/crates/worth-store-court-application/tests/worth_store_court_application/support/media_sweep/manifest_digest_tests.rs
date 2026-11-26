@@ -38,7 +38,7 @@ fn sha256_all(parts: &[&[u8]]) -> [u8; 32] {
 }
 
 fn build_envelope(opts: EnvelopeOptions<'_>) -> Vec<u8> {
-    let mut cp = b"WORTH-REL-CHK23\n\xb3runtime_instance_id".to_vec();
+    let mut cp = b"WORTH-REL-CHK24\n\xb3runtime_instance_id".to_vec();
     cp.extend_from_slice(opts.runtime_id);
     cp.push(0xa0 + opts.branch_tag.len() as u8);
     cp.extend_from_slice(opts.branch_tag.as_bytes());

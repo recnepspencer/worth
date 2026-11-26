@@ -352,6 +352,12 @@ text after admitting only the required page; preserve typed storage refusals.
 carried region facts without materializing record regions. Checkpoint restore
 checks the facts against the selected root commitment, and member admission
 independently checks them against actual record data.
+Native checkpoints are `CHK24` with `REG8` region members. Obsolete frames refuse
+with typed `RecoveryFailureClass::UnsupportedCheckpointVersion { found, supported }`
+(region members: `UnsupportedRegionImageVersion`). Reopen retains only the
+fixed-size roots of the paged record-identity tables; a partition's allocator rows
+fault through the working set on its first allocation, and an unreadable page
+refuses that allocation with `RecordAllocationDenial::IdentityPageUnavailable`.
 Exact kind projections and packetized kind queries route through the selected
 root's maintained kind directory. They admit only reached Head regions and
 materialize matching typed generations; empty kinds require no record I/O.

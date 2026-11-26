@@ -8,7 +8,9 @@ use worth_relational_contracts::internal_port as contracts;
 use worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableMemberLocator;
 pub(super) struct CheckpointDraftMetadata<'a> {
     pub(super) branches: &'a worth_relational_branch::internal_port::branch::registry::checkpoint_capture::data::CheckpointBranchMetadata,
-    pub(super) identity: &'a DurableRecordIdentityState,
+    pub(super) identity: &'a worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::paged_base::FrozenRecordIdentity,
+    /// The destination's current members: pages it holds may be carried.
+    pub(super) destination: &'a [RelationalDurableMemberLocator],
     pub(super) indexes: &'a worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::checkpoint_inputs::OriginalCheckpointIndexes,
     pub(super) symbol_frontier: u32,
     pub(super) through: contracts::branch::transition::sequence::RelationalBranchTransitionSequence,
@@ -53,6 +55,13 @@ pub(super) fn assemble(
     let definitions =
         CheckpointIndexDefinitions::capture_for_request(&source.indexes.catalog, request)
             .map_err(Denial::Request)?;
+    let mut members = metadata.members;
+    let record_identity = super::identity_members::capture(
+        source.identity,
+        source.destination,
+        &mut members,
+        request,
+    )?;
     let draft = RelationalCheckpointManifestDraft {
         branch_data: source.branches.clone(),
         coverage,
@@ -61,7 +70,7 @@ pub(super) fn assemble(
             |row| row.position,
         ),
         schemas,
-        record_identity: source.identity.clone(),
+        record_identity,
         aspect_contracts: Vec::new(),
         index_generation_frontier: source.indexes.generation_frontier,
         index_definition_frontier: source.indexes.catalog.next_index_id,
@@ -85,7 +94,7 @@ pub(super) fn assemble(
             ..Default::default()
         },
     };
-    Ok((draft, metadata.members))
+    Ok((draft, members))
 }
 fn overflow() -> Denial {
     Denial::Request(

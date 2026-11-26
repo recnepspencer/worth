@@ -180,8 +180,8 @@ fn content_stored_authoritative_field_byte_corruption_refuses_at_physical_integr
         .iter()
         .find_map(|member| match member {
             RelationalCheckpointMember::New { locator, bytes }
-                if bytes.starts_with(b"WORTH-REL-REG7\n")
-                    && bytes.get(b"WORTH-REL-REG7\n".len() + 38) == Some(&0)
+                if bytes.starts_with(b"WORTH-REL-REG8\n")
+                    && bytes.get(b"WORTH-REL-REG8\n".len() + 38) == Some(&0)
                     && bytes.windows(field.len()).any(|word| word == field) =>
             {
                 Some((*locator, bytes))
@@ -215,6 +215,7 @@ fn content_stored_authoritative_field_byte_corruption_refuses_at_physical_integr
             canonical_member_reads: Default::default(),
             journal_reads: Default::default(),
             member_reads: Default::default(),
+            paged_reads: Default::default(),
             commit_reads: Default::default(),
             commits_damaged: Default::default(),
             failed_member: Default::default(),

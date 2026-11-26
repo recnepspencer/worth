@@ -7,7 +7,7 @@ use worth_relational::facade::{
     history::CommitId,
 };
 
-pub(super) const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK23\n";
+pub(super) const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK24\n";
 
 pub(super) fn field<'a>(bytes: &'a [u8], name: &str) -> &'a [u8] {
     fields(bytes)

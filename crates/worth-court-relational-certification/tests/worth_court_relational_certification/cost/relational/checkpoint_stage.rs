@@ -35,19 +35,19 @@ use worth_testkit_relational::aspect_storage::{
 use worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request;
 
 /// The native checkpoint prefix; it is emitted but not sized.
-const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK23\n";
+const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK24\n";
 /// Journal artifact header: magic 8, version 2, position 8, commit 8,
 /// digest 32, payload length 8.
 const ARTIFACT_HEADER_BYTES: usize = 66;
 /// The payload digest's root hashes its domain `worth.relational.canonical.v8\0`,
 /// the position, the commit and the three field digests.
 const DIGEST_ROOT_BYTES: usize = 30 + 8 + 8 + 3 * 32;
-/// A region image member: `WORTH-REL-REG7\n`, then version 2, partition 4,
+/// A region image member: `WORTH-REL-REG8\n`, then version 2, partition 4,
 /// schema digest 32 and kind 1 before its payload.
-const REGION_IMAGE_MAGIC: &[u8] = b"WORTH-REL-REG7\n";
+const REGION_IMAGE_MAGIC: &[u8] = b"WORTH-REL-REG8\n";
 const REGION_IMAGE_FRAME_BYTES: usize = 15 + 2 + 4 + 32 + 1;
-/// The empty checkpoint's total charge: 2 x 2,486 - 16 + 175, the first court.
-const EMPTY_TOTAL: u64 = 5_131;
+/// The empty checkpoint's total charge: 2 x 2,506 - 16 + 175, the first court.
+const EMPTY_TOTAL: u64 = 5_171;
 
 #[test]
 fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
@@ -57,15 +57,15 @@ fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
     //   + sum(external artifacts)      one locator hash per canonical member
     //   + region capture               the residency owner's phase, bounded below
     //
-    // CHK23 carries each envelope as an external journal artifact, so wire
+    // CHK24 carries each envelope as an external journal artifact, so wire
     // inline members are always empty and `envelopes` section bytes are 0.
     // Authored index writes persist their catalog bound (public #384), so each
     // artifact and digest input is 31 bytes longer than before.
     let mut per_row_reconstruction = Vec::new();
     for (rows, expected_bytes, sections, digests, artifacts) in [
-        (0, Some(2_486), [0, 1, 172, 1, 1], 0, 0),
+        (0, Some(2_506), [0, 1, 172, 1, 1], 0, 0),
         (8, None, [0, 1_351, 340, 776, 1], 44_444, 44_124),
-        (64, None, [0, 3_646, 340, 3_071, 1], 356_864, 354_304),
+        (64, None, [0, 3_639, 340, 3_064, 1], 356_864, 354_304),
     ] {
         let request = serial_request();
         let execution = ExecutionRequest::serial(&request);
@@ -248,7 +248,7 @@ fn empty_checkpoint_work_ceiling_bounds_the_whole_capture() {
                 .is_some_and(|(ordinal, _)| *ordinal < consults));
             accepted = charges;
             let checkpoint = result.expect("the whole capture fits its total charge");
-            assert_eq!(checkpoint.bytes().len(), 2_486);
+            assert_eq!(checkpoint.bytes().len(), 2_506);
             // A work ceiling changes nothing the checkpoint retains.
             assert_eq!(
                 request.memory().unwrap().charged_memory_bytes(),

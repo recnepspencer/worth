@@ -258,7 +258,7 @@ pub(super) fn expand(
         retired_branch_names,
         branch_roots,
         branch_root_schema_images: manifest.schemas.ordinary_owned_copy(),
-        record_identity: manifest.record_identity,
+        record_identity: super::identity_pages::load_identity(&manifest.record_identity.roots, &source)?,
         record_generation_high_water: Vec::new(),
         reusable_record_slots: Vec::new(),
         record_slot_frontiers: Vec::new(),

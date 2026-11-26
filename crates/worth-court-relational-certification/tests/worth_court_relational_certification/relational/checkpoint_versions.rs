@@ -19,7 +19,7 @@ fn current_checkpoint_preserves_meaning_and_retired_or_unknown_versions_refuse()
     // Protocol versions are interoperability data, not a measured cost golden.
     let body = current
         .bytes()
-        .strip_prefix(b"WORTH-REL-CHK23\n")
+        .strip_prefix(b"WORTH-REL-CHK24\n")
         .expect("only the current combined checkpoint grammar is emitted");
     let now = RelationalNativeCheckpoint::inspect_bytes_with_source(
         &execution,
@@ -72,7 +72,9 @@ fn current_checkpoint_preserves_meaning_and_retired_or_unknown_versions_refuse()
         b"WORTH-REL-CHK20.1\n".as_slice(),
         b"WORTH-REL-CHK21\n".as_slice(),
         b"WORTH-REL-CHK22\n".as_slice(),
-        b"WORTH-REL-CHK24\n".as_slice(),
+        b"WORTH-REL-CHK23\n".as_slice(),
+        b"WORTH-REL-CHK25\n".as_slice(),
+        b"WORTH-REL-CHK\n".as_slice(),
     ] {
         let mut bytes = prefix.to_vec();
         bytes.extend_from_slice(body);
@@ -104,9 +106,15 @@ fn current_checkpoint_preserves_meaning_and_retired_or_unknown_versions_refuse()
 
 fn assert_unsupported(stop: RelationalRecoveryStop) {
     match stop {
-        RelationalRecoveryStop::Durability(failure) => assert_eq!(
-            failure.class,
-            RecoveryFailureClass::UnsupportedLegacySemantics
+        // A named grammar refuses with its exact version; an unnamed frame
+        // is unsupported legacy input.
+        RelationalRecoveryStop::Durability(failure) => assert!(
+            matches!(
+                failure.class,
+                RecoveryFailureClass::UnsupportedCheckpointVersion { supported: 24, .. }
+                    | RecoveryFailureClass::UnsupportedLegacySemantics
+            ),
+            "{failure:?}"
         ),
         other => panic!("version must refuse before parsing or loading rows: {other:?}"),
     }

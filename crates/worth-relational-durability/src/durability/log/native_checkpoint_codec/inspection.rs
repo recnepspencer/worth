@@ -54,7 +54,14 @@ pub(crate) fn inspect<'a>(
         let (_, branch_cells, _, _) = manifest.branch_data.ordinary_owned_parts();
         (
             manifest.symbol_identity_frontier,
-            manifest.record_identity,
+            // Paged tables need their members; a bare frame inspects none.
+            DurableRecordIdentityState::current_with_memory(
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                None,
+            ),
             Vec::new(),
             Vec::new(),
             manifest.schemas.ordinary_owned_copy(),
@@ -141,9 +148,18 @@ pub(crate) fn inspect<'a>(
     let mut envelope = fields(payload)?;
     let mut fields = fields(take(&mut envelope, "manifest")?)?;
     take(&mut fields, "symbol_identity_frontier")?;
-    let mut allocator = self::fields(take(&mut fields, "record_identity")?)?;
+    // CHK24 roots are content addressed: reusable and pending tables compare
+    // as their roots' bytes; frontiers and generations compare semantically
+    // above, and the page roster is a function of all four roots.
+    let mut identity = self::fields(take(&mut fields, "record_identity")?)?;
+    take(&mut identity, "pages")?;
+    let mut allocator = self::fields(take(&mut identity, "roots")?)?;
+    if !identity.is_empty() {
+        return Err(invalid("unknown record identity field").into());
+    }
     take(&mut allocator, "append_frontiers")?;
     take(&mut allocator, "generation_high_water")?;
+    take(&mut allocator, "partition_high_water")?;
     Ok(RelationalCheckpointInspection {
         branch_cells,
         model: NativeCheckpointModelBytes {
