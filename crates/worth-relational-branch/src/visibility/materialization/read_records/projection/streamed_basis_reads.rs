@@ -48,12 +48,12 @@ pub trait ProjectionRecordSource {
         &self,
         kind: KindId,
         partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = EntityId> + '_;
+    ) -> impl Iterator<Item = Result<EntityId, crate::storage::data::RelationalStorageUnavailable>> + '_;
     fn selected_relation_ids(
         &self,
         kind: KindId,
         partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = RelationId> + '_;
+    ) -> impl Iterator<Item = Result<RelationId, crate::storage::data::RelationalStorageUnavailable>> + '_;
     fn retained_head_region(
         &self,
         partition: PartitionId,

@@ -29,14 +29,20 @@ impl<'view> ExactProjectionReader<'view> {
         &self,
         kind: KindId,
         partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = EntityId> + '_ {
+    ) -> impl Iterator<Item = Result<EntityId, crate::storage::data::RelationalStorageUnavailable>> + '_
+    {
         self.root.entity_ids_of_kind(kind, partition)
     }
     pub(in crate::internal_port::visibility::materialization::read_records) fn relation_ids(
         &self,
         kind: KindId,
         partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = crate::identity::data::RelationId> + '_ {
+    ) -> impl Iterator<
+        Item = Result<
+            crate::identity::data::RelationId,
+            crate::storage::data::RelationalStorageUnavailable,
+        >,
+    > + '_ {
         self.root.relation_ids_of_kind(kind, partition)
     }
     /// One rolling-window step: an owned Head borrow of partition that the

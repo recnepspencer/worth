@@ -20,6 +20,7 @@ pub(super) fn entity<E>(
         return Ok(());
     };
     for id in source.selected_entity_ids(kind, partition) {
+        let id = id.map_err(|failure| ReadStop::Request(Cause::StorageUnavailable(failure)))?;
         source
             .demand_regions_head(execution, [id.partition_id])
             .map_err(ReadStop::Request)?;
@@ -82,6 +83,7 @@ pub(super) fn relation<E>(
         return Ok(());
     };
     for id in source.selected_relation_ids(kind, partition) {
+        let id = id.map_err(|failure| ReadStop::Request(Cause::StorageUnavailable(failure)))?;
         source
             .demand_regions_head(execution, [id.partition_id])
             .map_err(ReadStop::Request)?;

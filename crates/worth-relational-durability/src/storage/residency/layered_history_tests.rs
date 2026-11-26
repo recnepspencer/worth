@@ -235,9 +235,12 @@ pub(super) fn encode_layer(
         members.insert(captured.head.0, captured.head.1);
         members.insert(captured.history.0, captured.history.1);
         members.extend(captured.chunks.members);
+        let directory = captured.directory.seal(fixture_lane, execution).unwrap();
+        members.extend(directory.members);
         let source = counted(members, captured.history.0);
         (
             RelationalColdRegion {
+                directory: directory.descriptor,
                 chunks: Arc::new(captured.chunks.placement),
                 head: captured.head.0,
                 history: captured.history.0,

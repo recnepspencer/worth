@@ -40,15 +40,15 @@ impl KindRegionDirectory {
         let previous = previous.unwrap_or(&empty);
         let current = current.unwrap_or(&empty);
         for kind in current.changed_entity_kinds(previous) {
-            let before = previous.entity_ids(kind).next().is_some();
-            let after = current.entity_ids(kind).next().is_some();
+            let before = previous.has_entity_kind(kind);
+            let after = current.has_entity_kind(kind);
             if before != after {
                 update(&mut self.entities, kind, partition, after, request)?;
             }
         }
         for kind in current.changed_relation_kinds(previous) {
-            let before = previous.relation_ids(kind).next().is_some();
-            let after = current.relation_ids(kind).next().is_some();
+            let before = previous.has_relation_kind(kind);
+            let after = current.has_relation_kind(kind);
             if before != after {
                 update(&mut self.relations, kind, partition, after, request)?;
             }

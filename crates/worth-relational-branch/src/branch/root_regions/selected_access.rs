@@ -220,7 +220,12 @@ impl RelationalPersistentRegionSet {
         &self,
         kind: crate::identity::data::KindId,
         partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = crate::identity::data::EntityId> + '_ {
+    ) -> impl Iterator<
+        Item = Result<
+            crate::identity::data::EntityId,
+            crate::storage::data::RelationalStorageUnavailable,
+        >,
+    > + '_ {
         let regions: Box<dyn Iterator<Item = PartitionId> + '_> = match partition {
             Some(id) => Box::new(std::iter::once(id)),
             None => Box::new(self.kinds.entity_regions(kind)),
@@ -236,7 +241,12 @@ impl RelationalPersistentRegionSet {
         &self,
         kind: crate::identity::data::KindId,
         partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = crate::identity::data::RelationId> + '_ {
+    ) -> impl Iterator<
+        Item = Result<
+            crate::identity::data::RelationId,
+            crate::storage::data::RelationalStorageUnavailable,
+        >,
+    > + '_ {
         let regions: Box<dyn Iterator<Item = PartitionId> + '_> = match partition {
             Some(id) => Box::new(std::iter::once(id)),
             None => Box::new(self.kinds.relation_regions(kind)),

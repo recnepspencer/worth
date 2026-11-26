@@ -326,7 +326,7 @@ pub(super) fn recapture(
             RelationalColdRegion {
                 directory: members
                     .directory
-                    .portable(
+                    .descriptor(
                         fixture_lane,
                         &worth_execution::ExecutionRequest::serial(
                             &worth_harness::facade::execution_fixture::serial_request(),

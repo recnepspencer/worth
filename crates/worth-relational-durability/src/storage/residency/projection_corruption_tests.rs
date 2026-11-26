@@ -182,7 +182,7 @@ fn carried_live_counts_are_checked_against_admitted_member_rows() {
 fn carried_directory_is_checked_against_admitted_member_rows() {
     let fixture = region_with_history();
     let mut cold = fixture.cold.clone();
-    Arc::make_mut(&mut cold.directory).entities.clear();
+    Arc::make_mut(&mut cold.directory).entities.digest[0] ^= 1;
     let cell = RelationalRegionResidency::cold(cold).unwrap();
     assert_integrity_refusal(head_demand(&cell, 1 << 24).unwrap_err());
 }

@@ -145,7 +145,7 @@ impl RelationalRegionResidency {
                     let (commitment, _) = PartitionContentCommitment::capture_layered(lane, execution, partition, &content_symbols)
                         .map_err(|error| super::content_capture::restore_failure_with_cause(partition.partition_id, error, Cause::IntegrityMismatch))?;
                     let captured = capture_members(lane, execution, partition, &commitment, schema, schema_digest)?;
-                    let directory = captured.directory.portable(lane, execution).map_err(|error| error.into_failure(partition.partition_id))?;
+                    let directory = captured.directory.seal(lane, execution).map_err(|error| error.into_failure(partition.partition_id))?;
                     Ok::<_,super::RelationalResidencyDemandFailure>((commitment,captured,directory))
                 })?;
                 if full.is_none()
@@ -168,7 +168,7 @@ impl RelationalRegionResidency {
                 kind_authority: captured.kind_authority,
                 partition_id: partition.partition_id,
                 content_digest: commitment.digest(partition.partition_id),
-                directory,
+                directory: directory.descriptor,
                 live_counts: super::LiveRecordCounts::from_partition(partition),
                 entity_slots: partition.entity_arena.slot_count(),
                 relation_slots: partition.relation_arena.slot_count(),
@@ -190,6 +190,7 @@ impl RelationalRegionResidency {
                 members.push(RelationalCheckpointMember::Carried { locator });
             }
             members.extend(complete::chunk_members(captured.chunks.members));
+            members.extend(complete::chunk_members(directory.members));
             members.extend([captured.head, captured.history].into_iter().map(
                 |(locator, bytes)| RelationalCheckpointMember::New {
                     locator,
@@ -232,11 +233,11 @@ impl RelationalRegionResidency {
 pub fn verify_checkpoint_directory(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     directory: &super::RegionRecordDirectory,
-    expected: &super::PortableRecordDirectory,
+    expected: &crate::storage::data::record_directory_pages::PagedRecordDirectory,
 ) -> Result<bool, super::RelationalResidencyDemandFailure> {
     crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
         directory
-            .portable(lane, execution)
+            .descriptor(lane, execution)
             .map(|actual| actual.as_ref() == expected)
             .map_err(|error| error.into_failure(directory.partition_id()))
     })

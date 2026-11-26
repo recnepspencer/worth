@@ -18,7 +18,7 @@ fn every_leaf_disagreement_refuses_with_the_selected_region_and_capture_posture(
         &selected,
         &matching,
         worth_relational_branch::internal_port::branch::root::capture::with_reconstruction_fixture_for_test(|lane| {
-            selected.directory.portable_oracle_for_test(lane)
+            selected.directory.descriptor_oracle_for_test(lane)
         })
         .unwrap()
         .as_ref()
@@ -43,7 +43,7 @@ fn every_leaf_disagreement_refuses_with_the_selected_region_and_capture_posture(
             &selected,
             &captured,
             worth_relational_branch::internal_port::branch::root::capture::with_reconstruction_fixture_for_test(|lane| {
-                selected.directory.portable_oracle_for_test(lane)
+                selected.directory.descriptor_oracle_for_test(lane)
             })
             .unwrap()
             .as_ref()
@@ -113,7 +113,7 @@ fn leaf_values() -> (RelationalRootRegionCheckpoint, RelationalCheckpointRegion)
         content_digest: selected.content_digest,
         kind_authority: selected.kind_commitment,
         directory: worth_relational_branch::internal_port::branch::root::capture::with_reconstruction_fixture_for_test(|lane| {
-            selected.directory.portable_oracle_for_test(lane)
+            selected.directory.descriptor_oracle_for_test(lane)
         })
         .unwrap(),
         live_counts: Default::default(),

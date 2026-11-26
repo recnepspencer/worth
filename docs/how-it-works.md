@@ -384,6 +384,16 @@ fixed-size roots. Reopen reads none of their pages. The first allocation or
 replay in a partition faults that partition's rows through the runtime's
 working set, so reopen memory for the allocator does not grow with record count,
 outstanding reservations or partition count, and slot reuse stays exact.
+Each region leaf's record directory (which records of each kind live in the
+region) is also a pair of content-addressed paged directories, keyed by kind,
+slot and generation. The leaf keeps their fixed-size roots, each domain's
+membership commitment and its present kinds, plus the page roster, which joins
+the cell's member custody. Reopen installs only that descriptor: kind presence,
+absence and the region tree's commitment are answered without reading a page,
+and a kind scan faults only that kind's pages through the cell's working-set
+pool. The first edit to a region, or a read through an already accepted resident
+head, turns the directory resident once, after checking it against the recorded
+commitment.
 Every `CHK24` region leaf also records a chunk placement: each slot domain is
 cut into fixed 4096-slot chunks, sealed by one producer that derives each
 chunk's kind and adjacency summary before hashing it. The leaf keeps the Merkle

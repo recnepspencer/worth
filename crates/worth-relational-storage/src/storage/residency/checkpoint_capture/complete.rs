@@ -109,7 +109,7 @@ impl RelationalRegionResidency {
             kind_authority: captured.kind_authority,
             partition_id: partition.partition_id,
             content_digest: commitment.digest(partition.partition_id),
-            directory: captured.directory,
+            directory: captured.directory.descriptor,
             live_counts: super::super::LiveRecordCounts::from_partition(partition),
             entity_slots: partition.entity_arena.slot_count(),
             relation_slots: partition.relation_arena.slot_count(),
@@ -137,6 +137,7 @@ impl RelationalRegionResidency {
             ]
             .into_iter()
             .chain(chunk_members(captured.chunks.members))
+            .chain(chunk_members(captured.directory.members))
             .collect(),
             publication: RelationalCheckpointRegionPublication {
                 cell: Self::downgrade(self),

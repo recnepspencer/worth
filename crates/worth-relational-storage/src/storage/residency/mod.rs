@@ -6,8 +6,8 @@ pub use source_retirement::{
 };
 pub mod record_directory;
 pub use record_directory::{
-    DirectoryError as RecordDirectoryError, KindRegionDirectory, PortableRecordDirectory,
-    RegionRecordDirectory,
+    DirectoryError as RecordDirectoryError, KindRegionDirectory, RegionRecordDirectory,
+    SealedRecordDirectory,
 };
 pub mod live_counts;
 pub use live_counts::LiveRecordCounts;

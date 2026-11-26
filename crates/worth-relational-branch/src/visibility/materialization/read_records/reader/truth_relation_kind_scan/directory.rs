@@ -19,6 +19,11 @@ impl ProjectionRecordReader<'_> {
         // Rolling one-region window (Store M4 D7), as for entity kind scans.
         let mut window = None;
         for id in source.relation_ids(kind, partition) {
+            let id = id.map_err(|failure| {
+                NativeScanStop::Request(
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::StorageUnavailable(failure),
+                )
+            })?;
             scan.examine_slot()?;
             if window.as_ref().map(|(region, _)| *region) != Some(id.partition_id) {
                 // Release the previous borrow before demanding the next region.

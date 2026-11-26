@@ -35,6 +35,8 @@ pub mod member_custody_tests;
 pub mod mixed_history_tests;
 #[path = "projection_corruption_tests.rs"]
 pub mod projection_corruption;
+#[path = "record_directory_custody_tests.rs"]
+pub mod record_directory_custody_tests;
 #[path = "symbol_admission_tests.rs"]
 pub mod symbol_admission_tests;
 

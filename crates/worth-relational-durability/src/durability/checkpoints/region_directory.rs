@@ -229,24 +229,6 @@ impl ReadmittedRegionDirectory {
             contracts::durability::data::native_checkpoint_capture_denial::array_capture_stop,
         )?;
         for leaf in leaves {
-            let record_directory =
-                contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane::enter_reconstruction(
-                    |lane| {
-                        lane.recover(request, |lane, work| {
-                            worth_relational_storage::internal_port::storage::residency::record_directory::RegionRecordDirectory::from_portable(
-                                lane,
-                                leaf.partition_id,
-                                leaf.directory.clone(),
-                                &mut |units, bytes| work.prepare(units, bytes).map_err(Into::into),
-                            )
-                        })
-                    },
-                )
-                .map_err(
-                    |cause: worth_relational_storage::internal_port::storage::residency::record_directory::maintenance::DirectoryError| {
-                        cause.into_failure(leaf.partition_id)
-                    },
-                )?;
             contracts::durability::data::recovery_stop::account_work(request, 1)?;
             let key = (leaf.partition_id, schema_digest, leaf.head, leaf.history);
             let cell = match self.cells.get(&key) {
@@ -286,6 +268,9 @@ impl ReadmittedRegionDirectory {
                     cell
                 }
             };
+            // G7: only the fixed-size descriptor is installed; directory
+            // pages fault on demand through the cell's working set.
+            let record_directory = cell.record_directory(leaf.directory.clone());
             result
                 .push(RelationalRootRegionCheckpoint {
                     partition_id: leaf.partition_id,

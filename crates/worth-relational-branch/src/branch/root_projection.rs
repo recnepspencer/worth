@@ -126,7 +126,13 @@ impl<'a> SnapshotProjectionRoot<'a> {
         &self,
         kind: KindId,
         partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = EntityId> + 'a + use<'a> {
+    ) -> impl Iterator<Item = Result<EntityId, crate::storage::data::RelationalStorageUnavailable>>
+           + 'a
+           + use<'a> {
+        match partition {
+            Some(id) => self.adopt_accepted_membership(std::iter::once(id)),
+            None => self.adopt_accepted_membership(self.regions.entity_regions_of_kind(kind)),
+        }
         self.regions.entity_ids_of_kind(kind, partition)
     }
 
@@ -134,8 +140,26 @@ impl<'a> SnapshotProjectionRoot<'a> {
         &self,
         kind: KindId,
         partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = RelationId> + 'a + use<'a> {
+    ) -> impl Iterator<Item = Result<RelationId, crate::storage::data::RelationalStorageUnavailable>>
+           + 'a
+           + use<'a> {
+        match partition {
+            Some(id) => self.adopt_accepted_membership(std::iter::once(id)),
+            None => self.adopt_accepted_membership(self.regions.relation_regions_of_kind(kind)),
+        }
         self.regions.relation_ids_of_kind(kind, partition)
+    }
+
+    /// Accepted heads already hold their regions' exact membership, so a
+    /// paged record directory adopts it instead of faulting cold pages.
+    fn adopt_accepted_membership(&self, regions: impl Iterator<Item = PartitionId>) {
+        for id in regions {
+            if let (Some(view), Some(region)) =
+                (self.accepted_head_region_view(id), self.regions.get(id))
+            {
+                view.adopt_into(&region.directory);
+            }
+        }
     }
 
     pub fn try_for_each_partition_id<E>(

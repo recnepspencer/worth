@@ -77,10 +77,16 @@ pub(super) fn capture_partitions(
                 kind_authority: captured.kind_authority,
                 partition_id: partition.partition_id,
                 content_digest: commitment.digest(partition.partition_id),
-                directory: captured
-                    .directory
-                    .portable(lane, execution)
-                    .map_err(|error| error.into_failure(partition.partition_id))?,
+                directory: {
+                    let sealed = captured
+                        .directory
+                        .seal(lane, execution)
+                        .map_err(|error| error.into_failure(partition.partition_id))?;
+                    for member in sealed.members {
+                        add(members, member);
+                    }
+                    sealed.descriptor
+                },
                 live_counts: worth_relational_storage::internal_port::storage::residency::live_counts::LiveRecordCounts::from_partition(partition),
                 entity_slots: partition.entity_arena.slot_count(),
                 relation_slots: partition.relation_arena.slot_count(),

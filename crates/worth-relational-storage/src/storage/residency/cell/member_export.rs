@@ -48,8 +48,7 @@ impl RelationalRegionResidency {
                 .cloned()
                 .ok_or_else(|| self.failure(Cause::SourceUnavailable))?;
             let mut backed = cold.history_members.members(cold.history);
-            backed.insert(cold.head);
-            backed.extend(cold.chunks.members.iter().copied());
+            backed.extend(cold.leaf().leaf_members());
             sources.extend(
                 backed
                     .intersection(&required)

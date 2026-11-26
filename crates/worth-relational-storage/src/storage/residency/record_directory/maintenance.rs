@@ -12,6 +12,8 @@ use worth_relational_contracts::internal_port::storage::substrate::maintenance::
 pub enum DirectoryError {
     Admission(MaintenanceRefusal),
     Corrupt,
+    /// A cold directory page could not be read.
+    Unavailable(crate::storage::data::RelationalStorageUnavailableCause),
 }
 impl From<MaintenanceRefusal> for DirectoryError {
     fn from(cause: MaintenanceRefusal) -> Self {
@@ -52,6 +54,9 @@ impl DirectoryMaintainer<'_> {
             }
             any |= update_record(&mut next, before, false, work)?;
             any |= update_record(&mut next, after, true, work)?;
+        }
+        if any {
+            make_resident(&mut next, work)?;
         }
         Ok(if any {
             Arc::new(next)
@@ -108,6 +113,9 @@ impl DirectoryMaintainer<'_> {
             any |= update_record(&mut next, old.as_ref(), false, work)?;
             any |= update_record(&mut next, current.as_ref(), true, work)?;
         }
+        if any {
+            make_resident(&mut next, work)?;
+        }
         Ok(if any {
             Arc::new(next)
         } else {
@@ -115,6 +123,18 @@ impl DirectoryMaintainer<'_> {
         })
     }
 }
+/// An edited directory leaves no domain paged: its successor never depends
+/// on the predecessor's cold cell, which retires with the predecessor root.
+fn make_resident(
+    directory: &mut RegionRecordDirectory,
+    work: &mut ChangeWork<'_>,
+) -> Result<(), DirectoryError> {
+    let mut prepare = |units, bytes| work.prepare(units, bytes).map_err(Into::into);
+    directory.entities.make_resident(&mut prepare)?;
+    directory.relations.make_resident(&mut prepare)?;
+    Ok(())
+}
+
 fn update_record(
     directory: &mut RegionRecordDirectory,
     state: Option<&RecordChangeState>,
@@ -172,6 +192,11 @@ impl DirectoryError {
             Self::Admission(MaintenanceRefusal::Execution(cause)) => {
                 crate::storage::residency::RelationalResidencyDemandFailure::Request(cause)
             }
+            Self::Unavailable(cause) => crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(partition),
+                cause,
+            }
+            .into(),
             _ => crate::storage::data::RelationalStorageUnavailable {
                 subject: crate::storage::data::RelationalStorageSubject::Region(partition),
                 cause: crate::storage::data::RelationalStorageUnavailableCause::IntegrityMismatch,
@@ -187,6 +212,12 @@ impl DirectoryError {
             Self::Admission(MaintenanceRefusal::Execution(cause)) => {
                 crate::storage::residency::RegionContentFailure::Execution(cause)
             }
+            Self::Unavailable(cause) => crate::storage::residency::RegionContentFailure::Storage(
+                crate::storage::data::RelationalStorageUnavailable {
+                    subject: crate::storage::data::RelationalStorageSubject::Region(partition),
+                    cause,
+                },
+            ),
             _ => crate::storage::residency::RegionContentFailure::Storage(
                 crate::storage::data::RelationalStorageUnavailable {
                     subject: crate::storage::data::RelationalStorageSubject::Region(partition),

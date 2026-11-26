@@ -224,7 +224,7 @@ impl<Snapshot> branch::visibility::materialization::read_records::projection::st
         &self,
         kind: contracts::identity::data::primitives::KindId,
         partition: Option<contracts::identity::data::primitives::PartitionId>,
-    ) -> impl Iterator<Item = contracts::identity::data::record_ids::EntityId> + '_ {
+    ) -> impl Iterator<Item = Result<contracts::identity::data::record_ids::EntityId, worth_relational_storage::internal_port::storage::data::RelationalStorageUnavailable>> + '_ {
         self.basis
             .projection_root()
             .entity_ids_of_kind(kind, partition)
@@ -234,7 +234,7 @@ impl<Snapshot> branch::visibility::materialization::read_records::projection::st
         &self,
         kind: contracts::identity::data::primitives::KindId,
         partition: Option<contracts::identity::data::primitives::PartitionId>,
-    ) -> impl Iterator<Item = contracts::identity::data::record_ids::RelationId> + '_ {
+    ) -> impl Iterator<Item = Result<contracts::identity::data::record_ids::RelationId, worth_relational_storage::internal_port::storage::data::RelationalStorageUnavailable>> + '_ {
         self.basis
             .projection_root()
             .relation_ids_of_kind(kind, partition)

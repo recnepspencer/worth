@@ -66,6 +66,11 @@ impl<'lease> RelationalRegionHeadView<'lease> {
     pub(crate) fn partition_state(&self) -> &'lease PartitionState {
         self.partition
     }
+    /// Lets a paged record directory serve this accepted head's exact
+    /// membership instead of faulting its cold pages.
+    pub fn adopt_into(&self, directory: &super::RegionRecordDirectory) {
+        directory.adopt_resident(self.partition);
+    }
     pub fn same_region_view(&self, other: Self) -> bool {
         std::ptr::eq(self.partition, other.partition)
     }
