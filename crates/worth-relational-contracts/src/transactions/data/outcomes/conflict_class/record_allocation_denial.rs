@@ -79,6 +79,13 @@ pub enum RecordAllocationDenial {
         planned: usize,
         live: usize,
     },
+    /// A paged record-identity page of this partition could not be faulted
+    /// from the checkpoint; nothing was reserved.
+    IdentityPageUnavailable {
+        class: RecordAllocationClass,
+        partition_id: PartitionId,
+        cause: crate::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+    },
 }
 
 impl RecordAllocationDenial {
@@ -149,6 +156,13 @@ impl RecordAllocationDenial {
                 detail,
             } => format!(
                 "{class:?} allocation for partition {partition_id:?} slot {slot} was denied: {detail}"
+            ),
+            Self::IdentityPageUnavailable {
+                class,
+                partition_id,
+                cause,
+            } => format!(
+                "{class:?} paged record-identity table for partition {partition_id:?} is unavailable: {cause:?}"
             ),
             // Coupled evidence (#119): the variant's own fields are the detail.
             Self::ReplayEvidenceBlockBroken { .. }

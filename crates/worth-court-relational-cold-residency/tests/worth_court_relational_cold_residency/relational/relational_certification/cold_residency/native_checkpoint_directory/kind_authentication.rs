@@ -54,7 +54,7 @@ worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::Extern
         .restore_native_checkpoint(
             &execution,
             &RelationalNativeCheckpoint::from_untrusted_bytes(bytes),
-                worth_testkit_relational::cold_recovery::members_source(&native),
+            worth_testkit_relational::cold_recovery::members_source(&native),
         )
         .unwrap_err();
     assert_eq!(
@@ -170,6 +170,7 @@ fn forged_cross_region_kind_commitment_is_refused_before_region_payload_reads() 
             damaged: Default::default(),
             reads: Default::default(),
             member_reads: Default::default(),
+            paged_reads: Default::default(),
             commit_reads: Default::default(),
             commits_damaged: Default::default(),
             failed_member: Default::default(),

@@ -74,7 +74,7 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
         let directory = checkpoint.original_canonical_directory().unwrap();
         assert_eq!(
             directory.manifest.record_identity,
-            *checkpoint.record_identity_for_test()
+            paged_roots(checkpoint.record_identity_for_test())
         );
         assert_eq!(
             directory.manifest.symbol_identity_frontier,
@@ -111,7 +111,7 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
     let changed_directory = std::sync::Arc::get_mut(&mut original_directory)
         .expect("decoded checkpoint owns its original directory uniquely");
     let mut changed_manifest = changed_directory.manifest.ordinary_owned_draft();
-    changed_manifest.record_identity = after.record_identity_for_test().clone();
+    changed_manifest.record_identity = paged_roots(after.record_identity_for_test());
     changed_manifest.symbol_identity_frontier = after.symbol_identity_frontier_for_test();
     changed_directory.manifest = changed_manifest.seal_ordinary();
     *after.canonical_directory_mut_for_test() = Some(
@@ -169,15 +169,22 @@ fn checkpoint_recovery_preserves_abandoned_symbol_identity_frontiers() {
     let native = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
-&execution,
-execution.allocation_policy(),
-crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
-)
+            &execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let mut recovered = runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &native, crate::tests::support::durability::captured_members_source(&native))
+        .restore_native_checkpoint(
+            &execution,
+            &native,
+            crate::tests::support::durability::captured_members_source(&native),
+        )
         .unwrap();
     let mut candidate = recovered.services.symbols.begin_pending_meanings();
     let fresh = loop {
@@ -211,4 +218,14 @@ crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers { c
     .expect("fixture meanings agree with the candidate")
     .publish()
     .unwrap();
+}
+
+/// CHK24 manifests retain the identity tables' content-addressed roots and roster,
+/// which are a pure function of the resident image.
+fn paged_roots(
+    image: &crate::durability::data::DurableRecordIdentityState,
+) -> worth_relational_storage::internal_port::storage::data::record_identity_pages::PagedRecordIdentity{
+    let mut sink = worth_relational_storage::internal_port::storage::residency::chunked::cold_member_port::CollectedMembers::default();
+    worth_relational_storage::internal_port::storage::data::record_identity_pages::encode_record_identity(image, &mut sink)
+        .unwrap()
 }

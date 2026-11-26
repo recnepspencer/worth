@@ -288,7 +288,7 @@ fn required_catalog_delta_survives_all_projections_and_rejects_missing_or_older_
         .durability_authority()
         .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
-    assert!(checkpoint.bytes().starts_with(b"WORTH-REL-CHK23\n"));
+    assert!(checkpoint.bytes().starts_with(b"WORTH-REL-CHK24\n"));
     // The actual embedded checkpoint projection preserves the declaration too.
     let mut restored = memory_runtime();
     restored
@@ -311,7 +311,7 @@ fn required_catalog_delta_survives_all_projections_and_rejects_missing_or_older_
     wire::assert_malformed_deltas(execution, &artifact);
     for version in [13, 14, 15, 16, 17] {
         let mut old = checkpoint.bytes().to_vec();
-        old[..b"WORTH-REL-CHK23\n".len()]
+        old[..b"WORTH-REL-CHK24\n".len()]
             .copy_from_slice(format!("WORTH-REL-CHK{version}\n").as_bytes());
         let untrusted =
             worth_relational::facade::durability::RelationalNativeCheckpoint::from_untrusted_bytes(
@@ -324,7 +324,7 @@ fn required_catalog_delta_survives_all_projections_and_rejects_missing_or_older_
         );
         assert!(
             matches!(refused, Err(worth_relational::facade::durability::RelationalRecoveryStop::Durability(error))
-            if error.class == worth_relational::facade::durability::RecoveryFailureClass::UnsupportedLegacySemantics)
+            if error.class == worth_relational::facade::durability::RecoveryFailureClass::UnsupportedCheckpointVersion { found: version, supported: 24 })
         );
     }
     release_test_commit_snapshot(&runtime, &result);

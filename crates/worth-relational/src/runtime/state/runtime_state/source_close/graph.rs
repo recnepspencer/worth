@@ -13,6 +13,7 @@ enum Stage {
     Edition,
     Mirror,
     Symbols,
+    RecordIdentity,
     Nodes,
     Events,
     Index,
@@ -120,9 +121,9 @@ impl NativeSourceGraphRetirement {
             },
             Stage::Symbols => {
                 self.symbols = Some(runtime.services.symbols.clone());
-                self.stage = Stage::Nodes;
+                self.stage = Stage::RecordIdentity;
             }
-            Stage::Nodes | Stage::Events | Stage::IndexMember => {
+            Stage::RecordIdentity | Stage::Nodes | Stage::Events | Stage::IndexMember => {
                 self.advance_member(runtime, request, source)?
             }
             Stage::Index => {

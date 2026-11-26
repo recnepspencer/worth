@@ -99,7 +99,8 @@ pub struct RelationalCheckpointManifestDraft {
     pub(crate) coverage: CheckpointCoverage,
     pub covered_position: PatchStreamPosition,
     pub schemas: super::CheckpointSchemaImages,
-    pub record_identity: DurableRecordIdentityState,
+    /// `CHK24`: roots and page roster of the paged record-identity tables.
+    pub record_identity: worth_relational_storage::internal_port::storage::data::record_identity_pages::PagedRecordIdentity,
     pub(crate) aspect_contracts: Vec<worth_foundational::facade::PortableAspectContract>,
     pub(crate) index_generation_frontier: u64,
     pub index_definition_frontier: u64,
@@ -198,6 +199,9 @@ impl RelationalCheckpointManifestDraft {
             insert(row.member)?;
         }
         insert(self.derived_indexes)?;
+        for page in &self.record_identity.pages {
+            insert(*page)?;
+        }
         drop(insert);
         let mut output =
             worth_execution::ExecutionRequestArrayBuilder::allocate(*request, members.len())

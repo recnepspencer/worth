@@ -32,7 +32,7 @@ fn retired_checkpoint_refuses_before_reading_legacy_publication_meaning() {
         )
         .unwrap_err();
     assert!(matches!(stop, RelationalRecoveryStop::Durability(failure)
-        if failure.class == RecoveryFailureClass::UnsupportedLegacySemantics));
+        if failure.class == RecoveryFailureClass::UnsupportedCheckpointVersion { found: 20, supported: 24 }));
     assert_eq!(
         before.descriptor(),
         runtime

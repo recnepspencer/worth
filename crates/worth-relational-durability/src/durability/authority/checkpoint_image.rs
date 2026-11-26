@@ -58,6 +58,7 @@ impl CapturedCheckpointBasis {
             covered_transitions,
             branch_roots,
             record_identity,
+            carried_record_identity,
             envelopes,
             journal_index: _,
             envelope_cells: _,
@@ -82,6 +83,15 @@ impl CapturedCheckpointBasis {
             symbol_identity_frontier,
             runtime_name,
         } = self;
+        let record_identity = match carried_record_identity {
+            Some(base) => {
+                worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::RecordIdentitySubsystem::snapshot_paged_base_for_request(
+                    &base,
+                    execution,
+                )?
+            }
+            None => record_identity,
+        };
         // The mirror retains deleted records and MVCC cells from earlier
         // revisions. Their exact contracts belong to the selected main root;
         // the current runtime's active plans cannot reinterpret those cells.

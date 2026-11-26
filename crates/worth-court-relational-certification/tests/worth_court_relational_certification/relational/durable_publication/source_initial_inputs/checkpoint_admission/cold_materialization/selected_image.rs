@@ -99,7 +99,7 @@ pub(crate) fn member(
         image
             .checkpoint()
             .bytes()
-            .strip_prefix(b"WORTH-REL-CHK23\n")
+            .strip_prefix(b"WORTH-REL-CHK24\n")
             .unwrap(),
     )
     .unwrap();

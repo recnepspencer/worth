@@ -140,6 +140,13 @@ impl CapturedManifest {
             )
             .map_err(|cause| corrupt(format!("derived index member: {cause:?}")))?,
         );
+        let (record_identity, identity_pages) =
+            super::identity_pages::encode_identity_pages(&checkpoint.record_identity)?;
+        for (locator, bytes) in identity_pages {
+            members
+                .entry(locator)
+                .or_insert(RelationalCheckpointMember::New { locator, bytes });
+        }
         Ok(Self {
             component_holds: Vec::new(),
             envelope_cells: Default::default(),
@@ -158,7 +165,7 @@ impl CapturedManifest {
                 schemas: CheckpointSchemaImages::from_ordinary(
                     checkpoint.branch_root_schema_images.clone(),
                 ),
-                record_identity: checkpoint.record_identity.clone(),
+                record_identity,
                 aspect_contracts: checkpoint.aspect_contracts.clone(),
                 index_definitions: CheckpointIndexDefinitions::from_ordinary(
                     checkpoint.index_definitions.clone(),

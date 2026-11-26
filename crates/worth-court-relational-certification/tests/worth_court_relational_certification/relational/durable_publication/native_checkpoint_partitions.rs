@@ -67,7 +67,7 @@ pub(super) fn partition_image(
     let wire: Wire = rmp_serde::from_slice(
         checkpoint
             .bytes()
-            .strip_prefix(b"WORTH-REL-CHK23\n")
+            .strip_prefix(b"WORTH-REL-CHK24\n")
             .unwrap(),
     )
     .unwrap();
@@ -95,8 +95,8 @@ pub(super) fn partition_image(
         <[u8; 32]>::from(Sha256::digest(bytes.as_ref())),
         region.head.sha256
     );
-    let framed = bytes.as_ref().strip_prefix(b"WORTH-REL-REG7\n").unwrap();
-    assert_eq!(&framed[..2], &7_u16.to_be_bytes());
+    let framed = bytes.as_ref().strip_prefix(b"WORTH-REL-REG8\n").unwrap();
+    assert_eq!(&framed[..2], &8_u16.to_be_bytes());
     assert_eq!(&framed[2..6], &partition.as_u32().to_be_bytes());
     assert_eq!(framed[38], 0);
     let decoded: RegionHead = rmp_serde::from_slice(&framed[39..]).unwrap();

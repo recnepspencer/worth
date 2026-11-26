@@ -10,8 +10,9 @@ use crate::storage::data::partition_checkpoint_image::{
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionHistoryFrontiers;
 
-pub const MAGIC: &[u8] = b"WORTH-REL-REG7\n";
-const VERSION: u16 = 7;
+pub const MAGIC: &[u8] = b"WORTH-REL-REG8\n";
+pub const VERSION: u16 = 8;
+const FAMILY: &[u8] = b"WORTH-REL-REG";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalRegionImageKind {
@@ -146,7 +147,9 @@ impl<'bytes> RelationalRegionImage<'bytes> {
         {
             return Err(Cause::IntegrityMismatch);
         }
-        let frame = bytes.strip_prefix(MAGIC).ok_or(Cause::Damaged)?;
+        let frame = bytes
+            .strip_prefix(MAGIC)
+            .ok_or_else(|| obsolete_frame(bytes))?;
         let (header, payload) = frame.split_at_checked(39).ok_or(Cause::Damaged)?;
         let expected_kind = match kind {
             RelationalRegionImageKind::Head => 0,
@@ -198,6 +201,28 @@ impl RelationalRegionImage<'_> {
     }
 }
 
+/// A typed version refusal for another `WORTH-REL-REG<n>` grammar; anything
+/// else is damage. No earlier region grammar is decoded.
+fn obsolete_frame(bytes: &[u8]) -> Cause {
+    let version = bytes.strip_prefix(FAMILY).and_then(|label| {
+        let end = label.iter().take(6).position(|byte| *byte == NEWLINE)?;
+        let digits = &label[..end];
+        if digits.is_empty() || digits[0] == b'0' || !digits.iter().all(u8::is_ascii_digit) {
+            return None;
+        }
+        let found = std::str::from_utf8(digits).ok()?.parse::<u16>().ok()?;
+        (found != VERSION).then_some(found)
+    });
+    match version {
+        Some(found) => Cause::UnsupportedRegionImageVersion {
+            found,
+            supported: VERSION,
+        },
+        None => Cause::Damaged,
+    }
+}
+const NEWLINE: u8 = 0x0a;
+
 struct AdmittedImageWriter<'a> {
     bytes: &'a mut Vec<u8>,
     checkpoint: &'a mut dyn FnMut(u64, u64) -> Result<(), Cause>,
@@ -214,5 +239,54 @@ impl std::io::Write for AdmittedImageWriter<'_> {
     }
     fn flush(&mut self) -> std::io::Result<()> {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod version_tests {
+    use super::*;
+
+    #[test]
+    fn obsolete_and_future_region_grammars_refuse_with_their_typed_version() {
+        let decode_err = |bytes: &[u8]| {
+            let loc = crate::storage::data::member_frame::locator(bytes);
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|l| {
+                RelationalRegionImage::decode(
+                    l,
+                    &mut |_, _| Ok(()),
+                    bytes,
+                    loc,
+                    PartitionId(0),
+                    [0; 32],
+                    RelationalRegionImageKind::Head,
+                )
+                .err()
+                .unwrap()
+            })
+        };
+        for (frame, found) in [(&b"WORTH-REL-REG7\n"[..], 7), (&b"WORTH-REL-REG9\n"[..], 9)] {
+            let bytes = [frame, &[0; 40]].concat();
+            let expected = Cause::UnsupportedRegionImageVersion {
+                found,
+                supported: VERSION,
+            };
+            assert_eq!(obsolete_frame(&bytes), expected);
+            assert_eq!(decode_err(&bytes), expected);
+        }
+        for frame in [
+            &b"WORTH-REL-REGX\n"[..],
+            b"WORTH-REL-REG0\n",
+            b"WORTH-REL-REG08\n",
+            b"WORTH-REL-REG+8\n",
+            b"WORTH-REL-REG+7\n",
+            b"WORTH-REL-REG07\n",
+            b"WORTH-REL-CHK24\n",
+            b"",
+        ] {
+            let bytes = [frame, &[0; 40]].concat();
+            assert_eq!(obsolete_frame(&bytes), Cause::Damaged);
+            assert_eq!(decode_err(&bytes), Cause::Damaged);
+        }
+        assert_eq!(MAGIC, b"WORTH-REL-REG8\n");
     }
 }

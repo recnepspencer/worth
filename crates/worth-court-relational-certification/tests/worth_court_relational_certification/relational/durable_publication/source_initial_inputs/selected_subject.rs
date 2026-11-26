@@ -72,7 +72,7 @@ fn crossed_runtime(
     let image = capture_external(&original, &medium, execution);
     medium.file_checkpoint(image.checkpoint().clone());
     let bytes = image.checkpoint().bytes();
-    let payload = bytes.strip_prefix(b"WORTH-REL-CHK23\n").unwrap();
+    let payload = bytes.strip_prefix(b"WORTH-REL-CHK24\n").unwrap();
     let rows = crate::messagepack_value_spans::sequence(crate::messagepack_value_spans::field(
         crate::messagepack_value_spans::field(payload, "manifest"),
         "canonical_members",
@@ -260,7 +260,13 @@ fn complete_preserves_partial_update_without_demanding_untouched_aspect_referenc
     assert_eq!(lifecycle, RecordLifecycleState::Live);
     let complete = runtime
         .complete_checkpoint_service()
-        .prepare(&execution, RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
+        .prepare(
+            &execution,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let image = partition_image(
         complete.checkpoint(),

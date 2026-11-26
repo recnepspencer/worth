@@ -13,6 +13,7 @@ use std::sync::{Arc, Mutex, Weak};
 use super::member_io::{load_member, ChunkMemberSource};
 use crate::durability::medium::RelationalDurableMemberLocator;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use crate::storage::residency::working_set::evictor::ExternalPoolEvictor;
 use crate::storage::residency::working_set::{
     ResidencyPoolKind, WorkingSetAccountant, WorkingSetCharge,
 };
@@ -26,6 +27,7 @@ pub trait ResidentPage: Sized {
 }
 
 trait EvictableCache: Send + Sync {
+    fn pool(&self) -> ResidencyPoolKind;
     fn oldest_evictable_use(&self) -> Option<u64>;
     fn evict_one_unborrowed(&self) -> bool;
 }
@@ -37,6 +39,20 @@ trait EvictableCache: Send + Sync {
 pub struct PageEvictionGroup {
     clock: AtomicU64,
     peers: Mutex<Vec<Weak<dyn EvictableCache>>>,
+}
+
+impl std::fmt::Debug for PageEvictionGroup {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("PageEvictionGroup")
+            .finish_non_exhaustive()
+    }
+}
+
+impl ExternalPoolEvictor for PageEvictionGroup {
+    fn evict_one_for_pool(&self, pool: ResidencyPoolKind) -> bool {
+        self.evict_oldest_in_pool(Some(pool))
+    }
 }
 
 impl PageEvictionGroup {
@@ -52,6 +68,9 @@ impl PageEvictionGroup {
         accountant: Arc<WorkingSetAccountant>,
         pool: ResidencyPoolKind,
     ) -> Arc<ResidentPageCache<T>> {
+        accountant.enroll_external_evictor(Arc::downgrade(
+            &(Arc::clone(self) as Arc<dyn ExternalPoolEvictor>),
+        ));
         let cache = Arc::new(ResidentPageCache {
             accountant,
             pool,
@@ -73,13 +92,19 @@ impl PageEvictionGroup {
 
     /// Evicts the globally least-recently-used unborrowed page across all
     /// live peer caches without holding `self.peers` across any cache lock.
-    fn evict_oldest(&self) -> bool {
+    fn evict_oldest(&self, pool: ResidencyPoolKind) -> bool {
+        self.evict_oldest_in_pool(Some(pool))
+    }
+
+    fn evict_oldest_in_pool(&self, pool: Option<ResidencyPoolKind>) -> bool {
         let live: Vec<Arc<dyn EvictableCache>> = {
             let mut peers = self.peers.lock().unwrap_or_else(|error| error.into_inner());
             let mut upgraded = Vec::with_capacity(peers.len());
             peers.retain(|weak| match weak.upgrade() {
                 Some(cache) => {
-                    upgraded.push(cache);
+                    if pool.is_none_or(|target| cache.pool() == target) {
+                        upgraded.push(cache);
+                    }
                     true
                 }
                 None => false,
@@ -142,6 +167,10 @@ pub struct PageCacheObservation {
 }
 
 impl<T: ResidentPage + Send + Sync + 'static> EvictableCache for ResidentPageCache<T> {
+    fn pool(&self) -> ResidencyPoolKind {
+        self.pool
+    }
+
     fn oldest_evictable_use(&self) -> Option<u64> {
         self.lock().oldest_evictable_use()
     }
@@ -234,7 +263,7 @@ impl<T: ResidentPage> ResidentPageCache<T> {
 
     fn evict_one(&self) -> bool {
         match &self.group {
-            Some(group) => group.evict_oldest(),
+            Some(group) => group.evict_oldest(self.pool),
             None => self.lock().evict_one(),
         }
     }

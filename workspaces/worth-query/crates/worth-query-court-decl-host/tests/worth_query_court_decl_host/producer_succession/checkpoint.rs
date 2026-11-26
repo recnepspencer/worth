@@ -2,14 +2,14 @@
 use super::*;
 use serde::Deserialize;
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Weak};
+use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
 use worth_query_testkit_document_retention::facade::directory_home::{
     directory_lease, ClosedDirectorySnapshot,
 };
-use sha2::{Digest, Sha256};
-use std::sync::{Arc, Weak};
-use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
 use worth_relational::facade::{
     durability::{
         RelationalDurableColdSource, RelationalDurableMemberCustody,
@@ -207,7 +207,8 @@ pub fn omit_retirement_group_dir(snapshot: &ClosedDirectorySnapshot, directory: 
         let key = rmp_serde::to_vec("producer_cascade_retirement").unwrap();
         let field = ARTIFACT_HEADER + find(&frame[ARTIFACT_HEADER..], &key);
         let end = field + key.len() + value_len(&frame[field + key.len()..]);
-        let map = ARTIFACT_HEADER + find(&frame[ARTIFACT_HEADER..], b"canonical") + b"canonical".len();
+        let map =
+            ARTIFACT_HEADER + find(&frame[ARTIFACT_HEADER..], b"canonical") + b"canonical".len();
         assert_eq!(frame[map], 0xde, "current named envelope uses a map16");
         let count = u16::from_be_bytes(frame[map + 1..map + 3].try_into().unwrap());
         let mut changed = frame.to_vec();
@@ -316,7 +317,7 @@ impl RelationalDurableColdSource for DirectoryMemberColdSource {
         let len = usize::try_from(locator.length)
             .map_err(|_| RelationalStorageUnavailableCause::MissingMember)?;
         const MAGICS: &[&[u8]] = &[
-            b"WORTH-REL-REG7\n",
+            b"WORTH-REL-REG8\n",
             b"WORTH-REL-MBR1\n",
             b"WRTHRCCA",
             b"WRTHRBTA",

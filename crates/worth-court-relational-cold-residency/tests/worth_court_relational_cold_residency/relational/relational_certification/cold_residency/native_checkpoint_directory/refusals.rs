@@ -46,7 +46,11 @@ fn current_directory_rejects_damaged_duplicate_and_missing_members() {
             RelationalNativeCheckpoint::from_untrusted_bytes([CHECKPOINT_MAGIC, &amended].concat());
         let result = memory_runtime()
             .durability_recovery()
-            .restore_native_checkpoint(execution, &untrusted, worth_testkit_relational::cold_recovery::members_source(&untrusted));
+            .restore_native_checkpoint(
+                execution,
+                &untrusted,
+                worth_testkit_relational::cold_recovery::members_source(&untrusted),
+            );
         assert!(result.is_err(), "alteration {alteration}");
     }
 }
@@ -63,6 +67,7 @@ fn chk6_and_retired_inner_partition_grammars_are_refused() {
         b"WORTH-REL-CHK17\n".as_slice(),
         b"WORTH-REL-CHK18\n".as_slice(),
         b"WORTH-REL-CHK22\n".as_slice(),
+        b"WORTH-REL-CHK23\n".as_slice(),
         b"WORTH-REL-CHK20\n".as_slice(),
         b"WORTH-REL-CHK20.1\n".as_slice(),
         b"WORTH-REL-CHK21\n".as_slice(),
@@ -77,10 +82,10 @@ fn chk6_and_retired_inner_partition_grammars_are_refused() {
                 worth_testkit_relational::cold_recovery::members_source(&native),
             )
             .unwrap_err();
-        assert_eq!(
+        assert!(matches!(
             expect_durability_failure(stop).class,
-            RecoveryFailureClass::UnsupportedLegacySemantics
-        );
+            RecoveryFailureClass::UnsupportedCheckpointVersion { supported: 24, .. }
+        ));
     }
     for retired in [
         "partition_alias_format",

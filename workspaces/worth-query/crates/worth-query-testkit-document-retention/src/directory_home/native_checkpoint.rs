@@ -5,7 +5,7 @@ use worth_execution::ExecutionRequest;
 
 /// Locate the exact `WSANREC2` anchored record for `home.checkpoint` at
 /// `expected_generation`, decode its `WAPHCKP1` Relational section, and
-/// extract the Native `WORTH-REL-CHK23` frame without falling back to older
+/// extract the Native `WORTH-REL-CHK24` frame without falling back to older
 /// checkpoint generations.
 pub(super) fn read_native_checkpoint_frame_for_generation(
     root: &Path,
@@ -47,12 +47,14 @@ pub(super) fn read_native_checkpoint_frame_for_generation(
             if generation != expected_generation {
                 continue;
             }
-            let payload_bytes =
-                usize::try_from(u64::from_le_bytes(header[80..88].try_into().expect("fixed")))
-                    .ok()?;
-            let member_count =
-                usize::try_from(u64::from_le_bytes(header[88..96].try_into().expect("fixed")))
-                    .ok()?;
+            let payload_bytes = usize::try_from(u64::from_le_bytes(
+                header[80..88].try_into().expect("fixed"),
+            ))
+            .ok()?;
+            let member_count = usize::try_from(u64::from_le_bytes(
+                header[88..96].try_into().expect("fixed"),
+            ))
+            .ok()?;
             let table_bytes = member_count.checked_mul(MEMBER_LOCATOR_BYTES)?;
             let payload_start = at.checked_add(HEADER_BYTES)?.checked_add(table_bytes)?;
             let payload_end = payload_start.checked_add(payload_bytes)?;
@@ -68,9 +70,10 @@ pub(super) fn read_native_checkpoint_frame_for_generation(
                 continue;
             }
             let relational_tag = u16::from_le_bytes(payload[14..16].try_into().expect("fixed"));
-            let relational_len =
-                usize::try_from(u64::from_le_bytes(payload[16..24].try_into().expect("fixed")))
-                    .ok()?;
+            let relational_len = usize::try_from(u64::from_le_bytes(
+                payload[16..24].try_into().expect("fixed"),
+            ))
+            .ok()?;
             if relational_tag != worth_foundational::facade::DurableOwnerFamily::Relational.tag()
                 || relational_len == 0
             {
@@ -152,7 +155,11 @@ fn extract_native_from_admission_section(
             request,
         )
         .ok()?;
-    Some((covered, transitions, checkpoint.checkpoint().bytes().to_vec()))
+    Some((
+        covered,
+        transitions,
+        checkpoint.checkpoint().bytes().to_vec(),
+    ))
 }
 
 pub fn inspect_native_checkpoint_frame(
@@ -160,10 +167,8 @@ pub fn inspect_native_checkpoint_frame(
 ) -> worth_relational::facade::durability::RelationalCheckpointInspection<'_> {
     let lease = directory_lease();
     let request = ExecutionRequest::leased(&lease);
-    worth_relational::facade::durability::RelationalNativeCheckpoint::inspect_bytes(
-        &request, frame,
-    )
-    .expect("inspect published Native checkpoint frame")
+    worth_relational::facade::durability::RelationalNativeCheckpoint::inspect_bytes(&request, frame)
+        .expect("inspect published Native checkpoint frame")
 }
 
 pub fn assert_native_checkpoint_model_unchanged(before: &[u8], after: &[u8]) {
@@ -196,10 +201,7 @@ pub fn assert_native_checkpoint_fully_unchanged(before: &[u8], after: &[u8]) {
         old.current_publication_records
     );
     assert_eq!(now.frontiers, old.frontiers, "no Native record allocation");
-    assert_eq!(
-        now.generations, old.generations,
-        "no Native identity reuse"
-    );
+    assert_eq!(now.generations, old.generations, "no Native identity reuse");
     assert_eq!(
         now.symbol_identity_frontier, old.symbol_identity_frontier,
         "no receipt symbols or other symbol identities allocated"

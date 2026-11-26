@@ -92,6 +92,12 @@ pub fn prepare(
         &super::draft::CheckpointDraftMetadata {
             branches: &frozen.branches,
             identity: &frozen.identity,
+            destination: {
+                let RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members, ..
+                } = &placement;
+                current_members
+            },
             indexes: &frozen.indexes,
             symbol_frontier: frozen.symbol_frontier,
             through: frozen.original.branches.transitions().last().map_or(

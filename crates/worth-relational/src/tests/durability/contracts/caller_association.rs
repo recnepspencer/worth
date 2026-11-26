@@ -235,9 +235,12 @@ fn caller_association_survives_embedded_checkpoint_and_refuses_old_semantics() {
             crate::tests::support::durability::empty_cold_source(),
         )
         .unwrap_err();
-        assert_eq!(
+        assert!(matches!(
             expect_durability_failure(stop).class,
-            crate::durability::data::RecoveryFailureClass::UnsupportedLegacySemantics
-        );
+            crate::durability::data::RecoveryFailureClass::UnsupportedCheckpointVersion {
+                supported: 24,
+                ..
+            }
+        ));
     }
 }

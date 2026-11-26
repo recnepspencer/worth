@@ -26,3 +26,58 @@ fn sparse_page_membership_accepts_late_holes_and_refuses_duplicate_or_forged_ids
         "a hostile high bit must refuse without arithmetic overflow"
     );
 }
+
+#[test]
+fn record_identity_validation_refuses_unsorted_orphan_overflow_and_mismatched_roots() {
+    use worth_relational_contracts::internal_port::identity::data::primitives::PartitionId;
+    use worth_relational_storage::internal_port::storage::data::member_frame::locator;
+    use worth_relational_storage::internal_port::storage::data::record_identity_pages::{
+        PagedRecordIdentity as Paged, PagedRecordIdentityRoots as Roots,
+    };
+    use worth_relational_storage::internal_port::storage::residency::chunked::paged_directory::PagedDirectoryRoot as Root;
+
+    validate_record_identity(&Paged::default()).unwrap();
+    let mut pages = [locator(b"id-page-a"), locator(b"id-page-b")];
+    pages.sort_unstable();
+    let [low, high] = pages;
+    let r = |root_page, entry_count| Root {
+        root_page,
+        entry_count,
+    };
+    let valid = Paged {
+        roots: Roots {
+            generation_high_water: Some(r(low, 2)),
+            reusable_slots: None,
+            append_frontiers: Some(r(high, 1)),
+            pending_reservations: None,
+            partition_high_water: Some(PartitionId(0)),
+        },
+        pages: vec![low, high],
+    };
+    validate_record_identity(&valid).unwrap();
+    let bad = |mutate: &dyn Fn(&mut Paged)| {
+        let mut p = valid.clone();
+        mutate(&mut p);
+        assert!(validate_record_identity(&p).is_err());
+    };
+    bad(&|p| p.pages = vec![high, low]);
+    bad(&|p| p.pages = vec![low, low]);
+    bad(&|p| p.roots.generation_high_water = Some(r(low, 0)));
+    bad(&|p| p.roots.reusable_slots = Some(r(locator(b"orphan"), 1)));
+    bad(&|p| p.roots.generation_high_water = Some(r(low, u64::MAX)));
+    bad(&|p| p.roots.partition_high_water = None);
+    bad(&|p| {
+        let mut huge = high;
+        huge.length = u64::MAX;
+        p.pages = vec![low, huge];
+        p.roots.append_frontiers = Some(r(huge, 1));
+    });
+    assert!(validate_record_identity(&Paged {
+        roots: Roots::default(),
+        pages: vec![low]
+    })
+    .is_err());
+    let mut stray = Paged::default();
+    stray.roots.partition_high_water = Some(PartitionId(0));
+    assert!(validate_record_identity(&stray).is_err());
+}

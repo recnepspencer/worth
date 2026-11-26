@@ -234,7 +234,7 @@ fn fixed_read_work(regions: u32, history: usize, width: usize, check_refusal: bo
         );
         let regions_before = source.region_read_count();
         let symbols_before = source.symbol_page_read_count();
-        // CHK23 reopen reads only the derived-index catalog and head canonical commit
+        // CHK24 reopen reads only the derived-index catalog and head canonical commit
         // member; keep region, symbol, and lineage members unavailable across reopen.
         source.unavailable.store(true, Ordering::SeqCst);
         source

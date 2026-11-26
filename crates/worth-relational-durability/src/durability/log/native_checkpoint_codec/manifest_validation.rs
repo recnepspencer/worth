@@ -115,6 +115,7 @@ pub(super) fn validate(
     }
     validate_pages(&manifest.lineage)?;
     super::lineage_event_directory::validate(manifest)?;
+    validate_record_identity(&manifest.record_identity)?;
     let history_members = manifest
         .readmit_history_members(lane)
         .map_err(|cause| corrupt(format!("history member dependencies: {cause:?}")))?;
@@ -197,5 +198,49 @@ pub(super) fn validate_pages(
         }
         previous = Some(key);
     }
+    Ok(())
+}
+
+pub(super) fn validate_record_identity(
+    identity: &worth_relational_storage::internal_port::storage::data::record_identity_pages::PagedRecordIdentity,
+) -> Result<(), DurabilityError> {
+    let limit = worth_relational_storage::internal_port::storage::data::record_identity_pages::IDENTITY_PAGE_BYTES as u64;
+    let mut previous = None;
+    for page in &identity.pages {
+        if previous.is_some_and(|prior| prior >= page) || page.length > limit {
+            return Err(corrupt(
+                "checkpoint record identity page roster is duplicate, unsorted or oversized",
+            ));
+        }
+        previous = Some(page);
+    }
+    let roots = &identity.roots;
+    let tables = [
+        roots.generation_high_water,
+        roots.reusable_slots,
+        roots.append_frontiers,
+        roots.pending_reservations,
+    ];
+    let mut total = 0_u64;
+    let mut any_root = false;
+    for root in tables.into_iter().flatten() {
+        any_root = true;
+        if root.entry_count == 0 || identity.pages.binary_search(&root.root_page).is_err() {
+            return Err(corrupt(
+                "checkpoint record identity root is empty or absent from page roster",
+            ));
+        }
+        total = total
+            .checked_add(root.entry_count)
+            .ok_or_else(|| corrupt("checkpoint record identity entry count overflow"))?;
+    }
+    if identity.pages.is_empty() == any_root
+        || roots.append_frontiers.is_some() != roots.partition_high_water.is_some()
+    {
+        return Err(corrupt(
+            "checkpoint record identity roots disagree with page roster or partition high water",
+        ));
+    }
+    let _ = total;
     Ok(())
 }

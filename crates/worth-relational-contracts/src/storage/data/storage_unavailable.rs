@@ -50,6 +50,11 @@ pub enum RelationalStorageUnavailableCause {
         limit: u64,
     },
     MemoryExhausted,
+    /// A region member carries an obsolete (or future) region image grammar.
+    UnsupportedRegionImageVersion {
+        found: u16,
+        supported: u16,
+    },
 }
 
 /// Operations used by the Relational owners.
@@ -65,6 +70,7 @@ impl RelationalStorageUnavailableCauseOwnerPort for RelationalStorageUnavailable
                 | Self::Damaged
                 | Self::IntegrityMismatch
                 | Self::CorruptCurrentOwnership { .. }
+                | Self::UnsupportedRegionImageVersion { .. }
         )
     }
 }

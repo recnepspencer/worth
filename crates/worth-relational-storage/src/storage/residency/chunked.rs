@@ -26,6 +26,7 @@ pub mod canonical_read;
 pub mod chunk_directory;
 pub mod chunk_images;
 pub mod chunk_summary;
+pub mod cold_member_port;
 pub mod consolidation;
 pub mod continuation;
 pub mod layout;

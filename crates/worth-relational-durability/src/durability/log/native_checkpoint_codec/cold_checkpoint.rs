@@ -59,7 +59,8 @@ pub(super) fn readmit(
         branch_cells, branch_lifecycle,
         retired_branch_names,
         branch_roots: Vec::new(), branch_root_schema_images: manifest.schemas.ordinary_owned_copy(),
-        record_identity: manifest.record_identity,
+        // CHK24 reopen faults the paged tables through the directory edge.
+        record_identity: Default::default(),
         record_generation_high_water: Vec::new(), reusable_record_slots: Vec::new(), record_slot_frontiers: Vec::new(),
         envelopes, partition_images: Vec::new(), aspect_contracts: manifest.aspect_contracts,
         lineage: contracts::lineage::data::artifacts::checkpoint_artifact::LineageCheckpointArtifact::new(manifest.lineage_basis.ordinary_owned_copy(), Vec::new()),

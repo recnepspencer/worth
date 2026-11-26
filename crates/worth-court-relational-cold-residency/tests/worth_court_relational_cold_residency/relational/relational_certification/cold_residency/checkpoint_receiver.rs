@@ -47,6 +47,7 @@ pub(super) fn reopen(
         .recover(request, plan)
         .unwrap();
     assert_eq!(source.reads.load(Ordering::Relaxed), 0);
+    assert_eq!(source.paged_reads.load(Ordering::Relaxed), 0);
     CheckpointReceiver {
         runtime,
         medium,

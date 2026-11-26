@@ -29,7 +29,7 @@ pub(crate) fn relational_manifest_digest(bytes: &[u8]) -> Option<CheckpointDiges
     let (native, world, signal) = parse_waphckp1_sections(bytes)?;
     let (header_cut, bindings, source, image, companion) = parse_wsrcai01(native)?;
     let (source_cut, cp, init_and_orig) = parse_wrthrcs1_checkpoint(source)?;
-    if !cp.starts_with(b"WORTH-REL-CHK23\n") {
+    if !cp.starts_with(b"WORTH-REL-CHK24\n") {
         return None;
     }
     verify_wrwmreg1(companion, &bindings)?;

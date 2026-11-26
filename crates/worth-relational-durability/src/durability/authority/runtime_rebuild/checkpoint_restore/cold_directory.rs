@@ -174,7 +174,14 @@ pub fn prepare(
         None if directory.manifest.mirror.is_empty() => Default::default(),
         None => return Err(corrupt("mirror has no schema carrier").into()),
     };
-    let record_identity = super::record_identity::prepare_record_identity(checkpoint)?;
+    // G7: only the four fixed-size roots are retained; partitions fault their
+    // allocator rows through the working set on first use.
+    let record_identity =
+        crate::durability::log::native_checkpoint_codec::identity_pages::open_paged_identity(
+            directory.manifest.record_identity.clone(),
+            directory.identity_member_custody(),
+            working_set.cloned(),
+        );
     let has_naming_schemes = !registry.persistent_name_schemes().is_empty()
         || regions.schemas.has_persistent_name_schemes();
     Ok(PreparedColdDirectory {

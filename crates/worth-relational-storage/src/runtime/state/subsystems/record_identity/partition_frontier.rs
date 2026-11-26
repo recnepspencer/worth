@@ -13,7 +13,10 @@ impl RecordIdentitySubsystem {
             request,
             |context, _memory| {
                 let state = self.lock();
-                let mut highest = None;
+                let mut highest = state
+                    .paged
+                    .as_ref()
+                    .and_then(|base| base.roots().partition_high_water);
                 let mut rows = state.next_slots.try_iter(|work, _bytes| {
                     crate::execution::request_stage::checkpoint(context, work).map_err(Cause::from)
                 })?;

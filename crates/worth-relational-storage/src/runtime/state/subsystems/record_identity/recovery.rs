@@ -22,6 +22,7 @@ impl RecordIdentitySubsystem {
         let reservations = {
             let mut state = self.lock();
             state.replay_gaps.clear();
+            state.base_pending_released = true;
             state
                 .pending
                 .iter()
@@ -183,6 +184,13 @@ impl RecordIdentitySubsystem {
         origin: RecordAllocationOrigin,
     ) -> Result<RecordSlotReservation, RecordAllocationDenial> {
         let mut state = self.lock();
+        state.fault(class, partition_id).map_err(|cause| {
+            RecordAllocationDenial::IdentityPageUnavailable {
+                class,
+                partition_id,
+                cause,
+            }
+        })?;
         let key = (class, partition_id, slot);
         let restored_origin = match origin {
             RecordAllocationOrigin::AppendFrontier => ReservationOrigin::AppendFrontier,

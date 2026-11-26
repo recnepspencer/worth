@@ -13,7 +13,20 @@ pub(in super::super) fn capture(
     routes: &crate::runtime::RelationalCanonicalPublicationRoutes,
     selection: crate::runtime::PerformedCheckpointSelection,
 ) -> Result<CapturedCheckpointBasis, DurabilityError> {
-    let record_identity = runtime.record_identity.checkpoint_identity();
+    let (record_identity, carried_record_identity) =
+        match runtime.record_identity.unchanged_paged_identity() {
+            Some(base) => (
+                worth_relational_storage::internal_port::storage::data::record_identity_image::DurableRecordIdentityState::current_with_memory(
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                    None,
+                ),
+                Some(base),
+            ),
+            None => (runtime.record_identity.try_checkpoint_identity()?, None),
+        };
     // Checkpointing is a cold lane: retire expired reader roots and their
     // derived generations before selecting bounded payloads.
     runtime.run_index_generation_reclamation_pass();
@@ -80,6 +93,7 @@ pub(in super::super) fn capture(
         covered_transitions,
         branch_roots,
         record_identity,
+        carried_record_identity,
         commit_descriptors: artifacts
             .iter()
             .map(|artifact| (artifact.identity().commit_id(), artifact.roots().clone()))
