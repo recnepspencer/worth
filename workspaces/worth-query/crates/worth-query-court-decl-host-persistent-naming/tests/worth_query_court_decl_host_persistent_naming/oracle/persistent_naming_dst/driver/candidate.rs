@@ -2,6 +2,8 @@
 //! and whose last stage, the probe, reads one name on the unpublished
 //! candidate. The world's answer (or typed refusal) must equal the
 //! reference; an answer commits the envelope, a refusal leaves zero effects.
+//! A name read of a record the first stage created answers with the name
+//! the envelope gives it, which must be the name its commit records (#426).
 use std::collections::BTreeMap;
 
 use super::{placements, Driver};
@@ -67,7 +69,9 @@ impl Driver {
         };
         let parts = vec![stage, Part::Probe(token.clone(), keys)];
         let outcome = self.world.parts(&self.token(step, "candidate"), parts);
-        let answered = self.candidate_answer(read, &probe::take(&token))?;
+        let observed = probe::take(&token);
+        let pending = created.first().map(|(_, model)| *model);
+        let answered = self.candidate_answer(read, &observed, pending)?;
         if answered != *expected {
             return Err(format!(
                 "candidate read {read:?} after {first:?} answered {answered:?}, model {expected:?}"
@@ -87,6 +91,21 @@ impl Driver {
             }
             return Ok(Vec::new());
         }
+        if let (Read::NameOfCreated, Some((key, _))) = (read, created.first()) {
+            let read = observed.iter().find_map(|observation| match observation {
+                Observation::Named { name, .. } => Some(*name),
+                _ => None,
+            });
+            let after = self
+                .world
+                .names(&self.token(step, "candidate-after"), &[key.as_str()], 0);
+            if read != Some(after[0]) {
+                return Err(format!(
+                    "`{key}` read {read:?} on the candidate, its commit recorded {:?}",
+                    after[0]
+                ));
+            }
+        }
         if let (Some(plan), First::Commit(op)) = (plan, first) {
             self.committed.push(vec![plan]);
             self.naming_commits += 1;
@@ -97,8 +116,15 @@ impl Driver {
         Ok(created)
     }
 
-    /// What the probe observed for `read`, as a model answer.
-    fn candidate_answer(&self, read: Read, observed: &[Observation]) -> Result<Answer, String> {
+    /// What the probe observed for `read`, as a model answer. A name no
+    /// model name holds yet is the `pending` model name the first stage
+    /// births, and only for a read of the record it created.
+    fn candidate_answer(
+        &self,
+        read: Read,
+        observed: &[Observation],
+        pending: Option<usize>,
+    ) -> Result<Answer, String> {
         let by_key: BTreeMap<&String, usize> =
             self.keys.iter().map(|(name, key)| (key, *name)).collect();
         let by_name: BTreeMap<WorthQueryName<Member>, usize> = self
@@ -117,6 +143,10 @@ impl Driver {
                 .get(name)
                 .copied()
                 .ok_or_else(|| "an unknown name".to_owned())
+        };
+        let born = |name: &WorthQueryName<Member>| match (read, named(name)) {
+            (Read::NameOfCreated, Err(_)) => pending.ok_or_else(|| "an unknown name".to_owned()),
+            (_, known) => known,
         };
         let answer = |status: &'static str, targets: Result<_, String>| {
             targets.map(|targets| Answer { status, targets })
@@ -153,7 +183,7 @@ impl Driver {
         }
         let read_key = observed.iter().find_map(|observation| match observation {
             Observation::Named { name, .. } => {
-                Some(answer("Named", named(name).map(|n| [n].into())))
+                Some(answer("Named", born(name).map(|n| [n].into())))
             }
             Observation::NameRefused { refusal, .. } => Some(refused(refusal)),
             _ => None,

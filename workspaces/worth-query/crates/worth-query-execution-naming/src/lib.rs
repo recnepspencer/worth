@@ -16,6 +16,7 @@
 
 mod admission;
 mod birth_plan;
+mod candidate_reads;
 mod commit_wiring;
 mod denial;
 mod invariant_reads;

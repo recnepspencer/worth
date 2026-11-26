@@ -37,6 +37,27 @@ impl WorthQueryApplicationRequiredOutputSource<Schema, super::StartPieces> for B
     }
 }
 
+/// Members the edit to a registered value also creates and names, each
+/// under its own occurrence, before its producer runs (#426).
+static BEARS: std::sync::Mutex<std::collections::BTreeMap<u64, (String, String)>> =
+    std::sync::Mutex::new(std::collections::BTreeMap::new());
+
+/// Has the edit to `value` also create member `key` born under `occurrence`.
+pub fn bear(value: u64, key: &str, occurrence: &str) {
+    BEARS
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .insert(value, (key.to_owned(), occurrence.to_owned()));
+}
+
+fn borne(value: u64) -> Option<(String, String)> {
+    BEARS
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .get(&value)
+        .cloned()
+}
+
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
     fn decide(
@@ -64,6 +85,22 @@ impl OperationHandler<Schema, Binding> for Handler {
         let result = (|| {
             let model = writer.projected_entity(&model)?;
             writer.write_field(&model, ModelValue::at("ModelValue"), input.value)?;
+            if let Some((key, occurrence)) = borne(input.value) {
+                let member = writer.create_entity_in_context(
+                    &model,
+                    Member::reference(),
+                    WorthQueryApplicationEntityKey::new(key.clone()).unwrap(),
+                )?;
+                writer.initialize_field(&member, MemberKey::at("MemberKey"), key.clone())?;
+                writer.initialize_field(&member, MemberValue::at("MemberValue"), 1)?;
+                writer.link(
+                    ModelMember::reference(),
+                    format!("owns:{key}"),
+                    &model,
+                    &member,
+                )?;
+                writer.name_created_entity(&member, outputs::birth(&occurrence, "authored"))?;
+            }
             if input.collide {
                 let key = format!("shape-{}-collide", input.key);
                 let member = writer.create_entity_in_context(

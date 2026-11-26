@@ -199,10 +199,14 @@ A coupled member (a later edit-envelope stage or a coupled producer) reads
 names in `decide` exactly as a direct operation does (`name_of`, `resolve`,
 `resolve_in`, `relation_name_of`, `resolve_relation`), answered from the
 envelope's commit basis and admitted only while the unpublished candidate
-leaves every record the answer rests on live at the same identity: a record
-an earlier member created refuses `UnpublishedCandidateRecord`, one it ended
-refuses `EndedInCandidate`, and an answer resting on an ended or unborn name
-refuses `CandidateNameHistory`, each vetoing the envelope with zero effects
+leaves every record the answer rests on live at the same identity. A record
+an earlier member created and named reads the name and birth the envelope's
+commit records (`name_of`, `relation_name_of`, `birth_of`,
+`relation_birth_of`), and seals; one it created unnamed refuses
+`UnpublishedCandidateRecord`, a naming plan the commit would refuse refuses
+`CandidateNaming`, one it ended refuses `EndedInCandidate`, and a resolution
+resting on an ended or unborn name refuses `CandidateNameHistory`, each
+vetoing the envelope with zero effects
 ([candidate-basis reads](build-an-application.md#holding-and-resolving-names)).
 Hold names as ordinary values
 ([names as values, in rows and within an owner](build-an-application.md#names-as-values-in-rows-and-within-an-owner)):

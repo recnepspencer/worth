@@ -9,7 +9,9 @@ use worth_relational::facade::lineage::{
     PersistentNameSubjectKind,
 };
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_relational::facade::runtime::{CustomInvariantNameReads, CustomInvariantNameView};
+use worth_relational::facade::runtime::{
+    CustomInvariantNameReads, CustomInvariantNameSource, CustomInvariantNameView,
+};
 
 /// Recorded names and the installed schemes that govern them.
 pub(crate) trait RecordedNames {
@@ -78,5 +80,34 @@ impl RecordedNames for InInvariant<'_> {
 
     fn scheme_subject(&self, scheme_id: &str) -> Option<(PersistentNameSubjectKind, String)> {
         self.names.scheme_subject(scheme_id)
+    }
+}
+
+/// An applied candidate's names: the committed names at its basis overlaid
+/// with those the envelope's earlier members give their records (#426).
+pub(crate) struct InCandidate<'a> {
+    pub(crate) source: &'a dyn CustomInvariantNameSource,
+    pub(crate) view: &'a dyn CustomInvariantNameView,
+}
+
+impl RecordedNames for InCandidate<'_> {
+    fn recorded_name(
+        &self,
+        subject: PersistentNameSubjectKind,
+        digest: &[u8; 32],
+    ) -> Option<PersistentNameKey> {
+        self.view.recorded_name(subject, digest)
+    }
+
+    fn scheme_of(&self, name: PersistentNameKey) -> Option<&str> {
+        self.view.scheme_of(name)
+    }
+
+    fn birth_of(&self, name: PersistentNameKey) -> Option<&PersistentNameBirthParts> {
+        self.view.birth_of(name)
+    }
+
+    fn scheme_subject(&self, scheme_id: &str) -> Option<(PersistentNameSubjectKind, String)> {
+        self.source.scheme_subject(scheme_id)
     }
 }

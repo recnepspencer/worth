@@ -41,6 +41,7 @@ pub mod group_naming;
 pub mod managed_index;
 pub mod name_owner;
 pub mod naming;
+mod pending_naming;
 pub mod relation_naming;
 pub use managed_index::{
     native_index_decision_cause, WorthQueryComputationManagedIndexDenial,
@@ -48,11 +49,11 @@ pub use managed_index::{
 };
 pub mod output_availability;
 pub mod shared_owner_scope;
-pub use shared_owner_scope::SharedOwnerRelation;
 pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
     WorthQueryOutputAvailabilityState,
 };
+pub use shared_owner_scope::SharedOwnerRelation;
 pub mod prior_output;
 
 pub use computation_calls::{

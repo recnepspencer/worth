@@ -1,7 +1,8 @@
 //! Birth reads on an applied candidate (#345): a visible birth is the
-//! candidate's answer whatever an earlier stage did to the record, while a
-//! lookup that found no birth refuses, since the unpublished candidate may
-//! bear exactly that birth.
+//! candidate's answer whatever an earlier stage did to the record, and so is
+//! a birth an earlier stage bears (#426); a lookup by parts that found no
+//! birth refuses, since the unpublished candidate may bear exactly that
+//! birth.
 use super::*;
 use probe::births::{self, BirthObservation};
 
@@ -63,8 +64,11 @@ fn a_lookup_of_a_birth_an_earlier_stage_may_bear_refuses_and_commits_nothing() {
     nothing_committed(&world, &outcome, &["fresh"]);
 }
 
+/// The held name is exactly the one an earlier stage of the envelope bears:
+/// its birth reads from the envelope's own naming authority (#426), seals,
+/// and is the birth the commit records.
 #[test]
-fn the_birth_of_a_name_an_earlier_stage_may_bear_refuses_and_commits_nothing() {
+fn the_birth_of_a_name_an_earlier_stage_bears_reads_and_commits() {
     // The name a fresh world's birth of `fresh` mints, read from a world that
     // already committed that very birth.
     let token = "cand-births-held";
@@ -87,10 +91,22 @@ fn the_birth_of_a_name_an_earlier_stage_may_bear_refuses_and_commits_nothing() {
             probed(token, &[]),
         ],
     );
+    assert!(matches!(outcome, Envelope::Committed(_)), "{outcome:?}");
     let observed = births::take(token);
-    let [BirthObservation::BirthRefused { refusal, .. }] = observed.as_slice() else {
-        panic!("the birth read refuses: {observed:?}");
+    let [BirthObservation::Born { birth, .. }] = observed.as_slice() else {
+        panic!("the pending birth reads: {observed:?}");
     };
-    assert_eq!(refusal, "CandidateNameHistory");
-    nothing_committed(&world, &outcome, &["fresh"]);
+    assert_eq!(birth.name(), held);
+    assert_eq!(
+        (birth.occurrence_key(), birth.role_path()),
+        ("cand-births-held-fresh", "authored")
+    );
+    let after = format!("{token}-after");
+    births::birth_of(&after, "fresh", held);
+    world.probe(&after, &[], 1);
+    assert_eq!(
+        births::take(&after),
+        observed,
+        "the birth its commit records"
+    );
 }

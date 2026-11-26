@@ -21,8 +21,11 @@
 //! such a record gains no new live descendant. Where that premise fails the
 //! read refuses typed and vetoes sealing, never answering from stale state:
 //!
-//! - a record not live at the basis was created by the candidate and has no
-//!   published name (`UnpublishedCandidateRecord`);
+//! - a record not live at the basis was created by the candidate. When it is
+//!   live in the candidate as read, an earlier envelope member may have
+//!   named it: its name and birth are read from the names the envelope gives
+//!   its records (`pending_naming`, #426). Otherwise, or when no member named
+//!   it, it has no name yet (`UnpublishedCandidateRecord`);
 //! - a footprint record the candidate ended (deleted, retired, split or
 //!   merged away) refuses `EndedInCandidate`; it is never filtered out, so an
 //!   ambiguous sibling set never collapses to the survivor;
@@ -86,11 +89,39 @@ impl<Schema: ApplicationSchema, Operation>
         read: impl FnOnce(&RelationalRuntime) -> T,
     ) -> Result<T, Denial> {
         let reader = &*self.reader;
-        let (before, candidate) = match &reader.native {
+        let candidate = match &reader.native {
             NativeProjectionRead::Committed(runtime) => return Ok(read(runtime)),
-            NativeProjectionRead::Applied {
-                before, candidate, ..
-            } => (before, candidate),
+            NativeProjectionRead::Applied { candidate, .. } => candidate,
+        };
+        self.require_candidate_aligned()?;
+        let instance = candidate
+            .candidate_identity()
+            .proposal()
+            .runtime_instance_id();
+        let access = self.source_query.ok_or(Denial::CandidateBasis)?;
+        let mut read = Some(read);
+        let mut answer = None;
+        access.with_committed_runtime_dyn(reader.execution, &mut |runtime| {
+            if runtime.runtime_instance_id() != instance {
+                return;
+            }
+            if let Some(read) = read.take() {
+                answer = Some(read(runtime));
+            }
+        });
+        answer.ok_or(Denial::CandidateBasis)
+    }
+
+    /// Proves an applied candidate aligned with this reader: proposed on the
+    /// same runtime instance, on exactly this reader's branch observation,
+    /// with `before` pinned at this reader's runtime, branch and version.
+    pub(super) fn require_candidate_aligned(&self) -> Result<(), Denial> {
+        let reader = &*self.reader;
+        let NativeProjectionRead::Applied {
+            before, candidate, ..
+        } = &reader.native
+        else {
+            return Ok(());
         };
         let proposal = candidate.candidate_identity().proposal();
         let instance = proposal.runtime_instance_id();
@@ -108,27 +139,36 @@ impl<Schema: ApplicationSchema, Operation>
         {
             return Err(Denial::CandidateBasis);
         }
-        let access = self.source_query.ok_or(Denial::CandidateBasis)?;
-        let mut read = Some(read);
-        let mut answer = None;
-        access.with_committed_runtime_dyn(reader.execution, &mut |runtime| {
-            if runtime.runtime_instance_id() != instance {
-                return;
-            }
-            if let Some(read) = read.take() {
-                answer = Some(read(runtime));
-            }
-        });
-        answer.ok_or(Denial::CandidateBasis)
+        Ok(())
+    }
+
+    /// What the applied candidate did to `record`: refuses, vetoing sealing,
+    /// a record it ended or one it created that is not live as read; admits
+    /// every record of a committed read as unaltered.
+    pub(super) fn candidate_record(
+        &mut self,
+        record: LineageRecordTarget,
+    ) -> Result<CandidateRecord, Denial> {
+        let classified = self.candidate_alteration(record);
+        if classified.is_err() {
+            self.decision_facts
+                .veto_persistent_name(PersistentNameReadVeto::ReadFailed);
+        }
+        classified
     }
 
     /// Refuses, vetoing sealing, a read of `record` the applied candidate
-    /// created or ended; admits every record of a committed read.
+    /// created or ended: a group member read rests on the basis grouping.
     pub(super) fn require_candidate_unaltered(
         &mut self,
         record: LineageRecordTarget,
     ) -> Result<(), Denial> {
-        let unaltered = self.candidate_alteration(record);
+        let unaltered = self
+            .candidate_alteration(record)
+            .and_then(|altered| match altered {
+                CandidateRecord::Unaltered => Ok(()),
+                CandidateRecord::Created => Err(Denial::UnpublishedCandidateRecord(record)),
+            });
         self.vetoed(unaltered)
     }
 
@@ -146,7 +186,10 @@ impl<Schema: ApplicationSchema, Operation>
         let footprint = dependencies
             .live_records_on(branch)
             .into_iter()
-            .try_for_each(|record| self.candidate_alteration(record))
+            .try_for_each(|record| match self.candidate_alteration(record)? {
+                CandidateRecord::Unaltered => Ok(()),
+                CandidateRecord::Created => Err(Denial::UnpublishedCandidateRecord(record)),
+            })
             .and_then(|()| {
                 if dependencies.ended_lineages_on(branch).is_empty()
                     && !dependencies.awaits_births_on(branch)
@@ -168,12 +211,15 @@ impl<Schema: ApplicationSchema, Operation>
     }
 
     /// How the applied candidate changed `record` since its commit basis:
-    /// `Ok` when it is live at the same identity at both (or the read is
-    /// committed).
-    fn candidate_alteration(&mut self, record: LineageRecordTarget) -> Result<(), Denial> {
+    /// `Unaltered` when it is live at the same identity at both (or the read
+    /// is committed), `Created` when only the candidate as read has it live.
+    fn candidate_alteration(
+        &mut self,
+        record: LineageRecordTarget,
+    ) -> Result<CandidateRecord, Denial> {
         let reader = &mut *self.reader;
         let NativeProjectionRead::Applied { before, .. } = &reader.native else {
-            return Ok(());
+            return Ok(CandidateRecord::Unaltered);
         };
         let execution = reader.execution;
         let at_candidate = match record {
@@ -208,8 +254,9 @@ impl<Schema: ApplicationSchema, Operation>
         let states = live(Some(before.project_read()))
             .and_then(|basis| live(at_candidate).map(|candidate| (basis, candidate)));
         match states {
-            Ok((true, true)) => Ok(()),
-            Ok((false, _)) => Err(Denial::UnpublishedCandidateRecord(record)),
+            Ok((true, true)) => Ok(CandidateRecord::Unaltered),
+            Ok((false, true)) => Ok(CandidateRecord::Created),
+            Ok((false, false)) => Err(Denial::UnpublishedCandidateRecord(record)),
             Ok((true, false)) => Err(Denial::EndedInCandidate(record)),
             Err(cause) => {
                 reader.native_read_stop.get_or_insert(cause);
@@ -220,4 +267,14 @@ impl<Schema: ApplicationSchema, Operation>
             }
         }
     }
+}
+
+/// A record an applied candidate's read admits.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum CandidateRecord {
+    /// Live at the same identity at the basis and in the candidate.
+    Unaltered,
+    /// Not live at the basis, live in the candidate as read: an earlier
+    /// envelope member created it.
+    Created,
 }

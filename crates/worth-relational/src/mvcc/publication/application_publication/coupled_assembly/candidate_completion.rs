@@ -120,6 +120,7 @@ pub(crate) fn prepare_coupled_candidate(
         fresh_records,
         authored_writes,
         read: std::cell::RefCell::new(None),
+        candidate_names: Default::default(),
         successor_rounds: 0,
         indexes,
         prefix_span,

@@ -65,7 +65,11 @@ pub enum PendingRecordName {
 #[derive(Debug, Default)]
 pub struct PendingCommitNames {
     records: BTreeMap<LineageRecordTarget, PendingRecordName>,
-    births: BTreeMap<[u8; PersistentNameIdentity::BYTE_LEN], PersistentNameBirthRecord>,
+    /// Each birth the commit mints, with the record it names.
+    births: BTreeMap<
+        [u8; PersistentNameIdentity::BYTE_LEN],
+        (PersistentNameBirthRecord, LineageRecordTarget),
+    >,
 }
 
 impl PendingCommitNames {
@@ -85,7 +89,7 @@ impl PendingCommitNames {
         subject: PersistentNameSubjectKind,
         digest: &[u8; PersistentNameIdentity::BYTE_LEN],
     ) -> Option<PersistentNameKey> {
-        let birth = self.births.get(digest)?;
+        let (birth, _) = self.births.get(digest)?;
         if birth.subject_kind() != subject {
             return None;
         }
@@ -96,8 +100,17 @@ impl PendingCommitNames {
     ///
     /// Complexity: O(log b) in the commit's b births.
     pub fn birth_of(&self, name: PersistentNameKey) -> Option<&PersistentNameBirthRecord> {
-        let birth = self.births.get(name.digest())?;
+        let (birth, _) = self.births.get(name.digest())?;
         (birth.subject_kind() == name.subject_kind()).then_some(birth)
+    }
+
+    /// The record this commit mints `name` for; `None` for a name it does
+    /// not mint.
+    ///
+    /// Complexity: O(log b) in the commit's b births.
+    pub fn born_record(&self, name: PersistentNameKey) -> Option<LineageRecordTarget> {
+        let (birth, record) = self.births.get(name.digest())?;
+        (birth.subject_kind() == name.subject_kind()).then_some(*record)
     }
 
     fn name(&mut self, target: LineageRecordTarget, name: PersistentNameIdentity) {
@@ -179,7 +192,9 @@ pub fn preview_commit_names(
     }
     for (target, birth) in validated.minted_births {
         names.name(target, birth.identity());
-        names.births.insert(*birth.identity().as_bytes(), birth);
+        names
+            .births
+            .insert(*birth.identity().as_bytes(), (birth, target));
     }
     // Every record the commit retires ends its name, postured or not: an
     // unpostured delete or replace, a cascaded relation, a selection's

@@ -9,10 +9,14 @@ EXTENDS PersistentNaming
   later authored stage) then reads a name in its decision. The candidate has
   no name index of its own: the read answers from the derived index at the
   commit basis, admitted by Query's rule
-  (`worth-query-execution-lineage` `operation_reader::candidate_naming`):
+  (`worth-query-execution-lineage` `operation_reader::candidate_naming`),
+  overlaid with the names the envelope's own naming plan gives the records
+  its members created (`operation_reader::pending_naming`, #426):
 
-  - `name_of` a record not live at the basis refuses `RefusedUnpublished`
-    (the candidate created it; it has no published name);
+  - `name_of` a record not live at the basis answers with the name the
+    envelope gives it (`CandNames`: the candidate's own holders of its new
+    generation), which its commit then records; one the envelope names
+    nothing refuses `RefusedUnpublished`;
   - `name_of` a basis record the candidate ended refuses `RefusedEnded`;
   - `resolve` refuses `RefusedEnded` when any live record its basis answer
     rests on is not live at the same identity (generation) in the
@@ -27,8 +31,9 @@ EXTENDS PersistentNaming
   with zero effects. An answered read lets the envelope commit `first`.
   `CandidateReadSound` states the safety claim: an answered read equals what
   the committed envelope then makes true. It never returns a stale or ended
-  record, never fabricates an unpublished name, and never collapses an
-  ambiguous sibling set after an unpublished retirement.
+  record, never answers a pending name other than the one the commit
+  records, and never collapses an ambiguous sibling set after an
+  unpublished retirement.
 
   A field edit (`Edit`) changes no lineage: it appends no event. Re-owning a
   record is not modelled (the owner lives in Native adjacency, not the
@@ -84,6 +89,9 @@ CommitFirst(kind, x, y, z, o1, o2, p) ==
 
 Refused(s) == [status |-> s, targets |-> {}]
 
+\* The names a holder map gives the live records of generation `g`.
+NamesOfGen(state, g) == {m \in Names : state[m].alive /\ state[m].gen = g}
+
 \* Query's candidate-basis `resolve`: the basis answer, admitted only when
 \* every live record it rests on is unchanged and no ended or unborn name
 \* was walked.
@@ -102,13 +110,19 @@ ImplNameOf(cand, n) ==
         THEN [status |-> "Named", targets |-> {n}]
         ELSE Refused("RefusedEnded")
 
+\* Query's `name_of` of the record `first` created (generation `nextGen`):
+\* the name the envelope's own plan gives it on the candidate, before any
+\* commit (#426). A created record it names nothing refuses.
+ImplNameOfCreated(cand) ==
+    IF NamesOfGen(cand, nextGen) = {} THEN Refused("RefusedUnpublished")
+    ELSE [status |-> "Named", targets |-> NamesOfGen(cand, nextGen)]
+
 ImplRead(cand, rk, rn, scope, sel) ==
     CASE rk = "Resolve" -> ImplResolve(cand, rn, scope, sel)
       [] rk = "NameOf" -> ImplNameOf(cand, rn)
-      [] rk = "NameOfCreated" -> Refused("RefusedUnpublished")
+      [] rk = "NameOfCreated" -> ImplNameOfCreated(cand)
 
 \* What the committed envelope makes true of the same read (primed state).
-NamesOfGen(state, g) == {m \in Names : state[m].alive /\ state[m].gen = g}
 
 TruthAfter(rk, rn, scope, sel, basisGen, createdGen) ==
     CASE rk = "Resolve" -> AnswerIn(events', rn \in everBorn', live', rn, scope, sel)

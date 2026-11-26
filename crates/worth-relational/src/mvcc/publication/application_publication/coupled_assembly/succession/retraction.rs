@@ -92,6 +92,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         // another chain's records may still name the ones retracted here
         // until the round re-creates them, so no pin of it is cached.
         self.read.replace(None);
+        self.candidate_names.take();
         Ok(superseded)
     }
 }

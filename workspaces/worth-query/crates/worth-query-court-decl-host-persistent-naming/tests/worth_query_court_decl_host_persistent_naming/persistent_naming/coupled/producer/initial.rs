@@ -66,6 +66,7 @@ impl OperationHandler<Schema, Binding> for Handler {
             if prior.is_some() {
                 return Ok(Err(edit::Denial::ModelMismatch));
             }
+            super::pending_reads::decide(reader, input.value)?;
             let cut = super::reads::decide(reader, input.value)?;
             let grouped = super::group_reads::decide(reader, input.value);
             Ok(Ok(Decision {

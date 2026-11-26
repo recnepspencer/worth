@@ -40,7 +40,7 @@ pub(crate) fn test_name<K>(byte: u8) -> WorthQueryName<K> {
 pub(crate) use birth::admit_birth_of;
 pub(crate) use observed::entity_scheme_subject;
 pub use observed::ObservedEntityNames;
-pub(crate) use recorded_names::{AtObservation, InInvariant, RecordedNames};
+pub(crate) use recorded_names::{AtObservation, InCandidate, InInvariant, RecordedNames};
 pub(crate) use resolved::{
     kind_verified_resolved_name, resolved_group_handle, verify_resolved_subject, RequestedSubject,
 };
@@ -188,11 +188,11 @@ impl AdmittedCommitNames {
         &self,
         relation_id: RelationId,
     ) -> Result<&PersistentNameBirthRecord, ExecutionNamingDenial> {
-        self.relation_births
-            .get(&relation_id)
-            .ok_or_else(|| ExecutionNamingDenial::UnadmittedBirth {
+        self.relation_births.get(&relation_id).ok_or_else(|| {
+            ExecutionNamingDenial::UnadmittedBirth {
                 detail: format!("relation {relation_id:?} has no committed persistent name birth"),
-            })
+            }
+        })
     }
 
     pub fn birth_count(&self) -> usize {

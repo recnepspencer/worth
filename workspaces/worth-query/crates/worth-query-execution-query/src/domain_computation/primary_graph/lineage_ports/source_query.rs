@@ -126,6 +126,15 @@ impl<S: ApplicationSchema + 'static> SourceQueryReaderPort for SourceQueryReader
         Some(claimed)
     }
 
+    fn with_applied_candidate_names(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        candidate: &RelationalAppliedCandidateReadIdentity,
+        read: &mut dyn FnMut(&dyn worth_relational::facade::runtime::CustomInvariantNameSource),
+    ) -> Result<(), worth_relational::facade::runtime::CustomInvariantNameReadDenial> {
+        SourceQueryReaderAccess::with_applied_candidate_names(self, execution, candidate, read)
+    }
+
     fn observation_components_any(
         &self,
     ) -> (

@@ -24,6 +24,7 @@ pub enum SourceQueryRequest<I> {
 }
 mod admitted;
 mod applied;
+mod candidate_names;
 mod current_control;
 mod permission;
 mod predecessor;

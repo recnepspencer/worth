@@ -817,14 +817,27 @@ replay:
   answer exactly while every record it rests on is live at the same
   identity in both: a field edit, a re-owning or an in-place merge keeper
   keeps the answer, and owner chains are read on the candidate itself, so
-  `resolve_in` sees a same-envelope re-owning. Otherwise the read refuses
-  typed and vetoes the envelope with zero effects: a record an earlier
-  member created has no published name (`UnpublishedCandidateRecord`); a
-  record it deleted, retired, split or merged away (any one of a resolved
-  name's live records, never silently dropped) refuses `EndedInCandidate`;
-  and an answer resting on an ended or unborn name refuses
+  `resolve_in` sees a same-envelope re-owning. A record an earlier member
+  created and named (a birth, a split piece, a merge result, a regeneration
+  or restore) reads, through `name_of` / `relation_name_of`, the exact name
+  the envelope's commit records for it, and `birth_of` /
+  `relation_birth_of` read that name's birth (its discriminator decodes
+  under the kinds its references, pending or committed, were born as).
+  These answers come from the envelope's own naming authority, previewed
+  over the applied candidate exactly as finalization validates and mints,
+  and they seal: the record is created by this very commit, so a chain of
+  coupled producers each reading what the one before it created commits in
+  one envelope. Otherwise the read refuses typed and vetoes the envelope
+  with zero effects: a record an earlier member created but named nothing
+  has no name (`UnpublishedCandidateRecord`); an earlier member's naming
+  plan the commit would refuse (`MissingBirth`, `DuplicateBirth`, a stale
+  naming basis) refuses `CandidateNaming` with that exact denial; a record
+  it deleted, retired, split or merged away (any one of a resolved name's
+  live records, never silently dropped) refuses `EndedInCandidate`; and a
+  resolution resting on an ended or unborn name refuses
   `CandidateNameHistory`, because the candidate may restore, regenerate or
-  bear it. A coupled producer's successor round reads a record or relation
+  bear it. An envelope that refuses after such a read leaves no trace of
+  the names it read. A coupled producer's successor round reads a record or relation
   its own chain wrote as it was at the chain head, as all its other reads
   of it are served, so it can read and act again on a name its earlier
   round retired. Every admitted read records the same decision facts as a
