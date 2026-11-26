@@ -64,7 +64,8 @@ pub mod document_history {
         WorthQueryDocumentHistoryCloseFailure, WorthQueryDocumentHistoryCloseReceipt,
         WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
         WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryEnvelopeConstraint,
-        WorthQueryDocumentHistoryEnvelopeIntent, WorthQueryDocumentHistoryGroupAborting,
+        WorthQueryDocumentHistoryCorrectionMeaning, WorthQueryDocumentHistoryEnvelopeIntent,
+        WorthQueryDocumentHistoryGroupAborting,
         WorthQueryDocumentHistoryGroupAdoptionFailure, WorthQueryDocumentHistoryGroupPreparation,
         WorthQueryDocumentHistoryGroupReservation, WorthQueryDocumentHistoryNavigation,
         WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryOperationConstraint,
@@ -89,6 +90,7 @@ pub mod document_history {
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::{
         WorthQueryHistoryEnrollmentObservationForTest, WorthQueryHistoryEnrollmentReportForTest,
+        WorthQueryHistoryReversalFactForTest,
     };
 }
 
@@ -100,6 +102,9 @@ pub mod recorded_correction {
         WorthQueryCorrectionInputSelection, WorthQueryCorrectionIntent,
         WorthQueryPreparedCorrectionSource, WorthQuerySelectedCorrectionAlternative,
     };
+    /// A history document's own navigation, as restored support reads it
+    /// (tree-based undo's ruling B).
+    pub use crate::domain_computation::primary_graph::product_operation::WorthQueryCorrectionNavigationLineage;
 }
 
 pub mod capability_workflow {

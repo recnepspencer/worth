@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryCompletedRequiredOutputs,
     WorthQueryRecoveredApplicationCommitReceipt,
 };
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_query_execution_query::facade::ports::CompletedRequiredOutputsInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
@@ -185,8 +186,11 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 if !source.is_selected_at(selected.product().observation()) {
                     return Err(Denial::ReceiptMismatch);
                 }
+                // The member's receipt is selected at this head.
+                let commit = selected.product().observation().selected_commit().clone();
                 CapturedMember {
                     endpoint: selected.retain_application_read(),
+                    commit,
                     root_posture: None,
                 }
             }
@@ -200,6 +204,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 }
                 CapturedMember {
                     endpoint: Arc::clone(retained),
+                    commit: receipt.committed_product_publication().composite_commit().clone(),
                     root_posture: Some(completed.root_posture()),
                 }
             }

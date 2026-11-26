@@ -206,6 +206,8 @@ where
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let restored = &readmitted.restored;
         let crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin::Checkpoint(checkpoint) = &restored.origin else {
+            // A historical row is the transported row itself, already recorded.
+            self.mark_recorded_output(execution, readmitted);
             return Ok(());
         };
         let output_binding = restored.correspondence.binding_type().ok_or_else(|| {
@@ -238,18 +240,57 @@ where
                 Some(checkpoint.clone()),
             None,
         );
-        let witness = restored
+        if let Some(recorded) = recorded {
+            self.establish_readmitted_marks(execution, readmitted, &recorded.identity, &recorded.facts);
+        }
+        Ok(())
+    }
+
+    /// A readmission of a row lineage already holds (a join of the adopted
+    /// row, or a historical row) still compared it in full at `verified_at`.
+    /// Its lineage row is not recorded again; only its marks are established
+    /// there. Without them the next clean demand finds no row at a forked
+    /// head, discloses, and readmits the same row again without end
+    /// (public #353).
+    pub fn mark_recorded_output(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        readmitted: &ReadmittedOutput,
+    ) {
+        if readmitted.verified_at.is_none() {
+            return;
+        }
+        let facts = self
+            .runtime.primary_provider
+            .graph_ref()
+            .output_lineage_ref()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .restored_facts(&readmitted.settlement);
+        if let Some(facts) = facts {
+            self.establish_readmitted_marks(execution, readmitted, &readmitted.settlement, &facts);
+        }
+    }
+
+    /// Readmission is this output's one full comparison, made at
+    /// `verified_at` (absent when nothing was compared at the current head).
+    /// Recording it as marks lets the next clean demand read them instead;
+    /// a stop here leaves the output requiring verification.
+    fn establish_readmitted_marks(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        readmitted: &ReadmittedOutput,
+        identity: &std::sync::Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+        recorded_facts: &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts,
+    ) {
+        let witness = readmitted
+            .restored
             .native_output_witness
             .as_ref()
             .and_then(|witness| witness.get());
-        if let (Some(recorded), Some(witness), Some(head)) =
-            (recorded, witness, readmitted.verified_at.as_ref())
-        {
-            // Readmission is this output's one full comparison. Recording it
-            // as marks lets the next clean demand read them instead; a stop
-            // here leaves the output requiring verification.
+        if let (Some(witness), Some(head)) = (witness, readmitted.verified_at.as_ref()) {
             let source_owner = self.runtime.primary_provider.graph_ref().source_owner_ref();
-            if let Some(facts) = recorded.facts.for_comparison().filter(|_| {
+            if let Some(facts) = recorded_facts.for_comparison().filter(|_| {
 use crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop;
 use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as NativeStop;
                 match source_owner.mint_mark_cell_at_head(execution, head.branch_id()) {
@@ -263,15 +304,15 @@ use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as Nati
                         | NativeStop::HeadUnavailable)) => false,
                 }
             }) {
-                let _ = source_owner.invalidation_owner.establish_verified_root(head, &recorded.identity, &facts, witness);
+                let _ = source_owner.invalidation_owner.establish_verified_root(head, identity, &facts, witness);
             }
         }
-        Ok(())
     }
 }
 
-/// A checkpoint output whose facts and output were compared in full at
-/// `verified_at`, the head of its branch.
+/// A restored output whose facts and output were compared in full at
+/// `verified_at`, the head of its branch (absent when no marks may be
+/// recorded from the comparison).
 pub struct ReadmittedOutput {
     pub computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence,
     pub restored: crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput,

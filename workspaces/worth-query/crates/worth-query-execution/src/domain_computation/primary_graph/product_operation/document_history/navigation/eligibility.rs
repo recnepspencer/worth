@@ -36,6 +36,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     model: &HistoryModelIdentity,
     source: &WorthQueryHistoryPreview,
     outputs: Option<&super::WorthQueryHistoryOutputProfile>,
+    companions: &worth_relational::facade::branch::RelationalOwnedGraphCompanions,
 ) -> Result<(), Denial> {
     let definition = installed.definition().parts();
     let navigation = definition
@@ -237,13 +238,14 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                             super::super::WorthQueryDocumentHistoryDenial::InstalledBindingMismatch,
                         ))?;
                 let graph = native
-                    .prepare_owned_model_graph_selection(
+                    .prepare_owned_model_graph_selection_with_companions(
                         &execution,
                         current.product().relational_basis(),
                         historical.product().relational_basis(),
                         ownership,
                         layout.installed_history_ownership(),
                         model.entity(),
+                        companions.clone(),
                     )
                     .map_err(Denial::OwnedGraph)?;
                 let transaction = native
@@ -267,6 +269,11 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                 )?;
                 drop(prepared);
                 return Ok(());
+            }
+            // A scope-record selection carries no companion records, so a
+            // move across a recorded correction needs the owned-graph domain.
+            if companions != &Default::default() {
+                return Err(correction(Eligibility::ModelDomain));
             }
             let transaction = native
                 .begin_branch_transaction(

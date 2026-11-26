@@ -1,7 +1,7 @@
 use crate::identity::data::EntityId;
 pub use custody_observation::{observe_candidate_custody_reads, RelationalCandidateCustodyReads};
 pub use graph_denial::{RelationalOwnedModelForeignRelation, RelationalOwnedModelSelectionDenial};
-pub use graph_selection::RelationalOwnedModelGraphSelection;
+pub use graph_selection::{RelationalOwnedGraphCompanions, RelationalOwnedModelGraphSelection};
 pub use native_read::RelationalModelOwnershipDomain;
 pub use read_denial::{RelationalModelOwnershipConflict, RelationalModelOwnershipDenial};
 pub use selection::RelationalOwnedModelEntityBoundary;

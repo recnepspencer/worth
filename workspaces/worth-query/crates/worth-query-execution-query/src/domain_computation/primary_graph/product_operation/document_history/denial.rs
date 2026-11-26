@@ -65,6 +65,25 @@ pub enum WorthQueryDocumentHistoryDenial {
     RecordingIdentityExhausted,
     AttemptInFlight,
     IntentDrift,
+    /// A correction's source is not a step the document recorded on its
+    /// selected line (the current step or one of its ancestors): an undone
+    /// step, a step on another branch, or a commit from before
+    /// `attach_history`. Refused before any reservation (plan §10.1a).
+    SourceNotOnSelectedLine {
+        source: worth_runtime_world::facade::CompositeCommitIdentity,
+    },
+    /// A correction envelope needs a history whose model domain is an owned
+    /// model graph (tree-based undo Phase 2): navigation restores what a
+    /// correction retired, and its reversal fact, through the owned graph.
+    /// Refused when the envelope opens, before anything else; the document
+    /// is returned unchanged.
+    CorrectionRequiresOwnedModelGraph,
+    /// Spec-owner ruling 8a.2: Phase 2 records only an authored
+    /// `retire_created` (with its owned-subgraph cascades) or
+    /// `restore_retired`. A correction with no authored identity, or with
+    /// another one (live-owner members, preserve), refuses when the envelope
+    /// opens, before anything else; the document is returned unchanged.
+    UnsupportedHistoryCorrection,
     /// The step metadata exceeds the installed `maximum_step_metadata_bytes`.
     StepMetadataTooLarge {
         length: usize,

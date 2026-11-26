@@ -14,6 +14,7 @@ mod schema;
 use schema::*;
 mod courts;
 mod custody;
+mod dst;
 mod edit;
 mod family;
 mod historical_source;
@@ -36,6 +37,16 @@ worth_query_portable_type!(History => "worth.owned-outputs.history.v1");
 impl ApplicationHistoryBinding<Schema> for History {
     type Access = query::model::Read;
     const IDENTITY: &'static str = "OwnedOutputsHistory";
+}
+
+/// A scope-record history over the same model, which records the DST's
+/// edits but whose domain admits no correction envelope (Phase 2 confines
+/// corrections to an owned model graph).
+pub struct ScopeHistory;
+worth_query_portable_type!(ScopeHistory => "worth.owned-outputs.scope-history.v1");
+impl ApplicationHistoryBinding<Schema> for ScopeHistory {
+    type Access = query::model::Read;
+    const IDENTITY: &'static str = "OwnedOutputsScopeHistory";
 }
 pub struct Completion;
 impl<B: ApplicationMutationBinding<Schema>> ApplicationActionDelivery<Schema, B> for Completion {

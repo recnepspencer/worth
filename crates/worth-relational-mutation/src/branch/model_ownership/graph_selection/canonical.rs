@@ -35,6 +35,27 @@ impl RelationalOwnedModelGraphSelection {
                 })?;
             selected_entities.push(SelectedEntity { id, kind });
         }
+        let mut companion_selected = Vec::new();
+        for &id in &self.companions().restore {
+            let kind = entities
+                .selected_basis()
+                .get_current_partition(id.partition_id)
+                .and_then(|region| region.entity(id))
+                .filter(|slot| slot.is_live())
+                .and_then(|slot| slot.kind_id())
+                .ok_or_else(|| {
+                    TransactionCommitError::conflict(CommitConflict::new(
+                        ConflictClass::MutationStateInconsistency {
+                            detail: "prepared graph selected companion unavailable".into(),
+                            evidence:
+                                MutationStateInconsistencyEvidence::MaterializationTransition {
+                                    record: RecordRef::Entity(id),
+                                },
+                        },
+                    ))
+                })?;
+            companion_selected.push(SelectedEntity { id, kind });
+        }
         let selected_basis = entities
             .selected_basis()
             .descriptor()
@@ -48,6 +69,8 @@ impl RelationalOwnedModelGraphSelection {
             selected_entities,
             self.current_relations().values().copied().collect(),
             self.selected_relations().values().copied().collect(),
+            self.companions().retire.iter().copied().collect(),
+            companion_selected,
         ))
     }
 }

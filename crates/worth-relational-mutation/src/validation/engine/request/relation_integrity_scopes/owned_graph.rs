@@ -6,10 +6,16 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
         &mut self,
         selection: &worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelection,
     ) -> Result<(), TransactionCommitError> {
-        for id in selection.retired_entities() {
+        for id in selection
+            .retired_entities()
+            .chain(selection.companion_retired())
+        {
             self.collect_entity_removal(id)?;
         }
-        for (id, kind) in selection.selected_entities() {
+        for (id, kind) in selection
+            .selected_entities()
+            .chain(selection.companion_selected())
+        {
             self.check_live()?;
             if let Some(entities) = &mut self.revalidated_entities {
                 entities.insert(id);

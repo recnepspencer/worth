@@ -225,3 +225,30 @@ fn a_member_edit_keeps_its_new_source_route_through_reverse_and_reapply() {
         "{err:?}"
     );
 }
+
+/// Ruling 8a.2 (review r1 blocker 3): a live-owner member correspondence is
+/// not a Phase 2 history correction. Through the document it refuses when the
+/// envelope opens, typed, and the document comes back to close cleanly.
+#[test]
+fn a_live_owner_member_correction_refuses_at_correction_envelope_open() {
+    let host = world::install_program_with_other_model::<program::Program>(host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 0, Some(7));
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let old = Row { key: "old".into(), value: 11 };
+    let initial = Intent { owner: "a".into(), value: Some(1), retire: vec![], create: vec![old] };
+    publish(&host, &request, initial, "initialize-input");
+    let new = Row { key: "new".into(), value: 22 };
+    let retarget = Intent { owner: "a".into(), value: Some(2), retire: vec!["old".into()], create: vec![new] };
+    let receipt = publish(&host, &request, retarget, "retarget-input");
+    let document = world::attach(&host);
+    let limits = WorthQueryCorrectionHistoryLimits::new(None, NonZeroUsize::MIN);
+    let selected = request.corrections().select(&receipt, limits).unwrap();
+    let reverse = request.corrections().reverse(&selected).idempotency("undo-retarget").limits(limits);
+    let opened = document.correction_envelope::<correction::Revision, program::Program, program::Tree>(&host, reverse);
+    let Err(failure) = opened else { panic!("a live-owner member correction must refuse at open") };
+    let (document, denial) = failure.into_parts();
+    assert_eq!(format!("{denial:?}"), "History(Document(UnsupportedHistoryCorrection))");
+    assert_eq!(input(&request, "new").value, 22, "nothing ran");
+    host.with_host_advancement(|phase| document.close(&phase).unwrap()).unwrap();
+}

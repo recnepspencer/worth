@@ -9,7 +9,12 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::{
-    application_operation::{ApplicationMutationBinding, ApplicationMutationIntent},
+    application_aftermath::{ApplicationCorrectionBinding, ApplicationInverseBinding},
+    application_operation::{
+        ApplicationMutationAdmissionBinding, ApplicationMutationBinding, ApplicationMutationInputScope,
+        ApplicationMutationIntent, ApplicationMutationOutputPosture, ApplicationMutationScopeResolution,
+    },
+    application_history::ApplicationHistoryModelDomain,
     application_program::ApplicationProgramDefinition,
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
@@ -93,6 +98,119 @@ where
     }
 }
 
+impl<'runtime, S, H, Payload, Outputs>
+    WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>
+where
+    S: ApplicationSchema,
+    H: ApplicationHistoryBinding<S>,
+    Payload: WorthQueryHistoryPayloadMode<S, H>,
+{
+    /// Begin a correction envelope recorded as this document's next step:
+    /// stage 0 reverses the selected source, and stages pushed after it commit
+    /// with it. The source must be a step this document recorded on its
+    /// selected line, and its meaning names the stage it reverses, so any
+    /// stage of a multi-stage step can be corrected (public #368). Reversing
+    /// a creation cascades only to what the same source binding created
+    /// (`co_retire_created`); a sibling another stage created stays, so the
+    /// reversal refuses as a partial retirement while that sibling lives. A
+    /// retirement in a stage after the corrective one is postponed on public
+    /// #369 (it refuses `LaterStageRetirementPostponed`). A correction step
+    /// cannot itself be corrected: a corrective binding declares no
+    /// correction, so selecting it refuses `SourceNotCorrectable`. Reapply
+    /// cannot reach a document at all: this takes only a reversal request
+    /// (`corrections().reverse(..)`), and `corrections().reapply(..)` builds a
+    /// different type, so a history reapplication does not compile (ruling
+    /// 8a.2; history reapply is future work). The step's reversal fact follows navigation: a move
+    /// retires the facts of the steps it leaves and restores those of the
+    /// steps it enters. A correction needs an owned-model-graph history: any
+    /// other model domain refuses `CorrectionRequiresOwnedModelGraph` before
+    /// anything else, and navigation refuses again across a recorded
+    /// correction (defense in depth). Only an authored `retire_created` or
+    /// `restore_retired` records (ruling 8a.2); any other correction refuses
+    /// `UnsupportedHistoryCorrection` at open.
+    pub fn correction_envelope<'request, 'program, C, P, R>(
+        self,
+        program: &'program WorthQueryProgramApplicationRuntime<S, P>,
+        correction: crate::application_entry::correction::WorthQueryApplicationCorrectionRequest<
+            'request,
+            'request,
+            'request,
+            'request,
+            S,
+        >,
+    ) -> Result<
+        WorthQueryHistoryEditEnvelope<
+            'runtime,
+            'request,
+            'program,
+            S,
+            H,
+            P,
+            <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::IdempotencyKey,
+            Payload,
+            Outputs,
+        >,
+        WorthQueryHistoryEditEnvelopeFailure<'runtime, S, H, Payload, Outputs>,
+    >
+    where
+        P: ApplicationProgramDefinition<S>,
+        C: ApplicationCorrectionBinding<S>,
+        ApplicationInverseBinding<S, C>: ApplicationMutationBinding<S> + ApplicationMutationAdmissionBinding<S>,
+        <ApplicationInverseBinding<S, C> as ApplicationMutationAdmissionBinding<S>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<S, ApplicationInverseBinding<S, C>>,
+        <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync + ApplicationMutationInputScope<S, ApplicationInverseBinding<S, C>>,
+        <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::Result: Send,
+        <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::Denial: Send,
+        <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeResolution<S, <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::PrincipalIdentity>,
+        <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::IdempotencyKey: serde::Serialize + Send + Sync + 'static,
+        R: crate::application_entry::mutation::envelope::entry::outputs::EditStageOutputs<S, ApplicationInverseBinding<S, C>>,
+    {
+        let runtime = self.owner.application();
+        let corrections = correction.corrections();
+        let (principal, scope) = (corrections.principal, corrections.scope);
+        let domain = runtime
+            .installed_schema()
+            .installed_history::<H>()
+            .map(|installed| installed.definition().parts().model_domain);
+        let refusal = if let Err(cause) = domain {
+            Some(WorthQueryApplicationHistoryDenial::Installation(cause))
+        } else if domain != Ok(ApplicationHistoryModelDomain::OwnedModelGraph) {
+            Some(WorthQueryApplicationHistoryDenial::Document(
+                WorthQueryDocumentHistoryDenial::CorrectionRequiresOwnedModelGraph,
+            ))
+        } else if !supported_history_correction::<S, C>() {
+            Some(WorthQueryApplicationHistoryDenial::Document(
+                WorthQueryDocumentHistoryDenial::UnsupportedHistoryCorrection,
+            ))
+        } else if !std::ptr::eq(runtime, corrections.application)
+            || !std::ptr::eq(runtime, program.runtime())
+        {
+            Some(WorthQueryApplicationHistoryDenial::ForeignRuntime)
+        } else if corrections.branch != self.owner.branch() {
+            Some(WorthQueryApplicationHistoryDenial::RequestTargetMismatch)
+        } else {
+            None
+        };
+        if let Some(denial) = refusal {
+            return Err(WorthQueryHistoryEditEnvelopeFailure {
+                document: self,
+                denial: WorthQueryHistoryEditEnvelopeDenial::History(denial),
+            });
+        }
+        match correction.history_envelope::<C, P, R>(program) {
+            Ok(envelope) => Ok(WorthQueryHistoryEditEnvelope {
+                envelope,
+                principal,
+                scope,
+                document: self,
+            }),
+            Err(denial) => Err(WorthQueryHistoryEditEnvelopeFailure {
+                document: self,
+                denial: WorthQueryHistoryEditEnvelopeDenial::Correction(denial),
+            }),
+        }
+    }
+}
+
 impl<'runtime, S, H, P, K, Payload, Outputs>
     WorthQueryHistoryEditEnvelope<'runtime, '_, '_, S, H, P, K, Payload, Outputs>
 where
@@ -167,4 +285,20 @@ where
         f.debug_struct("WorthQueryHistoryEditEnvelope")
             .finish_non_exhaustive()
     }
+}
+
+/// Ruling 8a.2: an authored `retire_created` (its source creates, cascades
+/// included) or `restore_retired` (its source retires). A correction with no
+/// authored identity, a live-owner member correspondence, or a preserving
+/// source is not one.
+fn supported_history_correction<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>() -> bool {
+    C::authored_identity()
+        .and_then(|authored| authored.declaration().ok())
+        .is_some_and(|declared| {
+            declared.live_member_owner().is_none()
+                && matches!(
+                    declared.parts().source_posture,
+                    ApplicationMutationOutputPosture::Create | ApplicationMutationOutputPosture::Retire
+                )
+        })
 }

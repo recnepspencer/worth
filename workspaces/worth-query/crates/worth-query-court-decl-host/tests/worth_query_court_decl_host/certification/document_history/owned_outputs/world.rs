@@ -51,7 +51,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         restricted::contracts(contracts)?;
         upstream::contracts(contracts)?;
         downstream::contracts(contracts)?;
-        restricted_owned::contracts(contracts)
+        restricted_owned::contracts(contracts)?;
+        dst::fixture::contracts(contracts)
     }
     fn configure(
         configuration: Configuration,
@@ -66,11 +67,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
             configuration.reconciliation_owned_orbits,
         )?;
         setup.handler::<authored_member::retire::Binding, _>(authored_member::retire::Handler)?;
-        setup.handler::<authored_member::restore::Binding, _>(
-            authored_member::restore::Handler {
-                wrong_key: configuration.wrong_inverse_member,
-            },
-        )?;
+        let restore = authored_member::restore::Handler { wrong_key: configuration.wrong_inverse_member };
+        setup.handler::<authored_member::restore::Binding, _>(restore)?;
         setup.handler::<edit::Binding, _>(edit::Handler)?;
         setup.handler::<synchronous_edit::new_source::restricted::Binding, _>(
             synchronous_edit::new_source::restricted::Handler,
@@ -103,7 +101,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         restricted::install(setup)?;
         upstream::install(setup)?;
         downstream::install(setup)?;
-        restricted_owned::install(setup)
+        restricted_owned::install(setup)?;
+        dst::fixture::install(setup)
     }
 }
 pub fn install() -> Host {

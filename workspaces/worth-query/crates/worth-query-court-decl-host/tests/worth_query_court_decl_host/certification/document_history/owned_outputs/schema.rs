@@ -57,6 +57,13 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
         Registrations,
         authored_member::correction::UndoRetire,
         member_retarget::correction::Revision,
+        (
+            dst::fixture::UndoCreateE1,
+            dst::fixture::UndoCreateE2,
+            dst::fixture::UndoRetireE1,
+            dst::fixture::UndoRetireE2,
+            dst::fixture::UndoCreateE1Numeric,
+        ),
     );
 }
 impl Contribution {
@@ -148,7 +155,7 @@ fn declare(
     let schema = family::diamond::declare(predecessor::declare(
         family::predecessor_family::declare(schema),
     ));
-    let schema = synchronous_edit::envelope_fixture::declare(schema);
+    let schema = synchronous_edit::envelope_fixture::declare(dst::fixture::declare(schema));
     let schema = synchronous_edit::new_source::declare(synchronous_edit::declare(
         authored_member::declare(schema),
     ));
@@ -160,7 +167,7 @@ fn declare(
             second::declare(first::declare(permission::declare(schema))),
         )))),
     )))
-    .application_history(
+    .application_history(dst::fixture::history(
         ApplicationHistoryDefinition::<Schema, History>::for_binding(
             ApplicationQueryDisclosureContract::public(),
         )
@@ -173,5 +180,12 @@ fn declare(
         .operation::<member_delete::Binding>("Delete member")
         .operation::<authored_member::retire::Binding>("Retire authored member")
         .operation::<authored_member::restore::Binding>("Restore authored member"),
+    ))
+    .application_history(
+        ApplicationHistoryDefinition::<Schema, ScopeHistory>::for_binding(
+            ApplicationQueryDisclosureContract::public(),
+        )
+        .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
+        .operation::<dst::fixture::create_e1::Binding>("dst set e1"),
     )
 }

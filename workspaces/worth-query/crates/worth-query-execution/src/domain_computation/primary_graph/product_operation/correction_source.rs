@@ -34,7 +34,7 @@ pub use alternatives::{
 pub(in crate::domain_computation::primary_graph) use authored_identity::AuthoredCorrectionCandidateDenial;
 mod compatibility;
 pub(crate) mod restored_support;
-pub use restored_support::WorthQueryCorrectionRestoredSupportDenial;
+pub use restored_support::{WorthQueryCorrectionNavigationLineage, WorthQueryCorrectionRestoredSupportDenial};
 mod derivation;
 mod discovered_output;
 mod inspection;
@@ -148,6 +148,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         key: &WorthQueryCorrectionCommandKey,
         maximum_history: Option<NonZeroUsize>,
         maximum_results: NonZeroUsize,
+        navigation: Option<&dyn restored_support::WorthQueryCorrectionNavigationLineage>,
     ) -> Result<
         (
             ApplicationEncodedInput<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,
@@ -171,6 +172,36 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             maximum_history,
             maximum_results,
             None,
+            navigation,
+        )
+    }
+    /// A history correction's read-only head pass: the inverse input from the
+    /// source alone after a fresh disclosure, with no retention (plan §10.1).
+    pub fn derive_correction_inverse_input<C: ApplicationCorrectionBinding<Schema>>(
+        &self,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
+        maximum_history: Option<NonZeroUsize>,
+        maximum_results: NonZeroUsize,
+    ) -> Result<
+        ApplicationEncodedInput<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,
+        WorthQueryCorrectionDerivationDenial,
+    >
+    where
+        <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
+    {
+        derivation::derive_correction_inverse_input::<Schema, C>(
+            self,
+            access,
+            phase,
+            principal,
+            request,
+            source,
+            maximum_history,
+            maximum_results,
         )
     }
 }
@@ -224,6 +255,32 @@ impl<Schema> WorthQuerySelectedCorrectionSource<'_, Schema> {
         self.occurrence
             .original_binding()
             .expect("selected correction retained its native binding")
+    }
+
+    /// The composite commit whose stages this source names: a history
+    /// correction resolves it to a recorded step on the selected line.
+    pub fn source_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
+        self.ancestry.source().identity()
+    }
+
+    /// The canonical text of the commit member this source names (`primary`,
+    /// or `stage:{ordinal}:{identity}`): two stages of one step are two
+    /// correction sources, and a history correction's meaning names it.
+    pub fn source_member_text(&self) -> String {
+        self.occurrence.member().text()
+    }
+
+    /// This source's recorded coordinates, to select it again on another
+    /// target (a history correction's private candidate).
+    pub fn recorded_source(
+        &self,
+    ) -> crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource {
+        crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource::from_untrusted_parts(
+            worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE,
+            self.source_commit().clone(),
+            self.occurrence.commit_reference().clone(),
+            self.occurrence.member(),
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn application(

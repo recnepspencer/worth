@@ -44,6 +44,12 @@ pub fn read(
         })
         .map_err(aftermath_read_stop)?
         .ok_or(WorthQueryAftermathCausalityReadDenial::Unavailable)?;
+    // Canonical fields are written once, at birth. The one later revision a
+    // fact may carry is a navigation that rematerialized it as a companion
+    // record (tree-based undo's ruling (u)): that selection copies the
+    // retained original payload into its original slot, and its canonical
+    // envelope names the fact.
+    let mut restored = None;
     for locator in canonical_locators(layout) {
         let revision = view
             .entity_field_revision(
@@ -51,12 +57,47 @@ pub fn read(
                 entity,
                 &crate::domain_computation::primary_graph::observations::authoritative(locator),
             )
-            .map_err(aftermath_read_stop)?;
-        if revision.is_none_or(|revision| revision.version() != row.0) {
+            .map_err(aftermath_read_stop)?
+            .map(|revision| revision.version());
+        let consistent = match revision {
+            None => false,
+            Some(version) if version == row.0 => true,
+            Some(version) => match restored {
+                Some((at, restores)) if at == version => restores,
+                _ => {
+                    let restores = restores_companion(runtime, execution, version, entity)?;
+                    restored = Some((version, restores));
+                    restores
+                }
+            },
+        };
+        if !consistent {
             return Err(WorthQueryAftermathCausalityReadDenial::InconsistentCanonicalRelationships);
         }
     }
     decode(runtime, entity, row, owner)
+}
+
+/// Whether the commit at `version` is an owned-graph selection that
+/// rematerialized `entity` as a companion record.
+fn restores_companion(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    version: VersionId,
+    entity: worth_relational::facade::identity::EntityId,
+) -> Result<bool, WorthQueryAftermathCausalityReadDenial> {
+    let Some(commit) = runtime.history().immutable_commit_receipt_for_version(version) else {
+        return Ok(false);
+    };
+    let envelope = runtime
+        .replay()
+        .canonical_commit_envelope(execution, commit.commit_id)
+        .map_err(|cause| aftermath_read_stop(cause.into()))?;
+    Ok(matches!(
+        envelope.map(|envelope| envelope.authority_kind()),
+        Some(worth_relational::facade::replay::CanonicalCommitAuthorityKind::OwnedGraphSelection(selection))
+            if selection.restores_companion(entity)
+    ))
 }
 
 pub(super) fn decode(

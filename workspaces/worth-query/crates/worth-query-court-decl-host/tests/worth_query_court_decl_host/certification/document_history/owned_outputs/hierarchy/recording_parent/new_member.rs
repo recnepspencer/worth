@@ -1,6 +1,6 @@
 //! A real authored restoration creates the child source only on recording D.
 use super::*;
-mod program;
+pub(in super::super::super) mod program;
 type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 fn settle(host: &Host, request: &family::Request<'_, '_, '_>) {
     let mut tree = request

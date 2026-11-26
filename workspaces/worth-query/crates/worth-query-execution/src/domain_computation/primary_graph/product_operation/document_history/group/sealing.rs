@@ -51,18 +51,34 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 selected.product().observation(),
             );
             let exact = selected.product().read_lease();
-            let step = self
-                .selection
-                .lock()
-                .journal
-                .prepared_step(&group.reservation.record, endpoint.clone());
+            // Every member's commit is a correction source for this step, and
+            // a later navigation to it selects this basis.
+            let basis_commit = selected.product().relational_basis().observation().commit_id();
+            let execution = phase
+                .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
+                .map_err(Denial::Stopped)?;
+            let step = {
+                let mut selection = self.selection.lock();
+                selection
+                    .journal
+                    .index_source(
+                        &execution,
+                        group.completed.iter().map(|member| &member.commit),
+                        basis_commit,
+                        group.reservation.record.node,
+                    )
+                    .map_err(Denial::Recording)?;
+                selection.journal.prepared_step(&group.reservation.record, endpoint.clone())
+            };
             Ok(PreparedBinding {
                 discovery_recipes: group
                     .outputs
                     .as_ref()
                     .map(|outputs| Arc::clone(&outputs.recipes)),
                 node: RecordedNode {
+                    posted_fact: None,
                     step: step.clone(),
+                    source_commit: group.completed.last().map(|member| member.commit.clone()),
                     root_posture: group
                         .outputs
                         .as_ref()

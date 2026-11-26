@@ -18,6 +18,8 @@ use worth_execution::ExecutionRequest;
 use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 #[path = "journal/discovery_recipes.rs"]
 mod discovery_recipes;
+#[path = "journal/facts.rs"]
+mod facts;
 #[path = "journal/group.rs"]
 mod group;
 #[path = "journal/heads.rs"]
@@ -36,9 +38,17 @@ mod recording;
 mod retention;
 #[path = "journal/retention_work.rs"]
 mod retention_work;
+#[path = "journal/sources.rs"]
+mod sources;
 
 pub(super) struct RecordedNode {
     pub(super) step: WorthQueryHistoryStep,
+    /// The commit an envelope's stages made, which a correction names as its
+    /// source. `None` for the root and for steps a writer recorded.
+    pub(super) source_commit: Option<worth_runtime_world::facade::CompositeCommitIdentity>,
+    /// The reversal fact (aftermath-causality record) a correction step's
+    /// commit posted, which navigation retires and restores (ruling (u)).
+    pub(super) posted_fact: Option<worth_relational::facade::identity::EntityId>,
     pub(super) root_posture:
         Option<crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture>,
 }
@@ -54,6 +64,7 @@ pub(super) enum NodeBinding {
 
 pub(super) struct HistoryNode {
     pub(super) binding: NodeBinding,
+    line: sources::LinePosition,
     head_slot: Option<u64>,
     _allocation: HistoryInsertionAllocation,
 }
@@ -126,6 +137,13 @@ pub(in crate::domain_computation::primary_graph) struct HistoryJournal {
     // Rebuildable annotation index; its links confer no source or disclosure authority.
     children: BTreeMap<(u64, u64), ChildLink>,
     observation: Option<EnrollmentSink>,
+    // Correction sources: an envelope's commit -> its step's ordinal.
+    sources: BTreeMap<worth_runtime_world::facade::CompositeCommitIdentity, (u64, HistoryInsertionAllocation)>,
+    pending_sources: Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
+    // A step's retained basis (its relational commit) -> its ordinal, which a
+    // navigation commit names as the basis it selected.
+    endpoints: BTreeMap<worth_relational::facade::history::CommitId, (u64, HistoryInsertionAllocation)>,
+    pending_endpoint: Option<worth_relational::facade::history::CommitId>,
 }
 
 pub(super) enum AttemptLookup {
@@ -201,8 +219,11 @@ impl HistoryJournal {
                             endpoint,
                         )
                     },
+                    source_commit: None,
+                    posted_fact: None,
                     root_posture: None,
                 }),
+                line: sources::LinePosition::ROOT,
                 head_slot: None,
                 _allocation: allocation,
             },
@@ -230,6 +251,10 @@ impl HistoryJournal {
             closed_heads: 0,
             children: BTreeMap::new(),
             observation: None,
+            sources: BTreeMap::new(),
+            pending_sources: Vec::new(),
+            endpoints: BTreeMap::new(),
+            pending_endpoint: None,
         })
     }
 

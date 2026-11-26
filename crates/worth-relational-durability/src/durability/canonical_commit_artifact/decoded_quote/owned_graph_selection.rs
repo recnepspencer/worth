@@ -14,10 +14,10 @@ pub(super) fn quote(
             &mut bytes,
             match field {
                 "selected_basis" => super::branches::descriptor(value, request)?,
-                "current_entities" | "transfer_participants" => {
+                "current_entities" | "transfer_participants" | "companion_retired" => {
                     vector::<EntityId>(value, request, |_| Ok(0.into()))?
                 }
-                "selected_entities" => vector_with_storage(
+                "selected_entities" | "companion_selected" => vector_with_storage(
                     value,
                     request,
                     CanonicalOwnedGraphSelection::selected_entity_decode_storage,

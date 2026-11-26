@@ -13,6 +13,6 @@ pub(super) use program::{
     Child, ChildInput, Input, Output, Parent, Program as HierarchyProgram, SeedInput,
 };
 
-mod recording_parent;
+pub(super) mod recording_parent;
 
 mod source_edits;

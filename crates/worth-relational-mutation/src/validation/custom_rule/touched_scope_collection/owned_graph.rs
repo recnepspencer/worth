@@ -31,7 +31,10 @@ pub(super) fn collect(
             }
         }
     }
-    for id in selection.retired_entities() {
+    for id in selection
+        .retired_entities()
+        .chain(selection.companion_retired())
+    {
         if !work.try_charge(1) {
             return;
         }

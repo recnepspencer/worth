@@ -20,6 +20,16 @@ pub struct CanonicalOwnedGraphSelection {
     selected_entities: Vec<SelectedEntity>,
     current_relations: Vec<StructuralRelationRecord>,
     selected_relations: Vec<StructuralRelationRecord>,
+    /// Companion records outside the owned closure that follow the selection
+    /// (tree-based undo's reversal facts, public #56 ruling (u)): retired
+    /// live records of the current basis. Relation-free; absent in envelopes
+    /// written before them, which therefore decode as "no companions".
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    companion_retired: Vec<EntityId>,
+    /// Companion records rematerialized from the selected basis in their
+    /// original full-generation slots. Relation-free; absent before them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    companion_selected: Vec<SelectedEntity>,
     #[serde(skip)]
     pub(crate) _decoded_memory: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
 }
@@ -40,9 +50,13 @@ impl CanonicalOwnedGraphSelection {
         selected_entities: Vec<SelectedEntity>,
         current_relations: Vec<StructuralRelationRecord>,
         selected_relations: Vec<StructuralRelationRecord>,
+        companion_retired: Vec<EntityId>,
+        companion_selected: Vec<SelectedEntity>,
     ) -> Self {
         Self {
             _decoded_memory: None,
+            companion_retired,
+            companion_selected,
             selected_basis,
             model,
             current_entities,
@@ -55,8 +69,23 @@ impl CanonicalOwnedGraphSelection {
     pub(crate) fn transfer_participants(&self) -> impl Iterator<Item = EntityId> + '_ {
         self.transfer_participants.iter().copied()
     }
+    /// Companion records the selection retires (outside the owned closure).
+    pub(crate) fn companion_retired(&self) -> impl Iterator<Item = EntityId> + '_ {
+        self.companion_retired.iter().copied()
+    }
+    /// Companion records the selection rematerializes, with their kinds.
+    pub(crate) fn companion_selected(&self) -> impl Iterator<Item = (EntityId, KindId)> + '_ {
+        self.companion_selected
+            .iter()
+            .map(|entity| (entity.id, entity.kind))
+    }
     pub fn model(&self) -> EntityId {
         self.model
+    }
+    /// Whether this selection rematerialized `id` as a companion record, in
+    /// its original slot with its retained payload (ruling (u)).
+    pub fn restores_companion(&self, id: EntityId) -> bool {
+        self.companion_selected.iter().any(|entity| entity.id == id)
     }
     pub fn selected_basis(&self) -> &RelationalBranchBasisDescriptor {
         &self.selected_basis
@@ -135,6 +164,12 @@ impl CanonicalOwnedGraphSelection {
                     .iter()
                     .map(|e| RecordRef::Relation(e.relation_id)),
             )
+            .chain(self.companion_retired.iter().copied().map(RecordRef::Entity))
+            .chain(
+                self.companion_selected
+                    .iter()
+                    .map(|e| RecordRef::Entity(e.id)),
+            )
     }
 }
 
@@ -147,6 +182,8 @@ impl PartialEq for CanonicalOwnedGraphSelection {
             && self.selected_entities == other.selected_entities
             && self.current_relations == other.current_relations
             && self.selected_relations == other.selected_relations
+            && self.companion_retired == other.companion_retired
+            && self.companion_selected == other.companion_selected
     }
 }
 impl Eq for CanonicalOwnedGraphSelection {}
@@ -162,8 +199,12 @@ pub trait CanonicalOwnedGraphSelectionOwnerPort: Sized {
         selected_entities: Vec<SelectedEntity>,
         current_relations: Vec<StructuralRelationRecord>,
         selected_relations: Vec<StructuralRelationRecord>,
+        companion_retired: Vec<EntityId>,
+        companion_selected: Vec<SelectedEntity>,
     ) -> Self;
     fn transfer_participants(&self) -> impl Iterator<Item = EntityId> + '_;
+    fn companion_retired(&self) -> impl Iterator<Item = EntityId> + '_;
+    fn companion_selected(&self) -> impl Iterator<Item = (EntityId, KindId)> + '_;
     fn selected_entities(&self) -> impl ExactSizeIterator<Item = (EntityId, KindId)> + '_;
     fn selected_entity_kind(&self, id: EntityId) -> Option<KindId>;
     fn selected_relations(&self) -> &[StructuralRelationRecord];
@@ -188,6 +229,8 @@ impl CanonicalOwnedGraphSelectionOwnerPort for CanonicalOwnedGraphSelection {
         selected_entities: Vec<SelectedEntity>,
         current_relations: Vec<StructuralRelationRecord>,
         selected_relations: Vec<StructuralRelationRecord>,
+        companion_retired: Vec<EntityId>,
+        companion_selected: Vec<SelectedEntity>,
     ) -> Self {
         CanonicalOwnedGraphSelection::from_observed(
             selected_basis,
@@ -197,11 +240,21 @@ impl CanonicalOwnedGraphSelectionOwnerPort for CanonicalOwnedGraphSelection {
             selected_entities,
             current_relations,
             selected_relations,
+            companion_retired,
+            companion_selected,
         )
     }
 
     fn transfer_participants(&self) -> impl Iterator<Item = EntityId> + '_ {
         self.transfer_participants()
+    }
+
+    fn companion_retired(&self) -> impl Iterator<Item = EntityId> + '_ {
+        self.companion_retired()
+    }
+
+    fn companion_selected(&self) -> impl Iterator<Item = (EntityId, KindId)> + '_ {
+        self.companion_selected()
     }
 
     fn selected_entities(&self) -> impl ExactSizeIterator<Item = (EntityId, KindId)> + '_ {
@@ -240,3 +293,7 @@ impl CanonicalOwnedGraphSelectionOwnerPort for CanonicalOwnedGraphSelection {
         self.targets()
     }
 }
+
+#[cfg(test)]
+#[path = "owned_graph_selection_format_tests.rs"]
+mod format_tests;

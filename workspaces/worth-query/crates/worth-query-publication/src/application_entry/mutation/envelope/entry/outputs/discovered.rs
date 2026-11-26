@@ -108,6 +108,7 @@ where
         key: &WorthQueryCorrectionCommandKey,
         maximum_history: Option<NonZeroUsize>,
         maximum_results: NonZeroUsize,
+        navigation: Option<&dyn worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionNavigationLineage>,
     ) -> SelectedSource<S, B>
     where
         K: ApplicationCorrectionBinding<S>,
@@ -122,6 +123,7 @@ where
             key,
             maximum_history,
             maximum_results,
+            navigation,
         )
     }
     fn reapplication<K>(

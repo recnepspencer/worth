@@ -3,6 +3,7 @@
 //! leaves the child's inputs unchanged.
 use super::super::program::{Child, ChildInput, Input, Output, Parent};
 use super::*;
+use self::family::dst::DstOperations as _;
 pub struct Start;
 impl ApplicationConnectionIdentity for Start {
     const IDENTITY: &'static str = "owned-outputs.historical-scope.start";
@@ -91,6 +92,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<upstream::preserve::Operation>()
                 .conditional_operation::<restricted_owned::initial::Operation>()
                 .conditional_operation::<restricted_owned::preserve::Operation>()
+                .dst_operations()
                 .finish(),
         ];
         features.extend(family::feature_specs(

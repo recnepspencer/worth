@@ -56,12 +56,21 @@ pub fn apply(
                     .map_err(request)?;
                 relations::retire(&mut workspace, id, version, &mut outcome)?;
             }
-            for id in graph.entities_to_retire() {
+            // Companion records (ruling (u)'s reversal facts) follow the
+            // selection through the same slot transitions and index upkeep.
+            for id in graph
+                .entities_to_retire()
+                .chain(graph.companions().retire.iter().copied())
+            {
                 crate::contracts::execution::request_stage::checkpoint(context, 1)
                     .map_err(request)?;
                 entities::retire(&mut workspace, id, version, &mut outcome)?;
             }
-            for &id in graph.restored_entities() {
+            for &id in graph
+                .restored_entities()
+                .iter()
+                .chain(&graph.companions().restore)
+            {
                 crate::contracts::execution::request_stage::checkpoint(context, 1)
                     .map_err(request)?;
                 entities::select(&mut workspace, source, id, version, &mut outcome, context)?;

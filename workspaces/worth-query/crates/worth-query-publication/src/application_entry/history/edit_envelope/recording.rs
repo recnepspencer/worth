@@ -1,13 +1,16 @@
 //! One reservation, one private candidate, one commit and one adoption.
 use super::*;
+use crate::application_entry::correction::WorthQueryApplicationCorrectionDenial;
 use crate::application_entry::mutation::envelope::{
-    runtime::CapturedEnvelopeIntent, EnvelopeContext, WorthQueryEditEnvelopeOutcome,
+    runtime::{CapturedEnvelopeIntent, CorrectionSource},
+    EnvelopeContext, WorthQueryEditEnvelopeExecutionDenial, WorthQueryEditEnvelopeOutcome,
 };
 use std::{ops::ControlFlow, sync::Arc};
 use worth_query_execution::{
     facade::{product::WorthQueryExpectedProductBranch, runtime::ExecutionAllocationPolicy},
     publication_boundary::document_history::{
-        WorthQueryDocumentHistoryEnvelopeConstraint, WorthQueryDocumentHistoryEnvelopeIntent,
+        WorthQueryDocumentHistoryCorrectionMeaning, WorthQueryDocumentHistoryEnvelopeConstraint,
+        WorthQueryDocumentHistoryEnvelopeIntent,
         WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
         WorthQueryHistoryStepMetadata,
     },
@@ -73,16 +76,18 @@ where
             return refuse(document, Denial::Empty);
         }
         let mut admission = Admission::Unreached;
-        let executed = envelope.execute_with_history_front(allocation, |context, phase, captured| {
-            admission = admit(&document, context, phase, captured, &metadata);
+        let navigation = document.owner.correction_navigation_lineage();
+        let executed = envelope.execute_with_history_front(allocation, Some(&*navigation), |context, phase, captured, correction| {
+            admission = admit(&document, context, phase, captured, correction, &metadata);
             match &admission {
                 Admission::Running {
+                    reservation,
                     candidate,
                     constraint,
-                    ..
                 } => {
                     context.branch = candidate.branch();
                     context.history = Some(constraint.clone());
+                    context.correction_attempt = Some(reservation.attempt_identity());
                     ControlFlow::Continue(())
                 }
                 _ => ControlFlow::Break(()),
@@ -92,7 +97,7 @@ where
             Admission::Unreached => {
                 let denial = match executed {
                     Ok(outcome) => Denial::Envelope(outcome),
-                    Err(cause) => Denial::Execution(cause),
+                    Err(cause) => execution(cause),
                 };
                 return refuse(document, denial);
             }
@@ -121,7 +126,7 @@ where
                 let denial = match (constraint.take_refusal(), uncommitted) {
                     (Some((ordinal, denial)), _) => Denial::Stage { ordinal, denial },
                     (None, Ok(outcome)) => Denial::Envelope(outcome),
-                    (None, Err(cause)) => Denial::Execution(cause),
+                    (None, Err(cause)) => execution(cause),
                 };
                 return refuse(document, denial);
             }
@@ -145,12 +150,25 @@ where
     }
 }
 
+/// A correction's refusal stays typed; any other execution denial is the
+/// envelope's.
+fn execution(cause: WorthQueryEditEnvelopeExecutionDenial) -> Denial {
+    match cause.into_correction() {
+        Ok(denial) => Denial::Correction(denial),
+        Err(cause) => Denial::Execution(cause),
+    }
+}
+
 /// Read the document, reserve its one record and fork its private candidate.
+/// A correction is refused only once the head is confirmed, so a diverged
+/// document says `HeadDiverged` whatever its correction would have said;
+/// its source must be a step on the document's selected line.
 fn admit<'runtime, S, H, Payload, Outputs>(
     document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
     context: &EnvelopeContext<'_, S>,
     phase: &WorthQueryAdvancementPhase<'_>,
-    captured: CapturedEnvelopeIntent,
+    captured: Option<CapturedEnvelopeIntent>,
+    correction: Option<Result<CorrectionSource, WorthQueryApplicationCorrectionDenial>>,
     metadata: &WorthQueryHistoryStepMetadata,
 ) -> Admission<'runtime, S>
 where
@@ -170,21 +188,42 @@ where
     if let Err(cause) = document.read_in_advancement(phase, &current) {
         return Admission::Refused(Denial::History(cause));
     }
+    let correction = match correction {
+        None => None,
+        Some(Err(denial)) => return Admission::Refused(Denial::Correction(denial)),
+        Some(Ok(CorrectionSource { binding, commit, member })) => {
+            match document.owner.selected_line_correction_source(&commit) {
+                Ok(source) => Some(WorthQueryDocumentHistoryCorrectionMeaning { binding, source, member }),
+                Err(denial) => {
+                    return Admission::Refused(Denial::History(
+                        WorthQueryApplicationHistoryDenial::Document(denial),
+                    ))
+                }
+            }
+        }
+    };
+    // Only a refused correction arrives without a captured intent, and it
+    // returned above.
+    let captured = captured.expect("an envelope with an intent past its correction check");
     let prepared = super::super::metadata::with_metadata_read::<S, H, _>(
         phase,
         &current,
         document.access.clone(),
         &document.payload,
         |_, installed, read| {
+            let envelope = WorthQueryDocumentHistoryEnvelopeIntent::new(
+                &captured.key,
+                captured.intent,
+                &captured.first_operation,
+            );
             document.owner.reserve_history_envelope(
                 phase,
                 &access,
                 installed,
-                WorthQueryDocumentHistoryEnvelopeIntent::new(
-                    &captured.key,
-                    captured.intent,
-                    &captured.first_operation,
-                ),
+                match correction {
+                    Some(correction) => envelope.with_correction(correction),
+                    None => envelope,
+                },
                 metadata,
                 read,
             )

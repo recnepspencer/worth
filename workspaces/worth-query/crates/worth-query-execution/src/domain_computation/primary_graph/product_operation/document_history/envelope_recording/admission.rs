@@ -1,6 +1,7 @@
 //! One envelope reserves one history record before any candidate exists.
 use super::super::{
     journal::AttemptLookup, WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
+    WorthQueryHistoryNodeId,
     WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
     WorthQueryHistoryStepMetadata,
 };
@@ -23,6 +24,7 @@ use worth_query_declaration::facade::{
 };
 use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
 
@@ -36,6 +38,18 @@ pub struct WorthQueryDocumentHistoryEnvelopeIntent<'a> {
     key: &'a [u8; 32],
     intent: ApplicationEditIntentIdentity,
     first_operation: &'a ApplicationMutationBindingDescriptor,
+    correction: Option<WorthQueryDocumentHistoryCorrectionMeaning>,
+}
+
+/// What a correction envelope's meaning adds to its stages (plan §11.1): the
+/// correction binding, the recorded step it reverses, and which of that
+/// step's stages (its commit member, public #368). Two sources whose derived
+/// inverse inputs are equal are two meanings, as in the model.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryDocumentHistoryCorrectionMeaning {
+    pub binding: &'static str,
+    pub source: WorthQueryHistoryNodeId,
+    pub member: String,
 }
 
 impl<'a> WorthQueryDocumentHistoryEnvelopeIntent<'a> {
@@ -48,13 +62,43 @@ impl<'a> WorthQueryDocumentHistoryEnvelopeIntent<'a> {
             key,
             intent,
             first_operation,
+            correction: None,
         }
+    }
+
+    /// The same envelope, meaning a correction of `correction.source`.
+    pub fn with_correction(mut self, correction: WorthQueryDocumentHistoryCorrectionMeaning) -> Self {
+        self.correction = Some(correction);
+        self
     }
 }
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>
 {
+    /// The recorded step on the selected line whose stages made `source`, for
+    /// a correction naming it; refused before any reservation otherwise.
+    pub fn selected_line_correction_source(
+        &self,
+        source: &worth_runtime_world::facade::CompositeCommitIdentity,
+    ) -> Result<WorthQueryHistoryNodeId, Denial> {
+        self.selection
+            .lock()
+            .journal
+            .selected_line_source(source)
+            .ok_or_else(|| Denial::SourceNotOnSelectedLine { source: source.clone() })
+    }
+
+    /// This document's answer about its own navigation commits, for a
+    /// correction's restored support on its candidate (S3 ruling B).
+    pub fn correction_navigation_lineage(
+        &self,
+    ) -> std::sync::Arc<dyn crate::domain_computation::primary_graph::product_operation::WorthQueryCorrectionNavigationLineage + 'runtime> {
+        std::sync::Arc::new(DocumentNavigationLineage {
+            selection: self.selection.downgrade(),
+        })
+    }
+
     /// Reserve the one record an envelope will complete. Nothing is forked here:
     /// a refusal or an already recorded step leaves the document untouched.
     pub fn reserve_history_envelope(
@@ -89,8 +133,22 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         key_hash.update(H::IDENTITY.as_bytes());
         key_hash.update(envelope.key);
         let mut intent_hash = Sha256::new();
-        intent_hash.update(b"worth.query.document-history.envelope.intent.v1");
-        intent_hash.update(envelope.intent.identity());
+        match &envelope.correction {
+            // An edit keeps Phase 1's meaning byte for byte.
+            None => {
+                intent_hash.update(b"worth.query.document-history.envelope.intent.v1");
+                intent_hash.update(envelope.intent.identity());
+            }
+            Some(correction) => {
+                intent_hash.update(b"worth.query.document-history.envelope.correction-intent.v1");
+                intent_hash.update(envelope.intent.identity());
+                intent_hash.update((correction.binding.len() as u64).to_be_bytes());
+                intent_hash.update(correction.binding.as_bytes());
+                intent_hash.update(correction.source.ordinal().to_be_bytes());
+                intent_hash.update((correction.member.len() as u64).to_be_bytes());
+                intent_hash.update(correction.member.as_bytes());
+            }
+        }
         let meaning = <WorthQueryApplicationIdempotencyBinding as IdempotencyBindingInternalPort>::from_identities(
             key_hash.finalize().into(),
             intent_hash.finalize().into(),
@@ -134,5 +192,26 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 meaning,
             },
         ))
+    }
+}
+
+/// A document's navigation lineage: the journal's O(log) source and basis
+/// indexes, read under the document's selection lock.
+struct DocumentNavigationLineage {
+    selection: super::super::selection::WeakHistorySelectionCell,
+}
+
+impl crate::domain_computation::primary_graph::product_operation::WorthQueryCorrectionNavigationLineage
+    for DocumentNavigationLineage
+{
+    fn restores_descendant_of(
+        &self,
+        selected: worth_relational::facade::history::CommitId,
+        source: &worth_runtime_world::facade::CompositeCommitIdentity,
+    ) -> bool {
+        // A closed document vouches for nothing.
+        self.selection
+            .upgrade()
+            .is_some_and(|selection| selection.lock().journal.restores_descendant_of(selected, source))
     }
 }

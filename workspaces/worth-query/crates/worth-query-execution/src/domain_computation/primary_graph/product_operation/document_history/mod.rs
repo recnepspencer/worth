@@ -38,7 +38,8 @@ pub use description::{
 mod disposal;
 mod envelope_recording;
 pub use envelope_recording::{
-    WorthQueryDocumentHistoryEnvelopeConstraint, WorthQueryDocumentHistoryEnvelopeIntent,
+    WorthQueryDocumentHistoryCorrectionMeaning, WorthQueryDocumentHistoryEnvelopeConstraint,
+    WorthQueryDocumentHistoryEnvelopeIntent,
 };
 mod group;
 mod head_custody;
@@ -87,6 +88,7 @@ pub(in crate::domain_computation::primary_graph) use retention::HistoryRetention
 pub use retention::{WorthQueryHistoryReleaseOutcome, WorthQueryHistoryRetentionStatus};
 mod recording_outputs;
 mod reservation;
+mod reversal_facts;
 mod sealing;
 pub use recording_outputs::{
     WorthQueryCompletedRecordingOutputs, WorthQueryHistoryRecordingOutputOrigin,
@@ -120,6 +122,8 @@ pub use observation::{
 };
 #[doc(hidden)]
 pub use page_pause::WorthQueryHistoryPageAssemblyPauseForTest;
+#[doc(hidden)]
+pub use reversal_facts::WorthQueryHistoryReversalFactForTest;
 pub use paging::{
     WorthQueryHistoryPage, WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial,
     WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,

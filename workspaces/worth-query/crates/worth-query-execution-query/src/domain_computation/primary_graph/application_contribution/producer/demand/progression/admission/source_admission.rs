@@ -146,6 +146,8 @@ where
             )?;
             if newly_adopted {
                 self.record_restored_output(execution, source_scope, &readmitted)?;
+            } else {
+                self.mark_recorded_output(execution, &readmitted);
             }
             let observed_source = observed_source.install(&interest, installed_entry.clone())?;
             self.prepare_demand_recording(execution, &interest, &observed_source)?;

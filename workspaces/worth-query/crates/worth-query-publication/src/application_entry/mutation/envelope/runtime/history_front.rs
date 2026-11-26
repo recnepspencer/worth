@@ -1,5 +1,7 @@
 //! A history document sees the complete envelope intent before any stage is admitted.
 use super::*;
+use super::CorrectionSource;
+use crate::application_entry::correction::WorthQueryApplicationCorrectionDenial;
 use std::ops::ControlFlow;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor;
 
@@ -16,34 +18,51 @@ where
     S: ApplicationSchema,
     P: ApplicationProgramDefinition<S>,
 {
+    /// A correction envelope's corrective stage counts even before any
+    /// caller stage is pushed (review note 1).
     pub(in crate::application_entry) fn has_stages(&self) -> bool {
-        !self.envelope.envelope.stages.entries.is_empty()
+        !self.envelope.envelope.stages.entries.is_empty() || self.front.is_some()
     }
 
     /// Execute once, letting the history owner decide first. The owner may
     /// retarget the envelope to its private candidate, or stop before any
     /// stage is admitted; a stop executes nothing.
+    ///
+    /// A correction envelope reads its corrective stage's meaning at the head
+    /// first (`head`, read-only), so the complete intent is known before the
+    /// owner reserves its record. Once the owner has retargeted the envelope
+    /// to its candidate, the correction front derives again there and its
+    /// stage leads the envelope; a different meaning there commits nothing.
     pub(in crate::application_entry) fn execute_with_history_front(
         self,
         allocation: ExecutionAllocationPolicy<'_, '_>,
+        navigation: Option<&dyn worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionNavigationLineage>,
         history: impl FnOnce(
             &mut EnvelopeContext<'_, S>,
             &WorthQueryAdvancementPhase<'_>,
-            CapturedEnvelopeIntent,
+            Option<CapturedEnvelopeIntent>,
+            Option<Result<CorrectionSource, WorthQueryApplicationCorrectionDenial>>,
         ) -> ControlFlow<()>,
     ) -> Result<WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeExecutionDenial>
     where
         K: serde::Serialize + Send + Sync + 'static,
     {
-        let WorthQueryKeyedEditEnvelope {
+        let Self {
             envelope:
-                WorthQueryEditEnvelope {
-                    context,
-                    stages,
-                    brand,
+                WorthQueryKeyedEditEnvelope {
+                    envelope:
+                        WorthQueryEditEnvelope {
+                            context,
+                            stages,
+                            brand,
+                        },
+                    key,
                 },
-            key,
-        } = self.envelope;
+            program,
+            front,
+            head,
+            ..
+        } = self;
         // The authored stages are captured inside the front, so the intent is
         // complete before the history owner reserves its one record.
         let keyed = WorthQueryKeyedEditEnvelope {
@@ -57,19 +76,11 @@ where
             },
         };
         keyed.advance_with_front(
-            self.program,
+            program,
             allocation,
             AuthoredEnvelopeResolutionPurpose::Execute,
-            move |context, _, phase, key, entries| {
-                stages.capture(entries)?;
-                let Some(first_operation) = entries.first().map(|entry| entry.descriptor()) else {
-                    return Ok(Some(WorthQueryEditEnvelopeOutcome::Empty));
-                };
-                let intents = entries
-                    .iter()
-                    .map(|entry| entry.intent())
-                    .collect::<Vec<_>>();
-                let intent = key.intent(context.order, &intents).map_err(|cause| {
+            move |context, program, phase, key, entries| {
+                let intent_denial = |cause| {
                     WorthQueryEditEnvelopeExecutionDenial::envelope(
                         P::IDENTITY.as_str(),
                         crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
@@ -78,17 +89,63 @@ where
                             ),
                         ),
                     )
-                })?;
-                let captured = CapturedEnvelopeIntent {
-                    key: *key.identity(),
-                    intent,
-                    first_operation,
                 };
-                match history(context, phase, captured) {
-                    ControlFlow::Continue(()) => Ok(None),
+                let head = head.map(|head| head(context, phase));
+                stages.capture(entries)?;
+                let mut intents = entries
+                    .iter()
+                    .map(|entry| entry.intent())
+                    .collect::<Vec<_>>();
+                let mut first_operation = entries.first().map(|entry| entry.descriptor());
+                let head = head.map(|head| {
+                    head.map(|corrective| {
+                        intents.insert(0, corrective.intent);
+                        first_operation = Some(corrective.operation);
+                        corrective.source
+                    })
+                });
+                // A refused head pass still goes to the history owner, which
+                // reads the head first (HeadDiverged) and then refuses the
+                // correction typed: the as-built order, never `Empty`.
+                let captured = match first_operation {
+                    Some(first_operation) => Some(CapturedEnvelopeIntent {
+                        key: *key.identity(),
+                        intent: key.intent(context.order, &intents).map_err(intent_denial)?,
+                        first_operation,
+                    }),
+                    None if matches!(head, Some(Err(_))) => None,
+                    None => return Ok(Some(WorthQueryEditEnvelopeOutcome::Empty)),
+                };
+                let intent = captured.as_ref().map(|captured| captured.intent.clone());
+                if let ControlFlow::Break(()) = history(context, phase, captured, head) {
                     // Nothing ran. The history owner holds the reason and reports it.
-                    ControlFlow::Break(()) => Ok(Some(WorthQueryEditEnvelopeOutcome::Unseen)),
+                    return Ok(Some(WorthQueryEditEnvelopeOutcome::Unseen));
                 }
+                let Some(front) = front else {
+                    return Ok(None);
+                };
+                // The candidate pass: the owner retargeted `context` to its
+                // candidate, where the correction derives and admits again.
+                let mut corrective = Vec::new();
+                if let Some(outcome) = front(context, program, phase, key, &mut corrective, navigation)? {
+                    return Ok(Some(outcome));
+                }
+                entries.splice(0..0, corrective);
+                let intents = entries
+                    .iter()
+                    .map(|entry| entry.intent())
+                    .collect::<Vec<_>>();
+                let candidate = key.intent(context.order, &intents).map_err(intent_denial)?;
+                let intent = intent.expect("a refused head pass never reaches the candidate");
+                if candidate.identity() != intent.identity() {
+                    return Err(WorthQueryEditEnvelopeExecutionDenial::envelope(
+                        P::IDENTITY.as_str(),
+                        crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Correction(
+                            Box::new(WorthQueryApplicationCorrectionDenial::CandidateMeaningChanged),
+                        ),
+                    ));
+                }
+                Ok(None)
             },
         )
     }

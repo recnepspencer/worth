@@ -1,5 +1,6 @@
 //! The program: the recorded model edit and one demand root per output family.
 use super::*;
+use self::family::dst::DstOperations as _;
 pub struct Entry;
 impl ApplicationFeature<Schema> for Entry {
     type Inputs = ApplicationFeatureInputLeaf;
@@ -201,6 +202,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<downstream::preserve::Operation>()
                 .conditional_operation::<restricted_owned::initial::Operation>()
                 .conditional_operation::<restricted_owned::preserve::Operation>()
+                .dst_operations()
                 .finish(),
         ];
         features.extend(family::feature_specs(
@@ -357,7 +359,7 @@ pub(super) fn envelope_actions<
 >(
     entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
 ) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
-    entry
+    super::dst::fixture::actions(entry)
         .action::<family::borrowed_inputs::disconnect::Binding, DisconnectPart>()
         .finish_action()
         .action::<synchronous_edit::interleaved::ObserveValueBinding, Completion>()

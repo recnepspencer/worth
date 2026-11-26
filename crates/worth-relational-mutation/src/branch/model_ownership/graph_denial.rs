@@ -40,6 +40,19 @@ pub enum RelationalOwnedModelSelectionDenial {
         relation: RelationId,
         kind: KindId,
     },
+    /// A companion record is not live where the selection needs it.
+    CompanionUnavailable {
+        entity: EntityId,
+    },
+    /// A companion record is in the owned closure, in both companion sets,
+    /// or already live where the selection would rematerialize it.
+    CompanionOverlap {
+        entity: EntityId,
+    },
+    /// A companion record carries a relation; companions are relation-free.
+    CompanionRelated {
+        entity: EntityId,
+    },
 }
 impl RelationalOwnedModelSelectionDenial {
     /// Borrow the actual foreign-edge attribution without requiring a consumer

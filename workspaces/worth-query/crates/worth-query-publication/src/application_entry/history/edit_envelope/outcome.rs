@@ -63,6 +63,9 @@ pub enum WorthQueryHistoryEditEnvelopeDenial {
     /// The envelope ended without committing; the outcome names its stage.
     Envelope(WorthQueryEditEnvelopeOutcome),
     Execution(WorthQueryEditEnvelopeExecutionDenial),
+    /// A correction envelope's correction refused: its source, its derivation
+    /// or its corrective admission. Nothing committed and its key is free.
+    Correction(crate::application_entry::correction::WorthQueryApplicationCorrectionDenial),
     /// The stages committed on the private candidate, but a bound output tree
     /// could not be recorded at that commit. The candidate was discarded.
     Outputs(WorthQueryHistoryOutputDenial),
