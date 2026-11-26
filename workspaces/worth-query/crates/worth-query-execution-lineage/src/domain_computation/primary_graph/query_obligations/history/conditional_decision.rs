@@ -39,10 +39,7 @@ impl QueryObligationHistory {
 
     /// The original a live indeterminate answer keeps: a row the cold consumer
     /// already joined stays joined; otherwise World has not classified it.
-    pub fn retained_indeterminate_original(
-        &self,
-        key: &[u8; 32],
-    ) -> QueryConditionalOriginal {
+    pub fn retained_indeterminate_original(&self, key: &[u8; 32]) -> QueryConditionalOriginal {
         match self.conditional_decision(key).map(|row| row.posture) {
             Some(QueryConditionalPosture::Indeterminate(original)) => original,
             Some(
@@ -53,6 +50,12 @@ impl QueryObligationHistory {
             )
             | None => QueryConditionalOriginal::Unclassified,
         }
+    }
+
+    /// Whether a durable continuation row still governs `key`, so a fresh
+    /// Home must consume it before the key's fate is settled.
+    pub fn retains_conditional_decision(&self, key: &[u8; 32]) -> bool {
+        self.conditional_decision(key).is_some()
     }
 
     pub fn is_indeterminate(&self, key: &[u8; 32]) -> bool {

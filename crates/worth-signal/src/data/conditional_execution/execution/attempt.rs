@@ -18,7 +18,6 @@ use super::{
 use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
-use crate::data::output::NodeEvaluationResult;
 use worth_proof::{ExecuteReadyRecipeTransition, Transition};
 
 impl SignalGraph {
@@ -27,7 +26,7 @@ impl SignalGraph {
         request: SignalConditionalExecutionRequest<'_>,
         condition_resolver: &mut impl InstalledSignalConditionResolver,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
-        compute: impl FnOnce() -> Result<NodeEvaluationResult, SignalError>,
+        compute: impl crate::data::conditional_execution::SignalConditionalCompute,
         work: &mut crate::data::retained_storage::RetainedStoragePreparation,
     ) -> SignalConditionalAttemptOutcome {
         let mut counters = SignalConditionalDecisionCounters::default();
@@ -78,7 +77,7 @@ fn execute_conditional_attempt<Condition, Comparator, Compute>(
 where
     Condition: InstalledSignalConditionResolver,
     Comparator: ComparatorPolicyResolver,
-    Compute: FnOnce() -> Result<NodeEvaluationResult, SignalError>,
+    Compute: crate::data::conditional_execution::SignalConditionalCompute,
 {
     let prepared =
         prepare_conditional_attempt(graph, &request, providers.comparator, counters, work)?;
@@ -103,6 +102,7 @@ where
             request: &request,
             providers: &mut providers,
             ready_invalidation,
+            output_version_before,
             counters,
             work,
         }

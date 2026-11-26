@@ -138,11 +138,12 @@ pub struct TaskView {
     pub focus_end: Option<CanonicalTimestamp>,
 }
 
+/// The whole Inbox: Source of both managed indexes and itself watchable.
 #[derive(Clone, Debug, WorthQuery)]
 #[worth_query(
     schema = SparseSchema, context = Desktop, namespace = SPARSE, member,
     result = TaskView, root = Task, scope = InboxId, root_path(InboxTasks),
-    order_by(TaskView::id(), Ascending), limits = 64,
+    order_by(TaskView::id(), Ascending), live = whole_result, limits = 64,
 )]
 pub struct ReadInbox {
     #[worth_query(scope)]

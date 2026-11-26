@@ -162,9 +162,9 @@ pub(super) fn evaluate_due_wake(
     >,
 ) -> WorthQueryRetainedConditionalWake {
     let attempt = due.signal_ready_ordinal();
-    let mut compute = QueryConditionalComputeContext {
-        output_version: attempt,
-    };
+    // A due wake is a fresh occurrence: its output always advances past the
+    // node's current version, however deliveries or earlier wakes moved it.
+    let mut compute = QueryConditionalComputeContext::fresh(attempt);
     let lowering = signal_basis.installed_lowering_ref();
     let result = bridge.execute_managed_due_wake(
         execution,
@@ -225,9 +225,7 @@ pub(super) fn reconsider_retained_wake(
         return;
     }
     wake.attempt = wake.attempt.saturating_add(1);
-    let mut compute = QueryConditionalComputeContext {
-        output_version: wake.attempt,
-    };
+    let mut compute = QueryConditionalComputeContext::fresh(wake.attempt);
     let lowering = signal_basis.installed_lowering_ref();
     let result = bridge.execute_managed_due_wake(
         execution,
@@ -281,9 +279,7 @@ pub(super) fn reconsider_execution_denied_wake(
         return;
     }
     wake.attempt = wake.attempt.saturating_add(1);
-    let mut compute = QueryConditionalComputeContext {
-        output_version: wake.attempt,
-    };
+    let mut compute = QueryConditionalComputeContext::fresh(wake.attempt);
     let lowering = signal_basis.installed_lowering_ref();
     let result = bridge.execute_managed_due_wake(
         execution,

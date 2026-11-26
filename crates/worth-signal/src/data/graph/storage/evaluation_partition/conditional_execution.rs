@@ -5,7 +5,6 @@ use crate::data::conditional_execution::{
 };
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
-use crate::data::output::NodeEvaluationResult;
 use crate::data::proof::SignalInvalidationExecutionReceipt;
 use crate::logic::transaction::{SignalObservationAdmissionDenial, SignalObservationRequest};
 
@@ -64,7 +63,7 @@ impl SignalEvaluationPartition {
         request: SignalConditionalExecutionRequest<'_>,
         condition: &mut impl InstalledSignalConditionResolver,
         comparator: &mut impl ComparatorPolicyResolver,
-        compute: impl FnOnce() -> Result<NodeEvaluationResult, SignalError>,
+        compute: impl crate::data::conditional_execution::SignalConditionalCompute,
     ) -> Result<SignalPartitionConditionalCompletion, SignalPartitionConditionalDenial> {
         if self.pending_unwind.is_some() {
             return Err(SignalPartitionConditionalDenial::UnconsumedUnwind);

@@ -11,7 +11,6 @@ use crate::data::conditional_execution::{
     SignalConditionalExecutionRequest, SignalConditionalServiceContractBinding,
 };
 use crate::data::error::SignalError;
-use crate::data::output::NodeEvaluationResult;
 use crate::data::proof::SignalInvalidationExecutionReceipt;
 use crate::data::retained_storage::{
     SignalConditionalRetentionDenial, SignalConditionalRetentionReservation,

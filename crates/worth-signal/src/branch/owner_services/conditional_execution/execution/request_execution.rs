@@ -14,7 +14,7 @@ where
         request: SignalConditionalServiceExecutionRequest,
         condition: &mut impl InstalledSignalConditionResolver,
         comparator: &mut impl ComparatorPolicyResolver,
-        compute: impl FnOnce() -> Result<NodeEvaluationResult, SignalError>,
+        compute: impl crate::data::conditional_execution::SignalConditionalCompute,
     ) -> Result<SignalConditionalServiceCompletion, SignalConditionalServiceExecutionDenial> {
         super::super::request_completion::run_conditional_request(execution, |work| {
             self.execute_in_request(work, evaluation, request, condition, comparator, compute)
@@ -29,7 +29,7 @@ where
         request: SignalConditionalServiceExecutionRequest,
         condition: &mut impl InstalledSignalConditionResolver,
         comparator: &mut impl ComparatorPolicyResolver,
-        compute: impl FnOnce() -> Result<NodeEvaluationResult, SignalError>,
+        compute: impl crate::data::conditional_execution::SignalConditionalCompute,
     ) -> Result<SignalConditionalServiceCompletion, SignalConditionalServiceExecutionDenial> {
         use SignalConditionalServiceExecutionDenial as Denial;
 

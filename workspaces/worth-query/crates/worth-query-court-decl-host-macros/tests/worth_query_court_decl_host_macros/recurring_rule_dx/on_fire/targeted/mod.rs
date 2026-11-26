@@ -1,7 +1,9 @@
 //! An `on_fire ... in Inbox by InboxFacts::inbox_id()` hook creates a Task
 //! with a `unique` task id inside each fire commit and links it from the
 //! target Inbox: listed after cold reopen, idempotent on re-catch-up, and a
-//! fire whose task id another Task holds fails closed with a typed cause.
+//! fire whose task id another Task holds fails closed with a typed cause and
+//! still lets the Home retire cleanly. A rule scheduled in a session fires
+//! on that same session's catch-up without a reopen.
 mod program;
 mod schema;
 
@@ -13,7 +15,7 @@ use worth_query_host::facade::{
         WorthQueryTemporalCatchUpReport, WorthQueryTemporalCatchUpStatus,
         WorthQueryTemporalOccurrenceRefusalKind,
     },
-    WorthQueryRefusalCategory, WorthQueryUserFacingRefusal,
+    WorthQueryRefusalCategory, WorthQueryUserFacingRefusal, DEFAULT_HOST_EXECUTION_POLICY,
 };
 
 use program::{open, owner, TargetHome, TAKEN_TASK_ID};
@@ -134,8 +136,67 @@ fn targeted_on_fire_files_unique_tasks_into_its_inbox_and_refuses_a_taken_id() {
     // The refused fire committed nothing, `fired_count` included.
     assert_eq!(rule(&home, &clock, "home/taken").fired_count, 0);
     assert_eq!(inbox_tasks(&home, &clock), filed);
-    // A retained refused decision blocks a graceful close (a pre-existing
-    // conditional-lifecycle rule), so the court ends like a process exit.
-    drop(home);
-    let _ = std::fs::remove_dir_all(path);
+    // The refused fire committed nothing and owes no cleanup, so once its
+    // report (which carries invalidation deliveries) is dropped the Home
+    // retires cleanly; the reopened Home holds no partial effect of it.
+    drop(refused);
+    if let Err((_, stop)) = home
+        .into_retirement()
+        .try_retire(DEFAULT_HOST_EXECUTION_POLICY)
+    {
+        panic!("a permanently refused fire leaves nothing to retain: {stop:?}");
+    }
+    let home = open(&path, &clock);
+    assert_eq!(rule(&home, &clock, "home/taken").fired_count, 0);
+    assert_eq!(inbox_tasks(&home, &clock), filed);
+    home.close_clean().unwrap();
+    std::fs::remove_dir_all(path).unwrap();
+}
+
+#[test]
+fn targeted_rule_scheduled_in_session_files_its_tasks_on_same_session_catch_up() {
+    let mut path =
+        std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("recurring-target-session");
+    path.set_extension(std::process::id().to_string());
+    let _ = std::fs::remove_dir_all(&path);
+    let clock = WorthQueryAdmissionClock::system();
+
+    let home = open(&path, &clock);
+    let session = home.session(owner(&home, &clock));
+    session
+        .run(ScheduleRule {
+            rule_id: "home/daily".to_owned(),
+            due_ns: 1_000,
+            interval_ns: 1_000,
+            max_fires: 10,
+            lifecycle: WorthQueryRecurringLifecycle::Active,
+        })
+        .unwrap_or_else(|denial| panic!("schedule: {denial:?}"));
+    let catch_up_in_session = |now_ns| {
+        session
+            .catch_up_temporal::<Recurrence>(
+                WorthQueryClockCoordinate::from_nanoseconds(now_ns),
+                WorthQueryTemporalCatchUpPolicy::bounded(16).unwrap(),
+            )
+            .unwrap_or_else(|denial| panic!("same-session catch-up: {denial}"))
+            .fired()
+    };
+    // Occurrences 1000 and 2000 are due in the session that scheduled them.
+    assert_eq!(catch_up_in_session(2_500), 2);
+    let filed = vec![
+        ("home/daily#1".to_owned(), 1),
+        ("home/daily#2".to_owned(), 2),
+    ];
+    assert_eq!(inbox_tasks(&home, &clock), filed);
+    assert_eq!(catch_up_in_session(2_500), 0);
+    assert_eq!(inbox_tasks(&home, &clock), filed);
+    drop(session);
+    home.close_clean().unwrap();
+
+    let home = open(&path, &clock);
+    assert_eq!(catch_up(&home, &clock, 2_500).fired(), 0);
+    assert_eq!(inbox_tasks(&home, &clock), filed);
+    assert_eq!(rule(&home, &clock, "home/daily").fired_count, 2);
+    home.close_clean().unwrap();
+    std::fs::remove_dir_all(path).unwrap();
 }
