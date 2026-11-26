@@ -44,6 +44,17 @@ impl LineageBasisView for BranchNamingBasisGuard<'_> {
 }
 
 impl BranchNamingBasisGuard<'_> {
+    /// The guarded branch's derived name index under the same read lock;
+    /// `None` before its first named lineage.
+    pub fn name_index(
+        &self,
+    ) -> Result<
+        Option<&crate::lineage::index::PersistentNameBranchIndex>,
+        &crate::lineage::index::PersistentNameIndexDenial,
+    > {
+        self.guard.name_indexes.read(&self.branch_id)
+    }
+
     /// The guarded branch's group state; `None` before its first group
     /// lineage, and a refusal while it is unavailable.
     pub fn group_state(

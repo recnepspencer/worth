@@ -20,6 +20,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<stored::Binding, _>(stored::Handler)?;
         setup.handler::<retarget::Binding, _>(retarget::Handler)?;
         coupled::producer::install(setup)?;
+        invariant_names::install(setup)?;
         setup.handler::<edit::member::Binding, _>(edit::member::Handler)
     }
 }
@@ -147,11 +148,14 @@ where
     .unwrap()
 }
 /// A description for independent comparison; it never admits an edit or owner.
-pub fn member_identity(
-    host: &Host,
+pub fn member_identity<P>(
+    host: &WorthQueryProgramApplicationRuntime<Schema, P>,
     branch: worth_query_host::facade::product::WorthQueryProductBranch,
     key: &str,
-) -> Option<(u32, u64, u32)> {
+) -> Option<(u32, u64, u32)>
+where
+    P: ApplicationProgramDefinition<Schema>,
+{
     let scope = request_scope();
     host.with_host_advancement(|phase| {
         let selected = host.on_branch(branch).select(&phase).unwrap();

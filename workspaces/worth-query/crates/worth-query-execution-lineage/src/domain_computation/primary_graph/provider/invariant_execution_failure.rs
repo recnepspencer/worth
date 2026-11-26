@@ -100,6 +100,9 @@ pub fn map_validation_failure(
             if error.authored_retirement_refusal().is_some() {
                 return WorthQueryInvariantExecutionFailure::authored_retirement(error);
             }
+            if error.lineage_name_denial().is_some() {
+                return WorthQueryInvariantExecutionFailure::persistent_name(error);
+            }
             return match error.into_invariant_violation() {
                 Some(violation) => map_invariant_failure(violation.fields, violation.detail),
                 None => owner_failure(),

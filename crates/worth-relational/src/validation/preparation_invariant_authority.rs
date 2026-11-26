@@ -4,20 +4,32 @@ use crate::branch::selected_read::SelectedRelationalBranchRead;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::validation::custom_rule::CustomInvariantNameSource as Names;
 use crate::validation::data::execution::InvariantFailureEffect;
 use crate::validation::engine::InvariantExecutionResult;
 
 pub(crate) struct PreparationInvariantAuthority<'a> {
     runtime: &'a RelationalPreparationRuntime,
+    names: Option<&'a dyn Names>,
 }
 
 impl RelationalPreparationRuntime {
     pub(crate) fn invariant_authority(&self) -> PreparationInvariantAuthority<'_> {
-        PreparationInvariantAuthority { runtime: self }
+        let names = None;
+        PreparationInvariantAuthority {
+            runtime: self,
+            names,
+        }
     }
 }
 
-impl PreparationInvariantAuthority<'_> {
+impl<'a> PreparationInvariantAuthority<'a> {
+    /// Installed invariants read the proposal's persistent names from `names`.
+    pub(crate) fn with_names(mut self, names: &'a dyn Names) -> Self {
+        self.names = Some(names);
+        self
+    }
+
     pub(crate) fn begin_proposed_state(
         &self,
         selected: &SelectedRelationalBranchRead<'_>,
@@ -34,7 +46,8 @@ impl PreparationInvariantAuthority<'_> {
     ) -> Result<crate::validation::engine::PendingProposedPass, TransactionCommitError> {
         let view = self
             .runtime
-            .invariant_validation_view(selected.selected().state());
+            .invariant_validation_view(selected.selected().state())
+            .with_names(self.names);
         let started = super::proposed_state::begin_proposed_state(
             &view,
             selected,
@@ -74,7 +87,8 @@ impl PreparationInvariantAuthority<'_> {
         control.check()?;
         let view = self
             .runtime
-            .invariant_validation_view(selected.selected().state());
+            .invariant_validation_view(selected.selected().state())
+            .with_names(self.names);
         let result = super::proposed_state::complete_proposed_state(
             &view,
             selected,

@@ -22,6 +22,8 @@ pub(super) enum NativeDenial {
     Staging(RelationalTransactionStagingDenial),
     Content(worth_relational::facade::content::RelationalContentDenial),
     AuthoredRetirement(Box<worth_relational::facade::publication::PublicationError>),
+    /// The commit's naming plan, refused while an installed invariant read it.
+    PersistentName(Box<worth_relational::facade::publication::PublicationError>),
     Allocation(ExecutionAllocationDenial),
     RelationLaw(Box<worth_relational::facade::transactions::InvariantViolationFields>),
     ManagedSource(worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial),
@@ -30,6 +32,7 @@ impl NativeDenial {
     pub(super) fn allocation(&self) -> Option<&ExecutionAllocationDenial> {
         match self {
             Self::AuthoredRetirement(_)
+            | Self::PersistentName(_)
             | Self::PublicationCompanion(_)
             | Self::PublicationReadmission(_)
             | Self::PublicationCellRegistration(_) => None,

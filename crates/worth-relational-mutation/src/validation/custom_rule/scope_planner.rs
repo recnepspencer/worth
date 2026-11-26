@@ -234,6 +234,7 @@ pub struct CustomInvariantScopePlanner<'runtime> {
     work: super::CustomInvariantWorkMeter,
     proposal_identity:
         Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
+    pub(super) names: super::persistent_names::InvariantNames<'runtime>,
 }
 
 impl<'runtime> CustomInvariantScopePlanner<'runtime> {
@@ -308,6 +309,7 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
             committed_relations,
             counts,
             traversal,
+            names: super::persistent_names::InvariantNames::new(runtime.names(), work.clone()),
             work,
             proposal_identity: observation.proposal_identity().cloned(),
         }

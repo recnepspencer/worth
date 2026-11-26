@@ -764,6 +764,26 @@ replay:
   birth is immutable and rests on no fact, while an answer that found no
   birth vetoes sealing and, on an applied candidate, refuses
   `CandidateNameHistory`, since the unpublished candidate may bear it.
+- Inside an installed invariant, the read view exposes
+  `WorthQueryApplicationInvariantReadView::name_of(&entity)` and
+  `birth_of(&held)` (`host::application_invariants`, refusal
+  `WorthQueryInvariantNameDenial`), in scope planning and evaluation alike.
+  `name_of` first checks the entity as every view read does (binding, view,
+  kind, prepared scope); a record with no name refuses `RecordNotNamed`, as
+  an unnamed kind's records always do. `committed()` reads the branch's names
+  at the proposal's basis and never sees the proposal's own births.
+  `proposed()` also reads the names the commit under evaluation gives its
+  records (plain births, split pieces, merge results kept in place or minted
+  new, a coupled producer's outputs) and ends (retired, split and merged-away
+  parents), as Relational's own naming authority validates and mints them: a
+  pending birth answers with the exact name and `RecordedNameBirth` the
+  commit records, and its same-commit references are admitted by kind, so
+  `decode_discriminator::<D>()` refuses `NameKindMismatch` for a reference of
+  another kind. When the commit's naming plan is refused (`MissingBirth`,
+  `DuplicateBirth`, an invalid posture), the read refuses
+  `WorthQueryInvariantNameDenial::Names` and the commit refuses with that
+  exact naming denial (`persistent_name_refusal()`), whatever the rule
+  decides. Each read is charged to the invariant's work budget.
 - Relations are read the same way. `reader.relation_name_of(&relation)`
   takes the handle the decision reader's own traversal returned
   (`relations_from` / `relations_to`), never a raw relation identity, and

@@ -45,8 +45,8 @@ pub use typed_view::{
     WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantWalk,
     WorthQueryApplicationInvariantWalkIter, WorthQueryApplicationInvariantWalkStep,
     WorthQueryInvariantDerivedChanges, WorthQueryInvariantManagedIndexPair,
-    WorthQueryInvariantManagedIndexRead, WorthQueryPreparedInvariantDerivedChanges,
-    WorthQueryPreparedInvariantManagedIndex,
+    WorthQueryInvariantManagedIndexRead, WorthQueryInvariantNameDenial,
+    WorthQueryPreparedInvariantDerivedChanges, WorthQueryPreparedInvariantManagedIndex,
 };
 
 /// Supplies domain validation without supplying its own installation authority.

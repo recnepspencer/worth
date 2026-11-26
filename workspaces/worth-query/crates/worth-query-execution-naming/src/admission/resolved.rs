@@ -6,10 +6,9 @@
 
 use worth_query_declaration::facade::application_naming::WorthQueryName;
 use worth_query_declaration::persistent_name_admission_authority::admit_minted_digest;
-use worth_relational::facade::lineage::{
-    PersistentNameKey, PersistentNameObservationView, PersistentNameSubjectKind,
-};
-use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::lineage::{PersistentNameKey, PersistentNameSubjectKind};
+
+use super::RecordedNames;
 
 use crate::tracked_resolution::ExecutionNameReadDenial;
 
@@ -20,13 +19,12 @@ pub(crate) struct RequestedSubject<'kind> {
     pub(crate) name: &'kind str,
 }
 
-/// Verifies that `key`, recorded in `view`, was born under an installed
+/// Verifies that `key`, recorded in `names`, was born under an installed
 /// scheme governing exactly `requested`.
 ///
 /// Complexity: O(1) expected index probe plus one registry lookup.
 pub(crate) fn verify_resolved_subject(
-    runtime: &RelationalRuntime,
-    view: &PersistentNameObservationView<'_>,
+    names: &impl RecordedNames,
     key: PersistentNameKey,
     requested: RequestedSubject<'_>,
 ) -> Result<(), ExecutionNameReadDenial> {
@@ -36,9 +34,9 @@ pub(crate) fn verify_resolved_subject(
             actual: key.subject_kind(),
         });
     }
-    let scheme_id = view.scheme_of(key);
+    let scheme_id = names.scheme_of(key);
     let Some((installed_kind, installed_subject)) =
-        scheme_id.and_then(|scheme| runtime.persistent_name_scheme_subject(scheme))
+        scheme_id.and_then(|scheme| names.scheme_subject(scheme))
     else {
         return Err(ExecutionNameReadDenial::UnknownScheme {
             scheme_id: scheme_id.map(str::to_owned),
@@ -62,22 +60,20 @@ pub(crate) fn verify_resolved_subject(
 
 /// The kind-typed name a resolved key was born as, after verification.
 pub(crate) fn kind_verified_resolved_name<K>(
-    runtime: &RelationalRuntime,
-    view: &PersistentNameObservationView<'_>,
+    names: &impl RecordedNames,
     key: PersistentNameKey,
     requested: RequestedSubject<'_>,
 ) -> Result<WorthQueryName<K>, ExecutionNameReadDenial> {
-    admit_resolved_name_key(runtime, view, key, requested)
+    admit_resolved_name_key(names, key, requested)
 }
 
 /// Admits a verified resolved key as the kind-typed name it was born as.
 fn admit_resolved_name_key<K>(
-    runtime: &RelationalRuntime,
-    view: &PersistentNameObservationView<'_>,
+    names: &impl RecordedNames,
     key: PersistentNameKey,
     requested: RequestedSubject<'_>,
 ) -> Result<WorthQueryName<K>, ExecutionNameReadDenial> {
-    verify_resolved_subject(runtime, view, key, requested)?;
+    verify_resolved_subject(names, key, requested)?;
     Ok(admit_minted_digest(*key.digest()))
 }
 

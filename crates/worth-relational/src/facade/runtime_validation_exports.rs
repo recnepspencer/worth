@@ -12,6 +12,10 @@ pub use crate::derived_relation::{
     PinnedDerivedRelationRead, PinnedDerivedRelationScope, PreparedDerivedRelationChanges,
     PreparedDerivedRelationRead,
 };
+pub use crate::validation::custom_rule::{
+    CustomInvariantNameReadDenial, CustomInvariantNameReads, CustomInvariantNameView,
+    CustomInvariantRecordName,
+};
 pub use crate::validation::data::CustomInvariantNativeCheckpointDenial;
 pub use crate::validation::data::{
     CompleteStructuralWalk, CustomInvariantAccessContract, CustomInvariantDescriptor,

@@ -25,6 +25,7 @@ mod ergonomics;
 pub(crate) mod groups;
 mod history;
 mod interleaving;
+pub(crate) mod invariant_names;
 mod lineage;
 mod named_read;
 mod navigation;

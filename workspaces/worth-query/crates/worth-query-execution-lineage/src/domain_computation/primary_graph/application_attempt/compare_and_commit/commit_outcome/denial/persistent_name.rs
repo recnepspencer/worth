@@ -29,7 +29,12 @@ impl WorthQueryApplicationCommitDenial {
     /// The naming law Relational's commit finalization refused (for example
     /// `MissingBirth`, `DuplicateBirth`, `LineagePostureMismatch` or
     /// `InvalidMergeKeeper`), proven to precede publication: zero effects.
+    /// An installed invariant that read the commit's names meets the same
+    /// refusal first, and the commit refuses with it.
     pub fn persistent_name_refusal(&self) -> Option<&LineageNameDenial> {
+        if let Some(DenialCause::InvariantExecution(failure)) = self.cause.as_deref() {
+            return failure.persistent_name_refusal();
+        }
         self.native_preparation_error()?.lineage_name_denial_ref()
     }
 }

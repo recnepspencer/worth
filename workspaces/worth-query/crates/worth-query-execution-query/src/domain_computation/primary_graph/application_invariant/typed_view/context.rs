@@ -54,6 +54,7 @@ impl<'borrow, 'runtime, Schema>
             reads: &self.reads,
             content_fields: self.content_fields,
             content_decode: &self.content_decode,
+            names: self.lower.proposed_names(),
             _schema: PhantomData,
         }
     }
@@ -70,6 +71,7 @@ impl<'borrow, 'runtime, Schema>
             reads: &self.reads,
             content_fields: self.content_fields,
             content_decode: &self.content_decode,
+            names: self.lower.committed_names(),
             _schema: PhantomData,
         }
     }
@@ -116,6 +118,7 @@ impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, '
             reads: &self.reads,
             content_fields: self.content_fields,
             content_decode: &self.content_decode,
+            names: self.lower.proposed_names(),
             _schema: PhantomData,
         }
     }
@@ -132,6 +135,7 @@ impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, '
             reads: &self.reads,
             content_fields: self.content_fields,
             content_decode: &self.content_decode,
+            names: self.lower.committed_names(),
             _schema: PhantomData,
         }
     }
