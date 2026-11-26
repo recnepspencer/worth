@@ -31,6 +31,7 @@ StepAction(step) ==
       [] step.action = "PublishBranchCommit"      -> PublishBranchCommit
       [] step.action = "BeginCheckpoint"          -> BeginCheckpoint(step.epoch)
       [] step.action = "SealCheckpoint"           -> SealCheckpoint
+      [] step.action = "CoverCancelCheckpoint"    -> CoverCancelCheckpoint
       [] step.action = "RetireHistoryPrefix"      -> RetireHistoryPrefix(step.newFloor)
       [] step.action = "ArchiveBranch"            -> ArchiveBranch(step.branch)
       [] step.action = "RetireBranchRef"          -> RetireBranchRef(step.branch)
@@ -87,6 +88,7 @@ MatchesPost(step) ==
     /\ pinnedRoots' = step.postPinnedRoots
     /\ activeReaderLoans' = step.postReaderLoans
     /\ liveChildPins' = step.postChildPins
+    /\ pinsRestored' = step.postPinsRestored
     \* extents, generations, writebacks
     /\ phase' = step.postPhase
     /\ cov' = step.postCov

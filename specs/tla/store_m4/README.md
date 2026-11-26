@@ -10,13 +10,13 @@ M4 recovery stages.
 | Area | Actions |
 | --- | --- |
 | Commits and Home frontier | `PrepareBranch`, `BeginBranchCommit` (FIFO revalidation = M3 `BeginCommit`), `RefuseStaleCandidate`, `FlushJournal`, `PublishBranchCommit` (= M3 `SealManifest`; composes onto the current frontier) |
-| Checkpoints | `BeginCheckpoint`, `SealCheckpoint` (canonical coverage), `RetireHistoryPrefix` (consolidation) |
+| Checkpoints | `BeginCheckpoint`, `SealCheckpoint` (canonical coverage), `CoverCancelCheckpoint` (fuzzy maintenance checkpoint covering a cancelled candidate without root publication), `RetireHistoryPrefix` (consolidation) |
 | Branch lifecycle | `ArchiveBranch`, `RetireBranchRef`, `RefuseRetiredBranchName` |
 | PinTable | `PublishForkPin`, `AttachChildPin`, `ReleaseChildPin`, `AcquireReaderLoan`, `AcquireGrandchildLoan`, `ReleaseReaderLoan`, `BeginExpireForkLease`, `FinishExpireForkLease` |
 | P0 writeback fence | `WritebackIssue`, `WritebackLand`, `WritebackCancel`, `RefuseStaleWriteback` |
-| Reclamation | Path A: `ReclaimIntent` -> `PublishFreeSpaceRoot` -> `ReclaimComplete` -> `AdmitToAllocator`. Path B: `CancelCandidateExtent` -> `SealCheckpoint` -> `AdmitToAllocator`. Then `AllocateExtent` (reuse) |
+| Reclamation | Path A: `ReclaimIntent` -> `PublishFreeSpaceRoot` -> `ReclaimComplete` -> `AdmitToAllocator` (or after crash at `fsroot`, `fsroot_reopened` -> `RecoverResumeReclaimComplete` settles directly to `admitted` without a second `AdmitToAllocator`). Path B: `CancelCandidateExtent` -> `CoverCancelCheckpoint` (or `SealCheckpoint`) -> `AdmitToAllocator`. Then `AllocateExtent` (reuse) |
 | Cursors | `IssueRetainedBasisToken`, `ResumeCursor`, `ResumeCursorRefused` (HistoryUnavailable), `ReleaseCursorLoan` |
-| Crash and recovery | `Crash` (= M3 `CrashKill`; drops loans, unlanded writebacks, preparations, cursor loans, staged coverage), `BeginRecover`, `RecoverWal` (= M3 `AdvanceRecoverStage`; decides the pending commit's fate), `RecoverRestorePins`, `RecoverResumeFreeSpaceRoot`, `RecoverResumeReclaimComplete`, `RecoverServing` (= M3 `FinishRecover`) |
+| Crash and recovery | `Crash` (= M3 `CrashKill`; drops loans, unlanded writebacks, preparations, cursor loans, PinTable residency, staged coverage; transitions `fsroot` -> `fsroot_reopened`), `BeginRecover`, `RecoverWal` (= M3 `AdvanceRecoverStage`; decides the pending commit's fate), `RecoverRestorePins`, `RecoverResumeFreeSpaceRoot`, `RecoverResumeReclaimComplete`, `RecoverServing` (= M3 `FinishRecover`) |
 
 ## Commands
 
@@ -44,8 +44,8 @@ Results on the work PC (32 workers, TLC 2.19), constants `MaxCommits = 2`,
 
 | Check | Result |
 | --- | --- |
-| `StoreM4ScaleReclaim` (LifecycleSpec) | exit 0; 53,618,858 states generated, 8,270,446 distinct, depth 39, 53 s |
-| `StoreM4ScaleReclaimPhysical` (PhysicalSpec) | exit 0; 34,650,937 generated, 4,138,940 distinct, depth 40, 37 s |
+| `StoreM4ScaleReclaim` (LifecycleSpec) | exit 0; 71,140,642 states generated, 10,459,094 distinct, depth 38, 72 s |
+| `StoreM4ScaleReclaimPhysical` (PhysicalSpec) | exit 0; 78,199,509 generated, 9,174,404 distinct, depth 44, 73 s |
 | Witness 1 to 5 | exit 12 each, on the named `WitnessNNotReached` |
 
 ## Safety invariants and properties
@@ -77,8 +77,10 @@ queued when it was stopped. Safety is therefore checked over two sub-relations o
 - `PhysicalNext` drops `PinSteps`, `CursorSteps` and `ArchiveSteps`. Those
   steps write no physical variable. They only add `Reach` holders (pins,
   loans, cursor loans, archived roots), which can only disable
-  `ReclaimIntent("base")`. With "archived" mapped to "live" and
-  pins/cursors erased, every `Spec` behaviour projected on physical state is a
+  `ReclaimIntent("base")`. With "archived" mapped to "live", volatile `prep`
+  projected away (just-in-time `PrepareBranch` immediately before
+  `BeginBranchCommit` simulates every commit identically), and pins/cursors
+  erased, every `Spec` behaviour projected on physical state is a
   `PhysicalSpec` behaviour. This slice owns the generation, fence, idempotent
   resume and admission-coverage laws.
 
@@ -93,9 +95,9 @@ TLC prints is still a behaviour of `Spec`.
 
 | Witness | Module | What the printed trace shows |
 | --- | --- | --- |
-| 1 Grandchild survival and unrelated space return | `StoreM4Witness1GrandchildSurvival` | A is retired while B and a grandchild loan through the fork pin's child overlay share `base`; `gc` enters reclamation while that loan still holds `base`; `base` enters reclamation only after the loan, child and lease drain and B moves on |
-| 2 Paused writeback fence and cancel without root publication | `StoreM4Witness2WritebackFence` | Coalesced claim `{3,4}` at `<<0,0>>` in flight; `gc` completed and `cand` cancelled and checkpoint-covered, with `AdmitToAllocator` NOT `ENABLED` for either; after the claim lands both admit at `<<2,2>>`, `cand` with `rootPubGen` unchanged since the cancel; then a `<<0,0>>` submission is refused |
-| 3 Chained crash during recovery reclaim resume | `StoreM4Witness3ChainedCrashReclaim` (`MaxCrashes = 3`) | Crash at `intent`, `RecoverResumeFreeSpaceRoot`, a second crash before `RecoverResumeReclaimComplete`, completion on the next reopen, admit at `<<1,1>>`, reallocate and land a write, a third crash, and a reopen leaving the cells fresh at `<<1,1>>` |
+| 1 Grandchild survival and unrelated space return | `StoreM4Witness1GrandchildSurvival` | A is retired while B and a grandchild loan through the fork pin's child overlay share `base`; while the fork lease is `Expiring` and that grandchild loan still holds `base`, `gc` is reclaimed all the way to `admitted`; `base` enters reclamation only after the loan, child and lease drain and B moves on |
+| 2 Paused writeback fence and cancel without root publication | `StoreM4Witness2WritebackFence` | Coalesced claim `{3,4}` at `<<0,0>>` in flight; `cand` cancelled and covered by `CoverCancelCheckpoint` with `AdmitToAllocator("cand")` NOT `ENABLED`, then admitted at `<<0,1>>` with zero root publications (`cellGen'[4][1] = cellGen[4][1]`, `cellGen'[4][2] > cellGen[4][2]`); `gc` completed with overlapping claim in flight and `AdmitToAllocator("gc")` NOT `ENABLED`, then admitted after drain; then a `<<0,0>>` submission is refused |
+| 3 Chained crash during recovery reclaim resume | `StoreM4Witness3ChainedCrashReclaim` (`MaxCrashes = 3`) | Crash at `intent`, `RecoverResumeFreeSpaceRoot`, a second crash before `RecoverResumeReclaimComplete` (`fsroot -> fsroot_reopened`), next reopen settles `fsroot_reopened -> admitted` directly at `<<1,1>>` without a second `AdmitToAllocator` (`~ENABLED AdmitToAllocator("gc")`), reallocate and land a write, a third crash, and a reopen leaving the cells fresh at `<<1,1>>` |
 | 4 Concurrent preparation and archive race | `StoreM4Witness4ConcurrentPrepArchive` | A and B prepared on one frontier; A publishes; B passes revalidation with a stale candidate and publishes onto A's frontier (`a1` kept); A prepares, is archived, and is refused |
 | 5 Retained cursor across consolidation and HEAD advance | `StoreM4Witness5RetainedCursor` | Token on B at `base`; B's HEAD moves to `b1`; history consolidated; crash and reopen; `ResumeCursor` loans exactly `base`; after `base` is pruned, `ResumeCursorRefused` (HistoryUnavailable), never `b1` |
 
@@ -108,7 +110,8 @@ and action property listed above, plus `TraceAccepted`.
 
 | Trace | Expected | Covers |
 | --- | --- | --- |
-| `hand-chained-crash-reclaim` | exit 0 | Witness 3 path, idempotent resume, stale refusal after reuse |
+| `hand-chained-crash-reclaim` | exit 0 | Witness 3 path (`fsroot_reopened -> admitted`), idempotent resume, stale refusal after reuse |
+| `hand-path-b-cancel-zero-root-pub` | exit 0 | Path B cancel -> `CoverCancelCheckpoint` -> `AdmitToAllocator("cand")` at `<<0,1>>` (zero root publications) -> `AllocateExtent({4})` -> stale refusal |
 | `hand-writeback-fence-cancel-and-cursor` | exit 0 | Witness 2 and 5 paths |
 | `hand-grandchild-survival` | exit 0 | Witness 1 path |
 | `hand-concurrent-prep-archive` | exit 0 | Witness 4 path, and an indeterminate commit applied by `RecoverWal` |
@@ -117,6 +120,7 @@ and action property listed above, plus `TraceAccepted`.
 | `hand-rejected-m7-cursor-rebinds-head` | exit 11 | M7: resumed cursor loans B's HEAD instead of the basis |
 | `hand-rejected-m8-prune-before-coverage` | exit 11 | M8: `base` reclaimed before a canonical checkpoint covers it |
 | `hand-rejected-m9-double-free-on-resume` | exit 11 | M9: recovery re-releases a reallocated `g'` range |
+| `hand-rejected-m9-duplicate-admit-after-fsroot-reopen` | exit 11 | M9: duplicate `AdmitToAllocator` after `fsroot_reopened` already settled to `admitted` |
 | `hand-rejected-m9-admit-before-complete` | exit 11 | M9: allocator admission before `ReclaimComplete` |
 | `hand-rejected-m10-admit-under-inflight-writeback` | exit 11 | M10: admission while an overlapping claim is in flight |
 | `hand-rejected-m10-stale-generation-writeback` | exit 11 | M10: stale-generation submission admitted |
@@ -162,7 +166,8 @@ Post-state, required on every record:
 | `postPinState` | `"None"`, `"Active"`, `"Expiring"` or `"Expired"` |
 | `postPinnedRoots` | set of chunk names |
 | `postReaderLoans`, `postChildPins` | 0 or 1 |
-| `postPhase` | `{"base", "gc", "cand"}` mapped to `"none"`, `"intent"`, `"fsroot"`, `"complete"`, `"cancelled"` or `"admitted"` |
+| `postPinsRestored` | bool (`false` after `Crash` until `RecoverRestorePins`) |
+| `postPhase` | `{"base", "gc", "cand"}` mapped to `"none"`, `"intent"`, `"fsroot"`, `"fsroot_reopened"`, `"complete"`, `"cancelled"` or `"admitted"` |
 | `postCov` | the same keys mapped to `"live"`, `"dropped"`, `"staged"` or `"covered"` |
 | `postCellState` | list of 4 values: `"live"`, `"retired"`, `"free"` or `"fresh"` |
 | `postCellGen` | list of 4 pairs `[rootPubGen, fenceSeq]` |
@@ -176,7 +181,7 @@ Post-state, required on every record:
 The model has a fixed finite topology: branches `A` and `B` over a shared base;
 cells `1..4`, with extent `base = {1}`, `gc = {2,3}` and `cand = {4}`; claim
 ranges `{3}` (split) and `{3,4}` (coalesced across `gc` and `cand`);
-reallocation ranges `{3}` and `{2,3}`. A `store_m4_dst` scenario that emits
+reallocation ranges `{3}`, `{4}`, `{2,3}` and `{3,4}`. A `store_m4_dst` scenario that emits
 traces sets up exactly these roles. Its fixture maps the real
 `ArenaByteRange`s to cells, emits `ExtentAllocationGeneration` as the pair, and
 reports observed barrier outcomes, not oracle post-state.

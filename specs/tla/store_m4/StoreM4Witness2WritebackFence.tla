@@ -10,8 +10,11 @@ EXTENDS StoreM4ScaleReclaim
   fB  Path B: "cand" cancelled and checkpoint-covered while an overlapping
       coalesced claim is in flight, and AdmitToAllocator("cand") is NOT enabled.
   aA  after fA, AdmitToAllocator("gc") succeeds at gen' > g.
-  aB  after fB, AdmitToAllocator("cand") succeeds at gen' > g with no root
-      publication since the cancel (rootPubGen unchanged since cancel).
+  aB  after fB, AdmitToAllocator("cand") succeeds at gen' > g with ZERO root
+      publication since cell 4's original allocation (rootPubGen unchanged
+      from cellGen[4][1], so the generation advance comes strictly from
+      extent_fence_seq; dropping fenceSeq++ in CancelCandidateExtent breaks
+      this witness).
   st  after aA and aB, a fresh submission at the stale generation g on an
       overlapping range is refused (RefuseStaleWriteback).
   TLC must violate Witness2NotReached.
@@ -50,7 +53,9 @@ W2Next ==
                  fB |-> fl.fB \/ FencedB,
                  aA |-> fl.aA \/ (fl.fA /\ AdmittedAfterFence("gc")),
                  aB |-> fl.aB \/ (fl.fB /\ AdmittedAfterFence("cand")
-                                        /\ rootPubGen' = pubAtCancel),
+                                        /\ rootPubGen' = pubAtCancel
+                                        /\ cellGen'[4][1] = cellGen[4][1]
+                                        /\ cellGen'[4][2] > cellGen[4][2]),
                  st |-> fl.st]
     \/ /\ fl.aA /\ fl.aB
        /\ \E r \in IoRanges :
@@ -66,10 +71,11 @@ Witness2NotReached == ~(fl.fA /\ fl.fB /\ fl.aA /\ fl.aB /\ fl.st)
 
 \* Search focus (prunes only; any trace found is still a Spec behaviour).
 W2Focus ==
+    /\ durableHead = 0 /\ pendingWrite = "none"
     /\ crashCount = 0
     /\ pinState = "None"
     /\ tokenBasis = "none"
-    /\ \A b \in Branches : branchState[b] = "live"
+    /\ \A b \in Branches : branchState[b] = "live" /\ prep[b] = "none"
     /\ phase["base"] = "none"
 
 =============================================================================

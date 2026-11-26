@@ -6,10 +6,11 @@ EXTENDS StoreM4ScaleReclaim
   unrelated space return.
 
   Branch A is retired while sibling B and a grandchild reader loan (through
-  the fork pin's child overlay) still share "base"; unrelated garbage "gc"
-  then enters reclamation while that loan still holds "base"; finally "base"
-  itself enters reclamation once the last loan, the child overlay and the
-  lease have drained and B has moved on. TLC must violate
+  the fork pin's child overlay) still share "base"; the fork lease enters
+  "Expiring" and unrelated garbage "gc" is reclaimed all the way to
+  allocator admission while that grandchild loan still holds "base"; finally
+  "base" itself enters reclamation once the last loan, the child overlay and
+  the lease have drained and B has moved on. TLC must violate
   Witness1NotReached, printing the trace.
 
   `viaChild` and `w` are witness-only history variables: every W1Next step is
@@ -28,7 +29,8 @@ Progress ==
          /\ viaChild /\ activeReaderLoans = 1 /\ liveChildPins = 1
          /\ "base" \in PinRoots                                        -> 1
       [] w = 1
-         /\ phase["gc"] = "none" /\ phase'["gc"] = "intent"
+         /\ pinState = "Expiring"
+         /\ phase["gc"] # "admitted" /\ phase'["gc"] = "admitted"
          /\ viaChild /\ activeReaderLoans = 1
          /\ "base" \in PinRoots                                        -> 2
       [] w = 2

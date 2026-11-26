@@ -74,6 +74,7 @@ VARIABLES
     pinnedRoots,        \* HomeRootManifest roots captured by the pin (durable)
     activeReaderLoans,  \* volatile reader loans, direct or grandchild through the child overlay (0..1)
     liveChildPins,      \* durable nested child overlay pins (0..1)
+    pinsRestored,       \* volatile: FALSE after Crash until RecoverRestorePins restores PinTable
     \* ---- Physical extents, generations, writebacks, reclamation ----
     phase,          \* [Extents -> Phases] durable retirement / cancel record
     cov,            \* [Extents -> CovStates] canonical checkpoint coverage of the extent's removal
@@ -97,7 +98,7 @@ m3Vars == <<durableHead, checkpointEpoch, stagedCheckpoint, retainedFloor,
             recoveryStage, crashCount, buildId, derivedState, recoveredHead,
             reopenSucceeded>>
 branchVars == <<branchState, head, prep, frontierSeq, pendingBranch, retiredEver>>
-pinVars == <<pinState, pinnedRoots, activeReaderLoans, liveChildPins>>
+pinVars == <<pinState, pinnedRoots, activeReaderLoans, liveChildPins, pinsRestored>>
 extentVars == <<phase, cov, cellState, cellGen, rootPubGen, fenceSeq, inflight,
                 fsRootReleases, allocatorAdmits>>
 cursorVars == <<tokenBasis, cursorLoan>>
@@ -127,7 +128,7 @@ ExtentOf(c) == CASE c = 1 -> "base"
 \* Path A and Path B. Reallocation reuses "gc" split ({3}) or whole ({2,3}).
 \* "base" is reclaimed through Reach/pins only.
 IoRanges == {{3}, {3, 4}}
-AllocRanges == {{3}, {2, 3}}
+AllocRanges == {{3}, {4}, {2, 3}, {3, 4}}
 Overlaps(r1, r2) == r1 \cap r2 # {}
 
 MaxPubGen == MaxCommits + 2
@@ -140,8 +141,8 @@ GenGT(a, b) == a[1] > b[1] \/ (a[1] = b[1] /\ a[2] > b[2])
 BranchStates == {"live", "archived", "retired"}
 PrepStates == {"none", "current", "stale"}
 PinStates == {"None", "Active", "Expiring", "Expired"}
-Phases == {"none", "intent", "fsroot", "complete", "cancelled", "admitted"}
-RetiringPhases == {"intent", "fsroot", "complete", "cancelled"}
+Phases == {"none", "intent", "fsroot", "fsroot_reopened", "complete", "cancelled", "admitted"}
+RetiringPhases == {"intent", "fsroot", "fsroot_reopened", "complete", "cancelled"}
 CovStates == {"live", "dropped", "staged", "covered"}
 CellStates == {"live", "retired", "free", "fresh"}
 M4RecStages == {"none", "pins_restored", "fsroot_resumed", "complete_resumed"}
@@ -159,9 +160,11 @@ PinHolds ==
 PinRoots == IF PinHolds THEN pinnedRoots ELSE {}
 
 \* Complete independent reachability law (section 7.2 `Reach`).
+\* Fail-closed: before PinTable restoration on reopen, every non-retiring extent
+\* is treated as conservatively reachable so reclamation cannot admit new intents.
 Reach ==
     CatalogRoots
-    \cup PinRoots
+    \cup (IF pinsRestored THEN PinRoots ELSE {e \in Extents : phase[e] = "none"})
     \cup (IF cursorLoan # "none" THEN {cursorLoan} ELSE {})
     \cup (IF phase["cand"] = "none" THEN {"cand"} ELSE {})   \* in-flight candidate decision
 
@@ -193,6 +196,7 @@ Init ==
     /\ pinnedRoots = {}
     /\ activeReaderLoans = 0
     /\ liveChildPins = 0
+    /\ pinsRestored = TRUE
     /\ phase = [e \in Extents |-> "none"]
     /\ cov = [e \in Extents |-> IF e = "gc" THEN "covered" ELSE "live"]
     /\ cellState = [c \in Cells |-> "live"]
@@ -279,6 +283,18 @@ SealCheckpoint ==
                    fenceSeq, inflight, fsRootReleases, allocatorAdmits,
                    cursorVars, m4Rec>>
 
+\* Fuzzy maintenance checkpoint covering a cancelled candidate's WAL record
+\* without requiring a branch commit or root publication (M4.5a Path B,
+\* extent_copy/resolution.rs:158).
+CoverCancelCheckpoint ==
+    /\ ~crashed
+    /\ phase["cand"] = "cancelled"
+    /\ cov["cand"] = "dropped"
+    /\ cov' = [cov EXCEPT !["cand"] = "covered"]
+    /\ UNCHANGED <<m3Vars, branchVars, pinVars, phase, cellState, cellGen,
+                   rootPubGen, fenceSeq, inflight, fsRootReleases,
+                   allocatorAdmits, cursorVars, m4Rec>>
+
 \* History consolidation (journal prefix retirement, physical locators move).
 RetireHistoryPrefix(fl) ==
     /\ M3!RetireHistoryPrefix(fl)
@@ -326,7 +342,7 @@ PublishForkPin ==
     /\ pinState' = "Active"
     /\ pinnedRoots' = CatalogRoots
     /\ UNCHANGED <<m3Vars, branchVars, activeReaderLoans, liveChildPins,
-                   extentVars, cursorVars, m4Rec>>
+                   pinsRestored, extentVars, cursorVars, m4Rec>>
 
 \* Direct reader loan on the fork pin: fenced once the lease is Expiring.
 AcquireReaderLoan ==
@@ -335,7 +351,7 @@ AcquireReaderLoan ==
     /\ activeReaderLoans = 0
     /\ activeReaderLoans' = 1
     /\ UNCHANGED <<m3Vars, branchVars, pinState, pinnedRoots, liveChildPins,
-                   extentVars, cursorVars, m4Rec>>
+                   pinsRestored, extentVars, cursorVars, m4Rec>>
 
 \* Grandchild reader loan taken through the live child overlay; the child is
 \* its own lease, so the parent's Expiring fence does not refuse it, and the
@@ -346,14 +362,14 @@ AcquireGrandchildLoan ==
     /\ activeReaderLoans = 0
     /\ activeReaderLoans' = 1
     /\ UNCHANGED <<m3Vars, branchVars, pinState, pinnedRoots, liveChildPins,
-                   extentVars, cursorVars, m4Rec>>
+                   pinsRestored, extentVars, cursorVars, m4Rec>>
 
 ReleaseReaderLoan ==
     /\ ~crashed
     /\ activeReaderLoans = 1
     /\ activeReaderLoans' = 0
     /\ UNCHANGED <<m3Vars, branchVars, pinState, pinnedRoots, liveChildPins,
-                   extentVars, cursorVars, m4Rec>>
+                   pinsRestored, extentVars, cursorVars, m4Rec>>
 
 AttachChildPin ==
     /\ ~crashed
@@ -361,7 +377,7 @@ AttachChildPin ==
     /\ liveChildPins = 0
     /\ liveChildPins' = 1
     /\ UNCHANGED <<m3Vars, branchVars, pinState, pinnedRoots, activeReaderLoans,
-                   extentVars, cursorVars, m4Rec>>
+                   pinsRestored, extentVars, cursorVars, m4Rec>>
 
 \* Conservative drain: the child is released only once no loan is live.
 ReleaseChildPin ==
@@ -370,7 +386,7 @@ ReleaseChildPin ==
     /\ activeReaderLoans = 0
     /\ liveChildPins' = 0
     /\ UNCHANGED <<m3Vars, branchVars, pinState, pinnedRoots, activeReaderLoans,
-                   extentVars, cursorVars, m4Rec>>
+                   pinsRestored, extentVars, cursorVars, m4Rec>>
 
 \* Active -> Expiring fences new direct loans and child pins.
 BeginExpireForkLease ==
@@ -378,7 +394,7 @@ BeginExpireForkLease ==
     /\ pinState = "Active"
     /\ pinState' = "Expiring"
     /\ UNCHANGED <<m3Vars, branchVars, pinnedRoots, activeReaderLoans,
-                   liveChildPins, extentVars, cursorVars, m4Rec>>
+                   liveChildPins, pinsRestored, extentVars, cursorVars, m4Rec>>
 
 \* Expiring -> Expired only once every loan and child overlay has drained.
 FinishExpireForkLease ==
@@ -389,7 +405,7 @@ FinishExpireForkLease ==
     /\ pinState' = "Expired"
     /\ pinnedRoots' = {}
     /\ UNCHANGED <<m3Vars, branchVars, activeReaderLoans, liveChildPins,
-                   extentVars, cursorVars, m4Rec>>
+                   pinsRestored, extentVars, cursorVars, m4Rec>>
 
 \* ===========================================================================
 \* 4. P0 writeback fence & generation-checked I/O
@@ -439,9 +455,10 @@ WritebackCancel(w) ==
 \* 5. Split four-barrier reclamation (Path A) & candidate cancel (Path B)
 \* ===========================================================================
 
-\* Barrier 1: requires range outside Reach and canonical successor coverage.
+\* Barrier 1: requires restored pins, range outside Reach, and canonical coverage.
 ReclaimIntent(e) ==
     /\ ~crashed
+    /\ pinsRestored
     /\ e \in PathAExtents
     /\ phase[e] = "none"
     /\ e \notin Reach
@@ -552,18 +569,21 @@ ReleaseCursorLoan ==
 \* ===========================================================================
 
 \* Drops all volatile state: loans, unlanded writebacks, preparations, cursor
-\* loans, and unsealed checkpoint coverage. May fire mid-recovery (M3 stage
-\* "staging" / "manifest_switch"), i.e. between every M4 recovery stage.
+\* loans, PinTable residency, and unsealed checkpoint coverage. Any extent at
+\* "fsroot" becomes "fsroot_reopened" because bootstrap on reopen will already
+\* load its published free-space root into the allocator's durable index.
 Crash ==
     /\ M3!CrashKill
     /\ activeReaderLoans' = 0
+    /\ pinsRestored' = FALSE
     /\ inflight' = {}
     /\ prep' = [b \in Branches |-> "none"]
     /\ cursorLoan' = "none"
     /\ cov' = [e \in Extents |-> IF cov[e] = "staged" THEN "dropped" ELSE cov[e]]
+    /\ phase' = [e \in Extents |-> IF phase[e] = "fsroot" THEN "fsroot_reopened" ELSE phase[e]]
     /\ m4Rec' = "none"
     /\ UNCHANGED <<branchState, head, frontierSeq, pendingBranch, retiredEver,
-                   pinState, pinnedRoots, liveChildPins, phase, cellState,
+                   pinState, pinnedRoots, liveChildPins, cellState,
                    cellGen, rootPubGen, fenceSeq, fsRootReleases,
                    allocatorAdmits, tokenBasis>>
 
@@ -590,14 +610,17 @@ RecoverRestorePins ==
     /\ crashed
     /\ recoveryStage = "manifest_switch"
     /\ m4Rec = "none"
+    /\ pinsRestored' = TRUE
     /\ m4Rec' = "pins_restored"
-    /\ UNCHANGED <<m3Vars, branchVars, pinVars, extentVars, cursorVars>>
+    /\ UNCHANGED <<m3Vars, branchVars, pinState, pinnedRoots, activeReaderLoans,
+                   liveChildPins, extentVars, cursorVars>>
 
 \* Idempotent resume of barrier 2 for records still at "intent" only.
 RecoverResumeFreeSpaceRoot ==
     /\ crashed
     /\ recoveryStage = "manifest_switch"
     /\ m4Rec = "pins_restored"
+    /\ pinsRestored
     /\ LET pending == {e \in PathAExtents : phase[e] = "intent"}
        IN /\ phase' = [e \in Extents |-> IF e \in pending THEN "fsroot" ELSE phase[e]]
           /\ fsRootReleases' = [e \in Extents |->
@@ -608,23 +631,47 @@ RecoverResumeFreeSpaceRoot ==
     /\ UNCHANGED <<m3Vars, branchVars, pinVars, cov, cellState, cellGen,
                    fenceSeq, inflight, allocatorAdmits, cursorVars>>
 
-\* Idempotent resume of barrier 3 for records still at "fsroot" only; never
-\* touches completed / admitted / reallocated ranges.
+\* Idempotent resume of barrier 3 (matching Verus resume_release and Lean
+\* ReclamationSafety):
+\* - "fsroot" (this recovery just published the free-space root -> IntentDurable):
+\*   records completion and moves to "complete" so this process performs
+\*   AdmitToAllocator once after RecoverServing.
+\* - "fsroot_reopened" (crashed after PublishFreeSpaceRoot -> FreeSpacePublished):
+\*   bootstrap already loaded the published free-space root into the allocator;
+\*   completion settles directly to "admitted" (free at GlobalGen') without a
+\*   duplicate AdmitToAllocator (`M9`).
 RecoverResumeReclaimComplete ==
     /\ crashed
     /\ recoveryStage = "manifest_switch"
     /\ m4Rec = "fsroot_resumed"
-    /\ LET pending == {e \in PathAExtents : phase[e] = "fsroot"}
-       IN /\ phase' = [e \in Extents |-> IF e \in pending THEN "complete" ELSE phase[e]]
-          /\ fenceSeq' = IF pending # {} THEN fenceSeq + 1 ELSE fenceSeq
+    /\ pinsRestored
+    /\ LET ownFsRoot == {e \in PathAExtents : phase[e] = "fsroot"}
+           reopenedFsRoot == {e \in PathAExtents : phase[e] = "fsroot_reopened"}
+           pending == ownFsRoot \cup reopenedFsRoot
+           nextFence == IF pending # {} THEN fenceSeq + 1 ELSE fenceSeq
+           settledGen == <<rootPubGen, nextFence>>
+       IN /\ phase' = [e \in Extents |->
+                         IF e \in ownFsRoot THEN "complete"
+                         ELSE IF e \in reopenedFsRoot THEN "admitted"
+                         ELSE phase[e]]
+          /\ fenceSeq' = nextFence
+          /\ cellState' = [c \in Cells |->
+                             IF ExtentOf(c) \in reopenedFsRoot THEN "free"
+                             ELSE cellState[c]]
+          /\ cellGen' = [c \in Cells |->
+                           IF ExtentOf(c) \in reopenedFsRoot THEN settledGen
+                           ELSE cellGen[c]]
+          /\ allocatorAdmits' = [e \in Extents |->
+                                   IF e \in reopenedFsRoot THEN allocatorAdmits[e] + 1
+                                   ELSE allocatorAdmits[e]]
     /\ m4Rec' = "complete_resumed"
-    /\ UNCHANGED <<m3Vars, branchVars, pinVars, cov, cellState, cellGen,
-                   rootPubGen, inflight, fsRootReleases, allocatorAdmits,
-                   cursorVars>>
+    /\ UNCHANGED <<m3Vars, branchVars, pinVars, cov, rootPubGen,
+                   inflight, fsRootReleases, cursorVars>>
 
 RecoverServing ==
     /\ M3!FinishRecover
     /\ m4Rec = "complete_resumed"
+    /\ pinsRestored
     /\ m4Rec' = "none"
     /\ UNCHANGED <<branchVars, pinVars, extentVars, cursorVars>>
 
@@ -640,6 +687,7 @@ CommitSteps ==
     \/ PublishBranchCommit
     \/ \E ep \in Epochs : BeginCheckpoint(ep)
     \/ SealCheckpoint
+    \/ CoverCancelCheckpoint
     \/ \E fl \in Epochs : RetireHistoryPrefix(fl)
 
 RetireSteps ==
@@ -716,8 +764,10 @@ Spec == Init /\ [][Next]_vars
   PhysicalNext drops PinSteps, CursorSteps and ArchiveSteps. Those steps never
   write a physical variable; they only add Reach holders (pins, loans, cursor
   loans, archived roots), which can only disable ReclaimIntent("base"). Mapping
-  "archived" to "live" and erasing pins/cursors, every Spec behaviour
-  projected on physical state is a PhysicalSpec behaviour.
+  "archived" to "live", projecting away volatile `prep` (just-in-time
+  PrepareBranch immediately before BeginBranchCommit simulates every commit
+  identically), and erasing pins/cursors, every Spec behaviour projected on
+  physical state is a PhysicalSpec behaviour.
 *)
 LifecycleNext ==
     \/ CommitSteps \/ RetireSteps \/ ArchiveSteps \/ PinSteps \/ CursorSteps
@@ -746,6 +796,7 @@ TypeOK ==
     /\ pinnedRoots \subseteq Chunks
     /\ activeReaderLoans \in 0..1
     /\ liveChildPins \in 0..1
+    /\ pinsRestored \in BOOLEAN
     /\ phase \in [Extents -> Phases]
     /\ cov \in [Extents -> CovStates]
     /\ cellState \in [Cells -> CellStates]
@@ -805,7 +856,9 @@ CanonicalCoverageBeforePrune ==
 InterruptedReclaimIdempotent ==
     /\ \A e \in Extents : fsRootReleases[e] <= 1 /\ allocatorAdmits[e] <= 1
     /\ \A e \in PathAExtents :
-          fsRootReleases[e] = IF phase[e] \in {"fsroot", "complete", "admitted"} THEN 1 ELSE 0
+          fsRootReleases[e] =
+              IF phase[e] \in {"fsroot", "fsroot_reopened", "complete", "admitted"}
+              THEN 1 ELSE 0
     /\ \A e \in Extents : allocatorAdmits[e] = IF phase[e] = "admitted" THEN 1 ELSE 0
     /\ \A c \in Cells :
           /\ cellState[c] = "live" <=> phase[ExtentOf(c)] = "none"
@@ -829,9 +882,10 @@ RetainedBasisCursorImmutable ==
 HomeFrontierComposed ==
     \A b \in Branches : head[b] \in {"base", NewRoot(b)}
 
-\* Recovery maintenance only runs after the PinTable was restored.
+\* Recovery maintenance and serving only run after the PinTable is restored.
 PinsRestoredBeforeMaintenance ==
-    m4Rec # "none" => (crashed /\ recoveryStage = "manifest_switch")
+    /\ m4Rec # "none" => (crashed /\ recoveryStage = "manifest_switch")
+    /\ (~crashed \/ m4Rec \in {"pins_restored", "fsroot_resumed", "complete_resumed"}) => pinsRestored
 
 \* ===========================================================================
 \* Temporal (action) safety properties
