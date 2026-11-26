@@ -48,7 +48,12 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
         &self,
         kind: crate::identity::data::KindId,
         partition: Option<crate::identity::data::PartitionId>,
-    ) -> impl Iterator<Item = crate::identity::data::EntityId> + '_ {
+    ) -> impl Iterator<
+        Item = Result<
+            crate::identity::data::EntityId,
+            crate::storage::data::RelationalStorageUnavailable,
+        >,
+    > + '_ {
         self.basis
             .root()
             .into_iter()
@@ -59,7 +64,12 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
         &self,
         kind: crate::identity::data::KindId,
         partition: Option<crate::identity::data::PartitionId>,
-    ) -> impl Iterator<Item = crate::identity::data::RelationId> + '_ {
+    ) -> impl Iterator<
+        Item = Result<
+            crate::identity::data::RelationId,
+            crate::storage::data::RelationalStorageUnavailable,
+        >,
+    > + '_ {
         self.basis
             .root()
             .into_iter()

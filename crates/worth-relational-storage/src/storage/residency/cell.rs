@@ -1,4 +1,5 @@
 pub mod cold_chunks;
+pub mod cold_directory;
 pub mod demand;
 #[path = "cell/eviction.rs"]
 pub mod eviction;
@@ -52,7 +53,7 @@ pub struct RelationalColdRegion {
     pub schema_carrier_digest: [u8; 32],
     pub symbols: crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     pub content_digest: [u8; 32],
-    pub directory: std::sync::Arc<super::PortableRecordDirectory>,
+    pub directory: Arc<crate::storage::data::record_directory_pages::PagedRecordDirectory>,
     pub live_counts: crate::storage::residency::LiveRecordCounts,
     pub entity_slots: usize,
     pub relation_slots: usize,
@@ -132,8 +133,7 @@ pub struct RelationalRegionResidency {
 impl RelationalRegionResidency {
     pub fn cold(mut cold: RelationalColdRegion) -> Result<Arc<Self>, RelationalStorageUnavailable> {
         let mut members = cold.history_members.members(cold.history);
-        members.insert(cold.head);
-        members.extend(cold.chunks.members.iter().copied());
+        members.extend(cold.leaf().leaf_members());
         let custody = cold
             .source
             .as_ref()

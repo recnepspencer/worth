@@ -19,6 +19,11 @@ impl ProjectionRecordReader<'_> {
         // before the next region is demanded, so the scan never pins the root.
         let mut window = None;
         for id in source.entity_ids(kind, partition) {
+            let id = id.map_err(|failure| {
+                NativeScanStop::Request(
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::StorageUnavailable(failure),
+                )
+            })?;
             scan.examine_slot()?;
             if window.as_ref().map(|(region, _)| *region) != Some(id.partition_id) {
                 // Release the previous borrow before demanding the next region.

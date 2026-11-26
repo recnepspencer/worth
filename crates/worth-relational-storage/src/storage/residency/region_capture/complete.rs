@@ -26,8 +26,7 @@ pub(in crate::internal_port::storage::residency) struct Captured {
         (RelationalDurableMemberLocator, ExecutionImmutableBytes),
     pub(in crate::internal_port::storage::residency) history:
         (RelationalDurableMemberLocator, ExecutionImmutableBytes),
-    pub(in crate::internal_port::storage::residency) directory:
-        Arc<super::super::PortableRecordDirectory>,
+    pub(in crate::internal_port::storage::residency) directory: super::super::SealedRecordDirectory,
     pub(in crate::internal_port::storage::residency) kind_authority:
         super::super::RelationalRegionKindCommitment,
     pub(in crate::internal_port::storage::residency) history_members:
@@ -149,7 +148,7 @@ pub(in crate::internal_port::storage::residency) fn capture(
         })
         .map_err(|error| error.into_failure(partition.partition_id))?;
     let directory = directory
-        .portable(lane, request)
+        .seal(lane, request)
         .map_err(|error| error.into_failure(partition.partition_id))?;
     let chunks = lane
         .recover(request, |_lane, work| {

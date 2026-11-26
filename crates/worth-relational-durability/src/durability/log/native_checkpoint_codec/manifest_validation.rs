@@ -171,6 +171,8 @@ fn validate_leaves(
                 "checkpoint region chunk placement claims slots in an empty arena",
             ));
         }
+        leaf.validate_directory()
+            .map_err(|detail| corrupt(format!("checkpoint region {detail}")))?;
         leaf.chunks.admit().map_err(|refusal| {
             corrupt(format!(
                 "checkpoint region chunk placement is invalid: {refusal:?}"

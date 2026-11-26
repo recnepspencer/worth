@@ -1,198 +1,218 @@
-//! Canonical cold membership facts; ordinary publications never build this image.
+//! The directory's `CHK24` checkpoint form: sealing into paged members and
+//! read-free readmission from a recorded descriptor. Ordinary publications
+//! never build this image.
 use super::{
     maintenance::DirectoryError,
-    membership::{identity, key, kind},
+    membership::key,
+    paged::{PagedMembership, RecordDirectoryPages},
     *,
 };
-use crate::internal_port::storage::substrate::digest_index::DigestIndexOwnerPort as _;
+use crate::durability::medium::RelationalDurableMemberLocator;
+use crate::storage::data::record_directory_pages::{encode_record_directory, MembershipImage};
 use crate::storage::overlay::PartitionState;
+use crate::storage::residency::chunked::cold_member_port::CollectedMembers;
+use crate::storage::residency::chunked::member_io::ChunkMemberSink;
 use crate::storage::substrate::maintenance::ReconstructionLane;
-use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct PortableRecordDirectory {
-    pub entities: Vec<(KindId, EntityId)>,
-    pub relations: Vec<(KindId, RelationId)>,
+/// A sealed directory: the leaf descriptor and the page members it names.
+#[derive(Debug)]
+pub struct SealedRecordDirectory {
+    pub descriptor: Arc<PagedRecordDirectory>,
+    pub members: Vec<(RelationalDurableMemberLocator, Vec<u8>)>,
 }
+
+/// Computes locators without retaining page bytes.
+struct DiscardedPages;
+
+impl ChunkMemberSink for DiscardedPages {
+    fn put(
+        &mut self,
+        _locator: RelationalDurableMemberLocator,
+        _bytes: Vec<u8>,
+    ) -> Result<(), crate::storage::data::RelationalStorageUnavailableCause> {
+        Ok(())
+    }
+}
+
 impl RegionRecordDirectory {
-    pub fn portable(
+    /// The leaf descriptor together with its page members, for capture.
+    pub fn seal(
         &self,
         lane: &ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Arc<PortableRecordDirectory>, DirectoryError> {
-        lane.recover(execution, |lane, work| self.portable_controlled(lane, work))
-    }
-    fn portable_controlled(
-        &self,
-        _lane: &ReconstructionLane<'_>,
-        work: &mut crate::storage::substrate::maintenance::ReconstructionWork<'_, '_>,
-    ) -> Result<Arc<PortableRecordDirectory>, DirectoryError> {
-        if let Some(portable) = self.portable.get() {
-            return Ok(portable.clone());
-        }
-        let portable = (|| {
-            let mut entities = Vec::new();
-            let mut relations = Vec::new();
-            for encoded in self.entities.keys() {
-                work.prepare(1, size_of::<(KindId, EntityId)>() as u64)?;
-                entities.push((kind(encoded), identity(encoded, self.partition)));
-            }
-            for encoded in self.relations.keys() {
-                work.prepare(1, size_of::<(KindId, RelationId)>() as u64)?;
-                relations.push((kind(encoded), identity(encoded, self.partition)));
-            }
-            Ok::<_, DirectoryError>(Arc::new(PortableRecordDirectory {
-                entities,
-                relations,
-            }))
-        })()?;
-        Ok(self.portable.get_or_init(|| portable).clone())
-    }
-    #[cfg(test)]
-    pub(crate) fn portable_oracle(&self) -> Result<Arc<PortableRecordDirectory>, DirectoryError> {
-        crate::storage::residency::resident_history::inspect_reconstruction_fixture(|lane, work| {
-            self.portable_controlled(lane, work)
+    ) -> Result<SealedRecordDirectory, DirectoryError> {
+        lane.recover(execution, |_lane, work| {
+            let mut sink = CollectedMembers::default();
+            let descriptor = self.encode(&mut sink, &mut |units, bytes| {
+                work.prepare(units, bytes).map_err(Into::into)
+            })?;
+            Ok(SealedRecordDirectory {
+                descriptor,
+                members: sink.members,
+            })
         })
     }
 
-    pub fn from_portable(
+    /// The leaf descriptor without page bytes. A readmitted directory answers
+    /// from its recorded descriptor and reads no page.
+    pub fn descriptor(
+        &self,
         lane: &ReconstructionLane<'_>,
-        partition: PartitionId,
-        portable: Arc<PortableRecordDirectory>,
-        prepare: &mut dyn FnMut(u64, u64) -> Result<(), DirectoryError>,
-    ) -> Result<Arc<Self>, DirectoryError> {
-        let total = portable
-            .entities
-            .len()
-            .checked_add(portable.relations.len())
-            .ok_or(DirectoryError::Corrupt)?;
-        // The existing map and digest owners provide coexistence bounds. Cold
-        // construction also retains its ordered keys and digest input vector.
-        let map = crate::storage::substrate::SharedMap::<u128, ()>::new()
-            .adoption_allocation_bound()
-            .ok_or(DirectoryError::Corrupt)?;
-        let (_, digest) = crate::storage::substrate::DigestIndex::default().edit_quote(0);
-        let bytes = (total as u64)
-            .checked_mul(
-                map.checked_add(digest)
-                    .and_then(|n| n.checked_add(64))
-                    .ok_or(DirectoryError::Corrupt)?,
-            )
-            .ok_or(DirectoryError::Corrupt)?;
-        prepare((total as u64).saturating_mul(128), bytes)?;
-        let entities = keys(partition, &portable.entities)?;
-        let relations = keys(partition, &portable.relations)?;
-        Ok(Arc::new(Self {
-            partition,
-            entities: Membership::cold(lane, entities)?,
-            relations: Membership::cold(lane, relations)?,
-            portable: OnceLock::from(portable),
-        }))
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<PagedRecordDirectory>, DirectoryError> {
+        if let Some(descriptor) = self.paged.get() {
+            return Ok(descriptor.clone());
+        }
+        lane.recover(execution, |_lane, work| {
+            self.encode(&mut DiscardedPages, &mut |units, bytes| {
+                work.prepare(units, bytes).map_err(Into::into)
+            })
+        })
     }
+
+    fn encode(
+        &self,
+        sink: &mut dyn ChunkMemberSink,
+        prepare: &mut dyn FnMut(u64, u64) -> Result<(), DirectoryError>,
+    ) -> Result<Arc<PagedRecordDirectory>, DirectoryError> {
+        let entities = self.entities.sorted_keys(prepare)?;
+        let relations = self.relations.sorted_keys(prepare)?;
+        let descriptor = encode_record_directory(
+            MembershipImage {
+                keys: &entities,
+                digest: self.entities.digest(),
+            },
+            MembershipImage {
+                keys: &relations,
+                digest: self.relations.digest(),
+            },
+            sink,
+        )
+        .map_err(DirectoryError::Unavailable)?;
+        Ok(self.paged.get_or_init(|| Arc::new(descriptor)).clone())
+    }
+
+    /// Readmits a recorded leaf directory without reading any page: kind
+    /// presence and commitments answer from `descriptor`; scans fault pages
+    /// through `pages`.
+    pub fn from_paged(
+        partition: PartitionId,
+        descriptor: Arc<PagedRecordDirectory>,
+        pages: Arc<RecordDirectoryPages>,
+    ) -> Arc<Self> {
+        let open = |membership| {
+            Membership::Paged(Arc::new(PagedMembership::open(membership, pages.clone())))
+        };
+        Arc::new(Self {
+            partition,
+            entities: open(&descriptor.entities),
+            relations: open(&descriptor.relations),
+            paged: OnceLock::from(descriptor),
+        })
+    }
+
     pub fn capture(
         lane: &ReconstructionLane<'_>,
         partition: &PartitionState,
         prepare: &mut dyn FnMut(u64, u64) -> Result<(), DirectoryError>,
     ) -> Result<Arc<Self>, DirectoryError> {
-        let mut entities = Vec::new();
-        let mut relations = Vec::new();
-        for slot in partition.entity_arena.live_bitset.set_slots() {
-            prepare(1, std::mem::size_of::<(KindId, EntityId)>() as u64)?;
-            let record = partition
-                .entity_arena
-                .get_slot(slot)
-                .ok_or(DirectoryError::Corrupt)?;
-            entities.push((
-                record.kind_id().ok_or(DirectoryError::Corrupt)?,
-                EntityId::new(partition.partition_id, slot as u64, record.generation()),
-            ));
-        }
-        for slot in partition.relation_arena.live_bitset.set_slots() {
-            prepare(1, std::mem::size_of::<(KindId, RelationId)>() as u64)?;
-            let record = partition
-                .relation_arena
-                .get_slot(slot)
-                .ok_or(DirectoryError::Corrupt)?;
-            relations.push((
-                record.kind_id().ok_or(DirectoryError::Corrupt)?,
-                RelationId::new(partition.partition_id, slot as u64, record.generation()),
-            ));
-        }
-        entities.sort_unstable_by_key(|(kind, id)| key(*kind, *id));
-        relations.sort_unstable_by_key(|(kind, id)| key(*kind, *id));
-        Self::from_portable(
-            lane,
-            partition.partition_id,
-            Arc::new(PortableRecordDirectory {
-                entities,
-                relations,
-            }),
-            prepare,
-        )
+        let (entities, relations) = partition_keys(partition, prepare)?;
+        let total = (entities.len() as u64)
+            .checked_add(relations.len() as u64)
+            .ok_or(DirectoryError::Corrupt)?;
+        prepare(
+            total,
+            total.saturating_mul(membership::ResidentMembership::ENTRY_BYTES),
+        )?;
+        Ok(Arc::new(Self {
+            partition: partition.partition_id,
+            entities: Membership::cold(lane, entities)?,
+            relations: Membership::cold(lane, relations)?,
+            paged: OnceLock::new(),
+        }))
     }
-}
-fn keys<K: Copy>(
-    partition: PartitionId,
-    entries: &[(KindId, crate::identity::data::RecordId<K>)],
-) -> Result<Vec<u128>, DirectoryError> {
-    let mut previous = None;
-    entries
-        .iter()
-        .map(|(kind, id)| {
-            let encoded = key(*kind, *id);
-            if id.partition_id != partition || previous.is_some_and(|previous| previous >= encoded)
-            {
-                return Err(DirectoryError::Corrupt);
-            }
-            previous = Some(encoded);
-            Ok(encoded)
-        })
-        .collect()
-}
 
-impl RegionRecordDirectory {
     pub fn verify_member(
         lane: &ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        expected: &PortableRecordDirectory,
+        expected: &PagedRecordDirectory,
         partition: &PartitionState,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        let failure = |error: DirectoryError| error.into_failure(partition.partition_id);
         let actual = lane
             .recover(execution, |lane, work| {
                 Self::capture(lane, partition, &mut |units, bytes| {
                     work.prepare(units, bytes).map_err(Into::into)
                 })
             })
-            .map_err(|error: DirectoryError| error.into_failure(partition.partition_id))?;
+            .map_err(failure)?;
         if actual
-            .portable(lane, execution)
-            .map_err(|error| error.into_failure(partition.partition_id))?
+            .descriptor(lane, execution)
+            .map_err(failure)?
             .as_ref()
             != expected
         {
-            return Err(DirectoryError::Corrupt.into_failure(partition.partition_id));
+            return Err(failure(DirectoryError::Corrupt));
         }
         Ok(())
     }
 }
 
+/// The sorted kind-prefixed membership keys of `partition`'s live rows.
+fn partition_keys(
+    partition: &PartitionState,
+    prepare: &mut dyn FnMut(u64, u64) -> Result<(), DirectoryError>,
+) -> Result<(Vec<u128>, Vec<u128>), DirectoryError> {
+    let entry = std::mem::size_of::<u128>() as u64;
+    let mut entities = Vec::new();
+    for slot in partition.entity_arena.live_bitset.set_slots() {
+        prepare(1, entry)?;
+        let record = partition
+            .entity_arena
+            .get_slot(slot)
+            .ok_or(DirectoryError::Corrupt)?;
+        entities.push(key(
+            record.kind_id().ok_or(DirectoryError::Corrupt)?,
+            EntityId::new(partition.partition_id, slot as u64, record.generation()),
+        ));
+    }
+    let mut relations = Vec::new();
+    for slot in partition.relation_arena.live_bitset.set_slots() {
+        prepare(1, entry)?;
+        let record = partition
+            .relation_arena
+            .get_slot(slot)
+            .ok_or(DirectoryError::Corrupt)?;
+        relations.push(key(
+            record.kind_id().ok_or(DirectoryError::Corrupt)?,
+            RelationId::new(partition.partition_id, slot as u64, record.generation()),
+        ));
+    }
+    entities.sort_unstable();
+    relations.sort_unstable();
+    Ok((entities, relations))
+}
+
 /// Read the directory using the same reconstruction oracle as its owner tests.
 #[doc(hidden)]
 pub trait RegionRecordDirectoryFixturePort {
-    fn portable_oracle_for_test(
+    fn descriptor_oracle_for_test(
         &self,
         lane: &ReconstructionLane<'_>,
-    ) -> Result<Arc<PortableRecordDirectory>, DirectoryError>;
+    ) -> Result<Arc<PagedRecordDirectory>, DirectoryError>;
 }
 impl RegionRecordDirectoryFixturePort for RegionRecordDirectory {
-    fn portable_oracle_for_test(
+    fn descriptor_oracle_for_test(
         &self,
         lane: &ReconstructionLane<'_>,
-    ) -> Result<Arc<PortableRecordDirectory>, DirectoryError> {
+    ) -> Result<Arc<PagedRecordDirectory>, DirectoryError> {
         crate::storage::residency::resident_history::run_fixture_reconstruction(
             lane,
-            |lane, work| self.portable_controlled(lane, work),
+            |_lane, work| {
+                self.encode(&mut DiscardedPages, &mut |units, bytes| {
+                    work.prepare(units, bytes).map_err(Into::into)
+                })
+            },
         )
     }
 }

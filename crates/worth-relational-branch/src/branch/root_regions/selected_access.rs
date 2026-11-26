@@ -220,7 +220,12 @@ impl RelationalPersistentRegionSet {
         &self,
         kind: crate::identity::data::KindId,
         partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = crate::identity::data::EntityId> + '_ {
+    ) -> impl Iterator<
+        Item = Result<
+            crate::identity::data::EntityId,
+            crate::storage::data::RelationalStorageUnavailable,
+        >,
+    > + '_ {
         let regions: Box<dyn Iterator<Item = PartitionId> + '_> = match partition {
             Some(id) => Box::new(std::iter::once(id)),
             None => Box::new(self.kinds.entity_regions(kind)),
@@ -236,7 +241,12 @@ impl RelationalPersistentRegionSet {
         &self,
         kind: crate::identity::data::KindId,
         partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = crate::identity::data::RelationId> + '_ {
+    ) -> impl Iterator<
+        Item = Result<
+            crate::identity::data::RelationId,
+            crate::storage::data::RelationalStorageUnavailable,
+        >,
+    > + '_ {
         let regions: Box<dyn Iterator<Item = PartitionId> + '_> = match partition {
             Some(id) => Box::new(std::iter::once(id)),
             None => Box::new(self.kinds.relation_regions(kind)),
@@ -245,6 +255,68 @@ impl RelationalPersistentRegionSet {
             self.get(id)
                 .into_iter()
                 .flat_map(move |region| region.directory.relation_ids(kind))
+        })
+    }
+
+    pub fn entity_ids_of_kind_with_residency<'a>(
+        &'a self,
+        kind: crate::identity::data::KindId,
+        partition: Option<PartitionId>,
+        residency: &'a OperationResidency,
+    ) -> impl Iterator<
+        Item = Result<
+            crate::identity::data::EntityId,
+            crate::storage::data::RelationalStorageUnavailable,
+        >,
+    > + 'a {
+        let regions: Box<dyn Iterator<Item = PartitionId> + 'a> = match partition {
+            Some(id) => Box::new(std::iter::once(id)),
+            None => Box::new(self.kinds.entity_regions(kind)),
+        };
+        regions.flat_map(move |id| {
+            self.get(id)
+                .filter(|region| region.directory.has_entity_kind(kind))
+                .into_iter()
+                .flat_map(
+                    move |region| -> Box<dyn Iterator<Item = Result<_, _>> + 'a> {
+                        if let Some(head) = region.partition.held_head_view(residency) {
+                            Box::new(head.entity_ids_of_kind(kind).map(Ok))
+                        } else {
+                            Box::new(region.directory.entity_ids(kind))
+                        }
+                    },
+                )
+        })
+    }
+
+    pub fn relation_ids_of_kind_with_residency<'a>(
+        &'a self,
+        kind: crate::identity::data::KindId,
+        partition: Option<PartitionId>,
+        residency: &'a OperationResidency,
+    ) -> impl Iterator<
+        Item = Result<
+            crate::identity::data::RelationId,
+            crate::storage::data::RelationalStorageUnavailable,
+        >,
+    > + 'a {
+        let regions: Box<dyn Iterator<Item = PartitionId> + 'a> = match partition {
+            Some(id) => Box::new(std::iter::once(id)),
+            None => Box::new(self.kinds.relation_regions(kind)),
+        };
+        regions.flat_map(move |id| {
+            self.get(id)
+                .filter(|region| region.directory.has_relation_kind(kind))
+                .into_iter()
+                .flat_map(
+                    move |region| -> Box<dyn Iterator<Item = Result<_, _>> + 'a> {
+                        if let Some(head) = region.partition.held_head_view(residency) {
+                            Box::new(head.relation_ids_of_kind(kind).map(Ok))
+                        } else {
+                            Box::new(region.directory.relation_ids(kind))
+                        }
+                    },
+                )
         })
     }
 

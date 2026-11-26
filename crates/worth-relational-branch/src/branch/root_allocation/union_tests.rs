@@ -146,7 +146,7 @@ fn cold_region_union_refuses_without_demanding_any_payload() {
             directory: std::sync::Arc::new(
                 crate::storage::residency::RegionRecordDirectory::empty(PartitionId(7)),
             )
-            .portable_oracle_for_test(fixture_lane)
+            .descriptor_oracle_for_test(fixture_lane)
             .unwrap(),
             live_counts: Default::default(),
             entity_slots: 0,

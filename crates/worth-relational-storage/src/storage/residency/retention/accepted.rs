@@ -72,6 +72,19 @@ impl RelationalRegionRetention {
             .or_else(|| slot.head.get().map(|lease| lease.head_view()))
     }
 
+    /// Head view only if `custody` already holds an accepted lease for this
+    /// cell; never pins an unborrowed warm cell into `custody`.
+    pub fn held_head_view<'s>(
+        &'s self,
+        custody: impl Into<ResidencyCustody<'s>>,
+    ) -> Option<super::super::RelationalRegionHeadView<'s>> {
+        let slot = custody.into().existing(&self.cell)?;
+        slot.full
+            .get()
+            .map(|lease| lease.head_view())
+            .or_else(|| slot.head.get().map(|lease| lease.head_view()))
+    }
+
     pub fn admitted_head_view<'s>(
         &'s self,
         custody: impl Into<ResidencyCustody<'s>>,

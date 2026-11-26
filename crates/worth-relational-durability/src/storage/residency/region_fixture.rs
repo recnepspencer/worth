@@ -77,11 +77,13 @@ pub(super) fn region_with_history() -> RegionFixture {
             schema_digest,
         )
         .unwrap();
+        let directory = members.directory.seal(lane, execution).unwrap();
         let source = Arc::new(CountedSource {
             history: members.history.0,
             members: [members.head.clone(), members.history.clone()]
                 .into_iter()
                 .chain(members.chunks.members.iter().cloned())
+                .chain(directory.members.iter().cloned())
                 .collect::<BTreeMap<_, _>>(),
             reads: AtomicUsize::new(0),
             history_reads: AtomicUsize::new(0),
@@ -93,7 +95,7 @@ pub(super) fn region_with_history() -> RegionFixture {
         symbol_authority.replace(symbols);
         let cold = RelationalColdRegion {
             readmission: codec,
-            directory: members.directory.portable(lane, execution).unwrap(),
+            directory: directory.descriptor,
             history_members: members.history_members,
             kind_authority: members.kind_authority,
             source: Some(source.clone()),

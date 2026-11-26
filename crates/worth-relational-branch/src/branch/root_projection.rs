@@ -126,16 +126,22 @@ impl<'a> SnapshotProjectionRoot<'a> {
         &self,
         kind: KindId,
         partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = EntityId> + 'a + use<'a> {
-        self.regions.entity_ids_of_kind(kind, partition)
+    ) -> impl Iterator<Item = Result<EntityId, crate::storage::data::RelationalStorageUnavailable>>
+           + 'a
+           + use<'a> {
+        self.regions
+            .entity_ids_of_kind_with_residency(kind, partition, self.residency)
     }
 
     pub fn relation_ids_of_kind(
         &self,
         kind: KindId,
         partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = RelationId> + 'a + use<'a> {
-        self.regions.relation_ids_of_kind(kind, partition)
+    ) -> impl Iterator<Item = Result<RelationId, crate::storage::data::RelationalStorageUnavailable>>
+           + 'a
+           + use<'a> {
+        self.regions
+            .relation_ids_of_kind_with_residency(kind, partition, self.residency)
     }
 
     pub fn try_for_each_partition_id<E>(

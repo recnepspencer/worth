@@ -66,6 +66,42 @@ impl<'lease> RelationalRegionHeadView<'lease> {
     pub(crate) fn partition_state(&self) -> &'lease PartitionState {
         self.partition
     }
+    /// Live entity IDs of `kind` from this already-accepted head in canonical
+    /// slot order, avoiding any cold directory fault or permanent adoption.
+    pub fn entity_ids_of_kind(
+        &self,
+        kind: crate::identity::data::KindId,
+    ) -> impl Iterator<Item = EntityId> + 'lease + use<'lease> {
+        let partition = self.partition;
+        let partition_id = partition.partition_id;
+        partition
+            .entity_arena
+            .live_bitset
+            .set_slots()
+            .filter_map(move |slot| {
+                let record = partition.entity_arena.get_slot(slot)?;
+                (record.kind_id() == Some(kind))
+                    .then(|| EntityId::new(partition_id, slot as u64, record.generation()))
+            })
+    }
+    /// Live relation IDs of `kind` from this already-accepted head in canonical
+    /// slot order, avoiding any cold directory fault or permanent adoption.
+    pub fn relation_ids_of_kind(
+        &self,
+        kind: crate::identity::data::KindId,
+    ) -> impl Iterator<Item = RelationId> + 'lease + use<'lease> {
+        let partition = self.partition;
+        let partition_id = partition.partition_id;
+        partition
+            .relation_arena
+            .live_bitset
+            .set_slots()
+            .filter_map(move |slot| {
+                let record = partition.relation_arena.get_slot(slot)?;
+                (record.kind_id() == Some(kind))
+                    .then(|| RelationId::new(partition_id, slot as u64, record.generation()))
+            })
+    }
     pub fn same_region_view(&self, other: Self) -> bool {
         std::ptr::eq(self.partition, other.partition)
     }
