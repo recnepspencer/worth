@@ -6,6 +6,8 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+mod validation;
+
 use super::{PendingRecordReservation, RecordFrontierKey, RecordIdentityState, RecordSlotKey};
 use crate::history::data::canonical_record_allocation::{
     RecordAllocationClass, RecordAllocationOrigin,
@@ -69,17 +71,19 @@ fn origin(prior: Option<u32>) -> RecordAllocationOrigin {
 }
 
 impl PagedIdentityBase {
-    /// Opens the tables without reading a page; pages charge `accountant`.
+    /// Opens the tables without reading a page; pages charge `accountant` and
+    /// every cold read is confined to `paged.pages`.
     pub fn open(
         paged: PagedRecordIdentity,
         accountant: Arc<WorkingSetAccountant>,
         source: Arc<dyn ChunkMemberSource + Send + Sync>,
     ) -> Self {
+        let confined = Arc::new(validation::ConfinedMemberSource::new(source, &paged.pages));
         Self {
             directories: IdentityDirectories::open(&paged.roots, accountant),
             roots: paged.roots,
             paged,
-            source,
+            source: confined,
         }
     }
 
@@ -88,7 +92,7 @@ impl PagedIdentityBase {
         &self.paged
     }
 
-    /// One page member's bytes, for a capture whose destination lacks it.
+    /// One page member's verified bytes, for a capture whose destination lacks it.
     pub fn page_bytes(
         &self,
         page: crate::durability::medium::RelationalDurableMemberLocator,
@@ -105,6 +109,7 @@ impl PagedIdentityBase {
                 read => filled += read,
             }
         }
+        validation::verify_page_bytes(page, &bytes)?;
         Ok(bytes)
     }
 
@@ -172,6 +177,15 @@ impl PagedIdentityBase {
             .get(self.source.as_ref(), (tag, partition))?
             .map(slot)
             .transpose()?;
+        if rows.frontier.is_some()
+            && !self
+                .roots
+                .partition_high_water
+                .is_some_and(|hw| partition_id <= hw)
+        {
+            return Err(Cause::Damaged);
+        }
+        validation::validate_partition_rows(&rows)?;
         Ok(rows)
     }
 
@@ -203,10 +217,11 @@ impl PagedIdentityBase {
             };
             rows.pending.push((key, reservation));
         }
+        validation::validate_all_rows(&rows, self.roots.partition_high_water)?;
         Ok(rows)
     }
 
-    pub(super) fn entry_count(&self) -> u64 {
+    pub(super) fn entry_count(&self) -> Option<u64> {
         [
             self.roots.generation_high_water,
             self.roots.reusable_slots,
@@ -215,8 +230,7 @@ impl PagedIdentityBase {
         ]
         .into_iter()
         .flatten()
-        .map(|root| root.entry_count)
-        .sum()
+        .try_fold(0u64, |acc, root| acc.checked_add(root.entry_count))
     }
 }
 
@@ -357,6 +371,12 @@ impl RecordIdentityState {
 }
 
 impl super::RecordIdentitySubsystem {
+    /// Returns the reopened paged base when the allocator has not changed since
+    /// reopen, so ordinary and complete captures can carry its pages unread.
+    pub fn unchanged_paged_identity(&self) -> Option<Arc<PagedIdentityBase>> {
+        self.lock().unchanged_since_reopen()
+    }
+
     /// Freezes the image a capture records, carrying untouched checkpoint
     /// pages without reading them.
     pub fn frozen_checkpoint_identity_for_request(

@@ -85,3 +85,54 @@ pub(crate) fn open_paged_identity(
         Arc::new(pages(source)),
     ))
 }
+
+/// Installs an unchanged reopened allocator's paged directories into a native
+/// capture, carrying members already present in the destination and copying
+/// verified bytes otherwise without materializing resident rows.
+pub(crate) fn apply_carried_identity(
+    captured: &mut super::CapturedManifest,
+    base: &PagedIdentityBase,
+    prior: Option<&crate::durability::data::RelationalCheckpointManifest>,
+    carry_metadata: bool,
+    current_members: Option<&std::collections::BTreeSet<RelationalDurableMemberLocator>>,
+) -> Result<(), DurabilityError> {
+    let paged = base.paged();
+    for locator in &captured.manifest.record_identity.pages {
+        captured.members.remove(locator);
+    }
+    captured.manifest.record_identity = paged.clone();
+    for &locator in &paged.pages {
+        let may_carry = current_members.map_or(
+            carry_metadata
+                && prior.is_some_and(|prior| {
+                    prior.record_identity.pages.binary_search(&locator).is_ok()
+                }),
+            |held| held.contains(&locator),
+        );
+        let member = if may_carry {
+            crate::durability::data::RelationalCheckpointMember::Carried { locator }
+        } else {
+            let bytes = base.page_bytes(locator).map_err(|cause| {
+                DurabilityError::new(
+                    contracts::durability::data::recovery_errors::RecoveryFailureClass::ColdStorageUnavailable,
+                    format!("record identity page unavailable: {cause:?}"),
+                )
+            })?;
+            crate::durability::data::RelationalCheckpointMember::New {
+                locator,
+                bytes: ExecutionImmutableBytes::from_external_bytes(Arc::new(
+                    bytes.into_boxed_slice(),
+                )),
+            }
+        };
+        if matches!(
+            member,
+            crate::durability::data::RelationalCheckpointMember::New { .. }
+        ) {
+            captured.members.insert(locator, member);
+        } else {
+            captured.members.entry(locator).or_insert(member);
+        }
+    }
+    Ok(())
+}

@@ -55,6 +55,7 @@ impl CapturedCheckpointBasis {
         }
         let guarded_member_sources = std::mem::take(&mut self.guarded_member_sources);
         let _lineage_event_leases = std::mem::take(&mut self.lineage_event_leases);
+        let carried_record_identity = self.carried_record_identity.take();
         let carried_index_image = self.carried_index_image;
         let roots = std::mem::take(&mut self.branch_roots);
         let recorded_components = self.recorded_components.clone();
@@ -104,6 +105,15 @@ impl CapturedCheckpointBasis {
                 },
             )?;
         captured.component_holds = component_holds;
+        if let Some(base) = carried_record_identity {
+            crate::durability::log::native_checkpoint_codec::identity_pages::apply_carried_identity(
+                &mut captured,
+                &base,
+                prior.as_ref().map(|prior| &prior.manifest),
+                carry_metadata,
+                current_members.as_ref(),
+            )?;
+        }
         captured.append_lineage_events(event_rows, policy)?;
         captured.envelope_cells = captured_cells;
         captured.cold_source = placement

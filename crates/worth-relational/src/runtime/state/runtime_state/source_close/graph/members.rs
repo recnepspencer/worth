@@ -41,6 +41,7 @@ impl NativeSourceGraphRetirement {
                 | Stage::Edition
                 | Stage::Mirror
                 | Stage::Symbols
+                | Stage::RecordIdentity
                 | Stage::Index
                 | Stage::IndexDirectory
                 | Stage::SelectedDirectory
@@ -66,6 +67,7 @@ impl NativeSourceGraphRetirement {
                 | Stage::Edition
                 | Stage::Mirror
                 | Stage::Symbols
+                | Stage::RecordIdentity
                 | Stage::Index
                 | Stage::IndexDirectory
                 | Stage::SelectedDirectory
@@ -88,6 +90,7 @@ impl NativeSourceGraphRetirement {
                 | Stage::Edition
                 | Stage::Mirror
                 | Stage::Symbols
+                | Stage::RecordIdentity
                 | Stage::Index
                 | Stage::IndexDirectory
                 | Stage::SelectedDirectory
@@ -106,6 +109,7 @@ impl NativeSourceGraphRetirement {
                 | Stage::Edition
                 | Stage::Mirror
                 | Stage::Symbols
+                | Stage::RecordIdentity
                 | Stage::Index
                 | Stage::IndexDirectory
                 | Stage::SelectedDirectory

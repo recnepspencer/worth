@@ -247,6 +247,68 @@ fn unavailable_identity_page_refuses_allocation_without_reserving() {
 }
 
 #[test]
+fn unavailable_identity_page_refuses_replay_and_exact_reservation() {
+    use crate::identity::data::EntityId;
+    use crate::transactions::data::primitives::RecordRef;
+    let image = image(4);
+    let (owner, members, _accountant) = paged(&image);
+    members.bytes.lock().unwrap().clear();
+    let live = CanonicalRecordAllocation::with_origin(
+        0,
+        RecordRef::Entity(EntityId::new(PartitionId(1), 0, 5)),
+        RecordAllocationOrigin::AppendFrontier,
+    );
+    let replay = owner
+        .stage_replay_allocations(vec![live], Vec::new())
+        .unwrap_err();
+    assert!(matches!(
+        replay,
+        RecordAllocationDenial::IdentityPageUnavailable {
+            partition_id: PartitionId(1),
+            cause: Cause::MissingMember,
+            ..
+        }
+    ));
+    let exact = owner
+        .reserve_exact(
+            0,
+            RecordAllocationClass::Entity,
+            PartitionId(2),
+            0,
+            5,
+            RecordAllocationOrigin::AppendFrontier,
+        )
+        .unwrap_err();
+    assert!(matches!(
+        exact,
+        RecordAllocationDenial::IdentityPageUnavailable {
+            partition_id: PartitionId(2),
+            cause: Cause::MissingMember,
+            ..
+        }
+    ));
+    assert_eq!(owner.lock().faulted.len(), 0);
+}
+
+#[test]
+fn working_set_accountant_evicts_unborrowed_identity_pages_for_region_loads() {
+    let image = image(16);
+    let (owner, _members, accountant) = paged(&image);
+    let _ = reserve(&owner, 3);
+    assert!(accountant.charged_bytes(ResidencyPoolKind::Head) > 0);
+    // Requesting the full Head pool budget forces WorkingSetAccountant::evict_for
+    // to sweep the enrolled PageEvictionGroup and reclaim decoded identity pages.
+    let charge = accountant
+        .reserve(
+            ResidencyPoolKind::Head,
+            BUDGET.head_working_set_bytes,
+            std::ptr::null(),
+        )
+        .expect("unborrowed identity pages must yield Head budget to region loads");
+    drop(charge);
+}
+
+#[test]
 fn manifest_roster_names_exactly_the_written_pages_without_reading_any() {
     for partitions in [1_u32, 4, 40] {
         let members = Members::default();

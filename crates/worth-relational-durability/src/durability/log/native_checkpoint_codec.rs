@@ -37,15 +37,26 @@ fn checkpoint_payload(bytes: &[u8]) -> Result<&[u8], DurabilityError> {
     })
 }
 
-/// The major version of a `WORTH-REL-CHK<major>[.<minor>]\n` frame.
+/// The unsupported major version of a `WORTH-REL-CHK<major>[.<minor>]\n` frame.
 fn framed_checkpoint_version(bytes: &[u8]) -> Option<u16> {
     let label = bytes.strip_prefix(CHECKPOINT_FAMILY)?;
     let end = label.iter().take(12).position(|byte| *byte == b'\n')?;
-    let major = label[..end].split(|byte| *byte == b'.').next()?;
-    if major.is_empty() || !major.iter().all(u8::is_ascii_digit) {
+    let version = &label[..end];
+    let major = match version.iter().position(|byte| *byte == b'.') {
+        Some(dot) => {
+            let minor = &version[dot + 1..];
+            if minor.is_empty() || !minor.iter().all(u8::is_ascii_digit) {
+                return None;
+            }
+            &version[..dot]
+        }
+        None => version,
+    };
+    if major.is_empty() || major[0] == b'0' || !major.iter().all(u8::is_ascii_digit) {
         return None;
     }
-    std::str::from_utf8(major).ok()?.parse().ok()
+    let found: u16 = std::str::from_utf8(major).ok()?.parse().ok()?;
+    (found != CHECKPOINT_VERSION).then_some(found)
 }
 
 pub mod checkpoint_decoding;
@@ -83,3 +94,44 @@ pub struct DecodedNativeCheckpoint {
 
 pub mod inspection;
 pub(crate) use inspection::inspect as inspect_checkpoint;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn checkpoint_payload_refuses_other_versions_and_malformed_headers_distinctly() {
+        assert!(checkpoint_payload(b"WORTH-REL-CHK24\npayload").is_ok());
+        for (frame, expected) in [
+            (b"WORTH-REL-CHK23\n".as_slice(), 23),
+            (b"WORTH-REL-CHK23.1\n".as_slice(), 23),
+            (b"WORTH-REL-CHK25\n".as_slice(), 25),
+        ] {
+            let err = checkpoint_payload(frame).unwrap_err();
+            assert_eq!(
+                err.class,
+                RecoveryFailureClass::UnsupportedCheckpointVersion {
+                    found: expected,
+                    supported: CHECKPOINT_VERSION,
+                }
+            );
+        }
+        for malformed in [
+            b"WORTH-REL-CHK24.1\n".as_slice(),
+            b"WORTH-REL-CHK024\n".as_slice(),
+            b"WORTH-REL-CHK0\n".as_slice(),
+            b"WORTH-REL-CHK23.foo\n".as_slice(),
+            b"WORTH-REL-CHK23.\n".as_slice(),
+            b"WORTH-REL-CHK23.1.2\n".as_slice(),
+            b"WORTH-REL-CHK+23\n".as_slice(),
+        ] {
+            let err = checkpoint_payload(malformed).unwrap_err();
+            assert_eq!(
+                err.class,
+                RecoveryFailureClass::UnsupportedLegacySemantics,
+                "expected UnsupportedLegacySemantics for {:?}",
+                String::from_utf8_lossy(malformed)
+            );
+        }
+    }
+}

@@ -12,10 +12,56 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 mod tests;
 
 impl RecordIdentitySubsystem {
-    /// Ordinary construction retains its existing unqualified allocation contract.
+    #[cfg(test)]
     pub fn checkpoint_identity(&self) -> DurableRecordIdentityState {
-        snapshot(&self.lock(), None, None)
-            .expect(/* Proof: Without a request the private fixed-row copy has no refusal branch; every source slot already fits Native's public u64 identity. */ "ordinary fixed allocator image")
+        self.try_checkpoint_identity()
+            .expect("test fixed allocator image")
+    }
+
+    /// Fallible capture of the global allocator image; returns
+    /// `ColdStorageUnavailable` if any paged identity table cannot be read.
+    pub fn try_checkpoint_identity(&self) -> Result<DurableRecordIdentityState, DurabilityError> {
+        match snapshot(&self.lock(), None, None) {
+            Ok(image) => Ok(image),
+            Err(RelationalRecoveryStop::Durability(error)) => Err(error),
+            Err(stop) => Err(DurabilityError::new(
+                RecoveryFailureClass::ColdStorageUnavailable,
+                format!("paged record-identity capture stopped: {stop:?}"),
+            )),
+        }
+    }
+
+    /// Materializes a carried paged base for callers that require a resident
+    /// `DurableRecordIdentityState` (such as in-memory checkpoint images).
+    pub fn snapshot_paged_base_for_request(
+        base: &super::paged_base::PagedIdentityBase,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<DurableRecordIdentityState, RelationalRecoveryStop> {
+        crate::execution::request_custody::check_request(request)
+            .map_err(RelationalRecoveryStop::Request)?;
+        let count = base.entry_count().ok_or_else(overflow)?;
+        let bytes = DurableRecordIdentityState::control_storage_bytes()
+            .and_then(|bytes| {
+                bytes.checked_add(array_bytes::<DurablePendingRecordReservation>(
+                    usize::try_from(count).ok()?,
+                )?)
+            })
+            .and_then(|bytes| u64::try_from(bytes).ok())
+            .ok_or_else(overflow)?;
+        let memory = request
+            .reserve_retained_memory(bytes)
+            .map_err(|stop| RelationalRecoveryStop::Request(stop.into()))?;
+        let rows = base.all_rows().map_err(paged_unavailable)?;
+        image(
+            rows.generations
+                .iter()
+                .map(|(&key, &generation)| (key, generation)),
+            rows.reusable.iter().copied(),
+            rows.frontiers.iter().map(|(&key, &next)| (key, next)),
+            rows.pending.iter().copied(),
+            Some(request),
+            memory,
+        )
     }
 
     pub fn checkpoint_identity_for_request(
@@ -48,7 +94,10 @@ impl RecordIdentitySubsystem {
             })
             .and_then(|bytes| {
                 // Unfaulted checkpoint rows join the image (largest row size).
-                let base = state.paged.as_ref().map_or(0, |base| base.entry_count());
+                let base = match state.paged.as_ref() {
+                    Some(base) => base.entry_count()?,
+                    None => 0,
+                };
                 bytes.checked_add(array_bytes::<DurablePendingRecordReservation>(
                     usize::try_from(base).ok()?,
                 )?)

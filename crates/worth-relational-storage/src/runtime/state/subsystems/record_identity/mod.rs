@@ -234,6 +234,11 @@ impl RecordIdentitySubsystem {
                     state.generation_high_water.len(),
                 )?)
             })
+            .and_then(|n| {
+                n.checked_add(btree_map_bytes::<RecordFrontierKey, ()>(
+                    state.faulted.len(),
+                )?)
+            })
             .ok_or(Cause::MemoryOverflow)?;
         let reservation = request
             .reserve_retained_memory(u64::try_from(bytes).map_err(|_| Cause::MemoryOverflow)?)
@@ -266,6 +271,48 @@ impl RecordIdentitySubsystem {
             },
             reservation,
         ))
+    }
+
+    /// Validates exclusive ownership and source identity of any paged base
+    /// before irreversible close retirement.
+    pub fn preflight_source_retirement(
+        &self,
+        source: &dyn crate::durability::medium::cold_source::RelationalDurableColdSource,
+    ) -> Result<(), crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial>
+    {
+        self.retire_paged_source(source, false)
+    }
+
+    /// Releases any paged base's cold-source reference during irreversible close.
+    pub fn retire_source(
+        &self,
+        source: &dyn crate::durability::medium::cold_source::RelationalDurableColdSource,
+    ) -> Result<(), crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial>
+    {
+        self.retire_paged_source(source, true)
+    }
+
+    fn retire_paged_source(
+        &self,
+        source: &dyn crate::durability::medium::cold_source::RelationalDurableColdSource,
+        retire: bool,
+    ) -> Result<(), crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial>
+    {
+        use crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial as Denial;
+        use crate::durability::medium::member_custody::retirement::RelationalDurableMemberRetirementRefusal as Refusal;
+        let mut state = self.state.try_lock().map_err(|_| Denial::Busy)?;
+        if let Some(paged) = state.paged.as_mut() {
+            if Arc::get_mut(paged).is_none() {
+                return Err(Denial::Busy);
+            }
+            if !paged.source_matches(source) {
+                return Err(Denial::Refused(Refusal::ForeignCustody));
+            }
+            if retire {
+                state.paged = None;
+            }
+        }
+        Ok(())
     }
 }
 

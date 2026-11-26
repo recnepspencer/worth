@@ -294,11 +294,9 @@ impl ImmutableCheckpointMemberSource {
         if let Some(position) = self.canonical_members.get(&locator) {
             self.canonical_member_reads.lock().unwrap().push(locator);
             self.observe_canonical_read(*position)?;
-        } else if self
-            .members
-            .get(&locator)
-            .is_some_and(|bytes| bytes.bytes().starts_with(b"WORTH-REL-CHUNK1\n"))
-        {
+        } else if self.members.get(&locator).is_some_and(|bytes| {
+            bytes.bytes().starts_with(b"WORTH-REL-CHUNK1\n") && bytes.bytes().get(17) == Some(&3)
+        }) {
             self.paged_reads.fetch_add(1, Ordering::Relaxed);
         } else {
             self.reads.fetch_add(1, Ordering::Relaxed);

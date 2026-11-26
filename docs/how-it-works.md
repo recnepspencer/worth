@@ -380,8 +380,8 @@ with the typed `RecoveryFailureClass::UnsupportedCheckpointVersion` or
 dual-format reader. A `CHK24` manifest keeps the record-identity allocator's four
 tables (generation high-water marks, reusable slots, pending reservations and
 append frontiers) as content-addressed paged directories and retains only their
-fixed-size roots. Reopen reads none of their pages. The first allocation, replay
-or reclamation in a partition faults that partition's rows through the runtime's
+fixed-size roots. Reopen reads none of their pages. The first allocation or
+replay in a partition faults that partition's rows through the runtime's
 working set, so reopen memory for the allocator does not grow with record count,
 outstanding reservations or partition count, and slot reuse stays exact.
 

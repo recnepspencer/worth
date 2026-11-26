@@ -157,12 +157,18 @@ impl RecordAllocationDenial {
             } => format!(
                 "{class:?} allocation for partition {partition_id:?} slot {slot} was denied: {detail}"
             ),
+            Self::IdentityPageUnavailable {
+                class,
+                partition_id,
+                cause,
+            } => format!(
+                "{class:?} paged record-identity table for partition {partition_id:?} is unavailable: {cause:?}"
+            ),
             // Coupled evidence (#119): the variant's own fields are the detail.
             Self::ReplayEvidenceBlockBroken { .. }
             | Self::ReplayCancelledSlotInvalid { .. }
             | Self::LiveAllocationUnknown { .. }
-            | Self::LiveAllocationOrderDiverged { .. }
-            | Self::IdentityPageUnavailable { .. } => {
+            | Self::LiveAllocationOrderDiverged { .. } => {
                 format!("coupled record allocation evidence refused: {self:?}")
             }
         }

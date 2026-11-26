@@ -18,6 +18,7 @@ pub(crate) fn inspect<'a>(
         .check_live()
         .map_err(|stop| RelationalRecoveryStop::Request(stop.into()))?;
     let payload = super::checkpoint_payload(bytes)?;
+    let has_external = external.is_some();
     let (
         symbol_identity_frontier,
         record_identity,
@@ -152,14 +153,21 @@ pub(crate) fn inspect<'a>(
     // as their roots' bytes; frontiers and generations compare semantically
     // above, and the page roster is a function of all four roots.
     let mut identity = self::fields(take(&mut fields, "record_identity")?)?;
-    take(&mut identity, "pages")?;
+    let pages = take(&mut identity, "pages")?;
     let mut allocator = self::fields(take(&mut identity, "roots")?)?;
     if !identity.is_empty() {
         return Err(invalid("unknown record identity field").into());
     }
-    take(&mut allocator, "append_frontiers")?;
-    take(&mut allocator, "generation_high_water")?;
-    take(&mut allocator, "partition_high_water")?;
+    if has_external {
+        take(&mut allocator, "append_frontiers")?;
+        take(&mut allocator, "generation_high_water")?;
+        take(&mut allocator, "partition_high_water")?;
+    } else {
+        // Bare-frame inspection cannot decode paged tables into `frontiers` /
+        // `generations`, so retain all record-identity root and roster bytes in
+        // `model.allocator` for byte-exact invariance comparisons.
+        allocator.insert("pages".to_string(), pages);
+    }
     Ok(RelationalCheckpointInspection {
         branch_cells,
         model: NativeCheckpointModelBytes {

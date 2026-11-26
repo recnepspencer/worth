@@ -39,6 +39,10 @@ impl ChunkMemberSource for ColdMemberSource {
         target[..count].copy_from_slice(&tail[..count]);
         Ok(count)
     }
+
+    fn cold_source_identity(&self) -> Option<usize> {
+        Some((self.source.as_ref() as *const dyn RelationalDurableColdSource).cast::<()>() as usize)
+    }
 }
 
 /// Collects sealed members during capture, in write order, without duplicates.

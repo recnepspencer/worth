@@ -206,7 +206,12 @@ impl RelationalRegionImage<'_> {
 fn obsolete_frame(bytes: &[u8]) -> Cause {
     let version = bytes.strip_prefix(FAMILY).and_then(|label| {
         let end = label.iter().take(6).position(|byte| *byte == NEWLINE)?;
-        std::str::from_utf8(&label[..end]).ok()?.parse::<u16>().ok()
+        let digits = &label[..end];
+        if digits.is_empty() || digits[0] == b'0' || !digits.iter().all(u8::is_ascii_digit) {
+            return None;
+        }
+        let found = std::str::from_utf8(digits).ok()?.parse::<u16>().ok()?;
+        (found != VERSION).then_some(found)
     });
     match version {
         Some(found) => Cause::UnsupportedRegionImageVersion {
@@ -243,17 +248,44 @@ mod version_tests {
 
     #[test]
     fn obsolete_and_future_region_grammars_refuse_with_their_typed_version() {
+        let decode_err = |bytes: &[u8]| {
+            let loc = crate::storage::data::member_frame::locator(bytes);
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|l| {
+                RelationalRegionImage::decode(
+                    l,
+                    &mut |_, _| Ok(()),
+                    bytes,
+                    loc,
+                    PartitionId(0),
+                    [0; 32],
+                    RelationalRegionImageKind::Head,
+                )
+                .err()
+                .unwrap()
+            })
+        };
         for (frame, found) in [(&b"WORTH-REL-REG7\n"[..], 7), (&b"WORTH-REL-REG9\n"[..], 9)] {
-            assert_eq!(
-                obsolete_frame(&[frame, &[0; 40]].concat()),
-                Cause::UnsupportedRegionImageVersion {
-                    found,
-                    supported: VERSION,
-                }
-            );
+            let bytes = [frame, &[0; 40]].concat();
+            let expected = Cause::UnsupportedRegionImageVersion {
+                found,
+                supported: VERSION,
+            };
+            assert_eq!(obsolete_frame(&bytes), expected);
+            assert_eq!(decode_err(&bytes), expected);
         }
-        for frame in [&b"WORTH-REL-REGX\n"[..], b"WORTH-REL-CHK24\n", b""] {
-            assert_eq!(obsolete_frame(frame), Cause::Damaged);
+        for frame in [
+            &b"WORTH-REL-REGX\n"[..],
+            b"WORTH-REL-REG0\n",
+            b"WORTH-REL-REG08\n",
+            b"WORTH-REL-REG+8\n",
+            b"WORTH-REL-REG+7\n",
+            b"WORTH-REL-REG07\n",
+            b"WORTH-REL-CHK24\n",
+            b"",
+        ] {
+            let bytes = [frame, &[0; 40]].concat();
+            assert_eq!(obsolete_frame(&bytes), Cause::Damaged);
+            assert_eq!(decode_err(&bytes), Cause::Damaged);
         }
         assert_eq!(MAGIC, b"WORTH-REL-REG8\n");
     }

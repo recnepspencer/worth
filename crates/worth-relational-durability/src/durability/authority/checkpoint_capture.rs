@@ -28,6 +28,11 @@ pub struct CapturedCheckpointBasis {
         contracts::branch::transition::sequence::RelationalBranchTransitionSequence,
     pub branch_roots: Vec<RelationalBranchRootCheckpoint>,
     pub record_identity: CapturedRecordIdentity,
+    pub carried_record_identity: Option<
+        std::sync::Arc<
+            worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::paged_base::PagedIdentityBase,
+        >,
+    >,
     pub envelopes: Vec<PositionedCanonicalCommit>,
     pub envelope_cells:
         Vec<std::sync::Arc<worth_relational_branch::internal_port::history::commit::envelope_residency::RelationalCommitEnvelopeResidency>>,

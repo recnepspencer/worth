@@ -8,11 +8,19 @@ use super::{ResidencyPoolKind, WorkingSetAccountant};
 use crate::storage::residency::cell::RegionCellWeak;
 use crate::storage::residency::RelationalRegionResidency;
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
+
+/// Non-cell page caches charging one pool of a [`WorkingSetAccountant`].
+pub(in crate::internal_port::storage::residency) trait ExternalPoolEvictor:
+    Send + Sync + std::fmt::Debug
+{
+    fn evict_one_for_pool(&self, pool: ResidencyPoolKind) -> bool;
+}
 
 #[derive(Debug, Default)]
 pub(in crate::internal_port::storage::residency) struct ClockRing {
     cells: Vec<RegionCellWeak>,
+    external_evictors: Vec<Weak<dyn ExternalPoolEvictor>>,
     hand: usize,
 }
 
@@ -41,6 +49,23 @@ impl WorkingSetAccountant {
         let mut ring = self.ring.lock().unwrap_or_else(|error| error.into_inner());
         ring.cells.retain(|entry| entry.upgrade().is_some());
         ring.cells.push(cell);
+    }
+
+    /// Register a page eviction group charging this accountant's pools.
+    pub(in crate::internal_port::storage::residency) fn enroll_external_evictor(
+        &self,
+        evictor: Weak<dyn ExternalPoolEvictor>,
+    ) {
+        let mut ring = self.ring.lock().unwrap_or_else(|error| error.into_inner());
+        ring.external_evictors
+            .retain(|entry| entry.upgrade().is_some());
+        if !ring
+            .external_evictors
+            .iter()
+            .any(|entry| Weak::ptr_eq(entry, &evictor))
+        {
+            ring.external_evictors.push(evictor);
+        }
     }
 
     pub(super) fn live_cells(&self) -> Vec<Arc<RelationalRegionResidency>> {
@@ -97,6 +122,33 @@ impl WorkingSetAccountant {
         }
         let mut ring = self.ring.lock().unwrap_or_else(|error| error.into_inner());
         ring.hand = ring.hand.wrapping_add(visited);
+        let externals = if ledger.available() < bytes {
+            ring.external_evictors
+                .retain(|entry| entry.upgrade().is_some());
+            ring.external_evictors
+                .iter()
+                .filter_map(Weak::upgrade)
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
+        drop(ring);
+        while ledger.available() < bytes {
+            let mut progress = false;
+            for evictor in &externals {
+                if ledger.available() >= bytes {
+                    break;
+                }
+                if evictor.evict_one_for_pool(pool) {
+                    sweep.evicted += 1;
+                    self.evictions.fetch_add(1, Ordering::AcqRel);
+                    progress = true;
+                }
+            }
+            if !progress {
+                break;
+            }
+        }
         sweep
     }
 }
