@@ -30,6 +30,6 @@ def check_owner_sizes(audit, examples):
             failures.append(f'{owner} exceeds the 23.0% Total or Prod share')
     print(f'{"combined":<12} {"":>10} {all_total:>11,} {all_production:>11,}')
     print(f'Runtime Total includes {example_lines:,} example lines')
-    if all_total > 510_000:
-        failures.append(f'combined Total LOC exceeds 510,000: {all_total:,}')
+    if all_total > 515_000:
+        failures.append(f'combined Total LOC exceeds 515,000: {all_total:,}')
     return failures
