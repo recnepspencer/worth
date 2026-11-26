@@ -7,13 +7,13 @@ mod maintenance;
 pub use maintenance::{HomeMaintenanceAdapter, WorthQueryHomeMaintenance};
 
 pub use rt_pw::{
-    activation, branch_close, installed_source_reads_on_this_thread_for_test, owner_cleanup,
-    prepare_conditional_publication, publication_binding, publication_denial,
+    activation, branch_close, commit_pulse, installed_source_reads_on_this_thread_for_test,
+    owner_cleanup, prepare_conditional_publication, publication_binding, publication_denial,
     publish_conditional_definition, published_effect, read_consult, read_lock_probe,
     record_installed_source_read_for_test, relational_publication, request_control, resources,
     test_product_world_resources, test_product_world_resources_with_history_limit_for_test,
     OwnerCleanupRetirements, ReadLockProbeForTest, RetiringRelationalSource,
-    WorthQueryCommitHistoryHold, WorthQueryDurableStateAdmissionDenial,
+    WorthQueryCommitHistoryHold, WorthQueryCommitPulse, WorthQueryDurableStateAdmissionDenial,
     WorthQueryPerformedRelationalProductChange,
     WorthQueryPerformedRelationalProductChangeDeliveryDenial,
     WorthQueryPerformedRelationalProductChangeDeliveryDenialKind,

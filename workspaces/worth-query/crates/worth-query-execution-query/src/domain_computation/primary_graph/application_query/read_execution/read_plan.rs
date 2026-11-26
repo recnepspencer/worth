@@ -27,6 +27,7 @@ pub struct ReadPlan<'a> {
     >,
 
     pub(crate) maximum_result_count: usize,
+    pub(crate) root_window: Option<&'a super::super::root_window::WorthQueryApplicationRootWindow>,
 }
 
 impl<'a> ReadPlan<'a> {
@@ -46,6 +47,7 @@ impl<'a> ReadPlan<'a> {
             governance: &plan.governance,
             material_source: None,
             maximum_result_count: plan.controls.maximum_result_count().get(),
+            root_window: plan.root_window.as_ref(),
         }
     }
     pub fn public_worker<S, Q, P, R, A, I, C>(
@@ -76,6 +78,7 @@ impl worth_execution::ChargedBytes for ReadPlan<'_> {
             material_source: _material_source,
 
             maximum_result_count: _maximum_result_count,
+            root_window: _root_window,
         } = self;
         0
     }
@@ -100,6 +103,7 @@ impl ReadPlan<'_> {
             material_source: self.material_source,
 
             maximum_result_count: self.maximum_result_count,
+            root_window: self.root_window,
         }
     }
 }

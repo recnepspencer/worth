@@ -155,6 +155,19 @@ where
         } else {
             plan
         };
+        let plan = match self.root_window {
+            Some(_)
+                if binding
+                    .query()
+                    .read_graph()
+                    .managed_index_selection()
+                    .is_some() =>
+            {
+                return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
+            }
+            Some(window) => plan.with_root_window(window),
+            None => plan,
+        };
         perform(self.application, &binding, self.principal, plan)
     }
 }

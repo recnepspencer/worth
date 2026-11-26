@@ -94,6 +94,11 @@ pub use read_execution::{
     query_read_kernel_entries_on_this_thread_for_test,
 };
 pub mod readiness;
+pub mod root_window;
+pub use root_window::{
+    WorthQueryApplicationRootWindow, WorthQueryApplicationRootWindowBoundary,
+    WorthQueryApplicationRootWindowProgress,
+};
 pub mod resource_lifecycle;
 pub mod runtime_support;
 pub use access_context::WorthQueryApplicationQueryAccessContext;

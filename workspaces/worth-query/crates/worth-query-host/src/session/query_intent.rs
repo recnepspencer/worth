@@ -9,7 +9,7 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchema,
 };
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationProjection, WorthQueryManagedIndex,
+    WorthQueryApplicationProjection, WorthQueryApplicationRootWindow, WorthQueryManagedIndex,
 };
 use worth_query_publication::facade::{
     application_entry::{
@@ -56,6 +56,17 @@ pub trait WorthQuerySessionQuery<Schema: ApplicationSchema>:
         self,
         session: &WorthQueryHostSession<'_, Schema, Program>,
         observation: &WorthQueryApplicationReadObservation,
+    ) -> Result<
+        WorthQueryPublishedApplicationResult<QueryMarker<Schema, Self>, Self::Row>,
+        WorthQueryApplicationRequestQueryDenial,
+    >;
+
+    #[doc(hidden)]
+    fn execute_window_in_session<Program>(
+        self,
+        session: &WorthQueryHostSession<'_, Schema, Program>,
+        at: Option<&WorthQueryApplicationReadObservation>,
+        window: WorthQueryApplicationRootWindow,
     ) -> Result<
         WorthQueryPublishedApplicationResult<QueryMarker<Schema, Self>, Self::Row>,
         WorthQueryApplicationRequestQueryDenial,
@@ -107,6 +118,32 @@ where
         let principal = session.call_principal();
         let request = session.request_as(&principal, &scope);
         let query_req = request.at(observation).query(self);
+        let query_req = match session.settings.query_result_limit {
+            Some(limit) => query_req.limit_results(limit),
+            None => query_req,
+        };
+        session
+            .with_funded_advancement(&scope, |phase| query_req.execute_in_advancement(&phase))
+            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
+    }
+
+    fn execute_window_in_session<Program>(
+        self,
+        session: &WorthQueryHostSession<'_, Schema, Program>,
+        at: Option<&WorthQueryApplicationReadObservation>,
+        window: WorthQueryApplicationRootWindow,
+    ) -> Result<
+        WorthQueryPublishedApplicationResult<QueryMarker<Schema, Self>, Self::Row>,
+        WorthQueryApplicationRequestQueryDenial,
+    > {
+        let scope = session.fresh_scope();
+        let principal = session.call_principal();
+        let request = session.request_as(&principal, &scope);
+        let query_req = match at {
+            Some(observation) => request.at(observation).query(self),
+            None => request.query(self),
+        }
+        .window(window);
         let query_req = match session.settings.query_result_limit {
             Some(limit) => query_req.limit_results(limit),
             None => query_req,

@@ -43,6 +43,7 @@ impl<Schema: ApplicationSchema, Program: 'static>
                     open_disposition,
                     active_head: std::sync::Mutex::new(active_head),
                     owned: std::sync::Arc::default(),
+                    commit_watch: std::sync::Arc::default(),
                 },
                 request,
             ),

@@ -212,7 +212,8 @@ impl PreparedAdoptionPublication {
                 loop {
                     match outcome {
                         WorldDurablePublicationOutcome::Performed(p) => {
-                            return Ok(Outcome::Performed(p))
+                            crate::domain_computation::execution_runtime::product_world::commit_pulse::note_publication();
+                            return Ok(Outcome::Performed(p));
                         }
                         WorldDurablePublicationOutcome::Pending(pending) => {
                             if request.interruption().is_some() || execution.consult().is_err() {

@@ -37,6 +37,7 @@ pub use relation_attachment::validate_relation_cardinality;
 mod relation_distribution;
 mod relation_occurrence;
 mod relation_target_filter;
+pub mod root_window;
 pub mod source_footprint;
 mod work;
 use fields::{direct_projections, project_fields, projection_scope};

@@ -22,6 +22,8 @@ mod bootstrap_publication;
 mod capability_grant_join;
 mod continuation_ordering;
 pub mod derived_relation;
+mod entity_fields;
+pub use entity_fields::WorthQueryEntityFieldLayout;
 mod equality_fields;
 pub mod field_coordinate;
 mod field_optionality;

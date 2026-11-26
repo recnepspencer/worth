@@ -67,6 +67,8 @@ worth_query_application_program! {
             query(FindTasksByTitleBinding) { definition: FindTasksByTitleQuery::definition(); };
             query(ReadTaskDetailsBinding) { definition: ReadTaskDetailsQuery::definition(); };
             query(ReadProjectTasksBinding) { definition: ReadProjectTasksQuery::definition(); };
+            query(BacklogTasksBinding) { definition: BacklogTasksQuery::definition(); };
+            query(TasksByPriorityBinding) { definition: TasksByPriorityQuery::definition(); };
             body_action(RescheduleTaskBinding, RescheduleTaskDelivery) as RescheduleTaskAction {
                 operation: reschedule_task_definition();
             };

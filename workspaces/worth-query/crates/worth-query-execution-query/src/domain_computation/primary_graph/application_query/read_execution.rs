@@ -151,7 +151,25 @@ pub fn read_prepared_root_rows(
     let contract = plan.contract;
     let selection =
         select_bounded_roots(runtime, execution, graph, plan, true, spent, interruption)?;
-    validate_read_cardinality(contract.cardinality(), selection.candidates.len(), plan)?;
+    let window = match plan.root_window {
+        Some(window) => Some(select_root_window_roots(
+            runtime,
+            execution,
+            graph,
+            plan,
+            &selection.candidates,
+            window,
+            spent,
+            interruption,
+        )?),
+        None => {
+            validate_read_cardinality(contract.cardinality(), selection.candidates.len(), plan)?;
+            None
+        }
+    };
+    let roots = window
+        .as_ref()
+        .map_or(selection.candidates.as_slice(), |window| &window.roots);
     let tree = materialize_result_tree(
         execution,
         runtime,
@@ -160,7 +178,7 @@ pub fn read_prepared_root_rows(
         contract,
         plan.governance,
         plan.parameters,
-        &selection.candidates,
+        roots,
         &selection.selected_predicate_sources,
         selection.root_path_source.as_ref(),
         ResultTreeCollectionSelection::Complete,
@@ -179,7 +197,14 @@ pub fn read_prepared_root_rows(
             plan.name,
         ));
     }
-    let actual_work = selection.work_units.saturating_add(tree.work_units);
+    let (window_reads, window_comparisons, window_work) = window.map_or_else(
+        || (WorthQueryInvariantProjectionWork::default(), 0, 0),
+        |window| (window.reads, window.ordering_comparisons, window.work_units),
+    );
+    let actual_work = selection
+        .work_units
+        .saturating_add(tree.work_units)
+        .saturating_add(window_work);
     Ok(RawNonLiveKernelOutcome {
         raw: RawOneShotRows {
             material_source: plan.material_source.cloned(),
@@ -194,9 +219,9 @@ pub fn read_prepared_root_rows(
             target_identity_index_generation: None,
             projected_records: tree.projected_records,
             projected_fields: tree.projected_fields,
-            reads: selection.reads.combined(tree.reads),
+            reads: selection.reads.combined(tree.reads).combined(window_reads),
             root_path_steps: selection.root_path_steps,
-            ordering_comparisons: tree.ordering_comparisons,
+            ordering_comparisons: tree.ordering_comparisons.saturating_add(window_comparisons),
             ordered_index_generation: None,
             ordered_index_entries_examined: 0,
             next_boundary: None,
@@ -205,6 +230,47 @@ pub fn read_prepared_root_rows(
         },
         persistent_names: None,
     })
+}
+
+/// A window pages a `Many` collection, never an exact row, and is at most as
+/// wide as the result ceiling.
+fn select_root_window_roots(
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    plan: &read_plan::ReadPlan<'_>,
+    candidates: &[worth_relational::facade::identity::EntityId],
+    window: &super::root_window::WorthQueryApplicationRootWindow,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
+    interruption: ReadInterruption<'_>,
+) -> Result<
+    tree_materialization::root_window::RootWindowSelection,
+    WorthQueryApplicationReadExecutionDenial,
+> {
+    if plan.contract.cardinality() != ApplicationQueryCardinality::Many {
+        return Err(read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::CardinalityMismatch,
+            plan.name,
+        ));
+    }
+    if window.width().get() > plan.maximum_result_count {
+        return Err(read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::ResultLimitExceeded,
+            plan.name,
+        ));
+    }
+    tree_materialization::root_window::select_root_window(
+        execution,
+        runtime,
+        plan.snapshot,
+        graph,
+        plan.contract,
+        plan.governance,
+        candidates,
+        window,
+        interruption,
+        spent,
+    )
 }
 
 pub mod continuation_page;

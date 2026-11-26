@@ -29,6 +29,7 @@ pub(crate) struct WorthQueryProductRuntimeFields {
     pub(crate) default_branch: ProductBranchIdentity,
     pub(crate) default_occurrence: ProductBranchIncarnation,
     pub(crate) root_identity: Arc<WorthQueryProductRootIdentity>,
+    pub(crate) commit_pulse: super::commit_pulse::WorthQueryCommitPulse,
     pub(crate) recovered_root_authority:
         Option<Arc<worth_runtime_world::facade::RecoveredRuntimeWorldRootAuthority>>,
 }
@@ -119,9 +120,17 @@ impl WorthQueryProductRuntime {
                 default_branch,
                 default_occurrence,
                 root_identity: Arc::new(WorthQueryProductRootIdentity { _private: () }),
+                commit_pulse: super::commit_pulse::WorthQueryCommitPulse::new(),
                 recovered_root_authority,
             }),
         }
+    }
+
+    /// This root's committed-publication pulse: its version advances after
+    /// each product advancement that published, for cheap change detection
+    /// and commit wake-ups. It records no commit.
+    pub fn commit_pulse(&self) -> super::commit_pulse::WorthQueryCommitPulse {
+        self.fields().commit_pulse.clone()
     }
 
     pub fn owns_branch_selector(&self, branch: crate::basis::WorthQueryProductBranch) -> bool {

@@ -1,9 +1,11 @@
 //! End-to-end Daymark-style acceptance court covering all unified Target DX
 //! surfaces (#1, #2, #3, #4, #5, #6, and #8) on a real persistent Directory Home.
 mod actions;
+mod background_calls_court;
 mod body_links;
 mod body_links_court;
 mod cold_reopen_default_policy_court;
+mod commit_watch_court;
 mod courts;
 mod details_correction;
 mod durable_history_court;
@@ -11,6 +13,7 @@ mod keyed_refusal_court;
 mod option_preimage_court;
 mod owned_live_court;
 mod owned_session_court;
+mod paged_query_court;
 mod preview_and_undo_court;
 mod preview_discard_court;
 mod program;

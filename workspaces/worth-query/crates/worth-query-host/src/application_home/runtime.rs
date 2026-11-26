@@ -70,6 +70,8 @@ pub struct WorthQueryApplicationHome<Schema, Program> {
     pub(super) active_head: Mutex<WorthQueryProductBranch>,
     /// Owned sessions and live subscriptions this Home must release on close.
     pub(crate) owned: std::sync::Arc<super::owned_holds::OwnedRuntimeHolds>,
+    /// Commit callbacks of this Home and their notifier.
+    pub(crate) commit_watch: std::sync::Arc<crate::background::commit_watch::CommitWatchRegistry>,
 }
 impl<Schema, Program> WorthQueryApplicationHome<Schema, Program>
 where

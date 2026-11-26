@@ -211,6 +211,23 @@ worth_query_mutation_binding!(pub UpdateAssetBinding for UpdateAsset, schema Sho
     scope AssetKey, field AssetKey::at("AssetKey"), value update_scope,
 );
 pub struct UpdateAssetHandler;
+
+thread_local! {
+    static UPDATE_RACE: std::cell::RefCell<Option<Box<dyn FnOnce()>>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+/// Runs `competitor` inside the next update decided on this thread, after its
+/// target's pre-images were observed and before its candidate commits.
+pub fn race_next_update_on_this_thread(competitor: impl FnOnce() + 'static) {
+    UPDATE_RACE.with(|race| *race.borrow_mut() = Some(Box::new(competitor)));
+}
+
+fn run_update_race_hook() {
+    if let Some(competitor) = UPDATE_RACE.with(|race| race.borrow_mut().take()) {
+        competitor();
+    }
+}
 impl OperationHandler<ShopFloorSchema, UpdateAssetBinding> for UpdateAssetHandler {
     fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
         Some(&[])
@@ -223,25 +240,15 @@ impl OperationHandler<ShopFloorSchema, UpdateAssetBinding> for UpdateAssetHandle
         WorthQueryInvariantMutationTarget<ShopFloorSchema, Asset>,
         WorthQueryOperationBodyDenial,
     > {
+        // No discarded reads: `write_target` observes the pre-image of every
+        // field this operation declares both readable and writable.
         let result = reader
             .resolve_entity(AssetKey::at("AssetKey"), input.key)
             .and_then(|a| {
                 reader.entity(&a, Asset::reference())?;
-                let _ = reader.field(&a, Title::at("Title"))?;
-                let _ = reader.field(&a, StartMin::at("StartMin"))?;
-                let _ = reader.field(&a, EndMin::at("EndMin"))?;
-                let _ = reader.field(&a, MinX::at("MinX"))?;
-                let _ = reader.field(&a, MinY::at("MinY"))?;
-                let _ = reader.field(&a, MinZ::at("MinZ"))?;
-                let _ = reader.field(&a, MaxX::at("MaxX"))?;
-                let _ = reader.field(&a, MaxY::at("MaxY"))?;
-                let _ = reader.field(&a, MaxZ::at("MaxZ"))?;
-                let _ = reader.field(&a, FminX::at("FminX"))?;
-                let _ = reader.field(&a, FminY::at("FminY"))?;
-                let _ = reader.field(&a, FmaxX::at("FmaxX"))?;
-                let _ = reader.field(&a, FmaxY::at("FmaxY"))?;
-                reader.mutation_target(&a)
+                reader.write_target(&a)
             });
+        run_update_race_hook();
         match result {
             Ok(target) => HandlerResult::Completed(target),
             Err(cause) => HandlerResult::ExecutionDenied(cause),

@@ -366,13 +366,34 @@ where
     }
 
     /// Admit an observed entity as a target for the candidate phase of this
-    /// exact operation attempt.
+    /// exact operation attempt. Writing a field of it still requires that
+    /// field's decision read; [`Self::write_target`] records those reads.
     pub fn mutation_target<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
     ) -> Result<WorthQueryInvariantMutationTarget<Schema, Entity>, HandlerExecutionDenial> {
         self.reader
             .mutation_target(identity)
+            .map_err(HandlerExecutionDenial::new)
+    }
+
+    /// [`Self::mutation_target`] for an entity the candidate writes: also
+    /// observes every field of it that the operation declares both readable
+    /// and writable, exactly as a decision read of each would, so
+    /// `build_candidate` may write them with no discarded reads.
+    ///
+    /// The pre-images are sealed with the decision: a competitor that commits
+    /// a change to an observed field before this attempt commits returns it
+    /// `Stale`, never a silent overwrite. They also widen what the attempt
+    /// (and a later correction of it) depends on to all of those fields, which
+    /// is why this is a separate, explicit call. A writable field the operation
+    /// does not declare readable still refuses `UnobservedWrite`.
+    pub fn write_target<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+    ) -> Result<WorthQueryInvariantMutationTarget<Schema, Entity>, HandlerExecutionDenial> {
+        self.reader
+            .decision_write_target(identity)
             .map_err(HandlerExecutionDenial::new)
     }
 }

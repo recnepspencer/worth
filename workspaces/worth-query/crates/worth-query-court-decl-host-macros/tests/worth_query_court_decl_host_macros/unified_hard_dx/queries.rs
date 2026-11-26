@@ -23,6 +23,10 @@ pub const DETAILS_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.task-details.v1");
 pub const PROJECT_TASKS_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.project-tasks.v1");
+pub const BY_PRIORITY_NS: ApplicationIdentityNamespace =
+    worth_query_identity_namespace!("daymark.unified.tasks-by-priority.v1");
+pub const BACKLOG_NS: ApplicationIdentityNamespace =
+    worth_query_identity_namespace!("daymark.unified.backlog-tasks.v1");
 
 /// Target DX #5: unified `#[derive(WorthQuery)]` with literal equality, optional
 /// parameter equality, optional date <= comparison, related-record absence,
@@ -171,6 +175,44 @@ pub struct ReadTaskDetails {
     limits = 64,
 )]
 pub struct ReadProjectTasks {
+    #[worth_query(scope)]
+    pub project: u64,
+}
+
+/// A project's tasks by key under a small result ceiling (8 rows), so a
+/// modest collection outgrows a single read.
+#[derive(Clone, Debug, WorthQuery)]
+#[worth_query(
+    schema = DaymarkSchema,
+    context = DaymarkContext,
+    namespace = BACKLOG_NS,
+    result = TaskRow,
+    root = Task,
+    scope = ProjectKey,
+    root_path(Contains),
+    order_by(TaskRow::task_key(), Ascending),
+    limits = 8,
+)]
+pub struct BacklogTasks {
+    #[worth_query(scope)]
+    pub project: u64,
+}
+
+/// A project's tasks by descending priority: a non-unique ordering key, so a
+/// page boundary often falls inside a run of equal priorities.
+#[derive(Clone, Debug, WorthQuery)]
+#[worth_query(
+    schema = DaymarkSchema,
+    context = DaymarkContext,
+    namespace = BY_PRIORITY_NS,
+    result = TaskRow,
+    root = Task,
+    scope = ProjectKey,
+    root_path(Contains),
+    order_by(TaskRow::priority(), Descending),
+    limits = 8,
+)]
+pub struct TasksByPriority {
     #[worth_query(scope)]
     pub project: u64,
 }

@@ -228,7 +228,8 @@ fn execute_home_publication(
     loop {
         match outcome {
             WorldDurablePublicationOutcome::Performed(performed) => {
-                return Outcome::Performed(performed)
+                worth_query_execution_runtime::facade::execution_runtime::product_world::commit_pulse::note_publication();
+                return Outcome::Performed(performed);
             }
             WorldDurablePublicationOutcome::Pending(pending) => {
                 if request.interruption().is_some() || execution.consult().is_err() {
