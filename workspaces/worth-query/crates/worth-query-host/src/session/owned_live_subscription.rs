@@ -22,8 +22,11 @@ use super::{QueryBinding, QueryMarker, QueryRow, WorthQueryHostSession};
 /// `close`, ...) and may be stored in the same value as its Home, such as a
 /// desktop application's state.
 ///
-/// Closing or retiring the Home closes it for you: afterwards `refresh`
-/// refuses `Closed` and dropping it is harmless, so no drop ordering is owed.
+/// Closing or retiring the Home on the thread that opened it closes it for
+/// you: afterwards `refresh` refuses `Closed` and dropping it is harmless, so
+/// no drop ordering is owed. Its native lease is pinned to that thread, so a
+/// Home retired on another thread refuses until the subscription is dropped
+/// or polled: [`Self::refresh_owned`] through a detached session closes it.
 pub type WorthQueryOwnedLiveSubscription<Schema, Intent> =
     WorthQueryTypedLiveSubscription<'static, Schema, Intent>;
 
@@ -75,7 +78,9 @@ where
     Intent: ApplicationQueryIntent<Schema>,
     QueryRow<Schema, Intent>: WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Intent>>,
 {
-    /// [`Self::refresh`] through an owned session; a closed Home refuses `Closed`.
+    /// [`Self::refresh`] through an owned session. Once the session's Home has
+    /// closed it refuses `Closed` and closes this subscription's lease, so a
+    /// retirement retried from another thread then completes.
     pub fn refresh_owned<Program>(
         &mut self,
         session: &WorthQueryOwnedSession<Schema, Program>,

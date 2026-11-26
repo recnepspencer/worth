@@ -129,3 +129,62 @@ fn an_app_retires_its_home_with_an_owned_session_and_live_subscription_open() {
     }
     std::fs::remove_dir_all(path).unwrap();
 }
+
+#[test]
+fn a_detached_refresh_closes_a_subscription_pinned_to_another_thread_so_retirement_completes() {
+    use std::sync::mpsc::channel;
+    let path = temp_home_path("owned-cross-thread");
+    let clock = WorthQueryAdmissionClock::system();
+    let home = open_daymark(&path, &clock);
+    let session = home.session(owner(&home, &clock)).into_owned();
+    let (opened_tx, opened_rx) = channel();
+    let (poll_tx, poll_rx) = channel::<()>();
+    let (closed_tx, closed_rx) = channel();
+    let worker = std::thread::spawn({
+        let session = session.clone();
+        move || {
+            let mut ready = session
+                .subscribe(LiveReadyTasks {
+                    project: 1,
+                    priority: None,
+                    due_before: None,
+                })
+                .unwrap();
+            opened_tx.send(()).unwrap();
+            poll_rx.recv().unwrap();
+            let refused = ready.refresh_owned(&session);
+            closed_tx
+                .send(matches!(
+                    refused,
+                    Err(WorthQueryTypedLiveRefreshDenial::Closed)
+                ))
+                .unwrap();
+            poll_rx.recv().unwrap();
+            drop(ready);
+        }
+    });
+    opened_rx.recv().unwrap();
+
+    // The subscription's lease is pinned to the worker thread, so retiring
+    // here releases the session but must wait for the subscription.
+    let retiring = match home
+        .into_retirement()
+        .try_retire(DEFAULT_HOST_EXECUTION_POLICY)
+    {
+        Ok(()) => panic!("a lease pinned to another thread still holds the runtime"),
+        Err((retiring, _)) => retiring,
+    };
+    assert!(!session.is_attached());
+    poll_tx.send(()).unwrap();
+    assert!(
+        closed_rx.recv().unwrap(),
+        "a detached refresh refuses Closed"
+    );
+    if let Err((_, stop)) = retiring.try_retire(DEFAULT_HOST_EXECUTION_POLICY) {
+        panic!("the closed lease no longer holds the runtime: {stop:?}");
+    }
+    poll_tx.send(()).unwrap();
+    worker.join().unwrap();
+    drop(session);
+    std::fs::remove_dir_all(path).unwrap();
+}

@@ -4,6 +4,7 @@
 //! releases the session, after which every call refuses `HomeClosed`.
 use std::sync::{Arc, Mutex};
 
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_declaration::facade::{
     application_operation::{
         ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
@@ -102,6 +103,15 @@ where
     Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema> + 'static,
 {
+    /// [`WorthQueryHostSession::current_principal`]: the proof the next call
+    /// acts under, renewed first when due, for Home calls such as `home.undo`.
+    pub fn current_principal(&self) -> WorthQueryAuthenticatedExternalPrincipal<Schema> {
+        match &self.settings.renewal {
+            Some(renewal) => renewal.current(),
+            None => self.settings.principal.clone(),
+        }
+    }
+
     /// Whether the Home is still open for this session.
     pub fn is_attached(&self) -> bool {
         self.attached_runtime().is_some()

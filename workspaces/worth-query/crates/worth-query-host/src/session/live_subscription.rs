@@ -28,6 +28,7 @@ use worth_query_publication::facade::application_entry::{
 
 use super::live_slot::LiveSlot;
 use super::{QueryBinding, QueryMarker, QueryRow, WorthQueryHostSession};
+use crate::application_home::owned_holds::OwnedRuntimeHold;
 
 /// Every non-`Pending`/non-`Delivered` failure or termination returned by
 /// [`WorthQueryTypedLiveSubscription::refresh`].
@@ -216,10 +217,14 @@ where
         }
     }
 
-    /// The Home closed and released this owned subscription.
+    /// The Home closed (or its owned session detached): close any native lease
+    /// and receipt still held, so a retirement on another thread can finish.
     pub(super) fn released(
         &mut self,
     ) -> Result<Option<&[QueryRow<Schema, Intent>]>, WorthQueryTypedLiveRefreshDenial> {
+        if let LiveSlot::Held(held) = &self.inner {
+            OwnedRuntimeHold::release(held.as_ref());
+        }
         self.invalidate();
         Err(WorthQueryTypedLiveRefreshDenial::Closed)
     }

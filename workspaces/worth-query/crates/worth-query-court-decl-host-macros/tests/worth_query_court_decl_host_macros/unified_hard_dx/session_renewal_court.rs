@@ -12,9 +12,9 @@ use worth_query_host::facade::{
     WorthQueryUserFacingRefusal,
 };
 
-use super::actions::SetTaskState;
+use super::actions::{CorrectTaskState, SetTaskState};
 use super::program::{owner, owner_identity, HostAudience, LocalProcessMethod};
-use super::queries::{LiveReadyTasks, ReadyTasks};
+use super::queries::{FindTasksByTitle, LiveReadyTasks, ReadyTasks};
 use super::schema::TaskRow;
 use super::sol_round2_policy_and_custody_courts::open_memory_home_with_policy;
 
@@ -152,4 +152,76 @@ fn a_local_session_renews_its_proof_far_past_one_lifetime() {
     // The creation proof itself lapsed long ago.
     assert_session_expired(&fixed.query(ready()).unwrap_err());
     live.close().unwrap();
+}
+
+#[test]
+fn an_expired_proof_on_undo_redo_and_managed_index_reads_is_session_expired() {
+    let time = controlled_clock();
+    let clock = time.clock();
+    let home = open_memory_home_with_policy(&clock, None);
+    let me = owner(&home, &clock);
+    let entry = home
+        .session(&me)
+        .run(SetTaskState {
+            task: 1,
+            state: "REVIEW".to_owned(),
+        })
+        .unwrap()
+        .correction_entry();
+    let indexed = FindTasksByTitle {
+        project: 1,
+        prefix: "Draft".to_owned(),
+    };
+    let mut watch = home.session(&me).watch(indexed.clone()).unwrap();
+    time.advance(Duration::from_secs(601)).unwrap();
+
+    // The undo refusal travels through correction-source disclosure.
+    assert_session_expired(&home.undo(&entry, &me).unwrap_err());
+    assert_session_expired(&home.redo(&entry, &me).unwrap_err());
+    let session = home.session(&me);
+    assert_session_expired(&watch.refresh(&session).err().unwrap());
+    assert_session_expired(&session.query_indexed(indexed.clone()).unwrap_err());
+    assert_session_expired(&session.ensure_index_ready(indexed).err().unwrap());
+}
+
+#[test]
+fn a_renewing_session_hands_home_undo_a_fresh_proof_past_one_lifetime() {
+    let time = controlled_clock();
+    let clock = time.clock();
+    let home = open_memory_home_with_policy(&clock, None);
+    let local = WorthQueryLocalProcessPrincipal::new(
+        owner_identity(),
+        HostAudience,
+        LocalProcessMethod,
+        Duration::from_secs(300),
+    )
+    .unwrap();
+    let session = home.local_session(local, &clock).unwrap();
+    let entry = session
+        .run(SetTaskState {
+            task: 1,
+            state: "REVIEW".to_owned(),
+        })
+        .unwrap()
+        .correction_entry();
+    time.advance(Duration::from_secs(1_000)).unwrap();
+
+    let stale = session.principal().clone();
+    match home.undo_authored::<CorrectTaskState>(&entry, &stale) {
+        Err(denial) => assert_session_expired(&denial),
+        Ok(outcome) => assert_session_expired(
+            &outcome
+                .refusal_summary()
+                .expect("the creation proof lapsed"),
+        ),
+    }
+    let undone = home
+        .undo_authored::<CorrectTaskState>(&entry, session.current_principal())
+        .expect("the renewed proof undoes");
+    assert!(undone.refusal_summary().is_none(), "{undone:?}");
+    let owned = session.into_owned();
+    let redone = home
+        .redo_authored::<CorrectTaskState>(&entry, owned.current_principal())
+        .expect("an owned session's renewed proof redoes");
+    assert!(redone.refusal_summary().is_none(), "{redone:?}");
 }

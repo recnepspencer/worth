@@ -13,7 +13,7 @@ use worth_query_publication::facade::application_entry::{
 
 use crate::application_home::WorthQueryHomeUndoDenial;
 
-use super::stops::{stopped, work};
+use super::stops::{principal_resolution, stopped, work};
 use super::world_history::{ancestry, exact_history};
 
 use super::request::{
@@ -109,7 +109,8 @@ impl WorthQueryUserFacingRefusal for WorthQueryCorrectionDerivationDenial {
             Self::NoActiveReversal | Self::ReapplicationUnavailable => NOTHING_TO_REDO,
             Self::Selection(cause) => cause.user_summary(),
             Self::Material(cause) => material(cause),
-            Self::SubjectNotDisclosed | Self::Principal(_) => PERMISSION,
+            Self::SubjectNotDisclosed => PERMISSION,
+            Self::Principal(denial) => principal_resolution(denial.kind()),
             Self::Admission(cause) => cause.user_summary(),
             Self::Scope(cause) => cause.user_summary(),
             Self::Read(cause) => cause.user_summary(),

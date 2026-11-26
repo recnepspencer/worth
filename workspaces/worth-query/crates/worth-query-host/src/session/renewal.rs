@@ -57,7 +57,7 @@ impl<Schema: 'static> RenewingPrincipal<Schema> {
     /// The current proof, renewed first when it is in its last quarter. A
     /// refused renewal keeps the old proof, so the request reports
     /// `SessionExpired` once it lapses rather than a missing permission.
-    fn current(&self) -> WorthQueryAuthenticatedExternalPrincipal<Schema> {
+    pub(super) fn current(&self) -> WorthQueryAuthenticatedExternalPrincipal<Schema> {
         let mut current = self
             .current
             .lock()
@@ -105,6 +105,14 @@ impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Sch
     /// Whether this session renews its own proof.
     pub fn renews_principal(&self) -> bool {
         self.settings.renewal.is_some()
+    }
+
+    /// The proof this session's next operation acts under, renewed first when
+    /// it is due. Pass it to Home calls that take a principal, such as
+    /// `home.undo(..)`, `home.redo(..)` or `home.correction_history(..)`, so a
+    /// renewing session needs no separate adapter past one proof lifetime.
+    pub fn current_principal(&self) -> WorthQueryAuthenticatedExternalPrincipal<Schema> {
+        self.call_principal().into_owned()
     }
 
     /// The proof one operation of this session acts under: the renewed proof
