@@ -51,6 +51,7 @@ impl WorthQueryOutputDemandRegistry {
             record.wake.notify();
         }
         state.release_matching_prerequisites(|_, record| record.product_occurrence == occurrence);
+        let drained = drain_occurrence_cleanup(&mut state, occurrence);
         let DemandRegistryState {
             records,
             required_keys,
@@ -72,8 +73,37 @@ impl WorthQueryOutputDemandRegistry {
             true
         });
         drop(state);
+        drop(drained);
         drop(retired_cursors);
     }
+}
+
+/// The single release pass frees one claim hop. A row whose last claimant
+/// retired in that pass is queued with its own claims and output custody,
+/// and a later admitted drain may never come for a retired occurrence. Drain
+/// this occurrence's queued rows now, so its whole claim chain releases the
+/// World history it observes (public #358). A refused step stays queued.
+fn drain_occurrence_cleanup(
+    state: &mut DemandRegistryState,
+    occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+) -> Vec<crate::domain_computation::primary_graph::application_output_demand::registry::cleanup::RetiredTerminalCleanup> {
+    let mut drained = Vec::new();
+    for _ in 0..state.records.len() {
+        let queued_here = state.pending_cleanup_head.as_ref().is_some_and(|head| {
+            state
+                .records
+                .get(head.as_ref())
+                .is_some_and(|row| row.product_occurrence == occurrence)
+        });
+        if !queued_here || drained.try_reserve(1).is_err() {
+            break;
+        }
+        match state.take_terminal_cleanup_step() {
+            Ok(Some(step)) => drained.push(step),
+            Ok(None) | Err(_) => break,
+        }
+    }
+    drained
 }
 
 fn unheld_retired_row(record: &DemandRecord) -> bool {
