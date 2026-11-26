@@ -7,6 +7,7 @@ use std::env::VarError;
 use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
+#[cfg(not(windows))]
 const LOCALTIME: &str = "/etc/localtime";
 const ZONEINFO: &str = "/usr/share/zoneinfo";
 /// Real TZif files are a few KiB; a larger or special file is refused.

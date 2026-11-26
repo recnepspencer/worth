@@ -13,13 +13,20 @@ use super::{WorthQueryLocalCalendarDenial as Denial, WorthQueryTimeZone, WorthQu
 #[cfg(windows)]
 const ZONE_KEY: &str = r"HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation";
 
+/// `CREATE_NO_WINDOW`: a GUI-subsystem application never flashes a console
+/// window while `reg.exe` runs.
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
 /// Reads the system zone through `%SystemRoot%\System32\reg.exe`.
 #[cfg(windows)]
 pub(super) fn load() -> Result<WorthQueryTimeZone, Denial> {
+    use std::os::windows::process::CommandExt;
     let system_root = std::env::var_os("SystemRoot").unwrap_or_else(|| r"C:\Windows".into());
     let tool = std::path::Path::new(&system_root).join(r"System32\reg.exe");
     let output = std::process::Command::new(tool)
         .args(["query", ZONE_KEY])
+        .creation_flags(CREATE_NO_WINDOW)
         .output()
         .map_err(|cause| Denial::SystemZoneUnreadable(cause.kind()))?;
     if !output.status.success() {
