@@ -16,6 +16,7 @@ use super::super::super::derived_index_artifacts::restore_checkpoint_derived_ind
 use super::super::authority_continuity::validate_checkpoint_lineage_artifact;
 
 pub mod branch_root_images;
+pub mod cold_commits;
 pub mod cold_directory;
 pub mod history_readmission;
 

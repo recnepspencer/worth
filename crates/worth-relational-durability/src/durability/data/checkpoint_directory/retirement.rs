@@ -53,11 +53,13 @@ impl RelationalCheckpointDirectory {
             source,
             history_members,
             canonical_read,
+            commit_index,
             _basis,
             retirement,
         } = self;
         // A retired directory must no longer prove live selected custody.
         drop(admission_owner);
+        drop(commit_index);
         let payload = DirectoryRetirementPayload {
             _admission_image: admission_image,
             _source_schemas: source_schemas,

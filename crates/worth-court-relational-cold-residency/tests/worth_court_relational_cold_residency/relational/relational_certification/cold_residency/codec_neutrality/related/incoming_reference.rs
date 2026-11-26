@@ -87,7 +87,11 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
     let saved = capture(execution, &world.runtime);
     let (mut cold, receipt) = installed_references(1);
     cold.durability_recovery()
-        .restore_native_checkpoint(execution, &saved, worth_testkit_relational::cold_recovery::members_source(&saved))
+        .restore_native_checkpoint(
+            execution,
+            &saved,
+            worth_testkit_relational::cold_recovery::members_source(&saved),
+        )
         .unwrap();
     let receipt = cold
         .readmit_recovered_initial_schema_installation(receipt)
@@ -240,7 +244,11 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
     let (mut reopened, receipt) = installed_references(1);
     reopened
         .durability_recovery()
-        .restore_native_checkpoint(execution, &saved, worth_testkit_relational::cold_recovery::members_source(&saved))
+        .restore_native_checkpoint(
+            execution,
+            &saved,
+            worth_testkit_relational::cold_recovery::members_source(&saved),
+        )
         .unwrap();
     let receipt = reopened
         .readmit_recovered_initial_schema_installation(receipt)

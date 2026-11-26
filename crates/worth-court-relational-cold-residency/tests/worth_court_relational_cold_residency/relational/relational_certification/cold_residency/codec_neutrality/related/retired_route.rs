@@ -38,7 +38,11 @@ pub(super) fn cold_retired_route(
     let saved = capture(execution, target);
     let (mut cold, receipt) = installed(2);
     cold.durability_recovery()
-        .restore_native_checkpoint(execution, &saved, worth_testkit_relational::cold_recovery::members_source(&saved))
+        .restore_native_checkpoint(
+            execution,
+            &saved,
+            worth_testkit_relational::cold_recovery::members_source(&saved),
+        )
         .unwrap();
     let receipt = cold
         .readmit_recovered_initial_schema_installation(receipt)
@@ -90,7 +94,11 @@ pub(super) fn cold_retired_route(
         let (mut rejected, receipt) = installed(2);
         rejected
             .durability_recovery()
-            .restore_native_checkpoint(execution, &untrusted, worth_testkit_relational::cold_recovery::members_source(&untrusted))
+            .restore_native_checkpoint(
+                execution,
+                &untrusted,
+                worth_testkit_relational::cold_recovery::members_source(&untrusted),
+            )
             .unwrap();
         let receipt = rejected
             .readmit_recovered_initial_schema_installation(receipt)

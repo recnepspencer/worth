@@ -19,15 +19,11 @@ impl SelectedCanonicalDirectory for RelationalCheckpointDirectory {
             .canonical_members
             .member(entry.position)
             .ok_or(Ack::Storage(Cause::MissingMember))?;
-        let ordinal = usize::try_from(
-            entry
-                .position
-                .0
-                .checked_sub(1)
-                .ok_or(Ack::Storage(Cause::IntegrityMismatch))?,
-        )
-        .map_err(|_| Ack::Storage(Cause::IntegrityMismatch))?;
-        if self.manifest.commits.get(ordinal) != Some(entry) || row.length < 66 {
+        let indexed = self
+            .commit_index
+            .at_position(entry.position)
+            .map_err(Ack::Storage)?;
+        if indexed.as_ref() != Some(entry) || row.length < 66 {
             return Err(Ack::Storage(Cause::IntegrityMismatch));
         }
         Ok(())

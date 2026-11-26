@@ -152,7 +152,7 @@ pub(crate) fn validate(
         )
     };
     let rows = manifest.canonical_members.entries();
-    if rows.len() != manifest.commits.len() {
+    if rows.len() as u64 != manifest.commits.count {
         return Err(malformed().into());
     }
     let scratch = std::alloc::Layout::array::<RelationalDurableMemberLocator>(rows.len())
@@ -161,14 +161,11 @@ pub(crate) fn validate(
         .reserve_retained_memory(scratch.size() as u64)
         .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
     let mut members = Vec::with_capacity(rows.len());
-    for (ordinal, (row, entry)) in rows.iter().zip(&manifest.commits).enumerate() {
+    for (ordinal, row) in rows.iter().enumerate() {
         request
             .consult()
             .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
-        if row.position != entry.position
-            || row.position.0 != ordinal as u64 + 1
-            || row.member.length < 66
-        {
+        if row.position.0 != ordinal as u64 + 1 || row.member.length < 66 {
             return Err(malformed().into());
         }
         members.push(row.member);
@@ -179,6 +176,7 @@ pub(crate) fn validate(
     }
     let canonical = |member| members.binary_search(&member).is_ok();
     if canonical(manifest.derived_indexes)
+        || manifest.commits.page_members().any(canonical)
         || manifest
             .roots
             .iter()

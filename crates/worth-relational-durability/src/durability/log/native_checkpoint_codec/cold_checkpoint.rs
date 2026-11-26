@@ -31,7 +31,8 @@ pub(super) fn readmit(
     let heads = facts.heads;
     let mut envelopes = Vec::new();
     let mut symbols = contracts::symbols::data::string_interner::StringInterner::default();
-    for entry in manifest.commits.iter().filter(|entry| {
+    // Selected heads are inline in the commit index: no page is read here.
+    for entry in manifest.commits.heads.iter().filter(|entry| {
         directory.admission_image.is_none() && heads.contains(&entry.commit.commit_id)
     }) {
         let commit = worth_relational_branch::internal_port::history::commit::envelope_residency::RelationalCommitEnvelopeResidency::readmit_selected(
@@ -54,7 +55,7 @@ pub(super) fn readmit(
         root_kind_images: Default::default(), mirror_kind_images: Default::default(),
         directory: Some(crate::durability::data::NativeCheckpointDirectoryEdge::new(directory)), canonical_directory:None,
         coverage: manifest.coverage,
-        commit_descriptors: manifest.commits.iter().map(|entry| (entry.commit.commit_id, entry.root.clone())).collect(),
+        commit_descriptors: manifest.commits.heads.iter().map(|entry| (entry.commit.commit_id, entry.root.clone())).collect(),
         mirror_schema_digest: manifest.mirror_schema,
         branch_cells, branch_lifecycle,
         retired_branch_names,

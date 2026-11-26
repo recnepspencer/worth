@@ -20,7 +20,7 @@ impl DurabilityAuthority<'_> {
     pub fn capture_checkpoint_basis_for_test(
         &self,
     ) -> Result<CapturedRelationalCheckpointBasisForTest, DurabilityError> {
-        self.capture_checkpoint_basis()
+        self.capture_checkpoint_basis(true)
             .map(CapturedRelationalCheckpointBasisForTest)
     }
 

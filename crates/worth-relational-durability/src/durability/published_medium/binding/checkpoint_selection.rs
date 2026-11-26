@@ -45,6 +45,7 @@ struct AcknowledgingCheckpoint {
     capture: RelationalNativeCheckpoint,
     _selection: CheckpointSelectionIdentity,
     directory_applied: bool,
+    cold_catalog_rebound: bool,
     admission: Option<crate::durability::data::CheckpointDirectoryAdmission>,
     directory: Option<std::sync::Arc<crate::durability::data::RelationalCheckpointDirectory>>,
     next_canonical: usize,
@@ -148,6 +149,7 @@ impl CheckpointPublication {
                     capture: actual.capture,
                     _selection: actual.selection,
                     directory_applied: false,
+                    cold_catalog_rebound: false,
                     admission: None,
                     directory: None,
                     next_canonical: 0,
@@ -263,15 +265,24 @@ impl AcknowledgingCheckpoint {
         if !self.directory_applied {
             context.poll().map_err(Denial::Stopped)?;
             if let Some(publication) = self.capture.manifest_publication() {
-                let prior = publication.acknowledge_directory(
-                    self.directory
-                        .as_ref()
-                        .ok_or(Denial::CaptureNotBound)?
-                        .clone(),
-                )?;
+                let directory = self
+                    .directory
+                    .as_ref()
+                    .ok_or(Denial::CaptureNotBound)?
+                    .clone();
+                let prior = publication.acknowledge_directory(directory)?;
                 self.retired.displaced_selection(prior);
             }
             self.directory_applied = true;
+        }
+        if !self.cold_catalog_rebound {
+            if let Some(publication) = self.capture.manifest_publication() {
+                let directory = self.directory.as_ref().ok_or(Denial::CaptureNotBound)?;
+                // Rebind any cold commits faulted between capture and ACK now
+                // that `directory` is selected and `prior` is held in `retired`.
+                publication.rebind_cold_catalog(directory, execution, context)?;
+            }
+            self.cold_catalog_rebound = true;
         }
         self.retired.advance(
             execution,

@@ -17,6 +17,8 @@ pub enum ChunkMemberKind {
     History,
     Continuation,
     DirectoryPage,
+    /// One page of a checkpoint's paged commit index (`CHK24`).
+    CommitIndexPage,
 }
 
 impl ChunkMemberKind {
@@ -26,6 +28,7 @@ impl ChunkMemberKind {
             Self::History => 1,
             Self::Continuation => 2,
             Self::DirectoryPage => 3,
+            Self::CommitIndexPage => 4,
         }
     }
 }

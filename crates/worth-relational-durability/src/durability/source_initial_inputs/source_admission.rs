@@ -100,9 +100,6 @@ pub(crate) fn readmit(
         &checkpoint.branch_root_schema_images,
         request,
     )?;
-    for (record, index) in normalized.canonical.iter().zip(&directory.manifest.commits) {
-        commitments.require_record(record, index, request)?;
-    }
     for transition in &normalized.transitions {
         if !commitments.has_schema(transition.schema) {
             return Err(Refusal::Malformed);
@@ -117,10 +114,14 @@ pub(crate) fn readmit(
             return Err(Refusal::Malformed);
         }
     }
+    // Stream commit pages one page at a time (O(1) resident pages) so
+    // original-input admission never pins the whole commit index in RAM.
     super::chronology::validate(
         &covered,
         &normalized,
         &directory.manifest,
+        directory.commit_index(),
+        &commitments,
         &checkpoint.branch_root_schema_images,
         world_selection
             .as_deref()

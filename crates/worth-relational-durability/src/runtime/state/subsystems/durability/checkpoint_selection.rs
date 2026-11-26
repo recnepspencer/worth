@@ -9,8 +9,15 @@ use crate::durability::data::{
     NativeCheckpointDirectoryEdge, PreparedCheckpointDirectory, RelationalCheckpointDirectory,
     RelationalCheckpointManifest,
 };
-use std::sync::{Arc, Mutex};
+use branch::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit;
+use branch::history::commit::cold_catalog::ColdCommitCatalog;
+use branch::history::commit::index_entry::RelationalCommitIndexEntry;
+use contracts::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal as Refusal;
+use contracts::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial as Denial;
+use std::sync::{Arc, Mutex, Weak};
+use worth_relational_storage::internal_port::durability::medium::checkpoint_acknowledgement_denial::RelationalCheckpointAcknowledgementDenial as Ack;
 use worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource;
+use worth_relational_storage::internal_port::storage::residency::working_set::WorkingSetAccountant;
 
 #[derive(Debug, Clone, Default)]
 pub struct RelationalCheckpointManifestSelection {
@@ -25,6 +32,8 @@ struct CheckpointSelectionState {
     acknowledged_index_definition_frontier: u64,
     initial_inputs:
         Option<crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact>,
+    working_set: Option<Arc<WorkingSetAccountant>>,
+    cold_catalog: Option<Weak<ColdCommitCatalog>>,
 }
 impl Default for CheckpointSelectionState {
     fn default() -> Self {
@@ -35,6 +44,8 @@ impl Default for CheckpointSelectionState {
             directory: None,
             acknowledged_index_definition_frontier: 1,
             initial_inputs: None,
+            working_set: None,
+            cold_catalog: None,
         }
     }
 }
@@ -49,17 +60,13 @@ pub(crate) struct RelationalCheckpointManifestPublication {
 }
 
 impl RelationalCheckpointManifestSelection {
-    pub(crate) fn freeze_capture_base(
-        &self,
-    ) -> Result<
-        Option<FrozenSelectedCaptureBase>,
-        contracts::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial,
-    >{
-        use contracts::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial as Denial;
-        let state = self
-            .selected
+    fn lock_state(&self) -> std::sync::MutexGuard<'_, CheckpointSelectionState> {
+        self.selected
             .lock()
-            .unwrap_or_else(|cause| cause.into_inner());
+            .unwrap_or_else(|cause| cause.into_inner())
+    }
+    pub(crate) fn freeze_capture_base(&self) -> Result<Option<FrozenSelectedCaptureBase>, Denial> {
+        let state = self.lock_state();
         match (&state.directory, &state.capture_base) {
             (None, None) => Ok(None),
             (Some(edge), Some(base)) => {
@@ -84,15 +91,8 @@ impl RelationalCheckpointManifestSelection {
         &self,
         original: &crate::durability::source_initial_inputs::source_admission::SourceOriginalInputs,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<
-        (),
-        contracts::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal,
-    > {
-        use contracts::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal as Refusal;
-        let mut state = self
-            .selected
-            .lock()
-            .unwrap_or_else(|cause| cause.into_inner());
+    ) -> Result<(), Refusal> {
+        let mut state = self.lock_state();
         let owner = state.admission.as_ref().ok_or(Refusal::OwnerUnavailable)?;
         let base = SelectedCheckpointCaptureBase::from_bound_inputs(owner, original, request)?;
         state.capture_base = Some(base.consume(Arc::new));
@@ -104,14 +104,11 @@ impl RelationalCheckpointManifestSelection {
         owner: worth_proof::RelationalReadmitted<
             crate::durability::checkpoint_admission::CheckpointAdmissionBinding,
         >,
-    ) -> Result<
-        (),
-        contracts::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal,
-    > {
+    ) -> Result<(), Refusal> {
         owner.consume(|owner| {
-            let mut state = self.selected.lock().unwrap_or_else(|cause| cause.into_inner());
+            let mut state = self.lock_state();
             if state.admission.is_some() {
-                return Err(contracts::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal::OwnerUnavailable);
+                return Err(Refusal::OwnerUnavailable);
             }
             state.admission = Some(owner);
             Ok(())
@@ -119,55 +116,47 @@ impl RelationalCheckpointManifestSelection {
     }
     pub fn admitted_commit(
         &self,
-        entry: &branch::history::commit::index_entry::RelationalCommitIndexEntry,
-    ) -> Result<
-        Option<branch::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit>,
-        contracts::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal,
-    > {
-        let owner = self
-            .selected
-            .lock()
-            .unwrap_or_else(|cause| cause.into_inner())
-            .admission
-            .clone();
+        entry: &RelationalCommitIndexEntry,
+    ) -> Result<Option<CheckpointAdmittedCommit>, Refusal> {
+        let owner = self.lock_state().admission.clone();
         match owner {
             Some(owner) => owner.commit(entry),
             None => Ok(None),
         }
     }
+    pub fn admitted_commit_for_request(
+        &self,
+        entry: &RelationalCommitIndexEntry,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<CheckpointAdmittedCommit>, Refusal> {
+        let owner = self.lock_state().admission.clone();
+        match owner {
+            Some(owner) => owner.commit_for_request(entry, request),
+            None => Ok(None),
+        }
+    }
     pub fn matches_admitted_source(
         &self,
-        commit: &branch::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit,
+        commit: &CheckpointAdmittedCommit,
         source: &Arc<dyn RelationalDurableColdSource>,
     ) -> bool {
-        self.selected
-            .lock()
-            .unwrap_or_else(|cause| cause.into_inner())
+        self.lock_state()
             .admission
             .as_ref()
             .is_some_and(|binding| binding.matches_source(commit, source))
     }
     pub fn snapshot(&self) -> Option<Arc<RelationalCheckpointDirectory>> {
-        self.selected
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+        self.lock_state()
             .directory
             .as_ref()
             .and_then(NativeCheckpointDirectoryEdge::snapshot)
     }
     pub fn acknowledged_index_definition_frontier(&self) -> u64 {
-        self.selected
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .acknowledged_index_definition_frontier
+        self.lock_state().acknowledged_index_definition_frontier
     }
     pub fn detached(&self) -> Self {
         // Pointer and completed semantic frontier come from ONE owner observation.
-        let state = self
-            .selected
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .clone();
+        let state = self.lock_state().clone();
         Self {
             selected: Arc::new(Mutex::new(state)),
         }
@@ -197,6 +186,18 @@ impl RelationalCheckpointManifestSelection {
             .lock()
             .unwrap_or_else(|error| error.into_inner())
             .initial_inputs = Some(input);
+    }
+    pub fn set_working_set(&self, working_set: Option<Arc<WorkingSetAccountant>>) {
+        self.selected
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .working_set = working_set;
+    }
+    pub fn register_cold_catalog(&self, catalog: &Arc<ColdCommitCatalog>) {
+        self.selected
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .cold_catalog = Some(Arc::downgrade(catalog));
     }
     pub fn restore_data(&self, directory: Arc<RelationalCheckpointDirectory>) {
         let prior = {
@@ -291,19 +292,66 @@ impl RelationalCheckpointManifestPublication {
     pub(crate) fn begin_selected_directory_admission(
         &self,
     ) -> crate::durability::data::CheckpointDirectoryAdmission {
-        crate::durability::data::CheckpointDirectoryAdmission::new(self.directory.clone())
+        let working_set = self
+            .selection
+            .selected
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .working_set
+            .clone();
+        crate::durability::data::CheckpointDirectoryAdmission::with_working_set(
+            self.directory.clone(),
+            working_set,
+        )
     }
-    pub(crate) fn complete_acknowledgement(
+    pub(crate) fn rebind_cold_catalog(
         &self,
-    ) -> Result<(), worth_relational_storage::internal_port::durability::medium::checkpoint_acknowledgement_denial::RelationalCheckpointAcknowledgementDenial>{
-        use worth_relational_storage::internal_port::durability::medium::checkpoint_acknowledgement_denial::RelationalCheckpointAcknowledgementDenial as Denial;
+        directory: &Arc<RelationalCheckpointDirectory>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<(), Ack> {
+        let cold = self
+            .selection
+            .selected
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .cold_catalog
+            .as_ref()
+            .and_then(Weak::upgrade);
+        let Some(cold) = cold else {
+            return Ok(());
+        };
+        let target = Arc::as_ptr(directory) as *const ();
+        for artifact in cold.live_artifacts() {
+            execution.check_live().map_err(Ack::Stopped)?;
+            if context.has_accounting() {
+                context.checkpoint(1).map_err(Ack::Stopped)?;
+            } else {
+                context.poll().map_err(Ack::Stopped)?;
+            }
+            let cell = artifact.envelope_residency();
+            if cell
+                .selected_directory()
+                .is_some_and(|dir| Arc::as_ptr(&dir) as *const () == target)
+            {
+                continue;
+            }
+            if let Some((entry, _)) = cell.source_placement()
+                && entry.position <= directory.manifest.covered_position
+            {
+                // Displaced prior directory remains pinned in `retired` until `retired.advance`.
+                let mut displaced = cell.install_selected(entry, directory.clone())?;
+                displaced.retire_journal_source(Some(directory.source.as_ref()))?;
+            }
+        }
+        Ok(())
+    }
+    pub(crate) fn complete_acknowledgement(&self) -> Result<(), Ack> {
         let mut selected = match self.selection.selected.try_lock() {
             Ok(guard) => guard,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(Ack::Busy),
         };
-        // THIS operation's retired, original selection is the completed fact.
-        // The data pointer may already belong to another incomplete capture.
         selected.acknowledged_index_definition_frontier = selected
             .acknowledged_index_definition_frontier
             .max(self.directory.manifest.index_definition_frontier);
@@ -312,15 +360,11 @@ impl RelationalCheckpointManifestPublication {
     pub(crate) fn acknowledge_directory(
         &self,
         directory: Arc<RelationalCheckpointDirectory>,
-    ) -> Result<
-        Option<Arc<RelationalCheckpointDirectory>>,
-        worth_relational_storage::internal_port::durability::medium::checkpoint_acknowledgement_denial::RelationalCheckpointAcknowledgementDenial,
-    >{
-        use worth_relational_storage::internal_port::durability::medium::checkpoint_acknowledgement_denial::RelationalCheckpointAcknowledgementDenial as Denial;
+    ) -> Result<Option<Arc<RelationalCheckpointDirectory>>, Ack> {
         let mut selected = match self.selection.selected.try_lock() {
             Ok(guard) => guard,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(Ack::Busy),
         };
         if self.regresses_initial_inputs(&selected)
             || selected
@@ -328,7 +372,7 @@ impl RelationalCheckpointManifestPublication {
                 .as_ref()
                 .is_some_and(|prior| self.regresses(&prior.manifest))
         {
-            return Err(Denial::StaleCapture);
+            return Err(Ack::StaleCapture);
         }
         selected.initial_inputs = self.initial_inputs.clone();
         selected.capture_base = self.capture_base.as_ref().and_then(|base| base.snapshot());

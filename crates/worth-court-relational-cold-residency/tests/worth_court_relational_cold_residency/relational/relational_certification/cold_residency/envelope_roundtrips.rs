@@ -38,15 +38,15 @@ fn live_nonhead_history_reads_original_patches_from_memory_and_durable_owners() 
         drop(body);
         update_entity(request, &runtime, entity, "live-envelope-after");
         runtime.run_branch_root_reclamation_pass();
-    let resident = runtime
-        .observe_commit_envelope_custody()
-        .into_iter()
-        .filter(|cell| cell.resident)
-        .count();
-    assert!(
-        resident < 4,
-        "released journal bodies fit head and reclamation headroom"
-    );
+        let resident = runtime
+            .observe_commit_envelope_custody()
+            .into_iter()
+            .filter(|cell| cell.resident)
+            .count();
+        assert!(
+            resident < 4,
+            "released journal bodies fit head and reclamation headroom"
+        );
         assert!(
             runtime.retired_branch_root_count() < 4,
             "a single retired version fits reclamation headroom"
@@ -187,7 +187,9 @@ fn recovered_nonhead_tail_envelopes_keep_their_original_receipt_and_source_read_
         "head commit envelope stays resident"
     );
     assert!(
-        cells.iter().all(|cell| cell.resident_payload_bytes.is_none()),
+        cells
+            .iter()
+            .all(|cell| cell.resident_payload_bytes.is_none()),
         "journal placement releases encoded duplicate buffers too"
     );
     let receipt = fixture

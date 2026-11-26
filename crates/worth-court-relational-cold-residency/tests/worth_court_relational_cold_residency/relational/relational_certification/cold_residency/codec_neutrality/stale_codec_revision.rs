@@ -54,7 +54,11 @@ fn actual_checkpoint_refuses_stale_codec_revision_without_replacing_target_state
     let initial_history = target.history().historical_latest_commit();
     let refusal = target
         .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint, worth_testkit_relational::cold_recovery::members_source(&checkpoint))
+        .restore_native_checkpoint(
+            execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap_err();
     let RelationalRecoveryStop::Durability(refusal) = refusal else {
         panic!("expected typed schema recovery refusal: {refusal:?}")

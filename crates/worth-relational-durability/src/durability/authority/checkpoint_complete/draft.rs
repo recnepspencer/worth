@@ -29,7 +29,7 @@ pub(super) fn assemble(
     ),
     Denial,
 > {
-    let last = canonical.index.last().map(|row| &row.commit);
+    let last = canonical.rows.last().map(|row| &row.commit);
     let bytes =
         match last {
             None => 0,
@@ -65,7 +65,7 @@ pub(super) fn assemble(
     let draft = RelationalCheckpointManifestDraft {
         branch_data: source.branches.clone(),
         coverage,
-        covered_position: canonical.index.last().map_or(
+        covered_position: canonical.rows.last().map_or(
             contracts::publication::patch::data::patch_position::PatchStreamPosition(0),
             |row| row.position,
         ),
@@ -80,7 +80,8 @@ pub(super) fn assemble(
         mirror_schema: None,
         mirror: Vec::new(),
         history_dependencies: Vec::new(),
-        commits: canonical.index.clone(),
+        // Paged once the regions install the selected roots.
+        commits: CheckpointCommitIndex::default(),
         canonical_members: canonical.inventory.clone(),
         symbols: metadata.symbols,
         symbol_identity_frontier: source.symbol_frontier,

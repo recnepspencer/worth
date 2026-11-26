@@ -44,8 +44,11 @@ pub(super) fn expand(
         }
         .readmit(execution)?,
     );
+    // Whole expansion is the one consumer that reads every commit page.
     let mut envelopes = Vec::new();
-    for entry in &manifest.commits {
+    let mut commit_descriptors = std::collections::BTreeMap::new();
+    directory.for_each_commit(|entry| {
+        commit_descriptors.insert(entry.commit.commit_id, entry.root.clone());
         envelopes.push(
             worth_relational_branch::internal_port::history::commit::envelope_residency::RelationalCommitEnvelopeResidency::readmit_selected(
                 entry,
@@ -54,7 +57,8 @@ pub(super) fn expand(
                 MEMBER_LIMIT,
             )?,
         );
-    }
+        Ok::<_, RelationalRecoveryStop>(())
+    })?;
     let mut symbol_table = worth_relational_contracts::internal_port::symbols::data::symbol_table_snapshot::SymbolTableSnapshot::default();
     for page in &manifest.symbols {
         let bytes = read(
@@ -247,11 +251,7 @@ pub(super) fn expand(
         root_kind_images,
         mirror_kind_images,
         coverage: manifest.coverage,
-        commit_descriptors: manifest
-            .commits
-            .iter()
-            .map(|entry| (entry.commit.commit_id, entry.root.clone()))
-            .collect(),
+        commit_descriptors,
         mirror_schema_digest: manifest.mirror_schema,
         branch_cells,
         branch_lifecycle,

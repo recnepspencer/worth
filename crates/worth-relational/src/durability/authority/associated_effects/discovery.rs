@@ -41,7 +41,18 @@ impl DurabilityAuthority<'_> {
         let catalog = self
             .runtime
             .history
-            .commit_artifact(id)
+            .try_commit_artifact(id)
+            .map_err(|cause| {
+                Refusal::Recovery(
+                    worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailable {
+                        subject: worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageSubject::Envelope(
+                            crate::publication::patch::data::PatchStreamPosition(0),
+                        ),
+                        cause,
+                    }
+                    .into(),
+                )
+            })?
             .map(|artifact| artifact.envelope_residency());
         let performed = self.runtime.history.performed_effect_residency(id);
         let residency = match (catalog, performed) {
@@ -74,7 +85,18 @@ impl DurabilityAuthority<'_> {
         let mut cells = self
             .runtime
             .history
-            .commit_artifacts()
+            .try_commit_artifacts()
+            .map_err(|cause| {
+                Refusal::Recovery(
+                    worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailable {
+                        subject: worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageSubject::Envelope(
+                            crate::publication::patch::data::PatchStreamPosition(0),
+                        ),
+                        cause,
+                    }
+                    .into(),
+                )
+            })?
             .into_iter()
             .map(|artifact| (artifact.commit_id(), artifact.envelope_residency()))
             .collect::<std::collections::BTreeMap<_, _>>();

@@ -1,6 +1,6 @@
 use worth_relational_contracts::internal_port as contracts;
-pub mod checkpoint_commit_index;
-pub(crate) use checkpoint_commit_index::{CanonicalIndexSource, CheckpointCommitIndex};
+pub mod commit_index_access;
+pub use worth_relational_branch::internal_port::history::commit::paged_index::CheckpointCommitIndex;
 pub mod checkpoint_roots;
 pub(crate) use checkpoint_roots::{
     CheckpointRoots, PreparedCheckpointRoot, PreparedCheckpointRoots, RelationalCheckpointRoot,

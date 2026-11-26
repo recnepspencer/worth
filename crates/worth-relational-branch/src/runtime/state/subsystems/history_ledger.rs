@@ -23,6 +23,10 @@ pub struct HistoryLedger {
     pub commit_envelopes:
         BTreeMap<CommitId, Arc<crate::history::commit::RelationalCommitEnvelopeResidency>>,
     pub patch_stream_index: BTreeMap<PatchStreamPosition, CommitId>,
+    /// `G7`: the selected checkpoint's commits, faulted on demand. The
+    /// resident maps above hold only commits published or recovered since
+    /// reopen and recovery overrides; they win wherever both answer.
+    pub cold_catalog: Option<Arc<crate::history::commit::cold_catalog::ColdCommitCatalog>>,
     pub next_commit_id: u64,
     pub next_version_id: u64,
 }
@@ -34,6 +38,7 @@ impl Default for HistoryLedger {
             commit_graph: BTreeMap::new(),
             commit_envelopes: BTreeMap::new(),
             patch_stream_index: BTreeMap::new(),
+            cold_catalog: None,
             next_commit_id: 1,
             next_version_id: 1,
         }

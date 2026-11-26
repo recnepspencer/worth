@@ -83,6 +83,14 @@ impl RegionRecordDirectory {
     pub fn has_relation_kind(&self, kind: KindId) -> bool {
         self.relations.has_kind(kind)
     }
+    /// Whether listing entity kinds faults cold pages; a resident or edited
+    /// directory answers from its ordered map instead.
+    pub fn entity_scan_needs_cold_pages(&self) -> bool {
+        self.entities.needs_cold_pages()
+    }
+    pub fn relation_scan_needs_cold_pages(&self) -> bool {
+        self.relations.needs_cold_pages()
+    }
     pub(super) fn has_paged_domain(&self) -> bool {
         self.entities.is_paged() || self.relations.is_paged()
     }

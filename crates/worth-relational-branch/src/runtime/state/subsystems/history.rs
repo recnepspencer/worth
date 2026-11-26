@@ -36,6 +36,8 @@ pub mod history_identity_allocation;
 pub mod history_ledger;
 #[path = "history_ledger_access.rs"]
 pub mod history_ledger_access;
+#[path = "history_ledger_cold.rs"]
+pub mod history_ledger_cold;
 pub use history_fork_binding::RelationalForkOwnerBinding;
 pub use history_head_versions::BranchHeadVersionIndexAuthority;
 pub use history_ledger::HistoryLedger;

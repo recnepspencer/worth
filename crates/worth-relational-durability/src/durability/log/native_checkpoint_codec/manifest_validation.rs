@@ -27,26 +27,13 @@ pub(super) fn validate(
     if manifest.index_generation_frontier == 0 {
         return Err(corrupt("checkpoint index generation frontier is zero"));
     }
-    let mut commits = BTreeSet::new();
-    for (ordinal, entry) in manifest.commits.iter().enumerate() {
-        if entry.position.0 != ordinal as u64 + 1
-            || entry.commit.commit_id.0 == 0
-            || entry
-                .commit
-                .parents
-                .iter()
-                .any(|parent| !commits.contains(parent))
-            || !commits.insert(entry.commit.commit_id)
-        {
-            return Err(corrupt(
-                "checkpoint commit index is not contiguous and acyclic",
-            ));
-        }
-    }
-    let last = manifest.commits.last();
-    if manifest.covered_position.0 != last.map_or(0, |entry| entry.position.0)
-        || manifest.coverage.up_to_commit.as_ref() != last.map(|entry| &entry.commit)
-        || manifest.coverage.up_to_version != last.map(|entry| entry.commit.version_id)
+    // G7: the commit index is validated from its descriptor alone; pages
+    // are checked against it when a lookup first faults them.
+    manifest.commits.validate().map_err(corrupt)?;
+    let tail = manifest.commits.tail.as_ref();
+    if manifest.covered_position.0 != manifest.commits.count
+        || manifest.coverage.up_to_commit.as_ref() != tail.map(|entry| &entry.commit)
+        || manifest.coverage.up_to_version != tail.map(|entry| entry.commit.version_id)
     {
         return Err(corrupt(
             "checkpoint coverage disagrees with its commit index",
@@ -69,7 +56,7 @@ pub(super) fn validate(
         .collect::<BTreeSet<_>>();
     let mut roots = BTreeSet::new();
     for root in &manifest.roots {
-        if !commits.contains(&root.commit_id)
+        if manifest.commits.head(root.commit_id).is_none()
             || !schemas.contains(&root.schema_carrier_digest)
             || !roots.insert(root.commit_id)
         {
@@ -79,7 +66,7 @@ pub(super) fn validate(
         }
         validate_leaves(&root.regions)?;
     }
-    if !heads.is_subset(&roots) {
+    if !heads.is_subset(&roots) || manifest.commits.heads.len() != roots.len() {
         return Err(corrupt("checkpoint omitted a selected branch root"));
     }
     components::validate(manifest)?;

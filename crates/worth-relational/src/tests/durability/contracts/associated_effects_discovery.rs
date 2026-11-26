@@ -45,8 +45,8 @@ fn native_custody_correction_enumerates_known_orphan_and_unrelated_association_m
         .discover_all_associated_effects(execution)
         .unwrap();
     assert!(
-        medium.member_read_digests().is_empty(),
-        "enumerating associated effects must perform zero protected member reads"
+        medium.non_index_member_read_digests().is_empty(),
+        "enumerating associated effects must perform zero canonical body reads"
     );
     assert_eq!(subjects.len(), 3);
     for (subject, expected) in subjects.iter().zip([&known, &orphan, &other]) {
@@ -68,8 +68,8 @@ fn native_custody_correction_enumerates_known_orphan_and_unrelated_association_m
         1
     );
     assert!(
-        medium.member_read_digests().is_empty(),
-        "filtered associated-effect discovery must perform zero protected member reads"
+        medium.non_index_member_read_digests().is_empty(),
+        "filtered associated-effect discovery must perform zero canonical body reads"
     );
     let memory = runtime_with_test_schema();
     let result = memory
@@ -132,7 +132,9 @@ fn keyed_discovery_returns_the_enumerated_subject_of_either_custody_cell_without
     }
     medium.start_recording_member_reads();
     let authority = runtime.durability_authority();
-    let scanned = authority.discover_all_associated_effects(execution).unwrap();
+    let scanned = authority
+        .discover_all_associated_effects(execution)
+        .unwrap();
     let [settled] = scanned.as_slice() else {
         panic!("one associated catalog-settled commit")
     };
@@ -163,7 +165,7 @@ fn keyed_discovery_returns_the_enumerated_subject_of_either_custody_cell_without
         "the subject must carry exactly the asked receipt, not only its commit id"
     );
     assert!(
-        medium.member_read_digests().is_empty(),
-        "keyed associated-effect discovery must perform zero protected member reads"
+        medium.non_index_member_read_digests().is_empty(),
+        "keyed associated-effect discovery must perform zero canonical body reads"
     );
 }

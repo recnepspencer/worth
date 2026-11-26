@@ -45,13 +45,17 @@ impl CapturedCheckpointBasis {
         }
         let mut event_rows = std::mem::take(&mut self.lineage_events);
         if carry_metadata && let Some(prior) = &prior {
-            let covered = prior
-                .manifest
-                .commits
-                .iter()
-                .map(|entry| entry.commit.commit_id)
-                .collect::<std::collections::BTreeSet<_>>();
-            event_rows.retain(|row| !covered.contains(&row.publication_commit_id));
+            // Ids above the prior maximum answer from descriptors alone.
+            let (index, mut kept) = (prior.commit_index(), Vec::new());
+            for row in event_rows {
+                let id = row.publication_commit_id;
+                if index.max_commit().is_none_or(|max| id > max)
+                    || prior.commit_entry(id).map_err(contracts::durability::data::native_checkpoint_capture_denial::capture_stop)?.is_none()
+                {
+                    kept.push(row);
+                }
+            }
+            event_rows = kept;
         }
         let guarded_member_sources = std::mem::take(&mut self.guarded_member_sources);
         let _lineage_event_leases = std::mem::take(&mut self.lineage_event_leases);
@@ -87,7 +91,7 @@ impl CapturedCheckpointBasis {
                         lane,
                         &metadata,
                         policy,
-                        prior.as_ref().map(|prior| &prior.manifest),
+                        prior.as_deref(),
                         journal_index,
                         control,
                         |position| {
@@ -311,16 +315,15 @@ impl CapturedCheckpointBasis {
             }
         }
         captured.guarded_members.extend(guarded_member_sources);
-        captured.manifest.coverage.up_to_commit = captured
-            .manifest
-            .commits
-            .last()
-            .map(|entry| entry.commit.clone());
-        captured.manifest.coverage.up_to_version = captured
-            .manifest
-            .commits
-            .last()
-            .map(|entry| entry.commit.version_id);
+        let held = |locator| {
+            current_members
+                .as_ref()
+                .map_or(carry_metadata, |held| held.contains(&locator))
+        };
+        let pages = captured.seal_native_commit_index(current_members.as_ref(), carry_metadata)?;
+        for member in pages {
+            insert_member(&mut captured, member);
+        }
         captured.manifest.schemas =
             CheckpointSchemaImages::from_ordinary(schemas.into_values().collect());
         captured.manifest.history_dependencies = history_dependencies
@@ -333,7 +336,7 @@ impl CapturedCheckpointBasis {
             )
             .map_err(|cause| corrupt(format!("captured history dependencies: {cause:?}")))?;
         captured.validate_lineage_events()?;
-        crate::durability::checkpoint_history::capture::capture(&mut captured, execution)?;
+        crate::durability::checkpoint_history::capture::capture(&mut captured, execution, &held)?;
         Ok(captured)
     }
 }

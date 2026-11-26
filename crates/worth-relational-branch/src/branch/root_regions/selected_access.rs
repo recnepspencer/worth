@@ -279,7 +279,12 @@ impl RelationalPersistentRegionSet {
                 .into_iter()
                 .flat_map(
                     move |region| -> Box<dyn Iterator<Item = Result<_, _>> + 'a> {
-                        if let Some(head) = region.partition.held_head_view(residency) {
+                        // A held head avoids cold directory faults; a resident
+                        // directory's ordered map is cheaper than the head's
+                        // live-slot scan.
+                        if region.directory.entity_scan_needs_cold_pages()
+                            && let Some(head) = region.partition.held_head_view(residency)
+                        {
                             Box::new(head.entity_ids_of_kind(kind).map(Ok))
                         } else {
                             Box::new(region.directory.entity_ids(kind))
@@ -310,7 +315,12 @@ impl RelationalPersistentRegionSet {
                 .into_iter()
                 .flat_map(
                     move |region| -> Box<dyn Iterator<Item = Result<_, _>> + 'a> {
-                        if let Some(head) = region.partition.held_head_view(residency) {
+                        // A held head avoids cold directory faults; a resident
+                        // directory's ordered map is cheaper than the head's
+                        // live-slot scan.
+                        if region.directory.relation_scan_needs_cold_pages()
+                            && let Some(head) = region.partition.held_head_view(residency)
+                        {
                             Box::new(head.relation_ids_of_kind(kind).map(Ok))
                         } else {
                             Box::new(region.directory.relation_ids(kind))

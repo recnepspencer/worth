@@ -321,11 +321,7 @@ pub fn record_recovered_commit(
             None,
         )?;
         history
-            .with_ledger_mut(|ledger| {
-                ledger
-                    .commit_catalog
-                    .install_source_recovery(None, artifact)
-            })
+            .with_ledger_mut(|ledger| ledger.install_source_recovery(None, artifact))
             .map_err(RelationalHistoryRecoveryDenial::Catalog)?;
     }
     history.require_recovered_branch(&envelope.branch_context)?;

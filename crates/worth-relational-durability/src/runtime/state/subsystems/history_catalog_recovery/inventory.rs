@@ -31,7 +31,6 @@ pub fn install_recovered_canonical_inventory(
     history.with_ledger_mut(|ledger| {
         for plan in &prepared {
             if !ledger
-                .commit_catalog
                 .source_replacement_matches(plan.artifact.commit_id(), plan.expected.as_ref())
             {
                 return Err(RelationalHistoryRecoveryDenial::Catalog(
@@ -41,7 +40,6 @@ pub fn install_recovered_canonical_inventory(
         }
         for (commit, plan) in commits.iter().zip(&prepared) {
             ledger
-                .commit_catalog
                 .install_source_recovery(plan.expected.as_ref(), Arc::clone(&plan.artifact))
                 .expect("same locked catalog validated every expected source before effects");
             ledger

@@ -21,7 +21,11 @@ fn reopened_lineage_resolution_preserves_original_replacement_chain_and_digest()
     );
     assert_eq!(observed.digest_basis(), fixture.expected.digest_basis());
     assert!(
-        fixture.runtime.observe_lineage_residency().resident_event_count < 601 / 2,
+        fixture
+            .runtime
+            .observe_lineage_residency()
+            .resident_event_count
+            < 601 / 2,
         "resolution loads only touched event pages"
     );
 }
@@ -65,7 +69,10 @@ fn forked_lineage_queries_preserve_original_resolution_without_reloading_members
         assert_eq!(warm.digest_basis(), fixture.expected.digest_basis());
     }
 
-    assert_eq!(fork.observe_lineage_residency().resident_event_count, admitted);
+    assert_eq!(
+        fork.observe_lineage_residency().resident_event_count,
+        admitted
+    );
     assert_eq!(fixture.source.member_reads.lock().unwrap().len(), reads);
 }
 
@@ -95,7 +102,13 @@ fn node_range_boundaries_keep_neighboring_event_members_cold() {
         resolution.traversed_event_ids.is_empty(),
         "this producer lineage was never replaced"
     );
-    assert!(fixture.runtime.observe_lineage_residency().resident_event_count < 601 / 2);
+    assert!(
+        fixture
+            .runtime
+            .observe_lineage_residency()
+            .resident_event_count
+            < 601 / 2
+    );
     assert!(!fixture
         .source
         .member_reads

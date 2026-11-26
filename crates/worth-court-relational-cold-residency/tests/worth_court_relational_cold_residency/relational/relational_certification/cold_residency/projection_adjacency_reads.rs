@@ -23,10 +23,7 @@ fn cold_and_warm_projection_adjacency_reads_preserve_actual_edges() {
             let warm_leases =
                 after_warm.adjacency_kind_slices_leased - after_cold.adjacency_kind_slices_leased;
             assert!(warm_leases > 0);
-            assert_eq!(
-                cold_leases, warm_leases,
-                "{door:?} historical={historical}"
-            );
+            assert_eq!(cold_leases, warm_leases, "{door:?} historical={historical}");
             assert_eq!(
                 after_cold.visible_authoritative_relation_records_materialized
                     - before.visible_authoritative_relation_records_materialized,

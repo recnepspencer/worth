@@ -53,6 +53,23 @@ impl CheckpointAdmittedCommit {
         })))
     }
 
+    pub fn retain_unfunded(
+        owner: Weak<AdmissionCustody>,
+        image: CheckpointAdmissionReadImage,
+        index: RetainedCanonicalIndex,
+        schema: Arc<RelationalBranchRootSchemaAuthority>,
+        visibility: RelationalBranchVisibilityCommitment,
+    ) -> Self {
+        Self(Arc::new(AdmittedRow {
+            owner,
+            image,
+            index,
+            schema,
+            visibility,
+            _memory: None,
+        }))
+    }
+
     pub fn original_row(&self) -> CheckpointOriginalRow<'_> {
         CheckpointOriginalRow::new(&self.0.image, &self.0.index)
     }
