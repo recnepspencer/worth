@@ -5,8 +5,8 @@ use std::sync::{Arc, Mutex};
 use crate::identity::CompositeCommitIdentity;
 
 use super::super::support::{effective_parent, lock_state, remove_installed, validate_owner};
-use super::super::CompositeHistoryCatalogState;
 use super::super::{lock_index, CompositeHistoryCatalog, CompositeHistoryCatalogDenial};
+use super::super::CompositeHistoryCatalogState;
 use super::interior::EligibleInterior;
 use super::{installed, installed_ancestry, RetiredBranchNeed, RetiredHistoryEntries};
 
@@ -163,13 +163,9 @@ impl Drop for PendingDurableHistoryRetirement {
 }
 
 impl CompositeHistoryCatalog {
-    pub(crate) fn begin_durable_retire_changed_history_excluding(
-        &self,
-        excluded_ordinals: &std::collections::BTreeSet<u64>,
-    ) -> PendingDurableHistoryRetirement {
+    pub(crate) fn begin_durable_retire_changed_history(&self) -> PendingDurableHistoryRetirement {
         let mut state = lock_state(&self.state);
         let mut commits = Vec::new();
-        let mut deferred = Vec::new();
         loop {
             let next = lock_index(&state.reachability).pop_changed();
             let Some(commit) = next else {
@@ -179,17 +175,8 @@ impl CompositeHistoryCatalog {
                 continue;
             }
             if EligibleInterior::assess(&state, &commit).is_some() {
-                if excluded_ordinals.contains(&commit.ordinal()) {
-                    deferred.push(commit);
-                    continue;
-                }
                 state.retiring.insert(commit.clone());
                 commits.push(commit);
-            }
-        }
-        for commit in deferred {
-            if installed(&state, &commit).is_some() {
-                lock_index(&state.reachability).mark_changed(&commit);
             }
         }
         let armed = !commits.is_empty();

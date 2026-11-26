@@ -12,12 +12,14 @@ impl WorthQueryPrimaryGraphProvider {
     /// The provider reads one product World's history and follows every
     /// history release that product's branch and recovery cleanups make.
     pub fn install_world_history(self: &Arc<Self>, product: &WorthQueryProductRuntime) {
+        let port = product.owner_ref().recovery_port();
         assert!(
-            self.world_history
-                .set(product.owner_ref().recovery_port())
-                .is_ok(),
+            self.world_history.set(port.clone()).is_ok(),
             "one product World owns the provider's history"
         );
+        if let Some(owner) = self.correction_material.get() {
+            owner.attach_world_history(port);
+        }
         let follower: std::sync::Weak<Self> = Arc::downgrade(self);
         product
             .owner_cleanup_ref()
@@ -37,20 +39,20 @@ impl WorthQueryPrimaryGraphProvider {
         runtime: &RelationalRuntime,
         committed: &worth_relational::facade::transactions::CommitResult,
     ) {
-        let excluded_ordinals = self.retained_correction_world_commit_ordinals();
-        let retired =
-            match self.world_history.get().map(|world| {
-                world.retire_changed_history_with_request(execution, &excluded_ordinals)
-            }) {
-                Some(Ok(retired)) => retired,
-                Some(Err(
-                    worth_runtime_world::facade::HistoryReclamationDenial::PartialPublication {
-                        reclaimed,
-                        ..
-                    },
-                )) => reclaimed,
-                Some(Err(_)) | None => Vec::new(),
-            };
+        let retired = match self
+            .world_history
+            .get()
+            .map(|world| world.retire_changed_history_with_request(execution))
+        {
+            Some(Ok(retired)) => retired,
+            Some(Err(
+                worth_runtime_world::facade::HistoryReclamationDenial::PartialPublication {
+                    reclaimed,
+                    ..
+                },
+            )) => reclaimed,
+            Some(Err(_)) | None => Vec::new(),
+        };
         if !retired.is_empty() {
             let commits = self
                 .completed_commit_evidence

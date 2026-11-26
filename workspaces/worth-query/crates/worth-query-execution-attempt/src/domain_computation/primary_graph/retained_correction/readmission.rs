@@ -43,11 +43,13 @@ impl CorrectionMaterialOwner {
                 catalog,
                 allocated_generation: generation,
                 pending: None,
+                pending_world_ordinal: None,
                 pins,
                 funding: Arc::new(MaterialFunding(Mutex::new(funding))),
                 world_ordinals: std::collections::BTreeMap::new(),
             }),
             post_transfer_observer: PostTransferObserver::default(),
+            world_history: WorldHistoryPort::default(),
         })
     }
 }

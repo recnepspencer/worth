@@ -33,14 +33,23 @@ impl RuntimeWorldRecoveryPort {
     pub fn retire_changed_history_with_request(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        excluded_ordinals: &std::collections::BTreeSet<u64>,
     ) -> Result<
         Vec<crate::identity::CompositeCommitIdentity>,
         crate::history::HistoryReclamationDenial,
     > {
         self.service()
             .map_err(crate::history::HistoryReclamationDenial::OwnerUnavailable)?
-            .retire_changed_history_with_request(execution, excluded_ordinals)
+            .retire_changed_history_with_request(execution)
+    }
+    pub fn retain_external_history_ordinals(&self, ordinals: &[u64]) {
+        if let Ok(service) = self.service() {
+            service.retain_external_history_ordinals(ordinals);
+        }
+    }
+    pub fn release_external_history_ordinals(&self, ordinals: &[u64]) {
+        if let Ok(service) = self.service() {
+            service.release_external_history_ordinals(ordinals);
+        }
     }
     pub fn release_retired_branch_history(
         &self,

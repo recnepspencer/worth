@@ -35,38 +35,48 @@ pub(super) struct SplicedParent {
 }
 
 impl CompositeHistoryCatalog {
+    /// Records World commit ordinals held by external durable subsystems (e.g.
+    /// active correction material) so interior retirement skips them in O(1)
+    /// without keeping them in the dirty frontier.
+    pub(crate) fn retain_external_history_ordinals(&self, ordinals: &[u64]) {
+        if ordinals.is_empty() {
+            return;
+        }
+        let mut state = lock_state(&self.state);
+        for &ordinal in ordinals {
+            state.externally_retained_ordinals.insert(ordinal);
+        }
+    }
+
+    /// Releases externally retained World commit ordinals and marks any still-
+    /// installed commits dirty so a later retirement pass reclaims them.
+    pub(crate) fn release_external_history_ordinals(&self, ordinals: &[u64]) {
+        if ordinals.is_empty() {
+            return;
+        }
+        let mut state = lock_state(&self.state);
+        for &ordinal in ordinals {
+            if state.externally_retained_ordinals.remove(&ordinal)
+                && let Some(commit) = state.by_ordinal.get(&ordinal).cloned()
+                && installed(&state, &commit).is_some()
+            {
+                lock_index(&state.reachability).mark_changed(&commit);
+            }
+        }
+    }
+
     /// Automatic owner-wide retirement visits only changed reachability slots.
     /// Returned payloads must be dropped after releasing the catalog lock.
     pub(crate) fn retire_changed_history(&self) -> RetiredHistoryEntries {
-        self.retire_changed_history_excluding(&std::collections::BTreeSet::new())
-    }
-
-    /// Automatic owner-wide retirement skipping commits whose ordinals remain
-    /// externally retained (e.g. active durable correction material). Deferred
-    /// commits stay marked changed so a later pass retires them once released.
-    pub(crate) fn retire_changed_history_excluding(
-        &self,
-        excluded_ordinals: &std::collections::BTreeSet<u64>,
-    ) -> RetiredHistoryEntries {
         let mut state = lock_state(&self.state);
         let mut retired = Vec::new();
-        let mut deferred = Vec::new();
         loop {
             let next = lock_index(&state.reachability).pop_changed();
             let Some(commit) = next else {
                 break;
             };
             if let Some(eligible) = EligibleInterior::assess(&state, &commit) {
-                if excluded_ordinals.contains(&commit.ordinal()) {
-                    deferred.push(commit);
-                    continue;
-                }
                 retired.push(eligible.retire(&mut state));
-            }
-        }
-        for commit in deferred {
-            if installed(&state, &commit).is_some() {
-                lock_index(&state.reachability).mark_changed(&commit);
             }
         }
         retired

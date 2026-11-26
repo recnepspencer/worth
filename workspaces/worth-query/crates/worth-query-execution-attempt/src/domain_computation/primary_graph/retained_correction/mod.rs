@@ -30,12 +30,21 @@ impl std::fmt::Debug for PostTransferObserver {
     }
 }
 
+#[derive(Default)]
+struct WorldHistoryPort(std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldRecoveryPort>);
+impl std::fmt::Debug for WorldHistoryPort {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("WorldHistoryPort")
+    }
+}
+
 #[derive(Debug)]
 pub struct CorrectionMaterialOwner {
     medium: Mutex<Option<Arc<dyn QueryCorrectionsMedium>>>,
     publication: Mutex<()>,
     state: Mutex<MaterialState>,
     post_transfer_observer: PostTransferObserver,
+    world_history: WorldHistoryPort,
 }
 pub struct MaterialPublication<'a> {
     owner: &'a CorrectionMaterialOwner,
@@ -46,10 +55,15 @@ struct MaterialState {
     catalog: MaterialCatalog,
     allocated_generation: u64,
     pending: Option<Arc<QueryCorrectionMaterialFrame>>,
+    pending_world_ordinal: Option<(
+        worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+        u64,
+    )>,
     pins: pins::LiveMaterialPins,
     funding: Arc<MaterialFunding>,
-    /// In-memory map from publication attempt to its reserved World commit ordinal
-    /// so automatic history retirement preserves commits with active correction material.
+    /// In-memory map from active publication attempt to its World commit ordinal
+    /// so World's external-retention set stays synchronized across capture,
+    /// readmission, expiry, and abandonment.
     world_ordinals: std::collections::BTreeMap<
         worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
         u64,
@@ -91,27 +105,69 @@ impl CorrectionMaterialOwner {
     ) -> Result<(), Denial> {
         self.publication()?.publish(record, request)
     }
+    fn publish_with_ordinal(
+        &self,
+        record: MaterialRecord,
+        pending_ordinal: Option<(
+            worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+            u64,
+        )>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Denial> {
+        self.publication()?
+            .publish_with_ordinal(record, pending_ordinal, request)
+    }
     fn settle(&self, request: &ExecutionRequest<'_, '_>) -> Result<(), Denial> {
         self.publication()?
             .finish_pending(self.medium()?.as_ref(), request)
+    }
+    pub fn attach_world_history(
+        &self,
+        world: worth_runtime_world::facade::RuntimeWorldRecoveryPort,
+    ) {
+        let world = self.world_history.0.get_or_init(|| world);
+        let ordinals: Vec<u64> = self.retained_world_commit_ordinals().into_iter().collect();
+        world.retain_external_history_ordinals(&ordinals);
+    }
+    pub(super) fn retain_world_ordinal(&self, ordinal: u64) {
+        if let Some(world) = self.world_history.0.get() {
+            world.retain_external_history_ordinals(&[ordinal]);
+        }
+    }
+    pub(super) fn release_world_ordinal(&self, ordinal: u64) {
+        if let Some(world) = self.world_history.0.get() {
+            world.release_external_history_ordinals(&[ordinal]);
+        }
     }
     pub fn record_world_ordinals(
         &self,
         originals: &worth_runtime_world::facade::WorldProgramActivationHistory,
     ) {
-        let mut state = self.state();
-        let keys: Vec<_> = state
-            .catalog
-            .material
-            .keys()
-            .map(|(original, _)| *original)
-            .collect();
-        for original in keys {
-            if let Some(entry) = originals.original_state(original) {
+        let mut ordinals = Vec::new();
+        {
+            let mut state = self.state();
+            let active: std::collections::BTreeSet<_> =
                 state
-                    .world_ordinals
-                    .insert(original, entry.reserved_commit().ordinal());
+                    .catalog
+                    .material
+                    .iter()
+                    .filter_map(|((original, _), entry)| match &entry.body {
+                        catalog::MaterialBody::Captured(_)
+                        | catalog::MaterialBody::Ready { .. } => Some(*original),
+                        catalog::MaterialBody::Expired { .. }
+                        | catalog::MaterialBody::Abandoned => None,
+                    })
+                    .collect();
+            for original in active {
+                if let Some(entry) = originals.original_state(original) {
+                    let ordinal = entry.reserved_commit().ordinal();
+                    state.world_ordinals.insert(original, ordinal);
+                    ordinals.push(ordinal);
+                }
             }
+        }
+        if let Some(world) = self.world_history.0.get() {
+            world.retain_external_history_ordinals(&ordinals);
         }
     }
 

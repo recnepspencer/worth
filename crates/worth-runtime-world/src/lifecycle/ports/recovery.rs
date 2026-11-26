@@ -16,8 +16,9 @@ pub(crate) trait RuntimeWorldRecoveryService:
     fn retire_changed_history_with_request(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        excluded_ordinals: &std::collections::BTreeSet<u64>,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial>;
+    fn retain_external_history_ordinals(&self, ordinals: &[u64]);
+    fn release_external_history_ordinals(&self, ordinals: &[u64]);
     fn release_retired_branch_history(
         &self,
         from: &crate::identity::CompositeCommitIdentity,

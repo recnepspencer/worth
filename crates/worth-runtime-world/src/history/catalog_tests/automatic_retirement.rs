@@ -134,7 +134,7 @@ fn manual_ancestry_scope_and_owner_wide_changed_scope_remain_distinct() {
 }
 
 #[test]
-fn excluded_ordinals_defer_retirement_until_released() {
+fn external_history_ordinals_defer_interior_retirement_in_o1_until_released() {
     let (fixture, commits) = linear_history(4);
     let catalog = CompositeHistoryCatalog::new(
         commits[0].identity().owner_identity(),
@@ -146,23 +146,54 @@ fn excluded_ordinals_defer_retirement_until_released() {
             .unwrap();
     }
     let _head = catalog.protect_explicit_commit(&commits[3]).unwrap();
-    let excluded = std::collections::BTreeSet::from([commits[1].identity().ordinal()]);
-    let retired = catalog.retire_changed_history_excluding(&excluded);
+    let retained_ordinal = commits[1].identity().ordinal();
+    catalog.retain_external_history_ordinals(&[retained_ordinal]);
+
+    // Single durable pass with BOTH excluded (`commits[1]`) and non-excluded
+    // (`commits[0]`, `commits[2]`) eligible commits skips `commits[1]`.
+    let pending = catalog.begin_durable_retire_changed_history();
+    assert_eq!(pending.remaining().len(), 2);
+    assert!(!pending.remaining().contains(commits[1].identity()));
+    // Abort once via ProvenNoEffect and re-begin cleanly.
+    pending.release_remaining_proven_no_effect();
+    let mut pending = catalog.begin_durable_retire_changed_history();
+    assert_eq!(pending.remaining().len(), 2);
+    let retired = pending.commit_next(2);
     assert_eq!(retired.len(), 2);
     drop(retired);
+    drop(pending);
+
     assert!(catalog.lookup(commits[0].identity()).is_none());
     assert!(catalog.lookup(commits[1].identity()).is_some());
     assert!(catalog.lookup(commits[2].identity()).is_none());
     assert!(catalog.lookup(commits[3].identity()).is_some());
 
-    // Durable exclusion also defers while excluded and retires once released.
-    let pending_still_excluded = catalog.begin_durable_retire_changed_history_excluding(&excluded);
-    assert!(pending_still_excluded.remaining().is_empty());
-    drop(pending_still_excluded);
-    assert!(catalog.lookup(commits[1].identity()).is_some());
+    // Spliced ancestry crosses the retired gap (`commits[2]`) and lands on `commits[1]`
+    // with generation span 2, stopping cleanly because `commits[0]` is retired.
+    let trace = catalog
+        .trace_ancestry(commits[3].identity().clone(), NonZeroUsize::new(4).unwrap())
+        .unwrap();
+    assert_eq!(trace.visited_count(), 2);
+    assert_eq!(trace.generations_to(1), Some(2));
+    assert!(trace.crossed_retired_history());
+    drop(trace);
 
-    let empty = std::collections::BTreeSet::new();
-    let mut pending_released = catalog.begin_durable_retire_changed_history_excluding(&empty);
+    // Unchanged externally retained commits do NOT stay in the dirty frontier (O(1) cost).
+    let lookups_before = catalog.counters().reachability_lookups();
+    assert!(catalog.retire_changed_history().is_empty());
+    assert!(catalog
+        .begin_durable_retire_changed_history()
+        .remaining()
+        .is_empty());
+    assert_eq!(
+        catalog.counters().reachability_lookups(),
+        lookups_before,
+        "externally retained commits must not churn the dirty frontier"
+    );
+
+    // Releasing the external ordinal wakes the commit once so durable retirement reclaims it.
+    catalog.release_external_history_ordinals(&[retained_ordinal]);
+    let mut pending_released = catalog.begin_durable_retire_changed_history();
     assert_eq!(
         pending_released.remaining(),
         std::slice::from_ref(commits[1].identity())

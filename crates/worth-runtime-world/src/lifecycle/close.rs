@@ -127,14 +127,13 @@ where
     fn retire_changed_history(
         &self,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
-        self.retire_changed_history_inner(None, &std::collections::BTreeSet::new())
+        self.retire_changed_history_inner(None)
     }
     fn retire_changed_history_with_request(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        excluded_ordinals: &std::collections::BTreeSet<u64>,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
-        self.retire_changed_history_inner(Some(execution), excluded_ordinals)
+        self.retire_changed_history_inner(Some(execution))
     }
     fn retire_unprotected_history(
         &self,

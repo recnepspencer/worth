@@ -325,7 +325,6 @@ pub(crate) trait RuntimeWorldLifecycleService:
     fn retire_changed_history_with_request(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        excluded_ordinals: &std::collections::BTreeSet<u64>,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial>;
     /// Retire the unprotected history behind `keep` and reclaim the pins only
     /// that history held. Returns the retired commits, oldest first.
