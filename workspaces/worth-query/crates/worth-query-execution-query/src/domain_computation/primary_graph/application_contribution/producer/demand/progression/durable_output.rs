@@ -26,7 +26,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         else {
             return Ok(());
         };
-        let (record_commit, branch_name) = match &source {
+        let (record_commit, branch_name) = match source.as_ref().map(|(source, _)| source) {
             Some(Source::Committed(receipt)) => {
                 let publication = receipt.committed_product_publication();
                 (
@@ -50,7 +50,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             }
             None => (basis.clone(), None),
         };
-        if let Some(source) = source {
+        if let Some((source, true)) = source {
             let lineage = self
                 .runtime
                 .primary_provider

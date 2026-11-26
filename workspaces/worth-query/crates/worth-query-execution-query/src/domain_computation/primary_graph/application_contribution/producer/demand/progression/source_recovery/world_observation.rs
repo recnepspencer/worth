@@ -121,12 +121,20 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     && known.owner_identity().durable() == Some(owner)
             })
             .ok_or_else(unavailable)?;
-        world
+        let observation = world
             .observe_product_branch_occurrence(current.lifecycle_incarnation())
             .map_err(|_| match execution.consult() {
                 Err(cause) => request_stop(cause),
                 Ok(()) => unavailable(),
-            })
+            })?;
+        if observation.branch_identity().name().as_str() != branch
+            || observation.lifecycle_incarnation().ordinal() != lifecycle
+            || observation.owner_identity().durable() != Some(owner)
+            || observation.selected_commit().owner_identity().durable() != Some(owner)
+        {
+            return Err(unavailable());
+        }
+        Ok(observation)
     }
 }
 fn unavailable() -> Denial {

@@ -104,7 +104,8 @@ impl RequiredOutputReadmission {
         mut sources: Vec<DurableCompositeCommitIdentity>,
         mut prerequisites: Vec<NonZeroU64>,
         mut checkpoints: Vec<Vec<u8>>,
-    ) -> Result<Option<NonZeroU64>, WorthQueryOutputDemandDenial> {
+    ) -> Result<Option<(NonZeroU64, DurableCompositeCommitIdentity)>, WorthQueryOutputDemandDenial>
+    {
         let Some(recording) = self.recording.get() else {
             return Ok(None);
         };
@@ -122,7 +123,7 @@ impl RequiredOutputReadmission {
                 checkpoints.clone(),
             );
             match result {
-                Ok(()) => return Ok(Some(held.position)),
+                Ok(()) => return Ok(Some((held.position, recording.basis()))),
                 Err(cause) => {
                     let absent = !held.history.output_demand_retained(held.position);
                     if absent && matches!(cause,
@@ -143,7 +144,6 @@ impl RequiredOutputReadmission {
         let mut row = recording.capture()?;
         if let Some(basis) = basis_override {
             row.basis = basis;
-            recording.set_basis(basis);
         }
         row.performed_sources = sources;
         row.prerequisites = prerequisites;
@@ -162,6 +162,12 @@ impl RequiredOutputReadmission {
         let Some(retained) = retained else {
             return Ok(None);
         };
+        let basis = if let Some(basis) = basis_override {
+            recording.set_basis(basis);
+            basis
+        } else {
+            recording.basis()
+        };
         let position = retained.position;
         *self
             .recorded_prerequisites
@@ -178,7 +184,7 @@ impl RequiredOutputReadmission {
                 "required output retention",
             ));
         }
-        Ok(Some(position))
+        Ok(Some((position, basis)))
     }
     pub fn rejoin_durable(&self) -> Result<(), WorthQueryOutputDemandDenial> {
         let Some(recording) = self.recording.get() else {
@@ -242,16 +248,15 @@ impl RequiredOutputReadmission {
         self.durable_position().is_some()
     }
     pub fn complete_durable(&self) {
+        let held = self
+            .durable
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         *self
             .recorded_prerequisites
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
-        if let Some(membership) = self
-            .durable
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .as_ref()
-        {
+        if let Some(membership) = held.as_ref() {
             membership.completed();
         }
     }

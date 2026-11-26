@@ -125,6 +125,11 @@ impl PreparedPrerequisiteClaims {
                                     && fallback_observation.lifecycle_incarnation().ordinal()
                                         == recording.lifecycle
                                     && fallback_observation.owner_identity().durable()
+                                        == Some(recorded_basis.owner())
+                                    && fallback_observation
+                                        .selected_commit()
+                                        .owner_identity()
+                                        .durable()
                                         == Some(recorded_basis.owner()) =>
                             {
                                 let live_basis = DurableCompositeCommitIdentity::from_recorded(

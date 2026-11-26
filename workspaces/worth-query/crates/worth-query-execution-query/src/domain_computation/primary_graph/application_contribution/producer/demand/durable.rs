@@ -153,7 +153,7 @@ impl<S: ApplicationSchema, F: WorthQueryProducerOutputFamily<S>>
                 }
             }
         };
-        let position = readmission
+        let (position, basis) = readmission
             .retain_durable(
                 &execution,
                 basis_override,
@@ -162,10 +162,7 @@ impl<S: ApplicationSchema, F: WorthQueryProducerOutputFamily<S>>
                 Vec::new(),
             )?
             .ok_or_else(unavailable)?;
-        Ok(WorthQueryOriginalOutputDemand {
-            position,
-            basis: recording.basis(),
-        })
+        Ok(WorthQueryOriginalOutputDemand { position, basis })
     }
 
     pub(crate) fn adopt_recorded_membership(

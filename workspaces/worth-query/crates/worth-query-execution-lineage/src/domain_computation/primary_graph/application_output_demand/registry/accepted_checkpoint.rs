@@ -35,7 +35,7 @@ impl WorthQueryOutputDemandRegistry {
         key: &WorthQueryOutputDemandKey,
     ) -> Option<(
         WorthQueryAcceptedOutputCheckpointIdentity,
-        Option<AcceptedCheckpointFactSource>,
+        Option<(AcceptedCheckpointFactSource, bool)>,
         Option<TypeId>,
     )> {
         let state = self
@@ -45,7 +45,8 @@ impl WorthQueryOutputDemandRegistry {
         let newest = super::refreshed_rejoin::newest_refresh(&state.records, key);
         let active_key = newest.as_ref().unwrap_or(key);
         let row = state.records.get(active_key)?;
-        checkpoint_record(active_key, row).or_else(|| published_checkpoint_record(active_key, row))
+        checkpoint_record_with_source(active_key, row)
+            .or_else(|| published_checkpoint_record(active_key, row))
     }
     fn checkpoint_records(
         &self,
@@ -93,7 +94,7 @@ fn published_checkpoint_record(
     record: &DemandRecord,
 ) -> Option<(
     WorthQueryAcceptedOutputCheckpointIdentity,
-    Option<AcceptedCheckpointFactSource>,
+    Option<(AcceptedCheckpointFactSource, bool)>,
     Option<TypeId>,
 )> {
     let DemandState::Output(output) = &record.state else {
@@ -123,7 +124,10 @@ fn published_checkpoint_record(
                     producer_fact_wire_version: 0,
                     metadata: None,
                 },
-                exact_source.then(|| AcceptedCheckpointFactSource::Committed(receipt.clone())),
+                Some((
+                    AcceptedCheckpointFactSource::Committed(receipt.clone()),
+                    exact_source,
+                )),
                 receipt.output_correspondence().binding_type(),
             ))
         }
@@ -148,7 +152,10 @@ fn published_checkpoint_record(
                     producer_fact_wire_version: 0,
                     metadata: None,
                 },
-                exact_source.then(|| AcceptedCheckpointFactSource::Recovered(publication.clone())),
+                Some((
+                    AcceptedCheckpointFactSource::Recovered(publication.clone()),
+                    exact_source,
+                )),
                 receipt.output_correspondence().binding_type(),
             ))
         }
@@ -163,6 +170,22 @@ fn checkpoint_record(
 ) -> Option<(
     WorthQueryAcceptedOutputCheckpointIdentity,
     Option<AcceptedCheckpointFactSource>,
+    Option<TypeId>,
+)> {
+    let (identity, source, binding) = checkpoint_record_with_source(key, record)?;
+    Some((
+        identity,
+        source.and_then(|(source, exact)| exact.then_some(source)),
+        binding,
+    ))
+}
+
+fn checkpoint_record_with_source(
+    key: &WorthQueryOutputDemandKey,
+    record: &DemandRecord,
+) -> Option<(
+    WorthQueryAcceptedOutputCheckpointIdentity,
+    Option<(AcceptedCheckpointFactSource, bool)>,
     Option<TypeId>,
 )> {
     let DemandState::Output(output) = &record.state else {
@@ -194,7 +217,10 @@ fn checkpoint_record(
                     producer_fact_wire_version: 0,
                     metadata: None,
                 },
-                exact_source.then(|| AcceptedCheckpointFactSource::Committed(receipt.clone())),
+                Some((
+                    AcceptedCheckpointFactSource::Committed(receipt.clone()),
+                    exact_source,
+                )),
                 receipt.output_correspondence().binding_type(),
             ))
         }
@@ -218,7 +244,10 @@ fn checkpoint_record(
                     producer_fact_wire_version: 0,
                     metadata: None,
                 },
-                exact_source.then(|| AcceptedCheckpointFactSource::Recovered(publication.clone())),
+                Some((
+                    AcceptedCheckpointFactSource::Recovered(publication.clone()),
+                    exact_source,
+                )),
                 receipt.output_correspondence().binding_type(),
             ))
         }
@@ -245,7 +274,10 @@ fn checkpoint_record(
                     producer_fact_wire_version: 0,
                     metadata: None,
                 },
-                exact_source.then(|| AcceptedCheckpointFactSource::Stable(stable.clone())),
+                Some((
+                    AcceptedCheckpointFactSource::Stable(stable.clone()),
+                    exact_source,
+                )),
                 stable.output_correspondence().binding_type(),
             ))
         }

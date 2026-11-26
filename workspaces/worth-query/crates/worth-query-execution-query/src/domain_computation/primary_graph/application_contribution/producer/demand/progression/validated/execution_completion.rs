@@ -44,6 +44,7 @@ pub fn finish(
 ) -> Result<CheckpointProgress, CompletionRefusal> {
     let receipt = match result.map(|prepared| prepared.into_parts()) {
         Ok((execution::ProducerExecutionOutcome::Unpublished(mut owner), ready_backing)) => {
+            performed.borrow_mut().mark_accepted(readiness);
             owner.retain_original_publication(original_publication);
             let checkpoint = WorthQueryOutputCheckpoint::PublicationPending {
                 owner: Box::new(owner),
