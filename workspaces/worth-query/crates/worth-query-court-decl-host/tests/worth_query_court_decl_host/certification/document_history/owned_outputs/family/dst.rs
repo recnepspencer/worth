@@ -4,6 +4,11 @@
 //! `dst-b`'s.
 //! `dst-use` consumes the tree's root: its decision reads the root's output
 //! through `current_output`, so its row carries consumed-output evidence.
+//! `dst-mid` and `dst-leaf` are a two-hop consumer chain rooted on member
+//! `e1` (public #358): `dst-mid` of the model reads `dst-a`'s current output
+//! for `e1` and keeps its parity, so an `e1` write that keeps the parity
+//! re-executes it to an equal output; `dst-leaf` reads `dst-mid`'s current
+//! output plus 100. Neither reads `e1`'s value directly.
 use super::*;
 family!(
     dst_a,
@@ -66,6 +71,47 @@ family!(
     |_: u64| 0
 );
 
+family!(
+    dst_mid,
+    SourceScopeCascade,
+    output,
+    Model,
+    ModelKey,
+    ModelValue,
+    upstream_source,
+    "dst-mid",
+    "owned-outputs.dst-mid.initial",
+    "owned-outputs.dst-mid.preserve",
+    DstMidInitial,
+    DstMidPreserve,
+    FirstOutput,
+    FirstFacts,
+    FirstKey,
+    FirstValue,
+    FirstOf,
+    |_: u64| 0
+);
+family!(
+    dst_leaf,
+    SourceScopeCascade,
+    output,
+    Model,
+    ModelKey,
+    ModelValue,
+    upstream_source,
+    "dst-leaf",
+    "owned-outputs.dst-leaf.initial",
+    "owned-outputs.dst-leaf.preserve",
+    DstLeafInitial,
+    DstLeafPreserve,
+    FirstOutput,
+    FirstFacts,
+    FirstKey,
+    FirstValue,
+    FirstOf,
+    |_: u64| 100
+);
+
 /// Declares the DST families' conditional operations on a root feature: a
 /// program that installs the owned world must name every family it holds.
 pub trait DstOperations {
@@ -81,5 +127,9 @@ impl<Feature: ApplicationFeature<Schema>> DstOperations
             .conditional_operation::<dst_b::preserve::Operation>()
             .conditional_operation::<dst_use::initial::Operation>()
             .conditional_operation::<dst_use::preserve::Operation>()
+            .conditional_operation::<dst_mid::initial::Operation>()
+            .conditional_operation::<dst_mid::preserve::Operation>()
+            .conditional_operation::<dst_leaf::initial::Operation>()
+            .conditional_operation::<dst_leaf::preserve::Operation>()
     }
 }

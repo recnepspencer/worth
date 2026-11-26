@@ -108,6 +108,17 @@ macro_rules! producer_operation {
     (SaturatedConsumerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SaturatedConsumerPreserve, $entity, $key, $value, $of); };
     (DstUseInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DstUseInitial, $entity, $key, $value, $of); };
     (DstUsePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DstUsePreserve, $entity, $key, $value, $of); };
+    (DstMidInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstMidInitial, $entity, $key, $value, $of); };
+    (DstMidPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstMidPreserve, $entity, $key, $value, $of); };
+    (DstLeafInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstLeafInitial, $entity, $key, $value, $of); };
+    (DstLeafPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstLeafPreserve, $entity, $key, $value, $of); };
+    // The member read, plus `dst-a`'s child outputs: the #358 chain's reads.
+    (@chain_read $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [SourceEntity, $entity, Member, ChildOutput]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue")];
+            read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value))]; creates: [$entity]; links: [$of];
+        });
+    };
     (CappedReaderInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedReaderInitial, $entity, $key, $value, $of); };
     (CappedReaderPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedReaderPreserve, $entity, $key, $value, $of); };
     (CappedConsumerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedConsumerInitial, $entity, $key, $value, $of); };

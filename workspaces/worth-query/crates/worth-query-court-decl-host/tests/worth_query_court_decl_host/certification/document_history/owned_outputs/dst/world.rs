@@ -58,7 +58,12 @@ pub fn install_consumer() -> Host {
     install_as(Shape::WithConsumer)
 }
 
-fn install_as(shape: Shape) -> Host {
+/// [`install`] settling the tree with the #358 consumer chain.
+pub fn install_chain() -> Host {
+    install_as(Shape::WithChain)
+}
+
+pub fn install_as(shape: Shape) -> Host {
     install_with(shape, host_limits(WorthQueryAdmissionClock::system()))
 }
 
@@ -119,7 +124,21 @@ impl<'h> Document<'h> {
         Self::attach_as(host, Shape::WithConsumer)
     }
 
-    fn attach_as(host: &'h Host, shape: Shape) -> Self {
+    /// [`Document::attach`] binding the tree with the #358 consumer chain.
+    pub fn attach_chain(host: &'h Host) -> Self {
+        Self::attach_as(host, Shape::WithChain)
+    }
+
+    /// Demand the document's tree again at the head its last read saw: the
+    /// #358 courts' second settle, which must reuse every mark the first
+    /// one left.
+    pub fn settle_again(&self) {
+        super::fixture::reads::with_branch_request(self.host, self.branch, |request| {
+            envelope::settle(self.host, request, self.shape)
+        });
+    }
+
+    pub fn attach_as(host: &'h Host, shape: Shape) -> Self {
         let document = super::super::world::attach(host);
         let document = with_request(host, |request| {
             host.with_host_advancement(|phase| {
@@ -129,6 +148,9 @@ impl<'h> Document<'h> {
                     Shape::Members => document
                         .with_output_trees::<program::Program, program::Tree>(&phase, request, host, demand, controls),
                     Shape::WithConsumer => document.with_output_trees::<program::Program, program::ConsumerTree>(
+                        &phase, request, host, demand, controls,
+                    ),
+                    Shape::WithChain => document.with_output_trees::<program::Program, program::ChainTree>(
                         &phase, request, host, demand, controls,
                     ),
                 }

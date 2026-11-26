@@ -21,6 +21,7 @@ mod history_correction;
 mod history_navigation;
 mod history_reversal_facts;
 pub(super) mod fixture;
+mod readmission;
 mod reference;
 mod regressions;
 mod trace;
@@ -118,15 +119,26 @@ fn the_oracle_agrees_with_the_model_it_translates() {
     agree("model", wide, workloads, ModelSystem::new);
 }
 
-/// The real document agrees with the oracle after every call. Every seed
-/// attaches its own document on one installed host.
+/// The real document agrees with the oracle after every call. One host per
+/// tree shape is installed before the sweep, and each seed attaches its own
+/// document on the host its seed picks: the members alone, with the `dst-use`
+/// consumer of the root, or with the #358 consumer chain. The invalidation
+/// shadow is armed throughout, so every marked certification is checked
+/// against full verification.
 #[test]
 fn the_document_agrees_with_the_oracle() {
+    use fixture::program::Shape;
+    let equivalence = worth_query_host::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    let host = world::install();
+    const SHAPES: [Shape; 3] = [Shape::Members, Shape::WithConsumer, Shape::WithChain];
+    let hosts = SHAPES.map(world::install_as);
     let workloads = Workloads {
         environment: &world::ENVIRONMENT,
         corrections: variable("WORTH_DST_CORRECTIONS", 0) == 1,
     };
-    agree("document", sweep().0, workloads, |_| world::Document::attach(&host));
+    agree("document", sweep().0, workloads, |seed| {
+        let shape = (seed % SHAPES.len() as u64) as usize;
+        world::Document::attach_as(&hosts[shape], SHAPES[shape])
+    });
+    assert!(equivalence.shadow_checks_for_test() > 0, "the armed shadow must check the sweep's certifications");
 }

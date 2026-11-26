@@ -2,7 +2,7 @@
 //! and outputs, and, while the document can be read, its selection, the
 //! paged `history_page` walk and the paged `redo_choices` walk.
 use super::super::fixture::label;
-use super::super::fixture::reads::{read_outputs, read_tree, try_read_entities, Tree};
+use super::super::fixture::reads::{read_chain, read_outputs, read_tree, try_read_entities, Tree};
 use super::super::reference::{Fact, History, Observed, Redo, RedoChoice, Row, Snapshot, ENTITIES};
 use super::*;
 
@@ -25,6 +25,12 @@ impl Document<'_> {
             }
         }
         let outputs = read_outputs(self.host, self.branch, &live);
+        if self.shape == Shape::WithChain {
+            // The #358 chain agrees with the outputs it reads: `dst-mid` is
+            // the parity of `dst-a`'s output for `e1`, `dst-leaf` that plus 100.
+            let mid = live[super::super::reference::E1].map_or(0, |_| outputs.0[super::super::reference::E1] % 2);
+            assert_eq!(read_chain(self.host, self.branch), (mid, 100 + mid), "the chain must read its sources");
+        }
         // A writer holds the document, and a closed one is gone. Otherwise
         // the reads themselves say whether the head diverged: a write outside
         // the document is learned here, not from the next call.

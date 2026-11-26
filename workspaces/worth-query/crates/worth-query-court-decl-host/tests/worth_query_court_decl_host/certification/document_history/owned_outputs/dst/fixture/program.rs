@@ -8,10 +8,15 @@
 //! [`ConsumerTree`] adds one `dst-use` output of the model, which reads the
 //! root's output through `current_output`; only the regression held on
 //! public #358 demands it.
+//!
+//! [`ChainTree`] adds the #358 consumer chain instead: `dst-mid` of the
+//! model reads `dst-a`'s current output for member `e1`, and `dst-leaf`
+//! reads `dst-mid`'s current output, so a readmitted consumer row is
+//! consumed again one hop downstream.
 use super::*;
 use super::super::super::hierarchy::program as hierarchy;
 use super::super::super::hierarchy::recording_parent::new_member::program as root;
-use family::dst::{dst_a, dst_b, dst_use};
+use family::dst::{dst_a, dst_b, dst_leaf, dst_mid, dst_use};
 
 macro_rules! discover {
     ($name:ident, $connection:ident, $port:ty, $family:ident, $identity:literal) => {
@@ -77,6 +82,51 @@ impl WorthQueryApplicationDependentOutputConnection<Schema> for Consume {
     }
 }
 
+/// A model-keyed consumer demanded once the root has generated the member
+/// `upstream:<model>`, as [`Consume`] is.
+macro_rules! consume {
+    ($name:ident, $connection:ident, $port:ty, $family:ident, $identity:literal) => {
+        pub struct $name;
+        impl ApplicationConnectionIdentity for $name {
+            const IDENTITY: &'static str = $identity;
+        }
+        impl ApplicationOccurrenceConnectionBinding<Schema, hierarchy::Parent, hierarchy::Child> for $name {}
+        pub type $connection =
+            ApplicationConnectionRef<Schema, hierarchy::Parent, hierarchy::Output, hierarchy::Child, $port, $name>;
+        impl WorthQueryApplicationDependentOutputConnection<Schema> for $name {
+            type RootDemand = upstream::Demand;
+            type Discovery = query::member_public::Read;
+            type Demand = $family::Demand;
+            const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
+            fn discovery_from_root(
+                root: &upstream::Demand,
+            ) -> Result<Self::Discovery, WorthQueryRequiredOutputConnectionDenial> {
+                Ok(query::member_public::Read(format!("upstream:{}", root.0)))
+            }
+            fn demands_from_discovery(
+                row: &query::Row,
+            ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial> {
+                let model = row.key.strip_prefix("upstream:").unwrap_or(&row.key);
+                Ok(vec![$family::Demand(model.to_owned())])
+            }
+        }
+    };
+}
+consume!(
+    Mid,
+    MidConnection,
+    hierarchy::ChainInput,
+    dst_mid,
+    "owned-outputs.dst.mid"
+);
+consume!(
+    Leaf,
+    LeafConnection,
+    super::super::super::family::borrowed_inputs::program::HeaderInput,
+    dst_leaf,
+    "owned-outputs.dst.leaf"
+);
+
 pub type Tree = ApplicationDemandOutputGraph<
     root::RootConnection,
     (
@@ -88,7 +138,7 @@ pub type Tree = ApplicationDemandOutputGraph<
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<(Tree, ConsumerTree)>;
+    type Outputs = ApplicationProgramOutputs<(Tree, (ConsumerTree, ChainTree))>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new("owned-outputs.dst.program");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
@@ -109,9 +159,26 @@ pub type ConsumerTree = ApplicationDemandOutputGraph<
     ),
 >;
 
+/// [`Tree`] with the #358 chain (`dst-mid`, then `dst-leaf`) beside its
+/// leaves.
+pub type ChainTree = ApplicationDemandOutputGraph<
+    root::RootConnection,
+    (
+        ApplicationOutputEdge<ConnectionA, ApplicationOutputLeaf>,
+        (
+            ApplicationOutputEdge<ConnectionB, ApplicationOutputLeaf>,
+            (
+                ApplicationOutputEdge<MidConnection, ApplicationOutputLeaf>,
+                ApplicationOutputEdge<LeafConnection, ApplicationOutputLeaf>,
+            ),
+        ),
+    ),
+>;
+
 /// Which tree a document binds and a write outside settles.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Shape {
     Members,
     WithConsumer,
+    WithChain,
 }
