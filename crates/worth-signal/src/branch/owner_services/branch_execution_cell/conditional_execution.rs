@@ -14,8 +14,6 @@ use crate::data::conditional_execution::{
     InstalledSignalConditionResolver, InstalledSignalConditionalContract,
     SignalConditionalExecutionRequest, SignalConditionalServiceContractBinding,
 };
-use crate::data::error::SignalError;
-use crate::data::output::NodeEvaluationResult;
 
 use super::basis::map_basis_cell_denial;
 use super::{SignalBranchCellAdmissionDenial, SignalBranchExecutionCell};
@@ -238,7 +236,7 @@ where
         request: SignalConditionalExecutionRequest<'_>,
         condition: &mut impl InstalledSignalConditionResolver,
         comparator: &mut impl ComparatorPolicyResolver,
-        compute: impl FnOnce() -> Result<NodeEvaluationResult, SignalError>,
+        compute: impl crate::data::conditional_execution::SignalConditionalCompute,
     ) -> Result<SignalConditionalServiceCompletion, SignalConditionalServiceExecutionDenial> {
         use SignalConditionalServiceExecutionDenial as Denial;
         let map_cell =

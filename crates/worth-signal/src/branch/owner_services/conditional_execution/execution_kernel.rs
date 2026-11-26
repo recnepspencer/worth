@@ -2,10 +2,8 @@ use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::conditional_execution::{
     InstalledSignalConditionResolver, SignalConditionalExecutionRequest,
 };
-use crate::data::error::SignalError;
 use crate::data::graph::storage::evaluation_partition::SignalPartitionConditionalDenial;
 use crate::data::graph::SignalGraph;
-use crate::data::output::NodeEvaluationResult;
 use crate::data::retained_storage::RetainedStoragePreparation;
 
 use super::{
@@ -23,7 +21,7 @@ pub(in crate::branch::owner_services) fn execute_conditional_against_graph(
     request: SignalConditionalExecutionRequest<'_>,
     condition: &mut impl InstalledSignalConditionResolver,
     comparator: &mut impl ComparatorPolicyResolver,
-    compute: impl FnOnce() -> Result<NodeEvaluationResult, SignalError>,
+    compute: impl crate::data::conditional_execution::SignalConditionalCompute,
 ) -> Result<SignalConditionalServiceCompletion, SignalConditionalServiceExecutionDenial> {
     use SignalConditionalServiceExecutionDenial as Denial;
 

@@ -4,8 +4,6 @@ use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::conditional_execution::{
     InstalledSignalConditionResolver, SignalConditionalExecutionRequest,
 };
-use crate::data::error::SignalError;
-use crate::data::output::NodeEvaluationResult;
 use crate::logic::transaction::SignalTransaction;
 
 use super::{
@@ -36,7 +34,7 @@ where
         request: SignalConditionalServiceExecutionRequest,
         condition: &mut impl InstalledSignalConditionResolver,
         comparator: &mut impl ComparatorPolicyResolver,
-        compute: impl FnOnce() -> Result<NodeEvaluationResult, SignalError>,
+        compute: impl crate::data::conditional_execution::SignalConditionalCompute,
     ) -> Result<SignalConditionalServiceCompletion, SignalConditionalServiceExecutionDenial> {
         super::request_completion::run_conditional_request(execution, |work| {
             self.execute_within_transaction_in_request(
@@ -59,7 +57,7 @@ where
         work: &mut worth_execution::MapKernelContext<'_, '_>,
         transaction: &mut SignalTransaction<'_, D, I, E, Ctx, T>,
         invocation: NestedConditionalInvocation<'_, Condition, Comparator>,
-        compute: impl FnOnce() -> Result<NodeEvaluationResult, SignalError>,
+        compute: impl crate::data::conditional_execution::SignalConditionalCompute,
     ) -> Result<SignalConditionalServiceCompletion, SignalConditionalServiceExecutionDenial>
     where
         Condition: InstalledSignalConditionResolver,

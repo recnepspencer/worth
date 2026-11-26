@@ -1,5 +1,6 @@
 mod artifact_reuse;
 mod compatibility;
+mod compute;
 mod condition_resolution;
 mod contract;
 #[cfg(test)]
@@ -24,6 +25,7 @@ pub use compatibility::{
     SignalConditionalExecutionAffinityMismatch, SignalConditionalSemanticComparisonMismatch,
     SignalConditionalSemanticContinuity, SignalConditionalSemanticMismatch,
 };
+pub use compute::{SignalConditionalBaselineCompute, SignalConditionalCompute};
 pub use contract::{
     InstalledSignalComparatorUse, InstalledSignalConditionalContract,
     SignalConditionalArtifactReuse, SignalConditionalArtifactReusePolicy,

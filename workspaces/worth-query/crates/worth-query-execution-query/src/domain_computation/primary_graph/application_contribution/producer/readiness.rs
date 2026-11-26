@@ -55,9 +55,7 @@ pub fn evaluate_output_readiness(
     worth_runtime_bridge::facade::BridgeConditionalDenial,
 > {
     let signal_basis = lowering.admit_signal_basis(bridge, truth.signal_basis())?;
-    let mut compute = QueryConditionalComputeContext {
-        output_version: attempt,
-    };
+    let mut compute = QueryConditionalComputeContext::exact(attempt);
     bridge.execute_for_source_record(
         execution,
         &signal_basis,

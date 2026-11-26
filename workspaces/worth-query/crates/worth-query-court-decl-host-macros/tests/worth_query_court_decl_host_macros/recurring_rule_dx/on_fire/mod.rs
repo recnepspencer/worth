@@ -2,6 +2,7 @@
 //! the fire commit: caught up after reopen or in the session that scheduled
 //! it, idempotent on re-catch-up, and silent once the rule is cancelled.
 mod program;
+mod same_session;
 mod schema;
 mod targeted;
 
@@ -93,55 +94,6 @@ fn on_fire_creates_one_task_per_fire_idempotently_until_cancelled() {
     home.close_clean().unwrap();
     let home = open(&path, &clock);
     assert_eq!(catch_up(&home, &clock, 20_000), 0);
-    assert_eq!(tasks(&home, &clock), created);
-    assert_eq!(fired_count(&home, &clock), 2);
-    home.close_clean().unwrap();
-    std::fs::remove_dir_all(path).unwrap();
-}
-
-#[test]
-fn on_fire_rule_scheduled_in_session_fires_on_same_session_catch_up() {
-    let mut path =
-        std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("recurring-on-fire-session");
-    path.set_extension(std::process::id().to_string());
-    let _ = std::fs::remove_dir_all(&path);
-    let clock = WorthQueryAdmissionClock::system();
-
-    let home = open(&path, &clock);
-    let session = home.session(owner(&home, &clock));
-    session
-        .run(ScheduleRule {
-            rule_id: "daily".to_owned(),
-            due_ns: 1_000,
-            interval_ns: 1_000,
-            max_fires: 10,
-            lifecycle: WorthQueryRecurringLifecycle::Active,
-        })
-        .unwrap_or_else(|denial| panic!("schedule: {denial:?}"));
-    let catch_up_in_session = |now_ns| {
-        session
-            .catch_up_temporal::<Recurrence>(
-                WorthQueryClockCoordinate::from_nanoseconds(now_ns),
-                WorthQueryTemporalCatchUpPolicy::bounded(16).unwrap(),
-            )
-            .unwrap_or_else(|denial| panic!("same-session catch-up: {denial}"))
-            .fired()
-    };
-    // Occurrences 1000 and 2000 are due without any reopen.
-    assert_eq!(catch_up_in_session(2_500), 2);
-    let created = tasks(&home, &clock);
-    let keys: Vec<_> = created
-        .iter()
-        .map(|task| (task.task_key.as_str(), task.fire_number))
-        .collect();
-    assert_eq!(keys, [("daily#1", 1), ("daily#2", 2)]);
-    assert_eq!(catch_up_in_session(2_500), 0);
-    assert_eq!(tasks(&home, &clock), created);
-    drop(session);
-    home.close_clean().unwrap();
-
-    let home = open(&path, &clock);
-    assert_eq!(catch_up(&home, &clock, 2_500), 0);
     assert_eq!(tasks(&home, &clock), created);
     assert_eq!(fired_count(&home, &clock), 2);
     home.close_clean().unwrap();

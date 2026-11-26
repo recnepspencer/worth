@@ -1,7 +1,6 @@
 use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
-use crate::data::output::NodeEvaluationResult;
 use crate::logic::evaluation::{EvaluationVerdict, EvaluationWork};
 use crate::logic::prepared::PreparedEvaluation;
 
@@ -48,6 +47,8 @@ pub(super) struct ConditionalResolutionAttempt<
     >,
     pub(super) ready_invalidation:
         Option<crate::data::proof::invalidation::progression::ReadyInvalidationBatch>,
+    /// The output version the node held when this attempt was prepared.
+    pub(super) output_version_before: u64,
     pub(super) counters: &'counter mut SignalConditionalDecisionCounters,
     pub(super) work:
         &'counter mut crate::data::retained_storage::RetainedStoragePreparation<'observer>,
@@ -58,7 +59,7 @@ impl<Condition, Comparator, Compute>
 where
     Condition: InstalledSignalConditionResolver,
     Comparator: ComparatorPolicyResolver,
-    Compute: FnOnce() -> Result<NodeEvaluationResult, SignalError>,
+    Compute: crate::data::conditional_execution::SignalConditionalCompute,
 {
     pub(super) fn resolve(self) -> Result<ConditionalResolution, SignalError> {
         super::work::reserve(self.work, Some(1))?;
@@ -98,9 +99,10 @@ where
         let compute = self.providers.compute.take().ok_or_else(|| {
             SignalError::internal("conditional compute provider was already consumed")
         })?;
+        let output_version_before = self.output_version_before;
         let compute = || {
             self.counters.compute_contacts += 1;
-            compute()
+            compute.compute(output_version_before)
         };
         let result = match self.ready_invalidation {
             Some(ready) => crate::logic::invalidation::scheduling::execute_ready_with_work(
