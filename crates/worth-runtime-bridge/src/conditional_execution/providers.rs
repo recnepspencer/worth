@@ -135,6 +135,19 @@ pub trait BridgeConditionalComputeProvider: Send + Sync + 'static {
         &self,
         context: &mut dyn std::any::Any,
     ) -> Result<worth_signal::facade::NodeEvaluationResult, String>;
+
+    /// Computes knowing the output version the node holds before this
+    /// attempt, which the output comparator compares the result against. A
+    /// provider whose output only marks a fresh evaluation derives its version
+    /// from it; the default ignores it and calls [`Self::compute`].
+    fn compute_from_baseline(
+        &self,
+        context: &mut dyn std::any::Any,
+        output_version_before: u64,
+    ) -> Result<worth_signal::facade::NodeEvaluationResult, String> {
+        let _ = output_version_before;
+        self.compute(context)
+    }
 }
 
 #[derive(Clone, Default)]

@@ -1,6 +1,8 @@
 //! Stock `interval_1d` and `text_prefix` managed indexes over Optional fields
 //! are sparse: rows without a key never match, `None <-> Some` edits move rows
-//! in and out of probe and watch results, and a cold rebuild agrees.
+//! in and out of probe and watch results, and a cold rebuild agrees. Their
+//! live Source is itself an owned subscription.
+mod live_source;
 mod probe;
 mod program;
 mod schema;

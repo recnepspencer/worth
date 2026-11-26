@@ -12,12 +12,14 @@ impl WorthQueryPrimaryGraphProvider {
     /// The provider reads one product World's history and follows every
     /// history release that product's branch and recovery cleanups make.
     pub fn install_world_history(self: &Arc<Self>, product: &WorthQueryProductRuntime) {
+        let port = product.owner_ref().recovery_port();
         assert!(
-            self.world_history
-                .set(product.owner_ref().recovery_port())
-                .is_ok(),
+            self.world_history.set(port.clone()).is_ok(),
             "one product World owns the provider's history"
         );
+        if let Some(owner) = self.correction_material.get() {
+            owner.attach_world_history(port);
+        }
         let follower: std::sync::Weak<Self> = Arc::downgrade(self);
         product
             .owner_cleanup_ref()

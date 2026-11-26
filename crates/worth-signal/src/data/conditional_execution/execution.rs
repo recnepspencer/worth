@@ -1,7 +1,6 @@
 use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
-use crate::data::output::NodeEvaluationResult;
 
 mod application;
 mod attempt;
@@ -73,7 +72,7 @@ impl SignalGraph {
         request: SignalConditionalExecutionRequest<'_>,
         condition_resolver: &mut impl InstalledSignalConditionResolver,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
-        compute: impl FnOnce() -> Result<NodeEvaluationResult, SignalError>,
+        compute: impl crate::data::conditional_execution::SignalConditionalCompute,
     ) -> Result<SignalConditionalDecisionEvidence, SignalConditionalExecutionFailure> {
         let mut attempt = Some((request, compute));
         let maximum_visits = self

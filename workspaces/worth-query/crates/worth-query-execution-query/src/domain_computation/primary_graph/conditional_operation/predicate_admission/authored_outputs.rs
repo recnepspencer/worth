@@ -1,6 +1,6 @@
 //! Authored output roles reconstruct host parameters through fresh installation.
 use super::super::authored_provider_source as source;
-use super::providers::QueryConditionalComputeContext;
+use super::providers::computed_output;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_query_installation::facade::{
@@ -8,7 +8,7 @@ use worth_query_installation::facade::{
     WorthQueryAuthoredHostConditionalOutputVersionProvider,
 };
 use worth_runtime_bridge::facade::*;
-use worth_signal::facade::{Aspect, AspectVersion, NodeEvaluationResult};
+use worth_signal::facade::{Aspect, NodeEvaluationResult};
 
 pub(super) struct QueryAuthoredConditionalComputeProvider<Node> {
     node: Arc<str>,
@@ -65,21 +65,26 @@ impl<Node: 'static> BridgeConditionalComputeProvider
     for QueryAuthoredConditionalComputeProvider<Node>
 {
     fn compute(&self, context: &mut dyn std::any::Any) -> Result<NodeEvaluationResult, String> {
-        let context = context
-            .downcast_ref::<QueryConditionalComputeContext>()
-            .ok_or_else(|| {
-                "conditional execution lacked Query's governed re-entry context".to_owned()
-            })?;
-        let version = self
-            .provider
-            .as_ref()
-            .map(|p| p.output_version(context.output_version))
-            .transpose()
-            .map_err(|cause| cause.detail().to_owned())?
-            .unwrap_or(context.output_version);
-        Ok(NodeEvaluationResult::from_version(
-            AspectVersion::from_updates([(Aspect::new(0), version)]),
-        ))
+        computed_output(context, None, |attempt| self.host_version(attempt))
+    }
+
+    fn compute_from_baseline(
+        &self,
+        context: &mut dyn std::any::Any,
+        output_version_before: u64,
+    ) -> Result<NodeEvaluationResult, String> {
+        computed_output(context, Some(output_version_before), |attempt| {
+            self.host_version(attempt)
+        })
+    }
+}
+impl<Node: 'static> QueryAuthoredConditionalComputeProvider<Node> {
+    fn host_version(&self, attempt: u64) -> Option<Result<u64, String>> {
+        self.provider.as_ref().map(|provider| {
+            provider
+                .output_version(attempt)
+                .map_err(|cause| cause.detail().to_owned())
+        })
     }
 }
 impl<Node: 'static> BridgeAuthoredConditionalProvider

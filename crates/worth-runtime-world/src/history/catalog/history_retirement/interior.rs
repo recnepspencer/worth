@@ -18,6 +18,12 @@ impl EligibleInterior {
         state: &CompositeHistoryCatalogState,
         commit: &CompositeCommitIdentity,
     ) -> Option<Self> {
+        if state
+            .externally_retained_ordinals
+            .contains(&commit.ordinal())
+        {
+            return None;
+        }
         let entry = installed(state, commit)?;
         if entry
             .publication

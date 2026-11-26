@@ -242,11 +242,11 @@ impl super::execution_view::BridgeConditionalExecutionView<'_> {
                 signal_request,
                 &mut condition,
                 &mut comparator,
-                || {
+                worth_signal::facade::SignalConditionalBaselineCompute(|output_version_before| {
                     compute
-                        .compute(compute_context)
+                        .compute_from_baseline(compute_context, output_version_before)
                         .map_err(worth_signal::facade::SignalError::invalid_input)
-                },
+                }),
             )
             .map_err(signal_service_denial)?;
         counters.signal_slot_reuse_hits = usize::from(completion.slot_reused());

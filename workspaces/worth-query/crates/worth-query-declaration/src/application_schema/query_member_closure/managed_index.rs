@@ -122,10 +122,12 @@ fn validate_source(
     if source.managed_index().is_some() {
         return Err(Cause::UnsupportedSourceShape);
     }
+    // A whole-result live lane only lets the same complete Source be watched;
+    // its rows, root, projection and disclosure stay what the index derives
+    // from. A keyed live cause or a continuation reshapes what Source reads.
     if !source.parameters().is_empty()
         || source.continuation().is_some()
         || source.live_cause().is_some()
-        || source.is_live_whole_result()
         || source.orbit().is_some()
         || source.component_selection().is_some()
     {

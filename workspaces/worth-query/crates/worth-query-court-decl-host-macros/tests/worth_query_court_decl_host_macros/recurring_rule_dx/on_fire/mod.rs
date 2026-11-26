@@ -1,7 +1,8 @@
 //! A recurring rule's `on_fire` hook creates one linked Task per fire inside
-//! the fire commit: caught up after reopen, idempotent on re-catch-up, and
-//! silent once the rule is cancelled.
+//! the fire commit: caught up after reopen or in the session that scheduled
+//! it, idempotent on re-catch-up, and silent once the rule is cancelled.
 mod program;
+mod same_session;
 mod schema;
 mod targeted;
 

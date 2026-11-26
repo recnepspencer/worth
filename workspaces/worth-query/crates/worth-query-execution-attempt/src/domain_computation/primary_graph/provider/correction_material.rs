@@ -107,6 +107,10 @@ impl WorthQueryPrimaryGraphProvider {
     ) -> Result<worth_proof::AdmittedHomeQueryCorrections, Denial> {
         if let Some(owner) = self.correction_material.get() {
             owner.admit_medium(medium.as_ref())?;
+            owner.record_world_ordinals(originals);
+            if let Some(world) = self.world_history.get() {
+                owner.attach_world_history(world.clone());
+            }
             owner.abandon_released(originals, request)?;
             owner.discharge_unperformed(Some(originals), request)?;
             return owner.admission();
@@ -116,6 +120,7 @@ impl WorthQueryPrimaryGraphProvider {
                 original_join::admit(request, native, self, originals, catalog)
             })
         })?;
+        owner.record_world_ordinals(originals);
         self.correction_material
             .set(owner)
             .map_err(|_| Denial::AdmissionAlreadyRecorded)?;
@@ -123,6 +128,9 @@ impl WorthQueryPrimaryGraphProvider {
             .correction_material
             .get()
             .expect("same installed material receiver");
+        if let Some(world) = self.world_history.get() {
+            owner.attach_world_history(world.clone());
+        }
         owner.abandon_released(originals, request)?;
         owner.discharge_unperformed(Some(originals), request)?;
         owner.admission()
