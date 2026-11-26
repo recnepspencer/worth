@@ -25,6 +25,7 @@ mod correction_coverage;
 pub use correction_coverage::ApplicationCorrectionCoverageGap;
 mod correction_fields;
 mod principal_fields;
+mod root_scope_keys;
 pub use content::*;
 mod capability_identifier_validation;
 mod capability_member_closure;

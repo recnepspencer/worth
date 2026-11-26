@@ -1496,9 +1496,60 @@ definition provides:
 | Required runtime contracts | `WorthQueryFeatureDefinition::contracts` projects requirements into contribution installation |
 | Runtime configuration | `WorthQueryFeatureDefinition::Configuration` and `configure` carry actual handlers and role runtimes into the existing setup owner |
 
-Compose definitions as typed tuples when appropriate. The application still
-chooses its contributions, feature membership, connections and domain
-configuration explicitly. Supply the handlers and readiness predicates as
+Compose definitions as typed tuples when appropriate. A flat tuple of 2 to 12
+definitions is itself a definition, so an application split into several
+features names them once, `feature_definition: (Orders, Stock, Billing,
+Shipping, Admin)`, and configures them from the matching tuple of runtimes,
+without nesting pairs. The application still chooses its contributions,
+feature membership, connections and domain configuration explicitly.
+
+Build a feature's runtime by member name when it has more than a few actions.
+`Runtime::builder()` starts with no handler; each handler-taking `action`
+member adds a setter named after its field, and `build()` refuses the first
+action still lacking a handler with the same
+`WorthQueryPrimaryGraphInstallationDenial` installation would return:
+
+```rust,ignore
+let stock = StockRuntime::builder()
+    .receive(ReceiveHandler::new(&catalog))
+    .ship(ShipHandler)
+    .recount(RecountHandler)
+    .build()?;
+let config = WorthQueryHomeConfig::new(build, ((orders, stock, billing),));
+```
+
+Required pairs are `builder(..)` arguments. The positional `Runtime::new(..)`
+remains for existing callers, and `Runtime::default()` exists when every
+handler is `Default`. Neither form makes the application's Clippy report
+`too_many_arguments`, however many actions the feature has.
+
+Declare a commit-time invariant inside the feature with an `invariant` member.
+`definition` is the marker's `ApplicationInvariantDefinition` and `rule` the
+factory that resolves the rule from the schema resolver; the member declares
+the invariant and installs its rule, so no hand-written feature definition is
+needed:
+
+```rust,ignore
+worth_query_application_contribution! {
+    pub feature StockActions<StockSchema> for StockFeature => StockRuntime {
+        action ship(ShipLotBinding, LotShipped, ShipLotHandler) {};
+        invariant(BinCapacity) {
+            definition: bin_capacity::definition();
+            rule: bin_capacity::resolve;
+        };
+    }
+}
+```
+
+The program still lists the rule in `rules:`. A query declared with a
+`query(Binding)` member and scoped on a field of its own root must scope by a
+key: a `unique` field, or an immutable `read_only` identity. A mutable,
+non-unique field such as a status is refused when the schema is built, with
+`ApplicationSchemaDeclarationDenial::RootScopedQueryRequiresKeyField` naming
+the binding, query and field; to list the roots sharing a value, scope on
+another entity or filter by a parameter. Reusable access lists are not a
+contribution member: an action's `access(..)` block also emits per-type
+capability impls, which a derive cannot import from another item. Supply the handlers and readiness predicates as
 runtime values, then execute actions through authorized application requests.
 Keep domain and numerical types in their own crates.
 
@@ -1708,8 +1759,10 @@ also names `::worth_query_host`.
   (with forwarded `access(..)` and inline capabilities such as `reads(Task)`),
   contextual mutation binding and optional source-completion `delivery`, with
   identities from `namespace`. Exactly one scope is declared: a field marked
-  `scope = Alias`, struct-level `principal_scope = Alias`, or struct-level
-  `scope = Alias, scope_value = path::to::fn`. With `body`, `result` defaults
+  `scope = Alias`, struct-level `principal_scope = Alias`, struct-level
+  `scope = Alias, scope_value = path::to::fn`, or, for a fixed-duty action
+  that always writes the same entity, `scope = Alias, scope_const = expr`.
+  With `body`, `result` defaults
   to `UnitApplicationValueBinding`, `decision` defaults to
   `WorthQueryOperationBodyDecision<Schema, ScopeEntity>`, and `access` defaults
   to reading the selected scope field (all overridable). `validate = path::to::check`

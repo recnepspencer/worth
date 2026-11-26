@@ -52,6 +52,17 @@ pub enum ApplicationSchemaDeclarationDenial {
         correction: String,
         field: super::ApplicationFieldBindingLocus,
     },
+    /// A query scoped on a field of its own root selects that root by the
+    /// field, so the field must be a key: declare it
+    /// `#[worth_query(equality, unique)]` (or make it an immutable
+    /// `read_only` identity). A mutable, non-unique field such as a status
+    /// cannot select one root; to list the roots sharing a value, scope the
+    /// query on another entity or filter by a parameter.
+    RootScopedQueryRequiresKeyField {
+        binding: String,
+        query: String,
+        field: super::ApplicationFieldBindingLocus,
+    },
     ExtensionRelationMinimum {
         path: String,
     },

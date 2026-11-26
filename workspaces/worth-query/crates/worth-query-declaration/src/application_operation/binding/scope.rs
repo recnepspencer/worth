@@ -1,9 +1,13 @@
 //! Scope strategies carry a record selection; storage facts stay on its binding.
 use super::ApplicationMutationScopeResolutionMode;
 use crate::application_schema::fragment::RecordSelection;
+use crate::application_schema::ApplicationEntityMarkerIdentity;
 
+/// The entity and field a mutation's scope selects. `Scope` is bounded here,
+/// so code generic over an `ApplicationMutationBinding` may rely on its scope
+/// being a declared entity without restating the bound.
 pub trait ApplicationMutationScopeBinding<Schema> {
-    type Scope;
+    type Scope: ApplicationEntityMarkerIdentity<Schema>;
     type Value: 'static;
     type Field: RecordSelection<Entity = Self::Scope, Value = Self::Value>;
     const RESOLUTION_MODE: ApplicationMutationScopeResolutionMode;
@@ -23,6 +27,8 @@ impl<Field: RecordSelection> ApplicationMutationFieldScope<Field> {
 }
 impl<Schema, Field: RecordSelection> ApplicationMutationScopeBinding<Schema>
     for ApplicationMutationFieldScope<Field>
+where
+    Field::Entity: ApplicationEntityMarkerIdentity<Schema>,
 {
     type Scope = Field::Entity;
     type Value = Field::Value;
@@ -47,6 +53,8 @@ impl<Field: RecordSelection> ApplicationMutationPrincipalScope<Field> {
 }
 impl<Schema, Field: RecordSelection> ApplicationMutationScopeBinding<Schema>
     for ApplicationMutationPrincipalScope<Field>
+where
+    Field::Entity: ApplicationEntityMarkerIdentity<Schema>,
 {
     type Scope = Field::Entity;
     type Value = Field::Value;

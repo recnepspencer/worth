@@ -4,6 +4,7 @@ use super::{
     ApplicationMutationScopeBinding,
 };
 use crate::application_schema::fragment::RecordSelection;
+use crate::application_schema::ApplicationEntityMarkerIdentity;
 
 type ResolvedFieldParts<Schema, Binding> = (
     <Binding as ApplicationMutationScopeBinding<Schema>>::Field,
@@ -20,6 +21,8 @@ pub trait ApplicationMutationScopeResolution<Schema, PrincipalIdentity>:
 impl<Schema, Field: RecordSelection, PrincipalIdentity>
     ApplicationMutationScopeResolution<Schema, PrincipalIdentity>
     for ApplicationMutationFieldScope<Field>
+where
+    Field::Entity: ApplicationEntityMarkerIdentity<Schema>,
 {
     fn into_field_parts(self, principal: &PrincipalIdentity) -> (Field, Field::Value) {
         ApplicationMutationFieldScope::into_field_parts(self, principal)
@@ -28,6 +31,7 @@ impl<Schema, Field: RecordSelection, PrincipalIdentity>
 impl<Schema, Field: RecordSelection> ApplicationMutationScopeResolution<Schema, Field::Value>
     for ApplicationMutationPrincipalScope<Field>
 where
+    Field::Entity: ApplicationEntityMarkerIdentity<Schema>,
     Field::Value: Clone,
 {
     fn into_field_parts(self, principal: &Field::Value) -> (Field, Field::Value) {

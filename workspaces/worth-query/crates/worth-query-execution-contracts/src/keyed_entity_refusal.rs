@@ -2,6 +2,8 @@
 //! entity already holds, preserved as typed evidence through handler execution.
 use worth_foundational::facade::AspectValue;
 
+mod field_label;
+
 /// What a keyed lookup or keyed write found.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum WorthQueryKeyedEntityOutcome {
@@ -74,6 +76,14 @@ impl WorthQueryKeyedEntityRefusal {
     /// The declared identity or unique field name.
     pub fn field(&self) -> &str {
         &self.field
+    }
+
+    /// The keyed field as lowercase words naming its entity exactly once, for
+    /// messages: `Order` / `OrderOrderId` and `Order` / `OrderId` both read
+    /// `order id`, `Item` / `Sku` reads `item sku`. [`Self::field`] stays the
+    /// declared name.
+    pub fn field_label(&self) -> String {
+        field_label::qualified_field_label(&self.entity, &self.field)
     }
 
     /// The key value, when it could be encoded.

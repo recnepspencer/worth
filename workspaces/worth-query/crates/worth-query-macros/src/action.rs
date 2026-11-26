@@ -14,7 +14,9 @@
 //!
 //! Exactly one scope: a field marked `#[worth_query(scope = Selection)]`
 //! (`column = ".."` for an override), `principal_scope = Selection`, or
-//! `scope = Selection, scope_value = path::to::value` on the input struct.
+//! `scope = Selection, scope_value = path::to::value` on the input struct, or
+//! `scope = Selection, scope_const = expr` for a fixed-duty action whose scope
+//! value is the same constant for every input.
 //!
 //! With `body`, the input binding retains its canonical input
 //! (`capture_input`), which authored-body input selectors require. The derive

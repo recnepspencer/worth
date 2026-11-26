@@ -74,7 +74,9 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     /// If an identical binding descriptor was already registered (for example as
     /// a correction's disclosure query binding), that registration is reused;
     /// conflicting binding meanings and duplicate query definitions are still
-    /// refused at build time.
+    /// refused at build time. A binding whose input field scopes the query's
+    /// own root must name a key field (`unique` or `read_only`); `build()`
+    /// refuses a mutable, non-unique one with `RootScopedQueryRequiresKeyField`.
     pub fn bound_application_query<Binding>(
         self,
         definition: ApplicationQueryDefinitionBuilder<
@@ -89,8 +91,9 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         Schema: super::ApplicationSchema,
         Binding: ApplicationQueryBinding<Schema>,
     {
-        let builder = self.application_query(definition);
+        let mut builder = self.application_query(definition);
         let descriptor = Binding::descriptor();
+        builder.root_scope_keys.expect(descriptor.clone());
         if builder
             .member_provenance
             .query_bindings()
