@@ -164,6 +164,18 @@ fn validate_leaves(
                 "checkpoint region directory has duplicate, unordered or invalid leaves",
             ));
         }
+        if (leaf.entity_slots == 0 && leaf.chunks.entity_domain != 0)
+            || (leaf.relation_slots == 0 && leaf.chunks.relation_domain != 0)
+        {
+            return Err(corrupt(
+                "checkpoint region chunk placement claims slots in an empty arena",
+            ));
+        }
+        leaf.chunks.admit().map_err(|refusal| {
+            corrupt(format!(
+                "checkpoint region chunk placement is invalid: {refusal:?}"
+            ))
+        })?;
         previous = Some(leaf.partition_id);
     }
     Ok(())

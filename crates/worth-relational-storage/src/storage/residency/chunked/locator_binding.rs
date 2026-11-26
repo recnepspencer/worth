@@ -9,6 +9,7 @@ use crate::durability::medium::RelationalDurableMemberLocator;
 /// checkpoint manifest, never by the semantic root: history consolidation
 /// replaces `history_locator` without touching `root_semantic_merkle`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ChunkLocatorBinding {
     slot_range: SlotRange,
     head_locator: RelationalDurableMemberLocator,

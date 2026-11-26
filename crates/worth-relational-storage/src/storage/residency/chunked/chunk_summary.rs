@@ -7,16 +7,59 @@
 //! agrees with the canonical full scan.
 use std::collections::BTreeSet;
 
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use super::slot_projection::{AdjacencyEdge, SlotVersion};
 use crate::identity::data::KindId;
 
 /// Sorted, duplicate-free record kinds and incident relation kinds.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(try_from = "EncodedSummary", into = "EncodedSummary")]
 pub struct ChunkKindAdjacencySummary {
     record_kinds: Vec<KindId>,
     adjacency_kinds: Vec<KindId>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct EncodedSummary {
+    record_kinds: Vec<KindId>,
+    adjacency_kinds: Vec<KindId>,
+}
+
+/// A decoded summary whose kind lists are not strictly ascending.
+#[derive(Debug)]
+pub struct NonCanonicalSummary;
+
+impl std::fmt::Display for NonCanonicalSummary {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("chunk summary kinds are not strictly ascending")
+    }
+}
+
+impl TryFrom<EncodedSummary> for ChunkKindAdjacencySummary {
+    type Error = NonCanonicalSummary;
+
+    fn try_from(encoded: EncodedSummary) -> Result<Self, Self::Error> {
+        let ascending = |kinds: &[KindId]| kinds.windows(2).all(|pair| pair[0] < pair[1]);
+        if !ascending(&encoded.record_kinds) || !ascending(&encoded.adjacency_kinds) {
+            return Err(NonCanonicalSummary);
+        }
+        Ok(Self {
+            record_kinds: encoded.record_kinds,
+            adjacency_kinds: encoded.adjacency_kinds,
+        })
+    }
+}
+
+impl From<ChunkKindAdjacencySummary> for EncodedSummary {
+    fn from(summary: ChunkKindAdjacencySummary) -> Self {
+        Self {
+            record_kinds: summary.record_kinds,
+            adjacency_kinds: summary.adjacency_kinds,
+        }
+    }
 }
 
 impl ChunkKindAdjacencySummary {

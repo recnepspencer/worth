@@ -4,6 +4,7 @@
 //! [`CanonicalChunkVisitor`]: no physical locator, layer boundary or
 //! continuation page boundary is ever hashed, so flattening layered history
 //! or re-paging a spilled slot leaves it bit-identical.
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use super::chunk_summary::{ChunkKindAdjacencySummary, SummaryDerivation};
@@ -17,8 +18,11 @@ const MERKLE_NODE: u8 = 1;
 const MERKLE_EMPTY: &[u8] = b"worth.relational.chunk.merkle.empty.v1";
 
 /// One chunk's canonical meaning, folded into the selected root's Merkle
-/// commitment. Only the chunk sealer and the canonical verifier mint it.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// commitment. The chunk sealer and the canonical verifier mint it; a `CHK24`
+/// manifest readmits it only through region placement admission, which
+/// re-derives the recorded `root_semantic_merkle` from the decoded entries.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ChunkSemanticEntry {
     domain: SlotDomain,
     slot_range: SlotRange,

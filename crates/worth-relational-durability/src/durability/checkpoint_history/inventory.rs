@@ -184,7 +184,7 @@ pub(crate) fn validate(
             .iter()
             .flat_map(|root| &root.regions)
             .chain(&manifest.mirror)
-            .any(|leaf| canonical(leaf.head) || canonical(leaf.history))
+            .any(|leaf| leaf.leaf_members().any(canonical))
         || manifest.history_dependencies.iter().any(|dependency| {
             canonical(dependency.member) || dependency.bases.iter().any(|member| canonical(*member))
         })

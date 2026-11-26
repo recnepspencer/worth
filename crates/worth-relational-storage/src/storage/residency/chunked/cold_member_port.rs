@@ -126,10 +126,48 @@ impl ChunkMemberSource for ColdMemberSource {
     }
 }
 
+/// Confines chunk-member reads to an admitted placement's member roster so a
+/// tampered continuation or directory page cannot fetch an unlisted locator
+/// from a shared backing source.
+#[derive(Debug)]
+pub struct ConfinedMemberSource<S> {
+    inner: S,
+    allowed: Vec<RelationalDurableMemberLocator>,
+}
+
+impl<S> ConfinedMemberSource<S> {
+    pub fn new(inner: S, mut allowed: Vec<RelationalDurableMemberLocator>) -> Self {
+        allowed.sort_unstable();
+        allowed.dedup();
+        Self { inner, allowed }
+    }
+}
+
+impl<S: ChunkMemberSource> ChunkMemberSource for ConfinedMemberSource<S> {
+    fn read_range(
+        &self,
+        member: RelationalDurableMemberLocator,
+        offset: u64,
+        target: &mut [u8],
+    ) -> Result<usize, Cause> {
+        if self.allowed.binary_search(&member).is_err() {
+            return Err(Cause::Damaged);
+        }
+        self.inner.read_range(member, offset, target)
+    }
+}
+
 /// Collects sealed members during capture, in write order, without duplicates.
 #[derive(Debug, Default)]
 pub struct CollectedMembers {
     pub members: Vec<(RelationalDurableMemberLocator, Vec<u8>)>,
+    seen: std::collections::BTreeSet<RelationalDurableMemberLocator>,
+}
+
+impl CollectedMembers {
+    pub fn contains(&self, locator: &RelationalDurableMemberLocator) -> bool {
+        self.seen.contains(locator)
+    }
 }
 
 impl ChunkMemberSink for CollectedMembers {
@@ -138,7 +176,7 @@ impl ChunkMemberSink for CollectedMembers {
         locator: RelationalDurableMemberLocator,
         bytes: Vec<u8>,
     ) -> Result<(), Cause> {
-        if !self.members.iter().any(|(known, _)| *known == locator) {
+        if self.seen.insert(locator) {
             self.members.push((locator, bytes));
         }
         Ok(())

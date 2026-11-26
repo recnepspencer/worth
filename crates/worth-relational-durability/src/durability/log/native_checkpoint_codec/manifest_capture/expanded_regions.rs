@@ -88,6 +88,12 @@ pub(super) fn capture_partitions(
                     + partition.relation_arena.lifecycle_counts().unavailable,
                 head: add(members, captured.head),
                 history: add(members, captured.history),
+                chunks: {
+                    for member in captured.chunks.members {
+                        add(members, member);
+                    }
+                    std::sync::Arc::new(captured.chunks.placement)
+                },
             })
         })
         .collect()

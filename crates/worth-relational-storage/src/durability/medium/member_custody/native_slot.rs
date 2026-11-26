@@ -34,6 +34,12 @@ impl NativeMemberRetirementSlot {
             }
         }
     }
+    pub fn try_retain_serving(&self) -> Option<Self> {
+        match self {
+            Self::Original(token) => Some(Self::Original(token.clone())),
+            Self::Retiring(_) | Self::Loaned | Self::Retired { .. } => None,
+        }
+    }
     /// No provider call or allocation occurs while the original slot is held.
     pub fn loan(
         &mut self,

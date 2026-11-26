@@ -172,8 +172,9 @@ impl RelationalCheckpointManifestDraft {
             .flat_map(|root| &root.regions)
             .chain(&self.mirror)
         {
-            insert(leaf.head)?;
-            insert(leaf.history)?;
+            for member in leaf.leaf_members() {
+                insert(member)?;
+            }
         }
         // Admitted declarations are exactly the reachable history graph.
         for dependency in &self.history_dependencies {

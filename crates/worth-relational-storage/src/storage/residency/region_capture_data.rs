@@ -12,6 +12,7 @@ pub struct CapturedRegionMembers {
     pub kind_authority: super::RelationalRegionKindCommitment,
     pub head: (RelationalDurableMemberLocator, Vec<u8>),
     pub history: (RelationalDurableMemberLocator, Vec<u8>),
+    pub chunks: super::chunked::region_projection::SealedRegionChunks,
 }
 
 pub type RegionMemberCapture =

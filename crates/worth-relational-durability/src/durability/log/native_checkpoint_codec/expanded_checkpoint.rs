@@ -327,6 +327,7 @@ fn expand_regions(
                 entity_slots: leaf.entity_slots,
                 relation_slots: leaf.relation_slots,
                 unavailable_records: leaf.unavailable_records,
+                chunks: leaf.chunks.clone(),
             })?;
             Ok((leaf.partition_id, cell))
         })

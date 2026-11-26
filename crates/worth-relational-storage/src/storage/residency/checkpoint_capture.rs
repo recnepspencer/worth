@@ -94,7 +94,10 @@ impl RelationalRegionResidency {
             .get(&schema_digest)
             .filter(|recorded| {
                 current_members.is_none_or(|members| {
-                    members.contains(&recorded.leaf.head)
+                    recorded
+                        .leaf
+                        .leaf_members()
+                        .all(|member| members.contains(&member))
                         && recorded
                             .history_members
                             .members(recorded.leaf.history)
@@ -121,7 +124,7 @@ impl RelationalRegionResidency {
         };
         let (recorded, members) = if let Some(recorded) = binding {
             let mut required = recorded.history_members.members(recorded.leaf.history);
-            required.insert(recorded.leaf.head);
+            required.extend(recorded.leaf.leaf_members());
             let members = required
                 .into_iter()
                 .map(|locator| RelationalCheckpointMember::Carried { locator })
@@ -173,6 +176,7 @@ impl RelationalRegionResidency {
                     + partition.relation_arena.lifecycle_counts().unavailable,
                 head: captured.head.0,
                 history: captured.history.0,
+                chunks: Arc::new(captured.chunks.placement),
             };
             let required = captured.history_members.members(captured.history.0);
             let mut members = Vec::new();
@@ -185,6 +189,7 @@ impl RelationalRegionResidency {
                 }
                 members.push(RelationalCheckpointMember::Carried { locator });
             }
+            members.extend(complete::chunk_members(captured.chunks.members));
             members.extend([captured.head, captured.history].into_iter().map(
                 |(locator, bytes)| RelationalCheckpointMember::New {
                     locator,

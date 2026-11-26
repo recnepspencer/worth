@@ -7,7 +7,7 @@ use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 #[derive(Debug)]
 pub struct CapturedCompleteRegion {
     pub leaf: RelationalCheckpointRegion,
-    pub members: [RelationalCheckpointMember; 2],
+    pub members: Vec<RelationalCheckpointMember>,
     pub publication: RelationalCheckpointRegionPublication,
 }
 #[derive(Debug)]
@@ -117,6 +117,7 @@ impl RelationalRegionResidency {
                 + partition.relation_arena.lifecycle_counts().unavailable,
             head: captured.head.0,
             history: captured.history.0,
+            chunks: Arc::new(captured.chunks.placement),
         };
         let recorded = RecordedRegionCheckpoint {
             leaf: leaf.clone(),
@@ -133,7 +134,10 @@ impl RelationalRegionResidency {
                     locator: captured.history.0,
                     bytes: captured.history.1,
                 },
-            ],
+            ]
+            .into_iter()
+            .chain(chunk_members(captured.chunks.members))
+            .collect(),
             publication: RelationalCheckpointRegionPublication {
                 cell: Self::downgrade(self),
                 schema_digest,
@@ -141,4 +145,21 @@ impl RelationalRegionResidency {
             },
         })
     }
+}
+
+/// Sealed chunk members as new checkpoint members.
+pub(in crate::internal_port::storage::residency) fn chunk_members(
+    members: Vec<(
+        crate::durability::medium::RelationalDurableMemberLocator,
+        Vec<u8>,
+    )>,
+) -> impl Iterator<Item = RelationalCheckpointMember> {
+    members
+        .into_iter()
+        .map(|(locator, bytes)| RelationalCheckpointMember::New {
+            locator,
+            bytes: worth_execution::ExecutionImmutableBytes::from_external_bytes(Arc::new(
+                bytes.into_boxed_slice(),
+            )),
+        })
 }

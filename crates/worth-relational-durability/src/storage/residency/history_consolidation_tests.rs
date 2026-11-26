@@ -191,6 +191,7 @@ fn archive(cold: &RelationalColdRegion) -> BTreeMap<RelationalDurableMemberLocat
         .members(cold.history)
         .into_iter()
         .chain([cold.head])
+        .chain(cold.chunks.members.iter().copied())
         .map(|member| {
             (
                 member,

@@ -234,9 +234,11 @@ pub(super) fn encode_layer(
         }
         members.insert(captured.head.0, captured.head.1);
         members.insert(captured.history.0, captured.history.1);
+        members.extend(captured.chunks.members);
         let source = counted(members, captured.history.0);
         (
             RelationalColdRegion {
+                chunks: Arc::new(captured.chunks.placement),
                 head: captured.head.0,
                 history: captured.history.0,
                 history_members: captured.history_members,

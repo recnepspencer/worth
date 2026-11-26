@@ -68,7 +68,7 @@ pub(super) fn capture(
             if cache.get(&key).is_none() {
                 let captured = match covered.get(*commit, region.partition_id, group.carrier) {
                     Some(leaf) => {
-                        for locator in [leaf.head, leaf.history] {
+                        for locator in leaf.leaf_members() {
                             if members.get(&locator).is_none() {
                                 members.insert_cloned_native_for_request(
                                     &locator,
