@@ -1,5 +1,5 @@
 //! A desktop-style value owns its Home and an owned live subscription side by
-//! side, receives another session's change, and retires once it lets go.
+//! side, receives another session's change, and retires with it still open.
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryAdmissionClock, WorthQueryOwnedLiveSubscription,
     DEFAULT_HOST_EXECUTION_POLICY,
@@ -30,7 +30,7 @@ fn keys(rows: &[super::schema::TaskRow]) -> Vec<u64> {
 }
 
 #[test]
-fn a_struct_owns_its_home_and_an_owned_live_subscription_then_retires() {
+fn a_struct_owns_its_home_and_an_owned_live_subscription_and_retires_with_it_open() {
     let path = temp_home_path("owned-live");
     let clock = WorthQueryAdmissionClock::system();
     let mut board = Board {
@@ -72,19 +72,15 @@ fn a_struct_owns_its_home_and_an_owned_live_subscription_then_retires() {
     drop(session);
     drop(me);
 
-    // While the subscription is held the Home keeps its runtime; once the
-    // subscription drops, the same retirement completes.
+    // Retirement closes the held subscription itself: no drop ordering is owed.
     let Board { ready, home } = board;
-    let retiring = match home
+    if let Err((_, stop)) = home
         .into_retirement()
         .try_retire(DEFAULT_HOST_EXECUTION_POLICY)
     {
-        Ok(()) => panic!("a held owned subscription keeps the Home's runtime open"),
-        Err((retiring, _stop)) => retiring,
-    };
-    drop(ready);
-    if let Err((_, stop)) = retiring.try_retire(DEFAULT_HOST_EXECUTION_POLICY) {
-        panic!("the Home retires once the owned subscription drops: {stop:?}");
+        panic!("retirement closes an open owned subscription: {stop:?}");
     }
+    // Closing a subscription its Home already closed is harmless.
+    ready.unwrap().close().unwrap();
     std::fs::remove_dir_all(path).unwrap();
 }

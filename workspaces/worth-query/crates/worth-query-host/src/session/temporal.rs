@@ -37,8 +37,9 @@ impl<Schema: ApplicationSchema + 'static, Program> WorthQueryHostSession<'_, Sch
         let lease = self
             .open_lease(&scope)
             .map_err(WorthQueryTemporalCatchUpDenial::Advancement)?;
-        self.home.catch_up_temporal_on::<Binding>(
-            self.branch,
+        crate::application_home::catch_up_temporal_in::<Schema, Program, Binding>(
+            self.home.runtime(),
+            self.settings.branch,
             now,
             &ExecutionRequest::leased(&lease),
             policy,

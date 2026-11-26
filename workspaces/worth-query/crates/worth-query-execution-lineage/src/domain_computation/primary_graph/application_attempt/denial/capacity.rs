@@ -31,6 +31,9 @@ impl ChargedBytes for AttemptDenialCause {
             AttemptDenialCause::None => 0,
             // A naming refusal holds short owned diagnostics only.
             AttemptDenialCause::PersistentName(cause) => std::mem::size_of_val(cause.as_ref()) as u64,
+            AttemptDenialCause::KeyedEntity(keyed) => (std::mem::size_of_val(keyed.as_ref()) as u64)
+                .saturating_add(keyed.entity().len() as u64)
+                .saturating_add(keyed.field().len() as u64),
             // Native query stops contain only inline reports, identities and enums.
             AttemptDenialCause::NativeQueryRead(_) => std::mem::size_of::<
                 worth_relational::facade::runtime::QueryReadExecutionStop,

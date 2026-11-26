@@ -85,6 +85,7 @@ pub(in crate::application_home) fn finish_service<
             checkpoint_limits,
             open_disposition,
             active_head,
+            owned: std::sync::Arc::default(),
         }
     });
     observation.arrive_for_test(

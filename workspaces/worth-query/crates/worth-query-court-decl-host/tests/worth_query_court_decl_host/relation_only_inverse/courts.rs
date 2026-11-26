@@ -240,3 +240,40 @@ fn relation_only_edit_seals_unchanged_demanded_kinds_and_restores_the_changed_pa
     edit("retarget-after-undo");
     assert!(live(&request, 10) && live(&request, 11) && live(&request, 20));
 }
+
+#[test]
+fn a_handler_resolve_miss_reaches_the_caller_as_a_keyed_not_found() {
+    use worth_query_host::facade::{WorthQueryRefusalCategory, WorthQueryUserFacingRefusal};
+    let (host, scope) = world();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.runtime().request(&principal, &scope);
+    let missing = Despawn {
+        id: 999,
+        part: None,
+        foreign: None,
+    };
+    let denial = match request
+        .advanced()
+        .mutate(missing)
+        .without_source()
+        .idempotency(&"despawn:999".to_owned())
+        .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
+    {
+        Err(denial) => denial,
+        Ok(outcome) => panic!("an unknown node cannot be despawned: {outcome:?}"),
+    };
+    let WorthQueryApplicationRequestMutationDenial::Handler(handler) = &denial else {
+        panic!("the executed handler refuses: {denial:?}");
+    };
+    let keyed = handler.keyed_entity().expect("the miss names its key");
+    assert_eq!(keyed.outcome(), WorthQueryKeyedEntityOutcome::NotFound);
+    assert_eq!(keyed.field(), "Id");
+    assert_eq!(
+        keyed.key(),
+        Some(&worth_foundational::facade::AspectValue::UInt64(999))
+    );
+    assert_eq!(
+        denial.refusal_category(),
+        WorthQueryRefusalCategory::NotFound
+    );
+}

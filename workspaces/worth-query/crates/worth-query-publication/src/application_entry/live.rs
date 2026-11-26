@@ -231,7 +231,6 @@ where
                 WorthQueryPrincipalResolutionDenialKind::Stopped(stop) => return Ok(self.lease.end_with_read_stop(stop)),
                 WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ForeignRuntime)
                 | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::StaleInstalledSchema)
-                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ExpiredAuthentication)
                 | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::UnknownPrincipal)
                 | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::DisabledPrincipal)
                 | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::AmbiguousPrincipal)
@@ -250,7 +249,11 @@ where
                 | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::SnapshotIdentityExhausted)
                 | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::RetentionCapacityExhausted)
                 | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::RetentionIdentityExhausted) => return Err(WorthQueryApplicationLiveNextDenial::PrincipalResolution(denial)),
-                WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ForeignPhase) => return Err(WorthQueryApplicationLiveNextDenial::PrincipalResolution(denial)),
+                // An expired proof is the caller's stale credential, not a
+                // change to what the lease observes: refuse this poll and keep
+                // the lease open, so a renewed session's next poll succeeds.
+                WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ExpiredAuthentication)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ForeignPhase) => return Err(WorthQueryApplicationLiveNextDenial::PrincipalResolution(denial)),
             },
         };
         Ok(self.lease.next(phase, &principal, fresh_request.scope))

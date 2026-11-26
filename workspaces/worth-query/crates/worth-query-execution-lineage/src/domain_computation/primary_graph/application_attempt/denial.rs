@@ -36,6 +36,7 @@ enum AttemptDenialCause {
     OutputObservation(Box<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>),
     RetainedInput(Box<worth_query_declaration::facade::application_operation::ApplicationRetainedInputDenial>),
     PersistentName(Box<worth_query_execution_naming::facade::WorthQueryOutputNameDenial>),
+    KeyedEntity(Box<crate::domain_computation::primary_graph::WorthQueryKeyedEntityRefusal>),
     None,
     NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
     RetainedSource(Box<super::retained_decision_facts::StoreDenial>),
@@ -227,6 +228,7 @@ impl std::fmt::Display for WorthQueryApplicationAttemptDenial {
 
 pub mod unobserved_write;
 pub use unobserved_write::WorthQueryApplicationUnobservedWrite;
+pub mod keyed_entity;
 pub mod output_observation;
 pub mod persistent_name;
 pub mod retained_input;
@@ -243,6 +245,7 @@ impl std::error::Error for WorthQueryApplicationAttemptDenial {
             Some(AttemptDenialCause::Allocation(denial)) => Some(denial.as_ref()),
             Some(AttemptDenialCause::RequestAuthority(denial)) => Some(denial.as_ref()),
             Some(AttemptDenialCause::PersistentName(denial)) => Some(denial.as_ref()),
+            Some(AttemptDenialCause::KeyedEntity(keyed)) => Some(keyed.as_ref()),
             _ => None,
         }
     }

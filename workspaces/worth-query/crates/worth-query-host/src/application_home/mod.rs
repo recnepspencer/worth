@@ -9,6 +9,7 @@ mod failure_close;
 mod history_and_undo;
 mod maintenance;
 mod opening;
+pub(crate) mod owned_holds;
 mod preview;
 mod refusal;
 mod request;
@@ -50,6 +51,7 @@ pub use retirement::{
     WorthQueryDirectoryOpenRetired, WorthQueryHomeRetirement, WorthQueryHomeRetirementStop,
 };
 pub use runtime::{WorthQueryApplicationHome, WorthQueryHomeOpenDisposition};
+pub(crate) use temporal_catch_up::catch_up_temporal_in;
 pub use transition::{
     NoHomeProgramTransition, WorthQueryApplicationHomeTransitionRequired,
     WorthQueryHomePredecessorRefusal, WorthQueryHomeProgramTransition,

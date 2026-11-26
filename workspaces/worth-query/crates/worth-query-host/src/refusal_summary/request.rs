@@ -4,21 +4,23 @@ use worth_query_execution::facade::{
         WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
     },
     primary_graph::{
-        MutationHandlerExecutionDenial, WorthQueryApplicationUncommitted,
-        WorthQueryOperationBodyDenial,
+        MutationHandlerExecutionDenial, WorthQueryApplicationCommitDenialKind as CommitDenialKind,
+        WorthQueryApplicationUncommitted, WorthQueryKeyedEntityOutcome,
+        WorthQueryKeyedEntityRefusal, WorthQueryOperationBodyDenial,
     },
 };
 use worth_query_publication::facade::application_entry::{
     WorthQueryApplicationRequestMutationDenial, WorthQueryApplicationRequestQueryDenial,
 };
 
-use super::stops::authorization;
+use super::stops::{authorization, principal_resolution};
 use super::summary::{
     WorthQueryRefusalCategory as Category, WorthQueryRefusalSummary as Summary,
     WorthQueryUserFacingRefusal,
 };
 
 pub(super) const PERMISSION: Summary = Summary::of(Category::PermissionDenied);
+pub(super) const SESSION_EXPIRED: Summary = Summary::of(Category::SessionExpired);
 pub(super) const STALE: Summary = Summary::of(Category::Conflict);
 pub(super) const INTERNAL: Summary = Summary::of(Category::Internal);
 pub(super) const UNSUPPORTED: Summary = Summary::of(Category::Unsupported);
@@ -40,6 +42,10 @@ pub(super) const ALREADY_DONE: Summary = Summary::with_message(
 pub(super) const MISSING_ITEM: Summary = Summary::with_message(
     Category::NotFound,
     "That item could not be found. It may have been removed.",
+);
+pub(super) const ALREADY_EXISTS: Summary = Summary::with_message(
+    Category::Conflict,
+    "Something with that name or key already exists. Choose a different one.",
 );
 pub(super) const RULE_REFUSED: Summary = Summary::with_message(
     Category::Validation,
@@ -82,7 +88,8 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationRequestMutationDenial 
         match self {
             Self::ExecutionRequest(cause) => cause.user_summary(),
             Self::Authorization(denial) => authorization(&denial.kind()),
-            Self::PrincipalResolution(_) | Self::WorkflowAuthoritySpent => PERMISSION,
+            Self::PrincipalResolution(denial) => principal_resolution(denial.kind()),
+            Self::WorkflowAuthoritySpent => PERMISSION,
             Self::ScopeResolution(cause) => cause.user_summary(),
             Self::Identity(cause) => cause.user_summary(),
             Self::InputCapture(cause) => match (cause.encoding(), cause.execution_stop()) {
@@ -109,6 +116,9 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationRequestMutationDenial 
 /// Handler stop evidence: the application's own body or its write admission.
 impl WorthQueryUserFacingRefusal for MutationHandlerExecutionDenial {
     fn user_summary(&self) -> Summary {
+        if let Some(keyed) = self.keyed_entity() {
+            return keyed.user_summary();
+        }
         match self {
             Self::Handler(_) | Self::Projection(_) => RULE_REFUSED,
             Self::Attempt(_) => STALE,
@@ -125,7 +135,8 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationRequestQueryDenial {
     fn user_summary(&self) -> Summary {
         match self {
             Self::ExecutionRequest(cause) => cause.user_summary(),
-            Self::PrincipalResolution(_) | Self::CapabilityAdmission(_) => PERMISSION,
+            Self::PrincipalResolution(denial) => principal_resolution(denial.kind()),
+            Self::CapabilityAdmission(_) => PERMISSION,
             Self::Admission(cause) => cause.user_summary(),
             Self::ScopeResolution(cause) => cause.user_summary(),
             Self::InputPreparation(cause) => cause.user_summary(),
@@ -150,6 +161,9 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationUncommitted {
             Self::ProductStale(_) | Self::Stale(_) => STALE,
             Self::Cancelled => CANCELLED,
             Self::TimedOut => TIMED_OUT,
+            Self::Denied(denial) if denial.kind() == CommitDenialKind::UniqueValueTaken => {
+                ALREADY_EXISTS
+            }
             Self::NoEffect(_) | Self::Aborted | Self::Denied(_) => RULE_REFUSED,
             Self::OutputAdopted(_) => ALREADY_DONE,
             Self::CleanupRequired(_)
@@ -161,6 +175,16 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationUncommitted {
                 "The change is still being saved. Check again in a moment before retrying.",
             ),
             Self::ProductPreparationRefused(_) => STORAGE,
+        }
+    }
+}
+
+/// A keyed lookup miss reads as a missing item; a held key as a conflict.
+impl WorthQueryUserFacingRefusal for WorthQueryKeyedEntityRefusal {
+    fn user_summary(&self) -> Summary {
+        match self.outcome() {
+            WorthQueryKeyedEntityOutcome::NotFound => MISSING_ITEM,
+            WorthQueryKeyedEntityOutcome::AlreadyExists => ALREADY_EXISTS,
         }
     }
 }

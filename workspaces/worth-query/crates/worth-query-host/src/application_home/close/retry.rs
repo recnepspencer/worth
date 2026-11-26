@@ -42,6 +42,7 @@ impl<Schema: ApplicationSchema, Program: 'static>
                     checkpoint_limits,
                     open_disposition,
                     active_head: std::sync::Mutex::new(active_head),
+                    owned: std::sync::Arc::default(),
                 },
                 request,
             ),

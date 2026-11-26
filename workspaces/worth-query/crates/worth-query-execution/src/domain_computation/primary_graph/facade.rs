@@ -261,7 +261,8 @@ pub use super::entity_key::{WorthQueryApplicationEntityKey, WorthQueryApplicatio
 pub use super::entity_resolution::WorthQueryApplicationEntityIdentity;
 pub use super::entity_resolution_denial::{
     WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
-    WorthQueryEntityResolutionRefusalKind,
+    WorthQueryEntityResolutionRefusalKind, WorthQueryKeyedEntityOutcome,
+    WorthQueryKeyedEntityRefusal,
 };
 pub use super::expression::WorthQueryWorkflowConditionSources;
 pub use super::fact_verification_observation::{
