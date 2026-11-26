@@ -55,8 +55,13 @@ impl ConsumedOutputEvidence {
             if row.output_facts().is_none() && witness.is_none() {
                 return Err(ConsumedOutputVerificationStop::Unavailable);
             }
-            // The witness, used only at the root, is the root evidence's own
-            // row, as `full_verification` takes it (public #358).
+            // As `full_verification` takes them (public #358): a projection
+            // holds through its own coordinate; the witness, used only at the
+            // root without one, through the root evidence's own row.
+            let output_historical = match row.output_facts() {
+                Some(_) => row.output_historical(),
+                None => evidence.historical.filter(|_| root),
+            };
             let changed = Self::compare_facts(
                 execution,
                 &facts,
@@ -66,8 +71,7 @@ impl ConsumedOutputEvidence {
                 runtime,
                 snapshot,
                 row.historical.as_ref(),
-                row.output_historical()
-                    .or_else(|| evidence.historical.filter(|_| root)),
+                output_historical,
             )?;
             if let Some(changed) = changed {
                 image.fence().map_err(map_verification_stop)?;

@@ -102,10 +102,16 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 .flatten();
             (current, verified_at)
         });
+        // Native selection's exact predicate already required this
+        // (`current_verification.rs`). Re-root only after `is_current` at
+        // `selected`, so no caller re-roots on another module's verdict.
         if !current? {
             return Ok(None);
         }
         let consumer = !candidate.consumed_outputs.is_empty();
+        if crate::domain_computation::primary_graph::output_lineage::invalidation::readmission_observation::historical_readmission_declined(consumer) {
+            return Ok(None);
+        }
         let verified_at = if consumer {
             match self.readmit_consumed_chain(execution, &selected, &candidate)? {
                 Some(head) => Some(head),

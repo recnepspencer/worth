@@ -13,7 +13,22 @@ impl FullVerificationImage<'_> {
     ) -> Result<FullVerificationDecision, FullVerificationStop> {
         let mut pending = Vec::new();
         reserve_pending(&mut pending, upstream.len())?;
-        pending.extend(upstream.iter().map(EvidenceView::from));
+        for consumed in upstream {
+            let view = EvidenceView::from(consumed);
+            // A marked upstream verifies through its marks, like any marked
+            // read: an equal successor the marks link carries the output this
+            // row consumed (public #358). Only an unmarked one is compared
+            // through this row's selection evidence.
+            let marked = !self.native_only
+                && (self.state.settlements.contains_key(view.identity())
+                    || self.state.equal_links.contains_key(view.identity()));
+            if !marked {
+                pending.push(view);
+            } else if self.verify_source_view(execution, view)? == FullVerificationDecision::Changed
+            {
+                return Ok(FullVerificationDecision::Changed);
+            }
+        }
         self.verify_native_sources(execution, pending, Some(evidence))
     }
     pub fn historical_source_is_current(

@@ -37,6 +37,33 @@ const PINNED: &[(u64, &[Op], &str)] = &[
     ),
 ];
 
+/// Each edit settles on a new product branch occurrence. The chain consumer
+/// settled on the newer one keeps its consumed evidence on the upstream row
+/// of the earlier one, whose source can only be disclosed on its own
+/// occurrence. A write outside then executes the consumer ordinarily instead
+/// of readmitting that row and refusing terminally `Superseded` (seed
+/// `0x7b020024` with corrections, public #358). The write changed `dst-a`'s
+/// source and the newer occurrence holds no `dst-a` row, so no equivalent
+/// upstream row exists to reuse: execution is the only sound outcome, and
+/// no chain is readmitted.
+#[test]
+fn a_chain_consumer_on_an_earlier_occurrences_upstream_settles() {
+    let equivalence =
+        worth_query_host::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install_chain();
+    let ops = [Op::Edit([Set(2), Set(2)]), Op::Edit([Set(2), Set(2)]), Op::OutOfBand([Set(1), Set(1)])];
+    if let Err(failure) = run(&mut world::Document::attach_chain(&host), &ops, None) {
+        panic!("#358 chain ({ops:?}) disagrees:\n{failure:#?}");
+    }
+    assert!(equivalence.shadow_checks_for_test() > 0, "the armed shadow must check a certification");
+    assert_eq!(
+        worth_query_host::facade::primary_graph::readmitted_chains_on_this_thread_for_test(),
+        0,
+        "the earlier occurrence's row is never readmitted on the newer one"
+    );
+}
+
 /// The first recorded edit of the forked-head cases: it creates both members.
 const MADE: Op = Op::Edit([Set(2), Set(1)]);
 

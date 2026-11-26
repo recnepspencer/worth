@@ -29,6 +29,24 @@ where
     {
         self.select_output_producer_with_remaining_core::<Family>(execution, source, profile_kind, retained_program_basis, Some(shared), SelectionPurpose::OutputDelivery, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
+    /// The historical row selected as current declined its readmission. The
+    /// same source selects again with that row stale: the ordinary Preserve
+    /// (or guarded input cutoff) executes over the live output.
+    pub fn select_output_producer_after_declined_readmission<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: &WorthQueryObservedSource<
+            <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
+        >,
+        profile_kind: &'static str,
+        retained_program_basis: Option<&WorthQueryApplicationReadObservation>,
+        shared: Option<&SharedSelectedProductOperation<'_, Schema>>,
+    ) -> Result<SelectedWithEntry<'_, Schema>, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        self.select_output_producer_with_remaining_core::<Family>(execution, source, profile_kind, retained_program_basis, shared, SelectionPurpose::DeclinedReadmission, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+    }
     pub fn select_output_producer_for_observation<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

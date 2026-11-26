@@ -8,14 +8,24 @@ thread_local! {
     static CARRIED_HISTORICAL_PROJECTIONS: Cell<u64> = const { Cell::new(0) };
     static SETTLEMENT_REGISTRATIONS: Cell<u64> = const { Cell::new(0) };
     static READMITTED_CHAINS: Cell<u64> = const { Cell::new(0) };
+    static DECLINED_READMISSIONS: Cell<u64> = const { Cell::new(0) };
+    /// The readmission kind the armed door declines: consumers or roots.
+    static DECLINE_CONSUMERS: Cell<Option<bool>> = const { Cell::new(None) };
 }
 
-fn count(counter: &'static std::thread::LocalKey<Cell<u64>>) {
+fn registered() -> bool {
     if !crate::domain_computation::execution_observation::is_installed() {
-        return;
+        return false;
     }
     if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
         crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+    }
+    true
+}
+
+fn count(counter: &'static std::thread::LocalKey<Cell<u64>>) {
+    if !registered() {
+        return;
     }
     counter.with(|value| {
         value.set(
@@ -45,6 +55,35 @@ pub fn record_settlement_registration() {
 /// A readmitted consumer chain left its consumer Clean at the selected head.
 pub fn record_readmitted_chain() {
     count(&READMITTED_CHAINS);
+}
+
+/// Whether the armed certification door declines this verified readmission
+/// of a consumer (`true`) or a root (`false`); a decline is counted. With no
+/// door armed every readmission proceeds.
+pub fn historical_readmission_declined(consumer: bool) -> bool {
+    let declined = DECLINE_CONSUMERS.with(Cell::get) == Some(consumer);
+    if declined {
+        count(&DECLINED_READMISSIONS);
+    }
+    declined
+}
+
+/// Public #358 liveness courts: until the installed observation guard drops,
+/// every historical readmission of a consumer (`true`) or a root (`false`)
+/// that verified current declines, as any stop after currentness would.
+#[doc(hidden)]
+pub fn decline_historical_readmissions_on_this_thread_for_test(consumers: bool) {
+    assert!(
+        registered(),
+        "the decline door needs an installed execution observation"
+    );
+    DECLINE_CONSUMERS.set(Some(consumers));
+}
+
+/// Verified historical readmissions the armed door declined on this thread.
+#[doc(hidden)]
+pub fn declined_historical_readmissions_on_this_thread_for_test() -> u64 {
+    DECLINED_READMISSIONS.with(Cell::get)
 }
 
 /// Moved facts or aspects on this thread accepted only by selection evidence.
@@ -79,4 +118,6 @@ fn clear_observations() {
     CARRIED_HISTORICAL_PROJECTIONS.set(0);
     SETTLEMENT_REGISTRATIONS.set(0);
     READMITTED_CHAINS.set(0);
+    DECLINED_READMISSIONS.set(0);
+    DECLINE_CONSUMERS.set(None);
 }

@@ -38,44 +38,6 @@ where
             limits,
             retained_program_basis.clone(),
         )?;
-        // Selection spends this request's meter on success and failure; it
-        // cannot mint a fresh allowance during refresh.
-        let (mut selected, entry) = match selected_product {
-            Some(selected) => self.select_output_producer_with_remaining_on_selected::<Family>(
-                execution,
-                selection_source.unwrap_or(&observed_source),
-                profile_kind,
-                retained_program_basis.as_deref(),
-                selected,
-            ),
-            None => self.select_output_producer_with_remaining::<Family>(
-                execution,
-                selection_source.unwrap_or(&observed_source),
-                profile_kind,
-                retained_program_basis.as_deref(),
-            ),
-        }?;
-        if selected_product.is_some() {
-            source_selection.admit_selected_producer::<Family>(&selected)?;
-        }
-
-        // Selection already returned the exact immutable entry from its sole
-        // matching iterator. Retain that entry for this demand's Interest.
-
-        let installed_entry = std::sync::Arc::clone(entry);
-        let source_epoch = observed_source.output_source_epoch().ok_or_else(|| {
-            denial(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
-                Family::IDENTITY,
-            )
-        })?;
-
-        let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
-            Family::IDENTITY,
-            selected.identity.clone(),
-            selected.applicability,
-            source_epoch.clone(),
-        );
         let product_occurrence =
             observed_source
                 .selected_product_occurrence()
@@ -88,47 +50,104 @@ where
         let source_scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
             observed_source.source_root(),
         );
-        // Only the exact retained-candidate selection has compared the full
-        // persisted producer facts at the current native basis. A fresh
-        // selection may never adopt a matching checkpoint by identity alone.
-        let restored = if selected.exact_retained_output {
-            let expected_key = selected.retained_idempotency_key.ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
-                    "exact retained output has no idempotency identity",
-                )
-            })?;
-            let output_binding = selected.retained_output_binding.ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
-                    "exact retained output has no output binding",
-                )
-            })?;
-            if selected.retained_read_posture
-                == super::super::super::RetainedOutputReadPosture::HistoricalSelection
-            {
-                self.readmit_historical_output::<Family>(
+        // A historical row that verified current may still decline its
+        // readmission (public #358). The demand then selects once more with
+        // that row stale and executes ordinarily; it never reselects it.
+        let mut declined = false;
+        let (mut selected, installed_entry, key, restored) = loop {
+            // Selection spends this request's meter on success and failure; it
+            // cannot mint a fresh allowance during refresh.
+            let (selected, entry) = match selected_product {
+                _ if declined => self.select_output_producer_after_declined_readmission::<Family>(
                     execution,
-                    &selected.identity,
-                    output_binding,
-                    expected_key,
-                    &observed_source,
-                    retained_program_basis.is_some(),
-                )?
-            } else {
-                self.readmit_checkpoint_output(
+                    selection_source.unwrap_or(&observed_source),
+                    profile_kind,
+                    retained_program_basis.as_deref(),
+                    selected_product,
+                ),
+                Some(selected) => self.select_output_producer_with_remaining_on_selected::<Family>(
                     execution,
-                    &selected.identity,
-                    output_binding,
-                    expected_key,
-                    &observed_source,
-                    source_epoch,
-                    source_scope,
-                    retained_program_basis.is_some(),
-                )?
+                    selection_source.unwrap_or(&observed_source),
+                    profile_kind,
+                    retained_program_basis.as_deref(),
+                    selected,
+                ),
+                None => self.select_output_producer_with_remaining::<Family>(
+                    execution,
+                    selection_source.unwrap_or(&observed_source),
+                    profile_kind,
+                    retained_program_basis.as_deref(),
+                ),
+            }?;
+            if selected_product.is_some() {
+                source_selection.admit_selected_producer::<Family>(&selected)?;
             }
-        } else {
-            None
+
+            // Selection already returned the exact immutable entry from its sole
+            // matching iterator. Retain that entry for this demand's Interest.
+
+            let installed_entry = std::sync::Arc::clone(entry);
+            let source_epoch = observed_source.output_source_epoch().ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    Family::IDENTITY,
+                )
+            })?;
+
+            let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
+            Family::IDENTITY,
+            selected.identity.clone(),
+            selected.applicability,
+            source_epoch.clone(),
+        );
+            let historical = selected.exact_retained_output
+                && selected.retained_read_posture
+                    == super::super::super::RetainedOutputReadPosture::HistoricalSelection;
+            // Only the exact retained-candidate selection has compared the full
+            // persisted producer facts at the current native basis. A fresh
+            // selection may never adopt a matching checkpoint by identity alone.
+            let restored = if selected.exact_retained_output {
+                let expected_key = selected.retained_idempotency_key.ok_or_else(|| {
+                    denial(
+                        WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                        "exact retained output has no idempotency identity",
+                    )
+                })?;
+                let output_binding = selected.retained_output_binding.ok_or_else(|| {
+                    denial(
+                        WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                        "exact retained output has no output binding",
+                    )
+                })?;
+                if historical {
+                    self.readmit_historical_output::<Family>(
+                        execution,
+                        &selected.identity,
+                        output_binding,
+                        expected_key,
+                        &observed_source,
+                        retained_program_basis.is_some(),
+                    )?
+                } else {
+                    self.readmit_checkpoint_output(
+                        execution,
+                        &selected.identity,
+                        output_binding,
+                        expected_key,
+                        &observed_source,
+                        source_epoch,
+                        source_scope,
+                        retained_program_basis.is_some(),
+                    )?
+                }
+            } else {
+                None
+            };
+            if historical && restored.is_none() && !declined {
+                declined = true;
+                continue;
+            }
+            break (selected, installed_entry, key, restored);
         };
         if let Some(readmitted) = restored {
             let restored = &readmitted.restored;

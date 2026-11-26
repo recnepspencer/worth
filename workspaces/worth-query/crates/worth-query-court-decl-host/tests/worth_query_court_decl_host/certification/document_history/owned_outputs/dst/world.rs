@@ -138,6 +138,15 @@ impl<'h> Document<'h> {
         });
     }
 
+    /// A write outside the document that the reference never sees. The
+    /// model's diverged head admits no second write outside, so a #358
+    /// court writes its tail here, just before close retires the branch.
+    pub fn write_outside_unmodelled(&mut self, stages: &Stages) {
+        let calls = calls(stages, read_entities(self.host, self.branch).map(|entity| entity.is_some()));
+        self.navigation += 1;
+        write_outside(self.host, self.shape, self.branch, format!("d{}:outside:{}", self.id, self.navigation), &calls);
+    }
+
     pub fn attach_as(host: &'h Host, shape: Shape) -> Self {
         let document = super::super::world::attach(host);
         let document = with_request(host, |request| {

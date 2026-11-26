@@ -12,6 +12,8 @@ pub use delivery_observation::inexact_native_deliveries_on_this_thread_for_test;
 pub mod readmission_observation;
 pub use readmission_observation::{
     carried_historical_projections_on_this_thread_for_test,
+    decline_historical_readmissions_on_this_thread_for_test,
+    declined_historical_readmissions_on_this_thread_for_test,
     historical_acceptances_on_this_thread_for_test, readmitted_chains_on_this_thread_for_test,
     settlement_registrations_on_this_thread_for_test,
 };

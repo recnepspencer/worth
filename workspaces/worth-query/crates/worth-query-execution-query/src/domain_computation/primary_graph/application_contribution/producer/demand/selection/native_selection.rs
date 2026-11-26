@@ -250,6 +250,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                         selected,
                         source,
                         &live_candidates,
+                        matches!(purpose, SelectionPurpose::DeclinedReadmission),
                     )
                 },
             )?;
@@ -309,10 +310,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     // producer, not merely the binding of a historical output.
                     // A different Preserve binding must execute its own work.
                     // No retained input key or checkpoint authority is supplied.
-                    let may_rejoin_ready = match purpose {
-                        SelectionPurpose::Lifecycle => false,
-                        SelectionPurpose::OutputDelivery => true,
-                    };
+                    let may_rejoin_ready = !matches!(purpose, SelectionPurpose::Lifecycle);
                     if may_rejoin_ready
                         && candidate
                             .completed_coupled_receipt_for_source(execution, source)

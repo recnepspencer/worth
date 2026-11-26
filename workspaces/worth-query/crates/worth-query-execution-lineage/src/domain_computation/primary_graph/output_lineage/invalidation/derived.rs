@@ -259,10 +259,23 @@ impl SourceInvalidationOwner {
         };
 
         let mut state = (*image.payload().current).clone();
+        let mut registration = registration;
 
         let registered_identity = Arc::clone(&registration.identity);
 
-        let output_coverage = if !matches!(output_basis, RegistrationOutputBasis::Ordinary) {
+        // An executed adoption with no predecessor mark (a historical row that
+        // declined readmission, public #358) links no equality: it owns fresh
+        // output support, like an ordinary execution.
+        let stable = match &output_basis {
+            RegistrationOutputBasis::Ordinary => false,
+            RegistrationOutputBasis::VerifiedCutoff(_) => true,
+            RegistrationOutputBasis::ExecutedAdoption(equality) => {
+                state.settlements.contains_key(equality.predecessor())
+            }
+        };
+        let output_coverage = if stable {
+            // An equality link supplies a stable row's output facts.
+            registration.output_facts = None;
             super::mark_state::OutputFactCoverage::Stable
         } else if registration.output_facts.is_some() {
             super::mark_state::OutputFactCoverage::Performed

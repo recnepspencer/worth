@@ -245,10 +245,38 @@ where
                                 Binding::IDENTITY,
                                 CurrentAcceptedStop::Closure(stop),
                             ))?;
-                        Ok(match rebound {
-                            Some(pending) => ReadyInspection::PendingExact(pending),
-                            None => ReadyInspection::PendingUnresolved,
-                        }.into())
+                        let Some(pending) = rebound else {
+                            return Ok(ReadyInspection::PendingUnresolved.into());
+                        };
+                        // No demand of this registry holds the upstream row (a
+                        // readmitted historical row), or the row that holds it
+                        // belongs to an earlier branch occurrence whose source
+                        // cannot be disclosed here (public #358). No wave can
+                        // schedule it: the consumer executes ordinarily and its
+                        // own read asks for the upstream.
+                        let demands = &runtime.runtime.output_demands;
+                        let unowned = match demands
+                            .pending_exact_ready_readmission(&pending, positioned)
+                            .map_err(ProducerExecutionStop::ExecutionStopped)?
+                        {
+                            crate::domain_computation::primary_graph::application_output_demand::PendingUpstream::Unavailable(_) => true,
+                            crate::domain_computation::primary_graph::application_output_demand::PendingUpstream::Ready(ready) => !demands.ready_on_occurrence(
+                                &ready,
+                                shared.selected().product().read_lease_ref().observation().lifecycle_incarnation(),
+                            ),
+                            crate::domain_computation::primary_graph::application_output_demand::PendingUpstream::Held(_) => false,
+                        };
+                        if !unowned {
+                            return Ok(ReadyInspection::PendingExact(pending).into());
+                        }
+                        let consumer = candidate.retain_recorded_identity()
+                            .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
+                        let matched = MatchedRequiredPredecessors::retain_consumer(
+                            &runtime.runtime.output_demands, &consumer, positioned,
+                        ).map_err(ProducerExecutionStop::ExecutionStopped)?;
+                        drop(sealed);
+                        invocation.confirm_source(execution, runtime, ())?;
+                        on_disclosure(permission, Some(matched))
                     }
                     CurrentAcceptedResult::PendingUnresolved =>
                         Ok(ReadyInspection::PendingUnresolved.into()),
