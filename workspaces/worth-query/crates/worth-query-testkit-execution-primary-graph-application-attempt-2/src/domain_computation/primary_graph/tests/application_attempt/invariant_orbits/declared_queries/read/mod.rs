@@ -37,6 +37,55 @@ where
     Q::ResultBinding: ApplicationStructuredValueBinding<Value = Row>,
     Row: WorthQueryApplicationProjection<OrbitSchema<true>, Q>,
 {
+    execute_planned(
+        world,
+        execution,
+        request,
+        query,
+        root,
+        maximum_result_count,
+        None,
+    )
+}
+
+/// The same admitted read, executed as one keyset window of its roots.
+pub fn execute_window<Q, Row>(
+    world: &World,
+    query: ApplicationQueryReference<OrbitSchema<true>, Q, Parameters, Row, Node>,
+    root: u64,
+    window: worth_query_execution::facade::primary_graph::WorthQueryApplicationRootWindow,
+) -> Result<WorthQueryApplicationOneShotResult<Q, Row>, Stop>
+where
+    Q: ApplicationQueryMarkerIdentity<OrbitSchema<true>> + 'static,
+    Q::ResultBinding: ApplicationStructuredValueBinding<Value = Row>,
+    Row: WorthQueryApplicationProjection<OrbitSchema<true>, Q>,
+{
+    let host = crate::test_request_policy::serial_request();
+    execute_planned(
+        world,
+        &worth_execution::ExecutionRequest::serial(&host),
+        &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope(),
+        query,
+        root,
+        2000,
+        Some(window),
+    )
+}
+
+fn execute_planned<Q, Row>(
+    world: &World,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    request: &WorthQueryRequestScope,
+    query: ApplicationQueryReference<OrbitSchema<true>, Q, Parameters, Row, Node>,
+    root: u64,
+    maximum_result_count: usize,
+    window: Option<worth_query_execution::facade::primary_graph::WorthQueryApplicationRootWindow>,
+) -> Result<WorthQueryApplicationOneShotResult<Q, Row>, Stop>
+where
+    Q: ApplicationQueryMarkerIdentity<OrbitSchema<true>> + 'static,
+    Q::ResultBinding: ApplicationStructuredValueBinding<Value = Row>,
+    Row: WorthQueryApplicationProjection<OrbitSchema<true>, Q>,
+{
     let (actor, subject, installed) = world
         .application
         .with_host_advancement(|phase| {
@@ -136,6 +185,10 @@ where
         })
         .unwrap()
         .map_err(Stop::Admission)?;
+    let plan = match window {
+        Some(window) => plan.with_root_window(window),
+        None => plan,
+    };
     execution
         .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
             world

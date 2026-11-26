@@ -2,7 +2,7 @@
 //! borrowing the Home, so a desktop or GUI value can store the Home, its
 //! session and its owned live subscriptions side by side. Closing the Home
 //! releases the session, after which every call refuses `HomeClosed`.
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_declaration::facade::{
@@ -27,9 +27,18 @@ use worth_query_publication::facade::application_entry::{
 use super::{
     QueryBinding, QueryMarker, QueryRow, SessionHome, SessionSettings,
     WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQueryOwnedLiveSubscription,
-    WorthQuerySessionCommit, WorthQuerySessionQuery, WorthQuerySessionRunDenial,
+    WorthQueryPage, WorthQueryPageCursor, WorthQuerySessionCommit, WorthQuerySessionQuery,
+    WorthQuerySessionRunDenial,
 };
 use crate::application_home::owned_holds::{OwnedRuntimeHold, OwnedRuntimeHolds};
+use crate::background::call_worker::CallWorker;
+use crate::background::commit_watch::{
+    CommitWatchRegistry, WorthQueryCommitWatchDenial, WorthQueryCommitWatchGuard,
+    WorthQueryCommittedBasisVersion,
+};
+use worth_query_execution::facade::product::WorthQueryCommitPulse;
+
+mod background_calls;
 
 /// A call of an owned session refused, or its Home closed first.
 #[derive(Debug)]
@@ -47,12 +56,16 @@ pub enum WorthQueryOwnedSessionDenial<Denial> {
 pub struct WorthQueryOwnedSession<Schema: ApplicationSchema, Program> {
     custody: Arc<OwnedRuntime<Schema, Program>>,
     holds: Arc<OwnedRuntimeHolds>,
+    commit_watch: Arc<CommitWatchRegistry>,
+    pulse: WorthQueryCommitPulse,
     settings: SessionSettings<Schema>,
 }
 
-/// The runtime clone an owned session holds, `None` once its Home closed.
+/// The runtime clone an owned session holds, `None` once its Home closed,
+/// and the call worker its clones share, started by the first `spawn_*`.
 struct OwnedRuntime<Schema, Program> {
     runtime: Mutex<Option<WorthQueryProgramApplicationRuntime<Schema, Program>>>,
+    calls: OnceLock<CallWorker>,
 }
 
 impl<Schema, Program> OwnedRuntimeHold for OwnedRuntime<Schema, Program> {
@@ -71,6 +84,8 @@ impl<Schema: ApplicationSchema, Program> Clone for WorthQueryOwnedSession<Schema
         Self {
             custody: Arc::clone(&self.custody),
             holds: Arc::clone(&self.holds),
+            commit_watch: Arc::clone(&self.commit_watch),
+            pulse: self.pulse.clone(),
             settings: self.settings.clone(),
         }
     }
@@ -87,12 +102,15 @@ where
     pub fn into_owned(self) -> WorthQueryOwnedSession<Schema, Program> {
         let custody = Arc::new(OwnedRuntime {
             runtime: Mutex::new(Some(self.home.runtime().clone())),
+            calls: OnceLock::new(),
         });
         let hold: Arc<dyn OwnedRuntimeHold + Send + Sync> = custody.clone();
         self.home.holds().register_shared(Arc::downgrade(&hold));
         WorthQueryOwnedSession {
             custody,
             holds: Arc::clone(self.home.holds()),
+            commit_watch: Arc::clone(self.home.commit_watch()),
+            pulse: self.home.primary_graph().commit_pulse(),
             settings: self.settings,
         }
     }
@@ -110,6 +128,25 @@ where
             Some(renewal) => renewal.current(),
             None => self.settings.principal.clone(),
         }
+    }
+
+    /// [`WorthQueryApplicationHome::committed_basis_version`](crate::application_home::WorthQueryApplicationHome::committed_basis_version)
+    /// of this session's Home. It stops changing once the Home closes.
+    pub fn committed_basis_version(&self) -> WorthQueryCommittedBasisVersion {
+        WorthQueryCommittedBasisVersion::of(&self.pulse)
+    }
+
+    /// [`WorthQueryApplicationHome::on_commit`](crate::application_home::WorthQueryApplicationHome::on_commit)
+    /// for this session's Home; refuses `HomeClosed` once it closed.
+    pub fn on_commit(
+        &self,
+        on_commit: impl Fn() + Send + Sync + 'static,
+    ) -> Result<WorthQueryCommitWatchGuard, WorthQueryCommitWatchDenial> {
+        if !self.is_attached() {
+            return Err(WorthQueryCommitWatchDenial::HomeClosed);
+        }
+        self.commit_watch
+            .watch(&self.holds, self.pulse.clone(), Arc::new(on_commit))
     }
 
     /// Whether the Home is still open for this session.
@@ -137,7 +174,7 @@ where
             .attached_runtime()
             .ok_or(WorthQueryOwnedSessionDenial::HomeClosed)?;
         let session = WorthQueryHostSession {
-            home: SessionHome::of_runtime(&runtime, &self.holds),
+            home: SessionHome::of_runtime(&runtime, &self.holds, &self.commit_watch),
             settings: self.settings.clone(),
         };
         Ok(body(&session))
@@ -190,6 +227,19 @@ where
         WorthQueryOwnedSessionDenial<WorthQueryApplicationRequestQueryDenial>,
     > {
         self.call(|session| session.query(intent))
+    }
+
+    /// [`WorthQueryHostSession::query_page`] through this owned session.
+    pub fn query_page<Intent: WorthQuerySessionQuery<Schema>>(
+        &self,
+        intent: Intent,
+        width: std::num::NonZeroUsize,
+        after: Option<&WorthQueryPageCursor<Intent>>,
+    ) -> Result<
+        WorthQueryPage<Intent::Row, Intent>,
+        WorthQueryOwnedSessionDenial<WorthQueryApplicationRequestQueryDenial>,
+    > {
+        self.call(|session| session.query_page(intent, width, after))
     }
 
     /// [`WorthQueryHostSession::subscribe_owned`] through this owned session.

@@ -171,7 +171,8 @@ fn execute_durable(
     loop {
         match outcome {
             WorldDurablePublicationOutcome::Performed(performed) => {
-                return PublicationOutcome::Performed(performed)
+                crate::domain_computation::execution_runtime::product_world::commit_pulse::note_publication();
+                return PublicationOutcome::Performed(performed);
             }
             WorldDurablePublicationOutcome::Pending(pending) => {
                 if request.interruption().is_some() || execution.consult().is_err() {

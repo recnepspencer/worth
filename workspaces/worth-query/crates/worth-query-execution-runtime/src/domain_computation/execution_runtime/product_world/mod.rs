@@ -7,6 +7,7 @@ mod application_publication;
 mod bootstrap;
 pub mod branch_close;
 mod clock;
+pub mod commit_pulse;
 mod conditional_recovery;
 mod creation;
 mod creation_release;
@@ -40,6 +41,7 @@ pub(crate) mod world_ports;
 pub use branch_close::WorthQueryProductBranchCloseScope;
 pub use branch_close::{WorthQueryProductBranchCloseDenial, WorthQueryProductBranchCloseReceipt};
 pub use clock::WorthQueryProductWorldClock;
+pub use commit_pulse::WorthQueryCommitPulse;
 pub use installation_denial::WorthQueryProductRuntimeInstallationDenial;
 pub use owner_cleanup::{
     OwnerCleanupRetirements, WorthQueryProductRetentionFollower, WorthQueryRetiredProductOccurrence,

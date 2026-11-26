@@ -91,6 +91,31 @@ fn complete_declared_orbit_keeps_anchor_order_identity_and_original_result_custo
     );
 }
 
+/// An orbit answers in Native anchor-forward order, not root identity order,
+/// so a keyset window over its roots would skip or repeat members: the read
+/// refuses before materializing anything.
+#[test]
+fn a_declared_orbit_refuses_a_root_window() {
+    let _isolation =
+        worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::reconstruction_execution::isolated_request_owner();
+    let world = world();
+    let window = worth_query_execution::facade::primary_graph::WorthQueryApplicationRootWindow::first(
+        std::num::NonZeroUsize::new(2).unwrap(),
+    );
+    let refused = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::read::execute_window(&world, Orbit::reference(), 1, window.clone());
+    let Err(worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::read::Stop::Read(denial)) = refused else {
+        panic!(
+            "an orbit read must refuse a root window, got {}",
+            if refused.is_ok() { "rows" } else { "another stop" }
+        );
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationOneShotDenialKind::TraversalUnavailable
+    );
+    assert!(window.take_progress().is_none(), "no window progress");
+}
+
 #[path = "components/mod.rs"]
 pub mod components;
 #[path = "currentness/mod.rs"]

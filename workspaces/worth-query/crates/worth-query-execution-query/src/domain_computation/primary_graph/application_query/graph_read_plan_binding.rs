@@ -37,6 +37,7 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     pub(crate) planned_batch_item: Option<super::batch::PlannedBatchItem>,
     pub(crate) retain_expression_context: bool,
     pub(crate) retain_projection_for_inspection: bool,
+    pub(crate) root_window: Option<super::root_window::WorthQueryApplicationRootWindow>,
     pub(crate) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     pub(crate) graph_authority_identity: String,
     pub(crate) provider_identity: String,
@@ -96,6 +97,18 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
     /// are refused by one-shot completion.
     pub fn retain_projection_for_inspection(mut self) -> Self {
         self.retain_projection_for_inspection = true;
+        self
+    }
+
+    /// Reads one keyset window of the ordered roots instead of the complete
+    /// result: the window's width bounds what is materialized, and its
+    /// progress reports the boundary to resume after. Only an ordinary
+    /// exact-root or root-path one-shot read honours it; other kernels refuse.
+    pub fn with_root_window(
+        mut self,
+        window: super::root_window::WorthQueryApplicationRootWindow,
+    ) -> Self {
+        self.root_window = Some(window);
         self
     }
 }

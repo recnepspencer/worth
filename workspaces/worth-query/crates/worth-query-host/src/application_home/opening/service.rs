@@ -86,6 +86,7 @@ pub(in crate::application_home) fn finish_service<
             open_disposition,
             active_head,
             owned: std::sync::Arc::default(),
+            commit_watch: std::sync::Arc::default(),
         }
     });
     observation.arrive_for_test(

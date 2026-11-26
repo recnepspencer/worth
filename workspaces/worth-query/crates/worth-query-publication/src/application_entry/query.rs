@@ -52,6 +52,8 @@ pub struct WorthQueryApplicationQueryRequest<'application, 'principal, 'scope, S
     limits: Option<NonZeroUsize>,
     retain_expression_context: bool,
     retain_projection_for_inspection: bool,
+    root_window:
+        Option<worth_query_execution::facade::primary_graph::WorthQueryApplicationRootWindow>,
 }
 
 impl<'application, 'principal, 'scope, Schema, Intent>
@@ -77,6 +79,7 @@ where
             limits: None,
             retain_expression_context: false,
             retain_projection_for_inspection: false,
+            root_window: None,
         }
     }
 
@@ -100,6 +103,7 @@ where
             limits: None,
             retain_expression_context: false,
             retain_projection_for_inspection: false,
+            root_window: None,
         }
     }
 
@@ -107,6 +111,22 @@ where
     /// are denied before admission.
     pub fn limit_results(mut self, maximum_results: NonZeroUsize) -> Self {
         self.limits = Some(maximum_results);
+        self
+    }
+
+    /// Reads one keyset window of the ordered rows instead of the complete
+    /// result: at most `window.width()` rows strictly after its boundary in
+    /// the query's order (declared ordering, then row identity). The width is
+    /// bounded by the result ceiling; the collection is not. After a
+    /// successful `execute`, `window.take_progress()` reports whether rows
+    /// remain and the boundary to resume after. Only a `Many` exact-root or
+    /// root-path query pages; a managed-index selection refuses
+    /// `RequestMode`, and another kernel reports no progress.
+    pub fn window(
+        mut self,
+        window: worth_query_execution::facade::primary_graph::WorthQueryApplicationRootWindow,
+    ) -> Self {
+        self.root_window = Some(window);
         self
     }
 

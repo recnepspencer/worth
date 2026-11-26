@@ -189,6 +189,24 @@ where
             .require_field(identity.native_identity(), field.identity())
     }
 
+    /// Admits `identity` as a mutation target, as [`Self::mutation_target`]
+    /// does, and records the pre-image of each field of it the operation
+    /// declares both writable and readable (see
+    /// [`native_decision::NativeDecision::observe_declared_writes`]).
+    pub fn decision_write_target<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+    ) -> Result<
+        crate::domain_computation::primary_graph::WorthQueryInvariantMutationTarget<Schema, Entity>,
+        WorthQueryInvariantProjectionTraversalDenial,
+    > {
+        let target = self.mutation_target(identity)?;
+        self.native_decision()
+            .observe_declared_writes(identity.native_identity())
+            .map_err(|denial| decision_traversal_denial(&denial))?;
+        Ok(target)
+    }
+
     pub fn require_decision_relation<Relation, From, To>(
         &mut self,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,

@@ -113,6 +113,47 @@ impl NativeDecision<'_> {
         self.record_field(identity, field, locator.clone());
         Ok(locator)
     }
+    /// Records the pre-image of every field of `identity`'s entity that this
+    /// operation declares both writable and readable, exactly as a decision
+    /// read of each would (the same tracked fact, sealed with the decision).
+    ///
+    /// A handler that targets an entity may then write those fields without a
+    /// discarded read. Each write still finds its sealed observed fact, so a
+    /// concurrent change to any observed field still makes the attempt Stale.
+    /// A writable field that is not a declared read stays unobserved and still
+    /// refuses `UnobservedWrite`; a foreign identity records nothing.
+    pub fn observe_declared_writes(
+        &mut self,
+        identity: NativeIdentity<'_>,
+    ) -> Result<(), WorthQueryInvariantDecisionPlanDenial> {
+        let Some(contracts) = self.contracts else {
+            return Ok(());
+        };
+        let entity = identity.entity.as_ref();
+        if !identity.local_to(self.authority, self.phase, entity) {
+            return Ok(());
+        }
+        let writable = self
+            .layout
+            .entity_fields(entity)
+            .filter(|field| field_presence::may_write(contracts.touches(), entity, field.locator))
+            .filter(|field| {
+                graph_reads_admit_target(
+                    contracts.graph_reads(),
+                    &ApplicationOperationDecisionReadTarget::Field {
+                        entity: entity.to_owned(),
+                        aspect: field.aspect.to_owned(),
+                        field: field.field.to_owned(),
+                    },
+                )
+            })
+            .map(|field| ApplicationFieldBindingLocus::new(entity, field.aspect, field.field))
+            .collect::<Vec<_>>();
+        for field in writable {
+            self.tracked_field(identity, &field)?;
+        }
+        Ok(())
+    }
     pub fn record_field(
         &mut self,
         identity: NativeIdentity<'_>,

@@ -53,6 +53,7 @@ impl PublishedEffect {
 /// refuse it loudly. Plain Execution pattern workers do not carry the owner
 /// context, so a publication there is not caught by this check.
 pub fn record() {
+    super::commit_pulse::note_publication();
     SLOT.with(|slot| {
         debug_assert!(
             slot.borrow().is_some() || !worth_execution::ExecutionOwnerContext::is_active(),

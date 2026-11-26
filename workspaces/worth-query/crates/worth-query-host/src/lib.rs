@@ -355,6 +355,7 @@
 //! ```
 
 mod application_home;
+mod background;
 pub mod facade;
 mod ordinary_contract;
 mod producer_stop_contract;

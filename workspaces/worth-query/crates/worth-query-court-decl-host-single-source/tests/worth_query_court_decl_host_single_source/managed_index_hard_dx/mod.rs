@@ -13,6 +13,7 @@ mod harness;
 mod operations;
 mod probes;
 mod schema;
+mod write_preimage_court;
 
 use harness::*;
 use operations::*;

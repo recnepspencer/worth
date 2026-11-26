@@ -148,6 +148,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             planned_batch_item: None,
             retain_expression_context: false,
             retain_projection_for_inspection: false,
+            root_window: None,
             runtime_authority: self.runtime.authority_identity(),
             graph_authority_identity: self
                 .runtime

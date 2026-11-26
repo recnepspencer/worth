@@ -18,7 +18,8 @@ pub use crate::basis::{
 };
 pub use crate::domain_computation::application_aftermath::WorthQueryExternalDispatchPostureKind;
 pub use crate::domain_computation::execution_runtime::product_world::{
-    WorthQueryDurableStateAdmissionDenial, WorthQueryPerformedRelationalProductChange,
+    WorthQueryCommitPulse, WorthQueryDurableStateAdmissionDenial,
+    WorthQueryPerformedRelationalProductChange,
     WorthQueryPerformedRelationalProductChangeDeliveryDenial,
     WorthQueryPerformedRelationalProductChangeDeliveryDenialKind,
     WorthQueryPerformedRelationalProductChangeDeliveryOutcome, WorthQueryProductBranchCloseDenial,

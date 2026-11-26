@@ -44,6 +44,7 @@ pub(super) fn advance(
         };
         match outcome {
             WorldDurablePublicationOutcome::Performed(performed) => {
+                worth_query_execution_runtime::facade::execution_runtime::product_world::commit_pulse::note_publication();
                 guard.preparation_mut().world = World::Performed(performed);
                 return Ok(Progress::Terminal);
             }

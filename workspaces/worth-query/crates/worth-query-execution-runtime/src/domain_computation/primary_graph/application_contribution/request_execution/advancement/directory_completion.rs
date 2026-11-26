@@ -10,6 +10,8 @@ impl QueryRequestExecution<'_> {
         retain_returned_outcome: bool,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
+        // Advances the pulse once this advancement closes, if it published.
+        let _publications = product.fields().commit_pulse.advancement_scope();
         let owner = Some(product.fields().owner.owner_identity());
         let source = Some(
             product

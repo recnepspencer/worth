@@ -308,13 +308,21 @@ pub use crate::application_home::{
     DEFAULT_CORRECTION_HISTORY_LIMITS, DEFAULT_HOST_EXECUTION_POLICY,
     DEFAULT_HOST_EXECUTION_WORK_CEILING,
 };
+/// Non-blocking owned-session calls and push commit notification for a Home.
+pub use crate::background::{
+    call_worker::DEFAULT_BACKGROUND_QUEUE_CAPACITY,
+    commit_watch::{
+        WorthQueryCommitWatchDenial, WorthQueryCommitWatchGuard, WorthQueryCommittedBasisVersion,
+    },
+    pending::{WorthQueryBackgroundDenial, WorthQueryPending},
+};
 /// Reusable authenticated Host session and typed whole-result / managed-index live handles.
 pub use crate::session::{
     WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQueryLocalSessionDenial,
     WorthQueryOwnedLiveSubscription, WorthQueryOwnedSession, WorthQueryOwnedSessionDenial,
-    WorthQuerySessionCommit, WorthQuerySessionIndexedQuery, WorthQuerySessionPrincipalSource,
-    WorthQuerySessionQuery, WorthQuerySessionRunDenial, WorthQuerySessionSnapshot,
-    WorthQuerySessionSnapshotDenial, WorthQueryTypedLiveCloseDenial,
+    WorthQueryPage, WorthQueryPageCursor, WorthQuerySessionCommit, WorthQuerySessionIndexedQuery,
+    WorthQuerySessionPrincipalSource, WorthQuerySessionQuery, WorthQuerySessionRunDenial,
+    WorthQuerySessionSnapshot, WorthQuerySessionSnapshotDenial, WorthQueryTypedLiveCloseDenial,
     WorthQueryTypedLiveRefreshDenial, WorthQueryTypedLiveSubscription,
     WorthQueryTypedManagedIndexRefreshDenial, WorthQueryTypedManagedIndexWatch,
 };

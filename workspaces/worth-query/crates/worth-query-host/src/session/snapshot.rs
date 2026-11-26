@@ -11,7 +11,10 @@ use worth_query_publication::facade::{
 };
 use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchIdentity};
 
-use super::{QueryMarker, WorthQueryHostSession, WorthQuerySessionQuery};
+use super::{
+    QueryMarker, WorthQueryHostSession, WorthQueryPage, WorthQueryPageCursor,
+    WorthQuerySessionQuery,
+};
 
 /// Why [`WorthQueryHostSession::snapshot`] could not pin a basis.
 pub type WorthQuerySessionSnapshotDenial = WorthQueryApplicationReadObservationDenial;
@@ -68,6 +71,18 @@ impl<Schema: ApplicationSchema, Program> WorthQuerySessionSnapshot<'_, '_, Schem
     ) -> Result<Vec<Intent::Row>, WorthQueryApplicationRequestQueryDenial> {
         self.query_result(intent)
             .map(WorthQueryPublishedApplicationResult::into_rows)
+    }
+
+    /// [`WorthQueryHostSession::query_page`] at the pinned basis: reading every
+    /// page through one snapshot walks one consistent collection, each row
+    /// exactly once, however many commits land meanwhile.
+    pub fn query_page<Intent: WorthQuerySessionQuery<Schema>>(
+        &self,
+        intent: Intent,
+        width: std::num::NonZeroUsize,
+        after: Option<&WorthQueryPageCursor<Intent>>,
+    ) -> Result<WorthQueryPage<Intent::Row, Intent>, WorthQueryApplicationRequestQueryDenial> {
+        super::page::read_page(self.session, Some(&self.observation), intent, width, after)
     }
 
     /// Runs `intent` at the pinned basis and keeps the full published result.

@@ -56,7 +56,7 @@ where
         let request_scope = self.scope;
         application
             .with_application_advancement(request_scope, |phase| {
-                if self.retained.is_some() || self.limits.is_some() {
+                if self.retained.is_some() || self.limits.is_some() || self.root_window.is_some() {
                     return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
                 }
                 let parameters = self
@@ -122,7 +122,7 @@ where
         let request_scope = self.scope;
         application
             .with_application_advancement(request_scope, |phase| {
-                if self.retained.is_some() || self.limits.is_some() {
+                if self.retained.is_some() || self.limits.is_some() || self.root_window.is_some() {
                     return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
                 }
                 let parameters = self

@@ -155,6 +155,15 @@ where
         } else {
             plan
         };
+        let plan = match self.root_window {
+            // A managed-index, orbit or component selection has its own order
+            // or whole-set metadata, which an identity-keyed window would break.
+            Some(_) if !pages_by_root_window(binding.query().read_graph()) => {
+                return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
+            }
+            Some(window) => plan.with_root_window(window),
+            None => plan,
+        };
         perform(self.application, &binding, self.principal, plan)
     }
 }
@@ -194,4 +203,14 @@ where
             .map_err(WorthQueryApplicationRequestQueryDenial::Execution)?
     };
     Ok(publish_application_result(result.into_admitted_disclosed()))
+}
+
+/// Whether a read's roots can be windowed: only selections whose order is the
+/// read's declared ordering then root identity, with no whole-set metadata.
+fn pages_by_root_window(
+    graph: &worth_query_installation::facade::WorthQueryInstalledGraphReadContract,
+) -> bool {
+    graph.managed_index_selection().is_none()
+        && graph.orbit().is_none()
+        && graph.component_selection().is_none()
 }

@@ -201,6 +201,7 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
             open_disposition,
             active_head,
             owned,
+            commit_watch,
         } = self;
         let active_head = active_head
             .into_inner()
@@ -214,6 +215,7 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
                     open_disposition,
                     active_head: std::sync::Mutex::new(active_head),
                     owned,
+                    commit_watch,
                 }),
             ));
         };
@@ -309,6 +311,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
                 open_disposition,
                 active_head: std::sync::Mutex::new(active_head),
                 owned: std::sync::Arc::default(),
+                commit_watch: std::sync::Arc::default(),
             }),
             CloseCustody::QueryAdmission {
                 query,
@@ -324,6 +327,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
                 open_disposition,
                 active_head: std::sync::Mutex::new(active_head),
                 owned: std::sync::Arc::default(),
+                commit_watch: std::sync::Arc::default(),
             }),
             CloseCustody::World {
                 query,
@@ -339,6 +343,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
                     open_disposition,
                     active_head: std::sync::Mutex::new(active_head),
                     owned: std::sync::Arc::default(),
+                    commit_watch: std::sync::Arc::default(),
                 }),
                 Err(home) => Err(Self::from_custody(CloseCustody::World {
                     query,

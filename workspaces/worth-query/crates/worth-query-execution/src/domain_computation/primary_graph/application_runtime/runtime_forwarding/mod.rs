@@ -4,6 +4,7 @@ mod authorization_admission;
 mod authorization_revalidation;
 mod capability_revalidation;
 mod capability_revocation_progression;
+mod commit_pulse;
 mod delegation_progression;
 mod elevation_progression;
 mod entity_resolution;
