@@ -341,6 +341,11 @@ impl LineageSubsystem {
         (self.state.read().group_lineage_after(b, c)).map(|(at, id)| (at, id.to_owned()))
     }
 
+    /// The first commit `b` published named lineage at after `c` (merge refusal).
+    pub fn named_lineage_after(&self, b: &BranchId, c: CommitId) -> Option<CommitId> {
+        self.state.read().named_lineage_after(b, c)
+    }
+
     pub fn replace_events(
         &self,
         lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,

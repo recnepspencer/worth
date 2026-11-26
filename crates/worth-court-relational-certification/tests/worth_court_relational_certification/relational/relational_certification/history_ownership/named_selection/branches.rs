@@ -163,6 +163,7 @@ fn a_split_on_the_source_and_an_edit_on_the_target_refuses_typed() {
             refusal,
             MergeExecutionPreparationError::NotExecutionReady(_)
                 | MergeExecutionPreparationError::NamedRecord(..)
+                | MergeExecutionPreparationError::NamedLineage(..)
         ),
         "{refusal:?}"
     );
@@ -246,4 +247,60 @@ fn records_the_source_never_named_still_merge() {
     assert_ne!(after.descriptor(), &before, "the merge committed");
     assert_eq!(live_name(execution, &runtime, &after, named), name);
     assert!(resolve(execution, &runtime, &after, name).contains("Exact"));
+}
+
+fn identity(key: PersistentNameKey) -> worth_relational::facade::lineage::PersistentNameIdentity {
+    match key {
+        PersistentNameKey::Entity(identity) => identity,
+        other => panic!("a member is an entity name: {other:?}"),
+    }
+}
+
+#[test]
+fn a_source_keep_in_place_merge_over_a_target_retirement_refuses_typed() {
+    use worth_relational::facade::lineage::LineageMergeKeeper;
+    let host = serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let runtime = named_runtime();
+    create_entity(execution, &runtime, "model");
+    let keeper = owned_entity(execution, &runtime, &head(&runtime), "keeper", true);
+    let absorbed = owned_entity(execution, &runtime, &head(&runtime), "absorbed", true);
+    let kept = live_name(execution, &runtime, &head(&runtime), keeper);
+    let gone = live_name(execution, &runtime, &head(&runtime), absorbed);
+    let feature = fork(execution, &runtime);
+    delete(execution, &runtime, &[absorbed]);
+    let mut transaction = runtime
+        .begin_branch_transaction(&feature, RelationalTransactionIntent::ordinary())
+        .unwrap();
+    let removal = DeleteEntityIntent {
+        entity_id: absorbed,
+    };
+    transaction
+        .push_batch(
+            WorkerIntentBatch::new("feature-merge").push(MutationIntent::Entity(
+                EntityMutationIntent::Delete(removal),
+            )),
+            execution.allocation_policy(),
+        )
+        .unwrap();
+    let parent = |entity, name| (LineageRecordTarget::Entity(entity), identity(name));
+    transaction.attach_naming_plan(CommitNamingPlan {
+        postures: vec![LineagePostureClaim::Merge {
+            parents: vec![parent(keeper, kept), parent(absorbed, gone)],
+            target: LineageRecordTarget::Entity(keeper),
+            keeper: LineageMergeKeeper::KeepParent(identity(kept)),
+        }],
+        ..CommitNamingPlan::default()
+    });
+    let committed = transaction.commit(execution, &runtime).unwrap();
+    let merged_at = committed.commit.commit_id;
+    release_test_commit_snapshot(&runtime, &committed);
+    let on_feature = resolve(execution, &runtime, &feature_head(&runtime), gone);
+    assert!(on_feature.contains(&format!("{keeper:?}")), "{on_feature}");
+    let refusal = refused(execution, &runtime);
+    assert_eq!(
+        refusal,
+        MergeExecutionPreparationError::NamedLineage(BranchId("feature".into()), merged_at),
+        "the source's absorbed -> keeper edge is never dropped silently"
+    );
 }

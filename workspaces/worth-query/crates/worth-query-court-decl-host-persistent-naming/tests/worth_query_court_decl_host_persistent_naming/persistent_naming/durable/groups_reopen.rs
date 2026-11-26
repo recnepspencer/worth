@@ -12,8 +12,8 @@
 //! (`checkpoint_restore/cold_directory.rs::readmit_lineage`), so every held
 //! group name then refuses `UnknownName` and members answer no group. The
 //! fix belongs to the checkpoint manifest and cold restore that Store
-//! M4.3e/M4.3f own; the court below states the required behavior and is held
-//! until that lands.
+//! M4.3f owns (recnepspencer/worth#440); the court below states the required
+//! behavior and is held until that lands.
 use super::super::outputs::World;
 use super::super::world::home;
 use super::admission::named_world;
@@ -32,7 +32,7 @@ fn group_names_survive_a_journal_reopen() {
 }
 
 #[test]
-#[ignore = "held: cold checkpoint restore drops non-head group lineage (Store M4.3e/f owns cold_checkpoint.rs and cold_directory.rs)"]
+#[ignore = "held on recnepspencer/worth#440: cold checkpoint restore drops non-head group lineage (Store M4.3f)"]
 fn group_names_survive_a_checkpoint_reopen() {
     reopened_serves_the_same_groups(true);
 }

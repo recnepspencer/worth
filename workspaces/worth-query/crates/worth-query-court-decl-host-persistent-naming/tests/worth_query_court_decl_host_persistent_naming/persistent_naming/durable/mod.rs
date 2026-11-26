@@ -18,6 +18,7 @@ use worth_query_decl::facade::application_naming::{NameSelection, WorthQueryName
 mod admission;
 mod groups_reopen;
 mod journey;
+mod regeneration;
 
 /// The names and records an application keeps across a restart.
 #[derive(Default)]

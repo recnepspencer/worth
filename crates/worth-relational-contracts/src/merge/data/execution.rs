@@ -84,6 +84,10 @@ pub enum MergeExecutionPreparationError {
     /// The source branch published group lineage of this scheme at this
     /// commit, after the merge base: a merge never carries it.
     NamedGroupLineage(BranchId, CommitId, String),
+    /// The source branch published named lineage (a birth, kept name, split,
+    /// merge or restore) at this commit, after the merge base: a merge never
+    /// carries it.
+    NamedLineage(BranchId, CommitId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

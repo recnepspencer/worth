@@ -218,8 +218,10 @@ group lineage was published by a non-head commit. Branches never merge named
 outputs silently: Query adopts a candidate only onto the head it was forked
 from (a diverged adoption refuses typed with zero effects), and Native branch
 merge preparation refuses
-`MergeExecutionPreparationError::{NamedRecord, NamedGroupLineage}` before any
-effect until producer-rerunning merge exists.
+`MergeExecutionPreparationError::{NamedRecord, NamedLineage, NamedGroupLineage}`
+before any effect until producer-rerunning merge exists: adopting or
+reconciling a source-named record onto another record, or source named or
+group lineage published after the merge base.
 A coupled member (a later edit-envelope stage or a coupled producer) reads
 names in `decide` exactly as a direct operation does (`name_of`, `resolve`,
 `resolve_in`, `relation_name_of`, `resolve_relation`), answered from the

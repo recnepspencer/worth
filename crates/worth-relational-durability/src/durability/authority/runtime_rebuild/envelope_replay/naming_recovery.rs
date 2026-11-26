@@ -138,7 +138,18 @@ pub fn reconstruct_replay_naming_plan(
         }
     }
 
+    // A name regenerated in this commit is re-minted here, so a birth in its
+    // occurrence references it as a same-occurrence name, never the basis.
     let regenerated = regenerated_births(lineage, envelope)?;
+    let mut regenerated_names = BTreeSet::new();
+    for (_, _, _, name, parts) in &regenerated {
+        regenerated_names.insert(*name);
+        let role = (
+            parts.occurrence_key().to_owned(),
+            parts.role_path().to_owned(),
+        );
+        same_occurrence_roles.insert(*name.as_bytes(), role);
+    }
     let basis_binding = lineage.naming_basis_binding();
     let basis = basis_binding.read_guard(branch_id.clone());
     let build_birth_request = |target: LineageRecordTarget,
@@ -158,7 +169,9 @@ pub fn reconstruct_replay_naming_plan(
                 continue;
             }
             let identity = PersistentNameIdentity::from_minted_digest(digest);
-            let ref_basis = if basis.contains_live_holder(&identity) {
+            let ref_basis = if basis.contains_live_holder(&identity)
+                && !regenerated_names.contains(&identity)
+            {
                 PersistentNameReferenceBasis::Basis
             } else if let Some((occ, role)) = same_occurrence_roles.get(&digest)
                 && occ == parts.occurrence_key()
@@ -267,7 +280,7 @@ pub fn reconstruct_replay_naming_plan(
         }
     }
     // In-commit regeneration: the kept name re-minted from its recorded birth.
-    for (subject, source, created, parts) in &regenerated {
+    for (subject, source, created, _, parts) in &regenerated {
         let (target, name) = resolve_basis_target(*source)?;
         postures.push(LineagePostureClaim::Retire { target, name });
         let target = resolve_created_target(*subject, *created)?;
@@ -328,6 +341,7 @@ type Regenerated = (
     LineageSubject,
     LineageId,
     LineageId,
+    PersistentNameIdentity,
     PersistentNameBirthParts,
 );
 
@@ -339,9 +353,12 @@ fn regenerated_births(
 ) -> Result<Vec<Regenerated>, DurabilityError> {
     let mut births = Vec::new();
     for event in envelope.lineage_events() {
-        let (Some(name), [source], [created]) =
-            (event.kept_name(), event.sources(), event.targets())
-        else {
+        let (LineageEventKind::Replace, Some(name), [source], [created]) = (
+            event.kind(),
+            event.kept_name(),
+            event.sources(),
+            event.targets(),
+        ) else {
             continue;
         };
         let key = match event.subject() {
@@ -351,19 +368,14 @@ fn regenerated_births(
         let parts = lineage.read_name_index(&envelope.branch_context, |index| {
             index.and_then(|index| index.recorded_birth(key).cloned())
         });
-        match (event.kind(), parts) {
-            (LineageEventKind::Replace, Ok(Some(parts))) => {
-                births.push((event.subject(), *source, *created, parts));
-            }
-            (LineageEventKind::Replace, _) => {
-                let detail = format!("regenerated name {name:?} has no recorded birth");
-                return Err(DurabilityError::new(
-                    RecoveryFailureClass::ReplayFailure,
-                    detail,
-                ));
-            }
-            _ => {}
-        }
+        let Ok(Some(parts)) = parts else {
+            let detail = format!("regenerated name {name:?} has no recorded birth");
+            return Err(DurabilityError::new(
+                RecoveryFailureClass::ReplayFailure,
+                detail,
+            ));
+        };
+        births.push((event.subject(), *source, *created, name, parts));
     }
     Ok(births)
 }
