@@ -7,9 +7,9 @@ use worth_query_execution::facade::primary_graph::{
 
 use super::live_open::live_open;
 use super::request::{
-    BUSY, CANCELLED, CAPACITY, INTERNAL, PERMISSION, STALE, STORAGE, TIMED_OUT, VERSION_MISMATCH,
+    BUSY, CANCELLED, CAPACITY, INTERNAL, STALE, STORAGE, TIMED_OUT, VERSION_MISMATCH,
 };
-use super::stops::{native, work};
+use super::stops::{native, principal_resolution, work};
 use super::summary::{
     WorthQueryRefusalCategory as Category, WorthQueryRefusalSummary as Summary,
     WorthQueryUserFacingRefusal,
@@ -36,7 +36,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryManagedIndexDenial {
             Cause::QueryAdmission(cause) => cause.user_summary(),
             Cause::QueryRead(cause) => cause.user_summary(),
             Cause::LiveAdmission(cause) => live_open(cause),
-            Cause::Principal(_) => PERMISSION,
+            Cause::Principal(denial) => principal_resolution(denial.kind()),
             Cause::SourceVerification { .. } | Cause::Source(_) => STALE,
             Cause::CurrentControl(_) | Cause::Product(_) | Cause::NativeAdmission(_) => BUSY,
             Cause::GraphWork(_) => CAPACITY,

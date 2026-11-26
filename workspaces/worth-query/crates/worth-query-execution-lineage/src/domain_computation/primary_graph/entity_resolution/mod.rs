@@ -207,6 +207,11 @@ impl WorthQueryEntityResolutionTruth<'_> {
                     WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity),
                     field,
                 )
+                .with_keyed_entity(crate::domain_computation::primary_graph::WorthQueryKeyedEntityRefusal::not_found(
+                    entity,
+                    field,
+                    Some(expected.clone()),
+                ))
             })?;
             Ok(WorthQueryResolvedEntity::from_lookup(
                 self.installed,

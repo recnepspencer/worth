@@ -19,6 +19,7 @@ mod entity_resolution_denial;
 mod execution_observation;
 mod generated_output_invariant_denial;
 mod home_retirement_owner;
+mod keyed_entity_refusal;
 mod managed_index_denial;
 mod operation_admission_identity;
 mod operation_home_retirement;

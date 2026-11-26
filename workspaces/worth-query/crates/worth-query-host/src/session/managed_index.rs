@@ -99,7 +99,8 @@ where
                 ));
             }
         };
-        let fresh_request = session.request(&scope);
+        let principal = session.call_principal();
+        let fresh_request = session.request_as(&principal, &scope);
         let query_req = fresh_request.query(self.intent.clone());
         let query_req = match self.result_limit {
             Some(limit) => query_req.limit_results(limit),
@@ -204,9 +205,10 @@ where
         QueryRow<Schema, Intent>: WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Intent>>,
 {
         let scope = self.fresh_scope();
-        let request = self.request(&scope);
+        let principal = self.call_principal();
+        let request = self.request_as(&principal, &scope);
         let query_req = request.query(intent.clone());
-        let query_req = match self.query_result_limit {
+        let query_req = match self.settings.query_result_limit {
             Some(limit) => query_req.limit_results(limit),
             None => query_req,
         };
@@ -218,7 +220,7 @@ where
         Ok(WorthQueryTypedManagedIndexWatch {
             intent,
             watch,
-            result_limit: self.query_result_limit,
+            result_limit: self.settings.query_result_limit,
             current: Some(initial.into_rows()),
             last_notification: None,
         })
@@ -276,7 +278,8 @@ where
             + 'static,
 {
         let scope = self.fresh_scope();
-        let request = self.request(&scope);
+        let principal = self.call_principal();
+        let request = self.request_as(&principal, &scope);
         self.with_funded_advancement(&scope, |phase| {
             request
                 .query(parent_intent)
@@ -310,7 +313,8 @@ where
             + 'static,
 {
         let scope = self.fresh_scope();
-        let request = self.request(&scope);
+        let principal = self.call_principal();
+        let request = self.request_as(&principal, &scope);
         self.with_funded_advancement(&scope, |phase| {
             request
                 .query(parent_intent)

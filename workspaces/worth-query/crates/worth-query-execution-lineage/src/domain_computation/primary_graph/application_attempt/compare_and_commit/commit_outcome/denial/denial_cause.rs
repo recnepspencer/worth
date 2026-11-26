@@ -15,6 +15,8 @@ pub enum DenialCause {
     /// commit basis before the transaction was staged.
     PersistentNameOutput(worth_query_execution_naming::facade::WorthQueryOutputNameDenial),
     ProviderSession(crate::domain_computation::WorthQueryProviderSessionFailure),
+    /// The entity type, unique field and key a refused unique write names.
+    KeyedEntity(crate::domain_computation::primary_graph::WorthQueryKeyedEntityRefusal),
     DecisionReadSet(crate::domain_computation::WorthQueryDecisionReadSetFailure),
     /// The request's own authorization stopped the commit: its security
     /// basis on the branch, or what it may do there.

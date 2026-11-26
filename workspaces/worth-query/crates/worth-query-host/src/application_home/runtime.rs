@@ -68,6 +68,8 @@ pub struct WorthQueryApplicationHome<Schema, Program> {
     pub(super) checkpoint_limits: worth_store_application::ApplicationHomeCheckpointLimits,
     pub(super) open_disposition: WorthQueryHomeOpenDisposition,
     pub(super) active_head: Mutex<WorthQueryProductBranch>,
+    /// Owned sessions and live subscriptions this Home must release on close.
+    pub(crate) owned: std::sync::Arc<super::owned_holds::OwnedRuntimeHolds>,
 }
 impl<Schema, Program> WorthQueryApplicationHome<Schema, Program>
 where

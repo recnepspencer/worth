@@ -287,12 +287,12 @@ pub use crate::application_home::{
     WorthQueryApplicationHomeCheckpointJournalObservation,
     WorthQueryApplicationHomeCheckpointLimits, WorthQueryApplicationHomeCloseOutcome,
     WorthQueryApplicationHomeClosePhase, WorthQueryApplicationHomeCloseRefused,
-    WorthQueryApplicationHomeClosed,
-    WorthQueryApplicationHomeDiscardDenial, WorthQueryApplicationHomeLocation,
-    WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpenRefusedPhase,
-    WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
-    WorthQueryApplicationHomeRequest, WorthQueryApplicationHomeTransitionRequired,
-    WorthQueryCorrectionEntry, WorthQueryCorrectionHistory, WorthQueryCorrectionHistoryEntry,
+    WorthQueryApplicationHomeClosed, WorthQueryApplicationHomeDiscardDenial,
+    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeOpenRefused,
+    WorthQueryApplicationHomeOpenRefusedPhase, WorthQueryApplicationHomeOpeningCloseRefused,
+    WorthQueryApplicationHomeOpeningClosed, WorthQueryApplicationHomeRequest,
+    WorthQueryApplicationHomeTransitionRequired, WorthQueryCorrectionEntry,
+    WorthQueryCorrectionHistory, WorthQueryCorrectionHistoryEntry,
     WorthQueryCorrectionHistoryLimit, WorthQueryDirectoryOpenDenial,
     WorthQueryDirectoryOpenRetired, WorthQueryHomeAuthoredCorrectionOutcome,
     WorthQueryHomeClosePolicyRefused, WorthQueryHomeConfig, WorthQueryHomeCorrectionOutcome,
@@ -310,11 +310,13 @@ pub use crate::application_home::{
 };
 /// Reusable authenticated Host session and typed whole-result / managed-index live handles.
 pub use crate::session::{
-    WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQueryOwnedLiveSubscription,
-    WorthQuerySessionCommit, WorthQuerySessionIndexedQuery, WorthQuerySessionQuery,
-    WorthQuerySessionRunDenial, WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,
-    WorthQueryTypedLiveSubscription, WorthQueryTypedManagedIndexRefreshDenial,
-    WorthQueryTypedManagedIndexWatch,
+    WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQueryLocalSessionDenial,
+    WorthQueryOwnedLiveSubscription, WorthQueryOwnedSession, WorthQueryOwnedSessionDenial,
+    WorthQuerySessionCommit, WorthQuerySessionIndexedQuery, WorthQuerySessionPrincipalSource,
+    WorthQuerySessionQuery, WorthQuerySessionRunDenial, WorthQuerySessionSnapshot,
+    WorthQuerySessionSnapshotDenial, WorthQueryTypedLiveCloseDenial,
+    WorthQueryTypedLiveRefreshDenial, WorthQueryTypedLiveSubscription,
+    WorthQueryTypedManagedIndexRefreshDenial, WorthQueryTypedManagedIndexWatch,
 };
 pub use crate::{
     worth_query_recurring_rule, worth_query_remote_codec, worth_query_scope_access,

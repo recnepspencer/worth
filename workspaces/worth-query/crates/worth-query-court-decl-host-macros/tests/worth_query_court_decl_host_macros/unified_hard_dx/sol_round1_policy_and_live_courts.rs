@@ -367,13 +367,8 @@ fn sol_blocker_5_live_subscription_expired_principal_clears_stale_rows() {
         .refresh(&expiring_session)
         .expect_err("expired principal must refuse live subscription refresh");
     assert!(
-        matches!(
-            auth_err,
-            WorthQueryTypedLiveRefreshDenial::Next(_)
-                | WorthQueryTypedLiveRefreshDenial::AuthorizationDenied(_)
-                | WorthQueryTypedLiveRefreshDenial::StalePrincipal
-        ),
-        "expected principal/auth refusal, got {auth_err:?}"
+        matches!(auth_err, WorthQueryTypedLiveRefreshDenial::SessionExpired),
+        "expected an expired-session refusal, got {auth_err:?}"
     );
     assert!(!sub.is_current());
     assert!(sub.current().is_none());

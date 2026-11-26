@@ -167,6 +167,12 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
         WorthQueryApplicationHomeClosed,
         WorthQueryApplicationHomeCloseRefused<Schema, Program>,
     > {
+        // A Directory close releases every owned session and live subscription
+        // before Query admission checks that no handle still holds the runtime.
+        // It runs on the caller's thread, where thread-pinned subscriptions live.
+        if self.directory.is_some() {
+            self.owned.release_all();
+        }
         worth_execution::run_with_execution_stack(move || self.close_on_execution_stack(request))
     }
 
@@ -194,6 +200,7 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
             checkpoint_limits,
             open_disposition,
             active_head,
+            owned,
         } = self;
         let active_head = active_head
             .into_inner()
@@ -206,6 +213,7 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
                     checkpoint_limits,
                     open_disposition,
                     active_head: std::sync::Mutex::new(active_head),
+                    owned,
                 }),
             ));
         };
@@ -300,6 +308,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
                 checkpoint_limits,
                 open_disposition,
                 active_head: std::sync::Mutex::new(active_head),
+                owned: std::sync::Arc::default(),
             }),
             CloseCustody::QueryAdmission {
                 query,
@@ -314,6 +323,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
                 checkpoint_limits,
                 open_disposition,
                 active_head: std::sync::Mutex::new(active_head),
+                owned: std::sync::Arc::default(),
             }),
             CloseCustody::World {
                 query,
@@ -328,6 +338,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
                     checkpoint_limits,
                     open_disposition,
                     active_head: std::sync::Mutex::new(active_head),
+                    owned: std::sync::Arc::default(),
                 }),
                 Err(home) => Err(Self::from_custody(CloseCustody::World {
                     query,

@@ -7,7 +7,7 @@ use worth_query_publication::facade::application_entry::WorthQueryApplicationLiv
 
 use super::query_read::admission;
 use super::request::{BUSY, INTERNAL, PERMISSION, STORAGE, VERSION_MISMATCH};
-use super::stops::authorization;
+use super::stops::{authorization, principal_resolution};
 use super::summary::{
     WorthQueryRefusalCategory as Category, WorthQueryRefusalSummary as Summary,
     WorthQueryUserFacingRefusal,
@@ -20,7 +20,8 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationLiveOpenRequestDenial 
             Self::InputPreparation(cause) => cause.user_summary(),
             Self::ScopeResolution(cause) => cause.user_summary(),
             Self::Open(cause) => live_open(cause),
-            Self::PrincipalResolution(_) | Self::CapabilityAdmission(_) => PERMISSION,
+            Self::PrincipalResolution(denial) => principal_resolution(denial.kind()),
+            Self::CapabilityAdmission(_) => PERMISSION,
             Self::Limit(_) => Summary::with_message(
                 Category::Capacity,
                 "There are too many results to show live. Narrow the view and try again.",
