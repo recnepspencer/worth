@@ -260,6 +260,7 @@ where
         execution,
         home_owner,
         WorthQueryAdmittedOperationData {
+            admitted_at: runtime.runtime.authorization_clock.admission_timestamp(),
             runtime_authority: runtime.runtime.authority_identity(),
             binding_identity: operation.binding_identity().clone(),
             operation: operation.operation().to_string(),

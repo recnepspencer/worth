@@ -48,6 +48,7 @@ pub struct InvariantRuntimeView<'a> {
     version_depth: usize,
     snapshot_pressure: bool,
     names: Option<&'a dyn crate::validation::custom_rule::CustomInvariantNameSource>,
+    admission_time: Option<worth_foundational::facade::CanonicalTimestamp>,
 }
 
 impl<'a> InvariantRuntimeView<'a> {
@@ -63,6 +64,22 @@ impl<'a> InvariantRuntimeView<'a> {
         let mut view: InvariantRuntimeView<'round> = self.clone();
         view.names = names;
         view
+    }
+
+    /// This view with the caller's trusted admission instant for the commit
+    /// under evaluation; `None` leaves installed invariants without one.
+    pub fn with_admission_time(
+        mut self,
+        admitted_at: Option<worth_foundational::facade::CanonicalTimestamp>,
+    ) -> Self {
+        self.admission_time = admitted_at;
+        self
+    }
+
+    pub(crate) const fn admission_time(
+        &self,
+    ) -> Option<worth_foundational::facade::CanonicalTimestamp> {
+        self.admission_time
     }
 
     pub(crate) fn names(
@@ -89,6 +106,7 @@ impl<'a> InvariantRuntimeView<'a> {
             version_depth: inputs.version_depth,
             snapshot_pressure: inputs.snapshot_pressure,
             names: None,
+            admission_time: None,
         }
     }
 
@@ -144,6 +162,7 @@ impl<'a> InvariantRuntimeView<'a> {
             version_depth: self.version_depth,
             snapshot_pressure: self.snapshot_pressure,
             names: self.names,
+            admission_time: self.admission_time,
         }
     }
 

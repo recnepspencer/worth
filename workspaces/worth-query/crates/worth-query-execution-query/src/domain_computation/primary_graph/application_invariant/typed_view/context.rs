@@ -98,6 +98,24 @@ impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, '
         }
     }
 
+    /// The trusted instant the operation under judgment was admitted at: the
+    /// one reading of the Home's runtime time source that its handler also
+    /// observes through `DecisionReader::admitted_at`, identical for every
+    /// rule and worker. A commit no Query operation admitted (such as a raw
+    /// platform transaction), or whose reading failed, refuses
+    /// `SourceUnavailable`; a rule then decides fail-closed. Reading it
+    /// charges no work.
+    pub fn admitted_at(
+        &self,
+    ) -> Result<
+        worth_foundational::facade::CanonicalTimestamp,
+        worth_query_execution_contracts::facade::runtime_time::WorthQueryRuntimeTimeDenial,
+    > {
+        self.lower.admission_time().ok_or(
+            worth_query_execution_contracts::facade::runtime_time::WorthQueryRuntimeTimeDenial::SourceUnavailable,
+        )
+    }
+
     /// Observed application preparation acquisitions plus evaluation acquisitions.
     /// Native private identity preparation is outside these observations.
     /// Each evaluation starts from the same immutable preparation observation;

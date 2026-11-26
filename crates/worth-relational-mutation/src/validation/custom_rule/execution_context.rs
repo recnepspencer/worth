@@ -30,6 +30,7 @@ pub struct CustomInvariantExecutionContext<'runtime> {
         Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
     work: super::CustomInvariantWorkMeter,
     pub(super) names: super::persistent_names::InvariantNames<'runtime>,
+    admission_time: Option<worth_foundational::facade::CanonicalTimestamp>,
 }
 
 pub use crate::contracts::validation::data::non_applicability::CustomInvariantNonApplicability;
@@ -172,6 +173,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
             traversal,
             proposal_identity,
             names: super::persistent_names::InvariantNames::new(runtime.names(), work.clone()),
+            admission_time: runtime.admission_time(),
             work,
         }
     }
@@ -203,6 +205,13 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         .provenance();
         provenance.non_applicability = Some(basis);
         provenance
+    }
+
+    /// The trusted admission instant the committing caller supplied for this
+    /// proposal, identical for every rule and worker; `None` when the caller
+    /// supplied none. Reading it charges no work.
+    pub const fn admission_time(&self) -> Option<worth_foundational::facade::CanonicalTimestamp> {
+        self.admission_time
     }
 
     /// Checks the original request without charging work or opening a scope.

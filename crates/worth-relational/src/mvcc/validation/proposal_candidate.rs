@@ -188,7 +188,10 @@ pub(super) fn validate(
         &identity,
         Default::default(),
     );
-    let authority = runtime.invariant_authority().with_names(&names);
+    let authority = runtime
+        .invariant_authority()
+        .with_names(&names)
+        .with_admission_time(validation_input.control().admission_time());
     let pending = authority.begin_proposed_state(
         &selected,
         mutation.state(),
@@ -235,7 +238,10 @@ pub(super) fn validate(
         &identity,
         carried.kept_while(aggregate_admission.is_none()),
     );
-    let authority = runtime.invariant_authority().with_names(&names);
+    let authority = runtime
+        .invariant_authority()
+        .with_names(&names)
+        .with_admission_time(validation_input.control().admission_time());
     let invariants = authority.enforce_proposed_state(
         &selected,
         mutation.state(),

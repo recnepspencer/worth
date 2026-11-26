@@ -8,6 +8,7 @@ use super::super::application_attempt_state::WorthQueryStagedApplicationAttempt;
 pub(super) struct ApplicationInvariantCandidateMaterial {
     pub(super) publication_appendix: Option<super::publication_appendix::PublicationAppendixPreparation>,
     pub(super) request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    pub(super) admitted_at: Option<worth_foundational::facade::CanonicalTimestamp>,
     pub(super) semantic: ApplicationInvariantSemanticMaterial,
     pub(super) requirements: Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
     pub(super) producer_required_invariants:
@@ -64,6 +65,7 @@ impl ApplicationInvariantCandidateMaterial {
         Ok(Self {
             publication_appendix,
             request: staged.validation_request().clone(),
+            admitted_at: staged.admitted_at().ok(),
             semantic: ApplicationInvariantSemanticMaterial::from_staged(staged)?,
             requirements: staged.invariant_requirements().to_vec(),
             producer_required_invariants: staged.producer_required_invariants(),

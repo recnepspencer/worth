@@ -286,6 +286,11 @@ fn construct_admitted_operation<
             .owner_ref()
             .owner_identity(),
         WorthQueryAdmittedOperationData {
+            admitted_at: preparation
+                .runtime
+                .runtime
+                .authorization_clock
+                .admission_timestamp(),
             runtime_authority,
             binding_identity: preparation.operation.binding_identity().clone(),
             operation: preparation.operation.operation().to_string(),

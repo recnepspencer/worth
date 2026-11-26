@@ -100,7 +100,7 @@ impl<S: ApplicationSchemaComposition, P> QueryHomeSignalProgramPreparationRefuse
 impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
     pub(super) fn from_meaning(
         state: HomeApplicationState<S, P>,
-        bootstrap: super::super::super::super::WorthQueryPrimaryGraphBootstrap<S>,
+        mut bootstrap: super::super::super::super::WorthQueryPrimaryGraphBootstrap<S>,
         source: RuntimeBridgeRelationalSource,
         ordinary: RuntimeBridge,
         metadata_readmission_authority: Option<
@@ -138,6 +138,7 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
             }
             None => crate::domain_computation::authorization::WorthQueryRuntimeClock::system(),
         };
+        bootstrap.stamp_seed_admission(clock.admission_timestamp().ok());
         Box::new(Self {
             core: ProgramCore {
                 program,

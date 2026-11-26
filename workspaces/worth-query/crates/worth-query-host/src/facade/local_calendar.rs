@@ -36,6 +36,32 @@
 //! assert_eq!(mountain.offset_at(july).seconds_east(), -6 * 3_600);
 //! assert_eq!(mountain.offset_at(instant).seconds_east(), -7 * 3_600);
 //! ```
+//!
+//! Commit-time rules convert the operation's trusted admission instant, never
+//! a caller's date. `DecisionReader::admitted_at()` and
+//! `WorthQueryApplicationInvariantContext::admitted_at()` return the same
+//! reading of the Home's runtime time source; a held source makes it
+//! deterministic in tests and moves only when told to:
+//!
+//! ```
+//! use std::time::Duration;
+//! use worth_query_host::facade::declaration::application_schema::{
+//!     CanonicalDate, CanonicalTimestamp,
+//! };
+//! use worth_query_host::facade::local_calendar::WorthQueryTimeZone;
+//! use worth_query_host::facade::primary_graph::WorthQueryFixedRuntimeTimeSource;
+//!
+//! // Pass a clone to `WorthQueryHomeConfig::with_authorization_time_source`.
+//! let clock = WorthQueryFixedRuntimeTimeSource::new(
+//!     CanonicalTimestamp::from_ymd_hms_micros(2026, 11, 27, 1, 30, 0, 0).unwrap(),
+//! );
+//! // `from_tz_variable(":America/Denver")` loads the same rules from the zone database.
+//! let mountain = WorthQueryTimeZone::from_tz_variable("MST7MDT,M3.2.0,M11.1.0").unwrap();
+//! // 01:30Z on the 27th is still 18:30 on the 26th in Mountain time.
+//! assert_eq!(mountain.date_at(clock.now()), Ok(CanonicalDate::from_ymd(2026, 11, 26).unwrap()));
+//! clock.advance(Duration::from_secs(5 * 3_600 + 30 * 60)).unwrap();
+//! assert_eq!(mountain.date_at(clock.now()), Ok(CanonicalDate::from_ymd(2026, 11, 27).unwrap()));
+//! ```
 pub use crate::local_calendar::{
     WorthQueryLocalCalendarDenial, WorthQueryTimeZone, WorthQueryUtcOffset,
 };

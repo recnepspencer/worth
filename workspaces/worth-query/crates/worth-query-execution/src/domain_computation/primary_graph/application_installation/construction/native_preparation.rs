@@ -134,6 +134,16 @@ where
             ),
         );
     }
+    graph.stamp_seed_admission(
+        match authorization_time_source.as_deref() {
+            Some(source) => {
+                crate::domain_computation::runtime_time::admission_timestamp_from(source)
+            }
+            None => crate::domain_computation::runtime_time::WorthQueryRuntimeClock::system()
+                .admission_timestamp(),
+        }
+        .ok(),
+    );
     initial_state(phase, &mut graph, &installed).map_err(Denial::InitialState)?;
     Ok(storage.fill(PreparedMemoryApplication {
         graph,

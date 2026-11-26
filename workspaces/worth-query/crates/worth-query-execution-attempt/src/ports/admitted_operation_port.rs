@@ -4,6 +4,11 @@
 
 use std::sync::Arc;
 
+type AdmittedAt = Result<
+    worth_foundational::facade::CanonicalTimestamp,
+    crate::domain_computation::runtime_time::WorthQueryRuntimeTimeDenial,
+>;
+
 use worth_execution::ExecutionRequest;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_operation::{
@@ -153,6 +158,7 @@ pub trait AdmittedOperationExecutionPort<Schema, Operation, Input, Scope>: Sized
     fn operation_definition_identity(&self) -> &[u8; 32];
     fn governed_input_identity(&self) -> Option<&[u8; 32]>;
     fn governed_proposal_identity(&self) -> Option<&[u8; 32]>;
+    fn admitted_at(&self) -> AdmittedAt;
     fn record_decision_context_use(&mut self, use_mask: DecisionContextUse);
     fn bind_required_output_demand(&mut self, context: RequiredOutputDemandContext);
     fn take_required_output_demand(&mut self) -> Option<RequiredOutputDemandContext>;

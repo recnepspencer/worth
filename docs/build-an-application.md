@@ -7178,6 +7178,75 @@ lifecycle. The [installed refusal courts](../workspaces/worth-query/crates/worth
 exercise original-caller decoding, unchanged native checkpoints, cancellation,
 installed order, size refusal, decode mismatch, and reproducible payload bytes.
 
+### Trusted admission time in handlers and commit invariants
+
+A rule about dates (a lot that must not be expired, an effective date that
+must not be backdated, a contract window) must judge the caller's dates
+against time the caller cannot forge. Query reads the Home's runtime time
+source once, when it admits an operation, and lends that one reading to
+everything that judges the operation:
+
+- `reader.admitted_at()` on the handler's `DecisionReader`;
+- `context.admitted_at()` on the commit invariant's
+  `WorthQueryApplicationInvariantContext` (Relational carries it to every rule
+  and worker unchanged; it is never persisted);
+- the Home's initial-state seed, which is stamped with one reading taken when
+  the Home installs, so a seeded record is judged too.
+
+Both return `Result<CanonicalTimestamp, WorthQueryRuntimeTimeDenial>`; the
+handler and every invariant of one operation observe the same instant, so a
+handler that stamps a record with `admitted_at()` and an invariant that checks
+the stamp can never disagree. A commit no Query operation admitted (a raw
+platform transaction such as an inbound-completion marker) carries no instant
+and refuses `SourceUnavailable`; decide fail-closed. Reading the instant marks
+the decision as request context, so it is never reused for another request.
+
+Convert the instant to the civil date your rule means with
+`host::local_calendar::WorthQueryTimeZone::date_at`, in the zone the
+application chooses (`WorthQueryTimeZone::from_tz_variable(":America/Denver")`,
+or `load_system()` for the desktop's own zone), never UTC by accident:
+
+```rust,ignore
+fn evaluate(&self, context: &WorthQueryApplicationInvariantContext<'_, '_, S>, lots: &Touched)
+    -> Result<WorthQueryApplicationInvariantVerdict<WorthQueryDomainRefusal>, Error>
+{
+    let Ok(admitted_at) = context.admitted_at() else {
+        return Ok(violation("trusted_time_unavailable", "Trusted time is unavailable."));
+    };
+    let today = self.zone.date_at(admitted_at)?; // 18:30 Mountain on the 26th is the 26th
+    let proposed = context.proposed();
+    for lot in lots {
+        if proposed.field(&self.effective_on, lot)?.is_none_or(|on| on < today) {
+            return Ok(violation("backdated_effective_date", "Lot takes effect before today."));
+        }
+    }
+    Ok(WorthQueryApplicationInvariantVerdict::Pass)
+}
+```
+
+The Home's runtime time source is the system clock by default. Tests and
+simulations hold it with `host::primary_graph::WorthQueryFixedRuntimeTimeSource`
+and move it on purpose; keep a clone to advance it after handing one to the
+Home:
+
+```rust,ignore
+let clock = WorthQueryFixedRuntimeTimeSource::new(
+    CanonicalTimestamp::from_ymd_hms_micros(2026, 11, 27, 1, 30, 0, 0)?,
+); // add `.with_admission_clock(clock)` when the Home uses `with_clock`
+let home = WorthQueryApplicationHome::open_memory(
+    WorthQueryHomeConfig::new(build, configuration)
+        .with_authorization_time_source(clock.clone()),
+)?;
+clock.advance(Duration::from_secs(5 * 3_600 + 30 * 60))?; // 00:00 Mountain on the 27th
+```
+
+The [admission-time court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/admission_time_dx/courts.rs)
+refuses a forged `2020-01-01` effective date at commit with the Home
+untouched, accepts a lot on its last Mountain day after UTC has rolled over,
+refuses it at Mountain midnight, proves the handler and invariant see one
+instant that moves only with the held clock, and stamps live time on a
+default Home.
+
 ### Optional invariant work and original interruption
 
 Within an explicitly accounted execution policy, the work ceiling can be absent:

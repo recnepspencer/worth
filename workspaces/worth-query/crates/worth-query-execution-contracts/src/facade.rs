@@ -2,7 +2,10 @@
 
 pub mod runtime_time {
     pub use crate::runtime_time::time_basis::*;
-    pub use crate::runtime_time::{WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial};
+    pub use crate::runtime_time::{
+        WorthQueryFixedRuntimeTimeSource, WorthQueryRuntimeTimeSource,
+        WorthQueryRuntimeTimeSourceDenial,
+    };
 }
 
 pub mod execution_observation {

@@ -24,7 +24,12 @@ impl Wake for CancelValidation {
 }
 
 impl ValidationRequestControl {
-    pub fn new(request: &WorthQueryRequestScope) -> Self {
+    /// `admitted_at` is the operation's single trusted admission instant;
+    /// Relational lends it unchanged to every installed invariant.
+    pub fn new(
+        request: &WorthQueryRequestScope,
+        admitted_at: Option<worth_foundational::facade::CanonicalTimestamp>,
+    ) -> Self {
         let cancellation = Arc::new(CancelValidation(RelationalCancellationSource::new()));
         let waker = Waker::from(Arc::clone(&cancellation));
         let token = request.cancellation().clone();
@@ -40,6 +45,10 @@ impl ValidationRequestControl {
         let relational = RelationalOperationControl::from(cancellation.0.token());
         let relational = match request.deadline() {
             Some(deadline) => relational.with_deadline(deadline),
+            None => relational,
+        };
+        let relational = match admitted_at {
+            Some(admitted_at) => relational.with_admission_time(admitted_at),
             None => relational,
         };
         Self {
@@ -65,7 +74,7 @@ mod tests {
         let request = WorthQueryRequestScope::new(
             Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(30)),
             source.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
-        let control = ValidationRequestControl::new(&request);
+        let control = ValidationRequestControl::new(&request, None);
         assert_eq!(control.relational().interruption(), None);
         source.cancel();
         assert_eq!(
@@ -75,7 +84,7 @@ mod tests {
         let deadline = WorthQueryRequestScope::new(
             Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now()),
             WorthQueryCancellationSource::new().token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
-        let timed = ValidationRequestControl::new(&deadline);
+        let timed = ValidationRequestControl::new(&deadline, None);
         assert_eq!(
             timed.relational().interruption(),
             Some(RelationalOperationInterruption::TimedOut)

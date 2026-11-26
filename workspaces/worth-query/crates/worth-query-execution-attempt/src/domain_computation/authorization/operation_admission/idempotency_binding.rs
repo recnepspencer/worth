@@ -15,6 +15,16 @@ impl WorthQueryAdmittedOperation {
         self.data.governed_input_identity.as_ref()
     }
 
+    /// The single trusted admission instant read when this operation was admitted.
+    pub const fn admitted_at(
+        &self,
+    ) -> Result<
+        worth_foundational::facade::CanonicalTimestamp,
+        crate::domain_computation::runtime_time::WorthQueryRuntimeTimeDenial,
+    > {
+        self.data.admitted_at
+    }
+
     pub fn governed_proposal_identity(&self) -> Option<&[u8; 32]> {
         self.delegation_activation_binding()
             .map(|binding| binding.proposal_identity())

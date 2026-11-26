@@ -65,6 +65,13 @@ pub struct WorthQueryAdmittedOperationData {
     >,
     pub required_output_demand:
         Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
+    /// The trusted instant this operation was admitted at, read once from the
+    /// Home's runtime time source; every decision and commit invariant of the
+    /// operation observes this one reading.
+    pub admitted_at: Result<
+        worth_foundational::facade::CanonicalTimestamp,
+        crate::domain_computation::runtime_time::WorthQueryRuntimeTimeDenial,
+    >,
 }
 
 // The core moves across threads on its own; only a brand's typed input slots

@@ -192,6 +192,7 @@ impl PreparedPrimaryGraphMeaning {
             program_activation: None,
             invariant_installation_receipt: self.invariant_installation_receipt,
             expected_invariant_inventory_digest: self.expected_invariant_inventory_digest,
+            seed_admission_time: None,
             _schema: PhantomData,
         }
     }

@@ -32,6 +32,7 @@ pub(super) fn commit_bootstrap_rows(
     rows: Vec<WorthQueryPrincipalBootstrapRow>,
     entity_rows: Vec<WorthQueryTypedEntityBootstrapRow>,
     relation_rows: Vec<WorthQueryTypedRelationBootstrapRow>,
+    admitted_at: Option<worth_foundational::facade::CanonicalTimestamp>,
 ) -> Result<worth_relational::facade::history::CommitId, WorthQueryPrimaryGraphInstallationDenial> {
     let mut initialization = initialization;
     let mut initialization_guard = None;
@@ -51,10 +52,16 @@ pub(super) fn commit_bootstrap_rows(
                             format!("initial Source session: {cause:?}")).with_managed_source_cause(cause))?,
                 );
             }
+            let control = worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted();
+            let control = match admitted_at {
+                Some(admitted_at) => control.with_admission_time(admitted_at),
+                None => control,
+            };
             let mut transaction = runtime
-                .begin_branch_transaction(
+                .begin_branch_transaction_with_control(
                     &options,
                     worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                    control,
                 )
                 .map_err(map_bootstrap_transaction_admission_denial)?;
             let mut batch = WorkerIntentBatch::new("application-principal-bootstrap");

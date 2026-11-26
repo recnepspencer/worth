@@ -54,6 +54,17 @@ impl WorthQueryStagedApplicationAttempt<'_> {
         self.attempt.affinity().publication_request()
     }
 
+    /// The operation's single trusted admission instant, handed to Relational
+    /// so every installed invariant observes the decision's own reading.
+    pub const fn admitted_at(
+        &self,
+    ) -> Result<
+        worth_foundational::facade::CanonicalTimestamp,
+        crate::domain_computation::runtime_time::WorthQueryRuntimeTimeDenial,
+    > {
+        self.attempt.affinity().admitted_at()
+    }
+
     pub fn overlay_identity(&self) -> &str {
         self.overlay.identity()
     }

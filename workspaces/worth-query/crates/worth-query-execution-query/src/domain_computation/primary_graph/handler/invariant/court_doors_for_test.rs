@@ -37,6 +37,9 @@ where
             context_use,
             interruption,
             conditional_definitions,
+            // A detached court reader has no Home; it reads the system clock.
+            worth_query_execution_contracts::facade::runtime_time::WorthQueryRuntimeClock::system()
+                .admission_timestamp(),
             None,
         )
     }
