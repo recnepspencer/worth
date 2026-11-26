@@ -316,3 +316,16 @@ pub enum ApplicationSchemaMember {
         definition: crate::application_naming::ErasedApplicationGroupNameScheme,
     },
 }
+
+impl ApplicationSchemaMember {
+    /// One operation's declared read, program or precondition: the members an
+    /// operation access projection registers.
+    pub(super) fn is_operation_access(&self) -> bool {
+        matches!(
+            self,
+            Self::OperationDecisionRead { .. }
+                | Self::OperationProgram { .. }
+                | Self::OperationMutationPrecondition { .. }
+        )
+    }
+}

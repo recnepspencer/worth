@@ -75,6 +75,18 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     {
         Operation::declare_access(self).operation(definition)
     }
+
+    /// Registers the access `project` appends as one set, the projection
+    /// `worth_query_operation!` generates: a read, program or precondition that
+    /// included fragments or inline clauses repeat registers once. Repeating a
+    /// whole operation declaration still refuses as a duplicate member.
+    #[doc(hidden)]
+    pub fn operation_access_set(self, project: impl FnOnce(Self) -> Self) -> Self {
+        let first = self.contribution_member_count();
+        let mut schema = project(self);
+        schema.retain_first_operation_access_since(first);
+        schema
+    }
 }
 
 #[cfg(test)]

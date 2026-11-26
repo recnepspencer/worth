@@ -258,12 +258,13 @@
 pub use worth_query_admission::facade as admission;
 pub use worth_query_declaration::facade as declaration;
 pub use worth_query_declaration::{
-    worth_query_application_query, worth_query_authentication_audience,
-    worth_query_authentication_method, worth_query_capability, worth_query_capability_context,
-    worth_query_capability_provenance, worth_query_disclosure_classification, worth_query_effect,
-    worth_query_identity_namespace, worth_query_operation, worth_query_operation_emits,
-    worth_query_operation_reads, worth_query_operation_writes, worth_query_portable_type,
-    worth_query_principal_issuer, worth_query_structured_value_binding, worth_query_workflow,
+    worth_query_access_fragment, worth_query_application_query,
+    worth_query_authentication_audience, worth_query_authentication_method, worth_query_capability,
+    worth_query_capability_context, worth_query_capability_provenance,
+    worth_query_disclosure_classification, worth_query_effect, worth_query_identity_namespace,
+    worth_query_operation, worth_query_operation_emits, worth_query_operation_reads,
+    worth_query_operation_writes, worth_query_portable_type, worth_query_principal_issuer,
+    worth_query_structured_value_binding, worth_query_workflow,
 };
 /// Explain saved query results and authored source operations for audit or debugging.
 /// Start with [`application_entry::WorthQueryApplicationRequest::inspect`] or

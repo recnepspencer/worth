@@ -8,7 +8,9 @@
 //! ResultBinding`, `decision = Decision`, optional `outputs = Outputs`, the
 //! flags `body` (the handler is the operation's authored body) and `program`
 //! (execution requires the application program), the forwarded `access(..)`
-//! block, inline capability lists such as `reads(Task)` and an optional
+//! block (which may `include: [path::to::fragment];` clauses shared through
+//! `worth_query_access_fragment!`), inline capability lists such as
+//! `reads(Task)` and an optional
 //! `validate = path::to::check`, the input binding's capture-time validator
 //! (`fn(&Self) -> Result<(), &'static str>`).
 //!

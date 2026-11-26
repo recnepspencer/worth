@@ -326,3 +326,33 @@ fn a_scope_value_function_and_body_defaults_and_typed_inputs_expand_cleanly() {
         assert!(err.contains("container rewrites"), "{bad_attr}: {err}");
     }
 }
+
+#[test]
+fn an_access_block_forwards_fragment_includes_with_or_without_inline_clauses() {
+    let header = "#[worth_query(schema = Schema, context = Ctx, namespace = NS, input = In, \
+                  operation = Op, binding = Bind, result = R, decision = D, \
+                  scope = Key, scope_value = rules::key";
+    let included_only = syn::parse_str(&format!(
+        "{header}, access(include: [super::posting::stock_access];))] struct Move {{ bin: u64 }}"
+    ))
+    .unwrap();
+    let expanded = expand(&included_only).unwrap().to_string();
+    assert!(
+        expanded.contains("access { include : [super :: posting :: stock_access] ; }"),
+        "{expanded}"
+    );
+
+    let combined = syn::parse_str(&format!(
+        "{header}, access(include: [posting::a, posting::b]; read_entities: [Bin]; \
+         writes: [BinFacts::label()];))] struct Relabel {{ bin: u64 }}"
+    ))
+    .unwrap();
+    let expanded = expand(&combined).unwrap().to_string();
+    assert!(
+        expanded.contains(
+            "access { include : [posting :: a , posting :: b] ; read_entities : [Bin] ; \
+             writes : [BinFacts :: label ()] ; }"
+        ),
+        "{expanded}"
+    );
+}

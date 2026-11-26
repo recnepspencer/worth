@@ -249,6 +249,23 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         }
     }
 
+    /// Keeps the first of each operation access member appended since `first`.
+    /// One operation's declared access is a set, so a read, program or
+    /// precondition repeated across its included fragments registers once.
+    pub(super) fn retain_first_operation_access_since(&mut self, first: usize) {
+        let appended = self.members.split_off(first.min(self.members.len()));
+        for member in appended {
+            let repeated = member.is_operation_access()
+                && self
+                    .members
+                    .get(first..)
+                    .is_some_and(|set| set.contains(&member));
+            if !repeated {
+                self.members.push(member);
+            }
+        }
+    }
+
     pub(super) fn contribution_member_count(&self) -> usize {
         self.members.len()
     }
