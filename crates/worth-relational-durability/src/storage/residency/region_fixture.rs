@@ -79,7 +79,10 @@ pub(super) fn region_with_history() -> RegionFixture {
         .unwrap();
         let source = Arc::new(CountedSource {
             history: members.history.0,
-            members: BTreeMap::from([members.head.clone(), members.history.clone()]),
+            members: [members.head.clone(), members.history.clone()]
+                .into_iter()
+                .chain(members.chunks.members.iter().cloned())
+                .collect::<BTreeMap<_, _>>(),
             reads: AtomicUsize::new(0),
             history_reads: AtomicUsize::new(0),
             corrupt: AtomicBool::new(false),
@@ -106,6 +109,7 @@ pub(super) fn region_with_history() -> RegionFixture {
             relation_slots: partition.relation_arena.slot_count(),
             unavailable_records: partition.entity_arena.lifecycle_counts().unavailable
                 + partition.relation_arena.lifecycle_counts().unavailable,
+            chunks: Arc::new(members.chunks.placement.clone()),
         };
         RegionFixture {
             cell: RelationalRegionResidency::cold(cold.clone()).unwrap(),

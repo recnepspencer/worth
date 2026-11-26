@@ -365,6 +365,10 @@ with typed `RecoveryFailureClass::UnsupportedCheckpointVersion { found, supporte
 fixed-size roots of the paged record-identity tables; a partition's allocator rows
 fault through the working set on its first allocation, and an unreadable page
 refuses that allocation with `RecordAllocationDenial::IdentityPageUnavailable`.
+Each region leaf records a `REG8` chunk placement; a cold-backed cell bound to
+the working set serves summary-pruned head-kind and outgoing-adjacency scans
+from it via `RelationalRegionResidency::recorded_chunks()` without materializing
+the region.
 Exact kind projections and packetized kind queries route through the selected
 root's maintained kind directory. They admit only reached Head regions and
 materialize matching typed generations; empty kinds require no record I/O.

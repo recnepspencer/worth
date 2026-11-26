@@ -270,6 +270,7 @@ impl ReadmittedRegionDirectory {
                             entity_slots: leaf.entity_slots,
                             relation_slots: leaf.relation_slots,
                             unavailable_records: leaf.unavailable_records,
+                            chunks: leaf.chunks.clone(),
                         },
                         self.directory.region_member_basis(),
                         &self.directory.history_members,

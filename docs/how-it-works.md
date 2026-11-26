@@ -384,6 +384,17 @@ fixed-size roots. Reopen reads none of their pages. The first allocation or
 replay in a partition faults that partition's rows through the runtime's
 working set, so reopen memory for the allocator does not grow with record count,
 outstanding reservations or partition count, and slot reuse stays exact.
+Every `CHK24` region leaf also records a chunk placement: each slot domain is
+cut into fixed 4096-slot chunks, sealed by one producer that derives each
+chunk's kind and adjacency summary before hashing it. The leaf keeps the Merkle
+root over the chunks' semantic entries (consolidating a chunk's history member
+never changes it), the member binding of every chunk, and the roster of chunk,
+continuation and directory members, which checkpoint custody pins. Admission
+checks exact coverage, the root and the roster. A cold region serves head-kind
+scans and outgoing-adjacency traversals from its chunks through the working
+set, skipping chunks whose summary proves the kind or edge absent. Chunks commit
+to current heads and adjacency; record history stays in the region's layered
+history members, and warm materialization still reads the region head image.
 
 Transaction reads carry the effective record forward over appended staged mutations.
 Their immutable staged-history handle provides `iter()`, `len()` and `is_empty()`;

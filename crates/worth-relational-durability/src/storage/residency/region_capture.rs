@@ -119,7 +119,16 @@ pub(crate) fn capture_region_members(
                     checkpoint,
                 )?,
             };
+            let chunks = worth_relational_storage::internal_port::storage::residency::chunked::region_projection::seal_region_chunks(
+                partition,
+                &mut |units, bytes| checkpoint(units, bytes),
+            )
+            .map_err(|error| match error {
+                worth_relational_storage::internal_port::storage::residency::chunked::region_projection::RegionChunkCaptureError::Stop(cause)
+                | worth_relational_storage::internal_port::storage::residency::chunked::region_projection::RegionChunkCaptureError::Unavailable(cause) => cause,
+            })?;
             Ok(CapturedRegionMembers {
+                chunks,
                 directory,
                 history_members,
                 kind_authority,

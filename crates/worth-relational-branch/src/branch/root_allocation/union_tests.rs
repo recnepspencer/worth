@@ -152,6 +152,9 @@ fn cold_region_union_refuses_without_demanding_any_payload() {
             entity_slots: 0,
             relation_slots: 0,
             unavailable_records: 0,
+            chunks: Arc::new(
+                crate::storage::residency::chunked::region_placement::RegionChunkPlacement::empty(),
+            ),
         })
         .unwrap();
         let region = Arc::new(

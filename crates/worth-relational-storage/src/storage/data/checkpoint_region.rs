@@ -16,4 +16,17 @@ pub struct RelationalCheckpointRegion {
     pub unavailable_records: usize,
     pub head: RelationalDurableMemberLocator,
     pub history: RelationalDurableMemberLocator,
+    /// The leaf's `REG8` chunk placement; its roster joins checkpoint custody.
+    pub chunks:
+        std::sync::Arc<crate::storage::residency::chunked::region_placement::RegionChunkPlacement>,
+}
+
+impl RelationalCheckpointRegion {
+    /// Every member this leaf references directly (head, history and chunk
+    /// roster); layered history bases are declared separately.
+    pub fn leaf_members(&self) -> impl Iterator<Item = RelationalDurableMemberLocator> + '_ {
+        [self.head, self.history]
+            .into_iter()
+            .chain(self.chunks.members.iter().copied())
+    }
 }

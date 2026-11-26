@@ -164,6 +164,11 @@ fn validate_leaves(
                 "checkpoint region directory has duplicate, unordered or invalid leaves",
             ));
         }
+        leaf.chunks.admit().map_err(|refusal| {
+            corrupt(format!(
+                "checkpoint region chunk placement is invalid: {refusal:?}"
+            ))
+        })?;
         previous = Some(leaf.partition_id);
     }
     Ok(())

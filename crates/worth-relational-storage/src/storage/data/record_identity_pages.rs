@@ -8,14 +8,12 @@
 use serde::{Deserialize, Serialize};
 
 use super::record_identity_image::{
-    DurablePendingRecordReservation, DurableRecordGenerationClass,
-    DurableRecordGenerationHighWater, DurableRecordIdentityState, DurableRecordReservationOrigin,
-    DurableRecordSlotFrontier, DurableReusableRecordSlot,
+    DurableRecordGenerationClass, DurableRecordIdentityState, DurableRecordReservationOrigin,
 };
 use crate::durability::medium::RelationalDurableMemberLocator;
 use crate::identity::data::PartitionId;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
-use crate::storage::residency::chunked::member_io::{ChunkMemberSink, ChunkMemberSource};
+use crate::storage::residency::chunked::member_io::ChunkMemberSink;
 use crate::storage::residency::chunked::page_cache::PageEvictionGroup;
 use crate::storage::residency::chunked::paged_directory::{
     DirectoryBuildError, DirectoryEntry, PagedDirectory, PagedDirectoryBuilder, PagedDirectoryRoot,
@@ -54,14 +52,6 @@ pub const fn class_tag(class: DurableRecordGenerationClass) -> u8 {
     }
 }
 
-pub fn class_of(tag: u8) -> Result<DurableRecordGenerationClass, Cause> {
-    match tag {
-        0 => Ok(DurableRecordGenerationClass::Entity),
-        1 => Ok(DurableRecordGenerationClass::Relation),
-        _ => Err(Cause::Damaged),
-    }
-}
-
 pub fn pending_value(
     origin: DurableRecordReservationOrigin,
     generation: u32,
@@ -71,13 +61,6 @@ pub fn pending_value(
         DurableRecordReservationOrigin::Reclaimed { prior_generation } => {
             (generation, Some(prior_generation))
         }
-    }
-}
-
-pub fn pending_origin(value: IdentityPendingValue) -> DurableRecordReservationOrigin {
-    match value.1 {
-        None => DurableRecordReservationOrigin::AppendFrontier,
-        Some(prior_generation) => DurableRecordReservationOrigin::Reclaimed { prior_generation },
     }
 }
 
@@ -181,63 +164,6 @@ fn build_cause(error: DirectoryBuildError) -> Cause {
         DirectoryBuildError::Member(cause) => cause,
         // A duplicate key is a damaged allocator image, never a valid table.
         DirectoryBuildError::KeyOutOfOrder | DirectoryBuildError::PageTooSmall => Cause::Damaged,
-    }
-}
-
-impl PagedRecordIdentityRoots {
-    /// The whole allocator image, for expanded decode and inspection only.
-    /// Reopen never calls this; it faults partitions through the paged base.
-    pub fn load_resident(
-        &self,
-        directories: &IdentityDirectories,
-        source: &dyn ChunkMemberSource,
-    ) -> Result<DurableRecordIdentityState, Cause> {
-        let mut generations = Vec::new();
-        let mut cursor = directories.generations.range_from(source, (0, 0, 0))?;
-        while let Some(((class, partition, slot), generation)) = cursor.next_entry()? {
-            generations.push(DurableRecordGenerationHighWater {
-                class: class_of(class)?,
-                partition_id: PartitionId(partition),
-                slot,
-                generation,
-            });
-        }
-        let mut reusable = Vec::new();
-        let mut cursor = directories.reusable.range_from(source, (0, 0, 0))?;
-        while let Some(((class, partition, slot), ())) = cursor.next_entry()? {
-            reusable.push(DurableReusableRecordSlot {
-                class: class_of(class)?,
-                partition_id: PartitionId(partition),
-                slot,
-            });
-        }
-        let mut frontiers = Vec::new();
-        let mut cursor = directories.frontiers.range_from(source, (0, 0))?;
-        while let Some(((class, partition), next_slot)) = cursor.next_entry()? {
-            frontiers.push(DurableRecordSlotFrontier {
-                class: class_of(class)?,
-                partition_id: PartitionId(partition),
-                next_slot,
-            });
-        }
-        let mut pending = Vec::new();
-        let mut cursor = directories.pending.range_from(source, (0, 0, 0))?;
-        while let Some(((class, partition, slot), value)) = cursor.next_entry()? {
-            pending.push(DurablePendingRecordReservation {
-                class: class_of(class)?,
-                partition_id: PartitionId(partition),
-                slot,
-                generation: value.0,
-                origin: pending_origin(value),
-            });
-        }
-        Ok(DurableRecordIdentityState::current_with_memory(
-            generations,
-            reusable,
-            frontiers,
-            pending,
-            None,
-        ))
     }
 }
 

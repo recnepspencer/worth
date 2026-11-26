@@ -34,18 +34,7 @@ impl RelationalRegionResidency {
                 &cold.schema_carrier_digest,
                 &super::super::RecordedRegionCheckpoint {
                     history_members: cold.history_members.clone(),
-                    leaf: crate::storage::data::checkpoint_region::RelationalCheckpointRegion {
-                        kind_authority: cold.kind_authority,
-                        partition_id: cold.partition_id,
-                        content_digest: cold.content_digest,
-                        directory: cold.directory.clone(),
-                        live_counts: cold.live_counts,
-                        entity_slots: cold.entity_slots,
-                        relation_slots: cold.relation_slots,
-                        unavailable_records: cold.unavailable_records,
-                        head: cold.head,
-                        history: cold.history,
-                    },
+                    leaf: cold.leaf(),
                 },
                 *request,
             )

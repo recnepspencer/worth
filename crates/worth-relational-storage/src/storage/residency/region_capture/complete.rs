@@ -32,6 +32,8 @@ pub(in crate::internal_port::storage::residency) struct Captured {
         super::super::RelationalRegionKindCommitment,
     pub(in crate::internal_port::storage::residency) history_members:
         Arc<RelationalHistoryMemberDirectory>,
+    pub(in crate::internal_port::storage::residency) chunks:
+        super::super::chunked::region_projection::SealedRegionChunks,
 }
 fn invalid(detail: &'static str) -> Stop {
     DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail).into()
@@ -149,7 +151,26 @@ pub(in crate::internal_port::storage::residency) fn capture(
     let directory = directory
         .portable(lane, request)
         .map_err(|error| error.into_failure(partition.partition_id))?;
+    let chunks =
+        super::super::chunked::region_projection::seal_region_chunks(partition, &mut |_, _| {
+            request
+                .consult()
+                .map_err(|cause| Stop::Request(cause.into()))
+        })
+        .map_err(|error| match error {
+            super::super::chunked::region_projection::RegionChunkCaptureError::Stop(stop) => stop,
+            super::super::chunked::region_projection::RegionChunkCaptureError::Unavailable(
+                cause,
+            ) => crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(
+                    partition.partition_id,
+                ),
+                cause,
+            }
+            .into(),
+        })?;
     Ok(Captured {
+        chunks,
         directory,
         head,
         history,

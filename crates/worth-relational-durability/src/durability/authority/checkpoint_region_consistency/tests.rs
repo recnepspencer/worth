@@ -122,6 +122,7 @@ fn leaf_values() -> (RelationalRootRegionCheckpoint, RelationalCheckpointRegion)
         unavailable_records: 0,
         head: locator,
         history: locator,
+        chunks: std::sync::Arc::new(worth_relational_storage::internal_port::storage::residency::chunked::region_placement::RegionChunkPlacement::empty()),
     };
     (selected, captured)
 }

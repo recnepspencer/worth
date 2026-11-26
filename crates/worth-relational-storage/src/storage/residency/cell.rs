@@ -1,3 +1,4 @@
+pub mod cold_chunks;
 pub mod demand;
 #[path = "cell/eviction.rs"]
 pub mod eviction;
@@ -56,6 +57,26 @@ pub struct RelationalColdRegion {
     pub entity_slots: usize,
     pub relation_slots: usize,
     pub unavailable_records: usize,
+    pub chunks: Arc<super::chunked::region_placement::RegionChunkPlacement>,
+}
+
+impl RelationalColdRegion {
+    /// The recorded leaf this cold region readmits.
+    pub fn leaf(&self) -> crate::storage::data::checkpoint_region::RelationalCheckpointRegion {
+        crate::storage::data::checkpoint_region::RelationalCheckpointRegion {
+            kind_authority: self.kind_authority,
+            partition_id: self.partition_id,
+            content_digest: self.content_digest,
+            directory: self.directory.clone(),
+            live_counts: self.live_counts,
+            entity_slots: self.entity_slots,
+            relation_slots: self.relation_slots,
+            unavailable_records: self.unavailable_records,
+            head: self.head,
+            history: self.history,
+            chunks: self.chunks.clone(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -112,6 +133,7 @@ impl RelationalRegionResidency {
     pub fn cold(mut cold: RelationalColdRegion) -> Result<Arc<Self>, RelationalStorageUnavailable> {
         let mut members = cold.history_members.members(cold.history);
         members.insert(cold.head);
+        members.extend(cold.chunks.members.iter().copied());
         let custody = cold
             .source
             .as_ref()
@@ -137,18 +159,7 @@ impl RelationalRegionResidency {
                         &cold.schema_carrier_digest,
                         &super::RecordedRegionCheckpoint {
                             history_members: cold.history_members.clone(),
-                            leaf: crate::storage::data::checkpoint_region::RelationalCheckpointRegion {
-                                kind_authority: cold.kind_authority,
-                                partition_id: cold.partition_id,
-                                content_digest: cold.content_digest,
-                                directory: cold.directory.clone(),
-                                live_counts: cold.live_counts,
-                                entity_slots: cold.entity_slots,
-                                relation_slots: cold.relation_slots,
-                                unavailable_records: cold.unavailable_records,
-                                head: cold.head,
-                                history: cold.history,
-                            },
+                            leaf: cold.leaf(),
                         },
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     )

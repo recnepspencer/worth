@@ -130,6 +130,7 @@ impl ChunkMemberSource for ColdMemberSource {
 #[derive(Debug, Default)]
 pub struct CollectedMembers {
     pub members: Vec<(RelationalDurableMemberLocator, Vec<u8>)>,
+    seen: std::collections::BTreeSet<RelationalDurableMemberLocator>,
 }
 
 impl ChunkMemberSink for CollectedMembers {
@@ -138,7 +139,7 @@ impl ChunkMemberSink for CollectedMembers {
         locator: RelationalDurableMemberLocator,
         bytes: Vec<u8>,
     ) -> Result<(), Cause> {
-        if !self.members.iter().any(|(known, _)| *known == locator) {
+        if self.seen.insert(locator) {
             self.members.push((locator, bytes));
         }
         Ok(())

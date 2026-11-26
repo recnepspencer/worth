@@ -15,6 +15,8 @@ use worth_relational_storage::internal_port::durability::medium::cold_source::{
 use worth_relational_storage::internal_port::storage::overlay::partition_content::PartitionContentCommitment;
 use worth_relational_storage::internal_port::storage::residency::views::RelationalRegionFullViewFixturePort as _;
 
+#[path = "chunk_placement_tests.rs"]
+pub mod chunk_placement_tests;
 #[path = "head_history_kind_tests.rs"]
 pub mod head_history_kind_tests;
 #[path = "head_metadata_tests.rs"]
