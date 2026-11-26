@@ -133,7 +133,7 @@ pub(super) fn storage_failure(
 }
 
 fn valid_event_shape(event: &crate::contracts::lineage::data::events::LineageEventRecord) -> bool {
-    use crate::contracts::lineage::data::events::LineageEventKind;
+    use crate::contracts::lineage::data::events::{LineageEventKind, LineageSubject};
     let sources = event.sources();
     let targets = event.targets();
     let source_set = sources
@@ -166,9 +166,15 @@ fn valid_event_shape(event: &crate::contracts::lineage::data::events::LineageEve
                 && targets.len() == 1
         }
     };
-    source_set.len() == sources.len()
+    // An identity does not bind its subject kind; a merge keeper may stay put.
+    let birth_ok = event.name_birth().is_none_or(|birth| {
+        let subject = crate::contracts::lineage::data::naming::PersistentNameSubjectKind::Entity;
+        (birth.subject_kind() == subject) == (event.subject() == LineageSubject::Entity)
+    });
+    birth_ok
+        && source_set.len() == sources.len()
         && target_set.len() == targets.len()
-        && source_set.is_disjoint(&target_set)
+        && (event.kind() == LineageEventKind::Merge || source_set.is_disjoint(&target_set))
         && relation_binding_ok
         && entity_binding_ok
         && match event.kind() {

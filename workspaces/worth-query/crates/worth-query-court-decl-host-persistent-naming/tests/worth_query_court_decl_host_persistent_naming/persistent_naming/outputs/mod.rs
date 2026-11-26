@@ -133,14 +133,22 @@ pub fn keys(keys: &[&str]) -> Vec<String> {
 
 /// One live installed world and its operator's request.
 pub struct World {
-    pub host: world::Host,
+    pub host: world::Runtime,
     scope: worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
     principal: WorthQueryAuthenticatedExternalPrincipal<Schema>,
 }
 
 impl World {
     pub fn install() -> Self {
-        let host = world::install();
+        Self::over(world::Runtime::Memory(world::install()))
+    }
+
+    /// The seeded world on a new Directory Home at `location`.
+    pub fn open_directory(location: std::path::PathBuf) -> Self {
+        Self::over(world::Runtime::directory(location))
+    }
+
+    fn over(host: world::Runtime) -> Self {
         let scope = request_scope();
         let principal = authenticate_operator(host.installed_schema(), &scope);
         Self {
@@ -148,6 +156,20 @@ impl World {
             scope,
             principal,
         }
+    }
+
+    /// Crashes the Directory Home and reopens it as a fresh installation;
+    /// the operator authenticates anew against the reopened schema.
+    pub fn crash_and_reopen(&mut self) {
+        self.host.crash_and_reopen();
+        self.scope = request_scope();
+        self.principal = authenticate_operator(self.host.installed_schema(), &self.scope);
+    }
+
+    /// Captures a Directory Home checkpoint: a later reopen restores it
+    /// and replays only the Journal tail after it.
+    pub fn checkpoint(&self) {
+        self.host.checkpoint();
     }
 
     pub fn request(&self) -> WorthQueryApplicationRequest<'_, '_, '_, Schema> {
@@ -260,9 +282,22 @@ impl World {
 /// Relational's typed commit-time naming refusal behind `outcome`.
 pub fn naming_refusal(outcome: &Outcome) -> Option<LineageNameDenial> {
     match outcome {
-        Outcome::Commit(WorthQueryApplicationUncommitted::Denied(denial)) => {
-            denial.persistent_name_refusal().cloned()
-        }
+        Outcome::Commit(uncommitted) => uncommitted_refusal(uncommitted).cloned(),
+        _ => None,
+    }
+}
+
+/// The typed naming refusal an uncommitted request carries. A Directory
+/// Home reports a Native refusal met while completing its durable candidate
+/// as preparation pending, with that refusal as its Native preparation error.
+pub fn uncommitted_refusal(
+    uncommitted: &WorthQueryApplicationUncommitted,
+) -> Option<&LineageNameDenial> {
+    match uncommitted {
+        WorthQueryApplicationUncommitted::Denied(denial) => denial.persistent_name_refusal(),
+        WorthQueryApplicationUncommitted::ProductPreparationPending(pending) => pending
+            .native_preparation_error()?
+            .lineage_name_denial_ref(),
         _ => None,
     }
 }

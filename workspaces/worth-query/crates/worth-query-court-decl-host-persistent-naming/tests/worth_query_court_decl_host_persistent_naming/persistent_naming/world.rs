@@ -1,4 +1,6 @@
 use super::*;
+pub mod home;
+pub use home::Runtime;
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
 pub type Document<'a> = WorthQueryApplicationHistoryDocument<'a, Schema, History>;
 impl WorthQueryApplicationContribution<Schema> for Contribution {
@@ -51,75 +53,82 @@ where
         ((),),
         ApplicationBuildIdentity::parse(build).unwrap(),
         limits,
-        |_, graph, installed| {
-            graph.bind_principal(
-                &installed.principal_binding(Actor::reference()).unwrap(),
-                WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
-                1,
-                operator_identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            for key in ["a", "b"] {
-                graph.bind_entity(
-                    WorthQueryApplicationEntitySeed::new(
-                        Model::reference(),
-                        WorthQueryApplicationEntityKey::new(key).unwrap(),
-                    )
-                    .field(ModelKey::at("ModelKey"), key.to_owned())
-                    .field(ModelValue::at("ModelValue"), 1),
-                )?;
-            }
-            for (key, value) in [
-                ("direct", 11),
-                ("nested", 22),
-                ("foreign", 33),
-                ("reference", 44),
-                ("loose", 55),
-            ] {
-                let seed = WorthQueryApplicationEntitySeed::new(
-                    Member::reference(),
-                    WorthQueryApplicationEntityKey::new(key).unwrap(),
-                )
-                .field(MemberKey::at("MemberKey"), key.to_owned())
-                .field(MemberValue::at("MemberValue"), value);
-                let seed = if named {
-                    seed.persistent_name("authored")
-                } else {
-                    seed
-                };
-                graph.bind_entity(seed)?;
-            }
-            for (model, member) in [("a", "direct"), ("b", "foreign")] {
-                graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                    ModelMember::reference(),
-                    format!("owns:{model}"),
-                    WorthQueryApplicationEntityKey::new(model).unwrap(),
-                    WorthQueryApplicationEntityKey::new(member).unwrap(),
-                ))?;
-            }
-            graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                Child::reference(),
-                "nested-link",
-                WorthQueryApplicationEntityKey::new("direct").unwrap(),
-                WorthQueryApplicationEntityKey::new("nested").unwrap(),
-            ))?;
-            graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                Reference::binding(),
-                "reference-link",
-                WorthQueryApplicationEntityKey::new("a").unwrap(),
-                WorthQueryApplicationEntityKey::new("reference").unwrap(),
-            ))?;
-            graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                Reference::binding(),
-                "foreign-loose-reference",
-                WorthQueryApplicationEntityKey::new("b").unwrap(),
-                WorthQueryApplicationEntityKey::new("loose").unwrap(),
-            ))?;
-            navigation::seed(graph)?;
-            Ok(())
-        },
+        |_, graph, installed| seed(graph, installed, named),
     )
     .map_err(|cause| format!("{cause:?}"))
+}
+/// Seeds the operator, models `a` and `b`, members (named when `named`)
+/// and their links: the one initial state every installation starts from.
+pub fn seed(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    installed: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<Schema>,
+    named: bool,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    graph.bind_principal(
+        &installed.principal_binding(Actor::reference()).unwrap(),
+        WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
+        1,
+        operator_identity(),
+        WorthQueryPrincipalMappingStatus::Enabled,
+    )?;
+    for key in ["a", "b"] {
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(
+                Model::reference(),
+                WorthQueryApplicationEntityKey::new(key).unwrap(),
+            )
+            .field(ModelKey::at("ModelKey"), key.to_owned())
+            .field(ModelValue::at("ModelValue"), 1),
+        )?;
+    }
+    for (key, value) in [
+        ("direct", 11),
+        ("nested", 22),
+        ("foreign", 33),
+        ("reference", 44),
+        ("loose", 55),
+    ] {
+        let seed = WorthQueryApplicationEntitySeed::new(
+            Member::reference(),
+            WorthQueryApplicationEntityKey::new(key).unwrap(),
+        )
+        .field(MemberKey::at("MemberKey"), key.to_owned())
+        .field(MemberValue::at("MemberValue"), value);
+        let seed = if named {
+            seed.persistent_name("authored")
+        } else {
+            seed
+        };
+        graph.bind_entity(seed)?;
+    }
+    for (model, member) in [("a", "direct"), ("b", "foreign")] {
+        graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+            ModelMember::reference(),
+            format!("owns:{model}"),
+            WorthQueryApplicationEntityKey::new(model).unwrap(),
+            WorthQueryApplicationEntityKey::new(member).unwrap(),
+        ))?;
+    }
+    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+        Child::reference(),
+        "nested-link",
+        WorthQueryApplicationEntityKey::new("direct").unwrap(),
+        WorthQueryApplicationEntityKey::new("nested").unwrap(),
+    ))?;
+    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+        Reference::binding(),
+        "reference-link",
+        WorthQueryApplicationEntityKey::new("a").unwrap(),
+        WorthQueryApplicationEntityKey::new("reference").unwrap(),
+    ))?;
+    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+        Reference::binding(),
+        "foreign-loose-reference",
+        WorthQueryApplicationEntityKey::new("b").unwrap(),
+        WorthQueryApplicationEntityKey::new("loose").unwrap(),
+    ))?;
+    navigation::seed(graph)?;
+    Ok(())
 }
 pub fn attach(host: &Host) -> Document<'_> {
     attach_as::<History>(host)

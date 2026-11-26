@@ -119,6 +119,26 @@ impl Trace {
     pub fn step(&mut self, op: &Op, observed: &Observed, born: &BTreeSet<usize>, events: usize) {
         let post = post(observed, born, events);
         self.lines.push(format!("{{{},{post}}}", action(op)));
+        self.observe(observed, &post);
+    }
+
+    /// Records a Store crash and reopen (from a checkpoint captured at this
+    /// boundary when `checkpointed`) and the reopened world's answers.
+    pub fn reopen(
+        &mut self,
+        checkpointed: bool,
+        observed: &Observed,
+        born: &BTreeSet<usize>,
+        events: usize,
+    ) {
+        let post = post(observed, born, events);
+        self.lines.push(format!(
+            "{{\"action\":\"ReopenFromStore\",\"checkpoint\":{checkpointed},{post}}}"
+        ));
+        self.observe(observed, &post);
+    }
+
+    fn observe(&mut self, observed: &Observed, post: &str) {
         let resolved = observed.answers.iter().map(|((n, scope, all), answer)| {
             format!(
                 "{{\"name\":{},\"scope\":{},\"sel\":{},\"status\":{},\"targets\":{}}}",
@@ -135,9 +155,9 @@ impl Trace {
         ));
     }
 
-    pub fn write(&self, dir: &std::path::Path, seed: u64) -> std::io::Result<std::path::PathBuf> {
+    pub fn write(&self, dir: &std::path::Path, file: &str) -> std::io::Result<std::path::PathBuf> {
         std::fs::create_dir_all(dir)?;
-        let path = dir.join(format!("seed-{seed}.ndjson"));
+        let path = dir.join(format!("{file}.ndjson"));
         std::fs::write(&path, self.lines.join("\n") + "\n")?;
         Ok(path)
     }

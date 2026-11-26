@@ -999,6 +999,20 @@ The runnable Slice 1B counterparts are the
 [durable group recovery court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_group_durable_recovery.rs), and the
 [cell-complex consumer court](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/cell_complex.rs).
 
+
+**Names across a restart.** Keep retained names as values (`WorthQueryName<K>`,
+`NamedTarget<K>`, or their stored text) and present them to the reopened
+Directory Home; there is no raw-bytes constructor. Reopen rebuilds every
+name from persisted births and lineage events, so retained names answer
+exactly as before the restart, and one this store never recorded refuses
+`UnknownName`. On a Directory Home a commit-time naming refusal (for example
+`DuplicateBirth` in a coupled envelope) can surface as
+`ProductPreparationPending` carrying the refusal as its Native preparation
+error; settle it as that section describes (end the Home and reopen) before
+the next request. Group names across a reopen *from a checkpoint* are a known
+held gap (Phase 7B-1). Diverged branches never merge named outputs: adopt a
+candidate onto the head it was forked from, or receive a typed refusal.
+
 ### 2.1 Declare operation access once
 
 For a native handler on a concrete application schema, put its complete access set in

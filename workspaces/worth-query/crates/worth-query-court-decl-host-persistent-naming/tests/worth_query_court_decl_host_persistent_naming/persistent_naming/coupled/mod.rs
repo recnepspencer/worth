@@ -76,9 +76,7 @@ impl World {
 /// Relational's typed commit-time naming refusal behind an envelope.
 pub fn envelope_refusal(outcome: &Envelope) -> Option<&LineageNameDenial> {
     match outcome {
-        Envelope::Uncommitted(WorthQueryApplicationUncommitted::Denied(denial)) => {
-            denial.persistent_name_refusal()
-        }
+        Envelope::Uncommitted(uncommitted) => super::outputs::uncommitted_refusal(uncommitted),
         _ => None,
     }
 }

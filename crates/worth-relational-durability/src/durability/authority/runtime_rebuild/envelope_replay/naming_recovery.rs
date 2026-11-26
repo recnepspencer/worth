@@ -3,10 +3,11 @@
 //! replayed commits execute through the full production naming/posture
 //! finalization path and reproduce exact canonical `LineageEventRecord`s.
 
+use contracts::lineage::data::name_resolution::PersistentNameKey;
 use contracts::lineage::data::naming::{
-    PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameDiscriminatorReference,
-    PersistentNameHolder, PersistentNameIdentity, PersistentNameIdentityOwnerPort as _,
-    PersistentNameReferenceBasis,
+    PersistentNameBirthParts, PersistentNameBirthRecord, PersistentNameBirthRequest,
+    PersistentNameDiscriminatorReference, PersistentNameHolder, PersistentNameIdentity,
+    PersistentNameIdentityOwnerPort as _, PersistentNameReferenceBasis,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use worth_relational_contracts::internal_port as contracts;
@@ -137,13 +138,14 @@ pub fn reconstruct_replay_naming_plan(
         }
     }
 
+    let regenerated = regenerated_births(lineage, envelope)?;
     let basis_binding = lineage.naming_basis_binding();
     let basis = basis_binding.read_guard(branch_id.clone());
     let build_birth_request = |target: LineageRecordTarget,
-                               birth: &PersistentNameBirthRecord|
+                               parts: &PersistentNameBirthParts|
      -> Result<PersistentNameBirthRequest, DurabilityError> {
-        let embedded = extract_embedded_name_refs(birth.parts().canonical_discriminator())
-            .map_err(|()| {
+        let embedded =
+            extract_embedded_name_refs(parts.canonical_discriminator()).map_err(|()| {
                 DurabilityError::new(
                     RecoveryFailureClass::ReplayFailure,
                     "replay found malformed discriminator bytes in durable birth".to_owned(),
@@ -159,7 +161,7 @@ pub fn reconstruct_replay_naming_plan(
             let ref_basis = if basis.contains_live_holder(&identity) {
                 PersistentNameReferenceBasis::Basis
             } else if let Some((occ, role)) = same_occurrence_roles.get(&digest)
-                && occ == birth.parts().occurrence_key()
+                && occ == parts.occurrence_key()
             {
                 PersistentNameReferenceBasis::SameOccurrence { role: role.clone() }
             } else {
@@ -171,12 +173,12 @@ pub fn reconstruct_replay_naming_plan(
             });
         }
         Ok(PersistentNameBirthRequest {
-            scheme_id: birth.parts().scheme_id().to_owned(),
-            occurrence_key: birth.parts().occurrence_key().to_owned(),
-            role_path: birth.parts().role_path().to_owned(),
-            parent_identities: birth.parts().parent_identities().to_vec(),
+            scheme_id: parts.scheme_id().to_owned(),
+            occurrence_key: parts.occurrence_key().to_owned(),
+            role_path: parts.role_path().to_owned(),
+            parent_identities: parts.parent_identities().to_vec(),
             referenced_names,
-            canonical_discriminator: birth.parts().canonical_discriminator().to_vec(),
+            canonical_discriminator: parts.canonical_discriminator().to_vec(),
             holder: target.to_holder(),
         })
     };
@@ -206,7 +208,7 @@ pub fn reconstruct_replay_naming_plan(
                     consumed_create_lineages.insert(child_lineage);
                     children.push(LineageSplitChild {
                         target: *child_target,
-                        birth: build_birth_request(*child_target, birth)?,
+                        birth: build_birth_request(*child_target, birth.parts())?,
                     });
                 }
                 postures.push(LineagePostureClaim::Split {
@@ -229,7 +231,7 @@ pub fn reconstruct_replay_naming_plan(
                         parents,
                         target: *target,
                         keeper: LineageMergeKeeper::MintNew {
-                            birth: build_birth_request(*target, birth)?,
+                            birth: build_birth_request(*target, birth.parts())?,
                         },
                     });
                 } else if let Some(kept) = event.kept_name() {
@@ -264,6 +266,14 @@ pub fn reconstruct_replay_naming_plan(
             LineageEventKind::Create | LineageEventKind::Replace => {}
         }
     }
+    // In-commit regeneration: the kept name re-minted from its recorded birth.
+    for (subject, source, created, parts) in &regenerated {
+        let (target, name) = resolve_basis_target(*source)?;
+        postures.push(LineagePostureClaim::Retire { target, name });
+        let target = resolve_created_target(*subject, *created)?;
+        let birth = build_birth_request(target, parts)?;
+        postures.push(LineagePostureClaim::Create { target, birth });
+    }
 
     // 2. Emit remaining standalone Create births.
     for event in events {
@@ -274,7 +284,7 @@ pub fn reconstruct_replay_naming_plan(
         {
             postures.push(LineagePostureClaim::Create {
                 target: *target,
-                birth: build_birth_request(*target, birth)?,
+                birth: build_birth_request(*target, birth.parts())?,
             });
         }
     }
@@ -312,4 +322,48 @@ fn reverify_birth(birth: &PersistentNameBirthRecord) -> Result<(), DurabilityErr
         )
     })?;
     Ok(())
+}
+
+type Regenerated = (
+    LineageSubject,
+    LineageId,
+    LineageId,
+    PersistentNameBirthParts,
+);
+
+/// Each regeneration (a `Replace` keeping its name) with the birth parts the
+/// branch's index ingested from persisted events, read before the basis guard.
+fn regenerated_births(
+    lineage: &LineageSubsystem,
+    envelope: &CanonicalCommitEnvelope,
+) -> Result<Vec<Regenerated>, DurabilityError> {
+    let mut births = Vec::new();
+    for event in envelope.lineage_events() {
+        let (Some(name), [source], [created]) =
+            (event.kept_name(), event.sources(), event.targets())
+        else {
+            continue;
+        };
+        let key = match event.subject() {
+            LineageSubject::Entity => PersistentNameKey::Entity(name),
+            LineageSubject::Relation => PersistentNameKey::Relation(name),
+        };
+        let parts = lineage.read_name_index(&envelope.branch_context, |index| {
+            index.and_then(|index| index.recorded_birth(key).cloned())
+        });
+        match (event.kind(), parts) {
+            (LineageEventKind::Replace, Ok(Some(parts))) => {
+                births.push((event.subject(), *source, *created, parts));
+            }
+            (LineageEventKind::Replace, _) => {
+                let detail = format!("regenerated name {name:?} has no recorded birth");
+                return Err(DurabilityError::new(
+                    RecoveryFailureClass::ReplayFailure,
+                    detail,
+                ));
+            }
+            _ => {}
+        }
+    }
+    Ok(births)
 }

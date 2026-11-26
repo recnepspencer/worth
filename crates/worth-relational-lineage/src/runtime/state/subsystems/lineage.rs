@@ -336,6 +336,11 @@ impl LineageSubsystem {
             .unwrap_or_default()
     }
 
+    /// The first group lineage `b` published after `base` (merge refusal).
+    pub fn group_lineage_after(&self, b: &BranchId, c: CommitId) -> Option<(CommitId, String)> {
+        (self.state.read().group_lineage_after(b, c)).map(|(at, id)| (at, id.to_owned()))
+    }
+
     pub fn replace_events(
         &self,
         lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,

@@ -24,13 +24,16 @@
 //!
 //! `WORTH_DST_SEEDS` (default 64) sets how many seeds run, `WORTH_DST_SEED`
 //! runs one seed, and `WORTH_DST_TRACE_DIR` writes each seed's NDJSON trace
-//! for `tools/tla/run_tlc.py trace`.
+//! for `tools/tla/run_tlc.py trace`. The durable sweep (`durable`) runs the
+//! same walks on a Directory Home crashed and reopened after every step.
 use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
 mod candidate;
 mod driver;
+mod durable;
+mod durable_step;
 mod observe;
 mod ops;
 pub(super) use ops::Rng;
@@ -64,6 +67,8 @@ struct Coverage {
     candidate_ended: usize,
     candidate_history: usize,
     candidate_pending: usize,
+    reopens: usize,
+    checkpointed_reopens: usize,
 }
 
 impl Coverage {
@@ -115,6 +120,8 @@ impl Coverage {
         self.candidate_ended += other.candidate_ended;
         self.candidate_history += other.candidate_history;
         self.candidate_pending += other.candidate_pending;
+        self.reopens += other.reopens;
+        self.checkpointed_reopens += other.checkpointed_reopens;
     }
 }
 
@@ -199,16 +206,21 @@ fn agree(model: &Oracle, observed: &Observed, minted: &BTreeSet<usize>) -> Resul
     Ok(())
 }
 
-fn run_seed(seed: u64, trace_dir: Option<&std::path::Path>) -> Result<Coverage, String> {
+fn run_seed(
+    seed: u64,
+    trace_dir: Option<&std::path::Path>,
+    durable: bool,
+) -> Result<Coverage, String> {
     let mut rng = Rng::new(seed);
     let mut model = Oracle::default();
-    let mut driver = Driver::new(seed);
+    let mut driver = Driver::new(seed, durable);
     let mut authored = BTreeSet::new();
     let mut minted = 0;
     let mut trace = Trace::default();
     let mut coverage = Coverage::default();
     let mut ops = Vec::new();
-    for step in 0..STEPS {
+    let steps = if durable { durable::steps() } else { STEPS };
+    for step in 0..steps {
         let op = next_op(&mut rng, &model, &authored, minted, coverage.rebuilds > 0);
         let op = driver.settle(op);
         ops.push(op.clone());
@@ -221,6 +233,10 @@ fn run_seed(seed: u64, trace_dir: Option<&std::path::Path>) -> Result<Coverage, 
         };
         coverage.count(&op, untouched);
         let created = driver.execute(&op, step).map_err(fail)?;
+        let recovered = durable && durable_step::settles_by_reopen(&op);
+        if recovered {
+            driver.reopen(false);
+        }
         driver.learn(step, &created).map_err(fail)?;
         // A candidate envelope lands its first stage only when the read
         // answered (an edit lands no naming event); every other op lands.
@@ -253,10 +269,25 @@ fn run_seed(seed: u64, trace_dir: Option<&std::path::Path>) -> Result<Coverage, 
         let born: BTreeSet<usize> = driver.names.keys().copied().collect();
         agree(&model, &observed, &born).map_err(fail)?;
         trace.step(&op, &observed, &born, driver.naming_commits);
+        if durable {
+            let (trace, coverage) = (&mut trace, &mut coverage);
+            durable_step::reopen_after(
+                &mut driver,
+                &model,
+                &born,
+                &observed,
+                step,
+                recovered,
+                trace,
+                coverage,
+            )
+            .map_err(|cause| format!("seed {seed} reopen after step {step}: {cause}"))?;
+        }
     }
     if let Some(dir) = trace_dir {
+        let file = format!("{}seed-{seed}", if durable { "durable-" } else { "" });
         trace
-            .write(dir, seed)
+            .write(dir, &file)
             .map_err(|cause| format!("trace: {cause}"))?;
     }
     Ok(coverage)
@@ -270,9 +301,8 @@ fn seeds() -> Vec<u64> {
     }
 }
 
-#[test]
-fn seeded_walks_agree_with_the_reference_oracle() {
-    let seeds = seeds();
+/// Runs `seeds` across worker threads; every failure fails the court.
+fn sweep(seeds: &[u64], durable: bool) -> Coverage {
     let trace_dir = std::env::var_os("WORTH_DST_TRACE_DIR").map(std::path::PathBuf::from);
     let workers = std::thread::available_parallelism()
         .map_or(4, usize::from)
@@ -285,7 +315,7 @@ fn seeded_walks_agree_with_the_reference_oracle() {
         for _ in 0..workers {
             scope.spawn(|| {
                 while let Some(&seed) = seeds.get(next.fetch_add(1, Ordering::Relaxed)) {
-                    match run_seed(seed, trace_dir.as_deref()) {
+                    match run_seed(seed, trace_dir.as_deref(), durable) {
                         Ok(coverage) => total.lock().unwrap().add(coverage),
                         Err(failure) => failures.lock().unwrap().push(failure),
                     }
@@ -300,7 +330,13 @@ fn seeded_walks_agree_with_the_reference_oracle() {
         failures.len(),
         failures.join("\n")
     );
-    let total = total.into_inner().unwrap();
+    total.into_inner().unwrap()
+}
+
+#[test]
+fn seeded_walks_agree_with_the_reference_oracle() {
+    let seeds = seeds();
+    let total = sweep(&seeds, false);
     eprintln!(
         "persistent-naming DST: {} seeds x {STEPS} steps, {total:?}",
         seeds.len()
@@ -322,6 +358,8 @@ fn seeded_walks_agree_with_the_reference_oracle() {
             candidate_ended,
             candidate_history,
             candidate_pending,
+            reopens: _,
+            checkpointed_reopens: _,
         } = total;
         for (case, runs) in [
             ("#133 multi-owner splits", multi_owner_splits),

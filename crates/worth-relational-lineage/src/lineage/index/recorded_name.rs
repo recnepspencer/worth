@@ -1,8 +1,9 @@
 //! Lookup of a name the index recorded from a committed birth, by its raw
-//! 32-byte digest.
+//! 32-byte digest, and of the canonical parts that birth carried.
 
 use crate::contracts::lineage::data::naming::{
-    PersistentNameIdentity, PersistentNameIdentityOwnerPort as _, PersistentNameSubjectKind,
+    PersistentNameBirthParts as Parts, PersistentNameIdentity,
+    PersistentNameIdentityOwnerPort as _, PersistentNameSubjectKind,
 };
 use worth_foundational::facade::AggregateIdentity;
 
@@ -36,5 +37,10 @@ impl PersistentNameBranchIndex {
             }
         };
         self.names.get_key_value(&probe).map(|(key, _)| *key)
+    }
+
+    /// The persisted birth parts the index ingested for `name`, if any.
+    pub fn recorded_birth(&self, name: PersistentNameKey) -> Option<&Parts> {
+        self.names.get(&name)?.birth()
     }
 }
