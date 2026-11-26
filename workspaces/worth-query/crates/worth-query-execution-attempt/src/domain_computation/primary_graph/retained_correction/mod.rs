@@ -48,6 +48,12 @@ struct MaterialState {
     pending: Option<Arc<QueryCorrectionMaterialFrame>>,
     pins: pins::LiveMaterialPins,
     funding: Arc<MaterialFunding>,
+    /// In-memory map from publication attempt to its reserved World commit ordinal
+    /// so automatic history retirement preserves commits with active correction material.
+    world_ordinals: std::collections::BTreeMap<
+        worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+        u64,
+    >,
 }
 #[derive(Debug)]
 struct MaterialFunding(Mutex<Vec<Option<worth_execution::ExecutionMemoryReservation>>>);
@@ -89,6 +95,43 @@ impl CorrectionMaterialOwner {
         self.publication()?
             .finish_pending(self.medium()?.as_ref(), request)
     }
+    pub fn record_world_ordinals(
+        &self,
+        originals: &worth_runtime_world::facade::WorldProgramActivationHistory,
+    ) {
+        let mut state = self.state();
+        let keys: Vec<_> = state
+            .catalog
+            .material
+            .keys()
+            .map(|(original, _)| *original)
+            .collect();
+        for original in keys {
+            if let Some(entry) = originals.original_state(original) {
+                state
+                    .world_ordinals
+                    .insert(original, entry.reserved_commit().ordinal());
+            }
+        }
+    }
+
+    /// World commit ordinals of writers whose correction material is still
+    /// active (`Captured` or `Ready`), excluding `Expired` and `Abandoned`.
+    pub fn retained_world_commit_ordinals(&self) -> std::collections::BTreeSet<u64> {
+        let state = self.state();
+        state
+            .catalog
+            .material
+            .iter()
+            .filter_map(|((original, _), entry)| match &entry.body {
+                catalog::MaterialBody::Captured(_) | catalog::MaterialBody::Ready { .. } => {
+                    state.world_ordinals.get(original).copied()
+                }
+                catalog::MaterialBody::Expired { .. } | catalog::MaterialBody::Abandoned => None,
+            })
+            .collect()
+    }
+
     pub fn admit_medium(&self, presented: &dyn QueryCorrectionsMedium) -> Result<(), Denial> {
         self.medium()?
             .authority()

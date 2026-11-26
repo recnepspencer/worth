@@ -67,6 +67,14 @@ impl WorthQueryPrimaryGraphProvider {
             .ok_or(Denial::AdmissionRequired)?
             .observe_original(commit, member)
     }
+    /// World commit ordinals currently backed by active (`Captured`/`Ready`)
+    /// durable correction material.
+    pub fn retained_correction_world_commit_ordinals(&self) -> std::collections::BTreeSet<u64> {
+        self.correction_material
+            .get()
+            .map(CorrectionMaterialOwner::retained_world_commit_ordinals)
+            .unwrap_or_default()
+    }
     /// Ready retained writers for a bounded correction history listing.
     pub fn retained_correction_history_candidates(
         &self,
@@ -107,6 +115,7 @@ impl WorthQueryPrimaryGraphProvider {
     ) -> Result<worth_proof::AdmittedHomeQueryCorrections, Denial> {
         if let Some(owner) = self.correction_material.get() {
             owner.admit_medium(medium.as_ref())?;
+            owner.record_world_ordinals(originals);
             owner.abandon_released(originals, request)?;
             owner.discharge_unperformed(Some(originals), request)?;
             return owner.admission();
@@ -116,6 +125,7 @@ impl WorthQueryPrimaryGraphProvider {
                 original_join::admit(request, native, self, originals, catalog)
             })
         })?;
+        owner.record_world_ordinals(originals);
         self.correction_material
             .set(owner)
             .map_err(|_| Denial::AdmissionAlreadyRecorded)?;

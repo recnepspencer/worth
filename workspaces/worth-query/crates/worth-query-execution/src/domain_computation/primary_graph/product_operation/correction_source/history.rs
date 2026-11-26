@@ -1,6 +1,6 @@
 //! Bounded newest-first listing of retained authored writes on one exact target.
 //!
-//! One walk of the target's exact product history, from its observed head back
+//! One walk of the target's retained product history, from its observed head back
 //! at most `maximum_history` parent links, visits only commits of this branch
 //! (each page consults the request). Commits with ready retained material are
 //! admitted through ordinary Home source selection, handed the identity the
@@ -184,7 +184,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         let mut distance = 0_usize;
         while records.len() < limit.get() {
             let page = observation
-                .prepare_exact_product_history_page(execution, &cursor)
+                .prepare_retained_product_history_page(execution, &cursor)
                 .map_err(D::ExactHistory)?;
             let walked = page.commit().and_then(|commit| {
                 let observed = commit.basis().relational_basis().observation();

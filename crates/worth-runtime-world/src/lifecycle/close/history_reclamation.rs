@@ -15,6 +15,7 @@ where
     pub(super) fn retire_changed_history_inner(
         &self,
         caller_execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+        excluded_ordinals: &std::collections::BTreeSet<u64>,
     ) -> Result<Vec<CompositeCommitIdentity>, HistoryReclamationDenial> {
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
@@ -24,12 +25,18 @@ where
                 )
             })?;
         if let Some(binding) = self.state.durable.as_ref() {
-            let pending = self.state.history.begin_durable_retire_changed_history();
+            let pending = self
+                .state
+                .history
+                .begin_durable_retire_changed_history_excluding(excluded_ordinals);
             let (reclaimed, _) =
                 self.drive_durable_history_retirement(binding, pending, caller_execution)?;
             Ok(reclaimed)
         } else {
-            let retired = self.state.history.retire_changed_history();
+            let retired = self
+                .state
+                .history
+                .retire_changed_history_excluding(excluded_ordinals);
             Ok(self.reclaim_retired_entries(retired))
         }
     }
@@ -75,8 +82,13 @@ where
         binding: &std::sync::Arc<crate::durability::WorldDurableMediumBinding>,
         pending: PendingDurableHistoryRetirement,
         caller_execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
-    ) -> Result<(Vec<CompositeCommitIdentity>, Option<CompositeCommitIdentity>), HistoryReclamationDenial>
-    {
+    ) -> Result<
+        (
+            Vec<CompositeCommitIdentity>,
+            Option<CompositeCommitIdentity>,
+        ),
+        HistoryReclamationDenial,
+    > {
         self.drive_durable_history_retirement_with_chunk_size_and_request(
             binding,
             pending,
@@ -91,13 +103,15 @@ where
         binding: &std::sync::Arc<crate::durability::WorldDurableMediumBinding>,
         pending: PendingDurableHistoryRetirement,
         chunk_size: usize,
-    ) -> Result<(Vec<CompositeCommitIdentity>, Option<CompositeCommitIdentity>), HistoryReclamationDenial>
-    {
+    ) -> Result<
+        (
+            Vec<CompositeCommitIdentity>,
+            Option<CompositeCommitIdentity>,
+        ),
+        HistoryReclamationDenial,
+    > {
         self.drive_durable_history_retirement_with_chunk_size_and_request(
-            binding,
-            pending,
-            chunk_size,
-            None,
+            binding, pending, chunk_size, None,
         )
     }
 
@@ -107,8 +121,13 @@ where
         mut pending: PendingDurableHistoryRetirement,
         chunk_size: usize,
         caller_execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
-    ) -> Result<(Vec<CompositeCommitIdentity>, Option<CompositeCommitIdentity>), HistoryReclamationDenial>
-    {
+    ) -> Result<
+        (
+            Vec<CompositeCommitIdentity>,
+            Option<CompositeCommitIdentity>,
+        ),
+        HistoryReclamationDenial,
+    > {
         use crate::durability::{
             WorldArtifactInput, WorldDurableArtifact, WorldDurablePublicationStop as Stop,
         };

@@ -45,6 +45,7 @@ impl CorrectionMaterialOwner {
                 pending: None,
                 pins,
                 funding: Arc::new(MaterialFunding(Mutex::new(funding))),
+                world_ordinals: std::collections::BTreeMap::new(),
             }),
             post_transfer_observer: PostTransferObserver::default(),
         })

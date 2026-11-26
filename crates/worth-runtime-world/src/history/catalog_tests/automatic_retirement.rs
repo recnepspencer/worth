@@ -132,3 +132,46 @@ fn manual_ancestry_scope_and_owner_wide_changed_scope_remain_distinct() {
     assert!(catalog.lookup(sibling_head.identity()).is_some());
     assert!(catalog.lookup(commits[1].identity()).is_some());
 }
+
+#[test]
+fn excluded_ordinals_defer_retirement_until_released() {
+    let (fixture, commits) = linear_history(4);
+    let catalog = CompositeHistoryCatalog::new(
+        commits[0].identity().owner_identity(),
+        history_contract(4, u64::MAX),
+    );
+    for commit in &commits {
+        catalog
+            .append(commit.clone(), fixture.history_pins(commit))
+            .unwrap();
+    }
+    let _head = catalog.protect_explicit_commit(&commits[3]).unwrap();
+    let excluded = std::collections::BTreeSet::from([commits[1].identity().ordinal()]);
+    let retired = catalog.retire_changed_history_excluding(&excluded);
+    assert_eq!(retired.len(), 2);
+    drop(retired);
+    assert!(catalog.lookup(commits[0].identity()).is_none());
+    assert!(catalog.lookup(commits[1].identity()).is_some());
+    assert!(catalog.lookup(commits[2].identity()).is_none());
+    assert!(catalog.lookup(commits[3].identity()).is_some());
+
+    // Durable exclusion also defers while excluded and retires once released.
+    let pending_still_excluded = catalog.begin_durable_retire_changed_history_excluding(&excluded);
+    assert!(pending_still_excluded.remaining().is_empty());
+    drop(pending_still_excluded);
+    assert!(catalog.lookup(commits[1].identity()).is_some());
+
+    let empty = std::collections::BTreeSet::new();
+    let mut pending_released = catalog.begin_durable_retire_changed_history_excluding(&empty);
+    assert_eq!(
+        pending_released.remaining(),
+        std::slice::from_ref(commits[1].identity())
+    );
+    let retired_after_release = pending_released.commit_next(1);
+    assert_eq!(retired_after_release.len(), 1);
+    drop(retired_after_release);
+    drop(pending_released);
+    assert_eq!(catalog.len(), 1);
+    assert!(catalog.lookup(commits[1].identity()).is_none());
+    assert!(catalog.lookup(commits[3].identity()).is_some());
+}

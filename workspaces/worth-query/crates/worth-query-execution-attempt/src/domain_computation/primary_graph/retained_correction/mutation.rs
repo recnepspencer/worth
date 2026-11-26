@@ -110,11 +110,14 @@ impl CorrectionMaterialOwner {
     pub fn ensure_capture(
         &self,
         material: MaterialCapture,
+        world_commit_ordinal: u64,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         self.settle(request)?;
+        let original = material.original;
         {
-            let state = self.state();
+            let mut state = self.state();
+            state.world_ordinals.insert(original, world_commit_ordinal);
             let key = (material.original, material.member);
             if let Some(existing) = state.catalog.material.get(&key) {
                 let capture = match &existing.body {
@@ -142,11 +145,14 @@ impl CorrectionMaterialOwner {
     pub fn ensure_ready(
         &self,
         material: MaterialReady,
+        world_commit_ordinal: u64,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         self.settle(request)?;
+        let original = material.original;
         {
-            let state = self.state();
+            let mut state = self.state();
+            state.world_ordinals.insert(original, world_commit_ordinal);
             let existing = state
                 .catalog
                 .material

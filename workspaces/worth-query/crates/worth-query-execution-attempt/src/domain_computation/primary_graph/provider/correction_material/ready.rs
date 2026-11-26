@@ -133,6 +133,10 @@ impl WorthQueryPrimaryGraphProvider {
                 content,
                 source_facts,
             },
+            application
+                .committed_product_publication()
+                .composite_commit()
+                .ordinal(),
             request,
         )
     }

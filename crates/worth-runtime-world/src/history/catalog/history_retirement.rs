@@ -38,15 +38,35 @@ impl CompositeHistoryCatalog {
     /// Automatic owner-wide retirement visits only changed reachability slots.
     /// Returned payloads must be dropped after releasing the catalog lock.
     pub(crate) fn retire_changed_history(&self) -> RetiredHistoryEntries {
+        self.retire_changed_history_excluding(&std::collections::BTreeSet::new())
+    }
+
+    /// Automatic owner-wide retirement skipping commits whose ordinals remain
+    /// externally retained (e.g. active durable correction material). Deferred
+    /// commits stay marked changed so a later pass retires them once released.
+    pub(crate) fn retire_changed_history_excluding(
+        &self,
+        excluded_ordinals: &std::collections::BTreeSet<u64>,
+    ) -> RetiredHistoryEntries {
         let mut state = lock_state(&self.state);
         let mut retired = Vec::new();
+        let mut deferred = Vec::new();
         loop {
             let next = lock_index(&state.reachability).pop_changed();
             let Some(commit) = next else {
                 break;
             };
             if let Some(eligible) = EligibleInterior::assess(&state, &commit) {
+                if excluded_ordinals.contains(&commit.ordinal()) {
+                    deferred.push(commit);
+                    continue;
+                }
                 retired.push(eligible.retire(&mut state));
+            }
+        }
+        for commit in deferred {
+            if installed(&state, &commit).is_some() {
+                lock_index(&state.reachability).mark_changed(&commit);
             }
         }
         retired

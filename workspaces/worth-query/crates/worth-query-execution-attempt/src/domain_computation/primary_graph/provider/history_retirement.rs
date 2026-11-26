@@ -37,20 +37,20 @@ impl WorthQueryPrimaryGraphProvider {
         runtime: &RelationalRuntime,
         committed: &worth_relational::facade::transactions::CommitResult,
     ) {
-        let retired = match self
-            .world_history
-            .get()
-            .map(|world| world.retire_changed_history_with_request(execution))
-        {
-            Some(Ok(retired)) => retired,
-            Some(Err(
-                worth_runtime_world::facade::HistoryReclamationDenial::PartialPublication {
-                    reclaimed,
-                    ..
-                },
-            )) => reclaimed,
-            Some(Err(_)) | None => Vec::new(),
-        };
+        let excluded_ordinals = self.retained_correction_world_commit_ordinals();
+        let retired =
+            match self.world_history.get().map(|world| {
+                world.retire_changed_history_with_request(execution, &excluded_ordinals)
+            }) {
+                Some(Ok(retired)) => retired,
+                Some(Err(
+                    worth_runtime_world::facade::HistoryReclamationDenial::PartialPublication {
+                        reclaimed,
+                        ..
+                    },
+                )) => reclaimed,
+                Some(Err(_)) | None => Vec::new(),
+            };
         if !retired.is_empty() {
             let commits = self
                 .completed_commit_evidence

@@ -1,4 +1,6 @@
 use crate::branch::OwnerRetirementWork;
+use crate::history::{HistoryReclamationDenial, RetiredBranchHistoryRelease};
+use crate::identity::CompositeCommitIdentity;
 use crate::recovery::{
     PerformedPublicationRecoveryDenial, ProductUnpublishedOwnerEffects,
     ProductUnpublishedRecoveryHandle, RecoveryCleanupOutcome, RecoveryContinuationContract,
@@ -12,11 +14,11 @@ mod recovered_publication;
 mod recovered_signal_leg;
 
 #[cfg(test)]
-#[path = "recovery_service/tests.rs"]
-mod settlement_catalog_tests;
-#[cfg(test)]
 #[path = "recovery_service/concurrency_tests.rs"]
 mod concurrency_tests;
+#[cfg(test)]
+#[path = "recovery_service/tests.rs"]
+mod settlement_catalog_tests;
 #[cfg(test)]
 #[path = "recovery_service/unwind_tests.rs"]
 mod unwind_tests;
@@ -157,38 +159,33 @@ where
     }
     fn retire_changed_history(
         &self,
-    ) -> Result<
-        Vec<crate::identity::CompositeCommitIdentity>,
-        crate::history::HistoryReclamationDenial,
-    > {
+    ) -> Result<Vec<CompositeCommitIdentity>, HistoryReclamationDenial> {
         super::super::ports::RuntimeWorldLifecycleService::retire_changed_history(self)
     }
     fn retire_changed_history_with_request(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<
-        Vec<crate::identity::CompositeCommitIdentity>,
-        crate::history::HistoryReclamationDenial,
-    > {
+        excluded_ordinals: &std::collections::BTreeSet<u64>,
+    ) -> Result<Vec<CompositeCommitIdentity>, HistoryReclamationDenial> {
         super::super::ports::RuntimeWorldLifecycleService::retire_changed_history_with_request(
-            self, execution,
+            self,
+            execution,
+            excluded_ordinals,
         )
     }
     fn release_retired_branch_history(
         &self,
-        from: &crate::identity::CompositeCommitIdentity,
-    ) -> Result<crate::history::RetiredBranchHistoryRelease, crate::history::HistoryReclamationDenial>
-    {
+        from: &CompositeCommitIdentity,
+    ) -> Result<RetiredBranchHistoryRelease, HistoryReclamationDenial> {
         super::super::ports::RuntimeWorldLifecycleService::release_retired_branch_history(
             self, from,
         )
     }
     fn release_retired_branch_history_with_request(
         &self,
-        from: &crate::identity::CompositeCommitIdentity,
+        from: &CompositeCommitIdentity,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<crate::history::RetiredBranchHistoryRelease, crate::history::HistoryReclamationDenial>
-    {
+    ) -> Result<RetiredBranchHistoryRelease, HistoryReclamationDenial> {
         super::super::ports::RuntimeWorldLifecycleService::release_retired_branch_history_with_request(
             self, from, execution,
         )
@@ -348,7 +345,8 @@ where
                 .settle_performed_publication(performed)
             {
                 Ok(result)
-                    if result.outcome().commit.commit_id == recovery.commit_identity().commit_id() =>
+                    if result.outcome().commit.commit_id
+                        == recovery.commit_identity().commit_id() =>
                 {
                     recovery.finish(|r, s| r.settle_relational_recovery(s, result));
                 }
