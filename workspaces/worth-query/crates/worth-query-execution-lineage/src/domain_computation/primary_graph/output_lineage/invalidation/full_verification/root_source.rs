@@ -8,14 +8,8 @@ impl FullVerificationImage<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: EvidenceView<'_>,
     ) -> Result<bool, FullVerificationStop> {
-        let origin = source.selected_native_root();
-
-        if origin.runtime_instance_id() != self.selected.runtime_instance_id()
-            || origin.branch_id() != self.selected.branch_id()
-            || origin.version_id() > self.selected.version_id()
-            || origin.position() > self.selected.position()
-        {
-            return Err(FullVerificationStop::Foreign);
+        if !observed_on_selected(self.selected, source.selected_native_root())? {
+            return Ok(false);
         }
         let Some(facts) = source.source_facts() else {
             return Ok(false);

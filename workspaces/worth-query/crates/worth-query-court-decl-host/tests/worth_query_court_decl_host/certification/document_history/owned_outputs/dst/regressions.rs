@@ -81,6 +81,8 @@ fn a_write_outside_on_a_forked_head_settles() {
 #[test]
 #[ignore = "held on public #358: a current_output consumer readmitted at a forked head never certifies; its consumed evidence stays on the abandoned line"]
 fn a_consumer_on_a_forked_head_settles() {
+    let equivalence =
+        worth_query_host::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install_consumer();
     let ops = [MADE, Op::Undo, MADE, Op::OutOfBand([Skip, Set(1)])];
@@ -88,6 +90,7 @@ fn a_consumer_on_a_forked_head_settles() {
         panic!("#358 ({ops:?}) disagrees:
 {failure:#?}");
     }
+    assert!(equivalence.shadow_checks_for_test() > 0, "the armed shadow must check a certification");
 }
 
 /// One envelope that sets `e1` then retires `e2`, or retires both, on the
@@ -113,4 +116,23 @@ fn an_owner_retirement_beside_another_stage_in_one_envelope_agrees() {
 {failure:#?}");
         }
     }
+}
+
+/// The consumer's output settled on `main` is read again when an edit settles
+/// on its product branch. The marks find that evidence unaligned and the
+/// consumer executes again; the armed shadow's full verification once called
+/// the same evidence foreign, and the equivalence check refused the edit
+/// `RetainedBasisUnavailable` instead (found arming the #358 consumer courts).
+#[test]
+fn an_armed_consumer_settles_an_edit_on_its_product_branch() {
+    let equivalence =
+        worth_query_host::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install_consumer();
+    let ops = [MADE];
+    if let Err(failure) = run(&mut world::Document::attach_consumer(&host), &ops, None) {
+        panic!("an armed consumer ({ops:?}) disagrees:
+{failure:#?}");
+    }
+    assert!(equivalence.shadow_checks_for_test() > 0, "the armed shadow must check a certification");
 }
