@@ -72,6 +72,10 @@ pub use crate::birth_plan::{
     ExecutionNameBirthPlan, ExecutionNameBirthPlanBuilder, ExecutionNamedMergeKeeper,
     ExecutionPendingEntityBirth, ExecutionPendingRelationBirth, ExecutionSplitChildSpec,
 };
+pub use crate::candidate_reads::{
+    candidate_entity_birth_of, candidate_entity_name_of, candidate_relation_birth_of,
+    candidate_relation_name_of, CandidateBirth,
+};
 pub use crate::commit_wiring::{CommittedNamedTransaction, ExecutionNamingCommitAuthority};
 pub use crate::denial::ExecutionNamingDenial;
 pub use crate::invariant_reads::{

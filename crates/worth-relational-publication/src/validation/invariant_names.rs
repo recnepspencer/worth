@@ -267,6 +267,10 @@ impl CustomInvariantNameView for ProposalNames<'_> {
             None => self.committed.as_ref()?.birth_of(name),
         }
     }
+
+    fn born_record(&self, name: PersistentNameKey) -> Option<LineageRecordTarget> {
+        self.pending?.born_record(name)
+    }
 }
 
 impl crate::authority::commit::phases::applied_mutation::AppliedDraftCustody {
@@ -293,6 +297,9 @@ impl crate::authority::commit::phases::applied_mutation::AppliedDraftCustody {
         ProposalNameSource::new(lineage.naming, lineage.schema, proposal, carry)
     }
 }
+
+#[path = "invariant_names/candidate.rs"]
+mod candidate;
 
 #[cfg(test)]
 #[path = "invariant_names_tests.rs"]

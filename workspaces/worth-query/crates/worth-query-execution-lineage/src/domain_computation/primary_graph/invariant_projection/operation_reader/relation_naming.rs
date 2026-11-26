@@ -11,7 +11,7 @@
 //!
 //! What no fact key tracks vetoes sealing exactly as for entities
 //! ([`PersistentNameReadVeto`]), and an applied candidate admits the read
-//! only as `candidate_naming` states.
+//! only as `candidate_naming` and `pending_naming` state.
 
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
@@ -20,7 +20,9 @@ use worth_query_declaration::facade::application_naming::{
     NameSelection, ResolvedName, WorthQueryName,
 };
 use worth_query_declaration::facade::application_schema::fragment;
-use worth_query_execution_naming::facade::{ExecutionNameResolveDenial, NameReadDependencies};
+use worth_query_execution_naming::facade::{
+    candidate_relation_name_of, ExecutionNameResolveDenial, NameReadDependencies,
+};
 use worth_query_installation::facade::{
     ApplicationOperationDecisionReadTarget, ApplicationRelationRef, ApplicationSchema,
     OperationReads,
@@ -30,6 +32,7 @@ use worth_relational::facade::lineage::LineageRecordTarget;
 use worth_relational::facade::runtime::ProjectionAspectScope;
 use worth_relational::facade::storage::RecordLifecycleState;
 
+use super::candidate_naming::CandidateRecord;
 use super::current_output::{WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind};
 use super::decision_reads::DecisionReadOutcome;
 use super::naming::{
@@ -74,19 +77,26 @@ impl<Schema: ApplicationSchema, Operation>
         {
             return Err(WorthQueryDecisionNameDenial::ForeignIdentity);
         }
-        self.require_candidate_unaltered(LineageRecordTarget::Relation(relation.relation_id()))?;
-        let named = self.with_name_reader(|reader| {
-            reader.relation_name_of::<Relation>(
-                relation.relation_id(),
-                &mut NameReadDependencies::new(),
-            )
-        })?;
-        if let Some(veto) = PersistentNameReadVeto::for_name_of(&named) {
-            self.decision_facts.veto_persistent_name(veto);
-        }
+        let (relation_id, record) = (
+            relation.relation_id(),
+            LineageRecordTarget::Relation(relation.relation_id()),
+        );
+        let named = if self.candidate_record(record)? == CandidateRecord::Created {
+            Ok(self.pending_name_of(record, |names| {
+                candidate_relation_name_of::<Relation>(names, relation_id)
+            })?)
+        } else {
+            let named = self.with_name_reader(|reader| {
+                reader.relation_name_of::<Relation>(relation_id, &mut NameReadDependencies::new())
+            })?;
+            if let Some(veto) = PersistentNameReadVeto::for_name_of(&named) {
+                self.decision_facts.veto_persistent_name(veto);
+            }
+            named
+        };
         // A relation's name changes only when its lineage ends, which ends
         // the relation: its fact tracks the answer and `RecordNotNamed`.
-        let live = self.live_relation::<Relation, From, To>(&subject, relation.relation_id())?;
+        let live = self.live_relation::<Relation, From, To>(&subject, relation_id)?;
         if live != *relation {
             self.decision_facts
                 .veto_persistent_name(PersistentNameReadVeto::ReadFailed);

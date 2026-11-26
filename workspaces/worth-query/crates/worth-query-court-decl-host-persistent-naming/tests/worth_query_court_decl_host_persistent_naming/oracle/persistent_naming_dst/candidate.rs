@@ -3,7 +3,9 @@
 //! one name on the unpublished candidate (`Read`). The reference answer is
 //! `PersistentNamingCandidate.tla`'s `ImplRead`, transcribed: the basis
 //! answer, admitted only where the candidate left every live record it rests
-//! on unchanged; otherwise a typed refusal, and the envelope commits nothing.
+//! on unchanged, and the name the envelope gives a record the first stage
+//! created (#426); otherwise a typed refusal, and the envelope commits
+//! nothing.
 use std::collections::BTreeSet;
 
 use super::ops::{Op, Placement, Rng};
@@ -29,7 +31,8 @@ pub enum Read {
     },
     /// `name_of` the basis record a live name holds.
     NameOf(usize),
-    /// `name_of` the record the first stage created.
+    /// `name_of` the record the first stage created and named: the name
+    /// the envelope gives it, which its commit then records (#426).
     NameOfCreated,
 }
 
@@ -48,14 +51,22 @@ impl First {
         ended.into_iter().collect()
     }
 
+    /// The name the first stage gives the (first) record it creates.
+    pub fn created(&self) -> Option<usize> {
+        match self {
+            Self::Edit(_) => None,
+            Self::Commit(op) => match op.as_ref() {
+                Op::Create { name, .. } | Op::Preserve { name, .. } | Op::Restore { name, .. } => {
+                    Some(*name)
+                }
+                Op::Split { pieces, .. } => Some(pieces[0]),
+                _ => None,
+            },
+        }
+    }
+
     fn creates(&self) -> bool {
-        matches!(
-            self,
-            Self::Commit(op) if matches!(
-                op.as_ref(),
-                Op::Create { .. } | Op::Preserve { .. } | Op::Restore { .. } | Op::Split { .. }
-            )
-        )
+        self.created().is_some()
     }
 }
 
@@ -95,7 +106,14 @@ pub fn expected(model: &Oracle, first: &First, read: Read) -> Answer {
             status: "Named",
             targets: BTreeSet::from([name]),
         },
-        Read::NameOfCreated => refused("RefusedUnpublished"),
+        // Every record a first stage creates is born named.
+        Read::NameOfCreated => match first.created() {
+            Some(name) => Answer {
+                status: "Named",
+                targets: BTreeSet::from([name]),
+            },
+            None => refused("RefusedUnpublished"),
+        },
     }
 }
 

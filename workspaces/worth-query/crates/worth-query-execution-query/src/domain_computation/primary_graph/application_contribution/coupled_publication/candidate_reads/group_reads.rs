@@ -15,12 +15,12 @@ use std::collections::BTreeSet;
 
 /// The group schemes decisions of this assembly read on its candidate.
 #[derive(Default)]
-pub(super) struct GroupReads {
+pub(in super::super) struct GroupReads {
     schemes: BTreeSet<String>,
 }
 
 impl GroupReads {
-    pub(super) fn retain(&mut self, scheme: &str) {
+    pub(in super::super) fn retain(&mut self, scheme: &str) {
         if !self.schemes.contains(scheme) {
             self.schemes.insert(scheme.to_owned());
         }
@@ -33,8 +33,9 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         &self,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<(), CoupledSourceReadStop> {
-        let reads = self.group_reads.borrow();
+        let reads = self.candidate_reads.borrow();
         match reads
+            .groups
             .schemes
             .iter()
             .find(|scheme| candidate.claims_group_scheme(scheme))

@@ -126,6 +126,26 @@ impl<S: ApplicationSchema + 'static> SourceQueryReaderPort for SourceQueryReader
         Some(claimed)
     }
 
+    fn with_applied_candidate_names(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        candidate: &RelationalAppliedCandidateReadIdentity,
+        read: &mut dyn FnMut(&dyn worth_relational::facade::runtime::CustomInvariantNameSource),
+    ) -> Result<(), worth_relational::facade::runtime::CustomInvariantNameReadDenial> {
+        SourceQueryReaderAccess::with_applied_candidate_names(self, execution, candidate, read)
+    }
+
+    fn retain_applied_pending_read(
+        &self,
+        read: worth_query_execution_lineage::facade::primary_graph::invariant_projection::operation_reader::PendingNameRead,
+    ) -> bool {
+        let Some(participants) = self.applied_participants else {
+            return false;
+        };
+        participants.retain_pending_name_read(read);
+        true
+    }
+
     fn observation_components_any(
         &self,
     ) -> (

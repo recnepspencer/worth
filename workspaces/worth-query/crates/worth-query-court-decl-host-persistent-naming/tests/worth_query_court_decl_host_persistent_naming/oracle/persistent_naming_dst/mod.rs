@@ -13,7 +13,9 @@
 //! refusals when both mint the same one), cross-commit `Restore` on a
 //! strictly fresh native identity, candidate-basis name reads (Slice 3C-1:
 //! an envelope whose later stage reads a name on the candidate an earlier
-//! stage mutated, answered or refused typed with zero effects), and
+//! stage mutated, answered or refused typed with zero effects, including
+//! the name the envelope gives a record that earlier stage created, #426),
+//! and
 //! destruction of the derived name index
 //! (a fresh world rebuilt from the same canonical commits). After every step
 //! every ever-minted name is resolved `Exact` and `AllDescendants`, unscoped
@@ -61,7 +63,7 @@ struct Coverage {
     candidate_answers: usize,
     candidate_ended: usize,
     candidate_history: usize,
-    candidate_unpublished: usize,
+    candidate_pending: usize,
 }
 
 impl Coverage {
@@ -83,10 +85,14 @@ impl Coverage {
             Op::MergeMint { .. } => self.minted_merges += 1,
             Op::Coupled { .. } => self.coupled += 1,
             Op::CoupledDuplicate { .. } => self.coupled_duplicates += 1,
+            Op::Candidate {
+                read: candidate::Read::NameOfCreated,
+                expected,
+                ..
+            } if !candidate::is_refusal(expected) => self.candidate_pending += 1,
             Op::Candidate { expected, .. } => match expected.status {
                 "RefusedEnded" => self.candidate_ended += 1,
                 "RefusedHistory" => self.candidate_history += 1,
-                "RefusedUnpublished" => self.candidate_unpublished += 1,
                 _ => self.candidate_answers += 1,
             },
             _ => {}
@@ -108,7 +114,7 @@ impl Coverage {
         self.candidate_answers += other.candidate_answers;
         self.candidate_ended += other.candidate_ended;
         self.candidate_history += other.candidate_history;
-        self.candidate_unpublished += other.candidate_unpublished;
+        self.candidate_pending += other.candidate_pending;
     }
 }
 
@@ -315,7 +321,7 @@ fn seeded_walks_agree_with_the_reference_oracle() {
             candidate_answers,
             candidate_ended,
             candidate_history,
-            candidate_unpublished,
+            candidate_pending,
         } = total;
         for (case, runs) in [
             ("#133 multi-owner splits", multi_owner_splits),
@@ -332,10 +338,7 @@ fn seeded_walks_agree_with_the_reference_oracle() {
             ("answered candidate reads", candidate_answers),
             ("candidate reads of ended records", candidate_ended),
             ("candidate reads over name history", candidate_history),
-            (
-                "candidate reads of unpublished records",
-                candidate_unpublished,
-            ),
+            ("candidate reads of earlier-stage births", candidate_pending),
         ] {
             assert!(runs > 0, "the seeds never exercised {case}");
         }

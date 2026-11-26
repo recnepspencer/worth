@@ -152,6 +152,7 @@ pub mod preserve {
         read_fields: [ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
         read_relations: [ModelMember, Seam];
         writes: [MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
+        creates: [Member]; links: [ModelMember];
         deletes: [Member]; unlinks: [Seam, ModelMember];
     });
     pub type Operation = StirRootPreserve;
@@ -173,6 +174,8 @@ pub mod preserve {
     pub struct Decision {
         primary: WorthQueryInvariantMutationTarget<Schema, Member>,
         drop: Option<super::super::courts::Drop>,
+        /// The model to bear member `made` in, and the round's reference.
+        made: Option<(WorthQueryInvariantMutationTarget<Schema, Model>, u64)>,
     }
     producer_binding!(
         "persistent-naming.stir-root.preserve",
@@ -203,11 +206,16 @@ pub mod preserve {
                 let reference =
                     reader.resolve_entity(MemberKey::at("MemberKey"), "reference".to_owned())?;
                 let seen = reader.field(&reference, MemberValue::at("MemberValue"))?;
-                let drop =
-                    super::super::courts::decide(reader, input.value, seen.unwrap_or_default())?;
+                let seen = seen.unwrap_or_default();
+                let drop = super::super::courts::decide(reader, input.value, seen)?;
+                let made = match super::super::pending::root_decide(reader, input.value, seen) {
+                    true => Some((reader.mutation_target(&source)?, seen)),
+                    false => None,
+                };
                 Ok::<_, HandlerExecutionDenial>(Decision {
                     primary: reader.mutation_target(&primary)?,
                     drop,
+                    made,
                 })
             })();
             match result {
@@ -228,6 +236,9 @@ pub mod preserve {
                 writer.preserve_output::<Primary>(&primary)?;
                 if let Some(drop) = decision.drop {
                     super::super::courts::build(drop, writer)?;
+                }
+                if let Some((model, reference)) = decision.made {
+                    super::super::pending::bear(writer, &model, reference)?;
                 }
                 Ok::<_, WorthQueryApplicationAttemptDenial>(())
             })();

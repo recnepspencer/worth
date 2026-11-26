@@ -13,6 +13,7 @@ use worth_relational::facade::lineage::{
 use worth_relational::facade::schema::*;
 use worth_testkit_relational::aspect_storage::AspectSchemaFixture;
 
+mod candidate;
 mod retry;
 
 const NODE_SCHEME: &str = "worth.cert.coupled.node.v1";

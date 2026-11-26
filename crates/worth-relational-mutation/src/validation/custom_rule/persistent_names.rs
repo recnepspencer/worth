@@ -33,6 +33,9 @@ pub trait CustomInvariantNameView {
     ) -> Option<PersistentNameKey>;
     fn scheme_of(&self, name: PersistentNameKey) -> Option<&str>;
     fn birth_of(&self, name: PersistentNameKey) -> Option<&PersistentNameBirthParts>;
+    /// The record this posture's own commit mints `name` for: `None` for a
+    /// committed name, or in the committed posture.
+    fn born_record(&self, name: PersistentNameKey) -> Option<LineageRecordTarget>;
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

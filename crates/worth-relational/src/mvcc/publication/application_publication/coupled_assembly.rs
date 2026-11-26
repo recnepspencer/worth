@@ -26,6 +26,7 @@ mod input_issuance;
 pub use inputs::RelationalRequiredOutputInput;
 mod aggregate_read;
 mod candidate_completion;
+mod candidate_names;
 mod continuation;
 mod managed_source;
 mod managed_source_alignment;
@@ -84,6 +85,8 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
     fresh_records: net_plan::CreatorCustody,
     authored_writes: authored_writes::AuthoredWrites,
     read: std::cell::RefCell<Option<RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>>>,
+    /// The envelope's names over `read`'s applied state (#426).
+    candidate_names: std::cell::RefCell<candidate_names::CandidateNameCache>,
     /// Successor rounds applied to earlier parts' chains; each is still one
     /// applied part in the pin, local-key and continuation sequence.
     successor_rounds: usize,

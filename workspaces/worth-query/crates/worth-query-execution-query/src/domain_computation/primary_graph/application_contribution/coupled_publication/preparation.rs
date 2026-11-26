@@ -276,9 +276,8 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             &source.partition,
         )?;
         let pin = candidate.pin_source(execution)?;
-        let prepared = producer
-            .coupled_executor()
-            .prepare_coupled_writer(
+        let (prepared, reads) = self.deciding(|| {
+            producer.coupled_executor().prepare_coupled_writer(
                 self.phase,
                 self.coordination,
                 self.application,
@@ -294,6 +293,8 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 producer.edition,
                 captured,
             )
+        });
+        let prepared = prepared
             .map_err(|stop| self.successor_prepare_stop(candidate, chain.as_ref(), stop))?;
         let PreparedCoupledWriter {
             writer,
@@ -334,6 +335,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             next,
             (publication, content, batch, naming),
         )?;
+        self.adopt_pending_reads(super::candidate_reads::ReadOwner::Part(index), reads);
         let owed = self.writers.borrow()[index].owed.position();
         // Only an owned route can derive its chain's next round: Native's own
         // predicate (`next_producer_round`). Any other participant (ordinary,

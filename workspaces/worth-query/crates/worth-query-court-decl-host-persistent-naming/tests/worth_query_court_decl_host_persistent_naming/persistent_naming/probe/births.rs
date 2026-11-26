@@ -43,6 +43,8 @@ pub enum BirthObservation {
 #[derive(Clone)]
 enum Read {
     BirthOf(WorthQueryName<Member>),
+    /// The birth of the name the probed member keyed so carries.
+    BirthOfMember(String),
     ForBirth(WorthQueryOutputBirth, Vec<WorthQueryName<Member>>),
     SeamBirthOf(WorthQueryName<Seam>),
     SeamForBirth(WorthQueryOutputBirth),
@@ -71,6 +73,11 @@ fn hold(token: &str, label: &str, read: Read) {
 /// Reads the birth of `name` under `label` in every later probe run.
 pub fn birth_of(token: &str, label: &str, name: WorthQueryName<Member>) {
     hold(token, label, Read::BirthOf(name));
+}
+
+/// Reads the birth of the name probed member `key` carries, under `label`.
+pub fn birth_of_member(token: &str, label: &str, key: &str) {
+    hold(token, label, Read::BirthOfMember(key.to_owned()));
 }
 
 /// Looks up the name `birth` under `parents` was minted as, under `label`.
@@ -104,6 +111,7 @@ pub fn take(token: &str) -> Vec<BirthObservation> {
 pub(super) fn observe(
     reader: &mut DecisionReader<'_, '_, '_, Schema, super::Binding>,
     token: &str,
+    live: &[(String, WorthQueryInvariantEntityIdentity<Schema, Member>)],
 ) {
     let reads = probes()
         .get(token)
@@ -119,6 +127,21 @@ pub(super) fn observe(
                     refusal: format!("{refusal:?}"),
                 },
             },
+            Read::BirthOfMember(key) => {
+                let member = live.iter().find(|(k, _)| *k == key).map(|(_, m)| m);
+                let member = member.unwrap_or_else(|| panic!("`{key}` is probed"));
+                let birth = reader
+                    .reader()
+                    .name_of(member)
+                    .and_then(|name| reader.reader().birth_of(&name));
+                match birth {
+                    Ok(birth) => BirthObservation::Born { label, birth },
+                    Err(refusal) => BirthObservation::BirthRefused {
+                        label,
+                        refusal: format!("{refusal:?}"),
+                    },
+                }
+            }
             Read::SeamBirthOf(name) => {
                 match reader.reader().relation_birth_of(Seam::reference(), &name) {
                     Ok(birth) => BirthObservation::SeamBorn { label, birth },

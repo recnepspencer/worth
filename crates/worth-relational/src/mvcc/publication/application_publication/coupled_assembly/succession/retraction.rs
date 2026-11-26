@@ -85,6 +85,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         self.indexes.remove(MemberId::Part(index));
         self.parts[index].chain.span = MemberSpan::default();
         self.parts[index].content = Default::default();
+        // Its records are withdrawn, so the retracted round names nothing.
+        self.parts[index].naming = None;
         let attachments = self.live_attachments(execution)?;
         self.mutation.content = self.whole_content(execution, &attachments)?;
         self.recapture_aggregate();
@@ -92,6 +94,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         // another chain's records may still name the ones retracted here
         // until the round re-creates them, so no pin of it is cached.
         self.read.replace(None);
+        self.candidate_names.take();
         Ok(superseded)
     }
 }

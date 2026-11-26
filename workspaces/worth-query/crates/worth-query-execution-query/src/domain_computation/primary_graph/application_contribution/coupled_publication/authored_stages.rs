@@ -52,20 +52,24 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         };
         let capture = &self.stage_captures()[physical];
         let pin = candidate.pin_source(execution)?;
-        let prepared = capture.executor.prepare(
-            execution,
-            &context,
-            self.coordination,
-            self.before,
-            before_pin,
-            &pin,
-            self,
-            candidate,
-        )?;
+        let (prepared, reads) = self.deciding(|| {
+            capture.executor.prepare(
+                execution,
+                &context,
+                self.coordination,
+                self.before,
+                before_pin,
+                &pin,
+                self,
+                candidate,
+            )
+        });
+        let prepared = prepared?;
         let crate::domain_computation::primary_graph::application_attempt::InspectedAuthoredApplication { writer, batch, content, roles, naming, demands } = prepared;
         // Retain custody before append: a cold-symbol retry must abort this
         // exact real session even when Native rejects the current suffix.
         let position = self.applied_position() + 1;
+        self.adopt_pending_reads(super::candidate_reads::ReadOwner::Stage(position), reads);
         self.authored.borrow_mut().push(AuthoredWriter {
             capture: capture.clone(),
             physical,

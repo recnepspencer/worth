@@ -31,6 +31,9 @@ impl CustomInvariantNameView for NoNames {
     fn birth_of(&self, _: PersistentNameKey) -> Option<&PersistentNameBirthParts> {
         None
     }
+    fn born_record(&self, _: PersistentNameKey) -> Option<LineageRecordTarget> {
+        None
+    }
 }
 
 /// Counts the reads that reached it.

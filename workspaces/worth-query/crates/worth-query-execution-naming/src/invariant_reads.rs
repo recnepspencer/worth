@@ -16,21 +16,13 @@ use worth_relational::facade::runtime::{
 };
 
 use crate::admission::{
-    admit_birth_of, kind_verified_resolved_name, InInvariant, RequestedSubject,
+    admit_birth_of, kind_verified_resolved_name, InInvariant, RecordedNames, RequestedSubject,
 };
 use crate::tracked_resolution::ExecutionNameReadDenial;
 
 /// The outer refusal is the invariant's name source; the inner one the read.
 pub type InvariantNameRead<T> =
     Result<Result<T, ExecutionNameReadDenial>, CustomInvariantNameReadDenial>;
-
-const fn entity<Schema, Entity: ApplicationEntityMarkerIdentity<Schema>>(
-) -> RequestedSubject<'static> {
-    RequestedSubject {
-        kind: PersistentNameSubjectKind::Entity,
-        name: Entity::IDENTIFIER,
-    }
-}
 
 /// The admitted `WorthQueryName<Entity>` `entity` carries in `names`'
 /// posture. Refuses typed when it carries none, when its name ended in that
@@ -46,19 +38,33 @@ where
     Entity: ApplicationEntityMarkerIdentity<Schema>,
 {
     let record = LineageRecordTarget::Entity(entity_id);
-    names.read(|view| match view.record_name(record) {
-        CustomInvariantRecordName::Named(key) => kind_verified_resolved_name(
+    names.read(|view| {
+        let carried = view.record_name(record);
+        name_in(
             &InInvariant { names, view },
-            key,
+            carried,
+            record,
             entity::<Schema, Entity>(),
-        ),
+        )
+    })
+}
+
+/// The admitted name `record` carries in `names`, given what it carries.
+pub(crate) fn name_in<K>(
+    names: &impl RecordedNames,
+    carried: CustomInvariantRecordName,
+    record: LineageRecordTarget,
+    requested: RequestedSubject<'_>,
+) -> Result<WorthQueryName<K>, ExecutionNameReadDenial> {
+    match carried {
+        CustomInvariantRecordName::Named(key) => kind_verified_resolved_name(names, key, requested),
         CustomInvariantRecordName::Ended => {
             Err(ExecutionNameReadDenial::RecordNoLongerNamed { record })
         }
         CustomInvariantRecordName::Unnamed => {
             Err(ExecutionNameReadDenial::RecordNotNamed { record })
         }
-    })
+    }
 }
 
 /// The recorded birth of a held entity name in `names`' posture, decoded
@@ -82,4 +88,12 @@ where
             .ok_or(ExecutionNameReadDenial::UnknownName)?;
         admit_birth_of(&InInvariant { names, view }, key, requested)
     })
+}
+
+pub(crate) const fn entity<Schema, Entity: ApplicationEntityMarkerIdentity<Schema>>(
+) -> RequestedSubject<'static> {
+    RequestedSubject {
+        kind: PersistentNameSubjectKind::Entity,
+        name: Entity::IDENTIFIER,
+    }
 }

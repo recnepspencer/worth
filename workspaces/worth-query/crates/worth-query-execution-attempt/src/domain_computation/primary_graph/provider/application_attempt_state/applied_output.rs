@@ -31,6 +31,12 @@ pub trait AppliedOutputParticipants {
     /// Retain a group read of `scheme` a decision of this assembly took from
     /// its committed basis: a later append that claims `scheme` refuses.
     fn retain_group_read(&self, scheme: &str);
+    /// Retain a pending name or birth a decision of this assembly read on
+    /// its candidate (#426): a later append that falsifies it refuses.
+    fn retain_pending_name_read(
+        &self,
+        read: worth_query_execution_lineage::facade::primary_graph::invariant_projection::operation_reader::PendingNameRead,
+    );
 }
 pub struct AppliedFamilyOutputs {
     pub outputs: Vec<ConsumedOutputEvidence>,

@@ -20,7 +20,8 @@
 //! On an applied candidate the reads run against the committed name index at
 //! the candidate's commit basis and are admitted only where the candidate left
 //! every record the answer rests on live at the same identity
-//! (`candidate_naming`).
+//! (`candidate_naming`); a record an earlier envelope member created reads the
+//! name the envelope gives it (`pending_naming`).
 
 use std::collections::BTreeMap;
 
@@ -30,7 +31,8 @@ use worth_query_declaration::facade::application_naming::{
 };
 use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 use worth_query_execution_naming::facade::{
-    ExecutionNameReadDenial, ExecutionNameResolveDenial, NameReadDependencies,
+    candidate_entity_name_of, ExecutionNameReadDenial, ExecutionNameResolveDenial,
+    NameReadDependencies,
 };
 use worth_query_installation::facade::{
     ApplicationOperationDecisionReadTarget, ApplicationSchema, OperationReads,
@@ -39,6 +41,7 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::lineage::LineageRecordTarget;
 
+use super::candidate_naming::CandidateRecord;
 use super::decision_reads::FailedDecisionRead;
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity;
@@ -117,19 +120,26 @@ impl<Schema: ApplicationSchema, Operation>
         if !self.reader.identity_is_local(identity, Entity::IDENTIFIER) {
             return Err(WorthQueryDecisionNameDenial::ForeignIdentity);
         }
-        self.require_candidate_unaltered(LineageRecordTarget::Entity(identity.entity_id))?;
+        let (entity_id, record) = (
+            identity.entity_id,
+            LineageRecordTarget::Entity(identity.entity_id),
+        );
+        if self.candidate_record(record)? == CandidateRecord::Created {
+            let named = self.pending_name_of(record, |names| {
+                candidate_entity_name_of::<Schema, Entity>(names, entity_id)
+            })?;
+            self.live_identity::<Entity>(entity_id)?;
+            return Ok(named);
+        }
         let named = self.with_name_reader(|reader| {
-            reader.entity_name_of::<Schema, Entity>(
-                identity.entity_id,
-                &mut NameReadDependencies::new(),
-            )
+            reader.entity_name_of::<Schema, Entity>(entity_id, &mut NameReadDependencies::new())
         })?;
         if let Some(veto) = PersistentNameReadVeto::for_name_of(&named) {
             self.decision_facts.veto_persistent_name(veto);
         }
         // A record's name changes only when its lineage ends, which ends the
         // record: the entity fact tracks the answer and `RecordNotNamed`.
-        self.live_identity::<Entity>(identity.entity_id)?;
+        self.live_identity::<Entity>(entity_id)?;
         named.map_err(WorthQueryDecisionNameDenial::Read)
     }
 

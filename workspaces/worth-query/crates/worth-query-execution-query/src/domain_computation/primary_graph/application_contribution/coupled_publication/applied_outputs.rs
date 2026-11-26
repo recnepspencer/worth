@@ -58,6 +58,12 @@ impl<S: ApplicationSchema> AppliedOutputParticipants for CoupledApplicationAssem
         self.alignments.borrow_mut().retain(alignment, observed);
     }
     fn retain_group_read(&self, scheme: &str) {
-        self.group_reads.borrow_mut().retain(scheme);
+        self.candidate_reads.borrow_mut().groups.retain(scheme);
+    }
+    fn retain_pending_name_read(
+        &self,
+        read: worth_query_execution_lineage::facade::primary_graph::invariant_projection::operation_reader::PendingNameRead,
+    ) {
+        self.candidate_reads.borrow_mut().pending.retain(read);
     }
 }

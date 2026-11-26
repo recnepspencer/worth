@@ -4,6 +4,7 @@ use std::fmt;
 
 use worth_query_execution_naming::facade::ExecutionNameReadDenial;
 use worth_relational::facade::lineage::LineageRecordTarget;
+use worth_relational::facade::runtime::CustomInvariantNameReadDenial;
 
 use super::super::current_output::WorthQueryCurrentOutputDenial;
 use super::super::decision_plan::WorthQueryInvariantDecisionPlanDenial;
@@ -30,7 +31,8 @@ pub enum WorthQueryDecisionNameDenial {
     /// on this reader's exact basis and runtime.
     CandidateBasis,
     /// The record was not live at the commit basis: the unpublished
-    /// candidate created it, so it carries no published name yet.
+    /// candidate created it, and no earlier envelope member named it (or it
+    /// is not live as read), so it carries no name yet.
     UnpublishedCandidateRecord(LineageRecordTarget),
     /// The record was live at the commit basis, but the unpublished
     /// candidate ended it (deleted, retired, split or merged it away), so its
@@ -49,6 +51,11 @@ pub enum WorthQueryDecisionNameDenial {
     OwnerRead(WorthQueryInvariantProjectionTraversalDenial),
     /// The name read itself refused.
     Read(ExecutionNameReadDenial),
+    /// The names the envelope's earlier members give their records could not
+    /// be read: its composed naming plan is refused (the envelope refuses
+    /// with this exact naming denial and commits nothing), or the branch's
+    /// names moved past its basis (a retryable stale-basis conflict).
+    CandidateNaming(CustomInvariantNameReadDenial),
     /// A group read on an applied candidate whose envelope already claims a
     /// partition or dissolve of the group kind's scheme: commit finalization
     /// regroups it, so no basis answer is the candidate's answer.
@@ -79,6 +86,10 @@ impl fmt::Display for WorthQueryDecisionNameDenial {
                 formatter.write_str("the name kind declares no owner scope")
             }
             Self::Read(denial) => fmt::Display::fmt(denial, formatter),
+            Self::CandidateNaming(denial) => write!(
+                formatter,
+                "the envelope's names for its earlier members' records are unavailable: {denial:?}"
+            ),
             Self::CandidateGroupState => formatter
                 .write_str("the unpublished candidate claims the group kind's partition"),
         }
