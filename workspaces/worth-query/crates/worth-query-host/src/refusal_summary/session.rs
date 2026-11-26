@@ -1,7 +1,8 @@
 //! Session actions, live views, managed-index watches, catch-up and sharing.
 use crate::session::{
-    WorthQuerySessionRunDenial, WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,
-    WorthQueryTypedManagedIndexRefreshDenial,
+    WorthQueryLocalSessionDenial, WorthQueryOwnedSessionDenial, WorthQuerySessionRunDenial,
+    WorthQuerySessionSnapshotDenial, WorthQueryTypedLiveCloseDenial,
+    WorthQueryTypedLiveRefreshDenial, WorthQueryTypedManagedIndexRefreshDenial,
 };
 use crate::shared_access::{
     AuthenticationRefusalReason, AuthorizationRefusalReason, ProtocolRefusalReason,
@@ -10,8 +11,8 @@ use crate::shared_access::{
 use crate::temporal_contribution::WorthQueryTemporalCatchUpDenial;
 
 use super::request::{
-    ALREADY_DONE, BUSY, CANCELLED, CAPACITY, INTERNAL, MISSING_ITEM, PERMISSION, TIMED_OUT,
-    UNSUPPORTED,
+    ALREADY_DONE, BUSY, CANCELLED, CAPACITY, INTERNAL, MISSING_ITEM, PERMISSION, SESSION_EXPIRED,
+    TIMED_OUT, UNSUPPORTED,
 };
 use super::stops::{authorization, projection, session};
 use super::summary::{
@@ -83,6 +84,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryTypedLiveRefreshDenial {
             Self::Cancelled => CANCELLED,
             Self::DeadlineExceeded => TIMED_OUT,
             Self::Closed => LIVE_CLOSED,
+            Self::SessionExpired => SESSION_EXPIRED,
         }
     }
 }
@@ -102,6 +104,39 @@ impl WorthQueryUserFacingRefusal for WorthQueryTypedManagedIndexRefreshDenial {
             Self::Overflow { .. } => LIVE_BEHIND,
             Self::Unavailable => BUSY,
             Self::Closed => LIVE_CLOSED,
+        }
+    }
+}
+
+/// A closed Home ends its owned sessions; other refusals keep their summary.
+impl<Denial: WorthQueryUserFacingRefusal> WorthQueryUserFacingRefusal
+    for WorthQueryOwnedSessionDenial<Denial>
+{
+    fn user_summary(&self) -> Summary {
+        match self {
+            Self::HomeClosed => Summary::with_message(
+                Category::NotFound,
+                "This data has been closed. Open it again to continue.",
+            ),
+            Self::Denied(denial) => denial.user_summary(),
+        }
+    }
+}
+
+impl WorthQueryUserFacingRefusal for WorthQueryLocalSessionDenial {
+    fn user_summary(&self) -> Summary {
+        match self {
+            Self::Admission(cause) => cause.user_summary(),
+            Self::Authentication(cause) => cause.user_summary(),
+        }
+    }
+}
+
+impl WorthQueryUserFacingRefusal for WorthQuerySessionSnapshotDenial {
+    fn user_summary(&self) -> Summary {
+        match self {
+            Self::ExecutionRequest(cause) => cause.user_summary(),
+            Self::ProductSelection(_) => BUSY,
         }
     }
 }

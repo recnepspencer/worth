@@ -83,9 +83,10 @@ where
             + 'static,
 {
         let scope = self.fresh_scope();
-        let request = self.request(&scope);
+        let principal = self.call_principal();
+        let request = self.request_as(&principal, &scope);
         let query_req = request.query(intent);
-        let query_req = match self.query_result_limit {
+        let query_req = match self.settings.query_result_limit {
             Some(limit) => query_req.limit_results(limit),
             None => query_req,
         };
@@ -119,9 +120,10 @@ where
             + 'static,
 {
         let scope = self.fresh_scope();
-        let request = self.request(&scope);
+        let principal = self.call_principal();
+        let request = self.request_as(&principal, &scope);
         let query_req = request.query(intent);
-        let query_req = match self.query_result_limit {
+        let query_req = match self.settings.query_result_limit {
             Some(limit) => query_req.limit_results(limit),
             None => query_req,
         };

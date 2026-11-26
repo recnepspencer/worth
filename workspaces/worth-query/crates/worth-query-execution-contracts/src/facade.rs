@@ -26,6 +26,7 @@ pub use crate::entity_key::*;
 pub use crate::entity_resolution_denial::*;
 pub use crate::generated_output_invariant_denial::*;
 pub use crate::home_retirement_owner::*;
+pub use crate::keyed_entity_refusal::*;
 pub use crate::managed_index_denial::WorthQueryManagedIndexWorkDenial;
 pub use crate::operation_admission_identity::*;
 pub use crate::operation_home_retirement::*;

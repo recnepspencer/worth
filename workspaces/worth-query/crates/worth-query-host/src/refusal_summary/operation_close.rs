@@ -6,7 +6,7 @@
 use worth_query_execution::facade::domain_computation::WorthQueryManagedRunCleanupFailureKind as Native;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryMutationCleanupFailureKind as Cleanup, WorthQueryOriginalOperationDenial as Original,
-    WorthQueryOutputReadCloseDenial as OutputRead, WorthQueryPrincipalResolutionDenialKind,
+    WorthQueryOutputReadCloseDenial as OutputRead,
 };
 use worth_query_execution::facade::product::{
     WorthQueryProductBranchOwnerCleanupDenial as Owner,
@@ -17,10 +17,8 @@ use worth_query_publication::facade::application_entry::{
     WorthQueryOperationCloseDenial, WorthQueryRequiredOutputPreparationDenial as Outputs,
 };
 
-use super::request::{
-    BUSY, CAPACITY, INTERNAL, PERMISSION, STORAGE, UNSUPPORTED, VERSION_MISMATCH,
-};
-use super::stops::{stopped, work};
+use super::request::{BUSY, CAPACITY, INTERNAL, STORAGE, UNSUPPORTED, VERSION_MISMATCH};
+use super::stops::{principal_resolution, work};
 use super::summary::{WorthQueryRefusalSummary as Summary, WorthQueryUserFacingRefusal};
 
 impl WorthQueryUserFacingRefusal for WorthQueryOperationCloseDenial {
@@ -43,10 +41,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryOperationCloseDenial {
 
 fn original(cause: &Original) -> Summary {
     match cause {
-        Original::Principal(denial) => match denial.kind() {
-            WorthQueryPrincipalResolutionDenialKind::Stopped(stop) => stopped(&stop),
-            WorthQueryPrincipalResolutionDenialKind::Refused(_) => PERMISSION,
-        },
+        Original::Principal(denial) => principal_resolution(denial.kind()),
         Original::Scope(denial) => denial.user_summary(),
         Original::QueryAdmission(denial) => denial.user_summary(),
         Original::QueryExecution(denial) => denial.user_summary(),

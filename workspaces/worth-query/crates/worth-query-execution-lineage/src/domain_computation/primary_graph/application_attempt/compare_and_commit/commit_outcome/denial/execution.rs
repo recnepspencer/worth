@@ -171,7 +171,7 @@ impl Denial {
                     Some(Ok(kind))
                 } else { allocation_control(failure.allocation_denial()) }
             }
-            Some(Cause::SourceRebase(_) | Cause::UnobservedWrite(_) | Cause::DomainValue(_) | Cause::DomainValueAdmission(_) | Cause::PersistentNameOutput(_)) | None => None,
+            Some(Cause::SourceRebase(_) | Cause::UnobservedWrite(_) | Cause::DomainValue(_) | Cause::DomainValueAdmission(_) | Cause::PersistentNameOutput(_) | Cause::KeyedEntity(_)) | None => None,
         }
     }
 

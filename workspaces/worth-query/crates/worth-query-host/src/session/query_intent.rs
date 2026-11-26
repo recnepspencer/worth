@@ -12,7 +12,9 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryManagedIndex,
 };
 use worth_query_publication::facade::{
-    application_entry::WorthQueryApplicationRequestQueryDenial,
+    application_entry::{
+        WorthQueryApplicationReadObservation, WorthQueryApplicationRequestQueryDenial,
+    },
     domain_computation::WorthQueryPublishedApplicationResult,
 };
 
@@ -48,6 +50,16 @@ pub trait WorthQuerySessionQuery<Schema: ApplicationSchema>:
         WorthQueryPublishedApplicationResult<QueryMarker<Schema, Self>, Self::Row>,
         WorthQueryApplicationRequestQueryDenial,
     >;
+
+    #[doc(hidden)]
+    fn execute_at_in_session<Program>(
+        self,
+        session: &WorthQueryHostSession<'_, Schema, Program>,
+        observation: &WorthQueryApplicationReadObservation,
+    ) -> Result<
+        WorthQueryPublishedApplicationResult<QueryMarker<Schema, Self>, Self::Row>,
+        WorthQueryApplicationRequestQueryDenial,
+    >;
 }
 
 impl<Schema, Intent> WorthQuerySessionQuery<Schema> for Intent
@@ -71,9 +83,31 @@ where
         WorthQueryApplicationRequestQueryDenial,
     > {
         let scope = session.fresh_scope();
-        let request = session.request(&scope);
+        let principal = session.call_principal();
+        let request = session.request_as(&principal, &scope);
         let query_req = request.query(self);
-        let query_req = match session.query_result_limit {
+        let query_req = match session.settings.query_result_limit {
+            Some(limit) => query_req.limit_results(limit),
+            None => query_req,
+        };
+        session
+            .with_funded_advancement(&scope, |phase| query_req.execute_in_advancement(&phase))
+            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
+    }
+
+    fn execute_at_in_session<Program>(
+        self,
+        session: &WorthQueryHostSession<'_, Schema, Program>,
+        observation: &WorthQueryApplicationReadObservation,
+    ) -> Result<
+        WorthQueryPublishedApplicationResult<QueryMarker<Schema, Self>, Self::Row>,
+        WorthQueryApplicationRequestQueryDenial,
+    > {
+        let scope = session.fresh_scope();
+        let principal = session.call_principal();
+        let request = session.request_as(&principal, &scope);
+        let query_req = request.at(observation).query(self);
+        let query_req = match session.settings.query_result_limit {
             Some(limit) => query_req.limit_results(limit),
             None => query_req,
         };
@@ -110,7 +144,8 @@ where
     ) -> Result<WorthQueryManagedIndex<Schema, Self::Index>, WorthQueryApplicationRequestQueryDenial>
     {
         let scope = session.fresh_scope();
-        let request = session.request(&scope);
+        let principal = session.call_principal();
+        let request = session.request_as(&principal, &scope);
         session
             .with_funded_advancement(&scope, |phase| {
                 request

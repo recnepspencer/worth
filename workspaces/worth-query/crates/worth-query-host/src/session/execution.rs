@@ -105,14 +105,15 @@ where
         graph
             .with_funded_application_completion(&scope, allocation, |phase| {
                 let seed =
-                    durable_branch_seed_in_advancement(graph, self.branch, &phase).map_err(
+                    durable_branch_seed_in_advancement(graph, self.settings.branch, &phase).map_err(
                         |cause| {
                             WorthQuerySessionRunDenial::Request(
                                 WorthQueryApplicationRequestMutationDenial::ProductSelection(cause),
                             )
                         },
                     )?;
-                let request = self.request(&scope);
+                let principal = self.call_principal();
+                let request = self.request_as(&principal, &scope);
                 for probe in 0..MAX_AUTO_KEY_PROBES {
                     let key =
                         <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey::derive_auto_key(
@@ -189,7 +190,8 @@ where
                 WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
             )
         })?;
-        let request = self.request(&scope);
+        let principal = self.call_principal();
+        let request = self.request_as(&principal, &scope);
         let outcome = request
             .advanced()
             .mutate(intent)
@@ -247,14 +249,15 @@ where
         graph
             .with_funded_application_completion(&scope, allocation, |phase| {
                 let seed =
-                    durable_branch_seed_in_advancement(graph, self.branch, &phase).map_err(
+                    durable_branch_seed_in_advancement(graph, self.settings.branch, &phase).map_err(
                         |cause| {
                             WorthQuerySessionRunDenial::Request(
                                 WorthQueryApplicationRequestMutationDenial::ProductSelection(cause),
                             )
                         },
                     )?;
-                let request = self.request(&scope);
+                let principal = self.call_principal();
+                let request = self.request_as(&principal, &scope);
                 for probe in 0..MAX_AUTO_KEY_PROBES {
                     let key =
                         <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey::derive_auto_key(
@@ -341,7 +344,8 @@ where
                 WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
             )
         })?;
-        let request = self.request(&scope);
+        let principal = self.call_principal();
+        let request = self.request_as(&principal, &scope);
         let outcome = request
             .advanced()
             .mutate(intent)

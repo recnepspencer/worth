@@ -22,7 +22,7 @@ where
     where
         Intent: ApplicationQueryIntent<Schema>,
     {
-        let maximum_results = match self.live_maximum_results {
+        let maximum_results = match self.settings.live_maximum_results {
             Some(explicit) => explicit,
             None => {
                 let installed_max = self
@@ -38,13 +38,16 @@ where
                             .get()
                     })
                     .unwrap_or(super::DEFAULT_LIVE_MAXIMUM_RESULTS);
-                match self.query_result_limit {
+                match self.settings.query_result_limit {
                     Some(narrowed) => narrowed.get().min(installed_max),
                     None => installed_max,
                 }
             }
         };
-        WorthQueryApplicationLiveLimits::bounded(self.live_buffer_capacity, maximum_results)
+        WorthQueryApplicationLiveLimits::bounded(
+            self.settings.live_buffer_capacity,
+            maximum_results,
+        )
     }
 
     /// Opens the untyped whole-result subscription behind [`Self::subscribe`].
@@ -65,9 +68,10 @@ where
         QueryRow<Schema, Intent>: WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Intent>>,
 {
         let scope = self.fresh_scope();
-        let request = self.request(&scope);
+        let principal = self.call_principal();
+        let request = self.request_as(&principal, &scope);
         let query_req = request.query(intent);
-        let query_req = match self.query_result_limit {
+        let query_req = match self.settings.query_result_limit {
             Some(limit) => query_req.limit_results(limit),
             None => query_req,
         };

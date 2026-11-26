@@ -16,6 +16,7 @@ use super::WorthQueryEntityResolutionSubject;
 use super::WorthQueryPrincipalResolutionMode;
 use super::WorthQueryResolvedEntity;
 use crate::domain_computation::primary_graph::index_currency::selected_index_is_current;
+use crate::domain_computation::primary_graph::WorthQueryKeyedEntityRefusal;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
@@ -115,10 +116,11 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 field,
             ));
         }
-        lookup
-            .candidate_entity_ids()
-            .first()
-            .ok_or_else(|| entity_denial(Kind::Refused(ResolutionRefusal::UnknownEntity), field))?;
+        lookup.candidate_entity_ids().first().ok_or_else(|| {
+            entity_denial(Kind::Refused(ResolutionRefusal::UnknownEntity), field).with_keyed_entity(
+                WorthQueryKeyedEntityRefusal::not_found(entity, field, Some(encoded.clone())),
+            )
+        })?;
 
         let resolved = WorthQueryResolvedEntity::from_lookup(
             &installed,

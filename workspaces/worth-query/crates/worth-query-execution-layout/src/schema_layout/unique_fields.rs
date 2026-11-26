@@ -63,6 +63,11 @@ impl<'layout> WorthQueryUniqueFields<'layout> {
         self.names.is_empty()
     }
 
+    /// The declared `(entity, aspect, field)` names of a unique field.
+    pub fn declared_name(&self, kind: KindId, locator: &AspectFieldLocator) -> Option<&FieldName> {
+        self.names.get(&kind)?.get(locator)
+    }
+
     /// The index a write of `locator` on `kind` must observe, or `None` when
     /// the field is not unique.
     pub fn index(

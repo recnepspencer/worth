@@ -10,6 +10,7 @@ pub use home_retirement::{
 pub mod execution;
 pub mod execution_report;
 pub mod failure;
+mod keyed_entity;
 pub use execution::MutationHandlerExecutionDenial;
 pub use execution_report::{
     WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,

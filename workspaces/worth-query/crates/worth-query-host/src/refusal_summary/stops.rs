@@ -9,6 +9,8 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationProjectionDenialKind as Projection,
     WorthQueryOperationAuthorizationDenialKind as Authorization,
     WorthQueryOperationAuthorizationRefusalKind as Policy,
+    WorthQueryPrincipalResolutionDenialKind as Principal,
+    WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal,
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as Session, WorthQueryValueDecodeDenial as Decode,
 };
@@ -17,8 +19,8 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Na
 use worth_runtime_world::facade::CompositeHistoryCatalogDenial as Catalog;
 
 use super::request::{
-    BAD_INPUT, BUSY, CANCELLED, CAPACITY, INTERNAL, MISSING_ITEM, PERMISSION, RULE_REFUSED, STALE,
-    STORAGE, TIMED_OUT,
+    BAD_INPUT, BUSY, CANCELLED, CAPACITY, INTERNAL, MISSING_ITEM, PERMISSION, RULE_REFUSED,
+    SESSION_EXPIRED, STALE, STORAGE, TIMED_OUT,
 };
 use super::summary::WorthQueryRefusalSummary as Summary;
 
@@ -111,6 +113,7 @@ pub(super) fn authorization(kind: &Authorization) -> Summary {
 
 fn policy(refusal: &Policy) -> Summary {
     match refusal {
+        Policy::ExpiredAuthentication => SESSION_EXPIRED,
         Policy::StaleScope => MISSING_ITEM,
         Policy::StaleInstalledSchema
         | Policy::StaleInstalledOperation
@@ -133,6 +136,15 @@ fn policy(refusal: &Policy) -> Summary {
         | Policy::PolicyNotInstalled
         | Policy::ScopeMismatch => INTERNAL,
         _ => PERMISSION,
+    }
+}
+
+/// An expired proof is the session's stale credential, never a missing grant.
+pub(super) fn principal_resolution(kind: Principal) -> Summary {
+    match kind {
+        Principal::Stopped(stop) => stopped(&stop),
+        Principal::Refused(PrincipalRefusal::ExpiredAuthentication) => SESSION_EXPIRED,
+        Principal::Refused(_) => PERMISSION,
     }
 }
 

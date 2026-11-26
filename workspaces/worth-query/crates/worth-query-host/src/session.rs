@@ -37,15 +37,23 @@ use crate::application_home::{WorthQueryApplicationHome, WorthQueryCorrectionEnt
 
 pub(crate) mod auto_key;
 mod execution;
+mod home_access;
+mod keyed_refusal;
 mod lease;
+mod live_governed;
 mod live_open;
+mod live_slot;
 mod live_subscription;
 mod managed_index;
 mod owned_live_subscription;
+mod owned_session;
 mod query_execution;
 mod query_intent;
+mod renewal;
+mod snapshot;
 mod temporal;
 pub use auto_key::WorthQueryAutoIdempotencyKey;
+pub(crate) use home_access::SessionHome;
 pub use live_subscription::{
     WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,
     WorthQueryTypedLiveSubscription,
@@ -54,7 +62,10 @@ pub use managed_index::{
     WorthQueryTypedManagedIndexRefreshDenial, WorthQueryTypedManagedIndexWatch,
 };
 pub use owned_live_subscription::WorthQueryOwnedLiveSubscription;
+pub use owned_session::{WorthQueryOwnedSession, WorthQueryOwnedSessionDenial};
 pub use query_intent::{WorthQuerySessionIndexedQuery, WorthQuerySessionQuery};
+pub use renewal::{WorthQueryLocalSessionDenial, WorthQuerySessionPrincipalSource};
+pub use snapshot::{WorthQuerySessionSnapshot, WorthQuerySessionSnapshotDenial};
 
 const DEFAULT_LIVE_BUFFER_CAPACITY: usize = 64;
 const DEFAULT_LIVE_MAXIMUM_RESULTS: usize = 1024;
@@ -114,13 +125,21 @@ pub enum WorthQuerySessionRunDenial<DomainDenial> {
 
 /// Reusable authenticated session over a [`WorthQueryApplicationHome`].
 ///
-/// Construct via [`WorthQueryApplicationHome::session`]. Every call opens a
-/// fresh [`WorthQueryRequestScope`], enforces this session's
-/// [`ExecutionRequestPolicy`], and re-admits authority on the configured
-/// branch with explicit bounded defaults.
+/// Construct via [`WorthQueryApplicationHome::session`] (or
+/// [`WorthQueryApplicationHome::local_session`] for a self-renewing local
+/// session). Every call opens a fresh [`WorthQueryRequestScope`], enforces
+/// this session's [`ExecutionRequestPolicy`], and re-admits authority on the
+/// configured branch with explicit bounded defaults.
 pub struct WorthQueryHostSession<'home, Schema: ApplicationSchema, Program> {
-    pub(super) home: &'home WorthQueryApplicationHome<Schema, Program>,
+    pub(super) home: SessionHome<'home, Schema, Program>,
+    pub(super) settings: SessionSettings<Schema>,
+}
+
+/// Everything a session decides besides the Home it reaches: shared verbatim
+/// by a borrowed session and the per-call sessions of an owned one.
+pub(super) struct SessionSettings<Schema> {
     pub(super) principal: WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    pub(super) renewal: Option<std::sync::Arc<renewal::RenewingPrincipal<Schema>>>,
     pub(super) branch: WorthQueryProductBranch,
     pub(super) clock: WorthQueryAdmissionClock,
     pub(super) policy: ExecutionRequestPolicy,
@@ -131,11 +150,11 @@ pub struct WorthQueryHostSession<'home, Schema: ApplicationSchema, Program> {
     pub(super) query_result_limit: Option<NonZeroUsize>,
 }
 
-impl<Schema: ApplicationSchema, Program> Clone for WorthQueryHostSession<'_, Schema, Program> {
+impl<Schema> Clone for SessionSettings<Schema> {
     fn clone(&self) -> Self {
         Self {
-            home: self.home,
             principal: self.principal.clone(),
+            renewal: self.renewal.clone(),
             branch: self.branch,
             clock: self.clock.clone(),
             policy: self.policy,
@@ -144,6 +163,15 @@ impl<Schema: ApplicationSchema, Program> Clone for WorthQueryHostSession<'_, Sch
             live_buffer_capacity: self.live_buffer_capacity,
             live_maximum_results: self.live_maximum_results,
             query_result_limit: self.query_result_limit,
+        }
+    }
+}
+
+impl<Schema: ApplicationSchema, Program> Clone for WorthQueryHostSession<'_, Schema, Program> {
+    fn clone(&self) -> Self {
+        Self {
+            home: self.home,
+            settings: self.settings.clone(),
         }
     }
 }
@@ -160,69 +188,76 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHome<Schema, Progr
         let policy =
             lease::default_session_policy(self.primary_graph().installed_execution_policy());
         WorthQueryHostSession {
-            home: self,
-            principal,
-            branch: self.active_branch(),
-            clock,
-            policy,
-            deadline: None,
-            cancellation: None,
-            live_buffer_capacity: DEFAULT_LIVE_BUFFER_CAPACITY,
-            live_maximum_results: None,
-            query_result_limit: None,
+            home: SessionHome::of_home(self),
+            settings: SessionSettings {
+                principal,
+                renewal: None,
+                branch: self.active_branch(),
+                clock,
+                policy,
+                deadline: None,
+                cancellation: None,
+                live_buffer_capacity: DEFAULT_LIVE_BUFFER_CAPACITY,
+                live_maximum_results: None,
+                query_result_limit: None,
+            },
         }
     }
 }
 
 impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Schema, Program> {
-    pub const fn home(&self) -> &'home WorthQueryApplicationHome<Schema, Program> {
-        self.home
+    /// The Home this session borrows; `None` inside a call of an owned session.
+    pub const fn home(&self) -> Option<&'home WorthQueryApplicationHome<Schema, Program>> {
+        self.home.home()
     }
 
     pub const fn branch(&self) -> WorthQueryProductBranch {
-        self.branch
+        self.settings.branch
     }
 
     pub const fn policy(&self) -> ExecutionRequestPolicy {
-        self.policy
+        self.settings.policy
     }
 
     pub const fn clock(&self) -> &WorthQueryAdmissionClock {
-        &self.clock
+        &self.settings.clock
     }
 
+    /// The proof this session was created with. A renewing session's
+    /// operations act under its latest renewed proof instead.
     pub const fn principal(&self) -> &WorthQueryAuthenticatedExternalPrincipal<Schema> {
-        &self.principal
+        &self.settings.principal
     }
 
     /// Replaces this session's bounded execution policy.
     pub const fn with_policy(mut self, policy: ExecutionRequestPolicy) -> Self {
-        self.policy = policy;
+        self.settings.policy = policy;
         self
     }
 
     /// Replaces only the execution budget inside this session's policy.
     pub const fn with_budget(mut self, budget: ExecutionBudget) -> Self {
-        self.policy =
-            ExecutionRequestPolicy::new(self.policy.posture(), self.policy.determinism(), budget);
+        let policy = self.settings.policy;
+        self.settings.policy =
+            ExecutionRequestPolicy::new(policy.posture(), policy.determinism(), budget);
         self
     }
 
     /// Replaces the admission clock used when opening fresh request scopes.
     pub fn with_clock(mut self, clock: WorthQueryAdmissionClock) -> Self {
-        self.clock = clock;
+        self.settings.clock = clock;
         self
     }
 
     /// Attaches a wall-clock deadline to fresh request scopes built by this session.
     pub const fn with_deadline(mut self, deadline: Option<Instant>) -> Self {
-        self.deadline = deadline;
+        self.settings.deadline = deadline;
         self
     }
 
     /// Attaches a cancellation token to fresh request scopes built by this session.
     pub fn with_cancellation(mut self, cancellation: WorthQueryCancellationToken) -> Self {
-        self.cancellation = Some(cancellation);
+        self.settings.cancellation = Some(cancellation);
         self
     }
 
@@ -232,51 +267,61 @@ impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Sch
         buffer_capacity: usize,
         maximum_results: usize,
     ) -> Self {
-        self.live_buffer_capacity = buffer_capacity;
-        self.live_maximum_results = Some(maximum_results);
+        self.settings.live_buffer_capacity = buffer_capacity;
+        self.settings.live_maximum_results = Some(maximum_results);
         self
     }
 
     /// Narrows the per-query result limit ceiling for one-shot, live, and watch reads.
     pub const fn with_result_limit(mut self, maximum_results: NonZeroUsize) -> Self {
-        self.query_result_limit = Some(maximum_results);
+        self.settings.query_result_limit = Some(maximum_results);
         self
     }
 
     /// Targets a specific product branch (such as a [`WorthQueryPreviewFork::branch`](crate::application_home::WorthQueryPreviewFork::branch)).
     pub const fn on_branch(mut self, branch: WorthQueryProductBranch) -> Self {
-        self.branch = branch;
+        self.settings.branch = branch;
         self
     }
 
     /// Constructs a fresh request scope for one operation.
     pub fn fresh_scope(&self) -> WorthQueryRequestScope {
         WorthQueryRequestScope::new(
-            self.deadline,
-            self.cancellation
+            self.settings.deadline,
+            self.settings
+                .cancellation
                 .clone()
                 .unwrap_or_else(|| WorthQueryCancellationSource::new().token()),
-            self.clock.clone(),
+            self.settings.clock.clone(),
         )
     }
 
     /// Borrows a fresh [`WorthQueryApplicationRequest`] bound to this session's
-    /// Home, principal, and target branch.
+    /// Home, creation proof, and target branch.
     pub fn request<'a>(
         &'a self,
         scope: &'a WorthQueryRequestScope,
     ) -> WorthQueryApplicationRequest<'home, 'a, 'a, Schema> {
+        self.request_as(&self.settings.principal, scope)
+    }
+
+    /// A request acting under `principal` (see [`Self::call_principal`]).
+    pub(super) fn request_as<'a>(
+        &self,
+        principal: &'a WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        scope: &'a WorthQueryRequestScope,
+    ) -> WorthQueryApplicationRequest<'home, 'a, 'a, Schema> {
         self.home
             .primary_graph()
-            .request(&self.principal, scope)
-            .on_branch(self.branch)
+            .request(principal, scope)
+            .on_branch(self.settings.branch)
     }
 
     pub(super) fn open_lease(
         &self,
         scope: &WorthQueryRequestScope,
     ) -> Result<ExecutionResourceLease<'home>, WorthQueryAdvancementDenial> {
-        lease::open_policy_lease(self.home.primary_graph(), self.policy, scope)
+        lease::open_policy_lease(self.home.primary_graph(), self.settings.policy, scope)
     }
 
     pub(super) fn with_funded_advancement<R>(
@@ -284,6 +329,6 @@ impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Sch
         scope: &WorthQueryRequestScope,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
-        lease::with_policy_advancement(self.home.primary_graph(), self.policy, scope, body)
+        lease::with_policy_advancement(self.home.primary_graph(), self.settings.policy, scope, body)
     }
 }

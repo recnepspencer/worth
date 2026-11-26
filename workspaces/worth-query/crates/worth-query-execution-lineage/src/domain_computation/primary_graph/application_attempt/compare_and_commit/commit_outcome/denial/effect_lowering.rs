@@ -1,8 +1,8 @@
 //! Typed refusals decided while lowering a program's effects.
 
 use super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitDenialStage,
+    denial_cause::DenialCause, WorthQueryApplicationCommitDenial,
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
 };
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
@@ -33,7 +33,19 @@ impl WorthQueryApplicationCommitDenial {
             kind,
             stage: WorthQueryApplicationCommitDenialStage::EffectLowering,
             detail: Some(denial.subject().into()),
-            cause: None,
+            cause: denial
+                .keyed_entity()
+                .map(|keyed| Box::new(DenialCause::KeyedEntity(keyed.clone()))),
+        }
+    }
+
+    /// The entity type, unique field and key a `UniqueValueTaken` refusal names.
+    pub fn keyed_entity(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryKeyedEntityRefusal> {
+        match self.cause.as_deref()? {
+            DenialCause::KeyedEntity(keyed) => Some(keyed),
+            _ => None,
         }
     }
 }

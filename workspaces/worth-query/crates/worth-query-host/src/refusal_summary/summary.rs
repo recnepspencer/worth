@@ -14,6 +14,9 @@ pub enum WorthQueryRefusalCategory {
     Conflict,
     /// The signed-in user may not perform or see this.
     PermissionDenied,
+    /// The session's sign-in proof expired. It is not a missing permission:
+    /// a renewed session (or a self-renewing one, on its next call) succeeds.
+    SessionExpired,
     /// The item, or the history needed to act on it, no longer exists.
     NotFound,
     /// The data or request belongs to a different program version or setup.
@@ -33,7 +36,10 @@ pub enum WorthQueryRefusalCategory {
 impl WorthQueryRefusalCategory {
     /// Whether repeating the same request unchanged can reasonably succeed.
     pub const fn retryable(self) -> bool {
-        matches!(self, Self::Capacity | Self::Interrupted | Self::Unavailable)
+        matches!(
+            self,
+            Self::Capacity | Self::Interrupted | Self::Unavailable | Self::SessionExpired
+        )
     }
 
     /// A short, jargon-free sentence describing the category to an end user.
@@ -44,6 +50,9 @@ impl WorthQueryRefusalCategory {
                 "This was changed since you last saw it. Refresh to see the latest version."
             }
             Self::PermissionDenied => "You don't have permission to do that.",
+            Self::SessionExpired => {
+                "Your sign-in expired before this finished. Nothing was changed. Try again."
+            }
             Self::NotFound => "That item, or the history needed for this, is no longer available.",
             Self::Unsupported => "This data was made by a different version of the app.",
             Self::Capacity => "That was too large to finish. Try again with less at once.",

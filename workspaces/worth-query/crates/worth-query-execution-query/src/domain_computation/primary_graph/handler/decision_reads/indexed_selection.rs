@@ -5,7 +5,7 @@ use worth_query_installation::facade::{ApplicationReadableScalarValueBinding, Ap
 use super::DecisionReader;
 use crate::domain_computation::primary_graph::{
     HandlerExecutionDenial, WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
-    WorthQueryInvariantEntityIdentity,
+    WorthQueryInvariantEntityIdentity, WorthQueryKeyedEntityRefusal,
 };
 use worth_query_declaration::facade::application_schema::OperationReads;
 
@@ -71,11 +71,20 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         >,
         Field::Binding: ApplicationReadableScalarValueBinding,
     {
+        use worth_query_installation::facade::ApplicationScalarValueBinding as _;
+        let key = Field::Binding::encode(&value).ok();
         self.resolve_optional_entity(field, value)?.ok_or_else(|| {
-            HandlerExecutionDenial::new(WorthQueryEntityResolutionDenial::new(
-                WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity),
-                field.field(),
-            ))
+            HandlerExecutionDenial::new(
+                WorthQueryEntityResolutionDenial::new(
+                    WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity),
+                    field.field(),
+                )
+                .with_keyed_entity(WorthQueryKeyedEntityRefusal::not_found(
+                    field.entity(),
+                    field.field(),
+                    key,
+                )),
+            )
         })
     }
 

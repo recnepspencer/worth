@@ -49,6 +49,7 @@ where
                 checkpoint_limits: request.checkpoint_limits,
                 open_disposition: WorthQueryHomeOpenDisposition::Created,
                 active_head,
+                owned: std::sync::Arc::default(),
             }
         })
         .map_err(|cause| Refused::from_phase(Phase::Preparation(cause)))

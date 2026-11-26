@@ -19,6 +19,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
+use crate::domain_computation::primary_graph::entity_resolution_denial::WorthQueryKeyedEntityRefusal;
 use crate::domain_computation::primary_graph::schema_layout::{
     WorthQueryUniqueFieldIndex, WorthQueryUniqueFields,
 };
@@ -72,22 +73,42 @@ impl<'layout> UniqueValueWrites<'layout> {
             .iter()
             .any(|candidate| Some(*candidate) != writer && !self.retiring.contains(candidate))
         {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::UniqueValueTaken,
-                locator,
-            ));
+            return Err(self.taken(kind, locator, value));
         }
         if !self.written.insert((
             kind,
             locator.clone(),
             prepare_aspect_value_identity_basis(value),
         )) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::UniqueValueTaken,
-                locator,
-            ));
+            return Err(self.taken(kind, locator, value));
         }
         Ok(())
+    }
+
+    /// The value is held: name the declared entity, field and key it collides on.
+    fn taken(
+        &self,
+        kind: KindId,
+        locator: &AspectFieldLocator,
+        value: &AspectValue,
+    ) -> WorthQueryApplicationAttemptDenial {
+        let subject = format!("{locator:?}");
+        match self.fields.declared_name(kind, locator) {
+            Some((entity, _aspect, field)) => {
+                WorthQueryApplicationAttemptDenial::unique_value_taken(
+                    subject,
+                    WorthQueryKeyedEntityRefusal::already_exists(
+                        entity,
+                        field,
+                        Some(value.clone()),
+                    ),
+                )
+            }
+            None => WorthQueryApplicationAttemptDenial::new(
+                WorthQueryApplicationAttemptDenialKind::UniqueValueTaken,
+                subject,
+            ),
+        }
     }
 }
 

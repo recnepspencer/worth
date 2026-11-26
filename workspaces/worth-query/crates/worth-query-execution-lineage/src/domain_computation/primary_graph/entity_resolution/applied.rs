@@ -119,9 +119,16 @@ impl WorthQueryInstalledEntityResolutionContext {
             };
             let Some((head, covers)) = own else {
                 return match selected.selection() {
-                    AppliedEntityFieldMatch::Absent => {
-                        Err(refused(ResolutionRefusal::UnknownEntity))
-                    }
+                    AppliedEntityFieldMatch::Absent => Err(refused(
+                        ResolutionRefusal::UnknownEntity,
+                    )
+                    .with_keyed_entity(
+                        crate::domain_computation::primary_graph::WorthQueryKeyedEntityRefusal::not_found(
+                            entity,
+                            field,
+                            Some(expected.clone()),
+                        ),
+                    )),
                     AppliedEntityFieldMatch::Ambiguous => {
                         Err(refused(ResolutionRefusal::AmbiguousEntity))
                     }

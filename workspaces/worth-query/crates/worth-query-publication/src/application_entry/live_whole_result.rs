@@ -286,7 +286,6 @@ where
                 WorthQueryPrincipalResolutionDenialKind::Refused(
                     PrincipalRefusal::ForeignRuntime
                     | PrincipalRefusal::StaleInstalledSchema
-                    | PrincipalRefusal::ExpiredAuthentication
                     | PrincipalRefusal::UnknownPrincipal
                     | PrincipalRefusal::DisabledPrincipal
                     | PrincipalRefusal::AmbiguousPrincipal
@@ -297,6 +296,9 @@ where
                 ) => {
                     return Ok(self.lease.terminate_stale_principal());
                 }
+                // An expired proof is the caller's stale credential, not a
+                // change to what the lease observes: refuse this poll without
+                // terminating, so a renewed session's next poll succeeds.
                 _ => {
                     return Err(WorthQueryApplicationLiveNextDenial::PrincipalResolution(
                         denial,

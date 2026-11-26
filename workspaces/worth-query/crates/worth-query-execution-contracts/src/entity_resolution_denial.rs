@@ -52,6 +52,7 @@ pub struct WorthQueryEntityResolutionDenial {
         worth_relational::facade::indexes::DerivedIndexId,
         worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind,
     )>,
+    keyed: Option<Box<crate::keyed_entity_refusal::WorthQueryKeyedEntityRefusal>>,
 }
 
 impl WorthQueryEntityResolutionDenial {
@@ -60,7 +61,24 @@ impl WorthQueryEntityResolutionDenial {
             kind,
             subject: subject.into(),
             native_lookup: None,
+            keyed: None,
         }
+    }
+
+    /// Names the entity type and key an `UnknownEntity` refusal looked for.
+    pub fn with_keyed_entity(
+        mut self,
+        keyed: crate::keyed_entity_refusal::WorthQueryKeyedEntityRefusal,
+    ) -> Self {
+        self.keyed = Some(Box::new(keyed));
+        self
+    }
+
+    /// The entity type and key this refusal names, when the resolver knew them.
+    pub fn keyed_entity(
+        &self,
+    ) -> Option<&crate::keyed_entity_refusal::WorthQueryKeyedEntityRefusal> {
+        self.keyed.as_deref()
     }
 
     pub fn with_native_lookup(
@@ -104,6 +122,9 @@ impl std::error::Error for WorthQueryEntityResolutionDenial {}
 
 impl worth_execution::ChargedBytes for WorthQueryEntityResolutionDenial {
     fn additional_charged_bytes(&self) -> u64 {
-        self.subject.capacity() as u64
+        let keyed = self.keyed.as_deref().map_or(0, |keyed| {
+            std::mem::size_of_val(keyed) + keyed.entity().len() + keyed.field().len()
+        });
+        self.subject.capacity() as u64 + keyed as u64
     }
 }
