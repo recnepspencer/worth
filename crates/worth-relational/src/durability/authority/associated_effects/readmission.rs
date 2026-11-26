@@ -54,7 +54,7 @@ impl DurabilityAuthority<'_> {
             .runtime
             .durability
             .checkpoint_selection()
-            .admitted_commit(&entry)
+            .admitted_commit_for_request(&entry, execution)
             .map_err(|cause| Refusal::Recovery(RelationalRecoveryStop::AdmissionImage(cause)))?;
         let (origin, semantic) = match admitted {
             Some(commit) => {

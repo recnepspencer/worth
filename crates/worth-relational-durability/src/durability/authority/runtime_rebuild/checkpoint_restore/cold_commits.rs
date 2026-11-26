@@ -25,6 +25,9 @@ pub struct SelectedCommitSource {
     selection: RelationalCheckpointManifestSelection,
     reopened: Weak<RelationalCheckpointDirectory>,
     working_set: Option<Arc<WorkingSetAccountant>>,
+    original_schemas: Option<
+        Arc<crate::durability::authority::runtime_rebuild::original_schemas::OriginalSchemaGraph>,
+    >,
 }
 
 impl SelectedCommitSource {
@@ -32,11 +35,13 @@ impl SelectedCommitSource {
         selection: RelationalCheckpointManifestSelection,
         reopened: &Arc<RelationalCheckpointDirectory>,
         working_set: Option<Arc<WorkingSetAccountant>>,
+        original_schemas: Option<Arc<crate::durability::authority::runtime_rebuild::original_schemas::OriginalSchemaGraph>>,
     ) -> Self {
         Self {
             selection,
             reopened: Arc::downgrade(reopened),
             working_set,
+            original_schemas,
         }
     }
 
@@ -62,9 +67,37 @@ impl ColdCommitSource for SelectedCommitSource {
     ) -> Result<Arc<RelationalCommitArtifact>, Cause> {
         let directory = self.directory().ok_or(Cause::SourceUnavailable)?;
         let index = RetainedCanonicalIndex::copy_cold(entry, readmit_journal_commit);
-        let artifact =
+        let mut artifact =
             RelationalCommitArtifact::from_index(index.clone(), directory.source.clone())
                 .map_err(|_| Cause::Damaged)?;
+        if let Some(graph) = &self.original_schemas
+            && let Some(normalized) = &graph.original.normalized
+            && let Some(offset) = entry
+                .position
+                .0
+                .checked_sub(1)
+                .and_then(|n| usize::try_from(n).ok())
+            && let Some(record) = normalized.canonical.get(offset)
+        {
+            if record.position != entry.position
+                || record.commit != entry.commit.commit_id
+                || record.payload_digest != entry.payload_digest
+            {
+                return Err(Cause::IntegrityMismatch);
+            }
+            let inputs =
+                branch::history::commit::artifact::original_inputs::OriginalCanonicalInputs {
+                    prestate_schema: graph
+                        .get(record.prestate_schema)
+                        .map_err(|_| Cause::IntegrityMismatch)?,
+                    result_schema: graph
+                        .get(record.result_schema)
+                        .map_err(|_| Cause::IntegrityMismatch)?,
+                    mutation: record.mutation.clone(),
+                };
+            let captured = inputs.try_into().map_err(|_| Cause::Damaged)?;
+            artifact.set_original_inputs(captured);
+        }
         let _displaced = artifact
             .envelope_residency()
             .install_selected(index, directory)

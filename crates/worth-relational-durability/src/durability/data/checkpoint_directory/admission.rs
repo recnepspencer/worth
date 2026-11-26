@@ -12,6 +12,7 @@ use worth_execution::{ExecutionArray, ExecutionRequest};
 #[derive(Debug)]
 pub(crate) struct CheckpointDirectoryAdmission {
     draft: Option<PreparedCheckpointDirectory>,
+    working_set: Option<std::sync::Arc<worth_relational_storage::internal_port::storage::residency::working_set::WorkingSetAccountant>>,
     members: Option<ExecutionArray<RelationalDurableMemberLocator>>,
     read: Option<SelectedCheckpointRead>,
     basis: Option<RelationalDurableMemberCustody>,
@@ -19,8 +20,15 @@ pub(crate) struct CheckpointDirectoryAdmission {
 }
 impl CheckpointDirectoryAdmission {
     pub(crate) fn new(draft: PreparedCheckpointDirectory) -> Self {
+        Self::with_working_set(draft, None)
+    }
+    pub(crate) fn with_working_set(
+        draft: PreparedCheckpointDirectory,
+        working_set: Option<std::sync::Arc<worth_relational_storage::internal_port::storage::residency::working_set::WorkingSetAccountant>>,
+    ) -> Self {
         Self {
             draft: Some(draft),
+            working_set,
             members: None,
             read: None,
             basis: None,
@@ -71,13 +79,17 @@ impl CheckpointDirectoryAdmission {
             .draft
             .take()
             .expect("admission owns the same original draft");
-        // G7: the commit index opens read-free over the admitted roster.
+        // G7: the commit index opens read-free over the admitted roster and binds
+        // its working-set accountant before any first fault can lock a fallback.
         let commit_index = std::sync::Arc::new(
             worth_relational_branch::internal_port::history::commit::paged_index::reader::ColdCommitIndex::open(
                 std::sync::Arc::new(draft.manifest.commits.clone()),
                 draft.source.clone(),
             ),
         );
+        if let Some(accountant) = &self.working_set {
+            commit_index.bind_working_set(accountant.clone());
+        }
         Ok(RelationalCheckpointDirectory {
             admission_owner: Default::default(),
             admission_image: None,

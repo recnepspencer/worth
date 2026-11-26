@@ -36,12 +36,39 @@ pub(crate) fn capture(
                 locator: row.member,
             }
         } else {
-            let bytes = captured
-                .cold_source
+            let source = captured
+                .prior_source
                 .as_ref()
-                .ok_or_else(|| corrupt("carried canonical member has no source"))?
-                .read_member(row.member, row.member.length)
-                .map_err(|cause| corrupt(&format!("carried canonical member: {cause:?}")))?;
+                .or(captured.cold_source.as_ref())
+                .ok_or_else(|| corrupt("carried canonical member has no source"))?;
+            let bytes = source.read_member(row.member, row.member.length).map_err(|cause| {
+                contracts::storage::data::storage_unavailable::RelationalStorageUnavailable {
+                    subject:
+                        contracts::storage::data::storage_unavailable::RelationalStorageSubject::Envelope(
+                            row.position,
+                        ),
+                    cause,
+                }
+            })?;
+            let actual =
+                worth_relational_storage::internal_port::storage::data::member_frame::locator_for_request(
+                    request,
+                    &bytes,
+                )
+                .map_err(RelationalNativeCheckpointCaptureDenial::Request)?;
+            if actual != row.member {
+                return Err(
+                    contracts::storage::data::storage_unavailable::RelationalStorageUnavailable {
+                        subject:
+                            contracts::storage::data::storage_unavailable::RelationalStorageSubject::Envelope(
+                                row.position,
+                            ),
+                        cause:
+                            contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause::IntegrityMismatch,
+                    }
+                    .into(),
+                );
+            }
             RelationalCheckpointMember::New {
                 locator: row.member,
                 bytes: worth_execution::ExecutionImmutableBytes::from_external_bytes(

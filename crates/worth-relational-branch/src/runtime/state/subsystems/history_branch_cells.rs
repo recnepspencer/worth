@@ -165,7 +165,7 @@ impl HistorySubsystem {
         if let Some(existing) = self.branch_cell(&branch_id) {
             let existing = existing.checkpoint();
             let incoming = cell.checkpoint();
-            let pristine_bootstrap = self.recorded_commit_envelope_count() == 0
+            let pristine_bootstrap = self.catalog_len() == 0
                 && history_recovery_validation::empty_bootstrap_cells_are_equivalent(
                     &existing, &incoming,
                 );

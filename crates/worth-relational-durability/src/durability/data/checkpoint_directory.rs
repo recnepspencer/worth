@@ -86,6 +86,12 @@ impl RelationalCheckpointDirectory {
     ) -> Result<Arc<Self>, contracts::durability::data::recovery_stop::RelationalRecoveryStop> {
         let retirement = PreparedCheckpointDirectoryRetirement::prepare(request)
             .map_err(admission::opening_stop)?;
+        let commit_index = Arc::new(
+            worth_relational_branch::internal_port::history::commit::paged_index::reader::ColdCommitIndex::open(
+                Arc::clone(self.commit_index.descriptor()),
+                Arc::clone(&self.source),
+            ),
+        );
         Ok(Arc::new(Self {
             admission_owner: Default::default(),
             admission_image: self.admission_image.clone(),
@@ -94,7 +100,7 @@ impl RelationalCheckpointDirectory {
             source: self.source.clone(),
             history_members: self.history_members.clone(),
             canonical_read: self.canonical_read.clone(),
-            commit_index: self.commit_index.clone(),
+            commit_index,
             _basis: self._basis.clone(),
             retirement,
         }))

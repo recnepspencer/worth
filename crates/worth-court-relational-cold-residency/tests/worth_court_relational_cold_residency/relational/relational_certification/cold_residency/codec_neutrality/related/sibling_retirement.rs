@@ -293,7 +293,11 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         let checkpoint = edit_original(&saved, *retiring, edit);
         let (mut cold, receipt) = installed(2);
         cold.durability_recovery()
-            .restore_native_checkpoint(execution, &checkpoint, worth_testkit_relational::cold_recovery::members_source(&checkpoint))
+            .restore_native_checkpoint(
+                execution,
+                &checkpoint,
+                worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+            )
             .unwrap();
         let receipt = cold
             .readmit_recovered_initial_schema_installation(receipt)

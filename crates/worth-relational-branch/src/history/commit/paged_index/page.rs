@@ -27,20 +27,27 @@ pub struct ResidentCommitPage {
 
 impl CommitIndexPage {
     /// Rows are non-empty, within budget, at consecutive positions from
-    /// `first`, and carry non-zero commit ids.
+    /// `first`, and carry non-zero unique commit and version ids.
     fn is_canonical(&self) -> bool {
-        !self.rows.is_empty()
-            && self.rows.len() <= COMMIT_PAGE_ENTRIES as usize
-            && self.rows.iter().enumerate().all(|(offset, row)| {
-                row.commit.commit_id.0 != 0
-                    && self.first.checked_add(offset as u64) == Some(row.position.0)
-            })
+        if self.rows.is_empty() || self.rows.len() > COMMIT_PAGE_ENTRIES as usize {
+            return false;
+        }
+        let mut commits = std::collections::BTreeSet::new();
+        let mut versions = std::collections::BTreeSet::new();
+        self.rows.iter().enumerate().all(|(offset, row)| {
+            row.commit.commit_id.0 != 0
+                && row.commit.version_id.0 != 0
+                && self.first.checked_add(offset as u64) == Some(row.position.0)
+                && commits.insert(row.commit.commit_id)
+                && versions.insert(row.commit.version_id)
+        })
     }
 }
 
 impl ResidentPage for ResidentCommitPage {
     fn decode(bytes: &[u8], locator: RelationalDurableMemberLocator) -> Result<Self, Cause> {
-        let page: CommitIndexPage = decode_member(ChunkMemberKind::CommitIndexPage, bytes, locator)?;
+        let page: CommitIndexPage =
+            decode_member(ChunkMemberKind::CommitIndexPage, bytes, locator)?;
         if !page.is_canonical() {
             return Err(Cause::Damaged);
         }
@@ -84,14 +91,23 @@ impl ResidentCommitPage {
             return Err(Cause::IntegrityMismatch);
         }
         for row in rows {
+            let tail_mismatch = index
+                .tail
+                .as_ref()
+                .filter(|tail| tail.position == row.position)
+                .is_some_and(|tail| tail != row);
+            let head_mismatch = index
+                .heads
+                .binary_search_by_key(&row.position.0, |entry| entry.position.0)
+                .ok()
+                .is_some_and(|slot| &index.heads[slot] != row);
             if row
                 .commit
                 .parents
                 .iter()
                 .any(|parent| *parent == row.commit.commit_id)
-                || index
-                    .inline_at(row.position.0)
-                    .is_some_and(|inline| inline != row)
+                || tail_mismatch
+                || head_mismatch
             {
                 return Err(Cause::IntegrityMismatch);
             }

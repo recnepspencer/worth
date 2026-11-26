@@ -163,6 +163,11 @@ impl RelationalNativeCheckpointOwnerPort for RelationalNativeCheckpoint {
         publication: CommitId,
         change: u8,
     ) -> Result<Self, RelationalRecoveryStop> {
-        self.corrupt_current_publication_roster_external_for_test(execution, source, publication, change)
+        self.corrupt_current_publication_roster_external_for_test(
+            execution,
+            source,
+            publication,
+            change,
+        )
     }
 }

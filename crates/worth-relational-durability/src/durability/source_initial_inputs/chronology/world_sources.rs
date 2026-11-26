@@ -15,13 +15,13 @@ pub(super) struct WorldSources<'a> {
     catalog: Option<&'a Catalog>,
     callers: ExecutionOrderedMap<CanonicalDigestId, &'a Original>,
     schemas: ExecutionOrderedMap<[u8; 32], [u8; 32]>,
-    performed: ExecutionOrderedMap<CommitId, Performed<'a>>,
+    performed: ExecutionOrderedMap<CommitId, Performed>,
 }
 #[derive(Clone)]
-struct Performed<'a> {
-    branch: &'a BranchId,
-    before: Axes<'a>,
-    after: Axes<'a>,
+struct Performed {
+    branch: BranchId,
+    before: Axes,
+    after: Axes,
     fate: Fate,
 }
 impl<'a> WorldSources<'a> {
@@ -78,21 +78,21 @@ impl<'a> WorldSources<'a> {
     }
     pub(super) fn before_canonical(
         &self,
-        fold: &mut Fold<'a>,
-        index: &'a Index,
+        fold: &mut Fold,
+        index: &Index,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<Axes<'a>, Refusal> {
+    ) -> Result<Axes, Refusal> {
         let branch = &index.commit.branch_id;
         let current = fold
             .current
-            .get(&branch)
+            .get(branch)
             .cloned()
             .ok_or(Refusal::Malformed)?;
         let Some(original) = self.original(index)? else {
             return Ok(current);
         };
         let (source_branch, wanted) = self.source(fold, original.source())?;
-        if source_branch != branch {
+        if &source_branch != branch {
             return Err(Refusal::Malformed);
         }
         if !current.same_state(&wanted) {
@@ -103,9 +103,9 @@ impl<'a> WorldSources<'a> {
     }
     pub(super) fn retain(
         &mut self,
-        index: &'a Index,
-        before: Axes<'a>,
-        after: Axes<'a>,
+        index: &Index,
+        before: Axes,
+        after: Axes,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Refusal> {
         let Some(original) = self.original(index)? else {
@@ -148,7 +148,7 @@ impl<'a> WorldSources<'a> {
             return Err(Refusal::Malformed);
         }
         let performed = Performed {
-            branch: &index.commit.branch_id,
+            branch: index.commit.branch_id.clone(),
             before,
             after,
             fate: original.fate(),
@@ -160,16 +160,21 @@ impl<'a> WorldSources<'a> {
     fn require_released_predecessor(
         &self,
         branch: &BranchId,
-        current: &Axes<'a>,
-        wanted: &Axes<'a>,
+        current: &Axes,
+        wanted: &Axes,
     ) -> Result<(), Refusal> {
-        let id = current.commit.ok_or(Refusal::Malformed)?.commit.commit_id;
+        let id = current
+            .commit
+            .as_deref()
+            .ok_or(Refusal::Malformed)?
+            .commit
+            .commit_id;
         let original = self.performed.get(&id).ok_or(Refusal::Malformed)?;
         match original.fate {
             Fate::Released => {}
             Fate::Open | Fate::Continued | Fate::Published => return Err(Refusal::Malformed),
         }
-        if original.branch != branch
+        if &original.branch != branch
             || !current.same_state(&original.after)
             || !wanted.same_state(&original.before)
         {
@@ -179,8 +184,8 @@ impl<'a> WorldSources<'a> {
     }
     pub(super) fn before_transition(
         &self,
-        fold: &mut Fold<'a>,
-        entry: &'a TransitionOriginalRecord,
+        fold: &mut Fold,
+        entry: &TransitionOriginalRecord,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Refusal> {
         let branch = match &entry.transition {
@@ -190,11 +195,16 @@ impl<'a> WorldSources<'a> {
             | Transition::Delete { .. } => entry.transition.branch(),
             Transition::RetainedFork { .. } => return Ok(()),
         };
-        let current = fold.current.get(&branch).ok_or(Refusal::Malformed)?;
+        let current = fold.current.get(branch).ok_or(Refusal::Malformed)?;
         if current.requires_transition(entry) {
             return Ok(());
         }
-        let id = current.commit.ok_or(Refusal::Malformed)?.commit.commit_id;
+        let id = current
+            .commit
+            .as_deref()
+            .ok_or(Refusal::Malformed)?
+            .commit
+            .commit_id;
         let performed = self.performed.get(&id).ok_or(Refusal::Malformed)?;
         self.require_released_predecessor(branch, current, &performed.before)?;
         if !performed.before.requires_transition(entry) {
@@ -204,17 +214,22 @@ impl<'a> WorldSources<'a> {
     }
     pub(super) fn finish(
         &self,
-        fold: &mut Fold<'a>,
-        cells: &'a [contracts::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint],
+        fold: &mut Fold,
+        cells: &[contracts::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint],
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Refusal> {
         for cell in cells {
             let branch = &cell.branch_id;
-            let current = fold.current.get(&branch).ok_or(Refusal::Malformed)?;
+            let current = fold.current.get(branch).ok_or(Refusal::Malformed)?;
             if matches_cell(current, cell) {
                 continue;
             }
-            let id = current.commit.ok_or(Refusal::Malformed)?.commit.commit_id;
+            let id = current
+                .commit
+                .as_deref()
+                .ok_or(Refusal::Malformed)?
+                .commit
+                .commit_id;
             let performed = self.performed.get(&id).ok_or(Refusal::Malformed)?;
             // A checkpoint may capture the original successor before the next
             // open restores its released predecessor. Its cell chooses neither
@@ -231,7 +246,7 @@ impl<'a> WorldSources<'a> {
     }
 }
 fn matches_cell(
-    state: &Axes<'_>,
+    state: &Axes,
     cell: &contracts::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint,
 ) -> bool {
     !state.removed

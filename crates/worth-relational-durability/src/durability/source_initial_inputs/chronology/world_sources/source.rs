@@ -2,12 +2,8 @@
 use super::*;
 use worth_relational_branch::internal_port::branch::basis_descriptor::RelationalBranchBasisPosture;
 use worth_relational_branch::internal_port::branch::recorded_basis::RecordedRelationalComponentTarget as Target;
-impl<'a> WorldSources<'a> {
-    pub(super) fn source(
-        &self,
-        fold: &Fold<'a>,
-        source: &'a Source,
-    ) -> Result<(&'a BranchId, Axes<'a>), Refusal> {
+impl WorldSources<'_> {
+    pub(super) fn source(&self, fold: &Fold, source: &Source) -> Result<(BranchId, Axes), Refusal> {
         match source {
             Source::Recorded(recorded) => {
                 let descriptor = recorded.descriptor();
@@ -31,7 +27,7 @@ impl<'a> WorldSources<'a> {
                         }
                     }
                     Target::Canonical(target) => {
-                        let index = state.commit.ok_or(Refusal::Malformed)?;
+                        let index = state.commit.as_deref().ok_or(Refusal::Malformed)?;
                         if target.receipt() != &index.commit
                             || target.position() != index.position
                             || target.artifact_digest() != &index.payload_digest
@@ -44,20 +40,20 @@ impl<'a> WorldSources<'a> {
                         // Native/World operational capability issuance.
                     }
                 }
-                Ok((descriptor.branch_id(), state.clone()))
+                Ok((descriptor.branch_id().clone(), state.clone()))
             }
             Source::Published(coordinates) => {
                 let state = fold
                     .canonical
                     .get(&coordinates.commit())
                     .ok_or(Refusal::Malformed)?;
-                let index = state.commit.ok_or(Refusal::Malformed)?;
+                let index = state.commit.as_deref().ok_or(Refusal::Malformed)?;
                 if index.position != coordinates.position()
                     || &index.payload_digest != coordinates.digest().bytes()
                 {
                     return Err(Refusal::Malformed);
                 }
-                Ok((&index.commit.branch_id, state.clone()))
+                Ok((index.commit.branch_id.clone(), state.clone()))
             }
         }
     }

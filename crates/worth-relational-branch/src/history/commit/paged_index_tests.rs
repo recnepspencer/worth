@@ -130,13 +130,21 @@ fn long_history_opens_without_reads_and_faults_only_touched_pages() {
             0,
             "open reads nothing"
         );
-        // Heads and the tail answer inline.
+        // Heads and the tail answer inline for position, commit, and version.
         assert_eq!(
             reader.by_commit(entry(7).commit.commit_id).unwrap(),
             Some(entry(7))
         );
         assert_eq!(
+            reader.by_version(entry(7).commit.version_id).unwrap(),
+            Some(entry(7))
+        );
+        assert_eq!(
             reader.at_position(PatchStreamPosition(count)).unwrap(),
+            Some(entry(count))
+        );
+        assert_eq!(
+            reader.by_version(entry(count).commit.version_id).unwrap(),
             Some(entry(count))
         );
         assert_eq!(reader.observation().faults, 0);
@@ -227,11 +235,54 @@ fn damaged_pages_and_descriptors_refuse_without_panicking() {
         Cause::Damaged
     );
     assert_eq!(members.reads.load(Ordering::SeqCst), reads);
-    // A page whose rows disagree with the descriptor is an integrity refusal.
+    // A page whose rows disagree with the descriptor is an integrity refusal
+    // and must not remain cached in the working-set pool.
     let mut shifted = index.clone();
     shifted.pages[0].commits[1] += 1;
     let shifted = ColdCommitIndex::open(Arc::new(shifted), members.clone());
     assert_eq!(shifted.page(0).unwrap_err(), Cause::IntegrityMismatch);
+    assert_eq!(shifted.observation().resident_pages, 0);
+    // Tampered head at tail.position and duplicate/zero version/commit ids refuse.
+    let mut tampered_head = index.clone();
+    tampered_head.heads[0].payload_digest[0] ^= 0xff;
+    assert!(tampered_head.validate().is_err());
+    let mut zero_version = index.clone();
+    zero_version.pages[0].versions[0] = 0;
+    assert!(zero_version.validate().is_err());
+    let mut dup_rows: Vec<_> = (1..=4).map(entry).collect();
+    dup_rows[2].commit.commit_id = dup_rows[0].commit.commit_id;
+    let dup_page = encode_member(
+        ChunkMemberKind::CommitIndexPage,
+        &page::CommitIndexPage {
+            first: 1,
+            rows: dup_rows,
+        },
+        COMMIT_PAGE_BYTES,
+    )
+    .unwrap();
+    let dup_index = CheckpointCommitIndex {
+        count: 4,
+        tail: Some(entry(4)),
+        heads: Vec::new(),
+        pages: vec![CommitIndexPageRef {
+            first: 1,
+            entries: 4,
+            commits: [11, 14],
+            versions: [1, 4],
+            member: dup_page.locator,
+        }],
+    };
+    members
+        .bytes
+        .lock()
+        .unwrap()
+        .insert(dup_page.locator, dup_page.bytes);
+    assert_eq!(
+        ColdCommitIndex::open(Arc::new(dup_index), members.clone())
+            .page(0)
+            .unwrap_err(),
+        Cause::Damaged
+    );
     // Unsorted rows and an unknown wire field are damaged frames.
     let mut rows: Vec<_> = (1..=4).map(entry).collect();
     rows.swap(1, 2);

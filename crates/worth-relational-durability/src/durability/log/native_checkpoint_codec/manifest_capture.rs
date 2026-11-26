@@ -48,6 +48,7 @@ pub(crate) struct CapturedManifest<M = RelationalCheckpointManifestDraft> {
     /// unchanged prefix this capture carries instead of re-reading it.
     pub(crate) prior_commits: Option<Arc<worth_relational_branch::internal_port::history::commit::paged_index::reader::ColdCommitIndex>>,
     pub(crate) prior_canonical: Option<crate::durability::checkpoint_history::inventory::CanonicalCheckpointMembers>,
+    pub(crate) prior_source: Option<Arc<dyn worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource>>,
 }
 
 impl CapturedManifest {
@@ -162,6 +163,7 @@ impl CapturedManifest {
             history_members: Arc::default(),
             commit_rows: commits,
             prior_canonical: prior.map(|prior| prior.manifest.canonical_members.clone()),
+            prior_source: prior.map(|prior| prior.source.clone()),
             prior_commits,
         })
     }

@@ -33,7 +33,8 @@ pub fn prepare_replay_context(
 ) -> Result<bool, RelationalRecoveryStop> {
     let had_checkpoint_artifact = inputs
         .history
-        .has_recorded_commit_envelope(envelope.commit.commit_id);
+        .try_has_commit(envelope.commit.commit_id)
+        .map_err(|cause| commit_index_unavailable(cause))?;
     validate_parent_closure(
         inputs.history,
         envelope,
@@ -122,36 +123,41 @@ fn validate_parent_closure(
     envelope: &CanonicalCommitEnvelope,
     available_commit_ids: &BTreeSet<contracts::history::data::coordinates::CommitId>,
     record_parent_validation: impl FnOnce(usize, usize),
-) -> Result<(), DurabilityError> {
+) -> Result<(), RelationalRecoveryStop> {
     let authoritative_parent_list = envelope.commit.ordered_parents();
     record_parent_validation(1, authoritative_parent_list.len());
-    if authoritative_parent_list
-        .as_slice()
-        .iter()
-        .any(|parent| !available_commit_ids.contains(parent) && !history.has_commit(*parent))
-    {
-        return Err(DurabilityError::new(
-            RecoveryFailureClass::MissingAuthoritativeParentClosure,
-            format!(
-                "missing authoritative ordered parent closure for commit {}",
-                envelope.commit.commit_id.0
-            ),
-        )
-        .with_history_drift_class(HistoryDriftClass::CanonicalHistoryDrift));
-    }
-    if authoritative_parent_list
-        .as_slice()
-        .iter()
-        .any(|parent| !history.has_recorded_commit_envelope(*parent))
-    {
-        return Err(DurabilityError::new(
-            RecoveryFailureClass::MissingAuthoritativeParentClosure,
-            format!(
-                "authoritative parent commit not recoverable before child {}",
-                envelope.commit.commit_id.0
-            ),
-        )
-        .with_history_drift_class(HistoryDriftClass::CanonicalHistoryDrift));
+    for parent in authoritative_parent_list.as_slice() {
+        let in_history = history
+            .try_has_commit(*parent)
+            .map_err(commit_index_unavailable)?;
+        if !available_commit_ids.contains(parent) && !in_history {
+            return Err(DurabilityError::new(
+                RecoveryFailureClass::MissingAuthoritativeParentClosure,
+                format!(
+                    "missing authoritative ordered parent closure for commit {}",
+                    envelope.commit.commit_id.0
+                ),
+            )
+            .with_history_drift_class(HistoryDriftClass::CanonicalHistoryDrift)
+            .into());
+        }
+        if !history.has_recorded_commit_envelope(*parent) && !in_history {
+            return Err(DurabilityError::new(
+                RecoveryFailureClass::MissingAuthoritativeParentClosure,
+                format!(
+                    "authoritative parent commit not recoverable before child {}",
+                    envelope.commit.commit_id.0
+                ),
+            )
+            .with_history_drift_class(HistoryDriftClass::CanonicalHistoryDrift)
+            .into());
+        }
     }
     Ok(())
+}
+
+fn commit_index_unavailable(
+    cause: contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+) -> RelationalRecoveryStop {
+    crate::durability::data::commit_index_access::stop(0, cause)
 }

@@ -36,7 +36,8 @@ fn concurrent_replay_references_release_each_original_reference_once() {
         )
         .unwrap();
     let committed = transaction.commit(execution, &runtime).unwrap();
-    let entities = worth_testkit_relational::aspect_storage::publications::changed_entities(&committed);
+    let entities =
+        worth_testkit_relational::aspect_storage::publications::changed_entities(&committed);
     release_test_commit_snapshot(&runtime, &committed);
     let version = committed.version_id;
     let start = std::sync::Barrier::new(8);

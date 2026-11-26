@@ -86,7 +86,11 @@ impl CheckpointCommitIndex {
 
     /// The inline entry at `position` (the tail or a head), if any.
     pub fn inline_at(&self, position: u64) -> Option<&RelationalCommitIndexEntry> {
-        if let Some(tail) = self.tail.as_ref().filter(|tail| tail.position.0 == position) {
+        if let Some(tail) = self
+            .tail
+            .as_ref()
+            .filter(|tail| tail.position.0 == position)
+        {
             return Some(tail);
         }
         self.heads
@@ -118,6 +122,7 @@ impl CheckpointCommitIndex {
                 || page.entries > COMMIT_PAGE_ENTRIES
                 || page.commits[0] == 0
                 || page.commits[0] > page.commits[1]
+                || page.versions[0] == 0
                 || page.versions[0] > page.versions[1]
                 || page.member.length == 0
                 || page.member.length > COMMIT_PAGE_BYTES as u64
@@ -140,11 +145,22 @@ impl CheckpointCommitIndex {
             _ => return Err("commit index tail is not its last entry"),
         }
         let mut prior: Option<&RelationalCommitIndexEntry> = None;
+        let mut head_commits = std::collections::BTreeSet::new();
+        let mut head_versions = std::collections::BTreeSet::new();
         for head in &self.heads {
-            if prior.is_some_and(|prior| {
-                prior.position >= head.position || prior.commit.commit_id == head.commit.commit_id
-            }) {
+            if prior.is_some_and(|prior| prior.position >= head.position)
+                || !head_commits.insert(head.commit.commit_id)
+                || !head_versions.insert(head.commit.version_id)
+            {
                 return Err("commit index heads are unordered or repeated");
+            }
+            if let Some(tail) = &self.tail
+                && (head.position == tail.position
+                    || head.commit.commit_id == tail.commit.commit_id
+                    || head.commit.version_id == tail.commit.version_id)
+                && head != tail
+            {
+                return Err("commit index head disagrees with tail entry");
             }
             self.within_page(head)?;
             prior = Some(head);

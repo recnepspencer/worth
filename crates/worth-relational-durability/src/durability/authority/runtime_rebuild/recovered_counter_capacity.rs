@@ -81,7 +81,17 @@ pub fn refresh_checkpoint_counters(
     checkpoint: &RelationalCheckpointManifestSelection,
 ) -> Result<(), DurabilityError> {
     // Both tiers answer their maxima from descriptors: no commit page is read.
-    let (max_commit, max_version) = history.max_commit_and_version();
+    let (max_commit, max_version) = history.try_max_commit_and_version().map_err(|cause| {
+        DurabilityError::from(
+            contracts::storage::data::storage_unavailable::RelationalStorageUnavailable {
+                subject:
+                    contracts::storage::data::storage_unavailable::RelationalStorageSubject::Envelope(
+                        contracts::publication::patch::data::patch_position::PatchStreamPosition(0),
+                    ),
+                cause,
+            },
+        )
+    })?;
     let next_commit_id = checked_checkpoint_successor(max_commit, "commit id")?;
     let next_version_id = checked_checkpoint_successor(max_version, "version id")?;
     let directory = checkpoint.snapshot();

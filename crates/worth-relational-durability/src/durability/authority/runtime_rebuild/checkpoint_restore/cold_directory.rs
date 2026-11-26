@@ -34,6 +34,7 @@ pub fn prepare(
     work: &mut CheckpointRestoreWork,
     working_set: Option<&Arc<worth_relational_storage::internal_port::storage::residency::working_set::WorkingSetAccountant>>,
     selection: &crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection,
+    original_schemas: Option<Arc<super::super::original_schemas::OriginalSchemaGraph>>,
 ) -> Result<PreparedColdDirectory, RelationalRecoveryStop> {
     let mut history = source_history
         .detached_owner_snapshot()
@@ -95,8 +96,10 @@ pub fn prepare(
             selection.clone(),
             directory,
             working_set.cloned(),
+            original_schemas,
         )),
     );
+    selection.register_cold_catalog(&cold);
     let mut catalog =
         worth_relational_branch::internal_port::history::commit::catalog::RelationalCommitCatalog::default();
     let mut head_cells = BTreeMap::new();

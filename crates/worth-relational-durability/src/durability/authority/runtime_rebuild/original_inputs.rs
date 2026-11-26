@@ -165,11 +165,16 @@ pub fn restore_catalog(
     plan: &RecoveryPlan,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), RelationalRecoveryStop> {
-    let artifacts = history
-        .commit_artifacts_for_request(request)
-        .map_err(|cause| {
-            contracts::durability::data::native_checkpoint_capture_denial::array_capture_stop(cause)
-        })?;
+    // G7: when a cold commit catalog is installed, cold commits resolve their
+    // OriginalCanonicalInputs lazily inside SelectedCommitSource::artifact; we
+    // attach inputs eagerly only to resident/tail commits without faulting pages.
+    let artifacts = if history.cold_commit_catalog().is_some() {
+        history.with_ledger_mut(|ledger| ledger.commit_catalog.snapshot())
+    } else {
+        history
+            .try_commit_artifacts()
+            .map_err(|cause| crate::durability::data::commit_index_access::stop(0, cause))?
+    };
     let mut catalog = worth_relational_branch::internal_port::history::commit::catalog::RelationalCommitCatalog::default();
     for artifact in artifacts.iter() {
         contracts::execution::request_custody::check_request(request)

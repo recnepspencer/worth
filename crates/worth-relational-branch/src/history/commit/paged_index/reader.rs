@@ -67,9 +67,16 @@ fn bounds(pages: impl Iterator<Item = [u64; 2]>) -> (Vec<u64>, Vec<u64>) {
 
 impl ColdCommitIndex {
     /// Opens `index` over `source` without reading any page.
-    pub fn open(index: Arc<CheckpointCommitIndex>, source: Arc<dyn RelationalDurableColdSource>) -> Self {
+    pub fn open(
+        index: Arc<CheckpointCommitIndex>,
+        source: Arc<dyn RelationalDurableColdSource>,
+    ) -> Self {
         let roster = index.page_members().collect();
-        Self::confined(index, ColdMemberSource::new(source, COMMIT_PAGE_BYTES as u64), roster)
+        Self::confined(
+            index,
+            ColdMemberSource::new(source, COMMIT_PAGE_BYTES as u64),
+            roster,
+        )
     }
 
     /// Opens `index` with reads confined to `roster`, the page members its
@@ -128,9 +135,10 @@ impl ColdCommitIndex {
     /// Page `ordinal`, faulted on a miss and checked against its descriptor.
     pub fn page(&self, ordinal: usize) -> Result<Arc<ResidentCommitPage>, Cause> {
         let reference = self.index.pages.get(ordinal).ok_or(Cause::Damaged)?;
-        let page = self.cache().page(&self.source, reference.member)?;
-        page.admit(reference, &self.index)?;
-        Ok(page)
+        self.cache()
+            .page_checked(&self.source, reference.member, |page| {
+                page.admit(reference, &self.index)
+            })
     }
 
     pub fn at_position(&self, position: PatchStreamPosition) -> Result<Option<Entry>, Cause> {
@@ -152,15 +160,34 @@ impl ColdCommitIndex {
         {
             return Ok(Some(inline.clone()));
         }
-        self.find(commit.0, &self.commit_bounds, |page| page.commits, |row| {
-            row.commit.commit_id == commit
-        })
+        self.find(
+            commit.0,
+            &self.commit_bounds,
+            |page| page.commits,
+            |row| row.commit.commit_id == commit,
+        )
     }
 
     pub fn by_version(&self, version: VersionId) -> Result<Option<Entry>, Cause> {
-        self.find(version.0, &self.version_bounds, |page| page.versions, |row| {
-            row.commit.version_id == version
-        })
+        if let Some(inline) = self
+            .index
+            .heads
+            .iter()
+            .find(|entry| entry.commit.version_id == version)
+            .or(self
+                .index
+                .tail
+                .as_ref()
+                .filter(|tail| tail.commit.version_id == version))
+        {
+            return Ok(Some(inline.clone()));
+        }
+        self.find(
+            version.0,
+            &self.version_bounds,
+            |page| page.versions,
+            |row| row.commit.version_id == version,
+        )
     }
 
     fn find(
@@ -177,7 +204,13 @@ impl ColdCommitIndex {
             if key < min || key > max {
                 continue;
             }
-            if let Some(row) = self.page(ordinal)?.page.rows.iter().find(|row| matches(row)) {
+            if let Some(row) = self
+                .page(ordinal)?
+                .page
+                .rows
+                .iter()
+                .find(|row| matches(row))
+            {
                 return Ok(Some(row.clone()));
             }
         }

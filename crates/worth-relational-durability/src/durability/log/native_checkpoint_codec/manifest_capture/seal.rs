@@ -60,6 +60,7 @@ impl CapturedManifest {
             commit_rows: self.commit_rows,
             prior_commits: self.prior_commits,
             prior_canonical: self.prior_canonical,
+            prior_source: self.prior_source,
         }
     }
 }

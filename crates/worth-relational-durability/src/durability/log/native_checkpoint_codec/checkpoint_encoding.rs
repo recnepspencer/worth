@@ -17,8 +17,10 @@ pub fn encode_checkpoint_members(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     checkpoint: &DurableCheckpoint,
     policy: ExecutionAllocationPolicy<'_, '_>,
-) -> Result<crate::durability::data::RelationalNativeCheckpoint, RelationalNativeCheckpointCaptureDenial>
-{
+) -> Result<
+    crate::durability::data::RelationalNativeCheckpoint,
+    RelationalNativeCheckpointCaptureDenial,
+> {
     policy.check_live()?;
     let mut answer = None;
     let handoff = execution.run_native_with_checkpoint(|stage| {
@@ -136,7 +138,7 @@ pub(crate) fn encode_captured(
         Vec<worth_relational_storage::internal_port::storage::residency::checkpoint_capture::RelationalCheckpointRegionPublication>,
     ),
     RelationalNativeCheckpointCaptureDenial,
-> {
+>{
     let ordinary_members = captured.members.len();
     let canonical = captured.canonical_payloads.take();
     let count = ordinary_members

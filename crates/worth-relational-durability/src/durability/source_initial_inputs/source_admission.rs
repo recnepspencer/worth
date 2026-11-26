@@ -96,27 +96,10 @@ pub(crate) fn readmit(
     {
         return Err(Refusal::Malformed);
     }
-    // Original-input admission replays the whole normalized history, so it
-    // reads every commit page once and keeps them for the chronology fold.
-    let index = directory.commit_index();
-    let pages = (0..index.descriptor().pages.len())
-        .map(|ordinal| {
-            index.page(ordinal).map_err(|cause| {
-                Refusal::Native(crate::durability::data::commit_index_access::stop(0, cause))
-            })
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    let rows = pages
-        .iter()
-        .flat_map(|page| page.page.rows.iter())
-        .collect::<Vec<_>>();
     let commitments = super::input_commitments::OriginalInputCommitments::capture(
         &checkpoint.branch_root_schema_images,
         request,
     )?;
-    for (record, index) in normalized.canonical.iter().zip(rows.iter().copied()) {
-        commitments.require_record(record, index, request)?;
-    }
     for transition in &normalized.transitions {
         if !commitments.has_schema(transition.schema) {
             return Err(Refusal::Malformed);
@@ -131,11 +114,14 @@ pub(crate) fn readmit(
             return Err(Refusal::Malformed);
         }
     }
+    // Stream commit pages one page at a time (O(1) resident pages) so
+    // original-input admission never pins the whole commit index in RAM.
     super::chronology::validate(
         &covered,
         &normalized,
         &directory.manifest,
-        &rows,
+        directory.commit_index(),
+        &commitments,
         &checkpoint.branch_root_schema_images,
         world_selection
             .as_deref()

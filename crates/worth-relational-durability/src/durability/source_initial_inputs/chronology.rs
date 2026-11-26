@@ -14,16 +14,59 @@ pub mod transitions;
 pub mod world_sources;
 use world_sources::WorldSources;
 
-struct Fold<'a> {
-    current: ExecutionOrderedMap<&'a BranchId, Axes<'a>>,
-    observations: ExecutionOrderedMap<ObservationKey<'a>, Axes<'a>>,
-    canonical: ExecutionOrderedMap<contracts::history::data::coordinates::CommitId, Axes<'a>>,
+struct Fold {
+    current: ExecutionOrderedMap<BranchId, Axes>,
+    observations: ExecutionOrderedMap<ObservationKey, Axes>,
+    canonical: ExecutionOrderedMap<contracts::history::data::coordinates::CommitId, Axes>,
+}
+struct CommitPageStream<'a> {
+    index: &'a worth_relational_branch::internal_port::history::commit::paged_index::reader::ColdCommitIndex,
+    page_ordinal: usize,
+    row_offset: usize,
+    page: Option<std::sync::Arc<worth_relational_branch::internal_port::history::commit::paged_index::page::ResidentCommitPage>>,
+}
+impl<'a> CommitPageStream<'a> {
+    fn new(
+        index: &'a worth_relational_branch::internal_port::history::commit::paged_index::reader::ColdCommitIndex,
+    ) -> Self {
+        Self {
+            index,
+            page_ordinal: 0,
+            row_offset: 0,
+            page: None,
+        }
+    }
+    fn next(
+        &mut self,
+    ) -> Result<Option<std::sync::Arc<worth_relational_branch::internal_port::history::commit::index_entry::RelationalCommitIndexEntry>>, Refusal>
+{
+        loop {
+            if let Some(page) = &self.page {
+                if let Some(row) = page.page.rows.get(self.row_offset) {
+                    self.row_offset += 1;
+                    return Ok(Some(std::sync::Arc::new(row.clone())));
+                }
+                // Drop the finished page before loading the next so at most one
+                // commit-index page is borrowed at any moment.
+                self.page = None;
+                self.page_ordinal += 1;
+                self.row_offset = 0;
+            }
+            if self.page_ordinal >= self.index.descriptor().pages.len() {
+                return Ok(None);
+            }
+            self.page = Some(self.index.page(self.page_ordinal).map_err(|cause| {
+                Refusal::Native(crate::durability::data::commit_index_access::stop(0, cause))
+            })?);
+        }
+    }
 }
 pub(super) fn validate(
     initial: &InitialInputsImage,
     normalized: &NormalizedOriginalInputs,
     manifest: &RelationalCheckpointManifest,
-    commits: &[&worth_relational_branch::internal_port::history::commit::index_entry::RelationalCommitIndexEntry],
+    commit_index: &worth_relational_branch::internal_port::history::commit::paged_index::reader::ColdCommitIndex,
+    commitments: &super::input_commitments::OriginalInputCommitments,
     schemas: &[crate::durability::data::DurableBranchRootSchemaImage],
     world: Option<&crate::durability::home_world_catalog::RelationalWorldSourceCatalog>,
     request: &ExecutionRequest<'_, '_>,
@@ -38,6 +81,7 @@ pub(super) fn validate(
     };
     fold.record(&initial.main, Axes::empty(birth), request)?;
     let mut sources = WorldSources::prepare(world, schemas, request)?;
+    let mut commits = CommitPageStream::new(commit_index);
     let mut transition = 0usize;
     let mut installed = false;
     for position in 0..=normalized.canonical.len() {
@@ -54,9 +98,10 @@ pub(super) fn validate(
         let Some(record) = normalized.canonical.get(position) else {
             break;
         };
-        let index = *commits.get(position).ok_or(Refusal::Malformed)?;
-        let branch = &index.commit.branch_id;
-        let mut state = sources.before_canonical(&mut fold, index, request)?;
+        let index = commits.next()?.ok_or(Refusal::Malformed)?;
+        commitments.require_record(record, &index, request)?;
+        let branch = index.commit.branch_id.clone();
+        let mut state = sources.before_canonical(&mut fold, &index, request)?;
         let before = state.clone();
         if state.removed
             || state.lifecycle != Lifecycle::Live
@@ -69,15 +114,15 @@ pub(super) fn validate(
             .checked_advance()
             .map_err(|_| Refusal::Malformed)?;
         state.truth = state.truth.checked_advance().ok_or(Refusal::Malformed)?;
-        state.commit = Some(index);
+        state.commit = Some(index.clone());
         state.schema = record.result_schema;
-        sources.retain(index, before, state.clone(), request)?;
+        sources.retain(&index, before, state.clone(), request)?;
         if world.is_some() {
             fold.canonical
                 .insert_cloned_native_for_request(&index.commit.commit_id, &state, *request)
                 .map_err(map)?;
         }
-        fold.record(branch, state, request)?;
+        fold.record(&branch, state, request)?;
     }
     if transition != normalized.transitions.len() || installed != (initial.entries.len() == 2) {
         return Err(Refusal::Malformed);
@@ -96,7 +141,7 @@ pub(super) fn validate(
     for (cell, lifecycle) in manifest.branch_cells.iter().zip(&manifest.branch_lifecycle) {
         let state = fold
             .current
-            .get(&&cell.branch_id)
+            .get(&cell.branch_id)
             .ok_or(Refusal::Malformed)?;
         if state.removed
             || state.generation != cell.observation.generation()
@@ -116,7 +161,7 @@ pub(super) fn validate(
             .count()
         || manifest.retired_branch_names.iter().any(|branch| {
             fold.current
-                .get(&branch)
+                .get(branch)
                 .is_none_or(|state| state.lifecycle != Lifecycle::Deleting)
         })
     {
@@ -132,11 +177,11 @@ pub(super) fn validate(
     }
     Ok(())
 }
-impl<'a> Fold<'a> {
+impl Fold {
     fn record(
         &mut self,
-        branch: &'a BranchId,
-        state: Axes<'a>,
+        branch: &BranchId,
+        state: Axes,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Refusal> {
         self.observations
@@ -147,12 +192,12 @@ impl<'a> Fold<'a> {
             )
             .map_err(map)?;
         self.current
-            .insert_cloned_native_for_request(&branch, &state, *request)
+            .insert_cloned_native_for_request(branch, &state, *request)
             .map_err(map)
     }
     fn install(
         &mut self,
-        initial: &'a InitialInputsImage,
+        initial: &InitialInputsImage,
         position: usize,
         transition: usize,
         installed: &mut bool,
@@ -169,7 +214,7 @@ impl<'a> Fold<'a> {
         if *installed || follows_transition.0 != transition as u64 {
             return Ok(());
         }
-        let state = self.current.get(&&initial.main).ok_or(Refusal::Malformed)?;
+        let state = self.current.get(&initial.main).ok_or(Refusal::Malformed)?;
         if position != 0 || state.removed || !state.matches_empty(before) {
             return Err(Refusal::Malformed);
         }

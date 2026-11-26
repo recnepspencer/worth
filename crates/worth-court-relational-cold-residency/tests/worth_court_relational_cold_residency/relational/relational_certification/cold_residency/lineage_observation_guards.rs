@@ -171,10 +171,22 @@ fn lineage_point_guard_preserves_a_cold_mirror_head_failure() {
             )
     };
     assert_eq!(read(), Err(expected(&fixture)));
-    assert_eq!(fixture.runtime.observe_lineage_residency().resident_node_count, 0);
+    assert_eq!(
+        fixture
+            .runtime
+            .observe_lineage_residency()
+            .resident_node_count,
+        0
+    );
     let reads = fixture.source.reads.load(Ordering::Relaxed);
     *fixture.source.failed_member.lock().unwrap() = None;
     assert_eq!(read(), Err(expected(&fixture)));
     assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
-    assert_eq!(fixture.runtime.observe_lineage_residency().resident_node_count, 0);
+    assert_eq!(
+        fixture
+            .runtime
+            .observe_lineage_residency()
+            .resident_node_count,
+        0
+    );
 }

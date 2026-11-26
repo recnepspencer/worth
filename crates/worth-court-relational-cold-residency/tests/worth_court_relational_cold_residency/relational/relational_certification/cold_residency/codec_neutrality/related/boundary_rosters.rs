@@ -68,7 +68,11 @@ fn refuse_missing_and_foreign() {
         });
         let (mut cold, receipt) = installed_references(1);
         cold.durability_recovery()
-            .restore_native_checkpoint(execution, &untrusted, worth_testkit_relational::cold_recovery::members_source(&untrusted))
+            .restore_native_checkpoint(
+                execution,
+                &untrusted,
+                worth_testkit_relational::cold_recovery::members_source(&untrusted),
+            )
             .unwrap();
         let receipt = cold
             .readmit_recovered_initial_schema_installation(receipt)

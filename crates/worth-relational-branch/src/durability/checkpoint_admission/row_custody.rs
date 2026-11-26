@@ -3,8 +3,9 @@ use super::admitted_commit::CheckpointAdmittedCommit;
 use super::refusal::RelationalCheckpointAdmissionRefusal as Refusal;
 use crate::durability::medium::RelationalDurableColdSource;
 use crate::history::{commit::RelationalCommitIndexEntry, data::CommitId};
-use std::sync::{Arc, OnceLock, Weak};
-use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionRequest};
+use std::collections::BTreeMap;
+use std::sync::{Arc, Mutex, Weak};
+use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 /// Lives exactly as long as the admitted serving directory.
 #[derive(Debug)]
@@ -31,13 +32,15 @@ impl SelectedCheckpointSource {
 #[derive(Debug)]
 pub struct AdmissionCustody {
     source: Weak<SelectedCheckpointSource>,
-    rows: OnceLock<ExecutionOrderedMap<CommitId, CheckpointAdmittedCommit>>,
+    count: usize,
+    rows: Mutex<BTreeMap<CommitId, CheckpointAdmittedCommit>>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 
 impl AdmissionCustody {
     pub fn retain(
         source: &Arc<SelectedCheckpointSource>,
+        count: usize,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Arc<Self>, Refusal> {
         let memory = request
@@ -45,23 +48,26 @@ impl AdmissionCustody {
             .map_err(|cause| Refusal::Request(cause.into()))?;
         Ok(Arc::new(Self {
             source: Arc::downgrade(source),
-            rows: OnceLock::new(),
+            count,
+            rows: Mutex::new(BTreeMap::new()),
             _memory: memory,
         }))
     }
 
-    pub fn install_rows(
+    pub fn cache_row(
         &self,
-        rows: ExecutionOrderedMap<CommitId, CheckpointAdmittedCommit>,
-    ) -> Result<(), Refusal> {
-        self.rows.set(rows).map_err(|_| Refusal::OwnerUnavailable)
+        commit_id: CommitId,
+        row: CheckpointAdmittedCommit,
+    ) -> CheckpointAdmittedCommit {
+        let mut rows = self
+            .rows
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        rows.entry(commit_id).or_insert(row).clone()
     }
 
     pub fn count(&self) -> Result<usize, Refusal> {
-        self.rows
-            .get()
-            .map(|rows| rows.len())
-            .ok_or(Refusal::OwnerUnavailable)
+        Ok(self.count)
     }
 
     pub fn belongs_to(&self, selection: &Arc<SelectedCheckpointSource>) -> bool {
@@ -74,21 +80,18 @@ impl AdmissionCustody {
             .is_some_and(|selection| Weak::ptr_eq(&selection.source, &Arc::downgrade(source)))
     }
 
-    pub fn commit(
+    pub fn cached_commit(
         &self,
         entry: &RelationalCommitIndexEntry,
-        covered: crate::publication::patch::data::PatchStreamPosition,
     ) -> Result<Option<CheckpointAdmittedCommit>, Refusal> {
-        let row = self
+        let rows = self
             .rows
-            .get()
-            .ok_or(Refusal::OwnerUnavailable)?
-            .get(&entry.commit.commit_id);
-        match row {
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        match rows.get(&entry.commit.commit_id) {
             Some(row) if row.index() == entry => Ok(Some(row.clone())),
             Some(_) => Err(Refusal::InvalidProjectedMeaning),
-            None if entry.position > covered => Ok(None),
-            None => Err(Refusal::InvalidProjectedMeaning),
+            None => Ok(None),
         }
     }
 }

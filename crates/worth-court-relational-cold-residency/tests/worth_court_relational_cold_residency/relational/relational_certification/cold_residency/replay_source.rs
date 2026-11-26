@@ -110,14 +110,19 @@ pub(super) fn reopened(request: &ExecutionRequest<'_, '_>) -> PinFixture {
         .is_some());
     assert_eq!(
         runtime
-            .observe_branch_region_residency(&BranchId("pin-retained-source".into()), entity.partition_id)
+            .observe_branch_region_residency(
+                &BranchId("pin-retained-source".into()),
+                entity.partition_id
+            )
             .unwrap()
             .full,
         RelationalRegionProbeStatus::Resident,
         "historical branch root is Full after demand"
     );
     assert_eq!(
-        runtime.observe_mirror_region_residency(entity.partition_id).full,
+        runtime
+            .observe_mirror_region_residency(entity.partition_id)
+            .full,
         RelationalRegionProbeStatus::Cold,
         "successful old-root admission leaves the distinct mirror cold"
     );

@@ -123,6 +123,7 @@ mod checkpoint_wire_fixture;
 mod native_checkpoint_directory;
 
 mod bounded_commit_index;
+mod bounded_commit_index_closeout;
 mod working_set_eviction;
 mod working_set_fixture;
 mod working_set_stress;

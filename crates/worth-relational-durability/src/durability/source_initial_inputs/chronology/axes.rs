@@ -9,15 +9,15 @@ use worth_relational_branch::internal_port::history::commit::index_entry::Relati
 use worth_relational_contracts::internal_port as contracts;
 
 #[derive(Clone)]
-pub(super) struct Axes<'a> {
+pub(super) struct Axes {
     pub(super) generation: Generation,
     pub(super) truth: RelationalBranchVersion,
     pub(super) lifecycle: Lifecycle,
-    pub(super) commit: Option<&'a RelationalCommitIndexEntry>,
+    pub(super) commit: Option<std::sync::Arc<RelationalCommitIndexEntry>>,
     pub(super) schema: [u8; 32],
     pub(super) removed: bool,
 }
-impl Axes<'_> {
+impl Axes {
     pub(super) fn empty(original: &super::super::recorded::RecordedEmptySchemaObservation) -> Self {
         Self {
             generation: original.generation,
@@ -39,7 +39,7 @@ impl Axes<'_> {
             && self.schema == original.schema_carrier
     }
     pub(super) fn matches_basis(&self, target: &RelationalBranchTarget) -> bool {
-        self.commit.is_some_and(|index| {
+        self.commit.as_deref().is_some_and(|index| {
             index.commit.commit_id.0 == target.selected_commit_id()
                 && index.commit.version_id.0 == target.version_id()
                 && &index.root == target.roots()
@@ -69,13 +69,13 @@ pub(super) fn posture(lifecycle: Lifecycle) -> u8 {
     }
 }
 
-impl Axes<'_> {
+impl Axes {
     pub(super) fn same_state(&self, other: &Self) -> bool {
         self.generation == other.generation
             && self.truth == other.truth
             && self.lifecycle == other.lifecycle
-            && self.commit.map(|row| row.commit.commit_id)
-                == other.commit.map(|row| row.commit.commit_id)
+            && self.commit.as_deref().map(|row| row.commit.commit_id)
+                == other.commit.as_deref().map(|row| row.commit.commit_id)
             && self.schema == other.schema
             && self.removed == other.removed
     }
@@ -117,51 +117,51 @@ impl Axes<'_> {
             } => {
                 self.generation == *prior_generation
                     && self.truth == *prior_truth_version
-                    && self.commit.map(|row| row.commit.commit_id) == *head_commit
+                    && self.commit.as_deref().map(|row| row.commit.commit_id) == *head_commit
             }
             Transition::RetainedFork { .. } => false,
         }
     }
 }
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub(super) struct ObservationKey<'a> {
-    branch: &'a BranchId,
+pub(super) struct ObservationKey {
+    branch: BranchId,
     generation: u64,
     truth: u64,
     posture: u8,
     commit: Option<contracts::history::data::coordinates::CommitId>,
 }
-impl<'a> ObservationKey<'a> {
+impl ObservationKey {
     /// The key of a live committed observation at exact axes.
     pub(super) fn live(
-        branch: &'a BranchId,
+        branch: &BranchId,
         generation: Generation,
         truth: RelationalBranchVersion,
         commit: contracts::history::data::coordinates::CommitId,
     ) -> Self {
         Self {
-            branch,
+            branch: branch.clone(),
             generation: generation.get(),
             truth: truth.as_u64(),
             posture: posture(Lifecycle::Live),
             commit: Some(commit),
         }
     }
-    pub(super) fn of_axes(branch: &'a BranchId, axes: &Axes<'_>) -> Self {
+    pub(super) fn of_axes(branch: &BranchId, axes: &Axes) -> Self {
         Self {
-            branch,
+            branch: branch.clone(),
             generation: axes.generation.get(),
             truth: axes.truth.as_u64(),
             posture: posture(axes.lifecycle),
-            commit: axes.commit.map(|row| row.commit.commit_id),
+            commit: axes.commit.as_deref().map(|row| row.commit.commit_id),
         }
     }
     pub(super) fn of_descriptor(
-        descriptor: &'a worth_relational_branch::internal_port::branch::basis_descriptor::RelationalBranchBasisDescriptor,
+        descriptor: &worth_relational_branch::internal_port::branch::basis_descriptor::RelationalBranchBasisDescriptor,
     ) -> Self {
         use worth_relational_branch::internal_port::branch::basis_descriptor::RelationalBranchBasisPosture;
         Self {
-            branch: descriptor.branch_id(),
+            branch: descriptor.branch_id().clone(),
             generation: descriptor.reference().generation().get(),
             truth: descriptor.truth_version().as_u64(),
             posture: match descriptor.posture() {

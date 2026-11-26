@@ -263,13 +263,16 @@ impl AcknowledgingCheckpoint {
         if !self.directory_applied {
             context.poll().map_err(Denial::Stopped)?;
             if let Some(publication) = self.capture.manifest_publication() {
-                let prior = publication.acknowledge_directory(
-                    self.directory
-                        .as_ref()
-                        .ok_or(Denial::CaptureNotBound)?
-                        .clone(),
-                )?;
+                let directory = self
+                    .directory
+                    .as_ref()
+                    .ok_or(Denial::CaptureNotBound)?
+                    .clone();
+                let prior = publication.acknowledge_directory(directory.clone())?;
                 self.retired.displaced_selection(prior);
+                // Rebind any cold commits faulted between capture and ACK now
+                // that `directory` is selected and `prior` is held in `retired`.
+                publication.rebind_cold_catalog(&directory)?;
             }
             self.directory_applied = true;
         }

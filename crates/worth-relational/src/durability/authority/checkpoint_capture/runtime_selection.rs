@@ -34,9 +34,19 @@ pub(in super::super) fn capture(
     let envelopes = selection.positioned_snapshot();
     let selected_directory = runtime.durability.checkpoint_selection().snapshot();
     let artifacts = match whole {
-        true => runtime.history.commit_artifacts(),
-        false => runtime.history.resident_commit_artifacts(),
-    };
+        true => runtime.history.try_commit_artifacts(),
+        false => runtime.history.try_resident_commit_artifacts(),
+    }
+    .map_err(|cause| {
+        DurabilityError::from(
+            worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailable {
+                subject: worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageSubject::Envelope(
+                    crate::publication::patch::data::PatchStreamPosition(0),
+                ),
+                cause,
+            },
+        )
+    })?;
     let lineage_basis = super::super::checkpoint_lineage_basis::capture(
         &artifacts,
         selected_directory

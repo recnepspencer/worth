@@ -17,8 +17,56 @@ use super::{HistoryLedger, HistorySubsystem};
 /// enough to copy. No accessor lends a borrow into the lock, so no caller can
 /// hold the ledger across storage, durability, or projection work.
 impl HistorySubsystem {
+    pub fn try_commit_artifact(
+        &self,
+        commit_id: CommitId,
+    ) -> Result<
+        Option<Arc<RelationalCommitArtifact>>,
+        worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+    >{
+        self.ledger.read().try_catalog_artifact(commit_id)
+    }
+
     pub fn commit_artifact(&self, commit_id: CommitId) -> Option<Arc<RelationalCommitArtifact>> {
         self.ledger.read().catalog_artifact(commit_id)
+    }
+
+    pub fn commit_receipt(
+        &self,
+        commit_id: CommitId,
+    ) -> Option<crate::history::data::RelationalCommitReceipt> {
+        self.ledger
+            .read()
+            .try_catalog_receipt(commit_id)
+            .ok()
+            .flatten()
+    }
+
+    pub fn commit_identity(&self, commit_id: CommitId) -> Option<RelationalCommitIdentity> {
+        self.ledger
+            .read()
+            .try_catalog_identity(commit_id)
+            .ok()
+            .flatten()
+    }
+
+    pub fn commit_receipt_for_version(
+        &self,
+        version_id: VersionId,
+    ) -> Option<crate::history::data::RelationalCommitReceipt> {
+        self.ledger
+            .read()
+            .try_catalog_receipt_for_version(version_id)
+            .ok()
+            .flatten()
+    }
+
+    pub fn latest_commit_receipt(&self) -> Option<crate::history::data::RelationalCommitReceipt> {
+        self.ledger
+            .read()
+            .try_latest_catalog_receipt()
+            .ok()
+            .flatten()
     }
 
     pub fn latest_commit_artifact(&self) -> Option<Arc<RelationalCommitArtifact>> {
@@ -26,10 +74,22 @@ impl HistorySubsystem {
     }
 
     pub fn latest_commit_identity(&self) -> Option<RelationalCommitIdentity> {
+        use crate::history::commit::identity::RelationalCommitIdentityOwnerPort as _;
+        self.latest_commit_receipt().map(|receipt| {
+            RelationalCommitIdentity::new(receipt.commit_id, receipt.version_id, receipt.branch_id)
+        })
+    }
+
+    pub fn try_commit_artifact_for_version(
+        &self,
+        version_id: VersionId,
+    ) -> Result<
+        Option<Arc<RelationalCommitArtifact>>,
+        worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+    >{
         self.ledger
             .read()
-            .latest_catalog_artifact()
-            .map(|artifact| artifact.identity().clone())
+            .try_catalog_artifact_for_version(version_id)
     }
 
     pub fn commit_artifact_for_version(
@@ -37,6 +97,15 @@ impl HistorySubsystem {
         version_id: VersionId,
     ) -> Option<Arc<RelationalCommitArtifact>> {
         self.ledger.read().catalog_artifact_for_version(version_id)
+    }
+
+    pub fn try_commit_artifacts(
+        &self,
+    ) -> Result<
+        Vec<Arc<RelationalCommitArtifact>>,
+        worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+    >{
+        self.ledger.read().try_catalog_artifacts()
     }
 
     pub fn commit_artifacts_for_request(
@@ -66,7 +135,12 @@ impl HistorySubsystem {
 
     /// The resident catalog and faulted cold artifacts still held: what a
     /// checkpoint capture must rebind, without reading any commit page.
-    pub fn resident_commit_artifacts(&self) -> Vec<Arc<RelationalCommitArtifact>> {
+    pub fn try_resident_commit_artifacts(
+        &self,
+    ) -> Result<
+        Vec<Arc<RelationalCommitArtifact>>,
+        worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+    >{
         let mut artifacts = self.ledger.read().resident_catalog_artifacts();
         // Every branch's selected commit stays capturable even when no resident
         // artifact holds it (a fork of a cold commit faults it here).
@@ -80,19 +154,43 @@ impl HistorySubsystem {
             {
                 let id = CommitId(target.selected_commit_id());
                 if held.insert(id)
-                    && let Some(artifact) = self.commit_artifact(id)
+                    && let Some(artifact) = self.try_commit_artifact(id)?
                 {
                     artifacts.push(artifact);
                 }
             }
         }
         artifacts.sort_by_key(|artifact| artifact.commit_id());
-        artifacts
+        Ok(artifacts)
+    }
+
+    pub fn resident_commit_artifacts(&self) -> Vec<Arc<RelationalCommitArtifact>> {
+        self.try_resident_commit_artifacts()
+            .unwrap_or_else(|_| self.ledger.read().resident_catalog_artifacts())
     }
 
     /// Largest commit and version ids, answered from page descriptors.
+    pub fn try_max_commit_and_version(
+        &self,
+    ) -> Result<
+        (Option<u64>, Option<u64>),
+        worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+    >{
+        self.ledger.read().try_max_commit_and_version()
+    }
+
     pub fn max_commit_and_version(&self) -> (Option<u64>, Option<u64>) {
         self.ledger.read().max_commit_and_version()
+    }
+
+    pub fn try_has_commit(
+        &self,
+        commit_id: CommitId,
+    ) -> Result<
+        bool,
+        worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+    >{
+        self.ledger.read().try_has_commit(commit_id)
     }
 
     pub fn has_commit(&self, commit_id: CommitId) -> bool {

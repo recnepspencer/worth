@@ -380,4 +380,15 @@ fn only_cold_domains_route_scans_through_held_heads_and_exhausted_ids_drop_pages
         !ids.holds_cursor(),
         "an exhausted iterator releases its pages"
     );
+    let failing = open(&fixture, Vec::new());
+    let Membership::Paged(paged) = &failing.relations else {
+        panic!("a readmitted domain is paged")
+    };
+    let mut err_ids =
+        paged.ids::<crate::identity::data::RelationDomain>(KindId(7), PartitionId::main());
+    assert!(err_ids.next().unwrap().is_err());
+    assert!(
+        !err_ids.holds_cursor(),
+        "a failing iterator releases its pages"
+    );
 }

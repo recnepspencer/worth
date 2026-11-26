@@ -233,7 +233,10 @@ impl RelationalRuntime {
             durability.attach_medium(medium);
         }
         let partitions = <StorageSubsystem as RuntimeSubsystem>::new(&());
-        partitions.working_set(config.storage.residency_budget);
+        let working_set = partitions.working_set(config.storage.residency_budget);
+        durability
+            .checkpoint_selection()
+            .set_working_set(working_set);
         let visibility = VisibilitySubsystem::new(&config);
         Ok(Self::from_state(crate::runtime::RelationalRuntimeState {
             commit_strategies,

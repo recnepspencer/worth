@@ -29,38 +29,30 @@ impl<'runtime> HistoryAccess<'runtime> {
         &self,
         commit_id: CommitId,
     ) -> Option<crate::history::RelationalCommitIdentity> {
-        self.runtime
-            .history
-            .commit_artifact(commit_id)
-            .map(|artifact| artifact.identity().clone())
-            .or_else(|| {
-                self.runtime
-                    .history
-                    .canonical_envelope(commit_id)
-                    .map(|envelope| {
-                        crate::history::RelationalCommitIdentity::new(
-                            envelope.commit.commit_id,
-                            envelope.commit.version_id,
-                            envelope.branch_context.clone(),
-                        )
-                    })
-            })
+        self.runtime.history.commit_identity(commit_id).or_else(|| {
+            self.runtime
+                .history
+                .canonical_envelope(commit_id)
+                .map(|envelope| {
+                    crate::history::RelationalCommitIdentity::new(
+                        envelope.commit.commit_id,
+                        envelope.commit.version_id,
+                        envelope.branch_context.clone(),
+                    )
+                })
+        })
     }
 
     /// Return the immutable catalog receipt, including ordered parentage, for
     /// evidence consumers that need to compare the canonical artifact without
     /// receiving a mutable history authority.
     pub fn immutable_commit_receipt(&self, commit_id: CommitId) -> Option<RelationalCommitReceipt> {
-        self.runtime
-            .history
-            .commit_artifact(commit_id)
-            .map(|artifact| artifact.receipt())
-            .or_else(|| {
-                self.runtime
-                    .history
-                    .canonical_envelope(commit_id)
-                    .map(|envelope| envelope.commit.clone())
-            })
+        self.runtime.history.commit_receipt(commit_id).or_else(|| {
+            self.runtime
+                .history
+                .canonical_envelope(commit_id)
+                .map(|envelope| envelope.commit.clone())
+        })
     }
 
     pub fn latest_catalog_commit_identity(

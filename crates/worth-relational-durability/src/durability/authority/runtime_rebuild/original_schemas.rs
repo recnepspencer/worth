@@ -11,7 +11,7 @@ use worth_execution::ExecutionRequest;
 use worth_relational_branch::internal_port::branch::transition::positioned::PositionedBranchTransitionOwnerPort as _;
 use contracts::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OriginalSchemaGraph {
     pub(crate) original:
         Arc<crate::durability::source_initial_inputs::source_admission::SourceOriginalInputs>,

@@ -149,7 +149,11 @@ fn genuine_native_codec_adoption_preserves_raw_source_and_rebuilds_target_equali
     let (mut reopened, receipt) = fixture::installed(2);
     reopened
         .durability_recovery()
-        .restore_native_checkpoint_with_authority(execution, &saved, worth_testkit_relational::cold_recovery::members_source(&saved))
+        .restore_native_checkpoint_with_authority(
+            execution,
+            &saved,
+            worth_testkit_relational::cold_recovery::members_source(&saved),
+        )
         .unwrap();
     reopened
         .readmit_recovered_initial_schema_installation(receipt)
