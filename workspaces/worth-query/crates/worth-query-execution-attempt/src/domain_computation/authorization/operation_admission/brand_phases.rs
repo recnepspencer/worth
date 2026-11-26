@@ -106,6 +106,17 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
+    pub(crate) fn inherit_admitted_at(
+        &mut self,
+        admitted_at: Result<
+            worth_foundational::facade::CanonicalTimestamp,
+            crate::domain_computation::runtime_time::WorthQueryRuntimeTimeDenial,
+        >,
+    ) {
+        self.core.inherit_admitted_at(admitted_at)
+    }
+
+    #[inline]
     pub(crate) fn governed_proposal_identity(&self) -> Option<&[u8; 32]> {
         self.core.governed_proposal_identity()
     }

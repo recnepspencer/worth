@@ -1,6 +1,7 @@
 use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial;
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use std::collections::{BTreeMap, BTreeSet};
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
@@ -226,10 +227,17 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         for intent in workflow_intents {
             batch = batch.push(intent);
         }
+        // Installed invariants judge the adoption at its admitted trusted instant.
+        let control = worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted();
+        let control = match admission.admitted_at() {
+            Ok(admitted_at) => control.with_admission_time(admitted_at),
+            Err(_) => control,
+        };
         let mut transaction = runtime
-            .begin_branch_transaction(
+            .begin_branch_transaction_with_control(
                 selected.product().relational_basis(),
                 worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                control,
             )
             .map_err(WorthQueryBranchAdoptionPreparationDenial::TransactionAdmission)?;
         if let Some(migration_batch) = migration_batch {

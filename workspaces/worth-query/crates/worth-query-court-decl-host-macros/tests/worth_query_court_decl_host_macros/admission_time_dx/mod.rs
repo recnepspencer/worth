@@ -6,22 +6,29 @@
 //! default Home reads the system clock. Caller-forged dates are refused at
 //! commit, judged in the zone the application chooses.
 mod courts;
+mod envelope_and_undo_court;
 mod handler;
 mod invariant;
 mod program;
 mod recovery_court;
 mod schema;
+mod undo;
 
 use program::{owner, DatedHome};
 use schema::{LotView, ReadLot};
 use worth_query_decl::facade::application_schema::{CanonicalDate, CanonicalTimestamp};
 use worth_query_host::facade::WorthQueryDomainRefusal;
 
-/// The lot as committed, read back by the owner.
+/// Lot 1 as committed, read back by the owner.
 fn lot(home: &DatedHome) -> LotView {
+    lot_n(home, 1)
+}
+
+/// A lot as committed, read back by the owner.
+fn lot_n(home: &DatedHome, lot: u64) -> LotView {
     let mut rows = home
         .session(owner(home))
-        .query(ReadLot { lot: 1 })
+        .query(ReadLot { lot })
         .expect("owner reads the lot");
     assert_eq!(rows.len(), 1);
     rows.remove(0)

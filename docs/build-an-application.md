@@ -7183,23 +7183,44 @@ installed order, size refusal, decode mismatch, and reproducible payload bytes.
 A rule about dates (a lot that must not be expired, an effective date that
 must not be backdated, a contract window) must judge the caller's dates
 against time the caller cannot forge. Query reads the Home's runtime time
-source once, when it admits an operation, and lends that one reading to
-everything that judges the operation:
+source at most once per advancement (one session call, background call or
+edit envelope) and lends that one reading to everything that judges it:
 
-- `reader.admitted_at()` on the handler's `DecisionReader`;
+- `reader.admitted_at()` on the handler's `DecisionReader`, in every stage of
+  a multi-stage edit envelope;
 - `context.admitted_at()` on the commit invariant's
   `WorthQueryApplicationInvariantContext` (Relational carries it to every rule
-  and worker unchanged; it is never persisted);
-- the Home's initial-state seed, which is stamped with one reading taken when
-  the Home installs, so a seeded record is judged too.
+  and worker unchanged; it is never persisted).
 
 Both return `Result<CanonicalTimestamp, WorthQueryRuntimeTimeDenial>`; the
-handler and every invariant of one operation observe the same instant, so a
-handler that stamps a record with `admitted_at()` and an invariant that checks
-the stamp can never disagree. A commit no Query operation admitted (a raw
-platform transaction such as an inbound-completion marker) carries no instant
-and refuses `SourceUnavailable`; decide fail-closed. Reading the instant marks
+handler, every envelope stage and every invariant of one commit observe the
+same instant, so a handler that stamps a record with `admitted_at()` and an
+invariant that checks the stamp can never disagree. Reading the instant marks
 the decision as request context, so it is never reused for another request.
+
+These commits carry the trusted instant to installed invariants:
+
+| Commit path | Instant |
+|---|---|
+| Actions (handler and body), background calls, recurring rule firings | The operation's admission reading |
+| Multi-stage edit envelopes | One reading shared by every stage and the commit |
+| `home.undo` / `home.redo` and their `_authored` forms, corrections and reapplication | The inverse operation's admission reading |
+| Program adoption | The adoption's admission reading |
+| Document history navigation (owned history heads) | One reading per navigation |
+| The initial-state seed | One reading taken when the Home installs |
+
+Raw platform commits that no Query operation admitted, such as an
+inbound-completion marker, carry none: `context.admitted_at()` refuses
+`SourceUnavailable`, so decide fail-closed or scope the rule away from them.
+Durable recovery replays committed history without re-judging it at a later
+clock.
+
+Undo, redo, reapplication, program adoption and history navigation commit new
+transitions now, so invariants judge them at the *current* trusted instant,
+not the original one: redoing a lot whose expiry has since passed is refused.
+A time-bounded rule should judge the fields a transition writes or changes
+(compare proposed against committed values) and leave untouched historical
+rows alone, rather than re-rejecting every row whose date has passed.
 
 Convert the instant to the civil date your rule means with
 `host::local_calendar::WorthQueryTimeZone::date_at`, in the zone the
@@ -7213,7 +7234,10 @@ fn evaluate(&self, context: &WorthQueryApplicationInvariantContext<'_, '_, S>, l
     let Ok(admitted_at) = context.admitted_at() else {
         return Ok(violation("trusted_time_unavailable", "Trusted time is unavailable."));
     };
-    let today = self.zone.date_at(admitted_at)?; // 18:30 Mountain on the 26th is the 26th
+    // 18:30 Mountain on the 26th is still the 26th.
+    let Ok(today) = self.zone.date_at(admitted_at) else {
+        return Ok(violation("local_date_unavailable", "Today's date is unavailable."));
+    };
     let proposed = context.proposed();
     for lot in lots {
         if proposed.field(&self.effective_on, lot)?.is_none_or(|on| on < today) {
@@ -7244,8 +7268,12 @@ The [admission-time court](../workspaces/worth-query/crates/worth-query-court-de
 refuses a forged `2020-01-01` effective date at commit with the Home
 untouched, accepts a lot on its last Mountain day after UTC has rolled over,
 refuses it at Mountain midnight, proves the handler and invariant see one
-instant that moves only with the held clock, and stamps live time on a
-default Home.
+instant that moves only with the held clock, stamps live time on a default
+Home, and reopens a Directory Home after the lot has expired. Its
+[envelope and undo court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/admission_time_dx/envelope_and_undo_court.rs)
+shows two envelope stages and the commit sharing one reading of a source that
+ticks on every read, an undo committing at a trusted instant, and a redo
+refused at the current one after the redone expiry has passed.
 
 ### Optional invariant work and original interruption
 

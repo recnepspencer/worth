@@ -159,6 +159,7 @@ pub trait AdmittedOperationExecutionPort<Schema, Operation, Input, Scope>: Sized
     fn governed_input_identity(&self) -> Option<&[u8; 32]>;
     fn governed_proposal_identity(&self) -> Option<&[u8; 32]>;
     fn admitted_at(&self) -> AdmittedAt;
+    fn inherit_admitted_at(&mut self, admitted_at: AdmittedAt);
     fn record_decision_context_use(&mut self, use_mask: DecisionContextUse);
     fn bind_required_output_demand(&mut self, context: RequiredOutputDemandContext);
     fn take_required_output_demand(&mut self) -> Option<RequiredOutputDemandContext>;

@@ -84,7 +84,8 @@ where
     }
     let context = Cell::new(DecisionContextUse::default());
     let interruption = Cell::new(None);
-    let admitted_at = read_set.admission().admitted_at();
+    let admitted_at = phase.settle_admitted_at(|| read_set.admission().admitted_at());
+    read_set.admission_mut().inherit_admitted_at(admitted_at);
     let operation_scope = read_set.admission().operation_scope_binding().clone();
     let (plan, projection, _) = runtime
         .mutation_projection

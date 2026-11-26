@@ -12,7 +12,15 @@ pub(super) enum AdvancementSource {
 /// Runtime custody of an active request, never retained in a product.
 pub struct ActiveAdvancement<'scope> {
     pub(super) execution: &'scope QueryRequestExecution<'scope>,
+    /// The one trusted admission instant every operation, envelope stage and
+    /// commit of this advancement observes; read at most once.
+    pub(super) admitted_at: std::sync::OnceLock<AdmittedAt>,
 }
+
+pub(crate) type AdmittedAt = Result<
+    worth_foundational::facade::CanonicalTimestamp,
+    worth_query_execution_contracts::facade::runtime_time::WorthQueryRuntimeTimeDenial,
+>;
 
 /// The receiving installed runtime differs from the one that lent the phase.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -58,6 +66,12 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
         &self,
     ) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
         self.owner
+    }
+
+    /// The advancement's trusted admission instant: the first reading offered
+    /// fixes it, and every later caller in this advancement receives the same.
+    pub(crate) fn settle_admitted_at(&self, first: impl FnOnce() -> AdmittedAt) -> AdmittedAt {
+        *self.active.admitted_at.get_or_init(first)
     }
 
     fn admitted_request(&self) -> ExecutionRequest<'scope, 'scope> {

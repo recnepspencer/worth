@@ -11,6 +11,7 @@ use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleI
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
@@ -172,11 +173,20 @@ impl NavigationProgress {
         let publisher = graph
             .application_publication_ref()
             .map(std::sync::Arc::as_ref);
+        // One trusted reading per navigation; installed invariants judge undo
+        // and redo at that instant, never without one.
+        let clock = application.inner.runtime.authorization_clock_ref();
+        let control = worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted();
+        let control = match phase.settle_admitted_at(|| clock.admission_timestamp()) {
+            Ok(admitted_at) => control.with_admission_time(admitted_at),
+            Err(_) => control,
+        };
         let (prepared, custody) = graph.with_runtime(&execution, |native| {
             let transaction = native
-                .begin_branch_transaction(
+                .begin_branch_transaction_with_control(
                     current.product().relational_basis(),
                     RelationalTransactionIntent::ordinary(),
+                    control,
                 )
                 .map_err(Denial::Transaction)?;
             let port = native.preparation_port();

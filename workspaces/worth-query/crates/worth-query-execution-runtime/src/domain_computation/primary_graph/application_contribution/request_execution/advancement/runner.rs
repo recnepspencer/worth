@@ -96,6 +96,7 @@ fn run_admitted_advancement(
             );
             let active = ActiveAdvancement {
                 execution: active_execution,
+                admitted_at: std::sync::OnceLock::new(),
             };
             let source = match (source_instance, owner) {
                 (Some(source), _) => AdvancementSource::Relational(source),

@@ -25,6 +25,7 @@ use worth_query_host::facade::{
 use super::handler::StampLotHandler;
 use super::invariant::{self, TrustedDates};
 use super::schema::*;
+use super::undo::*;
 
 worth_query_decl::facade::worth_query_authentication_method!(DatedMethod);
 worth_query_decl::facade::worth_query_authentication_audience!(DatedAudience);
@@ -38,7 +39,10 @@ impl ApplicationFeature<DatedSchema> for DatedFeature {
 
 worth_query_application_contribution! {
     pub feature DatedActions<DatedSchema> for DatedFeature => DatedRuntime {
+        schema: |schema| { schema.declared_operation(restore_lot_expiry_definition()) };
         query(ReadLotBinding) { definition: ReadLotQuery::definition(); };
+        body_action_ref(ExtendLotBinding, LotExtended) as ExtendLotAction {};
+        body_action_ref(RestoreLotExpiryBinding, LotExpiryRestored) as RestoreLotExpiryAction {};
         action stamp(StampLotBinding, LotStamped, StampLotHandler) as StampLotAction {};
     }
 }
@@ -97,7 +101,7 @@ worth_query_application_program! {
         >,
         contribution: DatedContribution {
             identity: "admission-time.dx.contribution.v1",
-            members: [Records, OwnerBinding],
+            members: [Records, OwnerBinding, CorrectLotExpiry],
         },
         feature_definition: DatedDefinition,
     }
@@ -121,26 +125,28 @@ fn seed(
     graph.bind_principal(&binding, key, 1_u64, identity(), enabled)?;
     // Seeded far ahead, so the seed passes `TrustedDates` at any real clock.
     let new_year = CanonicalDate::from_ymd(2999, 1, 1).unwrap();
-    graph.bind_entity(
-        WorthQueryApplicationEntitySeed::new(
-            Lot::reference(),
-            WorthQueryApplicationEntityKey::new("lot-1").unwrap(),
-        )
-        .field(LotFacts::lot_id(), 1_u64)
-        .field(LotFacts::effective_on(), new_year)
-        .field(LotFacts::expires_on(), new_year)
-        .field(
-            LotFacts::stamped_at(),
-            CanonicalTimestamp {
-                micros_since_unix_epoch: 0,
-            },
-        ),
-    )?;
+    for lot in [1_u64, 2] {
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(
+                Lot::reference(),
+                WorthQueryApplicationEntityKey::new(format!("lot-{lot}")).unwrap(),
+            )
+            .field(LotFacts::lot_id(), lot)
+            .field(LotFacts::effective_on(), new_year)
+            .field(LotFacts::expires_on(), new_year)
+            .field(
+                LotFacts::stamped_at(),
+                CanonicalTimestamp {
+                    micros_since_unix_epoch: 0,
+                },
+            ),
+        )?;
+    }
     Ok(())
 }
 
 fn config(
-    trusted_time: Option<WorthQueryFixedRuntimeTimeSource>,
+    trusted_time: Option<impl WorthQueryRuntimeTimeSource>,
 ) -> WorthQueryHomeConfig<'static, DatedSchema, DatedProgram> {
     let build = ApplicationBuildIdentity::parse("ad0117ed-0000-4000-8000-ad0117ed0000").unwrap();
     let config = WorthQueryHomeConfig::new(build, (DatedRuntime::new(StampLotHandler),))
@@ -154,6 +160,12 @@ fn config(
 /// Opens an in-memory Home; `trusted_time` replaces the default system clock.
 pub fn open(trusted_time: Option<WorthQueryFixedRuntimeTimeSource>) -> DatedHome {
     WorthQueryApplicationHome::open_memory(config(trusted_time))
+        .unwrap_or_else(|denial| panic!("dated Home opens: {denial}"))
+}
+
+/// Opens an in-memory Home over any trusted runtime time source.
+pub fn open_with(trusted_time: impl WorthQueryRuntimeTimeSource) -> DatedHome {
+    WorthQueryApplicationHome::open_memory(config(Some(trusted_time)))
         .unwrap_or_else(|denial| panic!("dated Home opens: {denial}"))
 }
 

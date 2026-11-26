@@ -9,6 +9,7 @@ use super::super::{
 };
 use super::DecisionContextUse;
 
+mod admission_time;
 mod interruption;
 mod managed_index;
 mod operation_body;
@@ -183,9 +184,7 @@ where
         worth_foundational::facade::CanonicalTimestamp,
         worth_query_execution_contracts::facade::runtime_time::WorthQueryRuntimeTimeDenial,
     > {
-        self.context_use
-            .set(self.context_use.get().request_context());
-        self.admitted_at
+        admission_time::observe(self.context_use, self.admitted_at)
     }
 
     /// Polls real request interruption without making it decision data.
