@@ -42,10 +42,7 @@ pub use finalization_test_support::{
 };
 pub use name_minting::PersistentNameMintingAuthority;
 pub use name_readmission::verify_persisted_birth_digest;
-pub(crate) use name_readmission::BirthReadmissionRefusal;
 pub use name_readmission::PersistedBirthClaim;
-pub(crate) use name_readmission::PersistedNameBytes;
-pub(crate) use name_readmission::VerifiedBirthDigest;
 
 #[doc(hidden)]
 pub mod posture_fixture;

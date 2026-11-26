@@ -23,7 +23,6 @@ use crate::contracts::graph_member::NativeMemberKey;
 use crate::lineage::groups::CommittedGroupTransition;
 
 use super::format::group_event_parts;
-use super::frame_encoding::encode_entity;
 use super::refusal::PersistentNameDurabilityError as Refusal;
 use super::wire::WireWriter;
 
@@ -141,4 +140,13 @@ fn encode_assignment(
         writer.u8(role_tag(member.role));
     }
     Ok(())
+}
+
+fn encode_entity(
+    writer: &mut WireWriter,
+    entity: crate::contracts::identity::data::record_ids::EntityId,
+) {
+    writer.u32(entity.partition_value());
+    writer.u64(entity.local_slot_value());
+    writer.u32(entity.generation_value());
 }

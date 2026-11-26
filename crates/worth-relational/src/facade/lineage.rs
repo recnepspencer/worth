@@ -1,10 +1,5 @@
 pub use crate::change_source::RelationalPersistentNameReadDenial;
-pub use crate::durability::naming::{
-    admit_persisted_name, encode_commit_frame, encode_durable_persistent_name_log,
-    encode_log_header, rebuild_name_index_from_durable_log, PersistentNameDurabilityError,
-    PersistentNameReferenceRole, PersistentNameWireSection,
-    FORMAT_VERSION as PERSISTENT_NAME_DURABLE_FORMAT_VERSION,
-};
+pub use crate::durability::naming::{PersistentNameDurabilityError, PersistentNameWireSection};
 pub use crate::lineage::access::{
     PersistentNameObservationView, RelationalLineageDiscoveryDenial, RelationalLineageNodeRead,
 };

@@ -10,18 +10,20 @@ use std::collections::BTreeSet;
 
 use worth_foundational::facade::AggregateIdentity;
 
+use crate::contracts::aggregate_identity::group_lineage::AggregateGroupLineageEvent;
 use crate::contracts::aggregate_identity::transition::group::model::{
     AggregateContinuityRule, AggregateGroupAssignment, AggregateGroupMembers, AggregateGroupOrigin,
     AggregateGroupScheme, AggregateGroupSchemeId, AggregateMemberRole,
 };
 use crate::contracts::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
 use crate::contracts::graph_member::NativeMemberKey;
+use crate::contracts::identity::data::{primitives::PartitionId, record_ids::EntityId};
 use crate::contracts::lineage::data::naming::{
     PersistentNameIdentity, PersistentNameIdentityOwnerPort as _,
 };
 use crate::lineage::groups::{CommittedGroupTransition, GroupTransitionKind};
 
-use super::frame_decoding::{decode_entity, decode_group_event};
+use super::format::{group_event_arity, group_event_from_parts};
 use super::group_frame_encoding::{GROUP_FRAME_MAGIC, GROUP_FRAME_VERSION};
 use super::refusal::{PersistentNameDurabilityError as Refusal, PersistentNameWireSection};
 use super::wire::{read_strictly_ascending, WireReader};
@@ -167,4 +169,21 @@ fn rule_from_tag(tag: u8) -> Result<AggregateContinuityRule, Refusal> {
             tag,
         }),
     }
+}
+
+fn decode_entity(reader: &mut WireReader<'_>) -> Result<EntityId, Refusal> {
+    let (partition, slot, generation) = (reader.u32()?, reader.u64()?, reader.u32()?);
+    Ok(EntityId::new(PartitionId(partition), slot, generation))
+}
+
+fn decode_group_event(reader: &mut WireReader<'_>) -> Result<AggregateGroupLineageEvent, Refusal> {
+    let tag = reader.u8()?;
+    let arity = group_event_arity(tag)?;
+    let first = AggregateIdentity::from_bytes(reader.digest()?);
+    let second = if arity == 2 {
+        Some(AggregateIdentity::from_bytes(reader.digest()?))
+    } else {
+        None
+    };
+    group_event_from_parts(tag, first, second)
 }
