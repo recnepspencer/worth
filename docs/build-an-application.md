@@ -1040,6 +1040,66 @@ Edit the access clause when adding a field or relation. The generated Rust
 capabilities and schema registration follow that declaration; native admission
 checks the handler's actual reads and effects against it.
 
+#### Reuse access with fragments
+
+When several operations share the same access, such as every stock posting
+reading a bin and writing its on-hand balance, declare that list once with
+`worth_query_access_fragment!` and include it by path. The fragment holds the
+same `kind: [..];` clauses as an `access` block, including `include` of other
+fragments:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. posting.rs
+use worth_query_decl::facade::worth_query_access_fragment;
+
+worth_query_access_fragment! {
+    /// Every stock posting resolves its bin and moves its balance.
+    stock_posting_access {
+        read_entities: [crate::schema::Bin, crate::schema::StockBalance];
+        read_fields: [crate::schema::BinFacts::bin_key(), crate::schema::StockBalanceFacts::on_hand()];
+        writes: [crate::schema::StockBalanceFacts::on_hand()];
+        creates: [crate::schema::StockMovement];
+        links: [crate::schema::BalanceMovements];
+    }
+}
+pub(crate) use stock_posting_access;
+
+// moves.rs: the fragment alone, through the action derive.
+#[derive(Clone, Debug, Serialize, Deserialize, WorthQueryAction)]
+#[worth_query(/* .. */ access(include: [super::posting::stock_posting_access];))]
+pub struct MoveStock { /* .. */ }
+
+// transfers.rs: the fragment plus this operation's own access.
+worth_query_operation!(pub Transfer for StockSchema, input TransferInput;
+    access {
+        include: [super::posting::stock_posting_access];
+        read_fields: [TransferFacts::transfer_id()];
+        writes: [TransferFacts::status()];
+    }
+);
+```
+
+Each include expands in place, so an operation gets exactly the Rust
+capabilities and schema projection it would get from writing the clauses
+inline; nothing is registered at runtime and handlers are still checked
+against the result. Re-export a fragment after its definition
+(`pub(crate) use name;`) to include it from sibling modules. Paths written
+inside a fragment, member paths and nested includes alike, resolve where the
+fragment is *included*, so write them `crate::`-qualified (or import them in
+every including module).
+
+An operation's declared access is a set. Field reads, writes and expectations
+(`read_fields`, `writes`, `expects_version`, `expects_fact`) may repeat across
+fragments and inline clauses and register once. Entity, relation and effect
+members (`read_entities`, `read_relations`, `creates`, `deletes`, `links`,
+`unlinks`, `emits`) each implement a Rust capability trait for the including
+operation, so one operation names each of them once across everything it
+includes, directly or through nested fragments; a repeat is a conflicting-impl
+(`E0119`) compile error. The
+[access fragment court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/access_fragment_dx/mod.rs)
+installs three actions sharing one fragment from sibling modules.
+
 For a [declarative operation body](../workspaces/worth-query/docs/authoring/scope-field-operation-bodies.md),
 the body derives its installed footprint from the authored statements. See the
 [schema and access examples](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/declared_operation/tests.rs)
@@ -1548,8 +1608,9 @@ non-unique field such as a status is refused when the schema is built, with
 `ApplicationSchemaDeclarationDenial::RootScopedQueryRequiresKeyField` naming
 the binding, query and field; to list the roots sharing a value, scope on
 another entity or filter by a parameter. Reusable access lists are not a
-contribution member: an action's `access(..)` block also emits per-type
-capability impls, which a derive cannot import from another item. Supply the handlers and readiness predicates as
+contribution member: declare them once with `worth_query_access_fragment!` and
+`include` them in each action's `access(..)` block
+([§2.1](#reuse-access-with-fragments)). Supply the handlers and readiness predicates as
 runtime values, then execute actions through authorized application requests.
 Keep domain and numerical types in their own crates.
 

@@ -1,5 +1,6 @@
 //! The same typed facts grant capabilities and populate the ordinary schema.
 use crate::application_schema::*;
+mod fragments;
 mod generic;
 
 use crate::application_schema::fragment::{self, FieldSelection};
@@ -92,6 +93,20 @@ impl fragment::Registration<Schema> for Contracts {
             )
             .declared_operation::<generic::GenericEdit>(
                 generic::GenericEdit::reference::<Schema>()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .declared_operation::<fragments::Restock>(
+                fragments::Restock::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .declared_operation::<fragments::GenericRestock>(
+                fragments::GenericRestock::reference::<Schema>()
                     .definition()
                     .no_external_effect()
                     .no_aftermath()

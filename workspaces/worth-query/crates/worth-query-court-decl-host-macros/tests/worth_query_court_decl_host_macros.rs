@@ -1,5 +1,7 @@
 //! A small task board declared through the Query derives and run end to end.
 #![recursion_limit = "256"]
+#[path = "worth_query_court_decl_host_macros/access_fragment_dx/mod.rs"]
+mod access_fragment_dx;
 #[path = "worth_query_court_decl_host_macros/domain_refusal_dx/mod.rs"]
 mod domain_refusal_dx;
 #[path = "worth_query_court_decl_host_macros/local_calendar_dx.rs"]
