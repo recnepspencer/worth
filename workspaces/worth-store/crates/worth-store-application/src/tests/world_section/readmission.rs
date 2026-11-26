@@ -8,6 +8,8 @@ use worth_signal::facade::{SignalGraph, SignalRuntime};
 mod checkpoint_accounting;
 #[path = "readmission/discard_derived.rs"]
 mod discard_derived;
+#[path = "readmission/maintenance_allowance.rs"]
+mod maintenance_allowance;
 #[path = "readmission/selected_source.rs"]
 mod selected_source;
 

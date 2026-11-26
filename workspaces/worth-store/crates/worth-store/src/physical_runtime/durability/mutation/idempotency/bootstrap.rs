@@ -161,11 +161,10 @@ impl PhysicalIdempotencyRegistryRebuilder {
     ) -> Result<(), PhysicalIdempotencyReopenFailure> {
         let decoded = DecodedPhysicalMutationBindingRecord::decode(record, self.context)
             .map_err(|_denial| PhysicalIdempotencyReopenFailure::CompactionRecordRejected)?;
-        let (identity, issuance, state, unresolved): (
+        let (identity, issuance, state): (
             PhysicalMutationIdempotencyKeyIdentity,
             PhysicalNamespaceDurableCheckpointGeneration,
             PhysicalMutationIdempotencyBindingState,
-            bool,
         ) = match decoded {
             DecodedPhysicalMutationBindingRecord::RebuiltUnsealed(basis) => (
                 basis.key().identity(),
@@ -174,7 +173,6 @@ impl PhysicalIdempotencyRegistryRebuilder {
                     basis,
                     prior: RebuiltPhysicalMutationBindingState::Unsealed,
                 },
-                true,
             ),
             DecodedPhysicalMutationBindingRecord::RebuiltGroupSealed { basis, group } => (
                 basis.key().identity(),
@@ -183,7 +181,6 @@ impl PhysicalIdempotencyRegistryRebuilder {
                     basis,
                     prior: RebuiltPhysicalMutationBindingState::GroupSealed(group),
                 },
-                true,
             ),
             DecodedPhysicalMutationBindingRecord::Terminal { basis, fate } => (
                 basis.key().identity(),
@@ -193,13 +190,11 @@ impl PhysicalIdempotencyRegistryRebuilder {
                     fate,
                     last_compacted: Some(self.generation),
                 },
-                false,
             ),
             DecodedPhysicalMutationBindingRecord::WalBound { basis, persisted } => (
                 basis.key().identity(),
                 basis.key().lease().issuance_generation(),
                 PhysicalMutationIdempotencyBindingState::WalBound { basis, persisted },
-                true,
             ),
         };
         if self
@@ -211,7 +206,7 @@ impl PhysicalIdempotencyRegistryRebuilder {
         if issuance.get() >= self.generation.get() {
             return Err(PhysicalIdempotencyReopenFailure::LeaseIssuedAfterDurableGeneration);
         }
-        self.insert(identity, state, unresolved)?;
+        self.insert(identity, state)?;
         self.last_compaction_key = Some(identity);
         Ok(())
     }
@@ -237,8 +232,16 @@ impl PhysicalIdempotencyRegistryRebuilder {
             return Err(PhysicalIdempotencyReopenFailure::LeaseIssuedAfterDurableGeneration);
         }
         let identity = persisted.key().identity();
-        if self.registry.bindings.contains_key(&identity) {
+        if let Some(existing) = self.registry.bindings.get(&identity) {
+            let held = existing.holds_pending_capacity();
             classify_reopened_wal_binding(self.registry.record_wal_binding(persisted))?;
+            // The exact retained member made this obligation WAL-durable.
+            if held && !self.registry.bindings[&identity].holds_pending_capacity() {
+                self.pending_count = self
+                    .pending_count
+                    .checked_sub(1)
+                    .ok_or(PhysicalIdempotencyReopenFailure::CounterOverflow)?;
+            }
             return Ok(());
         }
         let basis = super::registry::PhysicalMutationBindingBasis::new(
@@ -249,20 +252,20 @@ impl PhysicalIdempotencyRegistryRebuilder {
         self.insert(
             identity,
             PhysicalMutationIdempotencyBindingState::WalBound { basis, persisted },
-            true,
         )
     }
 
+    /// Committed WAL history is bounded by the live-binding limit only; the
+    /// pending-unresolved limit counts exactly what live admission counts.
     fn insert(
         &mut self,
         identity: PhysicalMutationIdempotencyKeyIdentity,
         state: PhysicalMutationIdempotencyBindingState,
-        unresolved: bool,
     ) -> Result<(), PhysicalIdempotencyReopenFailure> {
         if self.registry.bindings.len() >= self.live_limit {
             return Err(PhysicalIdempotencyReopenFailure::LiveBindingLimitExceeded);
         }
-        if unresolved {
+        if state.holds_pending_capacity() {
             self.pending_count = self
                 .pending_count
                 .checked_add(1)

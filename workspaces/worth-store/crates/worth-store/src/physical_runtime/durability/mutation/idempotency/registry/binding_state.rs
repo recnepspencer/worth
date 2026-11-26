@@ -45,6 +45,22 @@ pub(in crate::physical_runtime::durability::mutation::idempotency) enum Physical
     },
 }
 
+impl PhysicalMutationIdempotencyBindingState {
+    /// Pending-unresolved capacity bounds obligations whose effect is not yet
+    /// WAL-durable. A WAL-bound attempt's redo is already durable in retained
+    /// WAL or the namespace-durable compaction, so only the total live-binding
+    /// bound covers it. Live admission and fresh-process reopen share this one
+    /// classification: reopen cannot refuse a registry the session held.
+    pub(in crate::physical_runtime::durability::mutation::idempotency) const fn holds_pending_capacity(
+        &self,
+    ) -> bool {
+        matches!(
+            self,
+            Self::Unsealed(_) | Self::GroupSealed { .. } | Self::RebuiltUnresolved { .. }
+        )
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::physical_runtime::durability::mutation::idempotency) enum RebuiltPhysicalMutationBindingState
 {

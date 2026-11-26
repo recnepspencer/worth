@@ -3,9 +3,11 @@ use std::num::{NonZeroU32, NonZeroU64};
 use worth_store_physical_format::PhysicalCheckpointIdentity;
 
 use super::*;
+use crate::physical_runtime::durability::mutation::idempotency::persisted_binding::tests::fixture::single_member;
 use crate::physical_runtime::durability::mutation::idempotency::persisted_binding::PhysicalBindingDecodingContext;
 use crate::physical_runtime::durability::mutation::idempotency::registry::{
-    PhysicalMutationIdempotencyRegistryAdmission, PhysicalMutationWalBindingDenial,
+    PhysicalMutationIdempotencyRegistryAdmission as Admission,
+    PhysicalMutationIdempotencyRegistryDenial, PhysicalMutationWalBindingDenial,
 };
 use crate::physical_runtime::durability::mutation::idempotency::test_support::{
     fingerprint, fixture, idempotency_policy, mutation, RegistryFixture,
@@ -117,6 +119,97 @@ fn group_validation_rejects_missing_members_and_substituted_membership_digest() 
     fixture.media.close();
 }
 
+/// Issue #423: a session that completed more WAL members than the pending
+/// bound reopened that committed history as pending and refused ServingOpen.
+#[test]
+fn committed_wal_history_beyond_the_pending_bound_reopens_with_both_bounds_intact() {
+    let mut fixture = fixture(4);
+    let keys = (40..46_u8)
+        .map(|material| {
+            fixture
+                .registry
+                .issue_key(PhysicalMutationIdempotencyMaterial::new([material; 32]))
+                .unwrap()
+        })
+        .collect::<Vec<_>>();
+    let members = (40..46_u8)
+        .zip(&keys)
+        .map(|(payload, key)| {
+            let start = u64::from(payload) - 39;
+            let binding = single_member(&fixture, key.clone(), payload, payload.into(), start);
+            ReopenedPhysicalWalMember::from_verified_parts(
+                binding.member().lsn_range(),
+                binding.bytes(),
+                binding.redo_digest(),
+            )
+        })
+        .collect::<Vec<_>>();
+    // The first attempt was compacted before WAL binding; its retained member
+    // upgrades it, releasing the only pending slot.
+    assert!(matches!(
+        fixture.registry.admit_unallocated(
+            keys[0].clone(),
+            fingerprint(&fixture, 40),
+            mutation(&fixture, 40)
+        ),
+        Ok(Admission::Fresh(_))
+    ));
+    let records = compaction_records(&fixture);
+    let mut reopened = rebuilder(&fixture, idempotency_policy(1, 16));
+    reopened.consume_compaction_record(&records[0]).unwrap();
+    assert_eq!(reopened.pending_count, 1);
+    for member in members.clone() {
+        reopened.consume_wal_member(member).unwrap();
+    }
+    reopened.validate_groups().unwrap();
+    assert_eq!(reopened.pending_count, 0);
+    let mut registry = reopened.finish(checkpoint_compaction::admit_generation_zero());
+
+    // Exact retry joins the durable attempt; a substituted payload conflicts.
+    assert!(matches!(
+        registry.admit_unallocated(keys[5].clone(), fingerprint(&fixture, 45), mutation(&fixture, 90)),
+        Ok(Admission::DuplicateUnresolved(observation))
+            if observation.mutation() == mutation(&fixture, 45)
+    ));
+    assert!(matches!(
+        registry.admit_unallocated(
+            keys[5].clone(),
+            fingerprint(&fixture, 99),
+            mutation(&fixture, 91)
+        ),
+        Err(PhysicalMutationIdempotencyRegistryDenial::Conflict)
+    ));
+    // The genuine in-flight bound still admits one and refuses the next.
+    let issue = |material| {
+        registry
+            .issue_key(PhysicalMutationIdempotencyMaterial::new([material; 32]))
+            .unwrap()
+    };
+    let (fresh, next) = (issue(80), issue(81));
+    assert!(matches!(
+        registry.admit_unallocated(fresh, fingerprint(&fixture, 80), mutation(&fixture, 80)),
+        Ok(Admission::Fresh(_))
+    ));
+    assert!(matches!(
+        registry.admit_unallocated(next, fingerprint(&fixture, 81), mutation(&fixture, 81)),
+        Err(PhysicalMutationIdempotencyRegistryDenial::PendingUnresolvedLimitReached)
+    ));
+
+    // Committed history still counts against the total live-binding bound.
+    let mut live_bounded = rebuilder(&fixture, idempotency_policy(1, 4));
+    let refused = members
+        .into_iter()
+        .map(|member| live_bounded.consume_wal_member(member))
+        .find(Result::is_err);
+    assert_eq!(
+        refused,
+        Some(Err(
+            PhysicalIdempotencyReopenFailure::LiveBindingLimitExceeded
+        ))
+    );
+    fixture.media.close();
+}
+
 fn compacted_unsealed_records(fixture: &mut RegistryFixture, count: u8) -> Vec<Vec<u8>> {
     for index in 0..count {
         let key = fixture
@@ -129,9 +222,13 @@ fn compacted_unsealed_records(fixture: &mut RegistryFixture, count: u8) -> Vec<V
                 fingerprint(fixture, index + 1),
                 mutation(fixture, u64::from(index) + 1),
             ),
-            Ok(PhysicalMutationIdempotencyRegistryAdmission::Fresh(_))
+            Ok(Admission::Fresh(_))
         ));
     }
+    compaction_records(fixture)
+}
+
+fn compaction_records(fixture: &RegistryFixture) -> Vec<Vec<u8>> {
     let pending = fixture
         .registry
         .prepare_binding_compaction(
