@@ -39,6 +39,12 @@ pub(super) const ENTITY_SCHEME: &str = "worth.m43f.entity.v1";
 pub(super) const GROUP_SCHEME: &str = "worth.m43f.group.v1";
 
 pub(super) fn named_schema() -> RelationalSchemaRegistry {
+    naming_schema(false)
+}
+
+/// The named schema, its entity scheme minting structural identities when
+/// `structural_identity`.
+pub(super) fn naming_schema(structural_identity: bool) -> RelationalSchemaRegistry {
     let base = AspectSchemaFixture::with_default_declared_aspects(
         CascadeDeletePolicy::CascadeDeleteRelations,
     )
@@ -53,7 +59,7 @@ pub(super) fn named_schema() -> RelationalSchemaRegistry {
                 ["authored"],
                 false,
                 false,
-                false,
+                structural_identity,
             )
             .unwrap(),
         )
@@ -79,9 +85,17 @@ pub(super) fn durable_named_runtime(
     medium: &Arc<TestDurableMedium>,
     historical_budget: u64,
 ) -> RelationalRuntime {
+    durable_runtime_with(medium, historical_budget, named_schema())
+}
+
+pub(super) fn durable_runtime_with(
+    medium: &Arc<TestDurableMedium>,
+    historical_budget: u64,
+    schema: RelationalSchemaRegistry,
+) -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
-        .schema_registry(named_schema())
+        .schema_registry(schema)
         .residency_budget(ResidencyBudget {
             head_working_set_bytes: u64::MAX / 4,
             historical_working_set_bytes: historical_budget,
@@ -99,7 +113,21 @@ pub(super) fn reopen_named(
     medium: &Arc<TestDurableMedium>,
     historical_budget: u64,
 ) -> RelationalRuntime {
-    let mut runtime = durable_named_runtime(medium, historical_budget);
+    reopen_with(
+        request,
+        checkpoint,
+        source,
+        durable_named_runtime(medium, historical_budget),
+    )
+}
+
+/// Recovers `checkpoint` cold into the fresh `runtime`.
+pub(super) fn reopen_with(
+    request: &ExecutionRequest<'_, '_>,
+    checkpoint: RelationalNativeCheckpoint,
+    source: Arc<ImmutableCheckpointMemberSource>,
+    mut runtime: RelationalRuntime,
+) -> RelationalRuntime {
     let input = RelationalDurableRecoverySource::new(
         Some(
             worth_relational::facade::durability::RelationalDurableCheckpointSource::new(

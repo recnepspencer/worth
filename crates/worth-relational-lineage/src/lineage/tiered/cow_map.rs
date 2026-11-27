@@ -384,3 +384,7 @@ impl<'a, K, V> Iterator for CowMapIter<'a, K, V> {
         Some((&node.key, node.val.as_ref()))
     }
 }
+
+#[cfg(test)]
+#[path = "cow_map_fork_conformance_trace.rs"]
+mod fork_conformance_trace;

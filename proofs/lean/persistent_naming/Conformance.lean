@@ -5,8 +5,9 @@ import PersistentNaming
 # Executable Rust ↔ model conformance
 
 Reads the NDJSON traces the real Rust emits with
-`WORTH_PERSISTENT_NAMING_TRACE_DIR=<dir>`: `mint_order.ndjson` and
-`name_index.ndjson` from `crates/worth-relational-lineage`, and
+`WORTH_PERSISTENT_NAMING_TRACE_DIR=<dir>`: `mint_order.ndjson`,
+`name_index.ndjson`, `fork_children.ndjson` and `cow_fork.ndjson` from
+`crates/worth-relational-lineage`, and
 `wire_bound.ndjson` from `workspaces/worth-query`'s
 `worth-query-declaration`. Every line is checked against the proved
 definitions:
@@ -25,6 +26,14 @@ definitions:
 * `resolve`: `PersistentNameBranchIndex::resolve`'s index probes, frontier
   pops, edge visits and live descendants are those of
   `NameResolution.resolve` over the recorded index;
+* `fork_children`: `forks_inheriting` over the recorded `fork_children`
+  finds exactly `ForkChildren.forksInheriting`'s marked forks, the walk
+  finishes, and the map has the shape the model's closure reading assumes
+  (ascending cutoffs, no empty child set, one row per fork);
+* `cow_fork`: a `CowMap` clone allocates no node and shares its source's
+  root, as `CowMapFork.fork` copies one handle, and the slots the fork and
+  its source read before and after their own writes are those of
+  `CowMapFork.get` over `CowMapFork.apply`;
 * `wire`: an encoded discriminator value's length is `WireBound.encLen`,
   its type's `MAX_ENCODED_BYTES` is `WireBound.bound`, and a whole
   discriminator's length and bound are `discLen` and `fieldsBound`.
@@ -203,6 +212,60 @@ def checkDisc (j : Json) : Except String Unit := do
   let model := (WireBound.fieldsBound fields).map (WireBound.domainTagLen + 8 + d.identityLen + ·)
   expect ((← bound j) == model) s!"Rust's max_encoded_bytes is not the model's {model}"
 
+def cutoffRow (j : Json) : Except String (Nat × List Nat) := do
+  match (← j.getArr?).toList with
+  | [c, xs] => pure (← c.getNat?, ← nats xs)
+  | _ => throw s!"not a cutoff row: {j.compress}"
+
+def checkForkChildren (j : Json) : Except String Unit := do
+  let rows ← (← (← j.getObjVal? "forks").getArr?).toList.mapM fun row => do
+    match (← row.getArr?).toList with
+    | [p, cuts] => pure (← p.getNat?, ← (← cuts.getArr?).toList.mapM cutoffRow)
+    | _ => throw s!"not a branch row: {row.compress}"
+  let (seeds, c, top, found) := (← natsAt j "seeds", ← nat j "commit", ← nat j "top", ← natsAt j "found")
+  let children := rows.flatMap fun (_, cuts) => cuts.flatMap (·.2)
+  for (p, cuts) in rows do
+    let cutoffs := cuts.map (·.1)
+    expect ((cutoffs.zip cutoffs.tail).all fun (a, b) => a < b) s!"branch {p}'s cutoffs are not ascending"
+    expect (cuts.all fun (fc, xs) => !xs.isEmpty && fc ≤ top) s!"branch {p} keeps an empty or unbounded row"
+  expect (children.eraseDups.length == children.length) "a fork has two rows"
+  let F : ForkChildren.Forks := fun p => ((rows.find? (·.1 == p)).map (·.2)).getD []
+  let w := (ForkChildren.forksInheriting F c top seeds (seeds.length + children.length + 1)).val
+  expect w.stack.isEmpty "the model's walk did not finish"
+  expect (w.marked.mergeSort == found.mergeSort)
+    s!"forks inheriting {c} from {seeds}: Rust {found}, the model {w.marked.mergeSort}"
+
+/-- A slot: `[]` absent, `[null]` a tombstone, `[value]`. -/
+def slot (j : Json) : Except String (Option (Option Nat)) := do
+  match (← j.getArr?).toList with
+  | [] => pure none
+  | [v] => if v.isNull then pure (some none) else pure (some (some (← v.getNat?)))
+  | _ => throw s!"not a slot: {j.compress}"
+
+def slotsAt (j : Json) (key : String) : Except String (List (Option (Option Nat))) := do
+  (← (← j.getObjVal? key).getArr?).toList.mapM slot
+
+/-- Written slots as the model's table operations. -/
+def writes (j : Json) (key : String) : Except String (List (CowMapFork.Op Nat)) := do
+  (← (← j.getObjVal? key).getArr?).toList.mapM fun w => do
+    match (← w.getArr?).toList with
+    | [k, v] => if v.isNull then pure (.erase (← k.getNat?)) else pure (.write (← k.getNat?) (← v.getNat?))
+    | _ => throw s!"not a write: {w.compress}"
+
+def checkCowFork (j : Json) : Except String Unit := do
+  let empty : CowMapFork.Table Nat := { base := fun _ => none, delta := .leaf }
+  let source := CowMapFork.apply empty (← writes j "entries")
+  let fork := CowMapFork.fork source source.base
+  expect ((← nat j "fresh") + 1 == fork.steps && (← (← j.getObjVal? "shared").getBool?))
+    "the fork allocated nodes or did not share its source's root"
+  let probes ← nat j "probes"
+  let slots := fun (t : CowMapFork.Table Nat) => (List.range probes).map fun q => (CowMapFork.get t.delta q).val
+  expect ((← slotsAt j "forked") == slots fork.val) "the fork does not read its source's slots"
+  let child := CowMapFork.apply fork.val (← writes j "child_writes")
+  let parent := CowMapFork.apply source (← writes j "parent_writes")
+  expect ((← slotsAt j "child") == slots child) "the fork's slots after its writes are not the model's"
+  expect ((← slotsAt j "parent") == slots parent) "the source's slots after its writes are not the model's"
+
 def check (j : Json) : Except String Unit := do
   match ← (← j.getObjVal? "kind").getStr? with
   | "mint_order" => checkMintOrder j
@@ -210,6 +273,8 @@ def check (j : Json) : Except String Unit := do
   | "carriers" => checkCarriers j
   | "state_at" => checkStateAt j
   | "resolve" => checkResolve j
+  | "fork_children" => checkForkChildren j
+  | "cow_fork" => checkCowFork j
   | "wire" => checkWire j
   | "disc" => checkDisc j
   | other => throw s!"unknown line kind {other}"

@@ -688,6 +688,29 @@ automatically follow `Restore` events and bind to the checked-out basis.
 > commits (Store cold-checkpoint owner). Phase 7B-2/7B-3 follow; this
 > milestone stays open.
 
+> **Progress (2026-11-27, Phase 7B-2 to 7B-4 public, refs #71; not closed):**
+> The held non-head group reopen loss closed with Store M4.3f's paged `CHK24`
+> naming and group state (#440, #468), which also landed retention-floor
+> compaction, cutoff-indexed `fork_children` (#461) and copy-on-write table
+> forks. Phase 7B-2 landed recorded-at-basis discriminators and structural
+> identity (#449), tracked split and awaited-birth facts with delta carriers
+> (#460), shared symbol texts (#469) and canonical delta group-lineage frames
+> (#475). Step bounds are Lean 4 proofs in `proofs/lean/persistent_naming/`,
+> pinned to the shipping Rust and checked against its traces by
+> `lake exe conformance` (#477; `ForkChildrenCost` and `CowMapForkCost` for
+> `forks_inheriting` and table forks). `worth-court-relational-cold-residency`
+> `allocation_proofs::composed_cold_reopen_scaling` composes names, an Anchor
+> group and forks over a cold `CHK24` reopen at 1x and 10x, and
+> `allocation_proofs::naming_release_ceiling` is the manual release ceiling
+> run: at 100,000 names over 10,000 commits with 1,000 groups and 64 branches,
+> medians of three runs were cold reopen 1.03 s (104 MiB peak heap), fork
+> 11 µs, name and group resolve 0.45 ms, one-member detach 1.2 ms and a birth
+> 1.6 ms (77 ms when it first faults a cold partition). The same run found the
+> checkpoint paging every fork's inherited tables in full (109,085 naming
+> pages, 4.0 GB, a 47 MB manifest); that is the reopen's cost and is open. The
+> private 7B-3b adoption and the unified acceptance journey remain; this
+> milestone stays open.
+
 *(Phase 6 is the downstream consumer cutover tracked in the consumer repository.)*
 
 ### Outcome, scope and dependencies

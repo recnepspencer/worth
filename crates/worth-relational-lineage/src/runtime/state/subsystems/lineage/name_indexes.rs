@@ -375,3 +375,7 @@ impl LineageState {
             .collect()
     }
 }
+
+#[cfg(test)]
+#[path = "fork_children_conformance_trace.rs"]
+mod fork_children_conformance_trace;
