@@ -170,6 +170,67 @@ pub fn branch_key_digest(
     )
 }
 
+/// Decodes a `GROUP_LOG` row key into `(commit, branch_digest)`.
+pub fn parse_group_log_key(
+    key: &[u8],
+) -> Result<
+    (
+        crate::contracts::history::data::coordinates::CommitId,
+        [u8; 32],
+    ),
+    worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+>{
+    use crate::contracts::history::data::coordinates::CommitId;
+    use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
+    if key.first() != Some(&GROUP_LOG) {
+        return Err(Cause::Damaged);
+    }
+    let ((_ordinal, commit), digest) = <((u64, CommitId), [u8; 32])>::from_bytes(&key[1..])?;
+    Ok((commit, digest))
+}
+
+/// Computes sorted per-branch `(first_commit, last_commit)` spans for a
+/// primary `GROUP_LOG` page (empty for all non-`GROUP_LOG` pages).
+pub fn group_log_branch_spans(
+    rows: &[(Vec<u8>, Vec<u8>)],
+) -> Result<
+    Vec<super::GroupLogBranchSpan>,
+    worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+>{
+    use std::collections::BTreeMap;
+    use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
+    if rows
+        .first()
+        .is_none_or(|(key, _)| key.first() != Some(&GROUP_LOG))
+    {
+        return Ok(Vec::new());
+    }
+    let mut spans: BTreeMap<[u8; 32], (u64, u64)> = BTreeMap::new();
+    for (key, _) in rows {
+        let (commit, digest) = parse_group_log_key(key)?;
+        if commit.0 == 0 {
+            return Err(Cause::Damaged);
+        }
+        spans
+            .entry(digest)
+            .and_modify(|(lo, hi)| {
+                *lo = (*lo).min(commit.0);
+                *hi = (*hi).max(commit.0);
+            })
+            .or_insert((commit.0, commit.0));
+    }
+    Ok(spans
+        .into_iter()
+        .map(
+            |(branch_digest, (first_commit, last_commit))| super::GroupLogBranchSpan {
+                branch_digest,
+                first_commit,
+                last_commit,
+            },
+        )
+        .collect())
+}
+
 /// Cryptographic commitment to a primary page's ascending `(base_key, chunks)` pairs.
 pub fn continuation_digest(pairs: &[(&[u8], u32)]) -> Option<[u8; 32]> {
     if pairs.is_empty() {

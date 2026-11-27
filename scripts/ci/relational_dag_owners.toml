@@ -44,10 +44,10 @@ layer = 3
 # fork base link + ACK rebind, Arc-wrapped CowMap values, and Round 3 tests).
 # +200 for Store M4.3f Round 6-7 hardening (deadlock-free ACK guard, bounded
 # GROUP_LOG branch digest keys, and VALUE_CHUNK continuation accounting).
-# +500 for Store M4.3f Round 11-12 hardening (per-branch O(log P) ephemeral
-# event-page window index, pre-base GROUP_LOG skip, AVL path-sharing detection,
-# Arc-shared forward edges, and single-descent O(log n) im::OrdMap histories).
-cap = 22200
+# +900 for Store M4.3f Round 11-13 hardening (per-branch O(log P) ephemeral
+# event-page & GROUP_LOG window indexes, AVL path-sharing detection, Arc-shared
+# forward edges, safe range-based OrdMap predecessor lookups, and zero-rebuild compaction).
+cap = 22600
 floor = 7100
 depends = ["contracts", "storage", "branch"]
 

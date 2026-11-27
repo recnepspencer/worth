@@ -34,7 +34,8 @@ use crate::lineage::tiered::TieredMap;
 
 #[test]
 fn chunked_writer_refuses_values_above_64mib_and_rejects_malformed_prior_header() {
-    let key = row_key(GROUP_LOG, &(CommitId(1), BranchId("main".into())));
+    let digest = crate::lineage::naming_pages::tables::branch_key_digest(&BranchId("main".into()));
+    let key = row_key(GROUP_LOG, &((1u64, CommitId(1)), digest));
     let oversized = vec![0xABu8; MAX_REASSEMBLED_VALUE_BYTES + 1];
     let mut sink = CollectedMembers::default();
     let err = seal_pages(None, vec![(key.clone(), Some(oversized))], &mut sink)
@@ -64,6 +65,11 @@ fn chunked_writer_refuses_values_above_64mib_and_rejects_malformed_prior_header(
         entries: 1,
         continuation_chunks: 0,
         continuation_digest: None,
+        group_log_branches: vec![crate::lineage::naming_pages::GroupLogBranchSpan {
+            branch_digest: digest,
+            first_commit: 1,
+            last_commit: 1,
+        }],
         member: member.locator,
     };
     let state = Arc::new(CheckpointNamingState {
@@ -88,9 +94,10 @@ fn chunked_writer_refuses_values_above_64mib_and_rejects_malformed_prior_header(
 #[test]
 fn chunked_scan_succeeds_under_strict_one_page_memory_budget() {
     let branch = BranchId("main".into());
-    let k1 = row_key(GROUP_LOG, &(CommitId(1), branch.clone()));
-    let k2 = row_key(GROUP_LOG, &(CommitId(2), branch.clone()));
-    let k3 = row_key(GROUP_LOG, &(CommitId(3), branch));
+    let digest = crate::lineage::naming_pages::tables::branch_key_digest(&branch);
+    let k1 = row_key(GROUP_LOG, &((1u64, CommitId(1)), digest));
+    let k2 = row_key(GROUP_LOG, &((2u64, CommitId(2)), digest));
+    let k3 = row_key(GROUP_LOG, &((3u64, CommitId(3)), digest));
     let small_v1 = vec![0x11u8; 24 * 1024];
     let large_v2 = vec![0x5Cu8; 144 * 1024]; // 6 continuation chunks (~3 chunk pages)
     let small_v3 = vec![0x33u8; 24 * 1024];

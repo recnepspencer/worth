@@ -249,8 +249,7 @@ impl LineageState {
         crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
     > {
         use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
-        use crate::lineage::naming_pages::codec::NamingCodec;
-        use crate::lineage::naming_pages::tables::{branch_key_digest, GROUP_LOG};
+        use crate::lineage::naming_pages::tables::branch_key_digest;
 
         let bounds: BTreeMap<_, _> = self.ancestry(b, CommitId(u64::MAX)).into_iter().collect();
         let mut through = None;
@@ -264,42 +263,19 @@ impl LineageState {
                     .map(|(branch, &bound)| (branch_key_digest(branch), bound))
                     .collect();
                 if !digest_bounds.is_empty() {
-                    let group_log = &store.state().group_log;
-                    let primary_end =
-                        group_log.partition_point(|p| p.first.first() == Some(&GROUP_LOG));
-                    let start_page = group_log[..primary_end].partition_point(|p| {
-                        <((u64, CommitId), [u8; 32])>::from_bytes(&p.last[1..])
-                            .is_ok_and(|((_, last_commit), _)| last_commit <= c)
-                    });
                     let mut found: Option<(CommitId, String)> = None;
-                    store.scan_filtered(
-                        group_log,
-                        start_page,
-                        &[GROUP_LOG],
-                        |key| {
-                            let ((_ordinal, at), owner_digest) =
-                                <((u64, CommitId), [u8; 32])>::from_bytes(
-                                    key.get(1..).ok_or(Cause::Damaged)?,
-                                )?;
-                            Ok(at > c
-                                && digest_bounds
-                                    .get(&owner_digest)
-                                    .is_some_and(|bound| at <= *bound))
-                        },
-                        |key, frame| {
-                            let ((_ordinal, at), _) = <((u64, CommitId), [u8; 32])>::from_bytes(
-                                key.get(1..).ok_or(Cause::Damaged)?,
-                            )?;
-                            let transitions =
-                                crate::durability::naming::decode_group_lineage_frame(frame)
-                                    .map_err(|_| Cause::Damaged)?;
-                            if let Some(first) = transitions.first() {
+                    store.scan_group_log_after(&digest_bounds, c, |at, frame| {
+                        let transitions =
+                            crate::durability::naming::decode_group_lineage_frame(frame)
+                                .map_err(|_| Cause::Damaged)?;
+                        if let Some(first) = transitions.first() {
+                            if found.as_ref().is_none_or(|(prev, _)| at < *prev) {
                                 found = Some((at, first.scheme_id().to_owned()));
-                                return Ok(false);
                             }
-                            Ok(true)
-                        },
-                    )?;
+                            return Ok(true);
+                        }
+                        Ok(false)
+                    })?;
                     if found.is_some() {
                         return Ok(found);
                     }

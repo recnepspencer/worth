@@ -14,6 +14,17 @@ use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::lineage::data::name_resolution::{PersistentNameKey, PersistentNameTarget};
 use crate::contracts::lineage::data::naming::{PersistentNameBirthParts, PersistentNameIdentity};
 
+/// Exact `O(log n)` predecessor lookup (`k <= key`) on `im::OrdMap`.
+///
+/// Uses `range(..=key).next_back()` rather than `im::OrdMap::get_prev`, which
+/// drops promoted parent separators after a B-tree split in `im 15.1.0`.
+pub(super) fn ordmap_prev<'a, K: Ord, V>(
+    map: &'a im::OrdMap<K, V>,
+    key: &K,
+) -> Option<(&'a K, &'a V)> {
+    map.range(..=key).next_back()
+}
+
 /// What a name designates from one commit until its next timeline entry.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum NameState {
@@ -60,9 +71,7 @@ impl HolderEpochs {
 
     /// The lineage bound to this holder at `basis` in one `O(log e)` descent.
     pub(crate) fn lineage_at(&self, basis: CommitId) -> Option<LineageId> {
-        self.0
-            .get_prev(&(basis, LineageId(u64::MAX)))
-            .map(|((_, lineage), _)| *lineage)
+        ordmap_prev(&self.0, &(basis, LineageId(u64::MAX))).map(|((_, lineage), _)| *lineage)
     }
 
     pub(crate) fn insert_epoch(&mut self, bound_at: CommitId, lineage: LineageId) {
@@ -170,9 +179,7 @@ impl NameEntry {
     ///
     /// Complexity: single `O(log t)` B-tree predecessor descent.
     pub(crate) fn state_at(&self, basis: CommitId) -> Option<(CommitId, &NameState)> {
-        self.timeline
-            .get_prev(&basis)
-            .map(|(commit, state)| (*commit, state))
+        ordmap_prev(&self.timeline, &basis).map(|(commit, state)| (*commit, state))
     }
 
     /// The latest state and commit, as of the newest ingested commit.
@@ -218,7 +225,7 @@ impl NameEntry {
     /// Complexity: single `O(log t)` B-tree predecessor descent.
     pub(crate) fn lineage_ended_at(&self, ended_at: CommitId) -> Option<LineageId> {
         let prev_limit = ended_at.0.checked_sub(1)?;
-        match self.timeline.get_prev(&CommitId(prev_limit)) {
+        match ordmap_prev(&self.timeline, &CommitId(prev_limit)) {
             Some((_, NameState::Live(live))) => live.target.lineage(),
             _ => None,
         }
@@ -304,5 +311,76 @@ impl NameEntry {
         } else {
             self.forward_edges.insert(commit, Arc::new(vec![successor]));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::lineage::index::member_groups::{MemberTenure, MemberTenures};
+    use crate::lineage::index::retention::{compact_entry, compact_tenures, first_retained_commit};
+    use worth_foundational::facade::AggregateIdentity;
+
+    #[test]
+    fn predecessor_lookups_survive_btree_splits_at_promoted_separator_gaps() {
+        let g = |n: u8| AggregateIdentity::from_bytes([n; 32]);
+        let live = |n: u8| {
+            NameState::Live(LiveName {
+                target: PersistentNameTarget::Group { group: g(n) },
+                carriers: Carriers::new(),
+            })
+        };
+        let mut entry = NameEntry::born(
+            CommitId(2),
+            NameOrigin::Group {
+                scheme_id: Some("s".into()),
+            },
+            LiveName {
+                target: PersistentNameTarget::Group { group: g(1) },
+                carriers: Carriers::new(),
+            },
+        );
+        let mut epochs = HolderEpochs::default();
+        let mut tenure = MemberTenure::new();
+        for i in 1u64..=130 {
+            let c = CommitId(i * 2);
+            if i > 1 {
+                entry.set_state(c, live(i as u8));
+            }
+            epochs.insert_epoch(c, LineageId(i));
+            tenure.insert(c, Some(g(i as u8)));
+        }
+        assert!(entry.state_at(CommitId(1)).is_none());
+        assert!(epochs.lineage_at(CommitId(1)).is_none());
+        assert!(ordmap_prev(&tenure, &CommitId(1)).is_none());
+        // Verify every exact commit AND every odd gap (including 67 after promoted key 66).
+        for probe in 2u64..=261 {
+            let expected_i = (probe / 2).min(130);
+            let expected_c = CommitId(expected_i * 2);
+            let (got_c, _) = entry
+                .state_at(CommitId(probe))
+                .expect("predecessor must never vanish across B-tree split");
+            assert_eq!(got_c, expected_c, "NameEntry::state_at({probe})");
+            assert_eq!(
+                epochs.lineage_at(CommitId(probe)),
+                Some(LineageId(expected_i)),
+                "HolderEpochs::lineage_at({probe})"
+            );
+            assert_eq!(
+                ordmap_prev(&tenure, &CommitId(probe)).map(|(c, _)| *c),
+                Some(expected_c),
+                "MemberTenure prev({probe})"
+            );
+            assert_eq!(
+                first_retained_commit(&entry.timeline, CommitId(probe)),
+                Some(expected_c),
+                "first_retained_commit({probe})"
+            );
+        }
+        // Unchanged floor before earliest commit returns None without rebuilding.
+        assert!(compact_entry(&entry, CommitId(1)).is_none());
+        let mut tenures = MemberTenures::new();
+        tenures.insert("s".into(), tenure);
+        assert!(compact_tenures(&tenures, CommitId(1)).is_none());
     }
 }

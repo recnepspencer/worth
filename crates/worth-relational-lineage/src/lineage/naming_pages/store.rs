@@ -32,6 +32,7 @@ pub struct ColdNamingStore {
     group: Arc<PageEvictionGroup>,
     accountant: OnceLock<Arc<WorkingSetAccountant>>,
     cache: OnceLock<Arc<ResidentPageCache<ResidentNamingPage>>>,
+    pub(super) group_log_windows: super::group_window::GroupLogWindowIndex,
 }
 
 impl std::fmt::Debug for ColdNamingStore {
@@ -51,6 +52,7 @@ impl ColdNamingStore {
         source: Arc<dyn RelationalDurableColdSource>,
     ) -> Self {
         let roster = state.page_members();
+        let group_log_windows = super::group_window::GroupLogWindowIndex::build(&state.group_log);
         Self {
             source: ConfinedMemberSource::new(
                 ColdMemberSource::new(source, NAMING_PAGE_BYTES as u64),
@@ -59,6 +61,7 @@ impl ColdNamingStore {
             group: PageEvictionGroup::new(),
             accountant: OnceLock::new(),
             cache: OnceLock::new(),
+            group_log_windows,
             state,
         }
     }
@@ -185,65 +188,79 @@ impl ColdNamingStore {
             if !reference.first.starts_with(prefix) && reference.first.as_slice() > prefix {
                 break;
             }
-            let page = self.page(reference)?;
-            let has_chunked = page
-                .page
-                .rows
-                .iter()
-                .any(|(k, r)| k.starts_with(prefix) && r.first() == Some(&VALUE_CHUNKED_TAG));
-            if !has_chunked {
-                for (key, raw) in &page.page.rows {
-                    if key.as_slice() < prefix {
-                        continue;
-                    }
-                    if !key.starts_with(prefix) {
-                        return Ok(());
-                    }
-                    if parse_value_envelope(raw)?.is_some() {
-                        return Err(Cause::Damaged);
-                    }
-                    if !key_matches(key)? {
-                        continue;
-                    }
-                    if !visit(key, &raw[1..])? {
-                        return Ok(());
-                    }
-                }
-                continue;
+            if !self.scan_page_filtered(pages, reference, prefix, &mut key_matches, &mut visit)? {
+                return Ok(());
             }
-            let mut staged = Vec::new();
-            let mut hit_end = false;
+        }
+        Ok(())
+    }
+
+    /// Scans one primary page, applying `key_matches` before reassembling any
+    /// chunked row. Returns `Ok(true)` to continue scanning, `Ok(false)` when
+    /// `visit` stopped early or the `prefix` run ended.
+    pub(super) fn scan_page_filtered(
+        &self,
+        pages: &[NamingPageRef],
+        reference: &NamingPageRef,
+        prefix: &[u8],
+        mut key_matches: impl FnMut(&[u8]) -> Result<bool, Cause>,
+        mut visit: impl FnMut(&[u8], &[u8]) -> Result<bool, Cause>,
+    ) -> Result<bool, Cause> {
+        let page = self.page(reference)?;
+        let has_chunked = page
+            .page
+            .rows
+            .iter()
+            .any(|(k, r)| k.starts_with(prefix) && r.first() == Some(&VALUE_CHUNKED_TAG));
+        if !has_chunked {
             for (key, raw) in &page.page.rows {
                 if key.as_slice() < prefix {
                     continue;
                 }
                 if !key.starts_with(prefix) {
-                    hit_end = true;
-                    break;
+                    return Ok(false);
                 }
-                if key_matches(key)? {
-                    staged.push((key.clone(), raw.clone()));
+                if parse_value_envelope(raw)?.is_some() {
+                    return Err(Cause::Damaged);
                 }
-            }
-            // Release the logical page borrow before faulting any chunk pages.
-            drop(page);
-            for (key, raw) in staged {
-                let keep = match parse_value_envelope(&raw)? {
-                    None => visit(&key, &raw[1..])?,
-                    Some(_) => {
-                        let full = self.reassemble(pages, &key, &raw)?;
-                        visit(&key, &full)?
-                    }
-                };
-                if !keep {
-                    return Ok(());
+                if !key_matches(key)? {
+                    continue;
+                }
+                if !visit(key, &raw[1..])? {
+                    return Ok(false);
                 }
             }
-            if hit_end {
-                return Ok(());
+            return Ok(true);
+        }
+        let mut staged = Vec::new();
+        let mut hit_end = false;
+        for (key, raw) in &page.page.rows {
+            if key.as_slice() < prefix {
+                continue;
+            }
+            if !key.starts_with(prefix) {
+                hit_end = true;
+                break;
+            }
+            if key_matches(key)? {
+                staged.push((key.clone(), raw.clone()));
             }
         }
-        Ok(())
+        // Release the logical page borrow before faulting any chunk pages.
+        drop(page);
+        for (key, raw) in staged {
+            let keep = match parse_value_envelope(&raw)? {
+                None => visit(&key, &raw[1..])?,
+                Some(_) => {
+                    let full = self.reassemble(pages, &key, &raw)?;
+                    visit(&key, &full)?
+                }
+            };
+            if !keep {
+                return Ok(false);
+            }
+        }
+        Ok(!hit_end)
     }
 
     /// The exact bytes of page member `locator`, uncached, so a capture can

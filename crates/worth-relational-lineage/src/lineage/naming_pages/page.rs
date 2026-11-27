@@ -7,7 +7,7 @@ use worth_relational_storage::internal_port::storage::residency::chunked::member
 };
 use worth_relational_storage::internal_port::storage::residency::chunked::page_cache::ResidentPage;
 
-use super::{NamingPageRef, NAMING_KEY_BYTES, NAMING_PAGE_ENTRIES};
+use super::{GroupLogBranchSpan, NamingPageRef, NAMING_KEY_BYTES, NAMING_PAGE_ENTRIES};
 
 /// The encoded page: strictly ascending `(row key, value)` rows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -23,6 +23,7 @@ pub struct ResidentNamingPage {
     encoded: u64,
     continuation_chunks: u32,
     continuation_digest: Option<[u8; 32]>,
+    group_log_branches: Vec<GroupLogBranchSpan>,
 }
 
 impl NamingPage {
@@ -45,11 +46,13 @@ impl ResidentPage for ResidentNamingPage {
         }
         let (continuation_chunks, continuation_digest) =
             super::tables::page_continuation_summary(&page.rows)?;
+        let group_log_branches = super::tables::group_log_branch_spans(&page.rows)?;
         Ok(Self {
             page,
             encoded: bytes.len() as u64,
             continuation_chunks,
             continuation_digest,
+            group_log_branches,
         })
     }
 
@@ -69,6 +72,7 @@ impl ResidentNamingPage {
             || rows.last().map(|row| &row.0) != Some(&reference.last)
             || self.continuation_chunks != reference.continuation_chunks
             || self.continuation_digest != reference.continuation_digest
+            || self.group_log_branches != reference.group_log_branches
         {
             return Err(Cause::IntegrityMismatch);
         }

@@ -17,6 +17,7 @@ use worth_relational_storage::internal_port::durability::medium::cold_source::Re
 pub mod builder;
 pub mod codec;
 mod codec_im;
+mod group_window;
 pub mod page;
 pub mod store;
 pub mod tables;
@@ -33,6 +34,17 @@ pub const NAMING_LOGICAL_KEY_BYTES: usize = 192;
 /// Bound on one installed group scheme id in a branch header.
 pub const SCHEME_ID_BYTES: usize = 128;
 
+/// Per-branch publication-commit span carried on a primary `GROUP_LOG` page
+/// descriptor so cold merge preparation routes by `(branch, commit)` before
+/// opening any page payload.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GroupLogBranchSpan {
+    pub branch_digest: [u8; 32],
+    pub first_commit: u64,
+    pub last_commit: u64,
+}
+
 /// One page's fixed-bound descriptor.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -45,6 +57,8 @@ pub struct NamingPageRef {
     pub continuation_chunks: u32,
     #[serde(default)]
     pub continuation_digest: Option<[u8; 32]>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub group_log_branches: Vec<GroupLogBranchSpan>,
     pub member: RelationalDurableMemberLocator,
 }
 
@@ -200,13 +214,39 @@ pub fn validate_pages(pages: &[NamingPageRef]) -> Result<(), &'static str> {
             return Err("naming page descriptor is invalid or out of order");
         }
         if page.first[0] == tables::VALUE_CHUNK {
-            if page.continuation_chunks != 0 || page.continuation_digest.is_some() {
+            if page.continuation_chunks != 0
+                || page.continuation_digest.is_some()
+                || !page.group_log_branches.is_empty()
+            {
                 return Err("continuation chunk page carries nested continuations");
             }
             actual_chunks += u64::from(page.entries);
         } else {
             if (page.continuation_chunks == 0) != page.continuation_digest.is_none() {
                 return Err("naming page continuation count and digest disagree");
+            }
+            if page.first[0] == tables::GROUP_LOG {
+                let (first_commit, _) = tables::parse_group_log_key(&page.first)
+                    .map_err(|_| "group log page first key is malformed")?;
+                let (last_commit, _) = tables::parse_group_log_key(&page.last)
+                    .map_err(|_| "group log page last key is malformed")?;
+                if page.group_log_branches.is_empty()
+                    || page.group_log_branches.len() > page.entries as usize
+                    || page
+                        .group_log_branches
+                        .windows(2)
+                        .any(|pair| pair[0].branch_digest >= pair[1].branch_digest)
+                    || page.group_log_branches.iter().any(|span| {
+                        span.first_commit == 0
+                            || span.first_commit > span.last_commit
+                            || span.first_commit < first_commit.0
+                            || span.last_commit > last_commit.0
+                    })
+                {
+                    return Err("group log page branch spans are invalid or out of bounds");
+                }
+            } else if !page.group_log_branches.is_empty() {
+                return Err("non-group-log naming page carries group log branch spans");
             }
             expected_chunks += u64::from(page.continuation_chunks);
         }

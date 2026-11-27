@@ -10,6 +10,7 @@ use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::lineage::data::name_resolution::PersistentNameKey;
 use crate::contracts::lineage::data::naming::PersistentNameIdentity;
 
+use super::entry::ordmap_prev;
 use super::journal::IngestionJournal;
 use super::{
     Carriers, NameEntry, NameState, PersistentNameBranchIndex, PersistentNameCommittedBatch,
@@ -26,7 +27,7 @@ pub(crate) type MemberTenure = im::OrdMap<CommitId, Option<AggregateIdentity>>;
 pub(crate) type MemberTenures = im::OrdMap<String, MemberTenure>;
 
 fn tenure_at(tenure: &MemberTenure, basis: CommitId) -> Option<AggregateIdentity> {
-    tenure.get_prev(&basis).and_then(|(_, group)| *group)
+    ordmap_prev(tenure, &basis).and_then(|(_, group)| *group)
 }
 
 impl PersistentNameBranchIndex {

@@ -15,6 +15,7 @@ use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::lineage::data::name_resolution::PersistentNameKey;
 
+use super::entry::ordmap_prev;
 use super::member_groups::{MemberTenure, MemberTenures};
 use super::{
     HolderEpochs, NameEntry, NameState, PersistentNameBranchIndex, PersistentNameIndexDenial,
@@ -28,14 +29,15 @@ pub(crate) fn first_retained_commit<T: Clone>(
     run: &im::OrdMap<CommitId, T>,
     floor: CommitId,
 ) -> Option<CommitId> {
-    run.get_prev(&floor)
+    ordmap_prev(run, &floor)
         .map(|(c, _)| *c)
         .or_else(|| run.get_min().map(|(c, _)| *c))
 }
 
-/// Compacts one name entry for `floor`; `None` when nothing changes.
+/// Compacts one name entry for `floor`; `None` when nothing changes, with zero
+/// map rebuilds on unchanged entries.
 ///
-/// Complexity: O(t + e) in the entry's own timeline and edge runs.
+/// Complexity: `O(log t + log e)` on unchanged entries; `O(t + e)` when changed.
 pub(crate) fn compact_entry(entry: &NameEntry, floor: CommitId) -> Option<NameEntry> {
     let mut keep = first_retained_commit(&entry.timeline, floor)?;
     // An ended state at the floor still reports the lineage that ended there.
@@ -50,16 +52,32 @@ pub(crate) fn compact_entry(entry: &NameEntry, floor: CommitId) -> Option<NameEn
         }
     }
     let dropped_timeline = entry.timeline.get_min().is_some_and(|(min, _)| *min < keep);
-    let mut timeline: im::OrdMap<CommitId, NameState> = entry
-        .timeline
-        .range(keep..)
-        .map(|(commit, state)| (*commit, state.clone()))
-        .collect();
-    let effective = first_retained_commit(&timeline, floor);
-    let mut stripped = false;
-    if let Some(effective) = effective {
+    let effective = first_retained_commit(&entry.timeline, floor);
+    let needs_strip = effective.is_some_and(|eff| {
+        keep < eff
+            && entry.timeline.range(keep..eff).any(
+                |(_, state)| matches!(state, NameState::Live(live) if !live.carriers.is_empty()),
+            )
+    });
+    let dropped_edges = entry
+        .forward_edges
+        .range(..floor)
+        .any(|(commit, _)| *commit < keep || !entry.timeline.contains_key(commit));
+    if !dropped_timeline && !needs_strip && !dropped_edges {
+        return None;
+    }
+    let mut timeline = if dropped_timeline {
+        entry
+            .timeline
+            .range(keep..)
+            .map(|(commit, state)| (*commit, state.clone()))
+            .collect()
+    } else {
+        entry.timeline.clone()
+    };
+    if needs_strip && let Some(eff) = effective {
         let to_strip: Vec<CommitId> = timeline
-            .range(..effective)
+            .range(..eff)
             .filter_map(|(commit, state)| match state {
                 NameState::Live(live) if !live.carriers.is_empty() => Some(*commit),
                 _ => None,
@@ -68,19 +86,19 @@ pub(crate) fn compact_entry(entry: &NameEntry, floor: CommitId) -> Option<NameEn
         for commit in to_strip {
             if let Some(NameState::Live(live)) = timeline.get_mut(&commit) {
                 live.carriers.clear();
-                stripped = true;
             }
         }
     }
-    let forward_edges: im::OrdMap<_, _> = entry
-        .forward_edges
-        .iter()
-        .filter(|(commit, _)| **commit >= floor || timeline.contains_key(commit))
-        .map(|(commit, edges)| (*commit, edges.clone()))
-        .collect();
-    if !dropped_timeline && !stripped && forward_edges.len() == entry.forward_edges.len() {
-        return None;
-    }
+    let forward_edges = if dropped_edges {
+        entry
+            .forward_edges
+            .iter()
+            .filter(|(commit, _)| **commit >= floor || timeline.contains_key(commit))
+            .map(|(commit, edges)| (*commit, edges.clone()))
+            .collect()
+    } else {
+        entry.forward_edges.clone()
+    };
     Some(NameEntry {
         origin: entry.origin.clone(),
         born: entry.born,
@@ -92,11 +110,9 @@ pub(crate) fn compact_entry(entry: &NameEntry, floor: CommitId) -> Option<NameEn
 
 /// Compacts one record's binding epochs; `None` when nothing changes.
 ///
-/// Complexity: O(e) over retained suffix.
+/// Complexity: `O(log e)` when unchanged; `O(e)` over retained suffix when changed.
 pub(crate) fn compact_epochs(epochs: &HolderEpochs, floor: CommitId) -> Option<HolderEpochs> {
-    let keep = epochs
-        .0
-        .get_prev(&(floor, LineageId(u64::MAX)))
+    let keep = ordmap_prev(&epochs.0, &(floor, LineageId(u64::MAX)))
         .map(|(k, _)| *k)
         .or_else(|| epochs.0.get_min().map(|(k, _)| *k))?;
     if !epochs.0.get_min().is_some_and(|(min, _)| *min < keep) {
@@ -110,40 +126,51 @@ pub(crate) fn compact_epochs(epochs: &HolderEpochs, floor: CommitId) -> Option<H
     Some(HolderEpochs(retained))
 }
 
-/// Compacts one member's tenures; `Some(None)` removes the member.
+fn tenure_change_kind(tenure: &MemberTenure, floor: CommitId) -> Option<(Option<CommitId>, bool)> {
+    let Some(keep) = first_retained_commit(tenure, floor) else {
+        return Some((None, true));
+    };
+    let dropped = tenure.get_min().is_some_and(|(min, _)| *min < keep);
+    let mut retained_iter = tenure.range(keep..);
+    let remove_scheme = matches!(retained_iter.next(), Some((at, None)) if *at <= floor)
+        && retained_iter.next().is_none();
+    if !dropped && !remove_scheme {
+        None
+    } else {
+        Some((Some(keep), remove_scheme))
+    }
+}
+
+/// Compacts one member's tenures; `Some(None)` removes the member. Unchanged
+/// schemes and unchanged members reuse their persistent maps with zero rebuild.
 ///
-/// Complexity: O(S * t) over its S scheme tenures.
+/// Complexity: `O(S * log t)` when unchanged; rebuilds only changed schemes.
 pub(crate) fn compact_tenures(
     tenures: &MemberTenures,
     floor: CommitId,
 ) -> Option<Option<MemberTenures>> {
-    let mut changed = false;
-    let mut compacted = MemberTenures::new();
+    let mut updates: Vec<(&str, Option<CommitId>, bool)> = Vec::new();
     for (scheme, tenure) in tenures {
-        let Some(keep) = first_retained_commit(tenure, floor) else {
-            changed = true;
-            continue;
-        };
-        let dropped = tenure.get_min().is_some_and(|(min, _)| *min < keep);
-        let run: MemberTenure = tenure
-            .range(keep..)
-            .map(|(commit, group)| (*commit, *group))
-            .collect();
-        changed |= dropped;
-        if run.len() == 1
-            && let Some((at, None)) = run.get_min()
-            && *at <= floor
-        {
-            changed = true;
-            continue;
+        if let Some((keep, remove_scheme)) = tenure_change_kind(tenure, floor) {
+            updates.push((scheme.as_str(), keep, remove_scheme));
         }
-        compacted.insert(scheme.clone(), run);
     }
-    match (changed, compacted.is_empty()) {
-        (false, _) => None,
-        (true, true) => Some(None),
-        (true, false) => Some(Some(compacted)),
+    if updates.is_empty() {
+        return None;
     }
+    let mut compacted = tenures.clone();
+    for (scheme, keep, remove_scheme) in updates {
+        if remove_scheme {
+            compacted.remove(scheme);
+        } else if let (Some(keep), Some(tenure)) = (keep, tenures.get(scheme)) {
+            let run: MemberTenure = tenure
+                .range(keep..)
+                .map(|(commit, group)| (*commit, *group))
+                .collect();
+            compacted.insert(scheme.to_owned(), run);
+        }
+    }
+    Some((!compacted.is_empty()).then_some(compacted))
 }
 
 impl PersistentNameBranchIndex {

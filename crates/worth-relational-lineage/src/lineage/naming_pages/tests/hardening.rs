@@ -65,7 +65,9 @@ fn chunked_large_values_above_32kib_roundtrip_and_shrink_cleanly() {
         "every physical page stays <= 64 KiB"
     );
 
-    let log_key = row_key(GROUP_LOG, &(CommitId(7), BranchId("main".into())));
+    let main_digest =
+        crate::lineage::naming_pages::tables::branch_key_digest(&BranchId("main".into()));
+    let log_key = row_key(GROUP_LOG, &((1u64, CommitId(7)), main_digest));
     let huge_log_frame: Vec<u8> = (0..68_000usize).map(|i| (i * 17 % 239) as u8).collect();
     let log_pages = seal_pages(
         None,

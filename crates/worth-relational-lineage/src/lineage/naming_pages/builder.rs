@@ -13,8 +13,9 @@ use worth_relational_storage::internal_port::storage::residency::chunked::member
 use super::page::NamingPage;
 use super::store::ColdNamingStore;
 use super::tables::{
-    chunk_key, encode_chunked_header, page_continuation_summary, parse_chunk_key,
-    parse_value_envelope, table_domain, MAX_INLINE_VALUE_BYTES, VALUE_CHUNK, VALUE_INLINE_TAG,
+    chunk_key, encode_chunked_header, group_log_branch_spans, page_continuation_summary,
+    parse_chunk_key, parse_value_envelope, table_domain, MAX_INLINE_VALUE_BYTES, VALUE_CHUNK,
+    VALUE_INLINE_TAG,
 };
 use super::{
     NamingPageRef, NAMING_KEY_BYTES, NAMING_LOGICAL_KEY_BYTES, NAMING_PAGE_BYTES,
@@ -130,6 +131,7 @@ impl PageWriter<'_> {
         let rows = std::mem::take(&mut self.rows);
         let entries = rows.len() as u32;
         let (continuation_chunks, continuation_digest) = page_continuation_summary(&rows)?;
+        let group_log_branches = group_log_branch_spans(&rows)?;
         let member = encode_member(
             ChunkMemberKind::NamingStatePage,
             &NamingPage { rows },
@@ -143,6 +145,7 @@ impl PageWriter<'_> {
             entries,
             continuation_chunks,
             continuation_digest,
+            group_log_branches,
             member: locator,
         });
         self.bytes = 0;
