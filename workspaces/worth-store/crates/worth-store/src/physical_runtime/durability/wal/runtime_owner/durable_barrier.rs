@@ -35,4 +35,30 @@ impl PhysicalWalRuntimeState {
         let end = self.durable_lsn_end?.get();
         worth_store_physical_format::CheckpointWalSourceRange::new(begin, end)
     }
+
+    pub(super) fn has_reclaimable_closed_prefix(&self) -> bool {
+        if self.sealed {
+            return false;
+        }
+        let Some(durable_end) = self.durable_lsn_end else {
+            return false;
+        };
+        let entries = self.segments.entries();
+        let Some(first_retained) =
+            crate::physical_runtime::durability::checkpoint::first_required_segment(
+                entries,
+                durable_end,
+                durable_end,
+            )
+        else {
+            return false;
+        };
+        first_retained > 0
+            && super::super::reclamation::segment_is_reclaimable(
+                entries[0],
+                &self.unresolved_retirement_spans,
+                &self.copy_obligations,
+                durable_end.get(),
+            )
+    }
 }

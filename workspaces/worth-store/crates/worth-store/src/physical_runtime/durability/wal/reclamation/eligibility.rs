@@ -95,6 +95,32 @@ fn covers_retained(
     }
 }
 
+/// Whether a single closed WAL segment is eligible for reclamation at
+/// `cutoff_lsn_exclusive`, i.e., free of overlapping retirement holds and
+/// unresolved copy obligations.
+pub(in crate::physical_runtime::durability) fn segment_is_reclaimable(
+    entry: super::super::inventory::PhysicalWalSegmentInventoryEntry,
+    retirement_holds: &[(
+        crate::physical_runtime::durability::RetiredArtifact,
+        u64,
+        u64,
+    )],
+    copy_obligations: &[super::super::RetainedExtentCopyObligation],
+    cutoff_lsn_exclusive: u64,
+) -> bool {
+    let start = entry.lsn_range().start().get();
+    let end = entry.lsn_range().end_exclusive().get();
+    let held_by_retirement = retirement_holds
+        .iter()
+        .any(|(_, hold_start, hold_end)| start < *hold_end && *hold_start < end);
+    if held_by_retirement {
+        return false;
+    }
+    !copy_obligations
+        .iter()
+        .any(|copy| copy.holds_at(cutoff_lsn_exclusive) && copy.overlaps(start, end))
+}
+
 /// Prefix of `closed` segments eligible for reclamation at `cutoff_lsn_exclusive`,
 /// stopping at the first segment held by an unresolved retirement or copy obligation.
 pub(in crate::physical_runtime::durability) fn reclaimable_closed_prefix<'a>(
@@ -107,39 +133,17 @@ pub(in crate::physical_runtime::durability) fn reclaimable_closed_prefix<'a>(
     copy_obligations: &[super::super::RetainedExtentCopyObligation],
     cutoff_lsn_exclusive: u64,
 ) -> &'a [super::super::inventory::PhysicalWalSegmentInventoryEntry] {
-    let candidates = reclaimable_before_retirement(closed, retirement_holds);
-    match candidates.iter().position(|entry| {
-        copy_obligations.iter().any(|copy| {
-            copy.holds_at(cutoff_lsn_exclusive)
-                && copy.overlaps(
-                    entry.lsn_range().start().get(),
-                    entry.lsn_range().end_exclusive().get(),
-                )
-        })
+    match closed.iter().position(|entry| {
+        !segment_is_reclaimable(
+            *entry,
+            retirement_holds,
+            copy_obligations,
+            cutoff_lsn_exclusive,
+        )
     }) {
-        Some(index) => &candidates[..index],
-        None => candidates,
+        Some(index) => &closed[..index],
+        None => closed,
     }
-}
-
-fn reclaimable_before_retirement<'a>(
-    candidates: &'a [super::super::inventory::PhysicalWalSegmentInventoryEntry],
-    holds: &[(
-        crate::physical_runtime::durability::RetiredArtifact,
-        u64,
-        u64,
-    )],
-) -> &'a [super::super::inventory::PhysicalWalSegmentInventoryEntry] {
-    let Some(index) = candidates.iter().position(|entry| {
-        let start = entry.lsn_range().start().get();
-        let end = entry.lsn_range().end_exclusive().get();
-        holds
-            .iter()
-            .any(|(_, hold_start, hold_end)| start < *hold_end && *hold_start < end)
-    }) else {
-        return candidates;
-    };
-    &candidates[..index]
 }
 
 fn require_retained_suffix(

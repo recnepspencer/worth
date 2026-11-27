@@ -118,22 +118,10 @@ impl PhysicalWalRuntimeOwner {
     }
 
     pub(in crate::physical_runtime) fn has_reclaimable_closed_prefix(&self) -> bool {
-        let state = self
-            .shared
+        self.shared
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let entries = state.segments.entries();
-        if entries.len() <= 1 {
-            return false;
-        }
-        let cutoff = state.frontier.last_lsn_end().map_or(0, |lsn| lsn.get());
-        !super::reclamation::reclaimable_closed_prefix(
-            &entries[..entries.len() - 1],
-            &state.unresolved_retirement_spans,
-            &state.copy_obligations,
-            cutoff,
-        )
-        .is_empty()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .has_reclaimable_closed_prefix()
     }
 
     pub(super) fn admit_preparation(

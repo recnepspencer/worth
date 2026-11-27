@@ -352,6 +352,16 @@ impl PhysicalMutationBindingCompactionCutover<'_> {
             .commit(&mut self.registry, namespace_sync)
     }
 
+    #[cfg(test)]
+    pub(super) fn commit_for_test(
+        &mut self,
+    ) -> Result<PhysicalMutationBindingCompaction, PhysicalMutationBindingCompactionDenial> {
+        self.pending
+            .take()
+            .expect("a move-owned cutover commits at most once")
+            .apply_commit(&mut self.registry)
+    }
+
     fn pending_ref(&self) -> &PendingPhysicalMutationBindingCompaction {
         self.pending
             .as_ref()

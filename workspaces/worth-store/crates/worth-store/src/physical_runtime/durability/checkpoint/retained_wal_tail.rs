@@ -182,7 +182,7 @@ impl ContiguousRetainedWalTail {
     }
 }
 
-fn first_required_segment(
+pub(in crate::physical_runtime::durability) fn first_required_segment(
     entries: &[crate::physical_runtime::durability::wal::inventory::PhysicalWalSegmentInventoryEntry],
     checkpoint_boundary: LogSequenceNumber,
     durable_end: LogSequenceNumber,
