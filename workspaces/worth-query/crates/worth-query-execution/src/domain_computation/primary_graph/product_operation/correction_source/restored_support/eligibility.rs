@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::Fac
 use crate::domain_computation::primary_graph::fact_verification_observation::correction_rejection;
 use crate::domain_computation::primary_graph::{
     exact_basis_access::open_exact_basis_snapshot,
-    output_reuse::{first_moved_fact, read_denial, retained_fact_denial},
+    output_reuse::{first_moved_fact, retained_fact_denial},
     WorthQueryAdvancementPhase,
 };
 use worth_execution::ExecutionRequest;
@@ -245,21 +245,6 @@ fn compare_fact(
             if !original_view
                 .compare_entity_field_support(&execution, target_view, *entity_id, locator)
                 .map_err(|cause| Denial::RestoredSupport(Stop::FieldSupport(cause)))?
-            {
-                return Err(Denial::SourceDiverged);
-            }
-        }
-        // `strict` pinned the exact generation, kind and versions at the
-        // original; the target only has to keep that generation retired
-        // (public #445). Its version is free: a navigation that revives and
-        // retires it again restores the same meaning at a later commit.
-        Fact::RetiredOutputEntity { entity_id, .. } => {
-            if !crate::domain_computation::primary_graph::application_attempt::fact::retirement_equality::still_retired(
-                Some(target_view),
-                &execution,
-                *entity_id,
-            )
-            .map_err(|cause| Denial::DependencyComparison(read_denial(cause)))?
             {
                 return Err(Denial::SourceDiverged);
             }
