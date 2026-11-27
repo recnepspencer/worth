@@ -16,6 +16,7 @@ impl WorthQueryObservedSourceEpoch {
             entities: vec![root],
             aspects: Vec::new(),
             adjacencies: Vec::new(),
+            member_groups: Vec::new(),
             root_selection: None,
         };
         let checkpoint_identity =

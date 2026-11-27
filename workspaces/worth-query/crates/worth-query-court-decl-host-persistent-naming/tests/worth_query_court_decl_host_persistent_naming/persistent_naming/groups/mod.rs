@@ -18,6 +18,7 @@ mod lifecycle;
 mod projection;
 mod reads;
 mod refusals;
+pub(super) mod source_currentness;
 
 /// A group member held by name.
 pub fn held(name: WorthQueryName<Member>) -> GroupMember {

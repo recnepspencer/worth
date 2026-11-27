@@ -285,6 +285,12 @@ pub trait WorthQueryApplicationProjection<Schema, Query>: Sized {
     /// projection that leaves this `false` pays nothing and its name reads
     /// refuse `PersistentNamesUnavailable`.
     const PROJECTS_PERSISTENT_NAMES: bool = false;
+    /// Whether `project` reads a row's group name (`group_name`), here or
+    /// in a related row. Its rows' footprints then keep their members' group
+    /// membership, which regrouping changes without touching any record. A
+    /// hand-written projection that projects names is assumed to read group
+    /// names too, so it never loses that dependency.
+    const PROJECTS_GROUP_NAMES: bool = Self::PROJECTS_PERSISTENT_NAMES;
 
     fn project(
         row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,

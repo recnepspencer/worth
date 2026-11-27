@@ -36,6 +36,13 @@ pub fn selectors(
             Ok(())
         })?;
     }
+    for event in context.canonical_commit().lineage_events() {
+        context.checkpoint()?;
+        touch_keys::visit_lineage(event, |key| {
+            keys.push(key);
+            Ok(())
+        })?;
+    }
     Ok(Some(keys.into()))
 }
 pub struct MarkedDelivery {

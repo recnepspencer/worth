@@ -3,10 +3,10 @@
 //! refused batch leaves it untouched.
 
 use std::collections::BTreeSet;
+use worth_foundational::facade::AggregateIdentity;
 use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
 use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
-
-use worth_foundational::facade::AggregateIdentity;
+use worth_relational_lineage::internal_port::lineage::index::PersistentNameBranchIndexFixturePort as _;
 
 use crate::aggregate_identity::AggregateGroupLineageEvent;
 use crate::facade::history::CommitId;
@@ -65,7 +65,7 @@ fn group(byte: u8) -> AggregateIdentity {
 #[test]
 fn refused_batches_leave_the_index_exactly_as_it_was() {
     let (log, mut index, _) = mixed_history();
-    let before = index.clone();
+    let before = index.duplicate_for_test();
     let head = index.head().unwrap();
     assert_eq!(
         index.apply(&log[1]),
@@ -134,7 +134,7 @@ fn refused_batches_leave_the_index_exactly_as_it_was() {
         [],
     );
     let mut fresh = rebuild(&world.log()[..1]);
-    let snapshot = fresh.clone();
+    let snapshot = fresh.duplicate_for_test();
     assert!(matches!(
         fresh.apply(&unbound),
         Err(PersistentNameIndexDenial::MissingHolder { .. })
@@ -149,7 +149,7 @@ fn refused_batches_leave_the_index_exactly_as_it_was() {
 
 /// Applies `batch`, which must refuse, and proves the index is untouched.
 fn refuses(index: &mut PersistentNameBranchIndex, batch: &PersistentNameCommittedBatch) -> String {
-    let before = index.clone();
+    let before = index.duplicate_for_test();
     let denial = index.apply(batch).expect_err("corrupt batch refuses");
     assert_eq!(
         *index, before,

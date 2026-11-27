@@ -112,7 +112,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .map_err(WorthQueryAuthorizedApplicationReadDenial::Read)
                     .map_err(Denial::from)?;
                 if SubjectResult::<Schema, History>::PROJECTS_PERSISTENT_NAMES {
-                    observe_persistent_names(runtime, execution, plan, &mut raw);
+                    observe_persistent_names(
+                        runtime,
+                        execution,
+                        plan,
+                        &mut raw,
+                        SubjectResult::<Schema, History>::PROJECTS_GROUP_NAMES,
+                    );
                 }
                 Ok::<_, Denial>(raw)
             },

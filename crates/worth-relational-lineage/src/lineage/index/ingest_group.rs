@@ -19,7 +19,7 @@ use crate::contracts::lineage::data::name_resolution::{PersistentNameKey, Persis
 
 use super::journal::IngestionJournal;
 use super::{
-    LiveName, NameEntry, NameOrigin, NameState, PersistentNameBranchIndex,
+    Carriers, LiveName, NameEntry, NameOrigin, NameState, PersistentNameBranchIndex,
     PersistentNameCommittedBatch, PersistentNameIndexDenial,
 };
 
@@ -33,7 +33,7 @@ fn invalid(group: AggregateIdentity, detail: &'static str) -> PersistentNameInde
 fn live_group(group: AggregateIdentity) -> LiveName {
     LiveName {
         target: PersistentNameTarget::Group { group },
-        carriers: BTreeSet::new(),
+        carriers: Carriers::new(),
     }
 }
 

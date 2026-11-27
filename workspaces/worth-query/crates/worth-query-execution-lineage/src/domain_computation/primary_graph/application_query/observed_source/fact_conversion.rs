@@ -157,6 +157,10 @@ impl<Query> WorthQueryObservedSource<Query> {
                 adjacency_endpoint_count =
                     adjacency_endpoint_count.checked_add(adjacency.endpoints.len())?;
             }
+            for member in part.member_groups {
+                retained_payload_bytes =
+                    retained_payload_bytes.checked_add(member.owned_bytes())?;
+            }
             for aspect in part.aspects {
                 let per_field = (std::mem::size_of::<FieldKey>() as u64)
                     .checked_add(u64::try_from(aspect.aspect.as_str().len()).ok()?)?

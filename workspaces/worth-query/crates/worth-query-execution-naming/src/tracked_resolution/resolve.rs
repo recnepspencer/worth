@@ -169,18 +169,17 @@ impl ExecutionNameReader<'_> {
                 key,
                 requested,
             )?;
-            let (outcome, unrecorded_carrier) = match lower_selection(&view, selection) {
-                LoweredSelection::Relational(lowered) => (view.resolve(key, &lowered), false),
+            let (lowered, unrecorded_carrier) = match lower_selection(&view, selection) {
+                LoweredSelection::Relational(lowered) => (lowered, false),
                 LoweredSelection::UnrecordedCarriers(unborn) => {
                     for carrier in unborn {
                         dependencies.record_awaited_birth(&branch, carrier);
                     }
-                    (
-                        view.resolve(key, &PersistentNameSelection::AllDescendants),
-                        true,
-                    )
+                    (PersistentNameSelection::AllDescendants, true)
                 }
             };
+            dependencies.record_resolution(&branch, key, &lowered);
+            let outcome = view.resolve(key, &lowered);
             dependencies.record_footprint(&branch, &outcome.footprint);
             match (outcome.result, unrecorded_carrier) {
                 (Ok(PersistentNameResolution::Retired { at_commit }), _) => {

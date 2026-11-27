@@ -118,43 +118,38 @@ pub(super) fn probe<'a>(
     (document, probe::take(token))
 }
 
-/// Runs a probe whose decision rests on an ended name: the decision still
-/// observes, but the projection refuses to seal (an ended name has no
-/// decision fact key), so the edit is discarded and history does not move.
-pub(super) fn probe_refused<'a>(
+/// Runs a probe whose decision may rest on ended names and leaves history
+/// where it was. The decision seals on that history (a name-history fact),
+/// or recording the probe panics with the refusal; its recorded step is then
+/// undone, so the selected step is the one before the probe.
+pub(super) fn probe_unrecorded<'a>(
     host: &'a world::Host,
     document: world::Document<'a>,
     request: &Request<'_, '_, '_>,
     token: &str,
     keys: &[&str],
     ordinal: u64,
-) -> (world::Document<'a>, Vec<Observation>, String) {
+) -> (world::Document<'a>, Vec<Observation>) {
     let intent = probe::Intent {
         token: token.to_owned(),
         keys: keys.iter().map(|key| (*key).to_owned()).collect(),
         value: 100 + ordinal,
     };
-    let mut edit = document
-        .edit(intent)
-        .idempotency_owned(request, format!("{token}:refused-probe:{ordinal}"))
-        .unwrap()
-        .retain_in_program::<Program, ProbeAction>(host)
-        .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
-    loop {
-        edit = match edit.advance(request) {
-            WorthQueryHistoryEditAdvance::Progress(next) => next,
-            WorthQueryHistoryEditAdvance::Ready(_) => {
-                panic!("a decision resting on an ended name must not seal")
-            }
-            WorthQueryHistoryEditAdvance::Refused { edit, denial } => {
-                let denial = format!("{denial:?}");
-                let document = edit
-                    .discard(request)
-                    .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
-                return (document, probe::take(token), denial);
-            }
-        };
-    }
+    let document = record_edit!(
+        host,
+        document,
+        request,
+        intent,
+        ProbeAction,
+        format!("{token}:unrecorded-probe:{ordinal}")
+    );
+    let observed = probe::take(token);
+    let seed = token.bytes().fold(0u128, |hash, byte| {
+        hash.wrapping_mul(131) ^ u128::from(byte)
+    });
+    let undo = (0x7b2b_u128 << 112) | ((seed & 0xffff_ffff) << 32) | u128::from(ordinal);
+    navigate(&document, request, Navigate::Undo, undo);
+    (document, observed)
 }
 
 pub(super) fn named(observed: &[Observation], key: &str) -> WorthQueryName<Member> {
@@ -215,12 +210,6 @@ fn held_names_follow_delete_undo_branch_edit_checkout_and_redo() {
             .physical_endpoint()
             .product_branch()
     };
-    let ended = |denial: &str| {
-        assert!(
-            denial.contains("PersistentName(UntrackedDependency)"),
-            "{denial}"
-        )
-    };
 
     let (document, observed) = probe(&host, document, &request, token, &keys, 0);
     let direct = named(&observed, "direct");
@@ -247,8 +236,9 @@ fn held_names_follow_delete_undo_branch_edit_checkout_and_redo() {
         world::member_identity(&host, branch(&document), "direct"),
         None
     );
-    let (document, observed, denial) = probe_refused(&host, document, &request, token, &keys, 1);
-    ended(&denial);
+    // The held name's resolution through its ended lineage seals on that
+    // history (a name-history fact), so the probe records a step.
+    let (document, observed) = probe(&host, document, &request, token, &keys, 1);
     assert!(observed.contains(&Observation::Absent {
         key: "direct".into()
     }));
@@ -297,12 +287,14 @@ fn held_names_follow_delete_undo_branch_edit_checkout_and_redo() {
         world::member_identity(&host, branch(&document), "direct"),
         None
     );
-    let (document, observed, denial) = probe_refused(&host, document, &request, token, &keys, 3);
-    ended(&denial);
+    let (document, observed) = probe(&host, document, &request, token, &keys, 3);
     assert_eq!(resolution(&observed, "direct"), &retired("direct"));
 
-    // `undo_step` from the deletion restores it once more.
+    // Undo the sealed probe's own step, then `undo_step` from the deletion
+    // restores it once more.
     navigate(&document, &request, Navigate::Undo, 0x5a71_0003);
+    assert_eq!(document.current_step(&request).unwrap().id(), deleted.id());
+    navigate(&document, &request, Navigate::Undo, 0x5a71_0005);
     assert_eq!(document.current_step(&request).unwrap().id(), live.id());
     assert_eq!(
         world::member_identity(&host, branch(&document), "direct"),

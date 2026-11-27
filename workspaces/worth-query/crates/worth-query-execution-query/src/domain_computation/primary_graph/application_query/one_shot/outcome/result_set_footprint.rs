@@ -69,6 +69,7 @@ impl<'a> ResultSetFootprint<'a> {
                     entities: Vec::new(),
                     aspects: Vec::new(),
                     adjacencies: Vec::new(),
+                    member_groups: Vec::new(),
                     root_selection: None,
                 });
         footprint.root = self.root;

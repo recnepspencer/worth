@@ -201,7 +201,9 @@ fn fact_tag(fact: &Fact) -> u8 {
             direction: Dir::Incoming,
             ..
         } => 10,
-        _ => 11,
+        Fact::PersistentNameHistory { .. } => 11,
+        Fact::PersistentGroup { .. } => 12,
+        _ => 13,
     }
 }
 
@@ -269,6 +271,11 @@ fn cmp_source_fact(left: &Fact, right: &Fact) -> Ordering {
                 ..
             },
         ) => aa.cmp(ba).then_with(|| ar.cmp(br)),
+        (
+            Fact::PersistentNameHistory { read: a, .. },
+            Fact::PersistentNameHistory { read: b, .. },
+        ) => a.cmp(b),
+        (Fact::PersistentGroup { read: a, .. }, Fact::PersistentGroup { read: b, .. }) => a.cmp(b),
         _ => Ordering::Equal,
     }
 }
@@ -294,8 +301,7 @@ fn deduplicate_facts(
     let dedup_work = n_log2_n(count).ok_or(FootprintStop::Execution(Cause::WorkCounterOverflow))?;
     SourceFactsAllocation::work(execution, dedup_work).map_err(map_cause)?;
 
-    facts.sort_unstable_by(cmp_source_fact);
-    facts.dedup_by(|a, b| cmp_source_fact(a, b) == Ordering::Equal);
+    sort_and_deduplicate(&mut facts);
     check_interruption(request)?;
     Ok(facts)
 }
@@ -363,3 +369,15 @@ fn map_fact_stop(stop: RetainedFactStop<'_>) -> FootprintStop {
         | RetainedFactStop::Refused(_) => FootprintStop::Unavailable,
     }
 }
+
+/// Sorts `facts` canonically and drops exact duplicates only: two facts the
+/// order cannot tell apart are both kept unless they are equal, so no fact
+/// ever stands in for another.
+fn sort_and_deduplicate(facts: &mut Vec<Fact>) {
+    facts.sort_unstable_by(cmp_source_fact);
+    facts.dedup_by(|a, b| cmp_source_fact(a, b) == Ordering::Equal && a == b);
+}
+
+#[cfg(test)]
+#[path = "footprint/tests.rs"]
+mod tests;

@@ -91,7 +91,13 @@ pub struct WorthQueryObservedSourceFootprint {
     pub aspects: Vec<WorthQueryObservedFieldRevision>,
     pub adjacencies: Vec<WorthQueryObservedAdjacencyRevision>,
     pub root_selection: Option<Arc<WorthQueryObservedRootSelection>>,
+    /// The group membership of every named member a projected group name
+    /// (`#[worth_query(group_name)]`) read in this row, ascending by member:
+    /// regrouping changes no record, so this is what such a name rests on.
+    pub member_groups: Vec<member_groups::WorthQueryObservedMemberGroups>,
 }
+
+pub mod member_groups;
 
 pub struct WorthQueryObservedSource<Query> {
     pub(crate) expression_context: Option<Arc<RetainedExpressionContext>>,

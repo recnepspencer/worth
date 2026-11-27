@@ -214,10 +214,10 @@ fn a_derived_action_holds_and_resolves_a_named_target_input() {
     );
 
     // Split `base` into two pieces: `Exact` refuses `Ambiguous` and commits
-    // nothing. A keep-side selection resolves to its piece, but through the
-    // ended `base`, which a later `Restore` could revive: the decision never
-    // seals over that (`UntrackedDependency`) and commits nothing. Holding
-    // the piece's own name commits.
+    // nothing. A keep-side selection resolves to its piece through the ended
+    // `base`, which a later `Restore` could revive: the decision seals on
+    // that history as a name-history fact and commits, and the stored target
+    // resolves to the piece. Holding the piece's own name commits too.
     world.committed(
         &format!("{token}-split"),
         Plan {
@@ -250,11 +250,14 @@ fn a_derived_action_holds_and_resolves_a_named_target_input() {
     let keep = NameSelection::keep_side(&side).expect("a declared side");
     let (outcome, answer) = world.retarget(36203, NamedTarget::new(base, keep));
     assert_eq!(answer, "Exact", "the keep-side selection picked its piece");
-    assert!(
-        matches!(&outcome, Err(refusal) if refusal.contains("UntrackedDependency")),
-        "{outcome:?}"
+    assert!(committed(&outcome), "{outcome:?}");
+    let observed = world.probe(token, &["n1"], 3);
+    assert_eq!(
+        resolution(&observed, "stored-target"),
+        &resolved_to("stored-target", "n1"),
+        "the stored keep-side target resolves through the ended base"
     );
-    let n1 = named(&world.probe(token, &["n1"], 3), "n1");
+    let n1 = named(&observed, "n1");
     let (outcome, answer) = world.retarget(36205, NamedTarget::exact(n1));
     assert!(committed(&outcome), "{outcome:?}");
     assert_eq!(answer, "Exact");

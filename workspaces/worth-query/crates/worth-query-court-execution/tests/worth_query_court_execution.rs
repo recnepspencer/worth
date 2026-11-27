@@ -31,6 +31,7 @@ mod naming_tracked_birth_kinds;
 mod naming_tracked_births;
 mod naming_tracked_cold_directory;
 mod naming_tracked_cost;
+mod naming_tracked_dependency_cost;
 mod naming_tracked_fork_settlement;
 mod naming_tracked_invalidation;
 mod naming_tracked_rebuild;

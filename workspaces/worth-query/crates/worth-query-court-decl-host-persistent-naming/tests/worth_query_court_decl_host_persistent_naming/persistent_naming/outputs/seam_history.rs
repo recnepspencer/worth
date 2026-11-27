@@ -2,7 +2,7 @@
 //! `Split` -> `Merge` -> `Retire`. Every held seam name resolves to the seam
 //! live at each navigated node, through `undo_step`, `redo_to` and
 //! `checkout`.
-use super::super::history::{navigate, probe, probe_refused, record_edit, Navigate};
+use super::super::history::{navigate, probe, probe_unrecorded, record_edit, Navigate};
 use super::seam_names::{ends, link, seam, seam_read, MEMBERS};
 use super::*;
 
@@ -104,7 +104,7 @@ fn held_seam_names_follow_split_merge_retire_undo_redo_and_checkout() {
     let split = document.current_step(&request).unwrap();
     let (document, observed) = seams!(
         document,
-        probe_refused,
+        probe_unrecorded,
         [("p1", "m1", "m3"), ("p2", "m1", "m4")]
     );
     let (p1, p2) = (seam_named(&observed, "p1"), seam_named(&observed, "p2"));
@@ -132,7 +132,7 @@ fn held_seam_names_follow_split_merge_retire_undo_redo_and_checkout() {
     );
     let merged = document.current_step(&request).unwrap();
     let survivor = |label: &str| seam_between(label, "m1", "m3");
-    let (document, observed) = seams!(document, probe_refused, no_seams);
+    let (document, observed) = seams!(document, probe_unrecorded, no_seams);
     for label in ["s", "p1", "p2"] {
         assert_eq!(seam_resolution(&observed, label), &survivor(label));
     }
@@ -148,7 +148,7 @@ fn held_seam_names_follow_split_merge_retire_undo_redo_and_checkout() {
         },
     );
     let retirement = document.current_step(&request).unwrap();
-    let (document, observed) = seams!(document, probe_refused, no_seams);
+    let (document, observed) = seams!(document, probe_unrecorded, no_seams);
     for label in ["s", "p1", "p2"] {
         assert_eq!(seam_resolution(&observed, label), &retired(label));
     }
@@ -156,7 +156,7 @@ fn held_seam_names_follow_split_merge_retire_undo_redo_and_checkout() {
     // `undo_step` restores the merged survivor under its exact name.
     navigate(&document, &request, Navigate::Undo, 0x5d00_0001);
     assert_eq!(document.current_step(&request).unwrap().id(), merged.id());
-    let (document, observed) = seams!(document, probe_refused, [("p1", "m1", "m3")]);
+    let (document, observed) = seams!(document, probe_unrecorded, [("p1", "m1", "m3")]);
     assert_eq!(seam_named(&observed, "p1"), p1);
     for label in ["s", "p1", "p2"] {
         assert_eq!(seam_resolution(&observed, label), &survivor(label));
@@ -169,7 +169,7 @@ fn held_seam_names_follow_split_merge_retire_undo_redo_and_checkout() {
         Navigate::Redo(retirement.id()),
         0x5d00_0002,
     );
-    let (document, observed) = seams!(document, probe_refused, no_seams);
+    let (document, observed) = seams!(document, probe_unrecorded, no_seams);
     for label in ["s", "p1", "p2"] {
         assert_eq!(seam_resolution(&observed, label), &retired(label));
     }
@@ -184,7 +184,7 @@ fn held_seam_names_follow_split_merge_retire_undo_redo_and_checkout() {
     );
     let (document, observed) = seams!(
         document,
-        probe_refused,
+        probe_unrecorded,
         [("p1", "m1", "m3"), ("p2", "m1", "m4")]
     );
     assert_eq!(seam_named(&observed, "p1"), p1);

@@ -12,7 +12,9 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
-use crate::lineage::groups::{BranchGroupState, CommittedGroupTransition, GroupStateDenial};
+use crate::lineage::groups::{
+    BranchGroupState, CommittedGroupTransition, GroupStateAt, GroupStateDenial,
+};
 
 use super::LineageState;
 
@@ -25,9 +27,24 @@ pub(super) struct PublishedGroupLineage {
 }
 
 /// Every branch's derived group state, or the refusal that stopped it.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub(crate) struct BranchGroupStates {
     by_branch: BTreeMap<BranchId, Result<BranchGroupState, GroupStateDenial>>,
+}
+
+impl BranchGroupStates {
+    /// A whole-state copy (runtime fork or reconstruction lane only).
+    pub(super) fn duplicate_whole(&self) -> Self {
+        let branches = self.by_branch.iter().map(|(branch, state)| {
+            let copy = state
+                .as_ref()
+                .map(BranchGroupState::duplicate_for_branch_fork);
+            (branch.clone(), copy.map_err(Clone::clone))
+        });
+        Self {
+            by_branch: branches.collect(),
+        }
+    }
 }
 
 impl LineageState {
@@ -129,7 +146,7 @@ impl LineageState {
         let inherited = match self.group_states.by_branch.get(source) {
             None => return,
             Some(Ok(state)) if state.latest_commit().is_none_or(|at| at <= fork_commit) => {
-                Ok(state.clone())
+                Ok(state.duplicate_for_branch_fork())
             }
             Some(_) => self.rebuild_branch_group_state(target, CommitId(u64::MAX)),
         };
@@ -160,8 +177,35 @@ impl LineageState {
         self.group_states = BranchGroupStates { by_branch };
     }
 
+    /// `branch`'s group state as of `commit`. When the maintained state has
+    /// applied nothing after `commit` it is that state, borrowed in O(1):
+    /// every group lineage record of the branch's ancestry it holds is at or
+    /// before `commit`, and it holds all of them. Otherwise the state is
+    /// rebuilt for that historical commit.
+    ///
+    /// Complexity: O(1) at the head; O(published group lineage through
+    /// `commit`) for a historical commit (delta-bounded historical selection
+    /// is tree-based undo's `P1-F`).
+    pub(crate) fn group_state_at(
+        &self,
+        branch: &BranchId,
+        commit: CommitId,
+    ) -> Result<GroupStateAt<'_>, GroupStateDenial> {
+        match self.group_states.by_branch.get(branch) {
+            Some(Ok(state)) if state.latest_commit().is_none_or(|at| at <= commit) => {
+                Ok(GroupStateAt::Head(state))
+            }
+            _ => self
+                .rebuild_branch_group_state(branch, commit)
+                .map(GroupStateAt::Rebuilt),
+        }
+    }
+
     /// `branch`'s group state through `cutoff`, applying each ancestor's own
     /// records up to the commit its descendant forked at.
+    ///
+    /// Complexity: O(published group lineage through `cutoff`); records
+    /// after it are never visited.
     pub(super) fn rebuild_branch_group_state(
         &self,
         branch: &BranchId,
@@ -169,7 +213,10 @@ impl LineageState {
     ) -> Result<BranchGroupState, GroupStateDenial> {
         let bounds: BTreeMap<_, _> = self.ancestry(branch, cutoff).into_iter().collect();
         let mut state = BranchGroupState::default();
-        for record in &self.published_group_lineage {
+        let through = self
+            .published_group_lineage
+            .partition_point(|record| record.commit <= cutoff);
+        for record in &self.published_group_lineage[..through] {
             if bounds
                 .get(&record.branch)
                 .is_some_and(|bound| record.commit <= *bound)

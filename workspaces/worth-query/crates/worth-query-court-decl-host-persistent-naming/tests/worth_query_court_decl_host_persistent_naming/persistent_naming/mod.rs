@@ -95,6 +95,8 @@ pub(crate) fn entry() -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootCo
         .finish_action()
         .action::<retarget::Binding, Completion>()
         .finish_action()
+        .action::<groups::source_currentness::Binding, Completion>()
+        .finish_action()
         .action::<coupled::producer::shape::Binding, Completion>()
         .finish_action()
 }

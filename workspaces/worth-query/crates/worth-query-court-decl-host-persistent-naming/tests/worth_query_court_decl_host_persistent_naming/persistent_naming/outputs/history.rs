@@ -1,7 +1,7 @@
 //! `HistoryDocument` over installed-operation `Create` -> `Split` -> `Merge`
 //! -> delete: every held name resolves to the member live at each navigated
 //! node, through `undo_step`, `redo_to` and `checkout`.
-use super::super::history::{navigate, probe, probe_refused, record_edit, Navigate};
+use super::super::history::{navigate, probe, probe_unrecorded, record_edit, Navigate};
 use super::*;
 use probe::Observation;
 
@@ -92,7 +92,7 @@ fn held_output_names_follow_split_merge_delete_undo_checkout_and_redo() {
     );
     let merged = document.current_step(&request).unwrap();
     probe::hold(token, "h2", h2);
-    let (document, observed, _) = probe_refused(&host, document, &request, token, &["h1"], 2);
+    let (document, observed) = probe_unrecorded(&host, document, &request, token, &["h1"], 2);
     assert_eq!(resolution(&observed, "h"), &resolved_to("h", "h1"));
     assert_eq!(resolution(&observed, "h2"), &resolved_to("h2", "h1"));
 
@@ -106,14 +106,14 @@ fn held_output_names_follow_split_merge_delete_undo_checkout_and_redo() {
     );
     let deleted = document.current_step(&request).unwrap();
     probe::hold(token, "h1", h1);
-    let (document, observed, _) = probe_refused(&host, document, &request, token, &["h1"], 3);
+    let (document, observed) = probe_unrecorded(&host, document, &request, token, &["h1"], 3);
     assert_eq!(resolution(&observed, "h1"), &retired("h1"));
     assert_eq!(resolution(&observed, "h"), &retired("h"));
 
     // `undo_step` restores the merged survivor under its exact name.
     navigate(&document, &request, Navigate::Undo, 0x5c00_0001);
     assert_eq!(document.current_step(&request).unwrap().id(), merged.id());
-    let (document, observed, _) = probe_refused(&host, document, &request, token, &["h1"], 4);
+    let (document, observed) = probe_unrecorded(&host, document, &request, token, &["h1"], 4);
     assert_eq!(named(&observed, "h1"), h1);
     assert_eq!(resolution(&observed, "h1"), &resolved_to("h1", "h1"));
     assert_eq!(resolution(&observed, "h2"), &resolved_to("h2", "h1"));
@@ -125,7 +125,7 @@ fn held_output_names_follow_split_merge_delete_undo_checkout_and_redo() {
         Navigate::Redo(deleted.id()),
         0x5c00_0002,
     );
-    let (document, observed, _) = probe_refused(&host, document, &request, token, &["h1"], 5);
+    let (document, observed) = probe_unrecorded(&host, document, &request, token, &["h1"], 5);
     assert_eq!(resolution(&observed, "h1"), &retired("h1"));
     assert_eq!(resolution(&observed, "h"), &retired("h"));
 
@@ -137,7 +137,7 @@ fn held_output_names_follow_split_merge_delete_undo_checkout_and_redo() {
         Navigate::Checkout(split.id()),
         0x5c00_0003,
     );
-    let (document, observed, _) = probe_refused(&host, document, &request, token, &["h1", "h2"], 6);
+    let (document, observed) = probe_unrecorded(&host, document, &request, token, &["h1", "h2"], 6);
     assert_eq!(named(&observed, "h1"), h1);
     assert_eq!(
         named(&observed, "h2"),

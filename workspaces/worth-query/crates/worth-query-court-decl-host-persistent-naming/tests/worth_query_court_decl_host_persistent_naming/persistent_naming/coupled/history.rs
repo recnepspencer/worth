@@ -1,7 +1,7 @@
 //! `HistoryDocument` records each edit envelope as one step: held names its
 //! stages minted, split, merged and retired follow `undo_step`, `redo_to` and
 //! `checkout` exactly as for single-operation steps.
-use super::super::history::{navigate, probe, probe_refused, Navigate};
+use super::super::history::{navigate, probe, probe_unrecorded, Navigate};
 use super::sculpt::Held;
 use super::*;
 use probe::Observation;
@@ -156,7 +156,7 @@ fn envelope_named_outputs_follow_split_merge_retire_undo_checkout_and_redo() {
     probe::hold(token, "h", h);
     probe::hold(token, "k", k);
     probe::hold(token, merged_away, merged_name);
-    let (document, observed, _) = probe_refused(&host, document, &request, token, &[kept], 2);
+    let (document, observed) = probe_unrecorded(&host, document, &request, token, &[kept], 2);
     assert_eq!(outputs::resolution(&observed, "h"), &resolved("h", kept));
     assert_eq!(
         outputs::resolution(&observed, merged_away),
@@ -168,7 +168,7 @@ fn envelope_named_outputs_follow_split_merge_retire_undo_checkout_and_redo() {
     // `undo_step` returns to the split: both pieces live under their names.
     navigate(&document, &request, Navigate::Undo, 0x3b20_0001);
     assert_eq!(document.current_step(&request).unwrap().id(), split.id());
-    let (document, observed, _) = probe_refused(&host, document, &request, token, &["h1", "h2"], 3);
+    let (document, observed) = probe_unrecorded(&host, document, &request, token, &["h1", "h2"], 3);
     assert_eq!(named(&observed, kept), kept_name);
     assert_eq!(named(&observed, merged_away), merged_name);
     assert_eq!(
@@ -189,7 +189,7 @@ fn envelope_named_outputs_follow_split_merge_retire_undo_checkout_and_redo() {
         Navigate::Redo(merged.id()),
         0x3b20_0002,
     );
-    let (document, observed, _) = probe_refused(&host, document, &request, token, &[kept], 4);
+    let (document, observed) = probe_unrecorded(&host, document, &request, token, &[kept], 4);
     assert_eq!(named(&observed, kept), kept_name);
     assert_eq!(outputs::resolution(&observed, "h"), &resolved("h", kept));
     assert_eq!(
@@ -204,7 +204,7 @@ fn envelope_named_outputs_follow_split_merge_retire_undo_checkout_and_redo() {
         Navigate::Checkout(born.id()),
         0x3b20_0003,
     );
-    let (document, observed, _) = probe_refused(&host, document, &request, token, &["h", "k"], 5);
+    let (document, observed) = probe_unrecorded(&host, document, &request, token, &["h", "k"], 5);
     assert_eq!((named(&observed, "h"), named(&observed, "k")), (h, k));
     assert_eq!(outputs::resolution(&observed, "h"), &resolved("h", "h"));
     assert_eq!(outputs::resolution(&observed, "k"), &resolved("k", "k"));

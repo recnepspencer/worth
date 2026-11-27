@@ -105,6 +105,9 @@ pub fn deep_clone_bytes(fact: &Fact) -> Option<u64> {
         Fact::PersistentGroup { read, answer } => {
             size(read.group_kind.capacity())?.checked_add(answer.charged_bytes())
         }
+        Fact::PersistentNameHistory { read, answer } => {
+            read.charged_bytes().checked_add(answer.charged_bytes())
+        }
         Fact::IndexedEntitySelection {
             locator,
             value,

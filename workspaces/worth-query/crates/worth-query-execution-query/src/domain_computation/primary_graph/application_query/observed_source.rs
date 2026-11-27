@@ -2,6 +2,7 @@ use super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 
 pub use worth_query_execution_lineage::facade::primary_graph::application_query::observed_source::{
     comparison, denial, expression_context, fact_conversion, fact_sources, footprint_accounting,
+    member_groups,
     realized_footprint, retained_parameters, root_selection, scope_selector, source_identity,
     AppliedSourcePublication, DeclaredComponentSelection, DeclaredManagedIndexSelection,
     DeclaredOrbitSelection, ManagedSourceDependencies, ObservedQueryExpressionContext,

@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationEntityIdentity,
 };
+use worth_relational::facade::lineage::PersistentNameSubjectKind;
 
 impl<Schema, Operation, Input, Scope, Phase>
     WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>
@@ -133,6 +134,16 @@ pub(super) fn graph_read_scope_matches_key(
             WorthQueryOperationGraphReadScope::Entity(scope),
             WorthQueryApplicationFactKey::PersistentGroup(read),
         ) => scope.semantic_key() == read.member_kind,
+        // A name-history read is admitted under the declared read of the
+        // entity kind or relation whose names it resolved.
+        (
+            WorthQueryOperationGraphReadScope::Entity(scope),
+            WorthQueryApplicationFactKey::PersistentNameHistory(read),
+        ) => read.subject == PersistentNameSubjectKind::Entity && scope.semantic_key() == read.kind,
+        (
+            WorthQueryOperationGraphReadScope::Relation(scope),
+            WorthQueryApplicationFactKey::PersistentNameHistory(read),
+        ) => read.subject == PersistentNameSubjectKind::Relation && scope.relation() == read.kind,
         (
             WorthQueryOperationGraphReadScope::NativeProjection(scope),
             WorthQueryApplicationFactKey::Field {
@@ -170,6 +181,7 @@ pub(super) fn graph_reads_exactly_cover_fact_keys<'key>(
                     key,
                     WorthQueryApplicationFactKey::AspectPresence { .. }
                         | WorthQueryApplicationFactKey::PersistentGroup(_)
+                        | WorthQueryApplicationFactKey::PersistentNameHistory(_)
                 )
             })
             .filter(|key| graph_read_scope_matches_key(scope, key))

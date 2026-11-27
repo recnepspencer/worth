@@ -90,7 +90,13 @@ where
             |runtime, graph, plan| {
                 let mut raw = read_bounded_root_rows(runtime, execution, graph, plan, None)?;
                 if QueryResult::PROJECTS_PERSISTENT_NAMES {
-                    observe_persistent_names(runtime, execution, plan, &mut raw);
+                    observe_persistent_names(
+                        runtime,
+                        execution,
+                        plan,
+                        &mut raw,
+                        QueryResult::PROJECTS_GROUP_NAMES,
+                    );
                 }
                 Ok(raw)
             },

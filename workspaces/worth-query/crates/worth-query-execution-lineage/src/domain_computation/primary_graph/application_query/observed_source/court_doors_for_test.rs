@@ -18,6 +18,7 @@ impl WorthQueryObservedSourceFootprint {
             aspects,
             root_selection,
             adjacencies,
+            member_groups: Vec::new(),
         }
     }
 }

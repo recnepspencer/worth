@@ -32,9 +32,14 @@ pub struct AuthoritativeLineageBasis {
     pub retired_lineages: BTreeMap<PersistentNameIdentity, (LineageSubject, LineageId)>,
 }
 
+crate::lineage::clone_fences::assert_not_clone!(AuthoritativeBranchNamingState);
+
 /// Incrementally maintained, rebuildable per-branch naming basis inside
 /// `LineageState`.
-#[derive(Debug, Clone, Default)]
+///
+/// Not `Clone`: it holds every live and retired name of the branch. A fork
+/// copies it only through [`Self::duplicate_for_branch_fork`].
+#[derive(Debug, Default)]
 pub(super) struct AuthoritativeBranchNamingState {
     lineage_holders: BTreeMap<LineageId, PersistentNameHolder>,
     holder_names: BTreeMap<PersistentNameHolder, PersistentNameIdentity>,
@@ -45,6 +50,18 @@ pub(super) struct AuthoritativeBranchNamingState {
 }
 
 impl AuthoritativeBranchNamingState {
+    /// A forked branch's (or whole-state copy's) explicit O(names) copy.
+    pub(super) fn duplicate_for_branch_fork(&self) -> Self {
+        Self {
+            lineage_holders: self.lineage_holders.clone(),
+            holder_names: self.holder_names.clone(),
+            live_holders: self.live_holders.clone(),
+            live_lineages: self.live_lineages.clone(),
+            retired_lineages: self.retired_lineages.clone(),
+            latest_event_commit: self.latest_event_commit,
+        }
+    }
+
     pub(super) fn snapshot(&self) -> AuthoritativeLineageBasis {
         AuthoritativeLineageBasis {
             live_holders: self.live_holders.clone(),
@@ -287,7 +304,7 @@ impl LineageState {
         let seeded = if can_clone_head {
             self.branch_naming_states
                 .get(&source)
-                .cloned()
+                .map(AuthoritativeBranchNamingState::duplicate_for_branch_fork)
                 .unwrap_or_default()
         } else {
             rebuild_branch_naming_state_for_branch(

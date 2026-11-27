@@ -11,6 +11,10 @@ use super::name_indexes::BranchNameIndexes;
 use super::naming_basis::{rebuild_all_branch_naming_states, AuthoritativeBranchNamingState};
 use super::resolution_indexes::LineageResolutionIndexes;
 
+crate::lineage::clone_fences::assert_not_clone!(LineageState);
+crate::lineage::clone_fences::assert_not_clone!(super::name_indexes::BranchNameIndexes);
+crate::lineage::clone_fences::assert_not_clone!(super::group_states::BranchGroupStates);
+
 /// The lineage subsystem's authoritative contents.
 #[derive(Debug)]
 pub struct LineageState {
@@ -369,22 +373,4 @@ impl Default for LineageState {
     }
 }
 
-impl Clone for LineageState {
-    fn clone(&self) -> Self {
-        Self {
-            nodes: self.nodes.clone(),
-            relation_lineages: self.relation_lineages.clone(),
-            relation_lineage_holders: self.relation_lineage_holders.clone(),
-            branch_forks: self.branch_forks.clone(),
-            branch_naming_states: self.branch_naming_states.clone(),
-            name_indexes: self.name_indexes.clone(),
-            naming_rebuilt_event_frontier: self.naming_rebuilt_event_frontier,
-            published_events: self.published_events.clone(),
-            published_event_positions: self.published_event_positions.clone(),
-            published_group_lineage: self.published_group_lineage.clone(),
-            group_states: self.group_states.clone(),
-            resolution_indexes: self.resolution_indexes.clone(),
-            identity_allocator: self.identity_allocator.detached(),
-        }
-    }
-}
+mod whole_state_copy;

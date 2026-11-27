@@ -24,7 +24,7 @@ impl WorthQueryApplicationSnapshotLease {
         // observed at the lease's commit basis, which the decision reader
         // admitted only where the candidate claimed no partition of its
         // scheme and left every member it rests on live (#361).
-        if matches!(key, Key::PersistentGroup(_)) {
+        if matches!(key, Key::PersistentGroup(_) | Key::PersistentNameHistory(_)) {
             return None;
         }
         let entity = super::super::fact::touch_key::head_served_record(key);

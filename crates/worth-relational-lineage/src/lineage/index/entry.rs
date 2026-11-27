@@ -1,7 +1,10 @@
 //! One held name's derived history: its liveness timeline and the forward
 //! lineage edges recorded at each commit.
-
-use std::collections::BTreeSet;
+//!
+//! `NameEntry` is deliberately not `Clone`: its timeline grows with every
+//! commit that touches the name, so a copy is O(history). The index journals
+//! a touched entry by its history lengths alone (`mark` / `truncate_to`), and
+//! a branch fork copies the index only through its named fork entry point.
 
 use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::identity::data::primitives::LineageId;
@@ -15,11 +18,16 @@ pub(crate) enum NameState {
     Ended,
 }
 
+/// A name's declared carriers: a persistent set, so a timeline state that
+/// keeps or edits its predecessor's carriers shares every unchanged node
+/// instead of copying the set.
+pub(crate) type Carriers = im::OrdSet<PersistentNameIdentity>;
+
 /// A live name's record and its declared carriers.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct LiveName {
     pub(crate) target: PersistentNameTarget,
-    pub(crate) carriers: BTreeSet<PersistentNameIdentity>,
+    pub(crate) carriers: Carriers,
 }
 
 /// What a name was born from: an entity or relation name's canonical birth
@@ -30,8 +38,10 @@ pub(crate) enum NameOrigin {
     Group { scheme_id: Option<String> },
 }
 
+crate::lineage::clone_fences::assert_not_clone!(NameEntry);
+
 /// Derived per-name history, rebuilt solely from committed lineage batches.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct NameEntry {
     /// The canonical birth or group scheme the name was born from.
     origin: NameOrigin,
@@ -173,6 +183,32 @@ impl NameEntry {
             Some((at, last)) if *at == commit => *last = state,
             _ => self.timeline.push((commit, state)),
         }
+    }
+
+    /// A branch fork's copy of this history (see
+    /// `PersistentNameBranchIndex::duplicate_for_branch_fork`).
+    pub(super) fn duplicate_for_branch_fork(&self) -> Self {
+        Self {
+            origin: self.origin.clone(),
+            timeline: self.timeline.clone(),
+            forward_edges: self.forward_edges.clone(),
+        }
+    }
+
+    /// How long this name's histories are now: what rollback truncates to.
+    pub(super) fn mark(&self) -> super::journal::EntryMark {
+        super::journal::EntryMark {
+            timeline: self.timeline.len(),
+            edges: self.forward_edges.len(),
+        }
+    }
+
+    /// Drops every timeline state and edge row recorded after `mark`.
+    ///
+    /// Complexity: O(rows dropped), the rows one batch appended.
+    pub(super) fn truncate_to(&mut self, mark: super::journal::EntryMark) {
+        self.timeline.truncate(mark.timeline);
+        self.forward_edges.truncate(mark.edges);
     }
 
     pub(crate) fn add_edge(&mut self, commit: CommitId, successor: PersistentNameKey) {

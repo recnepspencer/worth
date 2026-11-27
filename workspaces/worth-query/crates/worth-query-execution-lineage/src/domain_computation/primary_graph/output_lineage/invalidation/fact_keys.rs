@@ -55,6 +55,21 @@ where
                 FullVerificationReason::UnsupportedFact,
             ));
         }
+        // Membership moves only with group lineage, which no posting
+        // addresses: the output verifies in full, as a group fact does.
+        Fact::PersistentNameHistory { answer, .. } if !answer.keyed_by_lineage() => {
+            return Err(FactKeyProjectionStop::FullVerificationRequired(
+                FullVerificationReason::UnsupportedFact,
+            ));
+        }
+        Fact::PersistentNameHistory { read, answer } => {
+            for lineage in answer.rests_on() {
+                projection.key(|| Key::PersistentNameLineage(*lineage))?;
+            }
+            if let Some(digest) = answer.awaited_birth(read) {
+                projection.key(|| Key::PersistentNameBirth(digest))?;
+            }
+        }
         Fact::Aggregate { .. }
         | Fact::PersistentGroup { .. }
         | Fact::ManagedIndexSource { .. }

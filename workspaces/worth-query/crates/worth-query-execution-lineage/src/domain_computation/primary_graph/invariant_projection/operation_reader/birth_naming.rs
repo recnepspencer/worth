@@ -3,9 +3,9 @@
 //!
 //! A birth visible at the reader's basis is immutable and stays visible at
 //! every later basis, so an answer that found one rests on no fact. An
-//! answer that found none rests on a birth not yet recorded, which no Query
-//! fact key tracks: a committed decision then refuses to seal
-//! ([`PersistentNameReadVeto::UntrackedDependency`]). On an applied
+//! answer that found none rests on a birth not yet recorded, keyed as a
+//! `PersistentNameHistory` birth fact (`track_name_history`): the committed
+//! decision seals, and the commit that births that name stales it. On an
 //! candidate a held name's birth an earlier envelope member mints answers
 //! from the envelope's names (`pending_naming`, #426); any other answer that
 //! found none refuses `CandidateNameHistory`, since the unpublished
@@ -27,6 +27,29 @@ use super::WorthQueryApplicationOperationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::invariant_projection::read_basis::NativeProjectionRead;
 
 type Denial = WorthQueryDecisionNameDenial;
+
+/// The declared read a birth read is admitted under.
+#[derive(Clone, Copy)]
+struct BirthReadOf<'kind> {
+    kind: &'kind str,
+    subject: PersistentNameSubjectKind,
+}
+
+impl<'kind> BirthReadOf<'kind> {
+    const fn entity(kind: &'kind str) -> Self {
+        Self {
+            kind,
+            subject: PersistentNameSubjectKind::Entity,
+        }
+    }
+
+    const fn relation(kind: &'kind str) -> Self {
+        Self {
+            kind,
+            subject: PersistentNameSubjectKind::Relation,
+        }
+    }
+}
 
 /// One birth read, before an applied candidate's awaited birth is settled.
 enum BirthRead<T> {
@@ -52,7 +75,8 @@ impl<Schema: ApplicationSchema, Operation>
         Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
     {
         self.admit_name_read(Entity::IDENTIFIER)?;
-        let answer = self.tracked_birth_read(|reader, dependencies| {
+        let read = BirthReadOf::entity(Entity::IDENTIFIER);
+        let answer = self.tracked_birth_read(read, |reader, dependencies| {
             reader.entity_birth_of::<Schema, Entity>(held, dependencies)
         });
         self.or_pending_birth(answer, PersistentNameSubjectKind::Entity, |names| {
@@ -70,7 +94,8 @@ impl<Schema: ApplicationSchema, Operation>
         Relation: fragment::Relation + OperationReads<Operation>,
     {
         self.admit_relation_name_read(relation.name())?;
-        let answer = self.tracked_birth_read(|reader, dependencies| {
+        let read = BirthReadOf::relation(relation.name());
+        let answer = self.tracked_birth_read(read, |reader, dependencies| {
             reader.relation_birth_of::<Relation>(held, dependencies)
         });
         self.or_pending_birth(answer, PersistentNameSubjectKind::Relation, |names| {
@@ -90,7 +115,8 @@ impl<Schema: ApplicationSchema, Operation>
         Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
     {
         self.admit_name_read(Entity::IDENTIFIER)?;
-        self.settled_birth_read(|reader, dependencies| {
+        let read = BirthReadOf::entity(Entity::IDENTIFIER);
+        self.settled_birth_read(read, |reader, dependencies| {
             reader.entity_name_for_birth::<Schema, Entity>(birth, parents, dependencies)
         })
     }
@@ -106,7 +132,8 @@ impl<Schema: ApplicationSchema, Operation>
         Relation: fragment::Relation + OperationReads<Operation>,
     {
         self.admit_relation_name_read(relation.name())?;
-        self.settled_birth_read(|reader, dependencies| {
+        let read = BirthReadOf::relation(relation.name());
+        self.settled_birth_read(read, |reader, dependencies| {
             reader.relation_name_for_birth::<Relation>(birth, parents, dependencies)
         })
     }
@@ -140,12 +167,13 @@ impl<Schema: ApplicationSchema, Operation>
     /// refused read vetoes sealing.
     fn settled_birth_read<T>(
         &mut self,
+        of: BirthReadOf<'_>,
         read: impl FnOnce(
             &worth_query_execution_naming::facade::ExecutionNameReader<'_>,
             &mut NameReadDependencies,
         ) -> Result<T, ExecutionNameReadDenial>,
     ) -> Result<T, Denial> {
-        match self.tracked_birth_read(read) {
+        match self.tracked_birth_read(of, read) {
             BirthRead::Settled(answer) => answer,
             BirthRead::Awaited { refusal, veto } => {
                 self.decision_facts.veto_persistent_name(veto);
@@ -158,6 +186,7 @@ impl<Schema: ApplicationSchema, Operation>
     /// basis does not record, whose refusal and veto are left to the caller.
     fn tracked_birth_read<T>(
         &mut self,
+        of: BirthReadOf<'_>,
         read: impl FnOnce(
             &worth_query_execution_naming::facade::ExecutionNameReader<'_>,
             &mut NameReadDependencies,
@@ -185,18 +214,18 @@ impl<Schema: ApplicationSchema, Operation>
         if let Err(denial) = self.require_candidate_footprint(&dependencies, &branch) {
             return BirthRead::Settled(Err(denial));
         }
-        let veto = match &answer {
-            Err(ExecutionNameReadDenial::UnknownName) => {
-                Some(PersistentNameReadVeto::UntrackedDependency)
+        match &answer {
+            Err(ExecutionNameReadDenial::UnknownName) | Ok(_)
+                if dependencies.awaits_births_on(&branch) =>
+            {
+                self.track_name_history(of.kind, of.subject, &dependencies, &branch);
             }
-            Err(_) => Some(PersistentNameReadVeto::ReadFailed),
-            Ok(_) if dependencies.awaits_births_on(&branch) => {
-                Some(PersistentNameReadVeto::UntrackedDependency)
-            }
-            Ok(_) => None,
-        };
-        if let Some(veto) = veto {
-            self.decision_facts.veto_persistent_name(veto);
+            Ok(_) => {}
+            // An unknown name with no awaited birth recorded rests on nothing
+            // a fact could key: it refuses to seal like any failed read.
+            Err(_) => self
+                .decision_facts
+                .veto_persistent_name(PersistentNameReadVeto::ReadFailed),
         }
         BirthRead::Settled(answer.map_err(Denial::Read))
     }

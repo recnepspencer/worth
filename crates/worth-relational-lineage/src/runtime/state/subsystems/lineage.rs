@@ -110,8 +110,12 @@ impl LineageSubsystem {
         self.state.read().published_rows()
     }
 
-    pub fn snapshot(&self) -> LineageState {
-        self.state.read().clone()
+    /// A working copy of the lineage state for a reconstruction lane.
+    pub fn snapshot_for_reconstruction(
+        &self,
+        lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
+    ) -> LineageState {
+        self.state.read().duplicate_for_reconstruction(lane)
     }
 
     pub fn identity_allocator(&self) -> LineageIdentityAllocator {
@@ -377,7 +381,7 @@ impl LineageSubsystem {
         let admissions = self.event_admissions.read();
         Self {
             discovery_metadata: Default::default(),
-            state: RuntimeOwnedState::new(self.snapshot()),
+            state: RuntimeOwnedState::new(self.state.read().duplicate_for_runtime_fork()),
             node_residency: self.node_residency.detached(),
             event_residency: self.event_residency.detached(),
             event_admissions: RuntimeOwnedState::new(admissions.clone()),

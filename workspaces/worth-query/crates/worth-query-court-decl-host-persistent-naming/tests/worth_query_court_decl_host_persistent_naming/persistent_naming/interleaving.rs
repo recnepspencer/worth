@@ -8,9 +8,7 @@ use std::sync::OnceLock;
 use proptest::prelude::*;
 use proptest::test_runner::{Config, FileFailurePersistence, RngAlgorithm, TestRng};
 
-use super::history::{
-    named, navigate, probe, probe_refused, record_edit, resolution, DeleteAction, Navigate,
-};
+use super::history::{named, navigate, probe, record_edit, resolution, DeleteAction, Navigate};
 use super::*;
 use probe::Observation;
 use worth_query_decl::facade::application_naming::WorthQueryName;
@@ -95,29 +93,20 @@ fn run(steps: &[Step], case: u64) {
             .filter(|&node| nodes[node].parent == Some(current))
             .collect();
         match *step {
+            // A probe seals whether its held names resolve live or through
+            // their ended lineage (a name-history fact), so it records a step.
             Step::Probe => {
                 let live = nodes[current].live;
-                if live.iter().all(|live| *live) {
-                    let (next, observed) =
-                        probe(&host, document, &request, &token, &KEYS, ordinal as u64 + 1);
-                    document = next;
-                    verify(&observed, live, &names);
-                    nodes.push(Node {
-                        id: document.current_step(&request).unwrap().id(),
-                        parent: Some(current),
-                        live,
-                    });
-                    current = nodes.len() - 1;
-                } else {
-                    let (next, observed, denial) =
-                        probe_refused(&host, document, &request, &token, &KEYS, ordinal as u64 + 1);
-                    document = next;
-                    assert!(
-                        denial.contains("PersistentName(UntrackedDependency)"),
-                        "{denial}"
-                    );
-                    verify(&observed, live, &names);
-                }
+                let (next, observed) =
+                    probe(&host, document, &request, &token, &KEYS, ordinal as u64 + 1);
+                document = next;
+                verify(&observed, live, &names);
+                nodes.push(Node {
+                    id: document.current_step(&request).unwrap().id(),
+                    parent: Some(current),
+                    live,
+                });
+                current = nodes.len() - 1;
             }
             Step::Delete(index) => {
                 // `nested` is owned only through `direct`'s `Child` edge.

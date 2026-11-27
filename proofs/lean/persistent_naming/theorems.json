@@ -3,7 +3,13 @@
     "PersistentNaming",
     "PersistentNaming.WireBound",
     "PersistentNaming.MintOrder",
-    "PersistentNaming.PostureCost"
+    "PersistentNaming.PostureCost",
+    "PersistentNaming.TimelineSearch",
+    "PersistentNaming.NameResolution",
+    "PersistentNaming.NameResolutionBound",
+    "PersistentNaming.IndexDelta",
+    "PersistentNaming.IndexDeltaCost",
+    "PersistentNaming.TrackedDeps"
   ],
   "allowed_axioms": [],
   "theorems": [
@@ -34,6 +40,58 @@
     {
       "name": "PersistentNaming.PostureCost.commit_naming_steps_basis_independent",
       "type": "∀ (small large : PersistentNaming.PostureCost.Basis) (changed : Nat) (claims : List PersistentNaming.PostureCost.Claim) (mintOrderSteps : Nat) (births : List PersistentNaming.PostureCost.Birth), PersistentNaming.PostureCost.commitSteps small changed claims mintOrderSteps births = PersistentNaming.PostureCost.commitSteps large changed claims mintOrderSteps births"
+    },
+    {
+      "name": "PersistentNaming.TimelineSearch.search_steps_le_log",
+      "type": "∀ (a : Nat → Nat) (basis lo size : Nat), (PersistentNaming.TimelineSearch.search a basis lo size).2 ≤ Nat.log2 size + 1"
+    },
+    {
+      "name": "PersistentNaming.TimelineSearch.search_eq_scan",
+      "type": "∀ (a : Nat → Nat) (basis lo size : Nat), (∀ i j, lo ≤ i → i ≤ j → j < lo + size → a i ≤ a j) → (PersistentNaming.TimelineSearch.search a basis lo size).1 = PersistentNaming.TimelineSearch.scan a basis lo size"
+    },
+    {
+      "name": "PersistentNaming.NameResolution.resolve_visits_lineage_path",
+      "type": "∀ (idx : Nat → Option PersistentNaming.NameResolution.Entry) (basis held fuel : Nat), (∀ k, k ∈ (PersistentNaming.NameResolution.resolve idx basis held fuel).visited → PersistentNaming.NameResolution.Reach idx basis held k) ∧ (PersistentNaming.NameResolution.resolve idx basis held fuel).probes = (PersistentNaming.NameResolution.resolve idx basis held fuel).visited.length ∧ (PersistentNaming.NameResolution.resolve idx basis held fuel).visited.Nodup"
+    },
+    {
+      "name": "PersistentNaming.NameResolution.resolve_steps_independent_of_unrelated",
+      "type": "∀ (idx idx' : Nat → Option PersistentNaming.NameResolution.Entry) (basis held fuel : Nat), (∀ k, PersistentNaming.NameResolution.Reach idx basis held k → idx k = idx' k) → (PersistentNaming.NameResolution.resolve idx basis held fuel).steps = (PersistentNaming.NameResolution.resolve idx' basis held fuel).steps"
+    },
+    {
+      "name": "PersistentNaming.NameResolution.resolve_steps_bounded",
+      "type": "∀ (idx : Nat → Option PersistentNaming.NameResolution.Entry) (basis held fuel Tmax : Nat), (∀ k e, PersistentNaming.NameResolution.Reach idx basis held k → idx k = Option.some e → e.len ≤ Tmax ∧ e.edgeLen ≤ Tmax) → (PersistentNaming.NameResolution.resolve idx basis held fuel).steps ≤ ((PersistentNaming.NameResolution.resolve idx basis held fuel).probes + (PersistentNaming.NameResolution.resolve idx basis held fuel).edges) * (3 * (Nat.log2 Tmax + 2))"
+    },
+    {
+      "name": "PersistentNaming.IndexDelta.rollback_restores",
+      "type": "∀ (c : Nat) (ops : List PersistentNaming.IndexDelta.Op) (s : PersistentNaming.IndexDelta.Store), (∀ k l, s k = Option.some l → ∀ e, e ∈ l → e.1 < c) → PersistentNaming.IndexDelta.rollback (PersistentNaming.IndexDelta.applyAll c ops (PersistentNaming.IndexDelta.init s)).journal (PersistentNaming.IndexDelta.applyAll c ops (PersistentNaming.IndexDelta.init s)).state = s"
+    },
+    {
+      "name": "PersistentNaming.IndexDelta.batch_refused_restores",
+      "type": "∀ (c : Nat) (ops : List PersistentNaming.IndexDelta.Op) (s : PersistentNaming.IndexDelta.Store), (∀ k l, s k = Option.some l → ∀ e, e ∈ l → e.1 < c) → (PersistentNaming.IndexDelta.applyAll c ops (PersistentNaming.IndexDelta.init s)).refused = true → (PersistentNaming.IndexDelta.batch c ops s).1 = s"
+    },
+    {
+      "name": "PersistentNaming.IndexDelta.batch_steps_bounded",
+      "type": "∀ (c : Nat) (ops : List PersistentNaming.IndexDelta.Op) (s : PersistentNaming.IndexDelta.Store), (PersistentNaming.IndexDelta.batch c ops s).2 ≤ 3 * ops.length"
+    },
+    {
+      "name": "PersistentNaming.IndexDelta.apply_steps_independent_of_history",
+      "type": "∀ (c : Nat) (ops : List PersistentNaming.IndexDelta.Op) (s s' : PersistentNaming.IndexDelta.Store), (∀ k, k ∈ List.map PersistentNaming.IndexDelta.Op.key ops → (s k).isSome = (s' k).isSome) → (PersistentNaming.IndexDelta.batch c ops s).2 = (PersistentNaming.IndexDelta.batch c ops s').2"
+    },
+    {
+      "name": "PersistentNaming.IndexDelta.carrier_update_members",
+      "type": "∀ (m : PersistentNaming.IndexDelta.Carriers) (added removed : List Nat) (y : Nat), (PersistentNaming.IndexDelta.carrierUpdate m added removed).1 y = (decide (y ∈ added) || (m y && !decide (y ∈ removed)))"
+    },
+    {
+      "name": "PersistentNaming.IndexDelta.carrier_update_independent_of_group_size",
+      "type": "∀ (m m' : PersistentNaming.IndexDelta.Carriers) (added removed : List Nat), (PersistentNaming.IndexDelta.carrierUpdate m added removed).2 = (PersistentNaming.IndexDelta.carrierUpdate m' added removed).2 ∧ (PersistentNaming.IndexDelta.carrierUpdate m added removed).2 = added.length + removed.length + 1"
+    },
+    {
+      "name": "PersistentNaming.TrackedDeps.currentness_steps_eq",
+      "type": "∀ (deps : List PersistentNaming.TrackedDeps.Key) (events : List PersistentNaming.TrackedDeps.Event), (PersistentNaming.TrackedDeps.currentness deps events).2 = PersistentNaming.TrackedDeps.sumTouched events * (Nat.log2 deps.length + 1) + events.length"
+    },
+    {
+      "name": "PersistentNaming.TrackedDeps.currentness_independent_of_unrelated_deps",
+      "type": "∀ (deps extra : List PersistentNaming.TrackedDeps.Key) (events : List PersistentNaming.TrackedDeps.Event), (∀ k, k ∈ extra → ∀ e, e ∈ events → ¬k ∈ PersistentNaming.TrackedDeps.touched e) → (PersistentNaming.TrackedDeps.currentness (deps ++ extra) events).1 = (PersistentNaming.TrackedDeps.currentness deps events).1 ∧ (PersistentNaming.TrackedDeps.currentness (deps ++ extra) events).2 = (PersistentNaming.TrackedDeps.currentness deps events).2 + PersistentNaming.TrackedDeps.sumTouched events * (Nat.log2 (deps ++ extra).length - Nat.log2 deps.length)"
     }
   ]
 }

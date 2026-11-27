@@ -5,8 +5,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::LineageId;
 use worth_relational::facade::lineage::{
-    LineageEventKind, LineageEventRecord, LineageRecordTarget, PersistentNameResolutionFootprint,
-    PersistentNameTarget,
+    LineageEventKind, LineageEventRecord, LineageRecordTarget, PersistentNameKey,
+    PersistentNameResolutionFootprint, PersistentNameSelection, PersistentNameTarget,
 };
 use worth_relational::facade::transactions::CommitResult;
 
@@ -30,8 +30,15 @@ struct BranchNameDependencies {
     /// Groups an answer rested on: a held group, every ended group its walk
     /// passed, and every live successor, matched by the selection or not.
     groups: BTreeSet<[u8; 32]>,
-    /// `(scheme, member)` group lookups and the group each one answered.
-    group_members: BTreeMap<(String, [u8; 32]), Option<[u8; 32]>>,
+    /// Group lookups per scheme: each member read and the group it answered.
+    group_members: BTreeMap<String, BTreeMap<[u8; 32], Option<[u8; 32]>>>,
+    /// The same lookups by answered group, so a touched group finds the
+    /// members it answered for without scanning every lookup.
+    members_by_group: BTreeMap<String, BTreeMap<[u8; 32], BTreeSet<[u8; 32]>>>,
+    /// Every resolution a read ran: the recorded name and the exact
+    /// Relational selection it was resolved under, so a consumer that keys
+    /// the answer itself can re-observe it at a later basis.
+    resolutions: BTreeSet<(PersistentNameKey, PersistentNameSelection)>,
 }
 
 impl BranchNameDependencies {
@@ -102,6 +109,36 @@ impl NameReadDependencies {
         self.branches
             .get(branch)
             .is_some_and(|deps| !deps.awaited_births.is_empty())
+    }
+
+    /// The digests of held names reads on `branch` found unborn, ascending.
+    pub fn awaited_births_on(&self, branch: &BranchId) -> Vec<[u8; 32]> {
+        self.branches
+            .get(branch)
+            .map(|deps| deps.awaited_births.iter().copied().collect())
+            .unwrap_or_default()
+    }
+
+    /// Every `(recorded name, Relational selection)` reads on `branch`
+    /// resolved, in canonical order.
+    pub fn resolutions_on(
+        &self,
+        branch: &BranchId,
+    ) -> Vec<(PersistentNameKey, PersistentNameSelection)> {
+        self.branches
+            .get(branch)
+            .map(|deps| deps.resolutions.iter().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    pub(crate) fn record_resolution(
+        &mut self,
+        branch: &BranchId,
+        held: PersistentNameKey,
+        selection: &PersistentNameSelection,
+    ) {
+        let resolutions = &mut self.branch_mut(branch).resolutions;
+        resolutions.insert((held, selection.clone()));
     }
 
     pub(crate) fn record_live_record(

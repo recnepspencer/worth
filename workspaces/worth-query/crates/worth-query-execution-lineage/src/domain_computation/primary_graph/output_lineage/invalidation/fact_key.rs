@@ -1,6 +1,6 @@
 use worth_foundational::facade::{AspectKey, CanonicalFieldPath};
 use worth_relational::facade::{
-    identity::{EntityId, KindId},
+    identity::{EntityId, KindId, LineageId},
     indexes::DerivedIndexId,
     storage::AuthoritativeFieldComparisonKey,
 };
@@ -44,4 +44,9 @@ pub enum FactPostingKey {
         key: AuthoritativeFieldComparisonKey,
     },
     IndexDefinition(DerivedIndexId),
+    /// A committed lineage event ended, split, merged away, replaced or
+    /// restored from this lineage.
+    PersistentNameLineage(LineageId),
+    /// A committed lineage event birthed the name with this digest.
+    PersistentNameBirth([u8; 32]),
 }

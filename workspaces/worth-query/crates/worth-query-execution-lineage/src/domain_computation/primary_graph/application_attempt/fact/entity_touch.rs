@@ -46,7 +46,10 @@ pub fn evaluate(fact: &WorthQueryApplicationObservedFact, candidate: EntityId) -
             *entity_id == candidate
         }
         // A group read rests on group state, which no entity record carries.
-        WorthQueryApplicationObservedFact::PersistentGroup { .. } => false,
+        // A name-history read rests on lineage the index records, whose
+        // live records the decision keys as entity facts of their own.
+        WorthQueryApplicationObservedFact::PersistentGroup { .. }
+        | WorthQueryApplicationObservedFact::PersistentNameHistory { .. } => false,
         WorthQueryApplicationObservedFact::Relation { from, to, .. } => {
             *from == candidate || *to == candidate
         }
