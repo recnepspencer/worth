@@ -38,6 +38,26 @@ impl ColdNamingSource for StaticSource {
     }
 }
 
+fn branch_state(
+    branch: BranchId,
+    pages: Vec<crate::lineage::naming_pages::NamingPageRef>,
+    group_log: Vec<crate::lineage::naming_pages::NamingPageRef>,
+    group_log_through: Option<u64>,
+) -> Arc<CheckpointNamingState> {
+    let root = BranchNamingRoot {
+        branch,
+        naming: None,
+        index: None,
+        groups: None,
+        pages,
+    };
+    Arc::new(CheckpointNamingState {
+        branches: vec![root],
+        group_log,
+        group_log_through,
+    })
+}
+
 #[test]
 fn chunked_large_values_above_32kib_roundtrip_and_shrink_cleanly() {
     let huge_name_key = row_key(
@@ -50,7 +70,6 @@ fn chunked_large_values_above_32kib_roundtrip_and_shrink_cleanly() {
         &PersistentNameKey::Group(AggregateIdentity::from_bytes([0x01; 32])),
     );
     let small_val = vec![0x99u8; 64];
-
     let mut rows = vec![
         (small_key.clone(), Some(small_val.clone())),
         (huge_name_key.clone(), Some(huge_name_val.clone())),
@@ -58,12 +77,9 @@ fn chunked_large_values_above_32kib_roundtrip_and_shrink_cleanly() {
     rows.sort_by(|a, b| a.0.cmp(&b.0));
     let mut sink = CollectedMembers::default();
     let branch_pages = seal_pages(None, rows, &mut sink).unwrap();
-    assert!(
-        branch_pages
-            .iter()
-            .all(|p| p.member.length <= NAMING_PAGE_BYTES as u64),
-        "every physical page stays <= 64 KiB"
-    );
+    assert!(branch_pages
+        .iter()
+        .all(|p| p.member.length <= NAMING_PAGE_BYTES as u64));
 
     let main_digest =
         crate::lineage::naming_pages::tables::branch_key_digest(&BranchId("main".into()));
@@ -79,21 +95,14 @@ fn chunked_large_values_above_32kib_roundtrip_and_shrink_cleanly() {
         .iter()
         .all(|p| p.member.length <= NAMING_PAGE_BYTES as u64));
 
-    let state = Arc::new(CheckpointNamingState {
-        branches: vec![BranchNamingRoot {
-            branch: BranchId("main".into()),
-            naming: None,
-            index: None,
-            groups: None,
-            pages: branch_pages.clone(),
-        }],
-        group_log: log_pages.clone(),
-        group_log_through: Some(7),
-    });
+    let state = branch_state(
+        BranchId("main".into()),
+        branch_pages.clone(),
+        log_pages.clone(),
+        Some(7),
+    );
     assert!(state.validate().is_ok());
-
-    let source = MemSource::from_sink(sink);
-    let store = ColdNamingStore::open(Arc::clone(&state), source);
+    let store = ColdNamingStore::open(Arc::clone(&state), MemSource::from_sink(sink));
     assert_eq!(
         store.get(&branch_pages, &small_key).unwrap(),
         Some(small_val)
@@ -104,7 +113,7 @@ fn chunked_large_values_above_32kib_roundtrip_and_shrink_cleanly() {
     );
     assert_eq!(
         store.get(&log_pages, &log_key).unwrap(),
-        Some(huge_log_frame.clone())
+        Some(huge_log_frame)
     );
 
     let mut scanned = BTreeMap::new();
@@ -117,7 +126,7 @@ fn chunked_large_values_above_32kib_roundtrip_and_shrink_cleanly() {
     assert_eq!(scanned.len(), 2);
     assert_eq!(scanned.get(&huge_name_key), Some(&huge_name_val));
 
-    // Shrink the huge value back to inline and confirm stale continuation chunks are removed.
+    // Shrink back to inline and confirm stale continuation chunks are removed.
     let mut sink2 = CollectedMembers::default();
     let shrunk_pages = seal_pages(
         Some((&store, &branch_pages)),
@@ -125,30 +134,21 @@ fn chunked_large_values_above_32kib_roundtrip_and_shrink_cleanly() {
         &mut sink2,
     )
     .unwrap();
-    let source2 = MemSource::from_sink(sink2);
-    let state2 = Arc::new(CheckpointNamingState {
-        branches: vec![BranchNamingRoot {
-            branch: BranchId("main".into()),
-            naming: None,
-            index: None,
-            groups: None,
-            pages: shrunk_pages.clone(),
-        }],
-        group_log: Vec::new(),
-        group_log_through: None,
-    });
+    let state2 = branch_state(
+        BranchId("main".into()),
+        shrunk_pages.clone(),
+        Vec::new(),
+        None,
+    );
     assert!(state2.validate().is_ok());
-    let store2 = ColdNamingStore::open(state2, source2);
+    let store2 = ColdNamingStore::open(state2, MemSource::from_sink(sink2));
     assert_eq!(
         store2.get(&shrunk_pages, &huge_name_key).unwrap(),
         Some(vec![0xab; 16])
     );
-    assert!(
-        shrunk_pages
-            .iter()
-            .all(|p| p.last[0] != crate::lineage::naming_pages::tables::VALUE_CHUNK),
-        "stale continuation chunks must be deleted when row shrinks"
-    );
+    assert!(shrunk_pages
+        .iter()
+        .all(|p| p.last[0] != crate::lineage::naming_pages::tables::VALUE_CHUNK));
 }
 
 #[test]
@@ -198,17 +198,7 @@ fn cold_advance_retention_floor_is_atomic_on_mid_pass_damage() {
         let last = bytes.len() - 1;
         bytes[last] ^= 0xff;
     }
-    let state = Arc::new(CheckpointNamingState {
-        branches: vec![BranchNamingRoot {
-            branch: branch.clone(),
-            naming: None,
-            index: None,
-            groups: None,
-            pages,
-        }],
-        group_log: Vec::new(),
-        group_log_through: None,
-    });
+    let state = branch_state(branch.clone(), pages, Vec::new(), None);
     let store = Arc::new(ColdNamingStore::open(state, source));
     let link = NamingBaseLink::new(Arc::new(StaticSource(store)), branch.clone());
     let mut cold_idx = PersistentNameBranchIndex::over(
@@ -218,22 +208,13 @@ fn cold_advance_retention_floor_is_atomic_on_mid_pass_damage() {
         resident.head(),
         Some(link),
     );
-    let err = cold_idx
-        .advance_retention_floor(CommitId(100))
-        .expect_err("mid-pass damaged member_groups page must refuse");
+    let err = cold_idx.advance_retention_floor(CommitId(100)).unwrap_err();
     assert_eq!(
         err,
         PersistentNameIndexDenial::StorageUnavailable(Cause::IntegrityMismatch)
     );
-    assert_eq!(
-        cold_idx.retention_floor(),
-        None,
-        "retention floor must stay unchanged after mid-pass failure"
-    );
-    assert!(
-        !cold_idx.names.has_delta(),
-        "names delta must stay untouched after mid-pass failure"
-    );
+    assert_eq!(cold_idx.retention_floor(), None);
+    assert!(!cold_idx.names.has_delta());
 }
 
 #[test]
@@ -315,22 +296,15 @@ fn frozen_capture_pins_store_and_custody_across_concurrent_source_swap() {
     changes.sort_unstable_by(|a, b| a.0.cmp(&b.0));
     let mut sink1 = CollectedMembers::default();
     let pages1 = seal_pages(None, changes, &mut sink1).unwrap();
-    let state1 = Arc::new(CheckpointNamingState {
-        branches: vec![BranchNamingRoot {
-            branch: branch.clone(),
-            naming: None,
-            index: Some(crate::lineage::naming_pages::NameIndexHeader {
-                earliest_commit: Some(1),
-                head: Some(1),
-                retention_floor: None,
-                unavailable: false,
-            }),
-            groups: None,
-            pages: pages1.clone(),
-        }],
-        group_log: Vec::new(),
-        group_log_through: None,
-    });
+    let hdr = crate::lineage::naming_pages::NameIndexHeader {
+        earliest_commit: Some(1),
+        head: Some(1),
+        retention_floor: None,
+        unavailable: false,
+    };
+    let mut s1 = (*branch_state(branch.clone(), pages1.clone(), Vec::new(), None)).clone();
+    s1.branches[0].index = Some(hdr);
+    let state1 = Arc::new(s1);
     let dropped_c1 = Arc::new(AtomicBool::new(false));
     let store1 = Arc::new(ColdNamingStore::open(
         Arc::clone(&state1),
@@ -340,27 +314,14 @@ fn frozen_capture_pins_store_and_custody_across_concurrent_source_swap() {
     let swappable = Arc::new(SwappableSource {
         slot: Mutex::new(Some(pinned1)),
     });
-
     let lineage = LineageSubsystem::new();
     lineage.install_cold_naming(swappable.clone(), &state1);
-
-    // Freeze C1 capture, then retire/clear C1 from the live source before sealing.
     let frozen = lineage.freeze_naming();
     *swappable.slot.lock().unwrap() = None;
-    assert!(
-        !dropped_c1.load(Ordering::SeqCst),
-        "frozen capture must pin C1 custody even after live source swaps/clears"
-    );
-
+    assert!(!dropped_c1.load(Ordering::SeqCst));
     let mut sink_out = CollectedMembers::default();
-    let sealed = frozen
-        .seal(&[branch.clone()], &mut sink_out)
-        .expect("frozen C1 capture seals cleanly against pinned C1 store");
+    let sealed = frozen.seal(&[branch.clone()], &mut sink_out).unwrap();
     assert_eq!(sealed.root(&branch).unwrap().pages, pages1);
-
     drop(frozen);
-    assert!(
-        dropped_c1.load(Ordering::SeqCst),
-        "C1 custody drops once frozen capture ends"
-    );
+    assert!(dropped_c1.load(Ordering::SeqCst));
 }

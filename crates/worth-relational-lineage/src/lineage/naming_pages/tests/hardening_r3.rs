@@ -66,59 +66,28 @@ impl NamingCodec for CountedPayload {
 #[test]
 fn cow_map_fork_and_disjoint_writes_clone_zero_unrelated_payloads() {
     let clones = Arc::new(AtomicUsize::new(0));
+    let payload = |value| CountedPayload {
+        value,
+        clones: Arc::clone(&clones),
+    };
     let mut parent: TieredMap<CommitId, CountedPayload> = TieredMap::resident(INDEX_NAME);
     for i in 1..=64u64 {
-        parent.insert(
-            CommitId(i),
-            CountedPayload {
-                value: i * 10,
-                clones: Arc::clone(&clones),
-            },
-        );
+        parent.insert(CommitId(i), payload(i * 10));
     }
-    assert_eq!(
-        clones.load(Ordering::SeqCst),
-        0,
-        "initial inserts into unique AVL tree must clone zero payloads"
-    );
+    assert_eq!(clones.load(Ordering::SeqCst), 0);
 
     let mut child = parent.fork(None);
-    // Disjoint insert, overwrite, and remove force AVL path copying and rotations.
     for extra in 100..=115u64 {
-        child.insert(
-            CommitId(extra),
-            CountedPayload {
-                value: extra,
-                clones: Arc::clone(&clones),
-            },
-        );
+        child.insert(CommitId(extra), payload(extra));
     }
-    child.insert(
-        CommitId(100),
-        CountedPayload {
-            value: 9999,
-            clones: Arc::clone(&clones),
-        },
-    );
+    child.insert(CommitId(100), payload(9999));
     child.remove_blind(&CommitId(101));
     child.remove_blind(&CommitId(16));
-    assert_eq!(
-        clones.load(Ordering::SeqCst),
-        0,
-        "fork + disjoint insert/overwrite/remove along shared AVL paths must clone ZERO ancestor payloads"
-    );
+    assert_eq!(clones.load(Ordering::SeqCst), 0);
 
-    // Mutating one shared key clones strictly that one target payload, never its path siblings.
-    child
-        .get_mut(&CommitId(32))
-        .unwrap()
-        .expect("target key present")
-        .value = 7777;
-    assert_eq!(
-        clones.load(Ordering::SeqCst),
-        1,
-        "get_mut on a shared key must clone strictly the single target payload"
-    );
+    // Mutating one shared key clones strictly that one target payload.
+    child.get_mut(&CommitId(32)).unwrap().unwrap().value = 7777;
+    assert_eq!(clones.load(Ordering::SeqCst), 1);
     assert_eq!(
         parent.get(&CommitId(32)).unwrap().as_deref().unwrap().value,
         320
@@ -134,14 +103,29 @@ fn cow_map_fork_and_disjoint_writes_clone_zero_unrelated_payloads() {
     assert_eq!(child.get(&CommitId(16)).unwrap(), None);
 }
 
+fn single_branch_store(pages: Vec<NamingPageRef>, sink: CollectedMembers) -> ColdNamingStore {
+    let root = BranchNamingRoot {
+        branch: BranchId("main".into()),
+        naming: None,
+        index: None,
+        groups: None,
+        pages,
+    };
+    let state = CheckpointNamingState {
+        branches: vec![root],
+        group_log: Vec::new(),
+        group_log_through: None,
+    };
+    ColdNamingStore::open(Arc::new(state), MemSource::from_sink(sink))
+}
+
 #[test]
 fn oversized_inline_envelope_refuses_damaged_on_both_get_and_scan() {
     let key = row_key(
         INDEX_NAME,
         &PersistentNameKey::Group(AggregateIdentity::from_bytes([0x44; 32])),
     );
-    let mut bad_inline = Vec::with_capacity(1 + MAX_INLINE_VALUE_BYTES + 1);
-    bad_inline.push(VALUE_INLINE_TAG);
+    let mut bad_inline = vec![VALUE_INLINE_TAG];
     bad_inline.resize(1 + MAX_INLINE_VALUE_BYTES + 1, 0xAB);
 
     let page = NamingPage {
@@ -158,18 +142,7 @@ fn oversized_inline_envelope_refuses_damaged_on_both_get_and_scan() {
         continuation_digest: None,
         member: member.locator,
     };
-    let state = Arc::new(CheckpointNamingState {
-        branches: vec![BranchNamingRoot {
-            branch: BranchId("main".into()),
-            naming: None,
-            index: None,
-            groups: None,
-            pages: vec![page_ref.clone()],
-        }],
-        group_log: Vec::new(),
-        group_log_through: None,
-    });
-    let store = ColdNamingStore::open(state, MemSource::from_sink(sink));
+    let store = single_branch_store(vec![page_ref.clone()], sink);
 
     // Inline fast-path: both get() and scan() must refuse Cause::Damaged.
     assert_eq!(store.get(&[page_ref.clone()], &key), Err(Cause::Damaged));
@@ -195,20 +168,7 @@ fn oversized_inline_envelope_refuses_damaged_on_both_get_and_scan() {
         &mut valid_sink,
     )
     .unwrap();
-    let valid_store = ColdNamingStore::open(
-        Arc::new(CheckpointNamingState {
-            branches: vec![BranchNamingRoot {
-                branch: BranchId("main".into()),
-                naming: None,
-                index: None,
-                groups: None,
-                pages: valid_pages.clone(),
-            }],
-            group_log: Vec::new(),
-            group_log_through: None,
-        }),
-        MemSource::from_sink(valid_sink),
-    );
+    let valid_store = single_branch_store(valid_pages.clone(), valid_sink);
     let chunked_header = valid_store
         .page(&valid_pages[0])
         .unwrap()
@@ -231,7 +191,6 @@ fn oversized_inline_envelope_refuses_damaged_on_both_get_and_scan() {
     mixed_sink
         .put(mixed_member.locator, mixed_member.bytes)
         .unwrap();
-    // Copy the valid continuation chunk pages so chunked row itself is valid.
     for p in &valid_pages[1..] {
         let raw_page = valid_store.page(p).unwrap();
         let m = encode_member(
@@ -251,18 +210,7 @@ fn oversized_inline_envelope_refuses_damaged_on_both_get_and_scan() {
         member: mixed_member.locator,
     }];
     mixed_refs.extend_from_slice(&valid_pages[1..]);
-    let mixed_state = Arc::new(CheckpointNamingState {
-        branches: vec![BranchNamingRoot {
-            branch: BranchId("main".into()),
-            naming: None,
-            index: None,
-            groups: None,
-            pages: mixed_refs.clone(),
-        }],
-        group_log: Vec::new(),
-        group_log_through: None,
-    });
-    let mixed_store = ColdNamingStore::open(mixed_state, MemSource::from_sink(mixed_sink));
+    let mixed_store = single_branch_store(mixed_refs.clone(), mixed_sink);
     assert_eq!(
         mixed_store.scan(&mixed_refs, &[INDEX_NAME], |_, _| Ok(true)),
         Err(Cause::Damaged)

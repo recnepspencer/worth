@@ -284,3 +284,114 @@ fn historical_fork_installs_prepared_lineage_under_tight_cache_without_second_re
         })
         .unwrap();
 }
+
+#[test]
+fn deep_fork_chain_historical_group_replay_preserves_checkpoint_order_via_min_heap() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let request = &ExecutionRequest::serial(&host);
+    let medium = TestDurableMedium::new();
+    let producer = durable_named_runtime(&medium, u64::MAX / 4);
+    let mut current = producer.main_branch_identity().branch_id().clone();
+
+    let (_, entities, names) = create_named_entities(
+        request,
+        &producer,
+        &current,
+        &["r16-a".into(), "r16-b".into(), "r16-c".into()],
+    );
+    // Build a 10-ancestor chain where each branch publishes one group partition
+    // (producing 10 distinct single-branch primary GROUP_LOG pages).
+    for level in 0..10usize {
+        let pair = if level % 2 == 0 {
+            vec![
+                (names[0], AggregateMemberRole::Anchor),
+                (names[1], AggregateMemberRole::Ordinary),
+            ]
+        } else {
+            vec![
+                (names[0], AggregateMemberRole::Anchor),
+                (names[2], AggregateMemberRole::Ordinary),
+            ]
+        };
+        let _ = publish_group_partition(
+            request,
+            &producer,
+            &current,
+            entities[0],
+            &format!("r16-lvl-{level}"),
+            vec![pair],
+        );
+        if level + 1 < 10 {
+            let next = BranchId(format!("r16-chain-{}", level + 1));
+            fork_retained_at(
+                request,
+                &producer,
+                &observe_branch(&producer, &current),
+                &next,
+            )
+            .unwrap();
+            current = next;
+        }
+    }
+    let expected_groups = producer
+        .with_persistent_names_at_observation(
+            request,
+            &observe_branch(&producer, &current).observation(),
+            |v| {
+                (
+                    v.group_of_member(GROUP_SCHEME, &names[0]),
+                    v.group_of_member(GROUP_SCHEME, &names[1]),
+                    v.group_of_member(GROUP_SCHEME, &names[2]),
+                )
+            },
+        )
+        .unwrap();
+    assert!(expected_groups.0.is_some() && expected_groups.0 == expected_groups.2);
+
+    let (ck, _) = capture_external_checkpoint(request, &producer);
+    let group_log_pages: Vec<_> = super::selected_directory::read_native(&ck)
+        .naming
+        .group_log
+        .into_iter()
+        .filter(|p| p.first.first() == Some(&14))
+        .map(|p| p.member)
+        .collect();
+    assert_eq!(group_log_pages.len(), 10);
+
+    let source = immutable_source(&ck, &medium);
+    let reopened = reopen_named(request, ck, source.clone(), &medium, u64::MAX / 4);
+    let basis_before = observe_branch(&reopened, &current);
+    let _ = publish_group_partition(
+        request,
+        &reopened,
+        &current,
+        entities[0],
+        "r16-post",
+        vec![vec![
+            (names[1], AggregateMemberRole::Anchor),
+            (names[2], AggregateMemberRole::Ordinary),
+        ]],
+    );
+
+    let reads_before = source.naming_page_reads.lock().unwrap().len();
+    let child = BranchId("r16-deep-hist-child".into());
+    fork_retained_at(request, &reopened, &basis_before, &child).unwrap();
+    let mut counts: BTreeMap<_, usize> = BTreeMap::new();
+    for m in &source.naming_page_reads.lock().unwrap()[reads_before..] {
+        *counts.entry(*m).or_default() += 1;
+    }
+    for page in &group_log_pages {
+        assert_eq!(counts.get(page).copied().unwrap_or(0), 1);
+    }
+    let child_obs = observe_branch(&reopened, &child).observation();
+    let child_groups = reopened
+        .with_persistent_names_at_observation(request, &child_obs, |v| {
+            (
+                v.group_of_member(GROUP_SCHEME, &names[0]),
+                v.group_of_member(GROUP_SCHEME, &names[1]),
+                v.group_of_member(GROUP_SCHEME, &names[2]),
+            )
+        })
+        .unwrap();
+    assert_eq!(child_groups, expected_groups);
+}

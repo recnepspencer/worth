@@ -63,117 +63,61 @@ fn unnamed_event(
 #[test]
 fn retired_unnamed_lineage_not_resurrected_in_truncated_naming_basis() {
     let branch = BranchId("main".into());
-    let entity = EntityId::new(PartitionId::main(), 101, 1);
-    let lineage = LineageId(1);
-    let entity2 = EntityId::new(PartitionId::main(), 202, 1);
-    let lineage2 = LineageId(2);
+    let (e1, l1) = (EntityId::new(PartitionId::main(), 101, 1), LineageId(1));
+    let (e2, l2) = (EntityId::new(PartitionId::main(), 202, 1), LineageId(2));
     let mut index = PersistentNameBranchIndex::new(branch.clone(), None);
-
-    // C1: create unnamed entity1 (lineage 1).
+    let ev = |id, c, k, s, t| unnamed_event(id, &branch, CommitId(c), k, s, t);
     index
         .apply(
             &PersistentNameCommittedBatch::new(CommitId(1)).with_lineage_events(
-                [unnamed_event(
-                    1,
-                    &branch,
-                    CommitId(1),
-                    LineageEventKind::Create,
-                    vec![],
-                    vec![lineage],
-                )],
-                [(lineage, entity)],
+                [ev(1, 1, LineageEventKind::Create, vec![], vec![l1])],
+                [(l1, e1)],
                 [],
             ),
         )
         .unwrap();
-
-    // C2: retire unnamed entity1 (lineage 1).
     index
         .apply(
             &PersistentNameCommittedBatch::new(CommitId(2)).with_lineage_events(
-                [unnamed_event(
-                    2,
-                    &branch,
-                    CommitId(2),
-                    LineageEventKind::Retire,
-                    vec![lineage],
-                    vec![],
-                )],
+                [ev(2, 2, LineageEventKind::Retire, vec![l1], vec![])],
                 [],
                 [],
             ),
         )
         .unwrap();
-
-    // C3: create another unnamed entity2 (lineage 2).
     index
         .apply(
             &PersistentNameCommittedBatch::new(CommitId(3)).with_lineage_events(
-                [unnamed_event(
-                    3,
-                    &branch,
-                    CommitId(3),
-                    LineageEventKind::Create,
-                    vec![],
-                    vec![lineage2],
-                )],
-                [(lineage2, entity2)],
+                [ev(3, 3, LineageEventKind::Create, vec![], vec![l2])],
+                [(l2, e2)],
                 [],
             ),
         )
         .unwrap();
-
-    // Truncate at C1: entity1 MUST be live; entity2 not yet born.
-    let child_c1 = index
-        .truncate_at(BranchId("c1".into()), CommitId(1))
-        .unwrap();
-    let basis_c1 = AuthoritativeBranchNamingState::from_truncated_index(&child_c1, CommitId(1))
-        .unwrap()
-        .snapshot()
-        .unwrap();
-    assert_eq!(
-        basis_c1
-            .live_lineages
-            .get(&PersistentNameHolder::Entity(entity)),
-        Some(&lineage),
-        "unnamed entity1 must be live at C1 before its C2 retirement"
-    );
-    assert!(!basis_c1
-        .live_lineages
-        .contains_key(&PersistentNameHolder::Entity(entity2)));
-
-    // Truncate at C2: entity1 was retired at C2 so MUST NOT be resurrected in live_lineages!
-    let child_c2 = index
-        .truncate_at(BranchId("c2".into()), CommitId(2))
-        .unwrap();
-    assert_eq!(child_c2.head(), Some(CommitId(2)));
-    let basis_c2 = AuthoritativeBranchNamingState::from_truncated_index(&child_c2, CommitId(2))
-        .unwrap()
-        .snapshot()
-        .unwrap();
-    assert!(
-        !basis_c2
-            .live_lineages
-            .contains_key(&PersistentNameHolder::Entity(entity)),
-        "retired unnamed entity1 must not be resurrected at C2"
-    );
-
-    // Retention compaction at C2 preserves ended_at = Some(C2) on the kept epoch.
-    index.advance_retention_floor(CommitId(2)).unwrap();
-    let child_c2_after_compact = index
-        .truncate_at(BranchId("c2-compact".into()), CommitId(2))
-        .unwrap();
-    let basis_c2_after_compact =
-        AuthoritativeBranchNamingState::from_truncated_index(&child_c2_after_compact, CommitId(2))
+    let basis_at = |idx: &PersistentNameBranchIndex, name: &str, c: u64| {
+        let child = idx.truncate_at(BranchId(name.into()), CommitId(c)).unwrap();
+        AuthoritativeBranchNamingState::from_truncated_index(&child, CommitId(c))
             .unwrap()
             .snapshot()
-            .unwrap();
-    assert!(
-        !basis_c2_after_compact
-            .live_lineages
-            .contains_key(&PersistentNameHolder::Entity(entity)),
-        "retention compaction must preserve unnamed retirement ended_at"
+            .unwrap()
+    };
+    let b1 = basis_at(&index, "c1", 1);
+    assert_eq!(
+        b1.live_lineages.get(&PersistentNameHolder::Entity(e1)),
+        Some(&l1)
     );
+    assert!(!b1
+        .live_lineages
+        .contains_key(&PersistentNameHolder::Entity(e2)));
+    let b2 = basis_at(&index, "c2", 2);
+    assert!(!b2
+        .live_lineages
+        .contains_key(&PersistentNameHolder::Entity(e1)));
+    index.advance_retention_floor(CommitId(2)).unwrap();
+    let b2_compact = basis_at(&index, "c2-compact", 2);
+    assert!(!b2_compact
+        .live_lineages
+        .contains_key(&PersistentNameHolder::Entity(e1)));
 }
 
 #[test]
@@ -182,64 +126,37 @@ fn naming_pages_isolate_domains_without_cross_domain_reads_and_refuse_mixed_desc
     let k_index = vec![INDEX_NAME, 1, 2, 3];
     let k_group = vec![GROUP_LIVE, 1, 2, 3];
 
-    // Initial seal with domains 1 and 3 (plus a chunked value in domain 3 -> domain 5).
     let mut sink1 = CollectedMembers::default();
     let big = vec![0x77u8; MAX_INLINE_VALUE_BYTES + 128];
-    let pages1 = seal_pages(
-        None,
-        vec![
-            (k_naming.clone(), Some(vec![1u8; 8])),
-            (k_group.clone(), Some(big.clone())),
-        ],
-        &mut sink1,
-    )
-    .unwrap();
-    assert_eq!(
-        pages1.len(),
-        3,
-        "domains 1, 3, and 5 must occupy separate pages"
-    );
-    for page in &pages1 {
-        assert_eq!(
-            table_domain(page.first[0]),
-            table_domain(page.last[0]),
-            "every sealed page must stay within a single table domain"
-        );
-    }
+    let rows1 = vec![(k_naming, Some(vec![1; 8])), (k_group, Some(big))];
+    let pages1 = seal_pages(None, rows1, &mut sink1).unwrap();
+    assert_eq!(pages1.len(), 3);
+    assert!(pages1
+        .iter()
+        .all(|p| table_domain(p.first[0]) == table_domain(p.last[0])));
     assert_eq!(table_domain(pages1[0].first[0]), Some(1));
     assert_eq!(table_domain(pages1[1].first[0]), Some(3));
     assert_eq!(pages1[2].first[0], VALUE_CHUNK);
     assert!(validate_pages(&pages1).is_ok());
 
-    // Incremental seal adding a domain-2 row between domain 1 and domain 3
-    // must read ZERO prior pages and carry domains 1, 3, and 5 untouched.
     let source = MemSource::from_sink(sink1);
-    let store = ColdNamingStore::open(
-        Arc::new(CheckpointNamingState {
-            branches: vec![BranchNamingRoot {
-                branch: BranchId("main".into()),
-                naming: None,
-                index: None,
-                groups: None,
-                pages: pages1.clone(),
-            }],
-            group_log: Vec::new(),
-            group_log_through: None,
-        }),
-        source.clone(),
-    );
+    let root = BranchNamingRoot {
+        branch: BranchId("main".into()),
+        naming: None,
+        index: None,
+        groups: None,
+        pages: pages1.clone(),
+    };
+    let state = CheckpointNamingState {
+        branches: vec![root],
+        group_log: Vec::new(),
+        group_log_through: None,
+    };
+    let store = ColdNamingStore::open(Arc::new(state), source.clone());
     let mut sink2 = CollectedMembers::default();
-    let pages2 = seal_pages(
-        Some((&store, &pages1)),
-        vec![(k_index.clone(), Some(vec![2u8; 8]))],
-        &mut sink2,
-    )
-    .unwrap();
-    assert_eq!(
-        source.read_count(),
-        0,
-        "inserting a row into a new table domain must read zero untouched prior pages"
-    );
+    let rows2 = vec![(k_index.clone(), Some(vec![2; 8]))];
+    let pages2 = seal_pages(Some((&store, &pages1)), rows2, &mut sink2).unwrap();
+    assert_eq!(source.read_count(), 0);
     assert_eq!(pages2.len(), 4);
     assert_eq!(pages2[0], pages1[0]);
     assert_eq!(table_domain(pages2[1].first[0]), Some(2));

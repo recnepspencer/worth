@@ -26,19 +26,20 @@ use super::LineageState;
 
 pub(super) type BranchNaming = Result<AuthoritativeBranchNamingState, NamingBasisUnavailable>;
 
-/// `branch`'s naming basis replayed from every published event along its
-/// fork ancestry.
+/// `branch`'s naming basis replayed through `cutoff` from every published event
+/// along its fork ancestry.
 ///
 /// Complexity: O(published events); full-history recovery only.
 pub(super) fn rebuild_branch_naming_state_for_branch(
     _full: &FullLineageRecoveryToken,
     branch_id: &BranchId,
+    cutoff: CommitId,
     published_events: &[PublishedLineageEvent],
     entity_nodes: &BTreeMap<LineageId, LineageNode>,
     relation_holders: &BTreeMap<LineageId, RelationId>,
     branch_forks: &BTreeMap<BranchId, (BranchId, CommitId)>,
 ) -> BranchNaming {
-    let cutoffs = ancestor_commit_cutoffs(branch_id, branch_forks);
+    let cutoffs = ancestor_commit_cutoffs(branch_id, cutoff, branch_forks);
     let mut state = AuthoritativeBranchNamingState::over(None, None, None);
     for published in published_events {
         let Some(&max_commit) = cutoffs.get(published.event.branch_id()) else {
@@ -79,6 +80,7 @@ pub(super) fn rebuild_all_branch_naming_states(
             let state = rebuild_branch_naming_state_for_branch(
                 full,
                 &branch_id,
+                CommitId(u64::MAX),
                 published_events,
                 entity_nodes,
                 relation_holders,
@@ -91,11 +93,12 @@ pub(super) fn rebuild_all_branch_naming_states(
 
 fn ancestor_commit_cutoffs(
     branch_id: &BranchId,
+    cutoff: CommitId,
     branch_forks: &BTreeMap<BranchId, (BranchId, CommitId)>,
 ) -> BTreeMap<BranchId, CommitId> {
     let mut cutoffs = BTreeMap::new();
     let mut current = branch_id.clone();
-    let mut current_cutoff = CommitId(u64::MAX);
+    let mut current_cutoff = cutoff;
     while !cutoffs.contains_key(&current) {
         cutoffs.insert(current.clone(), current_cutoff);
         let Some((parent, fork_commit)) = branch_forks.get(&current) else {

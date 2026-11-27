@@ -271,7 +271,7 @@ impl LineageState {
     }
 
     /// `branch`'s index through `cutoff` along its fork ancestry.
-    fn rebuild_branch_name_index(
+    pub(super) fn rebuild_branch_name_index(
         &self,
         _full: &FullLineageRecoveryToken,
         branch: &BranchId,

@@ -86,6 +86,15 @@ fn chunked_writer_refuses_values_above_64mib_and_rejects_malformed_prior_header(
     assert_eq!(err, Cause::Damaged);
 }
 
+fn hist_budget(historical_working_set_bytes: u64) -> ResidencyBudget {
+    ResidencyBudget {
+        head_working_set_bytes: u64::MAX / 4,
+        historical_working_set_bytes,
+        max_in_flight_fill_bytes: u64::MAX / 4,
+        streaming_window_bytes: 64 * 1024,
+    }
+}
+
 #[test]
 fn chunked_scan_succeeds_under_strict_one_page_memory_budget() {
     let branch = BranchId("main".into());
@@ -93,92 +102,61 @@ fn chunked_scan_succeeds_under_strict_one_page_memory_budget() {
     let k1 = row_key(GROUP_LOG, &((1u64, CommitId(1)), digest));
     let k2 = row_key(GROUP_LOG, &((2u64, CommitId(2)), digest));
     let k3 = row_key(GROUP_LOG, &((3u64, CommitId(3)), digest));
-    let small_v1 = vec![0x11u8; 24 * 1024];
-    let large_v2 = vec![0x5Cu8; 144 * 1024]; // 6 continuation chunks (~3 chunk pages)
-    let small_v3 = vec![0x33u8; 24 * 1024];
-
+    let (v1, v2, v3) = (
+        vec![0x11u8; 24 * 1024],
+        vec![0x5Cu8; 144 * 1024],
+        vec![0x33u8; 24 * 1024],
+    );
     let mut sink = CollectedMembers::default();
     let pages = seal_pages(
         None,
         vec![
-            (k1.clone(), Some(small_v1.clone())),
-            (k2.clone(), Some(large_v2.clone())),
-            (k3.clone(), Some(small_v3.clone())),
+            (k1.clone(), Some(v1.clone())),
+            (k2.clone(), Some(v2.clone())),
+            (k3.clone(), Some(v3.clone())),
         ],
         &mut sink,
     )
     .unwrap();
-    assert!(
-        pages.len() >= 4,
-        "expected logical page + >=3 chunk pages, got {}",
-        pages.len()
-    );
-    assert_eq!(
-        pages[0].last, k2,
-        "logical page holding chunked header must be strictly separate from continuation chunk pages"
-    );
+    assert!(pages.len() >= 4);
+    assert_eq!(pages[0].last, k2);
 
-    // Measure the exact charged bytes of the largest single page, then set the
-    // historical working-set budget strictly below 2 pages so 2 simultaneous
-    // borrowed pages would refuse MemoryExhausted.
     let source = MemSource::from_sink(sink);
+    let root = BranchNamingRoot {
+        branch: BranchId("main".into()),
+        naming: None,
+        index: None,
+        groups: None,
+        pages: pages.clone(),
+    };
     let state = Arc::new(CheckpointNamingState {
-        branches: vec![BranchNamingRoot {
-            branch: BranchId("main".into()),
-            naming: None,
-            index: None,
-            groups: None,
-            pages: pages.clone(),
-        }],
+        branches: vec![root],
         group_log: pages.clone(),
         group_log_through: Some(3),
     });
-    let mut max_single_page_bytes = 0u64;
+    let mut max_page = 0u64;
     for page_ref in &pages {
-        let probe_acct = WorkingSetAccountant::new(ResidencyBudget {
-            head_working_set_bytes: u64::MAX / 4,
-            historical_working_set_bytes: u64::MAX / 4,
-            max_in_flight_fill_bytes: u64::MAX / 4,
-            streaming_window_bytes: 64 * 1024,
-        });
+        let acct = WorkingSetAccountant::new(hist_budget(u64::MAX / 4));
         let probe = ColdNamingStore::open(Arc::clone(&state), source.clone());
-        probe.bind_working_set(probe_acct.clone());
+        probe.bind_working_set(acct.clone());
         let _ = probe.page(page_ref).unwrap();
-        max_single_page_bytes =
-            max_single_page_bytes.max(probe_acct.pressure().historical_resident_bytes);
+        max_page = max_page.max(acct.pressure().historical_resident_bytes);
     }
-    let one_page_budget = max_single_page_bytes + 512;
-    assert!(
-        one_page_budget < max_single_page_bytes.saturating_mul(2),
-        "budget {one_page_budget} must fit 1 page ({max_single_page_bytes}) and reject 2"
-    );
+    let one_page_budget = max_page + 512;
+    assert!(one_page_budget < max_page.saturating_mul(2));
 
-    let accountant = WorkingSetAccountant::new(ResidencyBudget {
-        head_working_set_bytes: u64::MAX / 4,
-        historical_working_set_bytes: one_page_budget,
-        max_in_flight_fill_bytes: u64::MAX / 4,
-        streaming_window_bytes: 64 * 1024,
-    });
     let store = ColdNamingStore::open(state, source);
-    assert!(store.bind_working_set(accountant));
-
+    assert!(store.bind_working_set(WorkingSetAccountant::new(hist_budget(one_page_budget))));
     let mut seen = Vec::new();
     store
         .scan(&pages, &[GROUP_LOG], |key, value| {
             seen.push((key.to_vec(), value.to_vec()));
             Ok(true)
         })
-        .expect("chunked scan must release logical page borrow and succeed under 1-page budget");
-    assert_eq!(seen, vec![(k1, small_v1), (k2, large_v2), (k3, small_v3)]);
+        .unwrap();
+    assert_eq!(seen, vec![(k1, v1), (k2, v2), (k3, v3)]);
     let obs = store.observation();
-    assert!(
-        obs.evictions > 0,
-        "expected evictions under 1-page budget: {obs:?}"
-    );
-    assert!(
-        obs.resident_pages <= 1,
-        "at most 1 page may remain resident: {obs:?}"
-    );
+    assert!(obs.evictions > 0 && obs.resident_pages <= 1);
 }
 
 #[test]

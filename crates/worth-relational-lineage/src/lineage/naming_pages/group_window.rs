@@ -6,7 +6,8 @@
 //! checkpoint page order, stopping at the very first matching transition before
 //! faulting any later page.
 
-use std::collections::BTreeMap;
+use std::cmp::Reverse;
+use std::collections::{BTreeMap, BinaryHeap};
 
 use worth_relational_contracts::internal_port::history::data::coordinates::CommitId;
 use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
@@ -123,10 +124,11 @@ impl<'a> BranchCursor<'a> {
 impl ColdNamingStore {
     /// Streams primary `GROUP_LOG` pages overlapping `(after, digest_bounds[b]]`
     /// (or `..=digest_bounds[b]` when `after` is `None`) in strict ascending
-    /// checkpoint page order (`k`-way merge over per-branch cursors,
-    /// `O(log P_b)` pre-base seek, `O(1)` post-bound stop, `O(|ancestry|)`
-    /// scratch space), filtering keys before chunk reassembly. `visit` returns
-    /// `Ok(true)` to continue or `Ok(false)` to stop before faulting later pages.
+    /// checkpoint page order (`k`-way min-heap merge over per-branch cursors,
+    /// `O(log P_b)` pre-base seek, `O(log |ancestry|)` page selection, `O(1)`
+    /// post-bound stop, `O(|ancestry|)` scratch space), filtering keys before
+    /// chunk reassembly. `visit` returns `Ok(true)` to continue or `Ok(false)`
+    /// to stop before faulting later pages.
     pub fn scan_group_log_window(
         &self,
         digest_bounds: &BTreeMap<[u8; 32], CommitId>,
@@ -135,24 +137,26 @@ impl ColdNamingStore {
     ) -> Result<(), Cause> {
         let group_log = &self.state().group_log;
         let mut cursors: Vec<BranchCursor<'_>> = Vec::with_capacity(digest_bounds.len());
+        let mut heap: BinaryHeap<Reverse<(usize, usize)>> =
+            BinaryHeap::with_capacity(digest_bounds.len());
         for (&digest, &bound) in digest_bounds {
             if after.is_some_and(|a| bound <= a) {
                 continue;
             }
             if let Some(window) = self.group_log_windows.by_branch.get(&digest) {
                 let cursor = BranchCursor::new(window, after, bound);
-                if cursor.peek_page_idx().is_some() {
+                if let Some(page_idx) = cursor.peek_page_idx() {
+                    let idx = cursors.len();
                     cursors.push(cursor);
+                    heap.push(Reverse((page_idx, idx)));
                 }
             }
         }
-        while let Some((best_cursor_idx, page_idx)) = cursors
-            .iter()
-            .enumerate()
-            .filter_map(|(i, c)| c.peek_page_idx().map(|idx| (i, idx)))
-            .min_by_key(|&(_, page_idx)| page_idx)
-        {
-            cursors[best_cursor_idx].advance();
+        while let Some(Reverse((page_idx, cursor_idx))) = heap.pop() {
+            cursors[cursor_idx].advance();
+            if let Some(next_page_idx) = cursors[cursor_idx].peek_page_idx() {
+                heap.push(Reverse((next_page_idx, cursor_idx)));
+            }
             let page_ref = &group_log[page_idx];
             let mut stop = false;
             let _ = self.scan_page_filtered(
