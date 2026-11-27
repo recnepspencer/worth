@@ -33,6 +33,7 @@ impl EffectCore<'_> {
                     relation,
                 )
             })?;
+        self.refuse_self_grant(kind, from, relation)?;
         let key = canonical_key(key(), relation)?;
         if self.keys.contains(&(kind, key.clone())) {
             return Err(denial(
@@ -52,6 +53,32 @@ impl EffectCore<'_> {
                 to: (*to.reference).clone(),
             });
         Ok(position)
+    }
+    /// Every handler, named, initialization, body-creation and fragment link
+    /// reaches this funnel, so no link verb can grant its own principal a
+    /// grant kind declared `forbid_self_grant`. Only an existing entity can
+    /// be the admitted principal; a created endpoint never is.
+    fn refuse_self_grant(
+        &self,
+        relation_kind: KindId,
+        from: Target<'_>,
+        relation: &str,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let EntityReference::Existing(entity) = from.reference else {
+            return Ok(());
+        };
+        let links_own_principal =
+            crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(*entity)
+                == self.principal;
+        if links_own_principal && self.layout.forbids_self_grant(relation_kind) {
+            // The operation's current authority never covers granting its
+            // own principal a self-grant-forbidden grant kind.
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
+                format!("self-grant:{relation}"),
+            ));
+        }
+        Ok(())
     }
     pub fn unlink_at_observation(
         &mut self,

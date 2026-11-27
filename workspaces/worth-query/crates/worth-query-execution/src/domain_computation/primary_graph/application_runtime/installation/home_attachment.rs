@@ -48,6 +48,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_home_application_ser
     validate_application_schema(runtime, installed)?;
     let handlers = super::owned_contributions::preflight(bootstrap, installed)?;
     let authorization = compile_authorization(bootstrap, installed)?;
+    super::capability_calendar::admit_capability_calendar(&authorization, authorization_clock)?;
     let graph = bootstrap.graph.integration_handle();
     let mutation_partitions = graph
         .with_runtime(&phase.execution_request(), |native| {

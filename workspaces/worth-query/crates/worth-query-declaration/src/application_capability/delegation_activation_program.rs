@@ -14,6 +14,8 @@ use super::{
 ///
 /// This is cold declaration meaning. Installation retains the result so warm
 /// execution can validate the selected target without reconstructing it.
+/// Only a workflow-tenure grant has a lineage to activate; a standing grant
+/// yields `None` (installation also refuses a standing activation).
 #[doc(hidden)]
 pub fn application_capability_delegation_activation_program_targets(
     contract: &ErasedApplicationCapabilityContract,
@@ -23,6 +25,8 @@ pub fn application_capability_delegation_activation_program_targets(
     let constraints = contract.constraints();
     let currentness = constraints.currentness();
     let delegation = contract.delegation();
+    let workflow = currentness.workflow()?;
+    let lineage = delegation.lineage()?;
     let mut required = BTreeSet::from([
         ApplicationOperationProgramTarget::Create {
             entity: contract.grant_entity().to_owned(),
@@ -31,13 +35,13 @@ pub fn application_capability_delegation_activation_program_targets(
         write_target(target.action().field()),
         write_target(target.purpose().field()),
         write_target(currentness.active_status().field()),
-        write_target(currentness.workflow().grant()),
+        write_target(workflow.grant()),
         write_target(currentness.validity().not_before()),
         write_target(currentness.validity().not_after()),
-        write_target(delegation.limit()),
+        write_target(lineage.limit()),
         link_target(target.resource()),
-        link_target(delegation.parent()),
-        link_target(delegation.grantor()),
+        link_target(lineage.parent()),
+        link_target(lineage.grantor()),
         link_target(delegation.grantee()),
     ]);
     extend_optional_field(&mut required, target.field());

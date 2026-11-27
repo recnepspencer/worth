@@ -90,6 +90,11 @@ where
     checkpoint_limits: ApplicationHomeCheckpointLimits,
     roster: WorthQueryApplicationProgramRoster<'authoring, Schema>,
     authorization_time_source: Option<Box<dyn WorthQueryRuntimeTimeSource>>,
+    capability_calendar: Option<
+        std::sync::Arc<
+            dyn worth_query_execution::facade::primary_graph::WorthQueryCapabilityCalendar,
+        >,
+    >,
     initial_state: InitialStateFn<'authoring, Schema>,
 }
 
@@ -124,6 +129,7 @@ where
             checkpoint_limits: ApplicationHomeCheckpointLimits::default(),
             roster: WorthQueryApplicationProgramRoster::new(),
             authorization_time_source: None,
+            capability_calendar: None,
             initial_state: Box::new(|_, _, _| Ok(())),
         }
     }
@@ -170,6 +176,19 @@ where
         source: impl WorthQueryRuntimeTimeSource,
     ) -> Self {
         self.authorization_time_source = Some(Box::new(source));
+        self
+    }
+
+    /// Supplies the calendar local-date grant validity is read on (for example
+    /// `WorthQueryTimeZone::load_system()?`, or a fixed offset in tests). It
+    /// joins the Home's trusted time basis: grants compare the local civil
+    /// date of the one admission instant, never a caller-supplied date. A Home
+    /// that installs a local-date grant without a calendar refuses to open.
+    pub fn with_capability_calendar(
+        mut self,
+        calendar: impl worth_query_execution::facade::primary_graph::WorthQueryCapabilityCalendar,
+    ) -> Self {
+        self.capability_calendar = Some(std::sync::Arc::new(calendar));
         self
     }
 
@@ -326,11 +345,15 @@ where
             config.initial_state,
         )
         .with_checkpoint_limits(config.checkpoint_limits);
-        request.authorization_time_source = Some(match config.authorization_time_source {
+        let source: Box<dyn WorthQueryRuntimeTimeSource> = match config.authorization_time_source {
             Some(source) => source,
             None => Box::new(ConfiguredAdmissionClockTimeSource {
                 clock: admission_clock,
             }),
+        };
+        request.authorization_time_source = Some(match config.capability_calendar {
+            Some(calendar) => super::capability_calendar::with_calendar(Some(source), calendar),
+            None => source,
         });
         with_bootstrap_advancement(config.execution_policy, |phase| {
             request.open_in_advancement(&phase)

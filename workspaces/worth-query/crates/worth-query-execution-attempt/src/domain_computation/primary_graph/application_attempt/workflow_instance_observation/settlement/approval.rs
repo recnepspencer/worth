@@ -302,11 +302,8 @@ pub fn observe_retained_approval_binding(
         &layout.approval.validity_timeline,
         facts,
     )?;
-    let timeline = match timeline.as_str() {
-        "unix-epoch-seconds" => worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-        "unix-epoch-milliseconds" => worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline::UnixEpochMilliseconds,
-        _ => return Err(denial("workflow approval validity timeline is invalid")),
-    };
+    let timeline = worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline::from_canonical_name(&timeline)
+        .ok_or_else(|| denial("workflow approval validity timeline is invalid"))?;
     let expiry = observed_u64(
         execution,
         runtime,

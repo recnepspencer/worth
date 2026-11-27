@@ -59,6 +59,9 @@ pub(super) struct EffectCore<'a> {
     keys: &'a mut BTreeSet<(KindId, String)>,
     case_transitions: &'a mut super::case_transition::CaseTransitions,
     creation_partition: &'a mut Option<WorthQueryApplicationCreationPartition>,
+    /// The admitted principal every relation link is checked against for
+    /// self-grant; it carries no authority.
+    principal: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
 }
 impl<S, O, I, Scope> WorthQueryApplicationEffectProgramBuilder<S, O, I, Scope> {
     #[inline(always)]
@@ -76,6 +79,11 @@ impl<S, O, I, Scope> WorthQueryApplicationEffectProgramBuilder<S, O, I, Scope> {
             field_write_positions: &mut self.field_write_positions,
             keys: &mut self.keys,
             creation_partition: &mut self.creation_partition,
+            principal: self
+                .read_set
+                .admission
+                .operation_scope_binding()
+                .principal(),
         }
     }
 }

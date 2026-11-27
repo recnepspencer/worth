@@ -10,6 +10,14 @@ use super::super::super::decode_budget::RecordDecodeAttempt;
 use super::super::wire_vocabulary::{decode_type_identity, write_type_identity};
 
 mod application_capability;
+use application_capability::CapabilityRecordShape;
+
+/// The member tag of one capability contract (7, 33 or 59).
+pub(super) fn capability_member_tag(
+    contract: &worth_query_declaration::facade::application_capability::ErasedApplicationCapabilityContract,
+) -> u16 {
+    CapabilityRecordShape::of(contract).member_tag()
+}
 use crate::record::application_query;
 
 pub(super) fn require_nesting_depth(
@@ -73,8 +81,16 @@ pub(super) fn decode(
         6 => ApplicationSchemaMember::ApplicationQuery {
             definition: application_query::decode(input, budget)?,
         },
-        7 | 33 => ApplicationSchemaMember::ApplicationCapability {
-            contract: application_capability::decode(input, budget, tag == 33)?,
+        7 | 33 | 59 => ApplicationSchemaMember::ApplicationCapability {
+            contract: application_capability::decode(
+                input,
+                budget,
+                match tag {
+                    7 => CapabilityRecordShape::Direct,
+                    33 => CapabilityRecordShape::Rooted,
+                    _ => CapabilityRecordShape::Extended,
+                },
+            )?,
         },
         8 => ApplicationSchemaMember::ApplicationCapabilityContext {
             context: input.text()?.to_owned(),

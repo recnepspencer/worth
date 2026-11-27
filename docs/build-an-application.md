@@ -7540,6 +7540,73 @@ with the original stamp. The
 [workflow-birth court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/workflow_birth_time_dx/courts.rs)
 stamps a workflow-enrolled birth in the same commit that starts its instance.
 
+### Standing grants, rooted revocation and calendar validity
+
+A site role, an organisation or workspace membership or a household member is
+a *standing* grant: it belongs to no workflow instance and is never delegated.
+Declare it as one, with no workflow, parent, grantor or delegation-limit
+field in the schema:
+
+```rust
+ApplicationCapabilityContractBuilder::new(ReviewCapability::reference(), ReviewOp::reference(), RoleGrant::reference())
+    .target(ApplicationCapabilityTargetDefinition::new(
+        role_is_review, ApplicationCapabilityRelationBinding::from_reference(GrantSite::reference()),
+        ApplicationCapabilityRelationDimension::not_applicable(),
+        ApplicationCapabilityFieldDimension::not_applicable(), purpose_is_quality,
+    ))
+    .constraints(ApplicationCapabilityConstraintDefinition::new(
+        ApplicationCapabilityMagnitudeDimension::not_applicable(),
+        ApplicationCapabilityCardinalityDimension::One,
+        ApplicationCapabilityCurrentnessDefinition::standing(
+            grant_is_active,
+            // or ::local_date(RoleGrantFacts::first_day(), RoleGrantFacts::last_day())
+            ApplicationCapabilityValidityDefinition::utc(RoleGrantFacts::valid_from(), RoleGrantFacts::valid_until())?,
+        )
+        .require_active(site_is_active), // rooted revocation, one line per entity kind
+        SiteContext::reference(),
+    ))
+    .delegation(
+        ApplicationCapabilityDelegationDefinition::standing(
+            ApplicationCapabilityRelationBinding::from_reference(RoleHolder::reference()),
+            SiteRoleProvenance::reference(),
+        )
+        .forbid_self_grant(),
+    )
+    // propagation: ApplicationCapabilityDelegationRule::forbidden()
+```
+
+- **Standing tenure.** `CurrentnessDefinition::standing` and
+  `DelegationDefinition::standing` go together; installation refuses a mixture,
+  a delegable or activated standing grant, and `forbid_self_grant` on a
+  workflow-tenure grant (`InvalidApplicationCapabilityTenure`).
+- **Rooted revocation.** `require_active(binding)` makes every entity of the
+  binding's kind on the grant's resource path (its head or context root and
+  every later step) hold that value. Deactivating a Site or Department revokes
+  every grant reaching through it without touching a grant row, and
+  reactivating it restores them. Installation refuses a kind the path never
+  crosses, the grant kind itself, a repeated kind, or more than eight bindings
+  (`InvalidApplicationCapabilityExtentStatus`).
+- **Validity.** `utc` bounds are inclusive `CanonicalTimestamp` instants;
+  `local_date` bounds are inclusive `CanonicalDate` days on the Home's
+  capability calendar. Both compare with the one trusted admission instant the
+  operation records as `admitted_at`, never a caller-supplied time. Supply the
+  calendar once with `WorthQueryHomeConfig::with_capability_calendar(zone)`
+  (any `WorthQueryTimeZone`, `WorthQueryUtcOffset` or calendar closure); a Home
+  that installs a local-date grant without one refuses to open
+  (`CapabilityCalendarMissing`). In a zone whose daylight-time fall-back crosses
+  midnight, a local day can repeat for that hour; this is civil-calendar
+  meaning. Governed elevation still needs a Unix-epoch timeline.
+- **Self-grant.** `forbid_self_grant()` refuses every operation that links its
+  own admitted principal as a grantee of that grant kind, through any handler
+  or declarative body link (`CurrentAuthorityDenied` with subject `self-grant:<relation>`; a declarative body that
+  links the principal is refused at installation as `SelfGrantingOperationBody`).
+
+A contract without these features keeps its archive record and capability
+identity byte for byte; one using them is written as archive member tag 59,
+which older readers refuse. See the
+[court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/standing_grant_dx/mod.rs)
+and [proofs](../specs/lean/capability_grant_path/README.md).
+
 ### Optional invariant work and original interruption
 
 Within an explicitly accounted execution policy, the work ceiling can be absent:

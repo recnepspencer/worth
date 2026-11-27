@@ -49,6 +49,7 @@ where
             "Product World and admission require the same monotonic clock",
         ));
     }
+    super::capability_calendar::admit_capability_calendar(&authorization, &authorization_clock)?;
     let product_runtime = crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime::install(
         graph.primary_provider.graph_ref().prepare_product_source(&phase.execution_request(), &graph.relational_branch_identity)
             .map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(

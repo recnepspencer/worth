@@ -144,10 +144,11 @@ pub fn encode_workflow_approval_support(
                 },
                 lineage: support.decision().durable_lineage_view(),
                 timeline: support.timeline().canonical_name(),
-                expiry: match support.expiry() {
-                    worth_foundational::facade::AspectValue::UInt64(value) => *value,
-                    _ => return Err(WorkflowApprovalRequestEncodingDenial::InvalidRequest),
-                },
+                expiry: crate::domain_computation::runtime_time::validity_ordinal(
+                    support.timeline(),
+                    support.expiry(),
+                )
+                .ok_or(WorkflowApprovalRequestEncodingDenial::InvalidRequest)?,
             })
         })
         .transpose()?;
@@ -210,11 +211,8 @@ pub fn decode_workflow_approval_support(
                     PortableSupportRole::ElevationUpperBound => super::WorthQueryCapabilitySupportRole::ElevationUpperBound,
                 },
                 lineage: support.lineage,
-                timeline: match support.timeline.as_str() {
-                    "unix-epoch-seconds" => worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                    "unix-epoch-milliseconds" => worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline::UnixEpochMilliseconds,
-                    _ => return Err(().into()),
-                },
+                timeline: worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline::from_canonical_name(&support.timeline)
+                    .ok_or(())?,
                 expiry: support.expiry,
             }) })
         })

@@ -3,10 +3,11 @@ use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityCardinalityDimension, ApplicationCapabilityConstraintDefinition,
     ApplicationCapabilityCurrentnessDefinition,
     ApplicationCapabilityDelegationActivationDefinition, ApplicationCapabilityDelegationDefinition,
-    ApplicationCapabilityFieldDimension, ApplicationCapabilityRelationDimension,
-    ApplicationCapabilityRevocationDefinition, ApplicationCapabilityTargetDefinition,
-    ApplicationCapabilityValidityDefinition, ApplicationCapabilityValidityTimeline,
-    ApplicationCapabilityWorkflowDefinition,
+    ApplicationCapabilityDelegationLineage, ApplicationCapabilityFieldDimension,
+    ApplicationCapabilityRelationBinding, ApplicationCapabilityRelationDimension,
+    ApplicationCapabilityRevocationDefinition, ApplicationCapabilitySelfGrantRule,
+    ApplicationCapabilityTargetDefinition, ApplicationCapabilityValidityDefinition,
+    ApplicationCapabilityValidityTimeline, ApplicationCapabilityWorkflowDefinition,
     WorthQueryPortableApplicationCapabilityConstraintParts,
     WorthQueryPortableApplicationCapabilityDelegationActivationParts,
     WorthQueryPortableApplicationCapabilityDelegationParts,
@@ -89,10 +90,20 @@ pub(super) fn write_delegation(
     output: &mut dyn BinaryEncodingSink,
     value: &ApplicationCapabilityDelegationDefinition,
 ) -> Result<(), Denial> {
-    bindings::write_relation(output, value.parent())?;
-    bindings::write_relation(output, value.grantor())?;
+    let lineage = value
+        .lineage()
+        .ok_or_else(|| Denial::new(Kind::UnsupportedRecordVariant))?;
+    bindings::write_relation(output, lineage.parent())?;
+    bindings::write_relation(output, lineage.grantor())?;
     bindings::write_relation(output, value.grantee())?;
-    bindings::write_field(output, value.limit())?;
+    bindings::write_field(output, lineage.limit())?;
+    write_provenance_and_programs(output, value)
+}
+
+pub(super) fn write_provenance_and_programs(
+    output: &mut dyn BinaryEncodingSink,
+    value: &ApplicationCapabilityDelegationDefinition,
+) -> Result<(), Denial> {
     output.text(value.provenance())?;
     write_type_identity(output, &value.provenance_identity())?;
     match value.activation() {
@@ -118,6 +129,26 @@ pub(super) fn decode_delegation(
     let grantor = bindings::decode_relation(input)?;
     let grantee = bindings::decode_relation(input)?;
     let limit = bindings::decode_field(input)?;
+    let lineage = Some(ApplicationCapabilityDelegationLineage::new(
+        parent, grantor, limit,
+    ));
+    decode_provenance_and_programs(
+        input,
+        budget,
+        lineage,
+        grantee,
+        ApplicationCapabilitySelfGrantRule::Permitted,
+    )
+}
+
+/// Provenance, activation and revocation, shared by every capability record.
+pub(super) fn decode_provenance_and_programs(
+    input: &mut BinaryInput<'_>,
+    budget: &mut RecordDecodeAttempt,
+    lineage: Option<ApplicationCapabilityDelegationLineage>,
+    grantee: ApplicationCapabilityRelationBinding,
+    self_grant: ApplicationCapabilitySelfGrantRule,
+) -> Result<ApplicationCapabilityDelegationDefinition, Denial> {
     let provenance = input.text()?.to_owned();
     let provenance_type = decode_type_identity(input)?;
     let activation = match input.u16()? {
@@ -134,14 +165,13 @@ pub(super) fn decode_delegation(
         ApplicationCapabilityDelegationDefinition::from_untrusted_parts(
             ARCHIVE_DECODE,
             WorthQueryPortableApplicationCapabilityDelegationParts {
-                parent,
-                grantor,
+                lineage,
                 grantee,
-                limit,
                 provenance,
                 provenance_type,
                 activation,
                 revocation,
+                self_grant,
             },
         ),
     )
@@ -199,9 +229,13 @@ fn write_currentness(
     output: &mut dyn BinaryEncodingSink,
     value: &ApplicationCapabilityCurrentnessDefinition,
 ) -> Result<(), Denial> {
+    let workflow = value
+        .workflow()
+        .filter(|_| value.extent_status().is_empty())
+        .ok_or_else(|| Denial::new(Kind::UnsupportedRecordVariant))?;
     bindings::write_value(output, value.active_status())?;
-    bindings::write_field(output, value.workflow().grant())?;
-    bindings::write_field(output, value.workflow().resource())?;
+    bindings::write_field(output, workflow.grant())?;
+    bindings::write_field(output, workflow.resource())?;
     write_validity(output, value.validity())
 }
 fn decode_currentness(
@@ -224,6 +258,11 @@ pub(super) fn write_validity(
     output.u16(match value.timeline() {
         ApplicationCapabilityValidityTimeline::UnixEpochSeconds => 1,
         ApplicationCapabilityValidityTimeline::UnixEpochMilliseconds => 2,
+        // Only member tag 59 currentness carries calendar or UTC timelines.
+        ApplicationCapabilityValidityTimeline::UtcTimestamp
+        | ApplicationCapabilityValidityTimeline::LocalDate => {
+            return Err(Denial::new(Kind::UnsupportedRecordVariant));
+        }
     })?;
     bindings::write_field(output, value.not_before())?;
     bindings::write_field(output, value.not_after())
@@ -243,7 +282,7 @@ pub(super) fn decode_validity(
     ))
 }
 
-fn write_field_dimension(
+pub(super) fn write_field_dimension(
     output: &mut dyn BinaryEncodingSink,
     value: &ApplicationCapabilityFieldDimension,
 ) -> Result<(), Denial> {
@@ -255,7 +294,7 @@ fn write_field_dimension(
         }
     }
 }
-fn decode_field_dimension(
+pub(super) fn decode_field_dimension(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationCapabilityFieldDimension, Denial> {
     match input.u16()? {
@@ -266,7 +305,7 @@ fn decode_field_dimension(
         _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
     }
 }
-fn write_relation_dimension(
+pub(super) fn write_relation_dimension(
     output: &mut dyn BinaryEncodingSink,
     value: &ApplicationCapabilityRelationDimension,
 ) -> Result<(), Denial> {
@@ -278,7 +317,7 @@ fn write_relation_dimension(
         }
     }
 }
-fn decode_relation_dimension(
+pub(super) fn decode_relation_dimension(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationCapabilityRelationDimension, Denial> {
     match input.u16()? {
@@ -289,7 +328,7 @@ fn decode_relation_dimension(
         _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
     }
 }
-fn write_cardinality(
+pub(super) fn write_cardinality(
     output: &mut dyn BinaryEncodingSink,
     value: ApplicationCapabilityCardinalityDimension,
 ) -> Result<(), Denial> {
@@ -302,7 +341,7 @@ fn write_cardinality(
         }
     }
 }
-fn decode_cardinality(
+pub(super) fn decode_cardinality(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationCapabilityCardinalityDimension, Denial> {
     match input.u16()? {

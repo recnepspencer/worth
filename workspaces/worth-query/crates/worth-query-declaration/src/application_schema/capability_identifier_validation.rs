@@ -46,14 +46,21 @@ pub(super) fn validate_capability_identifiers(
     validate_field_dimension(contract.constraints().magnitude())?;
     let currentness = contract.constraints().currentness();
     validate_field(currentness.active_status().field())?;
-    validate_field(currentness.workflow().grant())?;
-    validate_field(currentness.workflow().resource())?;
+    if let Some(workflow) = currentness.workflow() {
+        validate_field(workflow.grant())?;
+        validate_field(workflow.resource())?;
+    }
     validate_field(currentness.validity().not_before())?;
     validate_field(currentness.validity().not_after())?;
-    validate_relation(contract.delegation().parent())?;
-    validate_relation(contract.delegation().grantor())?;
+    for status in currentness.extent_status() {
+        validate_value_binding(status)?;
+    }
+    if let Some(lineage) = contract.delegation().lineage() {
+        validate_relation(lineage.parent())?;
+        validate_relation(lineage.grantor())?;
+        validate_field(lineage.limit())?;
+    }
     validate_relation(contract.delegation().grantee())?;
-    validate_field(contract.delegation().limit())?;
     if let Some(activation) = contract.delegation().activation() {
         validate_operation_binding(activation.operation())?;
         validate_field(activation.identity())?;

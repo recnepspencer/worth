@@ -190,6 +190,12 @@ impl WorthQueryInstalledAuthorizationRegistry {
         self.capabilities.plan(capability)
     }
 
+    /// Whether an installed grant's validity needs the Home's capability
+    /// calendar (a local-date timeline).
+    pub const fn requires_capability_calendar(&self) -> bool {
+        self.capabilities.requires_capability_calendar()
+    }
+
     pub fn capability_plan_by_identity(
         &self,
         capability_identity: &[u8; 32],

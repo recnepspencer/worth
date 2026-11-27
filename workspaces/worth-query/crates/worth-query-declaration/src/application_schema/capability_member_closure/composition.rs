@@ -202,10 +202,14 @@ fn requirement_is_owned(
         || field_dimension_owns(target.field(), requirement.field())
         || field_dimension_owns(constraints.magnitude(), requirement.field())
         || requirement_matches_fixed(requirement, currentness.active_status())
-        || requirement.field() == currentness.workflow().grant()
+        || currentness
+            .workflow()
+            .is_some_and(|workflow| requirement.field() == workflow.grant())
         || requirement.field() == currentness.validity().not_before()
         || requirement.field() == currentness.validity().not_after()
-        || requirement.field() == delegation.limit()
+        || delegation
+            .lineage()
+            .is_some_and(|lineage| requirement.field() == lineage.limit())
 }
 
 fn requirement_matches_fixed(
