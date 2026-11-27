@@ -21,31 +21,49 @@ use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipal
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial;
 use worth_query_execution::facade::eligibility::{
     WorthQueryAbilityEligibility, WorthQueryAbilityEligibilityDenial, WorthQueryAbilityKey,
-    WorthQueryEligibilityQuestion,
+    WorthQueryCapabilityEligibility, WorthQueryEligibilityQuestion,
 };
 use worth_query_publication::facade::application_entry::WorthQueryApplicationReadObservation;
 
 use super::WorthQueryHostSession;
 
-/// Per-candidate verdicts, in the order the candidates were given.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryEligibilityRoster {
-    members: Vec<(
-        WorthQueryExternalPrincipalIdentity,
-        WorthQueryAbilityEligibility,
-    )>,
+/// One candidate's verdict: an ability verdict, or a capability verdict
+/// carrying its policy cause.
+pub trait WorthQueryEligibilityVerdict: Copy {
+    /// Whether admission would admit this candidate.
+    fn is_eligible(self) -> bool;
 }
 
-impl WorthQueryEligibilityRoster {
+impl WorthQueryEligibilityVerdict for WorthQueryAbilityEligibility {
+    fn is_eligible(self) -> bool {
+        WorthQueryAbilityEligibility::is_eligible(self)
+    }
+}
+
+impl WorthQueryEligibilityVerdict for WorthQueryCapabilityEligibility {
+    fn is_eligible(self) -> bool {
+        WorthQueryCapabilityEligibility::is_eligible(self)
+    }
+}
+
+/// Per-candidate verdicts, in the order the candidates were given.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryEligibilityRoster<Verdict = WorthQueryAbilityEligibility> {
+    members: Vec<(WorthQueryExternalPrincipalIdentity, Verdict)>,
+}
+
+impl<Verdict: WorthQueryEligibilityVerdict> WorthQueryEligibilityRoster<Verdict> {
+    pub(super) fn of(
+        candidates: &[WorthQueryExternalPrincipalIdentity],
+        verdicts: Vec<Verdict>,
+    ) -> Self {
+        Self {
+            members: candidates.iter().cloned().zip(verdicts).collect(),
+        }
+    }
+
     /// Every candidate with its verdict.
-    pub fn iter(
-        &self,
-    ) -> impl Iterator<
-        Item = (
-            &WorthQueryExternalPrincipalIdentity,
-            WorthQueryAbilityEligibility,
-        ),
-    > {
+    pub fn iter(&self) -> impl Iterator<Item = (&WorthQueryExternalPrincipalIdentity, Verdict)> {
         self.members
             .iter()
             .map(|(identity, verdict)| (identity, *verdict))
@@ -59,10 +77,7 @@ impl WorthQueryEligibilityRoster {
     }
 
     /// The verdict for `identity`, when it was a candidate.
-    pub fn verdict(
-        &self,
-        identity: &WorthQueryExternalPrincipalIdentity,
-    ) -> Option<WorthQueryAbilityEligibility> {
+    pub fn verdict(&self, identity: &WorthQueryExternalPrincipalIdentity) -> Option<Verdict> {
         self.iter()
             .find(|(candidate, _)| *candidate == identity)
             .map(|(_, verdict)| verdict)
@@ -175,7 +190,5 @@ where
         })
         .map_err(WorthQueryEligibilityDenial::ExecutionRequest)?
         .map_err(WorthQueryEligibilityDenial::Observation)?;
-    Ok(WorthQueryEligibilityRoster {
-        members: candidates.iter().cloned().zip(verdicts).collect(),
-    })
+    Ok(WorthQueryEligibilityRoster::of(candidates, verdicts))
 }

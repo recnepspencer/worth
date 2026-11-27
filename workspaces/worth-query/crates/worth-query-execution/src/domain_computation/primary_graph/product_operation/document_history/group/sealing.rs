@@ -54,22 +54,13 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             // Every member's commit is a correction source for this step, and
             // a later navigation to it selects this basis.
             let basis_commit = selected.product().relational_basis().observation().commit_id();
-            let execution = phase
-                .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
-                .map_err(Denial::Stopped)?;
-            let step = {
-                let mut selection = self.selection.lock();
-                selection
-                    .journal
-                    .index_source(
-                        &execution,
-                        group.completed.iter().map(|member| &member.commit),
-                        basis_commit,
-                        group.reservation.record.node,
-                    )
-                    .map_err(Denial::Recording)?;
-                selection.journal.prepared_step(&group.reservation.record, endpoint.clone())
-            };
+            let step = self.index_bound_step(
+                phase,
+                &group.reservation,
+                group.completed.iter().map(|member| &member.commit),
+                basis_commit,
+                &endpoint,
+            )?;
             Ok(PreparedBinding {
                 discovery_recipes: group
                     .outputs

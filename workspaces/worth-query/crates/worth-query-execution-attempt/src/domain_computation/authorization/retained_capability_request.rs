@@ -161,6 +161,39 @@ impl WorthQueryRetainedCapabilityRequest {
             && candidate.context == self.context
     }
 
+    /// The request a fixed-target capability's own installed target names:
+    /// its action and purpose on `resource`, with nothing else to choose (see
+    /// `WorthQueryInstalledCapabilityPlan::has_fixed_target`).
+    pub fn for_installed_target(
+        capability_identity: [u8; 32],
+        principal: worth_relational::facade::identity::EntityId,
+        resource: worth_relational::facade::identity::EntityId,
+        installed: &crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan,
+    ) -> Self {
+        let target = installed.request();
+        Self {
+            recorded_actor: None,
+            principal,
+            capability_identity,
+            resource,
+            data: Arc::new(RetainedCapabilityRequestData {
+                _codec_funding: None,
+                resource_entity: Arc::from(target.resource_entity.as_str()),
+                elevation: None,
+                action: target.action.clone(),
+                purpose: target.purpose.clone(),
+                related_relation: None,
+                related: None,
+                field: None,
+                magnitude: None,
+                cardinality: 1,
+                context_name: Arc::from(target.context.as_str()),
+                context_type: Arc::from(target.context_type.as_str()),
+                context: RetainedContext::Native(BTreeMap::new()),
+            }),
+        }
+    }
+
     pub fn capture<Schema, Scope, Context>(
         capability_identity: [u8; 32],
         principal: worth_relational::facade::identity::EntityId,

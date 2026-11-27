@@ -13,13 +13,12 @@ pub fn lifecycle_decision_reads(
         elevation.identity(),
         elevation.reason(),
         elevation.status(),
-        elevation.validity().not_before(),
-        elevation.validity().not_after(),
         review.identity(),
         review.kind().field(),
         review.status(),
     ]
     .into_iter()
+    .chain(elevation.validity().bounds())
     .map(|field| ApplicationOperationDecisionReadTarget::Field {
         entity: field.entity().to_string(),
         aspect: field.aspect().to_string(),

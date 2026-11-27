@@ -1,6 +1,6 @@
 use super::canonical_components::{
-    append_field, append_relation, append_value_binding, text, unsigned, unsigned_64,
-    ApplicationCapabilityCanonicalComponent,
+    append_field, append_relation, append_validity_bound, append_value_binding, text, unsigned,
+    unsigned_64, ApplicationCapabilityCanonicalComponent,
 };
 use super::{
     ApplicationCapabilityContextEntitySlotBinding, ApplicationCapabilityElevationRule,
@@ -34,12 +34,12 @@ pub(super) fn append_elevation(
         "elevation.validity.timeline",
         elevation.validity().timeline().canonical_name(),
     );
-    append_field(
+    append_validity_bound(
         components,
         "elevation.validity.not-before",
         elevation.validity().not_before(),
     );
-    append_field(
+    append_validity_bound(
         components,
         "elevation.validity.not-after",
         elevation.validity().not_after(),

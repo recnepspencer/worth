@@ -12,7 +12,9 @@ use super::{
 };
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+mod authority_inventory;
 mod branch_set;
+mod capability_eligibility;
 mod current_read;
 mod eligibility;
 mod inspection;

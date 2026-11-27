@@ -31,7 +31,16 @@ def check_owner_sizes(audit, examples):
     print(f'{"combined":<12} {"":>10} {all_total:>11,} {all_production:>11,}')
     print(f'Runtime Total includes {example_lines:,} example lines')
     # +5,000 for Persistent Naming (#421) and Store M4.3b CHK24/REG8 paged record identity;
-    # +4,000 for Store M4.3e paged CHK24 CheckpointCommitIndex and lazy cold catalog (G7).
-    if all_total > 524_000:
-        failures.append(f'combined Total LOC exceeds 524,000: {all_total:,}')
+    # +4,000 for Store M4.3e paged CHK24 CheckpointCommitIndex and lazy cold catalog (G7);
+    # +5,000 for Store M4.3f (P0-A) paged CHK24 naming/group state, chunked continuation
+    # rows, cold retained-fork slicing, commit preflight, and retention compaction;
+    # +1,000 for Store M4.3f Round 2 hardening (CowMap AVL tree & per-branch CHK24 validation);
+    # +500 for Store M4.3f Round 4 hardening (HolderEpoch retirement tracking, single-domain
+    # CHK24 pages, immutable checkpoint naming custody, and Round 4 unit tests);
+    # +300 for Store M4.3f Round 6-7 hardening (deadlock-free ACK guard, bounded GROUP_LOG
+    # branch digest keys, and read-free VALUE_CHUNK continuation validation);
+    # +200 for Store M4.3f Round 10 post-rebase cold merge guards and O(batch) index journal;
+    # +1,000 for Store M4.3f Round 11-13 per-branch event/GROUP_LOG window indexes and OrdMap histories.
+    if all_total > 532_000:
+        failures.append(f'combined Total LOC exceeds 532,000: {all_total:,}')
     return failures

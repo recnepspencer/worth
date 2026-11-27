@@ -36,6 +36,20 @@ impl Document<'_> {
         self.branch
     }
 
+    /// Take the document's correction navigation lineage, close the real
+    /// document while it is held, then ask the lineage: (whether it vouches,
+    /// whether it places a write on the line).
+    pub fn vouch_after_close(&mut self) -> (bool, bool) {
+        let lineage = self
+            .document
+            .as_ref()
+            .expect("the document is held between calls")
+            .held_navigation_lineage_for_test()
+            .expect("a recorded step indexed its source and basis");
+        assert_eq!(self.close(), Outcome::Closed);
+        (lineage.restores_descendant(), lineage.wrote_on_line())
+    }
+
     /// `run`'s result, and the history journal's node probes while it ran.
     pub fn node_probes_during<T>(&mut self, run: impl FnOnce(&mut Self) -> T) -> (T, u64) {
         let journal = self

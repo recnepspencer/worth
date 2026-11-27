@@ -50,6 +50,7 @@ pub(crate) fn selected_region_manifest(
             0,
             0,
         )),
+        naming: Default::default(),
         derived_indexes,
         allocations: Default::default(),
     }

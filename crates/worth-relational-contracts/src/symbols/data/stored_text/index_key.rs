@@ -1,6 +1,6 @@
 //! Compact ordered lookup retaining the text's actual immutable byte owner.
-use super::{Backing, StoredSymbolText};
-use std::{borrow::Borrow, cmp::Ordering, sync::Arc};
+use super::StoredSymbolText;
+use std::{borrow::Borrow, cmp::Ordering};
 use worth_execution::ExecutionImmutableBytes;
 
 #[derive(Clone, Debug)]
@@ -13,13 +13,7 @@ const _: () =
 
 impl SymbolTextLookupKey {
     pub fn from_owned(text: StoredSymbolText) -> Self {
-        let bytes = match text.backing {
-            Backing::System(text) => ExecutionImmutableBytes::from_external_bytes(Arc::new(
-                text.into_bytes().into_boxed_slice(),
-            )),
-            Backing::Managed(bytes) => bytes,
-        };
-        Self { bytes }
+        Self { bytes: text.bytes }
     }
     pub fn from_text(text: &StoredSymbolText) -> Self {
         Self::from_owned(text.clone())
@@ -31,13 +25,10 @@ impl SymbolTextLookupKey {
     pub fn is_managed(&self) -> bool {
         !self.bytes.is_external_backing()
     }
+    /// The same custody, sharing the bytes.
     pub fn retained_text(&self) -> StoredSymbolText {
-        if self.bytes.is_external_backing() {
-            StoredSymbolText::from(self.as_str())
-        } else {
-            StoredSymbolText {
-                backing: Backing::Managed(self.bytes.clone()),
-            }
+        StoredSymbolText {
+            bytes: self.bytes.clone(),
         }
     }
 }

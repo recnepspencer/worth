@@ -132,13 +132,12 @@ fn required_program_targets(
             elevation.identity(),
             elevation.reason(),
             elevation.status(),
-            elevation.validity().not_before(),
-            elevation.validity().not_after(),
             review.identity(),
             review.kind().field(),
             review.status(),
         ]
         .into_iter()
+        .chain(elevation.validity().bounds())
         .map(|field| ApplicationOperationProgramTarget::Write {
             entity: field.entity().to_string(),
             aspect: field.aspect().to_string(),

@@ -237,12 +237,16 @@ impl RelationalRuntime {
         durability
             .checkpoint_selection()
             .set_working_set(working_set);
+        let lineage = LineageSubsystem::new();
+        durability
+            .checkpoint_selection()
+            .register_naming_ack_hook(lineage.naming_ack_hook());
         let visibility = VisibilitySubsystem::new(&config);
         Ok(Self::from_state(crate::runtime::RelationalRuntimeState {
             commit_strategies,
             history,
             indexes: Default::default(),
-            lineage: LineageSubsystem::new(),
+            lineage,
             durability,
             record_identity: <RecordIdentitySubsystem as RuntimeSubsystem>::new(&()),
             services,
@@ -267,6 +271,16 @@ impl RelationalRuntime {
         let config = configuration.config.as_ref().clone();
         let schema_contract_runtime =
             RuntimeSubsystem::fork(configuration.schema_contract_runtime.as_ref());
+        let (lineage, pinned_naming) = self.lineage.fork_with_pinned_cold();
+        let durability = RuntimeSubsystem::fork(&self.durability);
+        if let Some(custody) = pinned_naming.and_then(|pinned| pinned.custody()) {
+            durability
+                .checkpoint_selection()
+                .pin_detached_naming_directory(custody);
+        }
+        durability
+            .checkpoint_selection()
+            .register_naming_ack_hook(lineage.naming_ack_hook());
         Ok(Self::from_state(crate::runtime::RelationalRuntimeState {
             configuration: RelationalRuntimeConfiguration::new(config, schema_contract_runtime),
             commit_strategies: RuntimeSubsystem::fork(&self.commit_strategies),
@@ -275,8 +289,8 @@ impl RelationalRuntime {
             publication: self.publication.fork(),
             history,
             indexes: self.indexes.fork(),
-            lineage: self.lineage.fork(),
-            durability: RuntimeSubsystem::fork(&self.durability),
+            lineage,
+            durability,
             record_identity: RuntimeSubsystem::fork(&self.record_identity),
             services,
             owner_lifecycle: RelationalRuntimeOwner::new(),

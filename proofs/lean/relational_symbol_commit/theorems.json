@@ -1,0 +1,71 @@
+{
+  "imports": [
+    "RelationalSymbolCommit",
+    "RelationalSymbolCommit.Dictionary",
+    "RelationalSymbolCommit.Cost",
+    "RelationalSymbolCommit.Equivalence"
+  ],
+  "allowed_axioms": [],
+  "theorems": [
+    {
+      "name": "RelationalSymbolCommit.importAll_steps_le",
+      "type": "∀ (cap : Nat) (d : RelationalSymbolCommit.Dict) (es : List (Nat × Nat)), (RelationalSymbolCommit.importAll cap d es).snd ≤ 5 * es.length"
+    },
+    {
+      "name": "RelationalSymbolCommit.importAll_ok_steps",
+      "type": "∀ (cap : Nat) (d d' : RelationalSymbolCommit.Dict) (es : List (Nat × Nat)), (RelationalSymbolCommit.importAll cap d es).fst = Option.some d' → (RelationalSymbolCommit.importAll cap d es).snd = 5 * es.length"
+    },
+    {
+      "name": "RelationalSymbolCommit.importFull_steps",
+      "type": "∀ (cap : Nat) (snapshot : List (Nat × Nat)) (d : RelationalSymbolCommit.Dict), (RelationalSymbolCommit.importFull cap snapshot).fst = Option.some d → (RelationalSymbolCommit.importFull cap snapshot).snd = 5 * snapshot.length"
+    },
+    {
+      "name": "RelationalSymbolCommit.reserve_steps_le",
+      "type": "∀ (cap : Nat) (owner cand : RelationalSymbolCommit.Dict) (t : Nat), (RelationalSymbolCommit.reserve cap owner cand t).snd ≤ 8"
+    },
+    {
+      "name": "RelationalSymbolCommit.reserveAll_steps_le",
+      "type": "∀ (cap : Nat) (owner cand : RelationalSymbolCommit.Dict) (ts : List Nat), (RelationalSymbolCommit.reserveAll cap owner cand ts).snd ≤ 8 * ts.length"
+    },
+    {
+      "name": "RelationalSymbolCommit.commit_steps_bounded",
+      "type": "∀ (cap : Nat) (owner : RelationalSymbolCommit.Dict) (touched : List Nat), (RelationalSymbolCommit.commit cap owner touched).snd ≤ 13 * touched.length"
+    },
+    {
+      "name": "RelationalSymbolCommit.commit_steps_bound_independent_of_dictionary",
+      "type": "∀ (cap : Nat) (small large : RelationalSymbolCommit.Dict) (touched : List Nat), (RelationalSymbolCommit.commit cap small touched).snd ≤ 13 * touched.length ∧ (RelationalSymbolCommit.commit cap large touched).snd ≤ 13 * touched.length"
+    },
+    {
+      "name": "RelationalSymbolCommit.importAll_preserves",
+      "type": "∀ (cap : Nat) (d d' : RelationalSymbolCommit.Dict) (es : List (Nat × Nat)), RelationalSymbolCommit.Wf d → (RelationalSymbolCommit.importAll cap d es).fst = Option.some d' → RelationalSymbolCommit.Wf d' ∧ (∀ (s t : Nat), d.bySym s = Option.some t → d'.bySym s = Option.some t) ∧ d.next ≤ d'.next ∧ ∀ (e : Nat × Nat), e ∈ es → d'.bySym e.fst = Option.some e.snd"
+    },
+    {
+      "name": "RelationalSymbolCommit.importAll_append",
+      "type": "∀ (cap : Nat) (d : RelationalSymbolCommit.Dict) (L es : List (Nat × Nat)), (RelationalSymbolCommit.importAll cap d (L ++ es)).fst = (RelationalSymbolCommit.importAll cap d L).fst.bind fun d' => (RelationalSymbolCommit.importAll cap d' es).fst"
+    },
+    {
+      "name": "RelationalSymbolCommit.delta_import_eq_full_snapshot",
+      "type": "∀ (cap : Nat) (L es : List (Nat × Nat)) (d : RelationalSymbolCommit.Dict), (RelationalSymbolCommit.importFull cap L).fst = Option.some d → (RelationalSymbolCommit.importFull cap (L ++ es)).fst = (RelationalSymbolCommit.importAll cap d es).fst"
+    },
+    {
+      "name": "RelationalSymbolCommit.delta_import_refuses_iff_full_snapshot",
+      "type": "∀ (cap : Nat) (L es : List (Nat × Nat)) (d : RelationalSymbolCommit.Dict), (RelationalSymbolCommit.importFull cap L).fst = Option.some d → ((RelationalSymbolCommit.importFull cap (L ++ es)).fst = Option.none ↔ (RelationalSymbolCommit.importAll cap d es).fst = Option.none)"
+    },
+    {
+      "name": "RelationalSymbolCommit.importFull_wf",
+      "type": "∀ (cap : Nat) (L : List (Nat × Nat)) (d : RelationalSymbolCommit.Dict), (RelationalSymbolCommit.importFull cap L).fst = Option.some d → RelationalSymbolCommit.Wf d"
+    },
+    {
+      "name": "RelationalSymbolCommit.reserve_preserves",
+      "type": "∀ {cap : Nat} {owner cand owner' cand' : RelationalSymbolCommit.Dict} {t s : Nat}, RelationalSymbolCommit.Wf owner → RelationalSymbolCommit.Wf cand → (RelationalSymbolCommit.reserve cap owner cand t).fst = Option.some (owner', cand', s) → RelationalSymbolCommit.Wf owner' ∧ owner'.bySym = owner.bySym ∧ owner.next ≤ owner'.next ∧ RelationalSymbolCommit.Wf cand' ∧ cand'.bySym s = Option.some t"
+    },
+    {
+      "name": "RelationalSymbolCommit.reserveAll_preserves",
+      "type": "∀ (cap : Nat) (owner cand : RelationalSymbolCommit.Dict) (ts : List Nat) (r : RelationalSymbolCommit.Dict × RelationalSymbolCommit.Dict × List (Nat × Nat)), RelationalSymbolCommit.Wf owner → RelationalSymbolCommit.Wf cand → (RelationalSymbolCommit.reserveAll cap owner cand ts).fst = Option.some r → RelationalSymbolCommit.Wf r.fst ∧ r.fst.bySym = owner.bySym ∧ owner.next ≤ r.fst.next ∧ List.map Prod.snd r.snd.snd = ts"
+    },
+    {
+      "name": "RelationalSymbolCommit.commit_preserves",
+      "type": "∀ (cap : Nat) (owner d' : RelationalSymbolCommit.Dict) (touched : List Nat), RelationalSymbolCommit.Wf owner → (RelationalSymbolCommit.commit cap owner touched).fst = Option.some d' → RelationalSymbolCommit.Wf d' ∧ (∀ (s t : Nat), owner.bySym s = Option.some t → d'.bySym s = Option.some t) ∧ owner.next ≤ d'.next ∧ ∀ (t : Nat), t ∈ touched → ∃ s, d'.byVal t = Option.some s"
+    }
+  ]
+}

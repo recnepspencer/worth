@@ -40,13 +40,6 @@ impl RuntimeSymbolState {
         let Some((prior, recorded)) = self.configuration.get_key_value(text.as_str()) else {
             return false;
         };
-        *recorded == symbol
-            && match (prior.is_managed(), text.is_managed()) {
-                (false, false) => true,
-                (true, true) => {
-                    !text.as_str().is_empty() && std::ptr::eq(prior.as_str(), text.as_str())
-                }
-                (false, true) | (true, false) => false,
-            }
+        *recorded == symbol && prior.retained_text().is_same_custody(text)
     }
 }

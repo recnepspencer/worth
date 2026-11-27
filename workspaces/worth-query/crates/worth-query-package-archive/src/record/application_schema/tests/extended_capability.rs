@@ -37,10 +37,23 @@ fn contract(
     standing: bool,
     extent: bool,
 ) -> ErasedApplicationCapabilityContract {
+    let probe = probe();
+    let validity = ApplicationCapabilityValidityDefinition::new(timeline, probe.clone(), probe);
+    contract_with(validity, standing, extent)
+}
+
+fn probe() -> ApplicationCapabilityFieldBinding {
+    let current = capability().parts().constraints.currentness().clone();
+    probe_field(current.validity().not_before().unwrap())
+}
+
+fn contract_with(
+    validity: ApplicationCapabilityValidityDefinition,
+    standing: bool,
+    extent: bool,
+) -> ErasedApplicationCapabilityContract {
     let mut parts = capability().parts();
     let current = parts.constraints.currentness().clone();
-    let probe = probe_field(current.validity().not_before());
-    let validity = ApplicationCapabilityValidityDefinition::new(timeline, probe.clone(), probe);
     let mut currentness = match (standing, current.workflow()) {
         (false, Some(workflow)) => ApplicationCapabilityCurrentnessDefinition::new(
             current.active_status().clone(),
@@ -176,4 +189,66 @@ fn legacy_tags_refuse_utc_and_local_date_timelines() {
             unsupported()
         );
     }
+}
+
+#[test]
+fn open_standing_windows_round_trip_and_only_constructor_shapes_decode() {
+    use ApplicationCapabilityValidityTimeline as Timeline;
+    let window = |timeline, below: bool, above: bool| {
+        let bound = |open: bool| (!open).then(probe);
+        ApplicationCapabilityValidityDefinition::from_portable_parts(
+            timeline,
+            bound(below),
+            bound(above),
+        )
+        .unwrap()
+    };
+    let open_above = window(Timeline::UtcTimestamp, false, true);
+    let open_below = window(Timeline::LocalDate, true, false);
+    for validity in [
+        open_above,
+        open_below,
+        window(Timeline::UtcTimestamp, true, true),
+    ] {
+        let member = Member::ApplicationCapability {
+            contract: contract_with(validity, true, false),
+        };
+        let bytes = encode(&member);
+        assert_eq!(&bytes[..2], &59_u16.to_be_bytes());
+        assert_eq!(decode(&bytes).unwrap(), member);
+    }
+    // An open epoch window and an unbounded local-date window are shapes no
+    // constructor makes, so their words refuse.
+    for timeline in [Timeline::UnixEpochSeconds, Timeline::UnixEpochMilliseconds] {
+        assert!(
+            ApplicationCapabilityValidityDefinition::from_portable_parts(
+                timeline,
+                None,
+                Some(probe())
+            )
+            .is_none()
+        );
+    }
+    assert!(
+        ApplicationCapabilityValidityDefinition::from_portable_parts(
+            Timeline::LocalDate,
+            None,
+            None
+        )
+        .is_none()
+    );
+    let member = Member::ApplicationCapability {
+        contract: contract_with(window(Timeline::LocalDate, true, false), true, false),
+    };
+    // An open window on a workflow-tenure grant refuses at the raw decode.
+    let workflow = Member::ApplicationCapability {
+        contract: contract_with(window(Timeline::UtcTimestamp, false, true), false, false),
+    };
+    assert_eq!(
+        decode(&encode(&workflow)).unwrap_err().kind(),
+        unsupported()
+    );
+    let open_below_date = 4 | (1 << 8);
+    let refused = decode(&retimed(&encode(&member), open_below_date, 1 | (1 << 8)));
+    assert_eq!(refused.unwrap_err().kind(), unsupported());
 }

@@ -124,37 +124,13 @@ fn cancellation_between_completed_members_preserves_the_first_publication_and_re
     assert_eq!(contacts.snapshot(), (2, 2));
 }
 
-#[test]
+/// Cancel the group's completion at its preadoption receiver, after the
+/// step was indexed: the adoption refuses as stopped.
 #[expect(
     clippy::disallowed_methods,
-    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: cancellation_after_endpoint_capture_preserves_the_ready_candidate_for_fresh_guarded_adoption joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: stop_adoption_after_capture joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
 )]
-fn cancellation_after_endpoint_capture_preserves_the_ready_candidate_for_fresh_guarded_adoption() {
-    let (host, contacts) =
-        SetRetentionHandler::observe_installation_for_test(publish_on_first_program);
-    let document = attach(&host, head(&host), DOCUMENT_IDENTITY);
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.request(&principal, &scope);
-    let before = document.selection(&request).unwrap();
-    let mut group = begin(&host, document, 5, 0x9182_5c10);
-    until(&host, &mut group, |group| {
-        group.posture() == Posture::ReadyToComplete
-    });
-    let endpoint = {
-        let (_, execution) = group.parts();
-        let WorthQuerySourceCompletion::Fresh { receipt, .. } =
-            execution.completed_source(1).unwrap().evidence()
-        else {
-            panic!("actual last member endpoint")
-        };
-        receipt
-            .committed_product_publication()
-            .composite_commit()
-            .clone()
-    };
-    let effects = contacts.snapshot();
-    assert_eq!(effects, (2, 2));
+fn stop_adoption_after_capture(host: &App, group: &mut Group<'_>) {
     let pause = group.pause_after_history_capture_for_test();
     let cancellation = WorthQueryCancellationSource::new();
     let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
@@ -193,6 +169,37 @@ fn cancellation_after_endpoint_capture_preserves_the_ready_candidate_for_fresh_g
         "{result:?}"
     );
     assert_eq!(group.posture(), Posture::ReadyToComplete);
+}
+
+#[test]
+fn cancellation_after_endpoint_capture_preserves_the_ready_candidate_for_fresh_guarded_adoption() {
+    let (host, contacts) =
+        SetRetentionHandler::observe_installation_for_test(publish_on_first_program);
+    let document = attach(&host, head(&host), DOCUMENT_IDENTITY);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let before = document.selection(&request).unwrap();
+    let index = document.history_source_index_for_test();
+    let mut group = begin(&host, document, 5, 0x9182_5c10);
+    until(&host, &mut group, |group| {
+        group.posture() == Posture::ReadyToComplete
+    });
+    let endpoint = {
+        let (_, execution) = group.parts();
+        let WorthQuerySourceCompletion::Fresh { receipt, .. } =
+            execution.completed_source(1).unwrap().evidence()
+        else {
+            panic!("actual last member endpoint")
+        };
+        receipt
+            .committed_product_publication()
+            .composite_commit()
+            .clone()
+    };
+    let effects = contacts.snapshot();
+    assert_eq!(effects, (2, 2));
+    stop_adoption_after_capture(&host, &mut group);
     assert_eq!(contacts.snapshot(), effects);
     {
         let (document, execution) = group.parts();
@@ -207,6 +214,12 @@ fn cancellation_after_endpoint_capture_preserves_the_ready_candidate_for_fresh_g
         let step = execution.complete(document, &request).unwrap();
         assert_eq!(step.parent(), Some(before.step().id()));
         assert_eq!(step.endpoint().selected_commit(), &endpoint);
+        // The retry adopted the same endpoint: one basis, both members.
+        let indexed = document.history_source_index_for_test();
+        assert_eq!(
+            (indexed.sources, indexed.endpoints),
+            (index.sources + 2, index.endpoints + 1)
+        );
     }
     assert_eq!(group.posture(), Posture::Selected);
     assert_eq!(
@@ -216,4 +229,39 @@ fn cancellation_after_endpoint_capture_preserves_the_ready_candidate_for_fresh_g
     );
     finish(&host, group);
     assert_eq!(contacts.snapshot(), effects);
+}
+
+/// The stopped adoption had indexed the step's sources and basis; the abort
+/// that cancels the record removes both, so the index is back where it began
+/// (public #453).
+#[test]
+fn an_abort_after_a_stopped_adoption_releases_the_indexed_step() {
+    let (host, _contacts) =
+        SetRetentionHandler::observe_installation_for_test(publish_on_first_program);
+    let document = attach(&host, head(&host), DOCUMENT_IDENTITY);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let before = document.selection(&request).unwrap();
+    let index = document.history_source_index_for_test();
+    let mut group = begin(&host, document, 5, 0x9182_5c11);
+    until(&host, &mut group, |group| {
+        group.posture() == Posture::ReadyToComplete
+    });
+    stop_adoption_after_capture(&host, &mut group);
+    let indexed = group.document().history_source_index_for_test();
+    assert_eq!(
+        (indexed.sources, indexed.endpoints),
+        (index.sources + 2, index.endpoints + 1),
+        "the stopped adoption indexed the step"
+    );
+    let document = group.abort(&request).unwrap();
+    let released = document.history_source_index_for_test();
+    assert_eq!(
+        (released.sources, released.endpoints),
+        (index.sources, index.endpoints),
+        "the cancelled record's sources and basis go with it"
+    );
+    assert_eq!(document.selection(&request).unwrap(), before);
+    close(&host, document, 1);
 }

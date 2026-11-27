@@ -198,12 +198,11 @@ pub fn prepare(
 }
 
 pub fn readmit_lineage(
-    lane: &contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
     lineage: &LineageSubsystem,
     checkpoint: &DurableCheckpoint,
     directory: &Arc<crate::durability::data::RelationalCheckpointDirectory>,
-    has_naming_schemes: bool,
+    selection: &crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection,
+    working_set: Option<Arc<worth_relational_storage::internal_port::storage::residency::working_set::WorkingSetAccountant>>,
     commits: Option<Arc<worth_relational_branch::internal_port::history::commit::cold_catalog::ColdCommitCatalog>>,
 ) -> Result<(), RelationalRecoveryStop> {
     // Event rows resolve their commits through the history's cold catalog,
@@ -233,22 +232,14 @@ pub fn readmit_lineage(
             lineage.record_relation_lineage(relation_id, lineage_id);
         }
     }
-    super::super::recovered_group_lineage::install_recovered_group_lineage(
-        checkpoint
-            .envelopes
-            .iter()
-            .map(|positioned| positioned.envelope()),
-        |records| lineage.replace_group_lineage(records),
-    )?;
-    if has_naming_schemes {
-        for page in &directory.manifest.lineage {
-            lineage.demand_node(
-                execution,
-                contracts::identity::data::primitives::LineageId(page.first),
-            )?;
-        }
-        let _event_leases = lineage.demand_event_pages(execution, None, None)?;
-        lineage.finalize_cold_naming_basis(lane);
-    }
+    // G7 (`P0-A` / `#440`): install per-branch persistent-naming and group
+    // state headers lazily behind the selected checkpoint's paged store.
+    // Zero lineage node, lineage event, or naming/group pages are read here.
+    let naming_source = Arc::new(super::cold_naming::SelectedNamingSource::new(
+        directory,
+        working_set,
+    ));
+    lineage.install_cold_naming(naming_source, &directory.manifest.naming);
+    selection.register_naming_ack_hook(lineage.naming_ack_hook());
     Ok(())
 }

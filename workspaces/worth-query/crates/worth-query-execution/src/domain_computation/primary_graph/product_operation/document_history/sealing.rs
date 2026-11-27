@@ -19,12 +19,7 @@ use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, NoApplicationMutationSource},
     application_schema::ApplicationSchema,
 };
-use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
-use worth_query_execution_query::facade::ports::CompletedRequiredOutputsInternalPort as _;
-use worth_query_execution_runtime::facade::ports::{
-    ProductBranchInternalPort as _, ProductBranchLeaseInternalPort as _,
-};
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
 
 mod adoption_failure;
@@ -42,7 +37,9 @@ pub(super) struct PreparedBinding {
     pub(super) returned: WorthQueryHistoryStep,
 }
 
+mod binding;
 mod completion;
+pub(super) use binding::BoundSource;
 pub(super) use completion::RecordingCompletion;
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
@@ -261,137 +258,5 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         drop(previous_source);
         drop(release);
         Ok(prepared.returned)
-    }
-
-    pub(super) fn prepare_binding(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        reserved: &WorthQueryDocumentHistoryReservation,
-        candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
-        completion: RecordingCompletion<'_>,
-    ) -> Result<PreparedBinding, Denial> {
-        self.validate_reservation(reserved)?;
-        let runtime = self.application();
-        if !std::ptr::eq(runtime, candidate.application()) {
-            return Err(Denial::ForeignRuntime);
-        }
-        if candidate.expected_source() != reserved.expected {
-            return Err(Denial::HeadDiverged);
-        }
-        if !completion
-            .source()
-            .matches(reserved.operation_scope()?, reserved.meaning)
-        {
-            return Err(Denial::ReceiptMismatch);
-        }
-        let (selected, retained, root_posture) = match &completion {
-            RecordingCompletion::Forest {
-                source,
-                required,
-                completed,
-            } => {
-                completed.require_source(
-                    reserved,
-                    candidate,
-                    reserved.operation_scope()?,
-                    *source,
-                    *required,
-                )?;
-                let retained = completed.endpoint();
-                let selected = runtime
-                    .select_application_read_observation(phase, retained)
-                    .map_err(Denial::CandidateSelection)?;
-                (
-                    selected,
-                    Some(std::sync::Arc::clone(retained)),
-                    completed.root_posture(),
-                )
-            }
-
-            RecordingCompletion::Source(receipt) => {
-                let selected = runtime
-                    .on_branch(candidate.branch())
-                    .select(phase)
-                    .map_err(Denial::CandidateSelection)?;
-                if !receipt
-                    .committed_product_publication()
-                    .is_selected_at(selected.product().observation())
-                {
-                    return Err(Denial::ReceiptMismatch);
-                }
-                (selected, None, None)
-            }
-            RecordingCompletion::RecordedSource(receipt) => {
-                let selected = runtime
-                    .on_branch(candidate.branch())
-                    .select(phase)
-                    .map_err(Denial::CandidateSelection)?;
-                if !WorthQueryHistorySourceEvidence::Recorded(receipt)
-                    .is_selected_at(selected.product().observation())
-                {
-                    return Err(Denial::ReceiptMismatch);
-                }
-                (selected, None, None)
-            }
-            RecordingCompletion::RequiredOutputs { source, completed } => {
-                let retained = completed.retained_output();
-                if !completed.matches_source(source)
-                    || retained.branch_incarnation() != candidate.branch().occurrence()
-                {
-                    return Err(Denial::ReceiptMismatch);
-                }
-                let selected = runtime
-                    .select_application_read_observation(phase, retained)
-                    .map_err(Denial::CandidateSelection)?;
-                (
-                    selected,
-                    Some(std::sync::Arc::clone(retained)),
-                    Some(completed.root_posture()),
-                )
-            }
-        };
-        let endpoint =
-            WorthQueryProductBranchReadIdentity::from_observation(selected.product().observation());
-        let exact = selected.product().read_lease();
-        // A writer's step is a correction source as an envelope's is: its
-        // source commit (a recovered receipt behind a recorded forest names
-        // none) and the basis a later navigation to it selects.
-        let source_commit = match (&completion, completion.source()) {
-            (_, WorthQueryHistorySourceEvidence::Live(receipt)) => {
-                Some(receipt.committed_product_publication().composite_commit().clone())
-            }
-            (RecordingCompletion::RecordedSource(_), WorthQueryHistorySourceEvidence::Recorded(_)) => {
-                Some(endpoint.selected_commit().clone())
-            }
-            _ => None,
-        };
-        let basis_commit = selected.product().relational_basis().observation().commit_id();
-        let execution = phase
-            .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
-            .map_err(Denial::Stopped)?;
-        let step = {
-            let mut selection = self.selection.lock();
-            selection
-                .journal
-                .index_source(&execution, source_commit.as_ref(), basis_commit, reserved.record.node)
-                .map_err(Denial::Recording)?;
-            selection.journal.prepared_step(&reserved.record, endpoint.clone())
-        };
-        let discovery_recipes = match &completion {
-            RecordingCompletion::Forest { completed, .. } => {
-                Some(completed.discovery_recipes.clone())
-            }
-            _ => None,
-        };
-        // A writer's commit posts no reversal fact.
-        let node = RecordedNode { step, source_commit, posted_fact: None, root_posture };
-        Ok(PreparedBinding {
-            discovery_recipes,
-            returned: node.step.clone(),
-            node,
-            source: retained.unwrap_or_else(|| selected.retain_application_read()),
-            endpoint,
-            exact,
-        })
     }
 }

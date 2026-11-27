@@ -40,6 +40,7 @@ pub(in super::super) fn capture(
                 &configuration.config.execution.runtime_name,
                 &configuration.config.history.main_branch,
             )?;
+            let lineage_naming = runtime.lineage.freeze_naming();
             let indexes = runtime.indexes.checkpoint_inputs_for_request(request)?;
             let symbol_frontier = runtime
                 .services
@@ -50,6 +51,7 @@ pub(in super::super) fn capture(
                 branches,
                 components,
                 identity,
+                lineage_naming,
                 indexes,
                 symbol_frontier,
                 main_cell,

@@ -270,7 +270,7 @@ impl AcknowledgingCheckpoint {
                     .as_ref()
                     .ok_or(Denial::CaptureNotBound)?
                     .clone();
-                let prior = publication.acknowledge_directory(directory)?;
+                let prior = publication.acknowledge_directory(directory.clone())?;
                 self.retired.displaced_selection(prior);
             }
             self.directory_applied = true;

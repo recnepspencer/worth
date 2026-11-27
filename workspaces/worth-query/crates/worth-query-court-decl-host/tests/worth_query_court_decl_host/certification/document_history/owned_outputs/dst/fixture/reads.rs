@@ -8,14 +8,10 @@ use worth_query_host::facade::admission::authenticated_principal::{
 use worth_query_host::facade::product::WorthQueryProductBranch;
 
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
+/// The model history with outputs `O`.
+pub type Doc<'h, O> = WorthQueryApplicationHistoryDocument<'h, Schema, History, OrdinaryHistoryPayload, O>;
 /// The DST's document: the model history with its output tree bound.
-pub type Forest<'h> = WorthQueryApplicationHistoryDocument<
-    'h,
-    Schema,
-    History,
-    OrdinaryHistoryPayload,
-    WorthQueryHistoryWithOutputTrees<Schema>,
->;
+pub type Forest<'h> = Doc<'h, WorthQueryHistoryWithOutputTrees<Schema>>;
 
 /// One DST call's deadline. A call settles in well under a second, so a
 /// call that runs this long is a hang: it refuses `DeadlineExceeded` here

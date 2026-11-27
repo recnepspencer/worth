@@ -81,7 +81,7 @@ impl Plan<'_> {
     /// Builds assignments, retirements, and canonical lineage records.
     pub(super) fn assemble(
         self,
-        retired: &BTreeSet<AggregateIdentity>,
+        is_retired: &impl Fn(&AggregateIdentity) -> bool,
     ) -> AggregateGroupTransition {
         let keeper_of = self.keeper_of();
         let mut result = AggregateGroupTransition {
@@ -98,7 +98,7 @@ impl Plan<'_> {
             } = self.names[group].clone();
             let origin = match self.kept_by[group] {
                 Some(_) => AggregateGroupOrigin::Kept,
-                None if retired.contains(&identity) => AggregateGroupOrigin::Revived,
+                None if is_retired(&identity) => AggregateGroupOrigin::Revived,
                 None => AggregateGroupOrigin::Born,
             };
             match origin {

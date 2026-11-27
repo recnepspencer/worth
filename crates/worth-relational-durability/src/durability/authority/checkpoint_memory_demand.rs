@@ -40,7 +40,7 @@ impl CapturedCheckpointBasis {
                 )?;
             }
         }
-        self.lineage_event_leases = lineage.demand_event_pages(execution, None, None)?;
+        self.lineage_event_leases = lineage.demand_all_event_pages(execution)?;
         self.lineage_events = lineage
             .published_rows()
             .into_iter()

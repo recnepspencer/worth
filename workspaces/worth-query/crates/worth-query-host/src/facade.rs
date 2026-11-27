@@ -311,11 +311,8 @@ pub use crate::background::{
 pub mod principal_registry {
     pub use crate::principal_registry::WorthQueryPrincipalRegistryRefusal;
 }
-/// Fact-free "who may act?": verdicts from the installed policy decision, no fact minted.
-pub mod eligibility {
-    pub use crate::session::{WorthQueryEligibilityDenial, WorthQueryEligibilityRoster};
-    pub use worth_query_execution::facade::eligibility::*;
-}
+/// Fact-free "who may act?": verdicts from the installed policy decisions, no fact retained.
+pub mod eligibility;
 /// Reusable authenticated Host session and typed whole-result / managed-index live handles.
 pub use crate::session::{
     WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQueryLocalSessionDenial,

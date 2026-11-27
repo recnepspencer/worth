@@ -3,7 +3,7 @@
 //! outside the document; and a correction through today's route
 //! (`request.corrections()`), which also writes outside the document.
 use super::program::Shape;
-use super::reads::{Forest, Host};
+use super::reads::{Doc, Host};
 use super::*;
 use std::num::NonZeroUsize;
 use worth_execution::with_request_consult_observer_for_test;
@@ -35,26 +35,26 @@ pub enum Push {
     UndeclaredModel,
 }
 
-/// The end of one envelope on the document.
-pub enum Executed<'h> {
+/// The end of one envelope on the document (by default the DST's [`Forest`]).
+pub enum Executed<'h, O = WorthQueryHistoryWithOutputTrees<Schema>> {
     /// The step, and the commit receipt of each entity's stage.
     Recorded {
-        document: Forest<'h>,
+        document: Doc<'h, O>,
         step: WorthQueryHistoryStep,
         receipts: Vec<(usize, Receipt)>,
     },
     AlreadyRecorded {
-        document: Forest<'h>,
+        document: Doc<'h, O>,
         step: WorthQueryHistoryStep,
     },
     /// A correction whose source refused to select, before any envelope
     /// opened: the document is untouched.
     Unselectable {
-        document: Forest<'h>,
+        document: Doc<'h, O>,
         denial: String,
     },
     Refused {
-        document: Forest<'h>,
+        document: Doc<'h, O>,
         denial: WorthQueryHistoryEditEnvelopeDenial,
     },
 }
@@ -62,15 +62,15 @@ pub enum Executed<'h> {
 /// Push `pushes` in order on the document's envelope under `key`, then
 /// execute it with `metadata`. With `stop`, the request stops at that
 /// consult of the execution.
-pub fn envelope<'h>(
+pub fn envelope<'h, O: WorthQueryHistoryOutputsMode<Schema, History>>(
     host: &'h Host,
-    document: Forest<'h>,
+    document: Doc<'h, O>,
     branch: WorthQueryProductBranch,
     key: String,
     pushes: &[Push],
     metadata: Vec<u8>,
     stop: Option<u32>,
-) -> Executed<'h> {
+) -> Executed<'h, O> {
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(None, cancellation.token(), WorthQueryAdmissionClock::system());
     let principal = authenticate_operator(host.installed_schema(), &scope);

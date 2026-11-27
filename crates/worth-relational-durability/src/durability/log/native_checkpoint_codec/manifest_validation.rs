@@ -8,6 +8,7 @@ use contracts::history::data::coordinates::CommitId;
 use worth_foundational::FoundationalBranchTarget;
 
 pub mod components;
+mod naming;
 
 #[cfg(test)]
 #[path = "manifest_integrity_tests.rs"]
@@ -40,8 +41,10 @@ pub(super) fn validate(
         ));
     }
     let mut schemas = BTreeSet::new();
+    let mut has_naming_schemes = false;
     for schema in &manifest.schemas {
-        schema.readmit_registry().map_err(corrupt)?;
+        let (registry, _) = schema.readmit_registry().map_err(corrupt)?;
+        has_naming_schemes |= !registry.persistent_name_schemes().is_empty();
         if !schemas.insert(schema.carrier_digest()) {
             return Err(corrupt("duplicate checkpoint schema carrier"));
         }
@@ -102,6 +105,10 @@ pub(super) fn validate(
     }
     validate_pages(&manifest.lineage)?;
     super::lineage_event_directory::validate(manifest)?;
+    // G7: persistent naming and group state are validated read-free from
+    // their descriptors and cross-checked per-branch against manifest
+    // branches, roots, commits, lineage events, group log, and schemes.
+    naming::validate(manifest, has_naming_schemes)?;
     validate_record_identity(&manifest.record_identity)?;
     let history_members = manifest
         .readmit_history_members(lane)

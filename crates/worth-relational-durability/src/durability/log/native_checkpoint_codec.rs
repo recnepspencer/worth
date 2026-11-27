@@ -75,6 +75,7 @@ pub mod manifest_capture;
 pub mod manifest_validation;
 pub mod member_frame;
 pub mod member_sequence;
+pub(crate) mod naming_pages;
 pub use checkpoint_decoding::decode_checkpoint_from_source;
 #[doc(hidden)]
 pub use checkpoint_decoding::decode_expanded_checkpoint;

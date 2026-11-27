@@ -18,6 +18,7 @@ use super::super::authority_continuity::validate_checkpoint_lineage_artifact;
 pub mod branch_root_images;
 pub mod cold_commits;
 pub mod cold_directory;
+pub mod cold_naming;
 pub mod history_readmission;
 
 pub mod selected_catalog;
@@ -183,6 +184,13 @@ fn prepare_partitions(
             work,
         )
     })
+}
+
+pub(crate) fn prepare_lineage_for_capture(
+    lane: &contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
+    checkpoint: &DurableCheckpoint,
+) -> Result<LineageState, DurabilityError> {
+    prepare_lineage(lane, LineageState::default(), checkpoint)
 }
 
 fn prepare_lineage(

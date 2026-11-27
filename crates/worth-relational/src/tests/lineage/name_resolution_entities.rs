@@ -223,14 +223,14 @@ fn unknown_names_and_pruned_bases_refuse_typed_in_constant_work() {
     );
     assert_eq!(metrics(&pruned, held, 1), probes(0, 0, 0));
     assert_eq!(exact_key(&resolve(&pruned, held, 2, &exact())), held);
-    let mut advanced = pruned.duplicate_for_test();
-    advanced.advance_retention_floor(CommitId(1));
+    let mut advanced = pruned.fork_for_test();
+    advanced.advance_retention_floor(CommitId(1)).unwrap();
     assert_eq!(
         advanced.retention_floor(),
         Some(CommitId(2)),
         "floors never move back"
     );
-    advanced.advance_retention_floor(CommitId(3));
+    advanced.advance_retention_floor(CommitId(3)).unwrap();
     assert!(matches!(
         resolve(&advanced, held, 2, &exact()),
         Err(PersistentNameResolutionDenial::BasisPruned { .. })

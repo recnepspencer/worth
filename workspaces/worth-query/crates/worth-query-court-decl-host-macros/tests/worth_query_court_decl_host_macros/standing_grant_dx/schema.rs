@@ -8,7 +8,7 @@ use worth_query_decl::facade::{
     authentication::*,
     worth_query_identity, worth_query_identity_namespace, worth_query_native_scalar_bindings,
     worth_query_principal_binding, worth_query_structured_value_binding, WorthQueryAction,
-    WorthQueryRecord, WorthQueryRelation, WorthQuerySchema,
+    WorthQueryRecord, WorthQueryRelation, WorthQuerySchema, WorthQueryVocabulary,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryInvariantMutationTarget, WorthQueryOperationBodyDenial,
@@ -31,7 +31,7 @@ pub struct QmsSchema;
     fragment,
     name = "standing_grant_dx",
     bindings = Codecs,
-    members(Member, Mapping, Site, RoleGrant)
+    members(Member, Mapping, Site, RoleGrant, Assignment)
 )]
 pub struct Records;
 
@@ -48,7 +48,7 @@ impl Scalar<WorthQueryPrincipalMappingStatus> for Codecs {
 #[worth_query(
     entity,
     aspects(MemberFacts),
-    relations(RoleHolder),
+    relations(RoleHolder, AssignmentHolder),
     reference(QmsSchema, Records)
 )]
 pub struct Member;
@@ -76,9 +76,30 @@ pub struct Site;
 )]
 pub struct RoleGrant;
 
+/// One member's assignment to a site, enabled or disabled apart from any
+/// grant: the audit role needs both an enabled assignment and a current grant.
+#[derive(Clone, Copy, WorthQuerySchema)]
+#[worth_query(
+    entity,
+    aspects(AssignmentFacts),
+    relations(AssignmentSite),
+    reference(QmsSchema, Records)
+)]
+pub struct Assignment;
+
 #[derive(WorthQueryRelation)]
 #[worth_query(to = Member, from = Mapping, reference(QmsSchema, Records))]
 pub struct MappingMember;
+
+/// The member an assignment belongs to.
+#[derive(WorthQueryRelation)]
+#[worth_query(to = Assignment, from = Member, reference(QmsSchema, Records))]
+pub struct AssignmentHolder;
+
+/// The site an assignment covers.
+#[derive(WorthQueryRelation)]
+#[worth_query(to = Site, from = Assignment, reference(QmsSchema, Records))]
+pub struct AssignmentSite;
 
 /// The member holding a role grant (the capability grantee).
 #[derive(WorthQueryRelation)]
@@ -116,6 +137,14 @@ pub struct SiteRow {
     pub site_status: String,
 }
 
+/// Why a role is held: a closed vocabulary stored by its durable code.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, WorthQueryVocabulary)]
+#[worth_query(identity = "standing-grant.dx.purpose.v1", bindings = Codecs)]
+pub enum GrantPurpose {
+    Quality = 1,
+    Safety = 2,
+}
+
 /// UTC bounds serve the review role; local calendar days serve approval.
 #[derive(WorthQueryRecord)]
 #[worth_query(bindings = Codecs, aspect = RoleGrantFacts, fragment = Records, entity = RoleGrant)]
@@ -125,13 +154,25 @@ pub struct RoleGrantRow {
     #[worth_query(equality)]
     pub role: String,
     #[worth_query(equality)]
-    pub purpose: String,
+    pub purpose: GrantPurpose,
     #[worth_query(equality)]
     pub grant_status: String,
     pub valid_from: CanonicalTimestamp,
     pub valid_until: CanonicalTimestamp,
     pub first_day: CanonicalDate,
     pub last_day: CanonicalDate,
+    /// The largest amount the holder may countersign.
+    pub amount_limit: u64,
+}
+
+/// `assignment_status` is `enabled` or `disabled`.
+#[derive(WorthQueryRecord)]
+#[worth_query(bindings = Codecs, aspect = AssignmentFacts, fragment = Records, entity = Assignment)]
+pub struct AssignmentRow {
+    #[worth_query(equality, unique, read_only)]
+    pub assignment_id: String,
+    #[worth_query(equality)]
+    pub assignment_status: String,
 }
 
 worth_query_structured_value_binding!(pub BodyDenial for WorthQueryOperationBodyDenial {
@@ -164,6 +205,57 @@ pub struct SetSiteStatus {
     pub status: String,
 }
 
+/// Enables or disables one site assignment; no grant is touched.
+#[derive(Clone, Debug, Serialize, Deserialize, WorthQueryAction)]
+#[worth_query(
+    schema = QmsSchema, context = Desktop, namespace = QMS, member,
+    input = SetAssignmentStatusInput, operation = SetAssignmentStatusOp,
+    binding = SetAssignmentStatusBinding, delivery = AssignmentStatusSet, body, program,
+    reads(Assignment)
+)]
+pub struct SetAssignmentStatus {
+    #[worth_query(scope = AssignmentId)]
+    pub assignment: String,
+    pub status: String,
+}
+
+/// Sets one grant's status (`active` or `revoked`); its assignment stays.
+#[derive(Clone, Debug, Serialize, Deserialize, WorthQueryAction)]
+#[worth_query(
+    schema = QmsSchema, context = Desktop, namespace = QMS, member,
+    input = SetGrantStatusInput, operation = SetGrantStatusOp, binding = SetGrantStatusBinding,
+    delivery = GrantStatusSet, body, program, reads(RoleGrant)
+)]
+pub struct SetGrantStatus {
+    #[worth_query(scope = GrantId)]
+    pub grant: String,
+    pub status: String,
+}
+
+pub fn set_assignment_status_operation(
+) -> ApplicationOperationDefinition<QmsSchema, SetAssignmentStatusOp, SetAssignmentStatus> {
+    SetAssignmentStatusOp::reference()
+        .typed_body()
+        .assign_input(
+            AssignmentFacts::assignment_status(),
+            SetAssignmentStatus::status_input(),
+        )
+        .finish_pure_definition()
+        .expect("the assignment status body admits")
+}
+
+pub fn set_grant_status_operation(
+) -> ApplicationOperationDefinition<QmsSchema, SetGrantStatusOp, SetGrantStatus> {
+    SetGrantStatusOp::reference()
+        .typed_body()
+        .assign_input(
+            RoleGrantFacts::grant_status(),
+            SetGrantStatus::status_input(),
+        )
+        .finish_pure_definition()
+        .expect("the grant status body admits")
+}
+
 pub fn set_site_status_operation(
 ) -> ApplicationOperationDefinition<QmsSchema, SetSiteStatusOp, SetSiteStatus> {
     SetSiteStatusOp::reference()
@@ -186,7 +278,7 @@ pub fn set_site_status_operation(
         writes: [
             RoleGrantFacts::grant_id(), RoleGrantFacts::role(), RoleGrantFacts::purpose(),
             RoleGrantFacts::grant_status(), RoleGrantFacts::valid_from(), RoleGrantFacts::valid_until(),
-            RoleGrantFacts::first_day(), RoleGrantFacts::last_day(),
+            RoleGrantFacts::first_day(), RoleGrantFacts::last_day(), RoleGrantFacts::amount_limit(),
         ];
         creates: [RoleGrant];
         links: [RoleHolder, GrantSite];

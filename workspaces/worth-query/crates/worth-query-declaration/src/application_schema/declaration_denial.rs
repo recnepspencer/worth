@@ -168,6 +168,12 @@ pub enum ApplicationSchemaDeclarationDenial {
     InvalidApplicationCapabilityExtentStatus {
         capability: String,
     },
+    /// An open grant validity bound is a standing grant's: a workflow-tenure
+    /// grant may be delegated, and a child's window is proven inside its
+    /// parent's only when both are closed.
+    OpenApplicationCapabilityValidity {
+        capability: String,
+    },
     /// Governed elevation adds durations to its bounds, so it needs a
     /// Unix-epoch timeline; UTC-timestamp and local-date grants cannot elevate.
     UnsupportedApplicationCapabilityElevationTimeline {

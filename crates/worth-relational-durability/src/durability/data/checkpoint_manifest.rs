@@ -88,6 +88,7 @@ impl RelationalCheckpointManifest {
             lineage: self.lineage.clone(),
             lineage_events: self.lineage_events.clone(),
             lineage_basis: self.lineage_basis.clone(),
+            naming: self.naming.clone(),
             derived_indexes: self.derived_indexes,
             allocations: Default::default(),
         }
@@ -119,6 +120,8 @@ pub struct RelationalCheckpointManifestDraft {
     pub lineage: super::CheckpointPages,
     pub lineage_events: super::CheckpointLineageEventPages,
     pub(crate) lineage_basis: super::CheckpointLineageBasis,
+    /// `CHK24`: paged per-branch persistent-naming and group state.
+    pub naming: worth_relational_lineage::internal_port::lineage::naming_pages::CheckpointNamingState,
     pub derived_indexes: RelationalDurableMemberLocator,
     pub(in crate::internal_port::durability) allocations: ManifestMetadataAllocations,
 }
@@ -159,54 +162,82 @@ impl RelationalCheckpointManifestDraft {
         worth_execution::ExecutionArray<RelationalDurableMemberLocator>,
         contracts::durability::data::recovery_stop::RelationalRecoveryStop,
     > {
-        let mut members =
-            worth_execution::ExecutionOrderedMap::<RelationalDurableMemberLocator, ()>::default();
-        let mut insert = |member| {
-            members
-                .insert_cloned_native_for_request(&member, &(), *request)
-                .map_err(contracts::durability::data::recovery_stop::map_stop)
-        };
+        let naming_members = self.naming.page_members();
+        let cap = 1usize
+            + self
+                .roots
+                .iter()
+                .flat_map(|root| &root.regions)
+                .chain(&self.mirror)
+                .map(|leaf| leaf.leaf_members().count())
+                .sum::<usize>()
+            + self
+                .history_dependencies
+                .iter()
+                .map(|dep| 1 + dep.bases.len())
+                .sum::<usize>()
+            + self.symbols.len()
+            + self.lineage.len()
+            + self
+                .symbol_buckets
+                .iter()
+                .map(|bucket| bucket.pages.len())
+                .sum::<usize>()
+            + self.lineage_events.len()
+            + self.canonical_members.entries().len()
+            + self.record_identity.pages.len()
+            + self.commits.pages.len()
+            + naming_members.len();
+        let scratch =
+            std::alloc::Layout::array::<RelationalDurableMemberLocator>(cap).map_err(|_| {
+                contracts::durability::data::recovery_stop::RelationalRecoveryStop::Request(
+                contracts::execution::denial_cause::RelationalExecutionDenialCause::MemoryOverflow,
+            )
+            })?;
+        let _memory = request
+            .reserve_retained_memory(scratch.size() as u64)
+            .map_err(|cause| {
+                contracts::durability::data::recovery_stop::RelationalRecoveryStop::Request(
+                    cause.into(),
+                )
+            })?;
+        let mut members = Vec::with_capacity(cap);
         for leaf in self
             .roots
             .iter()
             .flat_map(|root| &root.regions)
             .chain(&self.mirror)
         {
-            for member in leaf.leaf_members() {
-                insert(member)?;
-            }
+            members.extend(leaf.leaf_members());
         }
         // Admitted declarations are exactly the reachable history graph.
         for dependency in &self.history_dependencies {
-            insert(dependency.member)?;
-            for member in &dependency.bases {
-                insert(*member)?;
-            }
+            members.push(dependency.member);
+            members.extend_from_slice(&dependency.bases);
         }
         for page in self.symbols.iter().chain(&self.lineage) {
-            insert(page.member)?;
+            members.push(page.member);
         }
-        for member in self
-            .symbol_buckets
-            .iter()
-            .flat_map(|bucket| bucket.pages.iter().copied())
-        {
-            insert(member)?;
+        for bucket in &self.symbol_buckets {
+            members.extend_from_slice(&bucket.pages);
         }
         for page in &self.lineage_events {
-            insert(page.member)?;
+            members.push(page.member);
         }
         for row in self.canonical_members.entries() {
-            insert(row.member)?;
+            request.consult().map_err(|cause| {
+                contracts::durability::data::recovery_stop::RelationalRecoveryStop::Request(
+                    cause.into(),
+                )
+            })?;
+            members.push(row.member);
         }
-        insert(self.derived_indexes)?;
-        for page in &self.record_identity.pages {
-            insert(*page)?;
-        }
-        for page in self.commits.page_members() {
-            insert(page)?;
-        }
-        drop(insert);
+        members.push(self.derived_indexes);
+        members.extend_from_slice(&self.record_identity.pages);
+        members.extend(self.commits.page_members());
+        members.extend(naming_members);
+        members.sort_unstable();
+        members.dedup();
         let mut output =
             worth_execution::ExecutionRequestArrayBuilder::allocate(*request, members.len())
                 .map_err(|cause| {
@@ -216,8 +247,8 @@ impl RelationalCheckpointManifestDraft {
                 ),
             )
                 })?;
-        for member in members.keys() {
-            output.push(*member).map_err(|cause| {
+        for member in members {
+            output.push(member).map_err(|cause| {
                 contracts::durability::data::recovery_stop::RelationalRecoveryStop::from(
                     contracts::durability::data::native_checkpoint_capture_denial::array_capture_stop(cause),
                 )

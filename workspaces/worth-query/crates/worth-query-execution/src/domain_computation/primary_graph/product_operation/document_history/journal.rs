@@ -140,9 +140,13 @@ pub(in crate::domain_computation::primary_graph) struct HistoryJournal {
     // Correction sources: an envelope's commit -> its step's ordinal.
     sources: BTreeMap<worth_runtime_world::facade::CompositeCommitIdentity, (u64, HistoryInsertionAllocation)>,
     pending_sources: Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
-    // A step's retained basis (its relational commit) -> its ordinal, which a
-    // navigation commit names as the basis it selected.
-    endpoints: BTreeMap<worth_relational::facade::history::CommitId, (u64, HistoryInsertionAllocation)>,
+    // A step's retained basis (its relational commit) -> the commit its
+    // candidate forked from and its ordinal. A navigation commit names the
+    // basis it selected; a step's own commits lie in (fork, basis].
+    endpoints: BTreeMap<
+        worth_relational::facade::history::CommitId,
+        (Option<worth_relational::facade::history::CommitId>, u64, HistoryInsertionAllocation),
+    >,
     pending_endpoint: Option<worth_relational::facade::history::CommitId>,
 }
 

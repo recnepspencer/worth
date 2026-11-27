@@ -32,6 +32,11 @@ pub fn encode_native_capture(
                 stage,
             };
         answer = Some((|| -> Result<_, CaptureDenial> {
+            let naming_generations = basis
+                .lineage_naming
+                .as_ref()
+                .map(|frozen| frozen.branch_generations().clone())
+                .unwrap_or_default();
             let captured = basis.build_native_capture(
                 execution,
                 policy,
@@ -41,11 +46,13 @@ pub fn encode_native_capture(
             )?;
             let mut captured = captured.seal_ordinary();
             let manifest_publication = artifact_policy.publication_source().map(|source| {
-                selection.prepare(
-                    captured.manifest.clone(),
-                    source,
-                    captured.history_members.clone(),
-                )
+                selection
+                    .prepare(
+                        captured.manifest.clone(),
+                        source,
+                        captured.history_members.clone(),
+                    )
+                    .with_naming_generations(naming_generations)
             });
             let coverage = captured.manifest.covered_position;
             let transitions = captured.manifest.coverage.up_to_branch_transition;
