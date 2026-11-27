@@ -144,13 +144,14 @@ impl World {
             .1
     }
 
-    /// Commits `intents` under `plan` on `basis`.
+    /// Commits `intents` under `plan` on `basis`; returns the bytes of the
+    /// canonical group lineage frame the commit published.
     pub fn commit(
         &self,
         basis: &AdmittedRelationalBranchBasis,
         intents: Vec<MutationIntent>,
         plan: CommitNamingPlan,
-    ) {
+    ) -> usize {
         let execution = ExecutionRequest::serial(&self.host);
         let mut transaction = self
             .runtime
@@ -164,10 +165,12 @@ impl World {
             .unwrap();
         transaction.attach_naming_plan(plan);
         let committed = transaction.commit(&execution, &self.runtime).unwrap();
+        let group_frame = committed.group_lineage_frame().len();
         self.runtime
             .snapshots()
             .release_snapshot(&committed.snapshot)
             .unwrap();
+        group_frame
     }
 
     /// One commit creating `keys`, each born authored in its own occurrence.
@@ -238,8 +241,13 @@ impl World {
             .unwrap()
     }
 
-    /// Deletes `name`'s member and retires the name.
-    pub fn retire(&self, basis: &AdmittedRelationalBranchBasis, name: PersistentNameIdentity) {
+    /// Deletes `name`'s member and retires the name; returns the commit's
+    /// group lineage frame bytes.
+    pub fn retire(
+        &self,
+        basis: &AdmittedRelationalBranchBasis,
+        name: PersistentNameIdentity,
+    ) -> usize {
         let entity = self.entity(basis, name);
         let plan = CommitNamingPlan {
             postures: vec![LineagePostureClaim::Retire {
@@ -248,7 +256,7 @@ impl World {
             }],
             ..CommitNamingPlan::default()
         };
-        self.commit(basis, vec![delete(entity)], plan);
+        self.commit(basis, vec![delete(entity)], plan)
     }
 
     /// The split plan and intents cutting `parent` into `(key, step)`

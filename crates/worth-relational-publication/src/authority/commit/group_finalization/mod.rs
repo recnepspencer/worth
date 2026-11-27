@@ -9,6 +9,7 @@
 //! exists, so a refused transition leaves the commit with zero effects.
 
 mod commit_names;
+mod empty_state;
 mod partition;
 mod selection;
 

@@ -244,9 +244,12 @@ mod tests {
 
     use super::*;
     use crate::contracts::aggregate_identity::group_lineage::AggregateGroupLineageEvent as GEv;
+    use crate::contracts::aggregate_identity::transition::group::delta::{
+        AggregateGroupAssignment, AggregateGroupChange,
+    };
     use crate::contracts::aggregate_identity::transition::group::model::{
-        AggregateContinuityRule, AggregateGroupAssignment, AggregateGroupMembers,
-        AggregateGroupOrigin, AggregateGroupScheme, AggregateGroupSchemeId, AggregateMemberRole,
+        AggregateContinuityRule, AggregateGroupMembers, AggregateGroupScheme,
+        AggregateGroupSchemeId, AggregateMemberRole,
     };
     use crate::contracts::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
     use crate::contracts::graph_member::NativeMemberKey;
@@ -295,8 +298,7 @@ mod tests {
                 identity: gid,
                 anchor: name,
                 sources: Vec::new(),
-                members,
-                origin: AggregateGroupOrigin::Born,
+                change: AggregateGroupChange::Born(members),
             };
             let ret: BTreeSet<_> = retired
                 .map(|r| AggregateIdentity::from_bytes([r; 32]))

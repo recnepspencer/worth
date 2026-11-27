@@ -6,6 +6,8 @@ use crate::contracts::identity::data::record_ids::EntityId;
 use crate::contracts::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 use AggregateContinuityRule as Rule;
 pub mod continuity;
+pub mod differential;
+pub mod memory_state;
 pub mod property;
 pub mod refusals;
 pub mod roles;
@@ -62,7 +64,7 @@ impl World {
         prior: &[AggregatePriorGroup],
         retired: &BTreeSet<AggregateIdentity>,
         next: &[Spec<'_>],
-    ) -> Result<AggregateGroupTransition, Denial> {
+    ) -> Result<AggregateGroupPartitionTransition, Denial> {
         let proposed = next.iter().map(|spec| self.members(spec)).collect();
         AggregateGroupNamingAuthority::transition(&scheme(rule), prior, retired, proposed)
     }
@@ -73,7 +75,7 @@ impl World {
     }
 }
 
-pub(super) fn prior_of(transition: &AggregateGroupTransition) -> Vec<AggregatePriorGroup> {
+pub(super) fn prior_of(transition: &AggregateGroupPartitionTransition) -> Vec<AggregatePriorGroup> {
     transition
         .assignments
         .iter()
@@ -102,7 +104,7 @@ pub(super) type Projection = (
     BTreeSet<Event>,
 );
 
-pub(super) fn project(transition: &AggregateGroupTransition) -> Projection {
+pub(super) fn project(transition: &AggregateGroupPartitionTransition) -> Projection {
     let groups = transition
         .assignments
         .iter()

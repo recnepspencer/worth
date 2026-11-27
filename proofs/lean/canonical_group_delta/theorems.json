@@ -1,0 +1,67 @@
+{
+  "imports": [
+    "CanonicalGroupDelta",
+    "CanonicalGroupDelta.TimeM",
+    "CanonicalGroupDelta.Delta",
+    "CanonicalGroupDelta.Residual"
+  ],
+  "allowed_axioms": [],
+  "theorems": [
+    {
+      "name": "CanonicalGroupDelta.applyDelta_steps",
+      "type": "∀ {α : Type} (m : CanonicalGroupDelta.Members α) (d : CanonicalGroupDelta.Delta α), (CanonicalGroupDelta.applyDelta m d).steps = d.removed.length + d.upserted.length + 1"
+    },
+    {
+      "name": "CanonicalGroupDelta.applyDelta_steps_independent",
+      "type": "∀ {α : Type} (m m' : CanonicalGroupDelta.Members α) (d : CanonicalGroupDelta.Delta α), (CanonicalGroupDelta.applyDelta m d).steps = (CanonicalGroupDelta.applyDelta m' d).steps"
+    },
+    {
+      "name": "CanonicalGroupDelta.apply_diff",
+      "type": "∀ {α : Type} [inst : DecidableEq α] (prior next : CanonicalGroupDelta.Members α) (support : List Nat), (∀ x, x ∉ support → prior x = none ∧ next x = none) → (CanonicalGroupDelta.applyDelta prior (CanonicalGroupDelta.diff prior next support)).val = next"
+    },
+    {
+      "name": "CanonicalGroupDelta.replay_eq_full",
+      "type": "∀ {α : Type} [inst : DecidableEq α] (m : CanonicalGroupDelta.Members α) (hs : List (CanonicalGroupDelta.Members α × List Nat)), CanonicalGroupDelta.Covered m hs → (CanonicalGroupDelta.replayDelta m hs).val = CanonicalGroupDelta.replayFull m hs"
+    },
+    {
+      "name": "CanonicalGroupDelta.diff_size",
+      "type": "∀ {α : Type} [inst : DecidableEq α] (prior next : CanonicalGroupDelta.Members α) (support : List Nat), (CanonicalGroupDelta.diff prior next support).removed.length + (CanonicalGroupDelta.diff prior next support).upserted.length = (CanonicalGroupDelta.touched prior next support).length"
+    },
+    {
+      "name": "CanonicalGroupDelta.replay_steps",
+      "type": "∀ {α : Type} [inst : DecidableEq α] (m : CanonicalGroupDelta.Members α) (hs : List (CanonicalGroupDelta.Members α × List Nat)), CanonicalGroupDelta.Covered m hs → (CanonicalGroupDelta.replayDelta m hs).steps = CanonicalGroupDelta.replayCost m hs"
+    },
+    {
+      "name": "CanonicalGroupDelta.encode_length",
+      "type": "∀ {α : Type} (name : Nat → List Nat) (member : Nat × α → List Nat) (w : Nat), (∀ x, (name x).length = 32) → (∀ p, (member p).length = w) → ∀ (d : CanonicalGroupDelta.Delta α), (CanonicalGroupDelta.encode name member d).length = 8 + 32 * d.removed.length + w * d.upserted.length"
+    },
+    {
+      "name": "CanonicalGroupDelta.encode_diff_le_touched",
+      "type": "∀ {α : Type} [inst : DecidableEq α] (name : Nat → List Nat) (member : Nat × α → List Nat) (w : Nat), (∀ x, (name x).length = 32) → (∀ p, (member p).length = w) → ∀ (prior next : CanonicalGroupDelta.Members α) (support : List Nat), (CanonicalGroupDelta.encode name member (CanonicalGroupDelta.diff prior next support)).length ≤ 8 + (32 + w) * (CanonicalGroupDelta.touched prior next support).length"
+    },
+    {
+      "name": "CanonicalGroupDelta.seek_val",
+      "type": "∀ (skip l : List Nat), (CanonicalGroupDelta.seek skip l).val = (l.filter (fun x => decide (x ∉ skip))).head?"
+    },
+    {
+      "name": "CanonicalGroupDelta.seek_steps_bounded",
+      "type": "∀ (skip l : List Nat), l.Nodup → (CanonicalGroupDelta.seek skip l).steps ≤ skip.length + 1"
+    },
+    {
+      "name": "CanonicalGroupDelta.residual_count",
+      "type": "∀ (p : Nat × Bool → Bool) (leaving : List Nat) (l : List (Nat × Bool)), (l.filter (fun m => decide (m.1 ∉ leaving))).countP p + (l.filter (fun m => decide (m.1 ∈ leaving))).countP p = l.countP p"
+    },
+    {
+      "name": "CanonicalGroupDelta.residualBoundary_val",
+      "type": "∀ (l : List (Nat × Bool)) (leaving : List Nat), (CanonicalGroupDelta.residualBoundary (l.countP (·.2)) (l.filter (fun m => decide (m.1 ∈ leaving)))).val = (l.filter (fun m => decide (m.1 ∉ leaving))).countP (·.2)"
+    },
+    {
+      "name": "CanonicalGroupDelta.residualBoundary_steps",
+      "type": "∀ (stored : Nat) (touched : List (Nat × Bool)), (CanonicalGroupDelta.residualBoundary stored touched).steps = touched.length + 1"
+    },
+    {
+      "name": "CanonicalGroupDelta.scope_steps_le",
+      "type": "∀ (gs : List CanonicalGroupDelta.ScopedGroup), (∀ g, g ∈ gs → g.members.Nodup) → (CanonicalGroupDelta.scopeReads gs).steps ≤ (gs.map (fun g => 2 * g.touched.length + 2)).sum"
+    }
+  ]
+}

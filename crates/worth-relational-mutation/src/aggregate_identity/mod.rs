@@ -42,11 +42,14 @@ pub mod guard;
 pub mod record;
 
 pub use transition::group::{
-    AggregateContinuityRule, AggregateGroupAssignment, AggregateGroupClaimant,
-    AggregateGroupMember, AggregateGroupMembers, AggregateGroupNaming,
-    AggregateGroupNamingAuthority, AggregateGroupNamingDenial, AggregateGroupOrigin,
-    AggregateGroupScheme, AggregateGroupSchemeId, AggregateGroupTransition, AggregateMemberRole,
-    AggregatePriorGroup,
+    AggregateContinuityRule, AggregateGroupAssignment, AggregateGroupChange,
+    AggregateGroupClaimant, AggregateGroupDeltaAuthority, AggregateGroupHeader,
+    AggregateGroupMember, AggregateGroupMemberDelta, AggregateGroupMembers,
+    AggregateGroupMembership, AggregateGroupNaming, AggregateGroupNamingAuthority,
+    AggregateGroupNamingDenial, AggregateGroupOrigin, AggregateGroupPartitionAssignment,
+    AggregateGroupPartitionTransition, AggregateGroupRoleCounts, AggregateGroupScheme,
+    AggregateGroupSchemeId, AggregateGroupScope, AggregateGroupStateView, AggregateGroupTransition,
+    AggregateMemberRole, AggregatePriorGroup,
 };
 pub(crate) use transition::{
     transition, AggregateAssignment, AggregateLineageEvent, AggregateLineageKind,

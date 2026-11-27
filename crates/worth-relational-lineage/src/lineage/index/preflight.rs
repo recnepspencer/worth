@@ -27,7 +27,8 @@ impl PersistentNameBranchIndex {
     /// for `events`, `entity_bindings`, `relation_bindings` and
     /// `group_transitions`, latching any storage failure into `scope`.
     ///
-    /// Complexity: O(touched names, lineages, groups and members).
+    /// Complexity: O(touched names, lineages, groups and touched members,
+    /// plus each retired group's members).
     pub(crate) fn preflight_commit(
         &self,
         events: &[LineageEventRecord],
@@ -73,29 +74,29 @@ impl PersistentNameBranchIndex {
         }
         for committed in group_transitions {
             let transition = &committed.transition;
+            // Ingestion reads every event's group entry; only a retirement
+            // ends every member's tenure, and an assignment changes only its
+            // touched members' tenures.
             for event in &transition.lineage {
-                match *event {
+                let (first, second) = match *event {
                     GroupEvent::Born { group }
                     | GroupEvent::Revived { group }
-                    | GroupEvent::Retired { group } => {
-                        self.preflight_group_and_members(group, scope);
-                    }
-                    GroupEvent::SplitFrom { fragment, source } => {
-                        self.preflight_group_and_members(fragment, scope);
-                        self.preflight_group_and_members(source, scope);
-                    }
-                    GroupEvent::MergedInto { absorbed, keeper } => {
-                        self.preflight_group_and_members(absorbed, scope);
-                        self.preflight_group_and_members(keeper, scope);
-                    }
+                    | GroupEvent::Retired { group } => (group, None),
+                    GroupEvent::SplitFrom { fragment, source } => (fragment, Some(source)),
+                    GroupEvent::MergedInto { absorbed, keeper } => (absorbed, Some(keeper)),
+                };
+                for group in std::iter::once(first).chain(second) {
+                    let _ = self.names.get_in(&PersistentNameKey::Group(group), scope);
                 }
             }
             for &retired in &transition.retired {
                 self.preflight_group_and_members(retired, scope);
             }
             for assignment in &transition.assignments {
-                self.preflight_group_and_members(assignment.identity, scope);
-                for (member, _) in assignment.members.iter() {
+                let _ = self
+                    .names
+                    .get_in(&PersistentNameKey::Group(assignment.identity), scope);
+                for member in assignment.touched_members() {
                     let _ = self.member_groups.get_in(member, scope);
                 }
             }

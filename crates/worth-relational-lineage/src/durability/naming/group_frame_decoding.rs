@@ -11,9 +11,12 @@ use std::collections::BTreeSet;
 use worth_foundational::facade::AggregateIdentity;
 
 use crate::contracts::aggregate_identity::group_lineage::AggregateGroupLineageEvent;
+use crate::contracts::aggregate_identity::transition::group::delta::{
+    AggregateGroupAssignment, AggregateGroupChange, AggregateGroupMemberDelta,
+};
 use crate::contracts::aggregate_identity::transition::group::model::{
-    AggregateContinuityRule, AggregateGroupAssignment, AggregateGroupMembers, AggregateGroupOrigin,
-    AggregateGroupScheme, AggregateGroupSchemeId, AggregateMemberRole,
+    AggregateContinuityRule, AggregateGroupMembers, AggregateGroupScheme, AggregateGroupSchemeId,
+    AggregateMemberRole,
 };
 use crate::contracts::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
 use crate::contracts::graph_member::NativeMemberKey;
@@ -103,10 +106,39 @@ fn decode_assignment(reader: &mut WireReader<'_>) -> Result<AggregateGroupAssign
     let identity = read_group(reader)?;
     let anchor = PersistentNameIdentity::from_minted_digest(reader.digest()?);
     let sources = read_strictly_ascending(reader, "group sources", read_group, |source| *source)?;
-    let origin = match reader.u8()? {
-        1 => AggregateGroupOrigin::Kept,
-        2 => AggregateGroupOrigin::Born,
-        3 => AggregateGroupOrigin::Revived,
+    let non_canonical = |field| Refusal::NonCanonical { field };
+    let change = match reader.u8()? {
+        1 => {
+            let removed =
+                read_strictly_ascending(reader, "removed group members", read_name, |n| *n)?;
+            let upserted =
+                read_strictly_ascending(reader, "upserted group members", decode_member, |m| m.0)?;
+            let mut delta = AggregateGroupMemberDelta::new();
+            for name in removed {
+                delta
+                    .remove(name)
+                    .map_err(|_| non_canonical("group member delta"))?;
+            }
+            for (name, carrier, role) in upserted {
+                delta
+                    .upsert(name, carrier, role)
+                    .map_err(|_| non_canonical("group member delta"))?;
+            }
+            AggregateGroupChange::Kept(delta)
+        }
+        tag @ (2 | 3) => {
+            let members = read_strictly_ascending(reader, "group members", decode_member, |m| m.0)?;
+            let mut set = AggregateGroupMembers::new();
+            for (name, carrier, role) in members {
+                set.insert(name, carrier, role)
+                    .map_err(|_| non_canonical("group members"))?;
+            }
+            if tag == 2 {
+                AggregateGroupChange::Born(set)
+            } else {
+                AggregateGroupChange::Revived(set)
+            }
+        }
         tag => {
             return Err(Refusal::InvalidTag {
                 field: "group origin",
@@ -114,21 +146,16 @@ fn decode_assignment(reader: &mut WireReader<'_>) -> Result<AggregateGroupAssign
             })
         }
     };
-    let members = read_strictly_ascending(reader, "group members", decode_member, |m| m.0)?;
-    let mut set = AggregateGroupMembers::new();
-    for (name, carrier, role) in members {
-        set.insert(name, carrier, role)
-            .map_err(|_| Refusal::NonCanonical {
-                field: "group members",
-            })?;
-    }
     Ok(AggregateGroupAssignment {
         identity,
         anchor,
         sources,
-        members: set,
-        origin,
+        change,
     })
+}
+
+fn read_name(reader: &mut WireReader<'_>) -> Result<PersistentNameIdentity, Refusal> {
+    Ok(PersistentNameIdentity::from_minted_digest(reader.digest()?))
 }
 
 type DecodedMember = (PersistentNameIdentity, NativeMemberKey, AggregateMemberRole);

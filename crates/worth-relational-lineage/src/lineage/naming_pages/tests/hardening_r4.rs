@@ -173,8 +173,8 @@ fn naming_pages_isolate_domains_without_cross_domain_reads_and_refuse_mixed_desc
 
     // Unknown table tag descriptor refuses read-free.
     let mut unknown = pages1[0].clone();
-    unknown.first = vec![0u8, 1];
-    unknown.last = vec![0u8, 1];
+    unknown.first = vec![u8::MAX, 1];
+    unknown.last = vec![u8::MAX, 1];
     unknown.entries = 1;
     assert!(validate_pages(&[unknown]).is_err());
 }

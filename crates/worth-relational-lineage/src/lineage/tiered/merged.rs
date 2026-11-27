@@ -94,6 +94,63 @@ where
         self.scan_merged_with(prefix, None, visit)
     }
 
+    /// Visits every live row whose row key starts with `prefix`, ascending,
+    /// seeking the delta from `lower` (the least key whose row key carries
+    /// `prefix`) rather than walking it; `visit` returns `false` to stop.
+    /// Keys sharing `prefix` must order exactly as their row keys do.
+    ///
+    /// Complexity: O(log N + visited rows), faulting only the base pages the
+    /// visited range spans.
+    pub fn scan_prefix_from(
+        &self,
+        lower: &K,
+        prefix: &[u8],
+        mut visit: impl FnMut(K, RowRef<'_, V>) -> Result<bool, Cause>,
+    ) -> Result<(), Cause> {
+        let mut pending = self
+            .delta
+            .iter_from(lower)
+            .map(|(key, value)| (self.row_key(key), key, value))
+            .take_while(|(row, _, _)| row.starts_with(prefix))
+            .peekable();
+        let mut stopped = false;
+        if let Some(base) = self.base() {
+            base.scan(prefix, |row, bytes| {
+                while let Some((key_bytes, key, value)) = pending.peek() {
+                    if key_bytes.as_slice() > row {
+                        break;
+                    }
+                    let shadows = key_bytes.as_slice() == row;
+                    if let Some(value) = value.as_ref()
+                        && !visit((*key).clone(), RowRef::Borrowed(value))?
+                    {
+                        stopped = true;
+                        return Ok(false);
+                    }
+                    pending.next();
+                    if shadows {
+                        return Ok(true);
+                    }
+                }
+                let key = K::from_bytes(row.get(1..).ok_or(Cause::Damaged)?)?;
+                let keep = visit(key, RowRef::Owned(V::from_bytes(bytes)?))?;
+                stopped = !keep;
+                Ok(keep)
+            })?;
+        }
+        if stopped {
+            return Ok(());
+        }
+        for (_, key, value) in pending {
+            if let Some(value) = value.as_ref()
+                && !visit(key.clone(), RowRef::Borrowed(value))?
+            {
+                break;
+            }
+        }
+        Ok(())
+    }
+
     /// Every live row of the table, ascending by row key, duplicating borrowed
     /// resident rows through `duplicate`.
     pub fn collect_merged_with(

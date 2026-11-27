@@ -6,6 +6,7 @@
 
 use worth_foundational::facade::AggregateIdentity;
 
+use crate::contracts::aggregate_identity::transition::group::delta::AggregateGroupChange;
 use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::lineage::data::name_resolution::PersistentNameKey;
 use crate::contracts::lineage::data::naming::PersistentNameIdentity;
@@ -177,8 +178,24 @@ impl PersistentNameBranchIndex {
         }
         for assignment in batch.group_assignments() {
             let key = PersistentNameKey::Group(assignment.identity);
-            let members = assignment.members.iter().map(|(name, _)| name);
-            self.declare_carriers(key, members, batch.commit, journal, &mut changed)?;
+            match &assignment.change {
+                AggregateGroupChange::Kept(delta) => {
+                    let removed = delta.removed();
+                    let upserted = delta.upserted().map(|(name, _)| name);
+                    self.apply_carrier_delta(
+                        key,
+                        removed,
+                        upserted,
+                        batch.commit,
+                        journal,
+                        &mut changed,
+                    )?;
+                }
+                AggregateGroupChange::Born(members) | AggregateGroupChange::Revived(members) => {
+                    let members = members.iter().map(|(name, _)| name);
+                    self.declare_carriers(key, members, batch.commit, journal, &mut changed)?;
+                }
+            }
         }
         // Every departure ends before any arrival starts, so a member moving
         // between two groups of one scheme ends in its new group.
@@ -209,6 +226,55 @@ impl PersistentNameBranchIndex {
             });
         };
         let (left, joined) = carrier_delta(&live.carriers, declared);
+        if left.is_empty() && joined.is_empty() {
+            return Ok(());
+        }
+        let mut updated = live.clone();
+        drop(entry);
+        for member in &left {
+            updated.carriers.remove(member);
+        }
+        for member in &joined {
+            updated.carriers.insert(*member);
+        }
+        self.entry_mut(key, commit, journal)?
+            .set_state(commit, NameState::Live(updated));
+        if let PersistentNameKey::Group(group) = key {
+            changed.push((group, left, joined));
+        }
+        Ok(())
+    }
+}
+
+impl PersistentNameBranchIndex {
+    /// Applies a kept group's member delta onto `key`'s current carriers:
+    /// `removed` members leave, `upserted` members not yet carried join.
+    ///
+    /// Complexity: O(delta * log carriers): no walk of the carrier set.
+    fn apply_carrier_delta<'m>(
+        &mut self,
+        key: PersistentNameKey,
+        removed: impl Iterator<Item = &'m PersistentNameIdentity>,
+        upserted: impl Iterator<Item = &'m PersistentNameIdentity>,
+        commit: CommitId,
+        journal: &mut IngestionJournal,
+        changed: &mut Vec<(AggregateIdentity, MemberDelta, MemberDelta)>,
+    ) -> Result<(), PersistentNameIndexDenial> {
+        let entry = self.names.get(&key)?;
+        let Some(live) = entry.as_deref().and_then(NameEntry::current_live) else {
+            return Err(PersistentNameIndexDenial::InvalidTransition {
+                name: key,
+                detail: "a kept group's carriers changed while it is not live",
+            });
+        };
+        let left: MemberDelta = removed
+            .filter(|m| live.carriers.contains(*m))
+            .copied()
+            .collect();
+        let joined: MemberDelta = upserted
+            .filter(|m| !live.carriers.contains(*m))
+            .copied()
+            .collect();
         if left.is_empty() && joined.is_empty() {
             return Ok(());
         }

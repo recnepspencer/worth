@@ -85,6 +85,16 @@ impl<'basis, 'guard> CommitNameOutcome<'basis, 'guard> {
         (!self.ended.contains(&lineage)).then_some(*entity)
     }
 
+    /// Names this commit binds, with the entity each now designates (`None`
+    /// for a relation).
+    ///
+    /// Complexity: O(1) to start; O(bound names) to walk.
+    pub(super) fn bound_names(
+        &self,
+    ) -> impl Iterator<Item = (&PersistentNameIdentity, &Option<EntityId>)> {
+        self.bound.iter()
+    }
+
     /// Basis names this commit ends without rebinding them.
     ///
     /// Complexity: O(ended lineages * log N).

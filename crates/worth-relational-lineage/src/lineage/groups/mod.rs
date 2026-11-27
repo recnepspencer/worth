@@ -9,7 +9,11 @@
 
 pub mod branch_state;
 pub mod committed;
+mod group_install;
 pub mod group_read;
+mod group_rows;
+#[cfg(test)]
+mod group_state_tests;
 mod group_verify;
 
 pub use branch_state::{BranchGroupState, GroupStateAt, GroupStateDenial, SchemeGroups};

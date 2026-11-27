@@ -127,6 +127,7 @@ mod bounded_commit_index;
 mod bounded_commit_index_closeout;
 mod bounded_naming_closeout;
 mod bounded_naming_fixture;
+mod bounded_naming_group_delta;
 mod bounded_naming_hardening;
 mod bounded_naming_hardening_ack;
 mod bounded_naming_r10;

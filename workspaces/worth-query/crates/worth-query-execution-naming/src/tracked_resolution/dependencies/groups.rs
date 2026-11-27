@@ -54,8 +54,8 @@ impl NameReadDependencies {
     /// Whether one commit's group lineage on `branch` stales a recorded read.
     /// A frame that cannot be decoded stales every group read, never none.
     ///
-    /// Complexity: O((touched groups + assigned members) * log dependencies):
-    /// each touched group and each assigned member is one probe; no recorded
+    /// Complexity: O((touched groups + touched members) * log dependencies):
+    /// each touched group and each touched member is one probe; no recorded
     /// dependency the commit does not touch is ever visited.
     pub fn currentness_after_group_lineage(
         &self,
@@ -96,10 +96,12 @@ impl NameReadDependencies {
                     stale.insert(group);
                 }
             }
-            // A member the commit regrouped: one probe per assigned member.
+            // A member the commit regrouped: one probe per touched member (a
+            // kept group's delta, a born or revived group's members). A member
+            // a kept group lost was answered by that touched group above.
             let Some(lookups) = lookups else { continue };
             let assigned = transition.assignments.iter();
-            for (name, _) in assigned.flat_map(|assignment| assignment.members.iter()) {
+            for name in assigned.flat_map(|assignment| assignment.touched_members()) {
                 if let Some(answer) = lookups.get(name.as_bytes()) {
                     stale.insert(answer.unwrap_or(*name.as_bytes()));
                 }

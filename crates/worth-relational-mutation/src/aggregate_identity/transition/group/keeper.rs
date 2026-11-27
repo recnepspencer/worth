@@ -35,9 +35,10 @@ pub(super) fn destination(
 }
 
 /// For each next-state group, the prior group it keeps, if any.
+/// `anchors[old]` is prior group `old`'s birth anchor.
 pub(super) fn choose_keepers(
     rule: Rule,
-    prior: &[AggregatePriorGroup],
+    anchors: &[Name],
     destination: &[Option<(usize, usize)>],
     groups: usize,
 ) -> Vec<Option<usize>> {
@@ -52,7 +53,7 @@ pub(super) fn choose_keepers(
         .map(|claim| match rule {
             Rule::Anchor | Rule::ProducerRole => claim
                 .into_iter()
-                .min_by_key(|(old, _)| prior[*old].anchor)
+                .min_by_key(|(old, _)| anchors[*old])
                 .map(|(old, _)| old),
             Rule::Boundary => unique_max(claim.into_iter()).map(|(old, _)| old),
         })
@@ -60,7 +61,7 @@ pub(super) fn choose_keepers(
 }
 
 /// The sole entry with the strictly greatest nonzero score; ties keep nothing.
-fn unique_max(entries: impl Iterator<Item = (usize, usize)>) -> Option<(usize, usize)> {
+pub(super) fn unique_max(entries: impl Iterator<Item = (usize, usize)>) -> Option<(usize, usize)> {
     let mut best: Option<(usize, usize)> = None;
     let mut tied = false;
     for (key, score) in entries.filter(|(_, score)| *score > 0) {

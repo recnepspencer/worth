@@ -26,7 +26,7 @@ fn simultaneous_live_groups_claiming_one_anchor_refuse_naming_both() {
     let rule = Rule::Boundary;
     for world in worlds(&[10, 11, 12, 1, 30]) {
         let prior = detached_anchor(&world);
-        let before = prior.clone();
+        let before = detached_anchor(&world);
         let keeper: Spec<'_> = &[(11, B), (12, B), (1, Role::Ordinary)];
         let fresh: Spec<'_> = &[(10, B), (30, B)];
         for order in [[keeper, fresh], [fresh, keeper]] {

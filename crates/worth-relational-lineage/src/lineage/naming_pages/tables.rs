@@ -25,7 +25,7 @@ pub const INDEX_LINEAGE_HOLDER: u8 = 8;
 pub const INDEX_HOLDER_LINEAGES: u8 = 9;
 /// Name index: member name to its group tenures.
 pub const INDEX_MEMBER_GROUPS: u8 = 10;
-/// Group state: `(scheme, group)` to the live group.
+/// Group state: `(scheme, group)` to the live group's header.
 pub const GROUP_LIVE: u8 = 11;
 /// Group state: `(scheme, group)` of a retired group name.
 pub const GROUP_RETIRED: u8 = 12;
@@ -34,7 +34,11 @@ pub const GROUP_MEMBER_OWNER: u8 = 13;
 /// Published group lineage: `((ordinal, commit), branch)` to the canonical frame.
 pub const GROUP_LOG: u8 = 14;
 /// Value continuation chunk: `(base_key_len_be, base_key, chunk_idx_be)` -> bytes.
+/// The greatest tag: continuation chunk pages are the tail of every page run.
 pub const VALUE_CHUNK: u8 = 15;
+/// Group state: `(scheme, (group, role, member))` to the member's carrier.
+/// Tag 0 keeps `VALUE_CHUNK` the greatest tag.
+pub const GROUP_MEMBERS: u8 = 0;
 
 /// Logical component domain of a naming table tag.
 ///
@@ -45,7 +49,7 @@ pub const fn table_domain(tag: u8) -> Option<u8> {
     match tag {
         LINEAGE_HOLDER..=RETIRED_LINEAGE => Some(1),
         INDEX_NAME..=INDEX_MEMBER_GROUPS => Some(2),
-        GROUP_LIVE..=GROUP_MEMBER_OWNER => Some(3),
+        GROUP_MEMBERS | GROUP_LIVE..=GROUP_MEMBER_OWNER => Some(3),
         GROUP_LOG => Some(4),
         VALUE_CHUNK => Some(5),
         _ => None,

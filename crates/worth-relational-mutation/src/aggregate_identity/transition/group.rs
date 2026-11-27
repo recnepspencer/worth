@@ -17,17 +17,28 @@ use worth_foundational::facade::AggregateIdentity;
 use super::mint::{mint_group_identity, mint_group_name};
 use crate::contracts::aggregate_identity::group_lineage::AggregateGroupLineageEvent as Event;
 use crate::contracts::lineage::data::naming::PersistentNameIdentity as Name;
+pub mod delta;
 pub mod keeper;
 pub mod outcome;
-pub use crate::contracts::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
+pub use crate::contracts::aggregate_identity::transition::group::transition_result::{
+    AggregateGroupPartitionTransition, AggregateGroupTransition,
+};
+pub use delta::{AggregateGroupDeltaAuthority, AggregateGroupScope};
 #[cfg(test)]
 pub mod tests;
 
+pub use crate::contracts::aggregate_identity::transition::group::delta::{
+    AggregateGroupAssignment, AggregateGroupChange, AggregateGroupMemberDelta,
+};
 pub use crate::contracts::aggregate_identity::transition::group::denial::AggregateGroupNamingDenial;
 pub use crate::contracts::aggregate_identity::transition::group::model::{
-    AggregateContinuityRule, AggregateGroupAssignment, AggregateGroupClaimant,
-    AggregateGroupMember, AggregateGroupMembers, AggregateGroupOrigin, AggregateGroupScheme,
+    AggregateContinuityRule, AggregateGroupClaimant, AggregateGroupMember, AggregateGroupMembers,
+    AggregateGroupOrigin, AggregateGroupPartitionAssignment, AggregateGroupScheme,
     AggregateGroupSchemeId, AggregateMemberRole, AggregatePriorGroup,
+};
+pub use crate::contracts::aggregate_identity::transition::group::state_view::{
+    AggregateGroupHeader, AggregateGroupMembership, AggregateGroupRoleCounts,
+    AggregateGroupStateView,
 };
 use AggregateGroupNamingDenial as Denial;
 use AggregateMemberRole as Role;
@@ -97,7 +108,7 @@ impl AggregateGroupNamingAuthority {
         prior: &[AggregatePriorGroup],
         retired_history: &BTreeSet<AggregateIdentity>,
         proposed: Vec<AggregateGroupMembers>,
-    ) -> Result<AggregateGroupTransition, Denial> {
+    ) -> Result<AggregateGroupPartitionTransition, Denial> {
         Self::transition_with_retired(
             scheme,
             prior,
@@ -113,7 +124,7 @@ impl AggregateGroupNamingAuthority {
         prior: &[AggregatePriorGroup],
         is_retired: impl Fn(&AggregateIdentity) -> bool,
         mut proposed: Vec<AggregateGroupMembers>,
-    ) -> Result<AggregateGroupTransition, Denial> {
+    ) -> Result<AggregateGroupPartitionTransition, Denial> {
         let rule = scheme.rule();
         let old_owner = index_prior(scheme, prior, &is_retired)?;
         proposed.sort_by_key(|members| members.least_name());
@@ -126,7 +137,8 @@ impl AggregateGroupNamingAuthority {
             .iter()
             .map(|old| keeper::destination(rule, old, &new_owner))
             .collect();
-        let kept_by = keeper::choose_keepers(rule, prior, &destination, proposed.len());
+        let prior_anchors: Vec<Name> = prior.iter().map(|old| old.anchor).collect();
+        let kept_by = keeper::choose_keepers(rule, &prior_anchors, &destination, proposed.len());
         let names: Vec<GroupName> = proposed
             .iter()
             .enumerate()

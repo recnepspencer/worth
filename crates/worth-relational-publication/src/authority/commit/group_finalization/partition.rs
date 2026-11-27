@@ -1,20 +1,23 @@
-//! Declared group partitions, and member retirements, named by the group
-//! naming authority against the branch's prior groups.
+//! Declared group partitions, member retirements and member re-bindings,
+//! named by the incremental group naming authority against the branch's
+//! live groups.
 //!
-//! A scheme's changed scope is every prior live group a claim dissolves,
-//! shares a member with a declared group, or loses a member this commit
-//! retires. Each scoped group that is not dissolved keeps its undeclared live
-//! members together; only `dissolved` lets them leave the scheme. The
-//! authority then names the scope's next partition by the scheme's declared
-//! continuity rule, so keepers never depend on declaration order or native
-//! allocation.
+//! A scheme's changed scope is every live group a claim dissolves, shares a
+//! member with a declared group, loses a member this commit retires, or
+//! holds a member this commit re-binds to another record. Each scoped group
+//! that is not dissolved keeps its undeclared live members together; only
+//! `dissolved` lets them leave the scheme. The authority names the scope's
+//! next partition by the scheme's declared continuity rule from the touched
+//! members alone, so keepers never depend on declaration order or native
+//! allocation, and a kept group's untouched members are never read.
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use contracts::aggregate_identity::transition::group::denial::AggregateGroupNamingDenial as Denial;
 use contracts::aggregate_identity::transition::group::model::{
-    AggregateGroupMembers, AggregateGroupOrigin, AggregateGroupScheme, AggregatePriorGroup,
+    AggregateContinuityRule, AggregateGroupMembers, AggregateGroupScheme, AggregateGroupSchemeId,
 };
+use contracts::aggregate_identity::transition::group::state_view::AggregateGroupStateView;
 use contracts::graph_member::NativeMemberKey;
 use contracts::lineage::data::naming::PersistentNameIdentity;
 use contracts::lineage::data::postures::GroupPartitionClaim;
@@ -23,9 +26,12 @@ use worth_relational_contracts::internal_port as contracts;
 use worth_relational_lineage::internal_port::lineage::groups::{
     CommittedGroupTransition, GroupStateRead, GroupTransitionKind, SchemeGroupsRead,
 };
-use worth_relational_mutation::internal_port::aggregate_identity::AggregateGroupNamingAuthority;
+use worth_relational_mutation::internal_port::aggregate_identity::{
+    AggregateGroupDeltaAuthority, AggregateGroupScope,
+};
 
 use super::commit_names::CommitNameOutcome;
+use super::empty_state::EmptyGroupState;
 use super::GroupRefusal;
 
 /// One scheme's merged claims.
@@ -35,9 +41,11 @@ struct SchemeScope {
     declared: Vec<AggregateGroupMembers>,
 }
 
-/// Names every claimed or member-retiring scheme's next partition.
+/// Names every claimed, member-retiring or member-re-binding scheme's next
+/// partition.
 ///
-/// Complexity: O(S * (M log M)) for S touched schemes of M scoped members.
+/// Complexity: O(S * (T + scoped groups) * log M) for S touched schemes and
+/// T touched members, independent of untouched members.
 pub(super) fn partition_transitions(
     claims: &[GroupPartitionClaim],
     state: Option<GroupStateRead<'_>>,
@@ -76,7 +84,11 @@ pub(super) fn partition_transitions(
         if scopes.contains_key(scheme_id) {
             continue;
         }
-        if retired.iter().any(|name| groups.owner_of(name).is_some()) {
+        let retires = retired.iter().any(|name| groups.owner_of(name).is_some());
+        let rebinds = outcome
+            .bound_names()
+            .any(|(name, entity)| rebinding(groups, name, *entity).is_some());
+        if retires || rebinds {
             let scheme = scheme_of(scheme_id, groups.rule())
                 .map_err(|denial| GroupRefusal::new(scheme_id, denial))?;
             let scope = SchemeScope {
@@ -99,14 +111,29 @@ pub(super) fn partition_transitions(
     Ok(transitions)
 }
 
+/// How this commit re-binds group member `name`: `Some(Some(carrier))` for
+/// a new entity carrier, `Some(None)` when it no longer names an entity,
+/// `None` when `name` is no member or keeps its carrier.
+fn rebinding(
+    groups: SchemeGroupsRead<'_>,
+    name: &PersistentNameIdentity,
+    entity: Option<contracts::identity::data::record_ids::EntityId>,
+) -> Option<Option<NativeMemberKey>> {
+    let membership = groups.membership(name)?;
+    match entity.map(NativeMemberKey::Entity) {
+        Some(carrier) if carrier == membership.member.carrier => None,
+        carrier => Some(carrier),
+    }
+}
+
 fn scheme_of(
     scheme_id: &str,
-    rule: contracts::aggregate_identity::transition::group::model::AggregateContinuityRule,
+    rule: AggregateContinuityRule,
 ) -> Result<AggregateGroupScheme, Denial> {
-    let id = contracts::aggregate_identity::transition::group::model::AggregateGroupSchemeId::new(
-        scheme_id,
-    )?;
-    Ok(AggregateGroupScheme::new(id, rule))
+    Ok(AggregateGroupScheme::new(
+        AggregateGroupSchemeId::new(scheme_id)?,
+        rule,
+    ))
 }
 
 fn name_scope(
@@ -118,14 +145,13 @@ fn name_scope(
     let SchemeScope {
         scheme,
         dissolved,
-        mut declared,
+        declared,
     } = scope;
     if groups.is_some_and(|groups| groups.rule() != scheme.rule()) {
         return Err(Denial::ContinuityRuleChanged);
     }
-    let live = |identity: &AggregateIdentity| groups.and_then(|groups| groups.group(identity));
     for identity in &dissolved {
-        if live(identity).is_none() {
+        if groups.and_then(|groups| groups.header(identity)).is_none() {
             return Err(Denial::UnknownGroup {
                 identity: *identity,
             });
@@ -135,45 +161,36 @@ fn name_scope(
         .iter()
         .flat_map(|members| members.iter().map(|(name, _)| *name))
         .collect();
-    let owner = |name: &PersistentNameIdentity| groups.and_then(|groups| groups.owner_of(name));
-    let mut scoped: BTreeSet<AggregateIdentity> = dissolved.clone();
-    scoped.extend(declared_names.iter().filter_map(owner));
-    scoped.extend(retired.iter().filter_map(owner));
-    let mut prior: Vec<AggregatePriorGroup> = Vec::with_capacity(scoped.len());
-    for identity in &scoped {
-        let group = live(identity)
-            .expect("scoped groups are live owners")
-            .clone();
-        if !dissolved.contains(identity) {
-            let mut residual = AggregateGroupMembers::new();
-            for (name, member) in group.members.iter() {
-                if declared_names.contains(name) {
-                    continue;
-                }
-                if let Some(entity) = outcome.member_after(name) {
-                    residual.insert(*name, NativeMemberKey::Entity(entity), member.role)?;
-                }
+    let mut scope = AggregateGroupScope {
+        dissolved,
+        declared,
+        ..AggregateGroupScope::default()
+    };
+    if let Some(groups) = groups {
+        let owned = |name: &PersistentNameIdentity| groups.owner_of(name).is_some();
+        scope
+            .departed
+            .extend(retired.iter().filter(|name| owned(name)).copied());
+        for (name, entity) in outcome.bound_names() {
+            if declared_names.contains(name) {
+                continue;
             }
-            if !residual.is_empty() {
-                declared.push(residual);
+            match rebinding(groups, name, *entity) {
+                Some(Some(carrier)) => {
+                    scope.carriers.insert(*name, carrier);
+                }
+                Some(None) => {
+                    scope.departed.insert(*name);
+                }
+                None => {}
             }
         }
-        prior.push(group);
     }
-    let transition = AggregateGroupNamingAuthority::transition_with_retired(
-        &scheme,
-        &prior,
-        |identity| groups.is_some_and(|groups| groups.is_retired(identity)),
-        declared,
-    )?;
-    let noop = transition.retired.is_empty()
-        && transition.lineage.is_empty()
-        && transition.assignments.iter().all(|assignment| {
-            assignment.origin == AggregateGroupOrigin::Kept
-                && live(&assignment.identity)
-                    .is_some_and(|prior| prior.members == assignment.members)
-        });
-    Ok((!noop).then_some(CommittedGroupTransition {
+    let transition = match groups {
+        Some(groups) => AggregateGroupDeltaAuthority::transition(&scheme, &groups, scope)?,
+        None => AggregateGroupDeltaAuthority::transition(&scheme, &EmptyGroupState, scope)?,
+    };
+    Ok((!transition.is_noop()).then_some(CommittedGroupTransition {
         kind: GroupTransitionKind::Partition,
         scheme,
         transition,

@@ -1,0 +1,6 @@
+name = "canonical_group_delta"
+version = "0.1.0"
+defaultTargets = ["CanonicalGroupDelta"]
+
+[[lean_lib]]
+name = "CanonicalGroupDelta"

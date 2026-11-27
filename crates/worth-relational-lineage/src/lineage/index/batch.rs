@@ -6,8 +6,8 @@ use std::sync::Arc;
 use worth_foundational::facade::AggregateIdentity;
 
 use crate::contracts::aggregate_identity::group_lineage::AggregateGroupLineageEvent;
-use crate::contracts::aggregate_identity::transition::group::model::AggregateGroupAssignment;
-use crate::contracts::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
+use crate::contracts::aggregate_identity::transition::group::delta::AggregateGroupAssignment;
+use crate::contracts::aggregate_identity::transition::group::transition_result::AggregateGroupPartitionTransition;
 use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
@@ -31,8 +31,9 @@ pub struct PersistentNameCommittedBatch {
     /// Carrier sets declared name by name; a name declared here overrides
     /// the members a group transition below gives it.
     pub(crate) carriers: BTreeMap<PersistentNameKey, BTreeSet<PersistentNameIdentity>>,
-    /// Group transitions whose next-state groups carry their member names,
-    /// shared with the published lineage they came from, never copied.
+    /// Canonical group transitions, shared with the published lineage they
+    /// came from, never copied: a kept group's carriers change by its member
+    /// delta, a born or revived group's are its initial members.
     pub(crate) group_transitions: Vec<Arc<[CommittedGroupTransition]>>,
     /// The installed scheme of every group this batch assigns.
     pub(crate) group_schemes: BTreeMap<AggregateIdentity, String>,
@@ -79,9 +80,10 @@ impl PersistentNameCommittedBatch {
         self
     }
 
-    /// Adds one group naming transition: its lineage events, and each
-    /// next-state group's member names as that group's carriers.
-    pub fn with_group_transition(mut self, transition: &AggregateGroupTransition) -> Self {
+    /// Adds one full-partition group naming transition: its lineage events,
+    /// and each next-state group's complete member names declared as that
+    /// group's carriers.
+    pub fn with_group_transition(mut self, transition: &AggregateGroupPartitionTransition) -> Self {
         self.group_events.extend(transition.lineage.iter().copied());
         for assignment in &transition.assignments {
             let members = assignment.members.iter().map(|(name, _)| *name).collect();
@@ -96,7 +98,7 @@ impl PersistentNameCommittedBatch {
     pub fn with_scheme_group_transition(
         mut self,
         scheme_id: &str,
-        transition: &AggregateGroupTransition,
+        transition: &AggregateGroupPartitionTransition,
     ) -> Self {
         for assignment in &transition.assignments {
             self.group_schemes
@@ -107,7 +109,7 @@ impl PersistentNameCommittedBatch {
 
     /// Adds one commit's published group transitions, shared: their lineage
     /// events, each assigned group's scheme, and each next-state group's
-    /// member names as its carriers, read in place at ingestion.
+    /// carrier change, read in place at ingestion.
     ///
     /// Complexity: O(lineage events + assignments); members are never copied.
     pub fn with_published_group_transitions(
@@ -126,8 +128,9 @@ impl PersistentNameCommittedBatch {
         self
     }
 
-    /// Every next-state group assignment whose members are its carriers:
-    /// the shared published transitions, minus names declared explicitly.
+    /// Every canonical next-state group assignment whose membership change
+    /// is its carrier change: the shared published transitions, minus names
+    /// declared explicitly.
     pub(crate) fn group_assignments(&self) -> impl Iterator<Item = &AggregateGroupAssignment> {
         let assignments = self
             .group_transitions
