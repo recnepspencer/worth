@@ -41,6 +41,7 @@ pub struct PhysicalMutationBindingCompaction {
 pub(in crate::physical_runtime) struct PendingPhysicalMutationBindingCompaction {
     authority: PhysicalMutationBindingCompaction,
     prior_generation: PhysicalNamespaceDurableCheckpointGeneration,
+    captured_admissions: usize,
     retained_drop_materials: Vec<[u8; 32]>,
     _selected_pin_custody: SelectedBlobManifestPins,
 }
@@ -122,6 +123,7 @@ impl PhysicalMutationIdempotencyRegistry {
                 records_digest: digest.finalize().into(),
             },
             prior_generation: self.generation,
+            captured_admissions: self.admitted_since_checkpoint,
             retained_drop_materials,
             _selected_pin_custody: pins,
         })
@@ -174,6 +176,13 @@ impl PendingPhysicalMutationBindingCompaction {
         {
             return Err(PhysicalMutationBindingCompactionDenial::NamespaceSyncMismatch);
         }
+        self.apply_commit(registry)
+    }
+
+    pub(super) fn apply_commit(
+        self,
+        registry: &mut PhysicalMutationIdempotencyRegistry,
+    ) -> Result<PhysicalMutationBindingCompaction, PhysicalMutationBindingCompactionDenial> {
         if registry.generation != self.prior_generation {
             return Err(PhysicalMutationBindingCompactionDenial::RegistryChanged);
         }
@@ -199,6 +208,9 @@ impl PendingPhysicalMutationBindingCompaction {
             true
         });
         registry.generation = self.authority.generation;
+        registry.admitted_since_checkpoint = registry
+            .admitted_since_checkpoint
+            .saturating_sub(self.captured_admissions);
         Ok(self.authority)
     }
 }

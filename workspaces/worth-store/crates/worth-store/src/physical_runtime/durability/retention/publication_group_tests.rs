@@ -112,3 +112,50 @@ fn reopened_groups_restore_settled_and_unresolved_charges_without_double_refund(
     owner.release_sealed_publication(1, 1);
     assert_eq!(owner.charged_growth_bytes(), 0);
 }
+
+#[test]
+fn segment_charged_bytes_and_growth_usage_track_per_segment_and_aggregate_charges() {
+    let owner = admission();
+    assert_eq!(owner.growth_usage(), (0, 9_000));
+    assert_eq!(owner.segment_charged_bytes(1, 1), (0, 9_000));
+    owner
+        .reserve_wal_publication(reservation(1, 1, 3))
+        .unwrap()
+        .seal();
+    owner
+        .reserve_wal_publication(reservation(2, 3, 4))
+        .unwrap()
+        .seal();
+    owner.reserve_retained_bytes(400).unwrap().seal();
+    owner.note_sealed_publication(1, 1, 400);
+    assert_eq!(owner.segment_charged_bytes(1, 1), (1_500, 9_000));
+    assert_eq!(owner.segment_charged_bytes(2, 1), (1_100, 9_000));
+    assert_eq!(owner.growth_usage(), (2_600, 9_000));
+    owner.settle_exact_group(1, 3, 100, 200).unwrap();
+    assert_eq!(owner.segment_charged_bytes(1, 1), (700, 9_000));
+    assert_eq!(owner.growth_usage(), (1_800, 9_000));
+    owner.release_sealed_publication(1, 1);
+    assert_eq!(owner.segment_charged_bytes(1, 1), (0, 9_000));
+    assert_eq!(owner.segment_charged_bytes(2, 1), (1_100, 9_000));
+    assert_eq!(owner.growth_usage(), (1_100, 9_000));
+}
+
+#[test]
+fn segment_charges_track_restore_and_drop_refund_in_constant_lookup() {
+    let owner = admission();
+    owner
+        .restore_wal_publication(reservation(1, 1, 3), Some(200))
+        .unwrap();
+    owner.restore_sealed_publication(1, 1, 350).unwrap();
+    assert_eq!(owner.segment_charged_bytes(1, 1), (650, 9_000));
+    {
+        let _unsealed = owner.reserve_wal_publication(reservation(1, 3, 5)).unwrap();
+        assert_eq!(owner.segment_charged_bytes(1, 1), (1_750, 9_000));
+    }
+    // Dropping an unsealed lease refunds both global charged_bytes and segment_charges.
+    assert_eq!(owner.segment_charged_bytes(1, 1), (650, 9_000));
+    assert_eq!(owner.growth_usage(), (650, 9_000));
+    owner.release_sealed_publication(1, 1);
+    assert_eq!(owner.segment_charged_bytes(1, 1), (0, 9_000));
+    assert_eq!(owner.growth_usage(), (0, 9_000));
+}

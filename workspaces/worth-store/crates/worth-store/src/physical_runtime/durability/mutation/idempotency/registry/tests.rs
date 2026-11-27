@@ -375,3 +375,24 @@ fn independent_v1_fingerprint(
     }
     digest.finalize().into()
 }
+
+#[test]
+fn runtime_owner_binding_counts_track_admissions_and_saturated_reopen() {
+    use super::super::PhysicalMutationIdempotencyRuntimeOwner as Owner;
+    let (mut f, mat) = (fixture(4), PhysicalMutationIdempotencyMaterial::new);
+    let k0 = f.registry.issue_key(mat([41; 32])).unwrap();
+    let k_old = f.registry.issue_key(mat([42; 32])).unwrap();
+    f.registry
+        .admit_unallocated(k0, fingerprint(&f, 1), mutation(&f, 1))
+        .unwrap();
+    let (fp2, m2) = (fingerprint(&f, 2), mutation(&f, 2));
+    f.registry.set_namespace_durable_generation_for_test(1);
+    let owner = Owner::from_rebuilt_registry(f.registry);
+    assert_eq!(owner.binding_counts(), (1, 0));
+    let auth = Owner::authority(&owner);
+    // Key issued in generation 0 but freshly admitted in generation 1 still counts!
+    assert!(auth
+        .admit_unallocated_with(k_old, fp2, || Ok::<_, ()>(m2))
+        .is_ok());
+    assert_eq!(owner.binding_counts(), (2, 1));
+}

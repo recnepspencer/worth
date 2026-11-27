@@ -182,21 +182,24 @@ impl ContiguousRetainedWalTail {
     }
 }
 
-fn first_required_segment(
+pub(in crate::physical_runtime::durability) fn first_required_segment(
     entries: &[crate::physical_runtime::durability::wal::inventory::PhysicalWalSegmentInventoryEntry],
     checkpoint_boundary: LogSequenceNumber,
     durable_end: LogSequenceNumber,
 ) -> Option<usize> {
     if checkpoint_boundary == durable_end {
-        return entries.iter().rposition(|entry| {
-            let range = entry.lsn_range();
-            range.start() < checkpoint_boundary && range.end_exclusive() == checkpoint_boundary
-        });
+        let index = entries
+            .partition_point(|entry| entry.lsn_range().end_exclusive() < checkpoint_boundary);
+        let range = entries.get(index)?.lsn_range();
+        return (range.start() < checkpoint_boundary
+            && range.end_exclusive() == checkpoint_boundary)
+            .then_some(index);
     }
-    entries.iter().position(|entry| {
-        let range = entry.lsn_range();
-        range.start() <= checkpoint_boundary && checkpoint_boundary < range.end_exclusive()
-    })
+    let index =
+        entries.partition_point(|entry| entry.lsn_range().end_exclusive() <= checkpoint_boundary);
+    let range = entries.get(index)?.lsn_range();
+    (range.start() <= checkpoint_boundary && checkpoint_boundary < range.end_exclusive())
+        .then_some(index)
 }
 
 fn final_required_segment(

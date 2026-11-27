@@ -34,6 +34,61 @@ fn exact_contiguous_barriers_advance_checkpoint_truth_without_skipping() {
 }
 
 #[test]
+fn reclaimable_closed_prefix_waits_for_successor_segment_barrier() {
+    let mut state = wal_state(1, 10);
+    assert!(!state.has_reclaimable_closed_prefix());
+    assert!(state.record_durable_barrier(1, 10));
+    assert!(!state.has_reclaimable_closed_prefix());
+
+    // Append into successor segment 2 before its durable barrier completes.
+    let seg2 = WalSegmentId::new(2).unwrap();
+    let generation = WalSegmentGeneration::new(1).unwrap();
+    let range2 = WalLsnRange::new(LogSequenceNumber::new(10), LogSequenceNumber::new(15)).unwrap();
+    state
+        .segments
+        .record_completed_append(
+            WalSegmentArtifactIdentity::new(seg2, generation),
+            range2,
+            128,
+        )
+        .unwrap();
+    state.frontier = WalAppendFrontier::observed(seg2, generation, 128, LogSequenceNumber::new(15));
+    // Durable boundary is still at segment 1's end, so segment 1 must stay retained.
+    assert!(!state.has_reclaimable_closed_prefix());
+
+    // Once segment 2's barrier completes, segment 1 becomes reclaimable.
+    assert!(state.record_durable_barrier(10, 15));
+    assert!(state.has_reclaimable_closed_prefix());
+
+    // Extending segment 2 without its barrier moves durable_end inside segment 2,
+    // so no segment ends at durable_end until the new barrier completes.
+    let range2b = WalLsnRange::new(LogSequenceNumber::new(15), LogSequenceNumber::new(20)).unwrap();
+    state
+        .segments
+        .record_completed_append(
+            WalSegmentArtifactIdentity::new(seg2, generation),
+            range2b,
+            128,
+        )
+        .unwrap();
+    state.frontier = WalAppendFrontier::observed(seg2, generation, 256, LogSequenceNumber::new(20));
+    assert!(!state.has_reclaimable_closed_prefix());
+    assert!(state.record_durable_barrier(15, 20));
+    assert!(state.has_reclaimable_closed_prefix());
+
+    // An unresolved retirement hold overlapping segment 1 suppresses the cadence signal.
+    state.unresolved_retirement_spans.push((
+        crate::physical_runtime::durability::RetiredArtifact::Segment {
+            segment: 1,
+            generation: 1,
+        },
+        5,
+        6,
+    ));
+    assert!(!state.has_reclaimable_closed_prefix());
+}
+
+#[test]
 fn discontinuous_or_overreaching_barriers_seal_checkpoint_authority() {
     for (start, end) in [(2, 7), (1, 10), (1, 1)] {
         let mut state = wal_state(1, 9);

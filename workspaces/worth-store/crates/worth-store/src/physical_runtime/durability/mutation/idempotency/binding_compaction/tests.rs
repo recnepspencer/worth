@@ -1,4 +1,6 @@
 use super::decoding::PhysicalBindingCompactionRecordDecodeDenial;
+#[path = "tests/cadence_counts.rs"]
+mod cadence_counts;
 #[path = "tests/codec.rs"]
 mod codec;
 use super::encoding::COMPACTION_RECORD_DOMAIN;
