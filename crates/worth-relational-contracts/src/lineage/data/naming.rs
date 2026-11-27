@@ -64,9 +64,14 @@ pub struct PersistentNameBirthParts {
     role_path: String,
     parent_identities: Vec<PersistentNameIdentity>,
     canonical_discriminator: Vec<u8>,
+    structural_identity: bool,
 }
 
 impl PersistentNameBirthParts {
+    pub const fn structural_identity(&self) -> bool {
+        self.structural_identity
+    }
+
     pub fn scheme_id(&self) -> &str {
         &self.scheme_id
     }
@@ -135,8 +140,8 @@ pub enum PersistentNameHolder {
 /// Where a persistent name referenced by a birth's discriminator must exist.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub enum PersistentNameReferenceBasis {
-    /// Must exist as an active live holder at the commit's basis (not absent
-    /// and not retired in this commit).
+    /// Recorded on the branch at the basis: live, a retired ancestor, or retired
+    /// by this commit (a consumed cutter). Never-recorded names refuse.
     Basis,
     /// Must be minted earlier in the same commit batch under the exact same
     /// `occurrence_key` with a strictly lower role rank in the scheme DAG.
@@ -160,6 +165,7 @@ pub struct InstalledPersistentNameScheme {
     role_ranks: BTreeMap<String, u32>,
     split_capable: bool,
     require_authored_occurrence: bool,
+    structural_identity: bool,
 }
 
 impl InstalledPersistentNameScheme {
@@ -172,6 +178,7 @@ impl InstalledPersistentNameScheme {
         ordered_roles: impl IntoIterator<Item = impl Into<String>>,
         split_capable: bool,
         require_authored_occurrence: bool,
+        structural_identity: bool,
     ) -> Result<Self, String> {
         let scheme_id = scheme_id.into();
         if !is_valid_dotted_scheme_id(&scheme_id) {
@@ -213,7 +220,13 @@ impl InstalledPersistentNameScheme {
             role_ranks,
             split_capable,
             require_authored_occurrence,
+            structural_identity,
         })
+    }
+
+    /// Mints names from the discriminator alone (`canonical_birth_digest`).
+    pub const fn structural_identity(&self) -> bool {
+        self.structural_identity
     }
 
     pub fn scheme_id(&self) -> &str {
@@ -331,6 +344,7 @@ pub trait PersistentNameBirthPartsOwnerPort: Sized {
         role_path: String,
         parent_identities: Vec<PersistentNameIdentity>,
         canonical_discriminator: Vec<u8>,
+        structural_identity: bool,
     ) -> Self;
 }
 
@@ -341,6 +355,7 @@ impl PersistentNameBirthPartsOwnerPort for PersistentNameBirthParts {
         role_path: String,
         parent_identities: Vec<PersistentNameIdentity>,
         canonical_discriminator: Vec<u8>,
+        structural_identity: bool,
     ) -> Self {
         Self {
             scheme_id,
@@ -348,6 +363,7 @@ impl PersistentNameBirthPartsOwnerPort for PersistentNameBirthParts {
             role_path,
             parent_identities,
             canonical_discriminator,
+            structural_identity,
         }
     }
 }

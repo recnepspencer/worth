@@ -35,7 +35,7 @@ pub(super) fn dependency_order<'births>(
     let mut minted_by = BTreeMap::<PersistentNameIdentity, Vec<usize>>::new();
     for (position, (_, request)) in canonical.iter().enumerate() {
         minted_by
-            .entry(pending_identity(request))
+            .entry(pending_identity(scheme_registry, request))
             .or_default()
             .push(position);
     }
@@ -94,13 +94,20 @@ fn in_commit_dependencies(
     referenced.chain(request.parent_identities.iter().copied())
 }
 
-fn pending_identity(request: &PersistentNameBirthRequest) -> PersistentNameIdentity {
+fn pending_identity(
+    scheme_registry: &InstalledPersistentNameSchemeRegistry,
+    request: &PersistentNameBirthRequest,
+) -> PersistentNameIdentity {
+    let structural = scheme_registry
+        .get(&request.scheme_id)
+        .is_some_and(|scheme| scheme.structural_identity());
     PersistentNameIdentity::of_pending_birth(
         &request.scheme_id,
         &request.occurrence_key,
         &request.role_path,
         &request.parent_identities,
         &request.canonical_discriminator,
+        structural,
     )
 }
 

@@ -188,7 +188,14 @@ Declare roles, discriminators and occurrences as Rust types
 `ApplicationNameSchemeBuilder::from_roles` / `for_relation_from_roles`;
 `#[derive(ApplicationNameDiscriminator)]` over closed values, nested
 discriminators and `NameRef<K>` (one declaration for a committed or a
-same-commit reference); `OccurrencePath` for composed occurrences with
+same-commit reference; a committed one may name a retired ancestor or a
+cutter the same commit consumes, by its 32-byte identity);
+`ApplicationNameSchemeBuilder::structural_identity::<D>()` for names minted
+from the discriminator alone, identical whether splits land in one commit
+or several, with `D`'s wire bound checked at compile time
+(`MAX_STRUCTURAL_DISCRIMINATOR_BYTES`; scaling court
+`worth-court-relational-certification` `cost::relational::naming_scaling`,
+step and size proofs in `proofs/lean/persistent_naming/`); `OccurrencePath` for composed occurrences with
 numeric index order; `WorthQueryOutputBirth::of_role` for a birth under a
 typed role (`IndexedRoleDiscriminator` selects an indexed role's split piece
 with `NameSelection::keep_side`); and `NamedTarget<K>` for a held name with

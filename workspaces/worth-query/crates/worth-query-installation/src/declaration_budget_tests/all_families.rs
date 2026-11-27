@@ -44,6 +44,7 @@ pub(crate) fn declaration() -> ErasedApplicationSchemaDeclaration {
             None,
             Vec::new(),
             true,
+            false,
         ),
     });
     members.push(ApplicationSchemaMember::ApplicationGroupNameScheme {
@@ -58,6 +59,7 @@ pub(crate) fn declaration() -> ErasedApplicationSchemaDeclaration {
                 None,
                 Vec::new(),
                 true,
+                false,
             ),
             worth_query_declaration::facade::application_naming::ApplicationGroupContinuityRule::Anchor,
             Some("anchor_face".into()),

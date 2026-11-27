@@ -65,6 +65,7 @@ pub(super) fn named_create(
         "authored".to_owned(),
         Vec::new(),
         Vec::new(),
+        false,
     );
     let mut create = event(
         commit,

@@ -1014,6 +1014,7 @@ dependencies = [
  "sha2 0.10.9",
  "sha2 0.9.9",
  "stats_alloc",
+ "tracking-allocator",
  "worth-execution",
  "worth-foundational",
  "worth-proof",

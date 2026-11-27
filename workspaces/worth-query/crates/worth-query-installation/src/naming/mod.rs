@@ -56,6 +56,7 @@ pub struct InstalledNameSchemeLayout {
     pub(super) split_discriminator_identity: Option<String>,
     pub(super) discriminator_referenced_roles: Vec<String>,
     pub(super) require_authored_occurrence: bool,
+    pub(super) structural_identity: bool,
     pub(super) layout_digest: [u8; 32],
 }
 
@@ -98,6 +99,11 @@ impl InstalledNameSchemeLayout {
 
     pub const fn require_authored_occurrence(&self) -> bool {
         self.require_authored_occurrence
+    }
+
+    /// Names minted from the discriminator alone, never the parents.
+    pub const fn structural_identity(&self) -> bool {
+        self.structural_identity
     }
 
     pub const fn layout_digest(&self) -> &[u8; 32] {

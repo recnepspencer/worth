@@ -34,6 +34,7 @@ impl InstalledPersistentNameSchemeOwnerPort for InstalledPersistentNameScheme {
             role_ranks,
             split_capable,
             require_authored_occurrence,
+            structural_identity: false,
         }
     }
 }

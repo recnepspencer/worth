@@ -8,8 +8,8 @@
 //! `local_slot`, `generation`, `LineageId`, `CommitId`, or worker order).
 //!
 //! The returned identity proves nothing by itself. Commit finalization still
-//! requires every referenced identity to be a live holder at the basis or a
-//! birth it minted earlier in the same occurrence, and refuses otherwise.
+//! requires every referenced identity to be recorded at the basis or a birth
+//! it minted earlier in the same occurrence, and refuses otherwise.
 
 use super::{
     birth_digest::canonical_birth_digest,
@@ -18,7 +18,7 @@ use super::{
 
 impl PersistentNameIdentity {
     /// The identity commit finalization mints for a birth of exactly these
-    /// parts. Parents may be given in any order.
+    /// parts under a scheme of `structural_identity`. Parents in any order.
     ///
     /// Complexity: O(parts bytes + P log P) for P parents.
     pub fn of_pending_birth(
@@ -27,6 +27,7 @@ impl PersistentNameIdentity {
         role_path: &str,
         parent_identities: &[PersistentNameIdentity],
         canonical_discriminator: &[u8],
+        structural_identity: bool,
     ) -> Self {
         let mut sorted_parents = parent_identities.to_vec();
         sorted_parents.sort_unstable();
@@ -36,6 +37,7 @@ impl PersistentNameIdentity {
             role_path,
             sorted_parents.iter().map(PersistentNameIdentity::as_bytes),
             canonical_discriminator,
+            structural_identity,
         ))
     }
 }

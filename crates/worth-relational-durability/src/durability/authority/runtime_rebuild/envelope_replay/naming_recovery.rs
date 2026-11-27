@@ -327,6 +327,7 @@ fn reverify_birth(birth: &PersistentNameBirthRecord) -> Result<(), DurabilityErr
             .map(|id| *id.as_bytes())
             .collect(),
         canonical_discriminator: birth.parts().canonical_discriminator().to_vec(),
+        structural_identity: birth.parts().structural_identity(),
     };
     verify_persisted_birth_digest(claim).map_err(|refusal| {
         DurabilityError::new(

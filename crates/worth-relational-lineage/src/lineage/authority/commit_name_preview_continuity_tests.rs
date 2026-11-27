@@ -30,6 +30,7 @@ fn identity(birth: &PersistentNameBirthRequest) -> PersistentNameIdentity {
         &birth.role_path,
         &birth.parent_identities,
         &birth.canonical_discriminator,
+        false,
     )
 }
 

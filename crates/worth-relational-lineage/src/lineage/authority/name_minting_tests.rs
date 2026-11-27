@@ -6,6 +6,7 @@ use crate::contracts::lineage::data::naming::{
 pub mod basis_tests;
 pub mod discriminator_scan_tests;
 pub mod invariance_proptest;
+pub mod recorded_basis_tests;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::mem::size_of;

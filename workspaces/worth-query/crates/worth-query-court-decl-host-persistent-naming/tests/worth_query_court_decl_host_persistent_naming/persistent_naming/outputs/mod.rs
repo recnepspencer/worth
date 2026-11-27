@@ -17,9 +17,11 @@ use sculpt::{Held, HeldSeam, Keeper, Plan, SeamKeeper, Step};
 
 mod births;
 mod ergonomics;
+mod grouping;
 mod history;
 mod invalidation;
 mod lifecycle;
+mod recorded_basis;
 mod refusals;
 mod relations;
 mod same_commit;

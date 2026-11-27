@@ -80,6 +80,7 @@ fn cad_registry_with_changed_face_role() -> RelationalSchemaRegistry {
                 ["authored", "renamed_cut_piece", "seam_patch"],
                 true,
                 true,
+                false,
             )
             .expect("valid altered face scheme"),
         )
@@ -93,6 +94,7 @@ fn cad_registry_with_changed_face_role() -> RelationalSchemaRegistry {
                 ["authored", "cut_edge"],
                 false,
                 true,
+                false,
             )
             .expect("valid edge scheme"),
         )
@@ -106,6 +108,7 @@ fn cad_registry_with_changed_face_role() -> RelationalSchemaRegistry {
                 ["seam", "seam_piece"],
                 true,
                 true,
+                false,
             )
             .expect("valid seam scheme"),
         )
@@ -114,9 +117,18 @@ fn cad_registry_with_changed_face_role() -> RelationalSchemaRegistry {
         .install_persistent_name_schemes(
             schemes,
             BTreeMap::from([
-                ((PersistentNameSubjectKind::Entity, FACE_KIND_ID), FACE_SCHEME_ID.to_owned()),
-                ((PersistentNameSubjectKind::Entity, EDGE_KIND_ID), EDGE_SCHEME_ID.to_owned()),
-                ((PersistentNameSubjectKind::Relation, SEAM_KIND_ID), SEAM_SCHEME_ID.to_owned()),
+                (
+                    (PersistentNameSubjectKind::Entity, FACE_KIND_ID),
+                    FACE_SCHEME_ID.to_owned(),
+                ),
+                (
+                    (PersistentNameSubjectKind::Entity, EDGE_KIND_ID),
+                    EDGE_SCHEME_ID.to_owned(),
+                ),
+                (
+                    (PersistentNameSubjectKind::Relation, SEAM_KIND_ID),
+                    SEAM_SCHEME_ID.to_owned(),
+                ),
             ]),
         )
         .expect("altered CAD registry builds")
@@ -155,42 +167,73 @@ fn reopen_refuses_schema_mismatch_with_zero_effects_when_naming_schemes_omitted_
 
     let f1_ref = face_ref("f1");
     let f2_ref = face_ref("f2");
-    let s1_ref = seam_ref("s1", EntityReference::Created(f1_ref.clone()), EntityReference::Created(f2_ref.clone()));
+    let s1_ref = seam_ref(
+        "s1",
+        EntityReference::Created(f1_ref.clone()),
+        EntityReference::Created(f2_ref.clone()),
+    );
     let tx = begin_staged_tx(
         &source,
         "seed-schema-auth",
         vec![
             create_face_intent("f1"),
             create_face_intent("f2"),
-            create_seam_intent("s1", EntityReference::Created(f1_ref.clone()), EntityReference::Created(f2_ref.clone())),
+            create_seam_intent(
+                "s1",
+                EntityReference::Created(f1_ref.clone()),
+                EntityReference::Created(f2_ref.clone()),
+            ),
         ],
     );
     let mut b = ExecutionNameBirthPlanBuilder::new(&catalog, std::iter::empty());
-    b.add_entity_birth(ExecutionPendingEntityBirth::new(f1_ref.clone(), FACE_SCHEME_ID, "occ.sa.f1", "authored"))
-        .unwrap()
-        .add_entity_birth(ExecutionPendingEntityBirth::new(f2_ref.clone(), FACE_SCHEME_ID, "occ.sa.f2", "authored"))
-        .unwrap()
-        .add_relation_birth(
-            ExecutionPendingRelationBirth::new(s1_ref.clone(), SEAM_SCHEME_ID, "occ.sa.s1", "seam")
-                .with_discriminator(&SeamSplitDisc::Ordinal { index: 1 }),
-        )
+    b.add_entity_birth(ExecutionPendingEntityBirth::new(
+        f1_ref.clone(),
+        FACE_SCHEME_ID,
+        "occ.sa.f1",
+        "authored",
+    ))
+    .unwrap()
+    .add_entity_birth(ExecutionPendingEntityBirth::new(
+        f2_ref.clone(),
+        FACE_SCHEME_ID,
+        "occ.sa.f2",
+        "authored",
+    ))
+    .unwrap()
+    .add_relation_birth(
+        ExecutionPendingRelationBirth::new(s1_ref.clone(), SEAM_SCHEME_ID, "occ.sa.s1", "seam")
+            .with_discriminator(&SeamSplitDisc::Ordinal { index: 1 }),
+    )
+    .unwrap();
+    let (res, names) =
+        ExecutionNamingCommitAuthority::commit_with_naming_plan(&source, &execution, tx, b.build())
+            .expect("seed commit succeeds")
+            .into_parts();
+    let _ = names
+        .created_entity_name::<CadNamingSchema, Face>(&res, &f1_ref)
         .unwrap();
-    let (res, names) = ExecutionNamingCommitAuthority::commit_with_naming_plan(&source, &execution, tx, b.build())
-        .expect("seed commit succeeds")
-        .into_parts();
-    let _ = names.created_entity_name::<CadNamingSchema, Face>(&res, &f1_ref).unwrap();
     let (s1_id, _) = names.created_relation_name::<Seam>(&res, &s1_ref).unwrap();
     release_commit_snapshot(&source, &res);
 
-    source.durability_authority().checkpoint(&execution).expect("checkpoint succeeds");
+    source
+        .durability_authority()
+        .checkpoint(&execution)
+        .expect("checkpoint succeeds");
 
     // Case (a): Reopen with persistent naming schemes omitted -> typed SchemaMismatch, zero effects.
     let plan_omitted = source
         .durability()
-        .recovery_plan(&execution, RecoveryVerificationMode::NormalRecoveryVerification)
+        .recovery_plan(
+            &execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
         .expect("plan builds");
     let mut target_omitted = runtime_with(omitted_reg);
-    let head_before_omitted = target_omitted.admit_branch_basis(&target_omitted.main_branch_identity()).unwrap().observation().commit_id();
+    let head_before_omitted = target_omitted
+        .admit_branch_basis(&target_omitted.main_branch_identity())
+        .unwrap()
+        .observation()
+        .commit_id();
     let err_omitted = target_omitted
         .durability_recovery()
         .recover(&execution, plan_omitted)
@@ -203,19 +246,32 @@ fn reopen_refuses_schema_mismatch_with_zero_effects_when_naming_schemes_omitted_
         "expected SchemaMismatch when schemes omitted, got: {err_omitted:?}"
     );
     assert_eq!(
-        target_omitted.admit_branch_basis(&target_omitted.main_branch_identity()).unwrap().observation().commit_id(),
+        target_omitted
+            .admit_branch_basis(&target_omitted.main_branch_identity())
+            .unwrap()
+            .observation()
+            .commit_id(),
         head_before_omitted
     );
-    assert!(target_omitted.branch_live_persistent_names(&main).is_empty());
+    assert!(target_omitted
+        .branch_live_persistent_names(&main)
+        .is_empty());
     assert_eq!(target_omitted.relation_lineage(s1_id), None);
 
     // Case (b): Reopen with one role changed -> typed SchemaMismatch, zero effects.
     let plan_changed = source
         .durability()
-        .recovery_plan(&execution, RecoveryVerificationMode::NormalRecoveryVerification)
+        .recovery_plan(
+            &execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
         .expect("plan builds");
     let mut target_changed = runtime_with(changed_role_reg);
-    let head_before_changed = target_changed.admit_branch_basis(&target_changed.main_branch_identity()).unwrap().observation().commit_id();
+    let head_before_changed = target_changed
+        .admit_branch_basis(&target_changed.main_branch_identity())
+        .unwrap()
+        .observation()
+        .commit_id();
     let err_changed = target_changed
         .durability_recovery()
         .recover(&execution, plan_changed)
@@ -228,10 +284,16 @@ fn reopen_refuses_schema_mismatch_with_zero_effects_when_naming_schemes_omitted_
         "expected SchemaMismatch when role changed, got: {err_changed:?}"
     );
     assert_eq!(
-        target_changed.admit_branch_basis(&target_changed.main_branch_identity()).unwrap().observation().commit_id(),
+        target_changed
+            .admit_branch_basis(&target_changed.main_branch_identity())
+            .unwrap()
+            .observation()
+            .commit_id(),
         head_before_changed
     );
-    assert!(target_changed.branch_live_persistent_names(&main).is_empty());
+    assert!(target_changed
+        .branch_live_persistent_names(&main)
+        .is_empty());
     assert_eq!(target_changed.relation_lineage(s1_id), None);
 
     // Case (c): External-member cold-directory reopen also refuses both omitted and altered roles.
@@ -247,23 +309,37 @@ fn reopen_refuses_schema_mismatch_with_zero_effects_when_naming_schemes_omitted_
         )
         .expect("external-member checkpoint captures");
     let covered_pos = native.covered_position().expect("covered position");
-    let covered_trans = native.covered_branch_transitions().expect("covered transitions");
+    let covered_trans = native
+        .covered_branch_transitions()
+        .expect("covered transitions");
     for (label, registry) in [
         ("cold-omitted", base_cad_registry_without_naming_schemes()),
         ("cold-role-changed", cad_registry_with_changed_face_role()),
     ] {
         let cold_source = ExternalColdSource::from_native_capture(&native, &source, &execution);
         let mut target = runtime_with(registry);
-        let head_before = target.admit_branch_basis(&target.main_branch_identity()).unwrap().observation().commit_id();
+        let head_before = target
+            .admit_branch_basis(&target.main_branch_identity())
+            .unwrap()
+            .observation()
+            .commit_id();
         let recovery = RelationalDurableRecoverySource::new(
-            Some(RelationalDurableCheckpointSource::new(covered_pos, covered_trans, native.clone())),
+            Some(RelationalDurableCheckpointSource::new(
+                covered_pos,
+                covered_trans,
+                native.clone(),
+            )),
             Vec::new(),
             Vec::new(),
             cold_source,
         );
         let plan = target
             .durability()
-            .recovery_plan_from_source(&execution, recovery, RecoveryVerificationMode::NormalRecoveryVerification)
+            .recovery_plan_from_source(
+                &execution,
+                recovery,
+                RecoveryVerificationMode::NormalRecoveryVerification,
+            )
             .expect("cold plan builds");
         let err = target
             .durability_recovery()
@@ -276,7 +352,14 @@ fn reopen_refuses_schema_mismatch_with_zero_effects_when_naming_schemes_omitted_
             ),
             "{label}: expected SchemaMismatch, got {err:?}"
         );
-        assert_eq!(target.admit_branch_basis(&target.main_branch_identity()).unwrap().observation().commit_id(), head_before);
+        assert_eq!(
+            target
+                .admit_branch_basis(&target.main_branch_identity())
+                .unwrap()
+                .observation()
+                .commit_id(),
+            head_before
+        );
         assert!(target.branch_live_persistent_names(&main).is_empty());
         assert_eq!(target.relation_lineage(s1_id), None);
     }

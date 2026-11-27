@@ -19,7 +19,7 @@ pub enum LineagePostureKind {
 /// Specific reason a discriminator's referenced names failed basis validation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DiscriminatorBasisDenialReason {
-    /// Referenced basis name does not exist in live holders (or was retired).
+    /// Referenced basis name was never recorded on the branch at the basis.
     AbsentBasisName { identity: PersistentNameIdentity },
     /// Referenced same-occurrence role is not strictly earlier in scheme order.
     NonPrecedingRole { referenced_role: String },
@@ -35,6 +35,8 @@ pub enum DiscriminatorBasisDenialReason {
     /// Non-empty discriminator bytes failed canonical v1 domain-header or
     /// structural encoding validation.
     MalformedDiscriminator,
+    /// A structural-identity discriminator exceeds its wire ceiling.
+    UnboundedStructuralDiscriminator { len: usize },
 }
 
 /// Typed commit-boundary refusal returned when birth minting violates naming

@@ -375,6 +375,20 @@ schema using `worth_query_decl::facade::application_naming`:
   `role_order(&[...])`, optional `role_depends_on(role, earlier_role)` edges,
   `.require_authored_occurrence()`, and `.split_discriminator::<D>()` for split-capable
   kinds.
+- **Structural identity.** `.structural_identity::<D>()` (instead of
+  `.split_discriminator::<D>()`) mints the scheme's names from occurrence,
+  role and discriminator alone, never from their parents: landing two
+  sequential splits in one commit or in two mints byte-identical names for
+  every surviving piece. Relational still records every parent (in the birth
+  and as `Split`/`Merge` lineage edges), so `AllDescendants`, `UnchosenBranch`
+  and `birth_of` read the real history; two siblings with the same
+  discriminator refuse `DuplicateBirth`. `D` must have a derived wire bound
+  within `MAX_STRUCTURAL_DISCRIMINATOR_BYTES` (512): fixed-width values and
+  name references only, so a discriminator carrying text that could grow
+  with split depth does not compile, and Relational refuses an oversize
+  structural discriminator typed (`UnboundedStructuralDiscriminator`). The
+  default (no call) stays parent-inclusive: a piece's name depends on the
+  parent it was split from, and every existing scheme keeps its names.
 - **Canonical discriminators** implement `ApplicationNameDiscriminator` via
   `worth_query_decl::facade::worth_query_name_discriminator!`, encoding typed
   discriminator variants and any embedded `WorthQueryName<K>` references without
@@ -521,6 +535,10 @@ writer.name_created_entity(&face, WorthQueryOutputBirth::of_role(&occurrence, Fa
   `InCommit(WorthQuerySameCommitName<K>)`, built from either with `.into()`.
   A discriminator declared over it serves a referenced record born by an
   earlier commit and one born by the same commit, and mints the same name.
+  A committed reference may name any name the branch recorded at the basis,
+  live or retired: a cutter the same commit consumes, or an ancestor an
+  earlier commit retired, enters by its fixed 32-byte identity, so a
+  discriminator stays the same size at any split depth.
 - **`OccurrencePath`** composes an occurrence from segments:
   `root(key)`, `child(segment)`, `index(name, n)` and `anchored(name,
   &anchor)`, a segment placed relative to another occurrence
@@ -599,8 +617,9 @@ An unnamed program carries no naming plan at all.
   never the operation's name), so two independently authored occurrences with
   identical payloads keep distinct names. `.with_discriminator(&d)` tells
   siblings of one occurrence and role apart, and may embed `WorthQueryName`s
-  live at the basis and not retired by the same operation (`AbsentBasisName`
-  otherwise). A relation's name never includes its endpoints: two
+  recorded on the branch at the basis, live or retired (including one the
+  same operation retires); a name the branch never recorded refuses
+  (`UnresolvedReferencedName` while lowering, `AbsentBasisName` at commit). A relation's name never includes its endpoints: two
   same-role relations of one occurrence collide (`DuplicateBirth`) unless
   their discriminators differ.
 - **References to names born by the same commit.** An output of a later

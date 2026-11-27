@@ -13,6 +13,7 @@ pub struct NestedDiscriminator<D>(pub D);
 
 impl<D: ApplicationNameDiscriminator> sealed::Sealed for NestedDiscriminator<D> {}
 impl<D: ApplicationNameDiscriminator> ApplicationNameDiscriminatorValue for NestedDiscriminator<D> {
+    const MAX_ENCODED_BYTES: Option<usize> = super::wire_bound::nested_bound::<D>();
     fn encode_discriminator_value(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
         encode_nested(&self.0, encoder);
     }

@@ -80,18 +80,22 @@ use super::{
     note = "a field is a discrete Foundational value, a `WorthQueryName<K>`, a `NameRef<K>` or a nested `ApplicationNameDiscriminator`; floats, record ids and raw payloads are refused"
 )]
 pub trait ApplicationNameDiscriminatorField<Form: sealed::FieldForm> {
+    /// The most bytes this field's value encodes to; `None` when it can grow.
+    const MAX_ENCODED_BYTES: Option<usize>;
     fn encode_discriminator_field(&self, encoder: &mut ApplicationNameDiscriminatorEncoder);
 }
 
 impl<T: ApplicationNameDiscriminatorValue> ApplicationNameDiscriminatorField<sealed::ValueForm>
     for T
 {
+    const MAX_ENCODED_BYTES: Option<usize> = T::MAX_ENCODED_BYTES;
     fn encode_discriminator_field(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
         self.encode_discriminator_value(encoder);
     }
 }
 
 impl<D: ApplicationNameDiscriminator> ApplicationNameDiscriminatorField<sealed::NestedForm> for D {
+    const MAX_ENCODED_BYTES: Option<usize> = super::wire_bound::nested_bound::<D>();
     fn encode_discriminator_field(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
         encode_nested(self, encoder);
     }

@@ -34,6 +34,11 @@ pub(super) fn validate_and_lower_scheme(
             scheme_id: scheme_id.to_owned(),
         });
     }
+    if scheme.structural_identity() && scheme.split_discriminator_identity().is_none() {
+        return Err(ApplicationNameSchemeDenial::MissingSplitDiscriminator {
+            scheme_id: scheme_id.to_owned(),
+        });
+    }
     if let Some(disc_id) = scheme.split_discriminator_identity() {
         validate_discriminator_identity(scheme_id, disc_id)?;
     }
@@ -137,6 +142,7 @@ pub(super) fn validate_and_lower_scheme(
         split_discriminator_identity: scheme.split_discriminator_identity().map(str::to_owned),
         discriminator_referenced_roles,
         require_authored_occurrence: scheme.require_authored_occurrence(),
+        structural_identity: scheme.structural_identity(),
         layout_digest,
     })
 }
@@ -275,6 +281,9 @@ fn compute_layout_digest(
         write_str(&mut hasher, role);
     }
     hasher.update([u8::from(scheme.require_authored_occurrence())]);
+    if scheme.structural_identity() {
+        write_str(&mut hasher, "structural-identity");
+    }
     hasher.update((roles.len() as u64).to_be_bytes());
     for role in roles {
         write_str(&mut hasher, role.role());
