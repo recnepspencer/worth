@@ -7,22 +7,24 @@
 //! events its own outcome does not imply. Keeper choice and identity minting
 //! belong to the group naming authority, which recovery re-runs separately.
 //!
-//! Each scheme's live groups, retired names and member owners are tiered
-//! tables: a reopened runtime faults only the rows a commit touches.
+//! Each scheme's live group headers, member rows, retired names and member
+//! owners are tiered tables: a reopened runtime faults, and a commit
+//! writes, only the rows the transition touches.
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use worth_foundational::facade::AggregateIdentity;
 
-use crate::contracts::aggregate_identity::transition::group::model::{
-    AggregateContinuityRule, AggregatePriorGroup,
-};
+use crate::contracts::aggregate_identity::transition::group::model::AggregateContinuityRule;
+use crate::contracts::aggregate_identity::transition::group::state_view::AggregateGroupHeader;
+use crate::contracts::graph_member::NativeMemberKey;
 use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::lineage::data::naming::PersistentNameIdentity;
 use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
 use crate::lineage::naming_pages::tables;
 use crate::lineage::tiered::{NamingBaseLink, TieredMap};
 
+use super::group_rows::{GroupMemberKey, GroupOwnerRow};
 use super::CommittedGroupTransition;
 
 /// Why a committed group transition cannot apply to a branch's group state.
@@ -69,18 +71,23 @@ pub(crate) type SchemeKey<T> = (String, T);
 
 crate::lineage::clone_fences::assert_not_clone!(SchemeGroups);
 crate::lineage::clone_fences::assert_not_clone!(BranchGroupState);
+crate::lineage::clone_fences::assert_not_clone!(
+    crate::contracts::aggregate_identity::transition::group::model::AggregatePriorGroup
+);
 
-/// One installed scheme's live groups, retired names and member owners.
+/// One installed scheme's live group headers, member rows, retired names
+/// and member owners.
 ///
-/// Not `Clone`: it holds every live group's member set. Forks share tables
+/// Not `Clone`: it holds every live group's members. Forks share tables
 /// copy-on-write through [`BranchGroupState::fork`].
 #[derive(Debug, Eq, PartialEq)]
 pub struct SchemeGroups {
     pub(super) id: String,
     pub(super) rule: AggregateContinuityRule,
-    pub(super) live: TieredMap<SchemeKey<AggregateIdentity>, AggregatePriorGroup>,
+    pub(super) live: TieredMap<SchemeKey<AggregateIdentity>, AggregateGroupHeader>,
+    pub(super) members: TieredMap<SchemeKey<GroupMemberKey>, NativeMemberKey>,
     pub(super) retired: TieredMap<SchemeKey<AggregateIdentity>, ()>,
-    pub(super) member_owner: TieredMap<SchemeKey<PersistentNameIdentity>, AggregateIdentity>,
+    pub(super) member_owner: TieredMap<SchemeKey<PersistentNameIdentity>, GroupOwnerRow>,
 }
 
 impl SchemeGroups {
@@ -93,6 +100,7 @@ impl SchemeGroups {
             id,
             rule,
             live: TieredMap::over(tables::GROUP_LIVE, base.clone()),
+            members: TieredMap::over(tables::GROUP_MEMBERS, base.clone()),
             retired: TieredMap::over(tables::GROUP_RETIRED, base.clone()),
             member_owner: TieredMap::over(tables::GROUP_MEMBER_OWNER, base),
         }
@@ -103,6 +111,7 @@ impl SchemeGroups {
             id: self.id.clone(),
             rule: self.rule,
             live: self.live.fork(base.clone()),
+            members: self.members.fork(base.clone()),
             retired: self.retired.fork(base.clone()),
             member_owner: self.member_owner.fork(base),
         }
@@ -122,6 +131,7 @@ impl SchemeGroups {
 
     fn rebind_clean(&mut self, base: NamingBaseLink) {
         self.live.rebind_clean(base.clone());
+        self.members.rebind_clean(base.clone());
         self.retired.rebind_clean(base.clone());
         self.member_owner.rebind_clean(base);
     }
@@ -132,6 +142,7 @@ impl SchemeGroups {
         root: Option<&crate::contracts::history::data::coordinates::BranchId>,
     ) {
         self.live.rebind_source(source, root);
+        self.members.rebind_source(source, root);
         self.retired.rebind_source(source, root);
         self.member_owner.rebind_source(source, root);
     }
@@ -143,6 +154,7 @@ impl SchemeGroups {
     /// Every table of this scheme, for capture.
     pub(crate) fn encoded_changes(&self) -> Vec<(Vec<u8>, Option<Vec<u8>>)> {
         let mut changes = self.live.encoded_changes();
+        changes.extend(self.members.encoded_changes());
         changes.extend(self.retired.encoded_changes());
         changes.extend(self.member_owner.encoded_changes());
         changes
@@ -154,6 +166,7 @@ impl SchemeGroups {
         store: Option<&crate::lineage::naming_pages::store::ColdNamingStore>,
     ) -> Result<Vec<(Vec<u8>, Option<Vec<u8>>)>, Cause> {
         let mut rows = self.live.collect_encoded_in(store)?;
+        rows.extend(self.members.collect_encoded_in(store)?);
         rows.extend(self.retired.collect_encoded_in(store)?);
         rows.extend(self.member_owner.collect_encoded_in(store)?);
         Ok(rows)
@@ -346,50 +359,5 @@ impl std::ops::Deref for GroupStateAt<'_> {
             Self::Head(state) => state,
             Self::Rebuilt(state) => state,
         }
-    }
-}
-
-impl SchemeGroups {
-    fn install(&mut self, committed: &CommittedGroupTransition) -> Result<(), Cause> {
-        let transition = &committed.transition;
-        let touched: BTreeSet<_> = transition
-            .retired
-            .iter()
-            .copied()
-            .chain(transition.assignments.iter().map(|a| a.identity))
-            .collect();
-        for identity in &touched {
-            if let Some(prior) = self.live.remove(&self.key(*identity))? {
-                for (member, _) in prior.members.iter() {
-                    let key = self.key(*member);
-                    if self.member_owner.get(&key)?.as_deref() == Some(identity) {
-                        self.member_owner.remove(&key)?;
-                    }
-                }
-            }
-        }
-        for retired in &transition.retired {
-            self.retired.insert(self.key(*retired), ());
-        }
-        for assignment in &transition.assignments {
-            let key = self.key(assignment.identity);
-            if self.retired.contains_key(&key)? {
-                self.retired.remove(&key)?;
-            }
-            for (member, _) in assignment.members.iter() {
-                self.member_owner
-                    .insert(self.key(*member), assignment.identity);
-            }
-            self.live.insert(
-                key,
-                AggregatePriorGroup {
-                    identity: assignment.identity,
-                    anchor: assignment.anchor,
-                    sources: assignment.sources.clone(),
-                    members: assignment.members.clone(),
-                },
-            );
-        }
-        Ok(())
     }
 }

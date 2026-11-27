@@ -141,6 +141,7 @@ mod bounded_naming_r4;
 mod bounded_naming_r5;
 mod bounded_naming_r7;
 mod bounded_naming_state;
+mod group_delta_cold_residency;
 mod working_set_eviction;
 mod working_set_fixture;
 mod working_set_stress;

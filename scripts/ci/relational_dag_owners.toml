@@ -11,7 +11,8 @@ layer = 0
 # +400 for allocation-free borrowed created-binding lookups (M3 C5.4).
 # +100 for the declarative ResidencyBudget config section (Store M4.2b).
 # +100 for Persistent Naming Phase 7B-2a structural_identity, Store M4.3f finalization artifact field, and public #446 shared-byte symbol custody.
-cap = 68700
+# +300 for public #455 canonical kept-group member deltas and the group state view.
+cap = 69000
 floor = 38300
 depends = []
 
@@ -47,7 +48,11 @@ layer = 3
 # +900 for Store M4.3f Round 11-13 hardening (per-branch O(log P) ephemeral
 # event-page & GROUP_LOG window indexes, AVL path-sharing detection, Arc-shared
 # forward edges, safe range-based OrdMap predecessor lookups, and zero-rebuild compaction).
-cap = 22600
+# +1000 for public #455 delta group state (header and per-member rows, ordered
+# member seeks, delta verification/installation, WPGL v2 kept deltas, tests).
+# +300 for its contiguous group-member page domain and the Rust -> Lean
+# conformance trace test.
+cap = 23900
 floor = 7100
 depends = ["contracts", "storage", "branch"]
 

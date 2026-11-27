@@ -24,20 +24,26 @@ struct Cost {
     index_bytes: usize,
 }
 
-fn measure(run: impl FnOnce()) -> Cost {
-    let measured = allocation_attribution::measure(run);
+fn measure<R>(run: impl FnOnce() -> R) -> Cost {
+    measure_with(run).0
+}
+
+/// The cost of `run` and its result.
+fn measure_with<R>(run: impl FnOnce() -> R) -> (Cost, R) {
+    let (measured, result) = allocation_attribution::measure_with(run);
     assert!(
         measured.naming.count > 0,
         "naming work is attributed: stacks carry symbols"
     );
-    Cost {
+    let cost = Cost {
         count: measured.all.count,
         bytes: measured.all.bytes,
         naming_count: measured.naming.count,
         naming_bytes: measured.naming.bytes,
         index_count: measured.name_index.count,
         index_bytes: measured.name_index.bytes,
-    }
+    };
+    (cost, result)
 }
 
 /// Naming's allocation calls and bytes stay within `bound` of `small`. The
@@ -158,17 +164,18 @@ fn group_of(members: usize) -> (World, Vec<PersistentNameIdentity>) {
 
 /// One commit detaching the last member of an Anchor group of `members`
 /// into its own group: the group keeps its name and loses one member.
-fn detach_one_of(members: usize) -> Cost {
+/// Returns the commit's cost and its group lineage frame bytes.
+fn detach_one_of(members: usize) -> (Cost, usize) {
     let (world, names) = group_of(members);
     let (intents, plan) = World::partition(vec![vec![names[members - 1]]]);
     let basis = world.main();
-    measure(|| world.commit(&basis, intents, plan))
+    measure_with(|| world.commit(&basis, intents, plan))
 }
 
 /// One commit retiring the last member of an Anchor group of `members`.
-fn retire_one_of(members: usize) -> Cost {
+fn retire_one_of(members: usize) -> (Cost, usize) {
     let (world, names) = group_of(members);
-    measure(|| world.retire(&world.main(), names[members - 1]))
+    measure_with(|| world.retire(&world.main(), names[members - 1]))
 }
 
 /// One commit detaching a member from an Anchor group of eight, or joining
@@ -188,16 +195,25 @@ fn regroup_after(history: usize) -> Cost {
     measure(|| world.commit(&basis, intents, plan))
 }
 
-/// The derived index's allocation calls stay within `bound` of `small`;
-/// its bytes may grow only logarithmically in the group size, the persistent
-/// carrier set's path copy gaining a level (`members_ratio` = log2 large /
-/// log2 small group size), never with a copy of the set.
-fn assert_index_flat(large: Cost, small: Cost, bound: f64, members_ratio: f64, axis: &str) {
-    let calls = ratio(large.index_count, small.index_count);
-    let bytes = ratio(large.index_bytes, small.index_bytes);
-    println!("{axis}: derived index calls x{calls:.3}, bytes x{bytes:.3} (log bound x{members_ratio:.3})");
+/// Naming's allocation calls and bytes, and the derived index's share, grow
+/// at most logarithmically in the group size (`members_ratio` = log2 large /
+/// log2 small group size): a persistent tree's path copy gains a level,
+/// never a copy or walk of the group's members.
+fn assert_naming_log(large: Cost, small: Cost, members_ratio: f64, axis: &str) {
+    let calls = ratio(large.naming_count, small.naming_count);
+    let bytes = ratio(large.naming_bytes, small.naming_bytes);
+    let index_calls = ratio(large.index_count, small.index_count.max(1));
+    let index_bytes = ratio(large.index_bytes, small.index_bytes.max(1));
+    let commit_calls = ratio(large.count, small.count);
+    let commit_bytes = ratio(large.bytes, small.bytes);
+    println!("{axis}: naming calls x{calls:.3}, bytes x{bytes:.3} (log bound x{members_ratio:.3})");
+    println!("{axis}: derived index calls x{index_calls:.3}, bytes x{index_bytes:.3}");
+    println!("{axis}: whole commit calls x{commit_calls:.3}, bytes x{commit_bytes:.3}");
     assert!(
-        calls <= bound && bytes <= members_ratio,
+        calls <= members_ratio
+            && bytes <= members_ratio
+            && index_calls <= members_ratio
+            && index_bytes <= members_ratio,
         "{axis}: {large:?} vs {small:?}"
     );
 }
@@ -210,24 +226,27 @@ fn naming_allocations_stay_flat_in_group_size_and_membership_history() {
     println!("membership history 320: commit {long:?}");
     assert_naming_flat(long, short, 1.1, "membership history 320 vs 32");
 
-    // A one-member touch of a 64- or 640-member group. The derived index
-    // (carrier deltas, tail-only journal, tenures) is flat; the canonical
-    // group transition still names the touched group's complete next-state
-    // membership, so naming as a whole is reported, not bounded, on this
-    // axis (the canonical delta frame is the recorded follow-on).
+    // A one-member touch of a 64- or 640-member group: the canonical group
+    // transition records the kept group's member delta, so all naming work
+    // (finalization, the incremental group authority, the WPGL frame, group
+    // state verification and installation, the derived index) is bounded by
+    // the touched member, and the published frame is the same size.
+    let log_ratio = 640f64.log2() / 64f64.log2();
     for (label, touch) in [
-        ("detach", detach_one_of as fn(usize) -> Cost),
+        ("detach", detach_one_of as fn(usize) -> (Cost, usize)),
         ("retire", retire_one_of),
     ] {
-        let small = touch(64);
-        let large = touch(640);
-        println!("{label} one of 64: commit {small:?}");
-        println!("{label} one of 640: commit {large:?}");
-        let calls = ratio(large.naming_count, small.naming_count);
-        let bytes = ratio(large.naming_bytes, small.naming_bytes);
-        println!("{label} 640 vs 64: naming calls x{calls:.3}, bytes x{bytes:.3} (reported)");
-        let log_ratio = 640f64.log2() / 64f64.log2();
+        let (small, small_frame) = touch(64);
+        let (large, large_frame) = touch(640);
+        println!("{label} one of 64: commit {small:?}, group frame {small_frame} B");
+        println!("{label} one of 640: commit {large:?}, group frame {large_frame} B");
         let axis = format!("{label} one of 640 vs 64");
-        assert_index_flat(large, small, 1.1, log_ratio, &axis);
+        assert_naming_log(large, small, log_ratio, &axis);
+        let frame = ratio(large_frame, small_frame);
+        println!("{axis}: group frame bytes x{frame:.3}");
+        assert!(
+            small_frame > 0 && frame <= 1.05,
+            "{axis}: group frame {small_frame} -> {large_frame} B"
+        );
     }
 }

@@ -34,8 +34,8 @@ pub fn reconstruct_replay_naming_plan(
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<Option<CommitNamingPlan>, DurabilityError> {
     let events = envelope.lineage_events();
-    let groups = super::group_recovery::replay_group_claims(envelope)?;
-    let has_naming_or_postures = !groups.is_empty()
+    let group_transitions = super::group_recovery::replay_group_transitions(envelope)?;
+    let has_naming_or_postures = !group_transitions.is_empty()
         || events.iter().any(|event| {
             event.name_birth().is_some()
                 || event.kept_name().is_some()
@@ -302,8 +302,9 @@ pub fn reconstruct_replay_naming_plan(
         }
     }
 
+    let groups = super::group_recovery::replay_group_claims(envelope, group_transitions, &basis);
     basis.settle().map_err(naming_unavailable_error)?;
-    drop(basis);
+    let groups = groups?;
     if postures.is_empty() && groups.is_empty() {
         return Ok(None);
     }

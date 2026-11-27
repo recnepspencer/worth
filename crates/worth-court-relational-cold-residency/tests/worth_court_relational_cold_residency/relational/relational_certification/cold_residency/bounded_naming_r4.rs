@@ -46,7 +46,7 @@ use super::checkpoint_wire_fixture::{array, field, replace_field, rows, CHECKPOI
 fn strip_domain_pages(
     ck: &RelationalNativeCheckpoint,
     target_branch: &BranchId,
-    tag_range: std::ops::RangeInclusive<u8>,
+    tags: &[u8],
 ) -> RelationalNativeCheckpoint {
     let body = ck.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap();
     let manifest = field(body, "manifest");
@@ -61,7 +61,7 @@ fn strip_domain_pages(
             let mut kept = Vec::new();
             for page in pages {
                 let first: Vec<u8> = rmp_serde::from_slice(field(page, "first")).unwrap();
-                if tag_range.contains(&first[0]) {
+                if tags.contains(&first[0]) {
                     stripped_any = true;
                 } else {
                     kept.push(page);
@@ -74,7 +74,7 @@ fn strip_domain_pages(
     }
     assert!(
         stripped_any,
-        "target branch must have at least one page in {tag_range:?} to strip"
+        "target branch must have at least one page in {tags:?} to strip"
     );
     let refs: Vec<&[u8]> = edited.iter().map(Vec::as_slice).collect();
     let new_naming = replace_field(naming, "branches", &array(&refs));
@@ -360,12 +360,12 @@ fn tampered_chk24_stripping_naming_index_or_group_pages_refuses_corrupt_checkpoi
     let (ck, source) = capture_external_checkpoint(request, &producer);
 
     // Strip each component's pages independently while leaving ALL headers intact!
-    for (label, range) in [
-        ("naming-domain-1", 1u8..=5u8),
-        ("index-domain-2", 6u8..=10u8),
-        ("group-domain-3", 11u8..=13u8),
+    for (label, tags) in [
+        ("naming-domain-1", &[1u8, 2, 3, 4, 5][..]),
+        ("index-domain-2", &[6u8, 7, 8, 9, 10][..]),
+        ("group-domain-3", &[0u8, 11, 12, 13][..]),
     ] {
-        let tampered = strip_domain_pages(&ck, &child, range);
+        let tampered = strip_domain_pages(&ck, &child, tags);
         let mut target = durable_named_runtime(&medium, u64::MAX / 4);
         let input = RelationalDurableRecoverySource::new(
             Some(RelationalDurableCheckpointSource::new(

@@ -10,7 +10,7 @@ pub(super) fn agreed(
     names: &[u8],
     before: &[Spec<'_>],
     after: &[Spec<'_>],
-) -> AggregateGroupTransition {
+) -> AggregateGroupPartitionTransition {
     let all = worlds(names);
     let outcome = |world: &World| {
         let prior = world.born(rule, before);
@@ -23,7 +23,10 @@ pub(super) fn agreed(
     reference
 }
 
-fn group_with(transition: &AggregateGroupTransition, n: u8) -> &AggregateGroupAssignment {
+fn group_with(
+    transition: &AggregateGroupPartitionTransition,
+    n: u8,
+) -> &AggregateGroupPartitionAssignment {
     transition
         .assignments
         .iter()

@@ -5,8 +5,9 @@ use worth_relational_contracts::internal_port::aggregate_identity::transition::g
 use worth_foundational::facade::AggregateIdentity;
 
 use super::{
-    AggregateGroupAssignment, AggregateGroupClaimant, AggregateGroupMembers, AggregateGroupOrigin,
-    AggregateGroupTransition, AggregatePriorGroup, Denial, Event, GroupName, Name,
+    AggregateGroupClaimant, AggregateGroupMembers, AggregateGroupOrigin,
+    AggregateGroupPartitionAssignment, AggregateGroupPartitionTransition, AggregatePriorGroup,
+    Denial, Event, GroupName, Name,
 };
 
 /// Every naming decision, before any effect exists.
@@ -82,9 +83,9 @@ impl Plan<'_> {
     pub(super) fn assemble(
         self,
         is_retired: &impl Fn(&AggregateIdentity) -> bool,
-    ) -> AggregateGroupTransition {
+    ) -> AggregateGroupPartitionTransition {
         let keeper_of = self.keeper_of();
-        let mut result = AggregateGroupTransition {
+        let mut result = AggregateGroupPartitionTransition {
             assignments: Vec::with_capacity(self.proposed.len()),
             retired: BTreeSet::new(),
             lineage: BTreeSet::new(),
@@ -120,7 +121,7 @@ impl Plan<'_> {
                     });
                 }
             }
-            result.assignments.push(AggregateGroupAssignment {
+            result.assignments.push(AggregateGroupPartitionAssignment {
                 identity,
                 anchor,
                 sources,

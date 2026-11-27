@@ -9,8 +9,8 @@ use worth_foundational::facade::AggregateIdentity;
 
 use crate::aggregate_identity::{
     AggregateContinuityRule, AggregateGroupMembers, AggregateGroupNamingAuthority,
-    AggregateGroupNamingDenial, AggregateGroupScheme, AggregateGroupSchemeId,
-    AggregateGroupTransition, AggregateMemberRole, AggregatePriorGroup,
+    AggregateGroupNamingDenial, AggregateGroupPartitionTransition, AggregateGroupScheme,
+    AggregateGroupSchemeId, AggregateMemberRole, AggregatePriorGroup,
 };
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, PartitionId};
@@ -45,7 +45,7 @@ impl GroupWorld {
     pub(super) fn step(
         &mut self,
         groups: &[&[u8]],
-    ) -> Result<AggregateGroupTransition, AggregateGroupNamingDenial> {
+    ) -> Result<AggregateGroupPartitionTransition, AggregateGroupNamingDenial> {
         let mut proposed = Vec::with_capacity(groups.len());
         for group in groups {
             let mut members = AggregateGroupMembers::new();

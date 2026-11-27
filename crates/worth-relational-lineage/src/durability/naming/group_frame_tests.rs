@@ -5,9 +5,12 @@ use std::collections::BTreeSet;
 use worth_foundational::facade::AggregateIdentity;
 
 use crate::contracts::aggregate_identity::group_lineage::AggregateGroupLineageEvent as Event;
+use crate::contracts::aggregate_identity::transition::group::delta::{
+    AggregateGroupAssignment, AggregateGroupChange, AggregateGroupMemberDelta,
+};
 use crate::contracts::aggregate_identity::transition::group::model::{
-    AggregateContinuityRule, AggregateGroupAssignment, AggregateGroupMembers, AggregateGroupOrigin,
-    AggregateGroupScheme, AggregateGroupSchemeId, AggregateMemberRole,
+    AggregateContinuityRule, AggregateGroupMembers, AggregateGroupScheme, AggregateGroupSchemeId,
+    AggregateMemberRole,
 };
 use crate::contracts::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
 use crate::contracts::graph_member::NativeMemberKey;
@@ -48,8 +51,7 @@ fn transition(scheme: &str, groups: &[u8]) -> CommittedGroupTransition {
                 identity: group(*byte),
                 anchor: PersistentNameIdentity::from_minted_digest([*byte; 32]),
                 sources: vec![group(200), group(201)],
-                members,
-                origin: AggregateGroupOrigin::Born,
+                change: AggregateGroupChange::Born(members),
             }
         })
         .collect();
@@ -152,5 +154,65 @@ fn tampered_truncated_and_padded_frames_refuse_typed() {
     assert!(matches!(
         decode_group_lineage_frame(&padded),
         Err(Refusal::TrailingBytes { .. })
+    ));
+}
+
+fn name(byte: u8) -> PersistentNameIdentity {
+    PersistentNameIdentity::from_minted_digest([byte; 32])
+}
+
+/// A transition keeping group 10 with `removed` leaving and member 99
+/// joining.
+fn kept(removed: &[u8]) -> CommittedGroupTransition {
+    let mut delta = AggregateGroupMemberDelta::new();
+    for byte in removed {
+        delta.remove(name(*byte)).unwrap();
+    }
+    let carrier = NativeMemberKey::Entity(EntityId::new(PartitionId(1), 99, 1));
+    delta
+        .upsert(name(99), carrier, AggregateMemberRole::Ordinary)
+        .unwrap();
+    let mut committed = transition("a.loop.v1", &[10]);
+    committed.transition.assignments[0].change = AggregateGroupChange::Kept(delta);
+    committed.transition.lineage = BTreeSet::new();
+    committed.transition.retired = BTreeSet::new();
+    committed
+}
+
+#[test]
+fn kept_groups_encode_their_member_delta_alone() {
+    let committed = vec![kept(&[3, 7])];
+    let bytes = encode_group_lineage_frame(&committed).unwrap();
+    assert_eq!(bytes[4], 2, "WPGL v2 records kept groups by delta");
+    assert_eq!(decode_group_lineage_frame(&bytes).unwrap(), committed);
+    // One more removed member costs exactly one name digest: the frame
+    // never repeats a kept group's untouched members.
+    let wider = encode_group_lineage_frame(&[kept(&[3, 7, 8])]).unwrap();
+    assert_eq!(wider.len(), bytes.len() + 32);
+}
+
+#[test]
+fn version_one_and_non_canonical_deltas_refuse_typed() {
+    let bytes = encode_group_lineage_frame(&[kept(&[3, 7])]).unwrap();
+    let mut legacy = bytes.clone();
+    legacy[4] = 1;
+    assert!(matches!(
+        decode_group_lineage_frame(&legacy),
+        Err(Refusal::UnsupportedFormatVersion {
+            found: 1,
+            supported: 2
+        })
+    ));
+    // Swap the two removed names: a descending delta is not canonical.
+    let first = bytes
+        .windows(32)
+        .position(|window| window == [3; 32])
+        .unwrap();
+    let mut swapped = bytes.clone();
+    swapped[first..first + 32].copy_from_slice(&[7; 32]);
+    swapped[first + 32..first + 64].copy_from_slice(&[3; 32]);
+    assert!(matches!(
+        decode_group_lineage_frame(&swapped),
+        Err(Refusal::NonCanonical { .. })
     ));
 }

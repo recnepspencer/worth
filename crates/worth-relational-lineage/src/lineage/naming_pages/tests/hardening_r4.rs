@@ -2,9 +2,7 @@
 //! - `[P1-3]` Unnamed lineage retirement is recorded in `HolderEpoch::ended_at`,
 //!   preserved across retention compaction, and excluded from `live_lineages`
 //!   when truncating for a cold historical fork at or after retirement.
-//! - `[P1-4]` `seal_pages` isolates every physical page to one table domain
-//!   with zero unnecessary reads across domains, and `validate_pages` refuses
-//!   multi-domain or unknown-tag descriptors read-free.
+//! - Table-domain page isolation lives in `table_domains`.
 
 use std::sync::Arc;
 
@@ -23,11 +21,8 @@ use worth_relational_contracts::internal_port::lineage::data::naming::Persistent
 use super::super::builder::seal_pages;
 use super::super::codec::NamingCodec;
 use super::super::store::ColdNamingStore;
-use super::super::tables::{
-    branch_key_digest, table_domain, GROUP_LIVE, GROUP_LOG, INDEX_NAME, LINEAGE_HOLDER,
-    MAX_INLINE_VALUE_BYTES, VALUE_CHUNK,
-};
-use super::super::{validate_pages, BranchNamingRoot, CheckpointNamingState};
+use super::super::tables::{branch_key_digest, GROUP_LOG};
+use super::super::{validate_pages, CheckpointNamingState};
 use super::{CollectedMembers, MemSource};
 use crate::lineage::index::{PersistentNameBranchIndex, PersistentNameCommittedBatch};
 use crate::runtime::state::subsystems::lineage::naming_basis::AuthoritativeBranchNamingState;
@@ -119,64 +114,6 @@ fn retired_unnamed_lineage_not_resurrected_in_truncated_naming_basis() {
     assert!(!b2_compact
         .live_lineages
         .contains_key(&PersistentNameHolder::Entity(e1)));
-}
-
-#[test]
-fn naming_pages_isolate_domains_without_cross_domain_reads_and_refuse_mixed_descriptors() {
-    let k_naming = vec![LINEAGE_HOLDER, 1, 2, 3];
-    let k_index = vec![INDEX_NAME, 1, 2, 3];
-    let k_group = vec![GROUP_LIVE, 1, 2, 3];
-
-    let mut sink1 = CollectedMembers::default();
-    let big = vec![0x77u8; MAX_INLINE_VALUE_BYTES + 128];
-    let rows1 = vec![(k_naming, Some(vec![1; 8])), (k_group, Some(big))];
-    let pages1 = seal_pages(None, rows1, &mut sink1).unwrap();
-    assert_eq!(pages1.len(), 3);
-    assert!(pages1
-        .iter()
-        .all(|p| table_domain(p.first[0]) == table_domain(p.last[0])));
-    assert_eq!(table_domain(pages1[0].first[0]), Some(1));
-    assert_eq!(table_domain(pages1[1].first[0]), Some(3));
-    assert_eq!(pages1[2].first[0], VALUE_CHUNK);
-    assert!(validate_pages(&pages1).is_ok());
-
-    let source = MemSource::from_sink(sink1);
-    let root = BranchNamingRoot {
-        branch: BranchId("main".into()),
-        naming: None,
-        index: None,
-        groups: None,
-        pages: pages1.clone(),
-    };
-    let state = CheckpointNamingState {
-        branches: vec![root],
-        group_log: Vec::new(),
-        group_log_through: None,
-    };
-    let store = ColdNamingStore::open(Arc::new(state), source.clone());
-    let mut sink2 = CollectedMembers::default();
-    let rows2 = vec![(k_index.clone(), Some(vec![2; 8]))];
-    let pages2 = seal_pages(Some((&store, &pages1)), rows2, &mut sink2).unwrap();
-    assert_eq!(source.read_count(), 0);
-    assert_eq!(pages2.len(), 4);
-    assert_eq!(pages2[0], pages1[0]);
-    assert_eq!(table_domain(pages2[1].first[0]), Some(2));
-    assert_eq!(pages2[2], pages1[1]);
-    assert_eq!(pages2[3], pages1[2]);
-    assert!(validate_pages(&pages2).is_ok());
-
-    // Synthetic mixed-domain descriptor refuses read-free.
-    let mut mixed = pages1[0].clone();
-    mixed.last = k_index;
-    mixed.entries = 2;
-    assert!(validate_pages(&[mixed]).is_err());
-
-    // Unknown table tag descriptor refuses read-free.
-    let mut unknown = pages1[0].clone();
-    unknown.first = vec![0u8, 1];
-    unknown.last = vec![0u8, 1];
-    unknown.entries = 1;
-    assert!(validate_pages(&[unknown]).is_err());
 }
 
 #[test]

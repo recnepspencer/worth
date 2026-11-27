@@ -84,7 +84,11 @@ pub(crate) struct Allocations {
     pub(crate) text_copies: Share,
 }
 
-pub(crate) fn measure(run: impl FnOnce()) -> Allocations {
+pub(crate) fn measure<R>(run: impl FnOnce() -> R) -> Allocations {
+    measure_with(run).0
+}
+
+pub(crate) fn measure_with<R>(run: impl FnOnce() -> R) -> (Allocations, R) {
     static INSTALL: std::sync::Once = std::sync::Once::new();
     INSTALL.call_once(|| {
         AllocationRegistry::set_global_tracker(Attribution).expect("one tracker per binary");
@@ -92,20 +96,21 @@ pub(crate) fn measure(run: impl FnOnce()) -> Allocations {
     });
     COUNTS.iter().for_each(|count| count.store(0, Relaxed));
     MEASURING.store(true, Relaxed);
-    run();
+    let result = run();
     MEASURING.store(false, Relaxed);
     let share = |at: usize| Share {
         count: COUNTS[at].load(Relaxed),
         bytes: COUNTS[at + 1].load(Relaxed),
     };
-    Allocations {
+    let allocations = Allocations {
         all: share(0),
         naming: share(2),
         name_index: share(4),
         symbols: share(6),
         storage_tree: share(8),
         text_copies: share(10),
-    }
+    };
+    (allocations, result)
 }
 
 impl Allocations {

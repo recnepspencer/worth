@@ -294,6 +294,23 @@ impl<K: Ord, V> CowMap<K, V> {
     pub(crate) fn contains_key(&self, key: &K) -> bool {
         self.get(key).is_some()
     }
+
+    /// Entries with keys at or above `lower`, ascending.
+    ///
+    /// Complexity: O(log N) to seek, then O(1) amortized per entry.
+    pub(crate) fn iter_from(&self, lower: &K) -> CowMapIter<'_, K, V> {
+        let mut stack = Vec::new();
+        let mut node = &self.root;
+        while let Some(n) = node {
+            if n.key >= *lower {
+                stack.push(n.as_ref());
+                node = &n.left;
+            } else {
+                node = &n.right;
+            }
+        }
+        CowMapIter { stack }
+    }
 }
 
 impl<K: Ord + Clone, V> CowMap<K, V> {

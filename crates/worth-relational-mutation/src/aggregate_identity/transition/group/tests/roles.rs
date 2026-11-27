@@ -6,7 +6,7 @@ fn step(
     rule: Rule,
     prior: &[AggregatePriorGroup],
     next: &[Spec<'_>],
-) -> Result<AggregateGroupTransition, Denial> {
+) -> Result<AggregateGroupPartitionTransition, Denial> {
     world.run(rule, prior, &BTreeSet::new(), next)
 }
 

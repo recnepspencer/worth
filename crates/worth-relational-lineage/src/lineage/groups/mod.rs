@@ -9,8 +9,14 @@
 
 pub mod branch_state;
 pub mod committed;
+mod group_install;
 pub mod group_read;
+mod group_rows;
 mod group_verify;
+#[cfg(test)]
+mod kept_delta_conformance_trace;
+#[cfg(test)]
+mod kept_delta_installation;
 
 pub use branch_state::{BranchGroupState, GroupStateAt, GroupStateDenial, SchemeGroups};
 pub use committed::{CommittedGroupTransition, GroupTransitionKind};

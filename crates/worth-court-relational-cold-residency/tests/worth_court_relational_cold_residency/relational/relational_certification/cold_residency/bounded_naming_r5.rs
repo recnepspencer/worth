@@ -280,26 +280,26 @@ fn tampered_chk24_dropping_earlier_primary_group_log_page_refuses_corrupt_checkp
     let producer = durable_named_runtime(&medium, u64::MAX / 4);
     let main = producer.main_branch_identity().branch_id().clone();
 
-    // Rotating the Anchor across 4 commits dissolves the prior group and emits a
-    // fresh ~450-member inline creation frame (~15 KiB < 24 KiB chunking limit,
-    // ~30 KiB worst-case row budget each), spilling across >= 2 primary GROUP_LOG pages.
-    let labels: Vec<String> = (0..450)
+    // Four commits each name a fresh 400-member group: each emits an inline
+    // creation frame (~20 KiB < 24 KiB chunking limit) carrying the group's
+    // initial members, spilling across >= 2 primary GROUP_LOG pages. (A kept
+    // group's frame records only its member delta, so re-declaring one group
+    // would no longer grow the log.)
+    let labels: Vec<String> = (0..1600)
         .map(|i| format!("r6-inline-member-{i:04}"))
         .collect();
     let (_, entities, names) = create_named_entities(request, &producer, &main, &labels);
-    for step in 0..4usize {
-        let members: Vec<_> = names
+    for (step, fresh) in names.chunks(400).enumerate() {
+        let members: Vec<_> = fresh
             .iter()
             .enumerate()
             .map(|(i, &name)| {
-                (
-                    name,
-                    if i == step {
-                        AggregateMemberRole::Anchor
-                    } else {
-                        AggregateMemberRole::Ordinary
-                    },
-                )
+                let role = if i == 0 {
+                    AggregateMemberRole::Anchor
+                } else {
+                    AggregateMemberRole::Ordinary
+                };
+                (name, role)
             })
             .collect();
         publish_group_partition(

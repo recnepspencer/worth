@@ -1,0 +1,13 @@
+name = "canonical_group_delta"
+version = "0.1.0"
+defaultTargets = ["CanonicalGroupDelta"]
+
+[[lean_lib]]
+name = "CanonicalGroupDelta"
+
+# Rust <-> model conformance: `lake exe conformance <trace.ndjson>` checks a
+# trace emitted by the lineage crate's `kept_delta_conformance_trace` test
+# (`WORTH_GROUP_DELTA_TRACE=<path>`) against the proved transition functions.
+[[lean_exe]]
+name = "conformance"
+root = "Conformance"

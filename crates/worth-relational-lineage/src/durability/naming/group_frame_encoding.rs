@@ -6,20 +6,31 @@
 //! ascending order, so equal transitions always encode to equal bytes and the
 //! decoder refuses any other ordering.
 //!
+//! Version 2 records a kept group by its member delta, so a `k`-member edit
+//! of an `M`-member group encodes `O(k)` bytes; a born or revived group
+//! carries its initial members. Version 1 frames (complete kept membership)
+//! are refused typed.
+//!
 //! ```text
 //! frame      := "WPGL" version:u8 count:u32 transition*
 //! transition := kind:u8 scheme:text rule:u8
 //!               count:u32 assignment*  count:u32 retired:digest*
 //!               count:u32 event*
 //! assignment := identity:digest anchor:digest count:u32 source:digest*
-//!               origin:u8 count:u32 member*
+//!               origin:u8 body
+//! body       := kept:    count:u32 removed:digest* count:u32 member*
+//!             | born, revived: count:u32 member*
 //! member     := name:digest carrier-tag:u8 entity role:u8
 //! ```
 
+use crate::contracts::aggregate_identity::transition::group::delta::{
+    AggregateGroupAssignment, AggregateGroupChange,
+};
 use crate::contracts::aggregate_identity::transition::group::model::{
-    AggregateGroupAssignment, AggregateGroupOrigin, AggregateMemberRole,
+    AggregateGroupMember, AggregateGroupOrigin, AggregateMemberRole,
 };
 use crate::contracts::graph_member::NativeMemberKey;
+use crate::contracts::lineage::data::naming::PersistentNameIdentity;
 use crate::lineage::groups::CommittedGroupTransition;
 
 use super::format::group_event_parts;
@@ -27,7 +38,7 @@ use super::refusal::PersistentNameDurabilityError as Refusal;
 use super::wire::WireWriter;
 
 pub(super) const GROUP_FRAME_MAGIC: &[u8; 4] = b"WPGL";
-pub(super) const GROUP_FRAME_VERSION: u8 = 1;
+pub(super) const GROUP_FRAME_VERSION: u8 = 2;
 
 pub(super) const fn origin_tag(origin: AggregateGroupOrigin) -> u8 {
     match origin {
@@ -48,7 +59,8 @@ pub(super) const fn role_tag(role: AggregateMemberRole) -> u8 {
 /// Encodes one commit's group transitions; no transitions encode to no bytes,
 /// so a commit without group lineage keeps its envelope bytes unchanged.
 ///
-/// Complexity: O(total groups, members, sources and events).
+/// Complexity: O(groups, sources, events, kept deltas and born or revived
+/// members): never a kept group's untouched members.
 pub fn encode_group_lineage_frame(
     transitions: &[CommittedGroupTransition],
 ) -> Result<Vec<u8>, Refusal> {
@@ -126,19 +138,42 @@ fn encode_assignment(
     for source in &assignment.sources {
         writer.digest(source.bytes());
     }
-    writer.u8(origin_tag(assignment.origin));
-    writer.count("group members", assignment.members.len())?;
-    for (name, member) in assignment.members.iter() {
-        writer.digest(name.as_bytes());
-        let NativeMemberKey::Entity(entity) = &member.carrier else {
-            return Err(Refusal::NonCanonical {
-                field: "group member carrier",
-            });
-        };
-        writer.u8(1);
-        encode_entity(writer, *entity);
-        writer.u8(role_tag(member.role));
+    writer.u8(origin_tag(assignment.origin()));
+    match &assignment.change {
+        AggregateGroupChange::Kept(delta) => {
+            writer.count("removed group members", delta.removed_len())?;
+            for name in delta.removed() {
+                writer.digest(name.as_bytes());
+            }
+            writer.count("upserted group members", delta.upserted_len())?;
+            for (name, member) in delta.upserted() {
+                encode_member(writer, name, member)?;
+            }
+        }
+        AggregateGroupChange::Born(members) | AggregateGroupChange::Revived(members) => {
+            writer.count("group members", members.len())?;
+            for (name, member) in members.iter() {
+                encode_member(writer, name, member)?;
+            }
+        }
     }
+    Ok(())
+}
+
+fn encode_member(
+    writer: &mut WireWriter,
+    name: &PersistentNameIdentity,
+    member: &AggregateGroupMember,
+) -> Result<(), Refusal> {
+    writer.digest(name.as_bytes());
+    let NativeMemberKey::Entity(entity) = &member.carrier else {
+        return Err(Refusal::NonCanonical {
+            field: "group member carrier",
+        });
+    };
+    writer.u8(1);
+    encode_entity(writer, *entity);
+    writer.u8(role_tag(member.role));
     Ok(())
 }
 

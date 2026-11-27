@@ -128,6 +128,11 @@ impl AggregateGroupMembers {
         self.0.get(name)
     }
 
+    /// Removes `name`, returning its member.
+    pub fn remove(&mut self, name: &PersistentNameIdentity) -> Option<AggregateGroupMember> {
+        self.0.remove(name)
+    }
+
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -143,7 +148,9 @@ impl AggregateGroupMembers {
 }
 
 /// A live group before this commit, carrying the birth anchor of its name.
-#[derive(Clone, Debug, Eq, PartialEq)]
+///
+/// Not `Clone`: it owns a complete member set, so a copy is an `O(M)` walk.
+#[derive(Debug, Eq, PartialEq)]
 pub struct AggregatePriorGroup {
     pub identity: AggregateIdentity,
     pub anchor: PersistentNameIdentity,
@@ -165,9 +172,12 @@ pub enum AggregateGroupOrigin {
     Revived,
 }
 
-/// One named group of the next state.
+/// One named group of the next state with its complete membership: the
+/// full-partition authority's result, which the canonical
+/// [`super::delta::AggregateGroupAssignment`] records as a member delta for a
+/// kept group.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AggregateGroupAssignment {
+pub struct AggregateGroupPartitionAssignment {
     pub identity: AggregateIdentity,
     pub anchor: PersistentNameIdentity,
     /// The prior sources hashed into this name (empty for a pure group name).

@@ -13,14 +13,19 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use contracts::aggregate_identity::group_lineage::AggregateGroupLineageEvent as Event;
 use contracts::aggregate_identity::transition::group::denial::AggregateGroupNamingDenial as Denial;
-use contracts::aggregate_identity::transition::group::model::{
-    AggregateGroupAssignment, AggregateGroupMembers, AggregateGroupOrigin, AggregateGroupScheme,
-    AggregateGroupSchemeId, AggregatePriorGroup,
+use contracts::aggregate_identity::transition::group::delta::{
+    AggregateGroupAssignment, AggregateGroupChange,
 };
-use contracts::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
+use contracts::aggregate_identity::transition::group::model::{
+    AggregateGroupMembers, AggregateGroupScheme, AggregateGroupSchemeId, AggregatePriorGroup,
+};
+use contracts::aggregate_identity::transition::group::transition_result::{
+    member_delta, AggregateGroupTransition,
+};
 use contracts::graph_member::NativeMemberKey;
 use contracts::history::data::coordinates::CommitId;
 use contracts::identity::data::record_ids::EntityId;
+use worth_foundational::facade::AggregateIdentity;
 use contracts::lineage::data::naming::PersistentNameHolder;
 use contracts::lineage::data::postures::LineageBasisView;
 use worth_foundational::FoundationalBranchTarget;
@@ -89,17 +94,13 @@ pub(super) fn selection_transitions(
                     if selected_entities.contains(&entity))
             })
         };
-        let leaving: Vec<_> = now
-            .iter()
-            .flat_map(|now| now.live())
-            .filter(|g| in_current(g))
-            .collect();
-        let arriving: Vec<_> = then
-            .iter()
-            .flat_map(|then| then.live())
-            .filter(|g| in_selected(g))
-            .collect();
-        let transition = restore(now, &leaving, &arriving, outcome).map_err(refuse)?;
+        let now_live: Vec<AggregatePriorGroup> = now.iter().flat_map(|now| now.live()).collect();
+        let then_live: Vec<AggregatePriorGroup> =
+            then.iter().flat_map(|then| then.live()).collect();
+        let leaving: Vec<_> = now_live.iter().filter(|g| in_current(g)).collect();
+        let arriving: Vec<_> = then_live.iter().filter(|g| in_selected(g)).collect();
+        let live: BTreeMap<_, _> = now_live.iter().map(|g| (g.identity, g)).collect();
+        let transition = restore(now, &live, &leaving, &arriving, outcome).map_err(refuse)?;
         if transition.assignments.is_empty() && transition.retired.is_empty() {
             continue;
         }
@@ -115,6 +116,7 @@ pub(super) fn selection_transitions(
 
 fn restore(
     now: Option<SchemeGroupsRead<'_>>,
+    live: &BTreeMap<AggregateIdentity, &AggregatePriorGroup>,
     leaving: &[&AggregatePriorGroup],
     arriving: &[&AggregatePriorGroup],
     outcome: &CommitNameOutcome<'_, '_>,
@@ -141,29 +143,27 @@ fn restore(
                 .ok_or(Denial::MemberNotLive { name: *name })?;
             members.insert(*name, NativeMemberKey::Entity(entity), member.role)?;
         }
-        let live = now.and_then(|now| now.group(&group.identity));
-        let origin = match live {
+        let change = match live.get(&group.identity) {
             Some(live) if live.members == members => continue,
-            Some(_) => AggregateGroupOrigin::Kept,
+            Some(live) => AggregateGroupChange::Kept(member_delta(&live.members, &members)?),
             None if now.is_some_and(|now| now.is_retired(&group.identity)) => {
                 transition.lineage.insert(Event::Revived {
                     group: group.identity,
                 });
-                AggregateGroupOrigin::Revived
+                AggregateGroupChange::Revived(members)
             }
             None => {
                 transition.lineage.insert(Event::Born {
                     group: group.identity,
                 });
-                AggregateGroupOrigin::Born
+                AggregateGroupChange::Born(members)
             }
         };
         transition.assignments.push(AggregateGroupAssignment {
             identity: group.identity,
             anchor: group.anchor,
             sources: group.sources.clone(),
-            members,
-            origin,
+            change,
         });
     }
     transition

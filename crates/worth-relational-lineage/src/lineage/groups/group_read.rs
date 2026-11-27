@@ -1,17 +1,24 @@
-//! Read views of a branch's group state inside one read boundary's scope,
-//! and the naming-page codec of a live group.
+//! Read views of a branch's group state inside one read boundary's scope:
+//! point and ordered probes for the incremental group authority, and
+//! complete group walks only for history selection.
+use std::collections::BTreeSet;
+
 use worth_foundational::facade::AggregateIdentity;
 
 use crate::contracts::aggregate_identity::transition::group::model::{
-    AggregateContinuityRule, AggregateGroupMembers, AggregateMemberRole, AggregatePriorGroup,
+    AggregateContinuityRule, AggregateGroupMember, AggregateGroupMembers, AggregateMemberRole,
+    AggregatePriorGroup,
+};
+use crate::contracts::aggregate_identity::transition::group::state_view::{
+    AggregateGroupHeader, AggregateGroupMembership, AggregateGroupStateView,
 };
 use crate::contracts::lineage::data::naming::PersistentNameIdentity;
 use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
-use crate::lineage::naming_pages::codec::{read_serde, write_serde, NamingCodec, Reader, Writer};
 use crate::lineage::naming_pages::tables::scoped_prefix;
 use crate::lineage::tiered::NamingReadScope;
 
 use super::branch_state::{BranchGroupState, GroupStateDenial, SchemeGroups};
+use super::group_rows::{GroupMemberKey, GroupOwnerRow, ROLES};
 use super::CommittedGroupTransition;
 
 /// A branch's group state as one read boundary sees it.
@@ -68,10 +75,10 @@ impl<'s> SchemeGroupsRead<'s> {
         self.groups.rule
     }
 
-    /// The live group `identity`.
+    /// The live group `identity`'s header.
     ///
     /// Complexity: O(log G) and at most one page fault.
-    pub fn group(&self, identity: &AggregateIdentity) -> Option<&'s AggregatePriorGroup> {
+    pub fn header(&self, identity: &AggregateIdentity) -> Option<&'s AggregateGroupHeader> {
         self.groups
             .live
             .get_in(&self.groups.key(*identity), self.scope)
@@ -81,10 +88,13 @@ impl<'s> SchemeGroupsRead<'s> {
     ///
     /// Complexity: O(log M) and at most one page fault.
     pub fn owner_of(&self, member: &PersistentNameIdentity) -> Option<AggregateIdentity> {
+        self.owner_row(member).map(|row| row.group)
+    }
+
+    fn owner_row(&self, member: &PersistentNameIdentity) -> Option<&'s GroupOwnerRow> {
         self.groups
             .member_owner
             .get_in(&self.groups.key(*member), self.scope)
-            .copied()
     }
 
     /// Whether `identity` is a retired, unrevived group name.
@@ -95,69 +105,121 @@ impl<'s> SchemeGroupsRead<'s> {
             .is_some()
     }
 
-    /// Every live group in identity order: a scan of this scheme's range.
+    /// The live group `identity` with its complete membership.
     ///
-    /// Complexity: O(live groups of the scheme).
-    pub fn live(&self) -> Vec<&'s AggregatePriorGroup> {
-        let mut live = Vec::new();
+    /// Complexity: O(M log M): a walk of the group's member rows.
+    pub fn group(&self, identity: &AggregateIdentity) -> Option<AggregatePriorGroup> {
+        let header = self.header(identity)?;
+        Some(AggregatePriorGroup {
+            identity: header.identity,
+            anchor: header.anchor,
+            sources: header.sources.clone(),
+            members: self.members(identity),
+        })
+    }
+
+    /// Every live group in identity order with its complete membership: a
+    /// scan of this scheme's range, for history selection.
+    ///
+    /// Complexity: O(live groups and members of the scheme).
+    pub fn live(&self) -> Vec<AggregatePriorGroup> {
+        let mut headers = Vec::new();
         let prefix = scoped_prefix(self.groups.live.table(), &self.groups.id);
-        let scanned = self.groups.live.scan_merged(&prefix, |_, group| {
-            live.push(self.scope.alloc(group.into_owned()));
+        let scanned = self.groups.live.scan_merged(&prefix, |_, header| {
+            headers.push(header.into_owned());
             Ok(true)
         });
         if let Err(cause) = scanned {
             self.scope.fail(cause);
         }
-        live
+        headers
+            .into_iter()
+            .map(|header| AggregatePriorGroup {
+                members: self.members(&header.identity),
+                identity: header.identity,
+                anchor: header.anchor,
+                sources: header.sources,
+            })
+            .collect()
+    }
+
+    fn latch<T>(&self, read: Result<T, Cause>) -> Option<T> {
+        read.map_err(|cause| self.scope.fail(cause)).ok()
     }
 }
 
-fn role_tag(role: AggregateMemberRole) -> u8 {
-    match role {
-        AggregateMemberRole::Ordinary => 0,
-        AggregateMemberRole::Anchor => 1,
-        AggregateMemberRole::Boundary => 2,
+impl AggregateGroupStateView for SchemeGroupsRead<'_> {
+    fn group(&self, identity: &AggregateIdentity) -> Option<AggregateGroupHeader> {
+        self.header(identity).cloned()
     }
-}
 
-impl NamingCodec for AggregatePriorGroup {
-    fn write(&self, out: &mut Writer) {
-        self.identity.write(out);
-        self.anchor.write(out);
-        self.sources.write(out);
-        out.u32(u32::try_from(self.members.len()).unwrap_or(u32::MAX));
-        for (name, member) in self.members.iter() {
-            name.write(out);
-            write_serde(&member.carrier, out);
-            out.u8(role_tag(member.role));
-        }
-    }
-    fn read(input: &mut Reader<'_>) -> Result<Self, Cause> {
-        let identity = NamingCodec::read(input)?;
-        let anchor = NamingCodec::read(input)?;
-        let sources = NamingCodec::read(input)?;
-        let mut members = AggregateGroupMembers::new();
-        for _ in 0..input.count()? {
-            let name = PersistentNameIdentity::read(input)?;
-            let carrier = read_serde(input)?;
-            let role = match input.u8()? {
-                0 => AggregateMemberRole::Ordinary,
-                1 => AggregateMemberRole::Anchor,
-                2 => AggregateMemberRole::Boundary,
-                _ => return Err(Cause::Damaged),
-            };
-            if members.iter().last().is_some_and(|(last, _)| *last >= name) {
-                return Err(Cause::Damaged);
-            }
-            members
-                .insert(name, carrier, role)
-                .map_err(|_| Cause::Damaged)?;
-        }
-        Ok(Self {
-            identity,
-            anchor,
-            sources,
-            members,
+    fn membership(&self, name: &PersistentNameIdentity) -> Option<AggregateGroupMembership> {
+        let owner = *self.owner_row(name)?;
+        let key = GroupMemberKey {
+            group: owner.group,
+            role: owner.role,
+            name: *name,
+        };
+        let carrier = self
+            .groups
+            .members
+            .get_in(&self.groups.key(key), self.scope)?;
+        Some(AggregateGroupMembership {
+            group: owner.group,
+            member: AggregateGroupMember {
+                carrier: carrier.clone(),
+                role: owner.role,
+            },
         })
+    }
+
+    fn is_retired(&self, identity: &AggregateIdentity) -> bool {
+        SchemeGroupsRead::is_retired(self, identity)
+    }
+
+    fn least_member(
+        &self,
+        group: &AggregateIdentity,
+        role: Option<AggregateMemberRole>,
+        skip: &BTreeSet<PersistentNameIdentity>,
+    ) -> Option<PersistentNameIdentity> {
+        let single;
+        let roles: &[AggregateMemberRole] = match role {
+            Some(role) => {
+                single = [role];
+                &single
+            }
+            None => &ROLES,
+        };
+        let counts = self.header(group)?.counts;
+        let mut least: Option<PersistentNameIdentity> = None;
+        for role in roles.iter().filter(|role| counts.of(**role) > 0) {
+            let mut found = None;
+            let scanned = self.groups.scan_members(*group, Some(*role), |key, _| {
+                if skip.contains(&key.name) {
+                    return Ok(true);
+                }
+                found = Some(key.name);
+                Ok(false)
+            });
+            self.latch(scanned)?;
+            least = match (least, found) {
+                (Some(least), Some(found)) => Some(least.min(found)),
+                (least, found) => least.or(found),
+            };
+        }
+        least
+    }
+
+    fn members(&self, group: &AggregateIdentity) -> AggregateGroupMembers {
+        let mut members = AggregateGroupMembers::new();
+        let scanned = self.groups.scan_members(*group, None, |key, carrier| {
+            members
+                .insert(key.name, carrier.clone(), key.role)
+                .map_err(|_| Cause::Damaged)?;
+            Ok(true)
+        });
+        self.latch(scanned);
+        members
     }
 }
