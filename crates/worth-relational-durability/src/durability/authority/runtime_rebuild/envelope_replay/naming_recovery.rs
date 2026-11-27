@@ -138,18 +138,11 @@ pub fn reconstruct_replay_naming_plan(
         }
     }
 
-    // A name regenerated in this commit is re-minted here, so a birth in its
-    // occurrence references it as a same-occurrence name, never the basis.
+    // In-commit regenerations (`Replace` keeping its name) are reconstructed as
+    // `Retire` + `Create` using their recorded births. Because every basis name
+    // (live or retired) is admitted as `PersistentNameReferenceBasis::Basis`,
+    // references to a regenerated name replay directly against the basis.
     let regenerated = regenerated_births(lineage, envelope)?;
-    let mut regenerated_names = BTreeSet::new();
-    for (_, _, _, name, parts) in &regenerated {
-        regenerated_names.insert(*name);
-        let role = (
-            parts.occurrence_key().to_owned(),
-            parts.role_path().to_owned(),
-        );
-        same_occurrence_roles.insert(*name.as_bytes(), role);
-    }
     let basis_binding = lineage.naming_basis_binding();
     let basis = basis_binding.read_guard(branch_id.clone());
     let build_birth_request = |target: LineageRecordTarget,
@@ -169,17 +162,16 @@ pub fn reconstruct_replay_naming_plan(
                 continue;
             }
             let identity = PersistentNameIdentity::from_minted_digest(digest);
-            let ref_basis = if basis.contains_live_holder(&identity)
-                && !regenerated_names.contains(&identity)
-            {
-                PersistentNameReferenceBasis::Basis
-            } else if let Some((occ, role)) = same_occurrence_roles.get(&digest)
-                && occ == parts.occurrence_key()
-            {
-                PersistentNameReferenceBasis::SameOccurrence { role: role.clone() }
-            } else {
-                PersistentNameReferenceBasis::Basis
-            };
+            let ref_basis =
+                if basis.contains_live_holder(&identity) || basis.contains_retired(&identity) {
+                    PersistentNameReferenceBasis::Basis
+                } else if let Some((occ, role)) = same_occurrence_roles.get(&digest)
+                    && occ == parts.occurrence_key()
+                {
+                    PersistentNameReferenceBasis::SameOccurrence { role: role.clone() }
+                } else {
+                    PersistentNameReferenceBasis::Basis
+                };
             referenced_names.push(PersistentNameDiscriminatorReference {
                 identity,
                 basis: ref_basis,

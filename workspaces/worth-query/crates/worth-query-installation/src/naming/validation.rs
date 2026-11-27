@@ -34,7 +34,9 @@ pub(super) fn validate_and_lower_scheme(
             scheme_id: scheme_id.to_owned(),
         });
     }
-    if scheme.structural_identity() && scheme.split_discriminator_identity().is_none() {
+    if scheme.structural_identity()
+        && (!scheme.split_capable() || scheme.split_discriminator_identity().is_none())
+    {
         return Err(ApplicationNameSchemeDenial::MissingSplitDiscriminator {
             scheme_id: scheme_id.to_owned(),
         });
