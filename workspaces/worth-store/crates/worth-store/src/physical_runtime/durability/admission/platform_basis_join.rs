@@ -74,6 +74,10 @@ impl ReopenedPhysicalDurabilityRuntimeOwner {
         PhysicalMutationIdempotencyRuntimeOwner::authority(&self.idempotency)
     }
 
+    pub(in crate::physical_runtime) fn idempotency_binding_counts(&self) -> (usize, usize) {
+        self.idempotency.binding_counts()
+    }
+
     pub(in crate::physical_runtime) fn binding_compaction_authority(
         &self,
     ) -> crate::physical_runtime::durability::PhysicalMutationBindingCompactionRuntimeAuthority

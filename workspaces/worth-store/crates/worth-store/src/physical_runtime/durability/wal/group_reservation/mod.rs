@@ -27,6 +27,11 @@ impl PhysicalWalRuntimeOwner {
         ),
     > {
         let admitted = self.admit_group_preparations(members)?;
+        let publication = self
+            .publication
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
         let mut state = self
             .shared
             .lock()
@@ -44,6 +49,7 @@ impl PhysicalWalRuntimeOwner {
             ));
         }
         let byte_limit = state.policy.segment_byte_limit().get().get();
+        let inventory_limit = state.policy.segment_inventory_limit().get().get();
         let first_disposition = if state.segment_count == 0 {
             PhysicalWalFrameWriteDisposition::CreateSegment
         } else {
@@ -60,7 +66,22 @@ impl PhysicalWalRuntimeOwner {
             state.active_artifact.clone(),
             first_disposition,
         )?;
-        if current.resulting_frontier().valid_prefix_bytes() <= byte_limit {
+        // Each WAL segment retains both its raw frames and its settled routing
+        // metadata charge until checkpoint reclamation removes that closed
+        // segment. Rotate proactively once a segment holds a quarter of the
+        // growth budget so checkpoints can reclaim it before small-record
+        // metadata amplification exhausts the budget inside one open segment.
+        let retention_rotation_due = state.segment_count > 0
+            && state.segment_count < inventory_limit
+            && publication.as_ref().is_some_and(|admission| {
+                let frontier = state.frontier;
+                let (segment_bytes, growth_limit) = admission
+                    .segment_charged_bytes(frontier.segment().get(), frontier.generation().get());
+                segment_bytes >= (growth_limit / 4).max(1)
+            });
+        if current.resulting_frontier().valid_prefix_bytes() <= byte_limit
+            && !retention_rotation_due
+        {
             state.in_flight = true;
             return Ok(current);
         }
@@ -75,7 +96,6 @@ impl PhysicalWalRuntimeOwner {
                 },
             ));
         }
-        let inventory_limit = state.policy.segment_inventory_limit().get().get();
         if state.segment_count >= inventory_limit {
             return Err((
                 admitted,

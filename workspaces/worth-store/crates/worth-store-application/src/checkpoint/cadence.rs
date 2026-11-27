@@ -44,7 +44,18 @@ pub(crate) fn inspect(
         head: 0,
         uncovered_payload_bytes: None,
     });
-    let mut count_due = false;
+    // Live idempotency bindings are reclaimed only after `retention` subsequent
+    // checkpoints commit. Space checkpoints across the remaining binding budget
+    // by counting only bindings issued in the current generation, so a finished
+    // checkpoint immediately resets this trigger instead of thrashing back-to-back.
+    let idempotency = serving.durability_observation().idempotency_policy();
+    let live_limit = u64::from(idempotency.live_binding_limit().get().get());
+    let retention = idempotency.retention().get().get();
+    let (live_bindings, current_gen_bindings) = serving.idempotency_binding_counts();
+    let remaining_bindings = live_limit.saturating_sub(live_bindings);
+    let generation_budget = (remaining_bindings / retention.saturating_add(1)).max(1);
+    let mut count_due =
+        current_gen_bindings >= generation_budget || serving.physical_retention_checkpoint_due();
     // Check ALL five counts before requesting any suffix header. One count
     // trigger therefore avoids byte inspection even in another journal.
     for (index, observation) in observations.iter_mut().enumerate() {
@@ -68,7 +79,9 @@ pub(crate) fn inspect(
             due: true,
         });
     }
-    let mut due = false;
+    // Every uncovered payload byte waits in the same physical WAL tail, so
+    // the byte trigger compares the total across all five journals.
+    let mut total = 0u64;
     for observation in &mut observations {
         let journal = serving
             .ordered_journal(name(observation.name))
@@ -93,21 +106,23 @@ pub(crate) fn inspect(
             bytes = bytes
                 .checked_add(entry.payload_bytes())
                 .ok_or(Denial::SizeLimit)?;
-            if bytes >= limits.payload_bytes().get() {
+            total = total
+                .checked_add(entry.payload_bytes())
+                .ok_or(Denial::SizeLimit)?;
+            if total >= limits.payload_bytes().get() {
                 break;
             }
         }
         if position == observation.head {
             observation.uncovered_payload_bytes = Some(bytes);
         }
-        due |= bytes >= limits.payload_bytes().get();
-        if due {
+        if total >= limits.payload_bytes().get() {
             break;
         }
     }
     Ok(CheckpointCadence {
         journals: observations,
-        due,
+        due: total >= limits.payload_bytes().get(),
     })
 }
 fn name(name: &'static str) -> OrderedJournalName {

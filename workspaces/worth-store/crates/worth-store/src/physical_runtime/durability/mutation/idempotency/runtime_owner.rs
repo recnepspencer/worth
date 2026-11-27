@@ -69,6 +69,22 @@ impl PhysicalMutationIdempotencyRuntimeOwner {
         })
     }
 
+    /// Returns `(live_bindings, current_generation_bindings)` under one lock:
+    /// total live bindings held against the policy's live-binding limit, and
+    /// how many of them were issued since the last durable physical checkpoint.
+    pub(in crate::physical_runtime) fn binding_counts(&self) -> (usize, usize) {
+        let registry = self
+            .registry
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let current = registry
+            .bindings
+            .values()
+            .filter(|state| state.issuance_generation() == registry.generation)
+            .count();
+        (registry.bindings.len(), current)
+    }
+
     pub(in crate::physical_runtime) fn authority(
         owner: &Arc<Self>,
     ) -> PhysicalMutationIdempotencyRuntimeAuthority {

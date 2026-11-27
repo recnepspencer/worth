@@ -151,9 +151,15 @@ impl OrderedJournalPublicationFailureCustody {
 impl std::fmt::Debug for OrderedJournalPublicationTerminal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let fate = self.outcome.as_ref().map(|o| match o {
-            PhysicalMutationOutcome::Completed(_) => "Completed",
-            PhysicalMutationOutcome::ProvenNoEffect(_) => "ProvenNoEffect",
-            PhysicalMutationOutcome::Indeterminate(_) => "Indeterminate",
+            PhysicalMutationOutcome::Completed(_) => "Completed".to_owned(),
+            PhysicalMutationOutcome::ProvenNoEffect(no_effect) => format!(
+                "ProvenNoEffect({:?}, {:?})",
+                no_effect.cause(),
+                no_effect.admission_detail()
+            ),
+            PhysicalMutationOutcome::Indeterminate(ind) => {
+                format!("Indeterminate({:?})", ind.stage())
+            }
         });
         f.debug_struct("OrderedJournalPublicationTerminal")
             .field("source", &self.source)

@@ -191,6 +191,38 @@ impl PhysicalPublicationAdmission {
             .expect("reserved group charge is retained");
         Ok(())
     }
+
+    /// Returns `(segment_charged_bytes, growth_bytes_limit)` for one WAL segment.
+    pub(in crate::physical_runtime) fn segment_charged_bytes(
+        &self,
+        segment: u64,
+        generation: u64,
+    ) -> (u64, u64) {
+        let state = self.lock();
+        let wal = state
+            .wal_publications
+            .values()
+            .filter(|entry| {
+                (entry.reservation.segment, entry.reservation.generation) == (segment, generation)
+            })
+            .fold(0_u64, |total, entry| {
+                total.saturating_add(entry.reservation.total_bytes())
+            });
+        let total = state
+            .sealed_publications
+            .iter()
+            .filter(|(sealed_segment, sealed_generation, _)| {
+                (*sealed_segment, *sealed_generation) == (segment, generation)
+            })
+            .fold(wal, |total, (_, _, bytes)| total.saturating_add(*bytes));
+        (total, state.profile.growth_bytes())
+    }
+
+    /// Returns `(charged_bytes, growth_bytes_limit)` across retained publications.
+    pub(in crate::physical_runtime) fn growth_usage(&self) -> (u64, u64) {
+        let state = self.lock();
+        (state.charged_bytes, state.profile.growth_bytes())
+    }
 }
 
 impl super::AdmissionState {

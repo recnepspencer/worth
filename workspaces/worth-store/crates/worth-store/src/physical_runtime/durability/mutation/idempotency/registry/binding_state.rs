@@ -59,6 +59,18 @@ impl PhysicalMutationIdempotencyBindingState {
             Self::Unsealed(_) | Self::GroupSealed { .. } | Self::RebuiltUnresolved { .. }
         )
     }
+
+    pub(in crate::physical_runtime::durability::mutation::idempotency) fn issuance_generation(
+        &self,
+    ) -> PhysicalNamespaceDurableCheckpointGeneration {
+        match self {
+            Self::Unsealed(basis)
+            | Self::GroupSealed { basis, .. }
+            | Self::RebuiltUnresolved { basis, .. }
+            | Self::WalBound { basis, .. }
+            | Self::Terminal { basis, .. } => basis.key().lease().issuance_generation(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
