@@ -1,6 +1,7 @@
 //! The request program: the birth body action, the three native control
 //! actions and the `BornAtAdmission` invariant, opened over a held trusted
-//! clock. The owner holds the four company grants from the initial state.
+//! clock. The owner holds every acme grant and, at globex, every grant but
+//! the subject read; the outsider holds the acme command grants only.
 use std::time::Duration;
 
 use worth_query_decl::facade::application_program::*;
@@ -22,12 +23,13 @@ use worth_query_host::facade::{
     WorthQueryApplicationHome, WorthQueryHomeConfig,
 };
 
-use super::control::{AdvanceBinding, AuthorBinding, StartBinding};
+use super::control::AuthorBinding;
 use super::creator::{open_request_operation, OpenRequestBinding, RequestOpened};
-use super::grants::{self, ADVANCE, AUTHOR, OPEN, START};
+use super::grants::{self, ADVANCE, AUTHOR, ENUMERATE, OPEN, READ, REVIEW, START};
 use super::invariant::{self, BornAtAdmission};
 use super::schema::*;
-use super::{control, COMPANY};
+use super::subject_control::{AdvanceBinding, ReviewBinding, StartBinding};
+use super::{control, disclosure, subject_control, COMPANY};
 
 worth_query_decl::facade::worth_query_authentication_method!(BirthMethod);
 worth_query_decl::facade::worth_query_authentication_audience!(BirthAudience);
@@ -64,7 +66,8 @@ impl ApplicationFeatureDefinition<BirthSchema> for BirthDefinition {
         schema: ApplicationSchemaDeclarationBuilder<BirthSchema>,
     ) -> ApplicationSchemaDeclarationBuilder<BirthSchema> {
         let schema = <Actions as ApplicationFeatureDefinition<BirthSchema>>::members(schema);
-        grants::declare(control::declare(schema))
+        let schema = disclosure::declare(grants::declare(control::declare(schema)));
+        subject_control::declare(schema)
     }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![ApplicationFeatureSpec::root::<BirthSchema, BirthFeature>()
@@ -73,6 +76,8 @@ impl ApplicationFeatureDefinition<BirthSchema> for BirthDefinition {
             .native_action::<AuthorBinding>()
             .finish_action()
             .native_action::<StartBinding>()
+            .finish_action()
+            .native_action::<ReviewBinding>()
             .finish_action()
             .native_action::<AdvanceBinding>()
             .finish_action()
@@ -125,28 +130,33 @@ worth_query_application_program! {
 pub type BirthHome = WorthQueryApplicationHome<BirthSchema, BirthProgram>;
 
 const OWNER: &str = "owner";
+const OUTSIDER: &str = "outsider";
+/// A second company where the owner may open requests but not read them.
+pub const OTHER_COMPANY: &str = "globex";
 
-fn identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new(BirthIssuer, OWNER).unwrap()
+fn identity(principal: &str) -> WorthQueryExternalPrincipalIdentity {
+    WorthQueryExternalPrincipalIdentity::new(BirthIssuer, principal).unwrap()
 }
 
 fn key<Entity>(value: &str) -> WorthQueryApplicationEntityKey<BirthSchema, Entity> {
     WorthQueryApplicationEntityKey::new(value.to_owned()).unwrap()
 }
 
-/// One active, unexpiring, undelegable grant of `action` over the company.
+/// One active, unexpiring, undelegable grant of `action` over `company`.
 fn grant(
     graph: &mut WorthQueryPrimaryGraphBootstrap<BirthSchema>,
+    grantee: &str,
+    company: &str,
     action: &str,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    let grant = format!("grant-{action}");
+    let grant = format!("grant-{grantee}-{company}-{action}");
     graph.bind_entity(
         WorthQueryApplicationEntitySeed::new(Grant::reference(), key(&grant))
             .field(GrantFacts::grant_id(), grant.clone())
             .field(GrantFacts::action(), action.to_owned())
             .field(GrantFacts::purpose(), "purchase-request".to_owned())
             .field(GrantFacts::status(), "active".to_owned())
-            .field(GrantFacts::workflow(), COMPANY.to_owned())
+            .field(GrantFacts::workflow(), company.to_owned())
             .field(GrantFacts::not_before(), 0_u64)
             .field(GrantFacts::not_after(), u64::MAX)
             .field(GrantFacts::delegation_limit(), 0_u64),
@@ -154,7 +164,7 @@ fn grant(
     graph.bind_relation(WorthQueryApplicationRelationSeed::new(
         Grantee::reference(),
         &format!("{grant}-grantee"),
-        key(OWNER),
+        key(grantee),
         key(&grant),
     ))?;
     graph.bind_relation(WorthQueryApplicationRelationSeed::new(
@@ -167,7 +177,7 @@ fn grant(
         GrantResource::reference(),
         &format!("{grant}-resource"),
         key(&grant),
-        key(COMPANY),
+        key(company),
     ))
 }
 
@@ -178,27 +188,43 @@ fn seed(
     let binding = installed
         .principal_binding(OwnerBinding::reference())
         .unwrap();
-    let principal = WorthQueryApplicationPrincipalKey::new(OWNER).unwrap();
     let enabled = WorthQueryPrincipalMappingStatus::Enabled;
-    graph.bind_principal(&binding, principal, 1_u64, identity(), enabled)?;
-    graph.bind_entity(
-        WorthQueryApplicationEntitySeed::new(Company::reference(), key(COMPANY))
-            .field(CompanyFacts::company_id(), COMPANY.to_owned()),
-    )?;
-    for action in [AUTHOR, START, ADVANCE, OPEN] {
-        grant(graph, action)?;
+    for (number, principal) in [(1_u64, OWNER), (2, OUTSIDER)] {
+        let key = WorthQueryApplicationPrincipalKey::new(principal).unwrap();
+        graph.bind_principal(&binding, key, number, identity(principal), enabled)?;
+    }
+    for company in [COMPANY, OTHER_COMPANY] {
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(Company::reference(), key(company))
+                .field(CompanyFacts::company_id(), company.to_owned()),
+        )?;
+    }
+    let commands = [AUTHOR, START, REVIEW, ADVANCE, OPEN];
+    for action in commands.into_iter().chain([READ, ENUMERATE]) {
+        grant(graph, OWNER, COMPANY, action)?;
+    }
+    for action in commands {
+        grant(graph, OWNER, OTHER_COMPANY, action)?;
+        grant(graph, OUTSIDER, COMPANY, action)?;
     }
     Ok(())
 }
 
-/// Opens an in-memory Home whose trusted time is the held clock.
-pub fn open(trusted_time: WorthQueryFixedRuntimeTimeSource) -> BirthHome {
+/// Opens an in-memory Home, or creates or reopens the Directory Home at
+/// `directory`, whose trusted time is the held clock.
+pub fn open(
+    trusted_time: WorthQueryFixedRuntimeTimeSource,
+    directory: Option<&std::path::Path>,
+) -> BirthHome {
     let build = ApplicationBuildIdentity::parse("b1e70000-0000-4000-8000-b1e700000001").unwrap();
     let config = WorthQueryHomeConfig::new(build, (BirthRuntime::new(),))
         .with_initial_state(|_, graph, installed| seed(graph, installed))
         .with_authorization_time_source(trusted_time);
-    WorthQueryApplicationHome::open_memory(config)
-        .unwrap_or_else(|denial| panic!("birth Home opens: {denial}"))
+    match directory {
+        None => WorthQueryApplicationHome::open_memory(config),
+        Some(path) => WorthQueryApplicationHome::open_directory(path, config),
+    }
+    .unwrap_or_else(|denial| panic!("birth Home opens: {denial}"))
 }
 
 /// The owner authenticated as a local process, with the request scope it acts in.
@@ -208,6 +234,15 @@ pub struct Caller {
 }
 
 pub fn owner(schema: &WorthQueryInstalledApplicationSchema<BirthSchema>) -> Caller {
+    caller(schema, OWNER)
+}
+
+/// A principal holding the acme command grants but no subject read.
+pub fn outsider(schema: &WorthQueryInstalledApplicationSchema<BirthSchema>) -> Caller {
+    caller(schema, OUTSIDER)
+}
+
+fn caller(schema: &WorthQueryInstalledApplicationSchema<BirthSchema>, name: &str) -> Caller {
     let clock = WorthQueryAdmissionClock::system();
     let scope = WorthQueryRequestScope::new(
         None,
@@ -215,7 +250,7 @@ pub fn owner(schema: &WorthQueryInstalledApplicationSchema<BirthSchema>) -> Call
         clock.clone(),
     );
     let principal = WorthQueryLocalProcessPrincipal::new(
-        identity(),
+        identity(name),
         BirthAudience,
         BirthMethod,
         Duration::from_secs(600),

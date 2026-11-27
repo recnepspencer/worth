@@ -5,16 +5,22 @@
 //! instance; a commit-boundary invariant refuses any stamp other than its own
 //! `context.admitted_at()`. The world is minimal but real: grants admit four
 //! company capabilities, the vocabulary installs the actual creator with
-//! `birth_operation`, and births run through the public request API.
+//! `birth_operation`, and births run through the public request API. The
+//! born request links to its company, so a company grant reaches it through
+//! the governed subject read that `subject_lookup` reacquires it by.
 mod birth;
 mod control;
 mod courts;
 mod creator;
+mod disclosure;
 mod grants;
 mod invariant;
 mod program;
 mod schema;
 mod signing;
+mod subject_control;
+mod subject_lookup;
+mod subject_pages;
 mod workflow;
 
 use worth_query_decl::facade::application_schema::CanonicalTimestamp;

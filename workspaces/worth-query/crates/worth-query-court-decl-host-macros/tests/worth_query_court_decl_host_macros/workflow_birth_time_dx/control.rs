@@ -1,7 +1,7 @@
-//! The three workflow control steps the vocabulary requires: definition
-//! authoring (also the proposal slot), instance start and advance. Each is a
-//! `WORKFLOW_CONTROL` binding the kernel authorizes through its own company
-//! capability; no handler serves it.
+//! The company workflow control step the vocabulary requires: definition
+//! authoring, a `WORKFLOW_CONTROL` binding the kernel authorizes through its
+//! own company capability; no handler serves it. Steps on an instance are
+//! `subject_control`'s.
 use serde::{Deserialize, Serialize};
 use worth_query_decl::facade::application_capability::{
     ApplicationCapabilityRequest, ApplicationCapabilityRequestProjectionDenial,
@@ -10,7 +10,7 @@ use worth_query_decl::facade::application_operation::*;
 use worth_query_decl::facade::application_schema::*;
 use worth_query_decl::facade::{worth_query_operation, worth_query_structured_value_binding};
 
-use super::grants::{self, AdvanceCapability, AuthorCapability, Projection, StartCapability};
+use super::grants::{self, AuthorCapability, Projection};
 use super::schema::*;
 
 /// The company a control step acts on.
@@ -111,22 +111,8 @@ workflow_control!(
     grants::AUTHOR,
     "author"
 );
-workflow_control!(
-    StartOp,
-    StartBinding,
-    StartCapability,
-    grants::START,
-    "start"
-);
-workflow_control!(
-    AdvanceOp,
-    AdvanceBinding,
-    AdvanceCapability,
-    grants::ADVANCE,
-    "advance"
-);
 
-/// Authors a definition over one company; also the definition's review slot.
+/// Authors a definition over one company.
 #[derive(Clone, Debug)]
 pub struct Author(pub CompanyControl);
 
@@ -157,22 +143,10 @@ where
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<BirthSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BirthSchema> {
-    let (author, start, advance) = (
-        AuthorOp::reference(),
-        StartOp::reference(),
-        AdvanceOp::reference(),
-    );
+    let author = AuthorOp::reference();
     schema
         .operation(pure(author))
         .operation_projection_work_budget(author, 64)
         .operation_read_field(author, CompanyFacts::company_id())
-        .operation(pure(start))
-        .operation_projection_work_budget(start, 64)
-        .operation_read_field(start, CompanyFacts::company_id())
-        .operation(pure(advance))
-        .operation_projection_work_budget(advance, 64)
-        .operation_read_field(advance, CompanyFacts::company_id())
         .application_mutation_binding::<AuthorBinding>()
-        .application_mutation_binding::<StartBinding>()
-        .application_mutation_binding::<AdvanceBinding>()
 }

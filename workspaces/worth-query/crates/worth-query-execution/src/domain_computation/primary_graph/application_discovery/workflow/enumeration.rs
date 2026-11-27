@@ -27,6 +27,7 @@ use worth_relational::facade::indexes::BoundedRelatedEntityOrderedLookupRequest;
 use worth_relational::facade::indexes::BoundedRelatedEntityPrefixLookupRequest;
 use worth_relational::facade::indexes::BoundedRelatedEntityPrefixPage;
 use worth_relational::facade::indexes::DerivedIndexMaintenanceBudget;
+mod birth;
 pub(super) mod currency;
 /// Explicit selected scope; omitting a subject never widens a subject rule.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -56,6 +57,9 @@ where
     width: usize,
     rows: ExecutionArray<WorthQueryWorkflowInstanceRead>,
     native: Option<BoundedRelatedEntityPrefixPage>,
+    /// The subject's relation-backed birth follows the exhausted coordinate
+    /// pages; set when it did not fit this page.
+    birth_pending: bool,
     marker: PhantomData<fn() -> (Schema, B)>,
 }
 impl<
@@ -72,7 +76,12 @@ impl<
     }
     /// Retain this opaque owner for continuation; fresh disclosure is required on every call.
     pub fn continuation(&self) -> Option<&Self> {
-        self.native.as_ref()?.next_boundary().map(|_| self)
+        let native = self
+            .native
+            .as_ref()
+            .and_then(|page| page.next_boundary())
+            .is_some();
+        (native || self.birth_pending).then_some(self)
     }
 }
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
@@ -150,98 +159,125 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         {
             return Err(Denial::PolicyMismatch);
         }
-        let (rows, native) = graph
-            .integration_handle()
-            .with_runtime(&execution, |runtime| {
-                let snapshot = data.application_basis().snapshot_handle();
-                let layout = graph.layout().workflow();
-                let Some(lineage) = super::selection::lineage::<Spec>(
-                    runtime,
-                    &execution,
-                    snapshot,
-                    data.product().relational_basis(),
-                    layout,
-                    target.identity().as_str(),
-                )?
-                else {
-                    let rows = ExecutionArrayBuilder::allocate(0, execution.allocation_policy())
-                        .map_err(Denial::Allocation)?
-                        .seal()
-                        .map_err(Denial::Allocation)?;
-                    return Ok((rows, None));
-                };
-                currency::prepare(
-                    runtime,
-                    &execution,
-                    data.product().relational_basis(),
-                    index,
-                    index_read,
-                )?;
-                let pinned = runtime
-                    .read_truth()
-                    .pin_read_capability(snapshot, &[index], &execution)
-                    .map_err(Denial::PinnedRead)?;
-                let values = subject.map(|subject| {
-                    [
-                        AspectValue::UInt64(subject.partition_value_u64()),
-                        AspectValue::UInt64(subject.local_slot_value()),
-                        AspectValue::UInt64(u64::from(subject.generation_value())),
-                    ]
-                });
-                let prefix = values.as_ref().map_or(&[][..], |values| &values[..]);
-                let ordered = BoundedRelatedEntityOrderedLookupRequest::new(
-                    snapshot.clone(),
-                    index,
-                    lineage,
-                    layout.instance.entity_kind,
-                    None,
-                    width,
-                )
-                .map_err(Denial::PageShape)?;
-                let native = pinned
-                    .execute_bounded_related_entity_prefix_lookup(
-                        BoundedRelatedEntityPrefixLookupRequest::new(
-                            ordered,
-                            prefix,
-                            after
-                                .and_then(|page| page.native.as_ref())
-                                .and_then(|page| page.next_boundary()),
-                        ),
-                        &execution,
-                    )
-                    .map_err(Denial::Page)?;
-                let mut rows = ExecutionArrayBuilder::allocate(
-                    native.child_entity_ids().len(),
-                    execution.allocation_policy(),
-                )
-                .map_err(Denial::Allocation)?;
-                for instance in native.child_entity_ids() {
-                    // The native index verifies child kind, relation and complete ordering values.
-                    // The canonical record validates current protocol/start provenance at this SAME basis.
-                    let record = governed_record::observe(
-                        &execution,
+        let birth_only = after.is_some_and(|page| page.birth_pending);
+        let (rows, native, pending) =
+            graph
+                .integration_handle()
+                .with_runtime(&execution, |runtime| {
+                    let snapshot = data.application_basis().snapshot_handle();
+                    let layout = graph.layout().workflow();
+                    let Some(lineage) = super::selection::lineage::<Spec>(
                         runtime,
+                        &execution,
                         snapshot,
+                        data.product().relational_basis(),
                         layout,
-                        data.product().product_branch(),
-                        *instance,
-                        self.product().selected_commit() == data.product().selected_commit(),
-                        lineage,
-                        workflow.program_revision(),
-                        self.application()
-                            .installed_program_support()
-                            .ok_or(Denial::PolicyMismatch)?,
-                        workflow.resources(),
+                        target.identity().as_str(),
+                    )?
+                    else {
+                        let rows =
+                            ExecutionArrayBuilder::allocate(0, execution.allocation_policy())
+                                .map_err(Denial::Allocation)?
+                                .seal()
+                                .map_err(Denial::Allocation)?;
+                        return Ok((rows, None, false));
+                    };
+                    currency::prepare(
+                        runtime,
+                        &execution,
+                        data.product().relational_basis(),
+                        index,
+                        index_read,
                     )?;
-                    rows.push(project_record(
-                        record,
-                        data,
-                        WorthQueryWorkflowAudit::Withheld,
-                    ))
+                    let pinned = runtime
+                        .read_truth()
+                        .pin_read_capability(snapshot, &[index], &execution)
+                        .map_err(Denial::PinnedRead)?;
+                    let values = subject.map(|subject| {
+                        [
+                            AspectValue::UInt64(subject.partition_value_u64()),
+                            AspectValue::UInt64(subject.local_slot_value()),
+                            AspectValue::UInt64(u64::from(subject.generation_value())),
+                        ]
+                    });
+                    let prefix = values.as_ref().map_or(&[][..], |values| &values[..]);
+                    let native = if birth_only {
+                        None
+                    } else {
+                        let ordered = BoundedRelatedEntityOrderedLookupRequest::new(
+                            snapshot.clone(),
+                            index,
+                            lineage,
+                            layout.instance.entity_kind,
+                            None,
+                            width,
+                        )
+                        .map_err(Denial::PageShape)?;
+                        Some(
+                            pinned
+                                .execute_bounded_related_entity_prefix_lookup(
+                                    BoundedRelatedEntityPrefixLookupRequest::new(
+                                        ordered,
+                                        prefix,
+                                        after
+                                            .and_then(|page| page.native.as_ref())
+                                            .and_then(|page| page.next_boundary()),
+                                    ),
+                                    &execution,
+                                )
+                                .map_err(Denial::Page)?,
+                        )
+                    };
+                    let coordinates = native
+                        .as_ref()
+                        .map_or(&[][..], |native| native.child_entity_ids());
+                    // A birth carries no subject coordinates, so the coordinate
+                    // index never pages it: it follows the last coordinate page.
+                    let exhausted = native
+                        .as_ref()
+                        .is_none_or(|native| native.next_boundary().is_none());
+                    let born = match subject {
+                        Some(subject) if exhausted => birth::born_instance(
+                            runtime, &execution, snapshot, layout, subject, lineage,
+                        )?,
+                        _ => None,
+                    };
+                    let fits = coordinates.len() < width;
+                    let mut rows = ExecutionArrayBuilder::allocate(
+                        coordinates.len() + usize::from(born.is_some() && fits),
+                        execution.allocation_policy(),
+                    )
                     .map_err(Denial::Allocation)?;
-                }
-                Ok((rows.seal().map_err(Denial::Allocation)?, Some(native)))
-            })?;
+                    let born_here = born.filter(|_| fits);
+                    for instance in coordinates.iter().chain(born_here.as_ref()) {
+                        // The native index verifies child kind, relation and complete ordering values;
+                        // a birth's only subject relation names this subject. The canonical record
+                        // validates current protocol/start provenance at this SAME basis.
+                        let record = governed_record::observe(
+                            &execution,
+                            runtime,
+                            snapshot,
+                            layout,
+                            data.product().product_branch(),
+                            *instance,
+                            self.product().selected_commit() == data.product().selected_commit(),
+                            lineage,
+                            workflow.program_revision(),
+                            self.application()
+                                .installed_program_support()
+                                .ok_or(Denial::PolicyMismatch)?,
+                            workflow.resources(),
+                        )?;
+                        rows.push(project_record(
+                            record,
+                            data,
+                            WorthQueryWorkflowAudit::Withheld,
+                        ))
+                        .map_err(Denial::Allocation)?;
+                    }
+                    let pending = born.is_some() && !fits;
+                    Ok((rows.seal().map_err(Denial::Allocation)?, native, pending))
+                })?;
         Ok(WorthQueryWorkflowInstancePage {
             basis: WorthQueryWorkflowReadBasis::retained(data),
             target,
@@ -251,6 +287,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             width,
             rows,
             native,
+            birth_pending: pending,
             marker: PhantomData,
         })
     }

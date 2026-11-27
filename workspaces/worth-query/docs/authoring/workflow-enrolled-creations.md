@@ -205,6 +205,18 @@ commit: retain its outcome and receipt. Do not flatten `RecoveredCommitted`,
 unpublished, unresolved or deferred native outcomes into ordinary denial or
 permission to execute again.
 
+Without the receipt (a fresh session, a reopened Directory Home, or a newer
+revision published since the birth), reacquire the instance through the
+governed subject page:
+`request.at(&data).read_workflow_instances::<Spec, SubjectRead>(vocabulary, &target, subject_input, WorthQueryWorkflowReadExtent::Subject, width, indexes, None)`.
+The installed subject rule admits the subject first. The page then lists the
+subject's coordinate-recorded instances (started, migrated or succeeded) and,
+after them, its one relation-recorded birth, read from the native subject
+relation at the same basis. A live birth carries a fresh locator pinned to the
+revision it was born on, so it advances under that revision after a successor
+definition is published. A page too narrow for both carries the birth to its
+continuation. Unauthorized principals are refused before any lookup.
+
 ## Anti-Patterns
 
 Do not predict a future ID, enroll the container as a placeholder, seed a subject,
@@ -223,8 +235,10 @@ multiple created subjects and enrollment through program migration are refused.
 This is not a complete Reopen command. Closed-source pin admission, a fresh
 approval round, preserved historical signature validity and linkage to prior
 rounds remain separate domain and native joins. A retained requirement is live
-authority, not a restart-persistable permit. No receipt-free historical instance
-recovery or durable Store restart guarantee is added by this surface.
+authority, not a restart-persistable permit. Receipt-free reacquisition is the
+subject page above; no durable Store restart guarantee is added by this
+surface. Definition-wide instance pages do not yet list births: their native
+index orders instances by subject coordinates, which a birth does not record.
 
 ## Related Docs
 

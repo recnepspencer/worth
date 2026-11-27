@@ -2,11 +2,12 @@
 //! requirement, capture the original creator, bind it to that requirement,
 //! retain its declared SourceOnly action and advance it with fresh authority.
 use worth_query_host::facade::application_entry::*;
+use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
 use super::creator::{CreatedRequest, OpenRequest};
-use super::program::{owner, BirthProgram, OpenRequestAction};
+use super::program::{owner, BirthProgram, Caller, OpenRequestAction};
 use super::schema::{ReadRequest, RequestView};
-use super::workflow::{RequestWorkflow, World};
+use super::workflow::{RequestWorkflow, WorkflowHome, World};
 use super::COMPANY;
 
 /// Births request `request` and returns the instance its own commit started.
@@ -58,6 +59,46 @@ pub fn birth(world: &World, request: u64) -> PublishedWorkflowInstanceRef {
         panic!("the completed birth releases its cleanup");
     }
     instance
+}
+
+/// Births `request` in `company` on `definition` as `caller`, executing the
+/// bound creator in the program as a Directory Home requires.
+pub fn birth_in(
+    home: &WorkflowHome,
+    definition: &PublishedWorkflowDefinitionRef,
+    caller: &Caller,
+    company: &str,
+    request: u64,
+) -> PublishedWorkflowInstanceRef {
+    let open = OpenRequest {
+        company: company.to_owned(),
+        request,
+    };
+    let runtime = home.runtime().runtime();
+    let fresh = || runtime.request(&caller.principal, &caller.scope).advanced();
+    let required = fresh()
+        .mutate(open.clone())
+        .without_source()
+        .idempotency(&request)
+        .prepare_workflow_birth::<RequestWorkflow, CreatedRequest>(
+            home.vocabulary(),
+            definition.clone(),
+        )
+        .unwrap_or_else(|denial| panic!("birth prepares: {denial:?}"));
+    let outcome = fresh()
+        .mutate(open)
+        .without_source()
+        .idempotency(&request)
+        .for_workflow_birth::<RequestWorkflow, CreatedRequest>(home.vocabulary(), &required)
+        .unwrap_or_else(|denial| panic!("birth binds: {denial:?}"))
+        .execute_capability_in_program(home.runtime(), ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap_or_else(|denial| panic!("birth executes: {denial:?}"));
+    let Some(receipt) = outcome.receipt() else {
+        panic!("the birth commits");
+    };
+    required
+        .instance_in(receipt)
+        .unwrap_or_else(|denial| panic!("the birth commit started its instance: {denial:?}"))
 }
 
 /// A request as committed, read back by the owner.
