@@ -1,11 +1,9 @@
 //! Installed-requirement observation and exact decision-fact minting.
 
+use super::policy_decision::WorthQueryInstalledPolicySubject;
 use super::validation::denial;
-use super::validation::validate_decision;
 use super::WorthQueryConventionalAuthorizationDecisionPermit;
 use super::WorthQueryConventionalAuthorizationObservation;
-use crate::domain_computation::authorization::bridge_observation::lower_bridge_observation;
-use crate::domain_computation::authorization::installed_policy::WorthQueryInstalledAuthorizationPolicy;
 use crate::domain_computation::authorization::WorthQueryAuthorizationDecisionFact;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind;
@@ -14,7 +12,6 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessCo
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
-use worth_relational::facade::authorization::RelationalAuthorizationObservationPlan;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -99,25 +96,6 @@ pub trait ConventionalAuthorizationObservationRuntimeExt<
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
     ) -> Result<WorthQueryAuthorizationDecisionFact, WorthQueryOperationAuthorizationDenial>;
-    fn validate_scope(
-        &self,
-        requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial>;
-    fn validate_installation(
-        &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        installed: &WorthQueryInstalledAuthorizationPolicy,
-        requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial>;
-    fn observe_relational(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        installed: &WorthQueryInstalledAuthorizationPolicy,
-        requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
-    ) -> Result<
-        worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
-        WorthQueryOperationAuthorizationDenial,
-    >;
 }
 
 impl<Schema, Principal, PrincipalIdentity, Scope>
@@ -145,43 +123,31 @@ where
         Ok(admitted)
     }
 
+    /// Admission is the installed policy decision plus the one step
+    /// eligibility observation never takes: minting the decision fact.
     fn observe_one(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
     ) -> Result<WorthQueryAuthorizationDecisionFact, WorthQueryOperationAuthorizationDenial> {
-        self.validate_scope(requirement)?;
-        let installed = runtime.runtime.authorization.policy(requirement)?;
-        self.validate_installation(runtime, installed, requirement)?;
-        let evidence = self.observe_relational(execution, installed, requirement)?;
-        let dependency_identity = *evidence.observation_identity().bytes();
-        let bridge_observation = lower_bridge_observation(
-            installed,
-            &evidence,
-            dependency_identity,
-            requirement.policy(),
-        )?;
-        let bridge = runtime
-            .runtime
-            .authorization
-            .bridge()
-            .evaluate(bridge_observation)
-            .map_err(|_| {
-                denial(
-                    WorthQueryOperationAuthorizationDenialKind::Refused(
-                        AuthorizationRefusal::BridgeEvaluationRejected,
-                    ),
-                    requirement.policy(),
-                )
-            })?;
-        validate_decision(
-            runtime.runtime.authorization.bridge(),
-            &evidence,
-            &bridge,
-            dependency_identity,
-            requirement.policy(),
-        )?;
+        let decision = WorthQueryInstalledPolicySubject {
+            relational: self.relational,
+            snapshot: self.snapshot.clone(),
+            principal_entity_id: self.principal.principal_entity_id(),
+            scope_identity: self.scope_identity,
+            binding_identity: self.binding_identity,
+        }
+        .decide(execution, runtime, requirement)?;
+        if !decision.is_allowed() {
+            return Err(denial(
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::PermissionDenied,
+                ),
+                requirement.policy(),
+            ));
+        }
+        let (evidence, bridge) = decision.into_evidence();
         Ok(
             WorthQueryAuthorizationDecisionFact::from_conventional_observation(
                 WorthQueryConventionalAuthorizationDecisionPermit::new(),
@@ -190,97 +156,5 @@ where
                 bridge,
             ),
         )
-    }
-
-    fn validate_scope(
-        &self,
-        requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        if requirement.scope_entity() == self.scope_identity.entity_name() {
-            Ok(())
-        } else {
-            Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::Refused(
-                    AuthorizationRefusal::ScopeMismatch,
-                ),
-                requirement.scope_entity(),
-            ))
-        }
-    }
-
-    fn validate_installation(
-        &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        installed: &WorthQueryInstalledAuthorizationPolicy,
-        requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        if installed.scope_kind() != self.scope_identity.entity_kind() {
-            return Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::Refused(
-                    AuthorizationRefusal::ScopeMismatch,
-                ),
-                requirement.scope_entity(),
-            ));
-        }
-        let matches = runtime
-            .runtime
-            .authorization
-            .bridge()
-            .matches_installed_policy(
-            installed.correspondence(),
-            &crate::domain_computation::authorization::bridge_authorization_binding_identity(
-                self.binding_identity,
-            ),
-            requirement.ability(),
-            requirement.scope_entity(),
-            requirement.policy(),
-            installed.bridge_rule_bindings().iter().map(
-                crate::domain_computation::authorization::installed_policy::BridgeRuleBinding::rule,
-            ),
-        );
-        if matches {
-            Ok(())
-        } else {
-            Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::Refused(
-                    AuthorizationRefusal::PolicyNotInstalled,
-                ),
-                requirement.policy(),
-            ))
-        }
-    }
-
-    fn observe_relational(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        installed: &WorthQueryInstalledAuthorizationPolicy,
-        requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
-    ) -> Result<
-        worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
-        WorthQueryOperationAuthorizationDenial,
-    > {
-        let plan = RelationalAuthorizationObservationPlan::try_new(
-            self.snapshot.clone(),
-            self.principal.principal_entity_id(),
-            self.scope_identity.entity_id(),
-            installed.principal_kind(),
-            installed.scope_kind(),
-            installed.relational_paths().to_vec(),
-            [],
-        )
-        .map_err(|_| {
-            denial(
-                WorthQueryOperationAuthorizationDenialKind::Refused(
-                    AuthorizationRefusal::InvalidInstalledPolicy,
-                ),
-                requirement.policy(),
-            )
-        })?;
-        self.relational
-            .observe_authorization(plan, execution)
-            .map_err(|stop| match stop {
-                worth_relational::facade::authorization::RelationalAuthorizationObservationDenial::Execution(cause) => crate::domain_computation::authorization::denial::relational_read_denial(cause, requirement.policy()),
-                _ => denial(WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::RelationalObservationRejected), requirement.policy()),
-            })
     }
 }

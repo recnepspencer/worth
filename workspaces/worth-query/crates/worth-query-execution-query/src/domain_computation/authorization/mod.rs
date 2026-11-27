@@ -7,6 +7,7 @@ mod capability_revocation_progression;
 pub mod decision_facts;
 mod delegation_progression;
 mod elevation_progression;
+pub mod eligibility;
 mod graph_work_session;
 pub mod operation_progression;
 
