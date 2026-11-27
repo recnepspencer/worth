@@ -9,6 +9,7 @@
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
+tracking-allocator = { version = "0.4", default-features = false }
 "worth-foundational" = { "path" = "../worth-foundational" }
 "worth-proof" = { "path" = "../worth-proof" }
 

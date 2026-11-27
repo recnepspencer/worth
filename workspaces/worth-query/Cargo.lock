@@ -1532,6 +1532,7 @@ dependencies = [
  "worth-query-testkit-certification-operation",
  "worth-query-testkit-document-retention",
  "worth-relational",
+ "worth-testkit-foundational",
 ]
 
 [[package]]
@@ -3058,6 +3059,16 @@ version = "0.1.0"
 dependencies = [
  "glob",
  "serde_json",
+]
+
+[[package]]
+name = "worth-testkit-foundational"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "tracking-allocator",
+ "worth-foundational",
+ "worth-proof",
 ]
 
 [[package]]

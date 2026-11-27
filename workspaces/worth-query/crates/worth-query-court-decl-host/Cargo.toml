@@ -20,6 +20,7 @@ worth-query-testkit-certification-canonical = { path = "../worth-query-testkit-c
 worth-query-testkit-certification-operation = { path = "../worth-query-testkit-certification-operation" }
 worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
 worth-relational = { path = "../../../../crates/worth-relational" }
+worth-testkit-foundational = { path = "../../../../crates/worth-testkit-foundational" }
 
 [lints]
 workspace = true

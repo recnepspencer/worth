@@ -1,6 +1,8 @@
 //! Query proofs grouped by their product frontier.
 #![recursion_limit = "512"]
 
+worth_testkit_foundational::worth_allocation_probe!();
+
 #[path = "worth_query_court_decl_host/producer_succession/mod.rs"]
 #[macro_use]
 mod producer_succession;
