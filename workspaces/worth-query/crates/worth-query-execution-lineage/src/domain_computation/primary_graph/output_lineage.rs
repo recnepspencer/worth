@@ -3,6 +3,8 @@
 pub use invalidation::HeadCellRegistrationStop;
 pub mod certification_basis;
 pub use certification_basis::CertificationBasis;
+pub mod certification_scope;
+pub use certification_scope::CertificationScope;
 pub mod checkpoint_prerequisites;
 pub mod source_facts;
 pub mod source_publication;

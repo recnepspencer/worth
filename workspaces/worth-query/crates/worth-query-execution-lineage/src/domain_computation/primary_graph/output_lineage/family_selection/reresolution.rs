@@ -18,7 +18,9 @@ use crate::domain_computation::primary_graph::invariant_projection::consumed_out
     ConsumedOutputVerificationStop, EvidenceView,
 };
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
-use crate::domain_computation::primary_graph::output_lineage::CertificationBasis;
+use crate::domain_computation::primary_graph::output_lineage::{
+    CertificationBasis, CertificationScope,
+};
 
 /// A stop that means the family no longer answers here: `Moved`.
 const MOVED: Result<bool, Failure> = Ok(false);
@@ -72,8 +74,9 @@ impl ObservedFamilySelection {
         let Ok(selected) = runtime.read_truth().positioned_snapshot(basis.snapshot) else {
             return MOVED;
         };
-        let image = match ConsumedOutputEvidence::mark_free_image(&port.owner, &selected) {
-            Ok(image) => image,
+        // The fact's membership in the closure memo spans its candidates.
+        let (_scope, image) = match CertificationScope::enter(&port.owner, basis, &selected) {
+            Ok(entered) => entered,
             Err(ConsumedOutputVerificationStop::Unavailable) => return MOVED,
             Err(stop) => return Err(Failure::OutputObservation(stop)),
         };

@@ -165,6 +165,12 @@ impl ConsumedOutputEvidence {
         basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
+        // One closure memo for every `FamilySelection` fact this walk meets
+        // (public #429).
+        let _scope =
+            crate::domain_computation::primary_graph::output_lineage::CertificationScope::open(
+                basis, selected,
+            );
         if !owner.invalidation_equivalence_is_armed() {
             return Self::verify_optimized_views(
                 execution,
@@ -190,7 +196,11 @@ impl ConsumedOutputEvidence {
             selected,
             |result| {
                 owner.record_invalidation_shadow_check();
-                super::equivalence::check(execution, oracle_roots, image, result)
+                // The shadow opens its own scope: it never reuses a verdict
+                // the optimized path memoized (public #429).
+                crate::domain_computation::primary_graph::output_lineage::CertificationScope::isolated(
+                    || super::equivalence::check(execution, oracle_roots, image, result),
+                )
             },
         )
     }

@@ -4,6 +4,7 @@ use super::*;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::EqualityRecoveryImage;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::EqualityRecoveryRow;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedRows;
+use crate::domain_computation::primary_graph::output_lineage::CertificationScope;
 
 enum RecoveryStep {
     Visit(Arc<RecordedSettlementIdentity>, bool),
@@ -25,7 +26,7 @@ impl ConsumedOutputEvidence {
             .map_err(map_verification_stop)?;
         let mut observed = ObservedRows::new();
         Self::compare_equal_chain_in(
-            execution, evidence, &image, &mut observed, runtime, basis, selected, compared,
+            execution, evidence, &image, &mut observed, runtime, basis, selected, compared, false,
         )
     }
 
@@ -33,6 +34,11 @@ impl ConsumedOutputEvidence {
     /// read. A compared decision is fenced on `observed`, every row this walk
     /// (and any earlier walk sharing `observed`) read. An unlinked root keeps
     /// its direct fact ordinal, as the marked walk compares it directly.
+    ///
+    /// A `memoized` walk (a re-resolution's, which retains nothing) takes and
+    /// records the [`CertificationScope`] closure memo (public #429): a row
+    /// another walk in this frame completed `Current` is skipped with its
+    /// closure, and that walk's rows join `observed`, so the fence covers it.
     #[allow(clippy::too_many_arguments)]
     pub fn compare_equal_chain_in(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -43,9 +49,11 @@ impl ConsumedOutputEvidence {
         basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
         compared: &mut Vec<EqualityRecoveryRow>,
+        memoized: bool,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         let mut pending = Vec::new();
         let mut visited = OrdSet::new();
+        let mut memoize = None;
         reserve_pending(&mut pending, 1)?;
         pending.push(RecoveryStep::Visit(Arc::clone(evidence.identity), true));
         while let Some(step) = pending.pop() {
@@ -65,6 +73,19 @@ impl ConsumedOutputEvidence {
                 continue;
             }
             visited.insert(Arc::clone(&row.identity));
+            if memoized {
+                if let Some(rows) =
+                    CertificationScope::memo_hit(basis, selected, image, &row.identity)
+                {
+                    *observed = std::mem::take(observed).union(rows);
+                    continue;
+                }
+                // A completed walk of a row with an output projection is
+                // independent of the root witness and of `direct`.
+                if root && row.output_facts().is_some() {
+                    memoize = Some(Arc::clone(&row.identity));
+                }
+            }
             if !at_observation::reads_at_or_after(selected, &row.read_basis) {
                 return Ok(ConsumedOutputVerification::Unaligned);
             }
@@ -112,6 +133,9 @@ impl ConsumedOutputEvidence {
             );
         }
         image.fence(observed).map_err(map_verification_stop)?;
+        if let Some(terminal) = memoize {
+            CertificationScope::memo_record(basis, selected, image, terminal, observed);
+        }
         Ok(ConsumedOutputVerification::Current)
     }
 }

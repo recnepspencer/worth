@@ -45,6 +45,7 @@ impl ConsumedOutputEvidence {
                 basis,
                 selected,
                 &mut Vec::new(),
+                true,
             ),
             None => Err(ConsumedOutputVerificationStop::Unavailable),
         };

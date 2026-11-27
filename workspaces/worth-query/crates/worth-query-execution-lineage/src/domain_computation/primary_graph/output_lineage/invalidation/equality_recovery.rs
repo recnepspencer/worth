@@ -82,10 +82,15 @@ impl EqualityRecoveryImage {
         &self.state
     }
 
-    /// Whether `other` is this same read (the payload is shared).
-    pub fn same_read(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&other.payload, &self.payload)
-            && Arc::ptr_eq(&other.state, &self.state)
+    /// Whether every row in `observed` means in `fresh` what it means here,
+    /// through the same equal links (public #429, the memo's keep rule).
+    pub fn keeps_meaning(&self, fresh: &Self, observed: &ObservedRows) -> bool {
+        same_observed_meaning(&self.state, &fresh.state, observed, &self.selected)
+    }
+
+    /// Whether both images resolve every identity to the same terminal.
+    pub fn same_links(&self, other: &Self) -> bool {
+        self.state.equal_links.ptr_eq(&other.state.equal_links)
     }
 
     /// Resolve `identity` to its terminal row. `observed` gains the identity
