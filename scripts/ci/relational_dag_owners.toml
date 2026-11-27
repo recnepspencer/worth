@@ -52,7 +52,9 @@ layer = 3
 # member seeks, delta verification/installation, WPGL v2 kept deltas, tests).
 # +300 for its contiguous group-member page domain and the Rust -> Lean
 # conformance trace test.
-cap = 23900
+# +400 for the persistent-naming Rust -> Lean conformance trace tests (mint
+# order, name-index ingestion and resolution), which read crate-private state.
+cap = 24300
 floor = 7100
 depends = ["contracts", "storage", "branch"]
 

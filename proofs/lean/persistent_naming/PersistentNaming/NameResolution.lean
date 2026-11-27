@@ -1,5 +1,11 @@
 import PersistentNaming.TimelineSearch
 
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/access/name_resolution.rs:78-116 sha256:d7241adf91ce06d3c63f73baeeef05d3d016140a83ec9dede597d4689afba548
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/access/name_resolution.rs:120-165 sha256:2aa502990ecefa66c1848ad56235a85244bc7e8fb9cc8f570f1b3dcea565465c
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:226-232 sha256:d6ce72d8ffd051b70ec27689d2df303d803c9676074109a5ecc95f5224543183
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:246-250 sha256:0b03fce4cf71b68c38d5e5e61e62cb04c652ccc5faea34a5cdf22b592666abb8
+
 /-!
 # Held-name resolution step bound (Phase 7B-2, RULES §4 layer 1)
 
@@ -10,29 +16,33 @@ name_resolution.rs` and `NameEntry::state_at` / `edges_at` /
 entry.rs`.
 
 A step is one loop iteration of a binary search (`TimelineSearch.search`),
-one index probe (`self.names.get`, an O(1) expected hash lookup), one
-popped frontier name (`event_visits`), or one traversed forward edge
-(`edge_visits`). `state_at` is `partition_point` over a name's strictly
-ascending timeline, bounded by `log₂ t + 1` and proved equal to the linear
-scan in `TimelineSearch`. The walk is breadth first over a visited set from
-the held name. Here `resolve_visits_lineage_path` proves the probes `V`
-count distinct names, all on the forward lineage path `Reach`, and
+one index probe (`entry_in`, `index_probes`), one popped frontier name
+(`event_visits`), or one traversed forward edge (`edge_visits`). An index
+probe is one ordered descent of the tiered name table, `O(log N)` in the
+names it holds; the model charges it one step, the design's cost model, so
+the bounds below count probes and each probe pays that log factor in the
+Rust. `state_at` is the timeline predecessor (`ordmap_prev`), modelled by
+`TimelineSearch.search`, bounded by `log₂ t + 1` and proved equal to the
+linear scan there. The walk is breadth first over a visited set from the
+held name. Here `resolve_visits_lineage_path` proves the probes `V` count
+distinct names, all on the forward lineage path `Reach`, and
 `resolve_steps_independent_of_unrelated` that two indexes agreeing on that
-path take the same steps, so total names and unrelated commits never enter;
-`NameResolutionBound.resolve_steps_bounded` proves the steps are at most
-`(V + E)·3·(log₂ Tmax + 2)` with `E` traversed edges and `Tmax` the longest
-timeline or edge list among the names on the path.
+path take the same steps, so total names and unrelated commits never enter
+the count; `NameResolutionBound.resolve_steps_bounded` proves the steps are
+at most `(V + E)·3·(log₂ Tmax + 2)` with `E` traversed edges and `Tmax` the
+longest timeline or edge list among the names on the path.
+`Conformance.lean` checks the Rust walk's `index_probes`, `event_visits`,
+`edge_visits` and live descendants against `resolve` on every recorded
+resolution.
 
 Simplifications: the index is `Nat → Option Entry` with natural-number keys
-and commits; `edges_at` (`binary_search_by_key`) and `lineage_ended_at`'s
-`partition_point` (`<` rather than `<=`) are both modelled by the same
-`search`; `lineage_ended_at`'s backwards `find_map` is charged one step,
-which assumes the state before an `Ended` entry is live (ingestion ends only
-live names; not proved here); the constant-time empty-filter and
-pruned-basis refusals, the footprint and live-map insertions (O(log p)
-each), and the final `select` over the found live set are not counted. The
-walk runs on fuel; every theorem holds for every fuel, so a truncated walk
-is covered too.
+and commits; `edges_at` (an exact `OrdMap` lookup) and `lineage_ended_at`
+(the predecessor strictly below the ended commit) are both modelled by the
+same `search`, and `lineage_ended_at` is charged one search; the
+constant-time empty-filter and pruned-basis refusals, the footprint and
+live-map insertions (O(log p) each), and the final `select` over the found
+live set are not counted. The walk runs on fuel; every theorem holds for
+every fuel, so a truncated walk is covered too.
 -/
 namespace PersistentNaming.NameResolution
 

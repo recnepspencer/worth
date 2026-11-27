@@ -146,3 +146,7 @@ fn canonical_order<'births>(
     });
     ordered
 }
+
+#[cfg(test)]
+#[path = "mint_order_conformance_trace.rs"]
+mod conformance_trace;

@@ -1,3 +1,7 @@
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/authority/posture_validation.rs:34-287 sha256:e2ead63a5134a298529f834ebf9ebf216d4164fb3722dda428455a07e594f993
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/authority/name_minting.rs:87-208 sha256:4459ab2ab45f28c435da02fbc021c8a53e65cb5c809f5d7e250effb781796dfb
+
 /-!
 # Commit naming step bound independent of history (Phase 7B-2, RULES §4)
 
@@ -13,6 +17,10 @@ code reads it only through `LineageBasisView` point lookups.
 + Σ_births (1 + parents + references + discriminator bytes)`, and
 `commit_naming_steps_basis_independent` that two bases of any sizes give
 the same count: no term grows with the branch's historical name count.
+
+A structural cost model with no executable conformance trace: its steps are
+not observable from the Rust without production counters. The
+`proof-mirror:` pins bind it to the two functions it describes.
 -/
 namespace PersistentNaming.PostureCost
 

@@ -22,6 +22,9 @@ pub mod preflight;
 pub mod recorded_name;
 pub mod retention;
 
+#[cfg(test)]
+mod name_index_conformance_trace;
+
 pub use batch::PersistentNameCommittedBatch;
 pub use denial::PersistentNameIndexDenial;
 pub(crate) use entry::{Carriers, HolderEpochs, LiveName, NameEntry, NameOrigin, NameState};

@@ -4,3 +4,10 @@ defaultTargets = ["RelationalSymbolCommit"]
 
 [[lean_lib]]
 name = "RelationalSymbolCommit"
+
+# Rust <-> model conformance: `lake exe conformance <trace.ndjson>` checks a
+# trace emitted by worth-relational's `symbol_commit_conformance_trace` court
+# (`WORTH_SYMBOL_COMMIT_TRACE=<path>`) against the proved transition functions.
+[[lean_exe]]
+name = "conformance"
+root = "Conformance"

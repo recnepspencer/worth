@@ -62,3 +62,4 @@ mod visibility_aspect_versions;
 
 mod replay_copy_custody;
 mod staging_allocation_custody;
+mod symbol_commit_conformance_trace;

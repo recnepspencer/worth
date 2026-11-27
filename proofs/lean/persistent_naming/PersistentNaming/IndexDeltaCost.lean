@@ -1,5 +1,10 @@
 import PersistentNaming.IndexDelta
 
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/member_groups.rs:213-246 sha256:535256ffe4bea5ff84d22f03742aa6126b2971a9d6f8a85e22836377c8037b4d
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/member_groups.rs:254-295 sha256:0d7051244f8e9e1798b40de46903f2c9139885792f32e541e4e0dd028665f63a
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/member_groups.rs:305-340 sha256:31153ed21f62e35c45934a876b44a407aa957c0c49459a05727a426c1edef2aa
+
 /-!
 # Name-index batch delta: step bound and history independence (Phase 7B-2)
 

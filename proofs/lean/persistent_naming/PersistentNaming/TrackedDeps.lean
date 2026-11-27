@@ -1,3 +1,8 @@
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution-naming/src/tracked_resolution/dependencies.rs:53-55 sha256:fe14b7cc30246867f439b744ebdbe03ee9ee9979f88f2620a82c71856d4ebdc5
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution-naming/src/tracked_resolution/dependencies.rs:193-233 sha256:c2a85c05fe2782b4107fd83786723c3ad020824fb63da5b720c40f9e2651400f
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution-naming/src/tracked_resolution/dependencies/groups.rs:60-111 sha256:8b58679c20081078d061745fb37b184a5218f9944ae1c799efd5ad58ee5c6bd8
+
 /-!
 # Tracked-read currentness step bound (Phase 7B-2, RULES §4 layer 1)
 
@@ -17,9 +22,10 @@ lookup, not a model of the tree). What each event probes (`touched`):
   a target, in the live records and in the ended lineages (`rests_on`);
 * a group transition under `scheme`: each retired or assigned group in the
   group dependencies, in the awaited births, and in a reverse
-  `(scheme, answered group)` index of member answers; and each member named
-  in its assignments by one probe into the `(scheme, member)` map, never a
-  scan over all member dependencies.
+  `(scheme, answered group)` index of member answers; and each member its
+  assignment touches (`touched_members`: a kept group's delta, a born or
+  revived group's members) by one probe into the `(scheme, member)` map,
+  never a scan over all member dependencies.
 
 `currentness_steps_eq` proves the steps are exactly
 `Σ_events |touched e| · (log₂ D + 1) + |events|`, and
@@ -34,6 +40,12 @@ building the touched-group set) and inserting a hit into the stale set are
 not counted; the undecodable-frame path, which stales every group read by
 design, is not modelled. The reverse answer index the group check probes is
 `members_by_group` in `dependencies/groups.rs`.
+
+A cost model with no executable conformance trace: its step count is not
+observable from the Rust without production counters, and its verdict is the
+list of hit dependency keys, while the Rust reports the stale lineages,
+births and answered groups those hits imply. The `proof-mirror:` pins bind it
+to the Rust it describes.
 -/
 namespace PersistentNaming.TrackedDeps
 

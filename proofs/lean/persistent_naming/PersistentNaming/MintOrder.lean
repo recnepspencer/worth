@@ -1,11 +1,19 @@
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/authority/mint_order.rs:30-77 sha256:0ba2ca5a27d8aab3f4de11c37334153e9ed2d54a142dc23ef13e68cbd1b6f1f3
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/authority/mint_order.rs:81-95 sha256:cac7685d46dab116b81db997cc6dc7db3130877cf654834cb87b597d325ce13f
+
 /-!
 # `mint_order::dependency_order` step bound (Phase 7B-2, RULES §4 layer 1)
 
 Models the Kahn loop of `crates/worth-relational-lineage/src/lineage/
 authority/mint_order.rs`: `waits[p]` counts the in-commit births `p` still
-waits on, `releases[d]` lists the births waiting on `d`; the loop pops a
-ready birth, then decrements `waits` of every birth it releases, readying
-each that reaches zero. A step is one pop or one release visit.
+waits on, `releases[d]` lists the births waiting on `d`; the loop pops the
+least ready birth (`BTreeSet::pop_first`), then decrements `waits` of every
+birth it releases, readying each that reaches zero. A step is one pop or
+one release visit. `dependencyOrder` is the whole function over canonical
+positions: the graph (`waitsOf`, `releasesOf`), the loop, then the births
+left on a cycle in canonical order; `Conformance.lean` checks the Rust
+minting order against it.
 
 The workspace builds with `-C overflow-checks=on`, so a decrement of a zero
 `waits` panics: a run that completes never performs one. The model makes
@@ -84,13 +92,16 @@ theorem release_spec (n : Nat) : ∀ (l : List Nat) (waits w : Nat → Nat) (zer
         · simp; omega
         · split <;> simp <;> omega
 
-/-- The loop state: the ready births, the waits, the steps taken. -/
+/-- The loop state: the ready births (ascending, as the `BTreeSet` holds
+them), the waits, the steps taken and the births popped so far. -/
 structure State where
   ready : List Nat
   waits : Nat → Nat
   steps : Nat
+  order : List Nat := []
 
-/-- One loop iteration: pop a ready birth and release its dependents. -/
+/-- One loop iteration: pop the least ready birth (`pop_first`) and release
+its dependents, readying each that reaches zero. -/
 def step (releases : Nat → List Nat) (s : State) : Option State :=
   match s.ready with
   | [] => some s
@@ -98,7 +109,8 @@ def step (releases : Nat → List Nat) (s : State) : Option State :=
     match release s.waits (releases x) with
     | none => none
     | some (w, zeros) =>
-      some { ready := rest ++ zeros, waits := w, steps := s.steps + 1 + (releases x).length }
+      some { ready := (rest ++ zeros).mergeSort, waits := w,
+             steps := s.steps + 1 + (releases x).length, order := s.order ++ [x] }
 
 /-- `fuel` iterations, aborting on an overflow-checked panic. -/
 def run (releases : Nat → List Nat) : Nat → State → Option State
@@ -125,7 +137,8 @@ theorem step_spends_potential (n : Nat) (releases : Nat → List Nat)
       injection h with h
       subst h
       obtain ⟨hsum, hzeros⟩ := release_spec n _ _ _ _ (hrel x) hr
-      simp only [potential, hready, List.length_cons, List.length_append]
+      simp only [potential, hready, List.length_cons, List.length_mergeSort,
+        List.length_append]
       omega
 
 theorem run_spends_potential (n : Nat) (releases : Nat → List Nat)
@@ -155,5 +168,23 @@ theorem kahn_steps_bounded (n : Nat) (releases : Nat → List Nat)
   have := run_spends_potential n releases hrel fuel _ s' h
   simp only [potential] at this
   omega
+
+/-- The dependency graph `dependency_order` builds over `n` births in
+canonical order: `deps p` lists the positions `p` depends on (repeats and
+`p` itself allowed); `waits p` counts its distinct other dependencies and
+`releases d` lists, ascending, the births waiting on `d`. -/
+def waitsOf (deps : Nat → List Nat) (p : Nat) : Nat :=
+  ((deps p).eraseDups.filter (· ≠ p)).length
+
+def releasesOf (n : Nat) (deps : Nat → List Nat) (d : Nat) : List Nat :=
+  (List.range n).filter fun p => p ≠ d && (deps p).contains d
+
+/-- `dependency_order`: the Kahn loop from the births with no waits, then
+the births left on a cycle, in canonical order; `none` only on a zero
+decrement, which a well-formed graph never reaches. -/
+def dependencyOrder (n : Nat) (deps : Nat → List Nat) : Option (List Nat) :=
+  let ready := (List.range n).filter (waitsOf deps · = 0)
+  (run (releasesOf n deps) n { ready, waits := waitsOf deps, steps := 0 }).map
+    fun s => s.order ++ (List.range n).filter (s.waits · ≠ 0)
 
 end PersistentNaming.MintOrder

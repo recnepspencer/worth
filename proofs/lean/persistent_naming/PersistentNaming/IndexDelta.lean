@@ -1,3 +1,12 @@
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/mod.rs:275-306 sha256:cd0151b6797ba10f08c064d79e0cc52afff227bbede38fe897a1f14587398bf8
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/mod.rs:309-322 sha256:36f70c868ab7cc1a1816ee56c0144d5756e5cd7b0c2160c3c8d38575253e3b25
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/mod.rs:324-337 sha256:7f07bb9c4cadb347befd25e36ef7f01764572db972fa862b0f30296fffea8faa
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:255-267 sha256:343f792c71f5ee0a09dbeb7574ddb27a052080151ca30cdbe8981fd21ff756de
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:292-295 sha256:89edaad849ef8188a4c5cfd04d453385a411f93b18d365cc5cdb429085b1587c
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/journal.rs:73-94 sha256:2f26aa48a39db1132293297071143b41e70cec9518b797d141df30c9002b79f0
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/journal.rs:209-280 sha256:1407223c31dcbc36fb842d99bba3e24c283b0fcef973dc120162585826a2d96d
+
 /-!
 # Name-index batch delta: rollback and step bound (Phase 7B-2, RULES §4)
 
@@ -11,14 +20,22 @@ carrier update of `member_groups.rs`.
 timeline entry already stored has a commit below `c`. A key's timeline is
 append-only: `set_state(c, x)` overwrites the tail only when the tail has
 commit `c`, which is then an entry this same batch pushed. The journal
-records, per touched key and before its first change, only its prior length
-(`none` when the key is new), never a copy of the prior timeline; rollback
-truncates each saved key to that length or removes the new key.
+records, per touched key and before its first change, one undo entry
+(`save_name`), never a copy of the prior timeline: remove the key's delta
+slot (a key the batch makes new to this tier), restore the prior shared
+`Arc` (a fork-shared row), or remove the batch commit's timeline entry in
+place (`rollback_commit`). Every entry at commit `c` is this batch's, so
+each undo gives back exactly the prior timeline; the model records that
+prior timeline's length (`none` when the key is new) and rollback truncates
+to it or removes the new key, the same store on every key.
 
 A step is one operation (a saved-set probe, an O(1) expected `HashSet`
 lookup, plus one timeline write), one refused operation, or one restored
-journal entry. `rollback_restores` proves rollback after any prefix of any
-operation sequence gives back the prior store exactly, on every key, and
+journal entry. The write is one ordered insertion into the tiered name
+table and the name's `OrdMap` timeline, logarithmic in their sizes; the
+model charges it one step, the design's cost model. `rollback_restores`
+proves rollback after any prefix of any operation sequence gives back the
+prior store exactly, on every key, and
 `batch_refused_restores` that a refused batch leaves the store unchanged.
 `IndexDeltaCost` proves the step bound, its independence from history, and
 the group carrier update cost; each member's tenure push in a carrier delta
