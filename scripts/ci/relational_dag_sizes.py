@@ -39,7 +39,8 @@ def check_owner_sizes(audit, examples):
     # CHK24 pages, immutable checkpoint naming custody, and Round 4 unit tests);
     # +300 for Store M4.3f Round 6-7 hardening (deadlock-free ACK guard, bounded GROUP_LOG
     # branch digest keys, and read-free VALUE_CHUNK continuation validation);
-    # +200 for Store M4.3f Round 10 post-rebase cold merge guards and O(batch) index journal.
-    if all_total > 531_000:
-        failures.append(f'combined Total LOC exceeds 531,000: {all_total:,}')
+    # +200 for Store M4.3f Round 10 post-rebase cold merge guards and O(batch) index journal;
+    # +500 for Store M4.3f Round 11 bounded cold merge guards and O(1) im fork histories.
+    if all_total > 531_500:
+        failures.append(f'combined Total LOC exceeds 531,500: {all_total:,}')
     return failures

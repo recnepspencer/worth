@@ -310,8 +310,8 @@ where
         }
     }
 
-    pub fn delta_arc(&self, key: &K) -> Option<&Arc<Option<V>>> {
-        self.delta.get_arc(key)
+    pub fn delta_arc_and_shared(&self, key: &K) -> Option<(&Arc<Option<V>>, bool)> {
+        self.delta.get_arc_and_shared(key)
     }
 
     pub fn remove_delta(&mut self, key: &K) {

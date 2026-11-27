@@ -266,15 +266,25 @@ impl<K, V> CowMap<K, V> {
 
 impl<K: Ord, V> CowMap<K, V> {
     pub(crate) fn get_arc(&self, key: &K) -> Option<&Arc<V>> {
-        let mut cur = self.root.as_deref();
-        while let Some(node) = cur {
-            match key.cmp(&node.key) {
-                Ordering::Less => cur = node.left.as_deref(),
-                Ordering::Greater => cur = node.right.as_deref(),
-                Ordering::Equal => return Some(&node.val),
+        self.get_arc_and_shared(key).map(|(val, _)| val)
+    }
+
+    /// Returns the stored value `Arc` and whether it (or any AVL ancestor node
+    /// on the path from `root` to `key`) is shared with another `CowMap` clone.
+    pub(crate) fn get_arc_and_shared(&self, key: &K) -> Option<(&Arc<V>, bool)> {
+        let mut cur = self.root.as_ref()?;
+        let mut shared = false;
+        loop {
+            shared |= Arc::strong_count(cur) > 1;
+            match key.cmp(&cur.key) {
+                Ordering::Less => cur = cur.left.as_ref()?,
+                Ordering::Greater => cur = cur.right.as_ref()?,
+                Ordering::Equal => {
+                    shared |= Arc::strong_count(&cur.val) > 1;
+                    return Some((&cur.val, shared));
+                }
             }
         }
-        None
     }
 
     pub(crate) fn get(&self, key: &K) -> Option<&V> {

@@ -164,10 +164,24 @@ impl ColdNamingStore {
         &self,
         pages: &[NamingPageRef],
         prefix: &[u8],
-        mut visit: impl FnMut(&[u8], &[u8]) -> Result<bool, Cause>,
+        visit: impl FnMut(&[u8], &[u8]) -> Result<bool, Cause>,
     ) -> Result<(), Cause> {
         let start = pages.partition_point(|page| page.last.as_slice() < prefix);
-        for reference in &pages[start..] {
+        self.scan_filtered(pages, start, prefix, |_| Ok(true), visit)
+    }
+
+    /// Visits matching rows of `pages` starting at `start_page` with `prefix`,
+    /// applying `key_matches` BEFORE reassembling any continuation chunks so
+    /// filtered-out keys never fault `VALUE_CHUNK` pages.
+    pub fn scan_filtered(
+        &self,
+        pages: &[NamingPageRef],
+        start_page: usize,
+        prefix: &[u8],
+        mut key_matches: impl FnMut(&[u8]) -> Result<bool, Cause>,
+        mut visit: impl FnMut(&[u8], &[u8]) -> Result<bool, Cause>,
+    ) -> Result<(), Cause> {
+        for reference in pages.get(start_page..).unwrap_or(&[]) {
             if !reference.first.starts_with(prefix) && reference.first.as_slice() > prefix {
                 break;
             }
@@ -188,6 +202,9 @@ impl ColdNamingStore {
                     if parse_value_envelope(raw)?.is_some() {
                         return Err(Cause::Damaged);
                     }
+                    if !key_matches(key)? {
+                        continue;
+                    }
                     if !visit(key, &raw[1..])? {
                         return Ok(());
                     }
@@ -204,7 +221,9 @@ impl ColdNamingStore {
                     hit_end = true;
                     break;
                 }
-                staged.push((key.clone(), raw.clone()));
+                if key_matches(key)? {
+                    staged.push((key.clone(), raw.clone()));
+                }
             }
             // Release the logical page borrow before faulting any chunk pages.
             drop(page);

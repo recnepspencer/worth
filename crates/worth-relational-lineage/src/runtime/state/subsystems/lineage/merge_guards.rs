@@ -58,21 +58,25 @@ impl LineageSubsystem {
         };
         let residency = self.event_residency.read().clone();
         if let Some(residency) = residency {
-            let branches: BTreeSet<BranchId> = bounds.keys().cloned().collect();
-            let pages = residency.demand(execution, None, Some(&branches))?;
-            for page in &pages {
-                for row in page.rows() {
-                    let at = row.publication_commit_id;
-                    if at > c
-                        && is_named_lineage_event(&row.event)
-                        && bounds
-                            .get(row.event.branch_id())
-                            .is_some_and(|bound| at <= *bound)
-                    {
-                        earliest = Some(earliest.map_or(at, |prev| prev.min(at)));
-                    }
+            let mut branches = BTreeSet::new();
+            let mut max_bound = c;
+            for (branch, &bound) in &bounds {
+                if bound > c {
+                    branches.insert(branch.clone());
+                    max_bound = max_bound.max(bound);
                 }
             }
+            residency.visit_after(execution, &branches, c, max_bound, |row| {
+                let at = row.publication_commit_id;
+                if at > c
+                    && is_named_lineage_event(&row.event)
+                    && bounds
+                        .get(row.event.branch_id())
+                        .is_some_and(|bound| at <= *bound)
+                {
+                    earliest = Some(earliest.map_or(at, |prev| prev.min(at)));
+                }
+            })?;
         }
         Ok(earliest)
     }

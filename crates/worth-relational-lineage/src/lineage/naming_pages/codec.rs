@@ -338,24 +338,6 @@ impl<T: NamingCodec + Ord> NamingCodec for BTreeSet<T> {
     }
 }
 
-impl<T: NamingCodec + Ord + Clone> NamingCodec for im::OrdSet<T> {
-    fn write(&self, out: &mut Writer) {
-        out.u32(u32::try_from(self.len()).unwrap_or(u32::MAX));
-        self.iter().for_each(|value| value.write(out));
-    }
-    fn read(input: &mut Reader<'_>) -> Result<Self, Cause> {
-        let mut set = im::OrdSet::new();
-        for _ in 0..input.count()? {
-            let value = T::read(input)?;
-            if set.get_max().is_some_and(|last| *last >= value) {
-                return Err(Cause::Damaged);
-            }
-            set.insert(value);
-        }
-        Ok(set)
-    }
-}
-
 impl<K: NamingCodec + Ord, V: NamingCodec> NamingCodec for BTreeMap<K, V> {
     fn write(&self, out: &mut Writer) {
         out.u32(u32::try_from(self.len()).unwrap_or(u32::MAX));

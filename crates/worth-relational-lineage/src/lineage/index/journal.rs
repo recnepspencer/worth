@@ -43,7 +43,7 @@ enum MemberDeltaUndo {
 
 enum HolderDeltaUndo {
     RemoveFromDelta,
-    RestoreArc(Arc<Option<Vec<HolderEpoch>>>),
+    RestoreArc(Arc<Option<im::Vector<HolderEpoch>>>),
     Truncate(usize),
 }
 
@@ -78,10 +78,10 @@ impl IngestionJournal {
         if !self.saved_names.insert(key) {
             return;
         }
-        let undo = match names.delta_arc(&key) {
+        let undo = match names.delta_arc_and_shared(&key) {
             None => NameUndo::RemoveFromDelta,
-            Some(arc) if Arc::strong_count(arc) > 1 => NameUndo::RestoreArc(Arc::clone(arc)),
-            Some(arc) => match arc.as_ref() {
+            Some((arc, true)) => NameUndo::RestoreArc(Arc::clone(arc)),
+            Some((arc, false)) => match arc.as_ref() {
                 Some(entry) => {
                     self.truncated_names.insert(key);
                     NameUndo::Truncate(entry.mark())
@@ -111,27 +111,30 @@ impl IngestionJournal {
         if self.saved_member_deltas.contains(&member) {
             return;
         }
-        match members.delta_arc(&member) {
+        match members.delta_arc_and_shared(&member) {
             None => {
                 self.saved_member_deltas.insert(member);
                 self.member_deltas
                     .push((member, MemberDeltaUndo::RemoveFromDelta));
             }
-            Some(arc) if Arc::strong_count(arc) > 1 || arc.is_none() => {
+            Some((arc, true)) => {
                 self.saved_member_deltas.insert(member);
                 self.member_deltas
                     .push((member, MemberDeltaUndo::RestoreArc(Arc::clone(arc))));
             }
-            Some(arc) => {
-                if self.saved_tenures.insert((member, scheme.to_owned())) {
-                    let length = arc
-                        .as_ref()
-                        .as_ref()
-                        .and_then(|tenures| tenures.get(scheme))
-                        .map(Vec::len);
-                    self.tenures.push((member, scheme.to_owned(), length));
+            Some((arc, false)) => match arc.as_ref() {
+                None => {
+                    self.saved_member_deltas.insert(member);
+                    self.member_deltas
+                        .push((member, MemberDeltaUndo::RestoreArc(Arc::clone(arc))));
                 }
-            }
+                Some(tenures) => {
+                    if self.saved_tenures.insert((member, scheme.to_owned())) {
+                        let length = tenures.get(scheme).map(im::Vector::len);
+                        self.tenures.push((member, scheme.to_owned(), length));
+                    }
+                }
+            },
         }
     }
 
@@ -155,15 +158,15 @@ impl IngestionJournal {
     pub(super) fn save_holder_lineages(
         &mut self,
         holder: LineageHolder,
-        epochs: &TieredMap<LineageHolder, Vec<HolderEpoch>>,
+        epochs: &TieredMap<LineageHolder, im::Vector<HolderEpoch>>,
     ) {
         if !self.saved_holders.insert(holder) {
             return;
         }
-        let undo = match epochs.delta_arc(&holder) {
+        let undo = match epochs.delta_arc_and_shared(&holder) {
             None => HolderDeltaUndo::RemoveFromDelta,
-            Some(arc) if Arc::strong_count(arc) > 1 => HolderDeltaUndo::RestoreArc(Arc::clone(arc)),
-            Some(arc) => match arc.as_ref() {
+            Some((arc, true)) => HolderDeltaUndo::RestoreArc(Arc::clone(arc)),
+            Some((arc, false)) => match arc.as_ref() {
                 Some(vec) => {
                     self.truncated_holders.insert(holder);
                     HolderDeltaUndo::Truncate(vec.len())
@@ -260,5 +263,77 @@ impl IngestionJournal {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::contracts::history::data::coordinates::BranchId;
+    use crate::contracts::lineage::data::name_resolution::PersistentNameTarget;
+    use crate::lineage::index::{Carriers, LiveName, NameEntry, NameOrigin, NameState};
+    use worth_foundational::facade::AggregateIdentity;
+
+    fn make_key(byte: u8) -> PersistentNameKey {
+        PersistentNameKey::Group(AggregateIdentity::from_bytes([byte; 32]))
+    }
+
+    fn make_entry(byte: u8, commit: u64) -> NameEntry {
+        NameEntry::born(
+            CommitId(commit),
+            NameOrigin::Group {
+                scheme_id: Some("s".into()),
+            },
+            LiveName {
+                target: PersistentNameTarget::Group {
+                    group: AggregateIdentity::from_bytes([byte; 32]),
+                },
+                carriers: Carriers::new(),
+            },
+        )
+    }
+
+    #[test]
+    fn fork_shared_avl_descendant_is_detected_and_restores_original_arc() {
+        let mut base = PersistentNameBranchIndex::new(BranchId("main".into()), None);
+        for b in 1u8..=7 {
+            base.names.insert(make_key(b), make_entry(b, u64::from(b)));
+        }
+        let mut forked = base.fork_to(BranchId("fork".into()), None);
+        // Pick a non-root descendant whose own value Arc has strong_count == 1
+        // while its AVL root ancestor has strong_count == 2.
+        let target = make_key(1);
+        let (orig_arc, shared) = forked
+            .names
+            .delta_arc_and_shared(&target)
+            .expect("key present in forked delta");
+        assert!(shared, "AVL ancestor sharing must mark descendant shared");
+        assert_eq!(Arc::strong_count(orig_arc), 1);
+        let orig_ptr = Arc::as_ptr(orig_arc);
+
+        let mut journal = IngestionJournal::default();
+        journal.save_name(target, &forked.names);
+        assert!(
+            !journal.truncated_names.contains(&target),
+            "fork-shared row must use RestoreArc, not Truncate"
+        );
+        forked
+            .names
+            .get_mut_with(&target, NameEntry::duplicate_for_branch_fork)
+            .unwrap()
+            .unwrap()
+            .set_state(CommitId(99), NameState::Ended);
+        assert!(matches!(
+            base.names.get(&target).unwrap().unwrap().current(),
+            NameState::Live(_)
+        ));
+
+        journal.restore(&mut forked);
+        let (restored_arc, _) = forked.names.delta_arc_and_shared(&target).unwrap();
+        assert_eq!(Arc::as_ptr(restored_arc), orig_ptr);
+        assert!(matches!(
+            forked.names.get(&target).unwrap().unwrap().current(),
+            NameState::Live(_)
+        ));
     }
 }

@@ -4,14 +4,13 @@
 //! retirement or a carrier change ends a member's tenure, and a carrier
 //! declaration starts it, all at the batch's commit.
 
-use std::collections::BTreeMap;
-
 use worth_foundational::facade::AggregateIdentity;
 
 use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::lineage::data::name_resolution::PersistentNameKey;
 use crate::contracts::lineage::data::naming::PersistentNameIdentity;
 
+use super::entry::partition_point_im;
 use super::journal::IngestionJournal;
 use super::{
     Carriers, NameEntry, NameState, PersistentNameBranchIndex, PersistentNameCommittedBatch,
@@ -20,14 +19,15 @@ use super::{
 use crate::lineage::tiered::NamingReadScope;
 
 /// One member's group tenure under one scheme: strictly ascending commits,
-/// each holding until the next entry.
-pub(crate) type MemberTenure = Vec<(CommitId, Option<AggregateIdentity>)>;
+/// each holding until the next entry. Structural persistent vector so fork
+/// copy-on-write is `O(1)`.
+pub(crate) type MemberTenure = im::Vector<(CommitId, Option<AggregateIdentity>)>;
 
-/// One member's tenures, by installed group scheme.
-pub(crate) type MemberTenures = BTreeMap<String, MemberTenure>;
+/// One member's tenures, by installed group scheme (`O(1)` fork COW).
+pub(crate) type MemberTenures = im::OrdMap<String, MemberTenure>;
 
 fn tenure_at(tenure: &MemberTenure, basis: CommitId) -> Option<AggregateIdentity> {
-    let after = tenure.partition_point(|(commit, _)| *commit <= basis);
+    let after = partition_point_im(tenure, |(commit, _)| *commit <= basis);
     tenure.get(after.checked_sub(1)?)?.1
 }
 
@@ -145,7 +145,7 @@ impl PersistentNameBranchIndex {
             .get(&member)?
             .as_deref()
             .and_then(|tenures| tenures.get(scheme))
-            .and_then(|tenure| tenure.last())
+            .and_then(|tenure| tenure.back())
             .and_then(|(_, group)| *group);
         if only_from.is_some() && current != only_from {
             return Ok(());
@@ -154,10 +154,12 @@ impl PersistentNameBranchIndex {
         let tenures = self
             .member_groups
             .get_or_insert_with(member, Default::default)?;
-        let tenure = tenures.entry(scheme.to_owned()).or_default();
-        match tenure.last_mut() {
+        let tenure = tenures
+            .entry(scheme.to_owned())
+            .or_insert_with(im::Vector::new);
+        match tenure.back_mut() {
             Some((at, group)) if *at == commit => *group = next,
-            _ => tenure.push((commit, next)),
+            _ => tenure.push_back((commit, next)),
         }
         Ok(())
     }

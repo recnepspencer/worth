@@ -1,5 +1,5 @@
 //! Naming-page codec of the name index's rows.
-use crate::contracts::lineage::data::name_resolution::{PersistentNameKey, PersistentNameTarget};
+use crate::contracts::lineage::data::name_resolution::PersistentNameTarget;
 use crate::contracts::lineage::data::naming::{PersistentNameBirthParts, PersistentNameIdentity};
 use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
 use crate::lineage::naming_pages::codec::{read_serde, write_serde, NamingCodec, Reader, Writer};
@@ -181,13 +181,13 @@ impl NamingCodec for NameEntry {
             origin: NamingCodec::read(input)?,
             born: NamingCodec::read(input)?,
             timeline: NamingCodec::read(input)?,
-            forward_edges: Vec::<(_, Vec<PersistentNameKey>)>::read(input)?,
+            forward_edges: NamingCodec::read(input)?,
             lineage_commits: NamingCodec::read(input)?,
         };
         let ascending = |commits: Vec<u64>| commits.windows(2).all(|pair| pair[0] < pair[1]);
         if entry
             .timeline
-            .first()
+            .front()
             .is_none_or(|(first, _)| *first < entry.born)
             || !ascending(entry.timeline.iter().map(|(commit, _)| commit.0).collect())
             || !ascending(

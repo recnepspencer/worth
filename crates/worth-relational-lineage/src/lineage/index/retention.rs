@@ -17,6 +17,7 @@ use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::lineage::data::name_resolution::PersistentNameKey;
 
+use super::entry::partition_point_im;
 use super::member_groups::{MemberTenure, MemberTenures};
 use super::{
     HolderEpoch, NameEntry, NameState, PersistentNameBranchIndex, PersistentNameIndexDenial,
@@ -26,9 +27,8 @@ use super::{
 /// the latest entry at or before `floor`, or the first entry after it.
 ///
 /// Complexity: O(log n).
-pub(crate) fn first_retained<T>(run: &[(CommitId, T)], floor: CommitId) -> usize {
-    run.partition_point(|(commit, _)| *commit <= floor)
-        .saturating_sub(1)
+pub(crate) fn first_retained<T: Clone>(run: &im::Vector<(CommitId, T)>, floor: CommitId) -> usize {
+    partition_point_im(run, |(commit, _)| *commit <= floor).saturating_sub(1)
 }
 
 /// Compacts one name entry for `floor`; `None` when nothing changes.
@@ -38,17 +38,17 @@ pub(crate) fn compact_entry(entry: &NameEntry, floor: CommitId) -> Option<NameEn
     let mut keep = first_retained(&entry.timeline, floor);
     // An ended state at the floor still reports the lineage that ended there.
     if matches!(entry.timeline.get(keep), Some((_, NameState::Ended))) {
-        keep = entry.timeline[..keep]
-            .iter()
-            .rposition(|(_, state)| matches!(state, NameState::Live(_)))
+        keep = (0..keep)
+            .rev()
+            .find(|&idx| matches!(entry.timeline[idx], (_, NameState::Live(_))))
             .unwrap_or(keep);
     }
-    let mut timeline = entry.timeline[keep..].to_vec();
+    let mut timeline = entry.timeline.clone().split_off(keep);
     let effective = first_retained(&timeline, floor);
     let mut stripped = false;
-    for (_, state) in &mut timeline[..effective] {
-        if let NameState::Live(live) = state
-            && !live.carriers.is_empty()
+    for idx in 0..effective {
+        if matches!(&timeline[idx].1, NameState::Live(live) if !live.carriers.is_empty())
+            && let NameState::Live(live) = &mut timeline[idx].1
         {
             live.carriers.clear();
             stripped = true;
@@ -60,7 +60,7 @@ pub(crate) fn compact_entry(entry: &NameEntry, floor: CommitId) -> Option<NameEn
         .iter()
         .filter(|(commit, _)| *commit >= floor || read.contains(commit))
         .cloned()
-        .collect::<Vec<_>>();
+        .collect::<im::Vector<_>>();
     if keep == 0 && !stripped && forward_edges.len() == entry.forward_edges.len() {
         return None;
     }
@@ -75,17 +75,18 @@ pub(crate) fn compact_entry(entry: &NameEntry, floor: CommitId) -> Option<NameEn
 
 /// Compacts one record's binding epochs; `None` when nothing changes.
 ///
-/// Complexity: O(e).
-pub(crate) fn compact_epochs(epochs: &[HolderEpoch], floor: CommitId) -> Option<Vec<HolderEpoch>> {
-    let keep = epochs
-        .partition_point(|epoch| epoch.bound_at <= floor)
-        .saturating_sub(1);
-    (keep > 0).then(|| epochs[keep..].to_vec())
+/// Complexity: O(log e).
+pub(crate) fn compact_epochs(
+    epochs: &im::Vector<HolderEpoch>,
+    floor: CommitId,
+) -> Option<im::Vector<HolderEpoch>> {
+    let keep = partition_point_im(epochs, |epoch| epoch.bound_at <= floor).saturating_sub(1);
+    (keep > 0).then(|| epochs.clone().split_off(keep))
 }
 
 /// Compacts one member's tenures; `Some(None)` removes the member.
 ///
-/// Complexity: O(S * t) over its S scheme tenures.
+/// Complexity: O(S * log t) over its S scheme tenures.
 pub(crate) fn compact_tenures(
     tenures: &MemberTenures,
     floor: CommitId,
@@ -94,9 +95,10 @@ pub(crate) fn compact_tenures(
     let mut compacted = MemberTenures::new();
     for (scheme, tenure) in tenures {
         let keep = first_retained(tenure, floor);
-        let run: MemberTenure = tenure[keep..].to_vec();
+        let run: MemberTenure = tenure.clone().split_off(keep);
         changed |= keep > 0;
-        if let [(at, None)] = run.as_slice()
+        if run.len() == 1
+            && let Some((at, None)) = run.front()
             && *at <= floor
         {
             changed = true;
@@ -193,7 +195,7 @@ impl PersistentNameBranchIndex {
             if entry.born > cutoff {
                 continue;
             }
-            let timeline: Vec<_> = entry
+            let timeline: im::Vector<_> = entry
                 .timeline
                 .into_iter()
                 .filter(|(commit, _)| *commit <= cutoff)
@@ -202,10 +204,10 @@ impl PersistentNameBranchIndex {
                 continue;
             }
             note(entry.born);
-            for &(c, _) in &timeline {
-                note(c);
+            for (c, _) in &timeline {
+                note(*c);
             }
-            let forward_edges: Vec<_> = entry
+            let forward_edges: im::Vector<_> = entry
                 .forward_edges
                 .into_iter()
                 .filter(|(commit, _)| *commit <= cutoff)
@@ -227,7 +229,7 @@ impl PersistentNameBranchIndex {
             );
         }
         for (holder, epochs) in self.holder_lineages.collect_merged()? {
-            let kept: Vec<_> = epochs
+            let kept: im::Vector<_> = epochs
                 .into_iter()
                 .filter(|epoch| epoch.bound_at <= cutoff)
                 .map(|epoch| HolderEpoch {
@@ -259,8 +261,8 @@ impl PersistentNameBranchIndex {
                     .filter(|(commit, _)| *commit <= cutoff)
                     .collect();
                 if !run.is_empty() {
-                    for &(commit, _) in &run {
-                        note(commit);
+                    for (commit, _) in &run {
+                        note(*commit);
                     }
                     kept.insert(scheme, run);
                 }
@@ -282,7 +284,7 @@ impl PersistentNameBranchIndex {
         (
             Vec<(PersistentNameKey, NameEntry)>,
             Vec<(LineageId, super::LineageHolder)>,
-            Vec<(super::LineageHolder, Vec<HolderEpoch>)>,
+            Vec<(super::LineageHolder, im::Vector<HolderEpoch>)>,
         ),
         PersistentNameIndexDenial,
     > {

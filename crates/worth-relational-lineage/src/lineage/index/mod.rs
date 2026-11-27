@@ -59,7 +59,7 @@ pub struct PersistentNameBranchIndex {
     lineage_names: TieredMap<LineageId, PersistentNameKey>,
     lineage_holders: TieredMap<LineageId, LineageHolder>,
     /// Every lineage a record was bound to, in binding-commit order.
-    holder_lineages: TieredMap<LineageHolder, Vec<HolderEpoch>>,
+    holder_lineages: TieredMap<LineageHolder, im::Vector<HolderEpoch>>,
     /// Per member name and group scheme: which group held it from each commit.
     member_groups: TieredMap<PersistentNameIdentity, member_groups::MemberTenures>,
 }
@@ -223,7 +223,7 @@ impl PersistentNameBranchIndex {
     ) -> Option<LineageId> {
         self.holder_lineages
             .get_in(&holder, scope)?
-            .last()
+            .back()
             .map(|epoch| epoch.lineage)
     }
 
@@ -238,7 +238,7 @@ impl PersistentNameBranchIndex {
         scope: &NamingReadScope,
     ) -> Option<LineageId> {
         let epochs = self.holder_lineages.get_in(&holder, scope)?;
-        let after = epochs.partition_point(|epoch| epoch.bound_at <= basis);
+        let after = entry::partition_point_im(epochs, |epoch| epoch.bound_at <= basis);
         epochs.get(after.checked_sub(1)?).map(|epoch| epoch.lineage)
     }
 

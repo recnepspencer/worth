@@ -68,8 +68,8 @@ impl PersistentNameBranchIndex {
                     self.lineage_holders.insert(lineage, holder);
                     journal.save_holder_lineages(holder, &self.holder_lineages);
                     self.holder_lineages
-                        .get_or_insert_with(holder, Vec::new)?
-                        .push(HolderEpoch {
+                        .get_or_insert_with(holder, im::Vector::new)?
+                        .push_back(HolderEpoch {
                             bound_at: batch.commit,
                             lineage,
                             ended_at: None,
@@ -301,14 +301,12 @@ impl PersistentNameBranchIndex {
             {
                 journal.save_holder_lineages(holder, &self.holder_lineages);
                 if let Some(epochs) = self.holder_lineages.get_mut(&holder)?
-                    && let Some((idx, epoch)) = epochs
-                        .iter_mut()
-                        .enumerate()
+                    && let Some(idx) = (0..epochs.len())
                         .rev()
-                        .find(|(_, e)| e.lineage == *source)
+                        .find(|&idx| epochs[idx].lineage == *source)
                 {
-                    let prior_ended = epoch.ended_at;
-                    epoch.ended_at = Some(commit);
+                    let prior_ended = epochs[idx].ended_at;
+                    epochs[idx].ended_at = Some(commit);
                     journal.record_holder_ended(holder, idx, prior_ended);
                 }
             }

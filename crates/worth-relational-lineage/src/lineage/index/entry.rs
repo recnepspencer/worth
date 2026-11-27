@@ -6,12 +6,29 @@
 //! a touched entry by its history lengths alone (`mark` / `truncate_to`), and
 //! a branch fork shares entries copy-on-write via `TieredMap`.
 
-use std::collections::BTreeMap;
-
 use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::lineage::data::name_resolution::{PersistentNameKey, PersistentNameTarget};
 use crate::contracts::lineage::data::naming::{PersistentNameBirthParts, PersistentNameIdentity};
+
+/// Binary search partition point on a sorted `im::Vector`.
+///
+/// Complexity: O(log n) indexed probes, zero allocation.
+pub(super) fn partition_point_im<T: Clone>(
+    vec: &im::Vector<T>,
+    mut pred: impl FnMut(&T) -> bool,
+) -> usize {
+    let (mut left, mut right) = (0, vec.len());
+    while left < right {
+        let mid = left + (right - left) / 2;
+        if pred(&vec[mid]) {
+            left = mid + 1;
+        } else {
+            right = mid;
+        }
+    }
+    left
+}
 
 /// What a name designates from one commit until its next timeline entry.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,6 +70,10 @@ pub(crate) struct HolderEpoch {
 }
 
 /// Derived per-name history, rebuilt solely from committed lineage batches.
+///
+/// Backed by structural persistent `im` collections so copy-on-write fork
+/// duplication is strictly `O(1)` regardless of prior history length while
+/// `NameEntry` itself remains `!Clone`.
 #[derive(Debug, PartialEq, Eq)]
 pub struct NameEntry {
     /// The canonical birth or group scheme the name was born from.
@@ -61,26 +82,26 @@ pub struct NameEntry {
     pub(super) born: CommitId,
     /// Strictly ascending commits from birth; each state holds until the
     /// next entry.
-    pub(super) timeline: Vec<(CommitId, NameState)>,
+    pub(super) timeline: im::Vector<(CommitId, NameState)>,
     /// Strictly ascending commits; successors sorted and deduplicated.
-    pub(super) forward_edges: Vec<(CommitId, Vec<PersistentNameKey>)>,
+    pub(super) forward_edges: im::Vector<(CommitId, Vec<PersistentNameKey>)>,
     /// Earliest commit at which each `LineageId` held this name; maintained on
     /// every live write and preserved across retention compaction so
     /// `binds_lineage_by` is strictly `O(log L)` without scanning `timeline`.
-    pub(crate) lineage_commits: BTreeMap<LineageId, CommitId>,
+    pub(crate) lineage_commits: im::OrdMap<LineageId, CommitId>,
 }
 
 impl NameEntry {
     pub(crate) fn born(born_at: CommitId, origin: NameOrigin, live: LiveName) -> Self {
-        let mut lineage_commits = BTreeMap::new();
+        let mut lineage_commits = im::OrdMap::new();
         if let Some(lineage) = live.target.lineage() {
             lineage_commits.insert(lineage, born_at);
         }
         Self {
             origin,
             born: born_at,
-            timeline: vec![(born_at, NameState::Live(live))],
-            forward_edges: Vec::new(),
+            timeline: im::vector![(born_at, NameState::Live(live))],
+            forward_edges: im::Vector::new(),
             lineage_commits,
         }
     }
@@ -120,9 +141,7 @@ impl NameEntry {
     ///
     /// Complexity: O(log t) in this name's own timeline length.
     pub(crate) fn state_at(&self, basis: CommitId) -> Option<(CommitId, &NameState)> {
-        let after = self
-            .timeline
-            .partition_point(|(commit, _)| *commit <= basis);
+        let after = partition_point_im(&self.timeline, |(commit, _)| *commit <= basis);
         let (commit, state) = self.timeline.get(after.checked_sub(1)?)?;
         Some((*commit, state))
     }
@@ -131,7 +150,7 @@ impl NameEntry {
     pub(crate) fn last_state(&self) -> (CommitId, &NameState) {
         let (commit, state) = self
             .timeline
-            .last()
+            .back()
             .expect("a name entry always holds its birth state");
         (*commit, state)
     }
@@ -169,9 +188,7 @@ impl NameEntry {
     ///
     /// Complexity: O(log t) binary search plus O(1) immediate predecessor check.
     pub(crate) fn lineage_ended_at(&self, ended_at: CommitId) -> Option<LineageId> {
-        let before = self
-            .timeline
-            .partition_point(|(commit, _)| *commit < ended_at);
+        let before = partition_point_im(&self.timeline, |(commit, _)| *commit < ended_at);
         let prev = before.checked_sub(1)?;
         match self.timeline.get(prev) {
             Some((_, NameState::Live(live))) => live.target.lineage(),
@@ -192,9 +209,11 @@ impl NameEntry {
     ///
     /// Complexity: O(log e) in this name's own edge-commit count.
     pub(crate) fn edges_at(&self, commit: CommitId) -> &[PersistentNameKey] {
-        self.forward_edges
-            .binary_search_by_key(&commit, |(at, _)| *at)
-            .map_or(&[], |position| self.forward_edges[position].1.as_slice())
+        let position = partition_point_im(&self.forward_edges, |(at, _)| *at < commit);
+        match self.forward_edges.get(position) {
+            Some((at, successors)) if *at == commit => successors.as_slice(),
+            _ => &[],
+        }
     }
 
     /// Sets the state from `commit` on; a later write in the same commit
@@ -203,17 +222,16 @@ impl NameEntry {
     pub(crate) fn set_state(&mut self, commit: CommitId, state: NameState) -> Option<LineageId> {
         let inserted = if let NameState::Live(live) = &state
             && let Some(lineage) = live.target.lineage()
-            && let std::collections::btree_map::Entry::Vacant(slot) =
-                self.lineage_commits.entry(lineage)
+            && !self.lineage_commits.contains_key(&lineage)
         {
-            slot.insert(commit);
+            self.lineage_commits.insert(lineage, commit);
             Some(lineage)
         } else {
             None
         };
-        match self.timeline.last_mut() {
+        match self.timeline.back_mut() {
             Some((at, last)) if *at == commit => *last = state,
-            _ => self.timeline.push((commit, state)),
+            _ => self.timeline.push_back((commit, state)),
         }
         inserted
     }
@@ -225,6 +243,8 @@ impl NameEntry {
 
     /// Copy-on-write duplicate of this history when a shared `TieredMap` entry
     /// is mutated or materialized for an audit/retention pass.
+    ///
+    /// Complexity: O(1) structural sharing via persistent `im` handles.
     pub(super) fn duplicate_for_branch_fork(&self) -> Self {
         Self {
             origin: self.origin.clone(),
@@ -252,13 +272,13 @@ impl NameEntry {
     }
 
     pub(crate) fn add_edge(&mut self, commit: CommitId, successor: PersistentNameKey) {
-        match self.forward_edges.last_mut() {
+        match self.forward_edges.back_mut() {
             Some((at, successors)) if *at == commit => {
                 if let Err(position) = successors.binary_search(&successor) {
                     successors.insert(position, successor);
                 }
             }
-            _ => self.forward_edges.push((commit, vec![successor])),
+            _ => self.forward_edges.push_back((commit, vec![successor])),
         }
     }
 }

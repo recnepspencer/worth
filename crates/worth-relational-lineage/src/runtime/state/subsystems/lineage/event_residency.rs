@@ -1,7 +1,7 @@
 //! One counted, damage-isolated event cell is shared by all its node-range routes.
 use crate::contracts::storage::data::storage_unavailable::{
-    RelationalStorageUnavailable, RelationalStorageUnavailableCause as Cause,
-    RelationalStorageUnavailableCauseOwnerPort as _,
+    RelationalStorageSubject, RelationalStorageUnavailable,
+    RelationalStorageUnavailableCause as Cause, RelationalStorageUnavailableCauseOwnerPort as _,
 };
 pub mod member_export;
 use super::event_page::{self, ReadmittedLineageEventPage};
@@ -17,7 +17,9 @@ use std::sync::{
 use worth_relational_storage::internal_port::durability::medium::cold_source::{
     RelationalDurableColdSource, RelationalDurableMemberLocator,
 };
-use worth_relational_storage::internal_port::durability::medium::member_custody::RelationalDurableMemberCustody;
+use worth_relational_storage::internal_port::durability::medium::member_custody::{
+    native_source_slot::NativeSourceMemberState, RelationalDurableMemberCustody,
+};
 use worth_relational_storage::internal_port::storage::residency::demand_failure::RelationalResidencyDemandFailure as Failure;
 
 #[derive(Debug)]
@@ -34,7 +36,7 @@ struct EventPageCell {
 }
 #[derive(Debug)]
 pub(super) struct RuntimeLineageEventResidency {
-    pub(super) custody: Mutex<worth_relational_storage::internal_port::durability::medium::member_custody::native_source_slot::NativeSourceMemberState>,
+    pub(super) custody: Mutex<NativeSourceMemberState>,
     pages: BTreeMap<RelationalDurableMemberLocator, Arc<EventPageCell>>,
     routes: BTreeMap<RelationalLineageEventPageRoute, Vec<Arc<EventPageCell>>>,
     commit_bindings: LineageCommitBinding,
@@ -43,15 +45,7 @@ pub(super) struct RuntimeLineageEventResidency {
 /// commit index so admission never materializes every commit.
 #[derive(Clone)]
 pub struct LineageCommitBinding(
-    pub  Arc<
-        dyn Fn(
-                CommitId,
-            ) -> Result<
-                Option<RelationalCommitReceipt>,
-                crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
-            > + Send
-            + Sync,
-    >,
+    pub Arc<dyn Fn(CommitId) -> Result<Option<RelationalCommitReceipt>, Cause> + Send + Sync>,
 );
 impl std::fmt::Debug for LineageCommitBinding {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -72,7 +66,7 @@ impl RuntimeLineageEventResidency {
             source
                 .retain_members(&members)
                 .map_err(|cause| RelationalStorageUnavailable {
-                    subject: crate::contracts::storage::data::storage_unavailable::RelationalStorageSubject::Lineage {
+                    subject: RelationalStorageSubject::Lineage {
                         first: LineageId(
                             page_descriptors
                                 .iter()
@@ -104,10 +98,7 @@ impl RuntimeLineageEventResidency {
             pages.insert(descriptor.member, cell);
         }
         Ok(Self {
-            custody: Mutex::new(worth_relational_storage::internal_port::durability::medium::member_custody::native_source_slot::NativeSourceMemberState::new(
-                source.clone(),
-                placement,
-            )),
+            custody: Mutex::new(NativeSourceMemberState::new(source.clone(), placement)),
             pages,
             routes,
             commit_bindings: commits,
@@ -115,16 +106,11 @@ impl RuntimeLineageEventResidency {
     }
     pub(super) fn member_subjects(
         &self,
-    ) -> impl Iterator<
-        Item = (
-            RelationalDurableMemberLocator,
-            crate::contracts::storage::data::storage_unavailable::RelationalStorageSubject,
-        ),
-    > + '_ {
+    ) -> impl Iterator<Item = (RelationalDurableMemberLocator, RelationalStorageSubject)> + '_ {
         self.pages.values().map(|page| {
             (
                 page.descriptor.member,
-                crate::contracts::storage::data::storage_unavailable::RelationalStorageSubject::Lineage {
+                RelationalStorageSubject::Lineage {
                     first: LineageId(page.descriptor.first_node),
                     last: LineageId(page.descriptor.last_node),
                 },
@@ -173,8 +159,124 @@ impl RuntimeLineageEventResidency {
             })
             .collect()
     }
+
+    /// Visits event pages routed to `branches` whose publication-commit span
+    /// overlaps `(after, max_bound]` in bounded one-page windows without
+    /// retaining cold pages in resident memory.
+    pub(super) fn visit_after(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        branches: &BTreeSet<BranchId>,
+        after: CommitId,
+        max_bound: CommitId,
+        mut visit: impl FnMut(&RelationalCheckpointLineageEventRow),
+    ) -> Result<(), Failure> {
+        crate::contracts::execution::request_custody::check_request(execution)
+            .map_err(Failure::Request)?;
+        if branches.is_empty() || max_bound <= after {
+            return Ok(());
+        }
+        let mut selected = BTreeMap::new();
+        for (route, pages) in &self.routes {
+            if !branches.contains(&route.branch_id) {
+                continue;
+            }
+            for page in pages {
+                let d = &page.descriptor;
+                if d.last_publication_commit != 0
+                    && (d.last_publication_commit <= after.0
+                        || d.first_publication_commit > max_bound.0)
+                {
+                    continue;
+                }
+                selected.entry(d.member).or_insert(page);
+            }
+        }
+        for cell in selected.into_values() {
+            let source = self.source().map_err(|cause| cell.storage_failure(cause))?;
+            cell.visit_ephemeral(
+                execution,
+                source.as_ref(),
+                &self.commit_bindings,
+                &mut visit,
+            )?;
+        }
+        Ok(())
+    }
 }
 impl EventPageCell {
+    fn load_verified(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: &dyn RelationalDurableColdSource,
+        bindings: &LineageCommitBinding,
+    ) -> Result<ReadmittedLineageEventPage, Failure> {
+        let bytes = if self.descriptor.member.length > LINEAGE_EVENT_PAGE_BYTES {
+            Err(Cause::LimitExceeded {
+                length: self.descriptor.member.length,
+                limit: LINEAGE_EVENT_PAGE_BYTES,
+            })
+        } else {
+            source.read_member(self.descriptor.member, LINEAGE_EVENT_PAGE_BYTES)
+        }
+        .map_err(|cause| event_page::failure(&self.descriptor, cause))?;
+        let page = event_page::readmit(execution, &bytes, &self.descriptor)?;
+        for row in &page.rows {
+            let ok = (bindings.0)(row.publication_commit_id)
+                .and_then(|pub_c| {
+                    Ok(pub_c.is_some()
+                        && (bindings.0)(row.event.commit().commit_id)?.as_ref()
+                            == Some(row.event.commit()))
+                })
+                .map_err(|cause| event_page::failure(&self.descriptor, cause))?;
+            if !ok {
+                return Err(event_page::failure(&self.descriptor, Cause::Damaged));
+            }
+        }
+        Ok(page)
+    }
+
+    fn visit_ephemeral(
+        self: &Arc<Self>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: &dyn RelationalDurableColdSource,
+        bindings: &LineageCommitBinding,
+        visit: &mut impl FnMut(&RelationalCheckpointLineageEventRow),
+    ) -> Result<(), Failure> {
+        crate::contracts::execution::request_custody::check_request(execution)
+            .map_err(Failure::Request)?;
+        let cached = {
+            let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+            match &*state {
+                EventPageState::Resident(page) => Some(page.clone()),
+                EventPageState::Damaged(failure) => return Err((*failure).into()),
+                EventPageState::Cold => None,
+            }
+        };
+        if let Some(page) = cached {
+            for row in page.rows.elements() {
+                visit(row);
+            }
+            return Ok(());
+        }
+        match self.load_verified(execution, source, bindings) {
+            Ok(page) => {
+                for row in page.rows.elements() {
+                    visit(row);
+                }
+                Ok(())
+            }
+            Err(Failure::StorageUnavailable(failure)) => {
+                if failure.cause.is_proven_damage() {
+                    let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+                    *state = EventPageState::Damaged(failure);
+                }
+                Err(failure.into())
+            }
+            Err(stop) => Err(stop),
+        }
+    }
+
     fn demand(
         self: &Arc<Self>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -185,34 +287,7 @@ impl EventPageCell {
             .map_err(Failure::Request)?;
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         if matches!(*state, EventPageState::Cold) {
-            let loaded = if self.descriptor.member.length > LINEAGE_EVENT_PAGE_BYTES {
-                Err(Cause::LimitExceeded {
-                    length: self.descriptor.member.length,
-                    limit: LINEAGE_EVENT_PAGE_BYTES,
-                })
-            } else {
-                source.read_member(self.descriptor.member, LINEAGE_EVENT_PAGE_BYTES)
-            }
-            .map_err(|cause| event_page::failure(&self.descriptor, cause))
-            .and_then(|bytes| event_page::readmit(execution, &bytes, &self.descriptor))
-            .and_then(|page| {
-                let bound = |row: &RelationalCheckpointLineageEventRow| -> Result<bool, Cause> {
-                    Ok((bindings.0)(row.publication_commit_id)?.is_some()
-                        && (bindings.0)(row.event.commit().commit_id)?.as_ref()
-                            == Some(row.event.commit()))
-                };
-                for row in &page.rows {
-                    match bound(row) {
-                        Ok(true) => {}
-                        Ok(false) => {
-                            return Err(event_page::failure(&self.descriptor, Cause::Damaged));
-                        }
-                        Err(cause) => return Err(event_page::failure(&self.descriptor, cause)),
-                    }
-                }
-                Ok(page)
-            });
-            match loaded {
+            match self.load_verified(execution, source, bindings) {
                 Ok(page) => *state = EventPageState::Resident(Arc::new(page)),
                 Err(Failure::StorageUnavailable(failure)) => {
                     if failure.cause.is_proven_damage() {

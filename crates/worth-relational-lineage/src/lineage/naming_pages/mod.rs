@@ -16,6 +16,7 @@ use worth_relational_storage::internal_port::durability::medium::cold_source::Re
 
 pub mod builder;
 pub mod codec;
+mod codec_im;
 pub mod page;
 pub mod store;
 pub mod tables;
