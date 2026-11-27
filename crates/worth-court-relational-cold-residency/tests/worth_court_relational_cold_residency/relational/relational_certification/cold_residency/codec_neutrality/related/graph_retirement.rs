@@ -39,7 +39,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
     let edges = world.relations.map(|id| original.relation(id).1);
     let checkpoint = capture(execution, &world.runtime);
     let checkpoint_bytes = checkpoint.bytes().to_vec();
-    let (mut target, mut recovered, receipt) = recover(execution, &world);
+    let (mut target, mut recovered, receipt, _) = recover(execution, &world);
     assert!(target
         .readmit_recovered_initial_schema_installation(receipt.clone())
         .is_err());

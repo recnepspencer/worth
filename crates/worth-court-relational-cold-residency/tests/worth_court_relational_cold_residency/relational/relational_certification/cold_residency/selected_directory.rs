@@ -99,6 +99,18 @@ pub(super) fn read(input: &RelationalDurableRecoverySource) -> Directory {
 }
 
 pub(super) fn read_native(checkpoint: &RelationalNativeCheckpoint) -> Directory {
+    read_native_with_members(checkpoint, None)
+}
+
+pub(super) fn read_native_with_members(
+    checkpoint: &RelationalNativeCheckpoint,
+    carried: Option<
+        &std::collections::BTreeMap<
+            RelationalDurableMemberLocator,
+            worth_execution::ExecutionImmutableBytes,
+        >,
+    >,
+) -> Directory {
     #[derive(Deserialize)]
     struct Wire {
         manifest: Directory,
@@ -111,7 +123,7 @@ pub(super) fn read_native(checkpoint: &RelationalNativeCheckpoint) -> Directory 
     )
     .unwrap()
     .manifest;
-    directory.commits = commit_pages(checkpoint, &directory.commit_index);
+    directory.commits = commit_pages(checkpoint, &directory.commit_index, carried);
     directory
 }
 
@@ -120,6 +132,12 @@ pub(super) fn read_native(checkpoint: &RelationalNativeCheckpoint) -> Directory 
 pub(super) fn commit_pages(
     checkpoint: &RelationalNativeCheckpoint,
     index: &CommitIndex,
+    carried: Option<
+        &std::collections::BTreeMap<
+            RelationalDurableMemberLocator,
+            worth_execution::ExecutionImmutableBytes,
+        >,
+    >,
 ) -> Vec<CommitPlacement> {
     type Row = (
         serde::de::IgnoredAny,
@@ -131,12 +149,16 @@ pub(super) fn commit_pages(
     );
     let mut placements = Vec::new();
     for page in &index.pages {
-        let bytes = checkpoint.members().iter().find_map(|member| match member {
-            RelationalCheckpointMember::New { locator, bytes } if *locator == page.member => {
-                Some(bytes.clone())
-            }
-            _ => None,
-        });
+        let bytes = checkpoint
+            .members()
+            .iter()
+            .find_map(|member| match member {
+                RelationalCheckpointMember::New { locator, bytes } if *locator == page.member => {
+                    Some(bytes.clone())
+                }
+                _ => None,
+            })
+            .or_else(|| carried.and_then(|map| map.get(&page.member).cloned()));
         // A carrying capture writes only its new pages; its carried prefix is
         // not decodable from this checkpoint alone.
         let Some(bytes) = bytes else {

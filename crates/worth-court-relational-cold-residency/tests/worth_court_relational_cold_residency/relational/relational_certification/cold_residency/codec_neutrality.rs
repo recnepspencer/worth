@@ -144,12 +144,14 @@ fn recovered(
     RelationalRuntime,
     RecoveredRelationalRuntimeAuthority,
     RelationalInitialSchemaInstallationReceipt,
+    facade::durability::RelationalNativeCheckpoint,
 ) {
     let (mut target, receipt) = installed(2);
-    let (_, recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, &world.runtime))
+    let saved = capture(execution, &world.runtime);
+    let (_, recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &saved)
         .unwrap();
     assert!(recovered.codec_transition_pending());
-    (target, recovered, receipt)
+    (target, recovered, receipt, saved)
 }
 
 #[test]
@@ -161,8 +163,9 @@ fn ordinary_and_equal_ordinary_overwritten_rows_cannot_acquire_producer_retireme
         if genuine {
             rewrite_output(execution, &world);
         }
-        let (mut target, mut recovered, _) = recovered(execution, &world);
-        let before = capture(execution, &target);
+        let (mut target, mut recovered, _, prior_saved) = recovered(execution, &world);
+        let prior = locators(&prior_saved);
+        let before = capture_carrying(execution, &target, &prior);
         let source = protected_payload(execution, &target, world.authored);
         let (owner, installed) = target
             .durability_recovery()
@@ -197,7 +200,7 @@ fn ordinary_and_equal_ordinary_overwritten_rows_cannot_acquire_producer_retireme
             source,
             protected_payload(execution, &target, world.authored)
         );
-        assert_eq!(before, capture(execution, &target));
+        assert_eq!(before, capture_carrying(execution, &target, &prior));
         assert!(recovered.codec_transition_pending());
     }
 }
@@ -207,7 +210,7 @@ fn interrupted_native_codec_publication_returns_the_exact_source_custody_for_ret
     let request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution, true);
-    let (mut target, mut recovered, _) = recovered(execution, &world);
+    let (mut target, mut recovered, _, _) = recovered(execution, &world);
     let selected = basis(&target);
     let (owner, installed) = target
         .durability_recovery()

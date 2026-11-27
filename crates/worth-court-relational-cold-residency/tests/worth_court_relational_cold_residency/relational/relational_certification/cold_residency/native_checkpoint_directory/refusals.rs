@@ -10,47 +10,76 @@ fn current_directory_rejects_damaged_duplicate_and_missing_members() {
     let native = capture(execution, &runtime);
     let payload = native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap();
     let directory = read_native(&native);
+    let head = directory.roots[0].regions[0].head;
+    let head_bytes = member_bytes(&native, head).unwrap();
+    let base_source = worth_testkit_relational::cold_recovery::members_source(&native);
     for alteration in 0..4 {
-        let mut body = members(&native);
-        let changed_member;
         let mut amended = payload.to_vec();
+        let mut source = base_source.clone();
         match alteration {
             0 => {
-                let [transport, bytes]: [&[u8]; 2] = rows(body[0]).try_into().unwrap();
-                let mut locator: RelationalDurableMemberLocator =
-                    rmp_serde::from_slice(transport).unwrap();
+                // Non-empty inline member with damaged locator digest is rejected.
+                let mut locator = head;
                 locator.sha256[0] ^= 1;
-                changed_member = array(&[&rmp_serde::to_vec_named(&locator).unwrap(), bytes]);
-                body[0] = &changed_member;
+                let entry = array(&[
+                    &rmp_serde::to_vec_named(&locator).unwrap(),
+                    &rmp_serde::to_vec(&super::super::checkpoint_wire_fixture::Bytes(head_bytes))
+                        .unwrap(),
+                ]);
+                amended = replace_field(&amended, "members", &array(&[&entry]));
             }
-            1 => body.push(body[0]),
-            2 => body.retain(|member| key(member) != directory.roots[0].regions[0].head),
+            1 => {
+                // Duplicate inline member is rejected.
+                let entry = array(&[
+                    &rmp_serde::to_vec_named(&head).unwrap(),
+                    &rmp_serde::to_vec(&super::super::checkpoint_wire_fixture::Bytes(head_bytes))
+                        .unwrap(),
+                ]);
+                amended = replace_field(&amended, "members", &array(&[&entry, &entry]));
+            }
+            2 => {
+                // Missing restore-required external commit member in cold source is rejected.
+                let commit_member = native
+                    .members()
+                    .iter()
+                    .rev()
+                    .find_map(|member| match member {
+                        worth_relational::facade::durability::RelationalCheckpointMember::New {
+                            locator,
+                            bytes,
+                        } if bytes.starts_with(b"WRTHRCCA") => Some(*locator),
+                        _ => None,
+                    })
+                    .unwrap();
+                let remaining: Vec<_> = native
+                    .members()
+                    .iter()
+                    .filter(|member| member.locator() != commit_member)
+                    .cloned()
+                    .collect();
+                source = base_source.with_selected_members(&remaining);
+            }
             3 => {
-                let mut commits = rows(field(manifest(&native), "commits"));
+                // Tampered commit-index tail digest disagrees with inline head entry.
+                let commits = field(manifest(&native), "commits");
+                let tail = field(commits, "tail");
                 let mut digest: [u8; 32] =
-                    rmp_serde::from_slice(field(commits[0], "payload_digest")).unwrap();
+                    rmp_serde::from_slice(field(tail, "payload_digest")).unwrap();
                 digest[0] ^= 1;
-                let changed = replace_field(
-                    commits[0],
-                    "payload_digest",
-                    &rmp_serde::to_vec(&digest).unwrap(),
-                );
-                commits[0] = &changed;
-                let changed = replace_field(manifest(&native), "commits", &array(&commits));
-                amended = replace_field(payload, "manifest", &changed);
+                let changed_tail =
+                    replace_field(tail, "payload_digest", &rmp_serde::to_vec(&digest).unwrap());
+                let changed_commits = replace_field(commits, "tail", &changed_tail);
+                let changed_manifest =
+                    replace_field(manifest(&native), "commits", &changed_commits);
+                amended = replace_field(payload, "manifest", &changed_manifest);
             }
             _ => unreachable!(),
         }
-        let amended = replace_field(&amended, "members", &array(&body));
         let untrusted =
             RelationalNativeCheckpoint::from_untrusted_bytes([CHECKPOINT_MAGIC, &amended].concat());
         let result = memory_runtime()
             .durability_recovery()
-            .restore_native_checkpoint(
-                execution,
-                &untrusted,
-                worth_testkit_relational::cold_recovery::members_source(&untrusted),
-            );
+            .restore_native_checkpoint(execution, &untrusted, source);
         assert!(result.is_err(), "alteration {alteration}");
     }
 }

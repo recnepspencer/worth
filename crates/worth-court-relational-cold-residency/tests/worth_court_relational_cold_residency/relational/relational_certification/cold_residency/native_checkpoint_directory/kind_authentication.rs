@@ -189,18 +189,15 @@ fn forged_cross_region_kind_commitment_is_refused_before_region_payload_reads() 
             source.clone(),
         );
         let mut receiving = memory_runtime();
-        let plan = receiving
+        let outcome = receiving
             .durability()
             .recovery_plan_from_source(
                 &execution,
                 recovery,
                 RecoveryVerificationMode::NormalRecoveryVerification,
             )
-            .unwrap();
-        let failure = receiving
-            .durability_recovery()
-            .recover(&execution, plan)
-            .unwrap_err();
+            .and_then(|plan| receiving.durability_recovery().recover(&execution, plan));
+        let failure = outcome.unwrap_err();
         let reads = source
             .canonical_member_reads
             .lock()
@@ -210,24 +207,39 @@ fn forged_cross_region_kind_commitment_is_refused_before_region_payload_reads() 
             .copied()
             .collect::<Vec<_>>();
         assert!(
-            !reads.is_empty(),
-            "dimension {dimension}: the untrusted checkpoint must obtain canonical authority"
-        );
-        assert!(
             reads
                 .iter()
                 .all(|locator| canonical_members.contains(locator)),
             "dimension {dimension}: only canonical authority acquisition may precede kind refusal: {reads:?}"
         );
-        assert!(
-            matches!(
-                failure,
-                RelationalRecoveryStop::Durability(ref error)
-                if error.class == RecoveryFailureClass::CorruptCheckpoint
-                    && error.detail.contains("StorageContentMismatch")
-            ),
-            "dimension {dimension}: {failure:?}"
-        );
+        if matches!(dimension, 0 | 3) {
+            assert!(
+                !reads.is_empty(),
+                "dimension {dimension}: the untrusted checkpoint must obtain canonical authority"
+            );
+            assert!(
+                matches!(
+                    failure,
+                    RelationalRecoveryStop::Durability(ref error)
+                    if error.class == RecoveryFailureClass::CorruptCheckpoint
+                        && error.detail.contains("StorageContentMismatch")
+                ),
+                "dimension {dimension}: {failure:?}"
+            );
+        } else {
+            assert!(
+                reads.is_empty(),
+                "dimension {dimension}: live_counts vs directory mismatch fails read-free: {reads:?}"
+            );
+            assert!(
+                matches!(
+                    failure,
+                    RelationalRecoveryStop::Durability(ref error)
+                    if error.class == RecoveryFailureClass::CorruptCheckpoint
+                ),
+                "dimension {dimension}: {failure:?}"
+            );
+        }
     }
 }
 
@@ -266,7 +278,13 @@ fn forge_regions(bytes: &[u8], dimension: usize) -> Vec<u8> {
             let count: usize = rmp_serde::from_slice(field(field(leaf, part), key)).unwrap();
             (part, key, rmp_serde::to_vec(&(count + 1)).unwrap())
         }
-        3 => ("directory", "entities", array(&[])),
+        3 => {
+            let entities = field(field(leaf, "directory"), "entities");
+            let mut digest: [u8; 32] = rmp_serde::from_slice(field(entities, "digest")).unwrap();
+            digest[0] ^= 1;
+            let forged = replace_field(entities, "digest", &rmp_serde::to_vec(&digest).unwrap());
+            ("directory", "entities", forged)
+        }
         _ => unreachable!("four explicit corruptions"),
     };
     let changed = replace_field(field(leaf, part), key, &value);

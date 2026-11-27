@@ -109,8 +109,9 @@ pub(super) fn refuse_late_claim() {
         .unwrap();
     admit(execution, &runtime, &installed, outputs, true).unwrap();
     let saved = capture(execution, &runtime);
+    let saved_source = worth_testkit_relational::cold_recovery::members_source(&saved);
     // The unmodified, genuinely independent reference remains admissible cold.
-    let (cold, installed) = restore(execution, &saved);
+    let (cold, installed) = restore(execution, &saved, saved_source.clone());
     admit(execution, &cold, &installed, outputs, true).unwrap();
     assert_eq!(
         relation_payload(execution, &cold, edge),
@@ -137,20 +138,23 @@ pub(super) fn refuse_late_claim() {
         continued.before_write = Some(birth_commit.version_id);
         continued.after_write = preserve_commit.version_id;
         let mut untrusted = saved.clone();
+        let mut untrusted_source = saved_source.clone();
         for (commit, claim) in [
             (birth_commit.commit_id, born),
             (preserve_commit.commit_id, continued),
         ] {
-            untrusted = edit_original(&untrusted, commit, |bytes| {
-                edit_relations(bytes, |rows| {
-                    rows.push(claim);
-                    rows.sort_unstable_by_key(|row| row.id);
-                })
-            });
+            (untrusted, untrusted_source) =
+                edit_original(&untrusted, &untrusted_source, commit, |bytes| {
+                    edit_relations(bytes, |rows| {
+                        rows.push(claim);
+                        rows.sort_unstable_by_key(|row| row.id);
+                    })
+                });
         }
-        let (cold, installed) = restore(execution, &untrusted);
+        let (cold, installed) = restore(execution, &untrusted, untrusted_source.clone());
         let selected = basis(&cold);
-        let before = capture(execution, &cold);
+        let prior: Vec<_> = untrusted_source.members.keys().copied().collect();
+        let before = capture_carrying(execution, &cold, &prior);
         let denied = admit(execution, &cold, &installed, outputs, true).unwrap_err();
         assert!(
             format!("{denied:?}").contains(if forged_birth_endpoint {
@@ -165,7 +169,7 @@ pub(super) fn refuse_late_claim() {
             .basis_port()
             .compare_current_exact(&selected)
             .is_ok());
-        assert_eq!(capture(execution, &cold), before);
+        assert_eq!(capture_carrying(execution, &cold, &prior), before);
         assert_eq!(
             relation_payload(execution, &cold, edge),
             relation_payload(execution, &runtime, edge)
@@ -178,17 +182,16 @@ pub(super) fn refuse_late_claim() {
 fn restore(
     execution: &ExecutionRequest<'_, '_>,
     checkpoint: &worth_relational::facade::durability::RelationalNativeCheckpoint,
+    source: std::sync::Arc<
+        worth_testkit_relational::durable_medium::immutable_members::ImmutableCheckpointMemberSource,
+    >,
 ) -> (
     RelationalRuntime,
     worth_relational::facade::mvcc::RelationalInstalledApplicationPublicationAuthority,
 ) {
     let (mut cold, receipt) = installed_references(1);
     cold.durability_recovery()
-        .restore_native_checkpoint(
-            execution,
-            checkpoint,
-            worth_testkit_relational::cold_recovery::members_source(checkpoint),
-        )
+        .restore_native_checkpoint(execution, checkpoint, source)
         .unwrap();
     let receipt = cold
         .readmit_recovered_initial_schema_installation(receipt)

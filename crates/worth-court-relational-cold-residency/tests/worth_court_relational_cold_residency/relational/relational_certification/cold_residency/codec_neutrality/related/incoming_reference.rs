@@ -2,7 +2,7 @@
 use super::super::{publication_fixture, retained_records::RetainedRecords};
 use super::origin::exact_origin;
 use super::{
-    super::fixture::{basis, capture, create, locator, protected_payload},
+    super::fixture::{basis, capture, capture_carrying, create, locator, protected_payload},
     fixture::*,
 };
 use worth_execution::ExecutionRequest;
@@ -69,29 +69,18 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
     let independent_out_payload = relation_payload(execution, &world.runtime, independent_out);
     let external_payload = protected_payload(execution, &world.runtime, external);
     let reference_payload = relation_payload(execution, &world.runtime, reference);
-    world
-        .runtime
-        .readmit_required_output_publication(
-            execution,
-            &publisher.installed,
-            &basis(&world.runtime),
-            "native.closed.producer",
-            &[19; 32],
-            &publication_fixture::meaning("native.closed.producer"),
-            &publication_fixture::roles(
-                &world.outputs.map(|id| (id, KindId(3))),
-                RequiredOutputRolePosture::Create,
-            ),
-        )
-        .unwrap();
+    readmit(
+        execution,
+        &world.runtime,
+        &publisher.installed,
+        &world.outputs,
+        false,
+    );
     let saved = capture(execution, &world.runtime);
+    let saved_source = worth_testkit_relational::cold_recovery::members_source(&saved);
     let (mut cold, receipt) = installed_references(1);
     cold.durability_recovery()
-        .restore_native_checkpoint(
-            execution,
-            &saved,
-            worth_testkit_relational::cold_recovery::members_source(&saved),
-        )
+        .restore_native_checkpoint(execution, &saved, saved_source.clone())
         .unwrap();
     let receipt = cold
         .readmit_recovered_initial_schema_installation(receipt)
@@ -240,15 +229,16 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
     );
 
     // Cold readmission also authenticates the Preserve envelope, not merely the birth.
-    let saved = capture(execution, &cold);
+    let (saved, reopened_source) =
+        worth_testkit_relational::cold_recovery::capture_external_carrying(
+            execution,
+            &cold,
+            &saved_source,
+        );
     let (mut reopened, receipt) = installed_references(1);
     reopened
         .durability_recovery()
-        .restore_native_checkpoint(
-            execution,
-            &saved,
-            worth_testkit_relational::cold_recovery::members_source(&saved),
-        )
+        .restore_native_checkpoint(execution, &saved, reopened_source.clone())
         .unwrap();
     let receipt = reopened
         .readmit_recovered_initial_schema_installation(receipt)
@@ -288,7 +278,14 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
         relation_payload(execution, &reopened, independent_out),
         independent_out_payload
     );
-    assert_retirement_refused(execution, &reopened, world.activation, external, reference);
+    assert_retirement_refused(
+        execution,
+        &reopened,
+        &reopened_source,
+        world.activation,
+        external,
+        reference,
+    );
 }
 
 fn original_ids(ids: &[EntityId; 3]) -> Vec<EntityId> {
@@ -331,15 +328,29 @@ fn readmit(
 fn assert_retirement_refused(
     execution: &ExecutionRequest<'_, '_>,
     source: &worth_relational::facade::runtime::RelationalRuntime,
+    prior_source: &std::sync::Arc<
+        worth_testkit_relational::durable_medium::immutable_members::ImmutableCheckpointMemberSource,
+    >,
     activation: EntityId,
     external: EntityId,
     reference: RelationId,
 ) {
     let (mut target, _) = installed_references(2);
-    let (_, mut recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, source))
+    let (saved, target_source) = worth_testkit_relational::cold_recovery::capture_external_carrying(
+        execution,
+        source,
+        prior_source,
+    );
+    let (_, mut recovered) = target
+        .durability_recovery()
+        .restore_native_checkpoint_for_codec_transition_with_authority(
+            execution,
+            &saved,
+            target_source.clone(),
+        )
         .unwrap();
-    let before = capture(execution, &target);
-    let selected = basis(&target);
+    let prior: Vec<_> = target_source.members.keys().copied().collect();
+    let (before, selected) = (capture_carrying(execution, &target, &prior), basis(&target));
     let external_payload = protected_payload(execution, &target, external);
     let reference_payload = relation_payload(execution, &target, reference);
     let denied = candidate(
@@ -358,13 +369,12 @@ fn assert_retirement_refused(
         denied.detail().contains("purpose=codec-retirement"),
         "{denied:?}"
     );
-    assert!(target
+    let same = target
         .owner_component_services()
         .basis_port()
-        .compare_current_exact(&selected)
-        .is_ok());
-    assert!(recovered.codec_transition_pending());
-    assert_eq!(capture(execution, &target), before);
+        .compare_current_exact(&selected);
+    assert!(same.is_ok() && recovered.codec_transition_pending());
+    assert_eq!(capture_carrying(execution, &target, &prior), before);
     assert_eq!(
         protected_payload(execution, &target, external),
         external_payload
