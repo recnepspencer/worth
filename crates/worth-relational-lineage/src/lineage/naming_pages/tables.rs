@@ -189,46 +189,38 @@ pub fn parse_group_log_key(
     Ok((commit, digest))
 }
 
-/// Computes sorted per-branch `(first_commit, last_commit)` spans for a
-/// primary `GROUP_LOG` page (empty for all non-`GROUP_LOG` pages).
-pub fn group_log_branch_spans(
+/// Verifies that every row of a primary `GROUP_LOG` page has a canonical key
+/// belonging to one single branch with non-zero ascending commits.
+pub fn verify_group_log_single_branch(
     rows: &[(Vec<u8>, Vec<u8>)],
 ) -> Result<
-    Vec<super::GroupLogBranchSpan>,
+    (),
     worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
 >{
-    use std::collections::BTreeMap;
     use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
     if rows
         .first()
         .is_none_or(|(key, _)| key.first() != Some(&GROUP_LOG))
     {
-        return Ok(Vec::new());
+        return Ok(());
     }
-    let mut spans: BTreeMap<[u8; 32], (u64, u64)> = BTreeMap::new();
+    let mut expected_digest: Option<[u8; 32]> = None;
+    let mut prior_commit = 0u64;
     for (key, _) in rows {
         let (commit, digest) = parse_group_log_key(key)?;
-        if commit.0 == 0 {
+        if commit.0 == 0 || commit.0 < prior_commit {
             return Err(Cause::Damaged);
         }
-        spans
-            .entry(digest)
-            .and_modify(|(lo, hi)| {
-                *lo = (*lo).min(commit.0);
-                *hi = (*hi).max(commit.0);
-            })
-            .or_insert((commit.0, commit.0));
+        if let Some(expected) = expected_digest {
+            if digest != expected {
+                return Err(Cause::Damaged);
+            }
+        } else {
+            expected_digest = Some(digest);
+        }
+        prior_commit = commit.0;
     }
-    Ok(spans
-        .into_iter()
-        .map(
-            |(branch_digest, (first_commit, last_commit))| super::GroupLogBranchSpan {
-                branch_digest,
-                first_commit,
-                last_commit,
-            },
-        )
-        .collect())
+    Ok(())
 }
 
 /// Cryptographic commitment to a primary page's ascending `(base_key, chunks)` pairs.

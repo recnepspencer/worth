@@ -1,19 +1,26 @@
-//! Round 12 hardening court for Store M4.3f (`[P2-1]` and `[P2-2]`):
-//! - Sibling merge (`sibling2` forked at C2 into `sibling1` forked at C1) applies
-//!   each ancestor branch's own cutoff (`main <= C2`), skipping `main` event pages
-//!   wholly after C2 even though `sibling2` itself has bound `u64::MAX`.
+//! Round 12–14 hardening courts for Store M4.3f:
+//! - Sibling merge skips ancestor `main` event pages and `GROUP_LOG` pages
+//!   wholly after the source's fork cutoff.
+//! - Checkpoint-order `k`-way `GROUP_LOG` traversal refuses `NamedGroupLineage`
+//!   on an earlier readable ancestor page before touching a later unavailable
+//!   source page.
 
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::aggregate_identity::AggregateMemberRole;
 use worth_relational::facade::durability::{
     RecoveryVerificationMode, RelationalDurableCheckpointSource, RelationalDurableRecoverySource,
+    RelationalNativeCheckpoint,
 };
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::{KindId, PartitionId};
-use worth_relational::facade::merge::{MergeExecutionRequest, MergeIntent};
+use worth_relational::facade::merge::{
+    MergeExecutionPreparationError, MergeExecutionRequest, MergeIntent,
+};
 use worth_relational::facade::mvcc::RelationalTransactionIntent;
+use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::transactions::{
     CreateIntent, EntitySpec, MutationIntent, WorkerIntentBatch,
 };
@@ -21,18 +28,48 @@ use worth_testkit_relational::aspect_storage::publications::release_test_commit_
 use worth_testkit_relational::cold_recovery::{
     capture_external_carrying, capture_external_checkpoint,
 };
+use worth_testkit_relational::durable_medium::immutable_members::ImmutableCheckpointMemberSource;
 use worth_testkit_relational::durable_medium::TestDurableMedium;
 use worth_testkit_relational::durable_publication::field_patch;
 
 use super::bounded_naming_fixture::{
-    create_named_entities, observe_branch, publish_group_partition,
+    create_named_entities, group_scheme, observe_branch, publish_group_partition, GROUP_SCHEME,
 };
 use super::bounded_naming_r2::fork_retained_at;
 use super::bounded_naming_r3::durable_mixed_runtime;
 
+fn reopen_mixed(
+    request: &ExecutionRequest<'_, '_>,
+    medium: &Arc<TestDurableMedium>,
+    ck: RelationalNativeCheckpoint,
+    src: Arc<ImmutableCheckpointMemberSource>,
+) -> RelationalRuntime {
+    let mut rt = durable_mixed_runtime(medium);
+    let input = RelationalDurableRecoverySource::new(
+        Some(RelationalDurableCheckpointSource::new(
+            ck.covered_position().unwrap(),
+            ck.covered_branch_transitions().unwrap(),
+            ck,
+        )),
+        Vec::new(),
+        Vec::new(),
+        src,
+    );
+    let plan = rt
+        .durability()
+        .recovery_plan_from_source(
+            request,
+            input,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    rt.durability_recovery().recover(request, plan).unwrap();
+    rt
+}
+
 fn commit_unnamed(
     request: &ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &RelationalRuntime,
     branch: &BranchId,
     label: &str,
 ) {
@@ -64,55 +101,39 @@ fn sibling_merge_skips_ancestor_event_pages_past_source_fork_cutoff() {
     let producer = durable_mixed_runtime(&medium);
     let main = producer.main_branch_identity().branch_id().clone();
 
-    // C1 on main -> fork sibling1.
     commit_unnamed(request, &producer, &main, "r12-main-c1");
     let sibling1 = BranchId("r12-sibling-1".into());
-    let obs_c1 = observe_branch(&producer, &main);
-    fork_retained_at(request, &producer, &obs_c1, &sibling1).unwrap();
+    fork_retained_at(
+        request,
+        &producer,
+        &observe_branch(&producer, &main),
+        &sibling1,
+    )
+    .unwrap();
 
-    // C2 on main -> fork sibling2.
     commit_unnamed(request, &producer, &main, "r12-main-c2");
     let sibling2 = BranchId("r12-sibling-2".into());
-    let obs_c2 = observe_branch(&producer, &main);
-    fork_retained_at(request, &producer, &obs_c2, &sibling2).unwrap();
+    fork_retained_at(
+        request,
+        &producer,
+        &observe_branch(&producer, &main),
+        &sibling2,
+    )
+    .unwrap();
 
-    // Seal C1..C2 in checkpoint 1 and reopen so main's later C3 event lands in a
-    // distinct post-C2 event page carried separately in checkpoint 2.
     let (ck1, src1) = capture_external_checkpoint(request, &producer);
     let ck1_event_members: BTreeSet<_> = super::selected_directory::read_native(&ck1)
         .lineage_events
         .iter()
         .map(|p| p.member)
         .collect();
-    let mut mid = durable_mixed_runtime(&medium);
-    let mid_in = RelationalDurableRecoverySource::new(
-        Some(RelationalDurableCheckpointSource::new(
-            ck1.covered_position().unwrap(),
-            ck1.covered_branch_transitions().unwrap(),
-            ck1,
-        )),
-        Vec::new(),
-        Vec::new(),
-        src1.clone(),
-    );
-    let mid_plan = mid
-        .durability()
-        .recovery_plan_from_source(
-            request,
-            mid_in,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    mid.durability_recovery()
-        .recover(request, mid_plan)
-        .unwrap();
+    let mid = reopen_mixed(request, &medium, ck1, src1.clone());
 
     // C3 on main (strictly past sibling2's fork cutoff C2).
     commit_unnamed(request, &mid, &main, "r12-main-c3-beyond-sibling2");
 
     let (ck2, src2) = capture_external_carrying(request, &mid, &src1);
-    let ck2_dir = super::selected_directory::read_native(&ck2);
-    let post_c2_main_members: BTreeSet<_> = ck2_dir
+    let post_c2_main_members: BTreeSet<_> = super::selected_directory::read_native(&ck2)
         .lineage_events
         .iter()
         .map(|p| p.member)
@@ -123,34 +144,8 @@ fn sibling_merge_skips_ancestor_event_pages_past_source_fork_cutoff() {
         "C2 must emit a distinct main event page wholly after sibling2's fork cutoff"
     );
 
-    let mut reopened = durable_mixed_runtime(&medium);
-    let reopen_in = RelationalDurableRecoverySource::new(
-        Some(RelationalDurableCheckpointSource::new(
-            ck2.covered_position().unwrap(),
-            ck2.covered_branch_transitions().unwrap(),
-            ck2,
-        )),
-        Vec::new(),
-        Vec::new(),
-        src2.clone(),
-    );
-    let reopen_plan = reopened
-        .durability()
-        .recovery_plan_from_source(
-            request,
-            reopen_in,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    reopened
-        .durability_recovery()
-        .recover(request, reopen_plan)
-        .unwrap();
-
-    // Fail any read of the post-C2 main event page: merge preparation of sibling2
-    // into sibling1 must neither read nor fail on it.
-    let failed_target = *post_c2_main_members.iter().next().unwrap();
-    *src2.failed_member.lock().unwrap() = Some(failed_target);
+    let reopened = reopen_mixed(request, &medium, ck2, src2.clone());
+    *src2.failed_member.lock().unwrap() = Some(*post_c2_main_members.iter().next().unwrap());
     let reads_before = src2.member_reads.lock().unwrap().len();
 
     let bound = reopened
@@ -168,10 +163,7 @@ fn sibling_merge_skips_ancestor_event_pages_past_source_fork_cutoff() {
         .iter()
         .filter(|m| post_c2_main_members.contains(m))
         .count();
-    assert_eq!(
-        post_c2_reads, 0,
-        "merge preparation must not read main event pages wholly after sibling2's fork"
-    );
+    assert_eq!(post_c2_reads, 0);
 }
 
 #[test]
@@ -189,39 +181,27 @@ fn sibling_merge_skips_post_cutoff_main_group_log_pages() {
         &["r12-g-a".into(), "r12-g-b".into()],
     );
     let sibling1 = BranchId("r12-grp-sibling-1".into());
-    let obs_c1 = observe_branch(&producer, &main);
-    fork_retained_at(request, &producer, &obs_c1, &sibling1).unwrap();
+    fork_retained_at(
+        request,
+        &producer,
+        &observe_branch(&producer, &main),
+        &sibling1,
+    )
+    .unwrap();
 
     commit_unnamed(request, &producer, &main, "r12-grp-main-c2");
     let sibling2 = BranchId("r12-grp-sibling-2".into());
-    let obs_c2 = observe_branch(&producer, &main);
-    fork_retained_at(request, &producer, &obs_c2, &sibling2).unwrap();
+    fork_retained_at(
+        request,
+        &producer,
+        &observe_branch(&producer, &main),
+        &sibling2,
+    )
+    .unwrap();
 
     let (ck1, src1) = capture_external_checkpoint(request, &producer);
-    let mut mid = durable_mixed_runtime(&medium);
-    let mid_in = RelationalDurableRecoverySource::new(
-        Some(RelationalDurableCheckpointSource::new(
-            ck1.covered_position().unwrap(),
-            ck1.covered_branch_transitions().unwrap(),
-            ck1,
-        )),
-        Vec::new(),
-        Vec::new(),
-        src1.clone(),
-    );
-    let mid_plan = mid
-        .durability()
-        .recovery_plan_from_source(
-            request,
-            mid_in,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    mid.durability_recovery()
-        .recover(request, mid_plan)
-        .unwrap();
+    let mid = reopen_mixed(request, &medium, ck1, src1.clone());
 
-    // Publish group lineage on main strictly past sibling2's fork cutoff C2.
     let _ = publish_group_partition(
         request,
         &mid,
@@ -235,8 +215,7 @@ fn sibling_merge_skips_post_cutoff_main_group_log_pages() {
     );
 
     let (ck2, src2) = capture_external_carrying(request, &mid, &src1);
-    let ck2_dir = super::selected_directory::read_native(&ck2);
-    let post_c2_group_log_members: BTreeSet<_> = ck2_dir
+    let post_c2_group_log_members: BTreeSet<_> = super::selected_directory::read_native(&ck2)
         .naming
         .group_log
         .iter()
@@ -248,32 +227,8 @@ fn sibling_merge_skips_post_cutoff_main_group_log_pages() {
         "C2 must emit a primary GROUP_LOG page for main's post-C2 group transition"
     );
 
-    let mut reopened = durable_mixed_runtime(&medium);
-    let reopen_in = RelationalDurableRecoverySource::new(
-        Some(RelationalDurableCheckpointSource::new(
-            ck2.covered_position().unwrap(),
-            ck2.covered_branch_transitions().unwrap(),
-            ck2,
-        )),
-        Vec::new(),
-        Vec::new(),
-        src2.clone(),
-    );
-    let reopen_plan = reopened
-        .durability()
-        .recovery_plan_from_source(
-            request,
-            reopen_in,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    reopened
-        .durability_recovery()
-        .recover(request, reopen_plan)
-        .unwrap();
-
-    let failed_group_log = *post_c2_group_log_members.iter().next().unwrap();
-    *src2.failed_member.lock().unwrap() = Some(failed_group_log);
+    let reopened = reopen_mixed(request, &medium, ck2, src2.clone());
+    *src2.failed_member.lock().unwrap() = Some(*post_c2_group_log_members.iter().next().unwrap());
     let reads_before = src2.member_reads.lock().unwrap().len();
 
     let bound = reopened
@@ -291,8 +246,116 @@ fn sibling_merge_skips_post_cutoff_main_group_log_pages() {
         .iter()
         .filter(|m| post_c2_group_log_members.contains(m))
         .count();
+    assert_eq!(post_c2_group_reads, 0);
+}
+
+#[test]
+fn earlier_ancestor_group_transition_refuses_before_later_unavailable_source_page() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let request = &ExecutionRequest::serial(&host);
+    let medium = TestDurableMedium::new();
+    let producer = durable_mixed_runtime(&medium);
+    let main = producer.main_branch_identity().branch_id().clone();
+
+    let (_, _, names) = create_named_entities(
+        request,
+        &producer,
+        &main,
+        &["r14-a".into(), "r14-b".into(), "r14-c".into()],
+    );
+    let sibling1 = BranchId("r14-target".into());
+    fork_retained_at(
+        request,
+        &producer,
+        &observe_branch(&producer, &main),
+        &sibling1,
+    )
+    .unwrap();
+
+    // C2 on main: earlier group transition (paired with an unnamed KindId(3)
+    // creation so merge readiness passes and reaches `named_outputs::refuse`).
+    let commit_group = |branch: &BranchId, label: &str, members| {
+        let basis = observe_branch(&producer, branch);
+        let mut tx = producer
+            .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
+            .unwrap();
+        tx.push_batch(
+            WorkerIntentBatch::new(label).push(MutationIntent::Create(CreateIntent::Entity(
+                EntitySpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(3),
+                    client_key: label.into(),
+                    fields: field_patch("name", "name", label),
+                },
+            ))),
+            request.allocation_policy(),
+        )
+        .unwrap();
+        let mut plan = worth_relational::facade::lineage::CommitNamingPlan::default();
+        plan.declare_group_partition(group_scheme(), Vec::new(), vec![members]);
+        tx.attach_naming_plan(plan);
+        let committed = tx.commit(request, &producer).unwrap();
+        release_test_commit_snapshot(&producer, &committed);
+        committed.commit.commit_id
+    };
+    let c2_at = commit_group(
+        &main,
+        "r14-main-group",
+        vec![
+            (names[0], AggregateMemberRole::Anchor),
+            (names[1], AggregateMemberRole::Ordinary),
+        ],
+    );
+    let sibling2 = BranchId("r14-source".into());
+    fork_retained_at(
+        request,
+        &producer,
+        &observe_branch(&producer, &main),
+        &sibling2,
+    )
+    .unwrap();
+
+    // C3 on sibling2: later group transition on a separate single-branch GROUP_LOG page.
+    let _ = commit_group(
+        &sibling2,
+        "r14-source-group",
+        vec![
+            (names[0], AggregateMemberRole::Anchor),
+            (names[2], AggregateMemberRole::Ordinary),
+        ],
+    );
+
+    let (ck, src) = capture_external_checkpoint(request, &producer);
+    let primary_pages: Vec<_> = super::selected_directory::read_native(&ck)
+        .naming
+        .group_log
+        .into_iter()
+        .filter(|p| p.first.first() == Some(&14))
+        .collect();
     assert_eq!(
-        post_c2_group_reads, 0,
-        "merge preparation must not open post-cutoff main GROUP_LOG pages"
+        primary_pages.len(),
+        2,
+        "expected separate main and source GROUP_LOG pages"
+    );
+    let later_source_page = primary_pages[1].member;
+
+    let reopened = reopen_mixed(request, &medium, ck, src.clone());
+    // Mark sibling2's later GROUP_LOG page unavailable: checkpoint-order merge
+    // must hit main's earlier readable page and return NamedGroupLineage first.
+    *src.failed_member.lock().unwrap() = Some(later_source_page);
+
+    let bound = reopened
+        .bind_merge_execution_request(MergeExecutionRequest::new(
+            sibling1,
+            sibling2.clone(),
+            MergeIntent::ReconcileIntoTarget,
+        ))
+        .unwrap();
+    let err = reopened
+        .prepare_merge_execution(request, bound)
+        .expect_err("earlier ancestor group transition must refuse NamedGroupLineage");
+    assert_eq!(
+        err,
+        MergeExecutionPreparationError::NamedGroupLineage(sibling2, c2_at, GROUP_SCHEME.into())
     );
 }

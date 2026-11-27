@@ -13,9 +13,9 @@ use worth_relational_storage::internal_port::storage::residency::chunked::member
 use super::page::NamingPage;
 use super::store::ColdNamingStore;
 use super::tables::{
-    chunk_key, encode_chunked_header, group_log_branch_spans, page_continuation_summary,
-    parse_chunk_key, parse_value_envelope, table_domain, MAX_INLINE_VALUE_BYTES, VALUE_CHUNK,
-    VALUE_INLINE_TAG,
+    chunk_key, encode_chunked_header, page_continuation_summary, parse_chunk_key,
+    parse_group_log_key, parse_value_envelope, table_domain, verify_group_log_single_branch,
+    GROUP_LOG, MAX_INLINE_VALUE_BYTES, VALUE_CHUNK, VALUE_INLINE_TAG,
 };
 use super::{
     NamingPageRef, NAMING_KEY_BYTES, NAMING_LOGICAL_KEY_BYTES, NAMING_PAGE_BYTES,
@@ -108,9 +108,19 @@ impl PageWriter<'_> {
             && self.rows.first().is_some_and(|(first, _)| {
                 parse_chunk_key(first).map(|(b, _)| b) != parse_chunk_key(&key).map(|(b, _)| b)
             });
+        // Keep every primary GROUP_LOG page strictly single-branch so page
+        // endpoint keys (`first`, `last`) alone establish exact branch + commit
+        // routing without unverified interior metadata.
+        let different_group_log_branch = key[0] == GROUP_LOG
+            && self.rows.first().is_some_and(|(first, _)| {
+                first.first() == Some(&GROUP_LOG)
+                    && parse_group_log_key(first).ok().map(|(_, d)| d)
+                        != parse_group_log_key(&key).ok().map(|(_, d)| d)
+            });
         if self.rows.len() == NAMING_PAGE_ENTRIES as usize
             || self.bytes + size + PAGE_OVERHEAD > NAMING_PAGE_BYTES
             || different_chunk_base
+            || different_group_log_branch
             || self
                 .rows
                 .first()
@@ -130,8 +140,8 @@ impl PageWriter<'_> {
         let (first, last) = (first.0.clone(), last.0.clone());
         let rows = std::mem::take(&mut self.rows);
         let entries = rows.len() as u32;
+        verify_group_log_single_branch(&rows)?;
         let (continuation_chunks, continuation_digest) = page_continuation_summary(&rows)?;
-        let group_log_branches = group_log_branch_spans(&rows)?;
         let member = encode_member(
             ChunkMemberKind::NamingStatePage,
             &NamingPage { rows },
@@ -145,7 +155,6 @@ impl PageWriter<'_> {
             entries,
             continuation_chunks,
             continuation_digest,
-            group_log_branches,
             member: locator,
         });
         self.bytes = 0;

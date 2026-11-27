@@ -65,11 +65,6 @@ fn chunked_writer_refuses_values_above_64mib_and_rejects_malformed_prior_header(
         entries: 1,
         continuation_chunks: 0,
         continuation_digest: None,
-        group_log_branches: vec![crate::lineage::naming_pages::GroupLogBranchSpan {
-            branch_digest: digest,
-            first_commit: 1,
-            last_commit: 1,
-        }],
         member: member.locator,
     };
     let state = Arc::new(CheckpointNamingState {

@@ -156,7 +156,6 @@ fn oversized_inline_envelope_refuses_damaged_on_both_get_and_scan() {
         entries: 1,
         continuation_chunks: 0,
         continuation_digest: None,
-        group_log_branches: Vec::new(),
         member: member.locator,
     };
     let state = Arc::new(CheckpointNamingState {
@@ -249,7 +248,6 @@ fn oversized_inline_envelope_refuses_damaged_on_both_get_and_scan() {
         entries: 2,
         continuation_chunks: valid_pages[0].continuation_chunks,
         continuation_digest: valid_pages[0].continuation_digest,
-        group_log_branches: Vec::new(),
         member: mixed_member.locator,
     }];
     mixed_refs.extend_from_slice(&valid_pages[1..]);
