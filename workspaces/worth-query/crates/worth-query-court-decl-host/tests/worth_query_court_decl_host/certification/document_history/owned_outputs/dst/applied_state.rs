@@ -1,12 +1,18 @@
 //! The applied-state digest, the S5 cutover oracle (TBU 2E plan §R3.3). After
 //! every call of the default document sweep, the document's records are read
-//! through public queries on a fresh request. That covers the members of model
-//! `a` and the output rows of its tree. For each record the digest holds whether
-//! it is live, its lineage and generation, and its value. Lineage is the record's
-//! slot and generation its full identity; both are numbered densely in first-seen
-//! order per document, so seeds that share a host do not depend on each other's
-//! allocations. The schema declares no persistent names, so there is no live
-//! name to digest. Event logs are left out on purpose.
+//! through public queries on a fresh request. That covers model `a`, its
+//! members (`m` through the member set, so its ownership edge too), the
+//! upstream member and every output row of its tree, including each shape's
+//! model-keyed rows. For each record the digest holds whether it is live, its
+//! storage slot and generation, and its value. The generation is the full
+//! identity; slots and generations are numbered densely in first-seen order per
+//! document, so seeds that share a host do not depend on each other's
+//! allocations. Event logs are left out on purpose.
+//!
+//! Two gaps have no public read to close them. The schema declares no
+//! persistent names, so there is no live name to digest. And no query walks
+//! the `ChildOf` edges: `child_output` reads a row by key, so a `ChildOf` edge
+//! dropped by the last navigation before close escapes the digest.
 //!
 //! The digests the master build applied are pinned in
 //! `golden/applied_state.ndjson`, one line per seed and corrections setting.
@@ -54,27 +60,27 @@ pub fn record(digest: String) {
     });
 }
 
-/// Dense first-seen numbers for one document's lineages and generations.
+/// Dense first-seen numbers for one document's storage slots and generations.
 #[derive(Default)]
 pub struct Numbering {
-    lineages: BTreeMap<(u64, u64), u32>,
+    slots: BTreeMap<(u64, u64), u32>,
     generations: BTreeMap<EntityId, u32>,
 }
 
 impl Numbering {
-    /// `key=L<lineage>g<generation>:<value>` for a live record, `key=-` otherwise.
+    /// `key=s<slot>g<generation>:<value>` for a live record, `key=-` otherwise.
     pub fn label(&mut self, key: &str, row: Option<(EntityId, u64)>) -> String {
         let Some((id, value)) = row else {
             return format!("{key}=-");
         };
-        let next = self.lineages.len() as u32 + 1;
-        let lineage = *self
-            .lineages
+        let next = self.slots.len() as u32 + 1;
+        let slot = *self
+            .slots
             .entry((id.partition_id.0 as u64, id.local_slot.0))
             .or_insert(next);
         let next = self.generations.len() as u32 + 1;
         let generation = *self.generations.entry(id).or_insert(next);
-        format!("{key}=L{lineage}g{generation}:{value}")
+        format!("{key}=s{slot}g{generation}:{value}")
     }
 }
 

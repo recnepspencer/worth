@@ -111,7 +111,7 @@ pub struct Document<'h> {
     navigation: u128,
     head_diverged: bool,
     closed: bool,
-    /// Dense lineage and generation numbers for the applied-state digest.
+    /// Dense slot and generation numbers for the applied-state digest.
     applied: super::applied_state::Numbering,
 }
 
