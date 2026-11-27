@@ -31,12 +31,28 @@ pub struct NativeCheckpointModelBytes<'a> {
     pub(crate) fields: BTreeMap<String, &'a [u8]>,
     pub(crate) allocator: BTreeMap<String, &'a [u8]>,
 }
+
+/// Exact original value encodings for the exempt monotonic record-allocation
+/// fields (`append_frontiers`, `generation_high_water`, `partition_high_water`,
+/// and `pages`). Excluded from `NativeCheckpointModelBytes` so model-invariance
+/// checks allow burned monotonic allocations, while full-invariance checks can
+/// still detect any record allocation on bare `CHK24` frames without an external
+/// cold member source.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct NativeRecordAllocationBytes<'a> {
+    pub(crate) append_frontiers: &'a [u8],
+    pub(crate) generation_high_water: &'a [u8],
+    pub(crate) partition_high_water: &'a [u8],
+    pub(crate) pages: &'a [u8],
+}
+
 #[derive(Debug)]
 /// Reconstructive native model-byte view, allocator coordinates and live census.
 pub struct RelationalCheckpointInspection<'a> {
     pub(in crate::internal_port::durability) branch_cells:
         Vec<contracts::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint>,
     pub model: NativeCheckpointModelBytes<'a>,
+    pub record_allocation_bytes: NativeRecordAllocationBytes<'a>,
     /// Provisional symbol IDs can burn without publishing their meanings.
     pub symbol_identity_frontier: u32,
     pub frontiers: Vec<CheckpointRecordFrontier>,

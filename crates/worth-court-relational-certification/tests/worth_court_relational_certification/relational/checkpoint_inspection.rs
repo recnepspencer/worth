@@ -17,6 +17,7 @@ use worth_testkit_relational::{
     ordinary_records::create_entity,
 };
 
+mod allocation_bytes;
 mod shared_members;
 mod unknown_fields;
 

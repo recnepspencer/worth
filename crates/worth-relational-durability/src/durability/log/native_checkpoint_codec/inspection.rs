@@ -18,7 +18,6 @@ pub(crate) fn inspect<'a>(
         .check_live()
         .map_err(|stop| RelationalRecoveryStop::Request(stop.into()))?;
     let payload = super::checkpoint_payload(bytes)?;
-    let has_external = external.is_some();
     let (
         symbol_identity_frontier,
         record_identity,
@@ -149,31 +148,32 @@ pub(crate) fn inspect<'a>(
     let mut envelope = fields(payload)?;
     let mut fields = fields(take(&mut envelope, "manifest")?)?;
     take(&mut fields, "symbol_identity_frontier")?;
-    // CHK24 roots are content addressed: reusable and pending tables compare
-    // as their roots' bytes; frontiers and generations compare semantically
-    // above, and the page roster is a function of all four roots.
+    // CHK24 roots are content addressed: reusable and pending tables stay in
+    // `model.allocator`, while monotonic allocation frontiers, generation
+    // high-water marks, partition high-water marks, and the combined page
+    // roster are exposed separately in `record_allocation_bytes` for both
+    // external-source and bare-frame inspection.
     let mut identity = self::fields(take(&mut fields, "record_identity")?)?;
     let pages = take(&mut identity, "pages")?;
     let mut allocator = self::fields(take(&mut identity, "roots")?)?;
     if !identity.is_empty() {
         return Err(invalid("unknown record identity field").into());
     }
-    if has_external {
-        take(&mut allocator, "append_frontiers")?;
-        take(&mut allocator, "generation_high_water")?;
-        take(&mut allocator, "partition_high_water")?;
-    } else {
-        // Bare-frame inspection cannot decode paged tables into `frontiers` /
-        // `generations`, so retain all record-identity root and roster bytes in
-        // `model.allocator` for byte-exact invariance comparisons.
-        allocator.insert("pages".to_string(), pages);
-    }
+    let append_frontiers = take(&mut allocator, "append_frontiers")?;
+    let generation_high_water = take(&mut allocator, "generation_high_water")?;
+    let partition_high_water = take(&mut allocator, "partition_high_water")?;
     Ok(RelationalCheckpointInspection {
         branch_cells,
         model: NativeCheckpointModelBytes {
             envelope,
             fields,
             allocator,
+        },
+        record_allocation_bytes: NativeRecordAllocationBytes {
+            append_frontiers,
+            generation_high_water,
+            partition_high_water,
+            pages,
         },
         symbol_identity_frontier,
         frontiers,

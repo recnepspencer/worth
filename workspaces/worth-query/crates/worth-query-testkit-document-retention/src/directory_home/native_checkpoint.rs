@@ -203,6 +203,10 @@ pub fn assert_native_checkpoint_fully_unchanged(before: &[u8], after: &[u8]) {
     assert_eq!(now.frontiers, old.frontiers, "no Native record allocation");
     assert_eq!(now.generations, old.generations, "no Native identity reuse");
     assert_eq!(
+        now.record_allocation_bytes, old.record_allocation_bytes,
+        "no Native record allocation or identity page-roster advance"
+    );
+    assert_eq!(
         now.symbol_identity_frontier, old.symbol_identity_frontier,
         "no receipt symbols or other symbol identities allocated"
     );
