@@ -7,6 +7,7 @@
 use super::reference::{Action, Intent, Outcome, Stage, Stages, E1, E2};
 use super::world::Corrected;
 use super::*;
+use worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test as fact_verification;
 
 const SKIP: Stages = [Stage::Skip; 2];
 
@@ -26,6 +27,50 @@ fn recorded<'h>(host: &'h fixture::reads::Host, steps: &[[Stage; 2]]) -> world::
 
 fn refused(corrected: &Corrected, denial: &str) -> bool {
     matches!(corrected, Corrected::Refused(text) if text.contains(denial))
+}
+
+/// The restored-support stage that refused this thread's last correction.
+fn refusing_stage() -> Option<String> {
+    fact_verification().correction_restored_support_rejection
+}
+
+/// e2 created, retired, created again and retired again on one line: the
+/// source (step 2) and the selected basis (step 4) bracket two line writes
+/// that change e2's liveness (review r1 N2).
+const RELIVED: [[Stage; 2]; 4] = [
+    [Stage::Set(1), Stage::Set(1)],
+    [Stage::Skip, Stage::Retire],
+    [Stage::Skip, Stage::Set(1)],
+    [Stage::Skip, Stage::Retire],
+];
+
+/// Record [`RELIVED`], run `moves`, then reverse step 2's retirement of e2.
+/// The model refuses (e2 is live at node 3, in `Since(2)`), and the platform
+/// must refuse at the canonical cancellation, never by the facts comparison.
+fn relived_and_reretired_refuses(moves: &[Action]) {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = recorded(&host, &RELIVED);
+    for (index, action) in moves.iter().enumerate() {
+        assert_eq!(document.act(action), Outcome::Moved, "move {index}");
+    }
+    fact_verification();
+    let corrected = document.correct_recorded(5, 2, E2, &SKIP);
+    let stage = refusing_stage();
+    assert!(refused(&corrected, "SourceDiverged"), "{corrected:?}; {stage:?}");
+    assert!(stage.as_deref().is_some_and(|stage| stage.starts_with("stage=canonical-cancellation")), "{stage:?}");
+    document.release();
+}
+
+// ---- #453: supersession never passes over a line write ----
+
+/// H: an undo and a redo of the latest step. The redo's basis descends from
+/// the source, but the retirement's re-creation and re-retirement are line
+/// writes between them, so they keep needing their witnesses.
+#[test]
+#[ignore = "held on public #453: supersession drops the line edits between the source and a vouched navigation"]
+fn a_retirement_relived_and_reretired_on_the_line_refuses() {
+    relived_and_reretired_refuses(&[Action::Undo, Action::Redo(4)]);
 }
 
 // ---- positive courts ----
