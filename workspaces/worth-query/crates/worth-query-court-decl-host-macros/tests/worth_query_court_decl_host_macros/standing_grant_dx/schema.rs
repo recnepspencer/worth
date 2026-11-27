@@ -161,6 +161,8 @@ pub struct RoleGrantRow {
     pub valid_until: CanonicalTimestamp,
     pub first_day: CanonicalDate,
     pub last_day: CanonicalDate,
+    /// The largest amount the holder may countersign.
+    pub amount_limit: u64,
 }
 
 /// `assignment_status` is `enabled` or `disabled`.
@@ -276,7 +278,7 @@ pub fn set_site_status_operation(
         writes: [
             RoleGrantFacts::grant_id(), RoleGrantFacts::role(), RoleGrantFacts::purpose(),
             RoleGrantFacts::grant_status(), RoleGrantFacts::valid_from(), RoleGrantFacts::valid_until(),
-            RoleGrantFacts::first_day(), RoleGrantFacts::last_day(),
+            RoleGrantFacts::first_day(), RoleGrantFacts::last_day(), RoleGrantFacts::amount_limit(),
         ];
         creates: [RoleGrant];
         links: [RoleHolder, GrantSite];

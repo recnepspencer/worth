@@ -24,6 +24,7 @@ use worth_query_host::facade::{
 };
 
 use super::assign::AssignRoleHandler;
+use super::countersign::COUNTERSIGN;
 use super::grants::{self, ACTIVE, APPROVE, AUDIT, ENABLED, OBSERVE, REVIEW, WITNESS};
 use super::schema::*;
 use super::{Window, SITES};
@@ -136,7 +137,8 @@ fn grant(
             .field(RoleGrantFacts::valid_from(), window.valid_from)
             .field(RoleGrantFacts::valid_until(), window.valid_until)
             .field(RoleGrantFacts::first_day(), window.first_day)
-            .field(RoleGrantFacts::last_day(), window.last_day),
+            .field(RoleGrantFacts::last_day(), window.last_day)
+            .field(RoleGrantFacts::amount_limit(), 100_u64),
     )?;
     graph.bind_relation(WorthQueryApplicationRelationSeed::new(
         RoleHolder::reference(),
@@ -171,7 +173,7 @@ fn seed(
                 .field(SiteFacts::site_id(), site.to_owned())
                 .field(SiteFacts::site_status(), ACTIVE.to_owned()),
         )?;
-        for role in [REVIEW, APPROVE, AUDIT, WITNESS, OBSERVE] {
+        for role in [REVIEW, APPROVE, AUDIT, WITNESS, OBSERVE, COUNTERSIGN] {
             grant(graph, site, role, window)?;
         }
     }

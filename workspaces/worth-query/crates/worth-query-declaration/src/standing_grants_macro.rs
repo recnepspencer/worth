@@ -74,8 +74,8 @@ macro_rules! worth_query_standing_grants {
     ) => {
         $vis mod $module {
             use super::*;
-            use $crate::facade::application_capability as capability;
-            use $crate::facade::application_schema as schema;
+            use $crate::facade::application_capability as __worth_capability;
+            use $crate::facade::application_schema as __worth_schema;
 
             $crate::worth_query_capability_context!(pub $Context in $Schema);
             $crate::worth_query_capability_provenance!(pub $Provenance in $Schema);
@@ -83,7 +83,7 @@ macro_rules! worth_query_standing_grants {
                 $crate::worth_query_capability!($role_vis $Capability in $Schema);
                 $crate::worth_query_operation!($role_vis $Operation for $Schema, input $RequestBinding);
 
-                impl capability::ApplicationCapabilityRequest<$Schema, $Capability> for $Request {
+                impl __worth_capability::ApplicationCapabilityRequest<$Schema, $Capability> for $Request {
                     type Scope = $Scope;
                     type Context = $Context;
                     fn capability_request(
@@ -92,13 +92,13 @@ macro_rules! worth_query_standing_grants {
                         $crate::facade::application_capability::ApplicationCapabilityRequestProjection<$Schema, $Scope, $Context>,
                         $crate::facade::application_capability::ApplicationCapabilityRequestProjectionDenial,
                     > {
-                        ::core::result::Result::Ok(capability::ApplicationCapabilityRequestProjection::new(
-                            capability::application_capability_selector(
+                        ::core::result::Result::Ok(__worth_capability::ApplicationCapabilityRequestProjection::new(
+                            __worth_capability::application_capability_selector(
                                 $scope_field,
                                 ::core::clone::Clone::clone(&self.$scope_value),
                             )?,
-                            capability::application_capability_request_value(&$role_field, $role)?,
-                            capability::application_capability_request_value(&$purpose_field, $purpose)?,
+                            __worth_capability::application_capability_request_value(&$role_field, $role)?,
+                            __worth_capability::application_capability_request_value(&$purpose_field, $purpose)?,
                             $crate::facade::application_capability::ApplicationCapabilityRequestContext::new($Context::reference()),
                         ))
                     }
@@ -106,8 +106,8 @@ macro_rules! worth_query_standing_grants {
             )+
 
             /// The principal reaches the scope through a grant it holds.
-            pub fn through_grant() -> schema::ApplicationAuthorizationPath {
-                schema::ApplicationAuthorizationPathBuilder::from_principal($Principal::reference())
+            pub fn through_grant() -> __worth_schema::ApplicationAuthorizationPath {
+                __worth_schema::ApplicationAuthorizationPathBuilder::from_principal($Principal::reference())
                     .forward($Holder::reference())
                     .forward($Resource::reference())
                     .allow($Scope::reference())
@@ -115,20 +115,20 @@ macro_rules! worth_query_standing_grants {
 
             /// Every role's operation and standing contract.
             pub fn members(
-                schema: schema::ApplicationSchemaDeclarationBuilder<$Schema>,
+                schema: __worth_schema::ApplicationSchemaDeclarationBuilder<$Schema>,
             ) -> ::core::result::Result<
-                schema::ApplicationSchemaDeclarationBuilder<$Schema>,
-                schema::ApplicationSchemaDeclarationDenial,
+                __worth_schema::ApplicationSchemaDeclarationBuilder<$Schema>,
+                __worth_schema::ApplicationSchemaDeclarationDenial,
             > {
                 let mut schema = schema
                     .capability_context($Context::reference())
                     .capability_provenance($Provenance::reference());
                 $(
                     let operation = $Operation::reference();
-                    let validity = capability::ApplicationCapabilityValidityDeclaration::into_validity(
+                    let validity = __worth_capability::ApplicationCapabilityValidityDeclaration::into_validity(
                         $crate::facade::application_capability::ApplicationCapabilityValidityDefinition::$validity($($bound),*),
                     )?;
-                    let role = capability::application_capability_grant_value($role_field, $role)?;
+                    let role = __worth_capability::application_capability_grant_value($role_field, $role)?;
                     let allow = $crate::__worth_query_standing_allow!($($allow)?);
                     schema = schema
                         .operation(operation.definition().no_external_effect().no_aftermath().finish())
@@ -140,39 +140,39 @@ macro_rules! worth_query_standing_grants {
             }
 
             fn standing_contract<Cap, Op>(
-                capability: capability::ApplicationCapabilityRef<$Schema, Cap>,
-                operation: schema::ApplicationOperationRef<$Schema, Op, $Request>,
-                role: capability::ApplicationCapabilityValueBinding,
-                validity: capability::ApplicationCapabilityValidityDefinition,
-                allow: schema::ApplicationAuthorizationPath,
+                capability: __worth_capability::ApplicationCapabilityRef<$Schema, Cap>,
+                operation: __worth_schema::ApplicationOperationRef<$Schema, Op, $Request>,
+                role: __worth_capability::ApplicationCapabilityValueBinding,
+                validity: __worth_capability::ApplicationCapabilityValidityDefinition,
+                allow: __worth_schema::ApplicationAuthorizationPath,
             ) -> ::core::result::Result<
                 $crate::facade::application_capability::ApplicationCapabilityContract<$Schema, Cap, Op, $Request>,
-                schema::ApplicationSchemaDeclarationDenial,
+                __worth_schema::ApplicationSchemaDeclarationDenial,
             >
             where
-                Cap: capability::ApplicationCapabilityMarkerIdentity<Schema = $Schema> + 'static,
-                Op: schema::ApplicationOperationMarkerIdentity<$Schema, InputBinding = $RequestBinding>
+                Cap: __worth_capability::ApplicationCapabilityMarkerIdentity<Schema = $Schema> + 'static,
+                Op: __worth_schema::ApplicationOperationMarkerIdentity<$Schema, InputBinding = $RequestBinding>
                     + 'static,
-                $Request: capability::ApplicationCapabilityRequest<$Schema, Cap>,
+                $Request: __worth_capability::ApplicationCapabilityRequest<$Schema, Cap>,
             {
-                let active = capability::application_capability_grant_value($active_field, $active)?;
-                let currentness = capability::ApplicationCapabilityCurrentnessDefinition::standing(active, validity);
+                let active = __worth_capability::application_capability_grant_value($active_field, $active)?;
+                let currentness = __worth_capability::ApplicationCapabilityCurrentnessDefinition::standing(active, validity);
                 $(
                     let currentness = currentness.require_active(
-                        capability::application_capability_grant_value($extent_field, $extent)?,
+                        __worth_capability::application_capability_grant_value($extent_field, $extent)?,
                     );
                 )*
-                let target = capability::ApplicationCapabilityTargetDefinition::new(
+                let target = __worth_capability::ApplicationCapabilityTargetDefinition::new(
                     role,
                     $crate::facade::application_capability::ApplicationCapabilityRelationBinding::from_reference($Resource::reference()),
                     $crate::facade::application_capability::ApplicationCapabilityRelationDimension::not_applicable(),
                     $crate::facade::application_capability::ApplicationCapabilityFieldDimension::not_applicable(),
-                    capability::application_capability_grant_value($purpose_field, $purpose)?,
+                    __worth_capability::application_capability_grant_value($purpose_field, $purpose)?,
                 );
                 ::core::result::Result::Ok(
                     $crate::facade::application_capability::ApplicationCapabilityContractBuilder::new(capability, operation, $Grant::reference())
                         .target(target)
-                        .constraints(capability::ApplicationCapabilityConstraintDefinition::new(
+                        .constraints(__worth_capability::ApplicationCapabilityConstraintDefinition::new(
                             $crate::facade::application_capability::ApplicationCapabilityMagnitudeDimension::not_applicable(),
                             $crate::facade::application_capability::ApplicationCapabilityCardinalityDimension::One,
                             currentness,
@@ -188,7 +188,7 @@ macro_rules! worth_query_standing_grants {
                             .forbid_self_grant(),
                         )
                         .composition($crate::__worth_query_standing_composition!(allow))
-                        .elevation(capability::ApplicationCapabilityElevationRule::not_applicable())
+                        .elevation(__worth_capability::ApplicationCapabilityElevationRule::not_applicable())
                         .build(),
                 )
             }

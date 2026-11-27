@@ -100,8 +100,10 @@ pub enum WorthQueryAuthorityVerdict {
     /// no finer cause than "no allowing path held, or a denying one did".
     Denied(Option<WorthQueryApplicationAuthorizationExplanationCause>),
     /// The capability's target leaves an elevation, related entity, field,
-    /// magnitude or context entity to its request: ask it with a
-    /// `WorthQueryCapabilityEligibilityQuestion` carrying that request.
+    /// magnitude or context entity to its request, or a recorded-actor rule
+    /// needs a workflow actor context: ask it with a
+    /// `WorthQueryCapabilityEligibilityQuestion` carrying that request, or
+    /// through the workflow step itself.
     RequiresRequest,
 }
 

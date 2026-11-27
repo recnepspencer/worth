@@ -53,6 +53,7 @@ impl OperationHandler<QmsSchema, AssignRoleBinding> for AssignRoleHandler {
             writer.initialize_field(&grant, RoleGrantFacts::valid_until(), always_until())?;
             writer.initialize_field(&grant, RoleGrantFacts::first_day(), first_day())?;
             writer.initialize_field(&grant, RoleGrantFacts::last_day(), last_day())?;
+            writer.initialize_field(&grant, RoleGrantFacts::amount_limit(), 100_u64)?;
             writer.link(
                 RoleHolder::reference(),
                 format!("{}-holder", input.grant),

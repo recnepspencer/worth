@@ -8,6 +8,7 @@ mod admission_court;
 mod declaration_court;
 mod policy;
 mod program;
+mod role_authority_court;
 mod schema;
 
 use std::path::PathBuf;

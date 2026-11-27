@@ -7,7 +7,8 @@ use worth_query_host::facade::{
     eligibility::{
         WorthQueryAbilityEligibility, WorthQueryAbilityEligibilityDenial, WorthQueryAuthority,
         WorthQueryAuthorityInventory, WorthQueryAuthorityPath, WorthQueryAuthorityQuestion,
-        WorthQueryAuthorityVerdict as Verdict, WorthQueryEligibilityDenial,
+        WorthQueryAuthorityVerdict as Verdict, WorthQueryCapabilityEligibility,
+        WorthQueryCapabilityEligibilityQuestion, WorthQueryEligibilityDenial,
     },
     primary_graph::{
         WorthQueryApplicationAuthorizationExplanationCause as Cause,
@@ -15,6 +16,7 @@ use worth_query_host::facade::{
     },
 };
 
+use super::countersign::{CountersignCapability, CountersignOp, CountersignRequest};
 use super::grants::{AuditCapability, AuditOp, ViewAuditors};
 use super::observers::{home, SiteRole};
 use super::program::{caller, identity, QmsHome};
@@ -35,6 +37,24 @@ fn inventory(
     );
     home.session(caller(home, asker).principal)
         .explain_principal_authority(&question)
+}
+
+/// alice's verdict countersigning `amount` on north (her limit is 100).
+fn countersign_eligibility(home: &QmsHome, amount: u64) -> WorthQueryCapabilityEligibility {
+    let request = CountersignRequest {
+        site: "north".to_owned(),
+        amount,
+    };
+    let question = WorthQueryCapabilityEligibilityQuestion::of_request(
+        Desktop,
+        CountersignCapability::reference(),
+        CountersignOp::reference(),
+        &request,
+    )
+    .expect("the countersign request projects");
+    home.session(caller(home, "alice").principal)
+        .eligible_for_capability(&question)
+        .unwrap_or_else(|denial| panic!("the countersign question is answered: {denial:?}"))
 }
 
 fn capability(name: &str, operation: &str) -> WorthQueryAuthority {
@@ -63,12 +83,20 @@ fn an_inventory_explains_every_installed_authority_on_a_scope() {
         alice.subject_standing(),
         WorthQueryAbilityEligibility::Eligible
     );
-    // One ability and five capabilities live on Site; every target is fixed.
-    assert_eq!(alice.entries().len(), 6);
-    assert!(alice
-        .entries()
-        .iter()
-        .all(|entry| entry.verdict.is_allowed()));
+    // One ability and six capabilities live on Site. Every fixed target is
+    // allowed; a countersignature names its amount, so only a request asks.
+    assert_eq!(alice.entries().len(), 7);
+    assert_eq!(alice.allowed().count(), 6);
+    let countersign = capability("CountersignCapability", "CountersignOp");
+    assert_eq!(alice.verdict(&countersign), Some(&Verdict::RequiresRequest));
+    assert_eq!(
+        countersign_eligibility(&home, 100),
+        WorthQueryCapabilityEligibility::Eligible
+    );
+    assert_eq!(
+        countersign_eligibility(&home, 101),
+        WorthQueryCapabilityEligibility::Denied(Cause::MissingCapability)
+    );
     let view = WorthQueryAuthority::Ability {
         ability: "ViewAuditors".to_owned(),
         policy: "AuditorRosterPolicy".to_owned(),

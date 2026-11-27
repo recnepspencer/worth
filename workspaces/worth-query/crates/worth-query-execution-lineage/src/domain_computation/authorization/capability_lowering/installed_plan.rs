@@ -94,9 +94,11 @@ impl WorthQueryInstalledCapabilityPlan {
 
     /// Whether the contract's own target is a complete request on a scope:
     /// no elevation, related entity, field, magnitude or context entity for
-    /// a caller to choose, so only the principal and scope vary.
+    /// a caller to choose, and no recorded-actor rule needing a workflow
+    /// actor context, so only the principal and scope vary.
     pub fn has_fixed_target(&self) -> bool {
         self.elevation.is_none()
+            && self.decision_rules.recorded_actor.is_none()
             && self.request.related_relation.is_none()
             && self.request.field.is_none()
             && self.request.magnitude.is_none()

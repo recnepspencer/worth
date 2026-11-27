@@ -7,6 +7,7 @@
 mod assign;
 mod authority_inventory;
 mod capability_eligibility;
+mod countersign;
 mod courts;
 mod grants;
 mod observers;

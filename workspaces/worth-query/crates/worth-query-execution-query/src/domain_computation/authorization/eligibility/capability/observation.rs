@@ -140,19 +140,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             )
             .map_err(Denial::Asker)?;
             let disclosed = requirement_for::<Schema, Context>(self, prepared.binding, disclosure)?;
-            // 2. Resolve the head request and 3. decide disclosure there.
-            let head = prepared.resolve_on(native, prepared.head)?;
+            // 2. Resolve only the head scope and 3. decide disclosure there.
+            let scope = prepared.resolve_scope_on(native, prepared.head)?;
             let asker = asker.principal_entity_id();
-            if !prepared.holds_disclosure(native, &head, asker, disclosed)? {
+            if !prepared.holds_disclosure(native, prepared.head, &scope, asker, disclosed)? {
                 return Err(Denial::RosterNotDisclosed {
                     disclosure: disclosure.ability(),
                 });
             }
-            // 4. Only a disclosed roster resolves the pinned request.
-            let subject = match prepared.pinned {
-                Some(pinned) => prepared.resolve_on(native, pinned)?,
-                None => head,
-            };
+            // 4. Only a disclosed roster resolves the whole request.
+            let subject = prepared.resolve_on(native, prepared.pinned.unwrap_or(prepared.head))?;
             let mut verdicts = Vec::with_capacity(candidates.len());
             for candidate in candidates {
                 admit_request(request, prepared.installed.contract().operation())
@@ -224,6 +221,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .installed_schema()
             .principal_binding(Context::principal_binding())
             .map_err(Denial::PrincipalBinding)?;
+        // The capability's grantee is the principal kind it can admit.
+        if installed.contract().delegation().grantee().from() != binding.principal_entity() {
+            return Err(Denial::PrincipalEntityMismatch {
+                ability: key.capability(),
+            });
+        }
         let prepared = PreparedCapabilityEligibility {
             runtime: self,
             execution: &execution,

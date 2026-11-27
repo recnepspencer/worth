@@ -25,7 +25,7 @@ use super::WorthQueryCapabilityEligibility as Verdict;
 use crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan;
 use crate::domain_computation::authorization::delegation_admission::WorthQueryCapabilityObservationSource as _;
 use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::request_resolution::{
-    resolve_capability_request, WorthQueryResolvedCapabilityRequest,
+    resolve_capability_request, resolve_capability_scope, WorthQueryResolvedCapabilityRequest,
 };
 use crate::domain_computation::authorization::retained_capability_request::WorthQueryRetainedCapabilityRequest;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
@@ -34,6 +34,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRe
 use crate::domain_computation::authorization::WorthQueryRuntimeTimeSample;
 use crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess;
 use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationEntityIdentity, WorthQueryEntityResolutionTruth,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
     WorthQuerySelectedProductOperation,
 };
@@ -83,6 +84,43 @@ where
         native: &mut ApplicationQueryNativeAccess<'_>,
         selected: &'a WorthQuerySelectedProductOperation<'runtime, Schema>,
     ) -> Result<CapabilityBasis<'a, 'runtime, Schema, Scope>, Denial> {
+        let resolved = self.resolve_with(native, selected, |truth| {
+            resolve_capability_request(
+                self.execution,
+                truth,
+                self.runtime.installed_schema(),
+                self.projection,
+            )
+        })?;
+        Ok(CapabilityBasis { selected, resolved })
+    }
+
+    /// Only the request's scope on `selected`: what a roster's disclosure is
+    /// decided on before any other selector of the request resolves.
+    pub(super) fn resolve_scope_on(
+        &self,
+        native: &mut ApplicationQueryNativeAccess<'_>,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+    ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Scope>, Denial> {
+        self.resolve_with(native, selected, |truth| {
+            resolve_capability_scope(
+                self.execution,
+                truth,
+                self.runtime.installed_schema(),
+                self.projection,
+            )
+        })
+    }
+
+    /// Runs `resolve` against the entity-resolution truth of `selected`.
+    fn resolve_with<Resolved>(
+        &self,
+        native: &mut ApplicationQueryNativeAccess<'_>,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        resolve: impl FnOnce(
+            &WorthQueryEntityResolutionTruth<'_>,
+        ) -> Result<Resolved, WorthQueryOperationAuthorizationDenial>,
+    ) -> Result<Resolved, Denial> {
         let graph = self
             .runtime
             .runtime
@@ -90,7 +128,7 @@ where
             .ok_or_else(|| authorization(AuthorizationRefusal::ForeignRuntime, self.name()))?;
         let resolution = graph.retain_entity_resolution_context();
         let snapshot = selected.application_basis().snapshot_handle().clone();
-        let resolved = native
+        native
             .with_runtime(
                 graph,
                 self.execution,
@@ -103,24 +141,19 @@ where
                             WorthQueryPrincipalResolutionMode::Ordinary,
                         )
                         .map_err(|_| projection_rejected(self.name()))?;
-                    resolve_capability_request(
-                        self.execution,
-                        &truth,
-                        self.runtime.installed_schema(),
-                        self.projection,
-                    )
+                    resolve(&truth)
                 },
             )
-            .map_err(Denial::CapabilityRequest)?;
-        Ok(CapabilityBasis { selected, resolved })
+            .map_err(Denial::CapabilityRequest)
     }
 
-    /// Whether `principal` holds the installed `disclosure` ability on the
-    /// resolved request's scope at `basis`.
+    /// Whether `principal` holds the installed `disclosure` ability on
+    /// `scope` at `selected`.
     pub(super) fn holds_disclosure(
         &self,
         native: &mut ApplicationQueryNativeAccess<'_>,
-        basis: &CapabilityBasis<'_, '_, Schema, Scope>,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
         principal: EntityId,
         disclosure: &WorthQueryInstalledAbilityRequirement,
     ) -> Result<bool, Denial> {
@@ -129,10 +162,10 @@ where
                 runtime: self.runtime,
                 execution: self.execution,
                 binding_identity: &self.binding_identity,
-                selected: basis.selected,
+                selected,
             },
             native,
-            basis.resolved.resource(),
+            scope,
             principal,
             disclosure,
         )

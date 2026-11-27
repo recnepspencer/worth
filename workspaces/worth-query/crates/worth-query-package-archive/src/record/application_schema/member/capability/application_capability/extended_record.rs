@@ -134,6 +134,11 @@ fn decode_currentness(
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     let validity = decode_validity(input)?;
+    // An open window is a standing grant's; refuse it on a workflow grant at
+    // the raw decode, before installation would.
+    if workflow.is_some() && !validity.is_closed() {
+        return Err(Denial::new(Kind::UnsupportedRecordVariant));
+    }
     let extent = decode_sequence(input, budget, 8, |input, _| bindings::decode_value(input))?;
     if extent.len() > ApplicationCapabilityCurrentnessDefinition::MAXIMUM_EXTENT_STATUS {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
