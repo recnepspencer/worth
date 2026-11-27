@@ -1,8 +1,10 @@
 //! The resolved parts one eligibility observation shares.
 //!
 //! The asker is always admitted, and the roster disclosed, at the branch
-//! head: a pin selects what is reported, never who may ask. Verdicts read
-//! the subject basis, which is the head unless a retained observation pins it.
+//! head: a pin selects what is reported, never who may ask. Scopes resolve
+//! lazily, only after the steps that must precede them have passed, so a
+//! refused asker learns nothing about which scopes exist. Verdicts read the
+//! subject basis, which is the head unless a retained observation pins it.
 
 use super::WorthQueryAbilityKey;
 use super::{
@@ -21,6 +23,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
+use worth_query_declaration::facade::application_schema::fragment::RecordSelection;
 use worth_query_declaration::facade::application_schema::{
     ApplicationBindingContext, ApplicationSchema,
 };
@@ -48,13 +51,14 @@ type ContextPrincipal<Schema, Context> = WorthQueryAuthenticatedPrincipal<
 
 /// One selected committed basis and the question's scope resolved on it.
 pub(super) struct SelectedBasis<'a, 'runtime, Schema, Scope> {
-    pub(super) selected: &'a WorthQuerySelectedProductOperation<'runtime, Schema>,
-    pub(super) scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    selected: &'a WorthQuerySelectedProductOperation<'runtime, Schema>,
+    scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
 }
 
-pub(super) struct PreparedEligibility<'a, 'runtime, Schema: ApplicationSchema, Context, Scope>
+pub(super) struct PreparedEligibility<'a, 'runtime, Schema: ApplicationSchema, Context, Field>
 where
     Context: ApplicationBindingContext<Schema>,
+    Field: RecordSelection,
 {
     pub(super) runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     pub(super) execution: &'a worth_execution::ExecutionRequest<'a, 'a>,
@@ -63,16 +67,39 @@ where
     pub(super) binding_identity: ApplicationSchemaBindingIdentity,
     pub(super) requirement: &'a WorthQueryInstalledAbilityRequirement,
     /// Where the asker is admitted and the roster disclosed.
-    pub(super) head: SelectedBasis<'a, 'runtime, Schema, Scope>,
+    pub(super) head: &'a WorthQuerySelectedProductOperation<'runtime, Schema>,
     /// Where verdicts are read; `None` reads them at the head.
-    pub(super) pinned: Option<SelectedBasis<'a, 'runtime, Schema, Scope>>,
+    pub(super) pinned: Option<&'a WorthQuerySelectedProductOperation<'runtime, Schema>>,
+    /// The question's scope selection, resolved per basis when reached.
+    pub(super) field: Field,
+    pub(super) value: Field::Value,
 }
 
-impl<'a, Schema, Context, Scope> PreparedEligibility<'a, '_, Schema, Context, Scope>
+impl<'a, 'runtime, Schema, Context, Field> PreparedEligibility<'a, 'runtime, Schema, Context, Field>
 where
     Schema: ApplicationSchema,
     Context: ApplicationBindingContext<Schema>,
+    Field: RecordSelection,
+    Field::Value: Clone,
 {
+    /// The question's scope resolved on `selected`.
+    pub(super) fn basis_on(
+        &self,
+        native: &mut ApplicationQueryNativeAccess<'_>,
+        selected: &'a WorthQuerySelectedProductOperation<'runtime, Schema>,
+    ) -> Result<SelectedBasis<'a, 'runtime, Schema, Field::Entity>, Denial> {
+        let scope = selected
+            .resolve_entity_admitted_with_native_access(
+                self.execution,
+                self.field,
+                self.value.clone(),
+                self.request,
+                native,
+            )
+            .map_err(Denial::Scope)?;
+        Ok(SelectedBasis { selected, scope })
+    }
+
     pub(super) fn requirement_of(
         &self,
         ability: WorthQueryAbilityKey,
@@ -87,7 +114,6 @@ where
         asker: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     ) -> Result<ContextPrincipal<Schema, Context>, WorthQueryPrincipalResolutionDenial> {
         self.head
-            .selected
             .resolve_authenticated_principal_admitted_with_native_access(
                 self.execution,
                 self.binding,
@@ -104,9 +130,9 @@ where
     pub(super) fn verdict_of(
         &self,
         native: &mut ApplicationQueryNativeAccess<'_>,
+        subject: &SelectedBasis<'_, '_, Schema, Field::Entity>,
         identity: &WorthQueryExternalPrincipalIdentity,
     ) -> Result<Verdict, Denial> {
-        let subject = self.pinned.as_ref().unwrap_or(&self.head);
         let principal = subject
             .selected
             .resolve_candidate_principal_with_native_access(
@@ -128,7 +154,7 @@ where
     pub(super) fn decide(
         &self,
         native: &mut ApplicationQueryNativeAccess<'_>,
-        basis: &SelectedBasis<'_, '_, Schema, Scope>,
+        basis: &SelectedBasis<'_, '_, Schema, Field::Entity>,
         principal_entity_id: EntityId,
         requirement: &WorthQueryInstalledAbilityRequirement,
     ) -> Result<bool, Denial> {
@@ -146,7 +172,7 @@ where
                         relational,
                         snapshot,
                         principal_entity_id,
-                        scope_identity: basis.scope,
+                        scope_identity: &basis.scope,
                         binding_identity: &self.binding_identity,
                     }
                     .decide(self.execution, self.runtime, requirement)

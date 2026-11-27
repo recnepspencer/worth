@@ -9,7 +9,7 @@ use worth_query_host::facade::{
     WorthQueryRefusalCategory, WorthQuerySessionRunDenial, WorthQueryUserFacingRefusal,
 };
 
-use super::program::{identity, open};
+use super::program::{identity, open, OTHER_SITE};
 use super::*;
 
 type RunDenial = WorthQuerySessionRunDenial<WorthQueryOperationBodyDenial>;
@@ -18,11 +18,35 @@ type RunDenial = WorthQuerySessionRunDenial<WorthQueryOperationBodyDenial>;
 const FRANK: (&str, u64) = ("frank", 10);
 
 fn onboard(admin: &Session<'_>, subject: &str, operator: u64) -> Result<(), RunDenial> {
+    onboard_into(admin, SITE, subject, operator)
+}
+
+fn onboard_into(
+    admin: &Session<'_>,
+    site: &str,
+    subject: &str,
+    operator: u64,
+) -> Result<(), RunDenial> {
     admin
         .run(accounts::OnboardPrincipal {
-            directory: SITE.to_owned(),
+            directory: site.to_owned(),
             identity: identity(subject),
             principal: operator,
+        })
+        .map(drop)
+}
+
+fn set_status(
+    actor: &Session<'_>,
+    site: &str,
+    subject: &str,
+    enabled: bool,
+) -> Result<(), RunDenial> {
+    actor
+        .run(accounts::SetPrincipalStatus {
+            directory: site.to_owned(),
+            identity: identity(subject),
+            enabled,
         })
         .map(drop)
 }
@@ -124,15 +148,15 @@ fn only_the_onboarding_ability_onboards_and_disabling_stops_acting() {
         verdict(&session(&home, &clock, FRANK.0), "D1"),
         Verdict::Unmapped
     );
+    let refused = set_status(&alice, SITE, "alice", false).expect_err("alice may not");
+    assert_eq!(
+        refused.refusal_category(),
+        WorthQueryRefusalCategory::PermissionDenied
+    );
+    assert_eq!(verdict(&alice, "D1"), Verdict::Eligible);
     let admin = session(&home, &clock, "admin");
     let status = |enabled: bool| {
-        admin
-            .run(accounts::SetPrincipalStatus {
-                directory: SITE.to_owned(),
-                identity: identity("alice"),
-                enabled,
-            })
-            .expect("the admin sets alice's status")
+        set_status(&admin, SITE, "alice", enabled).expect("the admin sets alice's status")
     };
     status(false);
     assert_eq!(verdict(&alice, "D1"), Verdict::Disabled);
@@ -140,4 +164,70 @@ fn only_the_onboarding_ability_onboards_and_disabling_stops_acting() {
     status(true);
     assert_eq!(verdict(&alice, "D1"), Verdict::Eligible);
     assert!(approves(&alice, "D1"));
+}
+
+#[test]
+fn account_status_is_confined_to_the_accounts_own_directory() {
+    let path = temp_home_path("two-sites");
+    let clock = WorthQueryAdmissionClock::system();
+    let home = open(&path, &clock);
+    let admin = session(&home, &clock, "admin");
+    let admin2 = session(&home, &clock, "admin2");
+    onboard(&admin, FRANK.0, FRANK.1).expect("frank joins S1");
+    onboard_into(&admin2, OTHER_SITE, "grace", 20).expect("grace joins S2");
+    let (counter, _guard) = count_commits(&home);
+    // S2's operator cannot reach S1's accounts, onboarded or seeded, and an
+    // S1 account answers exactly like an identity that exists nowhere.
+    for subject in [FRANK.0, "alice", "admin", "ghost"] {
+        for enabled in [false, true] {
+            let refused =
+                set_status(&admin2, OTHER_SITE, subject, enabled).expect_err("not an S2 account");
+            assert_eq!(
+                registry_refusal(refused),
+                Some(Refusal::IdentityNotOnboarded)
+            );
+        }
+    }
+    // Naming S1 itself needs S1's onboarding ability.
+    let refused = set_status(&admin2, SITE, "admin", false).expect_err("admin2 lacks S1");
+    assert_eq!(
+        refused.refusal_category(),
+        WorthQueryRefusalCategory::PermissionDenied
+    );
+    // Symmetrically, S1's operator cannot reach grace.
+    let refused = set_status(&admin, SITE, "grace", false).expect_err("not an S1 account");
+    assert_eq!(
+        registry_refusal(refused),
+        Some(Refusal::IdentityNotOnboarded)
+    );
+    assert_eq!(
+        commits(&counter),
+        0,
+        "every cross-site attempt left no effect"
+    );
+    assert_eq!(
+        verdict(&session(&home, &clock, "alice"), "D1"),
+        Verdict::Eligible
+    );
+    // Each site's own operator manages its own accounts.
+    set_status(&admin, SITE, FRANK.0, false).expect("S1 disables frank");
+    assert_eq!(
+        verdict(&session(&home, &clock, FRANK.0), "D1"),
+        Verdict::Disabled
+    );
+    let refused = set_status(&admin2, OTHER_SITE, FRANK.0, true).expect_err("S2 cannot re-enable");
+    assert_eq!(
+        registry_refusal(refused),
+        Some(Refusal::IdentityNotOnboarded)
+    );
+    assert_eq!(
+        verdict(&session(&home, &clock, FRANK.0), "D1"),
+        Verdict::Disabled
+    );
+    set_status(&admin, SITE, FRANK.0, true).expect("S1 re-enables frank");
+    assert_eq!(
+        verdict(&session(&home, &clock, FRANK.0), "D1"),
+        Verdict::Denied
+    );
+    set_status(&admin2, OTHER_SITE, "grace", false).expect("S2 disables grace");
 }

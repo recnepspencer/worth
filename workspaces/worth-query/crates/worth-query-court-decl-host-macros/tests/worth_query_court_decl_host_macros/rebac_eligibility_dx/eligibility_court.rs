@@ -195,6 +195,58 @@ fn a_pin_reports_its_commit_but_never_widens_who_may_ask() {
 }
 
 #[test]
+fn a_refused_asker_cannot_tell_which_scopes_exist() {
+    let path = temp_home_path("scope-oracle");
+    let clock = WorthQueryAdmissionClock::system();
+    let home = open(&path, &clock);
+    // An unmapped or disabled asker is answered before any scope resolves.
+    for (subject, expected) in [("frank", Verdict::Unmapped), ("dave", Verdict::Disabled)] {
+        let asker = session(&home, &clock, subject);
+        for document in ["D1", "D404"] {
+            assert_eq!(asker.eligibility(&approve(document)).ok(), Some(expected));
+            let roster = asker.eligible_among(&approve(document), ViewApprovers::reference(), &[]);
+            assert!(
+                matches!(
+                    roster,
+                    Err(WorthQueryEligibilityDenial::Observation(
+                        WorthQueryAbilityEligibilityDenial::Asker(_)
+                    ))
+                ),
+                "{subject} on {document}"
+            );
+        }
+    }
+    // An undisclosed roster asker cannot tell whether a document existed at
+    // its pin: disclosure is decided at the head before the pin resolves.
+    let carol = session(&home, &clock, "carol");
+    let pinned = carol.snapshot().expect("carol pins before D6 exists");
+    session(&home, &clock, "admin")
+        .run(super::roles::PublishDocument {
+            site: super::SITE.to_owned(),
+            document: "D6".to_owned(),
+        })
+        .expect("the admin publishes D6 after the pin");
+    for document in ["D1", "D6"] {
+        let refused = pinned
+            .eligible_among(
+                &approve(document),
+                ViewApprovers::reference(),
+                &[identity("alice")],
+            )
+            .expect_err("carol holds no role on either document");
+        assert!(
+            matches!(
+                refused,
+                WorthQueryEligibilityDenial::Observation(
+                    WorthQueryAbilityEligibilityDenial::RosterNotDisclosed { .. }
+                )
+            ),
+            "{document}: {refused:?}"
+        );
+    }
+}
+
+#[test]
 fn an_unknown_scope_refuses_the_question_without_a_verdict() {
     let path = temp_home_path("unknown-scope");
     let clock = WorthQueryAdmissionClock::system();

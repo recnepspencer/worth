@@ -8,7 +8,7 @@ use worth_query_decl::facade::{
     worth_query_ability, worth_query_operation_requires, worth_query_policy,
 };
 
-use super::roles::{AssignDocumentRoleOp, RevokeAssignmentOp};
+use super::roles::{AssignDocumentRoleOp, PublishDocumentOp, RevokeAssignmentOp};
 use super::schema::*;
 
 worth_query_ability!(pub Approve scoped_to Document, in QmsSchema);
@@ -23,6 +23,7 @@ worth_query_policy!(pub ReadingPolicy in QmsSchema);
 worth_query_operation_requires!(ApproveDocumentOp => [Approve]);
 worth_query_operation_requires!(AssignDocumentRoleOp => [ManageOperators]);
 worth_query_operation_requires!(RevokeAssignmentOp => [ManageOperators]);
+worth_query_operation_requires!(PublishDocumentOp => [ManageOperators]);
 
 /// Operator → Holds → an active `role` assignment.
 fn holding(role: &str) -> ApplicationAuthorizationPathBuilder<QmsSchema, Assignment> {
@@ -96,6 +97,10 @@ impl Registration<QmsSchema> for QmsAccess {
             )
             .operation_requires_ability(
                 RevokeAssignmentOp::reference(),
+                ManageOperators::reference(),
+            )
+            .operation_requires_ability(
+                PublishDocumentOp::reference(),
                 ManageOperators::reference(),
             ))
     }

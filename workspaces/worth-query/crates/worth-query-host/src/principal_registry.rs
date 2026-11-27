@@ -99,7 +99,8 @@ impl std::error::Error for WorthQueryPrincipalRegistryRefusal {}
 /// The module contains:
 ///
 /// - `PrincipalAccount` with `PrincipalAccountFacts { external_identity,
-///   status }` and `PrincipalAccountTarget` (account → principal). The
+///   status }`, `PrincipalAccountTarget` (account → principal) and
+///   `PrincipalDirectory` (principal → the directory it joined). The
 ///   identity field is declared `unique`, so two accounts can never map one
 ///   identity: a racing duplicate is refused at commit, not discovered later
 ///   as an ambiguous principal.
@@ -115,9 +116,16 @@ impl std::error::Error for WorthQueryPrincipalRegistryRefusal {}
 /// - `RegistryMembers`: records, binding and onboarding requirements. Add it
 ///   to the contribution members and both actions as contribution `action`s.
 ///
+/// Each account belongs to one directory: status changes name it and refuse
+/// `IdentityNotOnboarded` for an account of any other directory, exactly as
+/// for an unknown identity, so one directory's operators learn nothing about
+/// another's accounts. External identities stay globally unique, so
+/// onboarding one already mapped anywhere refuses `IdentityAlreadyOnboarded`.
+/// Seed accounts with `seed_principal(graph, installed, directory, key,
+/// principal, identity, status)`: `bind_principal` plus the same directory
+/// enrollment onboarding commits.
 /// Refusals reach the caller as domain refusals; recover them with
-/// [`WorthQueryPrincipalRegistryRefusal::of`]. Seeding still uses
-/// `bind_principal` with `installed.principal_binding(Registry::reference())`.
+/// [`WorthQueryPrincipalRegistryRefusal::of`].
 /// The principal entity is created with only its identity field: its other
 /// aspects must be optional or written by a later action.
 #[macro_export]
@@ -147,7 +155,7 @@ macro_rules! worth_query_principal_registry {
             $crate::__worth_query_principal_registry_records!(
                 $Schema, $Context, $Key, $key_identity, $Denial,
                 $Principal, $PrincipalKey, $PrincipalFacts::$principal_id,
-                $Onboarding
+                $Directory, $Onboarding
             );
             $crate::__worth_query_principal_registry_actions!(
                 $Schema, $Context,

@@ -34,6 +34,8 @@ worth_query_application_program! {
                 as AssignAction {};
             action revoke(RevokeAssignmentBinding, AssignmentRevoked, RevokeAssignmentHandler)
                 as RevokeAction {};
+            action publish(PublishDocumentBinding, DocumentPublished, PublishDocumentHandler)
+                as PublishAction {};
             action onboard(
                 accounts::OnboardPrincipalBinding,
                 accounts::PrincipalOnboarded,
@@ -52,27 +54,35 @@ pub type QmsHome = WorthQueryApplicationHome<QmsSchema, QmsProgram>;
 pub type Principal = WorthQueryAuthenticatedExternalPrincipal<QmsSchema>;
 
 pub const SITE: &str = "S1";
+/// A second site with its own administrator and no shared accounts.
+pub const OTHER_SITE: &str = "S2";
 /// Published documents; `D1` carries the seeded document roles.
 pub const DOCUMENTS: [&str; 5] = ["D1", "D2", "D3", "D4", "D5"];
 
-/// Seeded operators: (subject, operator id, enabled).
-const OPERATORS: [(&str, u64, bool); 6] = [
-    ("admin", 1, true),
-    ("alice", 2, true),
-    ("bob", 3, true),
-    ("carol", 4, true),
-    ("dave", 5, false),
-    ("erin", 6, true),
+/// Seeded operators: (subject, operator id, enabled, site).
+const OPERATORS: [(&str, u64, bool, &str); 7] = [
+    ("admin", 1, true, SITE),
+    ("alice", 2, true, SITE),
+    ("bob", 3, true, SITE),
+    ("carol", 4, true, SITE),
+    ("dave", 5, false, SITE),
+    ("erin", 6, true, SITE),
+    ("admin2", 7, true, OTHER_SITE),
 ];
 
-/// Seeded assignments: (key, holder, role, covered document or the site).
-const ASSIGNMENTS: [(&str, &str, &str, Option<&str>); 6] = [
-    ("admin-site", "admin", "admin", None),
-    ("alice-approves-d1", "alice", "approver", Some("D1")),
-    ("bob-authors-d1", "bob", "author", Some("D1")),
-    ("bob-approves-d1", "bob", "approver", Some("D1")),
-    ("carol-reads-site", "carol", "reader", None),
-    ("dave-approves-d1", "dave", "approver", Some("D1")),
+/// Seeded document roles: (key, holder, role, document).
+const DOCUMENT_ROLES: [(&str, &str, &str, &str); 4] = [
+    ("alice-approves-d1", "alice", "approver", "D1"),
+    ("bob-authors-d1", "bob", "author", "D1"),
+    ("bob-approves-d1", "bob", "approver", "D1"),
+    ("dave-approves-d1", "dave", "approver", "D1"),
+];
+
+/// Seeded site roles: (key, holder, role, site).
+const SITE_ROLES: [(&str, &str, &str, &str); 3] = [
+    ("admin-site", "admin", "admin", SITE),
+    ("carol-reads-site", "carol", "reader", SITE),
+    ("admin2-site", "admin2", "admin", OTHER_SITE),
 ];
 
 pub fn identity(subject: &str) -> WorthQueryExternalPrincipalIdentity {
@@ -87,22 +97,28 @@ fn seed(
     graph: &mut WorthQueryPrimaryGraphBootstrap<QmsSchema>,
     installed: &WorthQueryInstalledApplicationSchema<QmsSchema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    let registry = installed
-        .principal_binding(accounts::Registry::reference())
-        .unwrap();
-    for (subject, id, enabled) in OPERATORS {
+    for site in [SITE, OTHER_SITE] {
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(Site::reference(), key(site))
+                .field(SiteFacts::site_id(), site.to_owned()),
+        )?;
+    }
+    for (subject, id, enabled, site) in OPERATORS {
         let status = if enabled {
             WorthQueryPrincipalMappingStatus::Enabled
         } else {
             WorthQueryPrincipalMappingStatus::Disabled
         };
-        let principal_key = WorthQueryApplicationPrincipalKey::new(subject).unwrap();
-        graph.bind_principal(&registry, principal_key, id, identity(subject), status)?;
+        accounts::seed_principal(
+            graph,
+            installed,
+            site,
+            subject,
+            id,
+            identity(subject),
+            status,
+        )?;
     }
-    graph.bind_entity(
-        WorthQueryApplicationEntitySeed::new(Site::reference(), key(SITE))
-            .field(SiteFacts::site_id(), SITE.to_owned()),
-    )?;
     for document in DOCUMENTS {
         graph.bind_entity(
             WorthQueryApplicationEntitySeed::new(Document::reference(), key(document))
@@ -116,35 +132,46 @@ fn seed(
             key(document),
         ))?;
     }
-    for (assignment, holder, role, document) in ASSIGNMENTS {
-        graph.bind_entity(
-            WorthQueryApplicationEntitySeed::new(Assignment::reference(), key(assignment))
-                .field(AssignmentFacts::assignment_id(), assignment.to_owned())
-                .field(AssignmentFacts::role(), role.to_owned())
-                .field(AssignmentFacts::active(), true),
-        )?;
+    for (assignment, holder, role, document) in DOCUMENT_ROLES {
+        seed_assignment(graph, assignment, holder, role)?;
         graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-            Holds::reference(),
-            format!("holds-{assignment}"),
-            key(holder),
+            Covers::reference(),
+            format!("covers-{assignment}"),
             key(assignment),
+            key(document),
         ))?;
-        match document {
-            Some(document) => graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                Covers::reference(),
-                format!("covers-{assignment}"),
-                key(assignment),
-                key(document),
-            ))?,
-            None => graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                Administers::reference(),
-                format!("administers-{assignment}"),
-                key(assignment),
-                key(SITE),
-            ))?,
-        }
+    }
+    for (assignment, holder, role, site) in SITE_ROLES {
+        seed_assignment(graph, assignment, holder, role)?;
+        graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+            Administers::reference(),
+            format!("administers-{assignment}"),
+            key(assignment),
+            key(site),
+        ))?;
     }
     Ok(())
+}
+
+/// One active assignment held by `holder`.
+fn seed_assignment(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<QmsSchema>,
+    assignment: &str,
+    holder: &str,
+    role: &str,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    graph.bind_entity(
+        WorthQueryApplicationEntitySeed::new(Assignment::reference(), key(assignment))
+            .field(AssignmentFacts::assignment_id(), assignment.to_owned())
+            .field(AssignmentFacts::role(), role.to_owned())
+            .field(AssignmentFacts::active(), true),
+    )?;
+    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+        Holds::reference(),
+        format!("holds-{assignment}"),
+        key(holder),
+        key(assignment),
+    ))
 }
 
 fn build() -> ApplicationBuildIdentity {
@@ -155,6 +182,7 @@ fn runtime() -> QmsRuntime {
     QmsRuntime::new(
         AssignRoleHandler,
         RevokeAssignmentHandler,
+        PublishDocumentHandler,
         accounts::OnboardPrincipalHandler,
         accounts::SetPrincipalStatusHandler,
     )

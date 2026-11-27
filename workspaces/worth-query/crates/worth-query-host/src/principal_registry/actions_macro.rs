@@ -31,7 +31,7 @@ macro_rules! __worth_query_principal_registry_actions {
                 writes: [PrincipalAccountFacts::external_identity(), PrincipalAccountFacts::status(),
                     $PrincipalFacts::$principal_id()];
                 creates: [PrincipalAccount, $Principal];
-                links: [PrincipalAccountTarget];
+                links: [PrincipalAccountTarget, PrincipalDirectory];
             )
         )]
         pub struct OnboardPrincipal {
@@ -41,9 +41,11 @@ macro_rules! __worth_query_principal_registry_actions {
             pub principal: <$PrincipalKey as RecordSelection>::Value,
         }
 
-        /// The keys of a fresh account and principal; neither exists yet.
+        /// The keys of a fresh account and principal, neither of which exists
+        /// yet, and the directory the account joins.
         pub struct OnboardDecision {
             key: ::std::string::String,
+            directory: $crate::facade::primary_graph::WorthQueryInvariantMutationTarget<$Schema, $Directory>,
         }
 
         /// Refuses an identity or principal identity already present, then
@@ -58,27 +60,42 @@ macro_rules! __worth_query_principal_registry_actions {
                 reader: &mut $crate::facade::primary_graph::DecisionReader<'_, '_, '_, $Schema, OnboardPrincipalBinding>,
             ) -> RegistryResult<OnboardDecision> {
                 use $crate::facade::principal_registry::WorthQueryPrincipalRegistryRefusal as Refusal;
-                let present = (|| -> ::core::result::Result<::core::option::Option<Refusal>, RegistryError> {
+                let decided = (|| -> ::core::result::Result<
+                    ::core::result::Result<OnboardDecision, Refusal>,
+                    RegistryError,
+                > {
+                    let directory = reader.resolve_entity(
+                        $DirectoryFacts::$directory_id(),
+                        input.directory.clone(),
+                    )?;
                     let account = reader.resolve_optional_entity(
                         PrincipalAccountFacts::external_identity(),
                         input.identity.clone(),
                     )?;
                     if account.is_some() {
-                        return ::core::result::Result::Ok(::core::option::Option::Some(Refusal::IdentityAlreadyOnboarded));
+                        return ::core::result::Result::Ok(::core::result::Result::Err(
+                            Refusal::IdentityAlreadyOnboarded,
+                        ));
                     }
                     let principal = reader.resolve_optional_entity(
                         $PrincipalFacts::$principal_id(),
                         input.principal.clone(),
                     )?;
-                    ::core::result::Result::Ok(principal.map(|_| Refusal::PrincipalIdentityTaken))
-                })();
-                match present {
-                    ::core::result::Result::Ok(::core::option::Option::None) => {
-                        $crate::facade::primary_graph::HandlerResult::Completed(OnboardDecision {
-                            key: input.identity.portable_text(),
-                        })
+                    if principal.is_some() {
+                        return ::core::result::Result::Ok(::core::result::Result::Err(
+                            Refusal::PrincipalIdentityTaken,
+                        ));
                     }
-                    ::core::result::Result::Ok(::core::option::Option::Some(refusal)) => {
+                    ::core::result::Result::Ok(::core::result::Result::Ok(OnboardDecision {
+                        key: input.identity.portable_text(),
+                        directory: reader.mutation_target(&directory)?,
+                    }))
+                })();
+                match decided {
+                    ::core::result::Result::Ok(::core::result::Result::Ok(decision)) => {
+                        $crate::facade::primary_graph::HandlerResult::Completed(decision)
+                    }
+                    ::core::result::Result::Ok(::core::result::Result::Err(refusal)) => {
                         refusal.into_handler_result()
                     }
                     ::core::result::Result::Err(cause) => {
@@ -114,14 +131,22 @@ macro_rules! __worth_query_principal_registry_actions {
                         PrincipalAccountFacts::status(),
                         WorthQueryPrincipalMappingStatus::Enabled,
                     )?;
-                    writer.link(PrincipalAccountTarget::reference(), decision.key, &account, &principal)?;
+                    let directory = writer.projected_entity(&decision.directory)?;
+                    writer.link(
+                        PrincipalAccountTarget::reference(),
+                        decision.key.clone(),
+                        &account,
+                        &principal,
+                    )?;
+                    writer.link(PrincipalDirectory::reference(), decision.key, &principal, &directory)?;
                     ::core::result::Result::Ok(())
                 })()
                 .into()
             }
         }
 
-        /// Enables or disables the account of `identity` in `directory`.
+        /// Enables or disables the account of `identity` in `directory`. An
+        /// account of another directory refuses exactly as an unknown one.
         #[derive(Clone, Debug, ::serde::Serialize, ::serde::Deserialize, $crate::facade::WorthQueryAction)]
         #[worth_query(
             schema = $Schema, context = $Context, namespace = STATUS_NAMESPACE,
@@ -131,9 +156,10 @@ macro_rules! __worth_query_principal_registry_actions {
             decision = $crate::facade::primary_graph::WorthQueryInvariantMutationTarget<$Schema, PrincipalAccount>,
             program,
             access(
-                read_entities: [$Directory, PrincipalAccount];
+                read_entities: [$Directory, PrincipalAccount, $Principal];
                 read_fields: [$DirectoryFacts::$directory_id(),
                     PrincipalAccountFacts::external_identity(), PrincipalAccountFacts::status()];
+                read_relations: [PrincipalAccountTarget, PrincipalDirectory];
                 writes: [PrincipalAccountFacts::status()];
             )
         )]
@@ -167,6 +193,28 @@ macro_rules! __worth_query_principal_registry_actions {
                         return $crate::facade::primary_graph::HandlerResult::ExecutionDenied(cause);
                     }
                 };
+                let member = (|| -> ::core::result::Result<bool, RegistryError> {
+                    for target in reader.relations_from(PrincipalAccountTarget::reference(), &account)? {
+                        let principal = target.into_to();
+                        for joined in reader.relations_from(PrincipalDirectory::reference(), &principal)? {
+                            let directory = joined.into_to();
+                            let key = reader.field(&directory, $DirectoryFacts::$directory_id())?;
+                            if key.as_ref() == ::core::option::Option::Some(&input.directory) {
+                                return ::core::result::Result::Ok(true);
+                            }
+                        }
+                    }
+                    ::core::result::Result::Ok(false)
+                })();
+                match member {
+                    ::core::result::Result::Ok(true) => {}
+                    ::core::result::Result::Ok(false) => {
+                        return Refusal::IdentityNotOnboarded.into_handler_result();
+                    }
+                    ::core::result::Result::Err(cause) => {
+                        return $crate::facade::primary_graph::HandlerResult::ExecutionDenied(cause);
+                    }
+                }
                 (|| {
                     reader.field(&account, PrincipalAccountFacts::status())?;
                     reader.mutation_target(&account)

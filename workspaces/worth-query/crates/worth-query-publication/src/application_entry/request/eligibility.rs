@@ -66,7 +66,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
 }
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationRetainedRequest<'_, '_, '_, Schema> {
-    /// The request principal's own verdict as of the pinned commit.
+    /// The request principal's own verdict as of the pinned commit; the
+    /// principal is still admitted at the branch head.
     pub fn observe_eligibility<Context, Ability, Field>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -88,7 +89,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRetainedRequest<'_, '_, '_,
     }
 
     /// Per-candidate verdicts as of the pinned commit, disclosed only when the
-    /// request principal holds `disclosure` on the same scope there.
+    /// request principal is admitted and holds `disclosure` on the same scope
+    /// at the branch head: a pin never widens who may see the roster.
     pub fn observe_roster_eligibility<Context, Ability, Field>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

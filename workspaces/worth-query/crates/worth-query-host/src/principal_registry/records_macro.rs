@@ -6,7 +6,7 @@
 macro_rules! __worth_query_principal_registry_records {
     ($Schema:ident, $Context:ident, $Key:ty, $key_identity:expr, $Denial:ty,
      $Principal:ident, $PrincipalKey:ident, $PrincipalFacts:ident :: $principal_id:ident,
-     $Onboarding:ident) => {
+     $Directory:ident, $Onboarding:ident) => {
         /// Scalar bindings of the account record. The external identity is
         /// never rewritten; only the status changes.
         pub struct RegistryBindings;
@@ -34,7 +34,7 @@ macro_rules! __worth_query_principal_registry_records {
         impl Fragment for RegistryRecords {
             const NAME: &'static str = "worth_principal_registry_records";
             type Bindings = RegistryBindings;
-            type Members = (PrincipalAccount,);
+            type Members = (PrincipalAccount, Extend<$Principal, (), (PrincipalDirectory,)>);
         }
 
         /// One external identity's account: maps it to exactly one principal.
@@ -51,6 +51,15 @@ macro_rules! __worth_query_principal_registry_records {
         #[derive($crate::facade::WorthQueryRelation)]
         #[worth_query(to = $Principal, from = PrincipalAccount, reference($Schema, RegistryRecords))]
         pub struct PrincipalAccountTarget;
+
+        /// The one directory a registered principal belongs to: its account's
+        /// status changes name that directory and are confined to it.
+        #[derive($crate::facade::WorthQueryRelation)]
+        #[worth_query(
+            to = $Directory, from = $Principal, reference($Schema, RegistryRecords),
+            cross_context = ApplicationRelationCrossContextPolicy::AllowExplicit,
+        )]
+        pub struct PrincipalDirectory;
 
         /// The account's identity is `unique`: the platform refuses a second
         /// account for one identity at commit, however the write arrives.
@@ -79,6 +88,38 @@ macro_rules! __worth_query_principal_registry_records {
                 idempotency: $Key = $key_identity,
                 denial: $Denial,
             }
+        }
+
+        /// Seeds one principal and its account through `bind_principal`, then
+        /// enrolls the principal in `directory`: the shape `OnboardPrincipal`
+        /// commits at runtime. `principal_key` is the principal's entity key.
+        pub fn seed_principal(
+            graph: &mut $crate::facade::primary_graph::WorthQueryPrimaryGraphBootstrap<$Schema>,
+            installed: &$crate::facade::domain::WorthQueryInstalledApplicationSchema<$Schema>,
+            directory: &str,
+            principal_key: &str,
+            principal: <$PrincipalKey as RecordSelection>::Value,
+            identity: WorthQueryExternalPrincipalIdentity,
+            status: WorthQueryPrincipalMappingStatus,
+        ) -> ::core::result::Result<(), $crate::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+            use $crate::facade::primary_graph::{
+                WorthQueryApplicationEntityKey as Key, WorthQueryApplicationPrincipalKey as PrincipalKey,
+                WorthQueryApplicationRelationSeed as RelationSeed,
+                WorthQueryPrimaryGraphInstallationDenial as Denial,
+                WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
+            };
+            let invalid = |value: &str| Denial::new(DenialKind::InvalidSchemaMember, value);
+            let binding = installed
+                .principal_binding(Registry::reference())
+                .map_err(|denial| Denial::binding_not_installed(denial.binding()))?;
+            let key = PrincipalKey::new(principal_key).map_err(|_| invalid(principal_key))?;
+            graph.bind_principal(&binding, key, principal, identity, status)?;
+            graph.bind_relation(RelationSeed::new(
+                PrincipalDirectory::reference(),
+                ::std::format!("principal-directory-{principal_key}"),
+                Key::new(principal_key).map_err(|_| invalid(principal_key))?,
+                Key::new(directory).map_err(|_| invalid(directory))?,
+            ))
         }
 
         impl OperationRequiresAbility<OnboardPrincipalOperation> for $Onboarding {}

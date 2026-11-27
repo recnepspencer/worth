@@ -4369,7 +4369,10 @@ reason admission would refuse the identity itself: `Unmapped`, `Disabled` or
 `Ambiguous`. Asking about oneself needs no disclosure. Revealing other
 principals' authority does: `eligible_among` requires the asker to hold the
 named disclosure ability on the same scope and otherwise refuses
-`RosterNotDisclosed` before evaluating any candidate. A question the platform
+`RosterNotDisclosed` before evaluating any candidate. The asker is admitted
+before any scope is resolved, and disclosure is decided before a pinned scope
+is resolved, so a refused asker gets the same answer whether or not the scope
+exists. A question the platform
 cannot answer (an unknown scope, an ability without a policy, or a policy that
 does not start at the binding's principal entity) refuses with a typed
 `WorthQueryEligibilityDenial` instead of a verdict.
@@ -4416,8 +4419,18 @@ refuses before any effect; recover the reason with
 `domain_refusal()`. A disabled account no longer acts or asks. Grant the new
 principal authority through ordinary relationship actions; it survives
 Directory reopen like any other commit
-([registry court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/rebac_eligibility_dx/registry_court.rs)). Seeds still use `bind_principal`
-with `installed.principal_binding(accounts::Registry::reference())`. The
+([registry court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/rebac_eligibility_dx/registry_court.rs)).
+
+Each principal belongs to the directory it joined (`PrincipalDirectory`).
+`SetPrincipalStatus` names a directory and refuses
+`IdentityNotOnboarded` for an account of any other directory, exactly as for
+an identity that exists nowhere, so one directory's operators can neither
+disable another's accounts nor learn they exist. External identities stay
+globally unique, so onboarding an identity mapped anywhere refuses
+`IdentityAlreadyOnboarded`. Seed accounts with
+`accounts::seed_principal(graph, installed, directory, key, id, identity, status)`,
+which binds the principal through `bind_principal` and enrolls it in the
+directory, the same shape onboarding commits. The
 principal is created with only its identity field, so its other aspects must
 be optional or written by a later action.
 

@@ -148,3 +148,65 @@ impl OperationHandler<QmsSchema, RevokeAssignmentBinding> for RevokeAssignmentHa
         .into()
     }
 }
+
+/// Publishes a new document on `site`.
+#[derive(Clone, Debug, Serialize, Deserialize, WorthQueryAction)]
+#[worth_query(
+    schema = QmsSchema, context = Qms, namespace = QMS, member,
+    input = PublishDocumentInput, operation = PublishDocumentOp,
+    binding = PublishDocumentBinding, delivery = DocumentPublished,
+    result = UnitApplicationValueBinding,
+    decision = WorthQueryInvariantMutationTarget<QmsSchema, Site>, program,
+    access(
+        read_entities: [Site];
+        read_fields: [SiteFacts::site_id()];
+        writes: [DocumentFacts::document_id(), DocumentFacts::approved()];
+        creates: [Document];
+        links: [Publishes];
+    )
+)]
+pub struct PublishDocument {
+    #[worth_query(scope = SiteId)]
+    pub site: String,
+    pub document: String,
+}
+
+pub struct PublishDocumentHandler;
+impl OperationHandler<QmsSchema, PublishDocumentBinding> for PublishDocumentHandler {
+    fn decide(
+        &self,
+        input: &PublishDocument,
+        reader: &mut DecisionReader<'_, '_, '_, QmsSchema, PublishDocumentBinding>,
+    ) -> HandlerResult<WorthQueryInvariantMutationTarget<QmsSchema, Site>, Denial> {
+        (|| {
+            let site = reader.resolve_entity(SiteFacts::site_id(), input.site.clone())?;
+            reader.mutation_target(&site)
+        })()
+        .into()
+    }
+
+    fn build_candidate(
+        &self,
+        input: &PublishDocument,
+        site: WorthQueryInvariantMutationTarget<QmsSchema, Site>,
+        writer: &mut CandidateWriter<'_, QmsSchema, PublishDocumentBinding>,
+    ) -> HandlerResult<(), Denial> {
+        (|| {
+            let site = writer.projected_entity(&site)?;
+            let key = WorthQueryApplicationEntityKey::new(input.document.clone())
+                .map_err(HandlerExecutionDenial::new)?;
+            let document = writer.create_entity(Document::reference(), key)?;
+            let id = input.document.clone();
+            writer.initialize_field(&document, DocumentFacts::document_id(), id.clone())?;
+            writer.initialize_field(&document, DocumentFacts::approved(), false)?;
+            writer.link(
+                Publishes::reference(),
+                format!("publishes-{id}"),
+                &site,
+                &document,
+            )?;
+            Ok::<_, HandlerExecutionDenial>(())
+        })()
+        .into()
+    }
+}

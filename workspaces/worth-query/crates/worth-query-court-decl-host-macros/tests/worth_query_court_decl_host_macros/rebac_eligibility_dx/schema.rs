@@ -93,7 +93,10 @@ pub struct Administers;
 
 /// A site publishes its documents.
 #[derive(WorthQueryRelation)]
-#[worth_query(to = Document, from = Site, reference(QmsSchema, Records))]
+#[worth_query(
+    to = Document, from = Site, reference(QmsSchema, Records),
+    cross_context = ApplicationRelationCrossContextPolicy::AllowExplicit,
+)]
 pub struct Publishes;
 
 #[derive(WorthQueryRecord)]
