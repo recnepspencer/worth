@@ -91,11 +91,63 @@ impl EnrollmentSink {
     }
 }
 
-impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHistory<'_, S, H> {
+/// The sizes of the journal's correction-source index: indexed source
+/// commits, and recorded bases (one per completed step, plan #453).
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct WorthQueryHistorySourceIndexForTest {
+    pub sources: usize,
+    pub endpoints: usize,
+}
+
+/// The document's correction navigation lineage, held by a test past the
+/// document's close, with one indexed source and basis to ask about.
+pub struct WorthQueryHeldNavigationLineageForTest<'runtime> {
+    lineage: Arc<dyn crate::domain_computation::primary_graph::product_operation::WorthQueryCorrectionNavigationLineage + 'runtime>,
+    selected: worth_relational::facade::history::CommitId,
+    source: worth_runtime_world::facade::CompositeCommitIdentity,
+}
+
+impl WorthQueryHeldNavigationLineageForTest<'_> {
+    /// The lineage's vouch for the held basis and source.
+    pub fn restores_descendant(&self) -> bool {
+        self.lineage
+            .restores_descendant_of(self.selected, &self.source)
+    }
+
+    /// Whether the lineage places the held basis's own commit on the line
+    /// from the held source to that basis.
+    pub fn wrote_on_line(&self) -> bool {
+        self.lineage
+            .wrote_on_line_through(self.selected, self.selected, &self.source)
+    }
+}
+
+impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
+    WorthQueryDocumentHistory<'runtime, S, H>
+{
     #[doc(hidden)]
     pub fn observe_history_enrollment_for_test(
         &mut self,
     ) -> WorthQueryHistoryEnrollmentObservationForTest {
         self.selection.lock().journal.observe()
+    }
+
+    #[doc(hidden)]
+    pub fn history_source_index_for_test(&self) -> WorthQueryHistorySourceIndexForTest {
+        let (sources, endpoints) = self.selection.lock().journal.source_index_sizes();
+        WorthQueryHistorySourceIndexForTest { sources, endpoints }
+    }
+
+    /// `None` until a step has indexed its source and basis.
+    #[doc(hidden)]
+    pub fn held_navigation_lineage_for_test(
+        &self,
+    ) -> Option<WorthQueryHeldNavigationLineageForTest<'runtime>> {
+        let (selected, source) = self.selection.lock().journal.first_indexed_source()?;
+        Some(WorthQueryHeldNavigationLineageForTest {
+            lineage: self.correction_navigation_lineage(),
+            selected,
+            source,
+        })
     }
 }

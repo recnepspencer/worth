@@ -1,29 +1,38 @@
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:13-18 sha256:c695fad3216b679b2baddf9ed1543e36c5ea3de5e447c0bb99e119037d7c2ba5
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:59-63 sha256:3e8f691aafa4c65343eec297dcb2d7d9863e762cec1f4935e66fa9f3c0dd1992
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:67-79 sha256:2775abb1175472f45067f3b23250ed7f8aeae8384dc0e5a44d78d70cbe92909e
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:82-84 sha256:794dbca66c30761d3a26d0e79e6130296bbce91ba4c391dd4483f05102f15d4e
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:87-132 sha256:d8596eb9b1fb3b3c5aff9b2d7dfb42d1aecbd08992afc715d9a808ec02a10df5
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:123-130 sha256:9359ccd83ca36821385a7fde3bb9cf218f8fd28ba12992219eeed9242b8f4284
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:106-122 sha256:442f324ccf378179f6b9e5985947d7d2f51891afff42e73c1d9971cec23a8ca4
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:137-138 sha256:7b79964869e5420cbe9abcdbd143672cef4d2e9d5aede269939aafad911b22ee
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:78-82 sha256:3e8f691aafa4c65343eec297dcb2d7d9863e762cec1f4935e66fa9f3c0dd1992
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:87-102 sha256:bdd8cbf1c3a03b493f179947a53785ca15bc7daa3ad7f34e74956062aa3171fe
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:106-115 sha256:a597d51a25d99e7725859501dff098320a19c3371381e8f2a235a9725adae19d
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:118-170 sha256:5737411d85e62fabacb05e64139153946a878a72bf37aaacc401425cef8ec46e
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:154-168 sha256:a92f80c3782f4b668b81f1b6aca203ee37b7cc731dcde8ebb0c12a753baa2306
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:112-128 sha256:5472342abee3493323b9c10195ef05a6749216a757c87171f44336573a3529dd
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:143-144 sha256:7b79964869e5420cbe9abcdbd143672cef4d2e9d5aede269939aafad911b22ee
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:182-200 sha256:0facd6e366a8d784c8c4aa94813ccaa7ac1066a24acd5b88e3d7cf0a450718bc
 /-
 The navigation supersession rule for a correction's restored support, unbounded.
 
-Mirrors (TBU Phase 2, `6a420909dc`)
+Mirrors (TBU Phase 2, `6a420909dc`; supersession keeps line writes, public #453)
   workspaces/worth-query/crates/worth-query-execution/src/domain_computation/
   primary_graph/product_operation/correction_source/restored_support/navigation.rs
-    * `OccurrenceKind`               navigation.rs:59-63  -> `Kind` (transliteration)
-    * `superseded_through`           navigation.rs:67-79  -> `supersededThrough`
+    * `OccurrenceKind`               navigation.rs:78-82  -> `Kind` (transliteration)
+    * `superseded_through`           navigation.rs:87-102 -> `supersededThrough`
       (transliteration: filter_map to navigations, `max_by_key` on the commit,
-      which keeps the LAST maximum, then `filter(selected.is_some_and(vouch))`)
-    * `needs_witness`                navigation.rs:82-84  -> `needsWitness` (verbatim)
-    * `without_vouched_navigation`   navigation.rs:87-132 -> `kept` (the filter
-      loop at navigation.rs:123-130; envelope reading is abstracted into `Occ`)
+      which keeps the LAST maximum, then the vouched basis kept beside the
+      commit: `Option<(through, selected)>`)
+    * `needs_witness`                navigation.rs:106-115 -> `needsWitness` (verbatim;
+      `on_line` is the lineage's `wrote_on_line_through`, a parameter `onLine`)
+    * `without_vouched_navigation`   navigation.rs:118-170 -> `kept` (the filter
+      loop at navigation.rs:154-168; envelope reading is abstracted into `Occ`)
   and the vouch the journal answers,
-  document_history/journal/sources.rs:106-122 (`restores_descendant_of`)
+  document_history/journal/sources.rs:112-128 (`restores_descendant_of`)
     -> `vouch` (abstraction: the two index lookups are given as the source step
        `S` and the basis's step `b`; the lift is parent-chain ancestry, proved
        equal to the code's loop in JumpLift.lean / jump_pointer_lift.rs).
+  The journal's `wrote_on_line_through` (sources.rs:182-200) is left abstract as
+  `onLine`: the theorems take what it answers as a hypothesis
+  (`kept_line_writes`) and show which writes it must name
+  (`since_change_is_a_line_write`). The kept loop's lookup of each
+  occurrence's kind is total here (every occurrence has its kind); the code
+  keeps an occurrence whose kind is missing.
 
 The relational side is an abstraction: facts are keys `Nat`, a fact's support
 is a record id `Nat`, an application commit overlays some keys, and a
@@ -35,14 +44,23 @@ navigation.rs:13-18). The occurrence map is ordered by commit id (an
 increasing by id.
 
 Results
-  * `superseded_split`     the decision cancels exactly a prefix that ends at
-    the latest navigation, keeps exactly the suffix after it, and that suffix
-    holds no navigation; the cancelled navigation was vouched.
+  * `superseded_split`     the decision cancels a prefix that ends at the
+    latest navigation, except the prefix's line writes, keeps exactly the
+    suffix after it, and that suffix holds no navigation; the superseding
+    navigation was vouched.
+  * `kept_line_writes`     every write `onLine` names stays kept.
+  * `kept_monotone`        the rule keeps everything the old rule kept.
+  * `since_change_is_a_line_write`  a change at any step between the source
+    and the selected basis was written by a step on the path from the source
+    to that basis: a line write, so kept.
+  * `old_rule_hides_a_line_write`  the old rule's counterexample (#453): it
+    cancelled two line writes that the final comparison cannot see.
   * `cancelled_effect_is_restored_state`  soundness: the effect of the
     cancelled set on every owned fact IS the restored recorded state; the
     cancelled commits cannot influence the facts at the target.
   * `target_fact`          the target's owned fact is the restored recorded
-    state followed by the kept (still-witnessed) occurrences only.
+    state followed by the suffix after the superseding navigation, which the
+    kept set ends with.
   * `restored_differs_only_by_line_writes`  a write that makes the restored
     state differ from the source's is a recorded step on the selected line
     between the source and the selected basis, so it is in the state the
@@ -75,7 +93,7 @@ def up : Nat → Nat → Nat
   | 0, n => n
   | k + 1, n => up k (T.par n)
 
-/-- `a` is `n` or one of its ancestors (sources.rs:137-138). -/
+/-- `a` is `n` or one of its ancestors (sources.rs:143-144). -/
 def AncOrSelf (a n : Nat) : Prop := ∃ k, up T k n = a
 
 theorem anc_refl (n : Nat) : AncOrSelf T n n := ⟨0, rfl⟩
@@ -117,7 +135,7 @@ theorem recorded_succ (init : Nat → Nat) (wr : Nat → Nat → Option Nat) {n 
 
 /-! ## Occurrences and the code's decision -/
 
-/-- An occurrence as the rule sees it (navigation.rs:59-63). -/
+/-- An occurrence as the rule sees it (navigation.rs:78-82). -/
 inductive Kind where
   | navigation (selected : Option Nat)
   | other
@@ -148,23 +166,35 @@ def maxByKey : List (Nat × Option Nat) → Option (Nat × Option Nat)
   | [] => none
   | x :: l => some (l.foldl maxStep x)
 
-/-- `superseded_through` (navigation.rs:67-79). -/
-def supersededThrough (l : List (Nat × Occ)) (vouch : Nat → Bool) : Option Nat :=
+/-- `superseded_through` (navigation.rs): the latest navigation's commit and
+the basis it selected, when the vouch accepts that basis. -/
+def supersededThrough (l : List (Nat × Occ)) (vouch : Nat → Bool) : Option (Nat × Nat) :=
   match maxByKey (navs l) with
-  | some (c, some b) => if vouch b then some c else none
+  | some (c, some b) => if vouch b then some (c, b) else none
   | _ => none
 
-/-- `needs_witness` (navigation.rs:82-84). -/
-def needsWitness (commit : Nat) (superseded : Option Nat) : Bool :=
+/-- `needs_witness` (navigation.rs), verbatim: an occurrence after the latest
+vouched navigation, or a write the journal answers is a recorded step's on the
+path from the source to the selected basis (`onLine`, the abstract
+`wrote_on_line_through`), still needs its witness. -/
+def needsWitness (commit : Nat) (kind : Kind) (superseded : Option (Nat × Nat))
+    (onLine : Nat → Nat → Bool) : Bool :=
   match superseded with
   | none => true
-  | some through => decide (commit > through)
+  | some (through, selected) => decide (commit > through) || (decide (kind = .other) && onLine commit selected)
 
-/-- The occurrences `without_vouched_navigation` keeps (navigation.rs:123-130). -/
-def kept (l : List (Nat × Occ)) (vouch : Nat → Bool) : List (Nat × Occ) :=
-  l.filter (fun x => needsWitness x.1 (supersededThrough l vouch))
+/-- The occurrences `without_vouched_navigation` keeps (its filter loop). -/
+def kept (l : List (Nat × Occ)) (vouch : Nat → Bool) (onLine : Nat → Nat → Bool) : List (Nat × Occ) :=
+  l.filter (fun x => needsWitness x.1 x.2.kind (supersededThrough l vouch) onLine)
 
-/-- The journal's vouch (sources.rs:106-122), over the index lookups' answers:
+/-- The rule before public #453: everything up to the latest vouched navigation
+was cancelled, line writes included. -/
+def keptOld (l : List (Nat × Occ)) (vouch : Nat → Bool) : List (Nat × Occ) :=
+  l.filter (fun x => match supersededThrough l vouch with
+    | none => true
+    | some (through, _) => decide (x.1 > through))
+
+/-- The journal's vouch (sources.rs:112-128), over the index lookups' answers:
 the source step `S` (never the root) is an ancestor-or-self of the selected
 basis's step `b`, which is on the selected line (an ancestor-or-self of
 `current`). -/
@@ -283,13 +313,15 @@ theorem lastNav_none_no_navigation : ∀ (l : List (Nat × Occ)), lastNav l = no
         | navigation s => rw [hk] at h; simp at h
       · exact lastNav_none_no_navigation l hl x hx
 
-/-- The code's decision, whenever it supersedes anything, cancels exactly the
-prefix that ends at the latest navigation, which was vouched, and keeps
-exactly the suffix after it, which holds no navigation. -/
-theorem superseded_split (l : List (Nat × Occ)) (vouch : Nat → Bool) (c : Nat)
-    (hs : Sorted l) (h : supersededThrough l vouch = some c) :
-    ∃ pre b post, l = pre ++ (c, .navigation (some b)) :: post ∧ vouch b = true ∧
-      (∀ x ∈ post, x.2.kind = .other) ∧ kept l vouch = post := by
+/-- The code's decision, whenever it supersedes anything: the latest
+navigation was vouched, the suffix after it holds no navigation, and the kept
+set is the prefix's line writes followed by that whole suffix. -/
+theorem superseded_split (l : List (Nat × Occ)) (vouch : Nat → Bool) (onLine : Nat → Nat → Bool)
+    (c b : Nat) (hs : Sorted l) (h : supersededThrough l vouch = some (c, b)) :
+    ∃ pre post, l = pre ++ (c, .navigation (some b)) :: post ∧ vouch b = true ∧
+      (∀ x ∈ post, x.2.kind = .other) ∧
+      kept l vouch onLine = pre.filter (fun x => decide (x.2.kind = .other) && onLine x.1 b) ++ post := by
+  have h' := h
   unfold supersededThrough at h
   rw [maxByKey_eq_lastNav l hs] at h
   cases hl : lastNav l with
@@ -299,41 +331,75 @@ theorem superseded_split (l : List (Nat × Occ)) (vouch : Nat → Bool) (c : Nat
     obtain ⟨c', s⟩ := r
     cases s with
     | none => simp at h
-    | some b =>
+    | some b' =>
       simp only at h
-      by_cases hv : vouch b = true
+      by_cases hv : vouch b' = true
       · rw [if_pos hv] at h
-        cases h
-        obtain ⟨pre, post, he, hp⟩ := lastNav_split l c (some b) hl
-        refine ⟨pre, b, post, he, hv, lastNav_none_no_navigation post hp, ?_⟩
+        simp only [Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨rfl, rfl⟩ := h
+        obtain ⟨pre, post, he, hp⟩ := lastNav_split l c' (some b') hl
+        refine ⟨pre, post, he, hv, lastNav_none_no_navigation post hp, ?_⟩
         unfold kept
-        have hsup : supersededThrough l vouch = some c := by
-          unfold supersededThrough; rw [maxByKey_eq_lastNav l hs, hl]; simp [hv]
-        rw [hsup]
+        rw [h']
         rw [he] at hs ⊢
         unfold Sorted at hs
         rw [List.pairwise_append] at hs
         obtain ⟨_, hpost, hcross⟩ := hs
         have hpost' := List.pairwise_cons.mp hpost
         rw [List.filter_append, List.filter_cons]
-        have hpre : pre.filter (fun x => needsWitness x.1 (some c)) = [] := by
-          rw [List.filter_eq_nil_iff]
+        have hpre : pre.filter (fun x => needsWitness x.1 x.2.kind (some (c', b')) onLine) =
+            pre.filter (fun x => decide (x.2.kind = .other) && onLine x.1 b') := by
+          apply List.filter_congr
           intro x hx
-          have := hcross x hx (c, .navigation (some b)) (by simp)
-          simp [needsWitness]; omega
-        have hpost2 : post.filter (fun x => needsWitness x.1 (some c)) = post := by
+          have := hcross x hx (c', .navigation (some b')) (by simp)
+          have hgt : decide (x.1 > c') = false := by simp; omega
+          simp only [needsWitness, hgt, Bool.false_or]
+        have hpost2 : post.filter (fun x => needsWitness x.1 x.2.kind (some (c', b')) onLine) = post := by
           rw [List.filter_eq_self]
           intro x hx
           have := hpost'.1 x hx
           simp [needsWitness]; omega
         rw [hpre, hpost2]
-        simp [needsWitness]
+        simp [needsWitness, Occ.kind]
       · simp [hv] at h
 
 /-- With no vouched navigation, every occurrence still needs its witness. -/
 theorem unvouched_keeps_everything (l : List (Nat × Occ)) (vouch : Nat → Bool)
-    (h : supersededThrough l vouch = none) : kept l vouch = l := by
+    (onLine : Nat → Nat → Bool) (h : supersededThrough l vouch = none) : kept l vouch onLine = l := by
   unfold kept; rw [h]; simp [needsWitness]
+
+/-- Every write the journal answers is a line write of the vouched path is
+kept, wherever it falls. -/
+theorem kept_line_writes (l : List (Nat × Occ)) (vouch : Nat → Bool) (onLine : Nat → Nat → Bool)
+    (x : Nat × Occ) (hx : x ∈ l) (hk : x.2.kind = .other)
+    (hline : ∀ c b, supersededThrough l vouch = some (c, b) → onLine x.1 b = true) :
+    x ∈ kept l vouch onLine := by
+  unfold kept
+  rw [List.mem_filter]
+  refine ⟨hx, ?_⟩
+  cases hsup : supersededThrough l vouch with
+  | none => rfl
+  | some p =>
+    obtain ⟨c, b⟩ := p
+    simp [needsWitness, hk, hline c b hsup]
+
+/-- The new rule keeps everything the old one kept: every refusal before
+public #453 is still a refusal. -/
+theorem kept_monotone (l : List (Nat × Occ)) (vouch : Nat → Bool) (onLine : Nat → Nat → Bool) :
+    ∀ x ∈ keptOld l vouch, x ∈ kept l vouch onLine := by
+  intro x hx
+  unfold keptOld at hx
+  unfold kept
+  rw [List.mem_filter] at hx ⊢
+  refine ⟨hx.1, ?_⟩
+  have h2 := hx.2
+  cases hsup : supersededThrough l vouch with
+  | none => rfl
+  | some p =>
+    obtain ⟨c, b⟩ := p
+    rw [hsup] at h2
+    simp only [decide_eq_true_eq] at h2
+    simp [needsWitness, h2]
 
 /-! ## Soundness: what the cancelled occurrences can and cannot affect -/
 
@@ -399,15 +465,17 @@ theorem run_through_navigation (pre post : List (Nat × Occ)) (c b : Nat) (σ : 
     cancelled_effect_is_restored_state T owned init wr emptyState pre c b σ k hk]
 
 /-- The target's owned facts are the restored recorded state followed by the
-kept occurrences only: no cancelled occurrence reaches them. -/
-theorem target_fact (l : List (Nat × Occ)) (vouch : Nat → Bool) (c : Nat)
-    (hs : Sorted l) (h : supersededThrough l vouch = some c)
+suffix after the latest vouched navigation, which the kept set ends with: no
+occurrence before that navigation reaches them. -/
+theorem target_fact (l : List (Nat × Occ)) (vouch : Nat → Bool) (onLine : Nat → Nat → Bool)
+    (c b : Nat) (hs : Sorted l) (h : supersededThrough l vouch = some (c, b))
     (σ : Nat → Nat) (k : Nat) (hk : owned k = true) :
-    ∃ b, vouch b = true ∧
-      run T owned init wr emptyState σ l k = runFact (recorded T init wr b k) k (kept l vouch) := by
-  obtain ⟨pre, b, post, he, hv, hpost, hkept⟩ := superseded_split l vouch c hs h
-  refine ⟨b, hv, ?_⟩
-  rw [hkept, he, run_through_navigation T owned init wr emptyState pre post c b σ hpost k hk]
+    vouch b = true ∧ ∃ pre post, l = pre ++ (c, .navigation (some b)) :: post ∧
+      kept l vouch onLine = pre.filter (fun x => decide (x.2.kind = .other) && onLine x.1 b) ++ post ∧
+      run T owned init wr emptyState σ l k = runFact (recorded T init wr b k) k post := by
+  obtain ⟨pre, post, he, hv, hpost, hkept⟩ := superseded_split l vouch onLine c b hs h
+  refine ⟨hv, pre, post, he, hkept, ?_⟩
+  rw [he, run_through_navigation T owned init wr emptyState pre post c b σ hpost k hk]
 
 /-- Two runs that differ only in their cancelled prefixes (and starting
 states) agree on every owned fact at the target. -/
@@ -424,8 +492,7 @@ def OnPath (S b m : Nat) : Prop := ∃ j, up T j b = m ∧ ∀ i, i ≤ j → up
 /-- The restored state differs from the source's recorded state at a fact only
 through a recorded step on the path from the source (exclusive) to the
 selected basis (inclusive). With a vouched basis that path lies on the
-selected line, and every such write is part of the restored state the final
-comparison reads: supersession hides none of them. -/
+selected line. It feeds `since_change_is_a_line_write`. -/
 theorem restored_differs_only_by_line_writes (S : Nat) (k : Nat) :
     ∀ b, AncOrSelf T S b →
       (∀ m, OnPath T S b m → wr m k = none) →
@@ -454,6 +521,48 @@ theorem restored_differs_only_by_line_writes (S : Nat) (k : Nat) :
     cases i' with
     | zero => exact hbS
     | succ i' => exact hne i' (by omega)
+
+theorem up_add (a j : Nat) : ∀ n, up T (a + j) n = up T j (up T a n) := by
+  induction a with
+  | zero => intro n; simp [up]
+  | succ a ih =>
+    intro n
+    rw [show a + 1 + j = (a + j) + 1 by omega]
+    simp only [up]
+    exact ih (T.par n)
+
+/-- **Line writes are what supersession must keep.** If any step `n` between
+the source `S` and the selected basis `b` (the `Since` nodes up to `b`) holds a
+fact differently from the source, a recorded step on the path from `S`
+(exclusive) to `b` wrote that fact. With `kept_line_writes`, and the journal's
+answer naming each such write's own step (the index's lower bound and its one
+owner make that true), every such change stays kept. -/
+theorem since_change_is_a_line_write (S b n k : Nat) (hSn : AncOrSelf T S n) (hnb : AncOrSelf T n b)
+    (hne : recorded T init wr n k ≠ recorded T init wr S k) :
+    ∃ m, OnPath T S b m ∧ wr m k ≠ none := by
+  by_cases hnS : n = S
+  · subst hnS; exact absurd rfl hne
+  apply Classical.byContradiction
+  intro hno
+  apply hne
+  apply restored_differs_only_by_line_writes T init wr S k n hSn
+  intro m ⟨j, hj, hjS⟩
+  obtain ⟨k0, hk0⟩ := hnb
+  obtain ⟨jS, hjSn⟩ := hSn
+  have hle : S ≤ n := by rw [← hjSn]; exact up_le T jS n
+  apply Classical.byContradiction
+  intro hw
+  apply hno
+  refine ⟨m, ⟨k0 + j, by rw [up_add, hk0, hj], ?_⟩, hw⟩
+  intro i hi
+  by_cases hik : k0 ≤ i
+  · rw [show i = k0 + (i - k0) by omega, up_add, hk0]
+    exact hjS (i - k0) (by omega)
+  · intro hiS
+    have : n = up T (k0 - i) S := by
+      rw [← hiS, ← up_add, show i + (k0 - i) = k0 by omega, hk0]
+    have hn : n ≤ S := by rw [this]; exact up_le T (k0 - i) S
+    exact hnS (by omega)
 
 /-- If the source wrote fact `k` with a fresh record (no other step writes that
 record and the root does not hold it), then the final comparison passing on
@@ -506,13 +615,41 @@ theorem outside_closure_counterexample :
     let wr : Nat → Nat → Option Nat := fun n k => if n = 1 ∧ k ≤ 1 then some 10 else none
     let log : List (Nat × Occ) :=
       [(5, .write (fun k => if k = 1 then some 99 else none)), (6, .navigation (some 1))]
-    supersededThrough log (fun b => b == 1) = some 6 ∧
-    kept log (fun b => b == 1) = [] ∧
+    supersededThrough log (fun b => b == 1) = some (6, 1) ∧
+    kept log (fun b => b == 1) (fun _ _ => false) = [] ∧
     run line owned init wr (fun _ => 0) (fun k => recorded line init wr 1 k) log 1 = 99 ∧
     recorded line init wr 1 1 = 10 := by
   refine ⟨by decide, ?_, ?_, ?_⟩
   · simp [kept, supersededThrough, navs, maxByKey, List.foldl, Occ.kind, needsWitness]
   · simp [run, apply, List.foldl]
   · rw [recorded_succ line _ _ (by decide)]; simp
+
+/-- **The rule before public #453 hid a line write** (court H, N2): step 1
+makes the entity live, step 2 retires it, step 3 makes it live again (commit
+13), step 4 retires it again (commit 14), then an undo (commit 15, basis 3)
+and a redo (commit 16, basis 4). Correcting step 2's retirement: the restored
+state at step 4 equals the source's, so the final comparison passes, yet step 3
+held the fact differently. The old rule cancelled both line writes; the new
+rule keeps them, and they then need their witnesses. -/
+theorem old_rule_hides_a_line_write :
+    let init : Nat → Nat := fun _ => 0
+    let wr : Nat → Nat → Option Nat := fun n k =>
+      if k = 0 then (if n = 1 then some 1 else if n = 2 then some 2
+        else if n = 3 then some 3 else if n = 4 then some 2 else none) else none
+    let log : List (Nat × Occ) :=
+      [(13, .write (fun k => if k = 0 then some 3 else none)),
+       (14, .write (fun k => if k = 0 then some 2 else none)),
+       (15, .navigation (some 3)), (16, .navigation (some 4))]
+    let vouch : Nat → Bool := fun b => b == 3 || b == 4
+    let onLine : Nat → Nat → Bool := fun c _ => c == 13 || c == 14
+    (keptOld log vouch).map Prod.fst = [] ∧
+    (kept log vouch onLine).map Prod.fst = [13, 14] ∧
+    recorded line init wr 4 0 = recorded line init wr 2 0 ∧
+    recorded line init wr 3 0 ≠ recorded line init wr 2 0 := by
+  refine ⟨by decide, by decide, ?_, ?_⟩
+  · rw [recorded_succ line _ _ (n := 4) (by decide), recorded_succ line _ _ (n := 2) (by decide)]
+    simp
+  · rw [recorded_succ line _ _ (n := 3) (by decide), recorded_succ line _ _ (n := 2) (by decide)]
+    simp
 
 end Supersession

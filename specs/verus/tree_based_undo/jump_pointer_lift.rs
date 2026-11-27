@@ -1,17 +1,17 @@
 //! Verus model of the history journal's skew-binary jump pointers (TBU Phase 2,
 //!
-//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal.rs:208-227 sha256:b2cf75724d9464cb72d037feb2e0b196f2ae96b7fc25f180c6a46fd5945ca3fa
+//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal.rs:212-231 sha256:b2cf75724d9464cb72d037feb2e0b196f2ae96b7fc25f180c6a46fd5945ca3fa
 //! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/recording.rs:69-69 sha256:c61709e07f1e87c34f5b7714e7f44e265d3f93574f644f1cfd6bcfafcf088188
 //! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/recording.rs:69-83 sha256:3c6c9d0e557acaa9013dde170c29b21c01c8b081502a746f929e304d2e419930
 //! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:11-24 sha256:440e9bbceea3610f10e055e9191b260d19a90f831c3c666ca66aa4c6104fcbc9
 //! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:19-23 sha256:d4595aca96e6eb87d7c0512e963d88cff9ff09dea7583f6e57e56071c64e1985
 //! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:29-49 sha256:109e3c8b3c8b373c2f9052841ea5efb632394bb92b6831e447e7e227b71aef1e
 //! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:37-43 sha256:ba587940a6ee28d4fd7c4e9f4f3bbc88d5c22d1185535bc7e3441311a47009b2
-//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:106-122 sha256:442f324ccf378179f6b9e5985947d7d2f51891afff42e73c1d9971cec23a8ca4
-//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:106-135 sha256:fb448aa820c0972ed3e66b9992f5cae758193df3fb5fd2613d99e4430a2126a1
-//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:139-162 sha256:29032e5260a39f9647d18cd17e63b31019a7139e39f852c828a21b689217fc0f
-//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:154-160 sha256:e1d85393d7dd13cedba09b046ea2921872307e1ccea67b64f65c4b6eeb1ed10b
-//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:164-167 sha256:7ec6a1fe2d558398cfa9f5d5b761989ef881301796f3cff5ac5cd0e02d7ddd32
+//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:112-128 sha256:5472342abee3493323b9c10195ef05a6749216a757c87171f44336573a3529dd
+//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:112-141 sha256:22d82c9737f188ceeb0b92e7d4ce1fbf605da5e17126612350c002dca7458cb7
+//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:145-168 sha256:29032e5260a39f9647d18cd17e63b31019a7139e39f852c828a21b689217fc0f
+//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:160-166 sha256:e1d85393d7dd13cedba09b046ea2921872307e1ccea67b64f65c4b6eeb1ed10b
+//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:170-173 sha256:7ec6a1fe2d558398cfa9f5d5b761989ef881301796f3cff5ac5cd0e02d7ddd32
 //!
 //! `54a0be61a1`, unchanged in `6a420909dc`).
 //!
@@ -20,8 +20,8 @@
 //!   primary_graph/product_operation/document_history/journal/sources.rs
 //!     - `LinePosition` and `LinePosition::ROOT`            sources.rs:11-24
 //!     - `HistoryJournal::child_position`                   sources.rs:29-49
-//!     - `HistoryJournal::is_ancestor_or_self`              sources.rs:139-162
-//!     - `HistoryJournal::position`                         sources.rs:164-167
+//!     - `HistoryJournal::is_ancestor_or_self`              sources.rs:145-168
+//!     - `HistoryJournal::position`                         sources.rs:170-173
 //!   and the reserve call site recording.rs:69-83 (`line = child_position(current)`,
 //!   then `nodes.insert(next, ..line..)`).
 //!
@@ -32,14 +32,14 @@
 //!     requires `is_some`, so verifying them proves they never panic).
 //!   - Abstraction: the journal's `BTreeMap<u64, HistoryNode>` is the trait
 //!     `Nodes`, whose `line(ordinal)` returns `Some(node.line)` exactly when the
-//!     ordinal is present (`position`, sources.rs:164-167). `self.access(..)`
+//!     ordinal is present (`position`, sources.rs:170-173). `self.access(..)`
 //!     cost accounting is replaced by a ghost probe counter.
 //!   - Ghost-only additions (erased): the `Ghost<u64>` new ordinal passed to
 //!     `child_position`, and the ghost probe/step count returned by
 //!     `is_ancestor_or_self`.
 //!
 //! Proved:
-//!   1. `root_wf`: the journal's initial one-node tree (journal.rs:208-227) is
+//!   1. `root_wf`: the journal's initial one-node tree (journal.rs:212-231) is
 //!      well formed.
 //!   2. `child_position` (reserve): never panics, never underflows or
 //!      overflows, and inserting its result at the fresh ordinal keeps the tree
@@ -353,7 +353,7 @@ proof fn lemma_up_insert(m: Map<u64, LinePosition>, new: u64, v: LinePosition, k
     }
 }
 
-/// The journal at creation (journal.rs:208-227) is one root node.
+/// The journal at creation (journal.rs:212-231) is one root node.
 pub proof fn root_wf()
     ensures
         wf(map![0u64 => root_spec()]),
@@ -442,7 +442,7 @@ proof fn lemma_child_wf(m: Map<u64, LinePosition>, new: u64, p: u64, r: LinePosi
 }
 
 // ---------------------------------------------------------------------------
-// The journal's node lookup (`position`, sources.rs:164-167).
+// The journal's node lookup (`position`, sources.rs:170-173).
 // ---------------------------------------------------------------------------
 
 pub trait Nodes {
@@ -540,7 +540,7 @@ proof fn lemma_qnext_lt(x: nat, t: nat)
     lemma_jd_bounds(x);
 }
 
-/// Where one lift iteration moves from `at` (sources.rs:154-160).
+/// Where one lift iteration moves from `at` (sources.rs:160-166).
 pub open spec fn lift_next(m: Map<u64, LinePosition>, at: u64, t: nat) -> u64 {
     if m.contains_key(m[at].jump) && m[m[at].jump].depth >= t {
         m[at].jump
@@ -589,7 +589,7 @@ proof fn lemma_lift_step(m: Map<u64, LinePosition>, node: u64, at: u64, t: nat)
 }
 
 // ---------------------------------------------------------------------------
-// is_ancestor_or_self (sources.rs:139-162).
+// is_ancestor_or_self (sources.rs:145-168).
 // ---------------------------------------------------------------------------
 
 pub fn is_ancestor_or_self<N: Nodes>(journal: &N, ancestor: u64, node: u64) -> (r: (
@@ -705,10 +705,10 @@ pub fn is_ancestor_or_self<N: Nodes>(journal: &N, ancestor: u64, node: u64) -> (
 }
 
 // ---------------------------------------------------------------------------
-// The two callers' decisions (sources.rs:106-135), over the indexes' answers.
+// The two callers' decisions (sources.rs:112-141), over the indexes' answers.
 // ---------------------------------------------------------------------------
 
-/// `restores_descendant_of` (sources.rs:106-122) once the two index lookups
+/// `restores_descendant_of` (sources.rs:112-128) once the two index lookups
 /// (`endpoints[selected]`, `sources[source]`) have produced their ordinals.
 pub fn restores_descendant_of<N: Nodes>(
     journal: &N,

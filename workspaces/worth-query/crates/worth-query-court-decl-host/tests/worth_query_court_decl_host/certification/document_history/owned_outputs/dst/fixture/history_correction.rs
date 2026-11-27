@@ -3,7 +3,7 @@
 //! first, then the caller's stages, on the document's private candidate.
 use super::envelope::{Executed, Receipt, Token, Undo};
 use super::program;
-use super::reads::{Forest, Host};
+use super::reads::{Doc, Forest, Host};
 use super::*;
 use std::num::NonZeroUsize;
 use worth_query_host::facade::admission::authenticated_principal::{
@@ -27,16 +27,16 @@ pub fn last_correction_consults() -> usize {
 /// the corrective stage's (the envelope's primary member, under `undo`'s
 /// entity) first, then each coupled stage's, so later corrections can name
 /// any of them.
-pub fn correction_envelope<'h>(
+pub fn correction_envelope<'h, O: WorthQueryHistoryOutputsMode<Schema, History>>(
     host: &'h Host,
-    document: Forest<'h>,
+    document: Doc<'h, O>,
     branch: WorthQueryProductBranch,
     key: String,
     source: &Receipt,
     undo: Undo,
     coupled: &[Call],
     stop: Option<u32>,
-) -> Executed<'h> {
+) -> Executed<'h, O> {
     correction_envelope_limited(host, document, branch, key, source, undo, coupled, stop, None, false)
 }
 
@@ -46,9 +46,9 @@ pub fn correction_envelope<'h>(
 /// creation is reversed by [`UndoCreateE1Numeric`], whose inverse binding
 /// keys by `u64`.
 #[allow(clippy::too_many_arguments)]
-pub fn correction_envelope_limited<'h>(
+pub fn correction_envelope_limited<'h, O: WorthQueryHistoryOutputsMode<Schema, History>>(
     host: &'h Host,
-    document: Forest<'h>,
+    document: Doc<'h, O>,
     branch: WorthQueryProductBranch,
     key: String,
     source: &Receipt,
@@ -57,7 +57,7 @@ pub fn correction_envelope_limited<'h>(
     stop: Option<u32>,
     history_limit: Option<NonZeroUsize>,
     numeric: bool,
-) -> Executed<'h> {
+) -> Executed<'h, O> {
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(None, cancellation.token(), WorthQueryAdmissionClock::system());
     let principal = authenticate_operator(host.installed_schema(), &scope);

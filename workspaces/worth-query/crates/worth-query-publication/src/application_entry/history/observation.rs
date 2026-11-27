@@ -2,17 +2,33 @@
 use super::*;
 
 impl<
+        'runtime,
         S: ApplicationSchema,
         H: ApplicationHistoryBinding<S>,
         Payload: WorthQueryHistoryPayloadMode<S, H>,
         Outputs,
-    > WorthQueryApplicationHistoryDocument<'_, S, H, Payload, Outputs>
+    > WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>
 {
     #[doc(hidden)]
     pub fn observe_history_enrollment_for_test(
         &mut self,
     ) -> worth_query_execution::publication_boundary::document_history::WorthQueryHistoryEnrollmentObservationForTest{
         self.owner.observe_history_enrollment_for_test()
+    }
+
+    #[doc(hidden)]
+    pub fn history_source_index_for_test(
+        &self,
+    ) -> worth_query_execution::publication_boundary::document_history::WorthQueryHistorySourceIndexForTest {
+        self.owner.history_source_index_for_test()
+    }
+
+    #[doc(hidden)]
+    pub fn held_navigation_lineage_for_test(
+        &self,
+    ) -> Option<worth_query_execution::publication_boundary::document_history::WorthQueryHeldNavigationLineageForTest<'runtime>>
+    {
+        self.owner.held_navigation_lineage_for_test()
     }
 
     /// Rewrites the fact `step` posted outside any navigation and reads it

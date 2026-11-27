@@ -118,7 +118,8 @@ pub use disposal::{
 pub(in crate::domain_computation::primary_graph) use model::HistoryModelIdentity;
 #[doc(hidden)]
 pub use observation::{
-    WorthQueryHistoryEnrollmentObservationForTest, WorthQueryHistoryEnrollmentReportForTest,
+    WorthQueryHeldNavigationLineageForTest, WorthQueryHistoryEnrollmentObservationForTest,
+    WorthQueryHistoryEnrollmentReportForTest, WorthQueryHistorySourceIndexForTest,
 };
 #[doc(hidden)]
 pub use page_pause::WorthQueryHistoryPageAssemblyPauseForTest;

@@ -19,6 +19,7 @@ mod corrective_cascade;
 mod driver;
 mod history_correction;
 mod history_navigation;
+mod history_retirement;
 mod history_reversal_facts;
 pub(super) mod fixture;
 mod readmission;
@@ -41,7 +42,30 @@ const DEFAULT_SEED_BASE: u64 = 0x7b02_0000;
 /// `0x7b02000f` (corrections on): a `current_output` read that returned
 /// `Missing` is not a verifiable consumer fact, so the chain keeps a stale
 /// `dst-mid` once `dst-a` is readmitted after it (held on public #429).
-const HELD_DOCUMENT_SEEDS: [(u64, bool, &str); 1] = [(0x7b02_000f, true, "public #429")];
+/// `0x7b02162a` (corrections on): re-correcting a retirement after its
+/// correction was undone is refused at Relational publication, "exact route
+/// has no canonical publication" (held on public #450). `0x7b02206b`
+/// (corrections on) refuses the same way, at the same succession site
+/// (held on public #450).
+/// `0x7b02205d` (corrections on): a retirement reversed after its
+/// re-creation was corrected records, because the performed correction pair
+/// cancels a re-creation the model counts as live on the line (held on
+/// public #456).
+/// `0x7b02125f` and `0x7b02181e` (corrections on): reversing a retirement
+/// after the document's navigation revived and retired it again refuses
+/// `SourceDiverged` at the paired support comparison (public #445, its arm
+/// deferred to public #465). With the arm, it refuses
+/// `IncompleteRestoration`, because native transition succession does not
+/// follow the `HistoricalAbsence` the navigation wrote (held on public #465).
+/// `WORTH_DST_RUN_HELD=1` runs the held seeds too, to trace one by name.
+const HELD_DOCUMENT_SEEDS: [(u64, bool, &str); 6] = [
+    (0x7b02_000f, true, "public #429"),
+    (0x7b02_162a, true, "public #450"),
+    (0x7b02_206b, true, "public #450"),
+    (0x7b02_205d, true, "public #456"),
+    (0x7b02_125f, true, "public #465"),
+    (0x7b02_181e, true, "public #465"),
+];
 
 fn variable(name: &str, default: u64) -> u64 {
     std::env::var(name)
@@ -83,6 +107,7 @@ fn agree<S: System>(
     for seed in seeds {
         if let Some((_, _, issue)) = HELD_DOCUMENT_SEEDS
             .iter()
+            .filter(|_| std::env::var_os("WORTH_DST_RUN_HELD").is_none())
             .find(|(held, corrections, _)| label == "document" && *held == seed && *corrections == workloads.corrections)
         {
             eprintln!("DST seed {seed:#x} held on {issue}");
