@@ -297,17 +297,32 @@ impl SourceInvalidationOwner {
                 }
             }
         }
-        let completion_cues = if let Some(partition) = publication_partition {
-            let affected = super::output_availability::record_completion(
+        // Convergence wake (public #429): a registration in a family wakes
+        // the `current_output` readers keyed on its source, so the active
+        // wave re-drives them. Marks never certify a `FamilySelection` fact,
+        // so a missed wake only delays a re-drive.
+        let mut wake_work = super::logical_marking::WorthQueryNativeMarkingWork::default();
+        let woken = super::delivery::mark_keys(
+            &mut state,
+            &[super::fact_key::FactPostingKey::FamilySelection(
+                registered_identity.source().clone(),
+            )],
+            &mut wake_work,
+        )?;
+        let mut affected = super::delivery::propagate(&mut state, woken, &mut wake_work)?;
+        if let Some(partition) = publication_partition {
+            affected = affected.union(super::output_availability::record_completion(
                 &mut state,
                 &registered_identity,
                 partition,
-            )?;
+            )?);
+        }
+        let completion_cues = if affected.is_empty() {
+            None
+        } else {
             Some(completion_cues::PreparedCompletionCues::prepare(
                 &state, &affected,
             )?)
-        } else {
-            None
         };
 
         let work_cue = state.settlements.get(&registered_identity).and_then(|row| {
