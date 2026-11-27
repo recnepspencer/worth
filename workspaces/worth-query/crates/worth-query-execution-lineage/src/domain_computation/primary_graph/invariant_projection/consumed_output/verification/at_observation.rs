@@ -58,6 +58,7 @@ impl ConsumedOutputEvidence {
         source_historical: Option<&crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
         output_historical: Option<&crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
     ) -> Result<Option<ConsumedOutputVerification>, ConsumedOutputVerificationStop> {
+        crate::domain_computation::primary_graph::output_lineage::family_selection::reresolution_observation::record_row_compared();
         // Restored facts and aspects hold through the coordinate of the row
         // they belong to (public #358); the witness is the output's own.
         let source = crate::domain_computation::primary_graph::output_lineage::RestoredAcceptance::new(execution, runtime, basis, source_historical);

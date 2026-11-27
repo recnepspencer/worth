@@ -1,6 +1,7 @@
 //! Re-resolution cost observation (public #429, plan §5): how often a
 //! `FamilySelection` fact re-resolved its family and compared a candidate,
-//! and what each certification frame of the closure memo cost. Counts are
+//! how many settlement rows a verification compared, and what each
+//! certification frame of the closure memo cost. Counts are
 //! kept only while an execution observation guard is installed, and end
 //! with it.
 
@@ -14,11 +15,14 @@ pub struct WorthQueryFamilySelectionCostForTest {
     pub rewalks: u64,
     /// Family candidates those re-resolutions compared.
     pub candidates_compared: u64,
+    /// Settlement rows whose facts a verification compared
+    /// (`compare_facts`), a closure memo hit compares none.
+    pub rows_compared: u64,
 }
 
 thread_local! {
     static COST: Cell<WorthQueryFamilySelectionCostForTest> =
-        const { Cell::new(WorthQueryFamilySelectionCostForTest { rewalks: 0, candidates_compared: 0 }) };
+        const { Cell::new(WorthQueryFamilySelectionCostForTest { rewalks: 0, candidates_compared: 0, rows_compared: 0 }) };
     /// The cost of each certification frame, recorded as it closed.
     static FRAMES: RefCell<Vec<WorthQueryFamilySelectionCostForTest>> = const { RefCell::new(Vec::new()) };
     static CLEANUP_REGISTERED: Cell<bool> = const { Cell::new(false) };
@@ -56,6 +60,11 @@ pub fn record_candidate_compared() {
     count(|cost| &mut cost.candidates_compared);
 }
 
+/// A verification compared one settlement row's facts.
+pub fn record_row_compared() {
+    count(|cost| &mut cost.rows_compared);
+}
+
 /// The cost counted so far, to measure a frame from; `None` while no
 /// observation guard is installed.
 pub fn frame_start() -> Option<WorthQueryFamilySelectionCostForTest> {
@@ -73,6 +82,7 @@ pub fn record_frame(start: Option<WorthQueryFamilySelectionCostForTest>) {
         frames.push(WorthQueryFamilySelectionCostForTest {
             rewalks: now.rewalks - start.rewalks,
             candidates_compared: now.candidates_compared - start.candidates_compared,
+            rows_compared: now.rows_compared - start.rows_compared,
         })
     });
 }

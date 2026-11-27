@@ -39,6 +39,7 @@ pub mod settlement_identity;
 pub mod source_facts;
 pub use crate::domain_computation::primary_graph::output_lineage::ProductCoordinate;
 pub use crate::domain_computation::primary_graph::output_lineage::CertificationBasis;
+pub use crate::domain_computation::primary_graph::output_lineage::CertificationScope;
 pub use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 pub use crate::domain_computation::primary_graph::output_lineage::WorthQueryCurrentOutputFamilyResolution;
 pub use crate::domain_computation::primary_graph::output_lineage::WorthQueryPriorOutputBindingResolution;

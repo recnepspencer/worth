@@ -32,6 +32,8 @@ enum Kind {
 
 #[path = "cardinality.rs"]
 mod cardinality;
+#[path = "closure_memo.rs"]
+mod closure_memo;
 #[path = "heads.rs"]
 mod heads;
 #[path = "missing_reader_heads.rs"]
