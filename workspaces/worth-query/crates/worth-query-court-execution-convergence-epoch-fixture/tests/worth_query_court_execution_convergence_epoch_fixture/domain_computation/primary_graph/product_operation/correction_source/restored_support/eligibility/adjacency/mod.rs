@@ -1,5 +1,5 @@
-//! The adjacency comparison stays its own arm beside a retirement fact, so a
-//! retirement arm (public #445, deferred to public #465) cannot end the comparison early.
+//! The adjacency comparison stays its own arm beside a retirement fact, so the
+//! retirement arm (public #445) cannot end the comparison early.
 use super::retirement::payload;
 use worth_query_execution::facade::domain_computation::WorthQueryCorrectionDerivationDenial as Denial;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as DecisionDirection;
@@ -23,7 +23,7 @@ use worth_relational::facade::transactions::RelationMutationIntent;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 
 #[test]
-fn paired_support_keeps_the_adjacency_comparison_beside_a_relaxed_retirement() {
+fn paired_support_keeps_the_adjacency_comparison_beside_a_retirement() {
     let world = installed_authorization_world(
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
