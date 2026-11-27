@@ -32,7 +32,9 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .reroot_consumed(candidate, &head)
+            // Called only after `restored_output_is_current` compared the
+            // whole chain's facts in full at this head (public #429).
+            .reroot_consumed(candidate, &head, true)
         else {
             return Ok(None);
         };

@@ -23,14 +23,39 @@ pub struct ReadmittedNode {
     /// The re-identified rows this one consumed; empty for a root.
     pub upstream: im::OrdSet<Arc<RecordedSettlementIdentity>>,
     pub historical: Option<SelectionCoordinate>,
+    /// Readmission compared this row's facts in full at the head (public
+    /// #429), so a fact marks cannot certify (`UnsupportedFact`) is proven.
+    pub fully_compared: bool,
+}
+
+/// Whether readmission accepts `node` at `currentness` without changing it:
+/// Clean; or, for a fully compared row, `UnsupportedFact`, or pending only on
+/// rows of this chain already accepted (a consumer of an `UnsupportedFact`
+/// row is registered pending on it, public #429).
+fn accepts(
+    node: &ReadmittedNode,
+    currentness: &Currentness,
+    accepted: &im::OrdSet<Arc<RecordedSettlementIdentity>>,
+) -> bool {
+    match currentness {
+        Currentness::Clean => true,
+        Currentness::FullVerificationRequired(FullVerificationReason::UnsupportedFact) => {
+            node.fully_compared
+        }
+        Currentness::PendingUpstream(edges) => {
+            node.fully_compared && edges.iter().all(|edge| accepted.contains(edge))
+        }
+        _ => false,
+    }
 }
 
 impl SourceInvalidationOwner {
     /// Post `nodes` (bottom-up, the consumer last) at `selected`, the live
     /// head readmission compared. A missing row is registered; a Clean one is
-    /// kept; a delivery gap or declared change is re-established. Anything
-    /// else refuses (`false`). Rows posted before a refusal stay: each was
-    /// proven at `selected`. Returns whether the consumer is Clean there.
+    /// kept, as is a fully compared one marks cannot certify ([`accepts`]); a
+    /// delivery gap or declared change is re-established. Anything else
+    /// refuses (`false`). Rows posted before a refusal stay: each was proven
+    /// at `selected`. Returns whether the consumer is accepted there.
     pub fn post_readmitted_chain(
         &self,
         runtime: &RelationalRuntime,
@@ -41,6 +66,7 @@ impl SourceInvalidationOwner {
         let Some(consumer) = nodes.last() else {
             return Ok(false);
         };
+        let mut accepted = im::OrdSet::new();
         for node in nodes {
             let Some(witness) = node.witness.get() else {
                 return Ok(false);
@@ -82,10 +108,11 @@ impl SourceInvalidationOwner {
                         node.historical.as_ref(),
                     )?;
                 }
+                accepted.insert(Arc::clone(&node.identity));
                 continue;
             }
             match self.currentness(selected, &node.identity)? {
-                Currentness::Clean => {}
+                currentness if accepts(node, &currentness, &accepted) => {}
                 Currentness::FullVerificationRequired(
                     FullVerificationReason::RetainedDeliveryGap
                     | FullVerificationReason::DeclaredChangeUnavailable,
@@ -100,16 +127,15 @@ impl SourceInvalidationOwner {
                         return Ok(false);
                     }
                 }
-                Currentness::Dirty(_)
+                Currentness::Clean
+                | Currentness::Dirty(_)
                 | Currentness::PendingUpstream(_)
                 | Currentness::FullVerificationRequired(_)
                 | Currentness::Foreign => return Ok(false),
             }
+            accepted.insert(Arc::clone(&node.identity));
         }
-        let clean = matches!(
-            self.currentness(selected, &consumer.identity)?,
-            Currentness::Clean
-        );
+        let clean = accepts(consumer, &self.currentness(selected, &consumer.identity)?, &accepted);
         if clean {
             super::super::readmission_observation::record_readmitted_chain();
         }

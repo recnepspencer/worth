@@ -45,15 +45,19 @@ struct Walk<'a> {
     publications: Vec<RelationalRequiredOutputPublication>,
     installs: Vec<(SharedRecordedOutputCell, Arc<[ConsumedOutputEvidence]>)>,
     done: BTreeMap<Arc<RecordedSettlementIdentity>, ConsumedOutputEvidence>,
+    fully_compared: bool,
 }
 
 impl WorthQueryApplicationOutputLineage {
     /// Re-identify `candidate`'s whole consumed chain at `selected`, after
-    /// `is_current` proved it there. `None` on any miss.
+    /// `is_current` proved it there. `None` on any miss. `fully_compared` is
+    /// whether the caller compared every node's facts in full at `selected`;
+    /// this lookup compares nothing.
     pub fn reroot_consumed(
         &self,
         candidate: &current_output::retained_candidates::WorthQueryRetainedOutputCandidate,
         selected: &PositionedRelationalSnapshot,
+        fully_compared: bool,
     ) -> Option<RerootPlan> {
         let selection = candidate.historical_selection.as_ref()?;
         let consumer = self.cell_of(&candidate.settlement_identity)?;
@@ -69,6 +73,7 @@ impl WorthQueryApplicationOutputLineage {
             publications: Vec::new(),
             installs: Vec::new(),
             done: BTreeMap::new(),
+            fully_compared,
         };
         let evidence = walk.all(&candidate.consumed_outputs)?;
         walk.nodes.push(ReadmittedNode {
@@ -77,6 +82,7 @@ impl WorthQueryApplicationOutputLineage {
             witness,
             upstream: identities(&evidence),
             historical: Some(Arc::clone(selection)),
+            fully_compared,
         });
         walk.installs.push((consumer, evidence));
         Some(RerootPlan {
@@ -165,6 +171,7 @@ impl Walk<'_> {
             witness: Arc::clone(&witness),
             upstream: identities(&upstream),
             historical: live.historical_selection.clone(),
+            fully_compared: self.fully_compared,
         });
         if !upstream.is_empty() {
             self.installs.push((cell.clone(), Arc::clone(&upstream)));
