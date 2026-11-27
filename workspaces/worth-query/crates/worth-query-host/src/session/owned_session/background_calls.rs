@@ -100,7 +100,7 @@ where
 
     /// Queues `call`, completing its handle with the call's outcome, a
     /// contained panic, or why it never ran.
-    fn dispatch<T, D>(
+    pub(crate) fn dispatch<T, D>(
         &self,
         call: impl FnOnce() -> Result<T, WorthQueryOwnedSessionDenial<D>> + Send + 'static,
     ) -> WorthQueryPending<T, D>

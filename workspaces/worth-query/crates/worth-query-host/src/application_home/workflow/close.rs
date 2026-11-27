@@ -1,6 +1,8 @@
 //! The original Home close owner retains the complete installed configuration.
 use super::*;
+use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_foundational::facade::ExecutionRequestPolicy;
 
 /// Closed Home resources and workflow configuration retire only at explicit reclaim.
 pub struct WorthQueryWorkflowHomeClosed<Schema, Spec>
@@ -8,7 +10,7 @@ where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
-    configuration: WorthQueryWorkflowRuntimeConfiguration<Schema, Spec>,
+    configuration: Arc<WorthQueryWorkflowRuntimeConfiguration<Schema, Spec>>,
     home: WorthQueryApplicationHomeClosed,
 }
 impl<Schema, Spec> WorthQueryWorkflowHomeClosed<Schema, Spec>
@@ -49,7 +51,7 @@ where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
-    configuration: WorthQueryWorkflowRuntimeConfiguration<Schema, Spec>,
+    configuration: Arc<WorthQueryWorkflowRuntimeConfiguration<Schema, Spec>>,
     home: WorthQueryApplicationHomeCloseRefused<Schema, Program>,
 }
 impl<Schema, Spec, Program> WorthQueryWorkflowHomeCloseRefused<Schema, Spec, Program>
@@ -142,5 +144,67 @@ where
                 home,
             }),
         }
+    }
+}
+
+/// Desktop-default retirement: [`WorthQueryApplicationHome::close_clean`] parity.
+impl<Schema, Spec, Program: 'static> WorthQueryWorkflowApplicationHome<Schema, Spec, Program>
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+{
+    /// Closes this Home using an owned serial lease with the requested budgets.
+    pub fn close_with_policy(
+        self,
+        policy: ExecutionRequestPolicy,
+    ) -> Result<
+        WorthQueryWorkflowHomeClosed<Schema, Spec>,
+        super::super::WorthQueryHomeClosePolicyRefused<
+            Self,
+            WorthQueryWorkflowHomeCloseRefused<Schema, Spec, Program>,
+        >,
+    > {
+        super::super::close_policy::with_close_policy(self, policy, |home, request| {
+            home.close(request)
+        })
+    }
+
+    /// Cleanly retires this Home under
+    /// [`DEFAULT_HOST_EXECUTION_POLICY`](super::super::DEFAULT_HOST_EXECUTION_POLICY),
+    /// then retires the workflow configuration and reclaims the inert retired
+    /// Query resources. A refusal returns this Home or its close continuation.
+    pub fn close_clean(
+        self,
+    ) -> Result<
+        worth_store_application::ApplicationHomeCloseOutcome,
+        super::super::WorthQueryHomeClosePolicyRefused<
+            Self,
+            WorthQueryWorkflowHomeCloseRefused<Schema, Spec, Program>,
+        >,
+    > {
+        self.close_clean_with_policy(super::super::DEFAULT_HOST_EXECUTION_POLICY)
+    }
+
+    /// [`Self::close_clean`] under an explicit execution policy.
+    pub fn close_clean_with_policy(
+        self,
+        policy: ExecutionRequestPolicy,
+    ) -> Result<
+        worth_store_application::ApplicationHomeCloseOutcome,
+        super::super::WorthQueryHomeClosePolicyRefused<
+            Self,
+            WorthQueryWorkflowHomeCloseRefused<Schema, Spec, Program>,
+        >,
+    > {
+        let WorthQueryWorkflowHomeClosed {
+            configuration,
+            home,
+        } = self.close_with_policy(policy)?;
+        drop(configuration);
+        let (outcome, retired_query) = home.into_parts();
+        if let Some(retired_query) = retired_query {
+            retired_query.reclaim();
+        }
+        Ok(outcome)
     }
 }

@@ -13,6 +13,7 @@ use worth_query_execution::facade::application_installation::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
 mod close;
+mod desktop;
 pub use close::{WorthQueryWorkflowHomeCloseRefused, WorthQueryWorkflowHomeClosed};
 
 /// Workflow configuration and Home custody are consumed together at close.
@@ -33,8 +34,10 @@ where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
-    configuration: WorthQueryWorkflowRuntimeConfiguration<Schema, Spec>,
-    home: WorthQueryApplicationHome<Schema, Program>,
+    /// Shared only with this Home's owned workflow sessions, which the Home
+    /// releases when it closes.
+    pub(crate) configuration: std::sync::Arc<WorthQueryWorkflowRuntimeConfiguration<Schema, Spec>>,
+    pub(crate) home: WorthQueryApplicationHome<Schema, Program>,
 }
 
 impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHome<Schema, Program> {
@@ -55,7 +58,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHome<Schema, Progr
                 .install_workflow_configuration(workflow, authentication)
             {
                 Ok(configuration) => Ok(WorthQueryWorkflowApplicationHome {
-                    configuration,
+                    configuration: std::sync::Arc::new(configuration),
                     home,
                 }),
                 Err((workflow, authentication, denial)) => {
@@ -108,6 +111,8 @@ where
             .vocabulary_for(self.home.runtime())
             .expect("privately paired Home configuration keeps its original receiver")
     }
+    /// Install the same Spec for another rostered program. Refuses
+    /// `RuntimeKeepaliveRetained` while an owned session of this Home is attached.
     pub fn support_workflow_spec(
         &mut self,
         workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
@@ -118,8 +123,13 @@ where
             WorthQueryWorkflowRuntimeBindingDenial,
         ),
     > {
-        self.configuration
-            .support_workflow_spec(&mut self.home.query, workflow)
+        let Some(configuration) = std::sync::Arc::get_mut(&mut self.configuration) else {
+            return Err((
+                workflow,
+                WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained,
+            ));
+        };
+        configuration.support_workflow_spec(&mut self.home.query, workflow)
     }
 }
 
