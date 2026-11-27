@@ -24,6 +24,11 @@ pub(in crate::application_entry) mod admitted;
 mod continuation;
 mod governed;
 mod governed_continuation;
+mod governed_history;
+pub use governed_history::{
+    WorthQueryGovernedHistoryCompleteness, WorthQueryGovernedHistoryDenial,
+    WorthQueryGovernedHistoryLimits,
+};
 mod governed_retained;
 mod live_approved;
 mod live_open;

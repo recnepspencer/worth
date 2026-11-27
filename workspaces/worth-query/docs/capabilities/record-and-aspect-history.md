@@ -52,6 +52,14 @@ array and retained selection overlap is included in the storage cap. Existing
 read-tree, parameter and immutable canonical-envelope custody is shared rather
 than counted as newly allocated capture backing.
 
+## One call from a Home session
+
+`session.record_history::<History>(request)` (or the same call on a pinned
+snapshot) performs the capture, opening and paging below in one advancement,
+admitting both capabilities for the session principal at every step, and
+returns owned steps. See [Causal audit reads](causal-audit-reads.md#read-a-records-governed-change-log).
+Use the explicit steps below when a caller must hold the cursor across calls.
+
 ## Open and continue at one exact product
 
 Retain a real `WorthQueryApplicationReadObservation` and select it on a fresh

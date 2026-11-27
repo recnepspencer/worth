@@ -12,6 +12,7 @@ use worth_query_host::facade::{
     WorthQueryBackgroundDenial, WorthQueryHomeOpenDisposition, WorthQueryHostSession,
     WorthQueryOwnedSessionDenial, WorthQueryOwnedWorkflowSession,
 };
+mod audit;
 mod opening;
 mod passive_reads;
 mod session_requests;

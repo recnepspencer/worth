@@ -272,6 +272,7 @@ pub use worth_query_declaration::{
 /// execution checks current inspection permission; saving an original does not
 /// preserve an access grant.
 pub use worth_query_execution::facade::application_inspection as causal_inspection;
+pub mod audit;
 pub use worth_query_execution::facade::{application_contribution, application_discovery};
 pub use worth_query_execution::facade::{application_installation, application_invariants};
 pub mod application_naming;

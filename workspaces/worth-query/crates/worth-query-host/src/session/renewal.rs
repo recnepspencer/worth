@@ -117,7 +117,7 @@ impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Sch
 
     /// The proof one operation of this session acts under: the renewed proof
     /// for a renewing session, otherwise the session's fixed proof.
-    pub(super) fn call_principal(
+    pub(crate) fn call_principal(
         &self,
     ) -> Cow<'_, WorthQueryAuthenticatedExternalPrincipal<Schema>> {
         match &self.settings.renewal {

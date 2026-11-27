@@ -26,13 +26,14 @@ use worth_query_publication::facade::application_entry::{
 use super::super::preview::{fork_expected_from_active_with_scope, WorthQueryPreviewForkDenial};
 use super::WorthQueryApplicationHome;
 
-type HistoryAccessBinding<S, H> =
+pub(in crate::application_home) type HistoryAccessBinding<S, H> =
     <<H as ApplicationHistoryBinding<S>>::Access as ApplicationQueryIntent<S>>::Binding;
-type HistoryQuery<S, H> = <HistoryAccessBinding<S, H> as ApplicationQueryBinding<S>>::Query;
-type HistoryScope<S, H> = <<HistoryAccessBinding<S, H> as ApplicationQueryBinding<S>>::ScopeBinding as ApplicationQueryScopeBinding<S>>::Scope;
-type HistoryPrincipal<S, H> =
+pub(in crate::application_home) type HistoryQuery<S, H> =
+    <HistoryAccessBinding<S, H> as ApplicationQueryBinding<S>>::Query;
+pub(in crate::application_home) type HistoryScope<S, H> = <<HistoryAccessBinding<S, H> as ApplicationQueryBinding<S>>::ScopeBinding as ApplicationQueryScopeBinding<S>>::Scope;
+pub(in crate::application_home) type HistoryPrincipal<S, H> =
     <HistoryAccessBinding<S, H> as ApplicationQueryBinding<S>>::PrincipalIdentity;
-type HistoryRows<S, H> = <<HistoryAccessBinding<S, H> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
+pub(in crate::application_home) type HistoryRows<S, H> = <<HistoryAccessBinding<S, H> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
 /// Why attaching an owned `'static` history document was refused, preserving
 /// exact owned-head custody when attachment or advancement fails after forking.
