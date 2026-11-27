@@ -1,9 +1,12 @@
+use worth_query_declaration::facade::application_schema::ApplicationAuthorizationComparison;
 use worth_query_installation::facade::{
     ApplicationAuthorizationPath, ApplicationAuthorizationTraversalDirection,
 };
 use worth_relational::facade::authorization::{
-    RelationalAuthorizationPathPlan, RelationalAuthorizationPredicate,
-    RelationalAuthorizationTraversal, RelationalAuthorizationTraversalDirection,
+    RelationalAuthorizationFieldComparison, RelationalAuthorizationFieldConstraint,
+    RelationalAuthorizationFieldOperand, RelationalAuthorizationPathPlan,
+    RelationalAuthorizationPredicate, RelationalAuthorizationTraversal,
+    RelationalAuthorizationTraversalDirection,
 };
 
 use super::{authorization_denial, WorthQueryOperationAuthorizationDenial};
@@ -34,14 +37,78 @@ pub fn lower_authorization_path(
                     "authorization predicate field is not installed",
                 )
             })?;
-        predicates.push(RelationalAuthorizationPredicate::new(
+        predicates.push(RelationalAuthorizationPredicate::compare(
             predicate.traversal_ordinal(),
             entity_kind,
             field,
+            lower_comparison(predicate.comparison()),
             predicate.value().clone(),
         ));
     }
-    Ok(RelationalAuthorizationPathPlan::new(traversals, predicates))
+    let mut constraints = Vec::with_capacity(path.field_constraints().len());
+    for constraint in path.field_constraints() {
+        constraints.push(RelationalAuthorizationFieldConstraint::new(
+            operand(
+                layout,
+                constraint.traversal_ordinal(),
+                constraint.entity(),
+                constraint.aspect(),
+                constraint.field(),
+            )?,
+            lower_comparison(constraint.comparison()),
+            // The admitted principal is path position 0.
+            operand(
+                layout,
+                0,
+                path.principal_entity(),
+                constraint.principal_aspect(),
+                constraint.principal_field(),
+            )?,
+        ));
+    }
+    Ok(RelationalAuthorizationPathPlan::new(traversals, predicates)
+        .with_field_constraints(constraints))
+}
+
+fn operand(
+    layout: &WorthQueryPrimaryGraphLayout,
+    ordinal: usize,
+    entity: &str,
+    aspect: &str,
+    field: &str,
+) -> Result<RelationalAuthorizationFieldOperand, WorthQueryOperationAuthorizationDenial> {
+    let kind = layout.entity_kind(entity).ok_or_else(|| {
+        authorization_denial(entity, "authorization constraint kind is not installed")
+    })?;
+    let locator = layout
+        .field_locator(entity, aspect, field)
+        .cloned()
+        .ok_or_else(|| {
+            authorization_denial(field, "authorization constraint field is not installed")
+        })?;
+    Ok(RelationalAuthorizationFieldOperand::new(
+        ordinal, kind, locator,
+    ))
+}
+
+const fn lower_comparison(
+    comparison: ApplicationAuthorizationComparison,
+) -> RelationalAuthorizationFieldComparison {
+    match comparison {
+        ApplicationAuthorizationComparison::Equal => RelationalAuthorizationFieldComparison::Equal,
+        ApplicationAuthorizationComparison::AtMost => {
+            RelationalAuthorizationFieldComparison::AtMost
+        }
+        ApplicationAuthorizationComparison::AtLeast => {
+            RelationalAuthorizationFieldComparison::AtLeast
+        }
+        ApplicationAuthorizationComparison::StrictlyLess => {
+            RelationalAuthorizationFieldComparison::StrictlyLess
+        }
+        ApplicationAuthorizationComparison::StrictlyGreater => {
+            RelationalAuthorizationFieldComparison::StrictlyGreater
+        }
+    }
 }
 
 pub fn lower_authorization_traversal(

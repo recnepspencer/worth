@@ -14,5 +14,12 @@ pub(in crate::application_schema) fn validate_authorization_path(
         validate_simple_identifier(predicate.aspect())?;
         validate_field_identifier(predicate.field())?;
     }
+    for constraint in path.field_constraints() {
+        validate_simple_identifier(constraint.entity())?;
+        validate_simple_identifier(constraint.aspect())?;
+        validate_field_identifier(constraint.field())?;
+        validate_simple_identifier(constraint.principal_aspect())?;
+        validate_field_identifier(constraint.principal_field())?;
+    }
     Ok(())
 }

@@ -1,4 +1,8 @@
-use super::super::{ApplicationAbilityRef, ApplicationAuthorizationPath, ApplicationPolicyRef};
+use super::super::{
+    ApplicationAbilityRef, ApplicationAbilityVocabulary, ApplicationAuthorizationPath,
+    ApplicationAuthorizationRule, ApplicationAuthorizationRuleDenial, ApplicationPolicyRef,
+    ApplicationRoleMatrix,
+};
 use super::{
     ApplicationOperationRef, ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember,
 };
@@ -54,6 +58,88 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             policy: policy.name().to_string(),
             paths,
         });
+        self
+    }
+}
+
+impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
+    /// Declares `ability` and installs `rule` as its policy paths. A rule that
+    /// cannot lower is kept as the schema's refusal and reported by `build`.
+    pub fn ability_rule<Ability, Scope, Policy, Principal>(
+        self,
+        ability: ApplicationAbilityRef<Schema, Ability, Scope>,
+        policy: ApplicationPolicyRef<Schema, Policy>,
+        rule: impl Into<ApplicationAuthorizationRule<Schema, Principal, Scope>>,
+    ) -> Self {
+        self.install_ability_rule(
+            ability.name(),
+            ability.scope(),
+            policy.name(),
+            rule.into().into_paths(),
+        )
+    }
+
+    /// Installs every ability of `Ability` from the role matrix: one rule per
+    /// ability, built by `rule` over exactly the roles granting it. An ability
+    /// no role grants is refused by name rather than installed for nobody.
+    pub fn role_abilities<Role, Ability, Policy, Principal>(
+        mut self,
+        policy: ApplicationPolicyRef<Schema, Policy>,
+        rule: impl Fn(
+            Ability,
+            &[Role],
+        ) -> ApplicationAuthorizationRule<Schema, Principal, Ability::Scope>,
+    ) -> Self
+    where
+        Role: ApplicationRoleMatrix<Ability>,
+        Ability: ApplicationAbilityVocabulary<Schema>,
+    {
+        for ability in Ability::ALL.iter().copied() {
+            let roles = Role::VARIANTS
+                .iter()
+                .copied()
+                .filter(|role| role.abilities().contains(&ability))
+                .collect::<Vec<_>>();
+            let paths = match roles.is_empty() {
+                true => Err(ApplicationAuthorizationRuleDenial::RoleLessAbility {
+                    ability: ability.ability_name().to_owned(),
+                }),
+                false => rule(ability, &roles).into_paths(),
+            };
+            self = self.install_ability_rule(
+                ability.ability_name(),
+                Ability::scope_name(),
+                policy.name(),
+                paths,
+            );
+        }
+        self
+    }
+
+    fn install_ability_rule(
+        mut self,
+        ability: &str,
+        scope_entity: &str,
+        policy: &str,
+        paths: Result<Vec<ApplicationAuthorizationPath>, ApplicationAuthorizationRuleDenial>,
+    ) -> Self {
+        match paths {
+            Ok(paths) => {
+                self.members.push(ApplicationSchemaMember::Ability {
+                    ability: ability.to_owned(),
+                    scope_entity: scope_entity.to_owned(),
+                });
+                self.members.push(ApplicationSchemaMember::AbilityPolicy {
+                    ability: ability.to_owned(),
+                    scope_entity: scope_entity.to_owned(),
+                    policy: policy.to_owned(),
+                    paths,
+                });
+            }
+            Err(denial) => {
+                self.refusal.get_or_insert(denial.into());
+            }
+        }
         self
     }
 }
