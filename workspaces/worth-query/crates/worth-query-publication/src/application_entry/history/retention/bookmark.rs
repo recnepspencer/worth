@@ -14,24 +14,7 @@ where
         node: WorthQueryHistoryNodeId,
         pin: bool,
     ) -> Result<WorthQueryHistoryRetentionStatus, WorthQueryApplicationHistoryDenial> {
-        read::with_retention_read(
-            &self.owner,
-            &self.access,
-            &self.payload,
-            request,
-            |_, _, read| Ok(read),
-            |phase, runtime, owner, access, read| {
-                runtime.change_document_history_bookmark::<H, N>(
-                    phase,
-                    &program_publication_access(),
-                    owner,
-                    access,
-                    read,
-                    node,
-                    pin,
-                )
-            },
-        )
+        self.set_history_bookmark_in::<N>(request, node, pin, Ungoverned)
     }
 
     pub fn set_history_bookmark_governed<N, C, O, I>(
@@ -49,20 +32,26 @@ where
         O::InputBinding: ApplicationStructuredValueBinding<Value = I>,
         I: ApplicationCapabilityRequest<S, C, Scope = ApplicationHistoryModel<S, H>> + 'static,
     {
-        read::with_retention_read(
-            &self.owner,
-            &self.access,
+        self.set_history_bookmark_in::<N>(request, node, pin, Governed { capability, operation, input })
+    }
+
+    fn set_history_bookmark_in<N: ApplicationHistoryBookmarkBinding<S, H>>(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        node: WorthQueryHistoryNodeId,
+        pin: bool,
+        authority: impl MetadataAuthority<S, H>,
+    ) -> Result<WorthQueryHistoryRetentionStatus, WorthQueryApplicationHistoryDenial> {
+        DocumentRequestContext::bind(&self.owner, request)?.with_metadata(
+            self.access.clone(),
             &self.payload,
-            request,
+            authority,
             |phase, runtime, read| {
-                read.with_metadata_capability(runtime, phase, capability, operation, input)
-            },
-            |phase, runtime, owner, access, read| {
                 runtime.change_document_history_bookmark::<H, N>(
                     phase,
                     &program_publication_access(),
-                    owner,
-                    access,
+                    &self.owner,
+                    &self.access,
                     read,
                     node,
                     pin,

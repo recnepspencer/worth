@@ -70,16 +70,8 @@ where
     where
         P: ApplicationProgramDefinition<S>,
     {
-        let runtime = self.owner.application();
-        let refusal = if !std::ptr::eq(runtime, request.application)
-            || !std::ptr::eq(runtime, program.runtime())
-        {
-            Some(WorthQueryApplicationHistoryDenial::ForeignRuntime)
-        } else if request.branch != self.owner.branch() {
-            Some(WorthQueryApplicationHistoryDenial::RequestTargetMismatch)
-        } else {
-            None
-        };
+        let refusal =
+            DocumentRequestContext::bind_exact(&self.owner, request, program.runtime()).err();
         if let Some(denial) = refusal {
             return Err(WorthQueryHistoryEditEnvelopeFailure {
                 document: self,
@@ -181,14 +173,14 @@ where
             Some(WorthQueryApplicationHistoryDenial::Document(
                 WorthQueryDocumentHistoryDenial::UnsupportedHistoryCorrection,
             ))
-        } else if !std::ptr::eq(runtime, corrections.application)
-            || !std::ptr::eq(runtime, program.runtime())
-        {
-            Some(WorthQueryApplicationHistoryDenial::ForeignRuntime)
-        } else if corrections.branch != self.owner.branch() {
-            Some(WorthQueryApplicationHistoryDenial::RequestTargetMismatch)
         } else {
-            None
+            let request = WorthQueryApplicationRequest {
+                application: corrections.application,
+                principal,
+                scope,
+                branch: corrections.branch,
+            };
+            DocumentRequestContext::bind_exact(&self.owner, &request, program.runtime()).err()
         };
         if let Some(denial) = refusal {
             return Err(WorthQueryHistoryEditEnvelopeFailure {

@@ -1,59 +1,5 @@
-//! Fresh metadata decorates the original READ; output custody never enters this core.
+//! Fresh metadata decorates the original READ; output custody never enters this read.
 use super::*;
-use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-
-pub(super) fn with_retention_read<S, H, T>(
-    owner: &WorthQueryDocumentHistory<'_, S, H>,
-    history_access: &H::Access,
-    payload: &impl WorthQueryHistoryPayloadMode<S, H>,
-    request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    prepare: impl for<'read> FnOnce(
-        &WorthQueryAdvancementPhase<'_>,
-        &WorthQueryPrimaryGraphApplicationRuntime<S>,
-        WorthQueryDocumentHistoryRead<'read, S, H>,
-    ) -> Result<
-        WorthQueryDocumentHistoryRead<'read, S, H>,
-        WorthQueryDocumentHistoryDenial,
-    >,
-    perform: impl for<'read> FnOnce(
-        &WorthQueryAdvancementPhase<'_>,
-        &WorthQueryPrimaryGraphApplicationRuntime<S>,
-        &WorthQueryDocumentHistory<'_, S, H>,
-        &H::Access,
-        WorthQueryDocumentHistoryRead<'read, S, H>,
-    ) -> Result<T, WorthQueryDocumentHistoryDenial>,
-) -> Result<T, WorthQueryApplicationHistoryDenial>
-where
-    S: ApplicationSchema,
-    H: ApplicationHistoryBinding<S>,
-    Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
-{
-    let runtime = owner.application();
-    if !std::ptr::eq(runtime, request.application) {
-        return Err(WorthQueryApplicationHistoryDenial::ForeignRuntime);
-    }
-    let current = WorthQueryApplicationRequest {
-        application: runtime,
-        principal: request.principal,
-        scope: request.scope,
-        branch: owner.branch(),
-    };
-    runtime
-        .with_application_advancement(request.scope, |phase| {
-            super::super::metadata::with_metadata_read::<S, H, _>(
-                &phase,
-                &current,
-                history_access.clone(),
-                payload,
-                |runtime, _, read| {
-                    let read = prepare(&phase, runtime, read)?;
-                    perform(&phase, runtime, owner, history_access, read)
-                },
-            )
-        })
-        .map_err(WorthQueryApplicationHistoryDenial::ExecutionRequest)?
-}
-
 impl<S, H, Payload, Outputs> WorthQueryApplicationHistoryDocument<'_, S, H, Payload, Outputs>
 where
     S: ApplicationSchema,
@@ -66,21 +12,7 @@ where
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryHistoryRetentionStatus, WorthQueryApplicationHistoryDenial> {
-        with_retention_read(
-            &self.owner,
-            &self.access,
-            &self.payload,
-            request,
-            |_, _, read| Ok(read),
-            |phase, runtime, owner, _, read| {
-                runtime.read_document_history_retention(
-                    phase,
-                    &program_publication_access(),
-                    owner,
-                    read,
-                )
-            },
-        )
+        self.history_retention_status_in(request, Ungoverned)
     }
 
     pub fn history_retention_status_governed<C, O, I>(
@@ -95,19 +27,23 @@ where
         O::InputBinding: ApplicationStructuredValueBinding<Value = I>,
         I: ApplicationCapabilityRequest<S, C, Scope = ApplicationHistoryModel<S, H>> + 'static,
     {
-        with_retention_read(
-            &self.owner,
-            &self.access,
+        self.history_retention_status_in(request, Governed { capability, operation, input })
+    }
+
+    fn history_retention_status_in(
+        &self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        authority: impl MetadataAuthority<S, H>,
+    ) -> Result<WorthQueryHistoryRetentionStatus, WorthQueryApplicationHistoryDenial> {
+        DocumentRequestContext::bind(&self.owner, request)?.with_metadata(
+            self.access.clone(),
             &self.payload,
-            request,
+            authority,
             |phase, runtime, read| {
-                read.with_metadata_capability(runtime, phase, capability, operation, input)
-            },
-            |phase, runtime, owner, _, read| {
                 runtime.read_document_history_retention(
                     phase,
                     &program_publication_access(),
-                    owner,
+                    &self.owner,
                     read,
                 )
             },

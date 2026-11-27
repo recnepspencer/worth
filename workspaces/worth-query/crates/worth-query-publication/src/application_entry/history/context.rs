@@ -5,7 +5,6 @@ use worth_query_declaration::facade::{
     application_history::ApplicationHistoryModel,
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationOperationRef},
 };
-use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 mod pause;
 
 impl<
@@ -25,7 +24,7 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         limits: WorthQueryHistoryContextRefreshLimits,
     ) -> Result<(), WorthQueryApplicationHistoryDenial> {
-        self.refresh_context_with(request, limits, |_, _, read| Ok(read))
+        self.refresh_context_in(request, limits, Ungoverned)
     }
 
     pub fn refresh_context_governed<C, O, I>(
@@ -41,54 +40,28 @@ where
         O::InputBinding: ApplicationStructuredValueBinding<Value = I>,
         I: ApplicationCapabilityRequest<S, C, Scope = ApplicationHistoryModel<S, H>> + 'static,
     {
-        self.refresh_context_with(request, limits, |phase, runtime, read| {
-            read.with_metadata_capability(runtime, phase, capability, operation, input)
-        })
+        self.refresh_context_in(request, limits, Governed { capability, operation, input })
     }
 
-    fn refresh_context_with(
+    fn refresh_context_in(
         &mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         limits: WorthQueryHistoryContextRefreshLimits,
-        prepare: impl for<'read> FnOnce(
-            &WorthQueryAdvancementPhase<'_>,
-            &WorthQueryPrimaryGraphApplicationRuntime<S>,
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-        ) -> Result<
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-            WorthQueryDocumentHistoryDenial,
-        >,
+        authority: impl MetadataAuthority<S, H>,
     ) -> Result<(), WorthQueryApplicationHistoryDenial> {
-        if !std::ptr::eq(self.owner.application(), request.application) {
-            return Err(WorthQueryApplicationHistoryDenial::ForeignRuntime);
-        }
-        let runtime = request.application;
-        let current = WorthQueryApplicationRequest {
-            application: runtime,
-            principal: request.principal,
-            scope: request.scope,
-            branch: self.owner.branch(),
-        };
-        let access = self.access.clone();
-        runtime
-            .with_application_advancement(request.scope, |phase| {
-                super::metadata::with_metadata_read::<S, H, _>(
-                    &phase,
-                    &current,
-                    access,
-                    &self.payload,
-                    |runtime, _, read| {
-                        let read = prepare(&phase, runtime, read)?;
-                        runtime.refresh_document_history_context(
-                            &phase,
-                            &program_publication_access(),
-                            &mut self.owner,
-                            read,
-                            limits,
-                        )
-                    },
+        DocumentRequestContext::bind(&self.owner, request)?.with_metadata(
+            self.access.clone(),
+            &self.payload,
+            authority,
+            |phase, runtime, read| {
+                runtime.refresh_document_history_context(
+                    phase,
+                    &program_publication_access(),
+                    &mut self.owner,
+                    read,
+                    limits,
                 )
-            })
-            .map_err(WorthQueryApplicationHistoryDenial::ExecutionRequest)?
+            },
+        )
     }
 }

@@ -4,14 +4,7 @@ use super::*;
 pub(super) fn with_read<S, H, P, Outputs, T>(
     document: &WorthQueryApplicationHistoryDocument<'_, S, H, P, Outputs>,
     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    prepare: impl for<'read> FnOnce(
-        &WorthQueryAdvancementPhase<'_>,
-        &WorthQueryPrimaryGraphApplicationRuntime<S>,
-        WorthQueryDocumentHistoryRead<'read, S, H>,
-    ) -> Result<
-        WorthQueryDocumentHistoryRead<'read, S, H>,
-        WorthQueryDocumentHistoryDenial,
-    >,
+    authority: impl MetadataAuthority<S, H>,
     perform: impl for<'read> FnOnce(
         &WorthQueryAdvancementPhase<'_>,
         &WorthQueryPrimaryGraphApplicationRuntime<S>,
@@ -24,36 +17,16 @@ where
     P: WorthQueryHistoryPayloadMode<S, H>,
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
 {
-    use WorthQueryHistoryNavigationAdvanceDenial as Denial;
-    let runtime = document.owner.application();
-    if !std::ptr::eq(runtime, request.application) {
-        return Err(Denial::History(
-            WorthQueryApplicationHistoryDenial::ForeignRuntime,
-        ));
-    }
-    let current = WorthQueryApplicationRequest {
-        application: runtime,
-        principal: request.principal,
-        scope: request.scope,
-        branch: document.owner.branch(),
-    };
-    runtime
-        .with_application_advancement(request.scope, |phase| {
-            super::super::metadata::with_metadata_read::<S, H, _>(
-                &phase,
-                &current,
+    DocumentRequestContext::bind(&document.owner, request)
+        .and_then(|context| {
+            context.with_metadata(
                 document.access.clone(),
                 &document.payload,
-                |runtime, _, read| {
-                    let read = prepare(&phase, runtime, read)?;
-                    Ok(perform(&phase, runtime, read))
-                },
+                authority,
+                |phase, runtime, read| Ok(perform(phase, runtime, read)),
             )
         })
-        .map_err(|cause| {
-            Denial::History(WorthQueryApplicationHistoryDenial::ExecutionRequest(cause))
-        })?
-        .map_err(Denial::History)?
+        .map_err(WorthQueryHistoryNavigationAdvanceDenial::History)?
 }
 
 impl<S, H, P, Outputs> WorthQueryApplicationHistoryDocument<'_, S, H, P, Outputs>
@@ -70,7 +43,7 @@ where
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryHistorySelection, WorthQueryHistoryNavigationAdvanceDenial> {
-        self.selection_with(request, |_, _, read| Ok(read))
+        self.selection_in(request, Ungoverned)
     }
 
     pub fn selection_governed<C, O, I>(
@@ -85,24 +58,15 @@ where
         O::InputBinding: ApplicationStructuredValueBinding<Value = I>,
         I: ApplicationCapabilityRequest<S, C, Scope = ApplicationHistoryModel<S, H>> + 'static,
     {
-        self.selection_with(request, |phase, runtime, read| {
-            read.with_metadata_capability(runtime, phase, capability, operation, input)
-        })
+        self.selection_in(request, Governed { capability, operation, input })
     }
 
-    fn selection_with(
+    fn selection_in(
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-        prepare: impl for<'read> FnOnce(
-            &WorthQueryAdvancementPhase<'_>,
-            &WorthQueryPrimaryGraphApplicationRuntime<S>,
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-        ) -> Result<
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-            WorthQueryDocumentHistoryDenial,
-        >,
+        authority: impl MetadataAuthority<S, H>,
     ) -> Result<WorthQueryHistorySelection, WorthQueryHistoryNavigationAdvanceDenial> {
-        with_read(self, request, prepare, |phase, runtime, read| {
+        with_read(self, request, authority, |phase, runtime, read| {
             runtime
                 .read_document_history_selection(
                     phase,

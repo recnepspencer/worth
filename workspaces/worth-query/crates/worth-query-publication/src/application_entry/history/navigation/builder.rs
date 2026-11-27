@@ -164,8 +164,10 @@ where
         WorthQueryHistoryNavigation<'d, 'r, S, H, N, P, Outputs>,
         WorthQueryHistoryNavigationAdvanceDenial,
     > {
-        self.prepare_with(request, |_, _, read| Ok(read))
+        self.prepare_in(request, Ungoverned)
     }
+    /// The governed navigation entry, kept for Part B's `.expected()` path
+    /// (tree-based undo 2E, ruling 11), which supplies its capability here.
     pub fn prepare_governed<C, O, I>(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -181,27 +183,18 @@ where
         O::InputBinding: ApplicationStructuredValueBinding<Value = I>,
         I: ApplicationCapabilityRequest<S, C, Scope = ApplicationHistoryModel<S, H>> + 'static,
     {
-        self.prepare_with(request, |phase, runtime, read| {
-            read.with_metadata_capability(runtime, phase, capability, operation, input)
-        })
+        self.prepare_in(request, Governed { capability, operation, input })
     }
-    fn prepare_with(
+    fn prepare_in(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-        prepare: impl for<'read> FnOnce(
-            &WorthQueryAdvancementPhase<'_>,
-            &WorthQueryPrimaryGraphApplicationRuntime<S>,
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-        ) -> Result<
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-            WorthQueryDocumentHistoryDenial,
-        >,
+        authority: impl MetadataAuthority<S, H>,
     ) -> Result<
         WorthQueryHistoryNavigation<'d, 'r, S, H, N, P, Outputs>,
         WorthQueryHistoryNavigationAdvanceDenial,
     > {
         let document = self.checkout.target.builder.document;
-        let navigation = read::with_read(document, request, prepare, |phase, _, read| {
+        let navigation = read::with_read(document, request, authority, |phase, _, read| {
             document.outputs.prepare::<N>(
                 phase,
                 request,

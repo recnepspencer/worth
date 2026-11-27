@@ -11,21 +11,15 @@ where
         &mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryHistoryReleaseOutcome, WorthQueryApplicationHistoryDenial> {
-        if !std::ptr::eq(self.owner.application(), request.application) {
-            return Err(WorthQueryApplicationHistoryDenial::ForeignRuntime);
-        }
-        request
-            .application
-            .with_application_advancement(request.scope, |phase| {
-                self.owner
-                    .release_history_owner_after_output_cleanup(
-                        &phase,
-                        &program_publication_access(),
-                        |branch| self.outputs.release_for_branch(&phase, branch),
-                    )
-                    .map_err(WorthQueryApplicationHistoryDenial::Document)?
-                    .map_err(WorthQueryApplicationHistoryDenial::Outputs)
-            })
-            .map_err(WorthQueryApplicationHistoryDenial::ExecutionRequest)?
+        DocumentRequestContext::bind(&self.owner, request)?.advance(|phase| {
+            self.owner
+                .release_history_owner_after_output_cleanup(
+                    phase,
+                    &program_publication_access(),
+                    |branch| self.outputs.release_for_branch(phase, branch),
+                )
+                .map_err(WorthQueryApplicationHistoryDenial::Document)?
+                .map_err(WorthQueryApplicationHistoryDenial::Outputs)
+        })
     }
 }

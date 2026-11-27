@@ -19,9 +19,11 @@ where
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> WorthQueryHistoryNavigationAdvance<Self> {
-        self.advance_with(request, |_, _, read| Ok(read))
+        self.advance_in(request, Ungoverned)
     }
 
+    /// The governed navigation entry, kept for Part B's `.expected()` path
+    /// (tree-based undo 2E, ruling 11), which supplies its capability here.
     pub fn advance_governed<C, O, I>(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -34,24 +36,15 @@ where
         O::InputBinding: ApplicationStructuredValueBinding<Value = I>,
         I: ApplicationCapabilityRequest<S, C, Scope = ApplicationHistoryModel<S, H>> + 'static,
     {
-        self.advance_with(request, |phase, runtime, read| {
-            read.with_metadata_capability(runtime, phase, capability, operation, input)
-        })
+        self.advance_in(request, Governed { capability, operation, input })
     }
 
-    fn advance_with(
+    fn advance_in(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-        prepare: impl for<'read> FnOnce(
-            &WorthQueryAdvancementPhase<'_>,
-            &WorthQueryPrimaryGraphApplicationRuntime<S>,
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-        ) -> Result<
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-            WorthQueryDocumentHistoryDenial,
-        >,
+        authority: impl MetadataAuthority<S, H>,
     ) -> WorthQueryHistoryNavigationAdvance<Self> {
-        match read::with_read(self.document, request, prepare, |phase, _, read| {
+        match read::with_read(self.document, request, authority, |phase, _, read| {
             self.document.outputs.advance::<N>(
                 phase,
                 request,
@@ -75,23 +68,14 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<(), (Self, WorthQueryHistoryNavigationAdvanceDenial)> {
         use WorthQueryHistoryNavigationAdvanceDenial as Denial;
-        let runtime = self.document.owner.application();
-        if !std::ptr::eq(runtime, request.application) {
-            return Err((
-                self,
-                Denial::History(WorthQueryApplicationHistoryDenial::ForeignRuntime),
-            ));
-        }
-        let result = runtime.with_application_advancement(request.scope, |phase| {
-            self.document.outputs.discard(&phase, &self.navigation)
-        });
-        match result {
+        let context = match DocumentRequestContext::bind(&self.document.owner, request) {
+            Ok(context) => context,
+            Err(cause) => return Err((self, Denial::History(cause))),
+        };
+        match context.advance(|phase| Ok(self.document.outputs.discard(phase, &self.navigation))) {
             Ok(Ok(())) => Ok(()),
             Ok(Err(cause)) => Err((self, cause)),
-            Err(cause) => Err((
-                self,
-                Denial::History(WorthQueryApplicationHistoryDenial::ExecutionRequest(cause)),
-            )),
+            Err(cause) => Err((self, Denial::History(cause))),
         }
     }
 }

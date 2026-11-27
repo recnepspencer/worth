@@ -61,7 +61,7 @@ where
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryHistoryStep, WorthQueryApplicationHistoryDenial> {
-        self.current_step_with(request, |_, _, read| Ok(read))
+        self.current_step_in(request, Ungoverned)
     }
 
     /// Fresh metadata capability authority is separate from payload READ and edit authority.
@@ -77,51 +77,26 @@ where
         O::InputBinding: ApplicationStructuredValueBinding<Value = I>,
         I: ApplicationCapabilityRequest<S, C, Scope = ApplicationHistoryModel<S, H>> + 'static,
     {
-        self.current_step_with(request, |phase, runtime, read| {
-            read.with_metadata_capability(runtime, phase, capability, operation, input)
-        })
+        self.current_step_in(request, Governed { capability, operation, input })
     }
 
-    fn current_step_with(
+    fn current_step_in(
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-        prepare: impl for<'read> FnOnce(
-            &WorthQueryAdvancementPhase<'_>,
-            &WorthQueryPrimaryGraphApplicationRuntime<S>,
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-        ) -> Result<
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-            WorthQueryDocumentHistoryDenial,
-        >,
+        authority: impl MetadataAuthority<S, H>,
     ) -> Result<WorthQueryHistoryStep, WorthQueryApplicationHistoryDenial> {
-        let runtime = self.owner.application();
-        if !std::ptr::eq(runtime, request.application) {
-            return Err(WorthQueryApplicationHistoryDenial::ForeignRuntime);
-        }
-        let current = WorthQueryApplicationRequest {
-            application: runtime,
-            principal: request.principal,
-            scope: request.scope,
-            branch: self.owner.branch(),
-        };
-        runtime
-            .with_application_advancement(request.scope, |phase| {
-                with_metadata_read::<S, H, _>(
-                    &phase,
-                    &current,
-                    self.access.clone(),
-                    &self.payload,
-                    |runtime, _, read| {
-                        let read = prepare(&phase, runtime, read)?;
-                        runtime.read_document_history_step(
-                            &phase,
-                            &program_publication_access(),
-                            &self.owner,
-                            read,
-                        )
-                    },
+        DocumentRequestContext::bind(&self.owner, request)?.with_metadata(
+            self.access.clone(),
+            &self.payload,
+            authority,
+            |phase, runtime, read| {
+                runtime.read_document_history_step(
+                    phase,
+                    &program_publication_access(),
+                    &self.owner,
+                    read,
                 )
-            })
-            .map_err(WorthQueryApplicationHistoryDenial::ExecutionRequest)?
+            },
+        )
     }
 }

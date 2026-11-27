@@ -135,6 +135,8 @@ mod preview;
 pub use preview::{WorthQueryApplicationHistoryPreview, WorthQueryHistoryPreviewResult};
 mod read;
 mod redo;
+mod request_context;
+use request_context::{DocumentRequestContext, Governed, MetadataAuthority, Ungoverned};
 mod retention;
 #[doc(hidden)]
 pub use edit::WorthQueryHistoryEditHandoffPauseForTest;

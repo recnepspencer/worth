@@ -27,79 +27,73 @@ where
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> WorthQueryHistoryEditAdvance<Self> {
-        self.advance_admission_with(request, |_, _, read| Ok(read))
+        self.advance_admission_with(request, Ungoverned)
     }
 
     #[inline(never)]
     pub(super) fn advance_admission_with(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-        metadata: impl for<'read> FnOnce(
-            &WorthQueryAdvancementPhase<'_>,
-            &worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-                S,
-            >,
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-        ) -> Result<
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-            WorthQueryDocumentHistoryDenial,
-        >,
+        metadata: impl MetadataAuthority<S, H>,
     ) -> WorthQueryHistoryEditAdvance<Self> {
-        // The caller established that this request names the document's runtime.
-        let runtime = request.application;
-        let mut already = None;
-        let result = runtime.with_application_advancement(request.scope, |phase| {
-            let current = WorthQueryApplicationRequest {
-                application: runtime,
-                principal: request.principal,
-                scope: request.scope,
-                branch: self.document.owner.branch(),
-            };
-            let Phase::Admission(state) = self.phase.as_mut().expect("admission phase") else {
-                unreachable!()
-            };
-            let (prepared, selected) = Mode::<S, I, A>::prepare(
-                state.operation.as_ref().expect("original action"),
-                &phase,
-                &current,
-            )
-            .map_err(|cause| {
-                WorthQueryHistoryEditDenial::History(WorthQueryApplicationHistoryDenial::Mutation(
-                    cause,
-                ))
-            })?;
-            let prepared_record =
-                crate::application_entry::history::metadata::with_metadata_read::<S, H, _>(
-                    &phase,
-                    &current,
-                    self.document.access.clone(),
-                    &self.document.payload,
-                    |runtime, installed, read| {
-                        let read = metadata(&phase, runtime, read)?;
-                        self.document.owner.reserve_history_record::<I::Binding>(
-                            &phase,
-                            &program_publication_access(),
-                            installed,
-                            WorthQueryDocumentHistoryOperation::new(
-                                &selected,
-                                &prepared.admission,
-                                prepared.idempotency,
-                            ),
-                            read,
-                        )
-                    },
-                )
-                .map_err(WorthQueryHistoryEditDenial::History)?;
-            match prepared_record {
-                WorthQueryDocumentHistoryRecordPreparation::Reserved(reserved) => {
-                    state.reservation = Some(reserved)
-                }
-                WorthQueryDocumentHistoryRecordPreparation::AlreadyRecorded(step) => {
-                    already = Some(step)
+        let context = match DocumentRequestContext::bind(&self.document.owner, request) {
+            Ok(context) => context,
+            Err(denial) => {
+                return WorthQueryHistoryEditAdvance::Refused {
+                    edit: self,
+                    denial: WorthQueryHistoryEditDenial::History(denial),
                 }
             }
-            Ok(())
-        });
+        };
+        let current = context.request();
+        let mut already = None;
+        let result = current
+            .application
+            .with_application_advancement(current.scope, |phase| {
+                let Phase::Admission(state) = self.phase.as_mut().expect("admission phase") else {
+                    unreachable!()
+                };
+                let (prepared, selected) = Mode::<S, I, A>::prepare(
+                    state.operation.as_ref().expect("original action"),
+                    &phase,
+                    current,
+                )
+                .map_err(|cause| {
+                    WorthQueryHistoryEditDenial::History(
+                        WorthQueryApplicationHistoryDenial::Mutation(cause),
+                    )
+                })?;
+                let prepared_record = context
+                    .admit_metadata(
+                        &phase,
+                        self.document.access.clone(),
+                        &self.document.payload,
+                        metadata,
+                        |_, installed, read| {
+                            self.document.owner.reserve_history_record::<I::Binding>(
+                                &phase,
+                                &program_publication_access(),
+                                installed,
+                                WorthQueryDocumentHistoryOperation::new(
+                                    &selected,
+                                    &prepared.admission,
+                                    prepared.idempotency,
+                                ),
+                                read,
+                            )
+                        },
+                    )
+                    .map_err(WorthQueryHistoryEditDenial::History)?;
+                match prepared_record {
+                    WorthQueryDocumentHistoryRecordPreparation::Reserved(reserved) => {
+                        state.reservation = Some(reserved)
+                    }
+                    WorthQueryDocumentHistoryRecordPreparation::AlreadyRecorded(step) => {
+                        already = Some(step)
+                    }
+                }
+                Ok(())
+            });
         if let Some(step) = already {
             let Some(Phase::Admission(mut state)) = self.phase.take() else {
                 unreachable!()

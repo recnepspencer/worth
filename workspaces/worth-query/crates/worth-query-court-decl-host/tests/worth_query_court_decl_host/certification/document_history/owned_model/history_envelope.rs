@@ -111,7 +111,9 @@ fn refused(execution: Execution<'_>) -> (world::Document<'_>, Denial) {
 }
 
 /// The refused stage and the scope and model its refusal names.
-fn refused_as_unowned(execution: Execution<'_>) -> (world::Document<'_>, usize, EntityId, EntityId) {
+fn refused_as_unowned(
+    execution: Execution<'_>,
+) -> (world::Document<'_>, usize, EntityId, EntityId) {
     let (document, denial) = refused(execution);
     let Denial::Stage {
         ordinal,
@@ -125,9 +127,7 @@ fn refused_as_unowned(execution: Execution<'_>) -> (world::Document<'_>, usize, 
 
 /// Run a refused envelope and require that it made no Native commit: the
 /// refusal came at admission, before any stage ran, not at the endpoint.
-fn refused_before_any_commit<'a>(
-    execute: impl FnOnce() -> Execution<'a>,
-) -> Execution<'a> {
+fn refused_before_any_commit<'a>(execute: impl FnOnce() -> Execution<'a>) -> Execution<'a> {
     let (execution, published) = observe_maintenance_work(8, execute);
     assert_eq!(
         published.published_rows.len() + published.omitted_publications,
@@ -298,5 +298,35 @@ fn a_model_scoped_birth_stage_and_an_owned_member_stage_record_one_step() {
         world::member_value(&host, branch(&host, &document), "born"),
         8
     );
+    close(&host, document);
+}
+
+/// A writer is never retargeted: an envelope requested on another branch
+/// than the document's head refuses before it opens.
+#[test]
+fn a_branch_mismatched_writer_refuses_target_mismatch() {
+    let host = world::install();
+    let document = world::attach(&host);
+    let head = current(&host, &document);
+    let own = branch(&host, &document);
+    assert_ne!(own, host.current_world());
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host
+        .request(&principal, &scope)
+        .on_branch(host.current_world());
+    let Err(failure) = document.edit_envelope(&host, &request, "mismatch".to_owned()) else {
+        panic!("an envelope on another branch must refuse");
+    };
+    let (document, denial) = failure.into_parts();
+    assert!(
+        matches!(
+            denial,
+            Denial::History(WorthQueryApplicationHistoryDenial::RequestTargetMismatch)
+        ),
+        "{denial:?}"
+    );
+    assert_eq!(current(&host, &document), head);
+    assert_eq!(branch(&host, &document), own);
     close(&host, document);
 }

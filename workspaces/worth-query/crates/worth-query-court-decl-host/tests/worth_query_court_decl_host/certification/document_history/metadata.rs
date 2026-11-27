@@ -299,3 +299,31 @@ fn metadata_disclosure_cannot_skip_the_original_read_body_and_filters() {
     drop(observation);
     close(&host, document, 1);
 }
+
+/// The governed read is admitted by the document's own runtime: a request on
+/// another host's runtime is refused before any step lookup.
+#[test]
+fn a_governed_read_from_a_foreign_runtime_refuses() {
+    let host = publish_on_first_program();
+    let other = publish_on_first_program();
+    let mut document = governed(&host);
+    let scope = request_scope();
+    let principal = authenticate_operator(other.runtime().installed_schema(), &scope);
+    let foreign = other.runtime().request(&principal, &scope);
+    let observation = document.observe_history_enrollment_for_test();
+    let refused = document
+        .current_step_governed(
+            &foreign,
+            capability::MetadataCapability::reference(),
+            capability::MetadataRead::reference(),
+            input(),
+        )
+        .unwrap_err();
+    assert!(
+        matches!(refused, HistoryDenial::ForeignRuntime),
+        "a foreign runtime must not govern this document's metadata: {refused:?}"
+    );
+    assert_eq!(observation.snapshot().node_probes, 0);
+    drop(observation);
+    close(&host, document, 1);
+}

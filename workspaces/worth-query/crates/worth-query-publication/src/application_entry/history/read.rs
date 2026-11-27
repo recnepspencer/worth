@@ -20,15 +20,8 @@ where
         WorthQueryPublishedApplicationResult<Query<S, H>, Rows<S, H>>,
         WorthQueryApplicationHistoryDenial,
     > {
-        let runtime = self.owner.application();
-        if !std::ptr::eq(runtime, request.application) {
-            return Err(WorthQueryApplicationHistoryDenial::ForeignRuntime);
-        }
-        runtime
-            .with_application_advancement(request.scope, |phase| {
-                self.read_in_advancement(&phase, request)
-            })
-            .map_err(WorthQueryApplicationHistoryDenial::ExecutionRequest)?
+        DocumentRequestContext::bind(&self.owner, request)?
+            .advance(|phase| self.read_in_advancement(phase, request))
     }
 
     pub(super) fn read_in_advancement(

@@ -6,7 +6,6 @@ use worth_query_declaration::facade::{
     application_history::ApplicationHistoryModel,
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationOperationRef},
 };
-use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryApplicationHistoryPreview<S, H>
@@ -28,12 +27,12 @@ where
         WorthQueryHistoryPreviewResult<Query<S, H>, Rows<S, H>>,
         WorthQueryApplicationHistoryDenial,
     > {
-        self.read_with(
+        self.read_in(
             &document.owner,
             &document.access,
             &document.payload,
             request,
-            |_, _, read| Ok(read),
+            Ungoverned,
         )
     }
     pub fn read_governed<C, O, I>(
@@ -58,98 +57,82 @@ where
         O::InputBinding: ApplicationStructuredValueBinding<Value = I>,
         I: ApplicationCapabilityRequest<S, C, Scope = ApplicationHistoryModel<S, H>> + 'static,
     {
-        self.read_with(
+        self.read_in(
             &document.owner,
             &document.access,
             &document.payload,
             request,
-            |phase, runtime, read| {
-                read.with_metadata_capability(runtime, phase, capability, operation, input)
+            Governed {
+                capability,
+                operation,
+                input,
             },
         )
     }
 
-    fn read_with(
+    fn read_in(
         &self,
         owner: &WorthQueryDocumentHistory<'_, S, H>,
         history_access: &H::Access,
         payload: &impl WorthQueryHistoryPayloadMode<S, H>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-        prepare: impl for<'read> FnOnce(
-            &WorthQueryAdvancementPhase<'_>,
-            &WorthQueryPrimaryGraphApplicationRuntime<S>,
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-        ) -> Result<
-            WorthQueryDocumentHistoryRead<'read, S, H>,
-            WorthQueryDocumentHistoryDenial,
-        >,
+        authority: impl MetadataAuthority<S, H>,
     ) -> Result<
         WorthQueryHistoryPreviewResult<Query<S, H>, Rows<S, H>>,
         WorthQueryApplicationHistoryDenial,
     > {
-        let runtime = owner.application();
-        if !std::ptr::eq(runtime, request.application) {
-            return Err(WorthQueryApplicationHistoryDenial::ForeignRuntime);
-        }
-        let current = WorthQueryApplicationRequest {
-            application: runtime,
-            principal: request.principal,
-            scope: request.scope,
-            branch: owner.branch(),
-        };
-        runtime
-            .with_application_advancement(request.scope, |phase| {
-                let admission = super::super::metadata::with_metadata_read::<S, H, _>(
-                    &phase,
-                    &current,
-                    history_access.clone(),
-                    payload,
-                    |runtime, _, read| {
-                        let read = prepare(&phase, runtime, read)?;
-                        runtime.prepare_document_history_preview_read(
-                            &phase,
-                            &program_publication_access(),
-                            owner,
-                            &self.owner,
-                            read,
-                        )
-                    },
-                )?;
-                let installed = runtime
-                    .installed_schema()
-                    .installed_history::<H>()
-                    .map_err(WorthQueryApplicationHistoryDenial::Installation)?;
-                payload
-                    .with_read(
-                        current.query(history_access.clone()),
-                        &phase,
-                        Some(&admission),
-                        |runtime, binding, external, plan| {
-                            let read = WorthQueryDocumentHistoryRead::new(
-                                &installed, binding, external, plan,
-                            );
-                            Ok(runtime
-                                .read_document_history_preview(
-                                    &phase,
-                                    &program_publication_access(),
-                                    owner,
-                                    &admission,
-                                    read,
-                                )
-                                .map(|result| WorthQueryHistoryPreviewResult {
-                                    original: publish_application_result(
-                                        result.into_admitted_disclosed(),
-                                    ),
-                                    source: self.step().endpoint().clone(),
-                                    root_posture: self
-                                        .owner
-                                        .required_root_posture(&program_publication_access()),
-                                })
-                                .map_err(WorthQueryApplicationHistoryDenial::Document))
-                        },
+        let context = DocumentRequestContext::bind(owner, request)?;
+        context.advance(|phase| {
+            let admission = context.admit_metadata(
+                phase,
+                history_access.clone(),
+                payload,
+                authority,
+                |runtime, _, read| {
+                    runtime.prepare_document_history_preview_read(
+                        phase,
+                        &program_publication_access(),
+                        owner,
+                        &self.owner,
+                        read,
                     )
-                    .map_err(WorthQueryApplicationHistoryDenial::Query)?
-            })
-            .map_err(WorthQueryApplicationHistoryDenial::ExecutionRequest)?
+                },
+            )?;
+            let installed = context
+                .request()
+                .application
+                .installed_schema()
+                .installed_history::<H>()
+                .map_err(WorthQueryApplicationHistoryDenial::Installation)?;
+            payload
+                .with_read(
+                    context.request().query(history_access.clone()),
+                    phase,
+                    Some(&admission),
+                    |runtime, binding, external, plan| {
+                        let read =
+                            WorthQueryDocumentHistoryRead::new(&installed, binding, external, plan);
+                        Ok(runtime
+                            .read_document_history_preview(
+                                phase,
+                                &program_publication_access(),
+                                owner,
+                                &admission,
+                                read,
+                            )
+                            .map(|result| WorthQueryHistoryPreviewResult {
+                                original: publish_application_result(
+                                    result.into_admitted_disclosed(),
+                                ),
+                                source: self.step().endpoint().clone(),
+                                root_posture: self
+                                    .owner
+                                    .required_root_posture(&program_publication_access()),
+                            })
+                            .map_err(WorthQueryApplicationHistoryDenial::Document))
+                    },
+                )
+                .map_err(WorthQueryApplicationHistoryDenial::Query)?
+        })
     }
 }

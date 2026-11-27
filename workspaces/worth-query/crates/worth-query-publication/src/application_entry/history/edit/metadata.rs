@@ -54,18 +54,21 @@ where
         O::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
         Input: ApplicationCapabilityRequest<S, C, Scope = ApplicationHistoryModel<S, H>> + 'static,
     {
-        if !std::ptr::eq(self.document.owner.application(), request.application) {
+        if let Err(denial) = DocumentRequestContext::bind(&self.document.owner, request) {
             return WorthQueryHistoryEditAdvance::Refused {
                 edit: self,
-                denial: WorthQueryHistoryEditDenial::History(
-                    WorthQueryApplicationHistoryDenial::ForeignRuntime,
-                ),
+                denial: WorthQueryHistoryEditDenial::History(denial),
             };
         }
         if matches!(&self.phase, Some(Phase::Admission(_))) {
-            self.advance_admission_with(request, |phase, runtime, read| {
-                read.with_metadata_capability(runtime, phase, capability, operation, input)
-            })
+            self.advance_admission_with(
+                request,
+                Governed {
+                    capability,
+                    operation,
+                    input,
+                },
+            )
         } else {
             self.advance(request)
         }

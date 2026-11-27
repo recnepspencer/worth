@@ -14,25 +14,7 @@ where
         &mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryHistoryRetentionStatus, WorthQueryApplicationHistoryDenial> {
-        self.document.maintain_history(request)?;
-        let target = self.target;
-        read::with_retention_read(
-            &self.document.owner,
-            &self.document.access,
-            &self.document.payload,
-            request,
-            |_, _, read| Ok(read),
-            |phase, runtime, owner, access, read| {
-                runtime.change_document_history_window::<H, N>(
-                    phase,
-                    &program_publication_access(),
-                    owner,
-                    access,
-                    read,
-                    target,
-                )
-            },
-        )
+        self.advance_in::<N>(request, Ungoverned)
     }
 
     pub fn advance_governed<N, C, O, I>(
@@ -48,22 +30,26 @@ where
         O::InputBinding: ApplicationStructuredValueBinding<Value = I>,
         I: ApplicationCapabilityRequest<S, C, Scope = ApplicationHistoryModel<S, H>> + 'static,
     {
+        self.advance_in::<N>(request, Governed { capability, operation, input })
+    }
+
+    fn advance_in<N: ApplicationHistoryWindowBinding<S, H>>(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        authority: impl MetadataAuthority<S, H>,
+    ) -> Result<WorthQueryHistoryRetentionStatus, WorthQueryApplicationHistoryDenial> {
         self.document.maintain_history(request)?;
         let target = self.target;
-        read::with_retention_read(
-            &self.document.owner,
-            &self.document.access,
+        DocumentRequestContext::bind(&self.document.owner, request)?.with_metadata(
+            self.document.access.clone(),
             &self.document.payload,
-            request,
+            authority,
             |phase, runtime, read| {
-                read.with_metadata_capability(runtime, phase, capability, operation, input)
-            },
-            |phase, runtime, owner, access, read| {
                 runtime.change_document_history_window::<H, N>(
                     phase,
                     &program_publication_access(),
-                    owner,
-                    access,
+                    &self.document.owner,
+                    &self.document.access,
                     read,
                     target,
                 )
