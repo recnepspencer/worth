@@ -188,30 +188,39 @@ impl FullVerificationImage<'_> {
                         FullVerificationReason::MissingSettlement,
                     ))?;
 
-            if row.read_basis.runtime_instance_id() != self.selected.runtime_instance_id()
-                || row.read_basis.branch_id() != self.selected.branch_id()
-                || row.read_basis.version_id() > self.selected.version_id()
-                || row.read_basis.position() > self.selected.position()
-            {
-                return Err(FullVerificationStop::Foreign);
+            if !observed_on_selected(self.selected, &row.read_basis)? {
+                return Ok(FullVerificationDecision::Changed);
             }
             let Some(facts) = row.facts.for_comparison() else {
                 return Ok(FullVerificationDecision::Changed);
             };
+            // Each restored fact holds as readmission accepts it, through the
+            // coordinate of the row it belongs to (public #358).
+            let accept = |coordinate| {
+                super::super::RestoredAcceptance::new(execution, self.runtime, self.snapshot, coordinate)
+            };
+            let source = accept(row.historical.as_ref());
             for fact in facts.iter() {
-                if !fact_is_current(execution, fact, self.runtime, self.snapshot)? {
+                if !(fact_is_current(execution, fact, self.runtime, self.snapshot)?
+                    || source.moved_fact_holds(fact)?)
+                {
                     return Ok(FullVerificationDecision::Changed);
                 }
             }
             let projection = equality::output_projection(&self.state, terminal, observed_rows)?;
             if let Some(projection) = projection {
+                let output = accept(projection.historical.as_ref());
                 for fact in projection.facts.iter() {
-                    if !fact_is_current(execution, fact, self.runtime, self.snapshot)? {
+                    if !(fact_is_current(execution, fact, self.runtime, self.snapshot)?
+                        || output.moved_fact_holds(fact)?)
+                    {
                         return Ok(FullVerificationDecision::Changed);
                     }
                 }
             } else if let Some(witness) = fallback_witness.filter(|_| direct) {
-                if !witness.unchanged_in(self.runtime, self.snapshot, execution)? {
+                // The fallback witness is the root evidence's own row.
+                let output = accept(root_source.and_then(|root| root.historical));
+                if !output.witness_holds(witness)? {
                     return Ok(FullVerificationDecision::Changed);
                 }
             } else {
@@ -227,6 +236,22 @@ impl FullVerificationImage<'_> {
         }
         Ok(FullVerificationDecision::Current)
     }
+}
+
+/// Evidence observed by this runtime off the selected lineage, on another
+/// branch or past the selected position, cannot be certified there: a
+/// decisive change, as the marks' `Unaligned` is. Another runtime's evidence
+/// is foreign.
+fn observed_on_selected(
+    selected: &PositionedRelationalSnapshot,
+    observed: &PositionedRelationalSnapshot,
+) -> Result<bool, FullVerificationStop> {
+    if observed.runtime_instance_id() != selected.runtime_instance_id() {
+        return Err(FullVerificationStop::Foreign);
+    }
+    Ok(observed.branch_id() == selected.branch_id()
+        && observed.version_id() <= selected.version_id()
+        && observed.position() <= selected.position())
 }
 
 fn fact_is_current(

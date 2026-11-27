@@ -17,6 +17,7 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
+        historical: Option<&crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         Self::observe_views(
             execution,
@@ -27,6 +28,7 @@ impl ConsumedOutputEvidence {
                 verification_requirement,
                 native_output_witness: Some(native_output_witness),
                 selected_native_root: observed,
+                historical,
             }),
             owner,
             runtime,
@@ -46,6 +48,7 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
+        historical: Option<&crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         Self::verify_views(
             execution,
@@ -56,6 +59,7 @@ impl ConsumedOutputEvidence {
                 verification_requirement,
                 native_output_witness: None,
                 selected_native_root: observed,
+                historical,
             }),
             owner,
             runtime,

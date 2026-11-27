@@ -176,7 +176,7 @@ where
     // Released has no interest or evidence and always executes fresh.
     observation::reach(Gate::RegistryCustody);
     let settlement = candidate.settlement_identity();
-    if !candidate.consumed_outputs().is_empty()
+    if candidate.has_consumed_outputs()
         && settlement.address().0 == observation.lifecycle_incarnation()
         && !required_output.registry().posts_settlement(settlement)?
     {

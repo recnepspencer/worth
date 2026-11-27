@@ -4,15 +4,23 @@ impl WorthQueryCurrentOutputCandidate {
     pub fn from_recorded(recorded: &RecordedOutput, role: &str) -> Option<Self> {
         Some(Self {
             consumed_outputs: Arc::clone(&recorded.consumed_outputs),
+            transported: recorded.transported_view(),
             verification_requirement: recorded.verification_requirement(),
             settlement_identity: Arc::clone(&recorded.settlement_identity),
             correspondence: Arc::clone(&recorded.correspondence),
             output_role: role.to_owned(),
             observed_source_facts: recorded.observed_source_facts()?,
+            // The completed computation owns the witness: an executed
+            // adoption its own fresh one, never its origin's. An adopted
+            // historical row that declined readmission has none (public #358).
             native_output_witness: recorded
-                .performed_origin
-                .as_ref()
-                .and_then(|origin| origin.get())
+                .completed_computation_record()
+                .or_else(|| {
+                    recorded
+                        .performed_origin
+                        .as_ref()
+                        .and_then(|origin| origin.get())
+                })
                 .unwrap_or(recorded)
                 .native_output_witness_cell()
                 .map(Arc::clone),

@@ -19,7 +19,11 @@ pub struct HistoricalOutputRead<'a> {
     publication: Option<&'a worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     facts: Option<&'a ComparableSourceFacts>,
     witness: Option<&'a SealedNativeOutputWitness>,
-    upstream: &'a [ConsumedOutputEvidence],
+    upstream: &'a std::sync::Arc<[ConsumedOutputEvidence]>,
+    /// A current read's re-rooted sets: the evidence its readmission proved
+    /// and marked answers in place of the transported provenance (public #358).
+    transported:
+        Option<&'a crate::domain_computation::primary_graph::output_lineage::TransportedView>,
 }
 impl<'a> HistoricalOutputRead<'a> {
     pub fn from_candidate(
@@ -34,6 +38,7 @@ impl<'a> HistoricalOutputRead<'a> {
                 .as_ref()
                 .and_then(|witness| witness.get()),
             upstream: &row.consumed_outputs,
+            transported: None,
         })
     }
     pub fn from_current_read(
@@ -48,6 +53,7 @@ impl<'a> HistoricalOutputRead<'a> {
                 .as_ref()
                 .and_then(|witness| witness.get()),
             upstream: &row.consumed_outputs,
+            transported: row.transported.as_ref(),
         })
     }
     pub fn is_current<Schema: worth_query_installation::facade::ApplicationSchema>(
@@ -60,34 +66,11 @@ impl<'a> HistoricalOutputRead<'a> {
         >,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let snapshot = selected.application_basis().snapshot_handle();
-        let basis = selected.product().relational_basis();
         let graph = &selected.application().runtime.primary_provider.graph_ref();
-        let (Some(publication), Some(publisher)) =
-            (self.publication, graph.application_publication_ref())
-        else {
+        let Some(publication) = self.publication else {
             return Ok(false);
         };
-        if !publication
-            .matches_current_ownership_at(execution, &publisher.native, basis)
-            .map_err(|cause| {
-                use worth_relational::facade::transactions::{
-                    CommitExecutionDenialKind, TransactionCommitError,
-                };
-                match cause {
-                    TransactionCommitError::Execution { denial, .. } => {
-                        let CommitExecutionDenialKind::Cause(cause) = denial.kind;
-                        read_denial(cause)
-                    }
-                    TransactionCommitError::Interrupted { interruption, .. } => {
-                        interruption_denial(interruption)
-                    }
-                    cause => WorthQueryOutputDemandDenial::new(
-                        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::CurrentPublication(Box::new(cause)),
-                        "historically selected publication current facts",
-                    ),
-                }
-            })?
-        {
+        if !publication_owned_at(execution, publication, selected)? {
             return Ok(false);
         }
         let Some(witness) = self.witness else {
@@ -119,13 +102,16 @@ impl<'a> HistoricalOutputRead<'a> {
             .read_truth()
             .positioned_snapshot(snapshot)
             .map_err(|_| evidence_unavailable())?;
+        let upstream = crate::domain_computation::primary_graph::output_lineage::TransportedView::consumed_outputs_at(
+            self.transported,
+            self.upstream,
+            &selected,
+        );
         let result = graph
             .source_owner_ref()
             .invalidation_owner
             .capture_full_verification(runtime, snapshot, &selected)
-            .and_then(|image| {
-                image.verify_historical_upstream(execution, self.upstream, &evidence)
-            });
+            .and_then(|image| image.verify_historical_upstream(execution, &upstream, &evidence));
         match result {
             Ok(FullVerificationDecision::Current) => Ok(true),
             Ok(FullVerificationDecision::Changed) => Ok(false),
@@ -147,4 +133,41 @@ impl<'a> HistoricalOutputRead<'a> {
             Err(_) => Ok(false),
         }
     }
+}
+
+/// Whether `publication` still belongs to the current owner at `selected`'s
+/// basis. A transported row and each upstream readmission re-identifies
+/// (public #358) must pass it before anything is marked.
+pub(crate) fn publication_owned_at<Schema: worth_query_installation::facade::ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    publication: &worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
+    selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+        '_,
+        Schema,
+    >,
+) -> Result<bool, WorthQueryOutputDemandDenial> {
+    let graph = &selected.application().runtime.primary_provider.graph_ref();
+    let Some(publisher) = graph.application_publication_ref() else {
+        return Ok(false);
+    };
+    publication
+        .matches_current_ownership_at(execution, &publisher.native, selected.product().relational_basis())
+        .map_err(|cause| {
+            use worth_relational::facade::transactions::{
+                CommitExecutionDenialKind, TransactionCommitError,
+            };
+            match cause {
+                TransactionCommitError::Execution { denial, .. } => {
+                    let CommitExecutionDenialKind::Cause(cause) = denial.kind;
+                    read_denial(cause)
+                }
+                TransactionCommitError::Interrupted { interruption, .. } => {
+                    interruption_denial(interruption)
+                }
+                cause => WorthQueryOutputDemandDenial::new(
+                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::CurrentPublication(Box::new(cause)),
+                    "historically selected publication current facts",
+                ),
+            }
+        })
 }

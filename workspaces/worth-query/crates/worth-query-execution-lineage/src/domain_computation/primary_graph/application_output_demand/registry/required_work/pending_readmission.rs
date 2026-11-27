@@ -58,6 +58,25 @@ impl WorthQueryOutputDemandRegistry {
         self.pending_identity_readmission(pending.identity())
     }
 
+    /// Whether `ready` is still a row of `occurrence`. A consumer on a later
+    /// branch occurrence can hold evidence on an earlier occurrence's row
+    /// (public #358); that row's source can only be disclosed on its own
+    /// occurrence, so it is never readmitted on another one.
+    pub fn ready_on_occurrence(
+        &self,
+        ready: &SelectedReadyReadmission,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) -> bool {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state
+            .records
+            .get(ready.key())
+            .is_some_and(|record| record.product_occurrence == occurrence)
+    }
+
     /// A fresh handler actually requested this exact output on this wave.
     /// It is scheduling evidence only; the reached row still certifies Current.
     pub fn requested_ready_readmission(

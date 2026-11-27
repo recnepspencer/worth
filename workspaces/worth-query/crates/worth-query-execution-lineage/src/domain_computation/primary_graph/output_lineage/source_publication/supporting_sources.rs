@@ -10,9 +10,10 @@ impl WorthQueryApplicationOutputLineage {
         candidate: &WorthQueryCurrentOutputCandidate,
         aliases: &mut Vec<(SemanticSource, [u8; 32])>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let consumed = candidate.consumed_outputs_for_aliases();
         let mut pending = Vec::new();
         let mut visited = OrdSet::new();
-        self.push_supports(&candidate.consumed_outputs, &mut pending)?;
+        self.push_supports(&consumed, &mut pending)?;
         while let Some(evidence) = pending.pop() {
             if visited.contains(evidence.identity()) {
                 continue;

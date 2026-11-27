@@ -20,14 +20,14 @@ impl AcceptedCurrentCandidate {
             return Ok(true);
         }
         if !self
-            .own_evidence_is_current(request_execution, runtime, snapshot)
+            .own_evidence_is_current(request_execution, runtime, snapshot, selected)
             .map_err(CurrentAcceptedStop::Closure)?
         {
             return Ok(true);
         }
         match ConsumedOutputEvidence::verify_many_with_admission(
             request_execution,
-            &self.selected.recorded().consumed_outputs,
+            &self.selected.recorded().consumed_outputs_at(selected),
             owner,
             runtime,
             snapshot,

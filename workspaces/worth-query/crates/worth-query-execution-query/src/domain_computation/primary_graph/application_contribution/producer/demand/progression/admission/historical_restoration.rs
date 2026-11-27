@@ -88,8 +88,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             // facts (`restored_facts_hold`), the output witness
             // (`unchanged_since_restoration`) and any consumed upstream.
             // `verified_at` is that same snapshot, so marks name only the
-            // basis compared. Only a root (no consumed outputs) is marked:
-            // `establish_verified_root` records no upstream (public #353).
+            // basis compared. A root is marked here (public #353); a consumer
+            // is readmitted with its re-identified chain below (public #358).
             let verified_at = candidate
                 .consumed_outputs
                 .is_empty()
@@ -102,9 +102,24 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 .flatten();
             (current, verified_at)
         });
+        // Native selection's exact predicate already required this
+        // (`current_verification.rs`). Re-root only after `is_current` at
+        // `selected`, so no caller re-roots on another module's verdict.
         if !current? {
             return Ok(None);
         }
+        let consumer = !candidate.consumed_outputs.is_empty();
+        if crate::domain_computation::primary_graph::output_lineage::invalidation::readmission_observation::historical_readmission_declined(consumer) {
+            return Ok(None);
+        }
+        let verified_at = if consumer {
+            match self.readmit_consumed_chain(execution, &selected, &candidate)? {
+                Some(head) => Some(head),
+                None => return Ok(None),
+            }
+        } else {
+            verified_at
+        };
         let Some(epoch) = observed_source.output_source_epoch() else {
             return Ok(None);
         };
@@ -117,6 +132,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             computation_source: origin.computation_source(),
             settlement: std::sync::Arc::clone(origin.settlement()),
             verified_at,
+            historical: candidate.historical_selection.clone(),
+            marks_posted: consumer,
             restored: WorthQueryRestoredAcceptedOutput {
                 origin: RestoredOutputOrigin::HistoricalSelection(origin),
                 correspondence: candidate.correspondence,

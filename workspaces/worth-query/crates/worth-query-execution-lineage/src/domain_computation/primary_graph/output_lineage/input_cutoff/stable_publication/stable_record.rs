@@ -108,7 +108,7 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             consumed_outputs: verified
                 .verified_consumed
                 .take()
-                .unwrap_or_else(|| Arc::clone(&selected_row.consumed_outputs)),
+                .unwrap_or_else(|| selected_row.consumed_outputs_at(self.selected)),
             completed_handler_facts: selected_row
                 .computation_source
                 .is_executed_adoption()

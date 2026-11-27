@@ -15,6 +15,8 @@ impl AcceptedCurrentCandidate {
         facts: super::super::super::ComparableSourceFacts,
     ) -> Result<CurrentAcceptedResult<'basis>, CurrentAcceptedStop> {
         let recorded = self.selected.recorded();
+        // Recovery posts the upstream ids this head reads (public #358).
+        let consumed = recorded.consumed_outputs_at(selected);
         let Some(witness) = self.selected.native_output_witness_cell() else {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         };
@@ -23,13 +25,14 @@ impl AcceptedCurrentCandidate {
             execution,
             &recorded.settlement_identity,
             &facts,
-            &recorded.consumed_outputs,
+            &consumed,
             requirement,
             witness,
             owner,
             runtime,
             snapshot,
             selected,
+            recorded.historical_selection.as_ref(),
         ) {
             Ok(answer) => answer,
             Err(ConsumedOutputVerificationStop::PendingUpstream) => {
@@ -55,6 +58,7 @@ impl AcceptedCurrentCandidate {
                     &recorded.settlement_identity,
                     &facts,
                     witness.get().expect("selected performed witness is sealed"),
+                    recorded.historical_selection.as_ref(),
                 )
                 .map_err(CurrentAcceptedStop::Registration)?
             {
@@ -65,7 +69,7 @@ impl AcceptedCurrentCandidate {
             match ConsumedOutputEvidence::recover_missing(
                 execution,
                 owner,
-                &recorded.consumed_outputs,
+                &consumed,
                 runtime,
                 snapshot,
                 selected,
@@ -87,7 +91,7 @@ impl AcceptedCurrentCandidate {
                 }
             }
             let upstream = super::super::super::invalidation::collect_consumed_output_upstream(
-                &*recorded.consumed_outputs,
+                &*consumed,
             )
             .map_err(|stop| {
                 CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(stop))
@@ -99,6 +103,7 @@ impl AcceptedCurrentCandidate {
                     &facts,
                     witness.get().expect("selected performed witness is sealed"),
                     upstream,
+                    recorded.historical_selection.as_ref(),
                 )
                 .map_err(CurrentAcceptedStop::Registration)?;
         }

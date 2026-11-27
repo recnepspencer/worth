@@ -9,7 +9,11 @@ use worth_relational::facade::mvcc::{
 pub mod denial;
 pub use denial::{HistoricalTransportDenial, WorthQueryHistoryPublicationCorrespondenceMismatch};
 pub mod coordinate;
-pub use coordinate::HistoricalSelectionCoordinate;
+pub use coordinate::{HistoricalSelectionCoordinate, SelectionCoordinate};
+pub mod acceptance;
+pub use acceptance::RestoredAcceptance;
+pub mod reroot;
+pub use reroot::RerootPlan;
 
 /// The selected step's own row for one route that Native restores.
 struct SelectedRow {

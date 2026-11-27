@@ -58,6 +58,9 @@ pub fn carry(
         .clone();
     // Both Arc fields share the facts' original allocation and its final-owner
     // ticket. The successor's own fact postings already cover this projection.
+    if projection.historical.is_some() {
+        super::super::readmission_observation::record_carried_historical_projection();
+    }
     row.output_facts = Some(projection);
 
     state

@@ -88,6 +88,8 @@ impl ApplicationOutputPort<Schema, Child> for ChildOutput {
 pub struct Child;
 pub struct ChildInput;
 pub struct SeedInput;
+/// The #358 consumer chain's `dst-mid` input (`dst::fixture::program`).
+pub struct ChainInput;
 impl ApplicationFeature<Schema> for Child {
     type Inputs = ApplicationFeatureInputList<
         ChildInput,
@@ -97,7 +99,7 @@ impl ApplicationFeature<Schema> for Child {
                 super::super::synchronous_edit::interleaved::PendingSeedInput,
                 ApplicationFeatureInputList<
                     super::super::family::borrowed_inputs::program::HeaderInput,
-                    ApplicationFeatureInputLeaf,
+                    ApplicationFeatureInputList<ChainInput, ApplicationFeatureInputLeaf>,
                 >,
             >,
         >,
@@ -112,6 +114,11 @@ impl ApplicationInputPort<Schema, Child> for ChildInput {
 impl ApplicationInputPort<Schema, Child> for SeedInput {
     type Value = query::RowBinding;
     const IDENTITY: &'static str = "hierarchy-seed-input";
+    const REQUIRED: bool = false;
+}
+impl ApplicationInputPort<Schema, Child> for ChainInput {
+    type Value = query::RowBinding;
+    const IDENTITY: &'static str = "hierarchy-chain-input";
     const REQUIRED: bool = false;
 }
 pub struct Seed;

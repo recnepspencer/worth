@@ -352,6 +352,8 @@ pub mod population_world;
 pub mod posting_continuation;
 #[path = "precommit_chain/mod.rs"]
 pub mod precommit_chain;
+#[path = "readmitted_chain/mod.rs"]
+pub mod readmitted_chain;
 #[path = "replay_propagation/mod.rs"]
 pub mod replay_propagation;
 #[path = "request_recording/mod.rs"]

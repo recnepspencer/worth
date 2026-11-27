@@ -115,12 +115,12 @@ impl AcceptedCurrentCandidate {
         if self.selected.recorded().consumed_outputs.is_empty() {
             return Ok(None);
         }
-        if !self.own_evidence_is_current(execution, runtime, snapshot)? {
+        if !self.own_evidence_is_current(execution, runtime, snapshot, selected)? {
             return Ok(None);
         }
         ConsumedOutputEvidence::select_exact_pending_dependency(
             execution,
-            &self.selected.recorded().consumed_outputs,
+            &self.selected.recorded().consumed_outputs_at(selected),
             owner,
             runtime,
             snapshot,
@@ -208,7 +208,7 @@ impl AcceptedCurrentCandidate {
         };
         match ConsumedOutputEvidence::verify_many_with_admission(
             execution,
-            &recorded.consumed_outputs,
+            &recorded.consumed_outputs_at(selected),
             owner,
             runtime,
             snapshot,
@@ -217,14 +217,14 @@ impl AcceptedCurrentCandidate {
             Ok(ConsumedOutputVerification::Current) => {}
             Ok(_) => {
                 if !self
-                    .own_evidence_is_current(execution, runtime, snapshot)
+                    .own_evidence_is_current(execution, runtime, snapshot, selected)
                     .map_err(CurrentAcceptedStop::Closure)?
                 {
                     return Ok(CurrentAcceptedResult::NeedsDisclosure);
                 }
                 return ConsumedOutputEvidence::select_exact_pending_dependency(
                     execution,
-                    &recorded.consumed_outputs,
+                    &recorded.consumed_outputs_at(selected),
                     owner,
                     runtime,
                     snapshot,
@@ -238,14 +238,14 @@ impl AcceptedCurrentCandidate {
             }
             Err(ConsumedOutputVerificationStop::PendingUpstream) => {
                 if !self
-                    .own_evidence_is_current(execution, runtime, snapshot)
+                    .own_evidence_is_current(execution, runtime, snapshot, selected)
                     .map_err(CurrentAcceptedStop::Closure)?
                 {
                     return Ok(CurrentAcceptedResult::NeedsDisclosure);
                 }
                 return ConsumedOutputEvidence::select_exact_pending_dependency(
                     execution,
-                    &recorded.consumed_outputs,
+                    &recorded.consumed_outputs_at(selected),
                     owner,
                     runtime,
                     snapshot,

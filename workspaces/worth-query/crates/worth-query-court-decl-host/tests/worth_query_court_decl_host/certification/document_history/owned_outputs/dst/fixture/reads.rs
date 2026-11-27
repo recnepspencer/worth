@@ -102,6 +102,18 @@ pub fn read_outputs(host: &Host, branch: WorthQueryProductBranch, live: &[Option
     })
 }
 
+/// The #358 chain's values for model `a`: `dst-mid`'s, then `dst-leaf`'s.
+/// Both are model-keyed, so each reads one row whatever is live.
+pub fn read_chain(host: &Host, branch: WorthQueryProductBranch) -> (u64, u64) {
+    with_branch_request(host, branch, |request| {
+        let read = |profile: &str| match request.query(query::first_output::Read(format!("{profile}:a"))).execute() {
+            Ok(rows) => rows.rows()[0].value,
+            Err(denial) => panic!("{profile} of model a must read: {denial:?}"),
+        };
+        (read("dst-mid"), read("dst-leaf"))
+    })
+}
+
 /// One `history_page` row.
 pub struct Entry {
     pub step: WorthQueryHistoryNodeId,

@@ -74,6 +74,32 @@ macro_rules! producer_decision_dependency {
     }};
     (DstUseInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@root_current $reader, $source) };
     (DstUsePreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@root_current $reader, $source) };
+    (DstMidInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@e1_parity $reader) };
+    (DstMidPreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@e1_parity $reader) };
+    (DstLeafInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@mid_current $reader, $source) };
+    (DstLeafPreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@mid_current $reader, $source) };
+    // The parity of `dst-a`'s current output for member `e1`; 0 while `e1`
+    // is not live. It resolves `e1` by key and never reads its value.
+    (@e1_parity $reader:ident) => {{
+        match $reader.resolve_optional_entity(MemberKey::at("MemberKey"), "e1".to_owned())? {
+            Some(member) => match $reader.current_output::<super::super::dst_a::Family, Member>(&member)? {
+                WorthQueryCurrentOutputSelection::Unique(output) => {
+                    $reader.field(&output, ChildValue::at("ChildValue"))?.expect("dst-a's current output has its value") % 2
+                }
+                _ => 0,
+            },
+            None => 0,
+        }
+    }};
+    // The value of `dst-mid`'s current output for this model.
+    (@mid_current $reader:ident, $source:ident) => {{
+        match $reader.current_output::<super::super::dst_mid::Family, Model>(&$source)? {
+            WorthQueryCurrentOutputSelection::Unique(output) => $reader
+                .field(&output, FirstValue::at("FirstValue"))?
+                .expect("dst-mid's current output has its value"),
+            _ => 0,
+        }
+    }};
     // The value of the DST root's current output for `$source` (`upstream:<model>`).
     (@root_current $reader:ident, $source:ident) => {{
         match $reader.current_output::<super::super::super::upstream::Family, Model>(&$source)? {

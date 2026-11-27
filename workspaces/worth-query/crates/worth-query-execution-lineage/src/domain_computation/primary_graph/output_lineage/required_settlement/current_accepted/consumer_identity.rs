@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSettlement
 
 impl AcceptedCurrentCandidate {
     pub fn consumes_outputs(&self) -> bool {
-        !self.selected.consumed_outputs().is_empty()
+        self.selected.has_consumed_outputs()
     }
 
     pub fn retain_recorded_identity(

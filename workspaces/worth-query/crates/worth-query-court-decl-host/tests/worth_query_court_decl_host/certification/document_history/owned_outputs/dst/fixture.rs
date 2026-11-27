@@ -105,6 +105,7 @@ pub fn declare(schema: ApplicationSchemaDeclarationBuilder<Schema>) -> Applicati
     }
     let schema = declared!(schema, set_e1, set_e2, despawn_e1, despawn_e2, despawn_e1_numeric, restore_e1, restore_e2);
     let schema = family::dst::dst_use::declare(family::dst::dst_b::declare(family::dst::dst_a::declare(schema)));
+    let schema = family::dst::dst_leaf::declare(family::dst::dst_mid::declare(schema));
     schema
         .application_mutation_binding::<create_e1::Binding>()
         .application_mutation_binding::<create_e2::Binding>()
@@ -154,7 +155,9 @@ pub fn contracts(
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     family::dst::dst_a::contracts(contracts)?;
     family::dst::dst_b::contracts(contracts)?;
-    family::dst::dst_use::contracts(contracts)
+    family::dst::dst_use::contracts(contracts)?;
+    family::dst::dst_mid::contracts(contracts)?;
+    family::dst::dst_leaf::contracts(contracts)
 }
 
 pub fn install(
@@ -169,7 +172,9 @@ pub fn install(
     handlers!(retire_e1, retire_e2, despawn_e1, despawn_e2, despawn_e1_numeric);
     family::dst::dst_a::install(setup)?;
     family::dst::dst_b::install(setup)?;
-    family::dst::dst_use::install(setup)
+    family::dst::dst_use::install(setup)?;
+    family::dst::dst_mid::install(setup)?;
+    family::dst::dst_leaf::install(setup)
 }
 
 /// The program actions the writers (`.edit`, `.gesture`) need.

@@ -26,6 +26,7 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
+            None,
         )
     }
 }

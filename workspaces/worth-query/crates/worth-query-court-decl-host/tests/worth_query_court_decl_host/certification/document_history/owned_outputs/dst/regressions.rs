@@ -37,6 +37,33 @@ const PINNED: &[(u64, &[Op], &str)] = &[
     ),
 ];
 
+/// Each edit settles on a new product branch occurrence. The chain consumer
+/// settled on the newer one keeps its consumed evidence on the upstream row
+/// of the earlier one, whose source can only be disclosed on its own
+/// occurrence. A write outside then executes the consumer ordinarily instead
+/// of readmitting that row and refusing terminally `Superseded` (seed
+/// `0x7b020024` with corrections, public #358). The write changed `dst-a`'s
+/// source and the newer occurrence holds no `dst-a` row, so no equivalent
+/// upstream row exists to reuse: execution is the only sound outcome, and
+/// no chain is readmitted.
+#[test]
+fn a_chain_consumer_on_an_earlier_occurrences_upstream_settles() {
+    let equivalence =
+        worth_query_host::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install_chain();
+    let ops = [Op::Edit([Set(2), Set(2)]), Op::Edit([Set(2), Set(2)]), Op::OutOfBand([Set(1), Set(1)])];
+    if let Err(failure) = run(&mut world::Document::attach_chain(&host), &ops, None) {
+        panic!("#358 chain ({ops:?}) disagrees:\n{failure:#?}");
+    }
+    assert!(equivalence.shadow_checks_for_test() > 0, "the armed shadow must check a certification");
+    assert_eq!(
+        worth_query_host::facade::primary_graph::readmitted_chains_on_this_thread_for_test(),
+        0,
+        "the earlier occurrence's row is never readmitted on the newer one"
+    );
+}
+
 /// The first recorded edit of the forked-head cases: it creates both members.
 const MADE: Op = Op::Edit([Set(2), Set(1)]);
 
@@ -75,12 +102,13 @@ fn a_write_outside_on_a_forked_head_settles() {
 
 /// Public #358: [`a_write_outside_on_a_forked_head_settles`]'s first shape
 /// with a `dst-use` output that reads the root through `current_output`.
-/// Readmitted at the forked head, the consumer's evidence stays on the
-/// abandoned line, so it never certifies and the settle spins to the call
-/// deadline.
+/// Readmitted at the forked head with its chain, the consumer's evidence is
+/// re-identified at its own selection commit, so it certifies there instead
+/// of spinning to the call deadline on the abandoned line.
 #[test]
-#[ignore = "held on public #358: a current_output consumer readmitted at a forked head never certifies; its consumed evidence stays on the abandoned line"]
 fn a_consumer_on_a_forked_head_settles() {
+    let equivalence =
+        worth_query_host::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install_consumer();
     let ops = [MADE, Op::Undo, MADE, Op::OutOfBand([Skip, Set(1)])];
@@ -88,6 +116,11 @@ fn a_consumer_on_a_forked_head_settles() {
         panic!("#358 ({ops:?}) disagrees:
 {failure:#?}");
     }
+    assert!(equivalence.shadow_checks_for_test() > 0, "the armed shadow must check a certification");
+    assert!(
+        worth_query_host::facade::primary_graph::readmitted_chains_on_this_thread_for_test() > 0,
+        "the consumer must be readmitted with its chain, not executed again"
+    );
 }
 
 /// One envelope that sets `e1` then retires `e2`, or retires both, on the
@@ -113,4 +146,23 @@ fn an_owner_retirement_beside_another_stage_in_one_envelope_agrees() {
 {failure:#?}");
         }
     }
+}
+
+/// The consumer's output settled on `main` is read again when an edit settles
+/// on its product branch. The marks find that evidence unaligned and the
+/// consumer executes again; the armed shadow's full verification once called
+/// the same evidence foreign, and the equivalence check refused the edit
+/// `RetainedBasisUnavailable` instead (found arming the #358 consumer courts).
+#[test]
+fn an_armed_consumer_settles_an_edit_on_its_product_branch() {
+    let equivalence =
+        worth_query_host::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install_consumer();
+    let ops = [MADE];
+    if let Err(failure) = run(&mut world::Document::attach_consumer(&host), &ops, None) {
+        panic!("an armed consumer ({ops:?}) disagrees:
+{failure:#?}");
+    }
+    assert!(equivalence.shadow_checks_for_test() > 0, "the armed shadow must check a certification");
 }

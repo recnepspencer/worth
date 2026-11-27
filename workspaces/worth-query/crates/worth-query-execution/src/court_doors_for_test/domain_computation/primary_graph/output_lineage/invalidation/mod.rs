@@ -19,6 +19,8 @@ pub mod owner;
 pub mod publication;
 #[path = "query_coverage/mod.rs"]
 pub mod query_coverage;
+#[path = "reestablishment/mod.rs"]
+pub mod reestablishment;
 #[path = "settlement/mod.rs"]
 pub mod settlement;
 #[path = "source_alignment/mod.rs"]

@@ -127,13 +127,18 @@ impl SourceInvalidationOwner {
             }
         };
         for ordinal in ordinals {
-            let fact = row
-                .fact_at(ordinal)
+            let (fact, historical) = row
+                .fact_with_coordinate_at(ordinal)
                 .ok_or(SettlementVerificationStop::Alignment)?;
             let movement = fact
                 .source_currentness_in(runtime, execution, snapshot)?
                 .map_err(SettlementVerificationStop::SourceRead)?;
-            if movement.movement() == Movement::Moved {
+            // A restored fact holds through its own row's coordinate, as the
+            // full comparison accepts it (public #358).
+            if movement.movement() == Movement::Moved
+                && !super::super::RestoredAcceptance::new(execution, runtime, snapshot, historical)
+                    .moved_fact_holds(fact)?
+            {
                 return Ok(DirtyReverification::ChangedOrdinal(ordinal));
             }
         }

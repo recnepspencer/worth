@@ -37,6 +37,12 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
         let selected = self.address.selected;
 
         let upstream = collect_consumed_output_upstream(self.consumed_outputs())?;
+        // Executed support owns its live output: a row whose predecessor has
+        // no mark keeps these facts in place of an equality link (public #358).
+        let output_facts = match (adoption, self.recorded.native_output_witness()) {
+            (Some(_), Some(witness)) => owner.prepare_performed_output_facts(witness, None)?,
+            _ => None,
+        };
         // The selected candidate may itself be an alias. This sealed relation
         // names that exact predecessor, never just the performed origin.
         let equality = StableEqualityConsequence {
@@ -56,11 +62,12 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
                 work_membership,
                 identity: Arc::clone(&self.address.identity),
                 facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::retain(self.recorded.computation_source, self.facts.clone()),
-                output_facts: None,
+                output_facts,
                 read_basis: selected.clone(),
                 stale_at_read_basis: im::OrdSet::new(),
                 requirement: None,
                 upstream,
+                historical: None,
             };
         match adoption {
             Some(adoption) => owner.prepare_current_executed_settlement(

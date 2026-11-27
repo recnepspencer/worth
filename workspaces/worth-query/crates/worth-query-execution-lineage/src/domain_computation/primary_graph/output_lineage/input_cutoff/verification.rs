@@ -187,7 +187,7 @@ impl RetainedInputCutoffCandidate {
                 return Ok(None);
             }
             observation::reach(Gate::MatchedRoots);
-            let Some(rebound) = matched_roots::rebound(self.consumed_outputs(), matched, selected)?
+            let Some(rebound) = matched_roots::rebound(&self.consumed_outputs_at(selected), matched, selected)?
             else {
                 return Ok(None);
             };
@@ -209,10 +209,11 @@ impl RetainedInputCutoffCandidate {
                 match ConsumedOutputEvidence::own_evidence_is_current(
                     execution,
                     &facts.slice(0..count),
-                    self.consumed_outputs(),
+                    &self.consumed_outputs_at(selected),
                     witness,
                     runtime,
                     snapshot,
+                    self.recorded().historical_selection.as_ref(),
                 ) {
                     Ok(false) => return Ok(None),
                     Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => {}
@@ -286,9 +287,9 @@ impl RetainedInputCutoffCandidate {
         observation::reach(Gate::ConsumedOutputs);
         match ConsumedOutputEvidence::verify_many_with_admission(
             execution,
-            verified_consumed
-                .as_deref()
-                .unwrap_or_else(|| self.consumed_outputs()),
+            &verified_consumed
+                .clone()
+                .unwrap_or_else(|| self.consumed_outputs_at(selected)),
             owner,
             runtime,
             snapshot,

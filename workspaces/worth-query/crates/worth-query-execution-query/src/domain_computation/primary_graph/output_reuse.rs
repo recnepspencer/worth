@@ -18,3 +18,4 @@ pub use selection::{owner_read, preflight_stop, retained_fact_denial};
 
 mod historical_selection;
 pub use historical_selection::HistoricalOutputRead;
+pub(crate) use historical_selection::publication_owned_at;
