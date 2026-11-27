@@ -119,6 +119,7 @@ pub use worth_query_declaration::{
     worth_query_principal_issuer, worth_query_program_transition, worth_query_query_binding,
     worth_query_standing_grants, worth_query_structured_value_binding, worth_query_unit,
     worth_query_value_binding, worth_query_workflow, worth_query_workflow_controls,
+    worth_query_workflow_read_binding,
 };
 /// Derive syntax over these declaration traits and macros; see
 /// [Build an Application](https://github.com/recnepspencer/worth/blob/master/docs/build-an-application.md).

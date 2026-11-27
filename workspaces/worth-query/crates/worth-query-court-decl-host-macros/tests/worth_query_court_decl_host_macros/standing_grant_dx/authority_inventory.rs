@@ -4,6 +4,7 @@
 //! capability verdicts are admission's, so withdrawing an assignment moves
 //! exactly the audit entry, as admission itself does.
 use worth_query_host::facade::{
+    audit::{WorthQueryImpactDependency, WorthQueryImpactRole},
     eligibility::{
         WorthQueryAbilityEligibility, WorthQueryAbilityEligibilityDenial, WorthQueryAuthority,
         WorthQueryAuthorityInventory, WorthQueryAuthorityPath, WorthQueryAuthorityQuestion,
@@ -20,7 +21,7 @@ use super::countersign::{CountersignCapability, CountersignOp, CountersignReques
 use super::grants::{AuditCapability, AuditOp, ViewAuditors};
 use super::observers::{home, SiteRole};
 use super::program::{caller, identity, QmsHome};
-use super::schema::{Desktop, SetAssignmentStatus, SiteFacts};
+use super::schema::{Desktop, Member, SetAssignmentStatus, SiteFacts};
 use super::{at, temp_home_path};
 
 fn inventory(
@@ -101,6 +102,8 @@ fn an_inventory_explains_every_installed_authority_on_a_scope() {
         ability: "ViewAuditors".to_owned(),
         policy: "AuditorRosterPolicy".to_owned(),
     };
+    // Both ViewAuditors rules (any grant, a review grant) hold over the one
+    // holder → site chain, which is listed once.
     let grant_path = Verdict::Allowed {
         through: vec![path(&["RoleHolder", "GrantSite"])],
     };
@@ -157,4 +160,33 @@ fn an_inventory_is_disclosed_only_to_a_holder_of_the_disclosure_ability() {
         WorthQueryAbilityEligibility::Unmapped
     );
     assert!(carol.entries().is_empty());
+}
+
+#[test]
+fn two_policy_rules_over_one_chain_name_each_impact_role_once() {
+    let path_on_disk = temp_home_path("authority-impact");
+    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0));
+    let home = home(&path_on_disk, &clock);
+    let impact = home
+        .session(caller(&home, "alice").principal)
+        .entity_impact(Member::reference());
+    // Each rule makes Member the principal and steps along RoleHolder; the
+    // roles interleave, so only a non-adjacent deduplication lists each once.
+    let roles: Vec<String> = impact
+        .dependencies()
+        .iter()
+        .filter_map(|dependency| match dependency {
+            WorthQueryImpactDependency::AbilityPolicy { ability, role, .. }
+                if ability == "ViewAuditors" =>
+            {
+                Some(match role {
+                    WorthQueryImpactRole::PrincipalEntity => "principal".to_owned(),
+                    WorthQueryImpactRole::Traversal { edge, .. } => edge.relation().to_owned(),
+                    other => format!("{other:?}"),
+                })
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(roles, ["principal", "RoleHolder"]);
 }

@@ -23,6 +23,21 @@ pub enum WorthQueryApplicationHistoryDenial {
     Allocation(worth_execution::ExecutionAllocationDenial),
 }
 
+impl WorthQueryApplicationHistoryDenial {
+    /// Whether the World history walk reached commits whose history was
+    /// retired: the record existed earlier, but the steps before the gap are
+    /// no longer kept. Every other stop (work, deadline, capacity, branch,
+    /// continuation, policy) answers `false`.
+    pub const fn is_retired_history_gap(&self) -> bool {
+        matches!(
+            self,
+            Self::World(worth_runtime_world::facade::ProductExactHistoryDenial::History(
+                worth_runtime_world::facade::CompositeAncestorSelectionDenial::RetiredHistoryGap
+            ))
+        )
+    }
+}
+
 impl From<super::super::WorthQueryApplicationOneShotDenial> for WorthQueryApplicationHistoryDenial {
     fn from(cause: super::super::WorthQueryApplicationOneShotDenial) -> Self {
         Self::Read(cause)

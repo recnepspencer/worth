@@ -13,6 +13,7 @@ mod grants;
 mod observers;
 mod open_validity;
 mod program;
+mod referenced_by;
 mod schema;
 mod typed_controls;
 

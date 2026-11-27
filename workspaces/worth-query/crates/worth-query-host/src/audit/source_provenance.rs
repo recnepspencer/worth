@@ -47,8 +47,40 @@ pub enum WorthQuerySourceProvenanceDenial {
     ForeignBranch,
     /// A capability or the principal was refused at admission.
     Admission(WorthQueryApplicationRequestQueryDenial),
-    /// The inspection itself refused (stale incarnation, governance, request).
+    /// The inspection itself refused (stale incarnation, governance, request,
+    /// or a disclosure shape field diagnostics do not support: see
+    /// [`Self::is_unsupported_field_shape`]).
     Inspection(WorthQueryApplicationInspectionDenial),
+}
+
+impl WorthQuerySourceProvenanceDenial {
+    /// Whether field-level diagnostics refused the source disclosure's query
+    /// shape, rather than a grant, the principal or a resource limit.
+    ///
+    /// Field effects are materialized for the record the disclosure scopes,
+    /// and a source disclosure is scoped like its operation. A creation
+    /// scoped by its parent (a Site-scoped operation creating a Dossier) can
+    /// only disclose the child through a root path from the parent, which
+    /// selects its records by traversal at the original commit; field
+    /// diagnostics admit root-scoped shapes only, so this read refuses. The
+    /// governed receipt is still readable through `reference_only()`
+    /// inspection, and the child's changed aspects through `record_history`.
+    pub fn is_unsupported_field_shape(&self) -> bool {
+        use worth_query_execution::facade::application_inspection::{
+            DiagnosticComparisonDenial as Comparison,
+            WorthQueryApplicationInspectionOwnerRefusal as Owner,
+        };
+        let Self::Inspection(cause) = self else {
+            return false;
+        };
+        matches!(
+            cause.owner_refusal(),
+            Some(
+                Owner::DiagnosticContractUnsupportedShape
+                    | Owner::DiagnosticAdmission(Comparison::UnsupportedShape)
+            )
+        )
+    }
 }
 
 /// The original source effects of one authored operation.
@@ -72,7 +104,10 @@ impl WorthQuerySourceProvenance {
         self.inspection.source_commit()
     }
     /// `Provided` when the field effects below were materialized; otherwise
-    /// why they were not (for example an unsupported projection shape).
+    /// why they were not (`UnsupportedSourceProjectionShape` when the root
+    /// disclosed record's projection reaches beyond its own fields). A
+    /// root-path disclosure refuses instead: see
+    /// [`WorthQuerySourceProvenanceDenial::is_unsupported_field_shape`].
     pub fn source_effects_outcome(&self) -> WorthQueryMaterializedFamilyOutcome {
         self.inspection.materialization().source_outcome()
     }

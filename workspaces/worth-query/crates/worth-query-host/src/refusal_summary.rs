@@ -47,8 +47,11 @@
 //!     Err(WorthQueryDomainRefusalDenial::MessageTooLong { maximum: 256, observed: 257 })
 //! ));
 //! ```
+mod audit_inspection;
 mod correction;
 mod custody;
+mod eligibility;
+mod history_read;
 mod home;
 mod live_open;
 mod local_setup;

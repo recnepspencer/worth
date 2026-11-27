@@ -18,6 +18,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationMaterializationRequest, WorthQueryMaterializedFamilyOutcome,
     },
     runtime::ExecutionAllocationPolicy,
+    WorthQueryRefusalCategory, WorthQueryUserFacingRefusal,
 };
 
 type Access = WorthQueryGovernedReadAccess<
@@ -164,4 +165,40 @@ fn a_session_explains_its_own_branch_operation_and_refuses_others() {
         .is_ok());
     drop((on_preview, elsewhere, direct, provenance));
     preview.discard(home).unwrap();
+}
+
+#[test]
+fn a_session_work_budget_too_small_for_the_inspection_refuses_as_capacity() {
+    let guard = host::open_directory(host::unique_directory("source-provenance-budget"));
+    let home = guard.home();
+    let scope = request_scope();
+    let principal = authenticate_operator(home.runtime().installed_schema(), &scope);
+    let receipt = host::edit(home.runtime(), Value::Primary(13), "provenance-budget");
+    let tight = worth_foundational::facade::ExecutionBudget::new(
+        std::num::NonZeroUsize::MIN,
+        Some(128 * 1024 * 1024),
+        Some(1),
+    );
+    let refused = home
+        .session(&principal)
+        .with_budget(tight)
+        .source_provenance::<SourceDisclosure>(&receipt, inspect("numeric"))
+        .expect_err("one unit of work cannot admit and inspect");
+    assert!(!refused.is_unsupported_field_shape(), "{refused:?}");
+    assert_eq!(
+        refused.refusal_category(),
+        WorthQueryRefusalCategory::Capacity,
+        "{refused:?}"
+    );
+    assert!(refused.retryable());
+    assert!(!refused.user_message().contains("WorthQuery"));
+    // The same receipt under the session's own budget is explained in full.
+    let provenance = home
+        .session(&principal)
+        .source_provenance::<SourceDisclosure>(&receipt, inspect("numeric"))
+        .unwrap();
+    assert_eq!(
+        provenance.source_effects_outcome(),
+        WorthQueryMaterializedFamilyOutcome::Provided
+    );
 }

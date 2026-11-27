@@ -38,8 +38,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
 }
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationRetainedRequest<'_, '_, '_, Schema> {
-    /// The subject's inventory as of the pinned commit; disclosure is still
-    /// decided at the branch head.
+    /// The subject's inventory over the pinned commit's grants and relations;
+    /// disclosure is still decided at the branch head, and capability grant
+    /// validity at the one trusted instant of this call.
     pub fn observe_authority_inventory<Context, Field>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

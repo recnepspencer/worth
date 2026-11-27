@@ -62,9 +62,23 @@ worth_query_standing_grants! {
 }
 pub use site_roles::*;
 
-// Any role holder over a site may see who could audit it.
+// Any role holder over a site may see who could audit it. A second, narrower
+// rule over the same holder → site chain (a review grant) allows nothing new:
+// explanations and impact list that chain once.
 worth_query_ability!(pub ViewAuditors scoped_to Site, in QmsSchema);
 worth_query_policy!(pub AuditorRosterPolicy in QmsSchema);
+
+/// The principal reaches a site through a review grant over it: the same
+/// relation chain as `through_grant()`, under a further predicate.
+fn through_review_grant() -> ApplicationAuthorizationPath {
+    let review = ApplicationEncodedScalarValue::try_new(REVIEW.to_owned()).expect("encodes");
+    ApplicationAuthorizationPathBuilder::from_principal(Member::reference())
+        .forward(RoleHolder::reference())
+        .where_equal(RoleGrantFacts::role(), review)
+        .expect("the grant role is equality-queryable")
+        .forward(GrantSite::reference())
+        .allow(Site::reference())
+}
 
 /// The principal reaches a site through an enabled assignment over it.
 fn through_enabled_assignment() -> ApplicationAuthorizationPath {
@@ -87,6 +101,6 @@ pub fn declare(
         .ability_policy(
             ViewAuditors::reference(),
             AuditorRosterPolicy::reference(),
-            [through_grant()],
+            [through_grant(), through_review_grant()],
         )
 }

@@ -101,3 +101,35 @@ fn local_dates_without_a_calendar_and_durations_on_civil_timelines_refuse() {
         ));
     }
 }
+
+#[test]
+fn one_reading_samples_every_timeline_at_its_own_instant_after_the_source_moves() {
+    let first = 20_783 * MICROS_PER_DAY + 3 * MICROS_PER_HOUR;
+    let source = WorthQueryFixedRuntimeTimeSource::new(at(first));
+    let clock = calendared(source.clone());
+    let reading = clock.read().unwrap();
+    source.set(at(first + 2 * MICROS_PER_DAY));
+    let utc = reading
+        .sample(ApplicationCapabilityValidityTimeline::UtcTimestamp)
+        .unwrap();
+    let local = reading
+        .sample(ApplicationCapabilityValidityTimeline::LocalDate)
+        .unwrap();
+    assert_eq!(utc.instant(), at(first));
+    assert_eq!(local.instant(), at(first));
+    // 03:00Z is still the previous local day at UTC-7.
+    assert_eq!(
+        local.value(),
+        &AspectValue::Date(CanonicalDate {
+            days_from_unix_epoch: 20_782,
+        })
+    );
+    // A fresh sample reads the moved source.
+    assert_eq!(
+        clock
+            .sample(ApplicationCapabilityValidityTimeline::UtcTimestamp)
+            .unwrap()
+            .instant(),
+        at(first + 2 * MICROS_PER_DAY)
+    );
+}

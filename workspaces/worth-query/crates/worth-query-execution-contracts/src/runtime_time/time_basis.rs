@@ -119,11 +119,20 @@ impl WorthQueryRuntimeClock {
         &self,
         timeline: ApplicationCapabilityValidityTimeline,
     ) -> Result<WorthQueryRuntimeTimeSample, WorthQueryRuntimeTimeDenial> {
+        self.read()?.sample(timeline)
+    }
+
+    /// One reading of the host-published source, to sample on several
+    /// validity timelines at the same trusted instant.
+    pub fn read(&self) -> Result<WorthQueryRuntimeTimeReading<'_>, WorthQueryRuntimeTimeDenial> {
         let now = self
             .source
             .current_time()
             .map_err(|_| WorthQueryRuntimeTimeDenial::SourceUnavailable)?;
-        sample_at(now, timeline, self.calendar.as_deref())
+        Ok(WorthQueryRuntimeTimeReading {
+            now,
+            calendar: self.calendar.as_deref(),
+        })
     }
 
     pub fn sample_interval(
@@ -141,6 +150,23 @@ impl WorthQueryRuntimeClock {
             .map(AspectValue::UInt64)
             .ok_or(WorthQueryRuntimeTimeDenial::TimelineValueOverflow)?;
         Ok(WorthQueryRuntimeTimeInterval { issued, expires })
+    }
+}
+
+/// One trusted instant read once from the host-published source. Every
+/// sample taken from it, on any timeline, judges validity at that instant.
+pub struct WorthQueryRuntimeTimeReading<'clock> {
+    now: SystemTime,
+    calendar: Option<&'clock dyn WorthQueryCapabilityCalendar>,
+}
+
+impl WorthQueryRuntimeTimeReading<'_> {
+    /// This reading's value on `timeline`.
+    pub fn sample(
+        &self,
+        timeline: ApplicationCapabilityValidityTimeline,
+    ) -> Result<WorthQueryRuntimeTimeSample, WorthQueryRuntimeTimeDenial> {
+        sample_at(self.now, timeline, self.calendar)
     }
 }
 

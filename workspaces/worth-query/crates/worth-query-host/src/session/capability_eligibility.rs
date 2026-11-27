@@ -8,6 +8,12 @@
 //! eligibility exactly as they refuse admission. Asking retains no decision,
 //! reserves no grant and commits nothing; acting still admits the actor.
 //!
+//! Head only, by contract: a verdict judges grant validity at the trusted
+//! instant of the call, so a snapshot pinned at an older commit would judge
+//! that commit's grants against today's clock. A
+//! [`super::WorthQuerySessionSnapshot`] therefore offers ability eligibility
+//! (relationship policy, no clock) but not capability eligibility.
+//!
 //! ```text
 //! let review = WorthQueryCapabilityEligibilityQuestion::of_request(
 //!     Desktop, ReviewCapability::reference(), ReviewOp::reference(), &request,
@@ -24,7 +30,6 @@ use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipal
 use worth_query_execution::facade::eligibility::{
     WorthQueryAbilityKey, WorthQueryCapabilityEligibility, WorthQueryCapabilityEligibilityQuestion,
 };
-use worth_query_publication::facade::application_entry::WorthQueryApplicationReadObservation;
 
 use super::eligibility::{WorthQueryEligibilityDenial, WorthQueryEligibilityRoster};
 use super::WorthQueryHostSession;
@@ -47,7 +52,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryHostSession<'_, Schema, Progr
         Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
     {
-        observe_capability_asker(self, None, question)
+        observe_capability_asker(self, question)
     }
 
     /// Which `candidates` may exercise the question's capability now, behind
@@ -70,15 +75,14 @@ impl<Schema: ApplicationSchema, Program> WorthQueryHostSession<'_, Schema, Progr
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
     {
         let disclosure = WorthQueryAbilityKey::of(disclosure);
-        observe_capability_roster(self, None, question, disclosure, candidates)
+        observe_capability_roster(self, question, disclosure, candidates)
     }
 }
 
-/// The asker's own capability verdict, at the head or at a retained
-/// observation, under a fresh request scope and the session's current proof.
-pub(super) fn observe_capability_asker<Schema, Program, Context, Capability, Operation, Input>(
+/// The asker's own capability verdict at the head, under a fresh request
+/// scope and the session's current proof.
+fn observe_capability_asker<Schema, Program, Context, Capability, Operation, Input>(
     session: &WorthQueryHostSession<'_, Schema, Program>,
-    at: Option<&WorthQueryApplicationReadObservation>,
     question: &Question<Schema, Context, Capability, Operation, Input>,
 ) -> Result<WorthQueryCapabilityEligibility, WorthQueryEligibilityDenial>
 where
@@ -92,20 +96,16 @@ where
     let principal = session.call_principal();
     let request = session.request_as(&principal, &scope);
     session
-        .with_funded_advancement(&scope, |phase| match at {
-            None => request.observe_capability_eligibility(&phase, question),
-            Some(observation) => request
-                .at(observation)
-                .observe_capability_eligibility(&phase, question),
+        .with_funded_advancement(&scope, |phase| {
+            request.observe_capability_eligibility(&phase, question)
         })
         .map_err(WorthQueryEligibilityDenial::ExecutionRequest)?
         .map_err(WorthQueryEligibilityDenial::Observation)
 }
 
-/// Candidate capability verdicts, at the head or at a retained observation.
-pub(super) fn observe_capability_roster<Schema, Program, Context, Capability, Operation, Input>(
+/// Candidate capability verdicts at the head.
+fn observe_capability_roster<Schema, Program, Context, Capability, Operation, Input>(
     session: &WorthQueryHostSession<'_, Schema, Program>,
-    at: Option<&WorthQueryApplicationReadObservation>,
     question: &Question<Schema, Context, Capability, Operation, Input>,
     disclosure: WorthQueryAbilityKey,
     candidates: &[WorthQueryExternalPrincipalIdentity],
@@ -121,12 +121,8 @@ where
     let principal = session.call_principal();
     let request = session.request_as(&principal, &scope);
     let verdicts = session
-        .with_funded_advancement(&scope, |phase| match at {
-            None => request
-                .observe_roster_capability_eligibility(&phase, question, disclosure, candidates),
-            Some(observation) => request
-                .at(observation)
-                .observe_roster_capability_eligibility(&phase, question, disclosure, candidates),
+        .with_funded_advancement(&scope, |phase| {
+            request.observe_roster_capability_eligibility(&phase, question, disclosure, candidates)
         })
         .map_err(WorthQueryEligibilityDenial::ExecutionRequest)?
         .map_err(WorthQueryEligibilityDenial::Observation)?;

@@ -171,12 +171,14 @@ fn retired_raw_product_parent_refuses_without_splicing_a_protected_older_record(
         }
     }
     assert!(gap);
-    assert!(matches!(
-        page_public(&application, &subjects, &mut cursor, &root),
-        Err(WorthQueryApplicationHistoryDenial::World(
-            ProductExactHistoryDenial::History(CompositeAncestorSelectionDenial::RetiredHistoryGap)
-        ))
-    ));
+    // The typed classifier names the same gap without matching World internals.
+    let again = page_public(&application, &subjects, &mut cursor, &root).err();
+    assert!(
+        again
+            .as_ref()
+            .is_some_and(WorthQueryApplicationHistoryDenial::is_retired_history_gap),
+        "{again:?}"
+    );
 }
 
 #[test]

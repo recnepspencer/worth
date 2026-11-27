@@ -56,6 +56,18 @@ pub enum WorthQueryCausalTimelineDenial {
     Workflow(WorthQueryWorkflowObservationDenial),
 }
 
+impl WorthQueryCausalTimelineDenial {
+    /// Whether the record stream stopped at a retired history gap: the
+    /// record's older history is no longer kept. Every other refusal of
+    /// either stream answers `false`.
+    pub const fn is_retired_history_gap(&self) -> bool {
+        match self {
+            Self::Record(cause) => cause.is_retired_history_gap(),
+            Self::Snapshot(_) | Self::Workflow(_) => false,
+        }
+    }
+}
+
 impl<Schema: ApplicationSchema, Program> WorthQuerySessionSnapshot<'_, '_, Schema, Program> {
     /// Reads `record` and `workflow` at [`Self::selected_commit`]:
     /// `snapshot.causal_timeline::<History, _, SubjectRead, AuditRead>(..)`.

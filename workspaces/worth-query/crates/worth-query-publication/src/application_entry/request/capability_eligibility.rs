@@ -73,8 +73,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
 }
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationRetainedRequest<'_, '_, '_, Schema> {
-    /// The request principal's own capability verdict as of the pinned
-    /// commit; the principal is still admitted at the branch head.
+    /// The request principal's own capability verdict over the grants and
+    /// relations of the pinned commit; the principal is still admitted at
+    /// the branch head. Grant validity is judged at the trusted instant of
+    /// this call, not at the commit's time: a grant that has since expired
+    /// reads `Denied`.
     pub fn observe_capability_eligibility<Context, Capability, Operation, Input>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -96,8 +99,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRetainedRequest<'_, '_, '_,
         )
     }
 
-    /// Per-candidate capability verdicts as of the pinned commit, disclosed
-    /// only when the request principal holds `disclosure` at the branch head.
+    /// Per-candidate capability verdicts over the pinned commit's grants,
+    /// disclosed only when the request principal holds `disclosure` at the
+    /// branch head. Validity is judged at the trusted instant of this call.
     pub fn observe_roster_capability_eligibility<Context, Capability, Operation, Input>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

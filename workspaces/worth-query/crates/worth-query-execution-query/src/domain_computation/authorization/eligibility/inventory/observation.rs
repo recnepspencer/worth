@@ -11,6 +11,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationAuthorizationPath, ApplicationBindingContext, ApplicationSchema,
 };
 use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_contracts::facade::runtime_time::WorthQueryRuntimeTimeReading;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledAbilityRequirement;
 use worth_relational::facade::identity::EntityId;
@@ -142,6 +143,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             principal,
         };
         let mut entries = Vec::new();
+        // One trusted instant judges every capability of this inventory.
+        let mut instant = None;
         for requirement in self
             .installed_schema()
             .installed_ability_requirements_on(field.entity())
@@ -173,7 +176,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 continue;
             }
             let verdict = if installed.has_fixed_target() {
-                self.capability_verdict(&execution, native, &subject, *identity, installed)?
+                let reading = match instant.take() {
+                    Some(reading) => reading,
+                    None => self.trusted_instant(installed)?,
+                };
+                let verdict = self.capability_verdict(
+                    &execution, native, &subject, &reading, *identity, installed,
+                )?;
+                instant = Some(reading);
+                verdict
             } else {
                 Verdict::RequiresRequest
             };
@@ -192,20 +203,33 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         ))
     }
 
+    /// The inventory's one trusted reading, taken when its first capability
+    /// needs a verdict.
+    fn trusted_instant(
+        &self,
+        installed: &WorthQueryInstalledCapabilityPlan,
+    ) -> Result<WorthQueryRuntimeTimeReading<'_>, Denial> {
+        self.runtime.authorization_clock.read().map_err(|_| {
+            authorization(
+                AuthorizationRefusal::TrustedTimeUnavailable,
+                installed.contract().name(),
+            )
+        })
+    }
+
     /// A fixed-target capability's verdict: admission's observation of its
-    /// own target request for the subject, at one trusted instant.
+    /// own target request for the subject, at the inventory's instant.
     fn capability_verdict<Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         native: &mut ApplicationQueryNativeAccess<'_>,
         subject: &Subject<'_, '_, Schema, Scope>,
+        reading: &WorthQueryRuntimeTimeReading<'_>,
         identity: [u8; 32],
         installed: &WorthQueryInstalledCapabilityPlan,
     ) -> Result<Verdict, Denial> {
         let name = installed.contract().name();
-        let sample = self
-            .runtime
-            .authorization_clock
+        let sample = reading
             .sample(installed.request().timeline)
             .map_err(|_| authorization(AuthorizationRefusal::TrustedTimeUnavailable, name))?;
         let session = WorthQueryGraphWorkSessionIdentity::for_fact_free_observation()
@@ -276,20 +300,27 @@ fn ability_verdict(
     }
     let (relational, _) = decision.into_evidence();
     let held = relational.paths().iter().map(|path| path.matched());
-    let through = requirement
+    let mut through: Vec<WorthQueryAuthorityPath> = Vec::new();
+    // Several rules may allow over the same relation chain; each chain is
+    // one path, first-held order kept.
+    for (installed, _) in requirement
         .policy_paths()
         .iter()
         .zip(held)
         .filter(|(installed, held)| *held && allows(installed.path()))
-        .map(|(installed, _)| WorthQueryAuthorityPath {
+    {
+        let path = WorthQueryAuthorityPath {
             relations: installed
                 .path()
                 .traversals()
                 .iter()
                 .map(|traversal| traversal.relation().to_owned())
                 .collect(),
-        })
-        .collect();
+        };
+        if !through.contains(&path) {
+            through.push(path);
+        }
+    }
     Verdict::Allowed { through }
 }
 

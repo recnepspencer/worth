@@ -67,9 +67,16 @@ refuses the next page. A principal without the read grant refuses with
 `WorthQueryGovernedHistoryDenial::Request(..)`; a capability that does not
 satisfy the history's metadata contract refuses with `History(..)`.
 
-The World walk needs custody of each product parent it steps through. Keep a
-snapshot (or other retained read) of the commits an audit view must reach;
-otherwise the walk reports the World's typed retired-history gap.
+The World walk needs custody of each product parent it steps through, and a
+Home has no retention setting that keeps them: a product commit nobody holds is
+retired once newer commits supersede it. An audit view that must walk back
+across commits retains custody of each of them as it lands: keep the session
+snapshot taken after each commit (`session.snapshot()`), or the commit's
+receipt, for as long as the history must stay readable. Pinning only an old
+commit does not keep the commits between it and the head. A walk that reaches
+a retired parent refuses whole; `denial.is_retired_history_gap()` is `true` for
+exactly that refusal, and its `user_summary()` says older history is no longer
+kept, distinct from work, capacity, deadline, branch and continuation stops.
 
 Record history records no actor. Actor attribution is a workflow fact.
 
@@ -124,8 +131,25 @@ them, and the inspection runs under the session's execution policy. The receipt
 must belong to the session's branch: a write on another branch, such as an
 unadopted preview, refuses with `WorthQuerySourceProvenanceDenial::ForeignBranch`;
 explain it from a session `on_branch(preview.branch())`. `source_effects_outcome()`
-says why effects were not materialized (for example an unsupported projection
-shape).
+says why effects were not materialized (for example
+`UnsupportedSourceProjectionShape` when the projection reaches past the
+disclosed record's own fields).
+
+Field effects are materialized for the record the source disclosure scopes, and
+installation requires a source disclosure to be scoped like its operation. An
+operation that creates a child under its scope (a Site-scoped enrollment
+creating a Dossier) can only disclose the child through a root path from the
+parent (`ApplicationQueryRootPath::from(Site).reverse(DossierSite)`). Such a
+query selects its records by traversal at the original commit, and field
+diagnostics admit only root-scoped shapes, so the read refuses with
+`Inspection(..)` and `denial.is_unsupported_field_shape()` is `true` (its
+`user_summary()` is `Unsupported`, never a permission or capacity refusal).
+The governed receipt itself stays readable:
+`request.inspect_source::<D>(&receipt).why_performed().reference_only()
+.execute_governed(metadata)` admits the metadata capability and returns the
+source commit, and `record_history` over a SubjectRead of the child lists the
+aspects that commit changed. Field values of a parent-scoped creation are not
+available through causal inspection; see the capability index's known gaps.
 
 ## Find what depends on an entity type and what references a record
 
@@ -149,6 +173,28 @@ scope entity along an incoming relation (`ApplicationQueryRootPath::from(X).reve
 Any other query refuses with `NotAnIncomingReference` before admission; the
 read itself keeps the query's own principal, scope, disclosure and capability
 admission.
+
+## Refusals for operators
+
+Every refusal above is typed, and each implements
+`WorthQueryUserFacingRefusal` (`worth_query_host::facade`): `user_summary()`
+returns a `WorthQueryRefusalCategory` and one sentence safe to show, so an
+audit UI never prints `{denial:?}`. Log the typed refusal for developers.
+
+| Refusal | Typed classifiers |
+|---|---|
+| `WorthQueryGovernedHistoryDenial` (record history) | `is_retired_history_gap()` |
+| `WorthQueryWorkflowObservationDenial` (workflow audit) | match its variants |
+| `WorthQueryCausalTimelineDenial` | `is_retired_history_gap()` (record stream) |
+| `WorthQuerySourceProvenanceDenial` | `is_unsupported_field_shape()`, `ForeignBranch` |
+| `WorthQueryReferencedByDenial` | `NotAnIncomingReference { query }` |
+| `WorthQuerySessionHistoricalSnapshotDenial` | `History(CommitUnavailable)` |
+| `WorthQueryEligibilityDenial` (eligibility, rosters, authority inventory) | `Observation(RosterNotDisclosed { .. })` and the other variants |
+
+A declaration or caller defect (an uninstalled capability, a query that reads
+no incoming link) renders `Internal`; a withheld disclosure renders
+`PermissionDenied`; a retired history gap or an unknown earlier commit renders
+`NotFound`.
 
 ## Workflow Homes
 

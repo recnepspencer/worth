@@ -14,7 +14,9 @@ use worth_query_host::facade::{
     },
 };
 
-use super::grants::{AuditCapability, AuditOp, ViewAuditors, ACTIVE, ENABLED};
+use worth_query_host::facade::{WorthQueryRefusalCategory, WorthQueryUserFacingRefusal};
+
+use super::grants::{AuditCapability, AuditOp, ReviewCapability, ViewAuditors, ACTIVE, ENABLED};
 use super::observers::{home, SiteRole};
 use super::program::{caller, identity, QmsHome};
 use super::schema::{SetAssignmentStatus, SetGrantStatus};
@@ -133,5 +135,44 @@ fn a_capability_roster_shares_the_ability_roster_disclosure_gate() {
             )
         ),
         "{refused:?}"
+    );
+}
+
+#[test]
+fn a_capability_paired_with_an_operation_it_is_not_installed_on_refuses_typed() {
+    let path = temp_home_path("capability-not-installed");
+    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0));
+    let home = home(&path, &clock);
+    // Review is installed on ReviewOp only; AuditOp carries the same request.
+    let mismatched = SiteRole {
+        capability: ReviewCapability::reference(),
+        operation: AuditOp::reference(),
+    };
+    let refused = home
+        .session(caller(&home, "alice").principal)
+        .eligible_for_capability(&mismatched.question("north"))
+        .expect_err("no contract pairs Review with AuditOp");
+    assert!(
+        matches!(
+            refused,
+            WorthQueryEligibilityDenial::Observation(
+                WorthQueryAbilityEligibilityDenial::CapabilityNotInstalled { .. }
+            )
+        ),
+        "{refused:?}"
+    );
+    // A caller defect, not a missing grant: no permission prompt is shown.
+    assert_eq!(
+        refused.refusal_category(),
+        WorthQueryRefusalCategory::Internal
+    );
+    // The installed pair is answered for the same principal and site.
+    assert_eq!(
+        SiteRole {
+            capability: ReviewCapability::reference(),
+            operation: super::grants::ReviewOp::reference(),
+        }
+        .eligibility(&home, "alice", "north"),
+        Verdict::Eligible
     );
 }

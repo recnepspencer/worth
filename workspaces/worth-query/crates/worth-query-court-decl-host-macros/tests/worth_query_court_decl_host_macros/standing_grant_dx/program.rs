@@ -26,6 +26,7 @@ use worth_query_host::facade::{
 use super::assign::AssignRoleHandler;
 use super::countersign::COUNTERSIGN;
 use super::grants::{self, ACTIVE, APPROVE, AUDIT, ENABLED, OBSERVE, REVIEW, WITNESS};
+use super::referenced_by::{site_grants, SiteGrantsBinding};
 use super::schema::*;
 use super::{Window, SITES};
 
@@ -51,6 +52,7 @@ worth_query_application_contribution! {
             operation: set_grant_status_operation();
         };
         action assign(AssignRoleBinding, RoleAssigned, AssignRoleHandler) as AssignRoleAction {};
+        query(SiteGrantsBinding) { definition: site_grants(); };
     }
 }
 
@@ -142,13 +144,13 @@ fn grant(
     )?;
     graph.bind_relation(WorthQueryApplicationRelationSeed::new(
         RoleHolder::reference(),
-        &format!("{grant}-holder"),
+        format!("{grant}-holder"),
         key("alice"),
         key(&grant),
     ))?;
     graph.bind_relation(WorthQueryApplicationRelationSeed::new(
         GrantSite::reference(),
-        &format!("{grant}-site"),
+        format!("{grant}-site"),
         key(&grant),
         key(site),
     ))
@@ -197,13 +199,13 @@ fn assign(
     )?;
     graph.bind_relation(WorthQueryApplicationRelationSeed::new(
         AssignmentHolder::reference(),
-        &format!("{assignment}-holder"),
+        format!("{assignment}-holder"),
         key(member),
         key(&assignment),
     ))?;
     graph.bind_relation(WorthQueryApplicationRelationSeed::new(
         AssignmentSite::reference(),
-        &format!("{assignment}-site"),
+        format!("{assignment}-site"),
         key(&assignment),
         key(site),
     ))
