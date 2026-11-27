@@ -32,6 +32,8 @@ enum Kind {
 
 #[path = "cardinality.rs"]
 mod cardinality;
+#[path = "restoration.rs"]
+mod restoration;
 #[path = "unsupported_readmission.rs"]
 mod unsupported_readmission;
 
@@ -126,6 +128,31 @@ fn certify(world: &AuthorizationWorld, fact: &Fact) -> FactMovement {
         .expect("the fixture certification owns its installed host call")
 }
 
+/// Answer `fact` on the plain path (`source_currentness_in`) at the selected
+/// head's snapshot, which no certification basis reaches; a refusal is
+/// `Err(())`.
+fn plain(world: &AuthorizationWorld, fact: &Fact) -> Result<FactMovement, ()> {
+    let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
+    let serial = worth_execution::ExecutionRequest::serial(&host_request);
+    let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request_for_test();
+            let selected = world.selected_product(&host);
+            graph.integration_handle_for_test().with_runtime(&serial, |runtime| {
+                fact.source_currentness_in(
+                    runtime,
+                    &host.borrowed_request_for_test(),
+                    selected.application_basis_for_test().snapshot_handle(),
+                )
+                .expect("the plain path is not stopped")
+                .map_err(|_| ())
+            })
+        })
+        .expect("the fixture comparison owns its installed host call")
+}
+
 /// Court 2: a read that selected `Missing` before the producer's first
 /// completion is not current after it. A fresh read selects `Unique`, so
 /// certifying the recorded selection answers `Moved`. The selection is never
@@ -153,6 +180,43 @@ fn a_missing_read_is_invalidated_by_a_first_completion() {
                 certify(world, selection),
                 FactMovement::from_equal(false),
                 "a Missing selection is not current once the producer completed"
+            );
+        },
+    );
+}
+
+/// Court 9 (§3.6): a caller with no certification basis degrades to one
+/// execution. The plain path answers a `Missing` selection `Moved` once the
+/// producer completed, which executes the reader, never the terminal
+/// `Unavailable`. The execution is one fresh read; its own selection
+/// certifies `Unmoved` on the basis path, so no second execution follows.
+#[test]
+fn a_none_coordinate_caller_degrades_to_execution() {
+    with_first_completion(
+        |world| {
+            install_family(world, vec![retained()]);
+            let (kind, facts) = read_family(world, "open");
+            assert_eq!(kind, Kind::Missing, "the family has no head before the producer completes");
+            facts
+        },
+        |world, _receipt, facts| {
+            let [selection @ Fact::FamilySelection { .. }] = facts.as_slice() else {
+                panic!("the Missing read must record exactly one FamilySelection fact: {facts:?}");
+            };
+            assert_eq!(
+                plain(world, selection),
+                Ok(FactMovement::from_equal(false)),
+                "the plain path answers Moved, which executes the reader"
+            );
+            let (fresh, facts) = read_family(world, "1");
+            assert_eq!(fresh, Kind::Unique, "the one execution selects the first completion's output");
+            let [executed @ Fact::FamilySelection { .. }] = facts.as_slice() else {
+                panic!("the execution must record exactly one FamilySelection fact: {facts:?}");
+            };
+            assert_eq!(
+                certify(world, executed),
+                FactMovement::from_equal(true),
+                "the execution's selection certifies on the basis path, so no second execution runs"
             );
         },
     );
