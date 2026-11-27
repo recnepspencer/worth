@@ -303,26 +303,35 @@ impl World {
         (intents, plan, names)
     }
 
-    /// Declares Anchor groups of `members` in chunks of `width`.
+    /// Declares Anchor groups of `members` in chunks of `width`, each led by
+    /// its first member.
     pub fn group(
         &self,
         basis: &AdmittedRelationalBranchBasis,
         members: &[PersistentNameIdentity],
         width: usize,
     ) {
+        let groups = members.chunks(width).map(<[_]>::to_vec).collect();
+        let (intents, plan) = Self::partition(groups);
+        self.commit(basis, intents, plan);
+    }
+
+    /// The claim partitioning the declared scope into `groups` of the Anchor
+    /// scheme, each led by its first member; undeclared members of a prior
+    /// group in scope stay grouped.
+    pub fn partition(
+        groups: Vec<Vec<PersistentNameIdentity>>,
+    ) -> (Vec<MutationIntent>, CommitNamingPlan) {
         let mut plan = CommitNamingPlan::default();
-        let groups = members
-            .chunks(width)
-            .map(|chunk| {
-                let role = |index| match index {
-                    0 => AggregateMemberRole::Anchor,
-                    _ => AggregateMemberRole::Ordinary,
-                };
-                chunk
-                    .iter()
-                    .enumerate()
-                    .map(|(i, name)| (*name, role(i)))
-                    .collect()
+        let role = |index| match index {
+            0 => AggregateMemberRole::Anchor,
+            _ => AggregateMemberRole::Ordinary,
+        };
+        let groups = groups
+            .into_iter()
+            .map(|group| {
+                let roles = group.into_iter().enumerate();
+                roles.map(|(i, name)| (name, role(i))).collect()
             })
             .collect();
         let scheme = AggregateGroupScheme::new(
@@ -330,6 +339,6 @@ impl World {
             AggregateContinuityRule::Anchor,
         );
         plan.declare_group_partition(scheme, Vec::new(), groups);
-        self.commit(basis, Vec::new(), plan);
+        (Vec::new(), plan)
     }
 }

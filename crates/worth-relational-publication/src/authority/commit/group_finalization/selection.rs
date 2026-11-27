@@ -29,7 +29,7 @@ use worth_relational_branch::internal_port::history::data::canonical_commit_enve
 };
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_lineage::internal_port::lineage::groups::{
-    BranchGroupState, CommittedGroupTransition, GroupTransitionKind, SchemeGroups,
+    BranchGroupState, CommittedGroupTransition, GroupStateAt, GroupTransitionKind, SchemeGroups,
 };
 use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::naming_basis_binding::BranchNamingBasisGuard;
 
@@ -38,8 +38,9 @@ use super::GroupRefusal;
 
 /// Restores the selection model's groups to the selected commit's state.
 ///
-/// Complexity: O(G log G) over the live groups of both states, plus one
-/// rebuild of the selected state from its published group lineage.
+/// Complexity: O(G log G) over the live groups of both states, plus the
+/// selected state: borrowed in O(1) at the head, else rebuilt from its
+/// published group lineage through the selected commit.
 pub(super) fn selection_transitions(
     selection: &CanonicalOwnedGraphSelection,
     basis: &BranchNamingBasisGuard<'_>,
@@ -48,7 +49,7 @@ pub(super) fn selection_transitions(
 ) -> Result<Vec<CommittedGroupTransition>, GroupRefusal> {
     let selected = selection.selected_basis();
     let target = match selected.reference().target() {
-        FoundationalBranchTarget::Empty => BranchGroupState::default(),
+        FoundationalBranchTarget::Empty => GroupStateAt::Rebuilt(BranchGroupState::default()),
         FoundationalBranchTarget::Basis(target) => basis
             .group_state_at(selected.branch_id(), CommitId(target.selected_commit_id()))
             .map_err(GroupRefusal::unavailable)?,

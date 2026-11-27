@@ -11,7 +11,6 @@
 use crate::contracts::lineage::data::naming::{
     PersistentNameIdentity, PersistentNameIdentityOwnerPort as _, PersistentNameSubjectKind,
 };
-use std::collections::BTreeSet;
 
 use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::identity::data::primitives::LineageId;
@@ -22,7 +21,7 @@ use crate::contracts::lineage::data::name_resolution::{PersistentNameKey, Persis
 
 use super::journal::IngestionJournal;
 use super::{
-    LineageHolder, LiveName, NameEntry, NameOrigin, NameState, PersistentNameBranchIndex,
+    Carriers, LineageHolder, LiveName, NameEntry, NameOrigin, NameState, PersistentNameBranchIndex,
     PersistentNameCommittedBatch, PersistentNameIndexDenial,
 };
 
@@ -194,7 +193,7 @@ impl PersistentNameBranchIndex {
             .ok_or(PersistentNameIndexDenial::MissingHolder { lineage: target })?;
         let live = LiveName {
             target: target_for(key, name, holder, target)?,
-            carriers: BTreeSet::new(),
+            carriers: Carriers::new(),
         };
         self.bind_lineage_name(target, key, journal)?;
         self.entry_mut(key, journal)
@@ -235,7 +234,7 @@ impl PersistentNameBranchIndex {
             }
             let live = LiveName {
                 target: target_for(key, birth.identity(), holder, lineage)?,
-                carriers: BTreeSet::new(),
+                carriers: Carriers::new(),
             };
             let origin = NameOrigin::Birth(birth.parts().clone());
             let entry = NameEntry::born(commit, origin, live);

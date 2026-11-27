@@ -114,5 +114,6 @@ pub fn read_continuation_page<
             actual_work,
         },
         persistent_names: None,
+        persistent_name_facts: Vec::new(),
     })
 }

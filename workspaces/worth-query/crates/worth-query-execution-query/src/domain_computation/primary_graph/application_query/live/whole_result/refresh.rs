@@ -83,7 +83,7 @@ where
             let _ = plan.basis.release();
             return self.handle_read_denial(denial);
         }
-        let (raw, authorization_work, read_proof) = match execute_authorized_read(
+        let (mut raw, authorization_work, read_proof) = match execute_authorized_read(
             execution,
             &self.runtime,
             &plan,
@@ -106,6 +106,7 @@ where
                 return self.handle_read_denial(denial);
             }
         };
+        let name_facts = std::mem::take(&mut raw.persistent_name_facts);
         let completed = match complete_one_shot(
             execution,
             &self.runtime,
@@ -131,6 +132,7 @@ where
             self.controls.request(),
             completed.read.result_set_observation(),
             completed.read.observed_sources(),
+            name_facts,
         ) {
             Ok(footprint) => footprint,
             Err(stop) => return self.handle_footprint_stop(stop),

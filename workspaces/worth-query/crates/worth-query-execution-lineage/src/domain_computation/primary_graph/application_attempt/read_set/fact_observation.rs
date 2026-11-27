@@ -36,7 +36,8 @@ pub fn observation_work_bound(key: &WorthQueryApplicationFactKey) -> Option<u64>
         | WorthQueryApplicationFactKey::Field { .. }
         | WorthQueryApplicationFactKey::AspectPresence { .. } => Some(1),
         WorthQueryApplicationFactKey::Relation { .. }
-        | WorthQueryApplicationFactKey::PersistentGroup(_) => None,
+        | WorthQueryApplicationFactKey::PersistentGroup(_)
+        | WorthQueryApplicationFactKey::PersistentNameHistory(_) => None,
         WorthQueryApplicationFactKey::Adjacency {
             maximum_work_units, ..
         } => u64::try_from(*maximum_work_units).ok()?.checked_add(1),
@@ -124,6 +125,9 @@ fn observe_fact_inner(
             "fresh source-query read required",
         )),
         WorthQueryApplicationFactKey::PersistentGroup(read) => basis.observe_group(read),
+        WorthQueryApplicationFactKey::PersistentNameHistory(read) => {
+            basis.observe_name_history(read)
+        }
         WorthQueryApplicationFactKey::Entity { entity, entity_id } => {
             let kind = layout.entity_kind(entity).ok_or_else(|| {
                 denial(

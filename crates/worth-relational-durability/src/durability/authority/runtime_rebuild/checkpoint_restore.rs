@@ -112,7 +112,7 @@ pub fn prepare_checkpoint_state(
         )?;
     let lineage =
         contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane::enter_reconstruction(|lane| {
-            prepare_lineage(lane, inputs.lineage.snapshot(), checkpoint)
+            prepare_lineage(lane, inputs.lineage.snapshot_for_reconstruction(lane), checkpoint)
         })?;
     let indexes =
         contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane::enter_reconstruction(|lane| {

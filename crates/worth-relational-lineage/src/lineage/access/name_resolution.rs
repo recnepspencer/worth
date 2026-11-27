@@ -200,7 +200,7 @@ fn select(
         }
         PersistentNameSelection::BoundedByCarriers { carriers } => live
             .iter()
-            .filter(|(_, found)| carriers.is_subset(&found.live.carriers))
+            .filter(|(_, found)| carriers.iter().all(|c| found.live.carriers.contains(c)))
             .collect(),
         PersistentNameSelection::KeepSide { discriminator } => live
             .iter()

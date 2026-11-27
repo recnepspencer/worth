@@ -1,7 +1,10 @@
 //! Slice 5D: a decision that read or resolved a seam's name is keyed on that
 //! seam between its endpoints, so a concurrent operation unlinking,
 //! retiring, splitting or merging it makes the earlier attempt's commit
-//! stale. A seam resolution resting on what no fact key tracks never seals.
+//! stale. A seam resolution resting on name history (ended names on its
+//! walked path, or a held name not yet born) seals on that history as a
+//! `PersistentNameHistory` fact: a concurrent commit changing it stales the
+//! decision, and an unrelated one leaves it current.
 use super::seam_names::{link, members, read_name, resolve, seam, seam_read, MEMBERS};
 use super::*;
 
@@ -29,6 +32,22 @@ fn race(token: &str, by_name: bool, plan: Plan) -> Outcome {
     } else {
         probe::seams::hold(token, "s", s, exact());
     }
+    let (observed, outcome) = prepare_then_commit(&world, token, plan);
+    if by_name {
+        assert_eq!(seam_named(&observed, "s"), s);
+    } else {
+        assert_eq!(
+            seam_resolution(&observed, "s"),
+            &seam_between("s", "m1", "m2")
+        );
+    }
+    outcome
+}
+
+/// Prepares the probe registered under `token`, commits `plan` before the
+/// prepared attempt commits, and returns what the prepared decision observed
+/// and how its commit ended.
+fn prepare_then_commit(world: &World, token: &str, plan: Plan) -> (Vec<SeamObservation>, Outcome) {
     let key = format!("{token}:raced-seam-probe");
     let mut request = world
         .request()
@@ -51,16 +70,10 @@ fn race(token: &str, by_name: bool, plan: Plan) -> Outcome {
         WorthQueryApplicationProgramMutationPreparation::Settled(_) => panic!("fresh decision"),
     };
     let observed = probe::seams::take(token);
-    if by_name {
-        assert_eq!(seam_named(&observed, "s"), s);
-    } else {
-        assert_eq!(
-            seam_resolution(&observed, "s"),
-            &seam_between("s", "m1", "m2")
-        );
-    }
     world.committed(&format!("{token}-race"), plan);
-    prepared.commit(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+    let outcome = prepared
+        .commit(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);
+    (observed, outcome)
 }
 
 fn stale(outcome: &Outcome) -> bool {
@@ -218,30 +231,82 @@ fn a_seam_handle_another_world_issued_is_foreign() {
     );
 }
 
-fn vetoed(ended: &str) -> bool {
-    ended.contains("PersistentName(UntrackedDependency)")
+fn sealed(ended: &str) -> bool {
+    ended.contains("Committed")
+}
+
+/// Retires the unrelated seam `o` from `m3` to `m4`.
+fn retire_unrelated() -> Plan {
+    Plan {
+        reads: keys(&["m3", "m4"]),
+        seam_reads: vec![seam_read("o", "m3", "m4")],
+        unlinks: vec![("m3".into(), "m4".into())],
+        steps: vec![Step::SeamRetire(HeldSeam::Read("o".into()))],
+        ..Plan::default()
+    }
+}
+
+/// The seam name another world minted from `m1` to `m2`; this one has not
+/// born it until it links the very same seam.
+fn unborn_here() -> (WorthQueryName<Seam>, Plan) {
+    let elsewhere = members();
+    let plan = || link("s", "m1", "m2", seam("elsewhere", "seam", 7));
+    elsewhere.committed("unborn-elsewhere", plan());
+    (
+        read_name(&elsewhere, "unborn-elsewhere", "m1", "m2"),
+        plan(),
+    )
 }
 
 #[test]
-fn a_swallowed_unknown_seam_name_never_seals() {
-    // A seam name born only in another world: this one never saw its birth.
-    let elsewhere = members();
-    elsewhere.committed(
-        "unknown-elsewhere",
-        link("s", "m1", "m2", seam("elsewhere", "seam", 7)),
-    );
-    let foreign = read_name(&elsewhere, "unknown-elsewhere", "m1", "m2");
+fn a_swallowed_unknown_seam_name_seals_on_its_awaited_birth() {
+    let (foreign, _) = unborn_here();
     let (world, _) = seamed("unknown");
     let (resolved, ended) = resolve(&world, "unknown-held", foreign, exact());
     assert!(
         matches!(&resolved, SeamObservation::ResolveRefused { refusal, .. } if refusal.contains("UnknownName")),
         "{resolved:?}"
     );
-    assert!(vetoed(&ended), "an unborn name has no fact key: {ended}");
+    assert!(
+        sealed(&ended),
+        "an unborn name seals on its awaited birth: {ended}"
+    );
 }
 
 #[test]
-fn a_seam_resolution_walking_ended_names_never_seals() {
+fn the_awaited_birth_stales_the_decision_and_an_unrelated_commit_does_not() {
+    let (foreign, birth) = unborn_here();
+    let world = members();
+    world.committed(
+        "awaited-o",
+        link("o", "m3", "m4", seam("weld-o", "seam", 1)),
+    );
+    probe::seams::hold("awaited-born", "held", foreign, exact());
+    let (observed, outcome) = prepare_then_commit(&world, "awaited-born", birth);
+    assert!(
+        matches!(seam_resolution(&observed, "held"), SeamObservation::ResolveRefused { refusal, .. } if refusal.contains("UnknownName")),
+        "{observed:?}"
+    );
+    assert!(
+        stale(&outcome),
+        "birthing the awaited name stales: {outcome:?}"
+    );
+
+    let world = members();
+    world.committed(
+        "awaited-o",
+        link("o", "m3", "m4", seam("weld-o", "seam", 1)),
+    );
+    probe::seams::hold("awaited-other", "held", foreign, exact());
+    let (_, outcome) = prepare_then_commit(&world, "awaited-other", retire_unrelated());
+    assert!(
+        matches!(outcome, Outcome::Committed { .. }),
+        "an unrelated commit leaves the awaited birth current: {outcome:?}"
+    );
+}
+
+#[test]
+fn a_seam_resolution_walking_ended_names_seals() {
     let (world, s) = seamed("ended");
     world.committed("ended-split", split());
     let (resolved, ended) = resolve(&world, "ended-all", s, NameSelection::AllDescendants);
@@ -250,15 +315,15 @@ fn a_seam_resolution_walking_ended_names_never_seals() {
         "{resolved:?}"
     );
     assert!(
-        vetoed(&ended),
-        "a later Restore revives the ended name: {ended}"
+        sealed(&ended),
+        "the ended path is keyed, not vetoed: {ended}"
     );
     let (resolved, ended) = resolve(&world, "ended-exact", s, exact());
     assert!(
         matches!(resolved, SeamObservation::Ambiguous { .. }),
         "{resolved:?}"
     );
-    assert!(vetoed(&ended), "{ended}");
+    assert!(sealed(&ended), "{ended}");
     let (world, s) = seamed("ended-retire");
     world.committed("ended-retired", retire());
     let (resolved, ended) = resolve(&world, "ended-retired-held", s, exact());
@@ -266,5 +331,38 @@ fn a_seam_resolution_walking_ended_names_never_seals() {
         matches!(resolved, SeamObservation::Retired { .. }),
         "{resolved:?}"
     );
-    assert!(vetoed(&ended), "{ended}");
+    assert!(sealed(&ended), "{ended}");
+}
+
+#[test]
+fn a_walk_through_ended_names_stales_on_its_path_and_stays_current_off_it() {
+    let walked = |token: &str, plan: Plan| {
+        let (world, s) = seamed(token);
+        world.committed(&format!("{token}-split"), split());
+        probe::seams::hold(token, "held", s, NameSelection::AllDescendants);
+        let (observed, outcome) = prepare_then_commit(&world, token, plan);
+        assert!(
+            matches!(
+                seam_resolution(&observed, "held"),
+                SeamObservation::Plural { .. }
+            ),
+            "{observed:?}"
+        );
+        outcome
+    };
+    // Retiring piece `p1`, a live successor on the walked path, stales.
+    let retire_piece = Plan {
+        reads: keys(&["m1", "m3"]),
+        seam_reads: vec![seam_read("p1", "m1", "m3")],
+        unlinks: vec![("m1".into(), "m3".into())],
+        steps: vec![Step::SeamRetire(HeldSeam::Read("p1".into()))],
+        ..Plan::default()
+    };
+    let outcome = walked("walk-piece", retire_piece);
+    assert!(stale(&outcome), "{outcome:?}");
+    let outcome = walked("walk-unrelated", retire_unrelated());
+    assert!(
+        matches!(outcome, Outcome::Committed { .. }),
+        "an edit off the walked path leaves it current: {outcome:?}"
+    );
 }

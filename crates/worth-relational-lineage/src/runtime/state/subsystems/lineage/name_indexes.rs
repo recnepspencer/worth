@@ -29,19 +29,39 @@ use super::state::PublishedLineageEvent;
 use super::{LineageState, LineageSubsystem};
 
 /// One branch's derived name index, or the refusal that stopped it.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(super) enum BranchNameIndex {
     Current(PersistentNameBranchIndex),
     Unavailable(PersistentNameIndexDenial),
 }
 
 /// Every branch's derived name index.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub(crate) struct BranchNameIndexes {
     by_branch: BTreeMap<BranchId, BranchNameIndex>,
 }
 
+impl BranchNameIndex {
+    fn duplicate_for_branch_fork(&self, target: &BranchId) -> Self {
+        match self {
+            Self::Current(index) => Self::Current(index.duplicate_for_branch_fork(target.clone())),
+            Self::Unavailable(denial) => Self::Unavailable(denial.clone()),
+        }
+    }
+}
+
 impl BranchNameIndexes {
+    /// A whole-state copy of every branch's index (runtime fork or
+    /// reconstruction lane only).
+    pub(super) fn duplicate_whole(&self) -> Self {
+        let branches = self.by_branch.iter();
+        Self {
+            by_branch: branches
+                .map(|(branch, index)| (branch.clone(), index.duplicate_for_branch_fork(branch)))
+                .collect(),
+        }
+    }
+
     /// The branch's current index, its recorded refusal, or an empty index
     /// for a branch that has published no named lineage yet.
     pub(super) fn read(
@@ -179,7 +199,7 @@ impl LineageState {
             Some(BranchNameIndex::Current(index))
                 if index.head().is_none_or(|head| head <= fork_commit) =>
             {
-                BranchNameIndex::Current(index.clone().rebranched(target.clone()))
+                BranchNameIndex::Current(index.duplicate_for_branch_fork(target.clone()))
             }
             None => BranchNameIndex::Current(PersistentNameBranchIndex::new(target.clone(), None)),
             Some(_) => self.rebuild_branch_name_index(target, CommitId(u64::MAX)),
@@ -336,9 +356,8 @@ impl LineageState {
                 let record = groups
                     .iter()
                     .find(|record| record.branch == branch && record.commit == commit);
-                for committed in record.iter().flat_map(|record| record.transitions.iter()) {
-                    batch = batch
-                        .with_scheme_group_transition(committed.scheme_id(), &committed.transition);
+                if let Some(record) = record {
+                    batch = batch.with_published_group_transitions(record.transitions.clone());
                 }
                 (branch, batch)
             })

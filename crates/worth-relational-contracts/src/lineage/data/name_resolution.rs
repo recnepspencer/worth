@@ -107,7 +107,7 @@ pub enum PersistentNameOfRecord {
 /// `Ambiguous`, and refuses zero `NoMatchingCandidate`. An empty carrier set
 /// or empty discriminator would match as a wildcard, so resolution refuses it
 /// with [`PersistentNameResolutionDenial::EmptySelectionFilter`].
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum PersistentNameSelection {
     Exact,
     AllDescendants,

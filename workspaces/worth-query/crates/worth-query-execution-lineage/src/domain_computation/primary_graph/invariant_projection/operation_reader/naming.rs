@@ -11,11 +11,16 @@
 //!   so a split, merge, replacement or retirement ending it stales the
 //!   decision through ordinary lifecycle invalidation;
 //! - an answer that also rested on ended names on the walked path (which a
-//!   later `Restore` revives), on a held name not yet born, or on a record
-//!   of the other subject kind has no Query fact key for that part, so the
-//!   projection refuses to seal with [`FailedDecisionRead::PersistentName`];
-//! - a name read that failed vetoes sealing the same way, even when the
-//!   handler swallowed the error.
+//!   later `Restore` revives), on a held name or carrier not yet born, or on
+//!   a record of the other subject kind is keyed as a `PersistentNameHistory`
+//!   fact naming the read itself (`track_name_history`): the seal re-observes
+//!   it, and a committed event touching a lineage it rests on, or birthing
+//!   the awaited name, re-verifies it, so the decision seals and stales
+//!   exactly when that history changes;
+//! - on an applied candidate that history is the unpublished candidate's,
+//!   which no fact can re-observe, so the projection refuses to seal with
+//!   [`FailedDecisionRead::PersistentName`]; a name read that failed vetoes
+//!   sealing the same way, even when the handler swallowed the error.
 //!
 //! On an applied candidate the reads run against the committed name index at
 //! the candidate's commit basis and are admitted only where the candidate left
@@ -39,11 +44,16 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::EntityId;
-use worth_relational::facade::lineage::LineageRecordTarget;
+use worth_relational::facade::lineage::{LineageRecordTarget, PersistentNameSubjectKind};
 
 use super::candidate_naming::CandidateRecord;
-use super::decision_reads::FailedDecisionRead;
+use super::decision_reads::{DecisionReadOutcome, FailedDecisionRead};
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
+use crate::domain_computation::primary_graph::application_attempt::fact::persistent_name_history::{
+    PersistentNameHistoryQuestion as Question, PersistentNameHistoryRead,
+};
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFactKey;
+use crate::domain_computation::primary_graph::invariant_projection::read_basis::NativeProjectionRead;
 use crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity;
 
 mod denial;
@@ -54,7 +64,8 @@ pub use denial::WorthQueryDecisionNameDenial;
 pub enum PersistentNameReadVeto {
     /// A name read failed; its outcome rests on nothing a fact retains.
     ReadFailed,
-    /// The answer rested on a dependency no Query fact key tracks: an ended
+    /// On an applied candidate, the answer rested on name history the
+    /// unpublished candidate may change and no fact can re-observe: an ended
     /// name a later `Restore` revives, an unborn held name, or a record of
     /// another subject kind than the one resolved.
     UntrackedDependency,
@@ -73,18 +84,16 @@ impl PersistentNameReadVeto {
     }
 
     /// The veto a decision's `resolve` outcome needs: every read refusal
-    /// and a pruned basis are failed reads; otherwise an answer resting on
-    /// what no fact key tracks (`untracked`) is an untracked dependency.
+    /// and a pruned basis are failed reads. Every other answer rests on
+    /// facts the read keys (`track_name_history` for its name history).
     pub fn for_resolve<H, K, O>(
         resolved: &Result<ResolvedName<H>, ExecutionNameResolveDenial<K, O>>,
-        untracked: bool,
     ) -> Option<Self> {
         match resolved {
             Err(ExecutionNameResolveDenial::Read(_))
             | Err(ExecutionNameResolveDenial::Resolution(NameResolutionDenial::BasisPruned)) => {
                 Some(Self::ReadFailed)
             }
-            _ if untracked => Some(Self::UntrackedDependency),
             _ => None,
         }
     }
@@ -194,15 +203,13 @@ impl<Schema: ApplicationSchema, Operation>
         };
         self.require_candidate_footprint(&dependencies, &branch)?;
         let mut identities = BTreeMap::new();
+        let mut other_kind = false;
         for record in dependencies.live_records_on(&branch) {
             match record {
                 LineageRecordTarget::Entity(entity_id) => {
                     identities.insert(entity_id, self.live_identity::<Entity>(entity_id)?);
                 }
-                LineageRecordTarget::Relation(_) => {
-                    self.decision_facts
-                        .veto_persistent_name(PersistentNameReadVeto::UntrackedDependency);
-                }
+                LineageRecordTarget::Relation(_) => other_kind = true,
             }
         }
         let mut owners = BTreeMap::new();
@@ -223,9 +230,12 @@ impl<Schema: ApplicationSchema, Operation>
             None => candidates.resolve(&mut owners_of),
         }?;
         let resolved = resolved.map_err(ExecutionNameResolveDenial::Resolution);
-        let untracked = untracked_resolution(&resolved, &dependencies, &branch);
-        if let Some(veto) = PersistentNameReadVeto::for_resolve(&resolved, untracked) {
+        if let Some(veto) = PersistentNameReadVeto::for_resolve(&resolved) {
             self.decision_facts.veto_persistent_name(veto);
+        }
+        if other_kind || rests_on_name_history(&resolved, &dependencies, &branch) {
+            let subject = PersistentNameSubjectKind::Entity;
+            self.track_name_history(Entity::IDENTIFIER, subject, &dependencies, &branch);
         }
         Ok(resolved
             .map(|resolved| local_handles(resolved, &identities))
@@ -259,15 +269,60 @@ impl<Schema: ApplicationSchema, Operation>
     }
 }
 
+impl<Schema: ApplicationSchema, Operation>
+    WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
+{
+    /// Keys what a read's answer rested on in name history, beyond its live
+    /// records, as `PersistentNameHistory` decision facts admitted under the
+    /// declared read of `kind`: every resolution it ran, under its exact
+    /// Relational selection, and every name or carrier it found unborn. On
+    /// an applied candidate that history is the candidate's own, which no
+    /// fact re-observes, so the decision refuses to seal instead.
+    pub(super) fn track_name_history(
+        &mut self,
+        kind: &str,
+        subject: PersistentNameSubjectKind,
+        dependencies: &NameReadDependencies,
+        branch: &BranchId,
+    ) {
+        if matches!(self.reader.native, NativeProjectionRead::Applied { .. }) {
+            self.decision_facts
+                .veto_persistent_name(PersistentNameReadVeto::UntrackedDependency);
+            return;
+        }
+        let resolutions = dependencies.resolutions_on(branch).into_iter();
+        let questions = resolutions
+            .map(|(held, selection)| Question::Resolution { held, selection })
+            .chain(
+                dependencies
+                    .awaited_births_on(branch)
+                    .into_iter()
+                    .map(Question::Birth),
+            );
+        for question in questions {
+            let read = PersistentNameHistoryRead {
+                kind: kind.to_owned(),
+                subject,
+                question,
+            };
+            self.decision_facts.record(
+                WorthQueryApplicationFactKey::PersistentNameHistory(read),
+                DecisionReadOutcome::Observed,
+            );
+        }
+    }
+}
+
 impl FailedDecisionRead {
     pub const fn persistent_name(veto: PersistentNameReadVeto) -> Self {
         Self::PersistentName(veto)
     }
 }
 
-/// Whether a resolution's answer rested on what no fact key tracks: an ended
-/// name on the walked path, or a held name not yet born.
-pub(super) fn untracked_resolution<H, K, O>(
+/// Whether a resolution's answer rested on name history no record lifecycle
+/// carries: an ended name on the walked path, or a held name or carrier not
+/// yet born.
+pub(super) fn rests_on_name_history<H, K, O>(
     resolved: &Result<ResolvedName<H>, ExecutionNameResolveDenial<K, O>>,
     dependencies: &NameReadDependencies,
     branch: &BranchId,

@@ -1,7 +1,7 @@
 //! Group dependencies of tracked name reads, and whether one commit's
 //! canonical group lineage stales them.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use worth_relational::facade::aggregate_identity::AggregateGroupTransition;
 use worth_relational::facade::history::BranchId;
@@ -27,9 +27,18 @@ impl NameReadDependencies {
         member: [u8; 32],
         answer: Option<[u8; 32]>,
     ) {
-        self.branch_mut(branch)
-            .group_members
-            .insert((scheme.to_owned(), member), answer);
+        let deps = self.branch_mut(branch);
+        let lookups = deps.group_members.entry(scheme.to_owned()).or_default();
+        let earlier = lookups.insert(member, answer).flatten();
+        let by_group = deps.members_by_group.entry(scheme.to_owned()).or_default();
+        if let Some(group) = earlier
+            && let Some(members) = by_group.get_mut(&group)
+        {
+            members.remove(&member);
+        }
+        if let Some(group) = answer {
+            by_group.entry(group).or_default().insert(member);
+        }
     }
 
     /// Whether a read on `branch` rested on group state.
@@ -42,7 +51,9 @@ impl NameReadDependencies {
     /// Whether one commit's group lineage on `branch` stales a recorded read.
     /// A frame that cannot be decoded stales every group read, never none.
     ///
-    /// Complexity: O(touched groups and members * log dependencies).
+    /// Complexity: O((touched groups + assigned members) * log dependencies):
+    /// each touched group and each assigned member is one probe; no recorded
+    /// dependency the commit does not touch is ever visited.
     pub fn currentness_after_group_lineage(
         &self,
         branch: &BranchId,
@@ -56,40 +67,38 @@ impl NameReadDependencies {
             Ok(transitions) => transitions,
             Err(_) => {
                 stale.extend(deps.groups.iter().copied());
-                let members = deps.group_members.iter();
-                stale.extend(members.map(|((_, member), answer)| answer.unwrap_or(*member)));
+                let lookups = deps.group_members.values().flat_map(BTreeMap::iter);
+                stale.extend(lookups.map(|(member, answer)| answer.unwrap_or(*member)));
                 return staleness(stale, BTreeSet::new());
             }
         };
         let mut births = BTreeSet::new();
         for (scheme_id, transition) in &transitions {
-            let touched: BTreeSet<[u8; 32]> = transition
+            let touched = transition
                 .retired
                 .iter()
                 .chain(transition.assignments.iter().map(|a| &a.identity))
-                .map(|group| *group.bytes())
-                .collect();
-            for group in deps.groups.intersection(&touched) {
-                stale.insert(*group);
-            }
-            for group in &touched {
-                if deps.awaited_births.contains(group) {
-                    births.insert(*group);
+                .map(|group| *group.bytes());
+            let lookups = deps.group_members.get(scheme_id);
+            let answered = deps.members_by_group.get(scheme_id);
+            for group in touched {
+                if deps.groups.contains(&group) {
+                    stale.insert(group);
+                }
+                if deps.awaited_births.contains(&group) {
+                    births.insert(group);
+                }
+                // A member whose answered group the commit touched.
+                if answered.is_some_and(|by_group| by_group.contains_key(&group)) {
+                    stale.insert(group);
                 }
             }
-            for ((scheme, member), answer) in &deps.group_members {
-                if scheme != scheme_id {
-                    continue;
-                }
-                let regrouped = transition.assignments.iter().any(|assignment| {
-                    assignment
-                        .members
-                        .iter()
-                        .any(|(name, _)| name.as_bytes() == member)
-                });
-                let answered_touched = answer.is_some_and(|group| touched.contains(&group));
-                if regrouped || answered_touched {
-                    stale.insert(answer.unwrap_or(*member));
+            // A member the commit regrouped: one probe per assigned member.
+            let Some(lookups) = lookups else { continue };
+            let assigned = transition.assignments.iter();
+            for (name, _) in assigned.flat_map(|assignment| assignment.members.iter()) {
+                if let Some(answer) = lookups.get(name.as_bytes()) {
+                    stale.insert(answer.unwrap_or(*name.as_bytes()));
                 }
             }
         }

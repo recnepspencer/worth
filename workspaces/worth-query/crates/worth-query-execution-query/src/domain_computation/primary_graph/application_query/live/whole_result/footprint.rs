@@ -57,6 +57,7 @@ impl WholeResultInvalidationFootprint {
         request: &WorthQueryRequestScope,
         result_set: &WorthQueryObservedResultSet<Query>,
         row_sources: &[WorthQueryObservedSource<Query>],
+        name_facts: Vec<Fact>,
     ) -> Result<Self, FootprintStop> {
         check_interruption(request)?;
         let mut total_hint = 0_usize;
@@ -143,6 +144,17 @@ impl WholeResultInvalidationFootprint {
         append(result_set.source())?;
         for row in row_sources {
             append(row)?;
+        }
+        // Projected group names rest on member group membership, which no
+        // row source carries (`persistent_name_facts`).
+        if !name_facts.is_empty() {
+            allocation
+                .claim_slice::<Fact>(execution, name_facts.len())
+                .map_err(map_cause)?;
+            combined
+                .try_reserve_exact(name_facts.len())
+                .map_err(|_| FootprintStop::Execution(Cause::AllocationFailed))?;
+            combined.extend(name_facts);
         }
         drop(scratch);
 

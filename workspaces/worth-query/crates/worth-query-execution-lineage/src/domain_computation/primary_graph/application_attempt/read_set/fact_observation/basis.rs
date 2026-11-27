@@ -35,16 +35,45 @@ impl FactObservationBasis<'_> {
     ) -> Result<
         crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact,
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    > {
+    >{
         use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial;
         use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact;
         let Self::Committed { runtime, snapshot } = self else {
-            return Err(Denial::new(MissingAuthoritativeFact, "persistent group at an applied image"));
+            return Err(Denial::new(
+                MissingAuthoritativeFact,
+                "persistent group at an applied image",
+            ));
         };
         let answer = read
             .observe_at(runtime, snapshot)
             .map_err(|_| Denial::new(MissingAuthoritativeFact, read.group_kind.clone()))?;
         Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact::PersistentGroup {
+            read: read.clone(),
+            answer,
+        })
+    }
+
+    /// A name-history read re-observed at a committed basis; an applied
+    /// image holds no published name index of its own, so it refuses there.
+    pub fn observe_name_history(
+        self,
+        read: &crate::domain_computation::primary_graph::application_attempt::fact::persistent_name_history::PersistentNameHistoryRead,
+    ) -> Result<
+        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact,
+        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    >{
+        use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial;
+        use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact;
+        let Self::Committed { runtime, snapshot } = self else {
+            return Err(Denial::new(
+                MissingAuthoritativeFact,
+                "persistent name history at an applied image",
+            ));
+        };
+        let answer = read
+            .observe_at(runtime, snapshot)
+            .map_err(|_| Denial::new(MissingAuthoritativeFact, read.kind.clone()))?;
+        Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact::PersistentNameHistory {
             read: read.clone(),
             answer,
         })

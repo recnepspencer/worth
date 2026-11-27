@@ -19,7 +19,9 @@ pub(super) fn key_entities_are_in_scope(
             scope.admits(*from) && scope.admits(*to)
         }
         WorthQueryApplicationFactKey::Adjacency { anchor, .. } => scope.admits(*anchor),
-        // A group read names no entity record, so it leaves no record to admit.
-        WorthQueryApplicationFactKey::PersistentGroup(_) => true,
+        // A group or name-history read names no entity record, so it leaves
+        // no record to admit.
+        WorthQueryApplicationFactKey::PersistentGroup(_)
+        | WorthQueryApplicationFactKey::PersistentNameHistory(_) => true,
     }
 }

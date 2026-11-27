@@ -9,9 +9,9 @@
 //! between its endpoint pair. Unlinking, splitting, merging or retiring it
 //! (or deleting an endpoint) changes that fact and stales the decision.
 //!
-//! What no fact key tracks vetoes sealing exactly as for entities
-//! ([`PersistentNameReadVeto`]), and an applied candidate admits the read
-//! only as `candidate_naming` and `pending_naming` state.
+//! Name history an answer rested on is keyed exactly as for entities
+//! (`track_name_history`), and an applied candidate admits the read only as
+//! `candidate_naming` and `pending_naming` state.
 
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
@@ -28,7 +28,7 @@ use worth_query_installation::facade::{
     OperationReads,
 };
 use worth_relational::facade::identity::{KindId, RelationId};
-use worth_relational::facade::lineage::LineageRecordTarget;
+use worth_relational::facade::lineage::{LineageRecordTarget, PersistentNameSubjectKind};
 use worth_relational::facade::runtime::ProjectionAspectScope;
 use worth_relational::facade::storage::RecordLifecycleState;
 
@@ -36,7 +36,7 @@ use super::candidate_naming::CandidateRecord;
 use super::current_output::{WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind};
 use super::decision_reads::DecisionReadOutcome;
 use super::naming::{
-    local_handles, untracked_resolution, PersistentNameReadVeto, WorthQueryDecisionNameDenial,
+    local_handles, rests_on_name_history, PersistentNameReadVeto, WorthQueryDecisionNameDenial,
 };
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFactKey;
@@ -133,21 +133,22 @@ impl<Schema: ApplicationSchema, Operation>
             resolved => resolved,
         };
         self.require_candidate_footprint(&dependencies, &branch)?;
-        let untracked = untracked_resolution(&resolved, &dependencies, &branch);
-        if let Some(veto) = PersistentNameReadVeto::for_resolve(&resolved, untracked) {
+        if let Some(veto) = PersistentNameReadVeto::for_resolve(&resolved) {
             self.decision_facts.veto_persistent_name(veto);
         }
         let mut relations = BTreeMap::new();
+        let mut other_kind = false;
         for record in dependencies.live_records_on(&branch) {
             match record {
                 LineageRecordTarget::Relation(relation_id) => {
                     relations.insert(relation_id, self.live_relation(&subject, relation_id)?);
                 }
-                LineageRecordTarget::Entity(_) => {
-                    self.decision_facts
-                        .veto_persistent_name(PersistentNameReadVeto::UntrackedDependency);
-                }
+                LineageRecordTarget::Entity(_) => other_kind = true,
             }
+        }
+        if other_kind || rests_on_name_history(&resolved, &dependencies, &branch) {
+            let kind = PersistentNameSubjectKind::Relation;
+            self.track_name_history(&subject.name, kind, &dependencies, &branch);
         }
         Ok(resolved.map(|resolved| local_handles(resolved, &relations)))
     }

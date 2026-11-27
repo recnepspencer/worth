@@ -223,7 +223,7 @@ fn unknown_names_and_pruned_bases_refuse_typed_in_constant_work() {
     );
     assert_eq!(metrics(&pruned, held, 1), probes(0, 0, 0));
     assert_eq!(exact_key(&resolve(&pruned, held, 2, &exact())), held);
-    let mut advanced = pruned.clone();
+    let mut advanced = pruned.duplicate_for_test();
     advanced.advance_retention_floor(CommitId(1));
     assert_eq!(
         advanced.retention_floor(),

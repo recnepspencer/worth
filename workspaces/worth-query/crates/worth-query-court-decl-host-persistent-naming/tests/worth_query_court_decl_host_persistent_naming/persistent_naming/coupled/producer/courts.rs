@@ -1,7 +1,7 @@
 //! The coupled producer's outputs: named exactly as a direct operation names
 //! them, kept by its Preserve, refused whole when it leaves one unnamed or
 //! mints the name its own edit minted, and followed by history navigation.
-use super::super::super::history::{navigate, probe, probe_refused, record_edit, Navigate};
+use super::super::super::history::{navigate, probe, probe_unrecorded, record_edit, Navigate};
 use super::*;
 use probe::Observation;
 use worth_query_host::facade::application_naming::LineageRecordTarget;
@@ -205,7 +205,7 @@ fn producer_named_outputs_follow_checkout_and_redo() {
         Navigate::Checkout(before.id()),
         0x3b21_0001,
     );
-    let (document, observed, _) = probe_refused(&host, document, &request, token, &[], 1);
+    let (document, observed) = probe_unrecorded(&host, document, &request, token, &[], 1);
     assert_eq!(
         outputs::resolution(&observed, "p"),
         &Observation::Retired { label: "p".into() }

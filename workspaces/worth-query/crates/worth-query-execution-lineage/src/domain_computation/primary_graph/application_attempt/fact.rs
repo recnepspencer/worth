@@ -10,11 +10,12 @@ pub mod equality;
 pub mod image;
 pub mod indexed_entity_selection;
 pub use indexed_entity_selection::applied::observe as observe_applied_indexed_entity_selection;
-pub mod locator_identity;
 pub mod applied_source_alignment;
+pub mod locator_identity;
 pub mod managed_source_read;
 pub mod movement;
 pub mod persistent_group;
+pub mod persistent_name_history;
 pub mod retirement_equality;
 pub mod source_currentness;
 pub mod source_read_authorization;
@@ -90,6 +91,8 @@ pub enum WorthQueryApplicationFactKey {
     },
     /// A tracked persistent group read.
     PersistentGroup(persistent_group::PersistentGroupRead),
+    /// A tracked entity or relation name read resting on name history.
+    PersistentNameHistory(persistent_name_history::PersistentNameHistoryRead),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -197,6 +200,11 @@ pub enum WorthQueryApplicationObservedFact {
     PersistentGroup {
         read: persistent_group::PersistentGroupRead,
         answer: persistent_group::PersistentGroupAnswer,
+    },
+    /// What a name-history read observed in the derived name index.
+    PersistentNameHistory {
+        read: persistent_name_history::PersistentNameHistoryRead,
+        answer: persistent_name_history::PersistentNameHistoryAnswer,
     },
     /// Exact result of a bounded equality-index selection.
     ///

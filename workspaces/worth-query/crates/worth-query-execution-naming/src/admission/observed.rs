@@ -104,6 +104,22 @@ impl ObservedEntityNames {
         }
     }
 
+    /// Every named record's member name with its installed subject and the
+    /// `(group kind, group)` pairs holding it, ascending: what a projected
+    /// group name rests on, whichever kind the projection asks for.
+    ///
+    /// Complexity: O(named records + their groups).
+    pub fn member_groups(&self) -> impl Iterator<Item = ([u8; 32], &str, Vec<(String, [u8; 32])>)> {
+        self.records.iter().filter_map(|(entity, observed)| {
+            let Observed::Named { scheme, digest } = observed else {
+                return None;
+            };
+            let mut groups = self.groups.get(entity).cloned().unwrap_or_default();
+            groups.sort();
+            Some((*digest, self.schemes[*scheme].1.as_str(), groups))
+        })
+    }
+
     /// How many records the read observed.
     pub fn len(&self) -> usize {
         self.records.len()

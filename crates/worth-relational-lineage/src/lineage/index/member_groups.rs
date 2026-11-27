@@ -4,7 +4,7 @@
 //! retirement or a carrier change ends a member's tenure, and a carrier
 //! declaration starts it, all at the batch's commit.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use worth_foundational::facade::AggregateIdentity;
 
@@ -13,7 +13,7 @@ use crate::contracts::lineage::data::name_resolution::PersistentNameKey;
 use crate::contracts::lineage::data::naming::PersistentNameIdentity;
 
 use super::journal::IngestionJournal;
-use super::{NameEntry, NameState, PersistentNameBranchIndex};
+use super::{Carriers, NameEntry, NameState, PersistentNameBranchIndex};
 
 /// One member's group tenure under one scheme: strictly ascending commits,
 /// each holding until the next entry.
@@ -67,7 +67,7 @@ impl PersistentNameBranchIndex {
         &self,
         group: AggregateIdentity,
         basis: CommitId,
-    ) -> Option<&BTreeSet<PersistentNameIdentity>> {
+    ) -> Option<&Carriers> {
         let entry = self.names.get(&PersistentNameKey::Group(group))?;
         match entry.state_at(basis)?.1 {
             NameState::Live(live) => Some(&live.carriers),
@@ -76,10 +76,12 @@ impl PersistentNameBranchIndex {
     }
 
     /// Ends every current member tenure `group` holds under its scheme.
-    pub(super) fn end_member_tenures(
+    ///
+    /// Complexity: O(|members| log) — only the members whose tenure moves.
+    pub(super) fn end_member_tenures<'m>(
         &mut self,
         group: AggregateIdentity,
-        members: &BTreeSet<PersistentNameIdentity>,
+        members: impl IntoIterator<Item = &'m PersistentNameIdentity>,
         commit: CommitId,
         journal: &mut IngestionJournal,
     ) {
@@ -92,10 +94,10 @@ impl PersistentNameBranchIndex {
     }
 
     /// Starts `group`'s tenure over each of `members` under its scheme.
-    pub(super) fn start_member_tenures(
+    pub(super) fn start_member_tenures<'m>(
         &mut self,
         group: AggregateIdentity,
-        members: &BTreeSet<PersistentNameIdentity>,
+        members: impl IntoIterator<Item = &'m PersistentNameIdentity>,
         commit: CommitId,
         journal: &mut IngestionJournal,
     ) {
@@ -134,7 +136,7 @@ impl PersistentNameBranchIndex {
         if only_from.is_some() && current != only_from {
             return;
         }
-        journal.save_member(member, self.member_groups.get(&member));
+        journal.save_tenure(member, scheme, self.member_groups.get(&member));
         let tenures = self.member_groups.entry(member).or_default();
         let tenure = tenures.entry(scheme.to_owned()).or_default();
         match tenure.last_mut() {

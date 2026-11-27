@@ -172,6 +172,9 @@ pub fn select(
             Fact::StructuralWalk { .. } => return Err(unsupported("StructuralWalk", fact)),
             Fact::Aggregate { .. } => return Err(unsupported("Aggregate", fact)),
             Fact::PersistentGroup { .. } => return Err(unsupported("PersistentGroup", fact)),
+            Fact::PersistentNameHistory { .. } => {
+                return Err(unsupported("PersistentNameHistory", fact))
+            }
             Fact::ComponentSelection { .. } => return Err(unsupported("ComponentSelection", fact)),
             Fact::SourcePublication { .. } => return Err(unsupported("SourcePublication", fact)),
             Fact::ManagedIndexSource { observation } => {

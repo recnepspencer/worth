@@ -4283,6 +4283,7 @@ dependencies = [
 name = "worth-relational-lineage"
 version = "0.1.0"
 dependencies = [
+ "im",
  "rmp-serde",
  "serde",
  "worth-execution",

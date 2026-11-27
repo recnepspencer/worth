@@ -312,7 +312,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Err(open_read_denial(denial, request.query.name()));
         }
 
-        let (raw, authorization_work, read_proof) =
+        let (mut raw, authorization_work, read_proof) =
             match execute_authorized_read(&execution, self, &plan, |runtime, graph, plan| {
                 let mut raw = read_bounded_root_rows(runtime, &execution, graph, plan, None)?;
                 if QueryResult::PROJECTS_PERSISTENT_NAMES {
@@ -334,6 +334,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             request.query.name(),
             execution,
         )?;
+        let name_facts = std::mem::take(&mut raw.persistent_name_facts);
         let completed =
             complete_one_shot(&execution, self, plan, raw, authorization_work, read_proof)
                 .map_err(|denial| map_open_one_shot_denial(denial, request.query.name()))?;
@@ -346,6 +347,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             request.controls.request(),
             completed.read.result_set_observation(),
             completed.read.observed_sources(),
+            name_facts,
         )
         .map_err(|stop| map_open_footprint_stop(stop, request.query.name()))?;
         let (rows, observed_sources, result_set_observation, receipt) =

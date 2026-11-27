@@ -97,7 +97,7 @@ impl<Schema: ApplicationSchema, Operation>
         let resolved = self.with_name_reader(|reader| {
             reader.resolve_group::<G>(held, selection, &mut NameReadDependencies::new())
         })?;
-        if let Some(veto) = PersistentNameReadVeto::for_resolve(&resolved, false) {
+        if let Some(veto) = PersistentNameReadVeto::for_resolve(&resolved) {
             self.decision_facts.veto_persistent_name(veto);
         }
         let subject = PersistentGroupSubject::Resolution(*held.as_bytes());

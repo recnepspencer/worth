@@ -77,6 +77,10 @@ pub struct RawNonLiveKernelOutcome {
     /// The persistent names of the materialized rows' records, when the
     /// read's projection asked for them and the name index answered.
     pub(crate) persistent_names: Option<worth_query_execution_naming::facade::ObservedEntityNames>,
+    /// What the projected names rest on beyond the rows' own records: each
+    /// named row member's group membership (`persistent_names`).
+    pub(crate) persistent_name_facts:
+        Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
 }
 
 pub struct RawLiveKernelOutcome {
@@ -229,6 +233,7 @@ pub fn read_prepared_root_rows(
             actual_work,
         },
         persistent_names: None,
+        persistent_name_facts: Vec::new(),
     })
 }
 

@@ -75,17 +75,16 @@ impl BranchNamingBasisGuard<'_> {
         self.guard.branch_group_state(&self.branch_id)
     }
 
-    /// `branch`'s group state exactly as of `commit`, rebuilt from its
-    /// canonical published group lineage.
-    ///
-    /// Complexity: O(published group lineage along the ancestry).
+    /// `branch`'s group state exactly as of `commit`: the maintained state
+    /// borrowed in O(1) at its head, else rebuilt from canonical published
+    /// group lineage through `commit` (see `LineageState::group_state_at`).
     pub fn group_state_at(
         &self,
         branch: &BranchId,
         commit: CommitId,
-    ) -> Result<crate::lineage::groups::BranchGroupState, crate::lineage::groups::GroupStateDenial>
+    ) -> Result<crate::lineage::groups::GroupStateAt<'_>, crate::lineage::groups::GroupStateDenial>
     {
-        self.guard.rebuild_branch_group_state(branch, commit)
+        self.guard.group_state_at(branch, commit)
     }
 
     /// The holder and name `lineage_id` carried on the guarded branch.

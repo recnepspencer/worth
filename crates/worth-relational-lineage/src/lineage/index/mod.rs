@@ -19,13 +19,14 @@ use std::collections::HashMap;
 
 pub use batch::PersistentNameCommittedBatch;
 pub use denial::PersistentNameIndexDenial;
-pub(crate) use entry::{LiveName, NameEntry, NameOrigin, NameState};
+pub(crate) use entry::{Carriers, LiveName, NameEntry, NameOrigin, NameState};
 
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
 use crate::contracts::lineage::data::name_resolution::PersistentNameKey;
 use crate::contracts::lineage::data::naming::PersistentNameIdentity;
+use worth_foundational::facade::AggregateIdentity;
 
 use journal::IngestionJournal;
 
@@ -36,8 +37,13 @@ pub(crate) enum LineageHolder {
     Relation(RelationId),
 }
 
+crate::lineage::clone_fences::assert_not_clone!(PersistentNameBranchIndex);
+
 /// Derived name-to-record index for one branch, with per-name history.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// Not `Clone`: a copy is O(names × history). The one copy the platform
+/// makes is a branch fork's, through [`Self::duplicate_for_branch_fork`].
+#[derive(Debug, PartialEq, Eq)]
 pub struct PersistentNameBranchIndex {
     branch_id: BranchId,
     retention_floor: Option<CommitId>,
@@ -115,16 +121,36 @@ impl PersistentNameBranchIndex {
         keys
     }
 
-    /// This index re-addressed to `target`, a branch forked from this one.
+    /// This index, moved and re-addressed to `target`: a rebuild hands an
+    /// ancestor's index on to its descendant without copying it.
+    ///
+    /// Complexity: O(1).
+    pub(crate) fn rebranched(mut self, target: BranchId) -> Self {
+        self.branch_id = target;
+        self
+    }
+
+    /// A copy of this index re-addressed to `target`, a branch forked from
+    /// this one: the fork's explicit, named O(names × history) copy (Semantic
+    /// Git `P0-B` replaces it with a copy-on-write overlay).
     ///
     /// Callers fork only an index whose head is at or before the fork
     /// commit, so the copy holds exactly the inherited history; later
     /// batches for `target` then pass the branch check.
-    ///
-    /// Complexity: O(1); the caller pays the O(names) clone once per fork.
-    pub(crate) fn rebranched(mut self, target: BranchId) -> Self {
-        self.branch_id = target;
-        self
+    pub(crate) fn duplicate_for_branch_fork(&self, target: BranchId) -> Self {
+        let names = self.names.iter();
+        Self {
+            branch_id: target,
+            retention_floor: self.retention_floor,
+            head: self.head,
+            names: names
+                .map(|(key, entry)| (*key, entry.duplicate_for_branch_fork()))
+                .collect(),
+            lineage_names: self.lineage_names.clone(),
+            lineage_holders: self.lineage_holders.clone(),
+            holder_lineages: self.holder_lineages.clone(),
+            member_groups: self.member_groups.clone(),
+        }
     }
 
     /// The lineage `holder` was bound to at `basis`: the latest binding at or
@@ -185,6 +211,12 @@ impl PersistentNameBranchIndex {
         }
     }
 
+    /// Applies each declared carrier set as a delta onto the name's current
+    /// carriers: the new timeline state shares every unchanged member with
+    /// its predecessor, and only members that left or joined move tenures.
+    ///
+    /// Complexity: O(declared) comparison plus O(delta log M) allocation per
+    /// changed name; never a copy of a whole carrier set or history.
     fn ingest_carriers(
         &mut self,
         batch: &PersistentNameCommittedBatch,
@@ -192,35 +224,55 @@ impl PersistentNameBranchIndex {
     ) -> Result<(), PersistentNameIndexDenial> {
         let mut changed = Vec::new();
         for (key, carriers) in &batch.carriers {
-            let Some(live) = self.names.get(key).and_then(NameEntry::current_live) else {
-                return Err(PersistentNameIndexDenial::InvalidTransition {
-                    name: *key,
-                    detail: "carriers declared for a name that is not live",
-                });
-            };
-            if &live.carriers == carriers {
-                continue;
-            }
-            let prior = live.carriers.clone();
-            let updated = LiveName {
-                target: live.target,
-                carriers: carriers.clone(),
-            };
-            self.entry_mut(*key, journal)
-                .set_state(batch.commit, NameState::Live(updated));
-            if let PersistentNameKey::Group(group) = key {
-                changed.push((*group, prior, carriers));
-            }
+            self.declare_carriers(*key, carriers.iter(), batch.commit, journal, &mut changed)?;
+        }
+        for assignment in batch.group_assignments() {
+            let key = PersistentNameKey::Group(assignment.identity);
+            let members = assignment.members.iter().map(|(name, _)| name);
+            self.declare_carriers(key, members, batch.commit, journal, &mut changed)?;
         }
         // Every departure ends before any arrival starts, so a member moving
         // between two groups of one scheme ends in its new group.
-        for (group, prior, carriers) in &changed {
-            let left = prior.difference(carriers).copied().collect();
-            self.end_member_tenures(*group, &left, batch.commit, journal);
+        for (group, left, _) in &changed {
+            self.end_member_tenures(*group, left, batch.commit, journal);
         }
-        for (group, prior, carriers) in &changed {
-            let joined = carriers.difference(prior).copied().collect();
-            self.start_member_tenures(*group, &joined, batch.commit, journal);
+        for (group, _, joined) in &changed {
+            self.start_member_tenures(*group, joined, batch.commit, journal);
+        }
+        Ok(())
+    }
+
+    /// Applies one declared carrier set (ascending) as a delta onto `key`'s
+    /// current carriers and records a group's left and joined members.
+    fn declare_carriers<'m>(
+        &mut self,
+        key: PersistentNameKey,
+        declared: impl Iterator<Item = &'m PersistentNameIdentity>,
+        commit: CommitId,
+        journal: &mut IngestionJournal,
+        changed: &mut Vec<(AggregateIdentity, MemberDelta, MemberDelta)>,
+    ) -> Result<(), PersistentNameIndexDenial> {
+        let Some(live) = self.names.get(&key).and_then(NameEntry::current_live) else {
+            return Err(PersistentNameIndexDenial::InvalidTransition {
+                name: key,
+                detail: "carriers declared for a name that is not live",
+            });
+        };
+        let (left, joined) = carrier_delta(&live.carriers, declared);
+        if left.is_empty() && joined.is_empty() {
+            return Ok(());
+        }
+        let mut updated = live.clone();
+        for member in &left {
+            updated.carriers.remove(member);
+        }
+        for member in &joined {
+            updated.carriers.insert(*member);
+        }
+        self.entry_mut(key, journal)
+            .set_state(commit, NameState::Live(updated));
+        if let PersistentNameKey::Group(group) = key {
+            changed.push((group, left, joined));
         }
         Ok(())
     }
@@ -252,13 +304,63 @@ impl PersistentNameBranchIndex {
     }
 }
 
+/// Member names that left or joined a carrier set in one commit.
+type MemberDelta = Vec<PersistentNameIdentity>;
+
+/// The members of `prior` that the ascending `declared` drops, and those it
+/// adds, by one merge walk over both.
+///
+/// Complexity: O(|prior| + |declared|) comparisons, O(delta) allocation.
+fn carrier_delta<'m>(
+    prior: &Carriers,
+    declared: impl Iterator<Item = &'m PersistentNameIdentity>,
+) -> (MemberDelta, MemberDelta) {
+    use std::cmp::Ordering;
+    let (mut left, mut joined) = (Vec::new(), Vec::new());
+    let (mut old, mut new) = (prior.iter().peekable(), declared.peekable());
+    loop {
+        match (old.peek(), new.peek()) {
+            (None, None) => break,
+            (Some(member), None) => {
+                left.push(**member);
+                old.next();
+            }
+            (None, Some(member)) => {
+                joined.push(**member);
+                new.next();
+            }
+            (Some(was), Some(now)) => match was.cmp(now) {
+                Ordering::Less => {
+                    left.push(**was);
+                    old.next();
+                }
+                Ordering::Greater => {
+                    joined.push(**now);
+                    new.next();
+                }
+                Ordering::Equal => {
+                    old.next();
+                    new.next();
+                }
+            },
+        }
+    }
+    (left, joined)
+}
+
 #[doc(hidden)]
 pub trait PersistentNameBranchIndexFixturePort {
     fn names_for_test(&self) -> &HashMap<PersistentNameKey, NameEntry>;
+    /// A court's copy of the whole index, to compare against after a refusal.
+    fn duplicate_for_test(&self) -> Self;
 }
 
 impl PersistentNameBranchIndexFixturePort for PersistentNameBranchIndex {
     fn names_for_test(&self) -> &HashMap<PersistentNameKey, NameEntry> {
         &self.names
+    }
+
+    fn duplicate_for_test(&self) -> Self {
+        self.duplicate_for_branch_fork(self.branch_id.clone())
     }
 }

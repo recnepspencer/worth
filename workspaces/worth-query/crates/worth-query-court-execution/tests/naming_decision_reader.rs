@@ -148,7 +148,7 @@ fn decision_name_of_on_an_unnamed_record_keys_the_record_and_completes() {
 }
 
 #[test]
-fn a_swallowed_untrackable_resolve_refuses_to_seal() {
+fn a_swallowed_unknown_resolve_seals_on_its_awaited_birth() {
     let held = held_account_name();
     let completed = complete_touch_account_projection!(|reader, account| {
         let _ = account;
@@ -162,8 +162,7 @@ fn a_swallowed_untrackable_resolve_refuses_to_seal() {
             ))
         ));
     });
-    let refusal = completed.expect_err("an unknown held name has no fact key, so nothing seals");
-    assert!(refusal.contains("PersistentName"), "{refusal}");
+    completed.expect("an unknown held name is keyed as an awaited birth, so the decision seals");
 }
 
 /// An `Account` name minted on a separate runtime whose scheme governs the
@@ -244,7 +243,7 @@ fn held_account_name() -> WorthQueryName<Account> {
 
 #[test]
 fn every_name_read_refusal_but_a_stable_unnamed_record_vetoes_sealing() {
-    use PersistentNameReadVeto::{ReadFailed, UntrackedDependency};
+    use PersistentNameReadVeto::ReadFailed;
     let record = LineageRecordTarget::Entity(EntityId::new(PartitionId::main(), 1, 1));
     let refusals = || {
         [
@@ -278,7 +277,7 @@ fn every_name_read_refusal_but_a_stable_unnamed_record_vetoes_sealing() {
         let resolved =
             Err::<ResolvedName<EntityId>, _>(ExecutionNameResolveDenial::<Account>::Read(refusal));
         assert_eq!(
-            PersistentNameReadVeto::for_resolve(&resolved, false),
+            PersistentNameReadVeto::for_resolve(&resolved),
             Some(ReadFailed)
         );
     }
@@ -287,30 +286,20 @@ fn every_name_read_refusal_but_a_stable_unnamed_record_vetoes_sealing() {
     };
     let veto = PersistentNameReadVeto::for_resolve;
     assert_eq!(
-        veto(&resolution(NameResolutionDenial::BasisPruned), false),
+        veto(&resolution(NameResolutionDenial::BasisPruned)),
         Some(ReadFailed)
     );
+    // An unknown or retired answer rests on name history the read keys as
+    // `PersistentNameHistory` facts: it seals rather than vetoing.
+    assert_eq!(veto(&resolution(NameResolutionDenial::UnknownName)), None);
     assert_eq!(
-        veto(&resolution(NameResolutionDenial::UnknownName), true),
-        Some(UntrackedDependency)
-    );
-    assert_eq!(
-        veto(
-            &resolution(NameResolutionDenial::Ambiguous {
-                candidates: vec![NameCandidate::new(held, Vec::new())]
-            }),
-            false
-        ),
+        veto(&resolution(NameResolutionDenial::Ambiguous {
+            candidates: vec![NameCandidate::new(held, Vec::new())]
+        })),
         None
     );
-    assert_eq!(
-        veto(&Ok(ResolvedName::Retired { at_commit: 3 }), true),
-        Some(UntrackedDependency)
-    );
-    assert_eq!(
-        veto(&Ok(ResolvedName::Exact(record_entity(record))), false),
-        None
-    );
+    assert_eq!(veto(&Ok(ResolvedName::Retired { at_commit: 3 })), None);
+    assert_eq!(veto(&Ok(ResolvedName::Exact(record_entity(record)))), None);
 }
 
 fn record_entity(record: LineageRecordTarget) -> EntityId {

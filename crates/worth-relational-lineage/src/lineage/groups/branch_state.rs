@@ -50,8 +50,14 @@ pub enum GroupStateDenial {
     },
 }
 
+crate::lineage::clone_fences::assert_not_clone!(SchemeGroups);
+crate::lineage::clone_fences::assert_not_clone!(BranchGroupState);
+
 /// One installed scheme's live groups, retired names and member owners.
-#[derive(Clone, Debug, Eq, PartialEq)]
+///
+/// Not `Clone`: it holds every live group's member set. A fork copies it
+/// only through [`BranchGroupState::duplicate_for_branch_fork`].
+#[derive(Debug, Eq, PartialEq)]
 pub struct SchemeGroups {
     rule: AggregateContinuityRule,
     live: BTreeMap<AggregateIdentity, AggregatePriorGroup>,
@@ -96,13 +102,34 @@ impl SchemeGroups {
 }
 
 /// Every installed scheme's groups on one branch.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+///
+/// Not `Clone`: a copy is O(groups × members). Head reads borrow the
+/// maintained state; a branch fork copies it through
+/// [`Self::duplicate_for_branch_fork`].
+#[derive(Debug, Default, Eq, PartialEq)]
 pub struct BranchGroupState {
     schemes: BTreeMap<String, SchemeGroups>,
     latest_commit: Option<CommitId>,
 }
 
 impl BranchGroupState {
+    /// A forked branch's explicit O(groups × members) copy of this state.
+    pub fn duplicate_for_branch_fork(&self) -> Self {
+        let schemes = self.schemes.iter().map(|(id, groups)| {
+            let copy = SchemeGroups {
+                rule: groups.rule,
+                live: groups.live.clone(),
+                retired: groups.retired.clone(),
+                member_owner: groups.member_owner.clone(),
+            };
+            (id.clone(), copy)
+        });
+        Self {
+            schemes: schemes.collect(),
+            latest_commit: self.latest_commit,
+        }
+    }
+
     pub fn scheme(&self, scheme_id: &str) -> Option<&SchemeGroups> {
         self.schemes.get(scheme_id)
     }
@@ -158,6 +185,26 @@ impl BranchGroupState {
             self.latest_commit = Some(self.latest_commit.map_or(commit, |at| at.max(commit)));
         }
         Ok(())
+    }
+}
+
+/// A branch's group state as of one commit: the maintained state itself
+/// when no later group lineage applies to it, else one rebuilt for that
+/// historical commit.
+#[derive(Debug)]
+pub enum GroupStateAt<'state> {
+    Head(&'state BranchGroupState),
+    Rebuilt(BranchGroupState),
+}
+
+impl std::ops::Deref for GroupStateAt<'_> {
+    type Target = BranchGroupState;
+
+    fn deref(&self) -> &BranchGroupState {
+        match self {
+            Self::Head(state) => state,
+            Self::Rebuilt(state) => state,
+        }
     }
 }
 

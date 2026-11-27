@@ -1,5 +1,6 @@
 use worth_relational::facade::history::RelationalDescriptiveTouch;
 use worth_relational::facade::history::RelationalTouchAdjacencyDirection;
+use worth_relational::facade::lineage::{LineageEventKind, LineageEventRecord};
 use worth_relational::facade::transactions::RecordRef;
 
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection;
@@ -92,6 +93,28 @@ pub fn visit<E>(
         Touch::IndexDefinition { index } => {
             emit(Key::IndexDefinition(*index))?;
         }
+    }
+    Ok(())
+}
+
+/// Lower one canonical lineage event into name-history addresses: every
+/// lineage it ends, splits, merges away, replaces or restores from, and the
+/// name a `Create` births.
+///
+/// Complexity: O(event sources + 1).
+pub fn visit_lineage<E>(
+    event: &LineageEventRecord,
+    mut emit: impl FnMut(FactPostingKey) -> Result<(), E>,
+) -> Result<(), E> {
+    if event.kind() == LineageEventKind::Create
+        && let Some(birth) = event.name_birth()
+    {
+        emit(FactPostingKey::PersistentNameBirth(
+            *birth.identity().as_bytes(),
+        ))?;
+    }
+    for source in event.sources() {
+        emit(FactPostingKey::PersistentNameLineage(*source))?;
     }
     Ok(())
 }

@@ -10,5 +10,5 @@
 pub mod branch_state;
 pub mod committed;
 
-pub use branch_state::{BranchGroupState, GroupStateDenial, SchemeGroups};
+pub use branch_state::{BranchGroupState, GroupStateAt, GroupStateDenial, SchemeGroups};
 pub use committed::{CommittedGroupTransition, GroupTransitionKind};

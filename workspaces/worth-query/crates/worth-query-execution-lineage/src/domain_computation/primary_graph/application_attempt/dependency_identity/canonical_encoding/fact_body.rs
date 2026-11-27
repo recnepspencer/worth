@@ -219,6 +219,9 @@ pub fn append_fact(
         WorthQueryApplicationObservedFact::PersistentGroup { read, answer } => {
             super::persistent_group::append(entries, prefix, read, answer);
         }
+        WorthQueryApplicationObservedFact::PersistentNameHistory { read, answer } => {
+            super::persistent_name_history::append(entries, prefix, read, answer);
+        }
         WorthQueryApplicationObservedFact::Relation {
             matching_relations, ..
         } => {

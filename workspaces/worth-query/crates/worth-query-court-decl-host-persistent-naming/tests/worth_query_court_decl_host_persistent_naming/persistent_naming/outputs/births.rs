@@ -218,7 +218,7 @@ fn split_merged_and_retired_names_keep_their_births_and_name_their_parents() {
 }
 
 #[test]
-fn name_for_birth_finds_recorded_births_and_an_unborn_answer_never_seals() {
+fn name_for_birth_finds_recorded_births_and_an_unborn_answer_seals_on_its_birth() {
     let token = "births-lookup";
     let (world, [body, tool, left, _]) = split_world(token);
     births::name_for_birth(
@@ -238,8 +238,8 @@ fn name_for_birth_finds_recorded_births_and_an_unborn_answer_never_seals() {
     assert_eq!(minted(&observed, "left"), Some(left));
     assert_eq!(minted(&observed, "unborn"), None);
     assert!(
-        !ended.contains("Committed"),
-        "an answer resting on an unborn name never seals: {ended}"
+        ended.contains("Committed"),
+        "an answer resting on an unborn name seals on its awaited birth: {ended}"
     );
 
     // Once `later` is born, and `left` retired, both lookups answer and seal.
@@ -294,8 +294,8 @@ fn a_seam_reads_its_birth_and_is_found_by_its_birth_parts() {
     births::seam_name_for_birth(token, "unborn", seam_names::seam("births-weld", "seam", 2));
     let (observed, ended) = world.probe_births(token, &[], 0);
     assert!(
-        !ended.contains("Committed"),
-        "an unborn seam lookup never seals: {ended}"
+        ended.contains("Committed"),
+        "an unborn seam lookup seals on its awaited birth: {ended}"
     );
     let seam_minted = |label: &str| {
         observed.iter().find_map(|observation| match observation {
