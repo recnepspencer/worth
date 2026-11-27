@@ -1,7 +1,9 @@
 //! Full comparison after a certified chain's terminal leaves the mark window.
 
 use super::*;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::EqualityRecoveryImage;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::EqualityRecoveryRow;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedRows;
 
 enum RecoveryStep {
     Visit(Arc<RecordedSettlementIdentity>, bool),
@@ -21,6 +23,27 @@ impl ConsumedOutputEvidence {
         let image = owner
             .equality_recovery_image(selected)
             .map_err(map_verification_stop)?;
+        let mut observed = ObservedRows::new();
+        Self::compare_equal_chain_in(
+            execution, evidence, &image, &mut observed, runtime, basis, selected, compared,
+        )
+    }
+
+    /// Follow `evidence`'s equal chain in one aligned `image` with no marks
+    /// read. A compared decision is fenced on `observed`, every row this walk
+    /// (and any earlier walk sharing `observed`) read. An unlinked root keeps
+    /// its direct fact ordinal, as the marked walk compares it directly.
+    #[allow(clippy::too_many_arguments)]
+    pub fn compare_equal_chain_in(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        evidence: EvidenceView<'_>,
+        image: &EqualityRecoveryImage,
+        observed: &mut ObservedRows,
+        runtime: &RelationalRuntime,
+        basis: CertificationBasis<'_>,
+        selected: &PositionedRelationalSnapshot,
+        compared: &mut Vec<EqualityRecoveryRow>,
+    ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         let mut pending = Vec::new();
         let mut visited = OrdSet::new();
         reserve_pending(&mut pending, 1)?;
@@ -35,7 +58,7 @@ impl ConsumedOutputEvidence {
                 }
             };
             let row = image
-                .terminal_row(&identity)
+                .terminal_row(&identity, observed)
                 .map_err(map_verification_stop)?;
 
             if visited.contains(&row.identity) {
@@ -48,6 +71,7 @@ impl ConsumedOutputEvidence {
             let Some(facts) = row.facts.for_comparison() else {
                 return Ok(ConsumedOutputVerification::ChangedUpstream);
             };
+            let direct = root && Arc::ptr_eq(&row.identity, evidence.identity);
             let witness = evidence
                 .native_output_witness
                 .filter(|_| root)
@@ -67,14 +91,14 @@ impl ConsumedOutputEvidence {
                 &facts,
                 row.output_facts(),
                 witness,
-                false,
+                direct,
                 runtime,
                 basis,
                 row.historical.as_ref(),
                 output_historical,
             )?;
             if let Some(changed) = changed {
-                image.fence().map_err(map_verification_stop)?;
+                image.fence(observed).map_err(map_verification_stop)?;
                 return Ok(changed);
             }
 
@@ -87,7 +111,7 @@ impl ConsumedOutputEvidence {
                     .map(|upstream| RecoveryStep::Visit(Arc::clone(upstream), false)),
             );
         }
-        image.fence().map_err(map_verification_stop)?;
+        image.fence(observed).map_err(map_verification_stop)?;
         Ok(ConsumedOutputVerification::Current)
     }
 }

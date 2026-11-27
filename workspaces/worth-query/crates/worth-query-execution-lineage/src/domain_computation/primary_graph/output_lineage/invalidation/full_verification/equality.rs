@@ -39,7 +39,7 @@ pub fn output_projection<'state>(
 ) -> Result<Option<&'state RegisteredOutputFacts>, FullVerificationStop> {
     let mut current = terminal;
     for _ in 0..=state.equal_links.len() {
-        image_fence::observe_row(observed_rows, current)?;
+        super::super::semantic_fence::observe(observed_rows, current);
 
         let row = state.settlements.get(current).ok_or(gap())?;
         if let Some(projection) = &row.output_facts {

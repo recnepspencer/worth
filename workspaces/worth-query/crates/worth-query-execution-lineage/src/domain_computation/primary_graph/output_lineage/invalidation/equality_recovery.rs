@@ -4,13 +4,13 @@ use std::sync::Arc;
 
 use im::OrdSet;
 use worth_relational::facade::mvcc::CompanionBranchCell;
-use worth_relational::facade::mvcc::CompanionBranchImage;
 use worth_relational::facade::mvcc::CompanionCellEditStop;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use super::mark_state::MarkState;
 use super::mark_state::OutputFactCoverage;
 use super::output_facts::RegisteredOutputFacts;
+use super::semantic_fence::{observe, same_observed_meaning, ObservedRows};
 use super::source_alignment::BranchMarkRoot;
 use super::source_alignment::SnapshotAlignedMarkState;
 use super::SettlementVerificationStop;
@@ -18,9 +18,13 @@ use super::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 
+/// One aligned read of the mark image a walk follows equality links in.
+/// Cloning it shares the same read.
+#[derive(Clone)]
 pub struct EqualityRecoveryImage {
     cell: CompanionBranchCell<BranchMarkRoot>,
-    image: CompanionBranchImage<BranchMarkRoot>,
+    payload: Arc<BranchMarkRoot>,
+    selected: PositionedRelationalSnapshot,
     state: Arc<MarkState>,
 }
 
@@ -64,18 +68,35 @@ impl SourceInvalidationOwner {
         let aligned = SnapshotAlignedMarkState::observe_image(&image, selected)
             .map_err(|_| SettlementVerificationStop::Alignment)?;
         Ok(EqualityRecoveryImage {
-            cell,
-            image,
             state: aligned.recovery_state(),
+            payload: Arc::clone(image.payload()),
+            cell,
+            selected: selected.clone(),
         })
     }
 }
 
 impl EqualityRecoveryImage {
+    /// The same aligned read, with its state for a semantic comparison.
+    pub fn state(&self) -> &MarkState {
+        &self.state
+    }
+
+    /// Whether `other` is this same read (the payload is shared).
+    pub fn same_read(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&other.payload, &self.payload)
+            && Arc::ptr_eq(&other.state, &self.state)
+    }
+
+    /// Resolve `identity` to its terminal row. `observed` gains the identity
+    /// asked for, the terminal, and every row the projection walk passes,
+    /// as the oracle records them (`full_verification.rs`).
     pub fn terminal_row(
         &self,
         identity: &Arc<RecordedSettlementIdentity>,
+        observed: &mut ObservedRows,
     ) -> Result<EqualityRecoveryRow, SettlementVerificationStop> {
+        observe(observed, identity);
         let mut current = Arc::clone(identity);
         for _ in 0..=self.state.equal_links.len() {
             let next = self
@@ -89,9 +110,10 @@ impl EqualityRecoveryImage {
                     .settlements
                     .get(&current)
                     .ok_or(SettlementVerificationStop::Alignment)?;
+                observe(observed, &current);
                 return Ok(EqualityRecoveryRow {
                     _custody: Arc::clone(row),
-                    output_projection: self.output_facts(&current)?,
+                    output_projection: self.output_facts(&current, observed)?,
                     identity: current,
                     facts: row.facts.clone(),
                     upstream: row.consumed_upstream.clone(),
@@ -116,9 +138,11 @@ impl EqualityRecoveryImage {
     fn output_facts(
         &self,
         terminal: &Arc<RecordedSettlementIdentity>,
+        observed: &mut ObservedRows,
     ) -> Result<Option<RegisteredOutputFacts>, SettlementVerificationStop> {
         let mut current = terminal;
         for _ in 0..=self.state.equal_links.len() {
+            observe(observed, current);
             let Some(row) = self.state.settlements.get(current) else {
                 return Ok(None);
             };
@@ -149,19 +173,20 @@ impl EqualityRecoveryImage {
         Err(SettlementVerificationStop::Alignment)
     }
 
-    /// Comparisons precede any recovery edit. A same-position actor edit
-    /// invalidates this read just as a native publication does.
-    pub fn fence(&self) -> Result<(), SettlementVerificationStop> {
+    /// Comparisons precede any recovery edit. The fence trips when a row the
+    /// walk read (`observed`) changed meaning since this read
+    /// (`semantic_fence`), or when `selected` no longer aligns. Mark-only
+    /// carries by the walk's own nested verifications pass.
+    pub fn fence(&self, observed: &ObservedRows) -> Result<(), SettlementVerificationStop> {
         let fresh = self.cell.read_image();
-        if fresh.root_id() != self.image.root_id()
-            || fresh.commit_id() != self.image.commit_id()
-            || fresh.position() != self.image.position()
-            || fresh.topology_generation() != self.image.topology_generation()
-            || !Arc::ptr_eq(fresh.payload(), self.image.payload())
-        {
-            return Err(SettlementVerificationStop::Edit(
-                CompanionCellEditStop::TopologyGenerationChanged,
-            ));
+        if Arc::ptr_eq(fresh.payload(), &self.payload) {
+            return Ok(());
+        }
+        let stop = || SettlementVerificationStop::Edit(CompanionCellEditStop::TopologyGenerationChanged);
+        let aligned =
+            SnapshotAlignedMarkState::observe_image(&fresh, &self.selected).map_err(|_| stop())?;
+        if !same_observed_meaning(&self.state, &aligned.recovery_state(), observed, &self.selected) {
+            return Err(stop());
         }
         Ok(())
     }

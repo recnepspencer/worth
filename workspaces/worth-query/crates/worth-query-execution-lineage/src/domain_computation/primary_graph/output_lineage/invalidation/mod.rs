@@ -21,7 +21,10 @@ pub mod derived;
 
 pub mod equality;
 pub mod equality_recovery;
+pub use equality_recovery::EqualityRecoveryImage;
 pub use equality_recovery::EqualityRecoveryRow;
+pub mod semantic_fence;
+pub use semantic_fence::ObservedRows;
 pub mod fact_key;
 pub mod fact_keys;
 

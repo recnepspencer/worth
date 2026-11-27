@@ -164,9 +164,9 @@ impl FullVerificationImage<'_> {
 
         pending.push((Arc::clone(identity), true));
         while let Some((original, direct)) = pending.pop() {
-            image_fence::observe_row(observed_rows, &original)?;
+            super::semantic_fence::observe(observed_rows, &original);
             let terminal = equality::terminal(&self.state, &original)?;
-            image_fence::observe_row(observed_rows, terminal)?;
+            super::semantic_fence::observe(observed_rows, terminal);
             let source = root_source.filter(|_| direct && Arc::ptr_eq(&original, terminal));
             if let Some(source) = source {
                 if !self.root_source_is_current(execution, source)? {

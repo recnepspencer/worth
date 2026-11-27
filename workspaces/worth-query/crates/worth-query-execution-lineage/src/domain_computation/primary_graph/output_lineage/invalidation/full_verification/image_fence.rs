@@ -3,6 +3,9 @@
 use super::*;
 
 impl FullVerificationImage<'_> {
+    /// The oracle's fence: the rows its walk read must mean the same in the
+    /// re-read image. Only this consistency check is shared with the
+    /// equality walk (`semantic_fence`); the verdict stays the oracle's own.
     pub fn fence_semantic_image(
         &self,
         observed: &OrdSet<Arc<RecordedSettlementIdentity>>,
@@ -18,48 +21,16 @@ impl FullVerificationImage<'_> {
             .map_err(FullVerificationStop::Alignment)?
             .into_full_verification_state();
 
-        if !self.state.equal_links.ptr_eq(&current.equal_links) {
+        if !super::super::semantic_fence::same_observed_meaning(
+            &self.state,
+            &current,
+            observed,
+            self.selected,
+        ) {
             return Err(FullVerificationStop::ActorImageChanged);
-        }
-        for identity in observed {
-            // A retired row an equality link still names was walked through,
-            // not read: it is absent from both images unless one changed.
-            let (old, fresh) = match (
-                self.state.settlements.get(identity),
-                current.settlements.get(identity),
-            ) {
-                (Some(old), Some(fresh)) => (old, fresh),
-                (None, None) => continue,
-                _ => return Err(FullVerificationStop::ActorImageChanged),
-            };
-
-            let same_output = match (&old.output_facts, &fresh.output_facts) {
-                (Some(old), Some(fresh)) => Arc::ptr_eq(&old.facts, &fresh.facts),
-                (None, None) => true,
-                _ => false,
-            };
-            // Own certified dirty-clear changes only marks. A registration or
-            // Stable publication changes these semantic bindings and requires retry.
-            if !old.facts.same_binding(&fresh.facts)
-                || !Arc::ptr_eq(&old.read_basis, &fresh.read_basis)
-                || !old.consumed_upstream.ptr_eq(&fresh.consumed_upstream)
-                || old.output_coverage != fresh.output_coverage
-                || old.verification_requirement != fresh.verification_requirement
-                || !same_output
-            {
-                return Err(FullVerificationStop::ActorImageChanged);
-            }
         }
         Ok(())
     }
-}
-
-pub fn observe_row(
-    observed: &mut OrdSet<Arc<RecordedSettlementIdentity>>,
-    identity: &Arc<RecordedSettlementIdentity>,
-) -> Result<(), FullVerificationStop> {
-    observed.insert(Arc::clone(identity));
-    Ok(())
 }
 
 mod court_doors_for_test;
