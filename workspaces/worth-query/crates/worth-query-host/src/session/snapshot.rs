@@ -5,7 +5,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_publication::facade::{
     application_entry::{
         WorthQueryApplicationReadObservation, WorthQueryApplicationReadObservationDenial,
-        WorthQueryApplicationRequestQueryDenial,
+        WorthQueryApplicationRequestQueryDenial, WorthQueryApplicationRetainedRequest,
     },
     domain_computation::WorthQueryPublishedApplicationResult,
 };
@@ -53,7 +53,27 @@ impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Sch
     }
 }
 
-impl<Schema: ApplicationSchema, Program> WorthQuerySessionSnapshot<'_, '_, Schema, Program> {
+impl<'home, Schema: ApplicationSchema, Program>
+    WorthQuerySessionSnapshot<'_, 'home, Schema, Program>
+{
+    /// Lends a request retained at the pinned basis, under the session's
+    /// current proof and a fresh request scope, for reads beyond typed
+    /// queries: workflow definition discovery, instance and history pages and
+    /// original-start reads all observe exactly [`Self::selected_commit`].
+    /// Each read still admits the principal's current disclosure; nothing is
+    /// written and the pin stays held.
+    pub fn with_request<R>(
+        &self,
+        body: impl for<'request> FnOnce(
+            &WorthQueryApplicationRetainedRequest<'home, 'request, 'request, Schema>,
+        ) -> R,
+    ) -> R {
+        let scope = self.session.fresh_scope();
+        let principal = self.session.call_principal();
+        let request = self.session.request_as(&principal, &scope);
+        body(&request.at(&self.observation))
+    }
+
     /// The commit every query of this snapshot reads.
     pub fn selected_commit(&self) -> &CompositeCommitIdentity {
         self.observation.selected_commit()
