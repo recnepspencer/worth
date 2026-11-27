@@ -176,6 +176,25 @@ where
     })
 }
 
+/// Only the request's scope, resolved exactly as
+/// [`resolve_capability_request`] resolves it, before any elevation, related
+/// or context selector is read.
+pub fn resolve_capability_scope<Schema, Scope, Context>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    truth: &WorthQueryEntityResolutionTruth<'_>,
+    schema: &WorthQueryInstalledApplicationSchema<Schema>,
+    projection: &ApplicationCapabilityRequestProjection<Schema, Scope, Context>,
+) -> Result<
+    WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    WorthQueryOperationAuthorizationDenial,
+>
+where
+    Schema: ApplicationSchema,
+{
+    resolve_selector(execution, truth, schema, projection.resource())
+        .map(|resource| resource.into_application_identity())
+}
+
 pub fn resolve_erased_selector<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     truth: &WorthQueryEntityResolutionTruth<'_>,

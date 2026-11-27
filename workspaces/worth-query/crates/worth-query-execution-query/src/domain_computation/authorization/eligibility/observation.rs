@@ -177,7 +177,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     /// The branch head, where the asker is admitted, and the retained basis
     /// verdicts read when one is pinned.
-    fn select_eligibility_bases(
+    pub(super) fn select_eligibility_bases(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: WorthQueryEligibilityBasis<'_>,

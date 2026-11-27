@@ -318,6 +318,20 @@ shows how to keep the right receipts, query a producer settlement and admit the
 current metadata/diagnostic access each request needs. Use it for audit and
 debugging views that must describe the original work after later state changes.
 
+## Audit reads: past commits, change logs, provenance and impact
+
+A session answers an audit view's questions in one call each, under its own
+principal and policy: `snapshot_at_commit`, `snapshot_at_recorded_commit` and
+`snapshot_at_original_receipt` pin an earlier commit; `record_history::<History>`
+reads a record's governed change log; a snapshot's `workflow_audit` reads a
+workflow instance's transition audit trail and `causal_timeline` reads both at
+one commit; `source_provenance::<Disclosure>` materializes what an authored
+operation wrote; `entity_impact` and `referenced_by` report what depends on an
+entity type and which records reference one record. Every read admits the
+principal afresh and refuses rather than returning less. Types are in
+`facade::audit`; see
+[Causal audit reads](../../docs/capabilities/causal-audit-reads.md).
+
 ## Contribution-Composed Applications
 
 Pure domain value crates own their values and validation without importing Query.
@@ -1113,7 +1127,12 @@ The workflow Home carries the ordinary Home's desktop surface with the same
 signatures: `session`, `local_session`, `on_commit`, `committed_basis_version`,
 `primary_graph`, `active_branch`, `open_disposition`, `home_identity`,
 `home_incarnation`, `close_with_policy`, `close_clean` and
-`close_clean_with_policy`. A session's `request(&scope)` and a snapshot's
+`close_clean_with_policy`. It also forwards `correction_history`, `undo`,
+`redo` (with `_with_key` and `_authored`), `fork_preview`, `adopt_preview`,
+`continue_preview_recovery`, `close_branch`, `owned_history`,
+`attach_owned_history_head`, `catch_up_temporal` and `pump_temporal` (with
+`_observing`) unchanged; `discard_preview(preview)` stands in for
+`preview.discard(&home)`. A session's `request(&scope)` and a snapshot's
 `with_request(..)` accept `vocabulary()` for every workflow lifecycle call and
 governed read; snapshot reads observe exactly the pinned commit and write
 nothing. `owned_session(session)` turns a session of this Home into a

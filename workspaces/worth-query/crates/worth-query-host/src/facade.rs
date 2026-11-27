@@ -4,33 +4,26 @@
 //! - Open or reopen a persistent Home in one call via [`WorthQueryApplicationHome::open_directory`]
 //!   with [`WorthQueryHomeConfig::desktop_default`], check [`WorthQueryApplicationHome::open_disposition`],
 //!   and retire cleanly with [`WorthQueryApplicationHome::close_clean`].
-//! - Create a reusable authenticated session via
-//!   [`WorthQueryApplicationHome::session`] (`let session = home.session(me);`)
-//!   with bounded defaults (`DEFAULT_HOST_EXECUTION_POLICY`) and run actions
-//!   (`session.run(...)`), typed queries (`session.query(...) -> Vec<Row>`),
-//!   whole-result live subscriptions (`session.subscribe(...)` returning
-//!   [`WorthQueryTypedLiveSubscription`]), and managed-index watches / cold
-//!   readiness (`session.watch(...)`, `session.ensure_index_ready(intent)` / `session.ensure_default_index_ready::<Query>()`).
-//! - Fork and atomically adopt "what-if" branches via
-//!   [`WorthQueryApplicationHome::fork_preview`] /
-//!   [`WorthQueryApplicationHome::adopt_preview`], attach `'static` document
-//!   history via [`WorthQueryApplicationHome::owned_history`], and perform
-//!   restart-safe undo/redo via [`WorthQueryApplicationHome::undo`], [`WorthQueryApplicationHome::undo_authored`],
-//!   [`WorthQueryApplicationHome::redo`], and [`WorthQueryApplicationHome::redo_authored`]; discover what to undo or
-//!   redo after a restart with [`WorthQueryApplicationHome::correction_history`]
-//!   (`history.next_undo()` / `history.next_redo()`).
+//! - Create a reusable session via [`WorthQueryApplicationHome::session`] (`home.session(me)`)
+//!   with bounded defaults (`DEFAULT_HOST_EXECUTION_POLICY`) and run actions (`session.run(..)`),
+//!   typed queries (`session.query(..)`), live subscriptions ([`WorthQueryTypedLiveSubscription`]),
+//!   managed-index watches and readiness (`session.watch(..)`, `session.ensure_index_ready(..)`).
+//! - Fork and adopt "what-if" branches ([`WorthQueryApplicationHome::fork_preview`],
+//!   [`WorthQueryApplicationHome::adopt_preview`]), attach `'static` document history
+//!   ([`WorthQueryApplicationHome::owned_history`]), undo/redo restart-safely
+//!   ([`WorthQueryApplicationHome::undo`], [`WorthQueryApplicationHome::redo`] and their
+//!   `_authored` forms), and list what to undo after a restart with
+//!   [`WorthQueryApplicationHome::correction_history`]. Audit reads are in [`audit`].
 //! - Show any refusal to an end user with [`WorthQueryUserFacingRefusal`]
 //!   (`denial.user_message()`), keeping `{denial:?}` for developer logs.
 //!
-//! Ordinary action owners retain the authentic installed runtime and complete
-//! installed action beyond construction. Applications keep their own genuine
-//! runtime handle for fresh requests; operation keepalive grants no admission
-//! or cleanup. Bind initial workflow vocabulary before retaining handles, and
-//! preserve runtime/spec/signing custody when configuration refuses.
+//! Ordinary action owners retain the authentic installed runtime and complete installed action
+//! beyond construction. Applications keep their own runtime handle for fresh requests; operation
+//! keepalive grants no admission or cleanup. Bind initial workflow vocabulary before retaining
+//! handles, and preserve runtime/spec/signing custody when configuration refuses.
 //!
-//! Raw-part `from_untrusted*` archive decoders are sealed off this audience:
-//! each demands an internal witness that neither the Host facade nor its
-//! re-exported declaration facade names, and that cannot be conjured.
+//! Raw-part `from_untrusted*` archive decoders are sealed off this audience: each demands an
+//! internal witness that neither this facade nor its declaration re-export names.
 //!
 //! ```compile_fail,E0432
 //! use worth_query_host::facade::declaration::archive_decode_authority::ARCHIVE_DECODE;
@@ -43,10 +36,8 @@
 //! }
 //! ```
 //!
-//! Transported checkpoints instead readmit through
-//! `WorthQueryApplicationCheckpoint::readmit_transported` under their retained
-//! capture origin, and transports describe correction sources with typed
-//! coordinates:
+//! Transported checkpoints readmit through `WorthQueryApplicationCheckpoint::readmit_transported`
+//! under their capture origin; transports describe correction sources with typed coordinates:
 //!
 //! ```
 //! use worth_query_host::facade::primary_graph::{
@@ -266,12 +257,11 @@ pub use worth_query_declaration::{
     worth_query_operation_writes, worth_query_portable_type, worth_query_principal_binding,
     worth_query_principal_issuer, worth_query_structured_value_binding, worth_query_workflow,
 };
-/// Explain saved query results and authored source operations for audit or debugging.
-/// Start with [`application_entry::WorthQueryApplicationRequest::inspect`] or
-/// [`application_entry::WorthQueryApplicationRequest::inspect_source`]. Each
-/// execution checks current inspection permission; saving an original does not
-/// preserve an access grant.
+/// Explain saved query results and authored source operations: start with
+/// [`application_entry::WorthQueryApplicationRequest::inspect`] or `inspect_source`. Each
+/// execution checks current inspection permission; a saved original keeps no grant.
 pub use worth_query_execution::facade::application_inspection as causal_inspection;
+pub mod audit;
 pub use worth_query_execution::facade::{application_contribution, application_discovery};
 pub use worth_query_execution::facade::{application_installation, application_invariants};
 pub mod application_naming;
@@ -321,11 +311,8 @@ pub use crate::background::{
 pub mod principal_registry {
     pub use crate::principal_registry::WorthQueryPrincipalRegistryRefusal;
 }
-/// Fact-free "who may act?": verdicts from the installed policy decision, no fact minted.
-pub mod eligibility {
-    pub use crate::session::{WorthQueryEligibilityDenial, WorthQueryEligibilityRoster};
-    pub use worth_query_execution::facade::eligibility::*;
-}
+/// Fact-free "who may act?": verdicts from the installed policy decisions, no fact retained.
+pub mod eligibility;
 /// Reusable authenticated Host session and typed whole-result / managed-index live handles.
 pub use crate::session::{
     WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQueryLocalSessionDenial,

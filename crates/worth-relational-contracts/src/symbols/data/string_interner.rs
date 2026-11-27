@@ -39,8 +39,9 @@ impl StringInterner {
             .next_symbol
             .checked_add(1)
             .ok_or(super::RelationalSymbolExhausted)?;
-        self.by_value.insert(value.to_string().into(), symbol);
-        self.by_symbol.insert(symbol, value.to_string().into());
+        let text = StoredSymbolText::from(value);
+        self.by_value.insert(text.clone(), symbol);
+        self.by_symbol.insert(symbol, text);
         Ok(symbol)
     }
 
@@ -230,6 +231,8 @@ mod exhaustion_tests {
 
 #[cfg(test)]
 mod allocation_tests;
+#[cfg(test)]
+mod import_tests;
 
 /// Operations used by the Relational owners.
 pub trait StringInternerOwnerPort: Sized {
@@ -250,6 +253,15 @@ pub trait StringInternerOwnerPort: Sized {
         &mut self,
         text: StoredSymbolText,
     ) -> Result<Symbol, super::RelationalFieldTextAdmissionDenial>;
+    /// Install one canonical meaning, refusing one that aliases an existing
+    /// meaning. `O(log N)` persistent-map writes sharing every untouched node
+    /// and text; none when this exact custody is already installed.
+    fn import_canonical_meaning(
+        &mut self,
+        symbol: Symbol,
+        text: &StoredSymbolText,
+    ) -> Result<(), &'static str>;
+    /// All of `snapshot`'s meanings or none: `O(|snapshot| log N)`.
     fn import_canonical_snapshot(
         &mut self,
         snapshot: &SymbolTableSnapshot,
@@ -323,48 +335,49 @@ impl StringInternerOwnerPort for StringInterner {
         Ok(symbol)
     }
 
+    fn import_canonical_meaning(
+        &mut self,
+        symbol: Symbol,
+        text: &StoredSymbolText,
+    ) -> Result<(), &'static str> {
+        let prior = self.by_symbol.get(&symbol);
+        if prior.is_some_and(|prior| prior != text)
+            || self
+                .symbol(text.as_str())
+                .is_some_and(|prior| prior != symbol)
+        {
+            return Err("canonical tail dictionary aliases existing symbol meaning");
+        }
+        if symbol.0 == u32::MAX {
+            return Err("canonical tail symbol exhausted");
+        }
+        // Imported System text never displaces the same meaning's Managed custody.
+        let text = prior
+            .filter(|prior| prior.is_managed() && !text.is_managed())
+            .unwrap_or(text);
+        if !prior.is_some_and(|prior| prior.is_same_custody(text)) {
+            let text = text.clone();
+            // Equal-key insert alone keeps the old key in persistent maps.
+            self.by_value.remove(text.as_str());
+            self.by_value.insert(text.clone(), symbol);
+            self.by_symbol.insert(symbol, text);
+        }
+        self.next_symbol = self.next_symbol.max(symbol.0.saturating_add(1));
+        Ok(())
+    }
+
     fn import_canonical_snapshot(
         &mut self,
         snapshot: &SymbolTableSnapshot,
     ) -> Result<(), &'static str> {
-        let mut symbols = std::collections::BTreeMap::new();
-        let mut values = std::collections::BTreeMap::new();
+        // Each meaning is checked against the dictionary holding the earlier
+        // ones, so a batch that contradicts itself refuses like an alias. The
+        // persistent roots copy in O(1); a refusal leaves `self` unchanged.
+        let mut staged = self.clone();
         for (symbol, text) in &snapshot.entries {
-            if self
-                .by_symbol
-                .get(symbol)
-                .is_some_and(|prior| prior != text)
-                || self
-                    .symbol(text.as_str())
-                    .is_some_and(|prior| prior != *symbol)
-            {
-                return Err("canonical tail dictionary aliases existing symbol meaning");
-            }
-            if symbol.0 == u32::MAX {
-                return Err("canonical tail symbol exhausted");
-            }
-            if symbols
-                .insert(*symbol, text.as_str())
-                .is_some_and(|prior| prior != text.as_str())
-                || values
-                    .insert(text.as_str(), *symbol)
-                    .is_some_and(|prior| prior != *symbol)
-            {
-                return Err("canonical tail dictionary contains conflicting meanings");
-            }
+            staged.import_canonical_meaning(*symbol, text)?;
         }
-        for (symbol, text) in &snapshot.entries {
-            let text = self
-                .by_symbol
-                .get(symbol)
-                .filter(|prior| prior.is_managed() && !text.is_managed())
-                .unwrap_or(text)
-                .clone();
-            self.by_value.remove(text.as_str());
-            self.by_value.insert(text.clone(), *symbol);
-            self.by_symbol.insert(*symbol, text);
-            self.next_symbol = self.next_symbol.max(symbol.0.saturating_add(1));
-        }
+        *self = staged;
         Ok(())
     }
 

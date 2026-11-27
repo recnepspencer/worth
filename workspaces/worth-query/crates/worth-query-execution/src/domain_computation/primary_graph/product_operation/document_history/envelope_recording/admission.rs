@@ -210,8 +210,22 @@ impl crate::domain_computation::primary_graph::product_operation::WorthQueryCorr
         source: &worth_runtime_world::facade::CompositeCommitIdentity,
     ) -> bool {
         // A closed document vouches for nothing.
-        self.selection
-            .upgrade()
-            .is_some_and(|selection| selection.lock().journal.restores_descendant_of(selected, source))
+        let Some(selection) = self.selection.upgrade() else {
+            return false;
+        };
+        selection.live().is_some_and(|live| live.journal.restores_descendant_of(selected, source))
+    }
+
+    fn wrote_on_line_through(
+        &self,
+        commit: worth_relational::facade::history::CommitId,
+        selected: worth_relational::facade::history::CommitId,
+        source: &worth_runtime_world::facade::CompositeCommitIdentity,
+    ) -> bool {
+        // A closed document cannot tell, so the write is kept.
+        let Some(selection) = self.selection.upgrade() else {
+            return true;
+        };
+        selection.live().is_none_or(|live| live.journal.wrote_on_line_through(commit, selected, source))
     }
 }

@@ -3,6 +3,7 @@ pub(crate) use worth_query_testkit_certification_correction::facade::certificati
 mod causal_inspection;
 #[path = "consecutive_undo.rs"]
 mod consecutive_undo;
+mod source_provenance;
 
 #[test]
 fn authored_retirement_restores_exact_logical_payload_under_new_physical_identity() {

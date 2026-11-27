@@ -24,7 +24,8 @@ use worth_query_host::facade::{
 };
 
 use super::assign::AssignRoleHandler;
-use super::grants::{self, ACTIVE, APPROVE, PURPOSE, REVIEW};
+use super::countersign::COUNTERSIGN;
+use super::grants::{self, ACTIVE, APPROVE, AUDIT, ENABLED, OBSERVE, REVIEW, WITNESS};
 use super::schema::*;
 use super::{Window, SITES};
 
@@ -42,6 +43,12 @@ worth_query_application_contribution! {
     pub feature QmsActions<QmsSchema> for QmsFeature => QmsRuntime {
         body_action(SetSiteStatusBinding, SiteStatusSet) as SetSiteStatusAction {
             operation: set_site_status_operation();
+        };
+        body_action(SetAssignmentStatusBinding, AssignmentStatusSet) as SetAssignmentStatusAction {
+            operation: set_assignment_status_operation();
+        };
+        body_action(SetGrantStatusBinding, GrantStatusSet) as SetGrantStatusAction {
+            operation: set_grant_status_operation();
         };
         action assign(AssignRoleBinding, RoleAssigned, AssignRoleHandler) as AssignRoleAction {};
     }
@@ -101,10 +108,11 @@ worth_query_application_program! {
 
 pub type QmsHome = WorthQueryApplicationHome<QmsSchema, QmsProgram>;
 
-/// Members: alice (1) holds the seeded roles; bob (2) holds none.
+/// Members: alice (1) holds the seeded roles and an enabled assignment over
+/// north; bob (2) holds no grant but an enabled assignment over north.
 pub const MEMBERS: [(&str, u64); 2] = [("alice", 1), ("bob", 2)];
 
-fn identity(name: &str) -> WorthQueryExternalPrincipalIdentity {
+pub fn identity(name: &str) -> WorthQueryExternalPrincipalIdentity {
     WorthQueryExternalPrincipalIdentity::new(QmsIssuer, name).unwrap()
 }
 
@@ -124,12 +132,13 @@ fn grant(
         WorthQueryApplicationEntitySeed::new(RoleGrant::reference(), key(&grant))
             .field(RoleGrantFacts::grant_id(), grant.clone())
             .field(RoleGrantFacts::role(), role.to_owned())
-            .field(RoleGrantFacts::purpose(), PURPOSE.to_owned())
+            .field(RoleGrantFacts::purpose(), GrantPurpose::Quality)
             .field(RoleGrantFacts::grant_status(), ACTIVE.to_owned())
             .field(RoleGrantFacts::valid_from(), window.valid_from)
             .field(RoleGrantFacts::valid_until(), window.valid_until)
             .field(RoleGrantFacts::first_day(), window.first_day)
-            .field(RoleGrantFacts::last_day(), window.last_day),
+            .field(RoleGrantFacts::last_day(), window.last_day)
+            .field(RoleGrantFacts::amount_limit(), 100_u64),
     )?;
     graph.bind_relation(WorthQueryApplicationRelationSeed::new(
         RoleHolder::reference(),
@@ -164,11 +173,40 @@ fn seed(
                 .field(SiteFacts::site_id(), site.to_owned())
                 .field(SiteFacts::site_status(), ACTIVE.to_owned()),
         )?;
-        for role in [REVIEW, APPROVE] {
+        for role in [REVIEW, APPROVE, AUDIT, WITNESS, OBSERVE, COUNTERSIGN] {
             grant(graph, site, role, window)?;
         }
     }
+    for (member, _) in MEMBERS {
+        assign(graph, member, "north")?;
+    }
     Ok(())
+}
+
+/// `member`'s enabled assignment over `site`, keyed `<member>-<site>`.
+fn assign(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<QmsSchema>,
+    member: &str,
+    site: &str,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    let assignment = format!("{member}-{site}");
+    graph.bind_entity(
+        WorthQueryApplicationEntitySeed::new(Assignment::reference(), key(&assignment))
+            .field(AssignmentFacts::assignment_id(), assignment.clone())
+            .field(AssignmentFacts::assignment_status(), ENABLED.to_owned()),
+    )?;
+    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+        AssignmentHolder::reference(),
+        &format!("{assignment}-holder"),
+        key(member),
+        key(&assignment),
+    ))?;
+    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+        AssignmentSite::reference(),
+        &format!("{assignment}-site"),
+        key(&assignment),
+        key(site),
+    ))
 }
 
 fn config(

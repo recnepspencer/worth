@@ -4404,6 +4404,77 @@ and any roster disclosed, at the branch head, so a pin never widens who may
 ask. A workflow Home's `session` is the same session type, so these calls work
 there unchanged. A verdict grants nothing: acting admits the actor afresh.
 
+#### Ask who may exercise a capability
+
+A capability-guarded operation is decided by its `ApplicationCapabilityContract`
+(grant selection, currentness, validity, composition rules and delegation
+lineage), not by an ability policy. Ask the contract itself rather than
+declaring a second policy beside it:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The compiled court is
+// .../standing_grant_dx/capability_eligibility.rs.
+use worth_query_host::facade::eligibility::WorthQueryCapabilityEligibilityQuestion;
+
+let audit = WorthQueryCapabilityEligibilityQuestion::of_request(
+    Desktop, AuditCapability::reference(), AuditOp::reference(), &SiteRequest { site },
+)?; // or ::new(Desktop, capability, operation, projection)
+match session.eligible_for_capability(&audit)? {
+    WorthQueryCapabilityEligibility::Eligible => { /* show the action */ }
+    WorthQueryCapabilityEligibility::Denied(cause) => { /* explain `cause` */ }
+    _ => { /* Unmapped, Disabled or Ambiguous identity */ }
+}
+let queue = session.eligible_among_for_capability(&audit, ViewAuditors::reference(), &staff)?;
+```
+
+`of_request` derives the projection exactly as admission does from the
+operation input. The verdict runs capability admission's own observation for
+that principal, at one trusted time sample, and keeps only its outcome: no
+decision is retained, no grant reserved, nothing committed. So a disabled role
+assignment, a revoked or expired grant, an inactive site or a failed
+composition rule refuse eligibility exactly as they refuse admission, with the
+same `WorthQueryApplicationAuthorizationExplanationCause`. Rosters use the
+ability roster's disclosure gate (`RosterNotDisclosed`). A capability that is
+exercised only through an approved elevation refuses the question
+(`CapabilityRequiresElevation`), and a request that does not resolve refuses
+`CapabilityRequest`.
+
+#### Explain a principal's authority
+
+The audit question "what may this principal do here, through what, and why
+not the rest?" is one call:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The compiled court is
+// .../standing_grant_dx/authority_inventory.rs.
+let question = WorthQueryAuthorityQuestion::new(
+    Desktop, auditor, SiteFacts::site_id(), "north".to_owned(), ViewAuditors::reference(),
+);
+let inventory = session.explain_principal_authority(&question)?;
+for entry in inventory.entries() {
+    match &entry.verdict {
+        WorthQueryAuthorityVerdict::Allowed { through } => { /* relation paths */ }
+        WorthQueryAuthorityVerdict::Denied(cause) => { /* policy cause, if any */ }
+        WorthQueryAuthorityVerdict::RequiresRequest => { /* ask with a capability question */ }
+    }
+}
+```
+
+Every installed ability on the scope entity is decided by the policy evaluator
+admission uses; `Allowed { through }` names the allowing policy paths that
+held. Every installed capability on it whose own target is a complete request
+(no elevation, related entity, field, magnitude or context entity left to the
+caller) runs admission's capability observation: allowed through its grant
+path, or denied with its explanation cause. Others report `RequiresRequest`.
+The inventory reveals another principal's authority, so the asker must hold
+the question's disclosure ability on the scope at the head
+(`RosterNotDisclosed`) before anything about the subject is read; an unmapped,
+disabled or ambiguous subject yields an empty inventory saying so. For the
+static half, `role_authority(role)` lists the abilities a role grants from the
+schema's role matrix.
+
 #### Onboard principals at runtime
 
 `worth_query_principal_registry!` declares how runtime users map to
@@ -7596,10 +7667,65 @@ ApplicationCapabilityContractBuilder::new(ReviewCapability::reference(), ReviewO
   (`CapabilityCalendarMissing`). In a zone whose daylight-time fall-back crosses
   midnight, a local day can repeat for that hour; this is civil-calendar
   meaning. Governed elevation still needs a Unix-epoch timeline.
+- **Open windows.** `ApplicationCapabilityValidityDefinition::unbounded()`
+  needs no validity fields; `from(field)` is valid from that bound and never
+  expires; `until(field)` is valid at every instant through that bound. The
+  field's type names the timeline (`CanonicalTimestamp` for UTC,
+  `CanonicalDate` for the local calendar). An open side adds no predicate and
+  a present side still fails closed at the admission instant. Open windows are
+  standing-only: a workflow-tenure grant may be delegated and must keep both
+  bounds so a child's window is proven inside its parent's
+  (`OpenApplicationCapabilityValidity`). Closed windows keep their identity
+  and archive bytes.
 - **Self-grant.** `forbid_self_grant()` refuses every operation that links its
   own admitted principal as a grantee of that grant kind, through any handler
   or declarative body link (`CurrentAuthorityDenied` with subject `self-grant:<relation>`; a declarative body that
   links the principal is refused at installation as `SelfGrantingOperationBody`).
+
+#### Declare standing roles as one table
+
+`worth_query_standing_grants!` writes the markers, operations, request
+projections and standing contracts above from one table over the grant record
+the application already declares:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The compiled table is .../standing_grant_dx/grants.rs.
+worth_query_standing_grants! {
+    pub mod site_roles for QmsSchema {
+        principal: Member,
+        request: SiteRequest => SiteRequestInput, input.site,
+        scope: Site = SiteFacts::site_id(),
+        context: SiteContext,
+        provenance: SiteRoleProvenance,
+        grant: RoleGrant {
+            holder: RoleHolder,
+            resource: GrantSite,
+            role: RoleGrantFacts::role(),
+            purpose: RoleGrantFacts::purpose() => GrantPurpose::Quality,
+            active: RoleGrantFacts::grant_status() => ACTIVE,
+        },
+        require_active: [SiteFacts::site_status() => ACTIVE],
+        work_budget: 64,
+        roles: [
+            pub ReviewCapability / ReviewOp = REVIEW,
+                utc(RoleGrantFacts::valid_from(), RoleGrantFacts::valid_until());
+            pub AuditCapability / AuditOp = AUDIT,
+                until(RoleGrantFacts::valid_until()), allow through_enabled_assignment();
+            pub ObserveCapability / ObserveOp = OBSERVE, unbounded();
+        ],
+    }
+}
+```
+
+Role, purpose, status and extent values are written in the record fields' own
+types (a `WorthQueryVocabulary` or text), so a contract and the request it
+admits encode the same value. Each role is allowed along `through_grant()`
+(holder, then resource) unless it names its own `allow` path. Add
+`site_roles::members(schema)?` to the schema declaration. Grant rows are
+written by the application's own handlers or seeds; revocation is a status
+write or an inactive extent. The standing-grant court declares five roles in
+92 lines where the hand-written contracts took 307.
 
 A contract without these features keeps its archive record and capability
 identity byte for byte; one using them is written as archive member tag 59,
@@ -7812,6 +7938,23 @@ worth_query_workflow_controls! {
     ],
 }
 ```
+
+The grant may instead be written in the grant record's own field types, with
+optional context slots and one read list for every control operation:
+
+<!-- illustrative -->
+```rust,ignore
+    grant: {
+        action: ControlGrantFacts::action() => ControlAction::Manage,   // a vocabulary
+        purpose: ControlGrantFacts::purpose() => ControlPurpose::Approval,
+    },
+    context_slots: [ControlSite = SiteFacts::site_id(), input.site],
+    reads: [PaymentFacts::payment_id(), PaymentFacts::amount()],
+```
+
+A typed grant also gives the context `grant_action()` and `grant_purpose()`,
+the contract target values built from the same typed values the requests
+encode; `reads` gives it `declare_control_reads(schema)`.
 
 Each control `Capability = "identity"` gets the portable type `identity.v1` and
 the binding, handler and command identities `identity.binding.v1`,
@@ -8902,6 +9045,8 @@ let pending = owned
 | `home.owned_session(session)` | A `'static` `WorthQueryOwnedWorkflowSession` holding the Home's runtime and installed configuration; it dereferences to `WorthQueryOwnedSession` (`spawn_query`, `spawn_run`, `on_commit`, ...). A session of another Home is returned unchanged |
 | `owned.with_workflow(\|session, vocabulary\| ..)`, `owned.spawn_with_workflow(..)` | Lend the session and a vocabulary bound to that call's runtime; the spawned form runs on the session's call worker and completes a `WorthQueryPending` (`with_waker`, `try_take`, `wait`) |
 | `home.close_clean()` | Retires the Home and its workflow configuration and releases every owned workflow session: later calls refuse `HomeClosed`, queued calls complete `WorthQueryBackgroundDenial::HomeClosed` |
+| `home.undo(..)`, `home.correction_history(..)`, `home.fork_preview(..)`, `home.adopt_preview(..)`, `home.discard_preview(..)`, `home.owned_history(..)`, `home.catch_up_temporal::<B>(..)` | The plain Home's correction, what-if preview, owned history and temporal catch-up calls, forwarded with the same signatures and refusals |
+| `session.snapshot_at_commit(&receipt, work)`, `snapshot.record_history::<History>(..)`, `snapshot.workflow_audit::<Spec, Subject, Audit>(..)`, `snapshot.causal_timeline::<..>(..)` | Audit time-travel: a snapshot pinned at an earlier commit, the record's governed change log and the instance's transition audit trail (advancer, executor, proposer, approver) at that commit. See [Causal audit reads](../workspaces/worth-query/docs/capabilities/causal-audit-reads.md) |
 
 While an owned workflow session is attached, `support_workflow_spec` refuses
 `RuntimeKeepaliveRetained`; support every program vocabulary before handing out

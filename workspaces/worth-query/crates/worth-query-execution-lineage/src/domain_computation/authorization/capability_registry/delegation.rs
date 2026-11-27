@@ -28,8 +28,10 @@ pub struct WorthQueryCapabilityDelegationBindings {
     pub disclosure: Option<AspectFieldLocator>,
     pub magnitude: Option<AspectFieldLocator>,
     pub active_status: (AspectFieldLocator, AspectValue),
-    pub not_before: AspectFieldLocator,
-    pub not_after: AspectFieldLocator,
+    /// Present for every delegable (workflow-tenure) grant, whose window
+    /// installation requires closed; a standing grant may leave either open.
+    pub not_before: Option<AspectFieldLocator>,
+    pub not_after: Option<AspectFieldLocator>,
     pub activation: Option<WorthQueryCapabilityDelegationActivationBindings>,
     pub revocation: Option<WorthQueryCapabilityRevocationBindings>,
     pub self_grant: ApplicationCapabilitySelfGrantRule,
@@ -58,6 +60,26 @@ impl WorthQueryCapabilityDelegationBindings {
                 capability,
             )
         })
+    }
+
+    /// The closed validity window a delegated child is proposed in. Every
+    /// delegable grant has one; an open window refuses delegation.
+    pub fn delegable_validity(
+        &self,
+        capability: &str,
+    ) -> Result<(&AspectFieldLocator, &AspectFieldLocator), WorthQueryOperationAuthorizationDenial>
+    {
+        self.not_before
+            .as_ref()
+            .zip(self.not_after.as_ref())
+            .ok_or_else(|| {
+                WorthQueryOperationAuthorizationDenial::new(
+                    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::DelegationRejected,
+                    ),
+                    capability,
+                )
+            })
     }
 }
 
@@ -124,8 +146,14 @@ impl WorthQueryCapabilityDelegationBindings {
                 .map(|binding| field_locator(layout, binding))
                 .transpose()?,
             active_status: active_status.clone(),
-            not_before: field_locator(layout, validity.not_before())?,
-            not_after: field_locator(layout, validity.not_after())?,
+            not_before: validity
+                .not_before()
+                .map(|bound| field_locator(layout, bound))
+                .transpose()?,
+            not_after: validity
+                .not_after()
+                .map(|bound| field_locator(layout, bound))
+                .transpose()?,
             self_grant: delegation.self_grant(),
             activation: delegation
                 .activation()

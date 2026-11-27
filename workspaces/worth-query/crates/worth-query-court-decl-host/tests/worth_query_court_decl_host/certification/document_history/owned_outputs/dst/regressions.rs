@@ -37,6 +37,37 @@ const PINNED: &[(u64, &[Op], &str)] = &[
     ),
 ];
 
+/// The public #445 pins. The paired support comparison refuses them
+/// (`SourceDiverged`) until the #445 arm returns with public #465; with the
+/// arm, Relational refuses the restoration (#465).
+const PINNED_ON_465: &[(u64, &[Op], &str)] = &[
+    (
+        0x7b02_125f,
+        &[
+            Op::Edit([Set(1), Set(2)]),
+            Op::Edit([Skip, Retire]),
+            Op::Checkout { pick: 196 },
+            Op::Checkout { pick: 52 },
+            Op::Edit([Set(2), Set(2)]),
+            Op::Edit([Skip, Set(1)]),
+            Op::Checkout { pick: 106 },
+            Op::Correction { pick: 220, entity: 0, on_line: true, cascade: false, stop: None },
+        ],
+        "a correction across the document's own navigation compared a re-retired output's commit version (public #445)",
+    ),
+    (
+        0x7b02_181e,
+        &[
+            Op::Edit([Set(2), Skip]),
+            Op::Edit([Retire, Skip]),
+            Op::Checkout { pick: 163 },
+            Op::Checkout { pick: 221 },
+            Op::Correction { pick: 242, entity: 1, on_line: true, cascade: false, stop: None },
+        ],
+        "reversing a retirement after a checkout away and back compared its commit version (public #445)",
+    ),
+];
+
 /// Each edit settles on a new product branch occurrence. The chain consumer
 /// settled on the newer one keeps its consumed evidence on the upstream row
 /// of the earlier one, whose source can only be disclosed on its own
@@ -67,15 +98,25 @@ fn a_chain_consumer_on_an_earlier_occurrences_upstream_settles() {
 /// The first recorded edit of the forked-head cases: it creates both members.
 const MADE: Op = Op::Edit([Set(2), Set(1)]);
 
-#[test]
-fn every_pinned_disagreement_stays_fixed() {
+fn replay(pins: &[(u64, &[Op], &str)]) {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install();
-    for (seed, ops, defect) in PINNED {
+    for (seed, ops, defect) in pins {
         if let Err(failure) = run(&mut world::Document::attach(&host), ops, None) {
             panic!("seed {seed:#x} ({defect}) disagrees again:\n{failure:#?}");
         }
     }
+}
+
+#[test]
+fn every_pinned_disagreement_stays_fixed() {
+    replay(PINNED);
+}
+
+#[test]
+#[ignore = "held on public #465 (with the deferred #445 arm): the paired support comparison refuses a source the navigation re-retired (SourceDiverged); with the arm back, restoration refuses because succession does not follow HistoricalAbsence"]
+fn the_pins_held_on_465_stay_fixed() {
+    replay(PINNED_ON_465);
 }
 
 /// Public #353: after an undo, a new record forks the history, and the

@@ -7,6 +7,7 @@
 use super::reference::{Action, Intent, Outcome, Stage, Stages, E1, E2};
 use super::world::Corrected;
 use super::*;
+use worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test as fact_verification;
 
 const SKIP: Stages = [Stage::Skip; 2];
 
@@ -26,6 +27,87 @@ fn recorded<'h>(host: &'h fixture::reads::Host, steps: &[[Stage; 2]]) -> world::
 
 fn refused(corrected: &Corrected, denial: &str) -> bool {
     matches!(corrected, Corrected::Refused(text) if text.contains(denial))
+}
+
+/// The restored-support stage that refused this thread's last correction.
+fn refusing_stage() -> Option<String> {
+    fact_verification().correction_restored_support_rejection
+}
+
+/// e2 created, retired, created again and retired again on one line: the
+/// source (step 2) and the selected basis (step 4) bracket two line writes
+/// that change e2's liveness (review r1 N2).
+const RELIVED: [[Stage; 2]; 4] = [
+    [Stage::Set(1), Stage::Set(1)],
+    [Stage::Skip, Stage::Retire],
+    [Stage::Skip, Stage::Set(1)],
+    [Stage::Skip, Stage::Retire],
+];
+
+/// Record [`RELIVED`], run `moves`, then reverse step 2's retirement of e2.
+/// The model refuses (e2 is live at node 3, in `Since(2)`), and the platform
+/// must refuse at the canonical cancellation, never by the facts comparison.
+fn relived_and_reretired_refuses(moves: &[Action]) {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = recorded(&host, &RELIVED);
+    for (index, action) in moves.iter().enumerate() {
+        assert_eq!(document.act(action), Outcome::Moved, "move {index}");
+    }
+    fact_verification();
+    let corrected = document.correct_recorded(5, 2, E2, &SKIP);
+    let stage = refusing_stage();
+    assert!(refused(&corrected, "SourceDiverged"), "{corrected:?}; {stage:?}");
+    assert!(stage.as_deref().is_some_and(|stage| stage.starts_with("stage=canonical-cancellation")), "{stage:?}");
+    document.release();
+}
+
+// ---- #453: supersession never passes over a line write ----
+
+/// H: an undo and a redo of the latest step. The redo's basis descends from
+/// the source, but the retirement's re-creation and re-retirement are line
+/// writes between them, so they keep needing their witnesses.
+#[test]
+fn a_retirement_relived_and_reretired_on_the_line_refuses() {
+    relived_and_reretired_refuses(&[Action::Undo, Action::Redo(4)]);
+}
+
+/// C1: the same line, then a checkout behind the source and back.
+#[test]
+fn a_retirement_relived_and_reretired_on_the_line_refuses_after_a_checkout_behind_it_and_back() {
+    relived_and_reretired_refuses(&[Action::Checkout(1), Action::Checkout(4)]);
+}
+
+/// C2: the same line, then three undos and three redos.
+#[test]
+fn a_retirement_relived_and_reretired_on_the_line_refuses_after_three_undos_and_redos() {
+    let undos = [Action::Undo, Action::Undo, Action::Undo];
+    relived_and_reretired_refuses(&[undos.as_slice(), &[Action::Redo(2), Action::Redo(3), Action::Redo(4)]].concat());
+}
+
+/// P-off: step 2's retirement of e1 descends from the source (step 1) but is
+/// not on the line up to the selected basis (the undo selects step 1), so the
+/// undo supersedes it and e1's creation is reversed.
+#[test]
+fn a_retirement_off_the_restored_line_does_not_block_reversing_the_creation() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = recorded(&host, &[[Stage::Set(1), Stage::Skip], [Stage::Retire, Stage::Skip]]);
+    assert_eq!(document.act(&Action::Undo), Outcome::Moved);
+    let corrected = document.correct_recorded(3, 1, E1, &SKIP);
+    assert!(matches!(corrected, Corrected::Recorded(3)), "{corrected:?}");
+    document.release();
+}
+
+/// A lineage a correction took can outlive its document: after the real
+/// close it answers without panicking, vouches for nothing, and keeps every
+/// write (it cannot tell a line write from another).
+#[test]
+fn a_lineage_held_past_its_documents_close_answers_without_panicking() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = recorded(&host, &[[Stage::Set(1), Stage::Skip]]);
+    assert_eq!(document.vouch_after_close(), (false, true));
 }
 
 // ---- positive courts ----
@@ -109,8 +191,9 @@ fn navigating_away_writing_outside_and_back_still_refuses_the_correction() {
 /// source made at the compared facts: the navigation selects a step where
 /// `e1` is a later occurrence (retired, then created again), so the
 /// occurrence the source created is not the one present. The navigation is
-/// vouched for and supersedes the retirement and re-creation on the way, so
-/// the final facts comparison decides: `SourceDiverged`.
+/// vouched for, but the retirement and re-creation on the way are line
+/// writes (public #453), so they keep needing their witnesses and the
+/// cancellation refuses `SourceDiverged` before the final comparison.
 #[test]
 fn a_navigation_that_restored_another_occurrence_still_refuses_the_correction() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
@@ -124,7 +207,9 @@ fn a_navigation_that_restored_another_occurrence_still_refuses_the_correction() 
     let mut document = recorded(&host, &steps);
     assert_eq!(document.act(&Action::Undo), Outcome::Moved);
     let corrected = document.correct_recorded(5, 1, E1, &SKIP);
-    assert!(refused(&corrected, "SourceDiverged"), "{corrected:?}");
+    let stage = refusing_stage();
+    assert!(refused(&corrected, "SourceDiverged"), "{corrected:?}; {stage:?}");
+    assert!(stage.as_deref().is_some_and(|stage| stage.starts_with("stage=canonical-cancellation")), "{stage:?}");
     document.release();
 }
 

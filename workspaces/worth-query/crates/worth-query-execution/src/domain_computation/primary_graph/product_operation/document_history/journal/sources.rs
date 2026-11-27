@@ -49,15 +49,18 @@ impl HistoryJournal {
     }
 
     /// Index the commit an envelope's stages made, and the step's retained
-    /// basis, as `node`'s while the record is prepared; a cancelled record
-    /// releases both again. An entry that already names another step is
-    /// kept, never overwritten: each step's commits are its own fresh ones,
-    /// so a collision should not happen, and if one did, keeping the earliest
-    /// means a release removes only what this record inserted.
+    /// basis with the commit its candidate forked from (`after`), as `node`'s
+    /// at adoption; a cancelled record releases both again. An entry that
+    /// already names another step is kept, never overwritten: each step's
+    /// commits are its own fresh ones, so a collision should not happen, and
+    /// if one did, keeping the earliest means a release removes only what this
+    /// record inserted. An adoption retry indexes the same basis again, which
+    /// the guard skips.
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn index_source<'c>(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         commits: impl IntoIterator<Item = &'c worth_runtime_world::facade::CompositeCommitIdentity>,
+        after: Option<worth_relational::facade::history::CommitId>,
         endpoint: Option<worth_relational::facade::history::CommitId>,
         node: WorthQueryHistoryNodeId,
     ) -> Result<(), worth_relational::facade::transactions::RelationalExecutionDenialCause> {
@@ -75,12 +78,15 @@ impl HistoryJournal {
             self.pending_sources.push(commit.clone());
         }
         if let Some(endpoint) = endpoint.filter(|endpoint| !self.endpoints.contains_key(endpoint)) {
+            // The index is written once, at adoption: a pending record never
+            // indexes a second, different basis.
+            debug_assert!(self.pending_endpoint.is_none(), "a pending record indexes one basis");
             let allocation = self.allocate::<(
                 worth_relational::facade::history::CommitId,
-                (u64, HistoryInsertionAllocation),
+                (Option<worth_relational::facade::history::CommitId>, u64, HistoryInsertionAllocation),
             )>(execution, self.endpoints.len(), 0)?;
             self.access(Access::Node);
-            self.endpoints.insert(endpoint, (node.ordinal(), allocation));
+            self.endpoints.insert(endpoint, (after, node.ordinal(), allocation));
             self.pending_endpoint = Some(endpoint);
         }
         Ok(())
@@ -94,7 +100,7 @@ impl HistoryJournal {
             }
         }
         if let Some(endpoint) = self.pending_endpoint.take()
-            && self.endpoints.get(&endpoint).is_some_and(|(indexed, _)| *indexed == node)
+            && self.endpoints.get(&endpoint).is_some_and(|(_, indexed, _)| *indexed == node)
         {
             self.endpoints.remove(&endpoint);
         }
@@ -111,7 +117,7 @@ impl HistoryJournal {
         self.access(Access::Selection);
         self.access(Access::Node);
         let (Some(basis), Some(step)) = (
-            self.endpoints.get(&selected).map(|(ordinal, _)| *ordinal),
+            self.endpoints.get(&selected).map(|(_, ordinal, _)| *ordinal),
             self.sources.get(source).map(|(ordinal, _)| *ordinal),
         ) else {
             return false;
@@ -164,6 +170,49 @@ impl HistoryJournal {
     fn position(&self, ordinal: u64) -> Option<LinePosition> {
         self.access(Access::Node);
         Some(self.nodes.get(&ordinal)?.line)
+    }
+
+    /// For a correction's restored support (public #453): whether the
+    /// relational commit `commit` is a write of a recorded step on the path
+    /// from the step whose stages made `source` to the step whose retained
+    /// basis is `selected`. Such a line write is kept with its witness. A
+    /// step's commits lie in `(after, basis]`, and no other step's basis falls
+    /// between them, so the first basis at or after `commit` names its
+    /// writer; a commit at or before that step's fork is none of its writes.
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn wrote_on_line_through(
+        &self,
+        commit: worth_relational::facade::history::CommitId,
+        selected: worth_relational::facade::history::CommitId,
+        source: &worth_runtime_world::facade::CompositeCommitIdentity,
+    ) -> bool {
+        self.access(Access::Selection);
+        self.access(Access::Node);
+        let (Some(basis), Some(step), Some((_, (after, writer, _)))) = (
+            self.endpoints.get(&selected).map(|(_, ordinal, _)| *ordinal),
+            self.sources.get(source).map(|(ordinal, _)| *ordinal),
+            self.endpoints.range(commit..).next(),
+        ) else {
+            return false;
+        };
+        !after.is_some_and(|after| commit <= after)
+            && self.is_ancestor_or_self(step, *writer)
+            && self.is_ancestor_or_self(*writer, basis)
+    }
+}
+
+impl HistoryJournal {
+    /// The number of indexed source commits and recorded bases, for courts.
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn source_index_sizes(
+        &self,
+    ) -> (usize, usize) {
+        (self.sources.len(), self.endpoints.len())
+    }
+
+    /// The first recorded basis and the first indexed source commit, for courts.
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn first_indexed_source(
+        &self,
+    ) -> Option<(worth_relational::facade::history::CommitId, worth_runtime_world::facade::CompositeCommitIdentity)> {
+        Some((*self.endpoints.keys().next()?, self.sources.keys().next()?.clone()))
     }
 }
 

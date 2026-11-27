@@ -1,10 +1,9 @@
 //! The envelope's one commit becomes the document head through one adoption.
-use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use super::super::{
-    journal::RecordedNode, sealing::PreparedBinding, WorthQueryCompletedRecordingOutputs,
-    WorthQueryDocumentHistory, WorthQueryDocumentHistoryAdoptionFailure,
-    WorthQueryDocumentHistoryDenial as Denial, WorthQueryDocumentHistoryReservation,
-    WorthQueryHistoryStep,
+    sealing::{BoundSource, PreparedBinding},
+    WorthQueryCompletedRecordingOutputs, WorthQueryDocumentHistory,
+    WorthQueryDocumentHistoryAdoptionFailure, WorthQueryDocumentHistoryDenial as Denial,
+    WorthQueryDocumentHistoryReservation, WorthQueryHistoryStep,
 };
 use crate::{
     basis::WorthQueryProductBranchReadIdentity,
@@ -74,7 +73,8 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
 
     /// Without a forest the endpoint is the envelope's commit, still selected
     /// on the candidate. With one it is the forest's endpoint, which must come
-    /// from this reservation, this candidate and this commit.
+    /// from this reservation, this candidate and this commit. The step is
+    /// indexed here, at adoption, and nowhere else.
     pub(super) fn prepare_envelope_binding(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -83,6 +83,37 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         receipt: &WorthQueryApplicationCommitReceipt,
         completed: Option<&WorthQueryCompletedRecordingOutputs>,
     ) -> Result<PreparedBinding, Denial> {
+        let bound = self.bind_envelope_source(phase, reserved, candidate, receipt, completed)?;
+        let step = self.index_bound_step(
+            phase,
+            reserved,
+            bound.source_commit.as_ref(),
+            bound.basis_commit,
+            &bound.endpoint,
+        )?;
+        // A correction's commit posts one aftermath-causality fact, which
+        // navigation retires and restores with this step (ruling (u)).
+        let posted_fact = receipt.aftermath_causality().and_then(|causality| {
+            match causality.fact_record() {
+                worth_relational::facade::transactions::RecordRef::Entity(id) => Some(*id),
+                worth_relational::facade::transactions::RecordRef::Relation(_) => None,
+            }
+        });
+        let discovery_recipes = completed.map(|completed| completed.discovery_recipes.clone());
+        Ok(bound.into_prepared(step, posted_fact, discovery_recipes))
+    }
+
+    /// The checks an envelope's binding relies on, and its source, endpoint
+    /// and basis. It indexes nothing: the output origin calls it before
+    /// adoption.
+    pub(super) fn bind_envelope_source(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        reserved: &WorthQueryDocumentHistoryReservation,
+        candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
+        receipt: &WorthQueryApplicationCommitReceipt,
+        completed: Option<&WorthQueryCompletedRecordingOutputs>,
+    ) -> Result<BoundSource, Denial> {
         self.validate_reservation(reserved)?;
         let runtime = self.application();
         if !std::ptr::eq(runtime, candidate.application()) {
@@ -114,44 +145,16 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 (selected, None)
             }
         };
-        let endpoint =
-            WorthQueryProductBranchReadIdentity::from_observation(selected.product().observation());
-        let exact = selected.product().read_lease();
-        let source_commit = receipt.committed_product_publication().composite_commit().clone();
-        // The basis a later navigation to this step selects (its retained source).
-        let basis_commit = selected.product().relational_basis().observation().commit_id();
-        let execution = phase
-            .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
-            .map_err(Denial::Stopped)?;
-        let step = {
-            let mut selection = self.selection.lock();
-            selection
-                .journal
-                .index_source(&execution, Some(&source_commit), basis_commit, reserved.record.node)
-                .map_err(Denial::Recording)?;
-            selection.journal.prepared_step(&reserved.record, endpoint.clone())
-        };
-        // A correction's commit posts one aftermath-causality fact, which
-        // navigation retires and restores with this step (ruling (u)).
-        let posted_fact = receipt.aftermath_causality().and_then(|causality| {
-            match causality.fact_record() {
-                worth_relational::facade::transactions::RecordRef::Entity(id) => Some(*id),
-                worth_relational::facade::transactions::RecordRef::Relation(_) => None,
-            }
-        });
-        let node = RecordedNode {
-            step,
-            source_commit: Some(source_commit),
-            posted_fact,
+        Ok(BoundSource {
+            endpoint: WorthQueryProductBranchReadIdentity::from_observation(
+                selected.product().observation(),
+            ),
+            exact: selected.product().read_lease(),
+            source_commit: Some(receipt.committed_product_publication().composite_commit().clone()),
+            // The basis a later navigation to this step selects (its retained source).
+            basis_commit: selected.product().relational_basis().observation().commit_id(),
             root_posture: None,
-        };
-        Ok(PreparedBinding {
-            discovery_recipes: completed.map(|completed| completed.discovery_recipes.clone()),
-            returned: node.step.clone(),
-            node,
             source: retained.unwrap_or_else(|| selected.retain_application_read()),
-            endpoint,
-            exact,
         })
     }
 }

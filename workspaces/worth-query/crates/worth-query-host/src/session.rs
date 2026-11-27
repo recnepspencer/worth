@@ -35,10 +35,13 @@ use worth_query_publication::facade::application_entry::{
 
 use crate::application_home::{WorthQueryApplicationHome, WorthQueryCorrectionEntry};
 
+mod authority_inventory;
 pub(crate) mod auto_key;
+mod capability_eligibility;
 mod domain_refusal;
 mod eligibility;
 mod execution;
+mod historical_snapshot;
 mod home_access;
 mod keyed_refusal;
 mod lease;
@@ -57,7 +60,10 @@ mod renewal;
 mod snapshot;
 mod temporal;
 pub use auto_key::WorthQueryAutoIdempotencyKey;
-pub use eligibility::{WorthQueryEligibilityDenial, WorthQueryEligibilityRoster};
+pub use eligibility::{
+    WorthQueryEligibilityDenial, WorthQueryEligibilityRoster, WorthQueryEligibilityVerdict,
+};
+pub use historical_snapshot::WorthQuerySessionHistoricalSnapshotDenial;
 pub(crate) use home_access::SessionHome;
 pub use live_subscription::{
     WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,
@@ -138,7 +144,7 @@ pub enum WorthQuerySessionRunDenial<DomainDenial> {
 /// this session's [`ExecutionRequestPolicy`], and re-admits authority on the
 /// configured branch with explicit bounded defaults.
 pub struct WorthQueryHostSession<'home, Schema: ApplicationSchema, Program> {
-    pub(super) home: SessionHome<'home, Schema, Program>,
+    pub(crate) home: SessionHome<'home, Schema, Program>,
     pub(super) settings: SessionSettings<Schema>,
 }
 
@@ -313,7 +319,7 @@ impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Sch
     }
 
     /// A request acting under `principal` (see [`Self::call_principal`]).
-    pub(super) fn request_as<'a>(
+    pub(crate) fn request_as<'a>(
         &self,
         principal: &'a WorthQueryAuthenticatedExternalPrincipal<Schema>,
         scope: &'a WorthQueryRequestScope,
@@ -324,14 +330,14 @@ impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Sch
             .on_branch(self.settings.branch)
     }
 
-    pub(super) fn open_lease(
+    pub(crate) fn open_lease(
         &self,
         scope: &WorthQueryRequestScope,
     ) -> Result<ExecutionResourceLease<'home>, WorthQueryAdvancementDenial> {
         lease::open_policy_lease(self.home.primary_graph(), self.settings.policy, scope)
     }
 
-    pub(super) fn with_funded_advancement<R>(
+    pub(crate) fn with_funded_advancement<R>(
         &self,
         scope: &WorthQueryRequestScope,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,

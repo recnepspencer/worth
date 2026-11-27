@@ -12,7 +12,9 @@ use super::{
 };
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+mod authority_inventory;
 mod branch_set;
+mod capability_eligibility;
 mod current_read;
 mod eligibility;
 mod inspection;
@@ -220,9 +222,10 @@ impl<'application, 'principal, 'scope, Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::application_entry) fn retained_observation(
-        &self,
-    ) -> super::WorthQueryApplicationReadObservation {
+    /// The pinned read basis itself, for a caller that keeps reading at this
+    /// exact commit after the request's scope ends. It carries no authority:
+    /// every later read through `at(..)` admits its own principal afresh.
+    pub fn retained_observation(&self) -> super::WorthQueryApplicationReadObservation {
         super::WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(&self.observation))
     }
 
@@ -301,6 +304,8 @@ where
 mod discovery_currentness;
 
 mod history_selection;
+mod read_access;
+pub use read_access::WorthQueryGovernedReadAccess;
 #[cfg(test)]
 #[path = "request_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;

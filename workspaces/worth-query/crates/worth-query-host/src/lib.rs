@@ -3,15 +3,12 @@
 //! Start with [Build an Application](https://github.com/recnepspencer/worth/blob/master/docs/build-an-application.md)
 //! and the [Capability Index](https://github.com/recnepspencer/worth/blob/master/docs/capability-index.md).
 //!
-//! Admission, lowering, execution, and publication consumers depend on this
-//! crate instead of importing Query's internal authority packages directly.
-//! The read-only [`facade::domain`] surface exposes an installed schema's
-//! `native_contracts()`, an installed operation's typed `graph_reads()` and
-//! `touches()`, and complete aftermath inspection through `authority()`,
-//! `recovery()`, `reconciliation()`, and
-//! `external_effect().correlation_family()`. These accessors inspect retained
-//! meaning; they do not grant installation, execution, correction, recovery,
-//! or external-effect authority.
+//! Admission, lowering, execution, and publication consumers depend on this crate instead of
+//! importing Query's internal authority packages directly. The read-only [`facade::domain`]
+//! surface exposes an installed schema's `native_contracts()`, an installed operation's typed
+//! `graph_reads()` and `touches()`, and aftermath inspection through `authority()`, `recovery()`,
+//! `reconciliation()`, and `external_effect().correlation_family()`. These accessors inspect
+//! retained meaning; they grant no installation, execution, correction or recovery authority.
 //!
 //! Product-aware hosts enter through
 //! `WorthQueryPrimaryGraphApplicationRuntime::current_world`, `branches`, and
@@ -356,40 +353,30 @@
 
 mod access_fragment_contract;
 mod application_home;
+mod audit;
 mod background;
-pub mod facade;
-mod ordinary_contract;
-mod producer_stop_contract;
-mod program_transition;
-mod refusal_summary;
-mod workflow_owner_contract;
-
-mod discovered_currentness_contract;
-
-mod funded_input_contract;
-mod workflow_actor_contract;
-
-mod cutover_contract;
-
 mod capability_command_contract;
-mod no_source_tree_contract;
-
+mod causal_inspection_contract;
 mod closed_delivery_contract;
-
 mod collection_contract;
-
+mod correction_facade_contract;
+mod cutover_contract;
+mod disclosure_and_program_fences_contract;
+mod discovered_currentness_contract;
+pub mod facade;
+mod funded_input_contract;
 mod local_calendar;
 mod logical_member_contract;
+mod no_source_tree_contract;
 mod ordered_index;
+mod ordinary_contract;
 mod principal_registry;
-mod storage_retention_contract;
-
-mod causal_inspection_contract;
-mod correction_facade_contract;
-mod disclosure_and_program_fences_contract;
+mod producer_stop_contract;
+mod program_transition;
 mod projection_derive_contract;
 mod projection_name_derive_contract;
 mod projection_relation_derive_contract;
+mod refusal_summary;
 mod runtime_and_handler_fences_contract;
 mod semantic_refusal_contract;
 mod session;
@@ -397,4 +384,7 @@ mod session_contract;
 mod shared_access;
 mod source_custody;
 mod source_custody_contract;
+mod storage_retention_contract;
 mod temporal_contribution;
+mod workflow_actor_contract;
+mod workflow_owner_contract;

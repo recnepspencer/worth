@@ -205,6 +205,7 @@ fn an_unbound_native_family_refuses_incomplete_and_leaves_the_document_intact() 
         .unwrap();
     let before = observe(&host, &document);
     let original = snapshot(&host, &document);
+    let index = document.history_source_index_for_test();
     let selection = document.selection(&request).unwrap();
     let model = world::model(&host, before.branch).native_id;
     let stages = Stages {
@@ -225,6 +226,11 @@ fn an_unbound_native_family_refuses_incomplete_and_leaves_the_document_intact() 
     assert_eq!(observe(&host, &document), before);
     assert_eq!(snapshot(&host, &document), original);
     assert_eq!(document.selection(&request).unwrap(), selection);
+    assert_eq!(
+        document.history_source_index_for_test(),
+        index,
+        "the refusal releases its index entries"
+    );
     // The refusal left no recording behind: the same key refuses the same way.
     let (document, again) = refused(record(&host, document, &scope, stages, metadata(b"")));
     assert!(

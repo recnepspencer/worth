@@ -89,6 +89,7 @@ pub use product_operation::document_history::{
     WorthQueryHistoryContextRefreshPauseForTest, WorthQueryHistoryDependentOutputRead,
     WorthQueryHistoryDescriptionContext, WorthQueryHistoryEnrollmentObservationForTest,
     WorthQueryHistoryEnrollmentReportForTest, WorthQueryHistoryReversalFactForTest,
+    WorthQueryHeldNavigationLineageForTest, WorthQueryHistorySourceIndexForTest,
     WorthQueryHistoryGroupCandidateCreation,
     WorthQueryHistoryGroupMemberAdmission, WorthQueryHistoryNavigationCompletion,
     WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,

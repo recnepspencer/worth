@@ -1,0 +1,6 @@
+name = "relational_symbol_commit"
+version = "0.1.0"
+defaultTargets = ["RelationalSymbolCommit"]
+
+[[lean_lib]]
+name = "RelationalSymbolCommit"

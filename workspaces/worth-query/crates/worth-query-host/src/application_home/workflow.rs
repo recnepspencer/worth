@@ -12,8 +12,13 @@ use worth_query_execution::facade::application_installation::{
     WorthQueryWorkflowRuntimeConfiguration, WorthQueryWorkflowVocabulary,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
+mod authored_corrections;
 mod close;
+mod corrections;
 mod desktop;
+mod owned_history;
+mod preview;
+mod temporal;
 pub use close::{WorthQueryWorkflowHomeCloseRefused, WorthQueryWorkflowHomeClosed};
 
 /// Workflow configuration and Home custody are consumed together at close.

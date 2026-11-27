@@ -241,7 +241,9 @@ pub use programs::{
 };
 pub use query::{
     WorthQueryApplicationProjectionRetentionRequest, WorthQueryApplicationQueryRequest,
-    WorthQueryProjectedQuery, WorthQueryProjectedQueryBinding, WorthQueryProjectedValue,
+    WorthQueryGovernedHistoryCompleteness, WorthQueryGovernedHistoryDenial,
+    WorthQueryGovernedHistoryLimits, WorthQueryProjectedQuery, WorthQueryProjectedQueryBinding,
+    WorthQueryProjectedValue,
 };
 pub use query_batch::{
     WorthQueryApplicationQueryBatchDenial, WorthQueryApplicationQueryBatchRequest,
@@ -250,7 +252,8 @@ pub use request::{
     WorthQueryApplicationBranchSetRequest, WorthQueryApplicationHistorySelectionDenial,
     WorthQueryApplicationReadObservationDenial, WorthQueryApplicationRequest,
     WorthQueryApplicationRequestExt, WorthQueryApplicationRetainedRequest,
-    WorthQueryOutputCurrentnessDenial, WorthQueryWorkflowObservationDenial,
+    WorthQueryGovernedReadAccess, WorthQueryOutputCurrentnessDenial,
+    WorthQueryWorkflowObservationDenial,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
 pub use workflow::{

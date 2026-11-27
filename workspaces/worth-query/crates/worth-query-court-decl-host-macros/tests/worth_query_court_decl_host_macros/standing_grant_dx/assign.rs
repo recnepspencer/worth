@@ -7,7 +7,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationEntityKey, WorthQueryOperationBodyDenial,
 };
 
-use super::grants::{ACTIVE, PURPOSE, REVIEW};
+use super::grants::{ACTIVE, REVIEW};
 use super::schema::*;
 
 pub struct AssignRoleHandler;
@@ -47,12 +47,13 @@ impl OperationHandler<QmsSchema, AssignRoleBinding> for AssignRoleHandler {
             let grant = writer.create_entity_in_context(&site, RoleGrant::reference(), key)?;
             writer.initialize_field(&grant, RoleGrantFacts::grant_id(), input.grant.clone())?;
             writer.initialize_field(&grant, RoleGrantFacts::role(), REVIEW.to_owned())?;
-            writer.initialize_field(&grant, RoleGrantFacts::purpose(), PURPOSE.to_owned())?;
+            writer.initialize_field(&grant, RoleGrantFacts::purpose(), GrantPurpose::Quality)?;
             writer.initialize_field(&grant, RoleGrantFacts::grant_status(), ACTIVE.to_owned())?;
             writer.initialize_field(&grant, RoleGrantFacts::valid_from(), always_from())?;
             writer.initialize_field(&grant, RoleGrantFacts::valid_until(), always_until())?;
             writer.initialize_field(&grant, RoleGrantFacts::first_day(), first_day())?;
             writer.initialize_field(&grant, RoleGrantFacts::last_day(), last_day())?;
+            writer.initialize_field(&grant, RoleGrantFacts::amount_limit(), 100_u64)?;
             writer.link(
                 RoleHolder::reference(),
                 format!("{}-holder", input.grant),

@@ -63,17 +63,14 @@ where
     let lineage = installed
         .delegation()
         .delegable_lineage(installed.contract().name())?;
+    let (not_before, not_after) = installed
+        .delegation()
+        .delegable_validity(installed.contract().name())?;
     let bindings = [
         (proposed.child_identity().field(), &activation.identity),
         (proposed.workflow().field(), &lineage.grant_workflow),
-        (
-            proposed.not_before().field(),
-            &installed.delegation().not_before,
-        ),
-        (
-            proposed.not_after().field(),
-            &installed.delegation().not_after,
-        ),
+        (proposed.not_before().field(), not_before),
+        (proposed.not_after().field(), not_after),
         (proposed.remaining_delegations().field(), &lineage.remaining),
     ];
     if bindings.into_iter().all(|(declared, expected)| {
@@ -94,6 +91,9 @@ fn child_fields<Schema, Scope, Context>(
     let lineage = installed
         .delegation()
         .delegable_lineage(installed.contract().name())?;
+    let (not_before, not_after) = installed
+        .delegation()
+        .delegable_validity(installed.contract().name())?;
     let target = proposed.target();
     let mut fields = BTreeMap::from([
         (identity.clone(), proposed.child_identity().value().clone()),
@@ -113,14 +113,8 @@ fn child_fields<Schema, Scope, Context>(
             lineage.grant_workflow.clone(),
             proposed.workflow().value().clone(),
         ),
-        (
-            installed.delegation().not_before.clone(),
-            proposed.not_before().value().clone(),
-        ),
-        (
-            installed.delegation().not_after.clone(),
-            proposed.not_after().value().clone(),
-        ),
+        (not_before.clone(), proposed.not_before().value().clone()),
+        (not_after.clone(), proposed.not_after().value().clone()),
         (
             lineage.remaining.clone(),
             proposed.remaining_delegations().value().clone(),

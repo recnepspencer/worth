@@ -103,6 +103,7 @@ fn a_request_stopped_anywhere_in_an_envelope_rolls_back_and_the_same_key_then_re
         let stop_at = stop_point(consults, stride, point);
         let before = observe(&host, &document);
         let original = snapshot(&host, &document);
+        let index = document.history_source_index_for_test();
         let stages = Stages {
             key: Box::leak(format!("stopped-{point}").into_boxed_str()),
             model: 3 + (point as u64 % 7),
@@ -122,6 +123,12 @@ fn a_request_stopped_anywhere_in_an_envelope_rolls_back_and_the_same_key_then_re
                 refusals_after_a_producer += usize::from(after_a_producer);
                 assert_eq!(observe(&host, &document), before, "stop at {stop_at}: {denial}");
                 assert_eq!(snapshot(&host, &document), original, "stop at {stop_at}");
+                // A stopped record releases every index entry it made.
+                assert_eq!(
+                    document.history_source_index_for_test(),
+                    index,
+                    "stop at {stop_at}: {denial}"
+                );
                 let mut step_before_maintenance = None;
                 if point % 2 == 1 {
                     let (next, step) =
@@ -152,6 +159,13 @@ fn a_request_stopped_anywhere_in_an_envelope_rolls_back_and_the_same_key_then_re
         document = next;
         assert_eq!(step.parent(), Some(before.current), "stop at {stop_at}");
         assert_eq!(observe(&host, &document).current, step.id());
+        // One recorded step indexes one source commit and one basis.
+        let indexed = document.history_source_index_for_test();
+        assert_eq!(
+            (indexed.sources, indexed.endpoints),
+            (index.sources + 1, index.endpoints + 1),
+            "stop at {stop_at}"
+        );
         let now = snapshot(&host, &document);
         assert_eq!(
             (now.model, now.member, now.outputs.0.value, now.outputs.1.value),

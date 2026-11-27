@@ -26,7 +26,7 @@ use crate::domain_computation::primary_graph::{
 use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession;
 
 pub mod observation;
-mod preflight;
+pub(crate) mod preflight;
 
 pub use observation::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use observation::{WorthQueryCapabilityContextKey, WorthQueryResolvedCapabilityRequest};

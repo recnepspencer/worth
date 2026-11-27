@@ -15,6 +15,7 @@ fn exercise(worker: bool) {
     let original = world::outputs(&host, host.current_world());
     let document = courts::configure_all_trees(&host, world::attach(&host));
     let before = document.current_step(&request).unwrap().id();
+    let index = document.history_source_index_for_test();
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let mut edit = document
         .edit(edit::Intent {
@@ -51,6 +52,12 @@ fn exercise(worker: bool) {
     ));
     let document = finish.document;
     drop(finish.outcome);
+    // The step's one adoption indexes its source commit and one basis.
+    let indexed = document.history_source_index_for_test();
+    assert_eq!(
+        (indexed.sources, indexed.endpoints),
+        (index.sources + 1, index.endpoints + 1)
+    );
     let future = document.selection(&request).unwrap();
     let recorded = world::outputs(&host, future.physical_endpoint().product_branch());
     assert_eq!(
@@ -120,6 +127,7 @@ fn omitted_family(worker: bool) {
         })
         .unwrap();
     let selection = document.selection(&request).unwrap();
+    let index = document.history_source_index_for_test();
     let branch = selection.physical_endpoint().product_branch();
     let model = world::model(&host, branch);
     let outputs = world::outputs(&host, branch);
@@ -153,6 +161,11 @@ fn omitted_family(worker: bool) {
                     .discard(&request)
                     .unwrap_or_else(|(_, cause)| panic!("discard: {cause:?}"));
                 assert_eq!(document.selection(&request).unwrap(), selection);
+                assert_eq!(
+                    document.history_source_index_for_test(),
+                    index,
+                    "the discard releases its index entries"
+                );
                 assert_eq!(world::model(&host, branch), model);
                 assert_eq!(world::outputs(&host, branch), outputs);
                 assert_eq!(

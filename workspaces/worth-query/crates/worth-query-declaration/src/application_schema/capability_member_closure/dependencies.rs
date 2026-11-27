@@ -41,14 +41,12 @@ pub(super) fn dependencies_are_closed(
             contract.constraints().currentness().active_status().field(),
         )
         && tenure_dependencies_exist(members, contract)
-        && field_exists(
-            members,
-            contract.constraints().currentness().validity().not_before(),
-        )
-        && field_exists(
-            members,
-            contract.constraints().currentness().validity().not_after(),
-        )
+        && contract
+            .constraints()
+            .currentness()
+            .validity()
+            .bounds()
+            .all(|bound| field_exists(members, bound))
         && relation_exists(members, contract.delegation().grantee())
         && delegation_activation_dependencies_exist(members, contract)
         && elevation_dependencies_exist(members, dimensions, contract.elevation())
@@ -111,13 +109,12 @@ fn elevation_dependencies_exist(
         elevation.identity(),
         elevation.reason(),
         elevation.status(),
-        elevation.validity().not_before(),
-        elevation.validity().not_after(),
         review.identity(),
         review.kind().field(),
         review.status(),
     ]
     .into_iter()
+    .chain(elevation.validity().bounds())
     .chain(
         elevation
             .states()

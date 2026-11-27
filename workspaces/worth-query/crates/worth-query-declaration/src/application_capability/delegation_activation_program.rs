@@ -36,14 +36,13 @@ pub fn application_capability_delegation_activation_program_targets(
         write_target(target.purpose().field()),
         write_target(currentness.active_status().field()),
         write_target(workflow.grant()),
-        write_target(currentness.validity().not_before()),
-        write_target(currentness.validity().not_after()),
         write_target(lineage.limit()),
         link_target(target.resource()),
         link_target(lineage.parent()),
         link_target(lineage.grantor()),
         link_target(delegation.grantee()),
     ]);
+    required.extend(currentness.validity().bounds().map(write_target));
     extend_optional_field(&mut required, target.field());
     extend_optional_field(&mut required, constraints.magnitude());
     extend_optional_relation(&mut required, target.relation());

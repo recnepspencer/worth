@@ -34,7 +34,8 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         if !profile.is_output_forest() || !profile.matches_recording_model(&self.model) {
             return Err(Denial::ForeignModel);
         }
-        let commit = self.prepare_envelope_binding(phase, reserved, candidate, receipt, None)?;
+        // The checks only: the step is indexed once, at adoption.
+        let bound = self.bind_envelope_source(phase, reserved, candidate, receipt, None)?;
         let execution = phase
             .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
@@ -46,7 +47,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             reserved.meaning,
             WorthQueryHistorySourceEvidence::Live(receipt),
             profile,
-            commit.source,
+            bound.source,
             None,
         )
     }

@@ -167,13 +167,14 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             }
             (Source::Recorded(_), Some(_)) => return Err(Denial::ReceiptMismatch),
         };
-        let prepared = self.prepare_binding(phase, reserved, candidate, completion)?;
+        // The checks only: the step is indexed once, at adoption.
+        let bound = self.bind_recording_source(phase, reserved, candidate, &completion)?;
         let current = self
             .application()
             .on_branch(candidate.branch())
             .select(phase)
             .map_err(Denial::CandidateSelection)?;
-        if current.product().observation() != prepared.source.product_observation() {
+        if current.product().observation() != bound.source.product_observation() {
             return Err(Denial::ReceiptMismatch);
         }
         let execution = phase
@@ -187,8 +188,8 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             reserved.meaning,
             source,
             profile,
-            prepared.source,
-            prepared.node.root_posture,
+            bound.source,
+            bound.root_posture,
         )
     }
 }
