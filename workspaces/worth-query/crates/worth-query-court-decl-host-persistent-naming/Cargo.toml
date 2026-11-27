@@ -14,6 +14,7 @@ worth-query-decl = { path = "../worth-query-decl" }
 worth-query-host = { path = "../worth-query-host" }
 worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
 worth-query-testkit-host = { path = "../worth-query-testkit-host" }
+worth-testkit-foundational = { path = "../../../../crates/worth-testkit-foundational" }
 
 [lints]
 workspace = true

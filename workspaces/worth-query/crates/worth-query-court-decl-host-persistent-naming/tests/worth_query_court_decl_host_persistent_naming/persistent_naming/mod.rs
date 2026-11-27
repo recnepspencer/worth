@@ -29,6 +29,7 @@ mod history;
 mod interleaving;
 pub(crate) mod invariant_names;
 mod lineage;
+mod named_records_axis;
 mod named_read;
 mod navigation;
 pub(crate) mod outputs;

@@ -29,6 +29,26 @@ pub struct AllocationCount {
     pub bytes: u64,
 }
 
+/// Panics unless every axis's `large` sample allocated at most 1.1x its
+/// `small` one, by count and by requested bytes: the complexity courts' flat
+/// bound for a 10x dimension. Every axis is printed before any is asserted.
+pub fn assert_flat(axes: &[(&str, AllocationCount, AllocationCount)]) {
+    for (axis, small, large) in axes {
+        eprintln!("allocation axis {axis}: small={small:?} large={large:?}");
+    }
+    for (axis, small, large) in axes {
+        assert!(small.allocations > 0, "{axis}: the operation must allocate");
+        assert!(
+            large.allocations * 10 <= small.allocations * 11,
+            "{axis}: allocations grew past 1.1x: {small:?} -> {large:?}"
+        );
+        assert!(
+            large.bytes * 10 <= small.bytes * 11,
+            "{axis}: requested bytes grew past 1.1x: {small:?} -> {large:?}"
+        );
+    }
+}
+
 pub struct AllocationProbe;
 
 impl AllocationProbe {

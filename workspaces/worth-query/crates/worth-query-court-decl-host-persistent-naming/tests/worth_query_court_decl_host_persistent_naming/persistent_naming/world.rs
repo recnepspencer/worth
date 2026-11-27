@@ -36,10 +36,25 @@ pub fn install() -> Host {
 pub fn try_install(named: bool) -> Result<Host, String> {
     try_install_program::<Program>(named, "91820000-0000-0000-0000-00000000a71e")
 }
+/// The named world with `extra` more named members `filler-<i>` owned by `a`.
+pub fn install_with_members(extra: usize) -> Host {
+    install_seeded::<Program>(true, "91820000-0000-0000-0000-00000000a71e", extra).unwrap()
+}
 /// Installs the seeded world on program `P` under build identity `build`.
 pub fn try_install_program<P>(
     named: bool,
     build: &str,
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, P>, String>
+where
+    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
+    P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
+{
+    install_seeded::<P>(named, build, 0)
+}
+fn install_seeded<P>(
+    named: bool,
+    build: &str,
+    extra: usize,
 ) -> Result<WorthQueryProgramApplicationRuntime<Schema, P>, String>
 where
     P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
@@ -56,7 +71,10 @@ where
         ((),),
         ApplicationBuildIdentity::parse(build).unwrap(),
         limits,
-        |_, graph, installed| seed(graph, installed, named),
+        |_, graph, installed| {
+            seed(graph, installed, named)?;
+            filler_members(graph, extra)
+        },
     )
     .map_err(|cause| format!("{cause:?}"))
 }
@@ -131,6 +149,31 @@ pub fn seed(
         WorthQueryApplicationEntityKey::new("loose").unwrap(),
     ))?;
     navigation::seed(graph)?;
+    Ok(())
+}
+/// `extra` named members `filler-<i>`, each owned by model `a`.
+fn filler_members(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    extra: usize,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    for filler in 0..extra {
+        let key = format!("filler-{filler}");
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(
+                Member::reference(),
+                WorthQueryApplicationEntityKey::new(&key).unwrap(),
+            )
+            .field(MemberKey::at("MemberKey"), key.clone())
+            .field(MemberValue::at("MemberValue"), 66)
+            .persistent_name("authored"),
+        )?;
+        graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+            ModelMember::reference(),
+            format!("owns:a:{key}"),
+            WorthQueryApplicationEntityKey::new("a").unwrap(),
+            WorthQueryApplicationEntityKey::new(&key).unwrap(),
+        ))?;
+    }
     Ok(())
 }
 pub fn attach(host: &Host) -> Document<'_> {

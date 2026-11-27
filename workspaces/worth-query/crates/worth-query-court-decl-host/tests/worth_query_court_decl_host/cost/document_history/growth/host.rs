@@ -24,7 +24,7 @@ use worth_query_testkit_document_retention::facade::{
     document_world_resources::{world_resources_with_capacity, WorldLifecycleCapacity},
 };
 
-pub(super) fn install(nodes: usize) -> App {
+pub(in crate::cost::document_history) fn install(nodes: usize) -> App {
     let nodes = u64::try_from(nodes).unwrap();
     let capacity = WorldLifecycleCapacity {
         live_product_branches: nodes + 32,
@@ -52,7 +52,7 @@ pub(super) fn install(nodes: usize) -> App {
     ))
 }
 
-pub(super) fn prefix() -> WorthQueryHistoryPageLimits {
+pub(in crate::cost::document_history) fn prefix() -> WorthQueryHistoryPageLimits {
     WorthQueryHistoryPageLimits {
         maximum_entries: NonZeroUsize::MIN,
         maximum_examined_entries: NonZeroUsize::MIN,
@@ -60,7 +60,7 @@ pub(super) fn prefix() -> WorthQueryHistoryPageLimits {
     }
 }
 
-pub(super) fn window(host: &App, document: &mut Document<'_>, nodes: usize) {
+pub(in crate::cost::document_history) fn window(host: &App, document: &mut Document<'_>, nodes: usize) {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -115,7 +115,7 @@ pub(super) fn select(
     panic!("finite scale checkout")
 }
 
-pub(super) fn maintain(
+pub(in crate::cost::document_history) fn maintain(
     host: &App,
     document: &mut Document<'_>,
     context: &WorthQueryHistoryDescriptionContext,

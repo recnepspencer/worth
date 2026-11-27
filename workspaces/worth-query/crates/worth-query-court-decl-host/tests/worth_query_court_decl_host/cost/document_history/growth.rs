@@ -1,5 +1,5 @@
 //! Depth and sibling width are independent; scheduled maxima reuse this cost court.
-mod host;
+pub(super) mod host;
 mod measurement;
 mod scenario;
 use measurement::Cost;

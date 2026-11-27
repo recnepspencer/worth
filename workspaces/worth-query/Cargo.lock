@@ -1646,6 +1646,7 @@ dependencies = [
  "worth-query-host",
  "worth-query-testkit-document-retention",
  "worth-query-testkit-host",
+ "worth-testkit-foundational",
 ]
 
 [[package]]

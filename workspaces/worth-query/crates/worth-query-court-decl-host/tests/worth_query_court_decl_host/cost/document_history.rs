@@ -1,4 +1,5 @@
 //! Warm ordinary append; retained-history depth varies, model and local edit do not.
+mod allocation_axes;
 mod envelope;
 mod group;
 mod growth;
