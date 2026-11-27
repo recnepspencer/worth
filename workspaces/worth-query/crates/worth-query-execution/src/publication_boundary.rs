@@ -89,9 +89,9 @@ pub mod document_history {
     };
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::{
-        WorthQueryHeldNavigationLineageForTest, WorthQueryHistoryEnrollmentObservationForTest,
-        WorthQueryHistoryEnrollmentReportForTest, WorthQueryHistoryReversalFactForTest,
-        WorthQueryHistorySourceIndexForTest,
+        history_envelope_identities_for_test, WorthQueryHeldNavigationLineageForTest,
+        WorthQueryHistoryEnrollmentObservationForTest, WorthQueryHistoryEnrollmentReportForTest,
+        WorthQueryHistoryReversalFactForTest, WorthQueryHistorySourceIndexForTest,
     };
 }
 

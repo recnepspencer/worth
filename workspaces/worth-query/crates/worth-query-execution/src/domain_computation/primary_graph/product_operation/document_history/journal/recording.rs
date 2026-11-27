@@ -20,6 +20,7 @@ impl HistoryJournal {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn reserve(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
+        namespace: JournalNamespace,
         meaning: WorthQueryApplicationIdempotencyBinding,
         label: &str,
         metadata: &WorthQueryHistoryStepMetadata,
@@ -36,7 +37,7 @@ impl HistoryJournal {
             .next
             .checked_add(1)
             .ok_or(Denial::RecordingIdentityExhausted)?;
-        let key = meaning.canonical_key();
+        let key = JournalKey::of(namespace, &meaning);
         let view_after = self
             .view_generation
             .checked_add(1)
@@ -51,7 +52,7 @@ impl HistoryJournal {
             .allocate::<(u64, HistoryNode)>(execution, self.nodes.len(), described)
             .map_err(Denial::Recording)?;
         let attempt_allocation = self
-            .allocate::<([u8; 32], HistoryAttempt)>(execution, self.attempts.len(), 0)
+            .allocate::<(JournalKey, HistoryAttempt)>(execution, self.attempts.len(), 0)
             .map_err(Denial::Recording)?;
         let source_allocation = self
             .allocate::<(u64, RetainedHistorySource)>(execution, self.retained.len(), 0)

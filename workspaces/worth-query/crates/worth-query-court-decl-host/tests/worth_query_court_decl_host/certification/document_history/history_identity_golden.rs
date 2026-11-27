@@ -5,10 +5,12 @@
 //! `bind_admission` never changes either identity, and the navigation kind is
 //! not hashed, so undo, redo_to and checkout share these bytes. The envelope,
 //! correction and group constants live in `golden/history_identity.json`
-//! (captured from master, `logs/tbu-2e-a/s0a-golden-capture.log`). They are
-//! data until S2 and S4 expose their production hashers.
+//! (captured from master, `logs/tbu-2e-a/s0a-golden-capture.log`). The
+//! envelope and correction rows are checked against the production hasher
+//! here; the group rows are data until S4.
 use super::*;
 use worth_query_decl::facade::application_history::ApplicationHistoryNavigationBinding;
+use worth_query_host::facade::application_entry::history_envelope_identities_for_test;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 use worth_query_testkit_document_retention::facade::document_retention_model::document_history::navigation::Navigation;
 
@@ -56,6 +58,40 @@ fn u128_navigation_identities_match_the_master_golden() {
             hex(binding.intent_identity()),
             INTENT_IDENTITY,
             "key {key:#x}"
+        );
+    }
+}
+
+fn bytes(text: &serde_json::Value) -> [u8; 32] {
+    let text = text.as_str().expect("a hex identity");
+    std::array::from_fn(|at| u8::from_str_radix(&text[2 * at..2 * at + 2], 16).expect("hex"))
+}
+
+#[test]
+fn envelope_and_correction_identities_match_the_master_golden() {
+    let golden: serde_json::Value =
+        serde_json::from_str(include_str!("golden/history_identity.json")).unwrap();
+    let rows = golden["envelope"].as_array().unwrap();
+    assert!(rows.iter().any(|row| row.get("correction").is_some()));
+    for row in rows {
+        let correction = row.get("correction").map(|correction| {
+            (
+                correction["binding"].as_str().unwrap(),
+                correction["source_ordinal"].as_u64().unwrap(),
+                correction["member"].as_str().unwrap(),
+            )
+        });
+        let (key, intent) = history_envelope_identities_for_test(
+            row["history"].as_str().unwrap(),
+            &bytes(&row["key"]),
+            &bytes(&row["edit_intent"]),
+            correction,
+        );
+        assert_eq!(hex(&key), row["key_identity"].as_str().unwrap(), "{row}");
+        assert_eq!(
+            hex(&intent),
+            row["intent_identity"].as_str().unwrap(),
+            "{row}"
         );
     }
 }

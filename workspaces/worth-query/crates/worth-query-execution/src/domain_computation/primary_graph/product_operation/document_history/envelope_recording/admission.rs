@@ -1,9 +1,10 @@
 //! One envelope reserves one history record before any candidate exists.
 use super::super::{
-    journal::AttemptLookup, WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
-    WorthQueryHistoryNodeId,
+    journal::AttemptLookup,
+    recording::{envelope_meaning, CorrectionParts, JournalNamespace},
+    WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
     WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
-    WorthQueryHistoryStepMetadata,
+    WorthQueryHistoryNodeId, WorthQueryHistoryStepMetadata,
 };
 use crate::{
     basis::WorthQueryProductBranchReadIdentity,
@@ -15,14 +16,12 @@ use crate::{
         document_history::WorthQueryDocumentHistoryRead, WorthQueryProgramPublicationAccess,
     },
 };
-use sha2::{Digest, Sha256};
 use worth_query_declaration::facade::{
     application_history::{ApplicationHistoryAccessBinding, ApplicationHistoryBinding},
     application_operation::{ApplicationEditIntentIdentity, ApplicationMutationBindingDescriptor},
     application_query::ApplicationQueryBinding,
     application_schema::{ApplicationSchema, ApplicationStructuredValueBinding},
 };
-use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -128,30 +127,15 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .find(|(descriptor, _)| *descriptor == envelope.first_operation)
             .map(|(_, operation)| operation.label.as_str())
             .ok_or(Denial::OperationNotDeclared)?;
-        let mut key_hash = Sha256::new();
-        key_hash.update(b"worth.query.document-history.envelope.key.v1");
-        key_hash.update(H::IDENTITY.as_bytes());
-        key_hash.update(envelope.key);
-        let mut intent_hash = Sha256::new();
-        match &envelope.correction {
-            // An edit keeps Phase 1's meaning byte for byte.
-            None => {
-                intent_hash.update(b"worth.query.document-history.envelope.intent.v1");
-                intent_hash.update(envelope.intent.identity());
-            }
-            Some(correction) => {
-                intent_hash.update(b"worth.query.document-history.envelope.correction-intent.v1");
-                intent_hash.update(envelope.intent.identity());
-                intent_hash.update((correction.binding.len() as u64).to_be_bytes());
-                intent_hash.update(correction.binding.as_bytes());
-                intent_hash.update(correction.source.ordinal().to_be_bytes());
-                intent_hash.update((correction.member.len() as u64).to_be_bytes());
-                intent_hash.update(correction.member.as_bytes());
-            }
-        }
-        let meaning = <WorthQueryApplicationIdempotencyBinding as IdempotencyBindingInternalPort>::from_identities(
-            key_hash.finalize().into(),
-            intent_hash.finalize().into(),
+        let meaning = envelope_meaning(
+            H::IDENTITY,
+            envelope.key,
+            envelope.intent.identity(),
+            envelope.correction.as_ref().map(|correction| CorrectionParts {
+                binding: correction.binding,
+                source: correction.source.ordinal(),
+                member: &correction.member,
+            }),
         );
         let head = runtime
             .on_branch(self.branch())
@@ -164,7 +148,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let mut selected = self.selection.lock();
-        match selected.journal.lookup(meaning) {
+        match selected.journal.lookup(JournalNamespace::Envelope, meaning) {
             AttemptLookup::Completed(node) => {
                 return Ok(WorthQueryDocumentHistoryRecordPreparation::AlreadyRecorded(
                     selected
@@ -183,7 +167,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         }
         let record = selected
             .journal
-            .reserve(&execution, meaning, label, step_metadata)?;
+            .reserve(&execution, JournalNamespace::Envelope, meaning, label, step_metadata)?;
         Ok(WorthQueryDocumentHistoryRecordPreparation::Reserved(
             WorthQueryDocumentHistoryReservation {
                 operation_scope: None,

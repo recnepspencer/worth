@@ -1,7 +1,6 @@
 //! Every member's real admission precedes reservation and candidate creation.
 use super::*;
-use sha2::{Digest, Sha256};
-use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort;
+use super::super::recording::{group_meaning, JournalNamespace};
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
@@ -87,27 +86,16 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         }) {
             return Err(Denial::GroupMemberMismatch);
         }
-        let mut key_hash = Sha256::new();
-        key_hash.update(b"worth.query.document-history.group.key.v1");
-        key_hash.update(H::IDENTITY.as_bytes());
-        key_hash.update(key.to_le_bytes());
-        let mut intent_hash = Sha256::new();
-        intent_hash.update(b"worth.query.document-history.group.members.v1");
-        for member in &members {
-            intent_hash.update(member.meaning.canonical_key());
-            let intent = member.meaning.intent_text();
-            intent_hash.update((intent.len() as u64).to_le_bytes());
-            intent_hash.update(intent.as_bytes());
-        }
-        let meaning = <WorthQueryApplicationIdempotencyBinding as IdempotencyBindingInternalPort>::from_identities(
-            key_hash.finalize().into(),
-            intent_hash.finalize().into(),
+        let meaning = group_meaning(
+            H::IDENTITY,
+            key,
+            members.iter().map(|member| &member.meaning),
         );
         let execution = phase
             .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let mut selected = self.selection.lock();
-        match selected.journal.lookup(meaning) {
+        match selected.journal.lookup(JournalNamespace::Writer, meaning) {
             AttemptLookup::Completed(node) => {
                 return Ok(WorthQueryDocumentHistoryGroupPreparation::AlreadyRecorded(
                     selected

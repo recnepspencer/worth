@@ -70,6 +70,8 @@ pub use fragment_view::{
 pub(crate) use managed_bridge::build_primary_graph_product_bridge;
 pub(in crate::domain_computation) use output_lineage::SourceInvalidationOwner;
 pub(in crate::domain_computation) use principal_currentness_capture::capture_principal_currentness_admitted;
+#[doc(hidden)]
+pub use product_operation::document_history::history_envelope_identities_for_test;
 pub use product_operation::document_history::{
     WorthQueryAdmittedHistoryProgramOutput, WorthQueryCompletedHistoryOutputs,
     WorthQueryCompletedRecordingOutputs, WorthQueryDocumentHistory,

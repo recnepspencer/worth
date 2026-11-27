@@ -57,6 +57,8 @@ mod history;
 mod inbound_occurrence;
 #[doc(hidden)]
 pub use history::WorthQueryHistoryEditHandoffPauseForTest;
+#[doc(hidden)]
+pub use history::history_envelope_identities_for_test;
 pub use history::{
     OrdinaryHistoryPayload, WorthQueryApplicationHistoryAttachmentFailure,
     WorthQueryApplicationHistoryCloseFailure, WorthQueryApplicationHistoryDenial,

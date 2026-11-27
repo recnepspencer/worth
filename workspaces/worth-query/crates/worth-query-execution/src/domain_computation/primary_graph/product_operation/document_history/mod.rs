@@ -86,6 +86,7 @@ mod retention;
 pub use redo::{WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices};
 pub(in crate::domain_computation::primary_graph) use retention::HistoryRetentionChange;
 pub use retention::{WorthQueryHistoryReleaseOutcome, WorthQueryHistoryRetentionStatus};
+mod recording;
 mod recording_outputs;
 mod reservation;
 mod reversal_facts;
@@ -116,6 +117,8 @@ pub use disposal::{
     WorthQueryDocumentHistoryClosingDenial,
 };
 pub(in crate::domain_computation::primary_graph) use model::HistoryModelIdentity;
+#[doc(hidden)]
+pub use recording::history_envelope_identities_for_test;
 #[doc(hidden)]
 pub use observation::{
     WorthQueryHeldNavigationLineageForTest, WorthQueryHistoryEnrollmentObservationForTest,

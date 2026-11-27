@@ -91,7 +91,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         if selected.expected != expected {
             return Err(Denial::HeadDiverged);
         }
-        match selected.journal.lookup(meaning) {
+        match selected.journal.lookup(super::recording::JournalNamespace::Writer, meaning) {
             AttemptLookup::Drift => return Err(Denial::IntentDrift),
             AttemptLookup::Reserved => return Err(Denial::AttemptInFlight),
             AttemptLookup::Completed(node) => {
@@ -113,6 +113,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .map_err(Denial::Stopped)?;
         let record = selected.journal.reserve(
             &execution,
+            super::recording::JournalNamespace::Writer,
             meaning,
             label,
             &super::WorthQueryHistoryStepMetadata::none(),

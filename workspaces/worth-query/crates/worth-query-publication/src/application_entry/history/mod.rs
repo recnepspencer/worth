@@ -140,6 +140,8 @@ use request_context::{DocumentRequestContext, Governed, MetadataAuthority, Ungov
 mod retention;
 #[doc(hidden)]
 pub use edit::WorthQueryHistoryEditHandoffPauseForTest;
+#[doc(hidden)]
+pub use worth_query_execution::publication_boundary::document_history::history_envelope_identities_for_test;
 pub use edit::{
     WorthQueryFixedHistoryEditOutcome, WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance,
     WorthQueryHistoryEditDenial, WorthQueryHistoryEditFinish, WorthQueryHistoryEditOutcome,

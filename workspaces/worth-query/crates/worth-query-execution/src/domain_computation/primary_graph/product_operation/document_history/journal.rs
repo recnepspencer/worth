@@ -2,6 +2,7 @@
 use super::{
     allocation::HistoryInsertionAllocation,
     observation::{Access, EnrollmentSink, WorthQueryHistoryEnrollmentObservationForTest},
+    recording::{JournalKey, JournalNamespace},
     step::{DocumentIncarnation, WorthQueryHistoryNodeId, WorthQueryHistoryStep},
     WorthQueryDocumentHistoryDenial as Denial, WorthQueryHistoryStepMetadata,
 };
@@ -120,7 +121,7 @@ pub(in crate::domain_computation::primary_graph) struct HistoryJournal {
     completed_end: u64,
     pending: Option<PendingRecord>,
     nodes: BTreeMap<u64, HistoryNode>,
-    attempts: BTreeMap<[u8; 32], HistoryAttempt>,
+    attempts: BTreeMap<JournalKey, HistoryAttempt>,
     past_heads: BTreeMap<u64, PastHead>,
     retained: BTreeMap<u64, RetainedHistorySource>,
     retained_completed: usize,
@@ -161,7 +162,7 @@ pub(super) struct ReservedHistoryRecord {
     pub(super) node: WorthQueryHistoryNodeId,
     pub(super) parent: WorthQueryHistoryNodeId,
     pub(super) transition: u64,
-    pub(super) key: [u8; 32],
+    pub(super) key: JournalKey,
     view_after: u64,
 }
 
@@ -262,9 +263,13 @@ impl HistoryJournal {
         })
     }
 
-    pub(super) fn lookup(&self, meaning: WorthQueryApplicationIdempotencyBinding) -> AttemptLookup {
+    pub(super) fn lookup(
+        &self,
+        namespace: JournalNamespace,
+        meaning: WorthQueryApplicationIdempotencyBinding,
+    ) -> AttemptLookup {
         self.access(Access::Attempt);
-        match self.attempts.get(&meaning.canonical_key()) {
+        match self.attempts.get(&JournalKey::of(namespace, &meaning)) {
             None => AttemptLookup::Unseen,
             Some(attempt) if !attempt.meaning.has_same_intent(meaning) => AttemptLookup::Drift,
             Some(HistoryAttempt {

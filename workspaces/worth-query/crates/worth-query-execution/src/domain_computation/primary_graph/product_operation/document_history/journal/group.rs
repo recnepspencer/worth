@@ -10,6 +10,7 @@ impl HistoryJournal {
     ) -> Result<ReservedHistoryRecord, Denial> {
         let record = self.reserve(
             execution,
+            JournalNamespace::Writer,
             meaning,
             label,
             &WorthQueryHistoryStepMetadata::none(),
