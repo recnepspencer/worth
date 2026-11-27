@@ -38,7 +38,9 @@ pub enum WorthQueryGovernedHistoryCompleteness {
     PageLimitReached,
 }
 
-/// Why a governed history read stopped before its first effect on the caller.
+/// Why a governed history read stopped. A refusal after the first page means
+/// `on_page` already saw the earlier pages; a caller that must expose all or
+/// nothing buffers them (the Host's `record_history` returns no partial log).
 #[derive(Debug)]
 pub enum WorthQueryGovernedHistoryDenial {
     /// The history query is not installed in this program's schema.
@@ -65,13 +67,14 @@ where
         WorthQueryApplicationProjection<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::Query>,
 {
     /// Reads the governed record and aspect history of every subject this
-    /// query discloses, oldest step first, handing each page to `on_page`.
+    /// query discloses, newest step first, handing each page to `on_page`.
     ///
     /// `read` governs the SubjectRead and `metadata` the history's metadata
     /// disclosure contract; each is admitted for this request's principal at
     /// capture, at opening and for every page, so a revocation between pages
-    /// refuses the next page. A retained request (`at(..)`) reads the history
-    /// visible at its pinned commit; capabilities are still admitted at the head.
+    /// refuses the next page (after `on_page` saw the earlier ones). A retained
+    /// request (`at(..)`) reads the history visible at its pinned commit;
+    /// capabilities are still admitted at the head.
     pub fn read_history_governed_in_advancement<History, RC, RO, RI, MC, MO, MI>(
         self,
         phase: &AdvancementPhase<'_>,

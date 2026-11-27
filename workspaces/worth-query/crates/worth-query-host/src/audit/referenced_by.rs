@@ -18,7 +18,6 @@ use worth_query_declaration::facade::{
     },
     application_schema::{
         ApplicationOperationMarkerIdentity, ApplicationSchema, ApplicationStructuredValueBinding,
-        RelationDirection,
     },
 };
 use worth_query_execution::facade::primary_graph::{
@@ -29,6 +28,7 @@ use worth_query_publication::facade::application_entry::{
     WorthQueryApplicationRequestQueryDenial, WorthQueryGovernedReadAccess,
 };
 
+use super::reverse_read::{incoming_relations_read, FirstStep};
 use super::WorthQueryRelationEdge;
 use crate::session::{WorthQueryHostSession, WorthQuerySessionQuery, WorthQuerySessionSnapshot};
 
@@ -166,21 +166,14 @@ where
     let not_incoming = || WorthQueryReferencedByDenial::NotAnIncomingReference {
         query: query.name().to_owned(),
     };
-    let paths = query.read_graph().root_paths();
-    if paths.is_empty() {
-        return Err(not_incoming());
-    }
-    let mut relations = Vec::new();
-    for path in paths {
-        let first = path.steps().first().ok_or_else(not_incoming)?;
-        if first.direction() != RelationDirection::Reverse || first.to() != referenced {
-            return Err(not_incoming());
-        }
-        let edge = WorthQueryRelationEdge::new(first.relation(), first.from(), first.to());
-        if !relations.contains(&edge) {
-            relations.push(edge);
-        }
-    }
-    relations.sort();
+    let first_steps = query.read_graph().root_paths().iter().map(|path| {
+        path.steps().first().map(|step| FirstStep {
+            direction: step.direction(),
+            relation: step.relation(),
+            from: step.from(),
+            to: step.to(),
+        })
+    });
+    let relations = incoming_relations_read(&referenced, first_steps).ok_or_else(not_incoming)?;
     Ok((referenced, relations))
 }

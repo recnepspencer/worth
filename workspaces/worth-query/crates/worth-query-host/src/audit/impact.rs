@@ -10,12 +10,16 @@ use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRelationDimension,
     application_schema::{
         ApplicationAuthorizationTraversalDirection, ApplicationEntityRef, ApplicationSchema,
-        ApplicationSchemaMember, RelationDirection,
+        ApplicationSchemaMember,
     },
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
+use super::reverse_read::{incoming_relations_read, FirstStep};
 use crate::session::WorthQueryHostSession;
+
+#[cfg(test)]
+mod tests;
 
 /// One declared relation between two entity types.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -233,6 +237,7 @@ impl WorthQueryEntityImpact {
                 roles.push(WorthQueryImpactRole::TargetRelation(target));
             }
         }
+        roles.dedup();
         roles
     }
 
@@ -251,28 +256,43 @@ impl WorthQueryEntityImpact {
         })
     }
 
-    /// Records the installed queries whose root path steps backward from this
-    /// entity along an incoming relation.
+    /// Records each installed referenced-by read of this entity, by the
+    /// same rule `referenced_by` admits it with.
     fn attach_reverse_reads(&mut self, member: &ApplicationSchemaMember) {
         let ApplicationSchemaMember::ApplicationQuery { definition } = member else {
             return;
         };
-        for path in definition.root_paths() {
-            for step in path.steps() {
-                if step.direction() != RelationDirection::Reverse || step.to() != self.entity {
-                    continue;
-                }
-                let incoming = self.incoming.iter_mut().find(|incoming| {
-                    incoming.edge.relation == step.relation() && incoming.edge.from == step.from()
-                });
-                if let Some(incoming) = incoming
-                    && !incoming
-                        .reverse_reads
-                        .iter()
-                        .any(|name| name == definition.name())
-                {
-                    incoming.reverse_reads.push(definition.name().to_owned());
-                }
+        let first_steps = definition.root_paths().iter().map(|path| {
+            path.steps().first().map(|step| FirstStep {
+                direction: step.direction(),
+                relation: step.relation(),
+                from: step.from(),
+                to: step.to(),
+            })
+        });
+        self.attach_query(definition.name(), definition.scope_entity(), first_steps);
+    }
+
+    fn attach_query<'query>(
+        &mut self,
+        query: &str,
+        scope_entity: &str,
+        first_steps: impl IntoIterator<Item = Option<FirstStep<'query>>>,
+    ) {
+        if scope_entity != self.entity {
+            return;
+        }
+        let Some(edges) = incoming_relations_read(scope_entity, first_steps) else {
+            return;
+        };
+        for edge in edges {
+            if let Some(incoming) = self
+                .incoming
+                .iter_mut()
+                .find(|incoming| incoming.edge == edge)
+                && !incoming.reverse_reads.iter().any(|name| name == query)
+            {
+                incoming.reverse_reads.push(query.to_owned());
             }
         }
     }

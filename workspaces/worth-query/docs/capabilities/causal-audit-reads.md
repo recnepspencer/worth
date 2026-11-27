@@ -120,8 +120,12 @@ if let Some(field) = provenance.field("retention_days") {
 This is `request.inspect_source::<SourceDisclosure>(&receipt).why_performed()
 .materialize(source_effects()).execute_governed(..)` with both capabilities
 admitted for the session principal immediately before the inspection consumes
-them. `source_effects_outcome()` says why effects were not materialized (for
-example an unsupported projection shape).
+them, and the inspection runs under the session's execution policy. The receipt
+must belong to the session's branch: a write on another branch, such as an
+unadopted preview, refuses with `WorthQuerySourceProvenanceDenial::ForeignBranch`;
+explain it from a session `on_branch(preview.branch())`. `source_effects_outcome()`
+says why effects were not materialized (for example an unsupported projection
+shape).
 
 ## Find what depends on an entity type and what references a record
 
@@ -129,7 +133,9 @@ example an unsupported projection shape).
 
 - `incoming()`: relations targeting the entity, each with the installed queries
   that read it in reverse (`reverse_reads()`; empty means no governed
-  referenced-by read exists for that relation);
+  referenced-by read exists for that relation). A query is listed exactly when
+  `referenced_by` would admit it: scoped on the entity, every root path starting
+  with a reverse step into it;
 - `outgoing()`: relations the entity references;
 - `dependencies()`: each capability (`GrantEntity`, `ScopeEntity`,
   `ResourceHead`, `Traversal`, `TargetRelation`) and ability policy

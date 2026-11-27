@@ -6,6 +6,7 @@
 //! This is `request.inspect_source::<Disclosure>(receipt).why_performed()
 //! .materialize(source_effects()).execute_governed(metadata, diagnostic)`;
 //! the disclosure's metadata and diagnostic contracts decide what is shown.
+use worth_execution::ExecutionAllocationPolicy;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_operation::ApplicationSourceDisclosureBinding,
@@ -41,6 +42,9 @@ pub struct WorthQuerySourceProvenanceRequest<Schema, MC, MO, MI, DC, DO, DI> {
 /// Why a source provenance read refused.
 #[derive(Debug)]
 pub enum WorthQuerySourceProvenanceDenial {
+    /// The receipt was committed on another product branch than the
+    /// session's; an active-branch session never explains a preview's write.
+    ForeignBranch,
     /// A capability or the principal was refused at admission.
     Admission(WorthQueryApplicationRequestQueryDenial),
     /// The inspection itself refused (stale incarnation, governance, request).
@@ -127,6 +131,9 @@ where
         source: &WorthQueryApplicationCommitReceipt,
     ) -> Result<WorthQuerySourceProvenance, WorthQuerySourceProvenanceDenial> {
         use WorthQuerySourceProvenanceDenial as Denial;
+        if source.product_branch() != session.branch() {
+            return Err(Denial::ForeignBranch);
+        }
         let scope = session.fresh_scope();
         let principal = session.call_principal();
         let request = session.request_as(&principal, &scope);
@@ -150,10 +157,16 @@ where
                 ))
             })?
             .map_err(Denial::Admission)?;
+        let lease = session.open_lease(&scope).map_err(|cause| {
+            Denial::Admission(WorthQueryApplicationRequestQueryDenial::ExecutionRequest(
+                cause,
+            ))
+        })?;
         request
             .inspect_source::<Disclosure>(source)
             .why_performed()
             .materialize(WorthQueryApplicationMaterializationRequest::source_effects())
+            .with_allocation_policy(ExecutionAllocationPolicy::Execution(&lease))
             .execute_governed(metadata, diagnostic)
             .map(|inspection| WorthQuerySourceProvenance { inspection })
             .map_err(Denial::Inspection)
@@ -163,8 +176,10 @@ where
 impl<Schema: ApplicationSchema, Program> WorthQueryHostSession<'_, Schema, Program> {
     /// Materializes what the authored operation behind `source` wrote, field
     /// by field: `session.source_provenance::<Disclosure>(&receipt, request)`.
-    /// Both capabilities are admitted for the session principal at the head
-    /// and consumed by this one inspection.
+    /// The receipt must belong to the session's branch (`ForeignBranch`
+    /// otherwise). Both capabilities are admitted for the session principal at
+    /// that branch's head and consumed by this one inspection, which runs under
+    /// the session's execution policy.
     pub fn source_provenance<Disclosure>(
         &self,
         source: &WorthQueryApplicationCommitReceipt,

@@ -6,6 +6,7 @@ mod causal_timeline;
 mod impact;
 mod record_history;
 mod referenced_by;
+mod reverse_read;
 mod source_provenance;
 mod workflow_audit;
 pub use causal_timeline::{WorthQueryCausalTimeline, WorthQueryCausalTimelineDenial};

@@ -326,7 +326,7 @@ impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Sch
             .on_branch(self.settings.branch)
     }
 
-    pub(super) fn open_lease(
+    pub(crate) fn open_lease(
         &self,
         scope: &WorthQueryRequestScope,
     ) -> Result<ExecutionResourceLease<'home>, WorthQueryAdvancementDenial> {
