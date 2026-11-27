@@ -1,10 +1,13 @@
-//! Select the bases, admit the asker, then resolve the request and read
+//! Select the head, admit the asker, then resolve the request and read
 //! verdicts from admission's capability observation. Nothing here is
 //! retained, reserved or written.
 //!
 //! The order is the ability eligibility disclosure rule: the asker is
-//! admitted at the head before any request resolves, and a roster's
-//! disclosure is decided at the head before a pinned request resolves.
+//! admitted before any request resolves, and a roster's disclosure is
+//! decided before the request resolves. Capability eligibility reads the
+//! branch head only: grant validity is judged at the trusted instant of the
+//! question, so a pinned commit's grants would be judged against a clock
+//! that describes neither that commit nor now.
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
@@ -24,6 +27,7 @@ use super::super::{
 };
 use super::prepared::PreparedCapabilityEligibility;
 use super::{WorthQueryCapabilityEligibility as Verdict, WorthQueryCapabilityEligibilityQuestion};
+use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::authorization::admission::admit_request;
 use crate::domain_computation::authorization::capability_elevation_projection::validate_elevation_projection;
 use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::preflight;
@@ -45,14 +49,14 @@ type Prepared<'a, 'runtime, Schema, Context, Capability, Input> = PreparedCapabi
 >;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Whether `asker` itself may exercise the question's capability at
-    /// `basis`: the outcome capability admission reaches for this principal
-    /// on this request there. Asking about oneself needs no disclosure, but
-    /// asking at a retained basis needs the asker admitted at the head.
+    /// Whether `asker` itself may exercise the question's capability at the
+    /// head of `branch`: the outcome capability admission reaches for this
+    /// principal on this request now. Asking about oneself needs no
+    /// disclosure.
     pub fn observe_asker_capability_eligibility<Context, Capability, Operation, Input>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        basis: WorthQueryEligibilityBasis<'_>,
+        branch: WorthQueryProductBranch,
         asker: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         question: &WorthQueryCapabilityEligibilityQuestion<
@@ -69,7 +73,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
     {
-        self.with_capability_question(phase, basis, request, question, |prepared, native| {
+        self.with_capability_question(phase, branch, request, question, |prepared, native| {
             // 1. Admit the asker at the head, before any request resolves.
             let admitted = admit_asker_at::<Schema, Context>(
                 prepared.head,
@@ -81,35 +85,26 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             );
             let admitted = match admitted {
                 Ok(admitted) => admitted,
-                Err(denial) if prepared.pinned.is_some() => return Err(Denial::Asker(denial)),
                 Err(denial) => {
                     return WorthQueryCandidatePrincipalRefusal::of(denial.kind())
                         .map(Verdict::of_refusal)
                         .ok_or(Denial::Asker(denial));
                 }
             };
-            // 2. Resolve the request on the subject basis and read the verdict.
-            match prepared.pinned {
-                Some(pinned) => {
-                    let subject = prepared.resolve_on(native, pinned)?;
-                    prepared.verdict_of(native, &subject, asker.identity())
-                }
-                None => {
-                    let head = prepared.resolve_on(native, prepared.head)?;
-                    prepared.verdict_for(native, &head, admitted.principal_entity_id())
-                }
-            }
+            // 2. Resolve the request at the head and read the verdict.
+            let head = prepared.resolve_on(native, prepared.head)?;
+            prepared.verdict_for(native, &head, admitted.principal_entity_id())
         })
     }
 
-    /// One verdict per candidate, in order, at `basis`, behind the same
-    /// disclosure gate as ability rosters: `asker` must be admitted and hold
-    /// `disclosure` on the request's scope at the head before any candidate
-    /// is evaluated or any pinned request resolves.
+    /// One verdict per candidate, in order, at the head of `branch`, behind
+    /// the same disclosure gate as ability rosters: `asker` must be admitted
+    /// and hold `disclosure` on the request's scope before any candidate is
+    /// evaluated or the whole request resolves.
     pub fn observe_roster_capability_eligibility<Context, Capability, Operation, Input>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        basis: WorthQueryEligibilityBasis<'_>,
+        branch: WorthQueryProductBranch,
         asker: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         question: &WorthQueryCapabilityEligibilityQuestion<
@@ -128,7 +123,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
     {
-        self.with_capability_question(phase, basis, request, question, |prepared, native| {
+        self.with_capability_question(phase, branch, request, question, |prepared, native| {
             // 1. Admit the asker at the head, before any request resolves.
             let asker = admit_asker_at::<Schema, Context>(
                 prepared.head,
@@ -149,7 +144,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 });
             }
             // 4. Only a disclosed roster resolves the whole request.
-            let subject = prepared.resolve_on(native, prepared.pinned.unwrap_or(prepared.head))?;
+            let subject = prepared.resolve_on(native, prepared.head)?;
             let mut verdicts = Vec::with_capacity(candidates.len());
             for candidate in candidates {
                 admit_request(request, prepared.installed.contract().operation())
@@ -166,7 +161,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     fn with_capability_question<Context, Capability, Operation, Input, Answer>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        basis: WorthQueryEligibilityBasis<'_>,
+        branch: WorthQueryProductBranch,
         request: &WorthQueryRequestScope,
         question: &WorthQueryCapabilityEligibilityQuestion<
             Schema,
@@ -216,7 +211,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     key.operation(),
                 )
             })?;
-        let (head, pinned) = self.select_eligibility_bases(&execution, basis)?;
+        let (head, _) =
+            self.select_eligibility_bases(&execution, WorthQueryEligibilityBasis::Current(branch))?;
         let binding = self
             .installed_schema()
             .principal_binding(Context::principal_binding())
@@ -238,7 +234,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             sample,
             session,
             head: &head,
-            pinned: pinned.as_ref(),
         };
         observe(&prepared, &mut ApplicationQueryNativeAccess::acquire())
     }

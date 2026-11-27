@@ -1,7 +1,8 @@
 //! Admit the asker and decide disclosure at the head, then resolve the
-//! subject and read every installed authority on the scope there (or at a
-//! pinned basis). The disclosure order is the roster's: nothing about the
-//! subject or the pinned scope is read before disclosure is decided.
+//! subject and read every installed authority on the scope there. The
+//! disclosure order is the roster's: nothing about the subject is read
+//! before disclosure is decided. The inventory reads the head only: its
+//! capability entries judge grant validity at one trusted instant of now.
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
@@ -29,6 +30,7 @@ use super::{
     WorthQueryAuthority, WorthQueryAuthorityEntry, WorthQueryAuthorityInventory,
     WorthQueryAuthorityPath, WorthQueryAuthorityQuestion, WorthQueryAuthorityVerdict as Verdict,
 };
+use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::authorization::admission::admit_request;
 use crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan;
 use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::preflight::bridge_matches_plan;
@@ -50,11 +52,12 @@ struct Subject<'a, 'runtime, Schema, Scope> {
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Every installed ability and capability the question's subject may
-    /// exercise on its scope at `basis`, behind the asker's disclosure.
+    /// exercise on its scope at the head of `branch`, behind the asker's
+    /// disclosure.
     pub fn observe_authority_inventory<Context, Field>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        basis: WorthQueryEligibilityBasis<'_>,
+        branch: WorthQueryProductBranch,
         asker: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         question: &WorthQueryAuthorityQuestion<Schema, Context, Field>,
@@ -69,7 +72,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| authorization(AuthorizationRefusal::ForeignPhase, field.entity()))?;
         admit_request(request, field.entity()).map_err(Denial::Authorization)?;
-        let (head, pinned) = self.select_eligibility_bases(&execution, basis)?;
+        let (head, _) =
+            self.select_eligibility_bases(&execution, WorthQueryEligibilityBasis::Current(branch))?;
         let binding = self
             .installed_schema()
             .principal_binding(Context::principal_binding())
@@ -80,19 +84,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let asker =
             admit_asker_at::<Schema, Context>(&head, &execution, &binding, asker, request, native)
                 .map_err(Denial::Asker)?;
-        let resolve = |selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-                       native: &mut ApplicationQueryNativeAccess<'_>| {
-            selected
-                .resolve_entity_admitted_with_native_access(
-                    &execution,
-                    field,
-                    value.clone(),
-                    request,
-                    native,
-                )
-                .map_err(Denial::Scope)
-        };
-        let head_scope = resolve(&head, native)?;
+        let scope = head
+            .resolve_entity_admitted_with_native_access(&execution, field, value, request, native)
+            .map_err(Denial::Scope)?;
         let binding_identity = self.installed_schema().binding_identity();
         let site = |selected| PolicyDecisionSite {
             runtime: self,
@@ -103,7 +97,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let disclosed = observe_ability_on(
             site(&head),
             native,
-            &head_scope,
+            &scope,
             asker.principal_entity_id(),
             disclosure,
         )?;
@@ -112,12 +106,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 disclosure: question.disclosure().ability(),
             });
         }
-        // 3. Only a disclosed inventory resolves the subject (and any pin).
-        let selected = pinned.as_ref().unwrap_or(&head);
-        let scope = match pinned.as_ref() {
-            Some(pinned) => resolve(pinned, native)?,
-            None => head_scope,
-        };
+        // 3. Only a disclosed inventory resolves the subject.
+        let selected = &head;
         let principal = selected
             .resolve_candidate_principal_with_native_access(
                 &execution,

@@ -11,18 +11,20 @@ use worth_query_host::facade::{
         WorthQueryAuthorityVerdict as Verdict, WorthQueryCapabilityEligibility,
         WorthQueryCapabilityEligibilityQuestion, WorthQueryEligibilityDenial,
     },
+    local_calendar::WorthQueryTimeZone,
     primary_graph::{
         WorthQueryApplicationAuthorizationExplanationCause as Cause,
-        WorthQueryFixedRuntimeTimeSource,
+        WorthQueryFixedRuntimeTimeSource, WorthQueryRuntimeTimeSource,
+        WorthQueryRuntimeTimeSourceDenial,
     },
 };
 
 use super::countersign::{CountersignCapability, CountersignOp, CountersignRequest};
 use super::grants::{AuditCapability, AuditOp, ViewAuditors};
 use super::observers::{home, SiteRole};
-use super::program::{caller, identity, QmsHome};
+use super::program::{caller, identity, open, QmsHome};
 use super::schema::{Desktop, Member, SetAssignmentStatus, SiteFacts};
-use super::{at, temp_home_path};
+use super::{at, november, temp_home_path};
 
 fn inventory(
     home: &QmsHome,
@@ -84,12 +86,15 @@ fn an_inventory_explains_every_installed_authority_on_a_scope() {
         alice.subject_standing(),
         WorthQueryAbilityEligibility::Eligible
     );
-    // One ability and six capabilities live on Site. Every fixed target is
-    // allowed; a countersignature names its amount, so only a request asks.
-    assert_eq!(alice.entries().len(), 7);
+    // One ability and seven capabilities live on Site. Every fixed target is
+    // allowed; a countersignature names its amount and evidence its purpose,
+    // so only a request asks them.
+    assert_eq!(alice.entries().len(), 8);
     assert_eq!(alice.allowed().count(), 6);
     let countersign = capability("CountersignCapability", "CountersignOp");
     assert_eq!(alice.verdict(&countersign), Some(&Verdict::RequiresRequest));
+    let evidence = capability("EvidenceCapability", "InspectEvidenceOp");
+    assert_eq!(alice.verdict(&evidence), Some(&Verdict::RequiresRequest));
     assert_eq!(
         countersign_eligibility(&home, 100),
         WorthQueryCapabilityEligibility::Eligible
@@ -189,4 +194,48 @@ fn two_policy_rules_over_one_chain_name_each_impact_role_once() {
         })
         .collect();
     assert_eq!(roles, ["principal", "RoleHolder"]);
+}
+
+/// The fixed trusted clock, counting every read of the current instant.
+#[derive(Clone)]
+struct CountingClock {
+    inner: WorthQueryFixedRuntimeTimeSource,
+    reads: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+}
+
+impl WorthQueryRuntimeTimeSource for CountingClock {
+    fn admission_clock(
+        &self,
+    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
+    {
+        self.inner.admission_clock()
+    }
+    fn current_time(&self) -> Result<std::time::SystemTime, WorthQueryRuntimeTimeSourceDenial> {
+        self.reads.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        self.inner.current_time()
+    }
+}
+
+#[test]
+fn one_inventory_reads_the_trusted_clock_once_for_every_capability() {
+    let clock = CountingClock {
+        inner: WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0)),
+        reads: Default::default(),
+    };
+    let denver = WorthQueryTimeZone::from_tz_variable("MST7MDT,M3.2.0,M11.1.0").unwrap();
+    let home = open(
+        &temp_home_path("authority-one-instant"),
+        clock.clone(),
+        Some(denver),
+        november(),
+    )
+    .unwrap_or_else(|denial| panic!("QMS Home opens: {denial}"));
+    let reads = || clock.reads.load(std::sync::atomic::Ordering::SeqCst);
+    for _ in 0..2 {
+        let before = reads();
+        let alice = inventory(&home, "alice", "alice").expect("alice may see north's roster");
+        // Five fixed-target capabilities are allowed; one reading judged them.
+        assert_eq!(alice.allowed().count(), 6);
+        assert_eq!(reads() - before, 1);
+    }
 }

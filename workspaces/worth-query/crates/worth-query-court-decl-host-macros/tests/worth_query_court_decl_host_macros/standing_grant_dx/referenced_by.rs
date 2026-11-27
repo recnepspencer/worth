@@ -110,12 +110,16 @@ fn referenced_by_returns_the_referencing_rows_at_the_head_and_at_a_pin() {
     let pinned = before.referenced_by(north()).expect("the pin is readable");
     assert_eq!(grant_ids(pinned.rows()), seeded("north"));
 
-    // Impact advertises exactly this query as GrantSite's reverse read.
+    // Impact advertises every installed reverse read of GrantSite: this
+    // query and the assignment provenance's disclosure query.
     let impact = session.entity_impact(Site::reference());
     let grant_site = impact
         .incoming()
         .iter()
         .find(|incoming| incoming.edge().relation() == "GrantSite")
         .expect("GrantSite is incoming to Site");
-    assert_eq!(grant_site.reverse_reads(), ["site_grants"]);
+    assert_eq!(
+        grant_site.reverse_reads(),
+        ["assigned_grant", "site_grants"]
+    );
 }

@@ -50,7 +50,7 @@ pub(super) fn catalog(cause: &Catalog) -> Summary {
         | Catalog::ArithmeticOverflow
         | Catalog::DependencyCountOverflow { .. }
         | Catalog::ProtectionCountOverflow { .. } => CAPACITY,
-        Catalog::InspectionFrontierChanged { .. } => STALE,
+        Catalog::InspectionFrontierChanged => STALE,
         _ => STORAGE,
     }
 }
@@ -81,17 +81,17 @@ pub(super) fn session(kind: &Session) -> Summary {
         Session::ContentInconsistency
         | Session::Content { .. }
         | Session::StorageUnavailable { .. } => STORAGE,
-        Session::HistoricalVisibility { .. } | Session::StaleIncarnation { .. } => BUSY,
+        Session::HistoricalVisibility { .. } | Session::StaleIncarnation => BUSY,
         Session::ExecutionResource { .. }
         | Session::ActiveSnapshotCapacityExhausted { .. }
-        | Session::RetentionCapacityExhausted { .. }
-        | Session::RetentionIdentityExhausted { .. }
-        | Session::SnapshotIdentityExhausted { .. }
-        | Session::CandidateIdentityExhausted { .. }
-        | Session::IndexMaintenanceBudgetExceeded { .. }
-        | Session::IndexGenerationIdentityExhausted { .. }
-        | Session::SessionIdentityExhausted { .. }
-        | Session::AllocationDenied { .. } => CAPACITY,
+        | Session::RetentionCapacityExhausted
+        | Session::RetentionIdentityExhausted
+        | Session::SnapshotIdentityExhausted
+        | Session::CandidateIdentityExhausted
+        | Session::IndexMaintenanceBudgetExceeded
+        | Session::IndexGenerationIdentityExhausted
+        | Session::SessionIdentityExhausted
+        | Session::AllocationDenied => CAPACITY,
         _ => INTERNAL,
     }
 }
@@ -164,15 +164,15 @@ pub(super) fn projection(kind: &Projection) -> Summary {
     }
 }
 
-fn decode(cause: &Decode) -> Summary {
+pub(super) fn decode(cause: &Decode) -> Summary {
     match cause {
         Decode::Checkpoint(stop) => kernel(stop),
         Decode::Scope(cause) => work(cause),
         Decode::Memory(_)
         | Decode::Reservation(_)
         | Decode::AccountingOverflow
-        | Decode::ContentProjectionWorkExceeded { .. }
-        | Decode::ContentProjectionWorkOverflow { .. } => CAPACITY,
+        | Decode::ContentProjectionWorkExceeded
+        | Decode::ContentProjectionWorkOverflow => CAPACITY,
         Decode::Content(RelationalContentDenial::Execution(cause)) => native(cause),
         Decode::CodecRejected
         | Decode::Content(_)

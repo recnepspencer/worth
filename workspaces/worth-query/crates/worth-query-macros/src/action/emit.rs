@@ -97,6 +97,10 @@ fn mutation_binding(input: &DeriveInput, action: &ActionDeclaration) -> TokenStr
     let binding_identity = identity(action, "binding");
     let handler_identity = identity(action, if action.body { "body" } else { "handler" });
     let program = action.program.then(|| quote!(program required,));
+    let inspection = action
+        .inspection_disclosure
+        .as_ref()
+        .map(|disclosure| quote!(inspection_disclosure #disclosure,));
     let outputs = action.outputs.as_ref().map_or_else(
         || quote!(#decl::application_operation::NoApplicationMutationOutputs),
         |outputs| quote!(#outputs),
@@ -128,7 +132,7 @@ fn mutation_binding(input: &DeriveInput, action: &ActionDeclaration) -> TokenStr
             #vis #binding for #intent, schema #schema, context #context,
             identity #binding_identity, input #input_binding, operation #operation,
             result #result, decision #decision, handler identity #handler_identity,
-            #program outputs #outputs, #scope
+            #program #inspection outputs #outputs, #scope
         );
     }
 }

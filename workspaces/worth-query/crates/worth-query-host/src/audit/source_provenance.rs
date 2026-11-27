@@ -57,14 +57,17 @@ impl WorthQuerySourceProvenanceDenial {
     /// Whether field-level diagnostics refused the source disclosure's query
     /// shape, rather than a grant, the principal or a resource limit.
     ///
-    /// Field effects are materialized for the record the disclosure scopes,
-    /// and a source disclosure is scoped like its operation. A creation
-    /// scoped by its parent (a Site-scoped operation creating a Dossier) can
-    /// only disclose the child through a root path from the parent, which
-    /// selects its records by traversal at the original commit; field
-    /// diagnostics admit root-scoped shapes only, so this read refuses. The
-    /// governed receipt is still readable through `reference_only()`
-    /// inspection, and the child's changed aspects through `record_history`.
+    /// Field diagnostics admit only a disclosure query rooted at its scoped
+    /// record: no root path, orbit or component selection, continuation or
+    /// live mode. Every other shape answers `true` here and renders an
+    /// `Unsupported` summary.
+    ///
+    /// The common case is a creation scoped by its parent (a Site-scoped
+    /// operation creating a Dossier): a source disclosure is scoped like its
+    /// operation, so it can disclose the child only through a root path,
+    /// which selects its records by traversal at the original commit. The
+    /// governed receipt stays readable through `reference_only()` inspection,
+    /// and the child's changed aspects through `record_history`.
     pub fn is_unsupported_field_shape(&self) -> bool {
         use worth_query_execution::facade::application_inspection::{
             DiagnosticComparisonDenial as Comparison,

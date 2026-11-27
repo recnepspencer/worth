@@ -5,7 +5,9 @@
 //! `namespace = NAMESPACE`, the generated type names `input = InputBinding`,
 //! `operation = Operation` and `binding = Binding`, plus an optional
 //! `delivery = Delivery` (a source-completion delivery), `result =
-//! ResultBinding`, `decision = Decision`, optional `outputs = Outputs`, the
+//! ResultBinding`, `decision = Decision`, optional `outputs = Outputs`, an
+//! optional `inspection_disclosure = SourceDisclosure` (the
+//! `ApplicationSourceDisclosureBinding` explaining what the action wrote), the
 //! flags `body` (the handler is the operation's authored body) and `program`
 //! (execution requires the application program), the forwarded `access(..)`
 //! block (which may `include: [path::to::fragment];` clauses shared through

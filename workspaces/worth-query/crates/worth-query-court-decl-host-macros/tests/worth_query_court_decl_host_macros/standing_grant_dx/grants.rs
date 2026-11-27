@@ -95,7 +95,7 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<QmsSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<QmsSchema> {
     let schema = site_roles::members(schema).expect("the site roles declare");
-    super::countersign::declare(schema)
+    super::provenance::declare(super::countersign::declare(schema))
         .ability(ViewAuditors::reference())
         .policy(AuditorRosterPolicy::reference())
         .ability_policy(

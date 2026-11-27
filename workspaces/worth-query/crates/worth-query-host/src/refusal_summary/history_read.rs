@@ -1,22 +1,18 @@
-//! Audit history reads: a record's governed change log, a workflow's audit
-//! trail, the causal timeline pairing them, and as-of snapshot pinning.
+//! Audit history reads: a record's governed change log, the causal timeline
+//! pairing it with a workflow audit trail, and as-of snapshot pinning.
 //!
 //! A retired history gap renders [`super::world_history::RETIRED_HISTORY`],
 //! never the generic "history gone" or a capacity or work stop.
-use worth_query_execution::facade::{
-    application_discovery::WorthQueryWorkflowReadDenial as WorkflowRead,
-    primary_graph::WorthQueryApplicationHistoryDenial as History,
-};
+use worth_query_execution::facade::primary_graph::WorthQueryApplicationHistoryDenial as History;
 use worth_query_publication::facade::application_entry::{
     WorthQueryApplicationHistorySelectionDenial as Selection, WorthQueryGovernedHistoryDenial,
-    WorthQueryWorkflowObservationDenial,
 };
 use worth_relational::facade::history::RelationalRecordHistoryDenial as Native;
 
 use crate::audit::WorthQueryCausalTimelineDenial;
 use crate::session::WorthQuerySessionHistoricalSnapshotDenial;
 
-use super::request::{BUSY, CAPACITY, INTERNAL, PERMISSION, STALE, STORAGE, VERSION_MISMATCH};
+use super::request::{BUSY, CAPACITY, INTERNAL, PERMISSION};
 use super::stops::{authorization, kernel, native, principal_resolution, work};
 use super::summary::{
     WorthQueryRefusalCategory as Category, WorthQueryRefusalSummary as Summary,
@@ -80,43 +76,6 @@ fn native_history(cause: &Native) -> Summary {
         | Native::EmptyAspectSelection
         | Native::NotExactSelectedCommit
         | Native::InvalidContinuation => INTERNAL,
-    }
-}
-
-impl WorthQueryUserFacingRefusal for WorthQueryWorkflowObservationDenial {
-    fn user_summary(&self) -> Summary {
-        match self {
-            Self::ExecutionRequest(cause) => cause.user_summary(),
-            Self::ProductSelection(_) => BUSY,
-            Self::Read(cause) => workflow_read(cause),
-        }
-    }
-}
-
-/// A workflow page's own stop. Withheld actor roles are not refusals.
-fn workflow_read(cause: &WorkflowRead) -> Summary {
-    match cause {
-        WorkflowRead::Authorization(denial) => authorization(&denial.kind()),
-        WorkflowRead::Principal(denial) => principal_resolution(denial.kind()),
-        WorkflowRead::Work(cause) => work(cause),
-        WorkflowRead::Relational(cause) => native(cause),
-        WorkflowRead::ContinuationMismatch => STALE,
-        WorkflowRead::Corrupt => STORAGE,
-        WorkflowRead::UnsupportedInstanceProtocol(_) => VERSION_MISMATCH,
-        WorkflowRead::SubscriptionCapacity | WorkflowRead::Allocation(_) => CAPACITY,
-        WorkflowRead::Reconstruction(_)
-        | WorkflowRead::PinnedRead(_)
-        | WorkflowRead::Preparation(_)
-        | WorkflowRead::Index(_)
-        | WorkflowRead::SelectedIndexUnavailable
-        | WorkflowRead::BasisUnavailable => BUSY,
-        WorkflowRead::PolicyMismatch
-        | WorkflowRead::Page(_)
-        | WorkflowRead::PageShape(_)
-        | WorkflowRead::Installation(_)
-        | WorkflowRead::Phase(_)
-        | WorkflowRead::Inspection(_)
-        | WorkflowRead::Execution(_) => INTERNAL,
     }
 }
 

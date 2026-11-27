@@ -1,5 +1,6 @@
 //! Forwards fact-free capability eligibility onto `worth-query-execution-query`.
 
+use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::{
@@ -13,7 +14,7 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity;
 use worth_query_execution_query::facade::domain_computation::authorization::eligibility::{
     WorthQueryAbilityEligibilityDenial, WorthQueryAbilityKey, WorthQueryCapabilityEligibility,
-    WorthQueryCapabilityEligibilityQuestion, WorthQueryEligibilityBasis,
+    WorthQueryCapabilityEligibilityQuestion,
 };
 
 type Question<Schema, Context, Capability, Operation, Input> =
@@ -24,7 +25,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     pub fn observe_asker_capability_eligibility<Context, Capability, Operation, Input>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        basis: WorthQueryEligibilityBasis<'_>,
+        branch: WorthQueryProductBranch,
         asker: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         question: &Question<Schema, Context, Capability, Operation, Input>,
@@ -36,7 +37,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
     {
         self.inner
-            .observe_asker_capability_eligibility(phase, basis, asker, request, question)
+            .observe_asker_capability_eligibility(phase, branch, asker, request, question)
     }
 
     /// Per-candidate capability verdicts behind the asker's disclosure; see
@@ -44,7 +45,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     pub fn observe_roster_capability_eligibility<Context, Capability, Operation, Input>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        basis: WorthQueryEligibilityBasis<'_>,
+        branch: WorthQueryProductBranch,
         asker: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         question: &Question<Schema, Context, Capability, Operation, Input>,
@@ -58,7 +59,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
     {
         self.inner.observe_roster_capability_eligibility(
-            phase, basis, asker, request, question, disclosure, candidates,
+            phase, branch, asker, request, question, disclosure, candidates,
         )
     }
 }

@@ -4454,11 +4454,9 @@ reading either answer as "may act".
 Capability verdicts judge grant validity at the trusted instant of the call,
 so they are read at the branch head: `WorthQuerySessionSnapshot` offers
 ability `eligibility` and `eligible_among` (relationship policy, no clock) but
-no capability eligibility or authority inventory. A pinned commit's grants
-judged against today's clock would describe neither the pinned moment nor
-now. A retained request's `observe_capability_eligibility` and
-`observe_authority_inventory` read the pinned commit's grants and relations and
-document that they still judge validity at the call's instant.
+no capability eligibility or authority inventory, and a retained request
+offers neither either. A pinned commit's grants judged against today's clock
+would describe neither the pinned moment nor now.
 
 #### Explain a principal's authority
 

@@ -281,7 +281,21 @@ where
         &principal.layout,
         &expected,
     )
-    .map_err(|_| denial::stale_principal(prepared.principal().binding()))
+    .map_err(|cause| {
+        match cause.kind() {
+        // A stopped re-read (work, deadline, cancellation) keeps its stop;
+        // only a principal that no longer resolves is stale.
+        crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind::Stopped(
+            stop,
+        ) => denial::authorization_denial(
+            WorthQueryOperationAuthorizationDenialKind::Stopped(stop),
+            prepared.principal().binding(),
+        ),
+        crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind::Refused(
+            _,
+        ) => denial::stale_principal(prepared.principal().binding()),
+    }
+    })
 }
 
 fn validate_admission<Schema, Principal, Identity, Capability, Operation, Input>(

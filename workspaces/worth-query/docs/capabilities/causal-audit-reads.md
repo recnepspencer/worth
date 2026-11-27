@@ -135,21 +135,31 @@ says why effects were not materialized (for example
 `UnsupportedSourceProjectionShape` when the projection reaches past the
 disclosed record's own fields).
 
-Field effects are materialized for the record the source disclosure scopes, and
-installation requires a source disclosure to be scoped like its operation. An
-operation that creates a child under its scope (a Site-scoped enrollment
-creating a Dossier) can only disclose the child through a root path from the
-parent (`ApplicationQueryRootPath::from(Site).reverse(DossierSite)`). Such a
-query selects its records by traversal at the original commit, and field
-diagnostics admit only root-scoped shapes, so the read refuses with
-`Inspection(..)` and `denial.is_unsupported_field_shape()` is `true` (its
-`user_summary()` is `Unsupported`, never a permission or capacity refusal).
+Field effects are materialized for the record the source disclosure scopes,
+and field diagnostics admit only a disclosure query rooted at that record: no
+root path, orbit or component selection, continuation or live mode. Any other
+shape refuses with `Inspection(..)` after both capabilities are admitted, and
+`denial.is_unsupported_field_shape()` is `true` (its `user_summary()` is
+`Unsupported`, never a permission or capacity refusal).
+
+The common case is a creation scoped by its parent. Installation requires a
+source disclosure to be scoped like its operation, so a Site-scoped enrollment
+that creates a Dossier can only disclose the Dossier through a root path
+(`ApplicationQueryRootPath::from(Site).reverse(DossierSite)`). Field values for
+that shape would need two things inspection does not have: evaluating the
+disclosure query at the original commit under fresh governance to learn which
+child records it discloses (the receipt retains the scope and parameters, not
+the selected children), and a diagnostic contract that covers root-path reads.
+Using every child the commit wrote instead would disclose records the query's
+parameters exclude, so the shape refuses rather than guess.
+
 The governed receipt itself stays readable:
 `request.inspect_source::<D>(&receipt).why_performed().reference_only()
 .execute_governed(metadata)` admits the metadata capability and returns the
 source commit, and `record_history` over a SubjectRead of the child lists the
-aspects that commit changed. Field values of a parent-scoped creation are not
-available through causal inspection; see the capability index's known gaps.
+aspects that commit changed. A `#[derive(WorthQueryAction)]` declares its
+source disclosure with `inspection_disclosure = SourceDisclosure`
+([court](../../crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/standing_grant_dx/provenance_court.rs)).
 
 ## Find what depends on an entity type and what references a record
 
@@ -186,7 +196,7 @@ audit UI never prints `{denial:?}`. Log the typed refusal for developers.
 | `WorthQueryGovernedHistoryDenial` (record history) | `is_retired_history_gap()` |
 | `WorthQueryWorkflowObservationDenial` (workflow audit) | match its variants |
 | `WorthQueryCausalTimelineDenial` | `is_retired_history_gap()` (record stream) |
-| `WorthQuerySourceProvenanceDenial` | `is_unsupported_field_shape()`, `ForeignBranch` |
+| `WorthQuerySourceProvenanceDenial` | `is_unsupported_field_shape()`, `ForeignBranch`; inspection stops classify by their exact resource and owner cause (an expired session renders `SessionExpired`) |
 | `WorthQueryReferencedByDenial` | `NotAnIncomingReference { query }` |
 | `WorthQuerySessionHistoricalSnapshotDenial` | `History(CommitUnavailable)` |
 | `WorthQueryEligibilityDenial` (eligibility, rosters, authority inventory) | `Observation(RosterNotDisclosed { .. })` and the other variants |

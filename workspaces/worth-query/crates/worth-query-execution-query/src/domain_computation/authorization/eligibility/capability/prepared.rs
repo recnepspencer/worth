@@ -61,10 +61,8 @@ where
     /// The one trusted instant every verdict of this question reads.
     pub(super) sample: WorthQueryRuntimeTimeSample,
     pub(super) session: WorthQueryGraphWorkSessionIdentity,
-    /// Where the asker is admitted and the roster disclosed.
+    /// Where the asker is admitted, the roster disclosed and verdicts read.
     pub(super) head: &'a WorthQuerySelectedProductOperation<'runtime, Schema>,
-    /// Where verdicts are read; `None` reads them at the head.
-    pub(super) pinned: Option<&'a WorthQuerySelectedProductOperation<'runtime, Schema>>,
 }
 
 impl<'a, 'runtime, Schema, Context, Scope, Slots>

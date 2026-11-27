@@ -54,3 +54,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryAbilityEligibilityDenial {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "eligibility_tests.rs"]
+mod tests;
