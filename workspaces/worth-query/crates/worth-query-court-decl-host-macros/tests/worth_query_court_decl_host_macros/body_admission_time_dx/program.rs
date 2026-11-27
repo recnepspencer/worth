@@ -38,6 +38,7 @@ impl ApplicationFeature<DeskSchema> for DeskFeature {
 worth_query_application_contribution! {
     pub feature DeskActions<DeskSchema> for DeskFeature => DeskRuntime {
         query(ReadTicketBinding) { definition: ReadTicketQuery::definition(); };
+        query(ReadEntryBinding) { definition: ReadEntryQuery::definition(); };
         query(ReadDeskBinding) { definition: ReadDeskQuery::definition(); };
         body_action(OpenTicketBinding, TicketOpened) as OpenTicketAction {
             operation: open_ticket_operation();

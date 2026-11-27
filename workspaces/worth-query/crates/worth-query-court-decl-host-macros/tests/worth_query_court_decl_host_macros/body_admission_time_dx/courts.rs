@@ -12,7 +12,7 @@ use worth_query_host::facade::WorthQuerySessionRunDenial;
 use super::program::{open, owner};
 use super::schema::OpenTicket;
 use super::switchable::Switchable;
-use super::{at, ticket};
+use super::{at, entry, ticket};
 
 #[test]
 fn a_body_birth_stamps_the_commit_instant_and_moves_only_with_the_clock() {
@@ -27,6 +27,8 @@ fn a_body_birth_stamps_the_commit_instant_and_moves_only_with_the_clock() {
         .run(OpenTicket { desk: 1, ticket: 7 })
         .expect("the birth commits");
     assert_eq!(ticket(&home, 7).created_at, at(2026, 11, 27, 1, 30));
+    // The child site is stamped in the same commit with the same instant.
+    assert_eq!(entry(&home, 7).opened_at, at(2026, 11, 27, 1, 30));
 
     let later = clock
         .advance(Duration::from_secs(3_600))
@@ -35,6 +37,7 @@ fn a_body_birth_stamps_the_commit_instant_and_moves_only_with_the_clock() {
         .run(OpenTicket { desk: 1, ticket: 8 })
         .expect("the second birth commits");
     assert_eq!(ticket(&home, 8).created_at, later);
+    assert_eq!(entry(&home, 8).opened_at, later);
     assert_eq!(later, at(2026, 11, 27, 2, 30));
     assert_eq!(
         ticket(&home, 7).created_at,

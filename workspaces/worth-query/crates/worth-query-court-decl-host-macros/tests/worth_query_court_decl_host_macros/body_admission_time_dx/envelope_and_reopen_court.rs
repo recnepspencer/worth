@@ -19,7 +19,7 @@ use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
 use super::program::{open, open_directory, owner};
 use super::schema::{NoteDesk, OpenTicket};
-use super::{at, desk, ticket};
+use super::{at, desk, entry, ticket};
 
 /// A trusted source that moves one millisecond forward on every read, so a
 /// second reading anywhere in one commit would be visible.
@@ -76,6 +76,11 @@ fn a_body_birth_a_handler_and_the_commit_invariant_observe_one_ticking_instant()
         desk(&home).noted_at,
         "body and handler share one instant"
     );
+    assert_eq!(
+        born,
+        entry(&home, 5).opened_at,
+        "root and child share it too"
+    );
     assert!(born.micros_since_unix_epoch >= start);
 }
 
@@ -104,6 +109,7 @@ fn a_directory_home_reopens_a_birth_with_its_original_stamp_after_the_clock_move
         clock.set(at(2026, 12, 15, 12, 0));
         let home = open_directory(&path, clock.clone());
         assert_eq!(ticket(&home, 3).created_at, at(2026, 11, 27, 1, 30));
+        assert_eq!(entry(&home, 3).opened_at, at(2026, 11, 27, 1, 30));
         home.session(owner(&home))
             .run(OpenTicket { desk: 1, ticket: 4 })
             .expect("a birth after reopen commits");

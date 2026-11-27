@@ -103,3 +103,28 @@ fn only_a_required_unitless_native_timestamp_target_admits_admission_time() {
         refused
     );
 }
+
+#[test]
+fn a_signed_creation_refuses_an_admission_time_initializer() {
+    let signed = ApplicationOperationBodyCreation::from_untrusted(
+        ARCHIVE_DECODE,
+        "Ticket".into(),
+        "ticket".into(),
+        vec![ApplicationOperationBodyCreatedField::AdmissionTime {
+            field: ApplicationFieldBindingLocus::new("Ticket", "Facts", "CreatedAt"),
+            binding: Timestamp::IDENTITY,
+        }],
+    )
+    .with_untrusted_signing(Some(
+        super::super::ApplicationOperationBodySigningSpec::from_untrusted(
+            ARCHIVE_DECODE,
+            "verification".into(),
+            ApplicationFieldBindingLocus::new("Ticket", "Facts", "Actor"),
+            ApplicationFieldBindingLocus::new("Ticket", "Facts", "Provenance"),
+        ),
+    ));
+    assert_eq!(
+        super::super::classified_capture::validate_creation(&signed),
+        Err(super::super::ApplicationOperationBodyAuthoringDenial::UnclassifiedSignedCapture)
+    );
+}

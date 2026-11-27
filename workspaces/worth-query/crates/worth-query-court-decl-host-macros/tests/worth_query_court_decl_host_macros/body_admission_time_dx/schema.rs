@@ -31,7 +31,7 @@ pub struct DeskSchema;
     fragment,
     name = "body_admission_time_dx",
     bindings = Codecs,
-    members(Owner, Mapping, Desk, Ticket)
+    members(Owner, Mapping, Desk, Ticket, Entry)
 )]
 pub struct Records;
 
@@ -62,8 +62,26 @@ pub struct Mapping;
 pub struct Desk;
 
 #[derive(Clone, Copy, WorthQuerySchema)]
-#[worth_query(entity, aspects(TicketFacts), reference(DeskSchema, Records))]
+#[worth_query(
+    entity,
+    aspects(TicketFacts),
+    relations(TicketEntries),
+    reference(DeskSchema, Records)
+)]
 pub struct Ticket;
+
+/// The ticket's first journal entry, born as a child site of the same body.
+#[derive(Clone, Copy, WorthQuerySchema)]
+#[worth_query(entity, aspects(EntryFacts), reference(DeskSchema, Records))]
+pub struct Entry;
+
+/// Each entry belongs to exactly one ticket.
+#[derive(WorthQueryRelation)]
+#[worth_query(
+    to = Entry, from = Ticket, reference(DeskSchema, Records),
+    cardinality = ApplicationRelationCardinality::new(None, None, None, Some(1), None, None),
+)]
+pub struct TicketEntries;
 
 #[derive(WorthQueryRelation)]
 #[worth_query(to = Owner, from = Mapping, reference(DeskSchema, Records))]
@@ -105,6 +123,16 @@ pub struct TicketRow {
     pub created_at: CanonicalTimestamp,
 }
 
+/// `opened_at` is initialized by the child site from trusted admission time.
+#[derive(WorthQueryRecord)]
+#[worth_query(bindings = Codecs, aspect = EntryFacts, fragment = Records, entity = Entry)]
+pub struct EntryRow {
+    #[worth_query(equality, unique, read_only)]
+    pub entry_id: u64,
+    #[worth_query(read_only)]
+    pub opened_at: CanonicalTimestamp,
+}
+
 worth_query_structured_value_binding!(pub BodyDenial for WorthQueryOperationBodyDenial {
     identity: worth_query_identity!(DESK, denial)
 });
@@ -142,6 +170,25 @@ pub struct ReadTicket {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, WorthQueryRow)]
+#[worth_query(schema = DeskSchema, root = Entry, namespace = DESK, member)]
+pub struct EntryView {
+    #[worth_query(field = EntryId)]
+    pub id: u64,
+    #[worth_query(field = OpenedAt)]
+    pub opened_at: CanonicalTimestamp,
+}
+
+#[derive(Clone, Debug, WorthQuery)]
+#[worth_query(
+    schema = DeskSchema, context = Desktop, namespace = DESK, member,
+    result = EntryView, root = Entry, scope = EntryId, cardinality = ExactlyOne, limits = 1,
+)]
+pub struct ReadEntry {
+    #[worth_query(scope)]
+    pub entry: u64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, WorthQueryRow)]
 #[worth_query(schema = DeskSchema, root = Desk, namespace = DESK, member)]
 pub struct DeskView {
     #[worth_query(field = DeskId)]
@@ -160,13 +207,14 @@ pub struct ReadDesk {
     pub desk: u64,
 }
 
-/// Opens a ticket on a desk. The caller names the ticket; the body stamps
-/// its birth instant.
+/// Opens a ticket on a desk with its first entry. The caller names the
+/// ticket; the body stamps both rows' birth instant.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, WorthQueryAction)]
 #[worth_query(
     schema = DeskSchema, context = Desktop, namespace = DESK, member,
     input = OpenTicketInput, operation = OpenTicketOp, binding = OpenTicketBinding,
-    delivery = TicketOpened, body, program, reads(Desk), creates(Ticket),
+    delivery = TicketOpened, body, program, reads(Desk), creates(Ticket, Entry),
+    links(TicketEntries),
 )]
 pub struct OpenTicket {
     #[worth_query(scope = DeskId)]
@@ -174,18 +222,29 @@ pub struct OpenTicket {
     pub ticket: u64,
 }
 
-/// One creation, two initializers: the caller's ticket number and the
-/// trusted admission instant.
+/// A root and a child creation site, each stamped with the trusted
+/// admission instant beside the caller's ticket number.
 pub fn open_ticket_operation(
 ) -> ApplicationOperationDefinition<DeskSchema, OpenTicketOp, OpenTicket> {
-    OpenTicketOp::reference()
+    let body = OpenTicketOp::reference()
         .typed_body()
         .in_scope(Desk::reference())
         .create_in_scope(Ticket::reference(), "ticket")
         .initialize_input(TicketFacts::ticket_id(), OpenTicket::ticket_input())
         .initialize_from_admission_time(TicketFacts::created_at())
-        .finish_pure_definition()
-        .expect("open ticket body admits")
+        .into_inner()
+        .and_then(|ticket| {
+            ticket.with_child(TicketEntries::reference(), "entry", |entry| {
+                entry
+                    .initialize_input(EntryFacts::entry_id(), "ticket")?
+                    .initialize_from_admission_time(EntryFacts::opened_at())
+            })
+        })
+        .and_then(|ticket| ticket.finish())
+        .expect("open ticket body admits");
+    OpenTicketOp::reference()
+        .pure_body_definition(body)
+        .expect("open ticket definition admits")
 }
 
 /// Notes a desk at the handler's trusted admission instant.

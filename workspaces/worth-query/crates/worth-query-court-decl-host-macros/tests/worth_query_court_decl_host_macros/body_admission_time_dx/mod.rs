@@ -3,7 +3,8 @@
 //! `creation.initialize_from_admission_time(field)`. The stamp is the one
 //! instant the advancement settled: the handler's `DecisionReader::admitted_at()`
 //! and the commit invariant's `context.admitted_at()` observe the same value,
-//! it moves only with the trusted clock, survives Directory reopen, and an
+//! a child creation site stamps the same instant as its root, it moves only
+//! with the trusted clock, survives Directory reopen, and an
 //! unavailable time source refuses the birth instead of fabricating time.
 mod courts;
 mod envelope_and_reopen_court;
@@ -14,7 +15,7 @@ mod schema;
 mod switchable;
 
 use program::{owner, DeskHome};
-use schema::{DeskView, ReadDesk, ReadTicket, TicketView};
+use schema::{DeskView, EntryView, ReadDesk, ReadEntry, ReadTicket, TicketView};
 use worth_query_decl::facade::application_schema::CanonicalTimestamp;
 
 /// A ticket as committed, read back by the owner.
@@ -23,6 +24,16 @@ fn ticket(home: &DeskHome, ticket: u64) -> TicketView {
         .session(owner(home))
         .query(ReadTicket { ticket })
         .expect("owner reads the ticket");
+    assert_eq!(rows.len(), 1);
+    rows.remove(0)
+}
+
+/// A ticket's child entry as committed, read back by the owner.
+fn entry(home: &DeskHome, entry: u64) -> EntryView {
+    let mut rows = home
+        .session(owner(home))
+        .query(ReadEntry { entry })
+        .expect("owner reads the entry");
     assert_eq!(rows.len(), 1);
     rows.remove(0)
 }
