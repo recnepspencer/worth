@@ -1,8 +1,8 @@
 //! Verus model of the history journal's skew-binary jump pointers (TBU Phase 2,
 //!
-//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal.rs:212-231 sha256:b2cf75724d9464cb72d037feb2e0b196f2ae96b7fc25f180c6a46fd5945ca3fa
-//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/recording.rs:69-69 sha256:c61709e07f1e87c34f5b7714e7f44e265d3f93574f644f1cfd6bcfafcf088188
-//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/recording.rs:69-83 sha256:3c6c9d0e557acaa9013dde170c29b21c01c8b081502a746f929e304d2e419930
+//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal.rs:213-232 sha256:b2cf75724d9464cb72d037feb2e0b196f2ae96b7fc25f180c6a46fd5945ca3fa
+//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/recording.rs:70-70 sha256:c61709e07f1e87c34f5b7714e7f44e265d3f93574f644f1cfd6bcfafcf088188
+//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/recording.rs:70-84 sha256:3c6c9d0e557acaa9013dde170c29b21c01c8b081502a746f929e304d2e419930
 //! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:11-24 sha256:440e9bbceea3610f10e055e9191b260d19a90f831c3c666ca66aa4c6104fcbc9
 //! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:19-23 sha256:d4595aca96e6eb87d7c0512e963d88cff9ff09dea7583f6e57e56071c64e1985
 //! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:29-49 sha256:109e3c8b3c8b373c2f9052841ea5efb632394bb92b6831e447e7e227b71aef1e
