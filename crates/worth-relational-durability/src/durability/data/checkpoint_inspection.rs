@@ -40,9 +40,9 @@ pub struct NativeCheckpointModelBytes<'a> {
 /// cold member source.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct NativeRecordAllocationBytes<'a> {
-    pub(crate) append_frontiers: &'a [u8],
-    pub(crate) generation_high_water: &'a [u8],
-    pub(crate) partition_high_water: &'a [u8],
+    pub(crate) append_frontiers: Option<&'a [u8]>,
+    pub(crate) generation_high_water: Option<&'a [u8]>,
+    pub(crate) partition_high_water: Option<&'a [u8]>,
     pub(crate) pages: &'a [u8],
 }
 

@@ -159,9 +159,9 @@ pub(crate) fn inspect<'a>(
     if !identity.is_empty() {
         return Err(invalid("unknown record identity field").into());
     }
-    let append_frontiers = take(&mut allocator, "append_frontiers")?;
-    let generation_high_water = take(&mut allocator, "generation_high_water")?;
-    let partition_high_water = take(&mut allocator, "partition_high_water")?;
+    let append_frontiers = allocator.remove("append_frontiers");
+    let generation_high_water = allocator.remove("generation_high_water");
+    let partition_high_water = allocator.remove("partition_high_water");
     Ok(RelationalCheckpointInspection {
         branch_cells,
         model: NativeCheckpointModelBytes {

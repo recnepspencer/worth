@@ -54,4 +54,18 @@ fn bare_chk24_inspection_exempts_burned_allocations_from_model_and_exposes_alloc
         decoded.record_allocation_bytes, after.record_allocation_bytes,
         "full-invariance inspection must still observe identity page roster changes"
     );
+
+    let omitted = rewritten(before.bytes(), true, |root_fields| {
+        root_fields.remove("generation_high_water");
+    });
+    let explicit_nil = rewritten(before.bytes(), true, |root_fields| {
+        root_fields.insert("generation_high_water".into(), vec![0xc0]);
+    });
+    let omitted_insp = RelationalNativeCheckpoint::inspect_bytes(&execution, &omitted).unwrap();
+    let nil_insp = RelationalNativeCheckpoint::inspect_bytes(&execution, &explicit_nil).unwrap();
+    assert_eq!(decoded.model, omitted_insp.model);
+    assert_ne!(
+        omitted_insp.record_allocation_bytes, nil_insp.record_allocation_bytes,
+        "omitting an optional allocation field must remain distinct from explicit nil"
+    );
 }
