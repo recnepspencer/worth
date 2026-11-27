@@ -78,6 +78,7 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
     let mut retirement_records = Vec::new();
     let mut retained_maintenance = Vec::new();
     let mut release_metadata = std::collections::BTreeMap::new();
+    let mut root_metadata = std::collections::BTreeMap::new();
     let mut retirement_locations = Vec::new();
     let mut interrupted_tail = None;
     let mut interrupted_segment = None;
@@ -224,9 +225,11 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
                     manifest_residue::observe(
                         frame.payload(),
                         frame.lsn_range(),
+                        (identity.segment().get(), identity.generation().get()),
                         media.store_identity().bytes(),
                         cutoff,
                         &mut retirement_spans,
+                        &mut root_metadata,
                     )?;
                     return Ok(());
                 }
@@ -234,9 +237,11 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
                     tier_epoch::observe(
                         frame.payload(),
                         frame.lsn_range(),
+                        (identity.segment().get(), identity.generation().get()),
                         media.store_identity().bytes(),
                         cutoff,
                         &mut retirement_spans,
+                        &mut root_metadata,
                     )?;
                     return Ok(());
                 }
@@ -350,12 +355,13 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         release_metadata: release_metadata
             .into_values()
             .map(|(release, intent)| {
-                let (bytes, segment, generation) = intent
-                    .map_or((0, 0, 0), |(segment, generation)| {
-                        (release.metadata_bytes(), segment, generation)
-                    });
-                (release.candidate_generation(), bytes, segment, generation)
+                let (b, s, g) = intent.map_or((0, 0, 0), |(s, g)| (release.metadata_bytes(), s, g));
+                (release.candidate_generation(), b, s, g)
             })
+            .chain(root_metadata.into_iter().map(|(root, (bytes, intent))| {
+                let (b, s, g) = intent.map_or((0, 0, 0), |(s, g)| (bytes, s, g));
+                (root, b, s, g)
+            }))
             .collect(),
         byte_count: total_bytes,
         peak_buffer_bytes,
@@ -380,16 +386,11 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
 fn map_inventory_failure(
     denial: PhysicalWalSegmentInventoryUpdateDenial,
 ) -> PhysicalWalOpenFailure {
+    use worth_store_wal::WalTopologyDenialKind as Kind;
     let kind = match denial {
-        PhysicalWalSegmentInventoryUpdateDenial::ArtifactOrder => {
-            worth_store_wal::WalTopologyDenialKind::StaleSegment
-        }
-        PhysicalWalSegmentInventoryUpdateDenial::GenerationMismatch => {
-            worth_store_wal::WalTopologyDenialKind::WrongGeneration
-        }
-        PhysicalWalSegmentInventoryUpdateDenial::LsnDiscontinuity => {
-            worth_store_wal::WalTopologyDenialKind::Gap
-        }
+        PhysicalWalSegmentInventoryUpdateDenial::ArtifactOrder => Kind::StaleSegment,
+        PhysicalWalSegmentInventoryUpdateDenial::GenerationMismatch => Kind::WrongGeneration,
+        PhysicalWalSegmentInventoryUpdateDenial::LsnDiscontinuity => Kind::Gap,
         PhysicalWalSegmentInventoryUpdateDenial::ByteCountOverflow => {
             return PhysicalWalOpenFailure::CounterOverflow;
         }

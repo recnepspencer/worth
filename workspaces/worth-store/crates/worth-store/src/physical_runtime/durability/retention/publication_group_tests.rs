@@ -139,3 +139,23 @@ fn segment_charged_bytes_and_growth_usage_track_per_segment_and_aggregate_charge
     assert_eq!(owner.segment_charged_bytes(2, 1), (1_100, 9_000));
     assert_eq!(owner.growth_usage(), (1_100, 9_000));
 }
+
+#[test]
+fn segment_charges_track_restore_and_drop_refund_in_constant_lookup() {
+    let owner = admission();
+    owner
+        .restore_wal_publication(reservation(1, 1, 3), Some(200))
+        .unwrap();
+    owner.restore_sealed_publication(1, 1, 350).unwrap();
+    assert_eq!(owner.segment_charged_bytes(1, 1), (650, 9_000));
+    {
+        let _unsealed = owner.reserve_wal_publication(reservation(1, 3, 5)).unwrap();
+        assert_eq!(owner.segment_charged_bytes(1, 1), (1_750, 9_000));
+    }
+    // Dropping an unsealed lease refunds both global charged_bytes and segment_charges.
+    assert_eq!(owner.segment_charged_bytes(1, 1), (650, 9_000));
+    assert_eq!(owner.growth_usage(), (650, 9_000));
+    owner.release_sealed_publication(1, 1);
+    assert_eq!(owner.segment_charged_bytes(1, 1), (0, 9_000));
+    assert_eq!(owner.growth_usage(), (0, 9_000));
+}

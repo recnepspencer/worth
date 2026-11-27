@@ -4,7 +4,7 @@ use super::{RecordPublicationDirector, RecordPublicationTerminalState};
 
 impl RecordPublicationDirector {
     pub(in crate::physical_runtime) fn retention_checkpoint_due(&self) -> bool {
-        if self.wal.observation().active_segment_count() <= 1 {
+        if !self.wal.has_reclaimable_closed_prefix() {
             return false;
         }
         let (charged, limit) = self.root_owner.publication_admission().growth_usage();

@@ -46,16 +46,18 @@ pub(crate) fn inspect(
     });
     // Live idempotency bindings are reclaimed only after `retention` subsequent
     // checkpoints commit. Space checkpoints across the remaining binding budget
-    // by counting only bindings issued in the current generation, so a finished
-    // checkpoint immediately resets this trigger instead of thrashing back-to-back.
+    // by counting bindings newly admitted since the last checkpoint (regardless
+    // of key issuance generation), so a finished checkpoint resets this trigger
+    // without allowing earlier-issued keys or reopened saturated registries to
+    // exhaust `live_limit`.
     let idempotency = serving.durability_observation().idempotency_policy();
     let live_limit = u64::from(idempotency.live_binding_limit().get().get());
     let retention = idempotency.retention().get().get();
-    let (live_bindings, current_gen_bindings) = serving.idempotency_binding_counts();
+    let (live_bindings, admitted_since_checkpoint) = serving.idempotency_binding_counts();
     let remaining_bindings = live_limit.saturating_sub(live_bindings);
     let generation_budget = (remaining_bindings / retention.saturating_add(1)).max(1);
-    let mut count_due =
-        current_gen_bindings >= generation_budget || serving.physical_retention_checkpoint_due();
+    let mut count_due = admitted_since_checkpoint >= generation_budget
+        || serving.physical_retention_checkpoint_due();
     // Check ALL five counts before requesting any suffix header. One count
     // trigger therefore avoids byte inspection even in another journal.
     for (index, observation) in observations.iter_mut().enumerate() {

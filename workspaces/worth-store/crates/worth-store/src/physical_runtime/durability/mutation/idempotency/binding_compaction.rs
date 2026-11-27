@@ -199,6 +199,7 @@ impl PendingPhysicalMutationBindingCompaction {
             true
         });
         registry.generation = self.authority.generation;
+        registry.admitted_since_checkpoint = 0;
         Ok(self.authority)
     }
 }

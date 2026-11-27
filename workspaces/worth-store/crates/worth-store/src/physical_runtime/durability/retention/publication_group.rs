@@ -99,6 +99,11 @@ impl PhysicalPublicationAdmission {
             },
         );
         state.charged_bytes = total;
+        state.add_segment_charge(
+            reservation.segment,
+            reservation.generation,
+            reservation.total_bytes(),
+        );
         Ok(())
     }
 
@@ -121,6 +126,7 @@ impl PhysicalPublicationAdmission {
             });
         }
         state.charged_bytes += bytes;
+        state.add_segment_charge(reservation.segment, reservation.generation, bytes);
         state.wal_publications.insert(
             reservation.start,
             RetainedWalPublication {
@@ -183,12 +189,14 @@ impl PhysicalPublicationAdmission {
             .metadata_bytes
             .checked_sub(metadata)
             .ok_or(())?;
+        let (segment, generation) = (entry.reservation.segment, entry.reservation.generation);
         entry.reservation.metadata_bytes = metadata;
         entry.settled = true;
         state.charged_bytes = state
             .charged_bytes
             .checked_sub(refund)
             .expect("reserved group charge is retained");
+        state.sub_segment_charge(segment, generation, refund);
         Ok(())
     }
 
@@ -199,22 +207,11 @@ impl PhysicalPublicationAdmission {
         generation: u64,
     ) -> (u64, u64) {
         let state = self.lock();
-        let wal = state
-            .wal_publications
-            .values()
-            .filter(|entry| {
-                (entry.reservation.segment, entry.reservation.generation) == (segment, generation)
-            })
-            .fold(0_u64, |total, entry| {
-                total.saturating_add(entry.reservation.total_bytes())
-            });
         let total = state
-            .sealed_publications
-            .iter()
-            .filter(|(sealed_segment, sealed_generation, _)| {
-                (*sealed_segment, *sealed_generation) == (segment, generation)
-            })
-            .fold(wal, |total, (_, _, bytes)| total.saturating_add(*bytes));
+            .segment_charges
+            .get(&(segment, generation))
+            .copied()
+            .unwrap_or(0);
         (total, state.profile.growth_bytes())
     }
 
@@ -226,6 +223,27 @@ impl PhysicalPublicationAdmission {
 }
 
 impl super::AdmissionState {
+    pub(super) fn add_segment_charge(&mut self, segment: u64, generation: u64, bytes: u64) {
+        if bytes != 0 {
+            let slot = self
+                .segment_charges
+                .entry((segment, generation))
+                .or_insert(0);
+            *slot = slot.saturating_add(bytes);
+        }
+    }
+
+    pub(super) fn sub_segment_charge(&mut self, segment: u64, generation: u64, bytes: u64) {
+        if bytes != 0
+            && let Some(slot) = self.segment_charges.get_mut(&(segment, generation))
+        {
+            *slot = slot.saturating_sub(bytes);
+            if *slot == 0 {
+                self.segment_charges.remove(&(segment, generation));
+            }
+        }
+    }
+
     pub(super) fn release_wal_publication_groups(&mut self, segment: u64, generation: u64) -> u64 {
         let mut released = 0_u64;
         self.wal_publications.retain(|_, entry| {
@@ -255,10 +273,16 @@ impl Drop for WalPublicationLease {
         };
         let mut state = admission.lock();
         if let Some(entry) = state.wal_publications.remove(&self.start) {
+            let bytes = entry.reservation.total_bytes();
             state.charged_bytes = state
                 .charged_bytes
-                .checked_sub(entry.reservation.total_bytes())
+                .checked_sub(bytes)
                 .expect("a no-effect group releases its own reservation");
+            state.sub_segment_charge(
+                entry.reservation.segment,
+                entry.reservation.generation,
+                bytes,
+            );
         }
     }
 }

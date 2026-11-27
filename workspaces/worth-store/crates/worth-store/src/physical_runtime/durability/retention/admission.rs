@@ -29,6 +29,7 @@ struct AdmissionState {
     garbage: BTreeMap<RetiredArtifact, RetainedGarbage>,
     sealed_publications: Vec<(u64, u64, u64)>,
     wal_publications: BTreeMap<u64, publication_group::RetainedWalPublication>,
+    segment_charges: BTreeMap<(u64, u64), u64>,
     reserved_displaced_entries: u32,
     reserved_displaced_bytes: u64,
 }
@@ -92,6 +93,7 @@ impl PhysicalPublicationAdmission {
                 garbage: BTreeMap::new(),
                 sealed_publications: Vec::new(),
                 wal_publications: BTreeMap::new(),
+                segment_charges: BTreeMap::new(),
                 reserved_displaced_entries: 0,
                 reserved_displaced_bytes: 0,
             }),

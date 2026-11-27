@@ -7,7 +7,8 @@ mod work_port;
 
 use authority::{EligiblePhysicalWalReclamation, EligiblePhysicalWalSegmentReclamation};
 pub(super) use eligibility::{
-    plan_reclamation, PhysicalWalReclamationEligibilityDenial, PhysicalWalReclamationPlan,
+    plan_reclamation, reclaimable_closed_prefix, PhysicalWalReclamationEligibilityDenial,
+    PhysicalWalReclamationPlan,
 };
 pub(in crate::physical_runtime) use execution::{
     PhysicalWalReclamationFoundation, PhysicalWalReclamationOwner,

@@ -9,6 +9,18 @@ use super::{
 
 impl PhysicalMutationIdempotencyRegistry {
     #[cfg(test)]
+    pub(in crate::physical_runtime::durability::mutation::idempotency) fn set_namespace_durable_generation_for_test(
+        &mut self,
+        generation: u64,
+    ) {
+        self.generation =
+            super::PhysicalNamespaceDurableCheckpointGeneration::from_namespace_durable_checkpoint(
+                generation,
+            );
+        self.admitted_since_checkpoint = 0;
+    }
+
+    #[cfg(test)]
     pub(in crate::physical_runtime::durability::mutation::idempotency) fn admit_unallocated(
         &mut self,
         key: PhysicalMutationIdempotencyKey,
@@ -51,6 +63,7 @@ impl PhysicalMutationIdempotencyRegistry {
             key.identity(),
             PhysicalMutationIdempotencyBindingState::Unsealed(basis),
         );
+        self.admitted_since_checkpoint = self.admitted_since_checkpoint.saturating_add(1);
         Ok(PhysicalMutationIdempotencyRegistryAdmission::Fresh(
             PhysicalMutationAttemptBinding::<WalUnallocated>::new(key, fingerprint, mutation),
         ))
