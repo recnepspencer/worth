@@ -79,14 +79,14 @@ const MOVED: Outcome = Outcome::Moved;
 
 /// P1: undo the retirement, redo it, then reverse it.
 #[test]
-#[ignore = "held on public #465: restoration after a navigation re-retired the source refuses; succession does not follow HistoricalAbsence"]
+#[ignore = "held on public #465 (with the deferred #445 arm): the paired support comparison refuses a source the navigation re-retired (SourceDiverged); with the arm back, restoration refuses because succession does not follow HistoricalAbsence"]
 fn a_retirement_is_reversed_after_its_undo_and_redo() {
     reversed_after(&[(Action::Undo, MOVED), (Action::Redo(2), MOVED)], 3);
 }
 
 /// P2: a checkout to the step before the retirement and back.
 #[test]
-#[ignore = "held on public #465: restoration after a navigation re-retired the source refuses; succession does not follow HistoricalAbsence"]
+#[ignore = "held on public #465 (with the deferred #445 arm): the paired support comparison refuses a source the navigation re-retired (SourceDiverged); with the arm back, restoration refuses because succession does not follow HistoricalAbsence"]
 fn a_retirement_is_reversed_after_a_checkout_away_and_back() {
     reversed_after(
         &[(Action::Checkout(1), MOVED), (Action::Checkout(2), MOVED)],
@@ -96,7 +96,7 @@ fn a_retirement_is_reversed_after_a_checkout_away_and_back() {
 
 /// P3: through the root, then the step before, then back.
 #[test]
-#[ignore = "held on public #465: restoration after a navigation re-retired the source refuses; succession does not follow HistoricalAbsence"]
+#[ignore = "held on public #465 (with the deferred #445 arm): the paired support comparison refuses a source the navigation re-retired (SourceDiverged); with the arm back, restoration refuses because succession does not follow HistoricalAbsence"]
 fn a_retirement_is_reversed_after_a_checkout_through_the_root() {
     let moves = [
         (Action::Checkout(0), MOVED),
@@ -108,7 +108,7 @@ fn a_retirement_is_reversed_after_a_checkout_through_the_root() {
 
 /// P4: two undos and two redos.
 #[test]
-#[ignore = "held on public #465: restoration after a navigation re-retired the source refuses; succession does not follow HistoricalAbsence"]
+#[ignore = "held on public #465 (with the deferred #445 arm): the paired support comparison refuses a source the navigation re-retired (SourceDiverged); with the arm back, restoration refuses because succession does not follow HistoricalAbsence"]
 fn a_retirement_is_reversed_after_two_undos_and_redos() {
     let moves = [
         (Action::Undo, MOVED),
@@ -122,7 +122,7 @@ fn a_retirement_is_reversed_after_two_undos_and_redos() {
 /// P5: a sibling edit of `e1` on the way (seed 0x7b02125f's shape). The
 /// edit forks a branch the final checkout leaves.
 #[test]
-#[ignore = "held on public #465: restoration after a navigation re-retired the source refuses; succession does not follow HistoricalAbsence"]
+#[ignore = "held on public #465 (with the deferred #445 arm): the paired support comparison refuses a source the navigation re-retired (SourceDiverged); with the arm back, restoration refuses because succession does not follow HistoricalAbsence"]
 fn a_retirement_is_reversed_with_a_sibling_edit_on_the_way() {
     let moves = [
         (Action::Checkout(1), MOVED),
@@ -150,7 +150,7 @@ fn a_retirement_is_reversed_after_a_checkout_that_never_revived_it() {
 /// unrelated step are navigation commits; the moved retirement version is
 /// the only difference the comparison sees.
 #[test]
-#[ignore = "held on public #465: restoration after a navigation re-retired the source refuses; succession does not follow HistoricalAbsence"]
+#[ignore = "held on public #465 (with the deferred #445 arm): the paired support comparison refuses a source the navigation re-retired (SourceDiverged); with the arm back, restoration refuses because succession does not follow HistoricalAbsence"]
 fn a_retirement_is_reversed_after_a_checkout_round_trip_and_an_unrelated_line_step() {
     let moves = [
         (Action::Checkout(1), MOVED),
@@ -280,7 +280,7 @@ type OutputFree<'h> = fixture::reads::Doc<'h, WorthQueryHistoryNoOutputs>;
 /// route. Once #465 lands it records, and an exact retirement comparison
 /// refuses it.
 #[test]
-#[ignore = "held on public #465: restoration after a navigation re-retired the source refuses; the corrective root pins the original retirement commit"]
+#[ignore = "held on public #465 (with the deferred #445 arm): the paired support comparison refuses a source the navigation re-retired (SourceDiverged); with the arm back, the corrective root refuses because it pins the original retirement commit"]
 fn an_output_free_retirement_is_reversed_after_a_checkout_away_and_back() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install();

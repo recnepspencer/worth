@@ -37,8 +37,9 @@ const PINNED: &[(u64, &[Op], &str)] = &[
     ),
 ];
 
-/// The public #445 pins. The comparison no longer refuses them; Relational
-/// then refuses the restoration (public #465).
+/// The public #445 pins. The paired support comparison refuses them
+/// (`SourceDiverged`) until the #445 arm returns with public #465; with the
+/// arm, Relational refuses the restoration (#465).
 const PINNED_ON_465: &[(u64, &[Op], &str)] = &[
     (
         0x7b02_125f,
@@ -113,7 +114,7 @@ fn every_pinned_disagreement_stays_fixed() {
 }
 
 #[test]
-#[ignore = "held on public #465: restoration after a navigation re-retired the source refuses; succession does not follow HistoricalAbsence"]
+#[ignore = "held on public #465 (with the deferred #445 arm): the paired support comparison refuses a source the navigation re-retired (SourceDiverged); with the arm back, restoration refuses because succession does not follow HistoricalAbsence"]
 fn the_pins_held_on_465_stay_fixed() {
     replay(PINNED_ON_465);
 }

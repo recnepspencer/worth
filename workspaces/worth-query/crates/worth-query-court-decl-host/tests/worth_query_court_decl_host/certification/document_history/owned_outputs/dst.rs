@@ -53,6 +53,8 @@ const DEFAULT_SEED_BASE: u64 = 0x7b02_0000;
 /// public #456).
 /// `0x7b02125f` and `0x7b02181e` (corrections on): reversing a retirement
 /// after the document's navigation revived and retired it again refuses
+/// `SourceDiverged` at the paired support comparison (public #445, its arm
+/// deferred to public #465). With the arm, it refuses
 /// `IncompleteRestoration`, because native transition succession does not
 /// follow the `HistoricalAbsence` the navigation wrote (held on public #465).
 /// `WORTH_DST_RUN_HELD=1` runs the held seeds too, to trace one by name.
