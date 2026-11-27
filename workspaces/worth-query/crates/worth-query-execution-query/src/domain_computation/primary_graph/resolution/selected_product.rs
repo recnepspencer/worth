@@ -7,6 +7,7 @@ use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort
 
 #[path = "selected_product/admitted.rs"]
 pub mod admitted;
+pub use admitted::WorthQueryCandidatePrincipalRefusal;
 pub use admitted::WorthQueryIssuedSelectedPrincipal;
 
 impl<Schema> super::super::WorthQuerySelectedProductOperation<'_, Schema>

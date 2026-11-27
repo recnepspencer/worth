@@ -1,7 +1,14 @@
 //! Same-basis reads: a session snapshot pins one committed basis of the
 //! session's branch, so every query it runs reads that basis however many
 //! commits land meanwhile. Dropping the snapshot releases the pin.
-use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_declaration::facade::application_schema::fragment::RecordSelection;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationAbilityRef, ApplicationBindingContext, ApplicationSchema,
+};
+use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity;
+use worth_query_execution::facade::eligibility::{
+    WorthQueryAbilityEligibility, WorthQueryAbilityKey, WorthQueryEligibilityQuestion,
+};
 use worth_query_publication::facade::{
     application_entry::{
         WorthQueryApplicationReadObservation, WorthQueryApplicationReadObservationDenial,
@@ -11,6 +18,7 @@ use worth_query_publication::facade::{
 };
 use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchIdentity};
 
+use super::eligibility::{WorthQueryEligibilityDenial, WorthQueryEligibilityRoster};
 use super::{
     QueryMarker, WorthQueryHostSession, WorthQueryPage, WorthQueryPageCursor,
     WorthQuerySessionQuery,
@@ -103,6 +111,46 @@ impl<'home, Schema: ApplicationSchema, Program>
         after: Option<&WorthQueryPageCursor<Intent>>,
     ) -> Result<WorthQueryPage<Intent::Row, Intent>, WorthQueryApplicationRequestQueryDenial> {
         super::page::read_page(self.session, Some(&self.observation), intent, width, after)
+    }
+
+    /// [`WorthQueryHostSession::eligibility`] as of [`Self::selected_commit`]:
+    /// the policy decision for this principal at the pinned basis, beside rows
+    /// read there. The asker is still admitted at the head, so a pin never
+    /// widens who may ask. Fact-free; an action still admits at the head.
+    pub fn eligibility<Context, Ability, Field>(
+        &self,
+        question: &WorthQueryEligibilityQuestion<Schema, Context, Ability, Field>,
+    ) -> Result<WorthQueryAbilityEligibility, WorthQueryEligibilityDenial>
+    where
+        Context: ApplicationBindingContext<Schema>,
+        Field: RecordSelection,
+        Field::Value: Clone,
+    {
+        super::eligibility::observe_asker(self.session, Some(&self.observation), question)
+    }
+
+    /// [`WorthQueryHostSession::eligible_among`] with verdicts as of
+    /// [`Self::selected_commit`]. The asker's admission and `disclosure` are
+    /// decided at the head: a revoked observer cannot read an older roster.
+    pub fn eligible_among<Context, Ability, Disclosure, Field>(
+        &self,
+        question: &WorthQueryEligibilityQuestion<Schema, Context, Ability, Field>,
+        disclosure: ApplicationAbilityRef<Schema, Disclosure, Field::Entity>,
+        candidates: &[WorthQueryExternalPrincipalIdentity],
+    ) -> Result<WorthQueryEligibilityRoster, WorthQueryEligibilityDenial>
+    where
+        Context: ApplicationBindingContext<Schema>,
+        Field: RecordSelection,
+        Field::Value: Clone,
+    {
+        let disclosure = WorthQueryAbilityKey::of(disclosure);
+        super::eligibility::observe_roster(
+            self.session,
+            Some(&self.observation),
+            question,
+            disclosure,
+            candidates,
+        )
     }
 
     /// Runs `intent` at the pinned basis and keeps the full published result.
