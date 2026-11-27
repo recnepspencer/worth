@@ -261,7 +261,7 @@ mod tests {
         PersistentNameHolder, PersistentNameIdentity, PersistentNameIdentityOwnerPort as _,
     };
     use crate::lineage::groups::{CommittedGroupTransition, GroupTransitionKind};
-    use crate::lineage::naming_pages::tests::hardening_r4::unnamed_event;
+    use crate::lineage::naming_pages::tests::unnamed_retirement_and_group_log_carry::unnamed_event;
     use worth_foundational::facade::AggregateIdentity;
 
     #[test]

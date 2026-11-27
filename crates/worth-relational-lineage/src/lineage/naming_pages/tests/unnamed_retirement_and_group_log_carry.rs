@@ -1,8 +1,6 @@
-//! Round 4 hardening unit tests (`[P1-3]` and `[P1-4]`):
-//! - `[P1-3]` Unnamed lineage retirement is recorded in `HolderEpoch::ended_at`,
-//!   preserved across retention compaction, and excluded from `live_lineages`
-//!   when truncating for a cold historical fork at or after retirement.
-//! - Table-domain page isolation lives in `table_domains`.
+//! Unit tests for unnamed lineage retirement truncation (`HolderEpoch::ended_at`)
+//! and read-free carry-forward when appending another branch's `GROUP_LOG`.
+//! Table-domain page isolation lives in `table_domains`.
 
 use std::sync::Arc;
 

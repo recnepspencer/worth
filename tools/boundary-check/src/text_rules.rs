@@ -22,6 +22,18 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         .collect();
     let root_clippy = toml::from_str::<toml::Value>(input.text("clippy.toml"));
     for (path, text) in &input.files {
+        if let Some(stem) = path
+            .rsplit('/')
+            .next()
+            .and_then(|name| name.strip_suffix(".rs"))
+            && let Some(reason) = review_round_stem_reason(stem)
+        {
+            out.push(diagnostic(
+                Code::TestNaming,
+                path,
+                format!("review-round Rust filename `{stem}.rs` ({reason})"),
+            ));
+        }
         if path.ends_with(".rs") {
             let rules: Vec<_> = identifier_rules
                 .iter()
@@ -88,6 +100,36 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         }
     }
     out
+}
+pub fn review_round_stem_reason(stem: &str) -> Option<String> {
+    let lower = stem.to_ascii_lowercase();
+    let segments: Vec<&str> = lower.split('_').collect();
+    for (index, seg) in segments.iter().enumerate() {
+        if index > 0
+            && seg.len() >= 2
+            && seg.starts_with('r')
+            && seg[1..].bytes().all(|b| b.is_ascii_digit())
+        {
+            return Some(format!("review-round suffix `_{seg}`"));
+        }
+        if let Some(rest) = seg.strip_prefix("round")
+            && !rest.is_empty()
+            && rest.bytes().all(|b| b.is_ascii_digit())
+        {
+            return Some(format!("review-round token `{seg}`"));
+        }
+        if *seg == "round"
+            && let Some(next) = segments.get(index + 1)
+            && !next.is_empty()
+            && next.bytes().all(|b| b.is_ascii_digit())
+        {
+            return Some(format!("review-round token `round_{next}`"));
+        }
+        if *seg == "sol" && segments.get(index + 1) == Some(&"blocker") {
+            return Some("review-blocker token `sol_blocker`".into());
+        }
+    }
+    None
 }
 pub fn feature_allowed(path: &str, name: &str) -> bool {
     ((under(path, "crates/worth-signal") || under(path, "crates/worth-signal-wasm"))
@@ -248,5 +290,30 @@ mod tests {
             manifest_features("crates/other/Cargo.toml", &v, &BTreeSet::new()).len(),
             1
         );
+    }
+    #[test]
+    fn review_round_rust_filenames_are_refused_while_semantic_names_pass() {
+        let bad = check(&Inputs::fixture(
+            &[
+                ("crates/a/tests/bounded_naming_r2.rs", ""),
+                ("crates/a/tests/bounded_naming_r3_ack.rs", ""),
+                ("crates/a/src/tests/hardening_r4.rs", ""),
+                ("workspaces/w/tests/sol_round1_hygiene_court.rs", ""),
+                ("crates/a/tests/foo_round_3.rs", ""),
+            ],
+            "",
+        ));
+        assert_eq!(bad.len(), 5);
+        assert!(bad.iter().all(|d| d.code == Code::TestNaming));
+        let ok = check(&Inputs::fixture(
+            &[
+                ("crates/a/tests/naming_ack_retention_and_forks.rs", ""),
+                ("crates/a/tests/r2d2_pool.rs", ""),
+                ("crates/a/tests/envelope_roundtrips.rs", ""),
+                ("crates/a/tests/r14_recovery.rs", ""),
+            ],
+            "",
+        ));
+        assert!(ok.is_empty());
     }
 }

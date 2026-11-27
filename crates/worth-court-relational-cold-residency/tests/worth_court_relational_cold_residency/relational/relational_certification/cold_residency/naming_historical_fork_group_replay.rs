@@ -1,11 +1,9 @@
-//! Round 15 hardening courts for Store M4.3f:
-//! - `[P1]` Cold historical forks prepare and carry reconstructed lineage
-//!   through durable publication so post-durable installation performs zero
-//!   cold reads (each cold page is read at most once even under a tight cache
-//!   budget that evicts early pages during reconstruction).
-//! - `[P2-2]` `rebuild_historical_group_state` routes through the per-branch
-//!   `GROUP_LOG` window index so unavailable sibling `GROUP_LOG` pages are
-//!   never opened during historical fork reconstruction.
+//! Cold-residency courts for historical-fork single-read lineage preparation
+//! and per-branch `GROUP_LOG` window replay:
+//! - Cold historical forks carry reconstructed lineage through durable
+//!   publication so post-durable installation performs zero cold reads.
+//! - `rebuild_historical_group_state` routes through the per-branch `GROUP_LOG`
+//!   window index so unavailable sibling `GROUP_LOG` pages are never opened.
 
 use std::collections::BTreeMap;
 
@@ -22,7 +20,7 @@ use super::bounded_naming_fixture::{
     create_named_entities, durable_named_runtime, observe_branch, publish_group_partition,
     reopen_named, GROUP_SCHEME,
 };
-use super::bounded_naming_r2::fork_retained_at;
+use super::naming_branch_root_and_dissolve::fork_retained_at;
 
 #[test]
 fn historical_fork_reconstructs_groups_without_opening_sibling_group_log_pages() {

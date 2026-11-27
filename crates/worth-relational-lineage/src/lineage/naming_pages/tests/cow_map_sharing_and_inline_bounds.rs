@@ -1,9 +1,5 @@
-//! Round 3 hardening unit tests (`[P1-7]` and `[P2-9]`):
-//! - `[P1-7]` `CowMap` wraps node values in `Arc<V>` so fork + disjoint writes
-//!   clone ZERO unrelated payloads, and `get_mut` clones strictly the target key.
-//! - `[P2-9]` Oversized inline envelopes (`payload.len() > MAX_INLINE_VALUE_BYTES`)
-//!   refuse `Cause::Damaged` consistently across `ColdNamingStore::get` AND both
-//!   `ColdNamingStore::scan` paths (inline fast-path and chunked staged path).
+//! Unit tests for `CowMap` structural sharing (`Arc<V>` zero-clone disjoint
+//! writes) and oversized inline envelope refusal across `get` and `scan`.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;

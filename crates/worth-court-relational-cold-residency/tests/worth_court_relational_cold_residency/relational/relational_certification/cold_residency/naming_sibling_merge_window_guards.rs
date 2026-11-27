@@ -1,4 +1,5 @@
-//! Round 12–14 hardening courts for Store M4.3f:
+//! Cold-residency courts for sibling-merge ancestor cutoff windowing and
+//! checkpoint-order `k`-way `GROUP_LOG` traversal:
 //! - Sibling merge skips ancestor `main` event pages and `GROUP_LOG` pages
 //!   wholly after the source's fork cutoff.
 //! - Checkpoint-order `k`-way `GROUP_LOG` traversal refuses `NamedGroupLineage`
@@ -35,8 +36,8 @@ use worth_testkit_relational::durable_publication::field_patch;
 use super::bounded_naming_fixture::{
     create_named_entities, group_scheme, observe_branch, publish_group_partition, GROUP_SCHEME,
 };
-use super::bounded_naming_r2::fork_retained_at;
-use super::bounded_naming_r3::durable_mixed_runtime;
+use super::naming_branch_root_and_dissolve::fork_retained_at;
+use super::naming_historical_fork_integrity::durable_mixed_runtime;
 
 fn reopen_mixed(
     request: &ExecutionRequest<'_, '_>,

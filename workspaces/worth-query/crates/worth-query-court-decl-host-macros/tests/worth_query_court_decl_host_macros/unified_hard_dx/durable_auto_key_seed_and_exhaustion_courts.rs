@@ -1,6 +1,6 @@
-//! Sol Round 2 courts covering Blockers #6 (durable canonical auto-key seed
-//! invariant across Directory Home reopen) and #7 (typed exhaustion denial and
-//! pre-occupied key skipping without double-applying recovered commits).
+//! Courts covering durable canonical auto-key seed invariance across
+//! Directory Home reopen and typed probe-exhaustion denial without
+//! double-applying recovered commits.
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryAdmissionClock, WorthQuerySessionRunDenial,
 };
@@ -12,10 +12,10 @@ use super::actions::{
 use super::courts::{open_daymark, temp_home_path};
 use super::program::owner;
 use super::queries::ReadTaskDetails;
-use super::sol_round2_policy_and_custody_courts::open_memory_home_with_policy;
+use super::serial_policy_and_custody_boundary_courts::open_memory_home_with_policy;
 
 #[test]
-fn sol_r2_blocker_6_auto_key_seed_is_identical_across_directory_reopen() {
+fn auto_key_seed_is_identical_across_directory_reopen() {
     let path = temp_home_path("sol-r2-durable-seed");
     let clock = WorthQueryAdmissionClock::system();
 
@@ -84,7 +84,7 @@ fn sol_r2_blocker_6_auto_key_seed_is_identical_across_directory_reopen() {
 }
 
 #[test]
-fn sol_r2_blocker_7_probe_exhaustion_returns_typed_denial() {
+fn auto_key_probe_exhaustion_returns_typed_denial() {
     let clock = WorthQueryAdmissionClock::system();
     let home = open_memory_home_with_policy(&clock, None);
     let me = owner(&home, &clock);

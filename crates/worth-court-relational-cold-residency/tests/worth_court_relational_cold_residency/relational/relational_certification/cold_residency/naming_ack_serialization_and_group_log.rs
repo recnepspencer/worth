@@ -1,8 +1,8 @@
-//! Round 5 hardening courts for Store M4.3f (`[P1-1]` and `[P1-2]`):
-//! - `[P1-1]` Overlapping/stale ACKs serialize directory selection and naming
+//! Cold-residency courts for ACK serialization, read-lock busy handling, and
+//! primary `GROUP_LOG` page completeness:
+//! - Overlapping/stale ACKs serialize directory selection and naming
 //!   consolidation so an older capture can never rebind live overlays backward.
-//! - `[P1-2]` Tampered `CHK24` stripping primary `GROUP_LOG` page descriptors
-//!   while keeping `VALUE_CHUNK` descriptors and `group_log_through` refuses
+//! - Tampered `CHK24` stripping primary `GROUP_LOG` page descriptors refuses
 //!   with `CorruptCheckpoint`.
 
 use std::sync::{Arc, Barrier};
@@ -21,8 +21,8 @@ use worth_testkit_relational::durable_medium::TestDurableMedium;
 use super::bounded_naming_fixture::{
     create_named_entities, durable_named_runtime, observe_branch, publish_group_partition,
 };
-use super::bounded_naming_r3_ack::{capture_only, try_ack};
 use super::checkpoint_wire_fixture::{array, field, replace_field, rows, CHECKPOINT_MAGIC};
+use super::naming_ack_isolation_and_rebind::{capture_only, try_ack};
 
 fn strip_primary_group_log_pages_keep_chunks(
     ck: &RelationalNativeCheckpoint,

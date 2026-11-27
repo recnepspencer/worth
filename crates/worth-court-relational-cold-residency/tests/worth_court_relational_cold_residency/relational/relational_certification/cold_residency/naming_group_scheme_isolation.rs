@@ -1,4 +1,4 @@
-//! Round 3 hardening court for Store M4.3f (`[P1-3]`):
+//! Cold-residency court for per-scheme group fault isolation:
 //! - First group write in a previously unused scheme installs read-free
 //!   (`base = None`) and commits cleanly even when another scheme's cold group
 //!   page is damaged, while touching the damaged scheme still refuses before

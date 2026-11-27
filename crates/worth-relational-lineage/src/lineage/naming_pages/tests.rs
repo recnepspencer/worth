@@ -1,10 +1,10 @@
 //! Unit proofs for `CHK24` paged naming state, working-set eviction,
 //! tamper/integrity refusals, and retention-floor compaction kernels.
+mod continuation_bounds_and_retention_floor;
+mod cow_map_sharing_and_inline_bounds;
 mod hardening;
-mod hardening_r2;
-mod hardening_r3;
-pub(crate) mod hardening_r4;
 mod table_domains;
+pub(crate) mod unnamed_retirement_and_group_log_carry;
 
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
