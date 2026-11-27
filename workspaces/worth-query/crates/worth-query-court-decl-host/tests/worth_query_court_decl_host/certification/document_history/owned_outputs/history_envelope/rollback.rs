@@ -88,6 +88,7 @@ fn a_request_cancelled_during_a_stage_rolls_back_and_the_same_key_then_records()
     let host = world::install();
     let document = world::attach(&host);
     let before = observe(&host, &document);
+    let index = document.history_source_index_for_test();
     let cancellation = WorthQueryCancellationSource::new();
     let stopped =
         WorthQueryRequestScope::new(None, cancellation.token(), WorthQueryAdmissionClock::system());
@@ -104,6 +105,13 @@ fn a_request_cancelled_during_a_stage_rolls_back_and_the_same_key_then_records()
         "the stopped request cannot open the phase a rollback would close in"
     );
     assert_eq!(observe(&host, &document), before);
+    assert_eq!(
+        document.history_source_index_for_test(),
+        index,
+        "the cancel releases its index entries"
+    );
     let document = retry_records_the_next_step(&host, document, &before);
+    let indexed = document.history_source_index_for_test();
+    assert_eq!((indexed.sources, indexed.endpoints), (index.sources + 1, index.endpoints + 1));
     close(&host, document);
 }

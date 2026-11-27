@@ -6,8 +6,10 @@ Two Lean 4 developments, unbounded, for public #56, Phase 2:
   - every jump is a level ancestor;
   - the lift is exactly parent-chain ancestry;
   - the lift reaches the level ancestor in `qsteps <= 4 * log2(x + 1) + 2` steps.
-- `Supersession.lean` mirrors restored support's navigation rule (`correction_source/restored_support/navigation.rs`): `OccurrenceKind`, `superseded_through`, `needs_witness`, and the filter in `without_vouched_navigation`, plus the journal's `restores_descendant_of`. It proves:
-  - only the latest vouched navigation supersedes;
+- `Supersession.lean` mirrors restored support's navigation rule (`correction_source/restored_support/navigation.rs`): `OccurrenceKind`, `superseded_through`, `needs_witness`, and the filter in `without_vouched_navigation`, plus the journal's `restores_descendant_of` and `wrote_on_line_through`. It proves:
+  - only the latest vouched navigation supersedes, and supersession keeps line writes: a write the journal's `wrote_on_line_through` names as a recorded step's on the path from the source to the selected basis stays kept (public #453);
+  - a change at any step between the source and the selected basis is such a line write, and the old rule, which hid them, is shown by its counterexample;
+  - the new rule keeps everything the old one kept;
   - unvouched means everything is kept;
   - a cancelled effect is the restored state, and never reaches the target;
   - a non-descending checkout does not vouch.
@@ -23,6 +25,8 @@ python C:/worth-orchestration/tools/lean/run_lean.py check specs/lean/tree_based
   --theorem JumpLift.J_succ
 python C:/worth-orchestration/tools/lean/run_lean.py check specs/lean/tree_based_undo/Supersession.lean \
   --theorem Supersession.superseded_split --theorem Supersession.unvouched_keeps_everything \
+  --theorem Supersession.kept_line_writes --theorem Supersession.kept_monotone \
+  --theorem Supersession.since_change_is_a_line_write --theorem Supersession.old_rule_hides_a_line_write \
   --theorem Supersession.cancelled_effect_is_restored_state --theorem Supersession.target_fact \
   --theorem Supersession.cancelled_never_reaches_target --theorem Supersession.restored_differs_only_by_line_writes \
   --theorem Supersession.fresh_fact_forces_descent --theorem Supersession.nondescending_checkout_does_not_vouch \

@@ -20,6 +20,7 @@ fn finish<'r, M>(
     M: WorthQueryHistoryGroupMembers<Schema, History, program::Program>,
 {
     let mut qualified = false;
+    let index = group.parts().0.history_source_index_for_test();
     for count in 0..512 {
         assert!(
             count < 511,
@@ -55,6 +56,12 @@ fn finish<'r, M>(
         .finish(request)
         .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
     assert_eq!(finished.completions.len(), 2);
+    // One adoption: each member's commit, and one basis for the group step.
+    let indexed = finished.document.history_source_index_for_test();
+    assert_eq!(
+        (indexed.sources, indexed.endpoints),
+        (index.sources + 2, index.endpoints + 1)
+    );
     let document = finished.document;
     drop(finished.completions);
     let future = document.selection(request).unwrap();

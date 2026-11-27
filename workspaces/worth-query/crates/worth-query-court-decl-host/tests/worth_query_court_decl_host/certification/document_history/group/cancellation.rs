@@ -137,6 +137,7 @@ fn cancellation_after_endpoint_capture_preserves_the_ready_candidate_for_fresh_g
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
     let before = document.selection(&request).unwrap();
+    let index = document.history_source_index_for_test();
     let mut group = begin(&host, document, 5, 0x9182_5c10);
     until(&host, &mut group, |group| {
         group.posture() == Posture::ReadyToComplete
@@ -207,6 +208,12 @@ fn cancellation_after_endpoint_capture_preserves_the_ready_candidate_for_fresh_g
         let step = execution.complete(document, &request).unwrap();
         assert_eq!(step.parent(), Some(before.step().id()));
         assert_eq!(step.endpoint().selected_commit(), &endpoint);
+        // The retry adopted the same endpoint: one basis, both members.
+        let indexed = document.history_source_index_for_test();
+        assert_eq!(
+            (indexed.sources, indexed.endpoints),
+            (index.sources + 2, index.endpoints + 1)
+        );
     }
     assert_eq!(group.posture(), Posture::Selected);
     assert_eq!(
