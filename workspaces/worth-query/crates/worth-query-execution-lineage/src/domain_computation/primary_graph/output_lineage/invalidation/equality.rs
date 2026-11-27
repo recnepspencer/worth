@@ -13,7 +13,8 @@ use crate::domain_computation::primary_graph::output_lineage::input_cutoff::Stab
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
 /// Register a sealed stable publication. Unsupported physical postings retain
-/// full verification and genuine output custody, without clean equality links.
+/// full verification and genuine output custody, and discharge nothing
+/// downstream; their equal links are still recorded (public #429).
 /// Mutates only the unpublished successor mark root. All selected walks and
 /// copy-on-write edits are admitted before their individual operations; a
 /// denial discards this root without changing the visible source image.
@@ -58,15 +59,18 @@ pub fn register_verified(
             // complete reverse postings it cannot establish a future Clean mark
             // or discharge downstream edges. Keep the original requirement.
             projection::carry(state, predecessor, successor)?;
-            return if state
+            if !state
                 .settlements
                 .get(successor)
                 .is_some_and(|row| row.output_facts.is_some())
             {
-                Ok(())
-            } else {
-                Err(missing(FullVerificationReason::RetainedDeliveryGap))
-            };
+                return Err(missing(FullVerificationReason::RetainedDeliveryGap));
+            }
+            // Downstream rows still follow the link, but only through full
+            // verification: an `UnsupportedFact` terminal is never
+            // `CanonicallyEqualClean` (public #429, plan §3.9).
+            link(state, predecessor, successor, old_link);
+            return Ok(());
         }
         Some(_) => return Err(missing(FullVerificationReason::RetainedDeliveryGap)),
     }
@@ -96,6 +100,17 @@ pub fn register_verified(
         }
     }
 
+    link(state, predecessor, successor, old_link);
+    Ok(())
+}
+
+/// Record `predecessor → successor`, keeping the predecessor's own prior.
+fn link(
+    state: &mut MarkState,
+    predecessor: &Arc<RecordedSettlementIdentity>,
+    successor: &Arc<RecordedSettlementIdentity>,
+    old_link: Option<Arc<EqualOutputLink>>,
+) {
     // These links can keep identities after their lineage records retire.
     // Their creation was already prepared by the lineage owner.
 
@@ -114,7 +129,6 @@ pub fn register_verified(
             next: None,
         }),
     );
-    Ok(())
 }
 
 pub fn discharge_selected_downstream(
