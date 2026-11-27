@@ -1,4 +1,5 @@
-//! Actual source readmission retains data funding through shared and weak owners.
+//! Actual source readmission retains data funding through shared and weak owners,
+//! and a stored owned-graph selection in today's encoding still readmits.
 
 use crate::durability::canonical_commit_artifact::{
     checkpoint_body::readmit_checkpoint_body, frame_encoding::encode_canonical_frame_for_request,
@@ -227,4 +228,49 @@ fn embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining
             check(&omitted);
         }
     }
+}
+
+/// A stored owned-graph selection in today's encoding (full current and
+/// selected sets, no encoding tag) stays readable byte-exact: readmission
+/// re-encodes it to the same payload, and its targets are the whole roster
+/// although only the model changed. S5's tagged encoding must keep this.
+#[test]
+fn a_v1_navigation_selection_readmits_byte_exact() {
+    use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
+    use branch::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelectionOwnerPort as _;
+    use branch::history::data::canonical_commit_envelope::CanonicalCommitAuthorityKind;
+    use std::collections::BTreeSet;
+    let bytes = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../worth-testkit-relational/assets/fixtures/owned_graph_selection_v1.frame"
+    ));
+    let stop = CancellationSource::new();
+    let host = SerialRequest::from_memory(SerialMemoryBudget::new(None), stop.token(), None);
+    let request = ExecutionRequest::serial(&host);
+    let readmitted = RelationalCanonicalCommitArtifact::readmit(bytes, &request).unwrap();
+    assert_eq!(readmitted.commit_id().0, 23);
+    let CanonicalCommitAuthorityKind::OwnedGraphSelection(selection) =
+        readmitted.envelope().authority_kind()
+    else {
+        panic!("the fixture is an owned-graph selection");
+    };
+    let targets: BTreeSet<_> = selection.targets().collect();
+    let entities: Vec<_> = targets
+        .iter()
+        .filter_map(|target| match target {
+            RecordRef::Entity(id) => Some(*id),
+            RecordRef::Relation(_) => None,
+        })
+        .collect();
+    assert_eq!(targets.len() - entities.len(), 10, "every owning edge");
+    assert!(entities.contains(&selection.model()));
+    assert_eq!(
+        entities
+            .iter()
+            .filter(|id| id.partition_id == PartitionId(3))
+            .count(),
+        10,
+        "every member, not only the edited model"
+    );
+    assert_eq!(entities.len(), 11);
 }
