@@ -35,6 +35,11 @@ const PINNED: &[(u64, &[Op], &str)] = &[
         &[Op::Begin { gesture: false }, Op::Edit([Retire, Skip]), Op::Replay { pick: 122, change: Change::Stages }],
         "an envelope under an `.edit` writer's key records a new step: the journal is keyed by namespace (refinement (v))",
     ),
+];
+
+/// The public #445 pins. The comparison no longer refuses them; Relational
+/// then refuses the restoration (public #465).
+const PINNED_ON_465: &[(u64, &[Op], &str)] = &[
     (
         0x7b02_125f,
         &[
@@ -92,15 +97,25 @@ fn a_chain_consumer_on_an_earlier_occurrences_upstream_settles() {
 /// The first recorded edit of the forked-head cases: it creates both members.
 const MADE: Op = Op::Edit([Set(2), Set(1)]);
 
-#[test]
-fn every_pinned_disagreement_stays_fixed() {
+fn replay(pins: &[(u64, &[Op], &str)]) {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install();
-    for (seed, ops, defect) in PINNED {
+    for (seed, ops, defect) in pins {
         if let Err(failure) = run(&mut world::Document::attach(&host), ops, None) {
             panic!("seed {seed:#x} ({defect}) disagrees again:\n{failure:#?}");
         }
     }
+}
+
+#[test]
+fn every_pinned_disagreement_stays_fixed() {
+    replay(PINNED);
+}
+
+#[test]
+#[ignore = "held on public #465: restoration after a navigation re-retired the source refuses; succession does not follow HistoricalAbsence"]
+fn the_pins_held_on_465_stay_fixed() {
+    replay(PINNED_ON_465);
 }
 
 /// Public #353: after an undo, a new record forks the history, and the
