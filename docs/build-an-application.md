@@ -9045,6 +9045,8 @@ let pending = owned
 | `home.owned_session(session)` | A `'static` `WorthQueryOwnedWorkflowSession` holding the Home's runtime and installed configuration; it dereferences to `WorthQueryOwnedSession` (`spawn_query`, `spawn_run`, `on_commit`, ...). A session of another Home is returned unchanged |
 | `owned.with_workflow(\|session, vocabulary\| ..)`, `owned.spawn_with_workflow(..)` | Lend the session and a vocabulary bound to that call's runtime; the spawned form runs on the session's call worker and completes a `WorthQueryPending` (`with_waker`, `try_take`, `wait`) |
 | `home.close_clean()` | Retires the Home and its workflow configuration and releases every owned workflow session: later calls refuse `HomeClosed`, queued calls complete `WorthQueryBackgroundDenial::HomeClosed` |
+| `home.undo(..)`, `home.correction_history(..)`, `home.fork_preview(..)`, `home.adopt_preview(..)`, `home.discard_preview(..)`, `home.owned_history(..)`, `home.catch_up_temporal::<B>(..)` | The plain Home's correction, what-if preview, owned history and temporal catch-up calls, forwarded with the same signatures and refusals |
+| `session.snapshot_at_commit(&receipt, work)`, `snapshot.record_history::<History>(..)`, `snapshot.workflow_audit::<Spec, Subject, Audit>(..)`, `snapshot.causal_timeline::<..>(..)` | Audit time-travel: a snapshot pinned at an earlier commit, the record's governed change log and the instance's transition audit trail (advancer, executor, proposer, approver) at that commit. See [Causal audit reads](../workspaces/worth-query/docs/capabilities/causal-audit-reads.md) |
 
 While an owned workflow session is attached, `support_workflow_spec` refuses
 `RuntimeKeepaliveRetained`; support every program vocabulary before handing out

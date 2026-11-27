@@ -35,8 +35,8 @@ pub type WorthQuerySessionSnapshotDenial = WorthQueryApplicationReadObservationD
 /// [`Self::selected_commit`] read identical data.
 #[must_use = "a snapshot pins its basis until dropped"]
 pub struct WorthQuerySessionSnapshot<'session, 'home, Schema: ApplicationSchema, Program> {
-    session: &'session WorthQueryHostSession<'home, Schema, Program>,
-    observation: WorthQueryApplicationReadObservation,
+    pub(crate) session: &'session WorthQueryHostSession<'home, Schema, Program>,
+    pub(crate) observation: WorthQueryApplicationReadObservation,
 }
 
 impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Schema, Program> {

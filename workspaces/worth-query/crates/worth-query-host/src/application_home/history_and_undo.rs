@@ -37,6 +37,9 @@ pub use durable_history::{
     WorthQueryCorrectionHistory, WorthQueryCorrectionHistoryEntry, WorthQueryCorrectionHistoryLimit,
 };
 pub use owned_history::WorthQueryHomeOwnedHistoryDenial;
+pub(in crate::application_home) use owned_history::{
+    HistoryAccessBinding, HistoryPrincipal, HistoryQuery, HistoryRows, HistoryScope,
+};
 
 /// Default bounded history traversal limits for Home undo and redo helpers.
 pub const DEFAULT_CORRECTION_HISTORY_LIMITS: WorthQueryCorrectionHistoryLimits =
