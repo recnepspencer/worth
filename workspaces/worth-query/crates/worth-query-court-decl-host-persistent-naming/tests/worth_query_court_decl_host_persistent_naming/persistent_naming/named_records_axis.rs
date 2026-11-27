@@ -1,11 +1,13 @@
 //! Named-records allocator axis: undo and checkout of one deleted member over
-//! 10 vs 100 more named members the navigation leaves unchanged allocate at
-//! most 1.1x, by count and by requested bytes. Each size gets its own host; a
+//! 10 vs 100 more named members the navigation leaves unchanged grow by at
+//! most one allocation and 256 requested bytes per member. Each size gets its own host; a
 //! one-member host runs both kinds first, so process-wide first use is
 //! outside both samples.
 use super::*;
 use history::{navigate, record_edit, DeleteAction, Navigate};
-use worth_testkit_foundational::allocation_probe::{assert_flat, AllocationCount, AllocationProbe};
+use worth_testkit_foundational::allocation_probe::{
+    assert_marginal, AllocationAxis, AllocationCount, AllocationProbe, PerItem,
+};
 
 /// Delete `direct`, then measure `undo_step` back and `checkout` of the
 /// deletion, with `extra` unchanged named members in the owned closure.
@@ -65,8 +67,24 @@ fn undo_and_checkout_allocate_flat_in_unchanged_named_members() {
     with_members(1);
     let (small_undo, small_checkout) = with_members(10);
     let (large_undo, large_checkout) = with_members(100);
-    assert_flat(&[
-        ("named/undo_step", small_undo, large_undo),
-        ("named/checkout", small_checkout, large_checkout),
+    let limit = PerItem {
+        allocations_per_ten: 10,
+        bytes: 256,
+    };
+    assert_marginal(&[
+        AllocationAxis {
+            name: "named/undo_step",
+            items: (10, 100),
+            small: small_undo,
+            large: large_undo,
+            limit,
+        },
+        AllocationAxis {
+            name: "named/checkout",
+            items: (10, 100),
+            small: small_checkout,
+            large: large_checkout,
+            limit,
+        },
     ]);
 }

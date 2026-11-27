@@ -1,5 +1,7 @@
 //! Allocator axes: the same history operation at 1x and 10x of one dimension
-//! allocates at most 1.1x, by count and by requested bytes. Each size gets its
+//! grows by at most a per-item limit, by count and by requested bytes. Each
+//! limit sits between the operation's traced cost per item and that cost plus
+//! one allocation per item (`s0a-axes-mutant.log`). Each size gets its
 //! own host sized by `growth::host::install` (the default world holds 32 live
 //! branches), so only the varied dimension differs; a smaller host runs every
 //! measured kind once first, so process-wide first use is outside both samples.
@@ -13,7 +15,16 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
     document_history::{navigation::Navigation, RetentionHistory},
     host::DocumentRetentionSchema,
 };
-use worth_testkit_foundational::allocation_probe::{assert_flat, AllocationCount, AllocationProbe};
+use worth_testkit_foundational::allocation_probe::{
+    assert_marginal, AllocationAxis, AllocationCount, AllocationProbe, PerItem,
+};
+
+/// Traced over three runs: +312 to +328 allocations and at most +82,815 B over
+/// 180 steps, about 1.8 and 460 per step.
+const PER_STEP: PerItem = PerItem {
+    allocations_per_ten: 23,
+    bytes: 600,
+};
 
 type Owner<'d, 'r> =
     WorthQueryHistoryNavigation<'d, 'r, DocumentRetentionSchema, RetentionHistory, Navigation>;
@@ -114,7 +125,13 @@ fn undo_allocates_flat_in_history_depth() {
     at_depth(2);
     let (_, small) = at_depth(20);
     let (_, large) = at_depth(200);
-    assert_flat(&[("depth/undo_step", small, large)]);
+    assert_marginal(&[AllocationAxis {
+        name: "depth/undo_step",
+        items: (20, 200),
+        small,
+        large,
+        limit: PER_STEP,
+    }]);
 }
 
 /// Each commit's naming-index ingestion walks every fork's whole ancestry, and
@@ -125,7 +142,13 @@ fn recording_allocates_flat_in_history_depth() {
     at_depth(2);
     let (small, _) = at_depth(20);
     let (large, _) = at_depth(200);
-    assert_flat(&[("depth/record", small, large)]);
+    assert_marginal(&[AllocationAxis {
+        name: "depth/record",
+        items: (20, 200),
+        small,
+        large,
+        limit: PER_STEP,
+    }]);
 }
 
 /// The root's first redo page, then `redo_to` its newest child, with
@@ -183,8 +206,29 @@ fn redo_choices_and_redo_to_allocate_flat_in_sibling_count() {
     with_children(2);
     let (small_page, small_redo) = with_children(4);
     let (large_page, large_redo) = with_children(40);
-    assert_flat(&[
-        ("branch/redo_choices", small_page, large_page),
-        ("branch/redo_to", small_redo, large_redo),
+    assert_marginal(&[
+        AllocationAxis {
+            name: "branch/redo_choices",
+            items: (4, 40),
+            small: small_page,
+            large: large_page,
+            // Traced: +0 allocations and +263 B over 36 siblings.
+            limit: PerItem {
+                allocations_per_ten: 5,
+                bytes: 16,
+            },
+        },
+        AllocationAxis {
+            name: "branch/redo_to",
+            items: (4, 40),
+            small: small_redo,
+            large: large_redo,
+            // Traced over three runs: +93 to +105 allocations and at most +27,802 B over
+            // 36 siblings, about 2.9 and 772 per sibling.
+            limit: PerItem {
+                allocations_per_ten: 34,
+                bytes: 850,
+            },
+        },
     ]);
 }

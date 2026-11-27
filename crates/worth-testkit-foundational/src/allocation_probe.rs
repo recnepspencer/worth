@@ -29,24 +29,70 @@ pub struct AllocationCount {
     pub bytes: u64,
 }
 
-/// Panics unless every axis's `large` sample allocated at most 1.1x its
-/// `small` one, by count and by requested bytes: the complexity courts' flat
-/// bound for a 10x dimension. Every axis is printed before any is asserted.
-pub fn assert_flat(axes: &[(&str, AllocationCount, AllocationCount)]) {
-    for (axis, small, large) in axes {
-        eprintln!("allocation axis {axis}: small={small:?} large={large:?}");
-    }
-    for (axis, small, large) in axes {
-        assert!(small.allocations > 0, "{axis}: the operation must allocate");
-        assert!(
-            large.allocations * 10 <= small.allocations * 11,
-            "{axis}: allocations grew past 1.1x: {small:?} -> {large:?}"
+/// One dimension of a complexity court: the same operation measured with
+/// `items.0` and `items.1` items of that dimension.
+#[derive(Clone, Copy, Debug)]
+pub struct AllocationAxis<'a> {
+    pub name: &'a str,
+    pub items: (u64, u64),
+    pub small: AllocationCount,
+    pub large: AllocationCount,
+    pub limit: PerItem,
+}
+
+/// The most one added item may cost: allocations per ten items, so a limit
+/// can sit between a traced flat cost and that cost plus one allocation per
+/// item, and requested bytes per item.
+#[derive(Clone, Copy, Debug)]
+pub struct PerItem {
+    pub allocations_per_ten: u64,
+    pub bytes: u64,
+}
+
+/// Panics unless, on every axis, the growth from the small sample to the large
+/// one stays within the axis's per-item limit, by count and by requested
+/// bytes. Growth is compared per added item, not as a ratio of totals, so a
+/// large fixed cost cannot hide per-item growth. Every axis is checked and
+/// printed before the panic names each one that failed.
+pub fn assert_marginal(axes: &[AllocationAxis<'_>]) {
+    let mut failed = Vec::new();
+    for axis in axes {
+        let added = axis.items.1 - axis.items.0;
+        let allocations = axis
+            .large
+            .allocations
+            .saturating_sub(axis.small.allocations);
+        let bytes = axis.large.bytes.saturating_sub(axis.small.bytes);
+        eprintln!(
+            "allocation axis {}: small={:?} large={:?}; +{} allocations and +{} B over {} added items (limit {}/10 allocations and {} B per item)",
+            axis.name, axis.small, axis.large, allocations, bytes, added,
+            axis.limit.allocations_per_ten, axis.limit.bytes,
         );
-        assert!(
-            large.bytes * 10 <= small.bytes * 11,
-            "{axis}: requested bytes grew past 1.1x: {small:?} -> {large:?}"
-        );
+        if axis.small.allocations == 0 {
+            failed.push(format!("{}: the operation must allocate", axis.name));
+        }
+        if allocations * 10 > axis.limit.allocations_per_ten * added {
+            failed.push(format!(
+                "{}: +{allocations} allocations over {added} items is past {}/10 per item",
+                axis.name, axis.limit.allocations_per_ten
+            ));
+        }
+        if bytes > axis.limit.bytes * added {
+            failed.push(format!(
+                "{}: +{bytes} B over {added} items is past {} B per item",
+                axis.name, axis.limit.bytes
+            ));
+        }
     }
+    assert!(
+        failed.is_empty(),
+        "allocation growth per item:
+{}",
+        failed.join(
+            "
+"
+        )
+    );
 }
 
 pub struct AllocationProbe;
