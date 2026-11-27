@@ -83,7 +83,7 @@ pub use checkpoint_allocation::{
 };
 pub use checkpoint_inspection::{
     CheckpointRecordFrontier, CheckpointRecordIdentity, NativeCheckpointModelBytes,
-    RelationalCheckpointInspection,
+    NativeRecordAllocationBytes, RelationalCheckpointInspection,
 };
 
 pub mod checkpoint_index_definitions;

@@ -98,7 +98,7 @@ pub(super) fn stable_current(application: &host::DirHost, key: &str) -> AspectVa
     let before = application.capture_native_checkpoint_frame();
     let value = current(application, key);
     let after = application.capture_native_checkpoint_frame();
-    worth_query_testkit_document_retention::facade::directory_home::assert_native_checkpoint_model_unchanged(
+    worth_query_testkit_document_retention::facade::directory_home::assert_native_checkpoint_fully_unchanged(
         &before, &after,
     );
     value

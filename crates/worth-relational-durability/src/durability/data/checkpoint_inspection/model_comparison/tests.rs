@@ -42,6 +42,7 @@ fn inspection(runtime: u64, wire: &'static [u8]) -> RelationalCheckpointInspecti
             ]),
             allocator: BTreeMap::new(),
         },
+        record_allocation_bytes: NativeRecordAllocationBytes::default(),
         branch_cells: vec![cell(runtime, "main")],
         symbol_identity_frontier: 0,
         frontiers: vec![],
