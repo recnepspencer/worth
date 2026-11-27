@@ -63,6 +63,13 @@ pub fn compile_elevation_rules(
     )?;
     let approver_conflict_requirements =
         approver_conflict::compile(contract, layout, capability, &relations, lowering)?;
+    // Installation admits governed elevation only on closed windows.
+    let (not_before, not_after) = elevation.validity().closed_bounds().ok_or_else(|| {
+        authorization_denial(
+            contract.name(),
+            "governed elevation needs a closed validity window",
+        )
+    })?;
     Ok(Some(WorthQueryCapabilityElevationBindings::new(
         elevation_kind,
         active.active,
@@ -72,8 +79,8 @@ pub fn compile_elevation_rules(
             elevation.validity().timeline(),
             active.not_before,
             active.not_after,
-            field_locator(layout, elevation.validity().not_before())?,
-            field_locator(layout, elevation.validity().not_after())?,
+            field_locator(layout, not_before)?,
+            field_locator(layout, not_after)?,
         ),
         approver_conflict_requirements,
         lower_lifecycle(layout, elevation)?,

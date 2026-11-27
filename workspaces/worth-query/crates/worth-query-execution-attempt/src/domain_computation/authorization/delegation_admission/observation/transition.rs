@@ -106,28 +106,36 @@ fn parent_predicates(
     installed: &WorthQueryInstalledCapabilityPlan,
     sample: &WorthQueryRuntimeTimeSample,
 ) -> Vec<RelationalAuthorizationPredicate> {
-    vec![
-        RelationalAuthorizationPredicate::new(
-            1,
-            installed.grant_kind(),
-            installed.delegation().active_status.0.clone(),
-            installed.delegation().active_status.1.clone(),
-        ),
-        RelationalAuthorizationPredicate::compare(
-            1,
-            installed.grant_kind(),
-            installed.delegation().not_before.clone(),
+    let delegation = installed.delegation();
+    // An open bound admits every instant on its side: it adds no predicate.
+    let bounds = [
+        (
+            &delegation.not_before,
             RelationalAuthorizationFieldComparison::AtMost,
-            sample.value().clone(),
         ),
-        RelationalAuthorizationPredicate::compare(
-            1,
-            installed.grant_kind(),
-            installed.delegation().not_after.clone(),
+        (
+            &delegation.not_after,
             RelationalAuthorizationFieldComparison::AtLeast,
-            sample.value().clone(),
         ),
-    ]
+    ];
+    std::iter::once(RelationalAuthorizationPredicate::new(
+        1,
+        installed.grant_kind(),
+        delegation.active_status.0.clone(),
+        delegation.active_status.1.clone(),
+    ))
+    .chain(bounds.into_iter().filter_map(|(bound, comparison)| {
+        bound.as_ref().map(|bound| {
+            RelationalAuthorizationPredicate::compare(
+                1,
+                installed.grant_kind(),
+                bound.clone(),
+                comparison,
+                sample.value().clone(),
+            )
+        })
+    }))
+    .collect()
 }
 
 fn narrowing_constraints(
@@ -153,20 +161,26 @@ fn narrowing_constraints(
         ),
         constraint(
             installed,
-            &bindings.not_before,
-            RelationalAuthorizationFieldComparison::AtLeast,
-        ),
-        constraint(
-            installed,
-            &bindings.not_after,
-            RelationalAuthorizationFieldComparison::AtMost,
-        ),
-        constraint(
-            installed,
             &lineage.remaining,
             RelationalAuthorizationFieldComparison::StrictlyLess,
         ),
     ];
+    // A child sits inside its parent's window on every closed side; an open
+    // side is unbounded for parent and child alike, so it constrains nothing.
+    if let Some(not_before) = &bindings.not_before {
+        constraints.push(constraint(
+            installed,
+            not_before,
+            RelationalAuthorizationFieldComparison::AtLeast,
+        ));
+    }
+    if let Some(not_after) = &bindings.not_after {
+        constraints.push(constraint(
+            installed,
+            not_after,
+            RelationalAuthorizationFieldComparison::AtMost,
+        ));
+    }
     if let Some(disclosure) = &bindings.disclosure {
         constraints.push(constraint(
             installed,

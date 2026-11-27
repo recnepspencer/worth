@@ -1,4 +1,4 @@
-# Standing grant path proofs (W9A-2)
+# Standing grant path proofs (W9A-2, open validity W10A)
 
 `GrantPath.lean` models one candidate capability grant path as lowered by
 `compile_grant_path` (`capability_lowering.rs`) and `extent_status::lower`:
@@ -27,6 +27,11 @@ outside `propext`, `Classical.choice` and `Quot.sound`.
 | `workflow_admits_standing` | a standing grant is a workflow grant minus the workflow equality |
 | `expired_stays_expired` | on a UTC (or epoch) timeline, once past `not_after` a grant never admits again |
 | `expired_stays_expired_local` | on the local-date timeline the same holds exactly when the calendar's date is monotone |
+| `validOpen_closed` | with both bounds present, open validity is exactly the closed comparison: closed grants are unchanged |
+| `open_above_never_expires` | a grant valid `from` a bound (open above) stays valid at every later sample |
+| `unbounded_always_valid` | an `unbounded()` window admits every sample |
+| `expired_stays_expired_open` | a present upper bound expires permanently whatever the lower bound |
+| `open_bound_is_extreme` | an absent bound admits exactly what the timeline's extreme admits, so `observe_grant_expiry` reporting the timeline's end for an open upper bound is the bound grant selection omits |
 
 The final `example`s pin the lowering: an active extent admits, an inactive
 one refuses, a workflow mismatch refuses, the grant itself (ordinal 1) is not

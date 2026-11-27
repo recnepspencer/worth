@@ -31,6 +31,7 @@ pub(super) fn requires_extended_record(contract: &ErasedApplicationCapabilityCon
         || delegation.lineage().is_none()
         || !currentness.extent_status().is_empty()
         || !currentness.validity().timeline().counts_unix_epoch_units()
+        || !currentness.validity().is_closed()
         || delegation.self_grant() != ApplicationCapabilitySelfGrantRule::Permitted
 }
 
@@ -149,36 +150,55 @@ fn decode_currentness(
     ))
 }
 
+/// An open lower bound sets this bit of the timeline word.
+const OPEN_BELOW: u16 = 1 << 8;
+/// An open upper bound sets this bit of the timeline word.
+const OPEN_ABOVE: u16 = 1 << 9;
+
 /// Grant validity only; elevation validity stays on the tag 7/33 timelines.
+/// A closed window writes its timeline code and both fields exactly as
+/// before; an open bound sets its bit and writes no field.
 fn write_validity(
     output: &mut dyn BinaryEncodingSink,
     value: &ApplicationCapabilityValidityDefinition,
 ) -> Result<(), Denial> {
-    output.u16(match value.timeline() {
+    let timeline = match value.timeline() {
         ApplicationCapabilityValidityTimeline::UnixEpochSeconds => 1,
         ApplicationCapabilityValidityTimeline::UnixEpochMilliseconds => 2,
         ApplicationCapabilityValidityTimeline::UtcTimestamp => 3,
         ApplicationCapabilityValidityTimeline::LocalDate => 4,
-    })?;
-    bindings::write_field(output, value.not_before())?;
-    bindings::write_field(output, value.not_after())
+    };
+    let open = |bound: Option<_>, bit| if bound.is_none() { bit } else { 0 };
+    output.u16(
+        timeline | open(value.not_before(), OPEN_BELOW) | open(value.not_after(), OPEN_ABOVE),
+    )?;
+    for bound in value.bounds() {
+        bindings::write_field(output, bound)?;
+    }
+    Ok(())
 }
 
 fn decode_validity(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationCapabilityValidityDefinition, Denial> {
-    let timeline = match input.u16()? {
+    let word = input.u16()?;
+    let timeline = match word & !(OPEN_BELOW | OPEN_ABOVE) {
         1 => ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
         2 => ApplicationCapabilityValidityTimeline::UnixEpochMilliseconds,
         3 => ApplicationCapabilityValidityTimeline::UtcTimestamp,
         4 => ApplicationCapabilityValidityTimeline::LocalDate,
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
-    Ok(ApplicationCapabilityValidityDefinition::new(
-        timeline,
-        bindings::decode_field(input)?,
-        bindings::decode_field(input)?,
-    ))
+    let mut bound = |open: u16| {
+        (word & open == 0)
+            .then(|| bindings::decode_field(input))
+            .transpose()
+    };
+    let not_before = bound(OPEN_BELOW)?;
+    let not_after = bound(OPEN_ABOVE)?;
+    // Only the shapes the declaration constructors produce decode.
+    ApplicationCapabilityValidityDefinition::from_portable_parts(timeline, not_before, not_after)
+        .ok_or_else(|| Denial::new(Kind::UnsupportedRecordVariant))
 }
 
 pub(super) fn write_delegation(

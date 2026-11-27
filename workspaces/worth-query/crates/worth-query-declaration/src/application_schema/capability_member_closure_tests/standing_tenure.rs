@@ -19,6 +19,7 @@ struct Shape {
     extent: Vec<ApplicationCapabilityValueBinding>,
     forbid_self_grant: bool,
     delegation: ApplicationCapabilityDelegationRule,
+    open_validity: bool,
 }
 
 impl Shape {
@@ -29,6 +30,7 @@ impl Shape {
             extent: vec![resource_active()],
             forbid_self_grant: true,
             delegation: ApplicationCapabilityDelegationRule::forbidden(),
+            open_validity: false,
         }
     }
 }
@@ -48,11 +50,20 @@ fn grant_active() -> ApplicationCapabilityValueBinding {
 }
 
 fn contract(shape: Shape) -> ErasedContract {
-    let validity = ApplicationCapabilityValidityDefinition::new(
-        ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-        binding("ValidFrom"),
-        binding("ValidThrough"),
-    );
+    let validity = if shape.open_validity {
+        ApplicationCapabilityValidityDefinition::from_portable_parts(
+            ApplicationCapabilityValidityTimeline::UtcTimestamp,
+            Some(binding("ValidFrom")),
+            None,
+        )
+        .unwrap()
+    } else {
+        ApplicationCapabilityValidityDefinition::new(
+            ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
+            binding("ValidFrom"),
+            binding("ValidThrough"),
+        )
+    };
     let currentness = if shape.standing_currentness {
         ApplicationCapabilityCurrentnessDefinition::standing(grant_active(), validity)
     } else {
@@ -191,6 +202,28 @@ fn tenure_mixtures_and_delegable_standing_grants_refuse_with_a_named_denial() {
             tenure_denial()
         );
     }
+}
+
+/// A workflow-tenure grant may be delegated, and a child's window nests in
+/// its parent's only when both are closed: an open window is standing-only.
+#[test]
+fn an_open_validity_window_on_a_workflow_tenure_grant_refuses() {
+    let workflow = Shape {
+        standing_currentness: false,
+        standing_holder: false,
+        forbid_self_grant: false,
+        extent: Vec::new(),
+        open_validity: true,
+        ..Shape::standing()
+    };
+    assert_eq!(
+        build_from_members(members(contract(workflow))),
+        Err(
+            ApplicationSchemaDeclarationDenial::OpenApplicationCapabilityValidity {
+                capability: "Capability".to_owned(),
+            }
+        )
+    );
 }
 
 #[test]

@@ -6,110 +6,29 @@
 use worth_query_host::facade::{
     eligibility::{
         WorthQueryAbilityEligibilityDenial, WorthQueryCapabilityEligibility as Verdict,
-        WorthQueryCapabilityEligibilityQuestion, WorthQueryEligibilityDenial,
+        WorthQueryEligibilityDenial,
     },
-    local_calendar::WorthQueryTimeZone,
     primary_graph::{
         WorthQueryApplicationAuthorizationExplanationCause as Cause,
-        WorthQueryFixedRuntimeTimeSource, WorthQueryOperationAuthorizationDenial,
-        WorthQueryPrincipalResolutionMode,
+        WorthQueryFixedRuntimeTimeSource,
     },
 };
 
-use super::grants::{AuditCapability, AuditOp, SiteRequest, ViewAuditors, ACTIVE, ENABLED};
-use super::program::{caller, identity, open, QmsHome};
-use super::schema::{Desktop, MemberBinding, SetAssignmentStatus, SetGrantStatus};
+use super::grants::{AuditCapability, AuditOp, ViewAuditors, ACTIVE, ENABLED};
+use super::observers::{home, SiteRole};
+use super::program::{caller, identity, QmsHome};
+use super::schema::{SetAssignmentStatus, SetGrantStatus};
 use super::{at, micros, november, temp_home_path};
 
-fn home(path: &std::path::Path, clock: &WorthQueryFixedRuntimeTimeSource) -> QmsHome {
-    let denver = WorthQueryTimeZone::from_tz_variable("MST7MDT,M3.2.0,M11.1.0").unwrap();
-    open(path, clock.clone(), Some(denver), november())
-        .unwrap_or_else(|denial| panic!("QMS Home opens: {denial}"))
-}
-
-fn question(
-    site: &str,
-) -> WorthQueryCapabilityEligibilityQuestion<
-    super::schema::QmsSchema,
-    Desktop,
-    AuditCapability,
-    AuditOp,
-    SiteRequest,
-> {
-    let request = SiteRequest {
-        site: site.to_owned(),
-    };
-    WorthQueryCapabilityEligibilityQuestion::of_request(
-        Desktop,
-        AuditCapability::reference(),
-        AuditOp::reference(),
-        &request,
-    )
-    .expect("the audit request projects")
-}
-
-/// `name`'s own audit verdict on `site`, asked through a Host session.
-fn eligibility(home: &QmsHome, name: &str, site: &str) -> Verdict {
-    home.session(caller(home, name).principal)
-        .eligible_for_capability(&question(site))
-        .unwrap_or_else(|denial| panic!("the audit question is answered: {denial:?}"))
-}
-
-/// `name`'s audit admission on `site`: `Ok` admits, else the denial.
-fn admission(
-    home: &QmsHome,
-    name: &str,
-    site: &str,
-) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-    let app = home.runtime().runtime();
-    let who = caller(home, name);
-    let schema = app.installed_schema();
-    let audit = schema
-        .capability(AuditCapability::reference(), AuditOp::reference())
-        .unwrap();
-    let binding = schema
-        .principal_binding(MemberBinding::reference())
-        .unwrap();
-    app.with_application_advancement(&who.scope, |phase| {
-        let selected = app.on_branch(app.current_world()).select(&phase).unwrap();
-        let principal = selected
-            .resolve_authenticated_principal(
-                &phase,
-                &binding,
-                &who.principal,
-                &who.scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
-        let request = SiteRequest {
-            site: site.to_owned(),
-        };
-        selected
-            .admit_capability_access(&phase, &principal, &audit, request, &who.scope)
-            .map(drop)
-    })
-    .unwrap()
-}
-
-/// Asserts both observers agree, returning the shared outcome: `None` when
-/// both allow, else the one policy cause both report.
-fn agreed(home: &QmsHome, name: &str, site: &str) -> Option<Cause> {
-    let verdict = eligibility(home, name, site);
-    match admission(home, name, site) {
-        Ok(()) => {
-            assert_eq!(verdict, Verdict::Eligible, "admission admits {name}");
-            None
-        }
-        Err(denial) => {
-            let cause = denial.explanation_cause();
-            assert!(
-                cause.is_some(),
-                "a policy refusal explains itself: {denial:?}"
-            );
-            assert_eq!(verdict.denial_cause(), cause, "{name}: {denial:?}");
-            cause
-        }
+fn audit() -> SiteRole<AuditCapability, AuditOp> {
+    SiteRole {
+        capability: AuditCapability::reference(),
+        operation: AuditOp::reference(),
     }
+}
+
+fn agreed(home: &QmsHome, name: &str, site: &str) -> Option<Cause> {
+    audit().agreed(home, name, site)
 }
 
 /// Enables or disables `name`'s north assignment; no grant is touched.
@@ -180,7 +99,11 @@ fn a_capability_roster_shares_the_ability_roster_disclosure_gate() {
     let staff = [identity("alice"), identity("bob"), identity("carol")];
     let roster = home
         .session(caller(&home, "alice").principal)
-        .eligible_among_for_capability(&question("north"), ViewAuditors::reference(), &staff)
+        .eligible_among_for_capability(
+            &audit().question("north"),
+            ViewAuditors::reference(),
+            &staff,
+        )
         .unwrap_or_else(|denial| panic!("alice holds a grant over north: {denial:?}"));
     let verdicts: Vec<_> = roster.iter().map(|(_, verdict)| verdict).collect();
     assert_eq!(
@@ -196,7 +119,11 @@ fn a_capability_roster_shares_the_ability_roster_disclosure_gate() {
     // bob holds no grant over north, so he may not see who can audit it.
     let refused = home
         .session(caller(&home, "bob").principal)
-        .eligible_among_for_capability(&question("north"), ViewAuditors::reference(), &staff)
+        .eligible_among_for_capability(
+            &audit().question("north"),
+            ViewAuditors::reference(),
+            &staff,
+        )
         .expect_err("bob holds no role over north");
     assert!(
         matches!(

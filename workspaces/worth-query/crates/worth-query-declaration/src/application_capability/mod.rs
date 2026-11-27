@@ -61,7 +61,7 @@ pub use contract::{
 pub use currentness::{
     ApplicationCapabilityCurrentnessDefinition, ApplicationCapabilityGrantTenure,
     ApplicationCapabilityValidityDefinition, ApplicationCapabilityValidityTimeline,
-    ApplicationCapabilityWorkflowDefinition,
+    ApplicationCapabilityValidityValue, ApplicationCapabilityWorkflowDefinition,
 };
 pub use delegation::{ApplicationCapabilityDelegationDepth, ApplicationCapabilityDelegationRule};
 pub use delegation_activation_program::application_capability_delegation_activation_program_targets;

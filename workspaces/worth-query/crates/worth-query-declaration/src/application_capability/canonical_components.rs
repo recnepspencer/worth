@@ -98,12 +98,12 @@ fn append_constraints(
         "constraints.currentness.validity.timeline",
         currentness.validity().timeline().canonical_name(),
     );
-    append_field(
+    append_validity_bound(
         components,
         "constraints.currentness.validity.not-before",
         currentness.validity().not_before(),
     );
-    append_field(
+    append_validity_bound(
         components,
         "constraints.currentness.validity.not-after",
         currentness.validity().not_after(),
@@ -169,6 +169,19 @@ fn append_delegation(
         text(components, "delegation.revocation.posture", "unavailable");
     }
     super::canonical_tenure_components::append_self_grant(components, delegation);
+}
+
+/// A present bound appends exactly as a field always has, so closed windows
+/// keep their identity; an open bound names its posture instead.
+pub(super) fn append_validity_bound(
+    components: &mut Vec<ApplicationCapabilityCanonicalComponent>,
+    prefix: &str,
+    bound: Option<&ApplicationCapabilityFieldBinding>,
+) {
+    match bound {
+        Some(field) => append_field(components, prefix, field),
+        None => text(components, format!("{prefix}.posture"), "open"),
+    }
 }
 
 pub(super) fn append_field(

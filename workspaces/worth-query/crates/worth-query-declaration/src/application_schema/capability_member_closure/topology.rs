@@ -24,14 +24,7 @@ pub(super) fn topology_is_valid(contract: &ErasedApplicationCapabilityContract) 
                 && workflow.resource().entity() == target.resource_path().scope_entity()
                 && workflow.grant().value_type() == workflow.resource().value_type()
         })
-        && currentness.validity().not_before().entity() == grant
-        && currentness.validity().not_after().entity() == grant
-        && currentness.validity().not_before().value_type()
-            == currentness.validity().not_after().value_type()
-        && currentness.validity().not_before().scalar_family()
-            == currentness.validity().timeline().scalar_family()
-        && currentness.validity().not_after().scalar_family()
-            == currentness.validity().timeline().scalar_family()
+        && currentness.validity().is_written_on(grant)
         && delegation.lineage().is_none_or(|lineage| {
             lineage.limit().entity() == grant
                 && lineage.parent().from() == grant
@@ -99,14 +92,8 @@ fn elevation_topology_is_valid(contract: &ErasedApplicationCapabilityContract) -
     let lifecycle = elevation.lifecycle();
     elevation.reason().entity() == elevation_entity
         && elevation.status().entity() == elevation_entity
-        && elevation.validity().not_before().entity() == elevation_entity
-        && elevation.validity().not_after().entity() == elevation_entity
-        && elevation.validity().not_before().value_type()
-            == elevation.validity().not_after().value_type()
-        && elevation.validity().not_before().scalar_family()
-            == elevation.validity().timeline().scalar_family()
-        && elevation.validity().not_after().scalar_family()
-            == elevation.validity().timeline().scalar_family()
+        && elevation.validity().is_closed()
+        && elevation.validity().is_written_on(elevation_entity)
         && elevation_duration_is_valid(elevation)
         && elevation
             .states()

@@ -17,6 +17,8 @@ pub const REVIEW: &str = "review";
 pub const APPROVE: &str = "approve";
 pub const PURPOSE: &str = "quality";
 pub const AUDIT: &str = "audit";
+pub const WITNESS: &str = "witness";
+pub const OBSERVE: &str = "observe";
 pub const ACTIVE: &str = "active";
 pub const ENABLED: &str = "enabled";
 
@@ -25,6 +27,8 @@ worth_query_capability_provenance!(pub SiteRoleProvenance in QmsSchema);
 worth_query_capability!(pub ReviewCapability in QmsSchema);
 worth_query_capability!(pub ApproveCapability in QmsSchema);
 worth_query_capability!(pub AuditCapability in QmsSchema);
+worth_query_capability!(pub WitnessCapability in QmsSchema);
+worth_query_capability!(pub ObserveCapability in QmsSchema);
 // Any role holder over a site may see who could audit it.
 worth_query_ability!(pub ViewAuditors scoped_to Site, in QmsSchema);
 worth_query_policy!(pub AuditorRosterPolicy in QmsSchema);
@@ -41,6 +45,8 @@ worth_query_structured_value_binding!(pub SiteRequestInput for SiteRequest {
 worth_query_operation!(pub ReviewOp for QmsSchema, input SiteRequestInput);
 worth_query_operation!(pub ApproveOp for QmsSchema, input SiteRequestInput);
 worth_query_operation!(pub AuditOp for QmsSchema, input SiteRequestInput);
+worth_query_operation!(pub WitnessOp for QmsSchema, input SiteRequestInput);
+worth_query_operation!(pub ObserveOp for QmsSchema, input SiteRequestInput);
 
 fn text(value: &str) -> ApplicationEncodedScalarValue<StringApplicationValueBinding> {
     ApplicationEncodedScalarValue::try_new(value.to_owned()).expect("role text encodes")
@@ -84,18 +90,25 @@ impl ApplicationCapabilityRequest<QmsSchema, ReviewCapability> for SiteRequest {
     }
 }
 
-impl ApplicationCapabilityRequest<QmsSchema, AuditCapability> for SiteRequest {
-    type Scope = Site;
-    type Context = SiteContext;
-    fn capability_request(
-        &self,
-    ) -> Result<
-        ApplicationCapabilityRequestProjection<QmsSchema, Site, SiteContext>,
-        ApplicationCapabilityRequestProjectionDenial,
-    > {
-        projection(self, AUDIT)
-    }
+/// One site role's request: the site under the role's action and purpose.
+macro_rules! site_role_request {
+    ($($Capability:ty => $role:expr),+ $(,)?) => {$(
+        impl ApplicationCapabilityRequest<QmsSchema, $Capability> for SiteRequest {
+            type Scope = Site;
+            type Context = SiteContext;
+            fn capability_request(
+                &self,
+            ) -> Result<
+                ApplicationCapabilityRequestProjection<QmsSchema, Site, SiteContext>,
+                ApplicationCapabilityRequestProjectionDenial,
+            > {
+                projection(self, $role)
+            }
+        }
+    )+};
 }
+
+site_role_request!(AuditCapability => AUDIT, WitnessCapability => WITNESS, ObserveCapability => OBSERVE);
 
 impl ApplicationCapabilityRequest<QmsSchema, ApproveCapability> for SiteRequest {
     type Scope = Site;
@@ -210,7 +223,11 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<QmsSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<QmsSchema> {
     let (review, approve) = (ReviewOp::reference(), ApproveOp::reference());
-    let audit = AuditOp::reference();
+    let (audit, witness, observe) = (
+        AuditOp::reference(),
+        WitnessOp::reference(),
+        ObserveOp::reference(),
+    );
     let utc = || {
         ApplicationCapabilityValidityDefinition::utc(
             RoleGrantFacts::valid_from(),
@@ -230,6 +247,12 @@ pub fn declare(
         .operation(pure(audit))
         .operation_projection_work_budget(audit, 64)
         .operation_read_field(audit, SiteFacts::site_id())
+        .operation(pure(witness))
+        .operation_projection_work_budget(witness, 64)
+        .operation_read_field(witness, SiteFacts::site_id())
+        .operation(pure(observe))
+        .operation_projection_work_budget(observe, 64)
+        .operation_read_field(observe, SiteFacts::site_id())
         .ability(ViewAuditors::reference())
         .policy(AuditorRosterPolicy::reference())
         .ability_policy(
@@ -244,12 +267,31 @@ pub fn declare(
             utc(),
             through_grant(),
         ))
+        // Open below: valid at every instant through the UTC bound.
         .capability(standing_role(
             AuditCapability::reference(),
             audit,
             AUDIT,
-            utc(),
+            ApplicationCapabilityValidityDefinition::until(RoleGrantFacts::valid_until())
+                .expect("UTC upper bound binds"),
             through_enabled_assignment(),
+        ))
+        // Open above: valid from a local calendar day and never expiring.
+        .capability(standing_role(
+            WitnessCapability::reference(),
+            witness,
+            WITNESS,
+            ApplicationCapabilityValidityDefinition::from(RoleGrantFacts::first_day())
+                .expect("local-date lower bound binds"),
+            through_grant(),
+        ))
+        // No validity fields at all: current while active and its site is.
+        .capability(standing_role(
+            ObserveCapability::reference(),
+            observe,
+            OBSERVE,
+            ApplicationCapabilityValidityDefinition::unbounded(),
+            through_grant(),
         ))
         .capability(standing_role(
             ApproveCapability::reference(),

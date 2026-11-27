@@ -24,7 +24,7 @@ use worth_query_host::facade::{
 };
 
 use super::assign::AssignRoleHandler;
-use super::grants::{self, ACTIVE, APPROVE, AUDIT, ENABLED, PURPOSE, REVIEW};
+use super::grants::{self, ACTIVE, APPROVE, AUDIT, ENABLED, OBSERVE, PURPOSE, REVIEW, WITNESS};
 use super::schema::*;
 use super::{Window, SITES};
 
@@ -171,7 +171,7 @@ fn seed(
                 .field(SiteFacts::site_id(), site.to_owned())
                 .field(SiteFacts::site_status(), ACTIVE.to_owned()),
         )?;
-        for role in [REVIEW, APPROVE, AUDIT] {
+        for role in [REVIEW, APPROVE, AUDIT, WITNESS, OBSERVE] {
             grant(graph, site, role, window)?;
         }
     }

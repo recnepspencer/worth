@@ -27,6 +27,11 @@ pub(super) fn validate_tenure(
             capability: capability(),
         });
     }
+    if !open_validity_is_standing(contract) {
+        return Err(Denial::OpenApplicationCapabilityValidity {
+            capability: capability(),
+        });
+    }
     if !elevation_timeline_is_supported(contract) {
         return Err(Denial::UnsupportedApplicationCapabilityElevationTimeline {
             capability: capability(),
@@ -132,10 +137,20 @@ fn extent_status_is_reachable(contract: &ErasedApplicationCapabilityContract) ->
     })
 }
 
+/// An open validity bound belongs to a standing grant: a workflow-tenure
+/// grant may be delegated, and a child's window is proven inside its
+/// parent's only when both windows are closed.
+fn open_validity_is_standing(contract: &ErasedApplicationCapabilityContract) -> bool {
+    let currentness = contract.constraints().currentness();
+    currentness.validity().is_closed() || currentness.workflow().is_none()
+}
+
 fn elevation_timeline_is_supported(contract: &ErasedApplicationCapabilityContract) -> bool {
     match contract.elevation() {
         ApplicationCapabilityElevationRule::Governed(elevation) => {
-            elevation.validity().timeline().counts_unix_epoch_units()
+            elevation.validity().is_closed()
+                && contract.constraints().currentness().validity().is_closed()
+                && elevation.validity().timeline().counts_unix_epoch_units()
                 && contract
                     .constraints()
                     .currentness()

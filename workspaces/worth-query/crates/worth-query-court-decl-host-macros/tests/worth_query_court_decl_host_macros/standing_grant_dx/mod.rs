@@ -8,6 +8,8 @@ mod assign;
 mod capability_eligibility;
 mod courts;
 mod grants;
+mod observers;
+mod open_validity;
 mod program;
 mod schema;
 

@@ -264,8 +264,12 @@ pub(super) fn write_validity(
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         }
     })?;
-    bindings::write_field(output, value.not_before())?;
-    bindings::write_field(output, value.not_after())
+    // Open windows are standing grants, which only member tag 59 carries.
+    let (not_before, not_after) = value
+        .closed_bounds()
+        .ok_or_else(|| Denial::new(Kind::UnsupportedRecordVariant))?;
+    bindings::write_field(output, not_before)?;
+    bindings::write_field(output, not_after)
 }
 pub(super) fn decode_validity(
     input: &mut BinaryInput<'_>,
