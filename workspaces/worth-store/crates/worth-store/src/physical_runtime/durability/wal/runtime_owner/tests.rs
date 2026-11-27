@@ -60,6 +60,22 @@ fn reclaimable_closed_prefix_waits_for_successor_segment_barrier() {
     assert!(state.record_durable_barrier(10, 15));
     assert!(state.has_reclaimable_closed_prefix());
 
+    // Extending segment 2 without its barrier moves durable_end inside segment 2,
+    // so no segment ends at durable_end until the new barrier completes.
+    let range2b = WalLsnRange::new(LogSequenceNumber::new(15), LogSequenceNumber::new(20)).unwrap();
+    state
+        .segments
+        .record_completed_append(
+            WalSegmentArtifactIdentity::new(seg2, generation),
+            range2b,
+            128,
+        )
+        .unwrap();
+    state.frontier = WalAppendFrontier::observed(seg2, generation, 256, LogSequenceNumber::new(20));
+    assert!(!state.has_reclaimable_closed_prefix());
+    assert!(state.record_durable_barrier(15, 20));
+    assert!(state.has_reclaimable_closed_prefix());
+
     // An unresolved retirement hold overlapping segment 1 suppresses the cadence signal.
     state.unresolved_retirement_spans.push((
         crate::physical_runtime::durability::RetiredArtifact::Segment {
