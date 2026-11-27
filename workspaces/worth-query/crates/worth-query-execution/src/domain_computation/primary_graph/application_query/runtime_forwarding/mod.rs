@@ -4,6 +4,7 @@ mod ability_eligibility;
 mod admission_finish;
 mod application_entry;
 mod batch_and_live_reads;
+mod capability_eligibility;
 mod continuation_and_retained_history;
 mod correction_and_history_capture;
 mod derived_collection_pair_maintenance;

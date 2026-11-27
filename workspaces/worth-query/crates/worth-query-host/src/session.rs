@@ -36,6 +36,7 @@ use worth_query_publication::facade::application_entry::{
 use crate::application_home::{WorthQueryApplicationHome, WorthQueryCorrectionEntry};
 
 pub(crate) mod auto_key;
+mod capability_eligibility;
 mod domain_refusal;
 mod eligibility;
 mod execution;
@@ -57,7 +58,9 @@ mod renewal;
 mod snapshot;
 mod temporal;
 pub use auto_key::WorthQueryAutoIdempotencyKey;
-pub use eligibility::{WorthQueryEligibilityDenial, WorthQueryEligibilityRoster};
+pub use eligibility::{
+    WorthQueryEligibilityDenial, WorthQueryEligibilityRoster, WorthQueryEligibilityVerdict,
+};
 pub(crate) use home_access::SessionHome;
 pub use live_subscription::{
     WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,

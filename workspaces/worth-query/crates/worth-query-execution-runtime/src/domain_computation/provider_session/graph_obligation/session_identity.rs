@@ -56,6 +56,13 @@ impl WorthQueryGraphWorkSessionIdentity {
             worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow,
         )))
     }
+    /// A fresh identity for one fact-free eligibility observation. It owns no
+    /// graph work, Source loan or purpose: a decision it tags is read for its
+    /// verdict and dropped, never retained, reserved or committed.
+    pub fn for_fact_free_observation() -> Option<Self> {
+        Self::mint()
+    }
+
     pub(super) fn mint() -> Option<Self> {
         {
             let update_counter = &NEXT_GRAPH_WORK_SESSION_IDENTITY;

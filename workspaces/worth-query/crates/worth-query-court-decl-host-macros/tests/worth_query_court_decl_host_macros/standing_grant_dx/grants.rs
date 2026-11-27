@@ -6,8 +6,9 @@ use serde::{Deserialize, Serialize};
 use worth_query_decl::facade::application_capability::*;
 use worth_query_decl::facade::application_schema::*;
 use worth_query_decl::facade::{
-    worth_query_capability, worth_query_capability_context, worth_query_capability_provenance,
-    worth_query_operation, worth_query_structured_value_binding,
+    worth_query_ability, worth_query_capability, worth_query_capability_context,
+    worth_query_capability_provenance, worth_query_operation, worth_query_policy,
+    worth_query_structured_value_binding,
 };
 
 use super::schema::*;
@@ -15,12 +16,18 @@ use super::schema::*;
 pub const REVIEW: &str = "review";
 pub const APPROVE: &str = "approve";
 pub const PURPOSE: &str = "quality";
+pub const AUDIT: &str = "audit";
 pub const ACTIVE: &str = "active";
+pub const ENABLED: &str = "enabled";
 
 worth_query_capability_context!(pub SiteContext in QmsSchema);
 worth_query_capability_provenance!(pub SiteRoleProvenance in QmsSchema);
 worth_query_capability!(pub ReviewCapability in QmsSchema);
 worth_query_capability!(pub ApproveCapability in QmsSchema);
+worth_query_capability!(pub AuditCapability in QmsSchema);
+// Any role holder over a site may see who could audit it.
+worth_query_ability!(pub ViewAuditors scoped_to Site, in QmsSchema);
+worth_query_policy!(pub AuditorRosterPolicy in QmsSchema);
 
 /// The site a role is exercised over.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -33,6 +40,7 @@ worth_query_structured_value_binding!(pub SiteRequestInput for SiteRequest {
 });
 worth_query_operation!(pub ReviewOp for QmsSchema, input SiteRequestInput);
 worth_query_operation!(pub ApproveOp for QmsSchema, input SiteRequestInput);
+worth_query_operation!(pub AuditOp for QmsSchema, input SiteRequestInput);
 
 fn text(value: &str) -> ApplicationEncodedScalarValue<StringApplicationValueBinding> {
     ApplicationEncodedScalarValue::try_new(value.to_owned()).expect("role text encodes")
@@ -76,6 +84,19 @@ impl ApplicationCapabilityRequest<QmsSchema, ReviewCapability> for SiteRequest {
     }
 }
 
+impl ApplicationCapabilityRequest<QmsSchema, AuditCapability> for SiteRequest {
+    type Scope = Site;
+    type Context = SiteContext;
+    fn capability_request(
+        &self,
+    ) -> Result<
+        ApplicationCapabilityRequestProjection<QmsSchema, Site, SiteContext>,
+        ApplicationCapabilityRequestProjectionDenial,
+    > {
+        projection(self, AUDIT)
+    }
+}
+
 impl ApplicationCapabilityRequest<QmsSchema, ApproveCapability> for SiteRequest {
     type Scope = Site;
     type Context = SiteContext;
@@ -90,11 +111,24 @@ impl ApplicationCapabilityRequest<QmsSchema, ApproveCapability> for SiteRequest 
 }
 
 /// The principal reaches a site only through a role grant it holds.
-fn composition() -> ApplicationCapabilityComposition {
-    let allow = ApplicationAuthorizationPathBuilder::from_principal(Member::reference())
+fn through_grant() -> ApplicationAuthorizationPath {
+    ApplicationAuthorizationPathBuilder::from_principal(Member::reference())
         .forward(RoleHolder::reference())
         .forward(GrantSite::reference())
-        .allow(Site::reference());
+        .allow(Site::reference())
+}
+
+/// The principal reaches a site through an enabled assignment over it.
+fn through_enabled_assignment() -> ApplicationAuthorizationPath {
+    ApplicationAuthorizationPathBuilder::from_principal(Member::reference())
+        .forward(AssignmentHolder::reference())
+        .where_equal(AssignmentFacts::assignment_status(), text(ENABLED))
+        .expect("assignment status is equality-queryable")
+        .forward(AssignmentSite::reference())
+        .allow(Site::reference())
+}
+
+fn composition(allow: ApplicationAuthorizationPath) -> ApplicationCapabilityComposition {
     ApplicationCapabilityComposition::new(
         ApplicationCapabilityDecisionComposition::new(
             ApplicationCapabilityAllowRule::new(ApplicationCapabilityGraphRule::any([
@@ -122,6 +156,7 @@ fn standing_role<Cap, Op>(
     operation: ApplicationOperationRef<QmsSchema, Op, SiteRequest>,
     role: &str,
     validity: ApplicationCapabilityValidityDefinition,
+    allow: ApplicationAuthorizationPath,
 ) -> ApplicationCapabilityContract<QmsSchema, Cap, Op, SiteRequest>
 where
     Cap: ApplicationCapabilityMarkerIdentity<Schema = QmsSchema> + 'static,
@@ -153,7 +188,7 @@ where
             )
             .forbid_self_grant(),
         )
-        .composition(composition())
+        .composition(composition(allow))
         .elevation(ApplicationCapabilityElevationRule::not_applicable())
         .build()
 }
@@ -175,6 +210,14 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<QmsSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<QmsSchema> {
     let (review, approve) = (ReviewOp::reference(), ApproveOp::reference());
+    let audit = AuditOp::reference();
+    let utc = || {
+        ApplicationCapabilityValidityDefinition::utc(
+            RoleGrantFacts::valid_from(),
+            RoleGrantFacts::valid_until(),
+        )
+        .expect("UTC validity binds")
+    };
     schema
         .capability_context(SiteContext::reference())
         .capability_provenance(SiteRoleProvenance::reference())
@@ -184,15 +227,29 @@ pub fn declare(
         .operation(pure(approve))
         .operation_projection_work_budget(approve, 64)
         .operation_read_field(approve, SiteFacts::site_id())
+        .operation(pure(audit))
+        .operation_projection_work_budget(audit, 64)
+        .operation_read_field(audit, SiteFacts::site_id())
+        .ability(ViewAuditors::reference())
+        .policy(AuditorRosterPolicy::reference())
+        .ability_policy(
+            ViewAuditors::reference(),
+            AuditorRosterPolicy::reference(),
+            [through_grant()],
+        )
         .capability(standing_role(
             ReviewCapability::reference(),
             review,
             REVIEW,
-            ApplicationCapabilityValidityDefinition::utc(
-                RoleGrantFacts::valid_from(),
-                RoleGrantFacts::valid_until(),
-            )
-            .expect("UTC validity binds"),
+            utc(),
+            through_grant(),
+        ))
+        .capability(standing_role(
+            AuditCapability::reference(),
+            audit,
+            AUDIT,
+            utc(),
+            through_enabled_assignment(),
         ))
         .capability(standing_role(
             ApproveCapability::reference(),
@@ -203,5 +260,6 @@ pub fn declare(
                 RoleGrantFacts::last_day(),
             )
             .expect("local-date validity binds"),
+            through_grant(),
         ))
 }

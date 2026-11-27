@@ -43,7 +43,7 @@ pub(super) type InstalledBinding<Schema, Context> = WorthQueryInstalledPrincipal
     <Context as ApplicationBindingContext<Schema>>::PrincipalIdentityBinding,
 >;
 
-type ContextPrincipal<Schema, Context> = WorthQueryAuthenticatedPrincipal<
+pub(super) type ContextPrincipal<Schema, Context> = WorthQueryAuthenticatedPrincipal<
     Schema,
     <Context as ApplicationBindingContext<Schema>>::Principal,
     <Context as ApplicationBindingContext<Schema>>::PrincipalIdentity,
@@ -113,16 +113,14 @@ where
         native: &mut ApplicationQueryNativeAccess<'_>,
         asker: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     ) -> Result<ContextPrincipal<Schema, Context>, WorthQueryPrincipalResolutionDenial> {
-        self.head
-            .resolve_authenticated_principal_admitted_with_native_access(
-                self.execution,
-                self.binding,
-                asker,
-                self.request,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-                None,
-                native,
-            )
+        admit_asker_at::<Schema, Context>(
+            self.head,
+            self.execution,
+            self.binding,
+            asker,
+            self.request,
+            native,
+        )
     }
 
     /// The verdict for `identity` at the subject basis: admission's refusal
@@ -158,29 +156,85 @@ where
         principal_entity_id: EntityId,
         requirement: &WorthQueryInstalledAbilityRequirement,
     ) -> Result<bool, Denial> {
-        let graph = self.runtime.runtime.primary_graph().ok_or_else(|| {
+        decide_ability_on(
+            PolicyDecisionSite {
+                runtime: self.runtime,
+                execution: self.execution,
+                binding_identity: &self.binding_identity,
+                selected: basis.selected,
+            },
+            native,
+            &basis.scope,
+            principal_entity_id,
+            requirement,
+        )
+    }
+}
+
+/// The asker admitted at `head` exactly as a request admits it.
+pub(super) fn admit_asker_at<Schema, Context>(
+    head: &WorthQuerySelectedProductOperation<'_, Schema>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    binding: &InstalledBinding<Schema, Context>,
+    asker: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request: &WorthQueryRequestScope,
+    native: &mut ApplicationQueryNativeAccess<'_>,
+) -> Result<ContextPrincipal<Schema, Context>, WorthQueryPrincipalResolutionDenial>
+where
+    Schema: ApplicationSchema,
+    Context: ApplicationBindingContext<Schema>,
+{
+    head.resolve_authenticated_principal_admitted_with_native_access(
+        execution,
+        binding,
+        asker,
+        request,
+        WorthQueryPrincipalResolutionMode::Ordinary,
+        None,
+        native,
+    )
+}
+
+/// The runtime, request and committed basis one policy decision reads.
+pub(super) struct PolicyDecisionSite<'a, 'runtime, Schema> {
+    pub(super) runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(super) execution: &'a worth_execution::ExecutionRequest<'a, 'a>,
+    pub(super) binding_identity: &'a ApplicationSchemaBindingIdentity,
+    pub(super) selected: &'a WorthQuerySelectedProductOperation<'runtime, Schema>,
+}
+
+/// The installed ability decision for one principal entity on `scope` at the
+/// site's basis: the evaluator admission uses, with no decision fact minted.
+pub(super) fn decide_ability_on<Schema: ApplicationSchema, Scope>(
+    site: PolicyDecisionSite<'_, '_, Schema>,
+    native: &mut ApplicationQueryNativeAccess<'_>,
+    scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    principal_entity_id: EntityId,
+    requirement: &WorthQueryInstalledAbilityRequirement,
+) -> Result<bool, Denial> {
+    let graph =
+        site.runtime.runtime.primary_graph().ok_or_else(|| {
             authorization(AuthorizationRefusal::ForeignRuntime, requirement.policy())
         })?;
-        let snapshot = basis.selected.application_basis().snapshot_handle().clone();
-        native
-            .with_runtime(
-                graph,
-                self.execution,
-                || foreign_runtime(requirement.policy()),
-                |relational| {
-                    WorthQueryInstalledPolicySubject {
-                        relational,
-                        snapshot,
-                        principal_entity_id,
-                        scope_identity: &basis.scope,
-                        binding_identity: &self.binding_identity,
-                    }
-                    .decide(self.execution, self.runtime, requirement)
-                },
-            )
-            .map(|decision| decision.is_allowed())
-            .map_err(Denial::Authorization)
-    }
+    let snapshot = site.selected.application_basis().snapshot_handle().clone();
+    native
+        .with_runtime(
+            graph,
+            site.execution,
+            || foreign_runtime(requirement.policy()),
+            |relational| {
+                WorthQueryInstalledPolicySubject {
+                    relational,
+                    snapshot,
+                    principal_entity_id,
+                    scope_identity: scope,
+                    binding_identity: site.binding_identity,
+                }
+                .decide(site.execution, site.runtime, requirement)
+            },
+        )
+        .map(|decision| decision.is_allowed())
+        .map_err(Denial::Authorization)
 }
 
 /// The installed requirement for `ability`, whose policy paths must all start
@@ -214,7 +268,7 @@ where
     }
 }
 
-fn foreign_runtime(subject: &str) -> WorthQueryOperationAuthorizationDenial {
+pub(super) fn foreign_runtime(subject: &str) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
         AuthorizationKind::Refused(AuthorizationRefusal::ForeignRuntime),
         subject,

@@ -4,3 +4,7 @@ pub use worth_query_execution_query::facade::domain_computation::authorization::
     WorthQueryAbilityEligibility, WorthQueryAbilityEligibilityDenial, WorthQueryAbilityKey,
     WorthQueryEligibilityBasis, WorthQueryEligibilityQuestion,
 };
+pub use worth_query_execution_query::facade::domain_computation::authorization::eligibility::{
+    WorthQueryCapabilityEligibility, WorthQueryCapabilityEligibilityQuestion,
+    WorthQueryCapabilityKey,
+};
