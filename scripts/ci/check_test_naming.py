@@ -22,16 +22,23 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[2]
+_QUALITY_DIR = str(ROOT / "scripts" / "quality")
+if _QUALITY_DIR not in sys.path:
+    sys.path.insert(0, _QUALITY_DIR)
+
+from rust_function_scrutiny import sanitize_rust  # noqa: E402
+
 SKIP_DIRS = {".git", "target", ".lake", "node_modules"}
-GIT_CANDIDATE_PATTERN = r"fn[[:space:]]+[A-Za-z0-9_]*(_r[0-9]+|round_?[0-9]+|sol_blocker)"
-CANDIDATE_FN_RE = re.compile(
-    r"fn\s+[A-Za-z0-9_]*(?:_r\d+|round_?\d+|sol_blocker)",
+GIT_CANDIDATE_PATTERN = r"[A-Za-z0-9_]*(_r[0-9]+|round_?[0-9]+|sol_blocker)"
+CANDIDATE_NAME_RE = re.compile(
+    r"[A-Za-z0-9_]*(?:_r\d+|round_?\d+|sol_blocker)",
     re.IGNORECASE,
 )
 TEST_FN_RE = re.compile(
-    r"#\[(?:(?:core|std)::prelude::v1::|(?:tokio|async_std)::)?test(?:\([^)]*\))?\]"
-    r"(?:\s*(?:#\[[^\]]*\]|//[^\n]*))*"
-    r"\s*(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?(?:unsafe\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)",
+    r"#\s*\[\s*(?:(?:(?:core|std)\s*::\s*prelude\s*::\s*v1|(?:tokio|async_std))\s*::\s*)?"
+    r"test(?:\s*\([^)]*\))?\s*\]"
+    r"(?:\s*#\s*\[[^\]]*\])*"
+    r"\s*(?:pub(?:\s*\([^)]*\))?\s+)?(?:async\s+)?(?:unsafe\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)",
     re.MULTILINE,
 )
 
@@ -73,84 +80,14 @@ def review_round_reason(identifier: str) -> str | None:
     return None
 
 
-def strip_comments_and_strings(source: str) -> str:
-    """Blank out string literals and comments while preserving newlines and offsets."""
-    out: list[str] = []
-    i = 0
-    n = len(source)
-    while i < n:
-        ch = source[i]
-        nxt = source[i + 1] if i + 1 < n else ""
-        if ch == "/" and nxt == "/":
-            while i < n and source[i] != "\n":
-                out.append(" ")
-                i += 1
-            continue
-        if ch == "/" and nxt == "*":
-            depth = 1
-            out.extend("  ")
-            i += 2
-            while i < n and depth > 0:
-                if source[i] == "/" and i + 1 < n and source[i + 1] == "*":
-                    depth += 1
-                    out.extend("  ")
-                    i += 2
-                elif source[i] == "*" and i + 1 < n and source[i + 1] == "/":
-                    depth -= 1
-                    out.extend("  ")
-                    i += 2
-                else:
-                    out.append("\n" if source[i] == "\n" else " ")
-                    i += 1
-            continue
-        if ch == '"':
-            out.append(" ")
-            i += 1
-            while i < n:
-                c = source[i]
-                if c == "\\" and i + 1 < n:
-                    out.append(" ")
-                    out.append("\n" if source[i + 1] == "\n" else " ")
-                    i += 2
-                elif c == '"':
-                    out.append(" ")
-                    i += 1
-                    break
-                else:
-                    out.append("\n" if c == "\n" else " ")
-                    i += 1
-            continue
-        if ch == "r" and (nxt == '"' or nxt == "#"):
-            hashes = 0
-            j = i + 1
-            while j < n and source[j] == "#":
-                hashes += 1
-                j += 1
-            if j < n and source[j] == '"':
-                out.extend(" " * (j - i + 1))
-                i = j + 1
-                closing = '"' + ("#" * hashes)
-                while i < n:
-                    if source.startswith(closing, i):
-                        out.extend(" " * len(closing))
-                        i += len(closing)
-                        break
-                    out.append("\n" if source[i] == "\n" else " ")
-                    i += 1
-                continue
-        out.append(ch)
-        i += 1
-    return "".join(out)
-
-
 def _check_test_functions(rel: str, file_path: Path, violations: list[Violation]) -> None:
     fs_file = _fs_path(file_path)
     if not fs_file.is_file():
         return
     raw = fs_file.read_text(encoding="utf-8", errors="replace").replace("\r\n", "\n")
-    if "#[" not in raw or "test" not in raw or CANDIDATE_FN_RE.search(raw) is None:
+    if "#" not in raw or "test" not in raw or CANDIDATE_NAME_RE.search(raw) is None:
         return
-    sanitized = strip_comments_and_strings(raw)
+    sanitized = sanitize_rust(raw)
     for match in TEST_FN_RE.finditer(sanitized):
         fn_name = match.group(1)
         fn_reason = review_round_reason(fn_name)
@@ -298,8 +235,11 @@ def run_self_test() -> int:
             )
             (root / "tests" / "semantic_property.rs").write_text(
                 "// #[test] fn ignored_r2_in_comment() {}\n"
+                "const QUOTE_CHAR: char = '\"';\n"
                 'const SAMPLE: &str = "#[test] fn ignored_round1_in_string() {}";\n'
                 "#[test]\n#[ignore]\nfn catches_round2_regression() {}\n"
+                "#[\n    test\n]\nfn\n    catches_multiline_r3() {}\n"
+                "#[\n    tokio :: test\n]\nasync fn\n    catches_multiline_tokio_round4() {}\n"
                 "#[test]\nfn valid_r2d2_pool_roundtrip() {}\n",
                 encoding="utf-8",
             )
@@ -311,12 +251,22 @@ def run_self_test() -> int:
                 )
             scanned, violations = scan_repository(root)
             assert scanned == 2, f"use_git={use_git}: expected 2 scanned files, got {scanned}"
-            assert len(violations) == 2, f"use_git={use_git}: expected 2 violations, got {violations}"
+            assert len(violations) == 4, f"use_git={use_git}: expected 4 violations, got {violations}"
             assert violations[0].kind == "filename" and violations[0].name == "hardening_r2.rs"
             assert (
                 violations[1].kind == "#[test] fn"
                 and violations[1].name == "catches_round2_regression"
-                and violations[1].line == 5
+                and violations[1].line == 6
+            )
+            assert (
+                violations[2].kind == "#[test] fn"
+                and violations[2].name == "catches_multiline_r3"
+                and violations[2].line == 11
+            )
+            assert (
+                violations[3].kind == "#[test] fn"
+                and violations[3].name == "catches_multiline_tokio_round4"
+                and violations[3].line == 16
             )
     print("[test-naming] SELF-TEST PASS")
     return 0
