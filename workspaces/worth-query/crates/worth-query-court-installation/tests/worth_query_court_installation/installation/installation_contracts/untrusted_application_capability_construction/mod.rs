@@ -25,6 +25,7 @@ fn downstream_decoder_constructs_owned_capability_meaning_without_typed_referenc
             scope_entity: "Resource".to_owned(),
             traversals: Vec::new(),
             predicates: Vec::new(),
+            field_constraints: Vec::new(),
         },
     );
     let clause = ApplicationCapabilityGraphClause::from_untrusted_parts(

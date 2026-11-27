@@ -28,6 +28,10 @@
 //!   dependencies and their canonical order, from one enum.
 //! - `ApplicationNameDiscriminator`: a persistent-name discriminator's
 //!   canonical encoding, from one struct or enum.
+//! - `WorthQueryVocabulary`: a closed enum's durable codes and identity
+//!   scalar binding.
+//! - `WorthQueryAbilities`: one ability marker per variant, scoped to one
+//!   entity, for role-matrix installation.
 //!
 //! Identities derive from an `ApplicationIdentityNamespace`; its role
 //! overrides, explicit `name`, `column` and `slot` keys keep existing wire
@@ -36,6 +40,9 @@
 
 use proc_macro::TokenStream;
 
+mod abilities;
+#[cfg(test)]
+mod abilities_tests;
 mod action;
 mod binary_value;
 mod case;
@@ -51,6 +58,9 @@ mod query;
 mod record;
 mod relation;
 mod schema;
+mod vocabulary;
+#[cfg(test)]
+mod vocabulary_tests;
 
 /// Declares a versioned, fixed-width, metered `BinaryValueDelegate`,
 /// `ApplicationScalarValueBinding`, `ApplicationReadableScalarValueBinding`,
@@ -133,6 +143,20 @@ pub fn derive_worth_query_name_role(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(ApplicationNameDiscriminator, attributes(worth_query))]
 pub fn derive_application_name_discriminator(input: TokenStream) -> TokenStream {
     expand(input, name_discriminator::expand)
+}
+
+/// Declares a closed, code-identified enum's identity scalar binding and its
+/// `ApplicationValueVocabulary`, from explicit variant codes.
+#[proc_macro_derive(WorthQueryVocabulary, attributes(worth_query))]
+pub fn derive_worth_query_vocabulary(input: TokenStream) -> TokenStream {
+    expand(input, vocabulary::expand)
+}
+
+/// Declares one ability marker per unit variant, all scoped to one entity, and
+/// the enum's `ApplicationAbilityVocabulary`.
+#[proc_macro_derive(WorthQueryAbilities, attributes(worth_query))]
+pub fn derive_worth_query_abilities(input: TokenStream) -> TokenStream {
+    expand(input, abilities::expand)
 }
 
 fn expand(

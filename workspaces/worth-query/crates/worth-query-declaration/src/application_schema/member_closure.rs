@@ -13,6 +13,7 @@ use super::{
     ApplicationSchemaMember,
 };
 
+mod authorization_conditions;
 mod decision_read_budgets;
 mod member_collections;
 mod principal_binding;
@@ -284,6 +285,14 @@ impl<'a> ClosureIndex<'a> {
             {
                 Err(ApplicationSchemaDeclarationDenial::MissingAbilityPolicyDependency)
             }
+            ApplicationSchemaMember::AbilityPolicy { paths, .. }
+                if paths.iter().any(|path| self.deny_reads_absent_value(path).is_some()) =>
+            {
+                Err(paths
+                    .iter()
+                    .find_map(|path| self.deny_reads_absent_value(path))
+                    .map_or(ApplicationSchemaDeclarationDenial::InvalidAbilityPolicy, Into::into))
+            }
             ApplicationSchemaMember::AbilityPolicy {
                 scope_entity,
                 paths,
@@ -343,25 +352,15 @@ impl<'a> ClosureIndex<'a> {
             };
             entity_by_ordinal.push(current);
         }
-        current == scope_entity
-            && path.predicates().iter().all(|predicate| {
-                entity_by_ordinal
-                    .get(predicate.traversal_ordinal())
-                    .is_some_and(|entity| *entity == predicate.entity())
-                    && self.fields.contains(&(
-                        predicate.entity(),
-                        predicate.aspect(),
-                        predicate.field(),
-                    ))
-                    && self.field_is_equality_queryable(
-                        predicate.entity(),
-                        predicate.aspect(),
-                        predicate.field(),
-                    )
-            })
+        current == scope_entity && self.path_conditions_are_closed(path, &entity_by_ordinal)
     }
 
-    fn field_is_equality_queryable(&self, entity: &str, aspect: &str, field: &str) -> bool {
+    pub(super) fn field_is_equality_queryable(
+        &self,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+    ) -> bool {
         self.members.iter().any(|member| {
             matches!(
                 member,
