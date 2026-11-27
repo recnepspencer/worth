@@ -6,6 +6,7 @@ import StoreM4
 
 Reads line-delimited JSON transition traces emitted by the real compiled Rust
 production implementations in `worth-store` (`store_m4_lean_conformance_trace`)
+and `worth-relational-storage` (`storage::residency::chunked::tests::lean_conformance_trace`)
 and mechanically verifies every observed transition and decision against all
 five proved modules of `StoreM4`:
 
@@ -15,18 +16,26 @@ five proved modules of `StoreM4`:
 * `gc_pin_transition` (`StoreM4.GCPinSafety`): checks `PinTableKernel`
   (`acquire_pin`, `acquire_reader_loan`, `release_reader_loan`, `expire_lease`)
   against `pinAcquire`, `loanAcquire`, `loanRelease`, `leaseExpire`, `childCount`,
-  and root protection reachability.
+  and `PinTable.reachableRoot`.
 * `chunked_partition` (`StoreM4.ChunkedCoverage`): checks fixed-size chunk
   sequence admission (`BlobChunkSequenceAdmission`) against `fixedPartition`,
-  `fixedChunk`, and `chunkCount`, verifying complete non-overlapping coverage
-  and exact refusal of gaps, overlaps, short interior chunks, and missing tails.
+  `fixedChunk`, `chunkCount`, and `SlotRange.contains`, verifying complete
+  non-overlapping coverage and exact refusal of gaps, overlaps, short interior
+  chunks, oversized final chunks, zero width/total, and missing tails.
+* `relational_chunk_directory`, `relational_chunk_consolidation`,
+  `relational_summary_scan`, `relational_summary_claim` (`StoreM4.ChunkedCoverage`):
+  checks `worth-relational-storage`'s `RegionChunkDirectory::admit`/`chunk_of`,
+  `ChunkHistoryImage::flattened`/`slot_versions`, `consolidate_history_chunk`,
+  `verify_bound_chunk`, `seal_chunk_image`, and `scan_chunks` against
+  `fixedPartition`, `fixedChunk`, `inlineHistory`, `canonical`, `consolidate`,
+  `derive`, `fullScan`, and `prunedScan`.
 * `extent_overlap`, `extent_gen_order`, `extent_drain`, `extent_lookup`
   (`StoreM4.ExtentGenerationSafety`): checks `ExtentArenaRange::overlaps`,
   `ExtentAllocationGeneration` lexicographic ordering, `PhysicalResidencyPool`'s
   `drain_writeback_fence` and `require_arena_frame_identity` against
   `Range.overlaps`, `Gen.lt`, `Barrier.admits`, and `lookupMatches`.
 * `reclaim_verdict`, `reclaim_resume` (`StoreM4.ReclamationSafety`): checks
-  `plan_reclaim_intent` (and `plan_reclaim`) against `planVerdict`, and
+  `ReclamationPlanValidator`'s `plan_reclaim_intent` against `planVerdict`, and
   `resume_release` against `resumeRelease`.
 
 Exits 0 iff every step refines the proved models. A checker, not a model: it
@@ -77,13 +86,20 @@ private def parseRootProbes (j : Json) (key : String) : Except String (List (Nat
     | [r, p] => pure (← r.getNat?, ← p.getBool?)
     | _ => throw s!"not a [root, protected] probe: {row.compress}"
 
-private def reachableRootBool (t : PinSafety.PinTable) (r : Nat) : Bool :=
-  t.any fun e => e.root == r && e.state != PinSafety.LeaseState.expired
+private local instance (e : PinSafety.PinEntry) :
+    Decidable e.protectsRoot := by
+  unfold PinSafety.PinEntry.protectsRoot
+  infer_instance
+
+private local instance (t : PinSafety.PinTable) (r : Nat) :
+    Decidable (PinSafety.PinTable.reachableRoot t r) := by
+  unfold PinSafety.PinTable.reachableRoot
+  infer_instance
 
 private def checkRootProbes (t : PinSafety.PinTable) (probes : List (Nat × Bool)) :
     Except String Unit := do
   for (r, observed) in probes do
-    let expected := reachableRootBool t r
+    let expected := decide (PinSafety.PinTable.reachableRoot t r)
     expect (observed == expected)
       s!"root {r} protection observed={observed}, model={expected}"
 
@@ -137,8 +153,49 @@ private def parseSlotRanges (j : Json) (key : String) :
     Except String (List ChunkedCoverage.SlotRange) := do
   (← (← j.getObjVal? key).getArr?).toList.mapM parseSlotRange
 
-private def rangeContainsBool (r : ChunkedCoverage.SlotRange) (slot : Nat) : Bool :=
-  r.start ≤ slot && slot < r.stop
+private local instance (r : ChunkedCoverage.SlotRange) (slot : Nat) :
+    Decidable (r.contains slot) := by
+  unfold ChunkedCoverage.SlotRange.contains
+  infer_instance
+
+private def parseNatList (j : Json) : Except String (List Nat) := do
+  (← j.getArr?).toList.mapM (·.getNat?)
+
+private def parseDomainRange (j : Json) : Except String (Nat × ChunkedCoverage.SlotRange) := do
+  match (← j.getArr?).toList with
+  | [d, s, e] => pure (← d.getNat?, ⟨← s.getNat?, ← e.getNat?⟩)
+  | _ => throw s!"not a [domain, start, stop] range: {j.compress}"
+
+private def parseSlotLookup (j : Json) :
+    Except String (Nat × Nat × Option ChunkedCoverage.SlotRange) := do
+  match (← j.getArr?).toList with
+  | [d, slot, found] =>
+    let foundOpt ← if found.isNull then pure none else some <$> parseSlotRange found
+    pure (← d.getNat?, ← slot.getNat?, foundOpt)
+  | _ => throw s!"not a [domain, slot, range?] lookup: {j.compress}"
+
+private def parseRow (j : Json) : Except String (ChunkedCoverage.Row Nat) := do
+  match (← j.getArr?).toList with
+  | [s, vs] => pure (← s.getNat?, ← parseNatList vs)
+  | _ => throw s!"not a [slot, [values]] row: {j.compress}"
+
+private def parseRows (j : Json) : Except String (List (ChunkedCoverage.Row Nat)) := do
+  (← j.getArr?).toList.mapM parseRow
+
+private def parseLayers (j : Json) (key : String) :
+    Except String (List (List (ChunkedCoverage.Row Nat))) := do
+  (← (← j.getObjVal? key).getArr?).toList.mapM parseRows
+
+private def lookupSpilled (spilled : List (ChunkedCoverage.Row Nat)) (slot : Nat) : List Nat :=
+  match spilled.find? (fun r => r.1 == slot) with
+  | some (_, vs) => vs
+  | none => []
+
+private def parseSummarizedChunk (j : Json) :
+    Except String (ChunkedCoverage.SummarizedChunk (Nat × List Nat) Nat) := do
+  let records ← parseRows (← j.getObjVal? "records")
+  let summary ← parseNatList (← j.getObjVal? "summary")
+  pure { records := records, summary := summary }
 
 private def checkChunkedPartition (j : Json) : Except String Unit := do
   let c ← natAt j "chunk_width"
@@ -158,10 +215,126 @@ private def checkChunkedPartition (j : Json) : Except String Unit := do
     expect (reportedCount == modelCount)
       s!"chunked_partition count {reportedCount} != model {modelCount}"
     for slot in List.range total do
-      let hits := outputRanges.filter (fun r => rangeContainsBool r slot)
+      let hits := outputRanges.filter (fun r => decide (r.contains slot))
       let own := ChunkedCoverage.fixedChunk c total (slot / c)
       expect (hits == [own])
         s!"slot {slot} covered by {repr hits}, expected [{repr own}]"
+
+private def checkRelationalChunkDirectory (j : Json) : Except String Unit := do
+  let c ← natAt j "chunk_slots"
+  let entitySlots ← natAt j "entity_slots"
+  let relationSlots ← natAt j "relation_slots"
+  let submitted ← (← (← j.getObjVal? "submitted").getArr?).toList.mapM parseDomainRange
+  let admitted ← boolAt j "admitted"
+  let lookups ← (← (← j.getObjVal? "slot_lookups").getArr?).toList.mapM parseSlotLookup
+  let modelExpected : List (Nat × ChunkedCoverage.SlotRange) :=
+    if c == 0 then []
+    else
+      (ChunkedCoverage.fixedPartition c entitySlots).map (fun r => (0, r)) ++
+      (ChunkedCoverage.fixedPartition c relationSlots).map (fun r => (1, r))
+  let modelAdmits := c > 0 && submitted == modelExpected
+  expect (admitted == modelAdmits)
+    s!"relational_chunk_directory (c={c}, ent={entitySlots}, rel={relationSlots}): Rust admitted={admitted}, model={modelAdmits}"
+  if admitted then
+    for (dom, slot, observed) in lookups do
+      let total := if dom == 0 then entitySlots else relationSlots
+      let expected : Option ChunkedCoverage.SlotRange :=
+        if slot < total then some (ChunkedCoverage.fixedChunk c total (slot / c)) else none
+      expect (observed == expected)
+        s!"relational_chunk_directory lookup (dom={dom}, slot={slot}): Rust={repr observed}, model={repr expected}"
+      if let some r := observed then
+        expect (decide (r.contains slot))
+          s!"relational_chunk_directory lookup slot {slot} not contained in {repr r}"
+
+private def checkRelationalChunkConsolidation (j : Json) : Except String Unit := do
+  let slots ← parseNatList (← j.getObjVal? "slots")
+  let spilled ← parseRows (← j.getObjVal? "spilled")
+  let layersBefore ← parseLayers j "layers_before"
+  let layersAfter ← parseLayers j "layers_after"
+  let inlineBefore ← parseRows (← j.getObjVal? "inline_before")
+  let inlineAfter ← parseRows (← j.getObjVal? "inline_after")
+  let canonicalBefore ← parseRows (← j.getObjVal? "canonical_before")
+  let canonicalAfter ← parseRows (← j.getObjVal? "canonical_after")
+  let isFlattened ← boolAt j "is_flattened_candidate"
+  let verifyOk ← boolAt j "verify_ok"
+  let consolidateOk ← boolAt j "consolidate_ok"
+  let merklePreserved ← boolAt j "merkle_preserved"
+  let chunkBefore : ChunkedCoverage.PhysicalChunk Nat := {
+    slots := slots
+    headLocator := 0
+    historyLocator := 1
+    layers := layersBefore
+    spilled := lookupSpilled spilled
+  }
+  let chunkConsolidated := ChunkedCoverage.consolidate chunkBefore 2
+  let chunkAfter : ChunkedCoverage.PhysicalChunk Nat := {
+    chunkBefore with
+    layers := layersAfter
+    historyLocator := 2
+  }
+  let expectedInlineBefore := slots.map fun s => (s, ChunkedCoverage.inlineHistory layersBefore s)
+  let expectedInlineAfter := slots.map fun s => (s, ChunkedCoverage.inlineHistory layersAfter s)
+  expect (inlineBefore == expectedInlineBefore)
+    s!"relational_chunk_consolidation inline_before mismatch: Rust={repr inlineBefore}, model={repr expectedInlineBefore}"
+  expect (inlineAfter == expectedInlineAfter)
+    s!"relational_chunk_consolidation inline_after mismatch: Rust={repr inlineAfter}, model={repr expectedInlineAfter}"
+  let modelCanonBefore := ChunkedCoverage.canonical chunkBefore
+  let modelCanonAfter := ChunkedCoverage.canonical chunkAfter
+  expect (canonicalBefore == modelCanonBefore)
+    s!"relational_chunk_consolidation canonical_before mismatch: Rust={repr canonicalBefore}, model={repr modelCanonBefore}"
+  expect (canonicalAfter == modelCanonAfter)
+    s!"relational_chunk_consolidation canonical_after mismatch: Rust={repr canonicalAfter}, model={repr modelCanonAfter}"
+  if isFlattened then
+    let modelCanonCons := ChunkedCoverage.canonical chunkConsolidated
+    expect (modelCanonAfter == modelCanonCons)
+      s!"relational_chunk_consolidation flattened canonical {repr modelCanonAfter} != consolidate model {repr modelCanonCons}"
+  let meaningPreserved := decide (modelCanonAfter == modelCanonBefore)
+  expect (verifyOk == meaningPreserved)
+    s!"relational_chunk_consolidation verify_ok={verifyOk}, model meaning_preserved={meaningPreserved}"
+  expect (consolidateOk == meaningPreserved)
+    s!"relational_chunk_consolidation consolidate_ok={consolidateOk}, model meaning_preserved={meaningPreserved}"
+  if consolidateOk then
+    expect merklePreserved
+      "relational_chunk_consolidation admitted consolidation mutated root_semantic_merkle"
+
+private def checkRelationalSummaryScan (j : Json) : Except String Unit := do
+  let queryKey ← natAt j "query_key"
+  let chunks ← (← (← j.getObjVal? "chunks").getArr?).toList.mapM parseSummarizedChunk
+  let canonicalHits ← parseNatList (← j.getObjVal? "canonical_hits")
+  let prunedHits ← parseNatList (← j.getObjVal? "pruned_hits")
+  let canonicalRead ← natAt j "canonical_chunks_read"
+  let prunedRead ← natAt j "pruned_chunks_read"
+  for ch in chunks do
+    let derived := ChunkedCoverage.derive Prod.snd ch.records
+    for k in derived do
+      expect (decide (k ∈ ch.summary))
+        s!"relational_summary_scan incomplete summary omits derived key {k}"
+    for k in ch.summary do
+      expect (decide (k ∈ derived))
+        s!"relational_summary_scan summary contains phantom key {k} not in derived keys"
+  let expectedFull := (ChunkedCoverage.fullScan Prod.snd queryKey chunks).map Prod.fst
+  let expectedPruned := (ChunkedCoverage.prunedScan Prod.snd queryKey chunks).map Prod.fst
+  expect (canonicalHits == expectedFull)
+    s!"relational_summary_scan canonical_hits={repr canonicalHits}, model fullScan={repr expectedFull}"
+  expect (prunedHits == expectedPruned)
+    s!"relational_summary_scan pruned_hits={repr prunedHits}, model prunedScan={repr expectedPruned}"
+  expect (prunedHits == canonicalHits)
+    s!"relational_summary_scan pruned_hits={repr prunedHits} diverged from canonical_hits={repr canonicalHits}"
+  expect (canonicalRead == chunks.length)
+    s!"relational_summary_scan canonical_chunks_read={canonicalRead}, expected {chunks.length}"
+  let expectedPrunedRead := (chunks.filter fun ch => decide (queryKey ∈ ch.summary)).length
+  expect (prunedRead == expectedPrunedRead)
+    s!"relational_summary_scan pruned_chunks_read={prunedRead}, model={expectedPrunedRead}"
+
+private def checkRelationalSummaryClaim (j : Json) : Except String Unit := do
+  let records ← parseRows (← j.getObjVal? "records")
+  let claimed ← parseNatList (← j.getObjVal? "claimed_summary")
+  let admitted ← boolAt j "admitted"
+  let derived := ChunkedCoverage.derive Prod.snd records
+  let modelMatches :=
+    derived.all (fun k => decide (k ∈ claimed)) && claimed.all (fun k => decide (k ∈ derived))
+  expect (admitted == modelMatches)
+    s!"relational_summary_claim: Rust admitted={admitted}, model={modelMatches}"
 
 private def parseRange (j : Json) : Except String ExtentGenerationSafety.Range := do
   match (← j.getArr?).toList with
@@ -200,10 +373,9 @@ private local instance (f : ExtentGenerationSafety.Ident)
   unfold ExtentGenerationSafety.lookupMatches
   infer_instance
 
-private def barrierAdmitsBool : ExtentGenerationSafety.Barrier → Bool
-  | .completedRetirement => true
-  | .checkpointCoveredCancel => true
-  | _ => false
+private local instance (b : ExtentGenerationSafety.Barrier) :
+    Decidable b.admits := by
+  cases b <;> unfold ExtentGenerationSafety.Barrier.admits <;> infer_instance
 
 private def checkExtentOverlap (j : Json) : Except String Unit := do
   let a ← parseRange (← j.getObjVal? "a")
@@ -235,7 +407,7 @@ private def checkExtentDrain (j : Json) : Except String Unit := do
   let exceedsSeen := seen.all fun e =>
     !decide (e.range.overlaps range) || decide (e.gen.lt nextGen)
   let exceedsFloor := (floorGen == ⟨0, 0⟩) || decide (floorGen.lt nextGen)
-  let modelAdmits := barrierAdmitsBool barrier && drained && exceedsSeen && exceedsFloor
+  let modelAdmits := decide barrier.admits && drained && exceedsSeen && exceedsFloor
   expect (admitted == modelAdmits)
     s!"extent_drain on {repr range} at {repr nextGen}: Rust admitted={admitted}, model={modelAdmits}"
   if admitted then
@@ -315,6 +487,10 @@ private def checkStep (j : Json) : Except String Unit := do
   | "pin_expire_step" => checkPinExpireStep j
   | "gc_pin_transition" => checkGCPinTransition j
   | "chunked_partition" => checkChunkedPartition j
+  | "relational_chunk_directory" => checkRelationalChunkDirectory j
+  | "relational_chunk_consolidation" => checkRelationalChunkConsolidation j
+  | "relational_summary_scan" => checkRelationalSummaryScan j
+  | "relational_summary_claim" => checkRelationalSummaryClaim j
   | "extent_overlap" => checkExtentOverlap j
   | "extent_gen_order" => checkExtentGenOrder j
   | "extent_drain" => checkExtentDrain j

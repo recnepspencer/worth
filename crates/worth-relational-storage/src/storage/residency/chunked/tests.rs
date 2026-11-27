@@ -3,6 +3,7 @@ mod member_store;
 
 mod chunk_partition;
 mod consolidation_invariance;
+mod lean_conformance_trace;
 mod paged_directory_reopen;
 mod placement_hardening;
 mod region_placement;

@@ -202,7 +202,8 @@ pub(super) fn record(trace: &mut Trace) {
     run_partition_case(trace, "chunk.single", 8, 5, &[(0, 5)]);
     run_partition_case(trace, "chunk.three", 3, 7, &[(0, 3), (3, 6), (6, 7)]);
 
-    // Refused partitions: missing tail, leading gap, overlap, short interior, zero width/total.
+    // Refused partitions: missing tail, leading gap, overlap, short interior,
+    // oversized single final chunk, zero width/total.
     run_partition_case(trace, "chunk.missing_tail", 4, 8, &[(0, 4)]);
     run_partition_case(trace, "chunk.gap", 4, 8, &[(4, 8)]);
     run_partition_case(trace, "chunk.overlap", 4, 8, &[(0, 4), (0, 4)]);
@@ -213,6 +214,7 @@ pub(super) fn record(trace: &mut Trace) {
         8,
         &[(0, 2), (2, 6), (6, 8)],
     );
+    run_partition_case(trace, "chunk.oversized_final", 4, 8, &[(0, 8)]);
     run_partition_case(trace, "chunk.zero_width", 0, 8, &[]);
     run_partition_case(trace, "chunk.zero_total", 4, 0, &[]);
 }

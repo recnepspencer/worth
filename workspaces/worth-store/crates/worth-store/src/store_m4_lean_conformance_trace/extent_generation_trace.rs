@@ -223,29 +223,25 @@ pub(super) fn record(trace: &mut Trace) {
     let floor = ExtentAllocationGeneration::OPENED;
     let inflight = [range(ARENA, 64, 32)];
 
-    // Incomplete barriers refused.
-    assert!(push_drain(
-        trace,
-        &pool,
-        range(ARENA, 64, 32),
+    // Incomplete barriers refused even while writeback is in flight.
+    for barrier in [
         ArenaReuseBarrier::RetirementIncomplete,
-        generation(5, 10),
-        floor,
-        &mut seen,
-        &inflight,
-    )
-    .is_err());
-    assert!(push_drain(
-        trace,
-        &pool,
-        range(ARENA, 64, 32),
         ArenaReuseBarrier::CancelUncovered,
-        generation(5, 10),
-        floor,
-        &mut seen,
-        &inflight,
-    )
-    .is_err());
+    ] {
+        assert_eq!(
+            push_drain(
+                trace,
+                &pool,
+                range(ARENA, 64, 32),
+                barrier,
+                generation(5, 10),
+                floor,
+                &mut seen,
+                &inflight,
+            ),
+            Err(WritebackFenceDrainDenial::BarrierIncomplete(barrier))
+        );
+    }
 
     // Exact, split, and coalesced drains refused while writeback is in flight.
     for (offset, len) in [(64, 32), (80, 16), (0, 256)] {
@@ -264,9 +260,32 @@ pub(super) fn record(trace: &mut Trace) {
         );
     }
 
-    // Complete writeback and release dirty frame; coalesced drain now admits at (5, 10).
+    // Complete writeback and release dirty frame.
     paused.complete_writeback(&writeback_clean).unwrap();
     drop(dirty);
+
+    // Incomplete barriers MUST still be refused on a fully drained range with
+    // no overlapping in-flight writeback and a fresh advancing generation.
+    for barrier in [
+        ArenaReuseBarrier::RetirementIncomplete,
+        ArenaReuseBarrier::CancelUncovered,
+    ] {
+        assert_eq!(
+            push_drain(
+                trace,
+                &pool,
+                range(ARENA, 64, 32),
+                barrier,
+                generation(5, 10),
+                floor,
+                &mut seen,
+                &[],
+            ),
+            Err(WritebackFenceDrainDenial::BarrierIncomplete(barrier))
+        );
+    }
+
+    // Completed barrier on the drained range now admits coalesced [0, 256) at (5, 10).
     let admitted = push_drain(
         trace,
         &pool,
