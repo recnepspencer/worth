@@ -59,6 +59,7 @@ pub(super) fn manifest_with_symbols(
             0,
             0,
         )),
+        naming: Default::default(),
         derived_indexes: member_frame::locator(b"derived-indexes"),
         allocations: Default::default(),
     }

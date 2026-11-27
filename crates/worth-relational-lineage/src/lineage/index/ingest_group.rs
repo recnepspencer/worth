@@ -46,21 +46,20 @@ impl PersistentNameBranchIndex {
         let events = &batch.group_events;
         // Pre-commit liveness of every group this batch mentions, read before
         // any of its events changes the index.
-        let live_before: BTreeSet<AggregateIdentity> = events
-            .iter()
-            .flat_map(|event| event_groups(*event))
-            .filter(|group| self.group_is_live(*group))
-            .collect();
+        let mut live_before = BTreeSet::new();
+        for group in events.iter().flat_map(|event| event_groups(*event)) {
+            if self.group_is_live(group)? {
+                live_before.insert(group);
+            }
+        }
         self.ingest_group_births(batch.commit, events, &batch.group_schemes, journal)?;
         let retired = self.ingest_group_retirements(batch.commit, events, &live_before, journal)?;
         self.ingest_group_edges(batch.commit, events, &live_before, &retired, journal)
     }
 
-    fn group_is_live(&self, group: AggregateIdentity) -> bool {
-        self.names
-            .get(&PersistentNameKey::Group(group))
-            .and_then(NameEntry::current_live)
-            .is_some()
+    fn group_is_live(&self, group: AggregateIdentity) -> Result<bool, PersistentNameIndexDenial> {
+        let entry = self.names.get(&PersistentNameKey::Group(group))?;
+        Ok(entry.as_deref().and_then(NameEntry::current_live).is_some())
     }
 
     fn ingest_group_births(
@@ -77,15 +76,19 @@ impl PersistentNameBranchIndex {
                         scheme_id: schemes.get(&group).cloned(),
                     };
                     let entry = NameEntry::born(commit, origin, live_group(group));
-                    self.insert_entry(PersistentNameKey::Group(group), entry, journal)?;
+                    self.insert_entry(PersistentNameKey::Group(group), commit, entry, journal)?;
                 }
                 Event::Revived { group } => {
                     let key = PersistentNameKey::Group(group);
-                    match self.names.get(&key).map(NameEntry::current) {
-                        Some(NameState::Ended) => self
-                            .entry_mut(key, journal)
+                    let ended = self
+                        .names
+                        .get(&key)?
+                        .map(|entry| *entry.current() == NameState::Ended);
+                    match ended {
+                        Some(true) => self
+                            .entry_mut(key, commit, journal)?
                             .set_state(commit, NameState::Live(live_group(group))),
-                        Some(NameState::Live(_)) => {
+                        Some(false) => {
                             return Err(invalid(group, "a live group cannot be revived"));
                         }
                         None => return Err(invalid(group, "a revived group was never born")),
@@ -116,14 +119,14 @@ impl PersistentNameBranchIndex {
                     "only a group live before the commit can retire",
                 ));
             }
-            let members = self
-                .names
-                .get(&PersistentNameKey::Group(group))
+            let entry = self.names.get(&PersistentNameKey::Group(group))?;
+            let members = entry
+                .as_deref()
                 .and_then(NameEntry::current_live)
                 .map(|live| live.carriers.clone())
                 .unwrap_or_default();
-            self.end_member_tenures(group, &members, commit, journal);
-            self.entry_mut(PersistentNameKey::Group(group), journal)
+            self.end_member_tenures(group, &members, commit, journal)?;
+            self.entry_mut(PersistentNameKey::Group(group), commit, journal)?
                 .set_state(commit, NameState::Ended);
             retired.insert(group);
         }
@@ -160,10 +163,10 @@ impl PersistentNameBranchIndex {
             if from == to {
                 return Err(invalid(from, "a group lineage edge cannot loop to itself"));
             }
-            if !self.group_is_live(to) {
+            if !self.group_is_live(to)? {
                 return Err(invalid(to, "a group lineage edge must reach a live group"));
             }
-            self.entry_mut(PersistentNameKey::Group(from), journal)
+            self.entry_mut(PersistentNameKey::Group(from), commit, journal)?
                 .add_edge(commit, PersistentNameKey::Group(to));
         }
         Ok(())

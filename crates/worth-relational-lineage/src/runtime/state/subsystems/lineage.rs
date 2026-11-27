@@ -9,12 +9,21 @@ use crate::contracts::lineage::data::graph::LineageNode;
 use crate::contracts::lineage::data::naming::{PersistentNameHolder, PersistentNameIdentity};
 use worth_relational_storage::internal_port::storage::substrate::owned_state::RuntimeOwnedState;
 
+pub mod cold_naming;
 pub mod event_page;
 pub mod event_residency;
+pub mod group_history;
 pub mod group_states;
 pub mod name_indexes;
 pub mod naming_basis;
 pub mod naming_basis_binding;
+mod naming_basis_truncate;
+pub mod naming_capture;
+pub mod naming_rebuild;
+pub mod recovery_token;
+pub use naming_basis::NamingBasisUnavailable;
+pub use naming_capture::FrozenLineageNaming;
+pub use recovery_token::FullLineageRecoveryToken;
 pub mod node_page;
 pub mod page_admission;
 pub use page_admission::PreparedLineageColdPages;
@@ -32,16 +41,23 @@ pub use state::{LineageState, ValidatedLineageEventBatch};
 
 /// The runtime's lineage authority, owned behind its own lock so lineage
 /// installation during settlement never demands exclusive access to the runtime.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct LineageSubsystem {
     discovery_metadata: std::sync::Mutex<()>,
     state: RuntimeOwnedState<LineageState>,
+    ack_hook: std::sync::Arc<cold_naming::LineageNamingAckHook>,
     event_admissions:
         RuntimeOwnedState<BTreeSet<worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableMemberLocator>>,
     event_residency:
         RuntimeOwnedState<Option<std::sync::Arc<event_residency::RuntimeLineageEventResidency>>>,
     node_residency:
         RuntimeOwnedState<Option<std::sync::Arc<node_residency::RuntimeLineageNodeResidency>>>,
+}
+
+impl Default for LineageSubsystem {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl LineageSubsystem {
@@ -110,7 +126,8 @@ impl LineageSubsystem {
         self.state.read().published_rows()
     }
 
-    /// A working copy of the lineage state for a reconstruction lane.
+    /// A working copy of the lineage state for a reconstruction lane; naming
+    /// tables share copy-on-write (see [`LineageState::fork_detached`]).
     pub fn snapshot_for_reconstruction(
         &self,
         lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
@@ -213,7 +230,8 @@ impl LineageSubsystem {
         &self,
         branch_id: &BranchId,
         lineage_id: LineageId,
-    ) -> Option<(PersistentNameHolder, PersistentNameIdentity)> {
+    ) -> Result<Option<(PersistentNameHolder, PersistentNameIdentity)>, NamingBasisUnavailable>
+    {
         self.state
             .read()
             .holder_and_name_for_lineage(branch_id, lineage_id)
@@ -223,10 +241,15 @@ impl LineageSubsystem {
         LineageNamingBasisBinding::new(self.state.share())
     }
 
+    pub fn naming_ack_hook(&self) -> std::sync::Weak<cold_naming::LineageNamingAckHook> {
+        std::sync::Arc::downgrade(&self.ack_hook)
+    }
+
     pub fn branch_live_persistent_names(
         &self,
         branch_id: &BranchId,
-    ) -> BTreeMap<PersistentNameIdentity, PersistentNameHolder> {
+    ) -> Result<BTreeMap<PersistentNameIdentity, PersistentNameHolder>, NamingBasisUnavailable>
+    {
         self.state.read().branch_live_persistent_names(branch_id)
     }
 
@@ -306,13 +329,6 @@ impl LineageSubsystem {
             .collect()
     }
 
-    pub fn finalize_cold_naming_basis(
-        &self,
-        lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
-    ) {
-        self.state.write().finalize_cold_naming_basis(lane);
-    }
-
     /// Replaces the published group lineage with recovered canonical records
     /// after fork ancestry is recorded; refuses the first branch whose
     /// records contradict its group posture.
@@ -362,29 +378,5 @@ impl LineageSubsystem {
 
     pub fn drain_events(&self) -> Vec<(LineageEventRecord, CommitId)> {
         self.state.write().drain_events().collect()
-    }
-}
-
-impl LineageSubsystem {
-    pub fn new() -> Self {
-        Self {
-            discovery_metadata: Default::default(),
-            state: RuntimeOwnedState::new(LineageState::empty()),
-            node_residency: Default::default(),
-            event_residency: Default::default(),
-            event_admissions: Default::default(),
-        }
-    }
-
-    pub fn fork(&self) -> Self {
-        // Admission membership and the copied resolution index form one basis.
-        let admissions = self.event_admissions.read();
-        Self {
-            discovery_metadata: Default::default(),
-            state: RuntimeOwnedState::new(self.state.read().duplicate_for_runtime_fork()),
-            node_residency: self.node_residency.detached(),
-            event_residency: self.event_residency.detached(),
-            event_admissions: RuntimeOwnedState::new(admissions.clone()),
-        }
     }
 }

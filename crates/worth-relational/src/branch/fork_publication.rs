@@ -150,14 +150,22 @@ impl RelationalForkPort {
                 .target_branch()
                 .clone(),
         );
+        let fork_commit_id = installable.as_ref().and_then(
+            crate::branch::fork::target_installation::InstallableForkTarget::shared_commit_id,
+        );
         let installed = publication.record_with_cutover(
             execution,
             step,
             validated.source_root.retained_schema_authority(),
             || {
                 self.recheck_fork_source(&validated, &source_state)?;
-                // Coordination still excludes source writers. Readers must not
-                // wait on source state across durable I/O or registry insertion.
+                // Coordination still excludes source writers and retention-floor
+                // raises. Re-verify fork ancestry atomically before durable append.
+                if let Some(commit_id) = fork_commit_id {
+                    self.lineage_naming
+                        .preflight_fork_ancestry(validated.descriptor.source_branch(), commit_id)
+                        .map_err(|_| RelationalForkDenial::RetentionOwnerUnavailable)?;
+                }
                 drop(source_state);
                 Ok(transition)
             },

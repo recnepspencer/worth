@@ -109,8 +109,8 @@ fn forked_branch_inherits_entity_and_relation_naming_basis_and_retires_independe
             .commit_id()
     };
     let head0 = fork_head();
-    let basis0 = runtime.branch_live_persistent_names(&fork_branch);
-    assert_eq!(basis0, runtime.branch_live_persistent_names(&main));
+    let basis0 = runtime.branch_live_persistent_names(&fork_branch).unwrap();
+    assert_eq!(basis0, runtime.branch_live_persistent_names(&main).unwrap());
 
     // 3. Re-birthing inherited F1 on fork-a refuses DuplicateBirth naming Entity(f1_id).
     let tx_dup_f = begin_branch_staged_tx(
@@ -144,7 +144,7 @@ fn forked_branch_inherits_entity_and_relation_naming_basis_and_retires_independe
         }) if identity == f1_rel && first_id == f1_id
     ));
     assert_eq!(fork_head(), head0);
-    assert_eq!(runtime.branch_live_persistent_names(&fork_branch), basis0);
+    assert_eq!(runtime.branch_live_persistent_names(&fork_branch).unwrap(), basis0);
 
     // 4. Re-birthing inherited S1 on fork-a (distinct endpoints f2 -> f1) refuses DuplicateBirth.
     let dup_s_ref = seam_ref(
@@ -185,7 +185,7 @@ fn forked_branch_inherits_entity_and_relation_naming_basis_and_retires_independe
         }) if identity == s1_rel && first_id == s1_id
     ));
     assert_eq!(fork_head(), head0);
-    assert_eq!(runtime.branch_live_persistent_names(&fork_branch), basis0);
+    assert_eq!(runtime.branch_live_persistent_names(&fork_branch).unwrap(), basis0);
 
     // 5. Retiring inherited F1 on fork-a succeeds without disturbing main's live names.
     let tx_ret = begin_branch_staged_tx(
@@ -208,10 +208,10 @@ fn forked_branch_inherits_entity_and_relation_naming_basis_and_retires_independe
     release_commit_snapshot(&runtime, c_ret.commit_result());
 
     assert!(!runtime
-        .branch_live_persistent_names(&fork_branch)
+        .branch_live_persistent_names(&fork_branch).unwrap()
         .contains_key(&f1_rel));
     assert_eq!(
-        runtime.branch_live_persistent_names(&main).get(&f1_rel),
+        runtime.branch_live_persistent_names(&main).unwrap().get(&f1_rel),
         Some(&PersistentNameHolder::Entity(f1_id))
     );
 }

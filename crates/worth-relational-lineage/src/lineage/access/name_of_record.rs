@@ -5,6 +5,7 @@ use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::lineage::data::name_resolution::PersistentNameOfRecord;
 use crate::contracts::lineage::data::postures::LineageRecordTarget;
 use crate::lineage::index::{LineageHolder, NameState, PersistentNameBranchIndex};
+use crate::lineage::tiered::NamingReadScope;
 
 impl PersistentNameBranchIndex {
     /// The name `record` carries at `basis`.
@@ -23,17 +24,35 @@ impl PersistentNameBranchIndex {
         record: LineageRecordTarget,
         basis: CommitId,
     ) -> PersistentNameOfRecord {
+        let scope = NamingReadScope::new();
+        let answer = self.name_of_record_in(record, basis, &scope);
+        settled(&scope, answer)
+    }
+
+    /// [`Self::name_of_record`] inside a read boundary's `scope`.
+    pub(crate) fn name_of_record_in(
+        &self,
+        record: LineageRecordTarget,
+        basis: CommitId,
+        scope: &NamingReadScope,
+    ) -> PersistentNameOfRecord {
+        if let Some(retention_floor) = self.retention_floor()
+            && basis < retention_floor
+        {
+            scope.fail_pruned(basis, retention_floor);
+            return PersistentNameOfRecord::Unnamed;
+        }
         let holder = match record {
             LineageRecordTarget::Entity(entity) => LineageHolder::Entity(entity),
             LineageRecordTarget::Relation(relation) => LineageHolder::Relation(relation),
         };
-        let Some(lineage) = self.lineage_of_holder(holder, basis) else {
+        let Some(lineage) = self.lineage_of_holder(holder, basis, scope) else {
             return PersistentNameOfRecord::Unnamed;
         };
-        let Some(key) = self.name_of_lineage(lineage) else {
+        let Some(key) = self.name_of_lineage(lineage, scope) else {
             return PersistentNameOfRecord::Unnamed;
         };
-        let Some(entry) = self.names.get(&key) else {
+        let Some(entry) = self.entry_in(&key, scope) else {
             return PersistentNameOfRecord::Unnamed;
         };
         match entry.state_at(basis) {
@@ -47,4 +66,14 @@ impl PersistentNameBranchIndex {
             Some(_) => PersistentNameOfRecord::Unnamed,
         }
     }
+}
+
+/// A standalone read's answer. Standalone reads serve resident indexes; a
+/// cold-backed index is read only through a boundary that settles its own
+/// scope, so a failed fault here is a broken invariant, never an answer.
+pub(crate) fn settled<T>(scope: &NamingReadScope, answer: T) -> T {
+    if let Err(cause) = scope.settle() {
+        panic!("a standalone name index read faulted a damaged page: {cause:?}");
+    }
+    answer
 }

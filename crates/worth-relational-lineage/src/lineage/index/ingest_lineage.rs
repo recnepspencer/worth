@@ -21,8 +21,8 @@ use crate::contracts::lineage::data::name_resolution::{PersistentNameKey, Persis
 
 use super::journal::IngestionJournal;
 use super::{
-    Carriers, LineageHolder, LiveName, NameEntry, NameOrigin, NameState, PersistentNameBranchIndex,
-    PersistentNameCommittedBatch, PersistentNameIndexDenial,
+    Carriers, HolderEpoch, LineageHolder, LiveName, NameEntry, NameOrigin, NameState,
+    PersistentNameBranchIndex, PersistentNameCommittedBatch, PersistentNameIndexDenial,
 };
 
 const fn subject_kind(subject: LineageSubject) -> PersistentNameSubjectKind {
@@ -60,16 +60,20 @@ impl PersistentNameBranchIndex {
                     .map(|(lineage, relation)| (*lineage, LineageHolder::Relation(*relation))),
             );
         for (lineage, holder) in holders {
-            match self.lineage_holders.get(&lineage) {
+            match self.lineage_holders.get(&lineage)?.as_deref() {
                 Some(bound) if *bound == holder => {}
                 Some(_) => return Err(PersistentNameIndexDenial::ConflictingHolder { lineage }),
                 None => {
+                    journal.save_lineage_holder(lineage, &self.lineage_holders);
                     self.lineage_holders.insert(lineage, holder);
+                    journal.save_holder_lineages(holder, &self.holder_lineages);
                     self.holder_lineages
-                        .entry(holder)
-                        .or_default()
-                        .push((batch.commit, lineage));
-                    journal.bound_lineage_holder(lineage);
+                        .get_or_insert_with(holder, Vec::new)?
+                        .push(HolderEpoch {
+                            bound_at: batch.commit,
+                            lineage,
+                            ended_at: None,
+                        });
                 }
             }
         }
@@ -120,7 +124,7 @@ impl PersistentNameBranchIndex {
                 event
                     .sources()
                     .first()
-                    .and_then(|src| self.lineage_names.get(src).copied())
+                    .and_then(|src| self.lineage_names.get(src).ok().flatten().map(|key| *key))
             })
             .unwrap_or_else(|| {
                 subject_key(
@@ -147,12 +151,13 @@ impl PersistentNameBranchIndex {
                 "a Restore target lineage must differ from its retired source lineage",
             ));
         }
-        let Some(entry) = self.names.get(&key) else {
+        let entry = self.names.get(&key)?;
+        let Some(entry) = entry.as_deref() else {
             let opposite = match event.subject() {
                 LineageSubject::Entity => PersistentNameKey::Relation(name),
                 LineageSubject::Relation => PersistentNameKey::Entity(name),
             };
-            if self.names.contains_key(&opposite) {
+            if self.names.contains_key(&opposite)? {
                 return Err(invalid(
                     key,
                     "a restored name's subject differs from its event subject",
@@ -175,7 +180,7 @@ impl PersistentNameBranchIndex {
             }
             (_, NameState::Ended) => {}
         }
-        if self.lineage_names.get(&source) != Some(&key) {
+        if self.lineage_names.get(&source)?.as_deref() != Some(&key) {
             return Err(invalid(
                 key,
                 "a Restore source lineage does not match the restored name",
@@ -189,14 +194,14 @@ impl PersistentNameBranchIndex {
         }
         let holder = *self
             .lineage_holders
-            .get(&target)
+            .get(&target)?
             .ok_or(PersistentNameIndexDenial::MissingHolder { lineage: target })?;
         let live = LiveName {
             target: target_for(key, name, holder, target)?,
             carriers: Carriers::new(),
         };
         self.bind_lineage_name(target, key, journal)?;
-        self.entry_mut(key, journal)
+        self.entry_mut(key, commit, journal)?
             .set_state(commit, NameState::Live(live));
         Ok(())
     }
@@ -225,7 +230,7 @@ impl PersistentNameBranchIndex {
         };
         let holder = *self
             .lineage_holders
-            .get(&lineage)
+            .get(&lineage)?
             .ok_or(PersistentNameIndexDenial::MissingHolder { lineage })?;
         if let Some(birth) = birth {
             let key = subject_key(event.subject(), birth.identity());
@@ -238,12 +243,13 @@ impl PersistentNameBranchIndex {
             };
             let origin = NameOrigin::Birth(birth.parts().clone());
             let entry = NameEntry::born(commit, origin, live);
-            self.insert_entry(key, entry, journal)?;
+            self.insert_entry(key, commit, entry, journal)?;
             self.bind_lineage_name(lineage, key, journal)?;
         }
         if let Some(kept) = kept {
             let key = subject_key(event.subject(), kept);
-            let Some(previous) = self.names.get(&key).and_then(NameEntry::current_live) else {
+            let previous = self.names.get(&key)?;
+            let Some(previous) = previous.as_deref().and_then(NameEntry::current_live) else {
                 return Err(invalid(
                     key,
                     "a kept merge name must be live to move records",
@@ -253,7 +259,7 @@ impl PersistentNameBranchIndex {
                 target: target_for(key, kept, holder, lineage)?,
                 carriers: previous.carriers.clone(),
             };
-            self.entry_mut(key, journal)
+            self.entry_mut(key, commit, journal)?
                 .set_state(commit, NameState::Live(live));
             self.bind_lineage_name(lineage, key, journal)?;
         }
@@ -266,11 +272,12 @@ impl PersistentNameBranchIndex {
         event: &LineageEventRecord,
         journal: &mut IngestionJournal,
     ) -> Result<(), PersistentNameIndexDenial> {
-        let mut successors: Vec<PersistentNameKey> = event
-            .targets()
-            .iter()
-            .filter_map(|lineage| self.lineage_names.get(lineage).copied())
-            .collect();
+        let mut successors: Vec<PersistentNameKey> = Vec::new();
+        for lineage in event.targets() {
+            if let Some(key) = self.lineage_names.get(lineage)? {
+                successors.push(*key);
+            }
+        }
         successors.sort_unstable();
         successors.dedup();
         let subject = subject_kind(event.subject());
@@ -281,7 +288,17 @@ impl PersistentNameBranchIndex {
             ));
         }
         for source in event.sources() {
-            let Some(&key) = self.lineage_names.get(source) else {
+            if !event.targets().contains(source)
+                && let Some(&holder) = self.lineage_holders.get(source)?.as_deref()
+            {
+                journal.save_holder_lineages(holder, &self.holder_lineages);
+                if let Some(epochs) = self.holder_lineages.get_mut(&holder)?
+                    && let Some(epoch) = epochs.iter_mut().rev().find(|e| e.lineage == *source)
+                {
+                    epoch.ended_at = Some(commit);
+                }
+            }
+            let Some(key) = self.lineage_names.get(source)?.map(|key| *key) else {
                 continue;
             };
             if key.subject_kind() != subject {
@@ -290,7 +307,7 @@ impl PersistentNameBranchIndex {
             if successors.binary_search(&key).is_ok() {
                 continue;
             }
-            let held_by_source = self.names.get(&key).is_some_and(|entry| {
+            let held_by_source = self.names.get(&key)?.is_some_and(|entry| {
                 matches!(
                     entry.last_state(),
                     (since, NameState::Live(live))
@@ -303,7 +320,7 @@ impl PersistentNameBranchIndex {
                     "an ending source lineage no longer holds its name",
                 ));
             }
-            let entry = self.entry_mut(key, journal);
+            let entry = self.entry_mut(key, commit, journal)?;
             entry.set_state(commit, NameState::Ended);
             for successor in &successors {
                 entry.add_edge(commit, *successor);
@@ -320,10 +337,10 @@ impl PersistentNameBranchIndex {
         key: PersistentNameKey,
         journal: &mut IngestionJournal,
     ) -> Result<(), PersistentNameIndexDenial> {
-        if self.lineage_names.contains_key(&lineage) {
+        if self.lineage_names.contains_key(&lineage)? {
             return Err(invalid(key, "a lineage cannot be bound to a second name"));
         }
-        journal.bound_lineage_name(lineage);
+        journal.save_lineage_name(lineage, &self.lineage_names);
         self.lineage_names.insert(lineage, key);
         Ok(())
     }

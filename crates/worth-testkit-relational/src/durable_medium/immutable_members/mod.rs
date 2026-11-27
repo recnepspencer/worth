@@ -25,6 +25,8 @@ pub struct ImmutableCheckpointMemberSource {
     pub paged_reads: AtomicUsize,
     /// CHK24 commit-index pages (`G7`), in read order.
     pub commit_page_reads: std::sync::Mutex<Vec<RelationalDurableMemberLocator>>,
+    /// CHK24 persistent-naming pages (kind tag 5), in read order.
+    pub naming_page_reads: std::sync::Mutex<Vec<RelationalDurableMemberLocator>>,
     pub commit_reads: std::sync::Mutex<Vec<PatchStreamPosition>>,
     pub commits_damaged: AtomicBool,
     pub failed_member: std::sync::Mutex<Option<RelationalDurableMemberLocator>>,
@@ -255,6 +257,7 @@ impl ImmutableCheckpointMemberSource {
             member_reads: Default::default(),
             paged_reads: Default::default(),
             commit_page_reads: Default::default(),
+            naming_page_reads: Default::default(),
             commit_reads: Default::default(),
             commits_damaged: AtomicBool::new(false),
             failed_member: Default::default(),
@@ -305,6 +308,10 @@ impl ImmutableCheckpointMemberSource {
             bytes.bytes().starts_with(b"WORTH-REL-CHUNK1\n") && bytes.bytes().get(17) == Some(&4)
         }) {
             self.commit_page_reads.lock().unwrap().push(locator);
+        } else if self.members.get(&locator).is_some_and(|bytes| {
+            bytes.bytes().starts_with(b"WORTH-REL-CHUNK1\n") && bytes.bytes().get(17) == Some(&5)
+        }) {
+            self.naming_page_reads.lock().unwrap().push(locator);
         } else {
             self.reads.fetch_add(1, Ordering::Relaxed);
             self.member_reads.lock().unwrap().push(locator);

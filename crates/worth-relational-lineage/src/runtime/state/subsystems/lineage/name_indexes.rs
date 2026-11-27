@@ -1,30 +1,20 @@
 //! Runtime maintenance of each branch's derived persistent-name index.
 //!
-//! The index is derived state, never authority: every entry comes from the
-//! canonical lineage events the commit pipeline installs, in publication
-//! order, and the same events rebuild it on fork, cold open and replay.
-//! Live publication installs a commit's events before the branch reference
-//! moves, so no observation can select a commit the index has not ingested.
-//!
-//! A refused batch cannot be repaired by the reader, and it must never refuse
-//! the writer that already published canonical truth; that branch's index is
-//! recorded unavailable and every name read on it refuses typed until the
-//! next rebuild from canonical history.
+//! Derived from canonical lineage events installed in publication order; a
+//! refused batch marks that branch unavailable until canonical rebuild.
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
-use crate::contracts::identity::data::primitives::LineageId;
-use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
-use crate::contracts::lineage::data::events::{
-    LineageEventKind, LineageEventRecord, LineageSubject,
-};
-use crate::contracts::lineage::data::graph::LineageNode;
+use crate::contracts::lineage::data::events::{LineageEventKind, LineageEventRecord};
 use crate::lineage::index::{
     PersistentNameBranchIndex, PersistentNameCommittedBatch, PersistentNameIndexDenial,
 };
+use crate::lineage::tiered::NamingReadScope;
 
 use super::group_states::PublishedGroupLineage;
+use super::naming_rebuild::named_holders;
+use super::recovery_token::FullLineageRecoveryToken;
 use super::state::PublishedLineageEvent;
 use super::{LineageState, LineageSubsystem};
 
@@ -36,32 +26,14 @@ pub(super) enum BranchNameIndex {
 }
 
 /// Every branch's derived name index.
+///
+/// Deliberately not `Clone`: [`Self::fork_all`] shares tables copy-on-write.
 #[derive(Debug, Default)]
 pub(crate) struct BranchNameIndexes {
-    by_branch: BTreeMap<BranchId, BranchNameIndex>,
-}
-
-impl BranchNameIndex {
-    fn duplicate_for_branch_fork(&self, target: &BranchId) -> Self {
-        match self {
-            Self::Current(index) => Self::Current(index.duplicate_for_branch_fork(target.clone())),
-            Self::Unavailable(denial) => Self::Unavailable(denial.clone()),
-        }
-    }
+    pub(super) by_branch: BTreeMap<BranchId, BranchNameIndex>,
 }
 
 impl BranchNameIndexes {
-    /// A whole-state copy of every branch's index (runtime fork or
-    /// reconstruction lane only).
-    pub(super) fn duplicate_whole(&self) -> Self {
-        let branches = self.by_branch.iter();
-        Self {
-            by_branch: branches
-                .map(|(branch, index)| (branch.clone(), index.duplicate_for_branch_fork(branch)))
-                .collect(),
-        }
-    }
-
     /// The branch's current index, its recorded refusal, or an empty index
     /// for a branch that has published no named lineage yet.
     pub(super) fn read(
@@ -79,13 +51,41 @@ impl BranchNameIndexes {
         self.by_branch.clear();
     }
 
-    /// Ingests one commit's events for `branch_id`, creating the branch's
+    /// Every index for a forked runtime, preserving each branch's own cold base.
+    ///
+    /// Complexity: O(branches).
+    pub(super) fn fork_all(&self) -> Self {
+        let by_branch = self
+            .by_branch
+            .iter()
+            .map(|(branch, index)| {
+                let index = match index {
+                    BranchNameIndex::Current(index) => BranchNameIndex::Current(
+                        index.fork_to(branch.clone(), index.base().cloned()),
+                    ),
+                    BranchNameIndex::Unavailable(denial) => {
+                        BranchNameIndex::Unavailable(denial.clone())
+                    }
+                };
+                (branch.clone(), index)
+            })
+            .collect();
+        Self { by_branch }
+    }
+
+    /// Ingests one commit's events for `branch_id`, creating a pure-resident
     /// index on its first named lineage.
     ///
     /// Complexity: O(batch events), independent of retained names or commits.
     fn ingest(&mut self, branch_id: &BranchId, batch: &PersistentNameCommittedBatch) {
         let slot = self.by_branch.entry(branch_id.clone()).or_insert_with(|| {
-            BranchNameIndex::Current(PersistentNameBranchIndex::new(branch_id.clone(), None))
+            BranchNameIndex::Current(PersistentNameBranchIndex::over(
+                branch_id.clone(),
+                None,
+                None,
+                None,
+                None,
+            ))
         });
         if let BranchNameIndex::Current(index) = slot
             && let Err(denial) = index.apply(batch)
@@ -97,78 +97,89 @@ impl BranchNameIndexes {
 
 impl LineageSubsystem {
     /// Runs `read` over `branch_id`'s derived name index under the lineage
-    /// read lock; `None` is a branch with no named lineage yet.
+    /// read lock; `None` is a branch with no named lineage yet. Rows `read`
+    /// faults from cold pages live in the boundary's scope; a fault that
+    /// failed refuses the whole read typed.
     ///
     /// The lock is held only for `read`, which must not reenter lineage
     /// installation.
     pub fn read_name_index<T>(
         &self,
         branch_id: &BranchId,
-        read: impl FnOnce(Option<&PersistentNameBranchIndex>) -> T,
+        read: impl FnOnce(Option<&PersistentNameBranchIndex>, &NamingReadScope) -> T,
     ) -> Result<T, PersistentNameIndexDenial> {
         let state = self.state.read();
-        state
+        let scope = NamingReadScope::new();
+        let answer = state
             .name_indexes
             .read(branch_id)
-            .map(read)
-            .map_err(Clone::clone)
+            .map(|index| read(index, &scope))
+            .map_err(Clone::clone)?;
+        scope.settle_index()?;
+        Ok(answer)
     }
 }
 
 impl LineageState {
     /// Ingests the events installed at positions `from..` (one commit) into
     /// their branch indexes.
-    ///
-    /// A branch forked at or after that commit while its settlement was in
-    /// flight copied its parent's index without it, so every such fork
-    /// descendant is rebuilt from canonical events; forks taken before the
-    /// commit never see it and stay as they are.
-    ///
-    /// Complexity: O(installed events + forks * ancestry depth); a rebuild,
-    /// O(installed events), happens only for a fork taken mid-settlement.
     pub(super) fn ingest_installed_name_events(&mut self, from: usize, from_group: usize) {
         let mut name_indexes = std::mem::take(&mut self.name_indexes);
         let groups: Vec<_> = self.published_group_lineage[from_group..].iter().collect();
         let batches = self.name_batches(&self.published_events[from..], &groups);
         for (branch_id, batch) in &batches {
+            self.bump_branch_generation(branch_id);
             name_indexes.ingest(branch_id, batch);
         }
         for fork in self.forks_inheriting(&batches) {
-            let rebuilt = self.rebuild_branch_name_index(&fork, CommitId(u64::MAX));
+            self.bump_branch_generation(&fork);
+            let rebuilt = match self.full_history.as_ref() {
+                Some(full) => self.rebuild_branch_name_index(full, &fork, CommitId(u64::MAX)),
+                None => {
+                    BranchNameIndex::Unavailable(PersistentNameIndexDenial::CheckpointedUnavailable)
+                }
+            };
             name_indexes.by_branch.insert(fork, rebuilt);
         }
         self.name_indexes = name_indexes;
     }
 
-    /// Forked branches whose inherited history reaches one of `batches`: a
-    /// fork of the batch's branch, directly or through ancestors, whose
-    /// inherited cutoff for that branch is at or after the batch's commit.
+    /// Forked branches whose inherited history reaches one of `batches`,
+    /// queried via cutoff-indexed `fork_children` (`O(log C + inheriting)`).
     fn forks_inheriting(
         &self,
         batches: &[(BranchId, PersistentNameCommittedBatch)],
     ) -> Vec<BranchId> {
-        if self.branch_forks.is_empty() || batches.is_empty() {
+        if self.fork_children.is_empty() || batches.is_empty() {
             return Vec::new();
         }
-        self.branch_forks
-            .keys()
-            .filter(|fork| {
-                self.ancestry(fork, CommitId(u64::MAX))
-                    .iter()
-                    .skip(1)
-                    .any(|(ancestor, bound)| {
-                        batches
-                            .iter()
-                            .any(|(branch, batch)| ancestor == branch && *bound >= batch.commit())
-                    })
-            })
-            .cloned()
-            .collect()
+        let mut affected = BTreeSet::new();
+        let mut stack: Vec<(&BranchId, CommitId, CommitId)> = Vec::new();
+        for (branch, batch) in batches {
+            if self.fork_children.contains_key(branch) {
+                stack.push((branch, batch.commit(), CommitId(u64::MAX)));
+            }
+        }
+        while let Some((parent, batch_commit, inherited_bound)) = stack.pop() {
+            let Some(by_cutoff) = self.fork_children.get(parent) else {
+                continue;
+            };
+            for (&fork_commit, children) in by_cutoff.range(batch_commit..) {
+                let bound = inherited_bound.min(fork_commit);
+                if bound < batch_commit {
+                    continue;
+                }
+                for child in children {
+                    if affected.insert(child.clone()) {
+                        stack.push((child, batch_commit, bound));
+                    }
+                }
+            }
+        }
+        affected.into_iter().collect()
     }
 
     /// Ingests readmitted events that arrived in canonical order.
-    ///
-    /// Complexity: O(readmitted events).
     pub(super) fn ingest_readmitted_name_events(&mut self, positions: &[usize]) {
         let events: Vec<_> = positions
             .iter()
@@ -186,23 +197,52 @@ impl LineageState {
         self.name_indexes = name_indexes;
     }
 
-    /// Starts `target`'s index from `source`'s at `fork_commit`, cloning it
-    /// when the source has ingested nothing later, else rebuilding it from
-    /// canonical events with ancestry cutoffs.
+    /// Starts `target`'s index from `source`'s at `fork_commit`, enforcing the
+    /// retention floor unconditionally before any fast path and preserving
+    /// `source`'s own actual cold base when shared unchanged.
     pub(super) fn fork_name_index(
         &mut self,
         target: &BranchId,
         source: &BranchId,
         fork_commit: CommitId,
     ) {
-        let inherited = match self.name_indexes.by_branch.get(source) {
-            Some(BranchNameIndex::Current(index))
+        let inherited = match (
+            self.name_indexes.by_branch.get(source),
+            self.full_history.as_ref(),
+        ) {
+            (Some(BranchNameIndex::Current(index)), _)
+                if index
+                    .retention_floor()
+                    .is_some_and(|floor| fork_commit < floor) =>
+            {
+                BranchNameIndex::Unavailable(PersistentNameIndexDenial::BasisPruned {
+                    basis: fork_commit,
+                    retention_floor: index.retention_floor().unwrap(),
+                })
+            }
+            (Some(BranchNameIndex::Current(index)), _)
                 if index.head().is_none_or(|head| head <= fork_commit) =>
             {
-                BranchNameIndex::Current(index.duplicate_for_branch_fork(target.clone()))
+                let link = index.base().map(|base| base.forked(target.clone()));
+                BranchNameIndex::Current(index.fork_to(target.clone(), link))
             }
-            None => BranchNameIndex::Current(PersistentNameBranchIndex::new(target.clone(), None)),
-            Some(_) => self.rebuild_branch_name_index(target, CommitId(u64::MAX)),
+            (Some(BranchNameIndex::Unavailable(denial)), _) => {
+                BranchNameIndex::Unavailable(denial.clone())
+            }
+            (None, None) => BranchNameIndex::Current(PersistentNameBranchIndex::over(
+                target.clone(),
+                None,
+                None,
+                None,
+                None,
+            )),
+            (_, Some(full)) => self.rebuild_branch_name_index(full, target, CommitId(u64::MAX)),
+            (Some(BranchNameIndex::Current(index)), None) => {
+                match index.truncate_at(target.clone(), fork_commit) {
+                    Ok(truncated) => BranchNameIndex::Current(truncated),
+                    Err(denial) => BranchNameIndex::Unavailable(denial),
+                }
+            }
         };
         self.name_indexes
             .by_branch
@@ -210,10 +250,8 @@ impl LineageState {
     }
 
     /// Rebuilds every branch index from the installed canonical events.
-    ///
-    /// Complexity: O(branches * ancestry depth * installed events); a
-    /// reconstruction-lane cost paid on cold open and replay only.
-    pub(super) fn rebuild_name_indexes(&mut self) {
+    pub(crate) fn rebuild_name_indexes(&mut self, full: &FullLineageRecoveryToken) {
+        full.assert_owner(self.state_id);
         let mut branches: Vec<BranchId> = self.branch_forks.keys().cloned().collect();
         branches.extend(
             self.published_events
@@ -225,18 +263,20 @@ impl LineageState {
         let rebuilt = branches
             .into_iter()
             .map(|branch| {
-                let index = self.rebuild_branch_name_index(&branch, CommitId(u64::MAX));
+                let index = self.rebuild_branch_name_index(full, &branch, CommitId(u64::MAX));
                 (branch, index)
             })
             .collect();
         self.name_indexes = BranchNameIndexes { by_branch: rebuilt };
     }
 
-    /// `branch`'s index through `cutoff`: its root ancestor's own events,
-    /// then each descendant's own events, each bounded by the fork commit
-    /// its child inherited. A cycle in fork metadata stops at the first
-    /// revisited branch, as the naming basis ancestry does.
-    fn rebuild_branch_name_index(&self, branch: &BranchId, cutoff: CommitId) -> BranchNameIndex {
+    /// `branch`'s index through `cutoff` along its fork ancestry.
+    fn rebuild_branch_name_index(
+        &self,
+        _full: &FullLineageRecoveryToken,
+        branch: &BranchId,
+        cutoff: CommitId,
+    ) -> BranchNameIndex {
         let ancestry = self.ancestry(branch, cutoff);
         let mut index: Option<PersistentNameBranchIndex> = None;
         for (ancestor, bound) in ancestry.iter().rev() {
@@ -264,8 +304,6 @@ impl LineageState {
     /// The first commit after `base` at which `branch`'s history (with its
     /// fork ancestors) published named lineage: a birth, a kept name, a
     /// split or a merge. Unnamed records' lineage is not named lineage.
-    ///
-    /// Complexity: O(published events + ancestry depth).
     pub(super) fn named_lineage_after(
         &self,
         branch: &BranchId,
@@ -291,8 +329,7 @@ impl LineageState {
             .map(|published| published.publication_commit_id)
     }
 
-    /// `branch` and its fork ancestors, nearest first, each with the commit
-    /// through which its history reaches `branch`.
+    /// `branch` and its fork ancestors, nearest first, with inherited cutoffs.
     pub(super) fn ancestry(
         &self,
         branch: &BranchId,
@@ -313,9 +350,7 @@ impl LineageState {
         ancestry
     }
 
-    /// Groups consecutive events by branch and publication commit into
-    /// committed batches, binding each named created lineage to its record,
-    /// and joins each commit's published group lineage to its batch.
+    /// Groups consecutive events by branch and commit into committed batches.
     fn name_batches(
         &self,
         events: &[PublishedLineageEvent],
@@ -324,76 +359,37 @@ impl LineageState {
         let mut batches: Vec<(BranchId, CommitId, Vec<LineageEventRecord>)> = Vec::new();
         for published in events {
             let branch = published.event.branch_id();
+            let ev = published.event.as_ref().clone();
             match batches.last_mut() {
-                Some((last_branch, commit, run))
-                    if last_branch == branch && *commit == published.publication_commit_id =>
-                {
-                    run.push(published.event.as_ref().clone());
+                Some((lb, c, run)) if lb == branch && *c == published.publication_commit_id => {
+                    run.push(ev);
                 }
-                _ => batches.push((
-                    branch.clone(),
-                    published.publication_commit_id,
-                    vec![published.event.as_ref().clone()],
-                )),
+                _ => batches.push((branch.clone(), published.publication_commit_id, vec![ev])),
             }
         }
-        for record in groups {
-            let joined = batches
+        for r in groups {
+            if !batches
                 .iter()
-                .any(|(branch, commit, _)| *branch == record.branch && *commit == record.commit);
-            if !joined {
-                batches.push((record.branch.clone(), record.commit, Vec::new()));
+                .any(|(b, c, _)| *b == r.branch && *c == r.commit)
+            {
+                batches.push((r.branch.clone(), r.commit, Vec::new()));
             }
         }
         batches.sort_by_key(|(_, commit, _)| *commit);
         batches
             .into_iter()
             .map(|(branch, commit, run)| {
-                let (entities, relations) =
-                    named_holders(&run, &self.nodes, &self.relation_lineage_holders);
-                let mut batch = PersistentNameCommittedBatch::new(commit)
-                    .with_lineage_events(run, entities, relations);
-                let record = groups
+                let (e, r) = named_holders(&run, &self.nodes, &self.relation_lineage_holders);
+                let mut batch =
+                    PersistentNameCommittedBatch::new(commit).with_lineage_events(run, e, r);
+                if let Some(rec) = groups
                     .iter()
-                    .find(|record| record.branch == branch && record.commit == commit);
-                if let Some(record) = record {
-                    batch = batch.with_published_group_transitions(record.transitions.clone());
+                    .find(|g| g.branch == branch && g.commit == commit)
+                {
+                    batch = batch.with_published_group_transitions(rec.transitions.clone());
                 }
                 (branch, batch)
             })
             .collect()
     }
-}
-
-/// The records of every lineage a named `Create` or `Restore` binds.
-fn named_holders(
-    events: &[LineageEventRecord],
-    nodes: &BTreeMap<LineageId, LineageNode>,
-    relation_holders: &BTreeMap<LineageId, RelationId>,
-) -> (Vec<(LineageId, EntityId)>, Vec<(LineageId, RelationId)>) {
-    let mut entities = Vec::new();
-    let mut relations = Vec::new();
-    let named = events.iter().filter(|event| {
-        matches!(
-            event.kind(),
-            LineageEventKind::Create | LineageEventKind::Restore
-        ) && (event.name_birth().is_some() || event.kept_name().is_some())
-    });
-    for event in named {
-        for &lineage in event.targets() {
-            match event.subject() {
-                LineageSubject::Entity => {
-                    if let Some(node) = nodes.get(&lineage) {
-                        entities.push((lineage, node.entity_id()));
-                    }
-                }
-                LineageSubject::Relation => {
-                    if let Some(relation) = relation_holders.get(&lineage) {
-                        relations.push((lineage, *relation));
-                    }
-                }
-            }
-        }
-    }
-    (entities, relations)
 }

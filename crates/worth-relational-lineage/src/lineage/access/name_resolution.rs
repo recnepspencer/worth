@@ -17,6 +17,7 @@ use crate::contracts::lineage::data::name_resolution::{
 use worth_foundational::facade::AggregateIdentity;
 
 use crate::lineage::index::{LiveName, NameEntry, NameState, PersistentNameBranchIndex};
+use crate::lineage::tiered::NamingReadScope;
 
 /// One live descendant and the birth side it was named with.
 struct LiveCandidate<'index> {
@@ -40,11 +41,29 @@ impl PersistentNameBranchIndex {
         basis: CommitId,
         selection: &PersistentNameSelection,
     ) -> PersistentNameResolutionOutcome {
+        let scope = NamingReadScope::new();
+        let outcome = self.resolve_in(held, basis, selection, &scope);
+        super::name_of_record::settled(&scope, outcome)
+    }
+
+    /// [`Self::resolve`] inside a read boundary's `scope`.
+    pub(crate) fn resolve_in(
+        &self,
+        held: PersistentNameKey,
+        basis: CommitId,
+        selection: &PersistentNameSelection,
+        scope: &NamingReadScope,
+    ) -> PersistentNameResolutionOutcome {
         let mut metrics = PersistentNameResolutionMetrics::default();
         let mut ended = Ended::default();
         let mut live = Vec::new();
-        let result =
-            self.resolve_counted(held, basis, selection, &mut metrics, &mut ended, &mut live);
+        let walk = ForwardWalk {
+            basis,
+            metrics: &mut metrics,
+            footprint: &mut ended,
+            scope,
+        };
+        let result = self.resolve_counted(held, selection, walk, &mut live);
         PersistentNameResolutionOutcome {
             result,
             metrics,
@@ -56,15 +75,14 @@ impl PersistentNameBranchIndex {
         }
     }
 
-    fn resolve_counted(
-        &self,
+    fn resolve_counted<'s>(
+        &'s self,
         held: PersistentNameKey,
-        basis: CommitId,
         selection: &PersistentNameSelection,
-        metrics: &mut PersistentNameResolutionMetrics,
-        footprint: &mut Ended,
+        walk: ForwardWalk<'_, 's>,
         frontier: &mut Vec<PersistentNameTarget>,
     ) -> Resolution {
+        let basis = walk.basis;
         let empty_filter = match selection {
             PersistentNameSelection::BoundedByCarriers { carriers } => carriers.is_empty(),
             PersistentNameSelection::KeepSide { discriminator } => discriminator.is_empty(),
@@ -81,9 +99,9 @@ impl PersistentNameBranchIndex {
                 retention_floor,
             });
         }
-        metrics.index_probes += 1;
+        walk.metrics.index_probes += 1;
         let unknown = PersistentNameResolutionDenial::UnknownName { name: held };
-        let entry = self.names.get(&held).ok_or(unknown.clone())?;
+        let entry = self.entry_in(&held, walk.scope).ok_or(unknown.clone())?;
         let (since, state) = entry.state_at(basis).ok_or(unknown)?;
         let mut live = BTreeMap::new();
         let retired_at = match state {
@@ -91,14 +109,7 @@ impl PersistentNameBranchIndex {
                 live.insert(held, candidate(entry, name));
                 since
             }
-            NameState::Ended => {
-                let walk = ForwardWalk {
-                    basis,
-                    metrics,
-                    footprint,
-                };
-                self.walk_forward(held, entry, since, &mut live, walk)
-            }
+            NameState::Ended => self.walk_forward(held, entry, since, &mut live, walk),
         };
         frontier.extend(live.values().map(|found| found.live.target));
         select(&live, retired_at, selection)
@@ -112,12 +123,13 @@ impl PersistentNameBranchIndex {
         entry: &'index NameEntry,
         ended_at: CommitId,
         live: &mut BTreeMap<PersistentNameKey, LiveCandidate<'index>>,
-        walk: ForwardWalk<'_>,
+        walk: ForwardWalk<'_, 'index>,
     ) -> CommitId {
         let ForwardWalk {
             basis,
             metrics,
             footprint,
+            scope,
         } = walk;
         let mut retired_at = ended_at;
         let mut visited = HashSet::from([held]);
@@ -135,7 +147,7 @@ impl PersistentNameBranchIndex {
                     continue;
                 }
                 metrics.index_probes += 1;
-                let Some(next) = self.names.get(successor) else {
+                let Some(next) = self.entry_in(successor, scope) else {
                     continue;
                 };
                 match next.state_at(basis) {
@@ -154,10 +166,11 @@ impl PersistentNameBranchIndex {
 }
 
 /// What a forward walk reads at and records into.
-struct ForwardWalk<'walk> {
+struct ForwardWalk<'walk, 's> {
     basis: CommitId,
     metrics: &'walk mut PersistentNameResolutionMetrics,
     footprint: &'walk mut Ended,
+    scope: &'s NamingReadScope,
 }
 
 /// What ended along a walked path: record lineages and group names.

@@ -53,6 +53,9 @@ pub struct CapturedCheckpointBasis {
         contracts::identity::data::primitives::LineageId,
     )>,
     pub lineage_events: Vec<worth_relational_lineage::internal_port::durability::data::lineage_event_pages::RelationalCheckpointLineageEventRow>,
+    pub lineage_naming: Option<
+        worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::FrozenLineageNaming,
+    >,
     pub lineage_event_pages_resident: bool,
     pub lineage_event_leases:
         Vec<worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::event_residency::ResidentLineageEventPage>,

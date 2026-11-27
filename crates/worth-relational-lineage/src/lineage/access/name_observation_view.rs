@@ -11,6 +11,7 @@ use crate::contracts::lineage::data::naming::{
 };
 use crate::contracts::lineage::data::postures::LineageRecordTarget;
 use crate::lineage::index::PersistentNameBranchIndex;
+use crate::lineage::tiered::NamingReadScope;
 
 /// One branch's persistent names as an admitted observation sees them.
 ///
@@ -18,18 +19,27 @@ use crate::lineage::index::PersistentNameBranchIndex;
 /// answer, and nothing here can mutate the index. A branch that has
 /// published no named lineage reads as an empty index: every record is
 /// `Unnamed` and every held name refuses `UnknownName`.
+///
+/// Rows a cold-backed index faults live in the read boundary's scope; the
+/// boundary refuses the whole read when any fault failed.
 #[derive(Clone, Copy, Debug)]
 pub struct PersistentNameObservationView<'index> {
     index: Option<&'index PersistentNameBranchIndex>,
+    scope: &'index NamingReadScope,
     basis: CommitId,
 }
 
 impl<'index> PersistentNameObservationView<'index> {
     pub(crate) const fn new(
         index: Option<&'index PersistentNameBranchIndex>,
+        scope: &'index NamingReadScope,
         basis: CommitId,
     ) -> Self {
-        Self { index, basis }
+        Self {
+            index,
+            scope,
+            basis,
+        }
     }
 
     /// The observation's commit, at which every read answers.
@@ -37,14 +47,28 @@ impl<'index> PersistentNameObservationView<'index> {
         self.basis
     }
 
+    /// Returns the index only when `self.basis` is at or above its retention
+    /// floor; otherwise latches `BasisPruned` on `self.scope` so the read
+    /// boundary fails closed instead of answering from compacted rows.
+    fn retained_index(&self) -> Option<&'index PersistentNameBranchIndex> {
+        let index = self.index?;
+        if let Some(retention_floor) = index.retention_floor()
+            && self.basis < retention_floor
+        {
+            self.scope.fail_pruned(self.basis, retention_floor);
+            return None;
+        }
+        Some(index)
+    }
+
     /// The name `record` carries at the basis.
     ///
-    /// Complexity: O(1) expected plus O(log t) in that name's timeline for a
-    /// live record, O(t) for an ended one.
+    /// Complexity: O(1) expected plus O(log t) in that name's timeline.
     pub fn name_of_record(&self, record: LineageRecordTarget) -> PersistentNameOfRecord {
-        self.index.map_or(PersistentNameOfRecord::Unnamed, |index| {
-            index.name_of_record(record, self.basis)
-        })
+        self.retained_index()
+            .map_or(PersistentNameOfRecord::Unnamed, |index| {
+                index.name_of_record_in(record, self.basis, self.scope)
+            })
     }
 
     /// Resolves `held` at the basis under `selection`.
@@ -57,7 +81,7 @@ impl<'index> PersistentNameObservationView<'index> {
         selection: &PersistentNameSelection,
     ) -> PersistentNameResolutionOutcome {
         match self.index {
-            Some(index) => index.resolve(held, self.basis, selection),
+            Some(index) => index.resolve_in(held, self.basis, selection, self.scope),
             None => PersistentNameResolutionOutcome {
                 result: Err(PersistentNameResolutionDenial::UnknownName { name: held }),
                 metrics: Default::default(),
@@ -76,9 +100,9 @@ impl<'index> PersistentNameObservationView<'index> {
         subject: PersistentNameSubjectKind,
         digest: &[u8; PersistentNameIdentity::BYTE_LEN],
     ) -> Option<PersistentNameKey> {
-        let index = self.index?;
-        let key = index.recorded_name(subject, digest)?;
-        let born_at = index.names.get(&key)?.born_at();
+        let index = self.retained_index()?;
+        let key = index.recorded_name(subject, digest, self.scope)?;
+        let born_at = index.entry_in(&key, self.scope)?.born_at();
         (born_at <= self.basis).then_some(key)
     }
 
@@ -89,7 +113,7 @@ impl<'index> PersistentNameObservationView<'index> {
     ///
     /// Complexity: O(1) expected.
     pub fn birth_of(&self, name: PersistentNameKey) -> Option<&'index PersistentNameBirthParts> {
-        let entry = self.index?.names.get(&name)?;
+        let entry = self.retained_index()?.entry_in(&name, self.scope)?;
         (entry.born_at() <= self.basis)
             .then(|| entry.birth())
             .flatten()
@@ -104,7 +128,9 @@ impl<'index> PersistentNameObservationView<'index> {
         scheme_id: &str,
         member: &PersistentNameIdentity,
     ) -> Option<PersistentNameKey> {
-        let group = self.index?.group_of_member(scheme_id, member, self.basis)?;
+        let group = self
+            .retained_index()?
+            .group_of_member(scheme_id, member, self.basis, self.scope)?;
         Some(PersistentNameKey::Group(group))
     }
 
@@ -115,10 +141,12 @@ impl<'index> PersistentNameObservationView<'index> {
         &self,
         member: &PersistentNameIdentity,
     ) -> Vec<(&'index str, PersistentNameKey)> {
-        let Some(index) = self.index else {
+        let Some(index) = self.retained_index() else {
             return Vec::new();
         };
-        let groups = index.groups_of_member(member, self.basis).into_iter();
+        let groups = index
+            .groups_of_member(member, self.basis, self.scope)
+            .into_iter();
         groups
             .map(|(scheme, group)| (scheme, PersistentNameKey::Group(group)))
             .collect()
@@ -128,10 +156,11 @@ impl<'index> PersistentNameObservationView<'index> {
     ///
     /// Complexity: O(log t) in the group's own timeline plus O(members).
     pub fn group_members(&self, group: PersistentNameKey) -> Option<Vec<PersistentNameIdentity>> {
+        let index = self.retained_index()?;
         let PersistentNameKey::Group(group) = group else {
             return None;
         };
-        let members = self.index?.group_members_at(group, self.basis)?;
+        let members = index.group_members_at(group, self.basis, self.scope)?;
         Some(members.iter().copied().collect())
     }
 
@@ -140,7 +169,7 @@ impl<'index> PersistentNameObservationView<'index> {
     ///
     /// Complexity: O(1) expected.
     pub fn scheme_of(&self, name: PersistentNameKey) -> Option<&'index str> {
-        let entry = self.index?.names.get(&name)?;
+        let entry = self.retained_index()?.entry_in(&name, self.scope)?;
         (entry.born_at() <= self.basis)
             .then(|| entry.scheme_id())
             .flatten()
@@ -149,13 +178,21 @@ impl<'index> PersistentNameObservationView<'index> {
 
 #[doc(hidden)]
 pub trait PersistentNameObservationViewOwnerPort<'index>: Sized {
-    fn new(index: Option<&'index PersistentNameBranchIndex>, basis: CommitId) -> Self;
+    fn new(
+        index: Option<&'index PersistentNameBranchIndex>,
+        scope: &'index NamingReadScope,
+        basis: CommitId,
+    ) -> Self;
 }
 
 impl<'index> PersistentNameObservationViewOwnerPort<'index>
     for PersistentNameObservationView<'index>
 {
-    fn new(index: Option<&'index PersistentNameBranchIndex>, basis: CommitId) -> Self {
-        Self::new(index, basis)
+    fn new(
+        index: Option<&'index PersistentNameBranchIndex>,
+        scope: &'index NamingReadScope,
+        basis: CommitId,
+    ) -> Self {
+        Self::new(index, scope, basis)
     }
 }

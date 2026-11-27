@@ -89,6 +89,7 @@ pub(super) fn assemble(
         lineage: metadata.lineage,
         lineage_events: metadata.lineage_events,
         lineage_basis,
+        naming: Default::default(),
         derived_indexes: metadata.derived_indexes,
         allocations: ManifestMetadataAllocations {
             _coverage: memory,

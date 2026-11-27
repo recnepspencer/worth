@@ -1,6 +1,7 @@
 //! Selected directory DATA and the independently completed catalog frontier.
 use worth_relational_branch::internal_port as branch;
 use worth_relational_contracts::internal_port as contracts;
+mod naming;
 pub mod source_retirement;
 use crate::durability::checkpoint_admission::{
     FrozenSelectedCaptureBase, PreparedCheckpointCaptureBase, SelectedCheckpointCaptureBase,
@@ -14,7 +15,9 @@ use branch::history::commit::cold_catalog::ColdCommitCatalog;
 use branch::history::commit::index_entry::RelationalCommitIndexEntry;
 use contracts::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal as Refusal;
 use contracts::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial as Denial;
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
+use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::cold_naming::LineageNamingAckHook;
 use worth_relational_storage::internal_port::durability::medium::checkpoint_acknowledgement_denial::RelationalCheckpointAcknowledgementDenial as Ack;
 use worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource;
 use worth_relational_storage::internal_port::storage::residency::working_set::WorkingSetAccountant;
@@ -29,11 +32,14 @@ struct CheckpointSelectionState {
     admission_loan: bool,
     capture_base: Option<Arc<SelectedCheckpointCaptureBase>>,
     directory: Option<NativeCheckpointDirectoryEdge>,
+    naming_directory: Option<NativeCheckpointDirectoryEdge>,
+    naming_directory_loan: bool,
     acknowledged_index_definition_frontier: u64,
     initial_inputs:
         Option<crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact>,
     working_set: Option<Arc<WorkingSetAccountant>>,
     cold_catalog: Option<Weak<ColdCommitCatalog>>,
+    naming_ack_hook: Option<Weak<LineageNamingAckHook>>,
 }
 impl Default for CheckpointSelectionState {
     fn default() -> Self {
@@ -42,10 +48,13 @@ impl Default for CheckpointSelectionState {
             admission_loan: false,
             capture_base: None,
             directory: None,
+            naming_directory: None,
+            naming_directory_loan: false,
             acknowledged_index_definition_frontier: 1,
             initial_inputs: None,
             working_set: None,
             cold_catalog: None,
+            naming_ack_hook: None,
         }
     }
 }
@@ -57,6 +66,7 @@ pub(crate) struct RelationalCheckpointManifestPublication {
     directory: PreparedCheckpointDirectory,
     initial_inputs:
         Option<crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact>,
+    naming_generations: BTreeMap<contracts::history::data::coordinates::BranchId, u64>,
 }
 
 impl RelationalCheckpointManifestSelection {
@@ -171,6 +181,7 @@ impl RelationalCheckpointManifestSelection {
             capture_base: None,
             selection: self.clone(),
             initial_inputs: None,
+            naming_generations: BTreeMap::new(),
             directory: PreparedCheckpointDirectory {
                 manifest,
                 source,
@@ -182,41 +193,27 @@ impl RelationalCheckpointManifestSelection {
         &self,
         input: crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact,
     ) {
-        self.selected
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .initial_inputs = Some(input);
+        self.lock_state().initial_inputs = Some(input);
     }
     pub fn set_working_set(&self, working_set: Option<Arc<WorkingSetAccountant>>) {
-        self.selected
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .working_set = working_set;
+        self.lock_state().working_set = working_set;
     }
     pub fn register_cold_catalog(&self, catalog: &Arc<ColdCommitCatalog>) {
-        self.selected
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .cold_catalog = Some(Arc::downgrade(catalog));
+        self.lock_state().cold_catalog = Some(Arc::downgrade(catalog));
+    }
+    pub fn register_naming_ack_hook(&self, hook: Weak<LineageNamingAckHook>) {
+        self.lock_state().naming_ack_hook = Some(hook);
     }
     pub fn restore_data(&self, directory: Arc<RelationalCheckpointDirectory>) {
-        let prior = {
-            let mut state = self
-                .selected
-                .lock()
-                .unwrap_or_else(|error| error.into_inner());
-            state
-                .directory
-                .replace(NativeCheckpointDirectoryEdge::new(directory))
-        };
+        let prior = self
+            .lock_state()
+            .directory
+            .replace(NativeCheckpointDirectoryEdge::new(directory));
         drop(prior);
     }
     pub fn restore_selected(&self, directory: Arc<RelationalCheckpointDirectory>) {
         let prior = {
-            let mut state = self
-                .selected
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            let mut state = self.lock_state();
             state.acknowledged_index_definition_frontier =
                 directory.manifest.index_definition_frontier;
             state
@@ -260,23 +257,23 @@ impl RelationalCheckpointManifestPublication {
             }
         }
     }
-    pub(crate) fn validate_coverage(
-        &self,
-    ) -> Result<(), worth_relational_storage::internal_port::durability::medium::checkpoint_acknowledgement_denial::RelationalCheckpointAcknowledgementDenial>{
-        let selected = self
-            .selection
-            .selected
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
+    pub(crate) fn with_naming_generations(
+        mut self,
+        generations: BTreeMap<contracts::history::data::coordinates::BranchId, u64>,
+    ) -> Self {
+        self.naming_generations = generations;
+        self
+    }
+
+    pub(crate) fn validate_coverage(&self) -> Result<(), Ack> {
+        let selected = self.selection.lock_state();
         if self.regresses_initial_inputs(&selected)
             || selected
                 .directory
                 .as_ref()
                 .is_some_and(|prior| self.regresses(&prior.manifest))
         {
-            return Err(
-                worth_relational_storage::internal_port::durability::medium::checkpoint_acknowledgement_denial::RelationalCheckpointAcknowledgementDenial::StaleCapture,
-            );
+            return Err(Ack::StaleCapture);
         }
         Ok(())
     }
@@ -285,6 +282,7 @@ impl RelationalCheckpointManifestPublication {
             || prior.coverage.up_to_branch_transition
                 > self.directory.manifest.coverage.up_to_branch_transition
             || prior.index_definition_frontier > self.directory.manifest.index_definition_frontier
+            || self.regresses_naming_retention_floor(prior)
     }
     pub(crate) fn source_matches(&self, source: &Arc<dyn RelationalDurableColdSource>) -> bool {
         Arc::ptr_eq(&self.directory.source, source)
@@ -292,13 +290,7 @@ impl RelationalCheckpointManifestPublication {
     pub(crate) fn begin_selected_directory_admission(
         &self,
     ) -> crate::durability::data::CheckpointDirectoryAdmission {
-        let working_set = self
-            .selection
-            .selected
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .working_set
-            .clone();
+        let working_set = self.selection.lock_state().working_set.clone();
         crate::durability::data::CheckpointDirectoryAdmission::with_working_set(
             self.directory.clone(),
             working_set,
@@ -312,9 +304,7 @@ impl RelationalCheckpointManifestPublication {
     ) -> Result<(), Ack> {
         let cold = self
             .selection
-            .selected
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
+            .lock_state()
             .cold_catalog
             .as_ref()
             .and_then(Weak::upgrade);
@@ -374,11 +364,24 @@ impl RelationalCheckpointManifestPublication {
         {
             return Err(Ack::StaleCapture);
         }
+        // Acquire the lineage write lock non-blockingly BEFORE mutating
+        // `selected` so a read callback holding the lineage read lock and
+        // querying `cold_naming_observation()` can never deadlock ACK.
+        let hook = selected.naming_ack_hook.as_ref().and_then(Weak::upgrade);
+        let ack_guard = match hook.as_ref() {
+            Some(hook) => Some(hook.try_lock_for_ack().ok_or(Ack::Busy)?),
+            None => None,
+        };
         selected.initial_inputs = self.initial_inputs.clone();
         selected.capture_base = self.capture_base.as_ref().and_then(|base| base.snapshot());
-        Ok(selected
+        let prior = selected
             .directory
-            .replace(NativeCheckpointDirectoryEdge::new(directory))
-            .map(NativeCheckpointDirectoryEdge::into_original))
+            .replace(NativeCheckpointDirectoryEdge::new(directory.clone()))
+            .map(NativeCheckpointDirectoryEdge::into_original);
+        let displaced_naming =
+            self.consolidate_cold_naming_locked(&mut selected, ack_guard, &directory);
+        drop(selected);
+        drop(displaced_naming);
+        Ok(prior)
     }
 }

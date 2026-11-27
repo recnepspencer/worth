@@ -7,15 +7,17 @@
 //! publication maintained. A record that cannot apply leaves its branch's
 //! state unavailable: group finalization and group reads on that branch then
 //! refuse typed until canonical history rebuilds it.
+//!
+//! A cold-backed runtime holds only the records published since its reopen;
+//! the earlier log lives in the selected checkpoint's paged group log.
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
-use crate::lineage::groups::{
-    BranchGroupState, CommittedGroupTransition, GroupStateAt, GroupStateDenial,
-};
+use crate::lineage::groups::{BranchGroupState, CommittedGroupTransition, GroupStateDenial};
 
+use super::recovery_token::FullLineageRecoveryToken;
 use super::LineageState;
 
 /// One commit's published group transitions.
@@ -27,23 +29,30 @@ pub(super) struct PublishedGroupLineage {
 }
 
 /// Every branch's derived group state, or the refusal that stopped it.
+///
+/// Deliberately not `Clone`: [`Self::fork_all`] shares tables copy-on-write.
 #[derive(Debug, Default)]
 pub(crate) struct BranchGroupStates {
-    by_branch: BTreeMap<BranchId, Result<BranchGroupState, GroupStateDenial>>,
+    pub(super) by_branch: BTreeMap<BranchId, Result<BranchGroupState, GroupStateDenial>>,
 }
 
 impl BranchGroupStates {
-    /// A whole-state copy (runtime fork or reconstruction lane only).
-    pub(super) fn duplicate_whole(&self) -> Self {
-        let branches = self.by_branch.iter().map(|(branch, state)| {
-            let copy = state
-                .as_ref()
-                .map(BranchGroupState::duplicate_for_branch_fork);
-            (branch.clone(), copy.map_err(Clone::clone))
-        });
-        Self {
-            by_branch: branches.collect(),
-        }
+    /// Every state for a forked runtime, preserving each branch's own cold base.
+    ///
+    /// Complexity: O(branches * schemes).
+    pub(super) fn fork_all(&self) -> Self {
+        let by_branch = self
+            .by_branch
+            .iter()
+            .map(|(branch, state)| {
+                let state = match state {
+                    Ok(state) => Ok(state.fork(state.base().cloned())),
+                    Err(denial) => Err(denial.clone()),
+                };
+                (branch.clone(), state)
+            })
+            .collect();
+        Self { by_branch }
     }
 }
 
@@ -62,12 +71,14 @@ impl LineageState {
         if transitions.is_empty() {
             return;
         }
-        let slot = self
-            .group_states
-            .by_branch
-            .entry(branch.clone())
-            .or_insert_with(|| Ok(BranchGroupState::default()));
-        if let Ok(state) = slot
+        self.bump_branch_generation(branch);
+        if !self.group_states.by_branch.contains_key(branch) {
+            self.group_states
+                .by_branch
+                .insert(branch.clone(), Ok(BranchGroupState::empty_over(None)));
+        }
+        if let Some(slot) = self.group_states.by_branch.get_mut(branch)
+            && let Ok(state) = slot
             && let Err(denial) = state.apply(commit, &transitions)
         {
             *slot = Err(denial);
@@ -81,13 +92,21 @@ impl LineageState {
 
     /// Replaces the published group lineage with canonical recovered records
     /// and rebuilds every branch's group state along the recorded fork
-    /// ancestry, refusing the first branch whose records cannot apply.
+    /// ancestry, refusing the first branch whose records cannot apply. Only a
+    /// full-history state can rebuild; a cold-backed one refuses.
     ///
     /// Complexity: O(branches * published group lineage).
     pub fn replace_group_lineage(
         &mut self,
         mut records: Vec<(BranchId, CommitId, Vec<CommittedGroupTransition>)>,
     ) -> Result<(), (BranchId, GroupStateDenial)> {
+        if self.full_history.is_none() {
+            let branch = records.first().map(|(branch, ..)| branch.clone());
+            return Err((
+                branch.unwrap_or(BranchId(String::new())),
+                GroupStateDenial::CheckpointedUnavailable,
+            ));
+        }
         records.sort_by_key(|(_, commit, _)| *commit);
         self.published_group_lineage = records
             .into_iter()
@@ -98,7 +117,12 @@ impl LineageState {
                 transitions: transitions.into(),
             })
             .collect();
-        self.rebuild_group_states();
+        let full = self
+            .full_history
+            .take()
+            .expect("full_history checked present above");
+        self.rebuild_group_states(&full);
+        self.full_history = Some(full);
         for (branch, state) in &self.group_states.by_branch {
             if let Err(denial) = state {
                 return Err((branch.clone(), denial.clone()));
@@ -119,9 +143,9 @@ impl LineageState {
         }
     }
 
-    /// The published group lineage of `branch` at exactly `commit`.
+    /// The resident published group lineage of `branch` at exactly `commit`.
     ///
-    /// Complexity: O(log P) in published group lineage records.
+    /// Complexity: O(log P) in resident published group lineage records.
     pub(super) fn group_lineage_at(
         &self,
         branch: &BranchId,
@@ -136,19 +160,28 @@ impl LineageState {
             .find(|record| &record.branch == branch)
     }
 
-    /// Starts `target`'s group state from `source`'s at `fork_commit`.
+    /// Starts `target`'s group state from `source`'s at `fork_commit`,
+    /// preserving `source`'s own actual cold base when shared unchanged.
     pub(super) fn fork_group_state(
         &mut self,
         target: &BranchId,
         source: &BranchId,
         fork_commit: CommitId,
     ) {
-        let inherited = match self.group_states.by_branch.get(source) {
-            None => return,
-            Some(Ok(state)) if state.latest_commit().is_none_or(|at| at <= fork_commit) => {
-                Ok(state.duplicate_for_branch_fork())
+        let inherited = match (
+            self.group_states.by_branch.get(source),
+            self.full_history.as_ref(),
+        ) {
+            (None, _) => return,
+            (Some(Ok(state)), _) if state.latest_commit().is_none_or(|at| at <= fork_commit) => {
+                let link = state.base().map(|base| base.forked(target.clone()));
+                Ok(state.fork(link))
             }
-            Some(_) => self.rebuild_branch_group_state(target, CommitId(u64::MAX)),
+            (Some(Err(denial)), _) => Err(denial.clone()),
+            (Some(Ok(_)), Some(full)) => {
+                self.rebuild_branch_group_state(full, target, CommitId(u64::MAX))
+            }
+            (Some(Ok(_)), None) => self.rebuild_historical_group_state(source, fork_commit),
         };
         self.group_states
             .by_branch
@@ -158,7 +191,8 @@ impl LineageState {
     /// Rebuilds every branch's group state from published group lineage.
     ///
     /// Complexity: O(branches * published group lineage).
-    pub(super) fn rebuild_group_states(&mut self) {
+    pub(super) fn rebuild_group_states(&mut self, full: &FullLineageRecoveryToken) {
+        full.assert_owner(self.state_id);
         let mut branches: Vec<BranchId> = self.branch_forks.keys().cloned().collect();
         branches.extend(
             self.published_group_lineage
@@ -170,44 +204,21 @@ impl LineageState {
         let by_branch = branches
             .into_iter()
             .map(|branch| {
-                let state = self.rebuild_branch_group_state(&branch, CommitId(u64::MAX));
+                let state = self.rebuild_branch_group_state(full, &branch, CommitId(u64::MAX));
                 (branch, state)
             })
             .collect();
         self.group_states = BranchGroupStates { by_branch };
     }
 
-    /// `branch`'s group state as of `commit`. When the maintained state has
-    /// applied nothing after `commit` it is that state, borrowed in O(1):
-    /// every group lineage record of the branch's ancestry it holds is at or
-    /// before `commit`, and it holds all of them. Otherwise the state is
-    /// rebuilt for that historical commit.
-    ///
-    /// Complexity: O(1) at the head; O(published group lineage through
-    /// `commit`) for a historical commit (delta-bounded historical selection
-    /// is tree-based undo's `P1-F`).
-    pub(crate) fn group_state_at(
-        &self,
-        branch: &BranchId,
-        commit: CommitId,
-    ) -> Result<GroupStateAt<'_>, GroupStateDenial> {
-        match self.group_states.by_branch.get(branch) {
-            Some(Ok(state)) if state.latest_commit().is_none_or(|at| at <= commit) => {
-                Ok(GroupStateAt::Head(state))
-            }
-            _ => self
-                .rebuild_branch_group_state(branch, commit)
-                .map(GroupStateAt::Rebuilt),
-        }
-    }
-
     /// `branch`'s group state through `cutoff`, applying each ancestor's own
-    /// records up to the commit its descendant forked at.
+    /// resident records up to the commit its descendant forked at.
     ///
     /// Complexity: O(published group lineage through `cutoff`); records
     /// after it are never visited.
     pub(super) fn rebuild_branch_group_state(
         &self,
+        _full: &FullLineageRecoveryToken,
         branch: &BranchId,
         cutoff: CommitId,
     ) -> Result<BranchGroupState, GroupStateDenial> {

@@ -6,19 +6,24 @@
 //! in that posture, overlaps two live groups' members, or carries lineage
 //! events its own outcome does not imply. Keeper choice and identity minting
 //! belong to the group naming authority, which recovery re-runs separately.
+//!
+//! Each scheme's live groups, retired names and member owners are tiered
+//! tables: a reopened runtime faults only the rows a commit touches.
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use worth_foundational::facade::AggregateIdentity;
 
-use crate::contracts::aggregate_identity::group_lineage::AggregateGroupLineageEvent as Event;
 use crate::contracts::aggregate_identity::transition::group::model::{
-    AggregateContinuityRule, AggregateGroupOrigin, AggregatePriorGroup,
+    AggregateContinuityRule, AggregatePriorGroup,
 };
 use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::lineage::data::naming::PersistentNameIdentity;
+use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
+use crate::lineage::naming_pages::tables;
+use crate::lineage::tiered::{NamingBaseLink, TieredMap};
 
-use super::{CommittedGroupTransition, GroupTransitionKind};
+use super::CommittedGroupTransition;
 
 /// Why a committed group transition cannot apply to a branch's group state.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -48,30 +53,58 @@ pub enum GroupStateDenial {
         scheme_id: String,
         detail: &'static str,
     },
+    /// A cold group page the state needed is missing or damaged.
+    StorageUnavailable(Cause),
+    /// The reopened checkpoint recorded this branch's group state unavailable.
+    CheckpointedUnavailable,
 }
+
+impl From<Cause> for GroupStateDenial {
+    fn from(cause: Cause) -> Self {
+        Self::StorageUnavailable(cause)
+    }
+}
+
+pub(crate) type SchemeKey<T> = (String, T);
 
 crate::lineage::clone_fences::assert_not_clone!(SchemeGroups);
 crate::lineage::clone_fences::assert_not_clone!(BranchGroupState);
 
 /// One installed scheme's live groups, retired names and member owners.
 ///
-/// Not `Clone`: it holds every live group's member set. A fork copies it
-/// only through [`BranchGroupState::duplicate_for_branch_fork`].
+/// Not `Clone`: it holds every live group's member set. Forks share tables
+/// copy-on-write through [`BranchGroupState::fork`].
 #[derive(Debug, Eq, PartialEq)]
 pub struct SchemeGroups {
-    rule: AggregateContinuityRule,
-    live: BTreeMap<AggregateIdentity, AggregatePriorGroup>,
-    retired: BTreeSet<AggregateIdentity>,
-    member_owner: BTreeMap<PersistentNameIdentity, AggregateIdentity>,
+    pub(super) id: String,
+    pub(super) rule: AggregateContinuityRule,
+    pub(super) live: TieredMap<SchemeKey<AggregateIdentity>, AggregatePriorGroup>,
+    pub(super) retired: TieredMap<SchemeKey<AggregateIdentity>, ()>,
+    pub(super) member_owner: TieredMap<SchemeKey<PersistentNameIdentity>, AggregateIdentity>,
 }
 
 impl SchemeGroups {
-    fn new(rule: AggregateContinuityRule) -> Self {
+    pub(crate) fn over(
+        id: String,
+        rule: AggregateContinuityRule,
+        base: Option<NamingBaseLink>,
+    ) -> Self {
         Self {
+            id,
             rule,
-            live: BTreeMap::new(),
-            retired: BTreeSet::new(),
-            member_owner: BTreeMap::new(),
+            live: TieredMap::over(tables::GROUP_LIVE, base.clone()),
+            retired: TieredMap::over(tables::GROUP_RETIRED, base.clone()),
+            member_owner: TieredMap::over(tables::GROUP_MEMBER_OWNER, base),
+        }
+    }
+
+    fn fork(&self, base: Option<NamingBaseLink>) -> Self {
+        Self {
+            id: self.id.clone(),
+            rule: self.rule,
+            live: self.live.fork(base.clone()),
+            retired: self.retired.fork(base.clone()),
+            member_owner: self.member_owner.fork(base),
         }
     }
 
@@ -79,70 +112,164 @@ impl SchemeGroups {
         self.rule
     }
 
-    /// Live groups in identity order.
-    pub fn live(&self) -> impl Iterator<Item = &AggregatePriorGroup> {
-        self.live.values()
+    pub fn id(&self) -> &str {
+        &self.id
     }
 
-    pub fn group(&self, identity: &AggregateIdentity) -> Option<&AggregatePriorGroup> {
-        self.live.get(identity)
+    pub(super) fn key<T>(&self, value: T) -> SchemeKey<T> {
+        (self.id.clone(), value)
     }
 
-    /// Every group name this scheme has retired and not revived.
-    pub fn retired(&self) -> &BTreeSet<AggregateIdentity> {
-        &self.retired
+    fn rebind_clean(&mut self, base: NamingBaseLink) {
+        self.live.rebind_clean(base.clone());
+        self.retired.rebind_clean(base.clone());
+        self.member_owner.rebind_clean(base);
     }
 
-    /// The live group `member` belongs to.
-    ///
-    /// Complexity: O(log M) in the scheme's live member count.
-    pub fn owner_of(&self, member: &PersistentNameIdentity) -> Option<AggregateIdentity> {
-        self.member_owner.get(member).copied()
+    fn rebind_source(
+        &mut self,
+        source: &std::sync::Arc<dyn crate::lineage::tiered::ColdNamingSource>,
+        root: Option<&crate::contracts::history::data::coordinates::BranchId>,
+    ) {
+        self.live.rebind_source(source, root);
+        self.retired.rebind_source(source, root);
+        self.member_owner.rebind_source(source, root);
+    }
+
+    pub(crate) fn base(&self) -> Option<&NamingBaseLink> {
+        self.live.base()
+    }
+
+    /// Every table of this scheme, for capture.
+    pub(crate) fn encoded_changes(&self) -> Vec<(Vec<u8>, Option<Vec<u8>>)> {
+        let mut changes = self.live.encoded_changes();
+        changes.extend(self.retired.encoded_changes());
+        changes.extend(self.member_owner.encoded_changes());
+        changes
+    }
+
+    /// Every live row of this scheme merged against `store`, for mixed-base capture.
+    pub(crate) fn collect_encoded_in(
+        &self,
+        store: Option<&crate::lineage::naming_pages::store::ColdNamingStore>,
+    ) -> Result<Vec<(Vec<u8>, Option<Vec<u8>>)>, Cause> {
+        let mut rows = self.live.collect_encoded_in(store)?;
+        rows.extend(self.retired.collect_encoded_in(store)?);
+        rows.extend(self.member_owner.collect_encoded_in(store)?);
+        Ok(rows)
     }
 }
 
 /// Every installed scheme's groups on one branch.
 ///
-/// Not `Clone`: a copy is O(groups × members). Head reads borrow the
-/// maintained state; a branch fork copies it through
-/// [`Self::duplicate_for_branch_fork`].
+/// Deliberately not `Clone`: head reads borrow the maintained state and forks
+/// share tables copy-on-write through [`Self::fork`].
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct BranchGroupState {
-    schemes: BTreeMap<String, SchemeGroups>,
-    latest_commit: Option<CommitId>,
+    pub(super) schemes: BTreeMap<String, SchemeGroups>,
+    pub(super) earliest_commit: Option<CommitId>,
+    pub(super) latest_commit: Option<CommitId>,
+    pub(super) base: Option<NamingBaseLink>,
 }
 
 impl BranchGroupState {
-    /// A forked branch's explicit O(groups × members) copy of this state.
-    pub fn duplicate_for_branch_fork(&self) -> Self {
-        let schemes = self.schemes.iter().map(|(id, groups)| {
-            let copy = SchemeGroups {
-                rule: groups.rule,
-                live: groups.live.clone(),
-                retired: groups.retired.clone(),
-                member_owner: groups.member_owner.clone(),
-            };
-            (id.clone(), copy)
-        });
+    /// The state a checkpoint recorded: scheme headers resident, tables cold.
+    pub(crate) fn over(
+        schemes: impl IntoIterator<Item = (String, AggregateContinuityRule)>,
+        earliest_commit: Option<CommitId>,
+        latest_commit: Option<CommitId>,
+        base: Option<NamingBaseLink>,
+    ) -> Self {
         Self {
-            schemes: schemes.collect(),
-            latest_commit: self.latest_commit,
+            schemes: schemes
+                .into_iter()
+                .map(|(id, rule)| (id.clone(), SchemeGroups::over(id, rule, base.clone())))
+                .collect(),
+            earliest_commit,
+            latest_commit,
+            base,
         }
+    }
+
+    /// An empty state whose tables read through `base`.
+    pub(crate) fn empty_over(base: Option<NamingBaseLink>) -> Self {
+        Self::over(std::iter::empty(), None, None, base)
     }
 
     pub fn scheme(&self, scheme_id: &str) -> Option<&SchemeGroups> {
         self.schemes.get(scheme_id)
     }
 
-    pub fn schemes(&self) -> impl Iterator<Item = (&str, &SchemeGroups)> {
-        self.schemes
-            .iter()
-            .map(|(id, groups)| (id.as_str(), groups))
+    /// This state for a fork, sharing every table copy-on-write and preserving
+    /// whether each individual scheme is backed by `base` or newly resident.
+    ///
+    /// Complexity: O(schemes).
+    pub(crate) fn fork(&self, base: Option<NamingBaseLink>) -> Self {
+        Self {
+            schemes: self
+                .schemes
+                .iter()
+                .map(|(id, groups)| {
+                    let scheme_base = if groups.base().is_some() {
+                        base.clone()
+                    } else {
+                        None
+                    };
+                    (id.clone(), groups.fork(scheme_base))
+                })
+                .collect(),
+            earliest_commit: self.earliest_commit,
+            latest_commit: self.latest_commit,
+            base,
+        }
+    }
+
+    /// Rebinds every scheme table cleanly onto an acknowledged cold base.
+    pub(crate) fn rebind_clean(&mut self, base: NamingBaseLink) {
+        for groups in self.schemes.values_mut() {
+            groups.rebind_clean(base.clone());
+        }
+        self.base = Some(base);
+    }
+
+    /// Rebinds all existing cold bases onto `source` (and optional `checkpointed_root`).
+    pub(crate) fn rebind_source(
+        &mut self,
+        source: &std::sync::Arc<dyn crate::lineage::tiered::ColdNamingSource>,
+        root: Option<&crate::contracts::history::data::coordinates::BranchId>,
+    ) {
+        if let Some(base) = &mut self.base {
+            *base = base.rebind_source(std::sync::Arc::clone(source), root);
+        }
+        for groups in self.schemes.values_mut() {
+            groups.rebind_source(source, root);
+        }
+    }
+
+    /// The actual cold base link backing this branch group state, if any.
+    pub(crate) fn base(&self) -> Option<&NamingBaseLink> {
+        self.base.as_ref()
+    }
+
+    /// The earliest commit whose transitions this state applied.
+    pub const fn earliest_commit(&self) -> Option<CommitId> {
+        self.earliest_commit
     }
 
     /// The newest commit whose transitions this state applied.
     pub const fn latest_commit(&self) -> Option<CommitId> {
         self.latest_commit
+    }
+
+    /// Installed scheme headers in id order.
+    pub(crate) fn scheme_headers(&self) -> impl Iterator<Item = (&str, AggregateContinuityRule)> {
+        self.schemes
+            .iter()
+            .map(|(id, groups)| (id.as_str(), groups.rule))
+    }
+
+    pub(crate) fn schemes_raw(&self) -> impl Iterator<Item = &SchemeGroups> {
+        self.schemes.values()
     }
 
     /// Verifies one commit's transitions against this state without applying
@@ -158,8 +285,15 @@ impl BranchGroupState {
                     scheme_id: scheme_id.to_owned(),
                 });
             }
-            let empty = SchemeGroups::new(committed.scheme.rule());
-            verify(self.schemes.get(scheme_id).unwrap_or(&empty), committed)?;
+            let empty;
+            let groups = match self.schemes.get(scheme_id) {
+                Some(groups) => groups,
+                None => {
+                    empty = SchemeGroups::over(scheme_id.to_owned(), committed.scheme.rule(), None);
+                    &empty
+                }
+            };
+            super::group_verify::verify(groups, committed)?;
         }
         Ok(())
     }
@@ -178,10 +312,17 @@ impl BranchGroupState {
         for committed in transitions {
             self.schemes
                 .entry(committed.scheme_id().to_owned())
-                .or_insert_with(|| SchemeGroups::new(committed.scheme.rule()))
-                .install(committed);
+                .or_insert_with(|| {
+                    SchemeGroups::over(
+                        committed.scheme_id().to_owned(),
+                        committed.scheme.rule(),
+                        None,
+                    )
+                })
+                .install(committed)?;
         }
         if !transitions.is_empty() {
+            self.earliest_commit = Some(self.earliest_commit.map_or(commit, |at| at.min(commit)));
             self.latest_commit = Some(self.latest_commit.map_or(commit, |at| at.max(commit)));
         }
         Ok(())
@@ -208,145 +349,8 @@ impl std::ops::Deref for GroupStateAt<'_> {
     }
 }
 
-fn verify(
-    groups: &SchemeGroups,
-    committed: &CommittedGroupTransition,
-) -> Result<(), GroupStateDenial> {
-    let scheme_id = || committed.scheme_id().to_owned();
-    let posture = |group, detail| GroupStateDenial::GroupPosture {
-        scheme_id: scheme_id(),
-        group,
-        detail,
-    };
-    if groups.rule != committed.scheme.rule() {
-        return Err(GroupStateDenial::RuleChanged {
-            scheme_id: scheme_id(),
-        });
-    }
-    let transition = &committed.transition;
-    for retired in &transition.retired {
-        if !groups.live.contains_key(retired) {
-            return Err(posture(*retired, "only a live group retires"));
-        }
-    }
-    let mut next_owner = BTreeMap::new();
-    let mut touched: BTreeSet<AggregateIdentity> = transition.retired.clone();
-    for assignment in &transition.assignments {
-        let identity = assignment.identity;
-        let (live, retired) = (
-            groups.live.contains_key(&identity),
-            groups.retired.contains(&identity),
-        );
-        let lawful = match assignment.origin {
-            AggregateGroupOrigin::Kept => live && !transition.retired.contains(&identity),
-            AggregateGroupOrigin::Born => !live && !retired,
-            AggregateGroupOrigin::Revived => retired && !live,
-        };
-        if !lawful {
-            return Err(posture(
-                identity,
-                "origin contradicts the branch's group state",
-            ));
-        }
-        if !touched.insert(identity) {
-            return Err(posture(identity, "one group is assigned twice"));
-        }
-        if assignment.members.is_empty() {
-            return Err(GroupStateDenial::EmptyGroup {
-                scheme_id: scheme_id(),
-                group: identity,
-            });
-        }
-        for (member, _) in assignment.members.iter() {
-            if next_owner.insert(*member, identity).is_some() {
-                return Err(GroupStateDenial::MemberOverlap {
-                    scheme_id: scheme_id(),
-                    member: *member,
-                });
-            }
-        }
-    }
-    for member in next_owner.keys() {
-        if let Some(owner) = groups.member_owner.get(member)
-            && !touched.contains(owner)
-        {
-            return Err(GroupStateDenial::MemberOverlap {
-                scheme_id: scheme_id(),
-                member: *member,
-            });
-        }
-    }
-    verify_events(groups, committed)
-}
-
-fn verify_events(
-    groups: &SchemeGroups,
-    committed: &CommittedGroupTransition,
-) -> Result<(), GroupStateDenial> {
-    let mismatch = |detail| GroupStateDenial::EventMismatch {
-        scheme_id: committed.scheme_id().to_owned(),
-        detail,
-    };
-    let transition = &committed.transition;
-    let assigned: BTreeSet<_> = transition.assignments.iter().map(|a| a.identity).collect();
-    let mut implied = BTreeSet::new();
-    for assignment in &transition.assignments {
-        match assignment.origin {
-            AggregateGroupOrigin::Born => implied.insert(Event::Born {
-                group: assignment.identity,
-            }),
-            AggregateGroupOrigin::Revived => implied.insert(Event::Revived {
-                group: assignment.identity,
-            }),
-            AggregateGroupOrigin::Kept => false,
-        };
-    }
-    implied.extend(
-        transition
-            .retired
-            .iter()
-            .map(|group| Event::Retired { group: *group }),
-    );
-    for event in &transition.lineage {
-        match *event {
-            Event::SplitFrom { fragment, source } => {
-                let lawful = committed.kind == GroupTransitionKind::Partition
-                    && assigned.contains(&fragment)
-                    && fragment != source
-                    && groups.live.contains_key(&source);
-                if !lawful {
-                    return Err(mismatch(
-                        "a split edge must leave a live group for a next-state group",
-                    ));
-                }
-            }
-            Event::MergedInto { absorbed, keeper } => {
-                let lawful = committed.kind == GroupTransitionKind::Partition
-                    && transition.retired.contains(&absorbed)
-                    && assigned.contains(&keeper);
-                if !lawful {
-                    return Err(mismatch(
-                        "a merge edge must leave a retired group for a next-state group",
-                    ));
-                }
-            }
-            Event::Born { .. } | Event::Revived { .. } | Event::Retired { .. } => {
-                if !implied.remove(event) {
-                    return Err(mismatch("a lifecycle event the outcome does not imply"));
-                }
-            }
-        }
-    }
-    if !implied.is_empty() {
-        return Err(mismatch(
-            "the outcome implies a lifecycle event the commit omits",
-        ));
-    }
-    Ok(())
-}
-
 impl SchemeGroups {
-    fn install(&mut self, committed: &CommittedGroupTransition) {
+    fn install(&mut self, committed: &CommittedGroupTransition) -> Result<(), Cause> {
         let transition = &committed.transition;
         let touched: BTreeSet<_> = transition
             .retired
@@ -355,22 +359,29 @@ impl SchemeGroups {
             .chain(transition.assignments.iter().map(|a| a.identity))
             .collect();
         for identity in &touched {
-            if let Some(prior) = self.live.remove(identity) {
+            if let Some(prior) = self.live.remove(&self.key(*identity))? {
                 for (member, _) in prior.members.iter() {
-                    if self.member_owner.get(member) == Some(identity) {
-                        self.member_owner.remove(member);
+                    let key = self.key(*member);
+                    if self.member_owner.get(&key)?.as_deref() == Some(identity) {
+                        self.member_owner.remove(&key)?;
                     }
                 }
             }
         }
-        self.retired.extend(transition.retired.iter().copied());
+        for retired in &transition.retired {
+            self.retired.insert(self.key(*retired), ());
+        }
         for assignment in &transition.assignments {
-            self.retired.remove(&assignment.identity);
+            let key = self.key(assignment.identity);
+            if self.retired.contains_key(&key)? {
+                self.retired.remove(&key)?;
+            }
             for (member, _) in assignment.members.iter() {
-                self.member_owner.insert(*member, assignment.identity);
+                self.member_owner
+                    .insert(self.key(*member), assignment.identity);
             }
             self.live.insert(
-                assignment.identity,
+                key,
                 AggregatePriorGroup {
                     identity: assignment.identity,
                     anchor: assignment.anchor,
@@ -379,5 +390,6 @@ impl SchemeGroups {
                 },
             );
         }
+        Ok(())
     }
 }

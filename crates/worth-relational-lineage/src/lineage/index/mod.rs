@@ -5,33 +5,39 @@
 //! [`PersistentNameBranchIndex::rebuild_from_log`] reproduces it exactly.
 //! Each name keeps its own liveness timeline, so a resolution at any retained
 //! basis reads only that name's entry and its forward lineage path.
+//!
+//! Every table is a [`TieredMap`]: a runtime reopened from a checkpoint
+//! reads its rows from cold pages on first touch, and readers borrow faulted
+//! rows through a [`NamingReadScope`].
 
 pub mod batch;
+pub mod codec;
 pub mod denial;
 pub mod entry;
 pub mod ingest_group;
 pub mod ingest_lineage;
 pub mod journal;
 pub mod member_groups;
+pub mod preflight;
 pub mod recorded_name;
-
-use std::collections::HashMap;
+pub mod retention;
 
 pub use batch::PersistentNameCommittedBatch;
 pub use denial::PersistentNameIndexDenial;
-pub(crate) use entry::{Carriers, LiveName, NameEntry, NameOrigin, NameState};
+pub(crate) use entry::{Carriers, HolderEpoch, LiveName, NameEntry, NameOrigin, NameState};
 
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
 use crate::contracts::lineage::data::name_resolution::PersistentNameKey;
 use crate::contracts::lineage::data::naming::PersistentNameIdentity;
-use worth_foundational::facade::AggregateIdentity;
+use crate::lineage::naming_pages::tables;
+use crate::lineage::tiered::{NamingBaseLink, NamingReadScope, TieredMap};
 
 use journal::IngestionJournal;
 
 /// The record a lineage was created for.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum LineageHolder {
     Entity(EntityId),
     Relation(RelationId),
@@ -41,37 +47,49 @@ crate::lineage::clone_fences::assert_not_clone!(PersistentNameBranchIndex);
 
 /// Derived name-to-record index for one branch, with per-name history.
 ///
-/// Not `Clone`: a copy is O(names × history). The one copy the platform
-/// makes is a branch fork's, through [`Self::duplicate_for_branch_fork`].
+/// Deliberately not `Clone`: a fork shares its tables copy-on-write through
+/// [`Self::fork_to`], so an `O(names)` copy cannot be written by accident.
 #[derive(Debug, PartialEq, Eq)]
 pub struct PersistentNameBranchIndex {
     branch_id: BranchId,
     retention_floor: Option<CommitId>,
+    earliest_commit: Option<CommitId>,
     head: Option<CommitId>,
-    pub(crate) names: HashMap<PersistentNameKey, NameEntry>,
-    lineage_names: HashMap<LineageId, PersistentNameKey>,
-    lineage_holders: HashMap<LineageId, LineageHolder>,
-    /// Every lineage a record was bound to, in binding-commit order: a
-    /// history restore rebinds the exact original record to a fresh lineage,
-    /// and a pinned read must still see the lineage bound at its basis.
-    holder_lineages: HashMap<LineageHolder, Vec<(CommitId, LineageId)>>,
+    pub(crate) names: TieredMap<PersistentNameKey, NameEntry>,
+    lineage_names: TieredMap<LineageId, PersistentNameKey>,
+    lineage_holders: TieredMap<LineageId, LineageHolder>,
+    /// Every lineage a record was bound to, in binding-commit order.
+    holder_lineages: TieredMap<LineageHolder, Vec<HolderEpoch>>,
     /// Per member name and group scheme: which group held it from each commit.
-    member_groups: HashMap<PersistentNameIdentity, member_groups::MemberTenures>,
+    member_groups: TieredMap<PersistentNameIdentity, member_groups::MemberTenures>,
 }
 
 impl PersistentNameBranchIndex {
     /// An empty index for `branch_id`. Bases below `min_retained_commit`
     /// refuse as pruned.
     pub fn new(branch_id: BranchId, min_retained_commit: Option<CommitId>) -> Self {
+        Self::over(branch_id, min_retained_commit, None, None, None)
+    }
+
+    /// The index a checkpoint recorded: its scalars resident, its tables
+    /// cold behind `base`.
+    pub(crate) fn over(
+        branch_id: BranchId,
+        retention_floor: Option<CommitId>,
+        earliest_commit: Option<CommitId>,
+        head: Option<CommitId>,
+        base: Option<NamingBaseLink>,
+    ) -> Self {
         Self {
             branch_id,
-            retention_floor: min_retained_commit,
-            head: None,
-            names: HashMap::new(),
-            lineage_names: HashMap::new(),
-            lineage_holders: HashMap::new(),
-            holder_lineages: HashMap::new(),
-            member_groups: HashMap::new(),
+            retention_floor,
+            earliest_commit,
+            head,
+            names: TieredMap::over(tables::INDEX_NAME, base.clone()),
+            lineage_names: TieredMap::over(tables::INDEX_LINEAGE_NAME, base.clone()),
+            lineage_holders: TieredMap::over(tables::INDEX_LINEAGE_HOLDER, base.clone()),
+            holder_lineages: TieredMap::over(tables::INDEX_HOLDER_LINEAGES, base.clone()),
+            member_groups: TieredMap::over(tables::INDEX_MEMBER_GROUPS, base),
         }
     }
 
@@ -93,6 +111,10 @@ impl PersistentNameBranchIndex {
         &self.branch_id
     }
 
+    pub const fn earliest_commit(&self) -> Option<CommitId> {
+        self.earliest_commit
+    }
+
     pub const fn head(&self) -> Option<CommitId> {
         self.head
     }
@@ -101,80 +123,145 @@ impl PersistentNameBranchIndex {
         self.retention_floor
     }
 
-    /// Raises the retention floor; a lower floor never un-prunes history.
-    pub fn advance_retention_floor(&mut self, floor: CommitId) {
-        if self.retention_floor.is_none_or(|current| current < floor) {
-            self.retention_floor = Some(floor);
-        }
-    }
-
+    /// Every name the index holds, by a full scan.
+    ///
+    /// Complexity: O(N); for audits and courts, never resolution.
     pub fn name_count(&self) -> usize {
-        self.names.len()
+        self.name_keys().len()
     }
 
     /// Every name the index has seen born, in canonical order.
     ///
     /// Complexity: O(N log N); for audits and courts, never resolution.
     pub fn name_keys(&self) -> Vec<PersistentNameKey> {
-        let mut keys: Vec<_> = self.names.keys().copied().collect();
+        let mut keys = Vec::new();
+        self.names
+            .scan_merged(&[self.names.table()], |key, _| {
+                keys.push(key);
+                Ok(true)
+            })
+            .unwrap_or_else(|cause| panic!("audit read of a damaged naming page: {cause:?}"));
         keys.sort_unstable();
         keys
     }
 
-    /// This index, moved and re-addressed to `target`: a rebuild hands an
-    /// ancestor's index on to its descendant without copying it.
-    ///
-    /// Complexity: O(1).
+    /// Complexity: O(1): tables are shared copy-on-write.
+    pub(crate) fn fork_to(&self, target: BranchId, base: Option<NamingBaseLink>) -> Self {
+        Self {
+            branch_id: target,
+            retention_floor: self.retention_floor,
+            earliest_commit: self.earliest_commit,
+            head: self.head,
+            names: self.names.fork(base.clone()),
+            lineage_names: self.lineage_names.fork(base.clone()),
+            lineage_holders: self.lineage_holders.fork(base.clone()),
+            holder_lineages: self.holder_lineages.fork(base.clone()),
+            member_groups: self.member_groups.fork(base),
+        }
+    }
+
+    /// Rebinds every table cleanly onto an acknowledged cold base, dropping
+    /// resident deltas.
+    pub(crate) fn rebind_clean(&mut self, base: NamingBaseLink) {
+        self.names.rebind_clean(base.clone());
+        self.lineage_names.rebind_clean(base.clone());
+        self.lineage_holders.rebind_clean(base.clone());
+        self.holder_lineages.rebind_clean(base.clone());
+        self.member_groups.rebind_clean(base);
+    }
+
+    /// Rebinds existing cold bases onto `source` (and optional `checkpointed_root`).
+    pub(crate) fn rebind_source(
+        &mut self,
+        source: &std::sync::Arc<dyn crate::lineage::tiered::ColdNamingSource>,
+        root: Option<&BranchId>,
+    ) {
+        self.names.rebind_source(source, root);
+        self.lineage_names.rebind_source(source, root);
+        self.lineage_holders.rebind_source(source, root);
+        self.holder_lineages.rebind_source(source, root);
+        self.member_groups.rebind_source(source, root);
+    }
+
+    pub(crate) fn base(&self) -> Option<&NamingBaseLink> {
+        self.names.base()
+    }
+
+    pub(crate) fn encoded_changes(&self) -> Vec<(Vec<u8>, Option<Vec<u8>>)> {
+        let mut changes = self.names.encoded_changes();
+        changes.extend(self.lineage_names.encoded_changes());
+        changes.extend(self.lineage_holders.encoded_changes());
+        changes.extend(self.holder_lineages.encoded_changes());
+        changes.extend(self.member_groups.encoded_changes());
+        changes
+    }
+
+    pub(crate) fn collect_encoded_in(
+        &self,
+        store: Option<&crate::lineage::naming_pages::store::ColdNamingStore>,
+    ) -> Result<
+        Vec<(Vec<u8>, Option<Vec<u8>>)>,
+        crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+    > {
+        let mut rows = self.names.collect_encoded_in(store)?;
+        rows.extend(self.lineage_names.collect_encoded_in(store)?);
+        rows.extend(self.lineage_holders.collect_encoded_in(store)?);
+        rows.extend(self.holder_lineages.collect_encoded_in(store)?);
+        rows.extend(self.member_groups.collect_encoded_in(store)?);
+        Ok(rows)
+    }
+
     pub(crate) fn rebranched(mut self, target: BranchId) -> Self {
         self.branch_id = target;
         self
     }
 
-    /// A copy of this index re-addressed to `target`, a branch forked from
-    /// this one: the fork's explicit, named O(names × history) copy (Semantic
-    /// Git `P0-B` replaces it with a copy-on-write overlay).
-    ///
-    /// Callers fork only an index whose head is at or before the fork
-    /// commit, so the copy holds exactly the inherited history; later
-    /// batches for `target` then pass the branch check.
-    pub(crate) fn duplicate_for_branch_fork(&self, target: BranchId) -> Self {
-        let names = self.names.iter();
-        Self {
-            branch_id: target,
-            retention_floor: self.retention_floor,
-            head: self.head,
-            names: names
-                .map(|(key, entry)| (*key, entry.duplicate_for_branch_fork()))
-                .collect(),
-            lineage_names: self.lineage_names.clone(),
-            lineage_holders: self.lineage_holders.clone(),
-            holder_lineages: self.holder_lineages.clone(),
-            member_groups: self.member_groups.clone(),
-        }
+    pub(crate) fn latest_holder_lineage_in(
+        &self,
+        holder: LineageHolder,
+        scope: &NamingReadScope,
+    ) -> Option<LineageId> {
+        self.holder_lineages
+            .get_in(&holder, scope)?
+            .last()
+            .map(|epoch| epoch.lineage)
     }
 
     /// The lineage `holder` was bound to at `basis`: the latest binding at or
     /// before it, so later restores never change a pinned answer.
     ///
-    /// Complexity: O(1) expected probe plus O(log e) in that record's own
-    /// binding epochs.
+    /// Complexity: O(log H) probe plus O(log e) in that record's own epochs.
     pub(crate) fn lineage_of_holder(
         &self,
         holder: LineageHolder,
         basis: CommitId,
+        scope: &NamingReadScope,
     ) -> Option<LineageId> {
-        let epochs = self.holder_lineages.get(&holder)?;
-        let after = epochs.partition_point(|(commit, _)| *commit <= basis);
-        epochs
-            .get(after.checked_sub(1)?)
-            .map(|(_, lineage)| *lineage)
+        let epochs = self.holder_lineages.get_in(&holder, scope)?;
+        let after = epochs.partition_point(|epoch| epoch.bound_at <= basis);
+        epochs.get(after.checked_sub(1)?).map(|epoch| epoch.lineage)
     }
 
     /// The name a lineage was bound to when its named record was created.
     ///
-    /// Complexity: O(1) expected.
-    pub(crate) fn name_of_lineage(&self, lineage: LineageId) -> Option<PersistentNameKey> {
-        self.lineage_names.get(&lineage).copied()
+    /// Complexity: O(log N) probe.
+    pub(crate) fn name_of_lineage(
+        &self,
+        lineage: LineageId,
+        scope: &NamingReadScope,
+    ) -> Option<PersistentNameKey> {
+        self.lineage_names.get_in(&lineage, scope).copied()
+    }
+
+    /// The entry of `key`, borrowed for `scope`.
+    ///
+    /// Complexity: O(log N) probe and at most one page fault.
+    pub(crate) fn entry_in<'s>(
+        &'s self,
+        key: &PersistentNameKey,
+        scope: &'s NamingReadScope,
+    ) -> Option<&'s NameEntry> {
+        self.names.get_in(key, scope)
     }
 
     /// Ingests one committed batch atomically: on refusal the index is left
@@ -201,6 +288,10 @@ impl PersistentNameBranchIndex {
             .and_then(|()| self.ingest_carriers(batch, &mut journal));
         match ingested {
             Ok(()) => {
+                self.earliest_commit = Some(
+                    self.earliest_commit
+                        .map_or(batch.commit, |e| e.min(batch.commit)),
+                );
                 self.head = Some(batch.commit);
                 Ok(())
             }
@@ -211,156 +302,62 @@ impl PersistentNameBranchIndex {
         }
     }
 
-    /// Applies each declared carrier set as a delta onto the name's current
-    /// carriers: the new timeline state shares every unchanged member with
-    /// its predecessor, and only members that left or joined move tenures.
-    ///
-    /// Complexity: O(declared) comparison plus O(delta log M) allocation per
-    /// changed name; never a copy of a whole carrier set or history.
-    fn ingest_carriers(
-        &mut self,
-        batch: &PersistentNameCommittedBatch,
-        journal: &mut IngestionJournal,
-    ) -> Result<(), PersistentNameIndexDenial> {
-        let mut changed = Vec::new();
-        for (key, carriers) in &batch.carriers {
-            self.declare_carriers(*key, carriers.iter(), batch.commit, journal, &mut changed)?;
-        }
-        for assignment in batch.group_assignments() {
-            let key = PersistentNameKey::Group(assignment.identity);
-            let members = assignment.members.iter().map(|(name, _)| name);
-            self.declare_carriers(key, members, batch.commit, journal, &mut changed)?;
-        }
-        // Every departure ends before any arrival starts, so a member moving
-        // between two groups of one scheme ends in its new group.
-        for (group, left, _) in &changed {
-            self.end_member_tenures(*group, left, batch.commit, journal);
-        }
-        for (group, _, joined) in &changed {
-            self.start_member_tenures(*group, joined, batch.commit, journal);
-        }
-        Ok(())
-    }
-
-    /// Applies one declared carrier set (ascending) as a delta onto `key`'s
-    /// current carriers and records a group's left and joined members.
-    fn declare_carriers<'m>(
-        &mut self,
-        key: PersistentNameKey,
-        declared: impl Iterator<Item = &'m PersistentNameIdentity>,
-        commit: CommitId,
-        journal: &mut IngestionJournal,
-        changed: &mut Vec<(AggregateIdentity, MemberDelta, MemberDelta)>,
-    ) -> Result<(), PersistentNameIndexDenial> {
-        let Some(live) = self.names.get(&key).and_then(NameEntry::current_live) else {
-            return Err(PersistentNameIndexDenial::InvalidTransition {
-                name: key,
-                detail: "carriers declared for a name that is not live",
-            });
-        };
-        let (left, joined) = carrier_delta(&live.carriers, declared);
-        if left.is_empty() && joined.is_empty() {
-            return Ok(());
-        }
-        let mut updated = live.clone();
-        for member in &left {
-            updated.carriers.remove(member);
-        }
-        for member in &joined {
-            updated.carriers.insert(*member);
-        }
-        self.entry_mut(key, journal)
-            .set_state(commit, NameState::Live(updated));
-        if let PersistentNameKey::Group(group) = key {
-            changed.push((group, left, joined));
-        }
-        Ok(())
-    }
-
     /// Mutable access to an existing entry, journaled before first change.
     fn entry_mut(
         &mut self,
         key: PersistentNameKey,
+        commit: CommitId,
         journal: &mut IngestionJournal,
-    ) -> &mut NameEntry {
-        journal.save_name(key, self.names.get(&key));
+    ) -> Result<&mut NameEntry, PersistentNameIndexDenial> {
+        journal.save_name(key, commit, &self.names);
         self.names
-            .get_mut(&key)
-            .expect("callers check that the entry exists before mutating it")
+            .get_mut_with(&key, NameEntry::duplicate_for_branch_fork)?
+            .ok_or(PersistentNameIndexDenial::InvalidTransition {
+                name: key,
+                detail: "a mutated name has no entry",
+            })
     }
 
     fn insert_entry(
         &mut self,
         key: PersistentNameKey,
+        commit: CommitId,
         entry: NameEntry,
         journal: &mut IngestionJournal,
     ) -> Result<(), PersistentNameIndexDenial> {
-        if self.names.contains_key(&key) {
+        if self.names.contains_key(&key)? {
             return Err(PersistentNameIndexDenial::DuplicateBirth { name: key });
         }
-        journal.save_name(key, None);
+        journal.save_name(key, commit, &self.names);
         self.names.insert(key, entry);
         Ok(())
     }
 }
 
-/// Member names that left or joined a carrier set in one commit.
-type MemberDelta = Vec<PersistentNameIdentity>;
-
-/// The members of `prior` that the ascending `declared` drops, and those it
-/// adds, by one merge walk over both.
-///
-/// Complexity: O(|prior| + |declared|) comparisons, O(delta) allocation.
-fn carrier_delta<'m>(
-    prior: &Carriers,
-    declared: impl Iterator<Item = &'m PersistentNameIdentity>,
-) -> (MemberDelta, MemberDelta) {
-    use std::cmp::Ordering;
-    let (mut left, mut joined) = (Vec::new(), Vec::new());
-    let (mut old, mut new) = (prior.iter().peekable(), declared.peekable());
-    loop {
-        match (old.peek(), new.peek()) {
-            (None, None) => break,
-            (Some(member), None) => {
-                left.push(**member);
-                old.next();
-            }
-            (None, Some(member)) => {
-                joined.push(**member);
-                new.next();
-            }
-            (Some(was), Some(now)) => match was.cmp(now) {
-                Ordering::Less => {
-                    left.push(**was);
-                    old.next();
-                }
-                Ordering::Greater => {
-                    joined.push(**now);
-                    new.next();
-                }
-                Ordering::Equal => {
-                    old.next();
-                    new.next();
-                }
-            },
-        }
-    }
-    (left, joined)
-}
-
 #[doc(hidden)]
 pub trait PersistentNameBranchIndexFixturePort {
-    fn names_for_test(&self) -> &HashMap<PersistentNameKey, NameEntry>;
-    /// A court's copy of the whole index, to compare against after a refusal.
+    /// Every entry, by a full scan of a resident index.
+    fn names_for_test(&self) -> std::collections::BTreeMap<PersistentNameKey, NameEntry>;
+    /// Copy-on-write fork of this index for rollback/refusal assertions in tests.
+    fn fork_for_test(&self) -> PersistentNameBranchIndex;
+    /// Alias of [`Self::fork_for_test`] for Phase 7B-2b test callers.
     fn duplicate_for_test(&self) -> Self;
 }
 
 impl PersistentNameBranchIndexFixturePort for PersistentNameBranchIndex {
-    fn names_for_test(&self) -> &HashMap<PersistentNameKey, NameEntry> {
-        &self.names
+    fn names_for_test(&self) -> std::collections::BTreeMap<PersistentNameKey, NameEntry> {
+        self.names
+            .collect_merged_with(NameEntry::duplicate_for_branch_fork)
+            .unwrap_or_else(|cause| panic!("audit read of a damaged naming page: {cause:?}"))
+            .into_iter()
+            .collect()
+    }
+
+    fn fork_for_test(&self) -> PersistentNameBranchIndex {
+        self.fork_to(self.branch_id.clone(), self.names.base().cloned())
     }
 
     fn duplicate_for_test(&self) -> Self {
-        self.duplicate_for_branch_fork(self.branch_id.clone())
+        self.fork_for_test()
     }
 }

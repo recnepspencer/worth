@@ -277,14 +277,31 @@ impl RelationalRuntime {
     }
 
     /// Read-only view of every currently live persistent-name holder derived
-    /// from Relational's committed lineage events on `branch_id`.
+    /// from Relational's committed lineage events on `branch_id`. Returns a
+    /// typed error instead of panicking when a cold naming page is damaged or
+    /// the branch's naming basis is unavailable.
     pub fn branch_live_persistent_names(
         &self,
         branch_id: &crate::history::data::BranchId,
-    ) -> std::collections::BTreeMap<
-        crate::lineage::data::PersistentNameIdentity,
-        crate::lineage::data::PersistentNameHolder,
-    > {
+    ) -> Result<
+        std::collections::BTreeMap<
+            crate::lineage::data::PersistentNameIdentity,
+            crate::lineage::data::PersistentNameHolder,
+        >,
+        worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::NamingBasisUnavailable,
+    >{
         self.lineage.branch_live_persistent_names(branch_id)
+    }
+
+    /// Page-cache observation of the currently selected checkpoint's naming
+    /// store, when cold-backed.
+    pub fn cold_naming_observation(
+        &self,
+    ) -> Option<worth_relational_storage::internal_port::storage::residency::chunked::page_cache::PageCacheObservation>
+{
+        self.durability
+            .checkpoint_selection()
+            .snapshot()
+            .map(|dir| dir.naming_state().observation())
     }
 }
