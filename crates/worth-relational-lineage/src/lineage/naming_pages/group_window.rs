@@ -85,8 +85,11 @@ struct BranchCursor<'a> {
 }
 
 impl<'a> BranchCursor<'a> {
-    fn new(window: &'a GroupLogBranchWindow, after: CommitId, bound: CommitId) -> Self {
-        let pos = window.entries.partition_point(|e| e.last_commit <= after.0);
+    fn new(window: &'a GroupLogBranchWindow, after: Option<CommitId>, bound: CommitId) -> Self {
+        let pos = match after {
+            Some(after) => window.entries.partition_point(|e| e.last_commit <= after.0),
+            None => 0,
+        };
         let mut cursor = Self { window, bound, pos };
         cursor.skip_ineligible();
         cursor
@@ -119,20 +122,21 @@ impl<'a> BranchCursor<'a> {
 
 impl ColdNamingStore {
     /// Streams primary `GROUP_LOG` pages overlapping `(after, digest_bounds[b]]`
-    /// in strict ascending checkpoint page order (`k`-way merge over per-branch
-    /// cursors, `O(log P_b)` pre-base seek, `O(1)` post-bound stop, `O(|ancestry|)`
-    /// scratch space), filtering keys before chunk reassembly and stopping
-    /// immediately once `visit` accepts a transition.
-    pub fn scan_group_log_after(
+    /// (or `..=digest_bounds[b]` when `after` is `None`) in strict ascending
+    /// checkpoint page order (`k`-way merge over per-branch cursors,
+    /// `O(log P_b)` pre-base seek, `O(1)` post-bound stop, `O(|ancestry|)`
+    /// scratch space), filtering keys before chunk reassembly. `visit` returns
+    /// `Ok(true)` to continue or `Ok(false)` to stop before faulting later pages.
+    pub fn scan_group_log_window(
         &self,
         digest_bounds: &BTreeMap<[u8; 32], CommitId>,
-        after: CommitId,
+        after: Option<CommitId>,
         mut visit: impl FnMut(CommitId, &[u8]) -> Result<bool, Cause>,
     ) -> Result<(), Cause> {
         let group_log = &self.state().group_log;
         let mut cursors: Vec<BranchCursor<'_>> = Vec::with_capacity(digest_bounds.len());
         for (&digest, &bound) in digest_bounds {
-            if bound <= after {
+            if after.is_some_and(|a| bound <= a) {
                 continue;
             }
             if let Some(window) = self.group_log_windows.by_branch.get(&digest) {
@@ -150,25 +154,26 @@ impl ColdNamingStore {
         {
             cursors[best_cursor_idx].advance();
             let page_ref = &group_log[page_idx];
-            let mut accepted = false;
+            let mut stop = false;
             let _ = self.scan_page_filtered(
                 group_log,
                 page_ref,
                 &[GROUP_LOG],
                 |key| {
                     let (at, owner_digest) = parse_group_log_key(key)?;
-                    Ok(at > after && digest_bounds.get(&owner_digest).is_some_and(|b| at <= *b))
+                    Ok(after.is_none_or(|a| at > a)
+                        && digest_bounds.get(&owner_digest).is_some_and(|b| at <= *b))
                 },
                 |key, frame| {
                     let (at, _) = parse_group_log_key(key)?;
-                    if visit(at, frame)? {
-                        accepted = true;
+                    if !visit(at, frame)? {
+                        stop = true;
                         return Ok(false);
                     }
                     Ok(true)
                 },
             )?;
-            if accepted {
+            if stop {
                 return Ok(());
             }
         }

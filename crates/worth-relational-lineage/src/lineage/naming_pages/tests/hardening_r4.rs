@@ -21,9 +21,11 @@ use worth_relational_contracts::internal_port::lineage::data::events::{
 use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameHolder;
 
 use super::super::builder::seal_pages;
+use super::super::codec::NamingCodec;
 use super::super::store::ColdNamingStore;
 use super::super::tables::{
-    table_domain, GROUP_LIVE, INDEX_NAME, LINEAGE_HOLDER, MAX_INLINE_VALUE_BYTES, VALUE_CHUNK,
+    branch_key_digest, table_domain, GROUP_LIVE, GROUP_LOG, INDEX_NAME, LINEAGE_HOLDER,
+    MAX_INLINE_VALUE_BYTES, VALUE_CHUNK,
 };
 use super::super::{validate_pages, BranchNamingRoot, CheckpointNamingState};
 use super::{CollectedMembers, MemSource};
@@ -257,4 +259,35 @@ fn naming_pages_isolate_domains_without_cross_domain_reads_and_refuse_mixed_desc
     unknown.last = vec![0u8, 1];
     unknown.entries = 1;
     assert!(validate_pages(&[unknown]).is_err());
+}
+
+#[test]
+fn seal_pages_appending_different_branch_group_log_carries_prior_page_without_reads() {
+    let key = |ord: u64, c: u64, b: &str| {
+        let mut k = vec![GROUP_LOG];
+        let digest = branch_key_digest(&BranchId(b.into()));
+        k.extend_from_slice(&((ord, CommitId(c)), digest).to_bytes());
+        k
+    };
+    let mut sink1 = CollectedMembers::default();
+    let pages1 = seal_pages(None, vec![(key(0, 1, "a"), Some(vec![1; 8]))], &mut sink1).unwrap();
+    let source = MemSource::from_sink(sink1);
+    source.members.lock().unwrap().remove(&pages1[0].member);
+    let state = CheckpointNamingState {
+        branches: Vec::new(),
+        group_log: pages1.clone(),
+        group_log_through: Some(1),
+    };
+    let store = ColdNamingStore::open(Arc::new(state), source.clone());
+    let mut sink2 = CollectedMembers::default();
+    let pages2 = seal_pages(
+        Some((&store, &pages1)),
+        vec![(key(1, 2, "b"), Some(vec![2; 8]))],
+        &mut sink2,
+    )
+    .unwrap();
+    assert_eq!(source.read_count(), 0);
+    assert_eq!(pages2.len(), 2);
+    assert_eq!(pages2[0], pages1[0]);
+    assert!(validate_pages(&pages2).is_ok());
 }

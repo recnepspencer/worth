@@ -143,16 +143,16 @@ impl RelationalForkPort {
             .publication_cell();
         let _coordination = source_cell.coordination().enter();
         let source_state = source_cell.enter_state();
-        let transition = validated.transition(
-            installable
-                .as_ref()
-                .expect("prepared fork target")
-                .target_branch()
-                .clone(),
-        );
+        let target_branch = installable
+            .as_ref()
+            .expect("prepared fork target")
+            .target_branch()
+            .clone();
+        let transition = validated.transition(target_branch.clone());
         let fork_commit_id = installable.as_ref().and_then(
             crate::branch::fork::target_installation::InstallableForkTarget::shared_commit_id,
         );
+        let prepared_lineage = std::cell::Cell::new(None);
         let installed = publication.record_with_cutover(
             execution,
             step,
@@ -160,11 +160,18 @@ impl RelationalForkPort {
             || {
                 self.recheck_fork_source(&validated, &source_state)?;
                 // Coordination still excludes source writers and retention-floor
-                // raises. Re-verify fork ancestry atomically before durable append.
+                // raises. Prepare and carry historical fork lineage atomically
+                // before durable append so installation performs zero cold reads.
                 if let Some(commit_id) = fork_commit_id {
-                    self.lineage_naming
-                        .preflight_fork_ancestry(validated.descriptor.source_branch(), commit_id)
-                        .map_err(|_| RelationalForkDenial::RetentionOwnerUnavailable)?;
+                    prepared_lineage.set(Some(
+                        self.lineage_naming
+                            .prepare_fork_ancestry(
+                                target_branch.clone(),
+                                validated.descriptor.source_branch().clone(),
+                                commit_id,
+                            )
+                            .map_err(|_| RelationalForkDenial::RetentionOwnerUnavailable)?,
+                    ));
                 }
                 drop(source_state);
                 Ok(transition)
@@ -173,6 +180,7 @@ impl RelationalForkPort {
                 let (outcome, basis, cleanup) = self.install_fork_target(
                     &validated,
                     installable.take().expect("one durable fork cutover"),
+                    prepared_lineage.take(),
                 );
                 (outcome, basis, cleanup, evidence)
             },
@@ -183,6 +191,7 @@ impl RelationalForkPort {
         // Refused/unresolved callbacks never own this preparation. Successful
         // cutover also returns its derived cleanup instead of destroying it
         // inside Native coordination or the canonical position reservation.
+        drop(prepared_lineage);
         drop(installable);
         let (outcome, basis, cleanup, evidence) = installed?;
         drop(cleanup);

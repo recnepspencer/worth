@@ -12,8 +12,7 @@ use std::collections::BTreeMap;
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
 use crate::lineage::groups::{BranchGroupState, GroupStateAt, GroupStateDenial};
-use crate::lineage::naming_pages::codec::NamingCodec;
-use crate::lineage::naming_pages::tables::{branch_key_digest, GROUP_LOG};
+use crate::lineage::naming_pages::tables::branch_key_digest;
 
 use super::LineageState;
 
@@ -57,18 +56,7 @@ impl LineageState {
             let store = source.store().ok_or(Cause::SourceUnavailable)?;
             through = store.state().group_log_through.map(CommitId);
             let mut refused = None;
-            store.scan(&store.state().group_log, &[GROUP_LOG], |key, frame| {
-                let ((_ordinal, at), owner_digest) =
-                    <((u64, CommitId), [u8; 32])>::from_bytes(key.get(1..).ok_or(Cause::Damaged)?)?;
-                if at > newest {
-                    return Ok(false);
-                }
-                if digest_bounds
-                    .get(&owner_digest)
-                    .is_none_or(|bound| at > *bound)
-                {
-                    return Ok(true);
-                }
+            store.scan_group_log_window(&digest_bounds, None, |at, frame| {
                 let transitions = crate::durability::naming::decode_group_lineage_frame(frame)
                     .map_err(|_| Cause::Damaged)?;
                 match state.apply(at, &transitions) {

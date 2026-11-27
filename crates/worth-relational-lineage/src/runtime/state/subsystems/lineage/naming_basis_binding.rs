@@ -12,6 +12,7 @@ use worth_relational_storage::internal_port::storage::substrate::owned_state::Ru
 use super::naming_basis::{
     AuthoritativeBranchNamingState, AuthoritativeLineageBasis, NamingBasisUnavailable,
 };
+pub use super::naming_fork::PreparedForkLineage;
 use super::LineageState;
 
 /// Zero-clone read-lock guard exposing `O(log N)` point lookups into one
@@ -209,14 +210,19 @@ impl LineageNamingBasisBinding {
         }
     }
 
-    pub fn preflight_fork_ancestry(
+    pub fn prepare_fork_ancestry(
         &self,
-        source_branch: &BranchId,
+        target_branch: BranchId,
+        source_branch: BranchId,
         fork_commit_id: CommitId,
-    ) -> Result<(), NamingBasisUnavailable> {
+    ) -> Result<PreparedForkLineage, NamingBasisUnavailable> {
         self.state
             .read()
-            .preflight_fork_ancestry(source_branch, fork_commit_id)
+            .prepare_fork_ancestry(target_branch, source_branch, fork_commit_id)
+    }
+
+    pub fn install_prepared_fork_ancestry(&self, prepared: PreparedForkLineage) {
+        self.state.write().install_prepared_fork_ancestry(prepared);
     }
 
     pub fn register_fork_ancestry(

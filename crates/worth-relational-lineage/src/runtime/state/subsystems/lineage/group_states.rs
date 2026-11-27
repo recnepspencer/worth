@@ -264,7 +264,7 @@ impl LineageState {
                     .collect();
                 if !digest_bounds.is_empty() {
                     let mut found: Option<(CommitId, String)> = None;
-                    store.scan_group_log_after(&digest_bounds, c, |at, frame| {
+                    store.scan_group_log_window(&digest_bounds, Some(c), |at, frame| {
                         let transitions =
                             crate::durability::naming::decode_group_lineage_frame(frame)
                                 .map_err(|_| Cause::Damaged)?;
@@ -272,9 +272,9 @@ impl LineageState {
                             if found.as_ref().is_none_or(|(prev, _)| at < *prev) {
                                 found = Some((at, first.scheme_id().to_owned()));
                             }
-                            return Ok(true);
+                            return Ok(false);
                         }
-                        Ok(false)
+                        Ok(true)
                     })?;
                     if found.is_some() {
                         return Ok(found);

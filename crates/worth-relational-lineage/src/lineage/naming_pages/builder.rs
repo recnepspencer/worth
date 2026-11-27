@@ -85,6 +85,33 @@ fn expand_changes(
     Ok(expanded)
 }
 
+/// Whether `key` can share a physical page with a page starting at `page_first`.
+///
+/// Every physical page stays within one table domain; `VALUE_CHUNK` pages also
+/// isolate a single base key, and primary `GROUP_LOG` pages isolate a single
+/// branch so endpoint keys alone establish exact branch + commit routing.
+fn same_page_bucket(page_first: &[u8], key: &[u8]) -> bool {
+    if table_domain(page_first[0]) != table_domain(key[0]) {
+        return false;
+    }
+    if page_first[0] == VALUE_CHUNK || key[0] == VALUE_CHUNK {
+        return page_first[0] == VALUE_CHUNK
+            && key[0] == VALUE_CHUNK
+            && parse_chunk_key(page_first)
+                .zip(parse_chunk_key(key))
+                .is_some_and(|((a, _), (b, _))| a == b);
+    }
+    if page_first[0] == GROUP_LOG || key[0] == GROUP_LOG {
+        return page_first[0] == GROUP_LOG
+            && key[0] == GROUP_LOG
+            && parse_group_log_key(page_first)
+                .ok()
+                .zip(parse_group_log_key(key).ok())
+                .is_some_and(|((_, a), (_, b))| a == b);
+    }
+    true
+}
+
 struct PageWriter<'s> {
     sink: &'s mut dyn ChunkMemberSink,
     rows: Vec<(Vec<u8>, Vec<u8>)>,
@@ -104,27 +131,12 @@ impl PageWriter<'_> {
                 limit: NAMING_PAGE_BYTES as u64,
             });
         }
-        let different_chunk_base = key[0] == VALUE_CHUNK
-            && self.rows.first().is_some_and(|(first, _)| {
-                parse_chunk_key(first).map(|(b, _)| b) != parse_chunk_key(&key).map(|(b, _)| b)
-            });
-        // Keep every primary GROUP_LOG page strictly single-branch so page
-        // endpoint keys (`first`, `last`) alone establish exact branch + commit
-        // routing without unverified interior metadata.
-        let different_group_log_branch = key[0] == GROUP_LOG
-            && self.rows.first().is_some_and(|(first, _)| {
-                first.first() == Some(&GROUP_LOG)
-                    && parse_group_log_key(first).ok().map(|(_, d)| d)
-                        != parse_group_log_key(&key).ok().map(|(_, d)| d)
-            });
         if self.rows.len() == NAMING_PAGE_ENTRIES as usize
             || self.bytes + size + PAGE_OVERHEAD > NAMING_PAGE_BYTES
-            || different_chunk_base
-            || different_group_log_branch
             || self
                 .rows
                 .first()
-                .is_some_and(|(first, _)| table_domain(first[0]) != table_domain(key[0]))
+                .is_some_and(|(first, _)| !same_page_bucket(first, &key))
         {
             self.flush()?;
         }
@@ -184,9 +196,8 @@ pub fn seal_pages(
     let mut changes = changes.into_iter().peekable();
     if let Some((store, pages)) = prior {
         for (ordinal, page) in pages.iter().enumerate() {
-            let page_domain = table_domain(page.first[0]);
             while let Some((key, _)) = changes.peek() {
-                if key.as_slice() < page.first.as_slice() && table_domain(key[0]) != page_domain {
+                if key.as_slice() < page.first.as_slice() && !same_page_bucket(&page.first, key) {
                     let Some((key, value)) = changes.next() else {
                         break;
                     };
@@ -203,7 +214,7 @@ pub fn seal_pages(
                 if upper.is_some_and(|upper| key.as_slice() >= upper) {
                     break;
                 }
-                if key.as_slice() > page.last.as_slice() && table_domain(key[0]) != page_domain {
+                if key.as_slice() > page.last.as_slice() && !same_page_bucket(&page.first, key) {
                     break;
                 }
                 touched.extend(changes.next());

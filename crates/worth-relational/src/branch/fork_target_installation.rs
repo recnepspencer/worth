@@ -42,13 +42,6 @@ impl RelationalForkPort {
             &target.target_cell,
             &target.source_root,
         )?;
-        if let Some(fork_commit_id) = target.shared_commit_id
-            && let Some(source_branch) = target.target_cell.fork_source_branch_id()
-        {
-            self.lineage_naming
-                .preflight_fork_ancestry(&source_branch, fork_commit_id)
-                .map_err(|_| RelationalForkDenial::RetentionOwnerUnavailable)?;
-        }
         let target_root = target
             .target_cell
             .root()
@@ -96,6 +89,9 @@ impl RelationalForkPort {
         &self,
         source: &ValidatedForkSource,
         installable: InstallableForkTarget,
+        prepared_lineage: Option<
+            worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::PreparedForkLineage,
+        >,
     ) -> (
         RelationalForkOutcome,
         Option<AdmittedRelationalBranchBasis>,
@@ -118,7 +114,10 @@ impl RelationalForkPort {
         if let Some(indexes) = target.indexes.take() {
             indexes.publish();
         }
-        if let Some(fork_commit_id) = target.shared_commit_id {
+        if let Some(prepared_lineage) = prepared_lineage {
+            self.lineage_naming
+                .install_prepared_fork_ancestry(prepared_lineage);
+        } else if let Some(fork_commit_id) = target.shared_commit_id {
             self.lineage_naming.register_fork_ancestry(
                 target_identity.branch_id().clone(),
                 (*source.descriptor.owner_source_branch()).clone(),
