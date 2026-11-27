@@ -9,6 +9,8 @@ mod application_naming_authoring;
 mod application_query_authoring;
 mod application_resource_authoring;
 mod authoring_context;
+#[cfg(test)]
+mod authorization_absence_tests;
 mod authorization_path_components;
 #[cfg(test)]
 mod authorization_path_components_tests;

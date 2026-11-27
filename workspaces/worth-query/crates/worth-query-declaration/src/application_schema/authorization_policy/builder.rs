@@ -67,8 +67,15 @@ pub struct ApplicationAuthorizationPathBuilder<
     _marker: PhantomData<fn() -> (Schema, Current, Principal, Mode)>,
 }
 
-/// Which principal a condition may compare against.
-pub trait ApplicationAuthorizationActor<Principal> {}
+mod sealed {
+    pub trait Sealed {}
+    impl Sealed for super::NoActor {}
+    impl<Principal> Sealed for super::PrincipalActor<Principal> {}
+}
+
+/// Which principal a condition may compare against. Sealed: only a
+/// condition on no principal or on the path's own principal joins a path.
+pub trait ApplicationAuthorizationActor<Principal>: sealed::Sealed {}
 impl<Principal> ApplicationAuthorizationActor<Principal> for NoActor {}
 impl<Principal> ApplicationAuthorizationActor<Principal> for PrincipalActor<Principal> {}
 

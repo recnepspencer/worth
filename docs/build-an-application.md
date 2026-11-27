@@ -4385,8 +4385,11 @@ The conditions, authored on typed field selections:
 | `rule.actor_is_not_target_of(R)` / `actor_is_not_source_of(R)` | deny the principal the scope's relation names (a case's author) | a one-step deny path; compiles only when the relation guarantees the edge (`source_min >= 1` / `target_min >= 1`), so a missing edge cannot let the deny fail open |
 
 Every condition is false on an absent value or another scalar family, so allow
-paths fail closed. A deny path does not fire on an absent value, so a deny
-condition on an optional field is refused at declaration. Declaration also
+paths fail closed. A deny path does not fire on an absent value, so every
+value a deny path reads must be a required field of an aspect every entity of
+the kind has: a deny condition on an optional field, or on any field of an
+`Option<A>`, extension or `Exclusive<..>` case aspect, is refused at
+declaration. Declaration also
 refuses an empty `one_of`, a field that is not equality-queryable, a path that
 lowers to more than 16 kernel paths, a rule without an allow path, and an
 ability no role grants (`RoleLessAbility`). Each refusal is an
@@ -7579,9 +7582,9 @@ the binding, handler and command identities `identity.binding.v1`,
 `identity.handler.v1` and `identity.command.v1`. The capability request names
 the same action and purpose literals as the grant target, so the two cannot
 disagree. Install each capability contract with `schema.capability(..)` as
-before. Bank's migration from its hand-written local macro is byte-identical:
-`worth-query-bank-court-domain` compares the installed schema fingerprint and
-every wire identity with the hand-written values.
+before. Bank's migration from its hand-written local macro was byte-identical
+(the whole installed schema was compared at the move), and
+`worth-query-bank-court-domain` keeps pinning every control's wire identity.
 
 #### Create and enroll through one retained action
 

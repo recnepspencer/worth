@@ -285,6 +285,14 @@ impl<'a> ClosureIndex<'a> {
             {
                 Err(ApplicationSchemaDeclarationDenial::MissingAbilityPolicyDependency)
             }
+            ApplicationSchemaMember::AbilityPolicy { paths, .. }
+                if paths.iter().any(|path| self.deny_reads_absent_value(path).is_some()) =>
+            {
+                Err(paths
+                    .iter()
+                    .find_map(|path| self.deny_reads_absent_value(path))
+                    .map_or(ApplicationSchemaDeclarationDenial::InvalidAbilityPolicy, Into::into))
+            }
             ApplicationSchemaMember::AbilityPolicy {
                 scope_entity,
                 paths,

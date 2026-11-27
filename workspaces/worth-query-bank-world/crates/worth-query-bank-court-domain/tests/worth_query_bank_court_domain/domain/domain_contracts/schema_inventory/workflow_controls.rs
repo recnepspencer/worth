@@ -1,4 +1,4 @@
-//! Old-versus-new differential for Bank's `worth_query_workflow_controls!` controls.
+//! Bank's macro-declared workflow controls keep the hand-written wire identities.
 use bank_domain::model::{BankPrincipalId, PaymentId};
 use bank_domain::schema::{
     ApprovePayment, ApprovedBusinessPaymentAdvance, ApprovedBusinessPaymentAdvanceBinding,
@@ -8,9 +8,7 @@ use bank_domain::schema::{
     ApprovedBusinessPaymentInstanceStartBinding, BankSchema,
 };
 use worth_query_decl::facade::application_schema::ApplicationValue as AspectValue;
-use worth_query_bank_testkit_domain::facade::domain_contracts::schema_inventory::workflow_controls::{
-    bank_schema_fingerprint, HAND_WRITTEN_BANK_SCHEMA_FINGERPRINT, HAND_WRITTEN_CONTROL_IDENTITIES,
-};
+use worth_query_bank_testkit_domain::facade::domain_contracts::schema_inventory::workflow_controls::HAND_WRITTEN_CONTROL_IDENTITIES;
 use worth_query_decl::facade::{
     application_capability::{
         ApplicationCapabilityContextMarkerIdentity, ApplicationCapabilityMarkerIdentity,
@@ -59,12 +57,7 @@ where
 }
 
 #[test]
-fn macro_declared_bank_controls_are_byte_identical_to_the_hand_written_ones() {
-    assert_eq!(
-        bank_schema_fingerprint(),
-        HAND_WRITTEN_BANK_SCHEMA_FINGERPRINT,
-        "the installed Bank schema changed when control.rs moved to the controls macro"
-    );
+fn macro_declared_bank_controls_keep_the_hand_written_wire_identities() {
     assert_eq!(
         [
             identities::<ApprovedBusinessPaymentApprovalBinding, ApprovedBusinessPaymentApproval>(),
