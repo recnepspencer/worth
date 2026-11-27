@@ -381,7 +381,7 @@ mod collection_contract;
 mod local_calendar;
 mod logical_member_contract;
 mod ordered_index;
-
+mod principal_registry;
 mod storage_retention_contract;
 
 mod causal_inspection_contract;

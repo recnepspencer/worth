@@ -4334,6 +4334,127 @@ Managed-index root selection and related-collection continuation remain distinct
 declared shapes. Combining them refuses during declaration; a managed candidate
 hit supplies no child-page position or root-pagination authority.
 
+### Who may act: abilities, eligibility and runtime principals
+
+Authorization is relationship-based. An ability is scoped to one entity
+(`worth_query_ability!(pub Approve scoped_to Document, in Schema)`), and its
+installed policy is a set of paths from the principal entity through ordinary
+relations and field predicates to that scope. Allow paths grant; a matching
+deny path refuses even when an allow path holds. Operations require abilities
+with `worth_query_operation_requires!` and `operation_requires_ability`; there
+are no role tables to keep in step. The compiled
+[QMS court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/rebac_eligibility_dx/access.rs) declares approvers, a separation-of-duties deny
+path for authors, a roster ability and a site-administration ability. To
+declare those paths as typed rules and a role matrix, see
+[roles, abilities and ReBAC rules](#who-may-act-roles-abilities-and-rebac-rules).
+
+#### Gate a query, and every page of it, by ability
+
+`#[worth_query(ability = ReadDocuments::reference())]` on a `WorthQuery`
+requires that ability on the query's scope. The ability and the query share
+one scope type parameter, so a mismatch does not compile, and schema build
+refuses an undeclared ability or one without an installed policy. A missing
+ability refuses `Admission(Authorization(Refused(PermissionDenied)))`, which
+the refusal summary reports as `PermissionDenied`. A page cursor carries a
+keyset position and never a grant: each `query_page`, through a session or a
+pinned snapshot, freshly admits the reader's current ability, so revoking it
+between page 1 and page 2 refuses page 2
+([paging court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/rebac_eligibility_dx/paging_court.rs)).
+
+#### Ask who may act without acting
+
+`WorthQueryEligibilityQuestion::new(Context, ability, field, value)` names one
+ability on one scope through the principal binding's context. The answer is
+read from the same installed policy decision admission uses, so a verdict and
+the next action agree, but asking mints no decision fact, reserves no grant,
+commits nothing and advances no sequence:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The compiled courts are
+// .../rebac_eligibility_dx/eligibility_court.rs and registry_court.rs.
+use worth_query_host::facade::eligibility::WorthQueryEligibilityQuestion;
+
+let approve = WorthQueryEligibilityQuestion::new(
+    Qms, Approve::reference(), DocumentFacts::document_id(), "D1".to_owned(),
+);
+if session.eligibility(&approve)?.is_eligible() {
+    // show the Approve button
+}
+let roster = session.eligible_among(&approve, ViewApprovers::reference(), &candidates)?;
+let approvers: Vec<_> = roster.eligible().collect();
+```
+
+A verdict is `Eligible`, `Denied` (no allow path, or a deny path), or the
+reason admission would refuse the identity itself: `Unmapped`, `Disabled` or
+`Ambiguous`. Asking about oneself needs no disclosure. Revealing other
+principals' authority does: `eligible_among` requires the asker to hold the
+named disclosure ability on the same scope and otherwise refuses
+`RosterNotDisclosed` before evaluating any candidate. The asker is admitted
+before any scope is resolved, and disclosure is decided before a pinned scope
+is resolved, so a refused asker gets the same answer whether or not the scope
+exists. A question the platform
+cannot answer (an unknown scope, an ability without a policy, or a policy that
+does not start at the binding's principal entity) refuses with a typed
+`WorthQueryEligibilityDenial` instead of a verdict.
+
+`snapshot.eligibility` and `snapshot.eligible_among` report verdicts as of the
+snapshot's pinned commit, beside rows read there. The asker is still admitted,
+and any roster disclosed, at the branch head, so a pin never widens who may
+ask. A workflow Home's `session` is the same session type, so these calls work
+there unchanged. A verdict grants nothing: acting admits the actor afresh.
+
+#### Onboard principals at runtime
+
+`worth_query_principal_registry!` declares how runtime users map to
+principals in one place:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The compiled declaration is
+// .../rebac_eligibility_dx/schema.rs.
+worth_query_principal_registry! {
+    pub mod accounts for QmsSchema {
+        context: Qms {
+            idempotency: u64 = worth_query_identity!(QMS, idempotency),
+            denial: BodyDenial,
+        },
+        principal: Operator => OperatorId = OperatorFacts::operator_id(),
+        directory: Site => SiteId = SiteFacts::site_id(),
+        onboarding: ManageOperators,
+    }
+}
+```
+
+It generates the `PrincipalAccount` record, whose external identity is
+declared `unique` so no write path can map one identity twice; the `Registry`
+principal binding and its context; and the `OnboardPrincipal` and
+`SetPrincipalStatus` actions with their handlers. Both actions require the
+`onboarding` ability on the named directory entity. Add
+`accounts::RegistryMembers` to the contribution members and both actions to a
+feature, then onboard on an open Home with
+`admin.run(accounts::OnboardPrincipal { directory, identity, principal })`.
+Onboarding an already-mapped identity, or a principal identity already held,
+refuses before any effect; recover the reason with
+`WorthQueryPrincipalRegistryRefusal::of(&refusal)` on the run's
+`domain_refusal()`. A disabled account no longer acts or asks. Grant the new
+principal authority through ordinary relationship actions; it survives
+Directory reopen like any other commit
+([registry court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/rebac_eligibility_dx/registry_court.rs)).
+
+Each principal belongs to the directory it joined (`PrincipalDirectory`).
+`SetPrincipalStatus` names a directory and refuses
+`IdentityNotOnboarded` for an account of any other directory, exactly as for
+an identity that exists nowhere, so one directory's operators can neither
+disable another's accounts nor learn they exist. External identities stay
+globally unique, so onboarding an identity mapped anywhere refuses
+`IdentityAlreadyOnboarded`. Seed accounts with
+`accounts::seed_principal(graph, installed, directory, key, id, identity, status)`,
+which binds the principal through `bind_principal` and enrolls it in the
+directory, the same shape onboarding commits. The
+principal is created with only its identity field, so its other aspects must
+be optional or written by a later action.
+
 
 ### Who may act: roles, abilities and ReBAC rules
 
