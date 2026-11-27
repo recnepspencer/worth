@@ -47,9 +47,14 @@ impl WorthQueryApplicationObservedFact {
                         "decision fact comparison",
                     )
                 })?;
-                observation
-                    .remains_equal_at(runtime, execution, basis)
-                    .map_err(family_selection_denial)
+                // In the attempt's own applied image its outputs are not settled
+                // heads yet, so the read's overlay applies again, as at the
+                // post-commit rebase (plan §3.7, S1 STOP 5).
+                match applied {
+                    Some(_) => observation.remains_equal_rebased(runtime, execution, basis),
+                    None => observation.remains_equal_at(runtime, execution, basis),
+                }
+                .map_err(family_selection_denial)
             }
             _ => self.remains_equal_in_image(runtime, execution, basis.snapshot, applied),
         }
