@@ -338,8 +338,6 @@ pub mod displaced_generation;
 pub mod equal_field_write;
 #[path = "equality/mod.rs"]
 pub mod equality;
-#[path = "family_selection/mod.rs"]
-pub mod family_selection;
 #[path = "full_verification/mod.rs"]
 pub mod full_verification;
 #[path = "local_requirement/mod.rs"]
