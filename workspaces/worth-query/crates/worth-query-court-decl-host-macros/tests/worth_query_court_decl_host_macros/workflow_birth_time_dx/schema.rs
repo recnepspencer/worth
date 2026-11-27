@@ -64,9 +64,14 @@ pub struct Mapping;
 #[worth_query(entity, aspects(CompanyFacts), reference(BirthSchema, Records))]
 pub struct Company;
 
-/// The subject born enrolled in its workflow.
+/// The subject born enrolled in its workflow, linked to its company at birth.
 #[derive(Clone, Copy, WorthQuerySchema)]
-#[worth_query(entity, aspects(RequestFacts), reference(BirthSchema, Records))]
+#[worth_query(
+    entity,
+    aspects(RequestFacts),
+    relations(RequestCompany),
+    reference(BirthSchema, Records)
+)]
 pub struct Request;
 
 /// One grant of one workflow capability over one company.
@@ -82,6 +87,11 @@ pub struct Grant;
 #[derive(WorthQueryRelation)]
 #[worth_query(to = Owner, from = Mapping, reference(BirthSchema, Records))]
 pub struct MappingOwner;
+
+/// The birth edge a subject-scoped read follows from a company grant.
+#[derive(WorthQueryRelation)]
+#[worth_query(to = Company, from = Request, reference(BirthSchema, Records))]
+pub struct RequestCompany;
 
 #[derive(WorthQueryRelation)]
 #[worth_query(to = Grant, from = Owner, reference(BirthSchema, Records))]
@@ -131,6 +141,9 @@ pub struct RequestRow {
     pub request_id: u64,
     #[worth_query(read_only)]
     pub created_at: CanonicalTimestamp,
+    /// Copied from the birth scope; a subject grant's workflow names it.
+    #[worth_query(equality, read_only)]
+    pub company_code: String,
 }
 
 /// The typed dimensions every workflow capability contract reads.
