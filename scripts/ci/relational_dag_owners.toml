@@ -50,7 +50,9 @@ layer = 3
 # forward edges, safe range-based OrdMap predecessor lookups, and zero-rebuild compaction).
 # +1000 for public #455 delta group state (header and per-member rows, ordered
 # member seeks, delta verification/installation, WPGL v2 kept deltas, tests).
-cap = 23600
+# +300 for its contiguous group-member page domain and the Rust -> Lean
+# conformance trace test.
+cap = 23900
 floor = 7100
 depends = ["contracts", "storage", "branch"]
 

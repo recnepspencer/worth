@@ -302,9 +302,9 @@ pub fn reconstruct_replay_naming_plan(
         }
     }
 
-    let groups = super::group_recovery::replay_group_claims(envelope, group_transitions, &basis)?;
+    let groups = super::group_recovery::replay_group_claims(envelope, group_transitions, &basis);
     basis.settle().map_err(naming_unavailable_error)?;
-    drop(basis);
+    let groups = groups?;
     if postures.is_empty() && groups.is_empty() {
         return Ok(None);
     }

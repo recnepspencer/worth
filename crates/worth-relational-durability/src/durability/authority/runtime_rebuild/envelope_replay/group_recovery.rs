@@ -18,7 +18,7 @@ use worth_relational_branch::internal_port::history::data::canonical_commit_enve
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_lineage::internal_port::durability::naming::decode_group_lineage_frame;
 use worth_relational_lineage::internal_port::lineage::groups::{
-    CommittedGroupTransition, GroupTransitionKind,
+    CommittedGroupTransition, GroupStateDenial, GroupTransitionKind,
 };
 use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::naming_basis_binding::BranchNamingBasisGuard;
 
@@ -41,7 +41,10 @@ pub fn replay_group_transitions(
 }
 
 /// The claims re-declaring `transitions` against the branch's replayed
-/// group state, read through `basis`.
+/// group state, read through `basis`. A cold fault latches in `basis`'s
+/// scope and reads as an absent group, so the caller settles `basis` before
+/// propagating this result: storage damage refuses as storage, never as the
+/// replay mismatch it would otherwise cause.
 ///
 /// Complexity: O(recorded members + each kept group's members).
 pub fn replay_group_claims(
@@ -54,7 +57,16 @@ pub fn replay_group_claims(
     }
     let state = basis.group_state().map_err(|denial| {
         let detail = format!("branch group state is unavailable: {denial:?}");
-        replay_failure(envelope, detail)
+        match denial {
+            GroupStateDenial::StorageUnavailable(_) => DurabilityError::new(
+                RecoveryFailureClass::ColdStorageUnavailable,
+                format!(
+                    "commit {} group lineage: {detail}",
+                    envelope.commit.commit_id.0
+                ),
+            ),
+            _ => replay_failure(envelope, detail),
+        }
     })?;
     let mut claims = Vec::with_capacity(transitions.len());
     for committed in transitions {

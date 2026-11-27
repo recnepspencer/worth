@@ -5,6 +5,9 @@
 Each modelled loop ticks once per element it visits, so a theorem about
 `steps` bounds exactly the work the Rust loop performs per visited row
 (each row probe is one `O(log N)` tiered-map seek in the implementation).
+
+Step-count infrastructure only: it models no production Rust, so it carries
+no `proof-mirror:` pin; `Delta` and `Residual` pin the Rust they model.
 -/
 namespace CanonicalGroupDelta
 

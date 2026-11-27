@@ -1,5 +1,13 @@
 import CanonicalGroupDelta.TimeM
 
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/group_install.rs:56-115 sha256:5aabe6e947e31cb375df580d67dad724583139f2ad0b1f0602445d914249cf82
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/group_install.rs:117-135 sha256:bf89330e2529e06eef917c15388ce3cc3a7c537afec578e4caa389f73277ba6b
+-- proof-mirror: crates/worth-relational-contracts/src/aggregate_identity/transition/group/transition_result.rs:42-61 sha256:c6f10de59f81f0203d633fbb6991008c0687d71362b16aa19be112217e05d0f3
+-- proof-mirror: crates/worth-relational-lineage/src/durability/naming/group_frame_encoding.rs:125-161 sha256:ae148932a87d1d1a47fade75fb7ab73d829fa8024ca8566d0101dd3beb8eb831
+-- proof-mirror: crates/worth-relational-lineage/src/durability/naming/group_frame_encoding.rs:163-178 sha256:3569bf941924a055d8c1e85f6987c8160dd08b72a81dcca5b427c45c0b46b18c
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/branch_state.rs:314-342 sha256:1299b2237583a255b1c946e481ef7a88843c4f028fc3135154e06ddf10244441
+
 /-!
 # Kept-group member deltas: step bound, wire bound and replay equivalence
 

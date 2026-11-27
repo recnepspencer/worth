@@ -6,7 +6,7 @@ use crate::contracts::identity::data::record_ids::EntityId;
 use crate::contracts::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 use AggregateContinuityRule as Rule;
 pub mod continuity;
-pub mod differential;
+pub mod delta_authority_matches_full_partition;
 pub mod memory_state;
 pub mod property;
 pub mod refusals;

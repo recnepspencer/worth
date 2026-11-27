@@ -27,19 +27,19 @@ use crate::lineage::tiered::NamingReadScope;
 
 use super::{BranchGroupState, CommittedGroupTransition, GroupStateDenial, GroupTransitionKind};
 
-fn name(n: u8) -> Name {
+pub(super) fn name(n: u8) -> Name {
     Name::from_minted_digest([n; 32])
 }
 
-fn group(n: u8) -> AggregateIdentity {
+pub(super) fn group(n: u8) -> AggregateIdentity {
     AggregateIdentity::from_bytes([n; 32])
 }
 
-fn carrier(n: u8, generation: u32) -> NativeMemberKey {
+pub(super) fn carrier(n: u8, generation: u32) -> NativeMemberKey {
     NativeMemberKey::Entity(EntityId::new(PartitionId(1), u64::from(n), generation))
 }
 
-fn committed(
+pub(super) fn committed(
     assignments: Vec<AggregateGroupAssignment>,
     lineage: BTreeSet<Event>,
 ) -> CommittedGroupTransition {

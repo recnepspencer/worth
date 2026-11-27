@@ -1,4 +1,5 @@
-"""Drift guard for the hand-mirrored proofs under specs/verus and specs/lean.
+"""Drift guard for the hand-mirrored proofs under specs/verus, specs/lean and
+proofs/lean.
 
 Each proof file carries one header line per source range it mirrors:
 
@@ -18,7 +19,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PROOFS = ["specs/verus", "specs/lean"]
+PROOFS = ["specs/verus", "specs/lean", "proofs/lean"]
 LINE = re.compile(r"proof-mirror:\s+(\S+):(\d+)-(\d+)\s+sha256:([0-9a-f]{64})")
 
 
@@ -33,7 +34,7 @@ def main(argv: list[str]) -> int:
     failures, checked = [], 0
     for folder in PROOFS:
         for proof in sorted((ROOT / folder).rglob("*")):
-            if not proof.is_file() or proof.suffix not in {".rs", ".lean"}:
+            if not proof.is_file() or proof.suffix not in {".rs", ".lean"} or ".lake" in proof.parts:
                 continue
             for match in LINE.finditer(proof.read_text(encoding="utf-8")):
                 path, start, end, expected = match.group(1), int(match.group(2)), int(match.group(3)), match.group(4)

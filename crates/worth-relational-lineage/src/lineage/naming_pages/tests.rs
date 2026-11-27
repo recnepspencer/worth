@@ -4,6 +4,7 @@ mod hardening;
 mod hardening_r2;
 mod hardening_r3;
 pub(crate) mod hardening_r4;
+mod table_domains;
 
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};

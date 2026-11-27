@@ -40,16 +40,23 @@ pub const VALUE_CHUNK: u8 = 15;
 /// Tag 0 keeps `VALUE_CHUNK` the greatest tag.
 pub const GROUP_MEMBERS: u8 = 0;
 
+/// Group state's member rows: the one domain sorting before the naming basis.
+pub const GROUP_MEMBER_DOMAIN: u8 = 0;
+/// Group state's headers, retired names and member owners.
+pub const GROUP_STATE_DOMAIN: u8 = 3;
+
 /// Logical component domain of a naming table tag.
 ///
 /// Pages never mix rows from different domains so read-free manifest
 /// validation can verify each component's page presence from descriptors
-/// alone.
+/// alone. Every domain is one contiguous tag interval, so a descriptor whose
+/// first and last keys share a domain holds no row of another domain.
 pub const fn table_domain(tag: u8) -> Option<u8> {
     match tag {
+        GROUP_MEMBERS => Some(GROUP_MEMBER_DOMAIN),
         LINEAGE_HOLDER..=RETIRED_LINEAGE => Some(1),
         INDEX_NAME..=INDEX_MEMBER_GROUPS => Some(2),
-        GROUP_MEMBERS | GROUP_LIVE..=GROUP_MEMBER_OWNER => Some(3),
+        GROUP_LIVE..=GROUP_MEMBER_OWNER => Some(GROUP_STATE_DOMAIN),
         GROUP_LOG => Some(4),
         VALUE_CHUNK => Some(5),
         _ => None,

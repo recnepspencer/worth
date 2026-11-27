@@ -273,7 +273,15 @@ fn validate_branch_root_headers(
     };
     let has_naming_pages = has_domain(1);
     let has_index_pages = has_domain(2);
-    let has_group_pages = has_domain(3);
+    // Every group transition leaves a header or a retired name, so group
+    // state with commits always has state pages; member rows never stand alone.
+    let has_group_pages = has_domain(tables::GROUP_STATE_DOMAIN);
+    let has_member_pages = has_domain(tables::GROUP_MEMBER_DOMAIN);
+    if has_member_pages && !has_group_pages {
+        return Err(corrupt(
+            "branch group member pages lack any group state pages",
+        ));
+    }
     if let Some(header) = root.naming {
         if !header.unavailable {
             if header.earliest_event_commit.is_some() != header.latest_event_commit.is_some()

@@ -191,8 +191,9 @@ impl AggregateGroupStateView for SchemeGroupsRead<'_> {
             }
             None => &ROLES,
         };
+        let counts = self.header(group)?.counts;
         let mut least: Option<PersistentNameIdentity> = None;
-        for role in roles {
+        for role in roles.iter().filter(|role| counts.of(**role) > 0) {
             let mut found = None;
             let scanned = self.groups.scan_members(*group, Some(*role), |key, _| {
                 if skip.contains(&key.name) {

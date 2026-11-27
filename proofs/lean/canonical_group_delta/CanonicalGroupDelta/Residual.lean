@@ -1,5 +1,11 @@
 import CanonicalGroupDelta.TimeM
 
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/group_read.rs:180-212 sha256:353ce0a11d997ef140976799c4ece6962aab0d17a4411ada032f48078353b1ae
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/group_install.rs:38-54 sha256:8ed31fb70dfdcfe0cf504da9604a160429df8ebf80bdecc01df002e173ef49d8
+-- proof-mirror: crates/worth-relational-mutation/src/aggregate_identity/transition/group/delta/naming.rs:156-201 sha256:51e2e866637caeb04a4143a23ed7bd1cf9b66f7264180ce9a51da2266e9f0443
+-- proof-mirror: crates/worth-relational-mutation/src/aggregate_identity/transition/group/delta/scope.rs:226-283 sha256:263b96543a6c58cf779d7a0cb53989e00676a7bcdc7b37431a866dbaaff6b223
+
 /-!
 # Residual groups: ordered seeks and role counts without a member walk
 
