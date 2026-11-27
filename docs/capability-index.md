@@ -233,9 +233,9 @@ read, and a persisted birth whose parts no longer re-encode to its identity
 fails closed. The model's `ReopenFromStore` action and
 `StoreReopenEquivalence` invariant cover it, and the durable simulation
 (`oracle::persistent_naming_dst::durable`; `WORTH_DST_DURABLE_SEEDS`,
-`WORTH_DST_DURABLE_STEPS`) crashes and reopens after every step. Known gap
-(held): group names do not yet survive a reopen *from a checkpoint* when the
-group lineage was published by a non-head commit. Branches never merge named
+`WORTH_DST_DURABLE_STEPS`) crashes and reopens after every step. Group names
+whose lineage a non-head commit published survive a reopen from a checkpoint
+too (`#440`, paged `CHK24` naming and group state). Branches never merge named
 outputs silently: Query adopts a candidate only onto the head it was forked
 from (a diverged adoption refuses typed with zero effects), and Native branch
 merge preparation refuses

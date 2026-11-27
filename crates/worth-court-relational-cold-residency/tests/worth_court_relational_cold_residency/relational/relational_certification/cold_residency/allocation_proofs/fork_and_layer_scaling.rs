@@ -14,7 +14,7 @@ use worth_testkit_relational::durable_medium::TestDurableMedium;
 
 use super::{ensure_tracker_installed, fixture, measure};
 
-fn fork_branch(
+pub(super) fn fork_branch(
     request: &ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     source_branch: &BranchId,

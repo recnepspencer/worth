@@ -6,8 +6,10 @@
 //! `(alloc_bytes, dealloc_bytes, live_bytes, peak_live_bytes)` on the calling
 //! thread with zero manual production work counters and zero cross-thread noise.
 mod cold_compaction;
+mod composed_cold_reopen_scaling;
 mod fixture;
 mod fork_and_layer_scaling;
+mod naming_release_ceiling;
 
 use std::cell::Cell;
 use std::sync::Once;
