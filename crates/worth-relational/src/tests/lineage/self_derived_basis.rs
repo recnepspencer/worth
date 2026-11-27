@@ -155,6 +155,7 @@ fn installed_schema_registry_validates_bindings_and_enforces_missing_birth() {
             ["authored"],
             true,
             true,
+            false,
         )
         .unwrap(),
     )
@@ -167,6 +168,7 @@ fn installed_schema_registry_validates_bindings_and_enforces_missing_birth() {
             ["seam"],
             true,
             true,
+            false,
         )
         .unwrap(),
     )

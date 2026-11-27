@@ -61,10 +61,12 @@ impl Registration<Schema> for Registrations {
     ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
     {
         use worth_query_decl::facade::application_naming::ApplicationNameSchemeBuilder;
-        // Role order and dependencies come from the role types.
+        // Role order and dependencies come from the role types. Members are
+        // named structurally (one commit or two mint the same names); seams
+        // keep the parent-inclusive default, so both modes run here.
         let scheme =
             ApplicationNameSchemeBuilder::<Schema, Member>::from_roles::<MemberRole>(MEMBER_SCHEME)
-                .split_discriminator::<outputs::MemberCut>()
+                .structural_identity::<outputs::MemberCut>()
                 .require_authored_occurrence()
                 .build()
                 .expect("the member scheme is well-formed");

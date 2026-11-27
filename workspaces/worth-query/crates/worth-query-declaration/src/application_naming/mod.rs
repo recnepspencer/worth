@@ -60,13 +60,17 @@ pub use denial::{
     validate_discriminator_identity, validate_role_name, validate_scheme_identifier,
     ApplicationNameSchemeDenial,
 };
+pub(crate) use discriminator::discriminator_fits_structural_identity;
 pub(crate) use discriminator::recorded_name_references;
+#[doc(hidden)]
+pub use discriminator::{bound_max, bound_sum, field_bound, max_encoded_bytes, variant_bound};
 pub use discriminator::{
     AdmittedNameReferences, ApplicationNameDiscriminator, ApplicationNameDiscriminatorDecode,
     ApplicationNameDiscriminatorDecodeDenial, ApplicationNameDiscriminatorDecoder,
     ApplicationNameDiscriminatorEncoder, ApplicationNameDiscriminatorField,
     ApplicationNameDiscriminatorFieldDecode, ApplicationNameDiscriminatorValue,
-    ApplicationNameDiscriminatorValueDecode, NestedDiscriminator, NAME_DISCRIMINATOR_DOMAIN_TAG,
+    ApplicationNameDiscriminatorValueDecode, NestedDiscriminator,
+    MAX_STRUCTURAL_DISCRIMINATOR_BYTES, NAME_DISCRIMINATOR_DOMAIN_TAG,
 };
 pub use erased::ErasedWorthQueryName;
 pub(crate) use group::validate_erased_group_scheme_identifiers;

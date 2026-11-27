@@ -179,6 +179,7 @@ fn held_account_name() -> WorthQueryName<Account> {
         ["authored", "cut_piece"],
         true,
         false,
+        false,
     )
     .expect("account scheme");
     let mut schemes = InstalledPersistentNameSchemeRegistry::new();

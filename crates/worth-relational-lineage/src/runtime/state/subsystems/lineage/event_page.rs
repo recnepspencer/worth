@@ -229,8 +229,9 @@ pub mod tests {
         birth: Option<Kind>,
     ) -> LineageEventRecord {
         let branch_id = BranchId("main".to_owned());
-        let parts =
-            || PersistentNameBirthParts::new("s".into(), "o".into(), "r".into(), vec![], vec![]);
+        let parts = || {
+            PersistentNameBirthParts::new("s".into(), "o".into(), "r".into(), vec![], vec![], false)
+        };
         assemble_lineage_event_record(LineageEventRecordParts {
             event_id: 1,
             commit: RelationalCommitReceipt {
