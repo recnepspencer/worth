@@ -32,7 +32,7 @@ The step bound ends every behaviour, so the configurations set
 
 | Model | Expected | What it shows |
 | --- | --- | --- |
-| `FamilySelectionWatch` | exit 0 (172,003 distinct states, depth 12) | `CleanOnlyFromReresolution`, `ServesCurrentSelection` and `EqualAdoptionStaysCurrent` hold, and `Converges` (`pending ~> ~pending`) holds under weak fairness on `Certify`. |
+| `FamilySelectionWatch` | exit 0 (172,003 distinct states, depth 12) | `CleanOnlyFromReresolution` and `EqualAdoptionStaysCurrent` hold, and `Converges` (`pending ~> ~pending`) holds under weak fairness on `Certify`. |
 | `FamilySelectionWatchKeyedClean` | exit 12, `CleanOnlyFromReresolution` | The pre-#429 rule: a completion, then a demand on a Missing reader certifies Clean by marks while the lineage selects `e1`. |
 | `FamilySelectionWatchReadCoordinate` | exit 12, `CleanOnlyFromReresolution` | Re-resolving at the read's coordinate breaks at a fork: fork, complete on the fork, register there, and a Missing reader certifies Clean. |
 | `FamilySelectionWatchSettlementIdentity` | exit 12, `EqualAdoptionStaysCurrent` | Comparing the selected settlement's identity moves a Unique reader after an equal adoption. |

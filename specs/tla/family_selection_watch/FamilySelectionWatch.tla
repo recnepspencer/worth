@@ -85,8 +85,7 @@ Select(h) ==
         ELSE IF Cardinality(cur) = 1 THEN CHOOSE e \in cur : TRUE
         ELSE "Ambiguous"
 
-NoCert == [kind |-> "none", recorded |-> "Missing", served |-> "Missing",
-           lineage |-> "Missing"]
+NoCert == [kind |-> "none", recorded |-> "Missing", lineage |-> "Missing"]
 
 TypeOK ==
     /\ live \subseteq Coordinates /\ Origin \in live
@@ -97,7 +96,7 @@ TypeOK ==
                                 vers : [Entities -> Versions],
                                 pending : BOOLEAN]]
     /\ last \in [kind : {"none", "clean", "moved"}, recorded : Outcomes,
-                 served : Outcomes, lineage : Outcomes]
+                 lineage : Outcomes]
     /\ steps \in 0..MaxSteps
 
 Init ==
@@ -230,13 +229,13 @@ Certification(r) ==
     IN  IF CertifiesClean(r)
         THEN /\ readers' = [readers EXCEPT ![r].pending = FALSE]
              /\ last' = [kind |-> "clean", recorded |-> readers[r].outcome,
-                         served |-> readers[r].outcome, lineage |-> lineage]
+                         lineage |-> lineage]
         ELSE /\ readers' = [readers EXCEPT ![r] =
                     [Execute(r) EXCEPT !.pending =
                         Mutant = "ImmediateMovedOnRestore"
                             /\ HasRestored(readers[r].coord)]]
              /\ last' = [kind |-> "moved", recorded |-> readers[r].outcome,
-                         served |-> lineage, lineage |-> lineage]
+                         lineage |-> lineage]
 
 \* A consumer demands r: certification runs whether or not a wake reached it.
 Demand(r) ==
@@ -263,14 +262,11 @@ Spec == Init /\ [][Next]_vars /\ \A r \in Readers : WF_vars(Certify(r))
 -----------------------------------------------------------------------------
 
 \* Every Clean certification re-resolved the outcome it recorded, at the
-\* certifier's coordinate.
+\* certifier's coordinate. A Moved reader executes again and serves the
+\* lineage outcome, so this is also what every certification serves, even
+\* for a reader an escaped head change never woke.
 CleanOnlyFromReresolution ==
     last.kind = "clean" => last.recorded = last.lineage
-
-\* Every certification serves the lineage outcome at the reader's
-\* coordinate, even for a reader an escaped head change never woke.
-ServesCurrentSelection ==
-    last.kind # "none" => last.served = last.lineage
 
 \* A certification moves a reader only when the selection's meaning moved,
 \* so an equal adoption never re-executes a current reader.
