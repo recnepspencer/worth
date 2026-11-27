@@ -25,6 +25,7 @@ mod readmission;
 mod reference;
 mod regressions;
 mod selection;
+mod selection_chain;
 mod trace;
 mod workload;
 mod world;

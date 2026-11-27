@@ -112,6 +112,18 @@ macro_rules! producer_operation {
     (DstMidPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstMidPreserve, $entity, $key, $value, $of); };
     (DstLeafInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstLeafInitial, $entity, $key, $value, $of); };
     (DstLeafPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstLeafPreserve, $entity, $key, $value, $of); };
+    (DstC3Initial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstC3Initial, $entity, $key, $value, $of); };
+    (DstC3Preserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstC3Preserve, $entity, $key, $value, $of); };
+    (DstC4Initial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstC4Initial, $entity, $key, $value, $of); };
+    (DstC4Preserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstC4Preserve, $entity, $key, $value, $of); };
+    (DstC5Initial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstC5Initial, $entity, $key, $value, $of); };
+    (DstC5Preserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstC5Preserve, $entity, $key, $value, $of); };
+    (DstC6Initial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstC6Initial, $entity, $key, $value, $of); };
+    (DstC6Preserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstC6Preserve, $entity, $key, $value, $of); };
+    (DstC7Initial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstC7Initial, $entity, $key, $value, $of); };
+    (DstC7Preserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstC7Preserve, $entity, $key, $value, $of); };
+    (DstC8Initial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstC8Initial, $entity, $key, $value, $of); };
+    (DstC8Preserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@chain_read DstC8Preserve, $entity, $key, $value, $of); };
     // The member read, plus `dst-a`'s child outputs: the #358 chain's reads.
     (@chain_read $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
         worth_query_operation!(pub $operation for Schema, input InputBinding; access {

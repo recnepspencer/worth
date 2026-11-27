@@ -162,6 +162,15 @@ impl<'h> Document<'h> {
                     Shape::WithChain => document.with_output_trees::<program::Program, program::ChainTree>(
                         &phase, request, host, demand, controls,
                     ),
+                    Shape::ChainOf1 => document.with_output_trees::<program::Program, program::Chain1Tree>(
+                        &phase, request, host, demand, controls,
+                    ),
+                    Shape::ChainOf4 => document.with_output_trees::<program::Program, program::Chain4Tree>(
+                        &phase, request, host, demand, controls,
+                    ),
+                    Shape::ChainOf8 => document.with_output_trees::<program::Program, program::Chain8Tree>(
+                        &phase, request, host, demand, controls,
+                    ),
                 }
                 .unwrap_or_else(|(_, cause)| panic!("the DST tree must bind: {cause:?}"))
             })

@@ -25,11 +25,14 @@ impl Document<'_> {
             }
         }
         let outputs = read_outputs(self.host, self.branch, &live);
-        if self.shape == Shape::WithChain {
-            // The #358 chain agrees with the outputs it reads: `dst-mid` is
-            // the parity of `dst-a`'s output for `e1`, `dst-leaf` that plus 100.
+        let depth = self.shape.chain_depth();
+        if depth > 0 {
+            // The chain agrees with the outputs it reads: `dst-mid` is the
+            // parity of `dst-a`'s output for `e1`, `dst-leaf` that plus 100,
+            // and each level above it the level below plus 1.
             let mid = live[super::super::reference::E1].map_or(0, |_| outputs.0[super::super::reference::E1] % 2);
-            assert_eq!(read_chain(self.host, self.branch), (mid, 100 + mid), "the chain must read its sources");
+            let expected: Vec<u64> = (0..depth as u64).map(|level| if level == 0 { mid } else { 99 + level + mid }).collect();
+            assert_eq!(read_chain(self.host, self.branch, depth), expected, "the chain must read its sources");
         }
         // A writer holds the document, and a closed one is gone. Otherwise
         // the reads themselves say whether the head diverged: a write outside

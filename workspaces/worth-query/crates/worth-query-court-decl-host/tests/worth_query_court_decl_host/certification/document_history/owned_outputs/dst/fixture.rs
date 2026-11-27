@@ -106,6 +106,8 @@ pub fn declare(schema: ApplicationSchemaDeclarationBuilder<Schema>) -> Applicati
     let schema = declared!(schema, set_e1, set_e2, despawn_e1, despawn_e2, despawn_e1_numeric, restore_e1, restore_e2);
     let schema = family::dst::dst_use::declare(family::dst::dst_b::declare(family::dst::dst_a::declare(schema)));
     let schema = family::dst::dst_leaf::declare(family::dst::dst_mid::declare(schema));
+    let schema = family::dst::dst_c5::declare(family::dst::dst_c4::declare(family::dst::dst_c3::declare(schema)));
+    let schema = family::dst::dst_c8::declare(family::dst::dst_c7::declare(family::dst::dst_c6::declare(schema)));
     schema
         .application_mutation_binding::<create_e1::Binding>()
         .application_mutation_binding::<create_e2::Binding>()
@@ -157,7 +159,13 @@ pub fn contracts(
     family::dst::dst_b::contracts(contracts)?;
     family::dst::dst_use::contracts(contracts)?;
     family::dst::dst_mid::contracts(contracts)?;
-    family::dst::dst_leaf::contracts(contracts)
+    family::dst::dst_leaf::contracts(contracts)?;
+    family::dst::dst_c3::contracts(contracts)?;
+    family::dst::dst_c4::contracts(contracts)?;
+    family::dst::dst_c5::contracts(contracts)?;
+    family::dst::dst_c6::contracts(contracts)?;
+    family::dst::dst_c7::contracts(contracts)?;
+    family::dst::dst_c8::contracts(contracts)
 }
 
 pub fn install(
@@ -174,7 +182,13 @@ pub fn install(
     family::dst::dst_b::install(setup)?;
     family::dst::dst_use::install(setup)?;
     family::dst::dst_mid::install(setup)?;
-    family::dst::dst_leaf::install(setup)
+    family::dst::dst_leaf::install(setup)?;
+    family::dst::dst_c3::install(setup)?;
+    family::dst::dst_c4::install(setup)?;
+    family::dst::dst_c5::install(setup)?;
+    family::dst::dst_c6::install(setup)?;
+    family::dst::dst_c7::install(setup)?;
+    family::dst::dst_c8::install(setup)
 }
 
 /// The program actions the writers (`.edit`, `.gesture`) need.

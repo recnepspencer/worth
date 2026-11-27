@@ -299,6 +299,10 @@ pub use super::ordinary_read::{
     WorthQueryOrdinaryReadBatch, WorthQueryOrdinaryReadMetadata, WorthQueryOrdinaryReadProjection,
     WorthQueryOrdinaryReadVersion,
 };
+pub use super::output_lineage::family_selection::reresolution_observation::{
+    family_selection_cost_on_this_thread_for_test,
+    family_selection_frame_costs_on_this_thread_for_test, WorthQueryFamilySelectionCostForTest,
+};
 pub use super::output_lineage::invalidation::{
     carried_historical_projections_on_this_thread_for_test,
     decline_historical_readmissions_on_this_thread_for_test,

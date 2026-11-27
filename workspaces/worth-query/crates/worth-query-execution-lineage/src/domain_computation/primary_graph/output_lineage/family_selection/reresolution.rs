@@ -62,6 +62,7 @@ impl ObservedFamilySelection {
         replaced: &[(Option<TypeId>, [u8; 32])],
         extra: &[EntityId],
     ) -> Result<bool, Failure> {
+        super::reresolution_observation::record_rewalk();
         let Some(port) = self.live_port() else {
             return MOVED;
         };
@@ -99,6 +100,7 @@ impl ObservedFamilySelection {
         };
         let mut verdicts = Vec::with_capacity(resolution.candidates.len());
         for candidate in &resolution.candidates {
+            super::reresolution_observation::record_candidate_compared();
             let upstream = candidate.consumed_outputs_at(&selected);
             let verdict = candidate_verdict(
                 candidate,

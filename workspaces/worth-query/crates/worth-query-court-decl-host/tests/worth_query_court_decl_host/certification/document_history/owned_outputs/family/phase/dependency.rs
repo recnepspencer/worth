@@ -78,6 +78,18 @@ macro_rules! producer_decision_dependency {
     (DstMidPreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@e1_parity $reader) };
     (DstLeafInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@mid_current $reader, $source) };
     (DstLeafPreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@mid_current $reader, $source) };
+    (DstC3Initial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@chain_current $reader, $source, dst_leaf) };
+    (DstC3Preserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@chain_current $reader, $source, dst_leaf) };
+    (DstC4Initial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@chain_current $reader, $source, dst_c3) };
+    (DstC4Preserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@chain_current $reader, $source, dst_c3) };
+    (DstC5Initial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@chain_current $reader, $source, dst_c4) };
+    (DstC5Preserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@chain_current $reader, $source, dst_c4) };
+    (DstC6Initial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@chain_current $reader, $source, dst_c5) };
+    (DstC6Preserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@chain_current $reader, $source, dst_c5) };
+    (DstC7Initial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@chain_current $reader, $source, dst_c6) };
+    (DstC7Preserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@chain_current $reader, $source, dst_c6) };
+    (DstC8Initial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@chain_current $reader, $source, dst_c7) };
+    (DstC8Preserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@chain_current $reader, $source, dst_c7) };
     // The parity of `dst-a`'s current output for member `e1`; 0 while `e1`
     // is not live. It resolves `e1` by key and never reads its value.
     (@e1_parity $reader:ident) => {{
@@ -97,6 +109,15 @@ macro_rules! producer_decision_dependency {
             WorthQueryCurrentOutputSelection::Unique(output) => $reader
                 .field(&output, FirstValue::at("FirstValue"))?
                 .expect("dst-mid's current output has its value"),
+            _ => 0,
+        }
+    }};
+    // The value of chain level `$below`'s current output for this model.
+    (@chain_current $reader:ident, $source:ident, $below:ident) => {{
+        match $reader.current_output::<super::super::$below::Family, Model>(&$source)? {
+            WorthQueryCurrentOutputSelection::Unique(output) => $reader
+                .field(&output, FirstValue::at("FirstValue"))?
+                .expect("the chain level's current output has its value"),
             _ => 0,
         }
     }};

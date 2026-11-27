@@ -31,6 +31,9 @@ use worth_relational::facade::mvcc::CompanionCellEditStop;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use super::invalidation::{EqualityRecoveryImage, ObservedRows, SettlementVerificationStop};
+use super::family_selection::reresolution_observation::{
+    self, WorthQueryFamilySelectionCostForTest,
+};
 use super::{CertificationBasis, ProductCoordinate, RecordedSettlementIdentity};
 use crate::domain_computation::primary_graph::invariant_projection::consumed_output::{
     map_verification_stop, ConsumedOutputVerificationStop,
@@ -50,6 +53,8 @@ struct Frame {
     members: usize,
     /// The `FamilySelection` facts in progress.
     facts: usize,
+    /// The re-resolution cost counted when the frame opened.
+    cost_from: Option<WorthQueryFamilySelectionCostForTest>,
 }
 
 impl Frame {
@@ -89,7 +94,9 @@ impl Drop for CertificationScope {
                     frame.facts -= 1;
                 }
                 if frame.members == 0 {
-                    frames.pop();
+                    if let Some(frame) = frames.pop() {
+                        reresolution_observation::record_frame(frame.cost_from);
+                    }
                 }
             }
         });
@@ -122,6 +129,7 @@ impl CertificationScope {
                     observed: ObservedRows::new(),
                     members: 1,
                     facts: 0,
+                    cost_from: reresolution_observation::frame_start(),
                 }),
             }
         });
@@ -164,6 +172,7 @@ impl CertificationScope {
                     observed: ObservedRows::new(),
                     members: 1,
                     facts: 1,
+                    cost_from: reresolution_observation::frame_start(),
                 }),
             }
             Ok(())

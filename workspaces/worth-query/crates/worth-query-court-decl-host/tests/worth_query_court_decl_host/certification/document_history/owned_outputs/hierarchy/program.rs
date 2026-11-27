@@ -90,6 +90,12 @@ pub struct ChildInput;
 pub struct SeedInput;
 /// The #358 consumer chain's `dst-mid` input (`dst::fixture::program`).
 pub struct ChainInput;
+pub struct ChainInput3;
+pub struct ChainInput4;
+pub struct ChainInput5;
+pub struct ChainInput6;
+pub struct ChainInput7;
+pub struct ChainInput8;
 impl ApplicationFeature<Schema> for Child {
     type Inputs = ApplicationFeatureInputList<
         ChildInput,
@@ -99,7 +105,7 @@ impl ApplicationFeature<Schema> for Child {
                 super::super::synchronous_edit::interleaved::PendingSeedInput,
                 ApplicationFeatureInputList<
                     super::super::family::borrowed_inputs::program::HeaderInput,
-                    ApplicationFeatureInputList<ChainInput, ApplicationFeatureInputLeaf>,
+                    ApplicationFeatureInputList<ChainInput, ApplicationFeatureInputList<ChainInput3, ApplicationFeatureInputList<ChainInput4, ApplicationFeatureInputList<ChainInput5, ApplicationFeatureInputList<ChainInput6, ApplicationFeatureInputList<ChainInput7, ApplicationFeatureInputList<ChainInput8, ApplicationFeatureInputLeaf>>>>>>>,
                 >,
             >,
         >,
@@ -121,6 +127,17 @@ impl ApplicationInputPort<Schema, Child> for ChainInput {
     const IDENTITY: &'static str = "hierarchy-chain-input";
     const REQUIRED: bool = false;
 }
+/// The chain-depth court's levels `dst-c3` to `dst-c8`, one input each.
+macro_rules! chain_input {
+    ($($port:ident => $identity:literal),*) => {$(
+        impl ApplicationInputPort<Schema, Child> for $port {
+            type Value = query::RowBinding;
+            const IDENTITY: &'static str = $identity;
+            const REQUIRED: bool = false;
+        }
+    )*};
+}
+chain_input!(ChainInput3 => "hierarchy-chain-input-3", ChainInput4 => "hierarchy-chain-input-4", ChainInput5 => "hierarchy-chain-input-5", ChainInput6 => "hierarchy-chain-input-6", ChainInput7 => "hierarchy-chain-input-7", ChainInput8 => "hierarchy-chain-input-8");
 pub struct Seed;
 impl ApplicationConnectionIdentity for Seed {
     const IDENTITY: &'static str = "owned-outputs.hierarchy.seed";

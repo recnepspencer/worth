@@ -9,16 +9,18 @@
 //! for `e1` and keeps its parity, so an `e1` write that keeps the parity
 //! re-executes it to an equal output; `dst-leaf` reads `dst-mid`'s current
 //! output plus 100. Neither reads `e1`'s value directly.
+//! `dst-c3` to `dst-c8` extend that chain for the public #429 chain-depth
+//! court: each reads the current output of the level below plus 1.
 use super::*;
 
 thread_local! {
-    /// `dst-mid` and `dst-leaf` candidates built on this thread (public #429).
-    static CHAIN_BUILDS: std::cell::Cell<[u64; 2]> = const { std::cell::Cell::new([0; 2]) };
+    /// Chain candidates built on this thread, `dst-mid` first (public #429).
+    static CHAIN_BUILDS: std::cell::Cell<[u64; 8]> = const { std::cell::Cell::new([0; 8]) };
 }
 
-/// `dst-mid` and `dst-leaf` candidates built on this thread so far: each is
-/// one execution of that output.
-pub fn chain_builds() -> [u64; 2] {
+/// Chain candidates built on this thread so far, `dst-mid`, `dst-leaf`, then
+/// `dst-c3` to `dst-c8`: each is one execution of that output.
+pub fn chain_builds() -> [u64; 8] {
     CHAIN_BUILDS.get()
 }
 
@@ -131,6 +133,39 @@ family!(
     |_: u64| built(1, 100)
 );
 
+/// One chain level above `dst-leaf`: the current output of the level below
+/// plus 1, counted as build `$index`.
+macro_rules! chain_level {
+    ($module:ident, $profile:literal, $initial:literal, $preserve:literal, $initial_op:ident, $preserve_op:ident, $index:literal) => {
+        family!(
+            $module,
+            SourceScopeCascade,
+            output,
+            Model,
+            ModelKey,
+            ModelValue,
+            upstream_source,
+            $profile,
+            $initial,
+            $preserve,
+            $initial_op,
+            $preserve_op,
+            FirstOutput,
+            FirstFacts,
+            FirstKey,
+            FirstValue,
+            FirstOf,
+            |_: u64| built($index, 1)
+        );
+    };
+}
+chain_level!(dst_c3, "dst-c3", "owned-outputs.dst-c3.initial", "owned-outputs.dst-c3.preserve", DstC3Initial, DstC3Preserve, 2);
+chain_level!(dst_c4, "dst-c4", "owned-outputs.dst-c4.initial", "owned-outputs.dst-c4.preserve", DstC4Initial, DstC4Preserve, 3);
+chain_level!(dst_c5, "dst-c5", "owned-outputs.dst-c5.initial", "owned-outputs.dst-c5.preserve", DstC5Initial, DstC5Preserve, 4);
+chain_level!(dst_c6, "dst-c6", "owned-outputs.dst-c6.initial", "owned-outputs.dst-c6.preserve", DstC6Initial, DstC6Preserve, 5);
+chain_level!(dst_c7, "dst-c7", "owned-outputs.dst-c7.initial", "owned-outputs.dst-c7.preserve", DstC7Initial, DstC7Preserve, 6);
+chain_level!(dst_c8, "dst-c8", "owned-outputs.dst-c8.initial", "owned-outputs.dst-c8.preserve", DstC8Initial, DstC8Preserve, 7);
+
 /// Declares the DST families' conditional operations on a root feature: a
 /// program that installs the owned world must name every family it holds.
 pub trait DstOperations {
@@ -150,5 +185,17 @@ impl<Feature: ApplicationFeature<Schema>> DstOperations
             .conditional_operation::<dst_mid::preserve::Operation>()
             .conditional_operation::<dst_leaf::initial::Operation>()
             .conditional_operation::<dst_leaf::preserve::Operation>()
+            .conditional_operation::<dst_c3::initial::Operation>()
+            .conditional_operation::<dst_c3::preserve::Operation>()
+            .conditional_operation::<dst_c4::initial::Operation>()
+            .conditional_operation::<dst_c4::preserve::Operation>()
+            .conditional_operation::<dst_c5::initial::Operation>()
+            .conditional_operation::<dst_c5::preserve::Operation>()
+            .conditional_operation::<dst_c6::initial::Operation>()
+            .conditional_operation::<dst_c6::preserve::Operation>()
+            .conditional_operation::<dst_c7::initial::Operation>()
+            .conditional_operation::<dst_c7::preserve::Operation>()
+            .conditional_operation::<dst_c8::initial::Operation>()
+            .conditional_operation::<dst_c8::preserve::Operation>()
     }
 }

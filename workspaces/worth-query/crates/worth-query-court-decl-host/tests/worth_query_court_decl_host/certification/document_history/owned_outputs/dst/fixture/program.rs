@@ -13,10 +13,14 @@
 //! model reads `dst-a`'s current output for member `e1`, and `dst-leaf`
 //! reads `dst-mid`'s current output, so a readmitted consumer row is
 //! consumed again one hop downstream.
+//!
+//! [`Chain1Tree`], [`Chain4Tree`] and [`Chain8Tree`] bind that chain one,
+//! four and eight levels deep for the public #429 chain-depth court:
+//! `dst-c3` to `dst-c8` each read the current output of the level below.
 use super::*;
 use super::super::super::hierarchy::program as hierarchy;
 use super::super::super::hierarchy::recording_parent::new_member::program as root;
-use family::dst::{dst_a, dst_b, dst_leaf, dst_mid, dst_use};
+use family::dst::{dst_a, dst_b, dst_c3, dst_c4, dst_c5, dst_c6, dst_c7, dst_c8, dst_leaf, dst_mid, dst_use};
 
 macro_rules! discover {
     ($name:ident, $connection:ident, $port:ty, $family:ident, $identity:literal) => {
@@ -126,6 +130,12 @@ consume!(
     dst_leaf,
     "owned-outputs.dst.leaf"
 );
+consume!(C3, C3Connection, hierarchy::ChainInput3, dst_c3, "owned-outputs.dst.c3");
+consume!(C4, C4Connection, hierarchy::ChainInput4, dst_c4, "owned-outputs.dst.c4");
+consume!(C5, C5Connection, hierarchy::ChainInput5, dst_c5, "owned-outputs.dst.c5");
+consume!(C6, C6Connection, hierarchy::ChainInput6, dst_c6, "owned-outputs.dst.c6");
+consume!(C7, C7Connection, hierarchy::ChainInput7, dst_c7, "owned-outputs.dst.c7");
+consume!(C8, C8Connection, hierarchy::ChainInput8, dst_c8, "owned-outputs.dst.c8");
 
 pub type Tree = ApplicationDemandOutputGraph<
     root::RootConnection,
@@ -138,7 +148,7 @@ pub type Tree = ApplicationDemandOutputGraph<
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<(Tree, (ConsumerTree, ChainTree))>;
+    type Outputs = ApplicationProgramOutputs<(Tree, (ConsumerTree, (ChainTree, (Chain1Tree, (Chain4Tree, Chain8Tree)))))>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new("owned-outputs.dst.program");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
@@ -175,10 +185,65 @@ pub type ChainTree = ApplicationDemandOutputGraph<
     ),
 >;
 
+/// [`Tree`] with `dst-mid` alone: the chain one level deep.
+pub type Chain1Tree = ApplicationDemandOutputGraph<
+    root::RootConnection,
+    (
+        ApplicationOutputEdge<ConnectionA, ApplicationOutputLeaf>,
+        (ApplicationOutputEdge<ConnectionB, ApplicationOutputLeaf>, ApplicationOutputEdge<MidConnection, ApplicationOutputLeaf>),
+    ),
+>;
+
+/// [`Tree`] with the chain four levels deep, `dst-mid` to `dst-c4`.
+pub type Chain4Tree = ApplicationDemandOutputGraph<
+    root::RootConnection,
+    (
+        ApplicationOutputEdge<ConnectionA, ApplicationOutputLeaf>,
+        (ApplicationOutputEdge<ConnectionB, ApplicationOutputLeaf>, (ApplicationOutputEdge<MidConnection, ApplicationOutputLeaf>, (ApplicationOutputEdge<LeafConnection, ApplicationOutputLeaf>, (ApplicationOutputEdge<C3Connection, ApplicationOutputLeaf>, ApplicationOutputEdge<C4Connection, ApplicationOutputLeaf>)))),
+    ),
+>;
+
+/// [`Tree`] with the chain eight levels deep, `dst-mid` to `dst-c8`.
+pub type Chain8Tree = ApplicationDemandOutputGraph<
+    root::RootConnection,
+    (
+        ApplicationOutputEdge<ConnectionA, ApplicationOutputLeaf>,
+        (ApplicationOutputEdge<ConnectionB, ApplicationOutputLeaf>, (ApplicationOutputEdge<MidConnection, ApplicationOutputLeaf>, (ApplicationOutputEdge<LeafConnection, ApplicationOutputLeaf>, (ApplicationOutputEdge<C3Connection, ApplicationOutputLeaf>, (ApplicationOutputEdge<C4Connection, ApplicationOutputLeaf>, (ApplicationOutputEdge<C5Connection, ApplicationOutputLeaf>, (ApplicationOutputEdge<C6Connection, ApplicationOutputLeaf>, (ApplicationOutputEdge<C7Connection, ApplicationOutputLeaf>, ApplicationOutputEdge<C8Connection, ApplicationOutputLeaf>)))))))),
+    ),
+>;
+
 /// Which tree a document binds and a write outside settles.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Shape {
     Members,
     WithConsumer,
+    /// The #358 chain, two levels deep.
     WithChain,
+    ChainOf1,
+    ChainOf4,
+    ChainOf8,
+}
+
+impl Shape {
+    /// How many chain levels the tree binds above `dst-a`.
+    pub fn chain_depth(self) -> usize {
+        match self {
+            Self::Members | Self::WithConsumer => 0,
+            Self::ChainOf1 => 1,
+            Self::WithChain => 2,
+            Self::ChainOf4 => 4,
+            Self::ChainOf8 => 8,
+        }
+    }
+
+    /// The chain tree `depth` levels deep.
+    pub fn chain_of(depth: usize) -> Self {
+        match depth {
+            1 => Self::ChainOf1,
+            2 => Self::WithChain,
+            4 => Self::ChainOf4,
+            8 => Self::ChainOf8,
+            _ => panic!("no chain tree is {depth} levels deep"),
+        }
+    }
 }

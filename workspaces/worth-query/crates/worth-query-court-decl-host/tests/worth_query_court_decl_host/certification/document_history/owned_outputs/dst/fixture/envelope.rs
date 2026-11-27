@@ -251,5 +251,8 @@ pub fn settle(host: &Host, request: &family::Request<'_, '_, '_>, shape: Shape) 
         Shape::Members => settle_tree!(host, request, program::Program, program::Tree),
         Shape::WithConsumer => settle_tree!(host, request, program::Program, program::ConsumerTree),
         Shape::WithChain => settle_tree!(host, request, program::Program, program::ChainTree),
+        Shape::ChainOf1 => settle_tree!(host, request, program::Program, program::Chain1Tree),
+        Shape::ChainOf4 => settle_tree!(host, request, program::Program, program::Chain4Tree),
+        Shape::ChainOf8 => settle_tree!(host, request, program::Program, program::Chain8Tree),
     }
 }

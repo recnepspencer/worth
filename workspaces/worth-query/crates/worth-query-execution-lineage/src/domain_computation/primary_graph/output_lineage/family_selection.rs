@@ -12,6 +12,7 @@ pub mod live_identity;
 pub mod observed;
 pub mod publication_heads;
 pub mod reresolution;
+pub mod reresolution_observation;
 pub mod selection;
 pub use checkpoint_priors::CheckpointPriorSelectionDenial;
 pub use checkpoint_priors::CheckpointPriorStructure;
