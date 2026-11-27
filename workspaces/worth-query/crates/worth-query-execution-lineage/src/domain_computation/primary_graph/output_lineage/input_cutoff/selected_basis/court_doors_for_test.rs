@@ -5,8 +5,8 @@ impl<'snapshot> PreparedInputCutoffBasis<'snapshot> {
     #[doc(hidden)]
     pub fn prepare_for_test(
         runtime: &RelationalRuntime,
-        snapshot: &'snapshot SnapshotHandle,
+        basis: CertificationBasis<'snapshot>,
     ) -> Result<Self, InputCutoffVerificationStop> {
-        Self::prepare(runtime, snapshot)
+        Self::prepare(runtime, basis)
     }
 }

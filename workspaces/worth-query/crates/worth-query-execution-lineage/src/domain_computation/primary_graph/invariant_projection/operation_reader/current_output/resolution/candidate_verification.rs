@@ -54,6 +54,18 @@ where
         if sealed.is_none() && !restored {
             return Ok(None);
         }
+        let product = self.selected_product.ok_or_else(|| {
+            WorthQueryCurrentOutputDenial::new(
+                WorthQueryCurrentOutputDenialKind::FamilyUnavailable,
+                subject,
+            )
+        })?;
+
+        let basis = crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+            product.lifecycle_incarnation(),
+            product.reference_generation(),
+            self.reader.snapshot,
+        );
 
         let verification = match sealed {
             Some(witness) => ConsumedOutputEvidence::verify_at_observation(
@@ -65,9 +77,10 @@ where
                 witness,
                 &self.reader.invalidation_owner,
                 native,
-                self.reader.snapshot,
+                basis,
                 selected,
                 candidate.historical(),
+
             )
             .map(|verification| {
                 Some(match verification {

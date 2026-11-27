@@ -7,7 +7,7 @@ impl AcceptedCurrentCandidate {
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<bool, CurrentAcceptedStop> {
         let origin = self.selected.recorded().computation_source;
@@ -20,7 +20,7 @@ impl AcceptedCurrentCandidate {
             return Ok(true);
         }
         if !self
-            .own_evidence_is_current(request_execution, runtime, snapshot, selected)
+            .own_evidence_is_current(request_execution, runtime, basis, selected)
             .map_err(CurrentAcceptedStop::Closure)?
         {
             return Ok(true);
@@ -30,8 +30,9 @@ impl AcceptedCurrentCandidate {
             &self.selected.recorded().consumed_outputs_at(selected),
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
+
         ) {
             Ok(answer) => Ok(answer != ConsumedOutputVerification::Current),
             // Missing certification is not evidence of a changed input.

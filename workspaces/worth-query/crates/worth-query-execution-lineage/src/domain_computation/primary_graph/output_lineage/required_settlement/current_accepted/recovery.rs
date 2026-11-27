@@ -21,6 +21,7 @@ impl AcceptedCurrentCandidate {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         };
         let requirement = Some(FullVerificationReason::RegistrationIncomplete);
+        let basis = super::certification_basis(product, snapshot);
         let verified = match ConsumedOutputEvidence::verify_at_observation(
             execution,
             &recorded.settlement_identity,
@@ -30,14 +31,14 @@ impl AcceptedCurrentCandidate {
             witness,
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
             recorded.historical_selection.as_ref(),
         ) {
             Ok(answer) => answer,
             Err(ConsumedOutputVerificationStop::PendingUpstream) => {
                 return self
-                    .pending_consumed_output(execution, owner, runtime, snapshot, selected)
+                    .pending_consumed_output(execution, owner, runtime, basis, selected)
                     .map(|pending| match pending {
                         Some(pending) => CurrentAcceptedResult::PendingExact(pending),
                         None => CurrentAcceptedResult::PendingUnresolved,
@@ -71,8 +72,9 @@ impl AcceptedCurrentCandidate {
                 owner,
                 &consumed,
                 runtime,
-                snapshot,
+                basis,
                 selected,
+
             ) {
                 Ok(()) => {}
                 Err(PublicationRecoveryStop::Reason(_)) => {

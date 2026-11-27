@@ -123,8 +123,13 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             crate::domain_computation::primary_graph::output_reuse::RetainedFactVerification::new(
                 execution,
                 relational,
-                self.application_basis().snapshot_handle(),
+                crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                    self.product().lifecycle_incarnation(),
+                    self.product().reference_generation(),
+                    self.application_basis().snapshot_handle(),
+                ),
                 None,
+
             );
         self.require_current_read_in(execution, relational, read, receipt, &mut verification)
     }

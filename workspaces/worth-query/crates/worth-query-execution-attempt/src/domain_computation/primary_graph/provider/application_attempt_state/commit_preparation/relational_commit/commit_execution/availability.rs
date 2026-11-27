@@ -57,6 +57,6 @@ pub(super) fn prepare(
             .map_err(|cause| stop(map_admission(cause)))?;
         Ok::<_, crate::domain_computation::WorthQueryProviderSessionCommitStop>(fence)
     })?;
-    validation::validate(execution, provider, before, &retained)?;
+    validation::validate(execution, provider, consumed_output::certification_basis(attempt, before), &retained)?;
     Ok(Some(fence))
 }

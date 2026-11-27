@@ -8,7 +8,7 @@ use std::sync::Arc;
 pub mod dependencies;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_relational::facade::snapshots::SnapshotHandle;
+use crate::domain_computation::primary_graph::output_lineage::CertificationBasis;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ObservedOutputPosture {
@@ -35,7 +35,7 @@ impl ObservedOutputCandidate {
         candidate: WorthQueryCurrentOutputCandidate,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<Arc<Self>, Stop> {
         let candidate = CandidateEvidence {
@@ -46,7 +46,7 @@ impl ObservedOutputCandidate {
             native_output_witness: candidate.native_output_witness,
             transported: candidate.transported,
         };
-        let expected = Self::assess(execution, &candidate, owner, runtime, snapshot, selected)?;
+        let expected = Self::assess(execution, &candidate, owner, runtime, basis, selected)?;
 
         let dependencies = dependencies::PostingDependencies::capture(&candidate, owner, selected)?;
 
@@ -71,7 +71,7 @@ impl ObservedOutputCandidate {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<bool, Stop> {
         Ok(Self::assess(
@@ -79,7 +79,7 @@ impl ObservedOutputCandidate {
             &self.candidate,
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
         )? == self.expected)
     }
@@ -88,7 +88,7 @@ impl ObservedOutputCandidate {
         candidate: &CandidateEvidence,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<ObservedOutputPosture, Stop> {
         let witness = candidate
@@ -103,7 +103,7 @@ impl ObservedOutputCandidate {
         if !witness
             .get()
             .expect("checked sealed witness")
-            .roles_remain_present_in(runtime, snapshot, execution)
+            .roles_remain_present_in(runtime, basis.snapshot, execution)
             .map_err(super::consumed_output::map_admission_stop)?
         {
             return Err(Stop::Unavailable);
@@ -125,9 +125,10 @@ impl ObservedOutputCandidate {
             witness,
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
-            crate::domain_computation::primary_graph::output_lineage::TransportedView::coordinate(candidate.transported.as_ref()),
+            crate::domain_computation
+::primary_graph::output_lineage::TransportedView::coordinate(candidate.transported.as_ref()),
         )? {
             ResultMeaning::Current => Ok(ObservedOutputPosture::Current),
             ResultMeaning::ChangedDirectFact(_)

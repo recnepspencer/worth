@@ -8,7 +8,7 @@ impl ConsumedOutputEvidence {
         roots: impl ExactSizeIterator<Item = EvidenceView<'a>>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
         verified: &mut Vec<(EvidenceView<'a>, bool)>,
         marked: &mut Vec<Arc<RecordedSettlementIdentity>>,
@@ -46,7 +46,7 @@ impl ConsumedOutputEvidence {
                 }
                 ConsumedOutputCurrentness::PendingEqualSuccessor => {
                     if let Some(changed) =
-                        Self::compare_own(execution, evidence, direct, runtime, snapshot)?
+                        Self::compare_own(execution, evidence, direct, runtime, basis)?
                     {
                         return Ok(changed);
                     }
@@ -54,7 +54,7 @@ impl ConsumedOutputEvidence {
                 }
                 ConsumedOutputCurrentness::FullVerificationRequired => {
                     let recovered = Self::compare_equal_chain(
-                        execution, evidence, owner, runtime, snapshot, selected, recovered,
+                        execution, evidence, owner, runtime, basis, selected, recovered,
                     )?;
                     if recovered != ConsumedOutputVerification::Current {
                         return Ok(recovered);
@@ -71,7 +71,7 @@ impl ConsumedOutputEvidence {
                 }
                 SourceSettlementCurrentness::PendingUpstream(_) => {
                     if let Some(changed) =
-                        Self::compare_own(execution, evidence, direct, runtime, snapshot)?
+                        Self::compare_own(execution, evidence, direct, runtime, basis)?
                     {
                         return Ok(changed);
                     }
@@ -87,7 +87,7 @@ impl ConsumedOutputEvidence {
                     let reverified = owner.reverify_dirty(
                         execution,
                         runtime,
-                        snapshot,
+                        basis.snapshot,
                         selected,
                         evidence.identity,
                     );
@@ -116,7 +116,7 @@ impl ConsumedOutputEvidence {
                 | SourceSettlementCurrentness::Dirty(_)
                 | SourceSettlementCurrentness::FullVerificationRequired(_)) => {
                     let changed =
-                        Self::compare_own(execution, evidence, direct, runtime, snapshot)?;
+                        Self::compare_own(execution, evidence, direct, runtime, basis)?;
                     if let Some(changed) = changed {
                         return Ok(changed);
                     }

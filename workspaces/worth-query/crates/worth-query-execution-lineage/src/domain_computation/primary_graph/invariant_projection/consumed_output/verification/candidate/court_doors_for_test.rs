@@ -12,7 +12,7 @@ impl ConsumedOutputEvidence {
         observed: &PositionedRelationalSnapshot,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         Self::verify_candidate_with_admission(
@@ -24,8 +24,9 @@ impl ConsumedOutputEvidence {
             observed,
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
+
             None,
         )
     }

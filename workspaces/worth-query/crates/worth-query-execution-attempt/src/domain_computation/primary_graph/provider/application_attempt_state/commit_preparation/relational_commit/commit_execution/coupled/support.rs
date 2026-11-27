@@ -60,6 +60,8 @@ pub(super) fn require(
     let after_own = attempt
         .coupled_after_own()
         .expect("Native completed this writer before continuing");
+    // The precommit pair consumed-output verification certifies on (public #429).
+    let basis = super::super::consumed_output::certification_basis(attempt, before);
     for fact in attempt.facts().values() {
         let fact = match fact {
             Fact::Application { fact, .. }
@@ -72,10 +74,10 @@ pub(super) fn require(
             provider.graph.with_runtime(execution, |runtime| {
                 if let Some(rebase) = rebase {
                     rebase.support_equal_after_own_effect(
-                        execution, runtime, before, &fact, earlier, image,
+                        execution, runtime, basis, &fact, earlier, image,
                     )
                 } else {
-                    fact.support_equal_after_own_effect(execution, runtime, before, earlier, image)
+                    fact.support_equal_after_own_effect_at(execution, runtime, basis, earlier, image)
                 }
             })
         };

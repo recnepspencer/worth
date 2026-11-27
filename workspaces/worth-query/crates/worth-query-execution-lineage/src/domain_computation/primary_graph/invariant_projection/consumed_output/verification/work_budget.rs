@@ -97,10 +97,10 @@ pub fn fact_is_current(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     fact: &WorthQueryApplicationObservedFact,
     runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
+    basis: CertificationBasis<'_>,
 ) -> Result<bool, ConsumedOutputVerificationStop> {
     match fact
-        .source_currentness_in(runtime, execution, snapshot)
+        .source_currentness_at(runtime, execution, basis)
         .map_err(map_admission_stop)?
     {
         Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => Err(stop),

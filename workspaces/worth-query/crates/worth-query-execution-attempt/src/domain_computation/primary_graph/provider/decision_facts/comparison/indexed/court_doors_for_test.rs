@@ -32,8 +32,8 @@ impl PreparedSelections {
         >,
         control: StorageControl<'_, '_>,
     ) -> Result<bool, WorthQueryDecisionReadSetFailure> {
-        Self::remains_equal(
-            self, execution, fact, runtime, snapshot, applied, None, control,
+        Self::remains_equal_with(
+            self, execution, fact, runtime, snapshot, None, applied, None, control,
         )
     }
 }

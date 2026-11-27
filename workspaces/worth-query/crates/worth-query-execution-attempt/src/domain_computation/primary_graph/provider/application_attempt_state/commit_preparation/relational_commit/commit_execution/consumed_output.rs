@@ -1,4 +1,5 @@
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
@@ -57,8 +58,10 @@ pub(super) fn verify(
                         .read_truth()
                         .positioned_snapshot(before)
                         .map_err(|_| ConsumedOutputPreparationDenial::SelectedUnavailable)?;
+                    let basis = certification_basis(attempt, before);
                     let current = ConsumedOutputEvidence::verify_many_with_admission(
-                        execution, &recorded, owner, runtime, before, &selected,
+                        execution, &recorded, owner, runtime, basis, &selected,
+
                     )
                     .map_err(ConsumedOutputPreparationDenial::Verification)?;
                     if current != ConsumedOutputVerification::Current {
@@ -79,6 +82,21 @@ pub(super) fn verify(
     Ok(VerifiedConsumedOutputPublication {
         required_prerequisites,
     })
+}
+
+/// The precommit certification basis: the attempt's product publication
+/// with the selected precommit snapshot. Consumed-output verification and
+/// availability validation certify on this one pair (public #429).
+pub(super) fn certification_basis<'a>(
+    attempt: &WorthQueryPrimaryGraphApplicationAttempt,
+    before: &'a SnapshotHandle,
+) -> crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'a> {
+    let product = attempt.affinity().product_publication().observation();
+    crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+        product.lifecycle_incarnation(),
+        product.reference_generation(),
+        before,
+    )
 }
 
 pub(super) fn verification_stop(

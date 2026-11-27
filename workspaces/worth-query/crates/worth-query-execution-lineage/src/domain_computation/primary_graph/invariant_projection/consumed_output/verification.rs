@@ -26,6 +26,7 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::Dirt
 use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
+use crate::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
@@ -131,7 +132,7 @@ impl ConsumedOutputEvidence {
         roots: &[Self],
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         Self::verify_views(
@@ -139,7 +140,7 @@ impl ConsumedOutputEvidence {
             roots.iter().map(EvidenceView::from),
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
         )
     }
@@ -149,10 +150,10 @@ impl ConsumedOutputEvidence {
         roots: impl ExactSizeIterator<Item = EvidenceView<'a>> + Clone,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
-        Self::observe_views(execution, roots, owner, runtime, snapshot, selected)?.driving()
+        Self::observe_views(execution, roots, owner, runtime, basis, selected)?.driving()
     }
 
     fn observe_views<'a>(
@@ -160,7 +161,7 @@ impl ConsumedOutputEvidence {
         roots: impl ExactSizeIterator<Item = EvidenceView<'a>> + Clone,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         if !owner.invalidation_equivalence_is_armed() {
@@ -169,7 +170,7 @@ impl ConsumedOutputEvidence {
                 roots,
                 owner,
                 runtime,
-                snapshot,
+                basis,
                 selected,
                 |result| result,
             );
@@ -177,14 +178,14 @@ impl ConsumedOutputEvidence {
         if roots.len() == 0 {
             return Ok(ConsumedOutputVerification::Current);
         }
-        let image = owner.capture_full_verification(runtime, snapshot, selected);
+        let image = owner.capture_full_verification(runtime, basis, selected);
         let oracle_roots = roots.clone();
         Self::verify_optimized_views(
             execution,
             roots,
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
             |result| {
                 owner.record_invalidation_shadow_check();
@@ -198,7 +199,7 @@ impl ConsumedOutputEvidence {
         roots: impl ExactSizeIterator<Item = EvidenceView<'a>> + Clone,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
         shadow: impl FnOnce(
             Result<ConsumedOutputVerification, ConsumedOutputVerificationStop>,
@@ -213,7 +214,7 @@ impl ConsumedOutputEvidence {
             roots.clone(),
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
             &mut verified,
             &mut marked,
@@ -229,7 +230,7 @@ impl ConsumedOutputEvidence {
                     if prior != ConsumedOutputVerification::Current {
                         return Ok(prior);
                     }
-                    Self::compare_in_full(execution, root, runtime, snapshot, selected)
+                    Self::compare_in_full(execution, root, runtime, basis, selected)
                 })
         } else {
             marked_result
@@ -242,7 +243,7 @@ impl ConsumedOutputEvidence {
                     .for_comparison()
                     .expect("only comparable terminal rows completed recovery");
                 let _ =
-                    owner.reestablish_verified(runtime, snapshot, selected, &row.identity, &facts);
+                    owner.reestablish_verified(runtime, basis.snapshot, selected, &row.identity, &facts);
             }
             // Each of these rows had its facts and output compared in full.
             // Consumed rows come last, so they are re-established first and
@@ -253,7 +254,7 @@ impl ConsumedOutputEvidence {
             for (evidence, _) in verified.into_iter().rev() {
                 let _ = owner.reestablish_verified(
                     runtime,
-                    snapshot,
+                    basis.snapshot,
                     selected,
                     evidence.identity,
                     evidence
@@ -262,7 +263,7 @@ impl ConsumedOutputEvidence {
                 );
             }
             // Rows answered from their marks are verified through this image.
-            let _ = owner.carry_read_basis(runtime, snapshot, selected, &marked);
+            let _ = owner.carry_read_basis(runtime, basis.snapshot, selected, &marked);
         }
         result
     }

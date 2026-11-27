@@ -9,7 +9,6 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_relational::facade::snapshots::SnapshotHandle;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 use crate::domain_computation::primary_graph::application_query::observed_source::{
@@ -157,7 +156,7 @@ impl WholeResultInvalidationFootprint {
         &self,
         execution: &ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
         request: &WorthQueryRequestScope,
     ) -> Result<WholeResultFootprintStatus, FootprintStop> {
         check_interruption(request)?;
@@ -172,7 +171,8 @@ impl WholeResultInvalidationFootprint {
             Some(WorthQueryRequestInterruption::DeadlineExceeded) => Err(Cause::DeadlineElapsed),
         };
         let mut verification =
-            RetainedFactVerification::new(execution, runtime, snapshot, Some(&query_control));
+            RetainedFactVerification::new(execution, runtime, basis, Some(&query_control));
+
         match first_moved_fact_in(&mut verification, self.facts.iter()) {
             Ok(None) => Ok(WholeResultFootprintStatus::Current),
             Ok(Some(_)) => Ok(WholeResultFootprintStatus::Invalidated),

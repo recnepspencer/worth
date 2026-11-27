@@ -48,7 +48,7 @@ impl FullVerificationImage<'_> {
             return Ok(false);
         };
         for fact in facts.iter() {
-            if fact_is_current(execution, fact, self.runtime, self.snapshot)? {
+            if fact_is_current(execution, fact, self.runtime, self.basis)? {
                 continue;
             }
             let answer = fact.historical_revision_matches(execution, current, evidence);

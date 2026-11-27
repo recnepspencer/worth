@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_relational::facade::snapshots::SnapshotHandle;
+use crate::domain_computation::primary_graph::output_lineage::CertificationBasis;
 
 use super::verification::map_admission_stop as admission_stop;
 use super::verification::ConsumedOutputVerification;
@@ -59,7 +59,7 @@ impl<'selected> SelectedPendingConsumedOutput<'selected> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
     ) -> Result<Option<Self>, ConsumedOutputVerificationStop> {
         ConsumedOutputEvidence::select_pending_from(
             execution,
@@ -67,8 +67,9 @@ impl<'selected> SelectedPendingConsumedOutput<'selected> {
             self.index + 1,
             owner,
             runtime,
-            snapshot,
+            basis,
             self.selected,
+
         )
     }
 
@@ -100,11 +101,11 @@ impl ConsumedOutputEvidence {
         roots: &Arc<[Self]>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &'selected PositionedRelationalSnapshot,
     ) -> Result<Option<SelectedPendingConsumedOutput<'selected>>, ConsumedOutputVerificationStop>
     {
-        Self::select_pending_from(execution, roots, 0, owner, runtime, snapshot, selected)
+        Self::select_pending_from(execution, roots, 0, owner, runtime, basis, selected)
     }
 
     fn select_pending_from<'selected>(
@@ -113,7 +114,7 @@ impl ConsumedOutputEvidence {
         start: usize,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &'selected PositionedRelationalSnapshot,
     ) -> Result<Option<SelectedPendingConsumedOutput<'selected>>, ConsumedOutputVerificationStop>
     {
@@ -148,8 +149,9 @@ impl ConsumedOutputEvidence {
                     std::slice::from_ref(evidence),
                     owner,
                     runtime,
-                    snapshot,
+                    basis,
                     selected,
+
                 ) {
                     Ok(verification) => verification != ConsumedOutputVerification::Current,
                     Err(ConsumedOutputVerificationStop::PendingUpstream) => true,

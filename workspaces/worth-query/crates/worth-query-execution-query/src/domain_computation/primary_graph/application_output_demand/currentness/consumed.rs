@@ -34,8 +34,13 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             &read.consumed_outputs_at(&selected),
             owner,
             relational,
-            snapshot,
+            crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                self.product().lifecycle_incarnation(),
+                self.product().reference_generation(),
+                snapshot,
+            ),
             &selected,
+
         ) {
             Ok(ConsumedOutputVerification::Current) => Ok(()),
             // These ordinals belong to the consumed output, not the consumer.

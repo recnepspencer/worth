@@ -64,7 +64,13 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let mut array = ExecutionArrayBuilder::allocate(count, execution.allocation_policy())
             .map_err(storage)?;
         let snapshot = self.application_basis().snapshot_handle();
-        let mut verification = RetainedFactVerification::new(execution, relational, snapshot, None);
+        let basis = crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+            self.product().lifecycle_incarnation(),
+            self.product().reference_generation(),
+            snapshot,
+        );
+        let mut verification = RetainedFactVerification::new(execution, relational, basis, None);
+
         let owner = &self
             .application()
             .runtime

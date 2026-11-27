@@ -38,7 +38,29 @@ impl PreparedSelections {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         fact: &WorthQueryApplicationObservedFact,
         runtime: &RelationalRuntime,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
+        applied: Option<
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        >,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
+        control: StorageControl<'_, '_>,
+    ) -> Result<bool, WorthQueryDecisionReadSetFailure> {
+        self.remains_equal_with(execution, fact, runtime, basis.snapshot, Some(basis), applied, own_outputs, control)
+    }
+
+    /// `basis` is the registered product's coordinate; without it the
+    /// comparison is the plain one, where facts only a basis compares answer
+    /// Moved (public #429).
+    #[allow(clippy::too_many_arguments)]
+    fn remains_equal_with(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        fact: &WorthQueryApplicationObservedFact,
+        runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
+        basis: Option<crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>>,
         applied: Option<
             &worth_relational::facade::runtime::RelationalPinnedRead<
                 worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
@@ -76,9 +98,11 @@ impl PreparedSelections {
                 .flatten()
                 .and_then(|record| own_outputs.and_then(|own| own.head_for(record)))
                 .or(applied);
-            return fact
-                .remains_equal_in_image(runtime, execution, snapshot, applied)
-                .map_err(super::super::fact_read_set_failure);
+            return match basis {
+                Some(basis) => fact.remains_equal_at_image(runtime, execution, basis, applied),
+                None => fact.remains_equal_in_image(runtime, execution, snapshot, applied),
+            }
+            .map_err(super::super::fact_read_set_failure);
         };
         // Preserve scalar malformed-limit refusal before index admission.
         if *candidate_limit == 0 || *candidate_limit == usize::MAX {

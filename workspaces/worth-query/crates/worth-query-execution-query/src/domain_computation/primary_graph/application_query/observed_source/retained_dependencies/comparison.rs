@@ -38,7 +38,13 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     Some(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled) => Err(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled),
                     Some(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::DeadlineExceeded) => Err(worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed),
                 };
-                let mut verification = RetainedFactVerification::new(&execution, relational, self.application_basis().snapshot_handle(), Some(&query_control));
+                let basis = crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                    self.product().lifecycle_incarnation(),
+                    self.product().reference_generation(),
+                    self.application_basis().snapshot_handle(),
+                );
+                let mut verification = RetainedFactVerification::new(&execution, relational, basis, Some(&query_control));
+
                 self.require_current_settlements_in_extent(execution, relational, settlements, &mut verification)?;
                 for source in dependencies.sources.elements() {
                     self.require_current_dependency_in(

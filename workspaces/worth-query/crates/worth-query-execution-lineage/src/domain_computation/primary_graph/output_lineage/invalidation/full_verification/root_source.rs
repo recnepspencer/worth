@@ -17,11 +17,11 @@ impl FullVerificationImage<'_> {
         let acceptance = super::super::super::RestoredAcceptance::new(
             execution,
             self.runtime,
-            self.snapshot,
+            self.basis,
             source.historical,
         );
         for fact in facts {
-            if !(fact_is_current(execution, fact, self.runtime, self.snapshot)?
+            if !(fact_is_current(execution, fact, self.runtime, self.basis)?
                 || acceptance.moved_fact_holds(fact)?)
             {
                 return Ok(false);

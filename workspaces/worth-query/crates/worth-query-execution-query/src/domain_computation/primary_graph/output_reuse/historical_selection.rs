@@ -66,6 +66,11 @@ impl<'a> HistoricalOutputRead<'a> {
         >,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let snapshot = selected.application_basis().snapshot_handle();
+        let basis = crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+            selected.product().lifecycle_incarnation(),
+            selected.product().reference_generation(),
+            snapshot,
+        );
         let graph = &selected.application().runtime.primary_provider.graph_ref();
         let Some(publication) = self.publication else {
             return Ok(false);
@@ -85,7 +90,7 @@ impl<'a> HistoricalOutputRead<'a> {
             .project_snapshot(snapshot)
             .ok_or_else(evidence_unavailable)?;
         if !restored_facts_hold(
-            execution, runtime, snapshot, &current, &evidence, self.facts,
+            execution, runtime, basis, &current, &evidence, self.facts,
         )? {
             return Ok(false);
         }
@@ -110,7 +115,8 @@ impl<'a> HistoricalOutputRead<'a> {
         let result = graph
             .source_owner_ref()
             .invalidation_owner
-            .capture_full_verification(runtime, snapshot, &selected)
+            .capture_full_verification(runtime, basis, &selected)
+
             .and_then(|image| image.verify_historical_upstream(execution, &upstream, &evidence));
         match result {
             Ok(FullVerificationDecision::Current) => Ok(true),

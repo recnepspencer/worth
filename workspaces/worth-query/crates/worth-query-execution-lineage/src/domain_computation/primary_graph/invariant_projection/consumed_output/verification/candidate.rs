@@ -15,7 +15,7 @@ impl ConsumedOutputEvidence {
         observed: &PositionedRelationalSnapshot,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
         historical: Option<&crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
@@ -32,7 +32,7 @@ impl ConsumedOutputEvidence {
             }),
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
         )
     }
@@ -46,7 +46,7 @@ impl ConsumedOutputEvidence {
         observed: &PositionedRelationalSnapshot,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
         historical: Option<&crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
@@ -63,7 +63,7 @@ impl ConsumedOutputEvidence {
             }),
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
         )
     }

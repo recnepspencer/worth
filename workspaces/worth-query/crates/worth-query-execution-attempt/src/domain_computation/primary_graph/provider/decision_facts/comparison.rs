@@ -26,6 +26,11 @@ pub struct PrimaryDecisionReadSetComparison<'provider> {
     facts: Arc<crate::domain_computation::primary_graph::ApplicationFactTable>,
     registration: crate::domain_computation::primary_graph::RegisteredPrimaryRead,
     snapshot: Option<SnapshotHandle>,
+    /// The registered product coordinate that selected `snapshot` (public #429).
+    coordinate: (
+        worth_runtime_world::facade::ProductBranchIncarnation,
+        worth_runtime_world::facade::ProductBranchReferenceGeneration,
+    ),
     selections: PreparedSelections,
     applied: Option<
         worth_relational::facade::runtime::RelationalPinnedRead<
@@ -256,6 +261,10 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
             (read, product)
         };
         let facts = registration.facts().clone();
+        let coordinate = (
+            product.observation().lifecycle_incarnation(),
+            product.observation().reference_generation(),
+        );
         let snapshot = provider.graph.with_runtime(execution, |runtime| {
             crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                 runtime, product.observation().basis().relational_basis(),
@@ -266,6 +275,7 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
             facts,
             registration,
             snapshot: Some(snapshot),
+            coordinate,
             selections: PreparedSelections::new(),
             applied,
             own_outputs: None,
@@ -307,13 +317,25 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
                     execution,
                     fact,
                     runtime,
-                    snapshot,
+                    crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                        self.coordinate.0,
+                        self.coordinate.1,
+                        snapshot,
+                    ),
                     self.applied.as_ref(),
                     self.own_outputs.as_ref(),
                     control,
                 ),
                 _ => fact
-                    .remains_equal_in(execution, runtime, snapshot)
+                    .remains_equal_at(
+                        execution,
+                        runtime,
+                        crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                            self.coordinate.0,
+                            self.coordinate.1,
+                            snapshot,
+                        ),
+                    )
                     .map_err(super::fact_read_set_failure),
             })?;
         check_control(control)?;

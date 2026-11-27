@@ -172,8 +172,13 @@ impl<Schema: ApplicationSchema + 'static> SelectedDecisionInput<'_, '_, Schema> 
                     request_execution,
                     &graph.source_owner_ref().invalidation_owner,
                     runtime,
-                    self.shared.selected().application_basis().snapshot_handle(),
+                    crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                        self.shared.selected().product().lifecycle_incarnation(),
+                        self.shared.selected().product().reference_generation(),
+                        self.shared.selected().application_basis().snapshot_handle(),
+                    ),
                     self.positioned,
+
                 )
             })
             .map_err(|stop| {

@@ -27,7 +27,7 @@ impl<Schema, Operation, Input, Scope>
                     self.admission.publication_request(),
                     "workflow operation authority",
                 )?;
-                if !fact.remains_equal_in(runtime, execution, self.lease.snapshot())? {
+                if !fact.remains_equal_at(runtime, execution, self.lease.certification_basis())? {
                     return Err(denial(
                         WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
                         format!(

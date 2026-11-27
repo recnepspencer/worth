@@ -4,6 +4,8 @@ use worth_execution::ExecutionRequest;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::correction_source::restored_support::eligibility::compare;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis;
+
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation;
@@ -69,6 +71,16 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
             let before_snapshot = before.application_basis_for_test().snapshot_handle();
             let original_snapshot = original.application_basis_for_test().snapshot_handle();
             let target_snapshot = target.application_basis_for_test().snapshot_handle();
+            let target_certification = CertificationBasis::of(
+                target.product().lifecycle_incarnation(),
+                target.product().reference_generation(),
+                target_snapshot,
+            );
+            let before_certification = CertificationBasis::of(
+                before.product().lifecycle_incarnation(),
+                before.product().reference_generation(),
+                before_snapshot,
+            );
             let original_basis = original.product().relational_basis_for_test();
             let target_basis = target.product().relational_basis_for_test();
             let target_commit = target_basis.observation().commit_id().unwrap();
@@ -103,13 +115,13 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
             assert_eq!(page.entries().map(|entry| entry.commit_id()).collect::<Vec<_>>(),
                 [original_basis.observation().commit_id().unwrap()],
                 "the exact selector discovers the genuine deletion and no unrelated lifecycle");
-            compare(runtime, execution, original_snapshot, target_snapshot, &facts).unwrap();
+            compare(runtime, execution, original_snapshot, target_certification, &facts).unwrap();
             assert!(matches!(
-                compare(runtime, execution, original_snapshot, before_snapshot, &facts),
+                compare(runtime, execution, original_snapshot, before_certification, &facts),
                 Err(Denial::SourceDiverged)
             ), "a live original entity does not prove retirement");
             assert!(matches!(
-                compare(runtime, execution, before_snapshot, target_snapshot, &facts),
+                compare(runtime, execution, before_snapshot, target_certification, &facts),
                 Err(Denial::SourceDiverged)
             ), "target retirement cannot establish a false original fact");
             let Fact::RetiredOutputEntity { kind, created_at, deleted_at, .. } = &fact else { unreachable!() };
@@ -130,14 +142,14 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
                 *actual = VersionId(deleted_at.as_u64() + 1);
             }
             for forged in [wrong_generation, wrong_kind, wrong_creation, wrong_deletion] {
-                assert!(matches!(compare(runtime, execution, original_snapshot, target_snapshot, &payload(forged)), Err(Denial::SourceDiverged)));
+                assert!(matches!(compare(runtime, execution, original_snapshot, target_certification, &payload(forged)), Err(Denial::SourceDiverged)));
             }
             let cancelled = worth_execution::CancellationSource::new();
             let request = worth_execution::SerialRequest::from_memory(
                 worth_execution::SerialMemoryBudget::new(None), cancelled.token(), None,
             );
             cancelled.cancel();
-            let stopped = compare(runtime, ExecutionRequest::serial(&request), original_snapshot, target_snapshot, &facts);
+            let stopped = compare(runtime, ExecutionRequest::serial(&request), original_snapshot, target_certification, &facts);
             assert!(matches!(stopped, Err(Denial::DependencyComparison(cause))
                 if cause.kind() == worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind::Cancelled),
                 "a stopped request remains a typed stop, not source divergence");

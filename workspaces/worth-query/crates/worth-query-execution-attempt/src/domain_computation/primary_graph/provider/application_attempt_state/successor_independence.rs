@@ -102,8 +102,12 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                     // touch could change it, or the uncovered part of a served
                     // relation list when the chain only deleted.
                     let compared = if touched {
-                        fact.support_equal_after_own_effect(
-                            execution, runtime, &snapshot, own.head(), current,
+                        fact.support_equal_after_own_effect_at(
+                            execution, runtime, crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                                before.lifecycle_incarnation(),
+                                before.reference_generation(),
+                                &snapshot,
+                            ), own.head(), current,
                         )
                     } else if relation_served && prior.iter().any(deletes) {
                         own.uncovered_residue_equal(runtime, execution, &snapshot, current, observed)

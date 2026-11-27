@@ -2,7 +2,7 @@
 //! exact `Arc<Mutex<...>>` allocation and `Send + Sync` bounds without exposing
 //! nested lineage and recorded-output type depth across downstream facades.
 use std::ops::Deref;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 
 use super::WorthQueryApplicationOutputLineage;
 
@@ -26,6 +26,20 @@ impl SharedOutputLineage {
 
     pub fn from_arc(owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>) -> Self {
         Self(owner)
+    }
+
+    pub fn downgrade(&self) -> WeakOutputLineage {
+        WeakOutputLineage(Arc::downgrade(&self.0))
+    }
+}
+
+/// A handle that does not keep the lineage alive (public #429).
+#[derive(Clone)]
+pub struct WeakOutputLineage(Weak<dyn OutputLineageBacking>);
+
+impl WeakOutputLineage {
+    pub fn upgrade(&self) -> Option<SharedOutputLineage> {
+        self.0.upgrade().map(SharedOutputLineage)
     }
 }
 

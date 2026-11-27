@@ -378,9 +378,14 @@ where
                     footprint.verify_at_snapshot(
                         execution,
                         relational,
-                        basis.snapshot_handle(),
+                        crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                            product.observation().lifecycle_incarnation(),
+                            product.observation().reference_generation(),
+                            basis.snapshot_handle(),
+                        ),
                         request,
                     )
+
                 })
         };
         let released = basis.release().released();

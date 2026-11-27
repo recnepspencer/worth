@@ -100,8 +100,13 @@ where
                 execution,
                 &graph.source_owner_ref().invalidation_owner,
                 relational,
-                snapshot,
+                crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                    wave.shared.selected().product().lifecycle_incarnation(),
+                    wave.shared.selected().product().reference_generation(),
+                    snapshot,
+                ),
                 &wave.positioned,
+
             )
         });
         // A commit that kept no fact gives the verifier nothing to establish.

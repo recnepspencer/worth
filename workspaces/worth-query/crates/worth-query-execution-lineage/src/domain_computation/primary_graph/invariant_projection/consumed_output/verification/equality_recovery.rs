@@ -14,7 +14,7 @@ impl ConsumedOutputEvidence {
         evidence: EvidenceView<'_>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
         compared: &mut Vec<EqualityRecoveryRow>,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
@@ -69,7 +69,7 @@ impl ConsumedOutputEvidence {
                 witness,
                 false,
                 runtime,
-                snapshot,
+                basis,
                 row.historical.as_ref(),
                 output_historical,
             )?;

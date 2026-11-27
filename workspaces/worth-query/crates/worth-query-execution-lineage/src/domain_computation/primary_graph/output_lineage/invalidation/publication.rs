@@ -67,7 +67,10 @@ pub fn register_completed(
     // A publication may have evicted its full index. The consumed Native
     // evidence remains authoritative: compare it after the effect, then
     // establish its missing rows upstream-first before posting this consumer.
-    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence::establish_missing(execution, owner, consumed_outputs, runtime, snapshot, &read_basis)?;
+    let product = application.committed_product_publication();
+    let basis = super::super::CertificationBasis::of(product.product_incarnation(), product.product_generation(), snapshot);
+    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence::establish_missing(execution, owner, consumed_outputs, runtime, basis, &read_basis)?;
+
     let stale_at_read_basis = own_effect_stale_ordinals(application).map_err(stopped)?;
     owner
         .register_completed_settlement(

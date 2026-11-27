@@ -200,10 +200,15 @@ where
                             .native()
                             .committed_runtime()
                             .ok_or(Cause::ContextUnavailable)?,
-                        reader_self.reader().snapshot(),
+                        crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                            access.shared.selected().product().lifecycle_incarnation(),
+                            access.shared.selected().product().reference_generation(),
+                            reader_self.reader().snapshot(),
+                        ),
                         &selected,
                     )
                     .map_err(Cause::Verification)?,
+
                 )
             } else {
                 None

@@ -4,6 +4,7 @@ use std::fmt;
 use std::sync::Arc;
 
 use worth_relational::facade::runtime::RelationalRuntime;
+use crate::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::ObservedSourcePublication;
@@ -20,7 +21,7 @@ pub trait SourcePublicationReader: Send + Sync {
         observed: &ObservedSourcePublication,
         runtime: &RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         positioned: &PositionedRelationalSnapshot,
     ) -> Result<bool, Stop>;
 }
@@ -160,12 +161,12 @@ impl ObservedSourcePublication {
         &self,
         runtime: &RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
     ) -> Result<bool, crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure>{
         use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Stop;
         let positioned = runtime
             .read_truth()
-            .positioned_snapshot(snapshot)
+            .positioned_snapshot(basis.snapshot)
             .map_err(|_| Stop::Unavailable)?;
         if positioned.runtime_instance_id() != self.selected.runtime_instance_id()
             || positioned.branch_id() != self.selected.branch_id()
@@ -183,7 +184,7 @@ impl ObservedSourcePublication {
             self,
             runtime,
             execution,
-            snapshot,
+            basis,
             &positioned,
         )
     }
@@ -195,7 +196,7 @@ impl SourcePublicationReader for SourceInvalidationOwner {
         observed: &ObservedSourcePublication,
         runtime: &RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         positioned: &PositionedRelationalSnapshot,
     ) -> Result<bool, Stop> {
         let cell = self.cell_for_read(positioned)
@@ -228,16 +229,16 @@ impl SourcePublicationReader for SourceInvalidationOwner {
         if equal {
             observed
                 .read_closure
-                .validate_for_publication(execution, runtime, snapshot)
+                .validate_for_publication(execution, runtime, basis.snapshot)
                 .map_err(Stop::OutputObservation)?;
             equal = observed
                 .read_closure
-                .source_facts_current(execution, runtime, snapshot)?;
+                .source_facts_current(execution, runtime, basis.snapshot)?;
         }
         if equal && let Some(candidate) = &observed.candidate {
             equal = candidate
                 .as_candidate()
-                .remains_in(execution, self, runtime, snapshot, positioned)
+                .remains_in(execution, self, runtime, basis, positioned)
                 .map_err(Stop::OutputObservation)?;
         }
         Ok(equal)

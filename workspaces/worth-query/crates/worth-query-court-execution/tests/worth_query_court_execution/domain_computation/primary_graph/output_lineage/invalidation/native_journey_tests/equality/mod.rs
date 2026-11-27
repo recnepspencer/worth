@@ -1,5 +1,6 @@
 //! Native actor consequence with real source snapshots and delivered touches.
 //! The test-only relation mint exercises the actor, not producer authorization.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 pub use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
@@ -110,7 +111,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         assert_pending(owner, &changed, &c, &other);
         let prior = SnapshotAlignedMarkState::observe_image_for_test(&historical_image, &changed).unwrap();
         assert!(matches!(prior.currentness_for_test(&b), SettlementCurrentness::PendingUpstream(edges) if edges.contains(&a0)));
-        assert_source_only_alias_verification(request_execution, owner, runtime, &changed_handle, &changed, &before, &a0, &old_a_fact);
+        assert_source_only_alias_verification(request_execution, owner, runtime, CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &changed_handle), &changed, &before, &a0, &old_a_fact);
         // Late registration consumes the already-certified clean successor,
         // rather than recreating a pending edge from the dirty predecessor.
         register(owner, Arc::clone(&b), Arc::from([]), &changed, OrdSet::unit(Arc::clone(&a0)));
@@ -121,7 +122,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         assert_pending(owner, &next, &b, &a0);
         register_alias(request_execution, owner, runtime, &next_handle, &next, entity, status.clone(), &a1, &a2);
         assert!(matches!(currentness(owner, &next, &b), SourceSettlementCurrentness::Clean));
-        assert_source_only_alias_verification(request_execution, owner, runtime, &next_handle, &next, &before, &a0, &old_a_fact);
+        assert_source_only_alias_verification(request_execution, owner, runtime, CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &next_handle), &next, &before, &a0, &old_a_fact);
 
         write_field(request_execution, runtime, entity, status.clone(), "changed-output");
         let (later_handle, later) = snapshot(runtime);
@@ -139,7 +140,7 @@ request_execution,                &a0,
                 &before,
                 owner,
                 runtime,
-                &later_handle,
+                CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &later_handle),
                 &later,
             ),
             Ok(ConsumedOutputVerification::ChangedDirectFact(0)),
@@ -223,7 +224,7 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         assert_eq!(ConsumedOutputEvidence::verify_candidate_with_admission_for_test(
 request_execution,            &a0,
             &RetainedSourceFacts::for_test_for_test(false, Arc::from([unchanged_fact])).for_comparison().unwrap(),
-            &[], None, &before, owner, runtime, &later_handle, &later,
+            &[], None, &before, owner, runtime, CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &later_handle), &later,
         ), Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerificationStop::PendingUpstream));
         for handle in [before_handle, alias_handle, later_handle] {
             runtime.snapshots().release_snapshot(&handle).unwrap();
@@ -291,7 +292,7 @@ pub fn assert_source_only_alias_verification(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     owner: &SourceInvalidationOwner,
     runtime: &RelationalRuntime,
-    handle: &SnapshotHandle,
+    basis: CertificationBasis<'_>,
     selected: &PositionedRelationalSnapshot,
     observed: &PositionedRelationalSnapshot,
     old_identity: &Arc<RecordedSettlementIdentity>,
@@ -309,7 +310,8 @@ pub fn assert_source_only_alias_verification(
             observed,
             owner,
             runtime,
-            handle,
+            basis,
+
             selected,
         )
     };

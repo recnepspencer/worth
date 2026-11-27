@@ -6,10 +6,10 @@ impl SourceInvalidationOwner {
     pub fn capture_full_verification_for_test<'selected>(
         &'selected self,
         runtime: &'selected RelationalRuntime,
-        snapshot: &'selected SnapshotHandle,
+        basis: CertificationBasis<'selected>,
         selected: &'selected PositionedRelationalSnapshot,
     ) -> Result<FullVerificationImage<'selected>, FullVerificationStop> {
-        Self::capture_full_verification(self, runtime, snapshot, selected)
+        Self::capture_full_verification(self, runtime, basis, selected)
     }
 }
 

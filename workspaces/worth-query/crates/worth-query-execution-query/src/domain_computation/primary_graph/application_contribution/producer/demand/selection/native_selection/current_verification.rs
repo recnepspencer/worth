@@ -87,7 +87,12 @@ where
                 compare_retained_output_dependencies(
                     execution,
                     runtime,
-                    selected.application_basis().snapshot_handle(),
+                    crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                        selected.product().lifecycle_incarnation(),
+                        selected.product().reference_generation(),
+                        selected.application_basis().snapshot_handle(),
+                    ),
+
                     identity_current,
                     candidate.observed_source_facts.as_deref(),
                 )?,

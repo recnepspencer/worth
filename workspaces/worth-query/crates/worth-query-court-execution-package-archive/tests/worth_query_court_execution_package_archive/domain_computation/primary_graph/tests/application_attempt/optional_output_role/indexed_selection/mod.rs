@@ -219,8 +219,13 @@ pub fn selection(
             compare_retained_output_dependencies(
                 execution,
                 runtime,
-                selected.application_basis_for_test().snapshot_handle(),
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                    selected.product().lifecycle_incarnation(),
+                    selected.product().reference_generation(),
+                    selected.application_basis_for_test().snapshot_handle(),
+                ),
                 true,
+
                 Some(facts),
             )
             .unwrap()

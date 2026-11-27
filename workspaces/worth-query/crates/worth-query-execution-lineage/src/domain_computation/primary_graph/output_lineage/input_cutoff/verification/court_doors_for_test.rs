@@ -10,7 +10,7 @@ impl RetainedInputCutoffCandidate {
         fresh_context: &PreparedDecisionReuseContext,
         matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
         owner: &SourceInvalidationOwner,
     ) -> Result<Option<VerifiedDependencies>, InputCutoffVerificationStop> {
@@ -21,7 +21,7 @@ impl RetainedInputCutoffCandidate {
             fresh_context,
             matched_predecessors,
             runtime,
-            snapshot,
+            basis,
             selected,
             owner,
         )

@@ -38,6 +38,7 @@ pub mod settlement_identity;
 #[path = "source_facts/mod.rs"]
 pub mod source_facts;
 pub use crate::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+pub use crate::domain_computation::primary_graph::output_lineage::CertificationBasis;
 pub use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 pub use crate::domain_computation::primary_graph::output_lineage::WorthQueryCurrentOutputFamilyResolution;
 pub use crate::domain_computation::primary_graph::output_lineage::WorthQueryPriorOutputBindingResolution;

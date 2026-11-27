@@ -3,17 +3,18 @@ use crate::domain_computation::primary_graph::{
     application_attempt::{
         FactMovement, WorthQueryApplicationObservedFact, WorthQuerySourceCurrentnessFailure,
     },
+    output_lineage::CertificationBasis,
     source_read_verification::SourceReadVerification,
 };
 use worth_relational::facade::{
-    mvcc::CompanionPreflightStop, runtime::RelationalRuntime, snapshots::SnapshotHandle,
+    mvcc::CompanionPreflightStop, runtime::RelationalRuntime,
     transactions::RelationalExecutionDenialCause,
 };
 
 pub struct RetainedFactVerification<'call, 'request, 'authority> {
     execution: &'call worth_execution::ExecutionRequest<'request, 'authority>,
     runtime: &'call RelationalRuntime,
-    snapshot: &'call SnapshotHandle,
+    basis: CertificationBasis<'call>,
     control: Option<&'call dyn Fn() -> Result<(), RelationalExecutionDenialCause>>,
     reads: Option<SourceReadVerification<'call>>,
 }
@@ -21,13 +22,13 @@ impl<'call, 'request, 'authority> RetainedFactVerification<'call, 'request, 'aut
     pub fn new(
         execution: &'call worth_execution::ExecutionRequest<'request, 'authority>,
         runtime: &'call RelationalRuntime,
-        snapshot: &'call SnapshotHandle,
+        basis: CertificationBasis<'call>,
         control: Option<&'call dyn Fn() -> Result<(), RelationalExecutionDenialCause>>,
     ) -> Self {
         Self {
             execution,
             runtime,
-            snapshot,
+            basis,
             control,
             reads: None,
         }
@@ -50,7 +51,7 @@ impl<'call, 'request, 'authority> RetainedFactVerification<'call, 'request, 'aut
         fact.source_currentness_with(
             self.runtime,
             self.execution,
-            self.snapshot,
+            self.basis,
             &mut self.reads,
             self.control,
         )

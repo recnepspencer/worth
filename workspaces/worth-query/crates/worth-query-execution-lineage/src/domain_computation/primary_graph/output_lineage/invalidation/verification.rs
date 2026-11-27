@@ -136,7 +136,7 @@ impl SourceInvalidationOwner {
             // A restored fact holds through its own row's coordinate, as the
             // full comparison accepts it (public #358).
             if movement.movement() == Movement::Moved
-                && !super::super::RestoredAcceptance::new(execution, runtime, snapshot, historical)
+                && !super::super::RestoredEvidence::new(execution, runtime, snapshot, historical)
                     .moved_fact_holds(fact)?
             {
                 return Ok(DirtyReverification::ChangedOrdinal(ordinal));

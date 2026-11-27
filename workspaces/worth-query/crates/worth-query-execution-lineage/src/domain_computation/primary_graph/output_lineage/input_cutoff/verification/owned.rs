@@ -14,6 +14,7 @@ pub struct OwnedVerifiedInputCutoff {
     computation: super::super::super::CurrentComputation,
     candidate: RetainedInputCutoffCandidate,
     selected: PositionedRelationalSnapshot,
+    coordinate: super::super::super::ProductCoordinate,
     fresh_key: Option<PreparedInputReuseKey>,
     verified_facts: super::super::super::ComparableSourceFacts,
     verified_consumed: Option<std::sync::Arc<[ConsumedOutputEvidence]>>,
@@ -30,6 +31,7 @@ impl RetainedInputCutoffCandidate {
         basis: PreparedInputCutoffBasis<'_>,
         owner: &SourceInvalidationOwner,
     ) -> Result<OwnedInputCutoffDecision, InputCutoffVerificationStop> {
+        let coordinate = basis.in_runtime(runtime)?.0.coordinate();
         match self.verify_for_reuse(
             execution,
             fresh_key,
@@ -55,6 +57,7 @@ impl RetainedInputCutoffCandidate {
                     computation,
                     candidate,
                     selected: basis.into_positioned(),
+                    coordinate,
                     fresh_key,
                     verified_facts,
                     verified_consumed,
@@ -77,9 +80,9 @@ impl OwnedVerifiedInputCutoff {
         source_facts: &(impl FactSequence + ?Sized),
     ) -> Result<Self, InputCutoffVerificationStop> {
         observation::reach(Gate::PublicationSource);
-        let (snapshot, selected) = basis.in_runtime(runtime)?;
+        let (certification, selected) = basis.in_runtime(runtime)?;
 
-        if self.selected == *selected {
+        if (&self.selected, self.coordinate) == (selected, certification.coordinate()) {
             return Ok(self);
         }
         if self.selected.runtime_instance_id() != selected.runtime_instance_id()
@@ -100,7 +103,7 @@ impl OwnedVerifiedInputCutoff {
                     .take(prefix)
                     .chain(source_facts.iter()),
                 runtime,
-                snapshot,
+                certification,
             )?
         {
             return Err(InputCutoffVerificationStop::CurrentnessRaced);
@@ -114,7 +117,7 @@ impl OwnedVerifiedInputCutoff {
                 .unwrap_or_else(|| self.candidate.consumed_outputs_at(selected)),
             owner,
             runtime,
-            snapshot,
+            certification,
             selected,
         )
         .map_err(|stop| match stop {
@@ -150,12 +153,13 @@ impl OwnedVerifiedInputCutoff {
             .candidate
             .native_output_witness()
             .ok_or(InputCutoffVerificationStop::CurrentnessRaced)?
-            .unchanged_in(runtime, snapshot, execution)?
+            .unchanged_in(runtime, certification.snapshot, execution)?
         {
             return Err(InputCutoffVerificationStop::CurrentnessRaced);
         }
         // Only the owner which compared every prepared input, consumed output
         // and retained postcondition can move the exact native registration basis.
+        self.coordinate = certification.coordinate();
         self.selected = basis.into_positioned();
         Ok(self)
     }
@@ -170,6 +174,7 @@ impl OwnedVerifiedInputCutoff {
             computation,
             candidate,
             selected,
+            coordinate: _,
             fresh_key,
             verified_facts,
             verified_consumed,

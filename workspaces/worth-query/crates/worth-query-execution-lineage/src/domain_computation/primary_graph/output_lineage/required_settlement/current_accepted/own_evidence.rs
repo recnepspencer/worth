@@ -5,7 +5,7 @@ impl AcceptedCurrentCandidate {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<bool, ConsumedOutputVerificationStop> {
         // An old dependency set cannot constrain a consumer whose own native
@@ -35,8 +35,9 @@ impl AcceptedCurrentCandidate {
             &self.selected.recorded().consumed_outputs_at(selected),
             witness,
             runtime,
-            snapshot,
-            self.selected.recorded().historical_selection.as_ref(),
+            basis,
+            self.selected
+.recorded().historical_selection.as_ref(),
         ) {
             Ok(false) => Ok(false),
             Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => Ok(true),

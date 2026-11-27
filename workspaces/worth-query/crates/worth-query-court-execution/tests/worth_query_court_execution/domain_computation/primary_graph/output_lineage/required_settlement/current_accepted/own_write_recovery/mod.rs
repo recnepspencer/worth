@@ -31,7 +31,18 @@ fn accepted_current_cannot_bypass_original_own_write_evidence() {
         let snapshot = retained_snapshot;
         let selected = runtime.read_truth().positioned_snapshot(&snapshot).unwrap();
         assert!(candidate
-            .decision_input_changed_at_for_test(execution, owner, runtime, &snapshot, &selected)
+            .decision_input_changed_at_for_test(
+                execution,
+                owner,
+                runtime,
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                    product.observation_for_test().lifecycle_incarnation(),
+                    product.observation_for_test().reference_generation(),
+                    &snapshot,
+                ),
+                &selected,
+            )
+
             .unwrap(),
             "the performed own write is evidence of a changed decision input");
 

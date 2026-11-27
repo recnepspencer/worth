@@ -10,10 +10,10 @@ pub use refusal::InputCutoffVerificationStop;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::super::invalidation::FullVerificationReason;
 use super::super::invalidation::SourceSettlementCurrentness;
+use super::super::CertificationBasis;
 use super::super::PreparedInputReuseKey;
 use super::PreparedInputCutoffBasis;
 use super::RetainedInputCutoffCandidate;
@@ -78,14 +78,14 @@ impl RetainedInputCutoffCandidate {
         basis: &'selected PreparedInputCutoffBasis<'_>,
         owner: &SourceInvalidationOwner,
     ) -> Result<InputCutoffDecision<'selected>, InputCutoffVerificationStop> {
-        let (snapshot, selected) = basis.in_runtime(runtime)?;
+        let (certification, selected) = basis.in_runtime(runtime)?;
         let verified = self.eligible_for_reuse(
             execution,
             &fresh_key,
             &fresh_context,
             matched_predecessors,
             runtime,
-            snapshot,
+            certification,
             selected,
             owner,
         )?;
@@ -120,7 +120,7 @@ impl RetainedInputCutoffCandidate {
         fresh_context: &PreparedDecisionReuseContext,
         matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
         owner: &SourceInvalidationOwner,
     ) -> Result<Option<VerifiedDependencies>, InputCutoffVerificationStop> {
@@ -212,7 +212,7 @@ impl RetainedInputCutoffCandidate {
                     &self.consumed_outputs_at(selected),
                     witness,
                     runtime,
-                    snapshot,
+                    basis,
                     self.recorded().historical_selection.as_ref(),
                 ) {
                     Ok(false) => return Ok(None),
@@ -267,7 +267,7 @@ impl RetainedInputCutoffCandidate {
         }
         observation::reach(Gate::HandlerPrefix);
         let current = if verify_full_prefix {
-            marked_facts_permit_reuse(execution, facts.iter().take(count), runtime, snapshot)?
+            marked_facts_permit_reuse(execution, facts.iter().take(count), runtime, basis)?
         } else if let Some(ordinals) = dirty_prefix {
             marked_facts_permit_reuse(
                 execution,
@@ -276,7 +276,7 @@ impl RetainedInputCutoffCandidate {
                     .take_while(|ordinal| **ordinal < count)
                     .map(|ordinal| &facts[*ordinal]),
                 runtime,
-                snapshot,
+                basis,
             )?
         } else {
             true
@@ -292,7 +292,7 @@ impl RetainedInputCutoffCandidate {
                 .unwrap_or_else(|| self.consumed_outputs_at(selected)),
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
         ) {
             Ok(ConsumedOutputVerification::Current) => {}
@@ -334,7 +334,7 @@ impl RetainedInputCutoffCandidate {
             }
         }
         observation::reach(Gate::OutputCurrentness);
-        if !witness.unchanged_in(runtime, snapshot, execution)? {
+        if !witness.unchanged_in(runtime, basis.snapshot, execution)? {
             return Ok(None);
         }
         Ok(Some(VerifiedDependencies {

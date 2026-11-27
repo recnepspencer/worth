@@ -220,8 +220,16 @@ where
                                         pending.next_pending(execution,
                                             &handle.source_owner_ref().invalidation_owner,
                                             relational,
-                                            sealed.snapshot_handle(),
+                                            {
+                                                let product = sealed.product().observation();
+                                                crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                                                    product.lifecycle_incarnation(),
+                                                    product.reference_generation(),
+                                                    sealed.snapshot_handle(),
+                                                )
+                                            },
                                         )
+
                                     })
                                     .map_err(|stop| ready::ready_currentness_denial(
                                         Binding::IDENTITY,

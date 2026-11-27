@@ -23,7 +23,7 @@ pub enum OutputDependencySelection {
 pub fn compare_retained_output_dependencies<F: FactSequence + ?Sized>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
     identity_current: bool,
     facts: Option<&F>,
 ) -> Result<OutputDependencySelection, WorthQueryOutputDemandDenial> {
@@ -31,7 +31,7 @@ pub fn compare_retained_output_dependencies<F: FactSequence + ?Sized>(
         Ok(facts) => facts,
         Err(fresh) => return Ok(fresh),
     };
-    match first_moved_fact(execution, runtime, snapshot, facts.iter()) {
+    match first_moved_fact(execution, runtime, basis, facts.iter()) {
         Ok(None) => Ok(OutputDependencySelection::Reuse),
         Ok(Some(_)) => Ok(OutputDependencySelection::FreshRequired),
         Err(stop) => Err(retained_fact_denial(
@@ -84,10 +84,11 @@ pub enum RetainedFactStop<'fact> {
 pub fn first_moved_fact<'fact>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
     facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
 ) -> Result<Option<&'fact WorthQueryApplicationObservedFact>, RetainedFactStop<'fact>> {
-    let mut extent = super::RetainedFactVerification::new(execution, runtime, snapshot, None);
+    let mut extent = super::RetainedFactVerification::new(execution, runtime, basis, None)
+;
     first_moved_fact_in(&mut extent, facts)
 }
 
@@ -95,8 +96,33 @@ pub fn first_moved_fact_in<'fact>(
     extent: &mut super::RetainedFactVerification<'_, '_, '_>,
     facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
 ) -> Result<Option<&'fact WorthQueryApplicationObservedFact>, RetainedFactStop<'fact>> {
+    first_moved_by(facts, |fact| extent.observe(fact))
+}
+
+/// The plain comparison at a snapshot with no product coordinate, for facts
+/// a checkpoint payload holds: the checkpoint codec encodes only plain source
+/// facts, and any fact only a certification basis compares answers Moved
+/// here (public #429).
+pub fn first_moved_fact_plain<'fact>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
+) -> Result<Option<&'fact WorthQueryApplicationObservedFact>, RetainedFactStop<'fact>> {
+    first_moved_by(facts, |fact| fact.source_currentness_in(runtime, execution, snapshot))
+}
+
+fn first_moved_by<'fact>(
+    facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
+    mut observe: impl FnMut(
+        &WorthQueryApplicationObservedFact,
+    ) -> Result<
+        Result<crate::domain_computation::primary_graph::application_attempt::FactMovement, WorthQuerySourceCurrentnessFailure>,
+        CompanionPreflightStop,
+    >,
+) -> Result<Option<&'fact WorthQueryApplicationObservedFact>, RetainedFactStop<'fact>> {
     for fact in facts {
-        match extent.observe(fact) {
+        match observe(fact) {
             Ok(Err(WorthQuerySourceCurrentnessFailure::ManagedIndex(cause))) => {
                 return Err(RetainedFactStop::ManagedIndex(cause))
             }
@@ -184,6 +210,7 @@ pub fn retained_output_settlement_is_verified(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     requirement: Option<FullVerificationReason>,
+
     settlement: &RecordedSettlementIdentity,
     owner: &SourceInvalidationOwner,
 ) -> Result<bool, WorthQueryOutputDemandDenial> {

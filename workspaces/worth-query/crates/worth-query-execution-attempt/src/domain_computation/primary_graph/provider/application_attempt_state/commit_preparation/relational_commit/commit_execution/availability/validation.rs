@@ -6,9 +6,10 @@ use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleI
 pub(super) fn validate(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
-    before: &worth_relational::facade::snapshots::SnapshotHandle,
+    basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
     observations: &[Arc<ObservedSourcePublication>],
 ) -> Result<(), crate::domain_computation::WorthQueryProviderSessionCommitStop> {
+    let before = basis.snapshot;
     let stop = consumed_output::verification_stop;
     let map_admission=crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop;
     provider.graph.with_runtime(execution, |runtime| {
@@ -17,7 +18,7 @@ pub(super) fn validate(
                 observation: std::sync::Arc::clone(observed),
             };
             let current = fact
-                .source_currentness_in(runtime, execution, before)
+                .source_currentness_at(runtime, execution, basis)
                 .map_err(|cause| stop(map_admission(cause)))?
                 .map_err(|cause| {
                     stop(match cause {

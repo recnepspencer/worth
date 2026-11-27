@@ -28,7 +28,13 @@ impl WorthQueryObservedApplicationFactBasis {
             self.product.observation().basis().relational_basis(),
         )
         .map_err(|denial| super::super::decision_facts::snapshot_read_set_failure(denial.into()))?;
-        let fresh = self.fact.remains_equal_in(execution, runtime, &snapshot);
+        let observation = self.product.observation();
+        let basis = crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+            observation.lifecycle_incarnation(),
+            observation.reference_generation(),
+            &snapshot,
+        );
+        let fresh = self.fact.remains_equal_at(execution, runtime, basis);
         crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
         fresh.map_err(super::super::decision_facts::fact_read_set_failure)
     }

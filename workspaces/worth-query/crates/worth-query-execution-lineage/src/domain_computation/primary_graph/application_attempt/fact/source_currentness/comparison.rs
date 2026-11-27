@@ -47,8 +47,11 @@ impl WorthQueryApplicationObservedFact {
             Self::StructuralWalk { observation } => {
                 observation.remains_equal(runtime, execution, snapshot)
             }
-            Self::SourcePublication { observation } => {
-                observation.remains_equal(runtime, execution, snapshot)
+            // Its published candidate's evidence can hold facts only a
+            // certification basis compares, so the plain path answers Moved
+            // and `source_currentness_at` compares it (public #429).
+            Self::SourcePublication { .. } => {
+                Ok(false)
             }
             Self::PersistentGroup { read, answer } => read
                 .remains_equal(answer, runtime, snapshot)

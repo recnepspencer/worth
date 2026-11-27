@@ -2,9 +2,11 @@
 
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use crate::basis::WorthQueryProductObservationLease;
+use crate::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
@@ -81,6 +83,20 @@ impl<'basis> CurrentAcceptedOutput<'basis> {
     }
 }
 
+/// The basis the accepted row is certified at: the leased Product's own
+/// occurrence and reference generation.
+fn certification_basis<'a>(
+    product: &WorthQueryProductObservationLease,
+    snapshot: &'a SnapshotHandle,
+) -> CertificationBasis<'a> {
+    let observation = product.observation();
+    CertificationBasis::of(
+        observation.lifecycle_incarnation(),
+        observation.reference_generation(),
+        snapshot,
+    )
+}
+
 #[derive(Debug)]
 pub enum CurrentAcceptedStop {
     Closure(ConsumedOutputVerificationStop),
@@ -108,14 +124,14 @@ impl AcceptedCurrentCandidate {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &'selected PositionedRelationalSnapshot,
     ) -> Result<Option<SelectedPendingConsumedOutput<'selected>>, ConsumedOutputVerificationStop>
     {
         if self.selected.recorded().consumed_outputs.is_empty() {
             return Ok(None);
         }
-        if !self.own_evidence_is_current(execution, runtime, snapshot, selected)? {
+        if !self.own_evidence_is_current(execution, runtime, basis, selected)? {
             return Ok(None);
         }
         ConsumedOutputEvidence::select_exact_pending_dependency(
@@ -123,7 +139,7 @@ impl AcceptedCurrentCandidate {
             &self.selected.recorded().consumed_outputs_at(selected),
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
         )
     }
@@ -157,6 +173,7 @@ impl AcceptedCurrentCandidate {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         };
         let computation = qualified.computation();
+        let basis = certification_basis(product, snapshot);
         if let Some(verified) = self.certify_executed_full_current(
             execution, owner, runtime, product, snapshot, selected, &qualified,
         )? {
@@ -197,7 +214,7 @@ impl AcceptedCurrentCandidate {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         }
         let (None, Some(facts)) = (requirement.filter(|_| !restored), facts) else {
-            return match self.pending_consumed_output(execution, owner, runtime, snapshot, selected)
+            return match self.pending_consumed_output(execution, owner, runtime, basis, selected)
             {
                 Ok(Some(pending)) => Ok(CurrentAcceptedResult::PendingExact(pending)),
                 Ok(None) | Err(ConsumedOutputVerificationStop::Unavailable) => {
@@ -211,13 +228,13 @@ impl AcceptedCurrentCandidate {
             &recorded.consumed_outputs_at(selected),
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
         ) {
             Ok(ConsumedOutputVerification::Current) => {}
             Ok(_) => {
                 if !self
-                    .own_evidence_is_current(execution, runtime, snapshot, selected)
+                    .own_evidence_is_current(execution, runtime, basis, selected)
                     .map_err(CurrentAcceptedStop::Closure)?
                 {
                     return Ok(CurrentAcceptedResult::NeedsDisclosure);
@@ -227,10 +244,11 @@ impl AcceptedCurrentCandidate {
                     &recorded.consumed_outputs_at(selected),
                     owner,
                     runtime,
-                    snapshot,
+                    basis,
                     selected,
                 )
                 .map(|pending| match pending {
+
                     Some(pending) => CurrentAcceptedResult::PendingExact(pending),
                     None => CurrentAcceptedResult::NeedsDisclosure,
                 })
@@ -238,7 +256,7 @@ impl AcceptedCurrentCandidate {
             }
             Err(ConsumedOutputVerificationStop::PendingUpstream) => {
                 if !self
-                    .own_evidence_is_current(execution, runtime, snapshot, selected)
+                    .own_evidence_is_current(execution, runtime, basis, selected)
                     .map_err(CurrentAcceptedStop::Closure)?
                 {
                     return Ok(CurrentAcceptedResult::NeedsDisclosure);
@@ -248,10 +266,11 @@ impl AcceptedCurrentCandidate {
                     &recorded.consumed_outputs_at(selected),
                     owner,
                     runtime,
-                    snapshot,
+                    basis,
                     selected,
                 )
                 .map(|pending| match pending {
+
                     Some(pending) => CurrentAcceptedResult::PendingExact(pending),
                     None => CurrentAcceptedResult::PendingUnresolved,
                 })

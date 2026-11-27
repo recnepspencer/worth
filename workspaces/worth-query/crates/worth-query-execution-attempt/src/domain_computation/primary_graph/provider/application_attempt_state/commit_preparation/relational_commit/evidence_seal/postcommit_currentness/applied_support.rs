@@ -19,7 +19,7 @@ impl PreparedSourceFactRebase {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
-        before: &SnapshotHandle,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
         fact: &Fact,
         after_own: &Candidate,
         complete: &Candidate,
@@ -76,6 +76,6 @@ impl PreparedSourceFactRebase {
         refreshed
             .as_ref()
             .unwrap_or(fact)
-            .support_equal_after_own_effect(execution, runtime, before, after_own, complete)
+            .support_equal_after_own_effect_at(execution, runtime, basis, after_own, complete)
     }
 }

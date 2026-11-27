@@ -12,7 +12,30 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle,
 };
 type Candidate = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
+/// The basis a support comparison reads before the candidates (public #429).
+#[derive(Clone, Copy)]
+enum SupportBasis<'a> {
+    /// A snapshot with no product coordinate: facts only a certification
+    /// basis compares answer Moved.
+    Plain(&'a SnapshotHandle),
+    Certified(crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'a>),
+}
+
 impl Fact {
+    /// The support comparison at a certification basis (public #429).
+    pub fn support_equal_after_own_effect_at(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
+        after_own: &Candidate,
+        complete: &Candidate,
+    ) -> Result<bool, Denial> {
+        self.support_equal(execution, runtime, SupportBasis::Certified(basis), after_own, complete)
+    }
+
+    /// The plain support comparison at `before`. Facts only a certification
+    /// basis compares answer Moved here (public #429).
     pub fn support_equal_after_own_effect(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -21,6 +44,25 @@ impl Fact {
         after_own: &Candidate,
         complete: &Candidate,
     ) -> Result<bool, Denial> {
+        self.support_equal(execution, runtime, SupportBasis::Plain(before), after_own, complete)
+    }
+
+    fn support_equal(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
+        basis: SupportBasis<'_>,
+        after_own: &Candidate,
+        complete: &Candidate,
+    ) -> Result<bool, Denial> {
+        let before = match basis {
+            SupportBasis::Plain(before) => before,
+            SupportBasis::Certified(basis) => basis.snapshot,
+        };
+        let equal_in_image = |applied: Option<&Candidate>| match basis {
+            SupportBasis::Plain(before) => self.remains_equal_in_image(runtime, execution, before, applied),
+            SupportBasis::Certified(basis) => self.remains_equal_at_image(runtime, execution, basis, applied),
+        };
         execution.consult().map_err(|cause| {
             Denial::relational_read_stopped(cause.into(), "coupled decision support")
         })?;
@@ -203,27 +245,29 @@ impl Fact {
                 if observation.applied_alignment().is_some() =>
             {
                 let alignment = observation.applied_alignment().expect("guarded alignment");
-                Ok(
-                    self.remains_equal_in_image(runtime, execution, before, None)?
-                        && alignment.unchanged_between(
-                            after_own.candidate_identity(),
-                            complete.candidate_identity(),
-                        )
-                        && observation.authorization().permission_equal_between(
-                            execution,
-                            &runtime
-                                .read_truth()
-                                .project_snapshot(before)
-                                .ok_or_else(unavailable)?,
-                            &b,
-                        )?,
-                )
+                Ok(equal_in_image(None)?
+                    && alignment.unchanged_between(
+                        after_own.candidate_identity(),
+                        complete.candidate_identity(),
+                    )
+                    && observation.authorization().permission_equal_between(
+                        execution,
+                        &runtime
+                            .read_truth()
+                            .project_snapshot(before)
+                            .ok_or_else(unavailable)?,
+                        &b,
+                    )?)
             }
             Self::SourcePublication { observation }
                 if observation.applied_candidate().is_some() =>
             {
+                let SupportBasis::Certified(basis) = basis else {
+                    // Its candidate's evidence is compared only at a basis.
+                    return Ok(false);
+                };
                 Ok(observation
-                    .remains_equal(runtime, execution, before)
+                    .remains_equal(runtime, execution, basis)
                     .map_err(source_stop)?
                     && observation
                         .applied_support_equal(execution, runtime, before, after_own, complete)?)
@@ -262,8 +306,7 @@ impl Fact {
             // Control and external publication observations retain their ordinary
             // owners. A moved unsupported observation refuses, never grants support.
             _ => Ok(
-                self.remains_equal_in_image(runtime, execution, before, Some(after_own))?
-                    && self.remains_equal_in_image(runtime, execution, before, Some(complete))?,
+                equal_in_image(Some(after_own))? && equal_in_image(Some(complete))?,
             ),
         }
     }

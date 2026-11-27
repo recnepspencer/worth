@@ -23,7 +23,7 @@ impl FullVerificationImage<'_> {
             Some(
                 self.runtime
                     .read_truth()
-                    .project_snapshot(self.snapshot)
+                    .project_snapshot(self.basis.snapshot)
                     .ok_or(FullVerificationStop::SourceUnavailable)?,
             )
         } else {
@@ -55,7 +55,7 @@ impl FullVerificationImage<'_> {
                 Some(evidence) => witness
                     .unchanged_since_restoration(
                         self.runtime,
-                        self.snapshot,
+                        self.basis.snapshot,
                         execution,
                         current
                             .as_ref()
@@ -66,7 +66,7 @@ impl FullVerificationImage<'_> {
                 None => super::super::super::RestoredAcceptance::new(
                     execution,
                     self.runtime,
-                    self.snapshot,
+                    self.basis,
                     source.historical,
                 )
                 .witness_holds(witness)?,

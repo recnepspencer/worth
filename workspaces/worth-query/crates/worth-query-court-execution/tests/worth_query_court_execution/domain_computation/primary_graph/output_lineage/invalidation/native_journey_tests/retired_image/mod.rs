@@ -1,3 +1,4 @@
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::full_verification::FullVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
@@ -80,7 +81,7 @@ pub fn retirement_image(
             retire();
         }
         let captured = owner
-            .capture_full_verification_for_test(runtime, &snapshot, &basis)
+            .capture_full_verification_for_test(runtime, CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &snapshot), &basis)
             .unwrap();
 
         if !retired_before_capture {

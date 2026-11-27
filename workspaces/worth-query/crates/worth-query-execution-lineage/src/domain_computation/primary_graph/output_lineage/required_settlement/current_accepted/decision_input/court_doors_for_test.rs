@@ -8,9 +8,10 @@ impl AcceptedCurrentCandidate {
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<bool, CurrentAcceptedStop> {
-        Self::decision_input_changed_at(self, request_execution, owner, runtime, snapshot, selected)
+        Self::decision_input_changed_at(self, request_execution, owner, runtime, basis, selected)
+
     }
 }

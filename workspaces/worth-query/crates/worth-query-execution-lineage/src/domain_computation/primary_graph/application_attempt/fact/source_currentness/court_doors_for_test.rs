@@ -20,7 +20,7 @@ impl WorthQueryApplicationObservedFact {
         &self,
         runtime: &'runtime worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
         reads: &mut Option<
             crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification<
                 'runtime,
@@ -34,6 +34,6 @@ impl WorthQueryApplicationObservedFact {
         >,
     ) -> Result<Result<FactMovement, WorthQuerySourceCurrentnessFailure>, CompanionPreflightStop>
     {
-        Self::source_currentness_with(self, runtime, execution, snapshot, reads, control)
+        Self::source_currentness_with(self, runtime, execution, basis, reads, control)
     }
 }

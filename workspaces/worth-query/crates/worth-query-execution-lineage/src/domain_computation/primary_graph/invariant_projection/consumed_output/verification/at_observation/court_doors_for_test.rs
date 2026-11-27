@@ -9,9 +9,9 @@ impl ConsumedOutputEvidence {
         consumed: &[ConsumedOutputEvidence],
         witness: &SealedNativeOutputWitness,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
     ) -> Result<bool, ConsumedOutputVerificationStop> {
-        Self::own_evidence_is_current(execution, facts, consumed, witness, runtime, snapshot, None)
+        Self::own_evidence_is_current(execution, facts, consumed, witness, runtime, basis, None)
     }
 }
 
@@ -26,7 +26,7 @@ impl ConsumedOutputEvidence {
         native_output_witness: &Arc<OnceLock<SealedNativeOutputWitness>>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         Self::verify_at_observation(
@@ -38,7 +38,7 @@ impl ConsumedOutputEvidence {
             native_output_witness,
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
             None,
         )

@@ -41,10 +41,10 @@ impl<Schema, Operation, Input, Scope>
                 self.admission
                     .validate_current_authority()
                     .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
-                if !fact.support_equal_after_own_effect(
+                if !fact.support_equal_after_own_effect_at(
                     execution,
                     runtime,
-                    self.lease.snapshot(),
+                    self.lease.certification_basis(),
                     captured,
                     current,
                 )? {

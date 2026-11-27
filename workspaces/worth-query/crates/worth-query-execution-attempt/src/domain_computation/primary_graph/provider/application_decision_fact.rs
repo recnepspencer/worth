@@ -127,6 +127,27 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         }
     }
 
+    /// The comparison at the registered product's certification basis:
+    /// application facts compare there, every other fact plainly (public #429).
+    pub fn remains_equal_at(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
+    ) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+        match self {
+            Self::Application { fact, .. }
+            | Self::ObservedSource { fact }
+            | Self::ApplicationObservedSource { fact, .. } => {
+                let _scope = super::super::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(
+                    super::super::application_attempt::consult_observation::Door::Equality,
+                );
+                fact.remains_equal_at(runtime, execution, basis)
+            }
+            _ => self.remains_equal_in(execution, runtime, basis.snapshot),
+        }
+    }
+
     pub fn remains_equal_in(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

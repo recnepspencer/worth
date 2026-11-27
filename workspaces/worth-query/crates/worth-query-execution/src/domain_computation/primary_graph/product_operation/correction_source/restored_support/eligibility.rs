@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::Fac
 use crate::domain_computation::primary_graph::fact_verification_observation::correction_rejection;
 use crate::domain_computation::primary_graph::{
     exact_basis_access::open_exact_basis_snapshot,
-    output_reuse::{first_moved_fact, retained_fact_denial},
+    output_reuse::{first_moved_fact, first_moved_fact_plain, retained_fact_denial},
     WorthQueryAdvancementPhase,
 };
 use worth_execution::ExecutionRequest;
@@ -49,10 +49,16 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
                     open_exact_basis_snapshot(runtime, target.product().relational_basis())
                         .map_err(Denial::Basis)?;
                 let result = strict(
-                    runtime,
-                    execution,
-                    &snapshot,
-                    facts,
+                    first_moved_fact(
+                        &execution,
+                        runtime,
+                        crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                            target.product().lifecycle_incarnation(),
+                            target.product().reference_generation(),
+                            &snapshot,
+                        ),
+                        facts.iter(),
+                    ),
                     "exact source occurrence",
                 );
                 crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
@@ -135,7 +141,19 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
                 runtime,
                 original,
                 target.product().relational_basis(),
-                |runtime, before, current| compare(runtime, execution, before, current, facts),
+                |runtime, before, current| {
+                    compare(
+                        runtime,
+                        execution,
+                        before,
+                        crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                            target.product().lifecycle_incarnation(),
+                            target.product().reference_generation(),
+                            current,
+                        ),
+                        facts,
+                    )
+                },
             )
         })
 }
@@ -167,14 +185,13 @@ pub fn compare(
     runtime: &RelationalRuntime,
     execution: ExecutionRequest<'_, '_>,
     original: &worth_relational::facade::snapshots::SnapshotHandle,
-    target: &worth_relational::facade::snapshots::SnapshotHandle,
+    target: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
     facts: &FactPayload,
 ) -> Result<(), Denial> {
+    // The ancestor commit has no product coordinate of its own, and the
+    // checkpoint payload holds only plain source facts (public #429).
     strict(
-        runtime,
-        execution,
-        original,
-        facts,
+        first_moved_fact_plain(&execution, runtime, original, facts.iter()),
         "original correction support",
     )?;
     let original_view = runtime
@@ -183,7 +200,7 @@ pub fn compare(
         .ok_or(Denial::SemanticMaterialUnavailable)?;
     let target_view = runtime
         .read_truth()
-        .project_snapshot(target)
+        .project_snapshot(target.snapshot)
         .ok_or(Denial::SemanticMaterialUnavailable)?;
     for fact in facts.iter() {
         compare_fact(
@@ -204,7 +221,7 @@ pub fn compare(
 fn compare_fact(
     runtime: &RelationalRuntime,
     execution: ExecutionRequest<'_, '_>,
-    target: &worth_relational::facade::snapshots::SnapshotHandle,
+    target: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
     original_view: &worth_relational::facade::runtime::VisibilityProjectionView,
     target_view: &worth_relational::facade::runtime::VisibilityProjectionView,
     fact: &Fact,
@@ -263,14 +280,14 @@ fn compare_fact(
     Ok(())
 }
 
-fn strict(
-    runtime: &RelationalRuntime,
-    execution: ExecutionRequest<'_, '_>,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    facts: &FactPayload,
+fn strict<'fact>(
+    moved: Result<
+        Option<&'fact Fact>,
+        crate::domain_computation::primary_graph::output_reuse::RetainedFactStop<'fact>,
+    >,
     subject: &'static str,
 ) -> Result<(), Denial> {
-    match first_moved_fact(&execution, runtime, snapshot, facts.iter()) {
+    match moved {
         Ok(None) => Ok(()),
         Ok(Some(fact)) => {
             correction_rejection(subject, Some(fact), &Denial::SourceDiverged);

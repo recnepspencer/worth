@@ -8,9 +8,9 @@ impl ConsumedOutputEvidence {
         roots: &[Self],
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
-        Self::verify_many_with_admission(execution, roots, owner, runtime, snapshot, selected)
+        Self::verify_many_with_admission(execution, roots, owner, runtime, basis, selected)
     }
 }

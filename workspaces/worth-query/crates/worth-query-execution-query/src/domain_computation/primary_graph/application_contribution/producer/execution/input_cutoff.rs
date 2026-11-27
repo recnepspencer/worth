@@ -206,7 +206,11 @@ where
         .with_runtime(&execution, |relational| {
             PreparedInputCutoffBasis::prepare(
                 relational,
-                selected.application_basis().snapshot_handle(),
+                crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                    selected.product().lifecycle_incarnation(),
+                    selected.product().reference_generation(),
+                    selected.application_basis().snapshot_handle(),
+                ),
             )
         })
         .map_err(cutoff_basis_denial)?;
@@ -262,8 +266,13 @@ where
                 .with_runtime(&execution, |relational| {
                     PreparedInputCutoffBasis::prepare(
                         relational,
-                        current.application_basis().snapshot_handle(),
+                        crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                            current.product().lifecycle_incarnation(),
+                            current.product().reference_generation(),
+                            current.application_basis().snapshot_handle(),
+                        ),
                     )
+
                 })
                 .map_err(cutoff_basis_denial)?;
             let verified = handle

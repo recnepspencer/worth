@@ -1,3 +1,4 @@
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::precommit_chain::*;
 
 #[test]
@@ -113,7 +114,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
                 std::slice::from_ref(&b_evidence),
                 owner,
                 runtime,
-                &unrelated_handle,
+                CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &unrelated_handle),
                 &unrelated,
             )
         }),
@@ -132,7 +133,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
                 std::slice::from_ref(&b_evidence),
                 owner,
                 runtime,
-                &after_handle,
+                CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &after_handle),
                 &after,
             )
         }),
@@ -167,7 +168,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
                 std::slice::from_ref(&b_evidence),
                 owner,
                 runtime,
-                &after_handle,
+                CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &after_handle),
                 &after,
             )
         }),

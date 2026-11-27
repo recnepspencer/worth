@@ -1,4 +1,5 @@
 //! A request that compares a retained output in full pays to record its row.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
 
@@ -107,7 +108,7 @@ fn a_verification_records_the_row_it_compared() {
             .register_settlement_for_test(SettlementRegistration::new_for_test(None, None, Arc::clone(&identity), RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)), None, positioned.clone(), OrdSet::new(), Some(FullVerificationReason::DeclaredChangeUnavailable), OrdSet::new()))
             .expect("the row requires verification at the selected source");
         let verify = || {
-            ConsumedOutputEvidence::verify_at_observation_for_test(&host_custody.borrowed_request_for_test(), &identity, &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)).for_comparison().unwrap(), &[], None, &witness, owner, runtime, snapshot, &positioned)
+            ConsumedOutputEvidence::verify_at_observation_for_test(&host_custody.borrowed_request_for_test(), &identity, &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)).for_comparison().unwrap(), &[], None, &witness, owner, runtime, CertificationBasis::of(selected.product().lifecycle_incarnation(), selected.product().reference_generation(), snapshot), &positioned)
         };
 let recorded = || {
             matches!(

@@ -1,5 +1,6 @@
 //! A native add/remove restores the same observed relation set. Clearing its
 //! dirty mark requires native verification and a still-current companion image.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
 
@@ -205,7 +206,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
                     panic!("fresh exact native comparison grants live clearing");
                 };
 
-                let diagnostic_image = owner.capture_full_verification_for_test(runtime, &latest_handle, &latest).unwrap();
+                let diagnostic_image = owner.capture_full_verification_for_test(runtime, CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &latest_handle), &latest).unwrap();
                 owner.clear_verified_dirty_for_test(verified).unwrap();
                 {
                     diagnostic_image

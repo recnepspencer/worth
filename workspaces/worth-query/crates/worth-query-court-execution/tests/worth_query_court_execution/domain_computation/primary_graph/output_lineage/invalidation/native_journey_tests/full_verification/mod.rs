@@ -1,4 +1,5 @@
 //! Real Native probes and immutable pre-verification capture; no synthetic stamp.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::full_verification::FullVerificationDecision;
@@ -63,7 +64,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
                 &[],
                 owner,
                 runtime,
-                &old_handle,
+                CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &old_handle),
                 &old_basis
             ),
             Ok(ConsumedOutputVerification::Current),
@@ -83,7 +84,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
             OrdSet::new(),
         );
         let old = owner
-            .capture_full_verification_for_test(runtime, &old_handle, &old_basis)
+            .capture_full_verification_for_test(runtime, CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &old_handle), &old_basis)
             .unwrap();
 
         assert_eq!(
@@ -101,7 +102,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         );
         let (changed_handle, changed_basis) = snapshot(runtime);
         let captured = owner
-            .capture_full_verification_for_test(runtime, &changed_handle, &changed_basis)
+            .capture_full_verification_for_test(runtime, CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &changed_handle), &changed_basis)
             .unwrap();
 
         assert_eq!(
@@ -133,7 +134,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
             "an intervening actor edit cannot manufacture an equivalence mismatch"
         );
         let fresh = owner
-            .capture_full_verification_for_test(runtime, &changed_handle, &changed_basis)
+            .capture_full_verification_for_test(runtime, CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &changed_handle), &changed_basis)
             .unwrap();
 
         assert_eq!(
@@ -142,7 +143,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         );
         assert!(
             owner
-                .capture_full_verification_for_test(runtime, &old_handle, &changed_basis)
+                .capture_full_verification_for_test(runtime, CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &old_handle), &changed_basis)
                 .is_err(),
             "Native and actor provenance cannot be substituted"
         );

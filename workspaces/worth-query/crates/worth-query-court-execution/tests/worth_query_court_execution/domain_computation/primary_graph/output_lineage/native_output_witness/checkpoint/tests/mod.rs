@@ -309,7 +309,12 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         assert!(matches!(
             compare_retained_output_dependencies(&host_custody.borrowed_request_for_test(),
                 runtime,
-                &after,
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                    selected.product().lifecycle_incarnation(),
+                    selected.product().reference_generation(),
+                    &after,
+                ),
+
                 true,
                 Some(&producer_facts),
             ),

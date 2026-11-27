@@ -1,6 +1,8 @@
 //! Product-local semantic output correspondence owned by Query publication.
 
 pub use invalidation::HeadCellRegistrationStop;
+pub mod certification_basis;
+pub use certification_basis::CertificationBasis;
 pub mod checkpoint_prerequisites;
 pub mod source_facts;
 pub mod source_publication;
@@ -68,7 +70,7 @@ pub use historical_transport::{
 };
 pub use historical_transport::{
     HistoricalSelectionCoordinate, HistoricalTransportDenial, PreparedHistoricalTransport,
-    RerootPlan, RestoredAcceptance, SelectionCoordinate,
+    RerootPlan, RestoredAcceptance, RestoredEvidence, SelectionCoordinate,
 };
 pub mod retention;
 pub mod settlement_identity;

@@ -6,7 +6,6 @@ use im::OrdSet;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::mark_state::MarkState;
 use super::mark_state::OutputFactCoverage;
@@ -15,6 +14,7 @@ use super::FullVerificationReason;
 use super::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::application_attempt::Movement;
 use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
@@ -58,7 +58,7 @@ pub struct FullVerificationImage<'selected> {
     native_only: bool,
     selected: &'selected PositionedRelationalSnapshot,
     runtime: &'selected RelationalRuntime,
-    snapshot: &'selected SnapshotHandle,
+    basis: CertificationBasis<'selected>,
     owner: &'selected SourceInvalidationOwner,
 }
 
@@ -66,12 +66,12 @@ impl SourceInvalidationOwner {
     pub fn capture_full_verification<'selected>(
         &'selected self,
         runtime: &'selected RelationalRuntime,
-        snapshot: &'selected SnapshotHandle,
+        basis: CertificationBasis<'selected>,
         selected: &'selected PositionedRelationalSnapshot,
     ) -> Result<FullVerificationImage<'selected>, FullVerificationStop> {
         let actual = runtime
             .read_truth()
-            .positioned_snapshot(snapshot)
+            .positioned_snapshot(basis.snapshot)
             .map_err(|_| FullVerificationStop::SourceUnavailable)?;
 
         if &actual != selected || selected.runtime_instance_id() != self.runtime_instance_id {
@@ -96,7 +96,7 @@ impl SourceInvalidationOwner {
             native_only,
             selected,
             runtime,
-            snapshot,
+            basis,
             owner: self,
         })
     }
@@ -197,11 +197,11 @@ impl FullVerificationImage<'_> {
             // Each restored fact holds as readmission accepts it, through the
             // coordinate of the row it belongs to (public #358).
             let accept = |coordinate| {
-                super::super::RestoredAcceptance::new(execution, self.runtime, self.snapshot, coordinate)
+                super::super::RestoredAcceptance::new(execution, self.runtime, self.basis, coordinate)
             };
             let source = accept(row.historical.as_ref());
             for fact in facts.iter() {
-                if !(fact_is_current(execution, fact, self.runtime, self.snapshot)?
+                if !(fact_is_current(execution, fact, self.runtime, self.basis)?
                     || source.moved_fact_holds(fact)?)
                 {
                     return Ok(FullVerificationDecision::Changed);
@@ -211,7 +211,7 @@ impl FullVerificationImage<'_> {
             if let Some(projection) = projection {
                 let output = accept(projection.historical.as_ref());
                 for fact in projection.facts.iter() {
-                    if !(fact_is_current(execution, fact, self.runtime, self.snapshot)?
+                    if !(fact_is_current(execution, fact, self.runtime, self.basis)?
                         || output.moved_fact_holds(fact)?)
                     {
                         return Ok(FullVerificationDecision::Changed);
@@ -258,10 +258,10 @@ fn fact_is_current(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     fact: &WorthQueryApplicationObservedFact,
     runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
+    basis: CertificationBasis<'_>,
 ) -> Result<bool, FullVerificationStop> {
     let movement = fact
-        .source_currentness_in(runtime, execution, snapshot)?
+        .source_currentness_at(runtime, execution, basis)?
         .map_err(FullVerificationStop::SourceRead)?;
     Ok(movement.movement() == Movement::Unmoved)
 }

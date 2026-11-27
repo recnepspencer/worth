@@ -2,14 +2,13 @@
 
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_relational::facade::snapshots::SnapshotHandle;
-
 use super::verification::InputCutoffVerificationStop;
+use crate::domain_computation::primary_graph::output_lineage::CertificationBasis;
 
 /// This is preparation evidence for cutoff verification, not mutation authority.
 /// Its private fields cannot pair an unrelated position with the issued handle.
 pub struct PreparedInputCutoffBasis<'snapshot> {
-    snapshot: &'snapshot SnapshotHandle,
+    basis: CertificationBasis<'snapshot>,
     positioned: PositionedRelationalSnapshot,
 }
 
@@ -19,14 +18,14 @@ impl<'snapshot> PreparedInputCutoffBasis<'snapshot> {
     }
     pub fn prepare(
         runtime: &RelationalRuntime,
-        snapshot: &'snapshot SnapshotHandle,
+        basis: CertificationBasis<'snapshot>,
     ) -> Result<Self, InputCutoffVerificationStop> {
         let positioned = runtime
             .read_truth()
-            .positioned_snapshot(snapshot)
+            .positioned_snapshot(basis.snapshot)
             .map_err(|_| InputCutoffVerificationStop::SelectedSourceUnavailable)?;
         Ok(Self {
-            snapshot,
+            basis,
             positioned,
         })
     }
@@ -34,11 +33,12 @@ impl<'snapshot> PreparedInputCutoffBasis<'snapshot> {
     pub fn in_runtime(
         &self,
         runtime: &RelationalRuntime,
-    ) -> Result<(&SnapshotHandle, &PositionedRelationalSnapshot), InputCutoffVerificationStop> {
+    ) -> Result<(CertificationBasis<'snapshot>, &PositionedRelationalSnapshot), InputCutoffVerificationStop>
+    {
         if runtime.runtime_instance_id() != self.positioned.runtime_instance_id() {
             return Err(InputCutoffVerificationStop::SelectedSourceMismatch);
         }
-        Ok((self.snapshot, &self.positioned))
+        Ok((self.basis, &self.positioned))
     }
 }
 

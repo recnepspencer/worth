@@ -77,8 +77,12 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                         | Fact::ApplicationObservedSource { fact, .. } => fact,
                         Fact::Principal(_) | Fact::Authorization { .. } => continue,
                     };
-                    match fact.support_equal_after_own_effect(
-                        execution, runtime, &snapshot, after_own, current,
+                    match fact.support_equal_after_own_effect_at(
+                        execution, runtime, crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                                before.lifecycle_incarnation(),
+                                before.reference_generation(),
+                                &snapshot,
+                            ), after_own, current,
                     ) {
                         Ok(true) => {}
                         Ok(false) => return Ok(true),

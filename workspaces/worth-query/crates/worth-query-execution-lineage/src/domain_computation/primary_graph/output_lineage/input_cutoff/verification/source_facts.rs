@@ -5,9 +5,9 @@ pub fn marked_facts_permit_reuse<'fact>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
     runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
+    basis: CertificationBasis<'_>,
 ) -> Result<bool, InputCutoffVerificationStop> {
-    match facts_are_current(execution, facts, runtime, snapshot) {
+    match facts_are_current(execution, facts, runtime, basis) {
         Ok(current) => Ok(current),
         Err(InputCutoffVerificationStop::WorkExhausted) => {
             observation::reach(Gate::HandlerPrefixAllowance);
@@ -23,10 +23,10 @@ pub fn facts_are_current<'fact>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
     runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
+    basis: CertificationBasis<'_>,
 ) -> Result<bool, InputCutoffVerificationStop> {
     for fact in facts {
-        if !fact_is_current(execution, fact, runtime, snapshot)? {
+        if !fact_is_current(execution, fact, runtime, basis)? {
             return Ok(false);
         }
     }
@@ -37,9 +37,9 @@ fn fact_is_current(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     fact: &WorthQueryApplicationObservedFact,
     runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
+    basis: CertificationBasis<'_>,
 ) -> Result<bool, InputCutoffVerificationStop> {
-    match fact.source_currentness_in(runtime, execution, snapshot)? {
+    match fact.source_currentness_at(runtime, execution, basis)? {
         Err(WorthQuerySourceCurrentnessFailure::ManagedIndex(cause)) => Err(InputCutoffVerificationStop::OutputObservation(
             crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::ManagedIndex(cause))),
         Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => {

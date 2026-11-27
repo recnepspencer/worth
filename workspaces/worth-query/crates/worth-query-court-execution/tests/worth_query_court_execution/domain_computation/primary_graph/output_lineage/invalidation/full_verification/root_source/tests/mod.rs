@@ -1,4 +1,5 @@
 //! Completeness of retained upstream evidence against actual actor registration.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use std::sync::Arc;
@@ -88,7 +89,7 @@ fn retained_source_must_include_every_registered_upstream_edge() {
         let omitted = retained(Arc::clone(&consumer), Vec::new());
         let complete = retained(Arc::clone(&consumer), vec![retained(upstream, Vec::new())]);
 
-        let captured = owner.capture_full_verification_for_test(runtime, &snapshot, &selected).unwrap();
+        let captured = owner.capture_full_verification_for_test(runtime, CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &snapshot), &selected).unwrap();
         assert_eq!(
             captured.require_complete_root_upstream_for_test(
                 EvidenceView::from(&omitted),

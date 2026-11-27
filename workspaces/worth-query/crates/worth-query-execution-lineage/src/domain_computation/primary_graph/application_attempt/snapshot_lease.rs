@@ -312,6 +312,17 @@ impl WorthQueryApplicationSnapshotLease {
         &self.product
     }
 
+    /// The lease's product coordinate with its own snapshot (public #429).
+    pub fn certification_basis(
+        &self,
+    ) -> super::super::output_lineage::CertificationBasis<'_> {
+        super::super::output_lineage::CertificationBasis::of(
+            self.product.lifecycle_incarnation(),
+            self.product.reference_generation(),
+            self.snapshot(),
+        )
+    }
+
     pub fn handle(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
         self.custody
             .as_ref()

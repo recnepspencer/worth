@@ -19,7 +19,7 @@ impl WorthQueryApplicationObservedFact {
         &self,
         runtime: &'runtime worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
         reads: &mut Option<
             crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification<
                 'runtime,
@@ -43,12 +43,12 @@ impl WorthQueryApplicationObservedFact {
                 | Self::StructuralWalk { .. }
                 | Self::DerivedSource { .. }
         ) {
-            return self.source_currentness_in(runtime, execution, snapshot);
+            return self.source_currentness_at(runtime, execution, basis);
         }
         check_request(execution)?;
         super::super::super::fact_verification_observation::source_currentness();
         if reads.is_none() {
-            match crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification::open(runtime, execution, snapshot) {
+            match crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification::open(runtime, execution, basis.snapshot) {
                 Ok(value) => *reads = Some(value),
                 Err(stop) => return comparison_result(Err(stop)),
             }
@@ -56,7 +56,7 @@ impl WorthQueryApplicationObservedFact {
         let reads = reads
             .as_mut()
             .expect("the extent admitted its selected image");
-        if !reads.answers_image(runtime, snapshot) {
+        if !reads.answers_image(runtime, basis.snapshot) {
             return Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable));
         }
         comparison_result(match self {
@@ -76,7 +76,29 @@ impl WorthQueryApplicationObservedFact {
         })
     }
 
-    /// Compare at the genuine selected snapshot under the original execution request.
+    /// The one dispatch on a certification basis (public #429). A
+    /// `SourcePublication` compares its published candidate's evidence on
+    /// the basis; every other fact answers exactly as `source_currentness_in`
+    /// does at the basis snapshot.
+    pub fn source_currentness_at(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
+    ) -> Result<Result<FactMovement, WorthQuerySourceCurrentnessFailure>, CompanionPreflightStop>
+    {
+        match self {
+            Self::SourcePublication { observation } => {
+                check_request(execution)?;
+                super::super::super::fact_verification_observation::source_currentness();
+                comparison_result(observation.remains_equal(runtime, execution, basis))
+            }
+            _ => self.source_currentness_in(runtime, execution, basis.snapshot),
+        }
+    }
+
+    /// Compare at the genuine selected snapshot under the original execution
+    /// request. Facts only a certification basis compares answer Moved here.
     pub fn source_currentness_in(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,

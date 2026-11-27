@@ -5,6 +5,45 @@ use super::{
 };
 
 impl WorthQueryApplicationObservedFact {
+    /// The comparison at a certification basis. Facts only a basis compares
+    /// are decided here; every other fact keeps its plain comparison (public #429).
+    pub fn remains_equal_at(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
+    ) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+        self.remains_equal_at_image(runtime, execution, basis, None)
+    }
+    pub fn remains_equal_at_image(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
+        applied: Option<
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        >,
+    ) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+        match self {
+            Self::SourcePublication { observation } => {
+                super::super::super::fact_verification_observation::value_comparison();
+                execution.consult().map_err(|stop| {
+                    SelfDenial::query_read_denial(
+                        worth_relational::facade::runtime::QueryReadExecutionStop::Request(stop),
+                        "decision fact comparison",
+                    )
+                })?;
+                observation
+                    .remains_equal(runtime, execution, basis)
+                    .map_err(source_publication_denial)
+            }
+            _ => self.remains_equal_in_image(runtime, execution, basis.snapshot, applied),
+        }
+    }
+    /// The plain comparison at a snapshot. Facts only a certification basis
+    /// compares answer Moved here (public #429).
     pub fn remains_equal_in(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -101,14 +140,8 @@ impl WorthQueryApplicationObservedFact {
             Self::PersistentNameHistory { read, answer } => read
                 .remains_equal(answer, runtime, snapshot)
                 .map_err(|_| SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "persistent name history comparison"))?,
-            Self::SourcePublication { observation } => observation.remains_equal(runtime, execution, snapshot)
-                .map_err(|cause| match cause {
-                    super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
-                    super::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => SelfDenial::managed_index(cause, "decision source consistency"),
-                    super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause, "source publication comparison"),
-                    super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded, "source publication comparison"),
-                    super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "source publication comparison"),
-                })?,
+            // Its candidate's evidence is compared only at a basis (public #429).
+            Self::SourcePublication { .. } => false,
             Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => super::retirement_equality::remains_equal(image.view().as_ref(), execution, *entity_id, *kind, *created_at, *deleted_at).map_err(|cause| SelfDenial::relational_read_stopped(cause, "retirement comparison"))?,
             Self::SourceEntity { entity_id } => match image.view() {
                 Some(view) => {
@@ -301,3 +334,13 @@ impl WorthQueryApplicationObservedFact {
 }
 
 mod court_doors_for_test;
+
+fn source_publication_denial(cause: super::WorthQuerySourceCurrentnessFailure) -> SelfDenial {
+    match cause {
+        super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
+        super::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => SelfDenial::managed_index(cause, "decision source consistency"),
+        super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause, "source publication comparison"),
+        super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded, "source publication comparison"),
+        super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "source publication comparison"),
+    }
+}

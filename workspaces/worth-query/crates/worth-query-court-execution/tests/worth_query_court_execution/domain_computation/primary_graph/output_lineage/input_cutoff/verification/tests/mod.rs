@@ -11,6 +11,7 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis;
 
 #[test]
 fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
@@ -22,8 +23,8 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
         .application
         .with_host_advancement(|phase| {
             let execution = phase.borrowed_request_for_test();
-            let entity = world
-                .selected_product(&phase.test_host_request_for_test())
+            let selected_product = world.selected_product(&phase.test_host_request_for_test());
+            let entity = selected_product
                 .resolve_entity(
                     &phase,
                     AccountStatus::at("AccountStatus"),
@@ -33,6 +34,8 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                 )
                 .unwrap()
                 .entity_id_for_test();
+            let (_, product, _) = selected_product.into_parts_for_test();
+            let observation = product.observation_for_test();
             let graph = (*world.application.runtime_for_test())
                 .primary_graph_for_test()
                 .unwrap();
@@ -79,7 +82,12 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                 // below comes from exhaustion alone, never from a changed source.
 
                 assert!(matches!(
-                    marked_facts_permit_reuse(&execution, &facts, runtime, &snapshot),
+                    marked_facts_permit_reuse(
+                        &execution,
+                        &facts,
+                        runtime,
+                        CertificationBasis::of(observation.lifecycle_incarnation(), observation.reference_generation(), &snapshot),
+                    ),
                     Ok(true)
                 ));
 
@@ -235,7 +243,12 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                 );
                 assert!(
                     matches!(
-                        marked_facts_permit_reuse(&execution, facts.iter(), runtime, &snapshot),
+                        marked_facts_permit_reuse(
+                            &execution,
+                            facts.iter(),
+                            runtime,
+                            CertificationBasis::of(observation.lifecycle_incarnation(), observation.reference_generation(), &snapshot),
+                        ),
                         Ok(true)
                     ),
                     "the native probe confirms the original handler fact"
@@ -261,9 +274,10 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                         &context(),
                         None,
                         runtime,
-                        &snapshot,
+                        CertificationBasis::of(observation.lifecycle_incarnation(), observation.reference_generation(), &snapshot),
                         &selected,
                         owner,
+
                     )
                     .unwrap();
                 assert!(

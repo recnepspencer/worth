@@ -16,6 +16,7 @@ use worth_relational::facade::runtime::{
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::SelectionCoordinate;
+use crate::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use crate::domain_computation::primary_graph::invariant_projection::consumed_output::verification::work_budget::fact_is_current;
 use crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop;
@@ -32,6 +33,13 @@ enum Evidence {
 }
 
 pub struct RestoredAcceptance<'a, 'e, 'f> {
+    basis: CertificationBasis<'a>,
+    restored: RestoredEvidence<'a, 'e, 'f>,
+}
+
+/// The coordinate's restoration evidence alone, for a fact whose revision
+/// already moved; it reads no family selection.
+pub struct RestoredEvidence<'a, 'e, 'f> {
     execution: &'a worth_execution::ExecutionRequest<'e, 'f>,
     runtime: &'a RelationalRuntime,
     snapshot: &'a SnapshotHandle,
@@ -40,6 +48,44 @@ pub struct RestoredAcceptance<'a, 'e, 'f> {
 }
 
 impl<'a, 'e, 'f> RestoredAcceptance<'a, 'e, 'f> {
+    pub fn new(
+        execution: &'a worth_execution::ExecutionRequest<'e, 'f>,
+        runtime: &'a RelationalRuntime,
+        basis: CertificationBasis<'a>,
+        coordinate: Option<&'a SelectionCoordinate>,
+    ) -> Self {
+        Self {
+            basis,
+            restored: RestoredEvidence::new(execution, runtime, basis.snapshot, coordinate),
+        }
+    }
+
+    /// The fact is current by revision, or restored by this coordinate.
+    pub fn fact_holds(&self, fact: &Fact) -> Result<bool, ConsumedOutputVerificationStop> {
+        let restored = &self.restored;
+        if fact_is_current(restored.execution, fact, restored.runtime, self.basis)? {
+            return Ok(true);
+        }
+        restored.moved_fact_holds(fact).map_err(map_admission_stop)
+    }
+
+    /// A fact whose revision already moved still holds when restored by this
+    /// coordinate.
+    pub fn moved_fact_holds(&self, fact: &Fact) -> Result<bool, CompanionPreflightStop> {
+        self.restored.moved_fact_holds(fact)
+    }
+
+    /// The output is unchanged by revision, or each moved aspect is restored
+    /// by this coordinate. Presence and retirement are the ordinary checks.
+    pub fn witness_holds(
+        &self,
+        witness: &SealedNativeOutputWitness,
+    ) -> Result<bool, CompanionPreflightStop> {
+        self.restored.witness_holds(witness)
+    }
+}
+
+impl<'a, 'e, 'f> RestoredEvidence<'a, 'e, 'f> {
     pub fn new(
         execution: &'a worth_execution::ExecutionRequest<'e, 'f>,
         runtime: &'a RelationalRuntime,
@@ -55,28 +101,13 @@ impl<'a, 'e, 'f> RestoredAcceptance<'a, 'e, 'f> {
         }
     }
 
-    /// The fact is current by revision, or restored by this coordinate.
-    pub fn fact_holds(&self, fact: &Fact) -> Result<bool, ConsumedOutputVerificationStop> {
-        if fact_is_current(self.execution, fact, self.runtime, self.snapshot)? {
-            return Ok(true);
-        }
-        self.held_by_evidence(|evidence, current| {
-            fact.historical_revision_matches(self.execution, current, evidence)
-        })
-        .map_err(map_admission_stop)
-    }
-
-    /// A fact whose revision already moved still holds when restored by this
-    /// coordinate.
     pub fn moved_fact_holds(&self, fact: &Fact) -> Result<bool, CompanionPreflightStop> {
         self.held_by_evidence(|evidence, current| {
             fact.historical_revision_matches(self.execution, current, evidence)
         })
     }
 
-    /// The output is unchanged by revision, or each moved aspect is restored
-    /// by this coordinate. Presence and retirement are the ordinary checks.
-    pub fn witness_holds(
+    fn witness_holds(
         &self,
         witness: &SealedNativeOutputWitness,
     ) -> Result<bool, CompanionPreflightStop> {

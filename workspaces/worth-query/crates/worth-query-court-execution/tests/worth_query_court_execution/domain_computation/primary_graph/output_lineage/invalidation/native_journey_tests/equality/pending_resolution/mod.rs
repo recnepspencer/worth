@@ -1,5 +1,6 @@
 //! Pending-edge resolution does not replace the cutoff's native verification.
 
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::tests::TestsWorthQueryObservedSourceSelectionForTest;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::equality::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
@@ -61,11 +62,11 @@ pub fn cutoff_journey(
         let handle = graph.integration_handle_for_test();
         let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
         let record = performed.get().unwrap();
-        let entity = world
+        let (entity, product) = world
             .application
             .with_host_advancement(|host_phase| {
-                world
-                    .selected_product(&host_phase.test_host_request_for_test())
+                let selected = world.selected_product(&host_phase.test_host_request_for_test());
+                let entity = selected
                     .resolve_entity(
                         &host_phase,
                         AccountStatus::at("AccountStatus"),
@@ -74,7 +75,8 @@ pub fn cutoff_journey(
                         WorthQueryPrincipalResolutionMode::Ordinary,
                     )
                     .unwrap()
-                    .entity_id_for_test()
+                    .entity_id_for_test();
+                (entity, selected.into_parts_for_test().1)
             })
             .expect("installed host call opens");
         let status = AccountStatus::at("AccountStatus");
@@ -172,7 +174,8 @@ pub fn cutoff_journey(
             let candidate = candidate(record, Arc::clone(&consumer), Arc::clone(&prefix));
             let context = context();
 
-let basis = PreparedInputCutoffBasis::prepare_for_test(runtime, &live_handle).unwrap();
+let certification = CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &live_handle);
+let basis = PreparedInputCutoffBasis::prepare_for_test(runtime, certification).unwrap();
 
 let result = candidate.clone().verify_for_reuse_for_test(
                 request_execution, candidate.prepared_input_key_for_test().unwrap().continued_by_republication_for_test(), context, None,
@@ -183,7 +186,8 @@ let result = candidate.clone().verify_for_reuse_for_test(
                     "the resolved pending edge must reach full verification");
 
 assert!(ConsumedOutputEvidence::own_evidence_is_current_for_test(
-request_execution,                    &prefix, &[], candidate.native_output_witness_for_test().unwrap(), runtime, &live_handle,
+request_execution,                    &prefix, &[], candidate.native_output_witness_for_test().unwrap(), runtime, certification,
+
                 ).unwrap());
                 // Full-prefix verification adds a visit and a native comparison
                 // for every completed handler fact, after the own-evidence check.

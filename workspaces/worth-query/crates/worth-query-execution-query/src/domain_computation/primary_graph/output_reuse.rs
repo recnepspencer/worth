@@ -10,7 +10,7 @@ pub use worth_query_execution_lineage::facade::primary_graph::output_reuse::veri
 pub use dependency::require_installed_output_dependencies;
 pub use selection::{
     compare_retained_output_dependencies, compare_retained_output_witness, first_moved_fact,
-    first_moved_fact_in, interruption_denial, memory_denial, read_denial,
+    first_moved_fact_in, first_moved_fact_plain, interruption_denial, memory_denial, read_denial,
     retained_output_settlement_is_verified, OutputDependencySelection, RetainedFactStop,
 };
 

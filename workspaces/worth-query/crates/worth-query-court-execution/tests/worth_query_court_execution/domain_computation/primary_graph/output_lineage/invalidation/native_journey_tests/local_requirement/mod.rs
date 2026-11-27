@@ -1,5 +1,6 @@
 //! A post-effect lineage requirement cannot be hidden by an older Clean mark.
 
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
@@ -175,7 +176,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
                     &before,
                     owner,
                     runtime,
-                    &after_handle,
+                    CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &after_handle),
                     &after,
                 )
             })

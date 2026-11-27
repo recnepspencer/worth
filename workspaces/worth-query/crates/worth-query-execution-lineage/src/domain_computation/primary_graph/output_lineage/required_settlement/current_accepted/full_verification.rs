@@ -51,6 +51,7 @@ impl AcceptedCurrentCandidate {
         // This established owner verifies all facts and the complete consumed
         // graph, including its Native witness and each read's authorization.
         // Unsupported postings remain unsupported after this read.
+        let basis = super::certification_basis(product, snapshot);
         let verified = ConsumedOutputEvidence::verify_at_observation(
             execution,
             &recorded.settlement_identity,
@@ -60,9 +61,10 @@ impl AcceptedCurrentCandidate {
             witness,
             owner,
             runtime,
-            snapshot,
+            basis,
             selected,
             recorded.historical_selection.as_ref(),
+
         );
         let verified = match verified {
             Ok(verified) => verified,

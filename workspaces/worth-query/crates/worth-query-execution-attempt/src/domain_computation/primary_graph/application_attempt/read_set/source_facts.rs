@@ -44,7 +44,7 @@ pub fn compare_source_facts<Schema, Operation, Input, Scope>(
             );
         }
         let fresh = lease.handle().with_runtime(execution, |runtime| {
-            fact.remains_equal_in(runtime, execution, lease.snapshot())
+            fact.remains_equal_at(runtime, execution, lease.certification_basis())
         })?;
         if !fresh {
             let kind = if matches!(fact, WorthQueryApplicationObservedFact::SourceEntity { .. }) {

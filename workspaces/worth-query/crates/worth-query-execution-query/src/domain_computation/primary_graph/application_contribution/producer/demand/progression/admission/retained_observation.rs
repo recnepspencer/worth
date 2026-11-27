@@ -234,9 +234,14 @@ where
                         witness,
                         owner,
                         relational,
-                        snapshot,
+                        crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+                            observation.lifecycle_incarnation(),
+                            observation.reference_generation(),
+                            snapshot,
+                        ),
                         &selected,
                         output.historical(),
+
                     ) {
                         Err(ConsumedOutputVerificationStop::ManagedIndex(cause)) => Err(WorthQueryOutputDemandDenial::managed_index(cause, Family::IDENTITY)),
                         Ok(verification) => Ok(verification == ConsumedOutputVerification::Current),

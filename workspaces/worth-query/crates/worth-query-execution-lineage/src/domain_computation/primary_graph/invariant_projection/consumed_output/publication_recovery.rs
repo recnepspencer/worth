@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::Sour
 use std::sync::Arc;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_relational::facade::snapshots::SnapshotHandle;
+use crate::domain_computation::primary_graph::output_lineage::CertificationBasis;
 
 pub enum PublicationRecoveryStop {
     Reason(FullVerificationReason),
@@ -38,10 +38,10 @@ impl ConsumedOutputEvidence {
         owner: &SourceInvalidationOwner,
         roots: &[ConsumedOutputEvidence],
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<(), FullVerificationReason> {
-        Self::recover_missing(execution, owner, roots, runtime, snapshot, selected)
+        Self::recover_missing(execution, owner, roots, runtime, basis, selected)
             .map_err(PublicationRecoveryStop::reason)
     }
 
@@ -50,7 +50,7 @@ impl ConsumedOutputEvidence {
         owner: &SourceInvalidationOwner,
         roots: &[ConsumedOutputEvidence],
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: CertificationBasis<'_>,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<(), PublicationRecoveryStop> {
         let incomplete =
@@ -82,8 +82,9 @@ impl ConsumedOutputEvidence {
                         std::slice::from_ref(evidence),
                         owner,
                         runtime,
-                        snapshot,
+                        basis,
                         selected,
+
                     )
                     .map_err(PublicationRecoveryStop::Closure)?
                         != ConsumedOutputVerification::Current

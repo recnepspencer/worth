@@ -1,4 +1,5 @@
 //! Independent consumed readers and restored marks share one original fact allocation.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
@@ -38,7 +39,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
             assert_eq!(ConsumedOutputEvidence::verify_at_observation_for_test(
                 &execution, &identity, &facts, &[],
                 Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::CheckpointRestore),
-                &witness, owner, runtime, &snapshot_handle, &basis,
+                &witness, owner, runtime, CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &snapshot_handle), &basis,
             ).unwrap(), ConsumedOutputVerification::Current);
 
 
@@ -56,7 +57,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
                 "actual restored prerequisite custody must be established, not bypassed");
         handle.with_runtime_for_test(&execution, |runtime| {
             assert_eq!(ConsumedOutputEvidence::verify_many_with_admission_for_test(
-                &execution, &[first.clone(), second.clone()], owner, runtime, &snapshot_handle,
+                &execution, &[first.clone(), second.clone()], owner, runtime, CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &snapshot_handle),
                 &basis,
             ).unwrap(), ConsumedOutputVerification::Current);
             let (current_handle, current_basis) = snapshot(runtime);

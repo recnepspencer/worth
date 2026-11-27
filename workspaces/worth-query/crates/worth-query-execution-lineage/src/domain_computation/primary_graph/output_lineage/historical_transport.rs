@@ -11,7 +11,7 @@ pub use denial::{HistoricalTransportDenial, WorthQueryHistoryPublicationCorrespo
 pub mod coordinate;
 pub use coordinate::{HistoricalSelectionCoordinate, SelectionCoordinate};
 pub mod acceptance;
-pub use acceptance::RestoredAcceptance;
+pub use acceptance::{RestoredAcceptance, RestoredEvidence};
 pub mod reroot;
 pub use reroot::RerootPlan;
 

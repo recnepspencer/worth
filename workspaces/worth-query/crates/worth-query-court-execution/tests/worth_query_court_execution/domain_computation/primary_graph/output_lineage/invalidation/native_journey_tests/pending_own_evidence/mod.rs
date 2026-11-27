@@ -1,4 +1,5 @@
 //! A pending upstream cannot hide a conclusive change to a candidate's own output.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
@@ -147,7 +148,7 @@ let witness = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&corresp
                 std::slice::from_ref(&b_evidence),
                 owner,
                 runtime,
-                &pending_handle,
+                CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &pending_handle),
                 &pending),
             Err(ConsumedOutputVerificationStop::PendingUpstream),
             "unchanged own facts cannot certify pending upstream"
@@ -162,7 +163,7 @@ let witness = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&corresp
                 &witness,
                 owner,
                 runtime,
-                &pending_handle,
+                CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &pending_handle),
                 &pending),
             Ok(ConsumedOutputVerification::ChangedUpstream),
             "the original output witness conclusively rejects the changed output"
@@ -175,7 +176,7 @@ let witness = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&corresp
                 std::slice::from_ref(&b_evidence),
                 owner,
                 runtime,
-                &changed_handle,
+                CertificationBasis::of(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation(), &changed_handle),
                 &changed),
             Ok(ConsumedOutputVerification::ChangedDirectFact(0))
         );

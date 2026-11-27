@@ -17,7 +17,7 @@ use worth_relational::facade::runtime::{
 pub fn restored_facts_hold<F: FactSequence + ?Sized>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
     current: &VisibilityProjectionView,
     evidence: &RelationalHistoricalSelectionRead,
     facts: Option<&F>,
@@ -25,7 +25,8 @@ pub fn restored_facts_hold<F: FactSequence + ?Sized>(
     let Some(facts) = facts.filter(|facts| !facts.is_empty()) else {
         return Ok(false);
     };
-    let mut extent = super::RetainedFactVerification::new(execution, runtime, snapshot, None);
+    let mut extent = super::RetainedFactVerification::new(execution, runtime, basis, None)
+;
     for fact in facts.iter() {
         let moved = super::first_moved_fact_in(&mut extent, std::iter::once(fact))
             .map_err(|stop| retained_fact_denial(stop, "restored comparison unavailable"))?;
