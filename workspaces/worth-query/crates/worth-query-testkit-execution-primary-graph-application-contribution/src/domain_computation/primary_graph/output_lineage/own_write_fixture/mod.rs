@@ -54,7 +54,7 @@ pub fn commit_own_write(
         worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources,
     ),
 ) {
-    commit_producer(generated, true, |_| (), |world, receipt, cell, resources, ()| {
+    commit_producer(generated, true, Hook::BeforeSeed, |_| (), |world, receipt, cell, resources, ()| {
         test(world, receipt, cell, resources)
     });
 }
@@ -67,13 +67,32 @@ pub fn with_first_completion<Before>(
     before: impl FnOnce(&AuthorizationWorld) -> Before,
     test: impl FnOnce(&AuthorizationWorld, WorthQueryApplicationCommitReceipt, Before),
 ) {
-    commit_producer(false, false, before, |world, receipt, _, _, value| test(world, receipt, value));
+    commit_producer(false, false, Hook::BeforeSeed, before, |world, receipt, _, _, value| test(world, receipt, value));
+}
+
+/// The generated producer of [`with_generated_own_write`] without its own
+/// write, so partition 7 of the seeded account gains a second current head
+/// beside the seed's. `seeded` runs on the installed world after the seed and
+/// before that commit (public #429).
+pub fn with_second_partition_head<Seeded>(
+    seeded: impl FnOnce(&AuthorizationWorld) -> Seeded,
+    test: impl FnOnce(&AuthorizationWorld, WorthQueryApplicationCommitReceipt, Seeded),
+) {
+    commit_producer(true, false, Hook::AfterSeed, seeded, |world, receipt, _, _, value| test(world, receipt, value));
+}
+
+/// Where [`commit_producer`] runs its hook.
+#[derive(PartialEq, Eq)]
+enum Hook {
+    BeforeSeed,
+    AfterSeed,
 }
 
 fn commit_producer<Before>(
     generated: bool,
     own_write: bool,
-    before: impl FnOnce(&AuthorizationWorld) -> Before,
+    at: Hook,
+    hook: impl FnOnce(&AuthorizationWorld) -> Before,
     test: impl FnOnce(
         &AuthorizationWorld,
         WorthQueryApplicationCommitReceipt,
@@ -88,7 +107,11 @@ fn commit_producer<Before>(
     let world = crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world_with_product_resources(product_resources);
     world.declare_output_contract::<OwnWriteOutputs>("OwnWriteOutputs");
     let request = live_scope();
-    let before = before(&world);
+    let mut hook = Some(hook);
+    let mut hooked = None;
+    if at == Hook::BeforeSeed {
+        hooked = hook.take().map(|hook| hook(&world));
+    }
     let seed = world
         .application
         .with_host_advancement(|phase| {
@@ -123,6 +146,9 @@ fn commit_producer<Before>(
         ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
+    if let Some(hook) = hook {
+        hooked = Some(hook(&world));
+    }
     let mut program = world.application.with_host_advancement(|phase| {
         let phase_custody = &phase;
     let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), &world, &request);
@@ -329,5 +355,5 @@ fn commit_producer<Before>(
         own_write,
         "the actual commit carries the computation's own-write staleness exactly when it writes its input"
     );
-    test(&world, receipt, cell, resources, before);
+    test(&world, receipt, cell, resources, hooked.expect("the hook ran"));
 }

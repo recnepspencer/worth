@@ -30,19 +30,24 @@ enum Kind {
     Denied,
 }
 
+#[path = "cardinality.rs"]
+mod cardinality;
 #[path = "unsupported_readmission.rs"]
 mod unsupported_readmission;
 
-/// Install the producer's output family with its declared binding, as program
-/// installation does.
-fn install_family(world: &AuthorizationWorld) {
+/// The seed's retained-account output, the family's first member.
+fn retained() -> (EqualityTypeId, String) {
+    (EqualityTypeId::of::<RetentionOutputs>(), "retained-account".to_owned())
+}
+
+/// Install the producer's output family over `members`, as program
+/// installation does. `RetentionOutputs` is declared here; the fixture
+/// declares `OwnWriteOutputs` itself.
+fn install_family(world: &AuthorizationWorld, members: Vec<(EqualityTypeId, String)>) {
     world.declare_output_contract::<RetentionOutputs>("RetentionOutputs");
     let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
     graph.integration_handle_for_test().output_lineage.lock().unwrap().install_output_families_for_test(
-        std::collections::BTreeMap::from([(
-            "test.retained-account-capacity".to_owned().into(),
-            vec![(EqualityTypeId::of::<RetentionOutputs>(), "retained-account".to_owned())],
-        )]),
+        std::collections::BTreeMap::from([("test.retained-account-capacity".to_owned().into(), members)]),
     );
 }
 
@@ -129,7 +134,7 @@ fn certify(world: &AuthorizationWorld, fact: &Fact) -> FactMovement {
 fn a_missing_read_is_invalidated_by_a_first_completion() {
     with_first_completion(
         |world| {
-            install_family(world);
+            install_family(world, vec![retained()]);
             // The seed has not set the account's status to "1" yet.
             let (kind, facts) = read_family(world, "open");
             assert_eq!(kind, Kind::Missing, "the family has no head before the producer completes");
