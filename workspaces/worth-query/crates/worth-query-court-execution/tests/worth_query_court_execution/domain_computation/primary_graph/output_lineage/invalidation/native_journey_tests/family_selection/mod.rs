@@ -32,8 +32,16 @@ enum Kind {
 
 #[path = "cardinality.rs"]
 mod cardinality;
+#[path = "heads.rs"]
+mod heads;
+#[path = "missing_reader_heads.rs"]
+mod missing_reader_heads;
+#[path = "other_partition_restore.rs"]
+mod other_partition_restore;
 #[path = "restoration.rs"]
 mod restoration;
+#[path = "reresolution_stops.rs"]
+mod reresolution_stops;
 #[path = "unsupported_readmission.rs"]
 mod unsupported_readmission;
 
