@@ -75,7 +75,13 @@ impl LineageState {
                 Some(full) => {
                     match self.rebuild_branch_name_index(full, &prepared.source, fork_commit_id) {
                         BranchNameIndex::Current(rebuilt) => {
-                            rebuilt.rebranched(prepared.target.clone())
+                            let mut child = rebuilt.rebranched(prepared.target.clone());
+                            if let Some(floor) = index.retention_floor() {
+                                child
+                                    .advance_retention_floor(floor)
+                                    .map_err(map_index_denial)?;
+                            }
+                            child
                         }
                         BranchNameIndex::Unavailable(denial) => {
                             return Err(map_index_denial(denial));
@@ -244,46 +250,32 @@ mod tests {
     };
     use crate::contracts::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
     use crate::contracts::graph_member::NativeMemberKey;
-    use crate::contracts::history::data::commit_receipt::RelationalCommitReceipt;
-    use crate::contracts::identity::data::primitives::{LineageId, PartitionId, VersionId};
+    use crate::contracts::identity::data::primitives::{LineageId, PartitionId};
     use crate::contracts::identity::data::record_ids::EntityId;
-    use crate::contracts::lineage::data::events::{
-        assemble_lineage_event_record, LineageEventKind, LineageEventRecordParts, LineageSubject,
-    };
+    use crate::contracts::lineage::data::events::LineageEventKind;
     use crate::contracts::lineage::data::graph::assemble_lineage_node;
     use crate::contracts::lineage::data::naming::{
         PersistentNameHolder, PersistentNameIdentity, PersistentNameIdentityOwnerPort as _,
     };
     use crate::lineage::groups::{CommittedGroupTransition, GroupTransitionKind};
+    use crate::lineage::naming_pages::tests::hardening_r4::unnamed_event;
     use worth_foundational::facade::AggregateIdentity;
 
     #[test]
     fn resident_prepare_fork_stages_components_surviving_concurrent_ack_clearing_full_history() {
         let mut state = LineageState::empty();
         let (main, child) = (BranchId("main".into()), BranchId("hist-child".into()));
-        let (e1, l1) = (EntityId::new(PartitionId::main(), 1, 1), LineageId(1));
+        let (e1, l1, l2) = (
+            EntityId::new(PartitionId::main(), 1, 1),
+            LineageId(1),
+            LineageId(2),
+        );
         state.record_node(assemble_lineage_node(l1, e1));
-        let ev = |id, c, kind, sources, targets| {
-            let commit = RelationalCommitReceipt {
-                commit_id: CommitId(c),
-                version_id: VersionId(c),
-                branch_id: main.clone(),
-                parents: Vec::new(),
-            };
-            assemble_lineage_event_record(LineageEventRecordParts {
-                event_id: id,
-                commit,
-                branch_id: main.clone(),
-                kind,
-                sources,
-                targets,
-                subject: LineageSubject::Entity,
-                name_birth: None,
-                kept_name: None,
-                relation_id: None,
-                entity_id: None,
-            })
-        };
+        state.record_node(assemble_lineage_node(
+            l2,
+            EntityId::new(PartitionId::main(), 2, 1),
+        ));
+        let ev = |id, c, kind, src, tgt| unnamed_event(id, &main, CommitId(c), kind, src, tgt);
         let scheme = AggregateGroupScheme::new(
             AggregateGroupSchemeId::new("s").unwrap(),
             AggregateContinuityRule::Anchor,
@@ -326,44 +318,56 @@ mod tests {
                 },
             }
         };
-        let c1 = [ev(1, 1, LineageEventKind::Create, vec![], vec![l1])];
-        let c2 = [ev(2, 2, LineageEventKind::Retire, vec![l1], vec![])];
-        state
-            .install_recovered_event_batch(&c1, CommitId(1))
-            .unwrap();
-        state.record_group_lineage(&main, CommitId(1), vec![mk_grp(1, None)]);
-        state
-            .install_recovered_event_batch(&c2, CommitId(2))
-            .unwrap();
-        state.record_group_lineage(&main, CommitId(2), vec![mk_grp(2, Some(1))]);
+        for (c, kind, src, tgt, g, ret) in [
+            (1, LineageEventKind::Create, vec![], vec![l1], 1, None),
+            (2, LineageEventKind::Create, vec![], vec![l2], 2, Some(1)),
+            (3, LineageEventKind::Retire, vec![l1], vec![], 3, Some(2)),
+        ] {
+            let batch = [ev(c, c, kind, src, tgt)];
+            state
+                .install_recovered_event_batch(&batch, CommitId(c))
+                .unwrap();
+            state.record_group_lineage(&main, CommitId(c), vec![mk_grp(g, ret)]);
+        }
+        if let Some(BranchNameIndex::Current(src)) = state.name_indexes.by_branch.get_mut(&main) {
+            src.advance_retention_floor(CommitId(2)).unwrap();
+        }
         assert!(state.full_history.is_some());
         let prepared = state
-            .prepare_fork_ancestry(child.clone(), main, CommitId(1))
+            .prepare_fork_ancestry(child.clone(), main, CommitId(2))
             .unwrap();
         assert!(
             prepared.name_index.is_some()
                 && prepared.naming_state.is_some()
                 && prepared.group_state.is_some()
         );
-        // Simulate concurrent C2 ACK clearing full_history with no cold source.
         state.full_history = None;
         state.cold_naming = None;
         state.published_group_lineage.clear();
         state.install_prepared_fork_ancestry(prepared);
+        let basis = state.authoritative_branch_naming_basis(&child);
         assert_eq!(
-            state
-                .authoritative_branch_naming_basis(&child)
-                .live_lineages
-                .get(&PersistentNameHolder::Entity(e1)),
+            basis.live_lineages.get(&PersistentNameHolder::Entity(e1)),
             Some(&l1)
         );
-        assert!(matches!(
-            state.name_indexes.by_branch.get(&child),
-            Some(BranchNameIndex::Current(idx)) if idx.head() == Some(CommitId(1))
-        ));
+        let Some(BranchNameIndex::Current(idx)) = state.name_indexes.by_branch.get(&child) else {
+            panic!("expected current child index");
+        };
+        assert_eq!(
+            (idx.head(), idx.retention_floor()),
+            (Some(CommitId(2)), Some(CommitId(2)))
+        );
+        use crate::contracts::lineage::data::name_resolution::{
+            PersistentNameKey, PersistentNameSelection,
+        };
+        let g1_key = PersistentNameKey::Group(AggregateIdentity::from_bytes([1; 32]));
+        assert!(idx
+            .resolve(g1_key, CommitId(1), &PersistentNameSelection::Exact)
+            .result
+            .is_err());
         assert!(matches!(
             state.group_states.by_branch.get(&child),
-            Some(Ok(groups)) if groups.latest_commit() == Some(CommitId(1))
+            Some(Ok(groups)) if groups.latest_commit() == Some(CommitId(2))
         ));
     }
 }

@@ -22,7 +22,7 @@ pub mod page;
 pub mod store;
 pub mod tables;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 /// Row and byte budgets of one naming page member.
 pub const NAMING_PAGE_ENTRIES: u32 = 256;
