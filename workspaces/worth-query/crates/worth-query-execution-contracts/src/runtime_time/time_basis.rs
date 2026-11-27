@@ -1,9 +1,12 @@
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use worth_foundational::facade::AspectValue;
+use worth_foundational::facade::{AspectValue, CanonicalTimestamp};
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline;
 
+use super::capability_calendar::WorthQueryCapabilityCalendar;
 use super::time_source::{WorthQueryRuntimeTimeSource, WorthQuerySystemRuntimeTimeSource};
+pub use super::validity_ordinal::validity_ordinal;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryRuntimeTimeDenial {
@@ -11,6 +14,10 @@ pub enum WorthQueryRuntimeTimeDenial {
     BeforeUnixEpoch,
     TimelineValueOverflow,
     DurationNotRepresentable,
+    /// The Home has no capability calendar for a local-date timeline.
+    CalendarUnavailable,
+    /// The capability calendar could not name the instant's local date.
+    LocalDateUnavailable,
 }
 
 impl std::fmt::Display for WorthQueryRuntimeTimeDenial {
@@ -20,17 +27,22 @@ impl std::fmt::Display for WorthQueryRuntimeTimeDenial {
             Self::BeforeUnixEpoch => "the trusted time lies before the Unix epoch",
             Self::TimelineValueOverflow => "the trusted time is not representable",
             Self::DurationNotRepresentable => "the duration is not representable on the timeline",
+            Self::CalendarUnavailable => "the Home has no capability calendar",
+            Self::LocalDateUnavailable => "the capability calendar cannot date the instant",
         })
     }
 }
 
 impl std::error::Error for WorthQueryRuntimeTimeDenial {}
 
-/// One trusted-time reading taken from the host-published source.
+/// One trusted-time reading taken from the host-published source: the
+/// admission instant and its value on one validity timeline. An admission
+/// judges validity and records `admitted_at` from this one reading.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryRuntimeTimeSample {
     timeline: ApplicationCapabilityValidityTimeline,
     value: AspectValue,
+    instant: CanonicalTimestamp,
 }
 
 pub struct WorthQueryRuntimeTimeInterval {
@@ -45,6 +57,16 @@ impl WorthQueryRuntimeTimeSample {
 
     pub const fn value(&self) -> &AspectValue {
         &self.value
+    }
+
+    /// The trusted instant this sample was read at.
+    pub const fn instant(&self) -> CanonicalTimestamp {
+        self.instant
+    }
+
+    /// This sample as an order-preserving durable ordinal on its timeline.
+    pub fn ordinal(&self) -> Option<u64> {
+        validity_ordinal(self.timeline, &self.value)
     }
 }
 
@@ -63,6 +85,7 @@ pub struct WorthQueryRuntimeClock {
     pub admission_clock:
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
     source: Box<dyn WorthQueryRuntimeTimeSource>,
+    calendar: Option<Arc<dyn WorthQueryCapabilityCalendar>>,
 }
 
 impl WorthQueryRuntimeClock {
@@ -73,8 +96,14 @@ impl WorthQueryRuntimeClock {
     pub fn from_source(source: impl WorthQueryRuntimeTimeSource) -> Self {
         Self {
             admission_clock: source.admission_clock(),
+            calendar: source.capability_calendar(),
             source: Box::new(source),
         }
+    }
+
+    /// Whether local-date grant validity can be judged on this clock.
+    pub fn has_capability_calendar(&self) -> bool {
+        self.calendar.is_some()
     }
 
     /// The trusted current instant as a canonical microsecond UTC timestamp,
@@ -94,7 +123,7 @@ impl WorthQueryRuntimeClock {
             .source
             .current_time()
             .map_err(|_| WorthQueryRuntimeTimeDenial::SourceUnavailable)?;
-        sample_at(now, timeline)
+        sample_at(now, timeline, self.calendar.as_deref())
     }
 
     pub fn sample_interval(
@@ -147,27 +176,49 @@ fn duration_units(
                 .try_into()
                 .map_err(|_| WorthQueryRuntimeTimeDenial::TimelineValueOverflow)
         }
+        // Installation refuses governed elevation on these timelines.
+        ApplicationCapabilityValidityTimeline::UtcTimestamp
+        | ApplicationCapabilityValidityTimeline::LocalDate => {
+            Err(WorthQueryRuntimeTimeDenial::DurationNotRepresentable)
+        }
     }
 }
 
 fn sample_at(
     now: SystemTime,
     timeline: ApplicationCapabilityValidityTimeline,
+    calendar: Option<&dyn WorthQueryCapabilityCalendar>,
 ) -> Result<WorthQueryRuntimeTimeSample, WorthQueryRuntimeTimeDenial> {
-    let elapsed = now
-        .duration_since(UNIX_EPOCH)
-        .map_err(|_| WorthQueryRuntimeTimeDenial::BeforeUnixEpoch)?;
+    let instant = super::canonical_instant::timestamp_of(now)?;
     let value = match timeline {
-        ApplicationCapabilityValidityTimeline::UnixEpochSeconds => elapsed.as_secs(),
-        ApplicationCapabilityValidityTimeline::UnixEpochMilliseconds => elapsed
-            .as_millis()
-            .try_into()
-            .map_err(|_| WorthQueryRuntimeTimeDenial::TimelineValueOverflow)?,
+        ApplicationCapabilityValidityTimeline::UnixEpochSeconds => {
+            AspectValue::UInt64(since_unix_epoch(now)?.as_secs())
+        }
+        ApplicationCapabilityValidityTimeline::UnixEpochMilliseconds => AspectValue::UInt64(
+            since_unix_epoch(now)?
+                .as_millis()
+                .try_into()
+                .map_err(|_| WorthQueryRuntimeTimeDenial::TimelineValueOverflow)?,
+        ),
+        ApplicationCapabilityValidityTimeline::UtcTimestamp => AspectValue::Timestamp(instant),
+        ApplicationCapabilityValidityTimeline::LocalDate => AspectValue::Date(
+            calendar
+                .ok_or(WorthQueryRuntimeTimeDenial::CalendarUnavailable)?
+                .local_date(instant)
+                .map_err(|_| WorthQueryRuntimeTimeDenial::LocalDateUnavailable)?,
+        ),
     };
     Ok(WorthQueryRuntimeTimeSample {
         timeline,
-        value: AspectValue::UInt64(value),
+        value,
+        instant,
     })
+}
+
+/// Epoch-count timelines cannot express an instant before 1970.
+fn since_unix_epoch(now: SystemTime) -> Result<std::time::Duration, WorthQueryRuntimeTimeDenial> {
+    now.duration_since(UNIX_EPOCH)
+        .map_err(|_| WorthQueryRuntimeTimeDenial::BeforeUnixEpoch)
 }
 
 #[cfg(test)]
@@ -240,6 +291,10 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "time_basis_timeline_tests.rs"]
+mod timeline_tests;
 
 #[path = "time_basis_court_doors_for_test.rs"]
 mod court_doors_for_test;

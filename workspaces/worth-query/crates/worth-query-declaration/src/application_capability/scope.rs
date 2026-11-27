@@ -4,13 +4,15 @@ use crate::application_schema::{
 };
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
-use super::{
-    ApplicationCapabilityContextRef, ApplicationCapabilityCurrentnessDefinition,
-    ApplicationCapabilityProvenanceRef,
-};
+use super::{ApplicationCapabilityContextRef, ApplicationCapabilityCurrentnessDefinition};
 
+mod delegation;
 mod portable_parts;
 mod target;
+pub use delegation::{
+    ApplicationCapabilityDelegationDefinition, ApplicationCapabilityDelegationLineage,
+    ApplicationCapabilitySelfGrantRule,
+};
 pub use portable_parts::{
     WorthQueryPortableApplicationCapabilityConstraintParts,
     WorthQueryPortableApplicationCapabilityDelegationParts,
@@ -225,92 +227,5 @@ impl ApplicationCapabilityConstraintDefinition {
 
     pub fn context_identity(&self) -> crate::portable_identity::WorthQueryPortableTypeIdentity {
         self.context_type.clone()
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct ApplicationCapabilityDelegationDefinition {
-    parent: ApplicationCapabilityRelationBinding,
-    grantor: ApplicationCapabilityRelationBinding,
-    grantee: ApplicationCapabilityRelationBinding,
-    limit: ApplicationCapabilityFieldBinding,
-    provenance: String,
-    provenance_type: crate::portable_identity::WorthQueryPortableTypeIdentity,
-    activation: Option<super::ApplicationCapabilityDelegationActivationDefinition>,
-    revocation: Option<super::ApplicationCapabilityRevocationDefinition>,
-}
-
-impl ApplicationCapabilityDelegationDefinition {
-    pub fn new<Schema, Provenance>(
-        parent: ApplicationCapabilityRelationBinding,
-        grantor: ApplicationCapabilityRelationBinding,
-        grantee: ApplicationCapabilityRelationBinding,
-        limit: ApplicationCapabilityFieldBinding,
-        provenance: ApplicationCapabilityProvenanceRef<Schema, Provenance>,
-    ) -> Self {
-        Self {
-            parent,
-            grantor,
-            grantee,
-            limit,
-            provenance: provenance.name().to_string(),
-            provenance_type: provenance.marker_identity(),
-            activation: None,
-            revocation: None,
-        }
-    }
-
-    pub fn with_activation(
-        mut self,
-        activation: super::ApplicationCapabilityDelegationActivationDefinition,
-    ) -> Self {
-        self.activation = Some(activation);
-        self
-    }
-
-    pub fn with_revocation(
-        mut self,
-        revocation: super::ApplicationCapabilityRevocationDefinition,
-    ) -> Self {
-        self.revocation = Some(revocation);
-        self
-    }
-
-    pub fn parent(&self) -> &ApplicationCapabilityRelationBinding {
-        &self.parent
-    }
-
-    pub fn grantor(&self) -> &ApplicationCapabilityRelationBinding {
-        &self.grantor
-    }
-
-    pub fn grantee(&self) -> &ApplicationCapabilityRelationBinding {
-        &self.grantee
-    }
-
-    pub fn limit(&self) -> &ApplicationCapabilityFieldBinding {
-        &self.limit
-    }
-
-    pub fn provenance(&self) -> &str {
-        &self.provenance
-    }
-
-    pub fn provenance_type(&self) -> &str {
-        self.provenance_type.as_str()
-    }
-
-    pub fn provenance_identity(&self) -> crate::portable_identity::WorthQueryPortableTypeIdentity {
-        self.provenance_type.clone()
-    }
-
-    pub const fn activation(
-        &self,
-    ) -> Option<&super::ApplicationCapabilityDelegationActivationDefinition> {
-        self.activation.as_ref()
-    }
-
-    pub const fn revocation(&self) -> Option<&super::ApplicationCapabilityRevocationDefinition> {
-        self.revocation.as_ref()
     }
 }

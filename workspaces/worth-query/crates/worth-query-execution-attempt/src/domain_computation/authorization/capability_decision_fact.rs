@@ -150,6 +150,12 @@ impl WorthQueryRetainedCapabilityAuthorization {
         self.sample.value()
     }
 
+    /// The trusted instant the current decision's validity was judged at; an
+    /// admission records it as `admitted_at`, so both share one reading.
+    pub const fn sampled_at(&self) -> worth_foundational::facade::CanonicalTimestamp {
+        self.sample.instant()
+    }
+
     pub const fn expiry(&self) -> &worth_foundational::facade::AspectValue {
         &self.expiry
     }

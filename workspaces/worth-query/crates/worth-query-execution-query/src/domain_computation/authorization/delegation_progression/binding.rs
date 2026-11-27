@@ -11,7 +11,9 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::{EntityId, KindId};
 
-use super::super::capability_registry::WorthQueryInstalledCapabilityPlan;
+use super::super::capability_registry::{
+    WorthQueryCapabilityLineageBindings, WorthQueryInstalledCapabilityPlan,
+};
 use super::denial;
 use super::support::WorthQueryDelegationResolvedRequest;
 use crate::domain_computation::authorization::{
@@ -131,12 +133,17 @@ where
         .activation
         .as_ref()
         .ok_or_else(|| delegation_denial(installed))?;
+    let lineage = installed
+        .delegation()
+        .delegable_lineage(installed.contract().name())?;
     let material =
         collect_activation_material(runtime, installed, proposed, &resolved, activation)?;
-    let (proposal_identity, canonical_work) =
-        derive_activation_proposal(&authority, installed, proposed, &resolved, &material)?;
+    let (proposal_identity, canonical_work) = derive_activation_proposal(
+        &authority, installed, lineage, proposed, &resolved, &material,
+    )?;
     let binding = material.into_binding(
         installed,
+        lineage,
         proposed,
         &resolved,
         &authority,
@@ -151,6 +158,7 @@ where
 fn derive_activation_proposal<Schema, Scope, Context>(
     authority: &WorthQueryDelegationActivationAuthority<'_>,
     installed: &WorthQueryInstalledCapabilityPlan,
+    lineage: &WorthQueryCapabilityLineageBindings,
     proposed: &ApplicationCapabilityDelegationRequestProjection<Schema, Scope, Context>,
     resolved: &WorthQueryDelegationResolvedRequest,
     material: &WorthQueryDelegationActivationMaterial,
@@ -167,14 +175,8 @@ fn derive_activation_proposal<Schema, Scope, Context>(
             child_kind: installed.grant_kind().as_u32(),
             child_key: proposed.child_key(),
             fields: &material.fields,
-            parent: canonical_relation(
-                installed.delegation().parent.relation_kind(),
-                resolved.parent(),
-            ),
-            grantor: canonical_relation(
-                installed.delegation().grantor.relation_kind(),
-                resolved.grantor(),
-            ),
+            parent: canonical_relation(lineage.parent.relation_kind(), resolved.parent()),
+            grantor: canonical_relation(lineage.grantor.relation_kind(), resolved.grantor()),
             grantee: canonical_relation(
                 installed.delegation().grantee.relation_kind(),
                 resolved.grantee(),
@@ -198,6 +200,7 @@ impl WorthQueryDelegationActivationMaterial {
     fn into_binding<Schema, Scope, Context>(
         self,
         installed: &WorthQueryInstalledCapabilityPlan,
+        lineage: &WorthQueryCapabilityLineageBindings,
         proposed: &ApplicationCapabilityDelegationRequestProjection<Schema, Scope, Context>,
         resolved: &WorthQueryDelegationResolvedRequest,
         authority: &WorthQueryDelegationActivationAuthority<'_>,
@@ -209,8 +212,8 @@ impl WorthQueryDelegationActivationMaterial {
             child_kind: installed.grant_kind(),
             child_key: proposed.child_key().to_string(),
             fields: self.fields,
-            parent_relation: installed.delegation().parent.relation_kind(),
-            grantor_relation: installed.delegation().grantor.relation_kind(),
+            parent_relation: lineage.parent.relation_kind(),
+            grantor_relation: lineage.grantor.relation_kind(),
             grantee_relation: installed.delegation().grantee.relation_kind(),
             resource_relation: installed.delegation().resource.relation_kind(),
             related_relation: self.related.map(|(relation, _)| relation),

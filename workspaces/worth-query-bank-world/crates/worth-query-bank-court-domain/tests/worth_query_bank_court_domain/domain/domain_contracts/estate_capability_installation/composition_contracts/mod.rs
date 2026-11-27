@@ -278,14 +278,11 @@ fn estate_contract_installs_exact_grant_currentness_meaning() {
         worth_query_decl::facade::application_capability::
             ApplicationCapabilityValidityTimeline::UnixEpochSeconds
     );
-    assert_eq!(
-        currentness.workflow().grant().field(),
-        "CapabilityWorkflowStageField"
-    );
-    assert_eq!(
-        currentness.workflow().resource().field(),
-        "EstateWorkflowStageField"
-    );
+    let workflow = currentness
+        .workflow()
+        .expect("the estate capability is a workflow-tenure grant");
+    assert_eq!(workflow.grant().field(), "CapabilityWorkflowStageField");
+    assert_eq!(workflow.resource().field(), "EstateWorkflowStageField");
     assert_eq!(
         currentness.validity().not_before().field(),
         "CapabilityValidFromField"

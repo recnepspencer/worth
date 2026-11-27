@@ -1,4 +1,5 @@
 //! The Host owns concrete Home custody and its installed Query service together.
+mod capability_calendar;
 mod checkpoint;
 mod close;
 mod close_policy;

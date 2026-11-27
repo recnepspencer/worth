@@ -6,7 +6,9 @@ use worth_relational::facade::authorization::{
     RelationalAuthorizationPredicate, RelationalAuthorizationRelatedEntityConstraint,
 };
 
-use super::super::super::capability_registry::WorthQueryInstalledCapabilityPlan;
+use super::super::super::capability_registry::{
+    WorthQueryCapabilityLineageBindings, WorthQueryInstalledCapabilityPlan,
+};
 use super::super::super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
 use super::super::super::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
@@ -26,9 +28,12 @@ pub(super) fn observe_transition(
     child: worth_relational::facade::identity::EntityId,
     parent: worth_relational::facade::identity::EntityId,
 ) -> Result<ObservedDelegationTransition, WorthQueryOperationAuthorizationDenial> {
+    let lineage = installed
+        .delegation()
+        .delegable_lineage(installed.contract().name())?;
     let narrowing = RelationalAuthorizationPathPlan::new(
         [
-            installed.delegation().parent.clone(),
+            lineage.parent.clone(),
             installed.delegation().resource.clone(),
         ],
         parent_predicates(installed, sample),
@@ -38,11 +43,11 @@ pub(super) fn observe_transition(
         installed.grant_kind(),
         parent,
     )])
-    .with_field_constraints(narrowing_constraints(installed))
+    .with_field_constraints(narrowing_constraints(installed, lineage))
     .with_related_entities(related_constraint(installed, request));
     let link = RelationalAuthorizationPathPlan::new(
         [
-            installed.delegation().grantor.clone(),
+            lineage.grantor.clone(),
             installed.delegation().grantee.clone(),
             installed.delegation().resource.clone(),
         ],
@@ -127,6 +132,7 @@ fn parent_predicates(
 
 fn narrowing_constraints(
     installed: &WorthQueryInstalledCapabilityPlan,
+    lineage: &WorthQueryCapabilityLineageBindings,
 ) -> Vec<RelationalAuthorizationFieldConstraint> {
     let bindings = &installed.delegation();
     let mut constraints = vec![
@@ -142,7 +148,7 @@ fn narrowing_constraints(
         ),
         constraint(
             installed,
-            &bindings.grant_workflow,
+            &lineage.grant_workflow,
             RelationalAuthorizationFieldComparison::Equal,
         ),
         constraint(
@@ -157,7 +163,7 @@ fn narrowing_constraints(
         ),
         constraint(
             installed,
-            &bindings.remaining,
+            &lineage.remaining,
             RelationalAuthorizationFieldComparison::StrictlyLess,
         ),
     ];
@@ -179,13 +185,13 @@ fn narrowing_constraints(
         RelationalAuthorizationFieldOperand::new(
             1,
             installed.grant_kind(),
-            bindings.grant_workflow.clone(),
+            lineage.grant_workflow.clone(),
         ),
         RelationalAuthorizationFieldComparison::Equal,
         RelationalAuthorizationFieldOperand::new(
             2,
             installed.scope_kind(),
-            bindings.resource_workflow.clone(),
+            lineage.resource_workflow.clone(),
         ),
     ));
     constraints

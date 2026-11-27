@@ -255,8 +255,12 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 context.entity,
             )
         }));
-        let path = RelationalAuthorizationPathPlan::new([], predicates(installed, proposed))
-            .with_related_entities(related);
+        let lineage = installed
+            .delegation()
+            .delegable_lineage(installed.contract().name())?;
+        let path =
+            RelationalAuthorizationPathPlan::new([], predicates(installed, lineage, proposed))
+                .with_related_entities(related);
         let plan = RelationalAuthorizationObservationPlan::try_new(
             self.snapshot.clone(),
             resolved.parent,
@@ -282,6 +286,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
 
 fn predicates<Schema, Scope, Context>(
     installed: &WorthQueryInstalledCapabilityPlan,
+    lineage: &crate::domain_computation::authorization::capability_registry::WorthQueryCapabilityLineageBindings,
     proposed: &ApplicationCapabilityDelegationRequestProjection<Schema, Scope, Context>,
 ) -> Vec<RelationalAuthorizationPredicate> {
     let target = proposed.target();
@@ -306,7 +311,7 @@ fn predicates<Schema, Scope, Context>(
         ),
         predicate(
             installed,
-            &installed.delegation().grant_workflow,
+            &lineage.grant_workflow,
             Comparison::Equal,
             proposed.workflow().value(),
         ),
@@ -324,7 +329,7 @@ fn predicates<Schema, Scope, Context>(
         ),
         predicate(
             installed,
-            &installed.delegation().remaining,
+            &lineage.remaining,
             Comparison::StrictlyGreater,
             proposed.remaining_delegations().value(),
         ),

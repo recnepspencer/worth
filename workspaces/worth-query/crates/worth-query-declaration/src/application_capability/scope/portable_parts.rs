@@ -7,6 +7,7 @@ use super::{
     ApplicationCapabilityFieldBinding, ApplicationCapabilityRelationBinding,
     ApplicationCapabilityValueBinding,
 };
+use super::{ApplicationCapabilityDelegationLineage, ApplicationCapabilitySelfGrantRule};
 use crate::application_capability::{
     ApplicationCapabilityCardinalityDimension, ApplicationCapabilityCurrentnessDefinition,
     ApplicationCapabilityDelegationActivationDefinition, ApplicationCapabilityFieldDimension,
@@ -136,14 +137,13 @@ impl ApplicationCapabilityConstraintDefinition {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPortableApplicationCapabilityDelegationParts {
-    pub parent: ApplicationCapabilityRelationBinding,
-    pub grantor: ApplicationCapabilityRelationBinding,
+    pub lineage: Option<ApplicationCapabilityDelegationLineage>,
     pub grantee: ApplicationCapabilityRelationBinding,
-    pub limit: ApplicationCapabilityFieldBinding,
     pub provenance: String,
     pub provenance_type: WorthQueryPortableTypeIdentity,
     pub activation: Option<ApplicationCapabilityDelegationActivationDefinition>,
     pub revocation: Option<ApplicationCapabilityRevocationDefinition>,
+    pub self_grant: ApplicationCapabilitySelfGrantRule,
 }
 
 impl ApplicationCapabilityDelegationDefinition {
@@ -152,27 +152,25 @@ impl ApplicationCapabilityDelegationDefinition {
         parts: WorthQueryPortableApplicationCapabilityDelegationParts,
     ) -> Self {
         Self {
-            parent: parts.parent,
-            grantor: parts.grantor,
+            lineage: parts.lineage,
             grantee: parts.grantee,
-            limit: parts.limit,
             provenance: parts.provenance,
             provenance_type: parts.provenance_type,
             activation: parts.activation,
             revocation: parts.revocation,
+            self_grant: parts.self_grant,
         }
     }
 
     pub fn parts(&self) -> WorthQueryPortableApplicationCapabilityDelegationParts {
         WorthQueryPortableApplicationCapabilityDelegationParts {
-            parent: self.parent.clone(),
-            grantor: self.grantor.clone(),
+            lineage: self.lineage.clone(),
             grantee: self.grantee.clone(),
-            limit: self.limit.clone(),
             provenance: self.provenance.clone(),
             provenance_type: self.provenance_type.clone(),
             activation: self.activation.clone(),
             revocation: self.revocation.clone(),
+            self_grant: self.self_grant,
         }
     }
 }

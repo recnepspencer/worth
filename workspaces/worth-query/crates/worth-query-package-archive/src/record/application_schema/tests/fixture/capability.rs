@@ -58,14 +58,17 @@ pub(super) fn application_capability() -> ErasedApplicationCapabilityContract {
     let delegation = ApplicationCapabilityDelegationDefinition::from_untrusted_parts(
         ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityDelegationParts {
-            parent: relation.clone(),
-            grantor: relation.clone(),
+            lineage: Some(ApplicationCapabilityDelegationLineage::new(
+                relation.clone(),
+                relation.clone(),
+                field.clone(),
+            )),
             grantee: relation.clone(),
-            limit: field.clone(),
             provenance: text("Provenance"),
             provenance_type: type_id("provenance"),
             activation: Some(activation),
             revocation: Some(revocation),
+            self_grant: ApplicationCapabilitySelfGrantRule::Permitted,
         },
     );
     ErasedApplicationCapabilityContract::from_untrusted_parts(

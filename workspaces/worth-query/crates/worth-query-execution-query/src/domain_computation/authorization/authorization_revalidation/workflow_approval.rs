@@ -54,13 +54,14 @@ where
         // Resolve the exact durable canonical capability identity above, then
         // freshly observe its principal/grant/lineage/dependencies below.
         let sample = self.sample_capability_time(installed)?;
-        let worth_foundational::facade::AspectValue::UInt64(now) = sample.value() else {
+        // Durable approvals store their expiry as the timeline's ordinal.
+        let Some(now) = sample.ordinal() else {
             return Err(stale_authorization());
         };
         if sample.timeline() != authority.timeline() {
             return Err(stale_authorization());
         }
-        if *now > authority.expiry() {
+        if now > authority.expiry() {
             return Err(WorthQueryOperationAuthorizationDenial::new(
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityExpired),
                 "workflow approval",
@@ -111,13 +112,13 @@ where
                 // Support is also re-admitted by its exact canonical request.
                 // Its recorded local seal belongs to the original installation.
                 let sample = self.sample_capability_time(installed)?;
-                let worth_foundational::facade::AspectValue::UInt64(support_now) = sample.value() else {
+                let Some(support_now) = sample.ordinal() else {
                     return Err(stale_authorization());
                 };
                 if sample.timeline() != support.timeline() {
                     return Err(stale_authorization());
                 }
-                if *support_now > support.expiry() {
+                if support_now > support.expiry() {
                     return Err(WorthQueryOperationAuthorizationDenial::new(
                         crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityExpired),
                         "workflow approval support",

@@ -119,7 +119,26 @@ where
         mut self,
         source: impl worth_query_execution::facade::primary_graph::WorthQueryRuntimeTimeSource,
     ) -> Self {
-        self.authorization_time_source = Some(Box::new(source));
+        self.authorization_time_source = Some(super::capability_calendar::replacing_source(
+            self.authorization_time_source.as_ref(),
+            Box::new(source),
+        ));
+        self
+    }
+
+    /// Supplies the calendar local-date grant validity is read on (for example
+    /// `WorthQueryTimeZone::load_system()?`, or a fixed offset in tests). It
+    /// joins the Home's trusted time basis: grants compare the local civil
+    /// date of the one admission instant, never a caller-supplied date. A Home
+    /// that installs a local-date grant without a calendar refuses to open.
+    pub fn with_capability_calendar(
+        mut self,
+        calendar: impl worth_query_execution::facade::primary_graph::WorthQueryCapabilityCalendar,
+    ) -> Self {
+        self.authorization_time_source = Some(super::capability_calendar::with_calendar(
+            self.authorization_time_source.take(),
+            std::sync::Arc::new(calendar),
+        ));
         self
     }
 

@@ -280,6 +280,8 @@ impl WorthQueryPrimaryGraphLayout {
             lower_continuation_orderings(schema, &entity_kinds, &relation_layouts)?;
         let capability_grant_joins =
             lower_capability_grant_joins(schema, &entity_kinds, &relation_layouts)?;
+        let forbidden_self_grant_relations =
+            super::self_grant::lower_forbidden_self_grants(schema, &relation_layouts)?;
         let fields = lower_fields(schema, &entity_kinds, value_bindings)?;
         let (registry, managed_sources) = managed_source::lower(
             sources,
@@ -336,6 +338,7 @@ impl WorthQueryPrimaryGraphLayout {
                 projection_field_keys,
                 continuation_orderings,
                 capability_grant_joins,
+                forbidden_self_grant_relations,
                 provider_idempotency: platform_entities.provider_idempotency,
                 provider_dispatch_outbox: platform_entities.provider_dispatch_outbox,
                 provider_inbound_completion: platform_entities.provider_inbound_completion,

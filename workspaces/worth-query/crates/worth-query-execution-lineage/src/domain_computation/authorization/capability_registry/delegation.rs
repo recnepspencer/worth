@@ -2,7 +2,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRe
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityDelegationRule, ApplicationCapabilityRelationDimension,
-    ErasedApplicationCapabilityContract,
+    ApplicationCapabilitySelfGrantRule, ErasedApplicationCapabilityContract,
 };
 use worth_relational::facade::authorization::{
     RelationalAuthorizationTraversal, RelationalAuthorizationTraversalDirection,
@@ -17,8 +17,8 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
 pub struct WorthQueryCapabilityDelegationBindings {
     pub rule: ApplicationCapabilityDelegationRule,
-    pub parent: RelationalAuthorizationTraversal,
-    pub grantor: RelationalAuthorizationTraversal,
+    /// The delegation lineage of a workflow-tenure grant; `None` when standing.
+    pub lineage: Option<WorthQueryCapabilityLineageBindings>,
     pub grantee: RelationalAuthorizationTraversal,
     pub grantee_from_grant: RelationalAuthorizationTraversal,
     pub resource: RelationalAuthorizationTraversal,
@@ -28,13 +28,37 @@ pub struct WorthQueryCapabilityDelegationBindings {
     pub disclosure: Option<AspectFieldLocator>,
     pub magnitude: Option<AspectFieldLocator>,
     pub active_status: (AspectFieldLocator, AspectValue),
-    pub grant_workflow: AspectFieldLocator,
-    pub resource_workflow: AspectFieldLocator,
     pub not_before: AspectFieldLocator,
     pub not_after: AspectFieldLocator,
-    pub remaining: AspectFieldLocator,
     pub activation: Option<WorthQueryCapabilityDelegationActivationBindings>,
     pub revocation: Option<WorthQueryCapabilityRevocationBindings>,
+    pub self_grant: ApplicationCapabilitySelfGrantRule,
+}
+
+/// The workflow binding and delegation lineage only a workflow-tenure grant has.
+pub struct WorthQueryCapabilityLineageBindings {
+    pub parent: RelationalAuthorizationTraversal,
+    pub grantor: RelationalAuthorizationTraversal,
+    pub grant_workflow: AspectFieldLocator,
+    pub resource_workflow: AspectFieldLocator,
+    pub remaining: AspectFieldLocator,
+}
+
+impl WorthQueryCapabilityDelegationBindings {
+    /// The lineage a delegation transition walks, refusing a standing grant.
+    pub fn delegable_lineage(
+        &self,
+        capability: &str,
+    ) -> Result<&WorthQueryCapabilityLineageBindings, WorthQueryOperationAuthorizationDenial> {
+        self.lineage.as_ref().ok_or_else(|| {
+            WorthQueryOperationAuthorizationDenial::new(
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::DelegationRejected,
+                ),
+                capability,
+            )
+        })
+    }
 }
 
 pub struct WorthQueryCapabilityDelegationActivationBindings {
@@ -60,7 +84,6 @@ impl WorthQueryCapabilityDelegationBindings {
     ) -> Result<Self, WorthQueryOperationAuthorizationDenial> {
         let delegation = contract.delegation();
         let currentness = contract.constraints().currentness();
-        let workflow = currentness.workflow();
         let validity = currentness.validity();
         let active_status = (
             field_locator(layout, currentness.active_status().field())?,
@@ -68,16 +91,7 @@ impl WorthQueryCapabilityDelegationBindings {
         );
         Ok(Self {
             rule: contract.composition().propagation().delegation(),
-            parent: relation(
-                layout,
-                delegation.parent(),
-                RelationalAuthorizationTraversalDirection::Forward,
-            )?,
-            grantor: relation(
-                layout,
-                delegation.grantor(),
-                RelationalAuthorizationTraversalDirection::Reverse,
-            )?,
+            lineage: lineage_bindings(contract, layout)?,
             grantee: relation(
                 layout,
                 delegation.grantee(),
@@ -110,11 +124,9 @@ impl WorthQueryCapabilityDelegationBindings {
                 .map(|binding| field_locator(layout, binding))
                 .transpose()?,
             active_status: active_status.clone(),
-            grant_workflow: field_locator(layout, workflow.grant())?,
-            resource_workflow: field_locator(layout, workflow.resource())?,
             not_before: field_locator(layout, validity.not_before())?,
             not_after: field_locator(layout, validity.not_after())?,
-            remaining: field_locator(layout, delegation.limit())?,
+            self_grant: delegation.self_grant(),
             activation: delegation
                 .activation()
                 .map(|activation| {
@@ -160,5 +172,36 @@ impl WorthQueryCapabilityDelegationBindings {
                 })
                 .transpose()?,
         })
+    }
+}
+
+/// Workflow binding and lineage appear together (installation refuses a
+/// mixture); a standing grant lowers neither.
+fn lineage_bindings(
+    contract: &ErasedApplicationCapabilityContract,
+    layout: &WorthQueryPrimaryGraphLayout,
+) -> Result<Option<WorthQueryCapabilityLineageBindings>, WorthQueryOperationAuthorizationDenial> {
+    let workflow = contract.constraints().currentness().workflow();
+    match (workflow, contract.delegation().lineage()) {
+        (None, None) => Ok(None),
+        (Some(workflow), Some(lineage)) => Ok(Some(WorthQueryCapabilityLineageBindings {
+            parent: relation(
+                layout,
+                lineage.parent(),
+                RelationalAuthorizationTraversalDirection::Forward,
+            )?,
+            grantor: relation(
+                layout,
+                lineage.grantor(),
+                RelationalAuthorizationTraversalDirection::Reverse,
+            )?,
+            grant_workflow: field_locator(layout, workflow.grant())?,
+            resource_workflow: field_locator(layout, workflow.resource())?,
+            remaining: field_locator(layout, lineage.limit())?,
+        })),
+        _ => Err(super::super::authorization_denial(
+            contract.name(),
+            "capability tenure mixes workflow and standing bindings",
+        )),
     }
 }
