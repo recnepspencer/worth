@@ -1,7 +1,7 @@
 //! Cold-aware merge-preparation guards for named entity/relation lineage and
 //! persistent group lineage after a merge base.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::lineage::data::events::{LineageEventKind, LineageEventRecord};
@@ -58,19 +58,16 @@ impl LineageSubsystem {
         };
         let residency = self.event_residency.read().clone();
         if let Some(residency) = residency {
-            let mut branches = BTreeSet::new();
-            let mut max_bound = c;
-            for (branch, &bound) in &bounds {
-                if bound > c {
-                    branches.insert(branch.clone());
-                    max_bound = max_bound.max(bound);
-                }
-            }
-            residency.visit_after(execution, &branches, c, max_bound, |row| {
+            let branch_bounds: BTreeMap<BranchId, CommitId> = bounds
+                .iter()
+                .filter(|&(_, &bound)| bound > c)
+                .map(|(branch, &bound)| (branch.clone(), bound))
+                .collect();
+            residency.visit_after(execution, &branch_bounds, c, |row| {
                 let at = row.publication_commit_id;
                 if at > c
                     && is_named_lineage_event(&row.event)
-                    && bounds
+                    && branch_bounds
                         .get(row.event.branch_id())
                         .is_some_and(|bound| at <= *bound)
                 {

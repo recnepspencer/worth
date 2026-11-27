@@ -2,33 +2,17 @@
 //! lineage edges recorded at each commit.
 //!
 //! `NameEntry` is deliberately not `Clone`: its timeline grows with every
-//! commit that touches the name, so a copy is O(history). The index journals
-//! a touched entry by its history lengths alone (`mark` / `truncate_to`), and
-//! a branch fork shares entries copy-on-write via `TieredMap`.
+//! commit that touches the name, so an unintended copy is fenced at compile
+//! time. Internally, its histories use persistent `im::OrdMap` tables and
+//! `Arc`-shared successor lists so both `duplicate_for_branch_fork` and
+//! single-descent commit-key predecessor lookups stay strictly `O(1)` / `O(log n)`.
+
+use std::sync::Arc;
 
 use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::lineage::data::name_resolution::{PersistentNameKey, PersistentNameTarget};
 use crate::contracts::lineage::data::naming::{PersistentNameBirthParts, PersistentNameIdentity};
-
-/// Binary search partition point on a sorted `im::Vector`.
-///
-/// Complexity: O(log n) indexed probes, zero allocation.
-pub(super) fn partition_point_im<T: Clone>(
-    vec: &im::Vector<T>,
-    mut pred: impl FnMut(&T) -> bool,
-) -> usize {
-    let (mut left, mut right) = (0, vec.len());
-    while left < right {
-        let mid = left + (right - left) / 2;
-        if pred(&vec[mid]) {
-            left = mid + 1;
-        } else {
-            right = mid;
-        }
-    }
-    left
-}
 
 /// What a name designates from one commit until its next timeline entry.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,21 +43,63 @@ pub(crate) enum NameOrigin {
 
 crate::lineage::clone_fences::assert_not_clone!(NameEntry);
 
-/// One record-to-lineage binding epoch, including its retirement/transition
-/// commit when the lineage ended so cold historical forks never resurrect
-/// retired unnamed lineages.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct HolderEpoch {
-    pub(crate) bound_at: CommitId,
-    pub(crate) lineage: LineageId,
-    pub(crate) ended_at: Option<CommitId>,
+/// One record's persistent binding-epoch history, keyed by `(bound_at, lineage)`
+/// with its optional retirement/transition commit `ended_at`.
+///
+/// Backed by `im::OrdMap` so fork copy-on-write is `O(1)` and historical
+/// predecessor lookups descend the tree once in `O(log e)`.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct HolderEpochs(pub(crate) im::OrdMap<(CommitId, LineageId), Option<CommitId>>);
+
+impl HolderEpochs {
+    pub(crate) fn latest(&self) -> Option<(CommitId, LineageId, Option<CommitId>)> {
+        self.0
+            .get_max()
+            .map(|((bound_at, lineage), ended_at)| (*bound_at, *lineage, *ended_at))
+    }
+
+    /// The lineage bound to this holder at `basis` in one `O(log e)` descent.
+    pub(crate) fn lineage_at(&self, basis: CommitId) -> Option<LineageId> {
+        self.0
+            .get_prev(&(basis, LineageId(u64::MAX)))
+            .map(|((_, lineage), _)| *lineage)
+    }
+
+    pub(crate) fn insert_epoch(&mut self, bound_at: CommitId, lineage: LineageId) {
+        self.0.insert((bound_at, lineage), None);
+    }
+
+    pub(crate) fn remove_epoch(&mut self, key: &(CommitId, LineageId)) {
+        self.0.remove(key);
+    }
+
+    /// Inspects epochs immutably in reverse commit order to locate `lineage`'s
+    /// latest binding key before mutating `ended_at`.
+    pub(crate) fn find_latest_key(&self, lineage: LineageId) -> Option<(CommitId, LineageId)> {
+        self.0
+            .iter()
+            .rev()
+            .find(|((_, l), _)| *l == lineage)
+            .map(|(k, _)| *k)
+    }
+
+    pub(crate) fn set_ended_at(
+        &mut self,
+        key: &(CommitId, LineageId),
+        ended_at: Option<CommitId>,
+    ) -> Option<Option<CommitId>> {
+        let slot = self.0.get_mut(key)?;
+        let prior = *slot;
+        *slot = ended_at;
+        Some(prior)
+    }
 }
 
 /// Derived per-name history, rebuilt solely from committed lineage batches.
 ///
-/// Backed by structural persistent `im` collections so copy-on-write fork
-/// duplication is strictly `O(1)` regardless of prior history length while
-/// `NameEntry` itself remains `!Clone`.
+/// Backed by persistent `im::OrdMap` tables and `Arc`-shared successor vectors
+/// so copy-on-write fork duplication is `O(1)` and commit-key predecessor
+/// lookups take one `O(log n)` descent while `NameEntry` remains `!Clone`.
 #[derive(Debug, PartialEq, Eq)]
 pub struct NameEntry {
     /// The canonical birth or group scheme the name was born from.
@@ -82,9 +108,10 @@ pub struct NameEntry {
     pub(super) born: CommitId,
     /// Strictly ascending commits from birth; each state holds until the
     /// next entry.
-    pub(super) timeline: im::Vector<(CommitId, NameState)>,
-    /// Strictly ascending commits; successors sorted and deduplicated.
-    pub(super) forward_edges: im::Vector<(CommitId, Vec<PersistentNameKey>)>,
+    pub(super) timeline: im::OrdMap<CommitId, NameState>,
+    /// Strictly ascending commits; successors sorted, deduplicated, and
+    /// `Arc`-shared so fork writes never deep-copy historical wide splits.
+    pub(super) forward_edges: im::OrdMap<CommitId, Arc<Vec<PersistentNameKey>>>,
     /// Earliest commit at which each `LineageId` held this name; maintained on
     /// every live write and preserved across retention compaction so
     /// `binds_lineage_by` is strictly `O(log L)` without scanning `timeline`.
@@ -97,11 +124,13 @@ impl NameEntry {
         if let Some(lineage) = live.target.lineage() {
             lineage_commits.insert(lineage, born_at);
         }
+        let mut timeline = im::OrdMap::new();
+        timeline.insert(born_at, NameState::Live(live));
         Self {
             origin,
             born: born_at,
-            timeline: im::vector![(born_at, NameState::Live(live))],
-            forward_edges: im::Vector::new(),
+            timeline,
+            forward_edges: im::OrdMap::new(),
             lineage_commits,
         }
     }
@@ -139,18 +168,18 @@ impl NameEntry {
     /// The state in force at `basis` and the commit it began, or `None` when
     /// the name was born after `basis`.
     ///
-    /// Complexity: O(log t) in this name's own timeline length.
+    /// Complexity: single `O(log t)` B-tree predecessor descent.
     pub(crate) fn state_at(&self, basis: CommitId) -> Option<(CommitId, &NameState)> {
-        let after = partition_point_im(&self.timeline, |(commit, _)| *commit <= basis);
-        let (commit, state) = self.timeline.get(after.checked_sub(1)?)?;
-        Some((*commit, state))
+        self.timeline
+            .get_prev(&basis)
+            .map(|(commit, state)| (*commit, state))
     }
 
     /// The latest state and commit, as of the newest ingested commit.
     pub(crate) fn last_state(&self) -> (CommitId, &NameState) {
         let (commit, state) = self
             .timeline
-            .back()
+            .get_max()
             .expect("a name entry always holds its birth state");
         (*commit, state)
     }
@@ -186,11 +215,10 @@ impl NameEntry {
     /// The lineage this name held until it ended at `ended_at`; `None` for
     /// groups.
     ///
-    /// Complexity: O(log t) binary search plus O(1) immediate predecessor check.
+    /// Complexity: single `O(log t)` B-tree predecessor descent.
     pub(crate) fn lineage_ended_at(&self, ended_at: CommitId) -> Option<LineageId> {
-        let before = partition_point_im(&self.timeline, |(commit, _)| *commit < ended_at);
-        let prev = before.checked_sub(1)?;
-        match self.timeline.get(prev) {
+        let prev_limit = ended_at.0.checked_sub(1)?;
+        match self.timeline.get_prev(&CommitId(prev_limit)) {
             Some((_, NameState::Live(live))) => live.target.lineage(),
             _ => None,
         }
@@ -207,13 +235,11 @@ impl NameEntry {
 
     /// Forward lineage edges recorded at exactly `commit`.
     ///
-    /// Complexity: O(log e) in this name's own edge-commit count.
+    /// Complexity: single `O(log e)` B-tree lookup.
     pub(crate) fn edges_at(&self, commit: CommitId) -> &[PersistentNameKey] {
-        let position = partition_point_im(&self.forward_edges, |(at, _)| *at < commit);
-        match self.forward_edges.get(position) {
-            Some((at, successors)) if *at == commit => successors.as_slice(),
-            _ => &[],
-        }
+        self.forward_edges
+            .get(&commit)
+            .map_or(&[], |successors| successors.as_slice())
     }
 
     /// Sets the state from `commit` on; a later write in the same commit
@@ -229,10 +255,7 @@ impl NameEntry {
         } else {
             None
         };
-        match self.timeline.back_mut() {
-            Some((at, last)) if *at == commit => *last = state,
-            _ => self.timeline.push_back((commit, state)),
-        }
+        self.timeline.insert(commit, state);
         inserted
     }
 
@@ -255,30 +278,31 @@ impl NameEntry {
         }
     }
 
-    /// How long this name's histories are now: what rollback truncates to.
-    pub(super) fn mark(&self) -> super::journal::EntryMark {
-        super::journal::EntryMark {
-            timeline: self.timeline.len(),
-            edges: self.forward_edges.len(),
-        }
-    }
-
-    /// Drops every timeline state and edge row recorded after `mark`.
+    /// Drops the timeline state and forward-edge row recorded by the rolling-
+    /// back batch at `commit` (which is strictly above pre-batch head).
     ///
-    /// Complexity: O(rows dropped), the rows one batch appended.
-    pub(super) fn truncate_to(&mut self, mark: super::journal::EntryMark) {
-        self.timeline.truncate(mark.timeline);
-        self.forward_edges.truncate(mark.edges);
+    /// Complexity: O(log t + log e).
+    pub(super) fn rollback_commit(&mut self, commit: CommitId) {
+        self.timeline.remove(&commit);
+        self.forward_edges.remove(&commit);
     }
 
+    /// Appends `successor` to `commit`'s forward edges. Inspects `commit`
+    /// immutably first and shares each commit's successor list behind `Arc`, so
+    /// fork writes never clone historical successor lists.
     pub(crate) fn add_edge(&mut self, commit: CommitId, successor: PersistentNameKey) {
-        match self.forward_edges.back_mut() {
-            Some((at, successors)) if *at == commit => {
+        if let Some(existing) = self.forward_edges.get(&commit) {
+            if existing.binary_search(&successor).is_ok() {
+                return;
+            }
+            if let Some(slot) = self.forward_edges.get_mut(&commit) {
+                let successors = Arc::make_mut(slot);
                 if let Err(position) = successors.binary_search(&successor) {
                     successors.insert(position, successor);
                 }
             }
-            _ => self.forward_edges.push_back((commit, vec![successor])),
+        } else {
+            self.forward_edges.insert(commit, Arc::new(vec![successor]));
         }
     }
 }

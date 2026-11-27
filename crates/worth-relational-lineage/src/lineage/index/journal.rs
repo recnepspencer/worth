@@ -4,10 +4,11 @@
 //! A batch's commit is strictly above the index head, so ingesting it never
 //! rewrites a timeline entry, edge row, tenure entry, or epoch earlier commits
 //! wrote (other than closing a holder epoch's `ended_at`). Unshared resident
-//! entries are journaled strictly by O(1) tail marks, newly inserted lineage
-//! ids, and overwritten `ended_at` cells with zero history cloning; absent
-//! delta slots roll back by removing the delta slot; shared fork slots
-//! (`Arc::strong_count > 1`) roll back in O(1) via `restore_delta_arc`.
+//! entries roll back in `O(log n)` per touched key by removing the batch's
+//! newly inserted commit/epoch keys and restoring overwritten `ended_at` cells
+//! with zero history cloning; absent delta slots roll back by removing the
+//! delta slot; shared fork slots (any AVL path ancestor or value `Arc` with
+//! `strong_count > 1`) roll back in `O(log N)` via `restore_delta_arc`.
 
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -18,22 +19,15 @@ use worth_relational_contracts::internal_port::lineage::data::name_resolution::P
 use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentity;
 
 use super::member_groups::MemberTenures;
-use super::{HolderEpoch, LineageHolder, NameEntry, PersistentNameBranchIndex};
+use super::{HolderEpochs, LineageHolder, NameEntry, PersistentNameBranchIndex};
 use crate::lineage::tiered::TieredMap;
 
 type Slot<V> = Option<Option<V>>;
 
-/// The lengths of one name's histories before a batch first touched it.
-#[derive(Clone, Copy, Debug)]
-pub(super) struct EntryMark {
-    pub(super) timeline: usize,
-    pub(super) edges: usize,
-}
-
 enum NameUndo {
     RemoveFromDelta,
     RestoreArc(Arc<Option<NameEntry>>),
-    Truncate(EntryMark),
+    RemoveCommit(CommitId),
 }
 
 enum MemberDeltaUndo {
@@ -41,38 +35,45 @@ enum MemberDeltaUndo {
     RestoreArc(Arc<Option<MemberTenures>>),
 }
 
+enum TenureUndo {
+    RemoveScheme,
+    RemoveCommit(CommitId),
+}
+
 enum HolderDeltaUndo {
     RemoveFromDelta,
-    RestoreArc(Arc<Option<im::Vector<HolderEpoch>>>),
-    Truncate(usize),
+    RestoreArc(Arc<Option<HolderEpochs>>),
+    InPlace,
 }
 
 /// Tail-only undo state for one batch's ingestion.
 ///
-/// Complexity: O(1) per touched name, member tenure, lineage binding, or
-/// holder epoch change to record and restore; independent of prior history.
+/// Complexity: O(log history) per touched name, member tenure, lineage binding,
+/// or holder epoch change to record and restore; independent of prior history.
 #[derive(Default)]
 pub(super) struct IngestionJournal {
     saved_names: HashSet<PersistentNameKey>,
-    truncated_names: HashSet<PersistentNameKey>,
+    in_place_names: HashSet<PersistentNameKey>,
     names: Vec<(PersistentNameKey, NameUndo)>,
     added_lineage_commits: Vec<(PersistentNameKey, LineageId)>,
     saved_member_deltas: HashSet<PersistentNameIdentity>,
     member_deltas: Vec<(PersistentNameIdentity, MemberDeltaUndo)>,
     saved_tenures: HashSet<(PersistentNameIdentity, String)>,
-    tenures: Vec<(PersistentNameIdentity, String, Option<usize>)>,
+    tenures: Vec<(PersistentNameIdentity, String, TenureUndo)>,
     lineage_names: Vec<(LineageId, Slot<PersistentNameKey>)>,
     lineage_holders: Vec<(LineageId, Slot<LineageHolder>)>,
     saved_holders: HashSet<LineageHolder>,
-    truncated_holders: HashSet<LineageHolder>,
+    in_place_holders: HashSet<LineageHolder>,
     holder_deltas: Vec<(LineageHolder, HolderDeltaUndo)>,
-    holder_ended: Vec<(LineageHolder, usize, Option<CommitId>)>,
+    added_holder_epochs: Vec<(LineageHolder, (CommitId, LineageId))>,
+    holder_ended: Vec<(LineageHolder, (CommitId, LineageId), Option<CommitId>)>,
 }
 
 impl IngestionJournal {
     pub(super) fn save_name(
         &mut self,
         key: PersistentNameKey,
+        commit: CommitId,
         names: &TieredMap<PersistentNameKey, NameEntry>,
     ) {
         if !self.saved_names.insert(key) {
@@ -82,9 +83,9 @@ impl IngestionJournal {
             None => NameUndo::RemoveFromDelta,
             Some((arc, true)) => NameUndo::RestoreArc(Arc::clone(arc)),
             Some((arc, false)) => match arc.as_ref() {
-                Some(entry) => {
-                    self.truncated_names.insert(key);
-                    NameUndo::Truncate(entry.mark())
+                Some(_) => {
+                    self.in_place_names.insert(key);
+                    NameUndo::RemoveCommit(commit)
                 }
                 None => NameUndo::RestoreArc(Arc::clone(arc)),
             },
@@ -97,7 +98,7 @@ impl IngestionJournal {
         key: PersistentNameKey,
         lineage: LineageId,
     ) {
-        if self.truncated_names.contains(&key) {
+        if self.in_place_names.contains(&key) {
             self.added_lineage_commits.push((key, lineage));
         }
     }
@@ -106,6 +107,7 @@ impl IngestionJournal {
         &mut self,
         member: PersistentNameIdentity,
         scheme: &str,
+        commit: CommitId,
         members: &TieredMap<PersistentNameIdentity, MemberTenures>,
     ) {
         if self.saved_member_deltas.contains(&member) {
@@ -130,8 +132,12 @@ impl IngestionJournal {
                 }
                 Some(tenures) => {
                     if self.saved_tenures.insert((member, scheme.to_owned())) {
-                        let length = tenures.get(scheme).map(im::Vector::len);
-                        self.tenures.push((member, scheme.to_owned(), length));
+                        let undo = if tenures.contains_key(scheme) {
+                            TenureUndo::RemoveCommit(commit)
+                        } else {
+                            TenureUndo::RemoveScheme
+                        };
+                        self.tenures.push((member, scheme.to_owned(), undo));
                     }
                 }
             },
@@ -158,7 +164,7 @@ impl IngestionJournal {
     pub(super) fn save_holder_lineages(
         &mut self,
         holder: LineageHolder,
-        epochs: &TieredMap<LineageHolder, im::Vector<HolderEpoch>>,
+        epochs: &TieredMap<LineageHolder, HolderEpochs>,
     ) {
         if !self.saved_holders.insert(holder) {
             return;
@@ -167,9 +173,9 @@ impl IngestionJournal {
             None => HolderDeltaUndo::RemoveFromDelta,
             Some((arc, true)) => HolderDeltaUndo::RestoreArc(Arc::clone(arc)),
             Some((arc, false)) => match arc.as_ref() {
-                Some(vec) => {
-                    self.truncated_holders.insert(holder);
-                    HolderDeltaUndo::Truncate(vec.len())
+                Some(_) => {
+                    self.in_place_holders.insert(holder);
+                    HolderDeltaUndo::InPlace
                 }
                 None => HolderDeltaUndo::RestoreArc(Arc::clone(arc)),
             },
@@ -177,20 +183,29 @@ impl IngestionJournal {
         self.holder_deltas.push((holder, undo));
     }
 
-    pub(super) fn record_holder_ended(
+    pub(super) fn record_added_holder_epoch(
         &mut self,
         holder: LineageHolder,
-        index: usize,
-        prior_ended_at: Option<CommitId>,
+        key: (CommitId, LineageId),
     ) {
-        if self.truncated_holders.contains(&holder) {
-            self.holder_ended.push((holder, index, prior_ended_at));
+        if self.in_place_holders.contains(&holder) {
+            self.added_holder_epochs.push((holder, key));
         }
     }
 
-    /// Truncates every touched resident history back to its saved length,
-    /// removes newly inserted lineage commits and delta slots, restores
-    /// overwritten `ended_at` markers, and restores shared arcs in O(batch).
+    pub(super) fn record_holder_ended(
+        &mut self,
+        holder: LineageHolder,
+        key: (CommitId, LineageId),
+        prior_ended_at: Option<CommitId>,
+    ) {
+        if self.in_place_holders.contains(&holder) {
+            self.holder_ended.push((holder, key, prior_ended_at));
+        }
+    }
+
+    /// Reverses every touched resident entry, newly inserted lineage commit,
+    /// tenure update, and holder epoch update in `O(batch * log history)`.
     pub(super) fn restore(self, index: &mut PersistentNameBranchIndex) {
         for (key, lineage) in self.added_lineage_commits.into_iter().rev() {
             if let Ok(Some(entry)) = index
@@ -204,27 +219,27 @@ impl IngestionJournal {
             match undo {
                 NameUndo::RemoveFromDelta => index.names.remove_delta(&key),
                 NameUndo::RestoreArc(arc) => index.names.restore_delta_arc(key, arc),
-                NameUndo::Truncate(mark) => {
+                NameUndo::RemoveCommit(commit) => {
                     if let Ok(Some(entry)) = index
                         .names
                         .get_mut_with(&key, NameEntry::duplicate_for_branch_fork)
                     {
-                        entry.truncate_to(mark);
+                        entry.rollback_commit(commit);
                     }
                 }
             }
         }
-        for (member, scheme, length) in self.tenures.into_iter().rev() {
+        for (member, scheme, undo) in self.tenures.into_iter().rev() {
             let Ok(Some(tenures)) = index.member_groups.get_mut(&member) else {
                 continue;
             };
-            match length {
-                Some(length) => {
+            match undo {
+                TenureUndo::RemoveCommit(commit) => {
                     if let Some(tenure) = tenures.get_mut(&scheme) {
-                        tenure.truncate(length);
+                        tenure.remove(&commit);
                     }
                 }
-                None => {
+                TenureUndo::RemoveScheme => {
                     tenures.remove(&scheme);
                 }
             }
@@ -243,11 +258,14 @@ impl IngestionJournal {
         for (key, slot) in self.lineage_holders.into_iter().rev() {
             index.lineage_holders.restore_slot(key, slot);
         }
-        for (holder, pos, prior_ended_at) in self.holder_ended.into_iter().rev() {
-            if let Ok(Some(epochs)) = index.holder_lineages.get_mut(&holder)
-                && let Some(epoch) = epochs.get_mut(pos)
-            {
-                epoch.ended_at = prior_ended_at;
+        for (holder, key, prior_ended_at) in self.holder_ended.into_iter().rev() {
+            if let Ok(Some(epochs)) = index.holder_lineages.get_mut(&holder) {
+                let _ = epochs.set_ended_at(&key, prior_ended_at);
+            }
+        }
+        for (holder, key) in self.added_holder_epochs.into_iter().rev() {
+            if let Ok(Some(epochs)) = index.holder_lineages.get_mut(&holder) {
+                epochs.remove_epoch(&key);
             }
         }
         for (holder, undo) in self.holder_deltas.into_iter().rev() {
@@ -256,11 +274,7 @@ impl IngestionJournal {
                 HolderDeltaUndo::RestoreArc(arc) => {
                     index.holder_lineages.restore_delta_arc(holder, arc);
                 }
-                HolderDeltaUndo::Truncate(len) => {
-                    if let Ok(Some(epochs)) = index.holder_lineages.get_mut(&holder) {
-                        epochs.truncate(len);
-                    }
-                }
+                HolderDeltaUndo::InPlace => {}
             }
         }
     }
@@ -300,8 +314,6 @@ mod tests {
             base.names.insert(make_key(b), make_entry(b, u64::from(b)));
         }
         let mut forked = base.fork_to(BranchId("fork".into()), None);
-        // Pick a non-root descendant whose own value Arc has strong_count == 1
-        // while its AVL root ancestor has strong_count == 2.
         let target = make_key(1);
         let (orig_arc, shared) = forked
             .names
@@ -312,10 +324,10 @@ mod tests {
         let orig_ptr = Arc::as_ptr(orig_arc);
 
         let mut journal = IngestionJournal::default();
-        journal.save_name(target, &forked.names);
+        journal.save_name(target, CommitId(99), &forked.names);
         assert!(
-            !journal.truncated_names.contains(&target),
-            "fork-shared row must use RestoreArc, not Truncate"
+            !journal.in_place_names.contains(&target),
+            "fork-shared row must use RestoreArc, not RemoveCommit"
         );
         forked
             .names
@@ -335,5 +347,36 @@ mod tests {
             forked.names.get(&target).unwrap().unwrap().current(),
             NameState::Live(_)
         ));
+    }
+
+    #[test]
+    fn fork_write_shares_historical_wide_split_successor_arc() {
+        let mut base = PersistentNameBranchIndex::new(BranchId("main".into()), None);
+        let target = make_key(1);
+        let mut entry = make_entry(1, 1);
+        for s in 2u8..=40 {
+            entry.add_edge(CommitId(5), make_key(s));
+        }
+        base.names.insert(target, entry);
+        let mut forked = base.fork_to(BranchId("fork".into()), None);
+        let forked_entry = forked
+            .names
+            .get_mut_with(&target, NameEntry::duplicate_for_branch_fork)
+            .unwrap()
+            .unwrap();
+        forked_entry.set_state(CommitId(10), NameState::Ended);
+        forked_entry.add_edge(CommitId(10), make_key(99));
+
+        let base_entry = base.names.get(&target).unwrap().unwrap();
+        let fork_entry = forked.names.get(&target).unwrap().unwrap();
+        assert!(
+            Arc::ptr_eq(
+                base_entry.forward_edges.get(&CommitId(5)).unwrap(),
+                fork_entry.forward_edges.get(&CommitId(5)).unwrap(),
+            ),
+            "fork write must share prior split successor list behind Arc without copying"
+        );
+        assert_eq!(fork_entry.edges_at(CommitId(10)), &[make_key(99)]);
+        assert!(base_entry.edges_at(CommitId(10)).is_empty());
     }
 }

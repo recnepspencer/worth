@@ -83,10 +83,10 @@ impl AuthoritativeBranchNamingState {
         for (holder, epochs) in holder_epochs {
             let holder = to_holder(holder);
             if !named_holders_seen.contains(&holder)
-                && let Some(last) = epochs.back()
-                && last.ended_at.is_none_or(|end| end > fork_commit)
+                && let Some((_, lineage, ended_at)) = epochs.latest()
+                && ended_at.is_none_or(|end| end > fork_commit)
             {
-                state.live_lineages.insert(holder, last.lineage);
+                state.live_lineages.insert(holder, lineage);
             }
         }
         if state.lineage_holders.has_delta()

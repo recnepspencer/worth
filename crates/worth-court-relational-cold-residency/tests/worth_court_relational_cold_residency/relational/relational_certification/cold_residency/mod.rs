@@ -130,6 +130,7 @@ mod bounded_naming_fixture;
 mod bounded_naming_hardening;
 mod bounded_naming_hardening_ack;
 mod bounded_naming_r10;
+mod bounded_naming_r12;
 mod bounded_naming_r2;
 mod bounded_naming_r2_ack;
 mod bounded_naming_r3;

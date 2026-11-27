@@ -4,27 +4,27 @@ use crate::contracts::lineage::data::naming::{PersistentNameBirthParts, Persiste
 use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
 use crate::lineage::naming_pages::codec::{read_serde, write_serde, NamingCodec, Reader, Writer};
 
-use super::{HolderEpoch, LineageHolder, LiveName, NameEntry, NameOrigin, NameState};
+use super::{HolderEpochs, LineageHolder, LiveName, NameEntry, NameOrigin, NameState};
 
-impl NamingCodec for HolderEpoch {
+impl NamingCodec for HolderEpochs {
     fn write(&self, out: &mut Writer) {
-        self.bound_at.write(out);
-        self.lineage.write(out);
-        self.ended_at.write(out);
+        self.0.write(out);
     }
     fn read(input: &mut Reader<'_>) -> Result<Self, Cause> {
-        let bound_at = NamingCodec::read(input)?;
-        let lineage = NamingCodec::read(input)?;
-        let ended_at: Option<crate::contracts::history::data::coordinates::CommitId> =
-            NamingCodec::read(input)?;
-        if ended_at.is_some_and(|end| end < bound_at) {
+        let map = im::OrdMap::<
+            (
+                crate::contracts::history::data::coordinates::CommitId,
+                crate::contracts::identity::data::primitives::LineageId,
+            ),
+            Option<crate::contracts::history::data::coordinates::CommitId>,
+        >::read(input)?;
+        if map
+            .iter()
+            .any(|((bound_at, _), ended_at)| ended_at.is_some_and(|end| end < *bound_at))
+        {
             return Err(Cause::Damaged);
         }
-        Ok(Self {
-            bound_at,
-            lineage,
-            ended_at,
-        })
+        Ok(Self(map))
     }
 }
 
@@ -184,19 +184,10 @@ impl NamingCodec for NameEntry {
             forward_edges: NamingCodec::read(input)?,
             lineage_commits: NamingCodec::read(input)?,
         };
-        let ascending = |commits: Vec<u64>| commits.windows(2).all(|pair| pair[0] < pair[1]);
         if entry
             .timeline
-            .front()
+            .get_min()
             .is_none_or(|(first, _)| *first < entry.born)
-            || !ascending(entry.timeline.iter().map(|(commit, _)| commit.0).collect())
-            || !ascending(
-                entry
-                    .forward_edges
-                    .iter()
-                    .map(|(commit, _)| commit.0)
-                    .collect(),
-            )
         {
             return Err(Cause::Damaged);
         }

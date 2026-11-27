@@ -3,6 +3,7 @@ use crate::contracts::storage::data::storage_unavailable::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause, RelationalStorageUnavailableCauseOwnerPort as _,
 };
+mod branch_window;
 pub mod member_export;
 use super::event_page::{self, ReadmittedLineageEventPage};
 use crate::contracts::history::data::commit_receipt::RelationalCommitReceipt;
@@ -39,6 +40,7 @@ pub(super) struct RuntimeLineageEventResidency {
     pub(super) custody: Mutex<NativeSourceMemberState>,
     pages: BTreeMap<RelationalDurableMemberLocator, Arc<EventPageCell>>,
     routes: BTreeMap<RelationalLineageEventPageRoute, Vec<Arc<EventPageCell>>>,
+    branch_windows: branch_window::BranchEventWindowIndex,
     commit_bindings: LineageCommitBinding,
 }
 /// The checkpoint's indexed receipt for a commit, read lazily from its paged
@@ -97,10 +99,12 @@ impl RuntimeLineageEventResidency {
             }
             pages.insert(descriptor.member, cell);
         }
+        let branch_windows = branch_window::BranchEventWindowIndex::build(pages.values().cloned());
         Ok(Self {
             custody: Mutex::new(NativeSourceMemberState::new(source.clone(), placement)),
             pages,
             routes,
+            branch_windows,
             commit_bindings: commits,
         })
     }
@@ -158,50 +162,6 @@ impl RuntimeLineageEventResidency {
                 cell.demand(execution, source.as_ref(), &self.commit_bindings)
             })
             .collect()
-    }
-
-    /// Visits event pages routed to `branches` whose publication-commit span
-    /// overlaps `(after, max_bound]` in bounded one-page windows without
-    /// retaining cold pages in resident memory.
-    pub(super) fn visit_after(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        branches: &BTreeSet<BranchId>,
-        after: CommitId,
-        max_bound: CommitId,
-        mut visit: impl FnMut(&RelationalCheckpointLineageEventRow),
-    ) -> Result<(), Failure> {
-        crate::contracts::execution::request_custody::check_request(execution)
-            .map_err(Failure::Request)?;
-        if branches.is_empty() || max_bound <= after {
-            return Ok(());
-        }
-        let mut selected = BTreeMap::new();
-        for (route, pages) in &self.routes {
-            if !branches.contains(&route.branch_id) {
-                continue;
-            }
-            for page in pages {
-                let d = &page.descriptor;
-                if d.last_publication_commit != 0
-                    && (d.last_publication_commit <= after.0
-                        || d.first_publication_commit > max_bound.0)
-                {
-                    continue;
-                }
-                selected.entry(d.member).or_insert(page);
-            }
-        }
-        for cell in selected.into_values() {
-            let source = self.source().map_err(|cause| cell.storage_failure(cause))?;
-            cell.visit_ephemeral(
-                execution,
-                source.as_ref(),
-                &self.commit_bindings,
-                &mut visit,
-            )?;
-        }
-        Ok(())
     }
 }
 impl EventPageCell {

@@ -21,7 +21,7 @@ use crate::contracts::lineage::data::name_resolution::{PersistentNameKey, Persis
 
 use super::journal::IngestionJournal;
 use super::{
-    Carriers, HolderEpoch, LineageHolder, LiveName, NameEntry, NameOrigin, NameState,
+    Carriers, HolderEpochs, LineageHolder, LiveName, NameEntry, NameOrigin, NameState,
     PersistentNameBranchIndex, PersistentNameCommittedBatch, PersistentNameIndexDenial,
 };
 
@@ -68,12 +68,9 @@ impl PersistentNameBranchIndex {
                     self.lineage_holders.insert(lineage, holder);
                     journal.save_holder_lineages(holder, &self.holder_lineages);
                     self.holder_lineages
-                        .get_or_insert_with(holder, im::Vector::new)?
-                        .push_back(HolderEpoch {
-                            bound_at: batch.commit,
-                            lineage,
-                            ended_at: None,
-                        });
+                        .get_or_insert_with(holder, HolderEpochs::default)?
+                        .insert_epoch(batch.commit, lineage);
+                    journal.record_added_holder_epoch(holder, (batch.commit, lineage));
                 }
             }
         }
@@ -301,13 +298,10 @@ impl PersistentNameBranchIndex {
             {
                 journal.save_holder_lineages(holder, &self.holder_lineages);
                 if let Some(epochs) = self.holder_lineages.get_mut(&holder)?
-                    && let Some(idx) = (0..epochs.len())
-                        .rev()
-                        .find(|&idx| epochs[idx].lineage == *source)
+                    && let Some(epoch_key) = epochs.find_latest_key(*source)
+                    && let Some(prior_ended) = epochs.set_ended_at(&epoch_key, Some(commit))
                 {
-                    let prior_ended = epochs[idx].ended_at;
-                    epochs[idx].ended_at = Some(commit);
-                    journal.record_holder_ended(holder, idx, prior_ended);
+                    journal.record_holder_ended(holder, epoch_key, prior_ended);
                 }
             }
             let Some(key) = self.lineage_names.get(source)?.map(|key| *key) else {

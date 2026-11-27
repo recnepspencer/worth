@@ -11,57 +11,74 @@
 //! `Retired` at any retained basis. A name retired before `F` compacts to its
 //! tombstone: its last live target (stripped of carriers), its retirement
 //! and the edges recorded there.
-use std::collections::BTreeSet;
-
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::lineage::data::name_resolution::PersistentNameKey;
 
-use super::entry::partition_point_im;
 use super::member_groups::{MemberTenure, MemberTenures};
 use super::{
-    HolderEpoch, NameEntry, NameState, PersistentNameBranchIndex, PersistentNameIndexDenial,
+    HolderEpochs, NameEntry, NameState, PersistentNameBranchIndex, PersistentNameIndexDenial,
 };
 
-/// The first slot of a commit-ordered run still read at bases `>= floor`:
-/// the latest entry at or before `floor`, or the first entry after it.
+/// The first commit in a commit-keyed history still read at bases `>= floor`:
+/// the latest entry at or before `floor`, or the earliest entry after it.
 ///
-/// Complexity: O(log n).
-pub(crate) fn first_retained<T: Clone>(run: &im::Vector<(CommitId, T)>, floor: CommitId) -> usize {
-    partition_point_im(run, |(commit, _)| *commit <= floor).saturating_sub(1)
+/// Complexity: single `O(log n)` B-tree descent.
+pub(crate) fn first_retained_commit<T: Clone>(
+    run: &im::OrdMap<CommitId, T>,
+    floor: CommitId,
+) -> Option<CommitId> {
+    run.get_prev(&floor)
+        .map(|(c, _)| *c)
+        .or_else(|| run.get_min().map(|(c, _)| *c))
 }
 
 /// Compacts one name entry for `floor`; `None` when nothing changes.
 ///
 /// Complexity: O(t + e) in the entry's own timeline and edge runs.
 pub(crate) fn compact_entry(entry: &NameEntry, floor: CommitId) -> Option<NameEntry> {
-    let mut keep = first_retained(&entry.timeline, floor);
+    let mut keep = first_retained_commit(&entry.timeline, floor)?;
     // An ended state at the floor still reports the lineage that ended there.
-    if matches!(entry.timeline.get(keep), Some((_, NameState::Ended))) {
-        keep = (0..keep)
+    if matches!(entry.timeline.get(&keep), Some(NameState::Ended)) {
+        if let Some((live_commit, _)) = entry
+            .timeline
+            .range(..keep)
             .rev()
-            .find(|&idx| matches!(entry.timeline[idx], (_, NameState::Live(_))))
-            .unwrap_or(keep);
-    }
-    let mut timeline = entry.timeline.clone().split_off(keep);
-    let effective = first_retained(&timeline, floor);
-    let mut stripped = false;
-    for idx in 0..effective {
-        if matches!(&timeline[idx].1, NameState::Live(live) if !live.carriers.is_empty())
-            && let NameState::Live(live) = &mut timeline[idx].1
+            .find(|(_, state)| matches!(state, NameState::Live(_)))
         {
-            live.carriers.clear();
-            stripped = true;
+            keep = *live_commit;
         }
     }
-    let read: BTreeSet<CommitId> = timeline.iter().map(|(commit, _)| *commit).collect();
-    let forward_edges = entry
+    let dropped_timeline = entry.timeline.get_min().is_some_and(|(min, _)| *min < keep);
+    let mut timeline: im::OrdMap<CommitId, NameState> = entry
+        .timeline
+        .range(keep..)
+        .map(|(commit, state)| (*commit, state.clone()))
+        .collect();
+    let effective = first_retained_commit(&timeline, floor);
+    let mut stripped = false;
+    if let Some(effective) = effective {
+        let to_strip: Vec<CommitId> = timeline
+            .range(..effective)
+            .filter_map(|(commit, state)| match state {
+                NameState::Live(live) if !live.carriers.is_empty() => Some(*commit),
+                _ => None,
+            })
+            .collect();
+        for commit in to_strip {
+            if let Some(NameState::Live(live)) = timeline.get_mut(&commit) {
+                live.carriers.clear();
+                stripped = true;
+            }
+        }
+    }
+    let forward_edges: im::OrdMap<_, _> = entry
         .forward_edges
         .iter()
-        .filter(|(commit, _)| *commit >= floor || read.contains(commit))
-        .cloned()
-        .collect::<im::Vector<_>>();
-    if keep == 0 && !stripped && forward_edges.len() == entry.forward_edges.len() {
+        .filter(|(commit, _)| **commit >= floor || timeline.contains_key(commit))
+        .map(|(commit, edges)| (*commit, edges.clone()))
+        .collect();
+    if !dropped_timeline && !stripped && forward_edges.len() == entry.forward_edges.len() {
         return None;
     }
     Some(NameEntry {
@@ -75,18 +92,27 @@ pub(crate) fn compact_entry(entry: &NameEntry, floor: CommitId) -> Option<NameEn
 
 /// Compacts one record's binding epochs; `None` when nothing changes.
 ///
-/// Complexity: O(log e).
-pub(crate) fn compact_epochs(
-    epochs: &im::Vector<HolderEpoch>,
-    floor: CommitId,
-) -> Option<im::Vector<HolderEpoch>> {
-    let keep = partition_point_im(epochs, |epoch| epoch.bound_at <= floor).saturating_sub(1);
-    (keep > 0).then(|| epochs.clone().split_off(keep))
+/// Complexity: O(e) over retained suffix.
+pub(crate) fn compact_epochs(epochs: &HolderEpochs, floor: CommitId) -> Option<HolderEpochs> {
+    let keep = epochs
+        .0
+        .get_prev(&(floor, LineageId(u64::MAX)))
+        .map(|(k, _)| *k)
+        .or_else(|| epochs.0.get_min().map(|(k, _)| *k))?;
+    if !epochs.0.get_min().is_some_and(|(min, _)| *min < keep) {
+        return None;
+    }
+    let retained: im::OrdMap<_, _> = epochs
+        .0
+        .range(keep..)
+        .map(|(key, ended_at)| (*key, *ended_at))
+        .collect();
+    Some(HolderEpochs(retained))
 }
 
 /// Compacts one member's tenures; `Some(None)` removes the member.
 ///
-/// Complexity: O(S * log t) over its S scheme tenures.
+/// Complexity: O(S * t) over its S scheme tenures.
 pub(crate) fn compact_tenures(
     tenures: &MemberTenures,
     floor: CommitId,
@@ -94,11 +120,18 @@ pub(crate) fn compact_tenures(
     let mut changed = false;
     let mut compacted = MemberTenures::new();
     for (scheme, tenure) in tenures {
-        let keep = first_retained(tenure, floor);
-        let run: MemberTenure = tenure.clone().split_off(keep);
-        changed |= keep > 0;
+        let Some(keep) = first_retained_commit(tenure, floor) else {
+            changed = true;
+            continue;
+        };
+        let dropped = tenure.get_min().is_some_and(|(min, _)| *min < keep);
+        let run: MemberTenure = tenure
+            .range(keep..)
+            .map(|(commit, group)| (*commit, *group))
+            .collect();
+        changed |= dropped;
         if run.len() == 1
-            && let Some((at, None)) = run.front()
+            && let Some((at, None)) = run.get_min()
             && *at <= floor
         {
             changed = true;
@@ -195,22 +228,22 @@ impl PersistentNameBranchIndex {
             if entry.born > cutoff {
                 continue;
             }
-            let timeline: im::Vector<_> = entry
+            let timeline: im::OrdMap<_, _> = entry
                 .timeline
-                .into_iter()
-                .filter(|(commit, _)| *commit <= cutoff)
+                .range(..=cutoff)
+                .map(|(commit, state)| (*commit, state.clone()))
                 .collect();
             if timeline.is_empty() {
                 continue;
             }
             note(entry.born);
-            for (c, _) in &timeline {
+            for c in timeline.keys() {
                 note(*c);
             }
-            let forward_edges: im::Vector<_> = entry
+            let forward_edges: im::OrdMap<_, _> = entry
                 .forward_edges
-                .into_iter()
-                .filter(|(commit, _)| *commit <= cutoff)
+                .range(..=cutoff)
+                .map(|(commit, edges)| (*commit, edges.clone()))
                 .collect();
             let lineage_commits = entry
                 .lineage_commits
@@ -229,39 +262,37 @@ impl PersistentNameBranchIndex {
             );
         }
         for (holder, epochs) in self.holder_lineages.collect_merged()? {
-            let kept: im::Vector<_> = epochs
-                .into_iter()
-                .filter(|epoch| epoch.bound_at <= cutoff)
-                .map(|epoch| HolderEpoch {
-                    bound_at: epoch.bound_at,
-                    lineage: epoch.lineage,
-                    ended_at: epoch.ended_at.filter(|&end| end <= cutoff),
+            let kept: im::OrdMap<_, _> = epochs
+                .0
+                .range(..=(cutoff, LineageId(u64::MAX)))
+                .map(|(&(bound_at, lineage), &ended_at)| {
+                    ((bound_at, lineage), ended_at.filter(|&end| end <= cutoff))
                 })
                 .collect();
             if kept.is_empty() {
                 continue;
             }
-            for epoch in &kept {
-                note(epoch.bound_at);
-                if let Some(end) = epoch.ended_at {
+            for (&(bound_at, lineage), &ended_at) in &kept {
+                note(bound_at);
+                if let Some(end) = ended_at {
                     note(end);
                 }
-                out.lineage_holders.insert(epoch.lineage, holder);
-                if let Some(name) = self.lineage_names.get(&epoch.lineage)? {
-                    out.lineage_names.insert(epoch.lineage, *name);
+                out.lineage_holders.insert(lineage, holder);
+                if let Some(name) = self.lineage_names.get(&lineage)? {
+                    out.lineage_names.insert(lineage, *name);
                 }
             }
-            out.holder_lineages.insert(holder, kept);
+            out.holder_lineages.insert(holder, HolderEpochs(kept));
         }
         for (member, tenures) in self.member_groups.collect_merged()? {
             let mut kept = MemberTenures::new();
             for (scheme, tenure) in tenures {
                 let run: MemberTenure = tenure
-                    .into_iter()
-                    .filter(|(commit, _)| *commit <= cutoff)
+                    .range(..=cutoff)
+                    .map(|(commit, group)| (*commit, *group))
                     .collect();
                 if !run.is_empty() {
-                    for (commit, _) in &run {
+                    for commit in run.keys() {
                         note(*commit);
                     }
                     kept.insert(scheme, run);
@@ -284,7 +315,7 @@ impl PersistentNameBranchIndex {
         (
             Vec<(PersistentNameKey, NameEntry)>,
             Vec<(LineageId, super::LineageHolder)>,
-            Vec<(super::LineageHolder, im::Vector<HolderEpoch>)>,
+            Vec<(super::LineageHolder, HolderEpochs)>,
         ),
         PersistentNameIndexDenial,
     > {

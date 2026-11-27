@@ -24,7 +24,7 @@ pub mod retention;
 
 pub use batch::PersistentNameCommittedBatch;
 pub use denial::PersistentNameIndexDenial;
-pub(crate) use entry::{Carriers, HolderEpoch, LiveName, NameEntry, NameOrigin, NameState};
+pub(crate) use entry::{Carriers, HolderEpochs, LiveName, NameEntry, NameOrigin, NameState};
 
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::identity::data::primitives::LineageId;
@@ -59,7 +59,7 @@ pub struct PersistentNameBranchIndex {
     lineage_names: TieredMap<LineageId, PersistentNameKey>,
     lineage_holders: TieredMap<LineageId, LineageHolder>,
     /// Every lineage a record was bound to, in binding-commit order.
-    holder_lineages: TieredMap<LineageHolder, im::Vector<HolderEpoch>>,
+    holder_lineages: TieredMap<LineageHolder, HolderEpochs>,
     /// Per member name and group scheme: which group held it from each commit.
     member_groups: TieredMap<PersistentNameIdentity, member_groups::MemberTenures>,
 }
@@ -223,23 +223,23 @@ impl PersistentNameBranchIndex {
     ) -> Option<LineageId> {
         self.holder_lineages
             .get_in(&holder, scope)?
-            .back()
-            .map(|epoch| epoch.lineage)
+            .latest()
+            .map(|(_, lineage, _)| lineage)
     }
 
     /// The lineage `holder` was bound to at `basis`: the latest binding at or
     /// before it, so later restores never change a pinned answer.
     ///
-    /// Complexity: O(log H) probe plus O(log e) in that record's own epochs.
+    /// Complexity: O(log H) probe plus single `O(log e)` predecessor descent.
     pub(crate) fn lineage_of_holder(
         &self,
         holder: LineageHolder,
         basis: CommitId,
         scope: &NamingReadScope,
     ) -> Option<LineageId> {
-        let epochs = self.holder_lineages.get_in(&holder, scope)?;
-        let after = entry::partition_point_im(epochs, |epoch| epoch.bound_at <= basis);
-        epochs.get(after.checked_sub(1)?).map(|epoch| epoch.lineage)
+        self.holder_lineages
+            .get_in(&holder, scope)?
+            .lineage_at(basis)
     }
 
     /// The name a lineage was bound to when its named record was created.
@@ -306,10 +306,10 @@ impl PersistentNameBranchIndex {
     fn entry_mut(
         &mut self,
         key: PersistentNameKey,
-        _commit: CommitId,
+        commit: CommitId,
         journal: &mut IngestionJournal,
     ) -> Result<&mut NameEntry, PersistentNameIndexDenial> {
-        journal.save_name(key, &self.names);
+        journal.save_name(key, commit, &self.names);
         self.names
             .get_mut_with(&key, NameEntry::duplicate_for_branch_fork)?
             .ok_or(PersistentNameIndexDenial::InvalidTransition {
@@ -321,14 +321,14 @@ impl PersistentNameBranchIndex {
     fn insert_entry(
         &mut self,
         key: PersistentNameKey,
-        _commit: CommitId,
+        commit: CommitId,
         entry: NameEntry,
         journal: &mut IngestionJournal,
     ) -> Result<(), PersistentNameIndexDenial> {
         if self.names.contains_key(&key)? {
             return Err(PersistentNameIndexDenial::DuplicateBirth { name: key });
         }
-        journal.save_name(key, &self.names);
+        journal.save_name(key, commit, &self.names);
         self.names.insert(key, entry);
         Ok(())
     }
