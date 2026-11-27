@@ -7,3 +7,7 @@ import PersistentNaming.NameResolutionBound
 import PersistentNaming.IndexDelta
 import PersistentNaming.IndexDeltaCost
 import PersistentNaming.TrackedDeps
+import PersistentNaming.TimeM
+import PersistentNaming.ForkChildren
+import PersistentNaming.ForkChildrenCost
+import PersistentNaming.CowMapForkCost

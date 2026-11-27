@@ -54,7 +54,9 @@ layer = 3
 # conformance trace test.
 # +400 for the persistent-naming Rust -> Lean conformance trace tests (mint
 # order, name-index ingestion and resolution), which read crate-private state.
-cap = 24300
+# +200 for the fork_children and CowMap fork conformance traces, which call
+# the private `forks_inheriting` and read private `CowMap` nodes.
+cap = 24500
 floor = 7100
 depends = ["contracts", "storage", "branch"]
 

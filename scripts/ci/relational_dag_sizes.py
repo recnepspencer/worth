@@ -44,7 +44,8 @@ def check_owner_sizes(audit, examples):
     # +2,600 for public #455 incremental group authority with its differential oracle court,
     # delta group state rows and WPGL v2 kept-group member deltas; +300 for its
     # contiguous group-member page domain and Rust -> Lean conformance trace test;
-    # +400 for the persistent-naming Rust -> Lean conformance trace tests.
-    if all_total > 535_300:
-        failures.append(f'combined Total LOC exceeds 535,300: {all_total:,}')
+    # +400 for the persistent-naming Rust -> Lean conformance trace tests;
+    # +200 for the fork_children and CowMap fork Rust -> Lean conformance traces.
+    if all_total > 535_500:
+        failures.append(f'combined Total LOC exceeds 535,500: {all_total:,}')
     return failures

@@ -9,7 +9,11 @@
     "PersistentNaming.NameResolutionBound",
     "PersistentNaming.IndexDelta",
     "PersistentNaming.IndexDeltaCost",
-    "PersistentNaming.TrackedDeps"
+    "PersistentNaming.TrackedDeps",
+    "PersistentNaming.TimeM",
+    "PersistentNaming.ForkChildren",
+    "PersistentNaming.ForkChildrenCost",
+    "PersistentNaming.CowMapForkCost"
   ],
   "allowed_axioms": [],
   "theorems": [
@@ -92,6 +96,70 @@
     {
       "name": "PersistentNaming.TrackedDeps.currentness_independent_of_unrelated_deps",
       "type": "∀ (deps extra : List PersistentNaming.TrackedDeps.Key) (events : List PersistentNaming.TrackedDeps.Event), (∀ k, k ∈ extra → ∀ e, e ∈ events → ¬k ∈ PersistentNaming.TrackedDeps.touched e) → (PersistentNaming.TrackedDeps.currentness (deps ++ extra) events).1 = (PersistentNaming.TrackedDeps.currentness deps events).1 ∧ (PersistentNaming.TrackedDeps.currentness (deps ++ extra) events).2 = (PersistentNaming.TrackedDeps.currentness deps events).2 + PersistentNaming.TrackedDeps.sumTouched events * (Nat.log2 (deps ++ extra).length - Nat.log2 deps.length)"
+    },
+    {
+      "name": "PersistentNaming.ForkChildren.forks_inheriting_independent_of_older_forks",
+      "type": "∀ (F O : PersistentNaming.ForkChildren.Forks) (c top : Nat) (seeds : List Nat) (fuel : Nat), (∀ (p : Nat) (e : Nat × List Nat), e ∈ O p → e.fst < c) → (PersistentNaming.ForkChildren.forksInheriting (fun (p : Nat) => O p ++ F p) c top seeds fuel).val = (PersistentNaming.ForkChildren.forksInheriting F c top seeds fuel).val"
+    },
+    {
+      "name": "PersistentNaming.ForkChildren.forks_inheriting_visits_no_older_fork",
+      "type": "∀ (F : PersistentNaming.ForkChildren.Forks) (c top : Nat) (seeds : List Nat) (fuel : Nat) (e : Nat × Nat), e ∈ (PersistentNaming.ForkChildren.forksInheriting F c top seeds fuel).val.visited → c ≤ e.snd"
+    },
+    {
+      "name": "PersistentNaming.ForkChildren.forks_inheriting_marked_nodup",
+      "type": "∀ (F : PersistentNaming.ForkChildren.Forks) (c top : Nat) (seeds : List Nat) (fuel : Nat), (PersistentNaming.ForkChildren.forksInheriting F c top seeds fuel).val.marked.Nodup"
+    },
+    {
+      "name": "PersistentNaming.ForkChildren.forks_inheriting_sound",
+      "type": "∀ (F : PersistentNaming.ForkChildren.Forks) (c top : Nat) (seeds : List Nat) (fuel x : Nat), x ∈ (PersistentNaming.ForkChildren.forksInheriting F c top seeds fuel).val.marked → ∃ (p : Nat), ∃ (ib : Nat), ∃ (fc : Nat), ∃ (xs : List Nat), PersistentNaming.ForkChildren.Reach F c top seeds p ib ∧ (fc, xs) ∈ F p ∧ c ≤ Min.min ib fc ∧ x ∈ xs"
+    },
+    {
+      "name": "PersistentNaming.ForkChildren.forks_inheriting_closed",
+      "type": "∀ (F : PersistentNaming.ForkChildren.Forks) (c top : Nat) (seeds : List Nat) (fuel : Nat), (PersistentNaming.ForkChildren.forksInheriting F c top seeds fuel).val.stack = [] → (∀ (s : Nat), s ∈ seeds → (s, top) ∈ (PersistentNaming.ForkChildren.forksInheriting F c top seeds fuel).val.popped) ∧ (∀ (x : Nat), x ∈ (PersistentNaming.ForkChildren.forksInheriting F c top seeds fuel).val.marked → ∃ (b : Nat), (x, b) ∈ (PersistentNaming.ForkChildren.forksInheriting F c top seeds fuel).val.popped) ∧ ∀ (q : Nat × Nat), q ∈ (PersistentNaming.ForkChildren.forksInheriting F c top seeds fuel).val.popped → ∀ (fc : Nat) (xs : List Nat), (fc, xs) ∈ F q.fst → c ≤ Min.min q.snd fc → ∀ (x : Nat), x ∈ xs → x ∈ (PersistentNaming.ForkChildren.forksInheriting F c top seeds fuel).val.marked"
+    },
+    {
+      "name": "PersistentNaming.ForkChildren.forks_inheriting_steps_bounded",
+      "type": "∀ (F : PersistentNaming.ForkChildren.Forks) (c top : Nat) (seeds : List Nat) (fuel C : Nat), (∀ (p : Nat), List.length (F p) ≤ C) → PersistentNaming.ForkChildren.steps (PersistentNaming.ForkChildren.forksInheriting F c top seeds fuel) ≤ (seeds.length + (PersistentNaming.ForkChildren.forksInheriting F c top seeds fuel).val.marked.length) * (C.log2 + 2) + PersistentNaming.ForkChildren.work F c (PersistentNaming.ForkChildren.forksInheriting F c top seeds fuel).val.popped"
+    },
+    {
+      "name": "PersistentNaming.CowMapFork.get_insert",
+      "type": "∀ {α : Type} (t : PersistentNaming.CowMapFork.Tree α) (k : Nat) (v : α) (q : Nat), (PersistentNaming.CowMapFork.get (PersistentNaming.CowMapFork.insert t k v).val q).val = if q = k then Option.some v else (PersistentNaming.CowMapFork.get t q).val"
+    },
+    {
+      "name": "PersistentNaming.CowMapFork.get_steps_le_height",
+      "type": "∀ {α : Type} (t : PersistentNaming.CowMapFork.Tree α) (q : Nat), (PersistentNaming.CowMapFork.get t q).steps ≤ PersistentNaming.CowMapFork.height t"
+    },
+    {
+      "name": "PersistentNaming.CowMapFork.insert_steps_le_height",
+      "type": "∀ {α : Type} (t : PersistentNaming.CowMapFork.Tree α) (k : Nat) (v : α), (PersistentNaming.CowMapFork.insert t k v).steps ≤ PersistentNaming.CowMapFork.height t + 1"
+    },
+    {
+      "name": "PersistentNaming.CowMapFork.read_apply",
+      "type": "∀ {α : Type} (ops : List (PersistentNaming.CowMapFork.Op α)) (t : PersistentNaming.CowMapFork.Table α) (q : Nat), PersistentNaming.CowMapFork.read (PersistentNaming.CowMapFork.apply t ops) q = PersistentNaming.CowMapFork.spec (PersistentNaming.CowMapFork.read t) ops q"
+    },
+    {
+      "name": "PersistentNaming.CowMapFork.fork_steps",
+      "type": "∀ {α : Type} (t : PersistentNaming.CowMapFork.Table α) (base : Nat → Option α), (PersistentNaming.CowMapFork.fork t base).steps = 1"
+    },
+    {
+      "name": "PersistentNaming.CowMapFork.fork_reads",
+      "type": "∀ {α : Type} (t : PersistentNaming.CowMapFork.Table α) (base : Nat → Option α), (∀ (q : Nat), base q = t.base q) → PersistentNaming.CowMapFork.read (PersistentNaming.CowMapFork.fork t base).val = PersistentNaming.CowMapFork.read t"
+    },
+    {
+      "name": "PersistentNaming.CowMapFork.fork_isolation",
+      "type": "∀ {α : Type} (t : PersistentNaming.CowMapFork.Table α) (base : Nat → Option α), (∀ (q : Nat), base q = t.base q) → ∀ (childOps parentOps : List (PersistentNaming.CowMapFork.Op α)), PersistentNaming.CowMapFork.read (PersistentNaming.CowMapFork.apply (PersistentNaming.CowMapFork.fork t base).val childOps) = PersistentNaming.CowMapFork.spec (PersistentNaming.CowMapFork.read t) childOps ∧ PersistentNaming.CowMapFork.read (PersistentNaming.CowMapFork.apply t parentOps) = PersistentNaming.CowMapFork.spec (PersistentNaming.CowMapFork.read t) parentOps"
+    },
+    {
+      "name": "PersistentNaming.CowMapFork.fork_index_steps_independent_of_size",
+      "type": "∀ (large small : PersistentNaming.CowMapFork.Index) (link link' : PersistentNaming.CowMapFork.Table Nat → Nat → Option Nat), (PersistentNaming.CowMapFork.forkIndex large link).steps = (PersistentNaming.CowMapFork.forkIndex small link').steps ∧ (PersistentNaming.CowMapFork.forkIndex large link).steps = 5"
+    },
+    {
+      "name": "PersistentNaming.CowMapFork.fork_groups_steps",
+      "type": "∀ (link : PersistentNaming.CowMapFork.Table Nat → Nat → Option Nat) (ss : List PersistentNaming.CowMapFork.SchemeTables), (PersistentNaming.CowMapFork.forkGroups link ss).steps = 4 * ss.length"
+    },
+    {
+      "name": "PersistentNaming.CowMapFork.fork_groups_steps_independent_of_members",
+      "type": "∀ (large small : List PersistentNaming.CowMapFork.SchemeTables) (link link' : PersistentNaming.CowMapFork.Table Nat → Nat → Option Nat), large.length = small.length → (PersistentNaming.CowMapFork.forkGroups link large).steps = (PersistentNaming.CowMapFork.forkGroups link' small).steps"
     }
   ]
 }
