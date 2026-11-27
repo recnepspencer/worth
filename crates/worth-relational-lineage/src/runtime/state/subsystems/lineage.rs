@@ -14,6 +14,7 @@ pub mod event_page;
 pub mod event_residency;
 pub mod group_history;
 pub mod group_states;
+mod merge_guards;
 pub mod name_indexes;
 pub mod naming_basis;
 pub mod naming_basis_binding;
@@ -354,16 +355,6 @@ impl LineageSubsystem {
         record
             .map(|record| record.transitions.to_vec())
             .unwrap_or_default()
-    }
-
-    /// The first group lineage `b` published after `base` (merge refusal).
-    pub fn group_lineage_after(&self, b: &BranchId, c: CommitId) -> Option<(CommitId, String)> {
-        (self.state.read().group_lineage_after(b, c)).map(|(at, id)| (at, id.to_owned()))
-    }
-
-    /// The first commit `b` published named lineage at after `c` (merge refusal).
-    pub fn named_lineage_after(&self, b: &BranchId, c: CommitId) -> Option<CommitId> {
-        self.state.read().named_lineage_after(b, c)
     }
 
     pub fn replace_events(

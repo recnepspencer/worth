@@ -198,17 +198,29 @@ impl NameEntry {
     }
 
     /// Sets the state from `commit` on; a later write in the same commit
-    /// replaces the earlier one.
-    pub(crate) fn set_state(&mut self, commit: CommitId, state: NameState) {
-        if let NameState::Live(live) = &state
+    /// replaces the earlier one. Returns `Some(lineage)` when a new lineage
+    /// binding was inserted into `lineage_commits` so rollback stays O(batch).
+    pub(crate) fn set_state(&mut self, commit: CommitId, state: NameState) -> Option<LineageId> {
+        let inserted = if let NameState::Live(live) = &state
             && let Some(lineage) = live.target.lineage()
+            && let std::collections::btree_map::Entry::Vacant(slot) =
+                self.lineage_commits.entry(lineage)
         {
-            self.lineage_commits.entry(lineage).or_insert(commit);
-        }
+            slot.insert(commit);
+            Some(lineage)
+        } else {
+            None
+        };
         match self.timeline.last_mut() {
             Some((at, last)) if *at == commit => *last = state,
             _ => self.timeline.push((commit, state)),
         }
+        inserted
+    }
+
+    /// Removes one lineage binding inserted by the rolling-back batch.
+    pub(super) fn remove_lineage_commit(&mut self, lineage: LineageId) {
+        self.lineage_commits.remove(&lineage);
     }
 
     /// Copy-on-write duplicate of this history when a shared `TieredMap` entry
@@ -224,25 +236,19 @@ impl NameEntry {
     }
 
     /// How long this name's histories are now: what rollback truncates to.
-    pub(super) fn mark(&self, batch_commit: CommitId) -> super::journal::EntryMark {
+    pub(super) fn mark(&self) -> super::journal::EntryMark {
         super::journal::EntryMark {
             timeline: self.timeline.len(),
             edges: self.forward_edges.len(),
-            lineage_commits_len: self.lineage_commits.len(),
-            batch_commit,
         }
     }
 
-    /// Drops every timeline state, edge row and lineage binding recorded after `mark`.
+    /// Drops every timeline state and edge row recorded after `mark`.
     ///
     /// Complexity: O(rows dropped), the rows one batch appended.
     pub(super) fn truncate_to(&mut self, mark: super::journal::EntryMark) {
         self.timeline.truncate(mark.timeline);
         self.forward_edges.truncate(mark.edges);
-        if self.lineage_commits.len() > mark.lineage_commits_len {
-            self.lineage_commits
-                .retain(|_, first| *first < mark.batch_commit);
-        }
     }
 
     pub(crate) fn add_edge(&mut self, commit: CommitId, successor: PersistentNameKey) {

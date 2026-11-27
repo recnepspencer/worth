@@ -6,7 +6,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
-use crate::contracts::lineage::data::events::{LineageEventKind, LineageEventRecord};
+use crate::contracts::lineage::data::events::LineageEventRecord;
 use crate::lineage::index::{
     PersistentNameBranchIndex, PersistentNameCommittedBatch, PersistentNameIndexDenial,
 };
@@ -299,34 +299,6 @@ impl LineageState {
             index = Some(current);
         }
         BranchNameIndex::Current(index.expect("the ancestry always holds the branch itself"))
-    }
-
-    /// The first commit after `base` at which `branch`'s history (with its
-    /// fork ancestors) published named lineage: a birth, a kept name, a
-    /// split or a merge. Unnamed records' lineage is not named lineage.
-    pub(super) fn named_lineage_after(
-        &self,
-        branch: &BranchId,
-        base: CommitId,
-    ) -> Option<CommitId> {
-        let bounds: BTreeMap<_, _> = self
-            .ancestry(branch, CommitId(u64::MAX))
-            .into_iter()
-            .collect();
-        self.published_events
-            .iter()
-            .find(|published| {
-                let (event, at) = (published.event.as_ref(), published.publication_commit_id);
-                let named = event.name_birth().is_some()
-                    || event.kept_name().is_some()
-                    || matches!(
-                        event.kind(),
-                        LineageEventKind::Split | LineageEventKind::Merge
-                    );
-                let bound = bounds.get(event.branch_id());
-                named && at > base && bound.is_some_and(|bound| at <= *bound)
-            })
-            .map(|published| published.publication_commit_id)
     }
 
     /// `branch` and its fork ancestors, nearest first, with inherited cutoffs.

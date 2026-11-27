@@ -306,10 +306,10 @@ impl PersistentNameBranchIndex {
     fn entry_mut(
         &mut self,
         key: PersistentNameKey,
-        commit: CommitId,
+        _commit: CommitId,
         journal: &mut IngestionJournal,
     ) -> Result<&mut NameEntry, PersistentNameIndexDenial> {
-        journal.save_name(key, commit, &self.names);
+        journal.save_name(key, &self.names);
         self.names
             .get_mut_with(&key, NameEntry::duplicate_for_branch_fork)?
             .ok_or(PersistentNameIndexDenial::InvalidTransition {
@@ -321,14 +321,14 @@ impl PersistentNameBranchIndex {
     fn insert_entry(
         &mut self,
         key: PersistentNameKey,
-        commit: CommitId,
+        _commit: CommitId,
         entry: NameEntry,
         journal: &mut IngestionJournal,
     ) -> Result<(), PersistentNameIndexDenial> {
         if self.names.contains_key(&key)? {
             return Err(PersistentNameIndexDenial::DuplicateBirth { name: key });
         }
-        journal.save_name(key, commit, &self.names);
+        journal.save_name(key, &self.names);
         self.names.insert(key, entry);
         Ok(())
     }

@@ -85,9 +85,11 @@ impl PersistentNameBranchIndex {
                         .get(&key)?
                         .map(|entry| *entry.current() == NameState::Ended);
                     match ended {
-                        Some(true) => self
-                            .entry_mut(key, commit, journal)?
-                            .set_state(commit, NameState::Live(live_group(group))),
+                        Some(true) => {
+                            let _ = self
+                                .entry_mut(key, commit, journal)?
+                                .set_state(commit, NameState::Live(live_group(group)));
+                        }
                         Some(false) => {
                             return Err(invalid(group, "a live group cannot be revived"));
                         }

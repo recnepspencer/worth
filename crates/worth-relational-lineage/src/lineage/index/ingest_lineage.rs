@@ -201,8 +201,12 @@ impl PersistentNameBranchIndex {
             carriers: Carriers::new(),
         };
         self.bind_lineage_name(target, key, journal)?;
-        self.entry_mut(key, commit, journal)?
-            .set_state(commit, NameState::Live(live));
+        if let Some(added) = self
+            .entry_mut(key, commit, journal)?
+            .set_state(commit, NameState::Live(live))
+        {
+            journal.record_added_lineage_commit(key, added);
+        }
         Ok(())
     }
 
@@ -259,8 +263,12 @@ impl PersistentNameBranchIndex {
                 target: target_for(key, kept, holder, lineage)?,
                 carriers: previous.carriers.clone(),
             };
-            self.entry_mut(key, commit, journal)?
-                .set_state(commit, NameState::Live(live));
+            if let Some(added) = self
+                .entry_mut(key, commit, journal)?
+                .set_state(commit, NameState::Live(live))
+            {
+                journal.record_added_lineage_commit(key, added);
+            }
             self.bind_lineage_name(lineage, key, journal)?;
         }
         Ok(())
@@ -293,9 +301,15 @@ impl PersistentNameBranchIndex {
             {
                 journal.save_holder_lineages(holder, &self.holder_lineages);
                 if let Some(epochs) = self.holder_lineages.get_mut(&holder)?
-                    && let Some(epoch) = epochs.iter_mut().rev().find(|e| e.lineage == *source)
+                    && let Some((idx, epoch)) = epochs
+                        .iter_mut()
+                        .enumerate()
+                        .rev()
+                        .find(|(_, e)| e.lineage == *source)
                 {
+                    let prior_ended = epoch.ended_at;
                     epoch.ended_at = Some(commit);
+                    journal.record_holder_ended(holder, idx, prior_ended);
                 }
             }
             let Some(key) = self.lineage_names.get(source)?.map(|key| *key) else {
