@@ -13,6 +13,9 @@ meaning per symbol and per text), keeps every existing meaning, never
 lowers the identity frontier and installs every imported meaning.
 `commit_preserves`: one commit (reservation, then the cutover import into
 the owner) keeps those invariants and gives every touched text a symbol.
+
+Proofs only: this file models no production Rust of its own, so it carries
+no `proof-mirror:` pin; `Dictionary` pins the Rust its definitions model.
 -/
 namespace RelationalSymbolCommit
 

@@ -43,7 +43,8 @@ def check_owner_sizes(audit, examples):
     # +1,000 for Store M4.3f Round 11-13 per-branch event/GROUP_LOG window indexes and OrdMap histories;
     # +2,600 for public #455 incremental group authority with its differential oracle court,
     # delta group state rows and WPGL v2 kept-group member deltas; +300 for its
-    # contiguous group-member page domain and Rust -> Lean conformance trace test.
-    if all_total > 534_900:
-        failures.append(f'combined Total LOC exceeds 534,900: {all_total:,}')
+    # contiguous group-member page domain and Rust -> Lean conformance trace test;
+    # +400 for the persistent-naming Rust -> Lean conformance trace tests.
+    if all_total > 535_300:
+        failures.append(f'combined Total LOC exceeds 535,300: {all_total:,}')
     return failures

@@ -1,11 +1,21 @@
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: crates/worth-relational-contracts/src/symbols/data/string_interner.rs:14-22 sha256:53e93a175e6efac45e11e93ce7ef1073ac8270f260b9cdd385cd9465ffb1c4b0
+-- proof-mirror: crates/worth-relational-contracts/src/symbols/data/string_interner.rs:287-295 sha256:2e148bc0cd416849f3e3941f87e8b4ac57006bb898fa42f3c6f79ba1c51adb0c
+-- proof-mirror: crates/worth-relational-contracts/src/symbols/data/string_interner.rs:338-367 sha256:e5aebdbed7d2efa475e7418c7e66a73d0b2269e1cca9560cf415883b73bb1458
+-- proof-mirror: crates/worth-relational-contracts/src/symbols/data/string_interner.rs:369-382 sha256:e03100d2f83f8a7d278b1ce486e7e6afb04660a4c070f57e644c96835203e528
+-- proof-mirror: crates/worth-relational-storage/src/runtime/state/subsystems/services/symbol_table/reservations.rs:69-76 sha256:3994c3b5220302f1de717ede0df963cac69cda8879d2dbd37faa32f262b77641
+-- proof-mirror: crates/worth-relational-storage/src/runtime/state/subsystems/services/symbol_table/reservations.rs:246-305 sha256:b194ffce419b924a8b4d9eaf483f8388ea9f42c934a20d1a79758d6477ec0f39
+
 /-!
 # Relational symbol dictionary: model (public #446)
 
 The pure transition of the Relational symbol dictionary
-(`crates/worth-relational-contracts/src/symbols/data/string_interner.rs`
-and the candidate reservations of
+(`crates/worth-relational-contracts/src/symbols/data/string_interner.rs`:
+`Default`, `reserve_identity`, `import_canonical_meaning`,
+`import_canonical_snapshot`) and the candidate reservations of
 `crates/worth-relational-storage/src/runtime/state/subsystems/services/
-symbol_table/reservations.rs`).
+symbol_table/reservations.rs` (`PendingSymbolMeanings::reserve`,
+`PreparedSymbolPublication::publish`).
 
 A dictionary maps symbols to texts and texts to symbols, with an identity
 frontier. Texts are opaque values. Each persistent map answers point
@@ -14,6 +24,14 @@ one per write. That is the design's cost model, not a proved property of a
 concrete persistent structure: the Rust `im` maps pay an `O(log N)` path
 copy per write, and since `StoredSymbolText` clones share their bytes, that
 path copy copies node pointers and handles, never an existing key's text.
+
+Abstractions, each outside what the theorems claim: a text's custody
+(Managed or System bytes) is not modelled, since it never changes a meaning;
+`reserve` models one candidate at a time, so the shared pending directory
+(`reservations.rs` 267-289), which hands a concurrent candidate the identity
+another live candidate reserved for the same text, always misses; the
+cold-bucket residency check passes. `Conformance.lean` checks the compiled
+Rust against these definitions step by step.
 -/
 namespace RelationalSymbolCommit
 

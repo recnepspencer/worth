@@ -9,6 +9,9 @@ resolution at any fuel takes at most `(V + E)·3·(log₂ Tmax + 2)` steps, with
 `V` index probes, `E` traversed edges and `Tmax` the longest timeline or edge
 list among the names on the lineage path only. Steps are as in
 `NameResolution`.
+
+Proofs only: this file models no production Rust of its own, so it carries
+no `proof-mirror:` pin; `NameResolution` pins the Rust its definitions model.
 -/
 namespace PersistentNaming.NameResolution
 

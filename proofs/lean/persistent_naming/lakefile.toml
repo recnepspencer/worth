@@ -4,3 +4,12 @@ defaultTargets = ["PersistentNaming"]
 
 [[lean_lib]]
 name = "PersistentNaming"
+
+# Rust <-> model conformance: `lake exe conformance <trace.ndjson>...` checks
+# the traces emitted with `WORTH_PERSISTENT_NAMING_TRACE_DIR=<dir>` by
+# worth-relational-lineage's `mint_order::conformance_trace` and
+# `index::name_index_conformance_trace` tests and worth-query-declaration's
+# `wire_bound_conformance_trace` test against the proved model.
+[[lean_exe]]
+name = "conformance"
+root = "Conformance"

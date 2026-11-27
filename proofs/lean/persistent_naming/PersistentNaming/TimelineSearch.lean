@@ -1,15 +1,24 @@
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:21-26 sha256:6cb1fef575318ae82ebd44dd64ba876716871427ee86ba96b2702df971681a40
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:181-183 sha256:4be772cacbea0fddd6908bdf1ad8c2db322e08006e4b1ed78f1f0371ec1bc1eb
+
 /-!
 # Timeline binary search: step bound and correctness (Phase 7B-2, RULES §4)
 
 Models `NameEntry::state_at` of `crates/worth-relational-lineage/src/
-lineage/index/entry.rs`: `partition_point(|(commit, _)| *commit <= basis)`
-over one name's strictly ascending timeline of length `t`. A step is one
-halving iteration. `search_steps_le_log` proves at most `log₂ t + 1` steps
-for every timeline and basis; `search_eq_scan` proves the result is the
-linear-scan answer, the index of the first entry whose commit exceeds the
-basis (ascending order is all it needs). The model halves `[lo, lo + size)`
-at its midpoint, as the standard library's `partition_point` does up to its
-branch-free layout, which has the same iteration bound.
+lineage/index/entry.rs`: the predecessor of `basis` (the last entry whose
+commit is at most `basis`) in one name's strictly ascending timeline of
+length `t`. The Rust timeline is an `im::OrdMap` and the lookup is
+`ordmap_prev`, one `range(..=basis).next_back()` B-tree descent. The model
+finds the same entry by halving `[lo, lo + size)` at its midpoint: the
+index of the first entry whose commit exceeds the basis, whose predecessor
+is the answer. `search_eq_scan` proves that index is the linear-scan answer
+(ascending order is all it needs), and `Conformance.lean` checks the Rust
+answer against it on every recorded timeline and basis.
+`search_steps_le_log` proves at most `log₂ t + 1` halving steps for every
+timeline and basis: that is the design's cost model of one ordered
+descent, not a proved property of the `im` B-tree, whose descent is
+likewise logarithmic in `t`.
 -/
 namespace PersistentNaming.TimelineSearch
 

@@ -101,3 +101,7 @@ pub(crate) const fn discriminator_fits_structural_identity<D: ApplicationNameDis
 {
     matches!(max_encoded_bytes::<D>(), Some(bound) if bound <= MAX_STRUCTURAL_DISCRIMINATOR_BYTES)
 }
+
+#[cfg(test)]
+#[path = "wire_bound_conformance_trace.rs"]
+mod conformance_trace;

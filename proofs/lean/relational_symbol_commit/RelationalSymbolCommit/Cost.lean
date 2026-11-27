@@ -12,6 +12,9 @@ dictionary of any size: no term depends on the existing client keys.
 `N` meanings takes exactly `5·N` steps, the cost every commit paid for each
 existing client key while a persistent-map path copy deep-copied each
 sibling entry's text.
+
+Proofs only: this file models no production Rust of its own, so it carries
+no `proof-mirror:` pin; `Dictionary` pins the Rust its definitions model.
 -/
 namespace RelationalSymbolCommit
 
