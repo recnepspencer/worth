@@ -49,7 +49,8 @@ impl LineageSubsystem {
                 .min();
             (bounds, earliest)
         };
-        if let Some(residency) = self.event_residency.read().clone()
+        let residency = self.event_residency.read().clone();
+        if let Some(residency) = residency
             && residency.may_contain_named_events
         {
             let branch_bounds: BTreeMap<BranchId, CommitId> =

@@ -7,6 +7,7 @@ fn current_directory_rejects_damaged_duplicate_and_missing_members() {
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let runtime = memory_runtime();
     create_entity(execution, &runtime, "manifest-damage");
+    create_entity(execution, &runtime, "manifest-damage-second");
     let native = capture(execution, &runtime);
     let payload = native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap();
     let directory = read_native(&native);
@@ -112,10 +113,12 @@ fn current_directory_rejects_damaged_duplicate_and_missing_members() {
         "damaged external head member must refuse on first demand: {demand_err:?}"
     );
 
-    // 4. Duplicate member in the current CHK24 canonical_members inventory is rejected.
+    // 4. Duplicate locator in the current CHK24 canonical_members inventory is rejected
+    // while keeping the exact inventory count and strictly increasing positions intact.
     let canonical = rows(field(manifest(&native), "canonical_members"));
-    assert!(!canonical.is_empty());
-    let duplicated = array(&[canonical[0], canonical[0]]);
+    assert_eq!(canonical.len(), 2);
+    let duplicate_second = replace_field(canonical[1], "member", field(canonical[0], "member"));
+    let duplicated = array(&[canonical[0], &duplicate_second]);
     let dup_manifest = replace_field(manifest(&native), "canonical_members", &duplicated);
     let dup_payload = replace_field(payload, "manifest", &dup_manifest);
     let dup_stop = memory_runtime()
