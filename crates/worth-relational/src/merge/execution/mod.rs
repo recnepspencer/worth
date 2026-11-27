@@ -3,6 +3,7 @@ use worth_relational_merge::internal_port::merge::data::prepared_execution::test
 use worth_relational_merge::internal_port::merge::data::prepared_execution::PreparedMergeExecutionOwnerPort as _;
 pub(crate) use worth_relational_merge::internal_port::merge::execution::plan_compilation;
 mod authority_verification;
+mod named_outputs;
 
 #[cfg(test)]
 use crate::merge::data::MergeExecutionRequest;
@@ -110,6 +111,7 @@ impl<'runtime> MergeAccess<'runtime> {
         let bound_executable_plan =
             compile_bound_executable_plan(self.runtime, &normalized_request, &execution_ready_plan)
                 .map_err(MergeExecutionPreparationError::Compilation)?;
+        named_outputs::refuse(self.runtime, &normalized_request, &bound_executable_plan)?;
 
         let compiled = CompiledMergeExecution::new(
             normalized_request,

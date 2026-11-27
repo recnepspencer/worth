@@ -1640,9 +1640,11 @@ version = "0.1.0"
 dependencies = [
  "proptest",
  "serde",
+ "worth-execution",
  "worth-query-decl",
  "worth-query-host",
  "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
 ]
 
 [[package]]

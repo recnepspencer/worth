@@ -7,6 +7,7 @@ use super::ops::{Op, Placement};
 
 mod candidate;
 mod coupled;
+mod durable;
 mod plan;
 use crate::persistent_naming::outputs::sculpt::{Held, Plan, ScopeStep, Step};
 use crate::persistent_naming::outputs::{birth, naming_refusal, Outcome, World};
@@ -38,6 +39,8 @@ pub struct Driver {
     /// Model `a`'s context partition, where owned records are created.
     context_partition: Option<u32>,
     pub naming_commits: usize,
+    /// Whether the world lives on a Directory Home that `reopen` crashes.
+    durable: bool,
 }
 
 /// The authored occurrence of a model name's first birth.
@@ -57,9 +60,9 @@ fn place(plan: &mut Plan, at: &[(String, Placement)]) {
 }
 
 impl Driver {
-    pub fn new(seed: u64) -> Self {
+    pub fn new(seed: u64, durable: bool) -> Self {
         Self {
-            world: World::install(),
+            world: fresh_world(durable),
             seed,
             generation: 0,
             next_key: 0,
@@ -70,6 +73,7 @@ impl Driver {
             seen: BTreeSet::new(),
             context_partition: None,
             naming_commits: 0,
+            durable,
         }
     }
 
@@ -262,7 +266,7 @@ impl Driver {
     /// identities are re-derived from the replayed commits.
     fn rebuild(&mut self) -> Result<(), String> {
         self.generation += 1;
-        self.world = World::install();
+        self.world = fresh_world(self.durable);
         self.seen.clear();
         for (ordinal, plans) in self.committed.clone().into_iter().enumerate() {
             self.replay(ordinal, &plans)?;
@@ -273,6 +277,15 @@ impl Driver {
             }
         }
         Ok(())
+    }
+}
+
+/// A freshly seeded world: in memory, or on a new Directory Home.
+fn fresh_world(durable: bool) -> World {
+    if durable {
+        World::open_directory(world::home::location())
+    } else {
+        World::install()
     }
 }
 

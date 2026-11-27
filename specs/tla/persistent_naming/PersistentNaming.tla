@@ -23,6 +23,13 @@ EXTENDS Integers, Sequences, FiniteSets
     commit creating a record of a schemed kind without naming it refuses
     typed (Relational `MissingBirth`) with zero effects, so no record of a
     schemed kind is ever live unnamed.
+  - Store durability (Phase 7): every commit's canonical events reach the
+    Store atomically with the commit, so the log IS the durable state. A
+    crash and reopen (`ReopenFromStore`), from a checkpoint plus Journal tail
+    or the Journal alone, rebuilds every volatile view -- the record state,
+    the derived index, the born and retired sets and the generation frontier
+    -- from the persisted log only; the reopened installation answers every
+    held name exactly as before the crash and never reissues a generation.
   - A coupled envelope (the authored stages of one edit envelope and the
     coupled producers it runs) is one commit: every member's naming plan is
     composed into the commit's one plan (Phase 5E Slice 3B-2), so all the
@@ -122,6 +129,17 @@ Successors(ev) ==
       [] ev.kind = "MergeKeep" -> {ev.keeper}
       [] ev.kind = "MergeMint" -> {ev.minted}
       [] OTHER -> {}
+
+\* The generations `ev` issued to the records it created.
+IssuedGens(ev) ==
+    CASE ev.kind \in {"Create", "Preserve", "Restore", "MergeMint"} -> {ev.gen}
+      [] ev.kind = "Split" -> {ev.g1, ev.g2}
+      [] OTHER -> {}
+
+\* The generation frontier a reopen recovers from the persisted log alone:
+\* one past every generation the log ever issued, live or ended.
+RecoveredFrontier(evSeq) ==
+    Max({0} \cup UNION {IssuedGens(evSeq[i]) : i \in 1..Len(evSeq)}) + 1
 
 LastEnd(evSeq, n) ==
     LET ends == {i \in 1..Len(evSeq) : Ends(evSeq[i], n)}
@@ -323,6 +341,16 @@ DestroyAndRebuildIndex ==
     /\ derivedIndex' = ReplayEvents(events, Len(events))
     /\ UNCHANGED <<nextGen, live, unnamedLive, events, everBorn, retired>>
 
+\* 11. Crash and reopen from the Store: a fresh installation rebuilds every
+\*     volatile view and the generation frontier from the persisted log alone.
+ReopenFromStore ==
+    /\ live' = ReplayEvents(events, Len(events))
+    /\ derivedIndex' = ReplayEvents(events, Len(events))
+    /\ everBorn' = {n \in Names : BornInLog(events, n)}
+    /\ retired' = {n \in everBorn' : ~live'[n].alive}
+    /\ nextGen' = RecoveredFrontier(events)
+    /\ UNCHANGED <<unnamedLive, events>>
+
 Next ==
     \/ \E n \in Names, o \in HolderOwners, p \in Partitions: CommitCreate(n, o, p)
     \/ \E n \in Names: RefuseDuplicateBirth(n)
@@ -339,6 +367,7 @@ Next ==
             CommitCoupledCreate(n1, o1, p1, n2, o2, p2)
     \/ \E n \in Names: RefuseCoupledDuplicateBirth(n)
     \/ DestroyAndRebuildIndex
+    \/ ReopenFromStore
 
 Spec == Init /\ [][Next]_vars
 
@@ -392,6 +421,15 @@ GenerationalSafety ==
     /\ \A n \in Names: live[n].alive => (live[n].gen >= 1 /\ live[n].gen < nextGen)
     /\ \A n1, n2 \in Names:
         (live[n1].alive /\ live[n2].alive /\ n1 /= n2) => live[n1].gen /= live[n2].gen
+
+\* 8. A reopen from the persisted log restores exactly the live state: the
+\*    recovered frontier lies past every issued generation and never behind
+\*    the live allocator, so no generation is ever issued twice.
+StoreReopenEquivalence ==
+    /\ ReplayEvents(events, Len(events)) = live
+    /\ {n \in Names : BornInLog(events, n)} = everBorn
+    /\ {n \in everBorn : ~ReplayEvents(events, Len(events))[n].alive} = retired
+    /\ RecoveredFrontier(events) = nextGen
 
 \* 7. The log only grows; a name coming back to life is a fresh generation;
 \*    a KeepParentInPlace keeper keeps its exact record (#314).

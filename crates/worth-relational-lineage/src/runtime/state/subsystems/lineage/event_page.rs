@@ -133,7 +133,7 @@ pub(super) fn storage_failure(
 }
 
 fn valid_event_shape(event: &crate::contracts::lineage::data::events::LineageEventRecord) -> bool {
-    use crate::contracts::lineage::data::events::LineageEventKind;
+    use crate::contracts::lineage::data::events::{LineageEventKind, LineageSubject};
     let sources = event.sources();
     let targets = event.targets();
     let source_set = sources
@@ -166,9 +166,20 @@ fn valid_event_shape(event: &crate::contracts::lineage::data::events::LineageEve
                 && targets.len() == 1
         }
     };
-    source_set.len() == sources.len()
+    // Only a Create carries a birth, of exactly its own subject (an identity
+    // does not bind its subject kind); a merge keeper may stay put.
+    let birth_ok = event.name_birth().is_none_or(|birth| {
+        use crate::contracts::lineage::data::naming::PersistentNameSubjectKind as Kind;
+        event.kind() == LineageEventKind::Create
+            && matches!(
+                (event.subject(), birth.subject_kind()),
+                (LineageSubject::Entity, Kind::Entity) | (LineageSubject::Relation, Kind::Relation)
+            )
+    });
+    birth_ok
+        && source_set.len() == sources.len()
         && target_set.len() == targets.len()
-        && source_set.is_disjoint(&target_set)
+        && (event.kind() == LineageEventKind::Merge || source_set.is_disjoint(&target_set))
         && relation_binding_ok
         && entity_binding_ok
         && match event.kind() {
@@ -187,13 +198,39 @@ pub mod tests {
     use crate::contracts::identity::data::{LineageId, VersionId};
     use crate::contracts::lineage::data::events::assemble_lineage_event_record;
     use crate::contracts::lineage::data::events::LineageEventRecordParts;
+    use crate::contracts::lineage::data::naming::PersistentNameBirthPartsOwnerPort as _;
+    use crate::contracts::lineage::data::naming::PersistentNameBirthRecordOwnerPort as _;
+    use crate::contracts::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
+    use crate::contracts::lineage::data::naming::PersistentNameSubjectKind as Kind;
+    use crate::contracts::lineage::data::naming::{
+        PersistentNameBirthParts, PersistentNameBirthRecord, PersistentNameIdentity,
+    };
     use crate::contracts::lineage::data::{LineageEventKind, LineageEventRecord, LineageSubject};
     use worth_relational_branch::internal_port::history::data::{
         BranchId, CommitId, RelationalCommitReceipt,
     };
 
     fn restore_event(sources: Vec<LineageId>, targets: Vec<LineageId>) -> LineageEventRecord {
+        event(
+            LineageEventKind::Restore,
+            LineageSubject::Entity,
+            sources,
+            targets,
+            None,
+        )
+    }
+
+    /// An event of `kind` on `subject`, carrying a birth of `birth` if any.
+    fn event(
+        kind: LineageEventKind,
+        subject: LineageSubject,
+        sources: Vec<LineageId>,
+        targets: Vec<LineageId>,
+        birth: Option<Kind>,
+    ) -> LineageEventRecord {
         let branch_id = BranchId("main".to_owned());
+        let parts =
+            || PersistentNameBirthParts::new("s".into(), "o".into(), "r".into(), vec![], vec![]);
         assemble_lineage_event_record(LineageEventRecordParts {
             event_id: 1,
             commit: RelationalCommitReceipt {
@@ -203,15 +240,52 @@ pub mod tests {
                 parents: Vec::new(),
             },
             branch_id,
-            kind: LineageEventKind::Restore,
+            kind,
             sources,
             targets,
-            subject: LineageSubject::Entity,
-            name_birth: None,
+            subject,
+            name_birth: birth.map(|kind| {
+                let identity = PersistentNameIdentity::from_minted_digest([7; 32]);
+                PersistentNameBirthRecord::new(identity, kind, parts())
+            }),
             kept_name: None,
             relation_id: None,
             entity_id: None,
         })
+    }
+
+    #[test]
+    fn a_birth_must_be_a_create_of_its_own_subject_and_only_a_merge_targets_a_source() {
+        use LineageEventKind::{Create, Merge, Restore, Split};
+        use LineageSubject::{Entity, Relation};
+        let id = LineageId;
+        let create = |subject, birth| event(Create, subject, vec![], vec![id(1)], Some(birth));
+        assert!(valid_event_shape(&create(Entity, Kind::Entity)));
+        assert!(valid_event_shape(&create(Relation, Kind::Relation)));
+        assert!(!valid_event_shape(&create(Entity, Kind::Relation)));
+        assert!(!valid_event_shape(&create(Relation, Kind::Group)));
+        assert!(!valid_event_shape(&create(Entity, Kind::Group)));
+        let restore = event(
+            Restore,
+            Entity,
+            vec![id(1)],
+            vec![id(2)],
+            Some(Kind::Entity),
+        );
+        assert!(
+            !valid_event_shape(&restore),
+            "only a Create carries a birth"
+        );
+        let keeper = event(Merge, Entity, vec![id(1), id(2)], vec![id(1)], None);
+        assert!(
+            valid_event_shape(&keeper),
+            "a merge keeper may stay in place"
+        );
+        let split = event(Split, Entity, vec![id(1)], vec![id(1), id(2)], None);
+        assert!(
+            !valid_event_shape(&split),
+            "only a merge targets its own source"
+        );
     }
 
     #[test]

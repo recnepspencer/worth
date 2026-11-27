@@ -24,7 +24,7 @@ pub use materialized_aspect_values::{
 
 use crate::branch::reference::observation::RelationalBranchReferenceObservation;
 use crate::branch::version::RelationalBranchVersion;
-use crate::history::data::coordinates::CommitId;
+use crate::history::data::coordinates::{BranchId, CommitId};
 use crate::merge::data::policy::LoweredRecordDecisionKind;
 use crate::merge::data::requests::normalized::NormalizedRelationalMergeRequest;
 use crate::transactions::data::primitives::RecordRef;
@@ -75,6 +75,19 @@ pub enum MergeExecutionPreparationError {
     NotExecutionReady(MergeExecutionReadinessReport),
     Compilation(MergeExecutionCompilationError),
     MutationPlan(MergeExecutionMutationPlanError),
+    /// The source branch names this record so: a merge would adopt it unnamed.
+    NamedRecord(
+        BranchId,
+        RecordRef,
+        crate::lineage::data::naming::PersistentNameIdentity,
+    ),
+    /// The source branch published group lineage of this scheme at this
+    /// commit, after the merge base: a merge never carries it.
+    NamedGroupLineage(BranchId, CommitId, String),
+    /// The source branch published named lineage (a birth, kept name, split,
+    /// merge or restore) at this commit, after the merge base: a merge never
+    /// carries it.
+    NamedLineage(BranchId, CommitId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -53,10 +53,6 @@ impl WireWriter {
     pub(super) fn text(&mut self, field: &'static str, text: &str) -> Result<(), Refusal> {
         self.bytes(field, text.as_bytes())
     }
-
-    pub(super) fn option_tag(&mut self, present: bool) {
-        self.u8(u8::from(present));
-    }
 }
 
 /// Reads canonical primitive encodings, refusing truncation typed.
@@ -68,10 +64,6 @@ pub(super) struct WireReader<'bytes> {
 impl<'bytes> WireReader<'bytes> {
     pub(super) const fn new(bytes: &'bytes [u8], section: PersistentNameWireSection) -> Self {
         Self { bytes, section }
-    }
-
-    pub(super) const fn remaining(&self) -> &'bytes [u8] {
-        self.bytes
     }
 
     pub(super) fn take(&mut self, needed: usize) -> Result<&'bytes [u8], Refusal> {
@@ -121,15 +113,6 @@ impl<'bytes> WireReader<'bytes> {
 
     pub(super) fn text(&mut self, field: &'static str) -> Result<String, Refusal> {
         String::from_utf8(self.bytes()?).map_err(|_| Refusal::MalformedUtf8 { field })
-    }
-
-    /// Reads a canonical presence tag: `0` absent, `1` present.
-    pub(super) fn option_tag(&mut self, field: &'static str) -> Result<bool, Refusal> {
-        match self.u8()? {
-            0 => Ok(false),
-            1 => Ok(true),
-            tag => Err(Refusal::InvalidTag { field, tag }),
-        }
     }
 
     /// Requires the section to be fully consumed.

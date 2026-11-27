@@ -16,6 +16,10 @@ EXTENDS PersistentNamingCandidate, TraceData
   read a name on the candidate: TLC accepts it iff the model's candidate-basis
   read gives exactly the observed answer or refusal, and the envelope then
   committed (an answer) or left zero effects (a refusal) as the model does.
+  A `ReopenFromStore` record (Phase 7B durable DST) is a crash of the
+  Directory Home and its reopen as a fresh installation; the following
+  `Observe` must answer every held name exactly as the model rebuilt from
+  the persisted log alone.
 *)
 
 VARIABLE pc
@@ -51,6 +55,8 @@ StepAction(step) ==
             RefuseCoupledDuplicateBirth(step.name)
       [] step.action = "DestroyAndRebuildIndex" ->
             DestroyAndRebuildIndex
+      [] step.action = "ReopenFromStore" ->
+            ReopenFromStore
       [] step.action = "Observe" ->
             /\ UNCHANGED vars
             /\ \A r \in step.resolved :

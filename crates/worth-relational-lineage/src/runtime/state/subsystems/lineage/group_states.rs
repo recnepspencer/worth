@@ -180,6 +180,20 @@ impl LineageState {
         Ok(state)
     }
 
+    /// The first group lineage `b`'s history (with fork ancestors) published after `c`.
+    pub(super) fn group_lineage_after(
+        &self,
+        b: &BranchId,
+        c: CommitId,
+    ) -> Option<(CommitId, &str)> {
+        let bounds: BTreeMap<_, _> = self.ancestry(b, CommitId(u64::MAX)).into_iter().collect();
+        let record = self.published_group_lineage.iter().find(|record| {
+            let bound = bounds.get(&record.branch);
+            record.commit > c && bound.is_some_and(|bound| record.commit <= *bound)
+        })?;
+        Some((record.commit, record.transitions.first()?.scheme_id()))
+    }
+
     /// Published group lineage records of `branch` through `bound`.
     pub(super) fn own_group_lineage(
         &self,

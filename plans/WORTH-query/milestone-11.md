@@ -678,6 +678,16 @@ automatically follow `Restore` events and bind to the checked-out basis.
 
 ## Phase 7: Durable names on Store reopen and branch merge
 
+> **Progress (2026-11-26, Phase 7B-1, refs #71; not closed):** Store-backed
+> crash/reopen at every lineage boundary (checkpoint + tail and Journal only),
+> fresh-installation admission and bare-identity refusal, branch-merge
+> named-output refusals, `ReopenFromStore` in `PersistentNaming.tla` and the
+> durable DST landed, with two durability fixes (checkpoint event pages
+> refused in-place keeper merges; Journal replay lost in-commit
+> regeneration). Held: group lineage lost on checkpoint reopen for non-head
+> commits (Store cold-checkpoint owner). Phase 7B-2/7B-3 follow; this
+> milestone stays open.
+
 *(Phase 6 is the downstream consumer cutover tracked in the consumer repository.)*
 
 ### Outcome, scope and dependencies
