@@ -26,6 +26,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
 pub mod accumulator;
 pub mod elevation;
+pub mod extent_status;
 pub mod installed_plan;
 pub mod resource_extent;
 
@@ -69,20 +70,27 @@ fn compile_grant_path(
         resource_extent::lower(contract, layout, grantee, resource)?;
     let scope_ordinal = traversals.len();
     let currentness = contract.constraints().currentness();
-    let predicates = vec![
+    let mut predicates = vec![
         predicate(layout, 1, grant_kind, contract.target().action())?,
         predicate(layout, 1, grant_kind, contract.target().purpose())?,
         predicate(layout, 1, grant_kind, currentness.active_status())?,
     ];
-    let workflow = currentness.workflow();
-    let workflow_constraint = RelationalAuthorizationFieldConstraint::new(
-        operand(layout, 1, grant_kind, workflow.grant())?,
-        RelationalAuthorizationFieldComparison::Equal,
-        operand(layout, scope_ordinal, scope_kind, workflow.resource())?,
-    );
+    predicates.extend(extent_status::lower(contract, layout, &traversals)?);
+    // A workflow-tenure grant belongs to the scope's workflow instance; a
+    // standing grant belongs to no workflow, so no equality applies.
+    let workflow_constraints = currentness
+        .workflow()
+        .map(|workflow| {
+            Ok(RelationalAuthorizationFieldConstraint::new(
+                operand(layout, 1, grant_kind, workflow.grant())?,
+                RelationalAuthorizationFieldComparison::Equal,
+                operand(layout, scope_ordinal, scope_kind, workflow.resource())?,
+            ))
+        })
+        .transpose()?;
     Ok(WorthQueryCapabilityPathTemplate {
         plan: RelationalAuthorizationPathPlan::new(traversals, predicates)
-            .with_field_constraints([workflow_constraint]),
+            .with_field_constraints(workflow_constraints),
         identity: clause_identity(capability, 0),
         guard: WorthQueryCapabilityRequestGuard::Unconditional,
         grant_ordinal: Some(1),

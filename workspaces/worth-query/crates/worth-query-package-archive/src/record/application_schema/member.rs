@@ -236,7 +236,7 @@ pub(super) fn decode(
         }),
         38 => component_set::decode(input, budget),
         tag @ 1..=5 | tag @ 25..=26 | tag @ 52..=54 => schema::decode(tag, input, budget),
-        tag @ 6..=10 | tag @ 33 => capability::decode(tag, input, budget),
+        tag @ (6..=10 | 33 | 59) => capability::decode(tag, input, budget),
         tag @ 11..=14 | tag @ 16..=18 | tag @ (29 | 30 | 35) => {
             operation::decode(tag, input, budget)
         }
@@ -291,9 +291,9 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::Relation { .. } => 4,
         ApplicationSchemaMember::PrincipalBinding { .. } => 5,
         ApplicationSchemaMember::ApplicationQuery { .. } => 6,
-        ApplicationSchemaMember::ApplicationCapability { contract }
-            if !contract.target().resource_path().is_direct() => 33,
-        ApplicationSchemaMember::ApplicationCapability { .. } => 7,
+        ApplicationSchemaMember::ApplicationCapability { contract } => {
+            capability::capability_member_tag(contract)
+        }
         ApplicationSchemaMember::ApplicationCapabilityContext { .. } => 8,
         ApplicationSchemaMember::ApplicationCapabilityContextEntitySlot { .. } => 9,
         ApplicationSchemaMember::ApplicationCapabilityProvenance { .. } => 10,

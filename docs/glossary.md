@@ -693,6 +693,16 @@ explained). Rust names are given where a type embodies the term.
   maximum; nested work adds to its calling branch. Span is not wall-clock
   duration. **See** [work and span](how-it-works.md#99-resources-execution-and-cost).
 
+**Standing grant**
+: A capability grant that belongs to no workflow instance and is never
+  delegated: a site role, an organisation or workspace membership, a
+  household member. Declared with `ApplicationCapabilityCurrentnessDefinition::standing`
+  and `ApplicationCapabilityDelegationDefinition::standing`; `require_active`
+  makes it current only while every entity of a kind on its resource path
+  holds a status (rooted revocation). **Not** a *workflow-tenure* grant, which
+  binds the scope's workflow value and may carry a delegation lineage.
+  **See** [Build an Application](build-an-application.md#standing-grants-rooted-revocation-and-calendar-validity).
+
 **Stale**
 : The basis an operation relied on is no longer current. In Relational, any
   movement of the branch after your observation makes a candidate stale.

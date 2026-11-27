@@ -14,8 +14,9 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 pub mod delegation;
 pub use delegation::{
     WorthQueryCapabilityDelegationActivationBindings, WorthQueryCapabilityDelegationBindings,
-    WorthQueryCapabilityRevocationBindings,
+    WorthQueryCapabilityLineageBindings, WorthQueryCapabilityRevocationBindings,
 };
+
 pub mod elevation;
 pub use elevation::{
     WorthQueryCapabilityElevationBindings, WorthQueryCapabilityElevationLifecycleBindings,
@@ -104,6 +105,7 @@ pub struct WorthQueryInstalledCapabilityRegistry {
     plans: BTreeMap<[u8; 32], WorthQueryInstalledCapabilityPlan>,
     elevation_lifecycles: WorthQueryInstalledElevationLifecycleRegistry,
     compilation: WorthQueryCapabilityPlanCompilationEvidence,
+    requires_capability_calendar: bool,
 }
 
 impl WorthQueryInstalledCapabilityRegistry {
@@ -139,11 +141,21 @@ impl WorthQueryInstalledCapabilityRegistry {
                 })?;
         }
         compilation.elevation_lifecycle_operation_count = elevation_lifecycles.len();
+        let requires_capability_calendar = plans
+            .values()
+            .any(|plan| plan.request().timeline.requires_calendar());
         Ok(Self {
             plans,
             elevation_lifecycles,
             compilation,
+            requires_capability_calendar,
         })
+    }
+
+    /// Whether an installed grant's validity is on the local-date timeline,
+    /// so the Home must supply a capability calendar to open.
+    pub const fn requires_capability_calendar(&self) -> bool {
+        self.requires_capability_calendar
     }
 
     pub fn plan<Schema, Capability, Operation, Input>(

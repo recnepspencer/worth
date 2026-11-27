@@ -12,6 +12,9 @@ use super::super::super::{
 
 use super::ObservedDelegationParent;
 
+/// Observes the grant's exact grantee and, for a delegable grant, its parent.
+/// A standing grant has no lineage, so it is a root by declaration and only
+/// its grantee link is observed.
 pub(super) fn observe_parent(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
@@ -20,18 +23,6 @@ pub(super) fn observe_parent(
     grant: worth_relational::facade::identity::EntityId,
     expected_grantee: worth_relational::facade::identity::EntityId,
 ) -> Result<ObservedDelegationParent, WorthQueryOperationAuthorizationDenial> {
-    let parent_path = RelationalAuthorizationPathPlan::new(
-        [
-            installed.delegation().parent.clone(),
-            reverse(&installed.delegation().parent),
-        ],
-        [],
-    )
-    .with_entity_anchors([RelationalAuthorizationEntityAnchor::new(
-        2,
-        installed.grant_kind(),
-        grant,
-    )]);
     let grantee_path = RelationalAuthorizationPathPlan::new([], []).with_related_entities([
         RelationalAuthorizationRelatedEntityConstraint::new(
             0,
@@ -39,13 +30,22 @@ pub(super) fn observe_parent(
             expected_grantee,
         ),
     ]);
+    let parent_path = installed.delegation().lineage.as_ref().map(|lineage| {
+        RelationalAuthorizationPathPlan::new([lineage.parent.clone(), reverse(&lineage.parent)], [])
+            .with_entity_anchors([RelationalAuthorizationEntityAnchor::new(
+                2,
+                installed.grant_kind(),
+                grant,
+            )])
+    });
+    let delegable = parent_path.is_some();
     let plan = RelationalAuthorizationObservationPlan::try_new(
         snapshot,
         grant,
         grant,
         installed.grant_kind(),
         installed.grant_kind(),
-        [parent_path, grantee_path],
+        parent_path.into_iter().chain([grantee_path]),
         [],
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
@@ -59,12 +59,14 @@ pub(super) fn observe_parent(
                 installed.contract().name(),
             )
         })?;
-    let [parent_path, grantee_path] = evidence.paths() else {
-        return Err(invalid_policy(installed.contract().name()));
+    let (parent_path, grantee_path) = match (delegable, evidence.paths()) {
+        (true, [parent_path, grantee_path]) => (Some(parent_path), grantee_path),
+        (false, [grantee_path]) => (None, grantee_path),
+        _ => return Err(invalid_policy(installed.contract().name())),
     };
     if !grantee_path.matched()
         || !grantee_path.exhaustive()
-        || !parent_path.exhaustive()
+        || parent_path.is_some_and(|path| !path.exhaustive())
         || evidence.counters().maximum_frontier_width > 1
     {
         return Err(denial(
@@ -75,16 +77,13 @@ pub(super) fn observe_parent(
         ));
     }
     let parent = parent_path
-        .matched()
-        .then(|| {
-            parent_path
-                .witness()
-                .and_then(|witness| witness.entity_at(1))
-        })
-        .flatten();
-    if parent_path.matched() != parent.is_some() {
-        return Err(invalid_policy(installed.contract().name()));
-    }
+        .filter(|path| path.matched())
+        .map(|path| path.witness().and_then(|witness| witness.entity_at(1)));
+    let parent = match parent {
+        None => None,
+        Some(Some(parent)) => Some(parent),
+        Some(None) => return Err(invalid_policy(installed.contract().name())),
+    };
     Ok(ObservedDelegationParent { evidence, parent })
 }
 

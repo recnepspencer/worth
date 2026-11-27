@@ -35,9 +35,9 @@ pub(in crate::physical_runtime::durability) struct PhysicalMutationIdempotencyRe
     policy: PhysicalDurabilityPolicyIdentity,
     retention: IdempotencyRetentionGenerations,
     pending_limit: PendingUnresolvedMutationLimit,
-    live_limit: crate::physical_runtime::LiveIdempotencyBindingLimit,
+    pub(super) live_limit: crate::physical_runtime::LiveIdempotencyBindingLimit,
     pub(super) generation: PhysicalNamespaceDurableCheckpointGeneration,
-    /// Only checkpoint/WAL reconciliation makes live absence proof.
+    pub(super) admitted_since_checkpoint: usize,
     pub(super) recovered_complete: bool,
     pub(super) bindings:
         BTreeMap<PhysicalMutationIdempotencyKeyIdentity, PhysicalMutationIdempotencyBindingState>,
@@ -121,15 +121,12 @@ impl PhysicalMutationIdempotencyRegistry {
     pub(super) const fn store_identity(&self) -> StableStoreIdentity {
         self.store
     }
-
     pub(super) const fn policy_identity(&self) -> PhysicalDurabilityPolicyIdentity {
         self.policy
     }
-
     pub(super) const fn retention(&self) -> IdempotencyRetentionGenerations {
         self.retention
     }
-
     pub(super) const fn runtime_identity(&self) -> RuntimeIdentity {
         self.runtime
     }
@@ -148,6 +145,7 @@ impl PhysicalMutationIdempotencyRegistry {
             pending_limit: idempotency.pending_unresolved_limit(),
             live_limit: idempotency.live_binding_limit(),
             generation: PhysicalNamespaceDurableCheckpointGeneration::INITIAL,
+            admitted_since_checkpoint: 0,
             recovered_complete: false,
             bindings: BTreeMap::new(),
         }
@@ -384,14 +382,6 @@ impl PhysicalMutationIdempotencyRegistry {
             last_compacted: None,
         };
         Ok(())
-    }
-
-    #[cfg(test)]
-    pub(super) fn set_namespace_durable_generation_for_test(&mut self, generation: u64) {
-        self.generation =
-            PhysicalNamespaceDurableCheckpointGeneration::from_namespace_durable_checkpoint(
-                generation,
-            );
     }
 }
 

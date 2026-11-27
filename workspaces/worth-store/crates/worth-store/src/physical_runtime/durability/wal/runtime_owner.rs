@@ -9,10 +9,10 @@ use crate::physical_runtime::{PhysicalSignalProfileIdentity, RuntimeIdentity};
 
 use super::preparation_admission::{AdmittedWalPreparedMutation, PhysicalWalPreparationAdmission};
 use super::{
-    PhysicalWalAppendDeclaration, PhysicalWalReservationDenial,
     inventory::{
         PhysicalWalSegmentInventory, ReopenedPhysicalWalInventory, ReopenedWalPublicationGroup,
     },
+    PhysicalWalAppendDeclaration, PhysicalWalReservationDenial,
 };
 
 #[derive(Clone)]
@@ -115,6 +115,13 @@ impl PhysicalWalRuntimeOwner {
             )),
             publication: Arc::new(Mutex::new(None)),
         }
+    }
+
+    pub(in crate::physical_runtime) fn has_reclaimable_closed_prefix(&self) -> bool {
+        self.shared
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .has_reclaimable_closed_prefix()
     }
 
     pub(super) fn admit_preparation(

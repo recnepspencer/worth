@@ -92,16 +92,7 @@ fn append_constraints(
         "constraints.currentness.active-status",
         currentness.active_status(),
     );
-    append_field(
-        components,
-        "constraints.currentness.workflow.grant",
-        currentness.workflow().grant(),
-    );
-    append_field(
-        components,
-        "constraints.currentness.workflow.resource",
-        currentness.workflow().resource(),
-    );
+    super::canonical_tenure_components::append_tenure(components, currentness);
     text(
         components,
         "constraints.currentness.validity.timeline",
@@ -117,6 +108,7 @@ fn append_constraints(
         "constraints.currentness.validity.not-after",
         currentness.validity().not_after(),
     );
+    super::canonical_tenure_components::append_extent_status(components, currentness);
     text(components, "constraints.context", constraints.context());
     text(
         components,
@@ -130,10 +122,7 @@ fn append_delegation(
     contract: &ErasedApplicationCapabilityContract,
 ) {
     let delegation = contract.delegation();
-    append_relation(components, "delegation.parent", delegation.parent());
-    append_relation(components, "delegation.grantor", delegation.grantor());
-    append_relation(components, "delegation.grantee", delegation.grantee());
-    append_field(components, "delegation.limit", delegation.limit());
+    super::canonical_tenure_components::append_holder(components, delegation);
     text(components, "delegation.provenance", delegation.provenance());
     text(
         components,
@@ -179,6 +168,7 @@ fn append_delegation(
     } else {
         text(components, "delegation.revocation.posture", "unavailable");
     }
+    super::canonical_tenure_components::append_self_grant(components, delegation);
 }
 
 pub(super) fn append_field(

@@ -252,7 +252,10 @@ impl PhysicalIdempotencyRegistryRebuilder {
         self.insert(
             identity,
             PhysicalMutationIdempotencyBindingState::WalBound { basis, persisted },
-        )
+        )?;
+        self.registry.admitted_since_checkpoint =
+            self.registry.admitted_since_checkpoint.saturating_add(1);
+        Ok(())
     }
 
     /// Committed WAL history is bounded by the live-binding limit only; the

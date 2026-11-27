@@ -75,6 +75,8 @@ mod fixture_members;
 mod population_budget;
 #[path = "capability_member_closure_tests/portable_reconstruction.rs"]
 mod portable_reconstruction;
+#[path = "capability_member_closure_tests/standing_tenure.rs"]
+mod standing_tenure;
 
 use fixture_members::{field_member, members, relation_member, unique_field_member};
 

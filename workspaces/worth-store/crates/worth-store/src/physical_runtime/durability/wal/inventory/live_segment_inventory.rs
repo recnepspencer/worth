@@ -41,6 +41,15 @@ impl PhysicalWalSegmentInventoryEntry {
         }
     }
 
+    #[cfg(test)]
+    pub(in crate::physical_runtime::durability) const fn from_parts_for_test(
+        identity: WalSegmentArtifactIdentity,
+        lsn_range: WalLsnRange,
+        byte_count: u64,
+    ) -> Self {
+        Self::from_completed_append(identity, lsn_range, byte_count)
+    }
+
     pub(in crate::physical_runtime::durability) const fn identity(
         self,
     ) -> WalSegmentArtifactIdentity {

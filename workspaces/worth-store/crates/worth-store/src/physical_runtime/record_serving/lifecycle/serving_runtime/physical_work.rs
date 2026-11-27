@@ -291,4 +291,20 @@ impl ServingPhysicalRuntime {
     > {
         self.physical_work_lifecycle().timeout(consumer)
     }
+
+    /// Returns `(live_bindings, current_generation_bindings)` held against the
+    /// policy's live-binding limit.
+    pub fn idempotency_binding_counts(&self) -> (u64, u64) {
+        let (live, current) = self.parts.durability.idempotency_binding_counts();
+        (
+            u64::try_from(live).unwrap_or(u64::MAX),
+            u64::try_from(current).unwrap_or(u64::MAX),
+        )
+    }
+
+    /// True when closed WAL segments can be reclaimed by a physical checkpoint
+    /// and retained publication growth has reached half its physical ceiling.
+    pub fn physical_retention_checkpoint_due(&self) -> bool {
+        self.parts.publication.retention_checkpoint_due()
+    }
 }

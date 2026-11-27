@@ -60,12 +60,12 @@ where
         .primary_graph()
         .ok_or_else(|| delegation_denial(installed))?;
     let layout = graph.layout();
+    let lineage = installed
+        .delegation()
+        .delegable_lineage(installed.contract().name())?;
     let bindings = [
         (proposed.child_identity().field(), &activation.identity),
-        (
-            proposed.workflow().field(),
-            &installed.delegation().grant_workflow,
-        ),
+        (proposed.workflow().field(), &lineage.grant_workflow),
         (
             proposed.not_before().field(),
             &installed.delegation().not_before,
@@ -74,10 +74,7 @@ where
             proposed.not_after().field(),
             &installed.delegation().not_after,
         ),
-        (
-            proposed.remaining_delegations().field(),
-            &installed.delegation().remaining,
-        ),
+        (proposed.remaining_delegations().field(), &lineage.remaining),
     ];
     if bindings.into_iter().all(|(declared, expected)| {
         field_locator(layout, declared).is_ok_and(|found| &found == expected)
@@ -94,6 +91,9 @@ fn child_fields<Schema, Scope, Context>(
     proposed: &ApplicationCapabilityDelegationRequestProjection<Schema, Scope, Context>,
     identity: &AspectFieldLocator,
 ) -> Result<BTreeMap<AspectFieldLocator, AspectValue>, WorthQueryOperationAuthorizationDenial> {
+    let lineage = installed
+        .delegation()
+        .delegable_lineage(installed.contract().name())?;
     let target = proposed.target();
     let mut fields = BTreeMap::from([
         (identity.clone(), proposed.child_identity().value().clone()),
@@ -110,7 +110,7 @@ fn child_fields<Schema, Scope, Context>(
             installed.delegation().active_status.1.clone(),
         ),
         (
-            installed.delegation().grant_workflow.clone(),
+            lineage.grant_workflow.clone(),
             proposed.workflow().value().clone(),
         ),
         (
@@ -122,7 +122,7 @@ fn child_fields<Schema, Scope, Context>(
             proposed.not_after().value().clone(),
         ),
         (
-            installed.delegation().remaining.clone(),
+            lineage.remaining.clone(),
             proposed.remaining_delegations().value().clone(),
         ),
     ]);

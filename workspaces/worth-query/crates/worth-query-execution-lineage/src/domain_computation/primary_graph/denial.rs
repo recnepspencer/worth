@@ -12,6 +12,9 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     NativeInitialPublicationRefused,
     NativeInitialPublicationUnresolved,
     AdmissionClockMismatch,
+    /// An installed grant has local-date validity but the Home's trusted time
+    /// basis supplies no capability calendar.
+    CapabilityCalendarMissing,
     /// An opted-in producer's source is shared, contextual or not its exact entity scope.
     ProducerOwnershipRequiresEntitySourceScope,
     ProducerFamilyOwnershipMismatch,

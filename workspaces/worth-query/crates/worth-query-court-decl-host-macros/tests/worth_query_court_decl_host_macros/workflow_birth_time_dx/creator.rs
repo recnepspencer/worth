@@ -37,7 +37,8 @@ worth_query_operation!(
     pub OpenRequestOp for BirthSchema, input OpenRequestInput;
     access { read_fields: [CompanyFacts::company_id()]; };
     reads [Company];
-    creates [Request]
+    creates [Request];
+    links [RequestCompany]
 );
 
 fn company_scope(input: &OpenRequest) -> String {
@@ -107,6 +108,8 @@ pub fn open_request_operation(
         .create_in_scope(Request::reference(), "request")
         .initialize_input(RequestFacts::request_id(), request_input())
         .initialize_from_admission_time(RequestFacts::created_at())
+        .initialize_from_scope(CompanyFacts::company_id(), RequestFacts::company_code())
+        .link_to_scope(RequestCompany::reference(), "company")
         .into_inner()
         .expect("the creation admits");
     let body = creation

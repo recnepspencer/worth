@@ -1,5 +1,6 @@
 //! Runtime forwarding shims colocated with `application_query`.
 
+mod ability_eligibility;
 mod admission_finish;
 mod application_entry;
 mod batch_and_live_reads;

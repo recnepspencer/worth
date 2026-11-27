@@ -150,6 +150,10 @@ impl PhysicalWalAppendPort {
         self.owner.observation()
     }
 
+    pub(in crate::physical_runtime) fn has_reclaimable_closed_prefix(&self) -> bool {
+        self.owner.has_reclaimable_closed_prefix()
+    }
+
     pub(in crate::physical_runtime) fn plan_maintenance_frame(
         &self,
         payload: &[u8],

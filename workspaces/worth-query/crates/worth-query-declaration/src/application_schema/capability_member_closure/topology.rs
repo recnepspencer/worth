@@ -19,10 +19,11 @@ pub(super) fn topology_is_valid(contract: &ErasedApplicationCapabilityContract) 
         && target.purpose().field().entity() == grant
         && target.resource().from() == grant
         && currentness.active_status().field().entity() == grant
-        && currentness.workflow().grant().entity() == grant
-        && currentness.workflow().resource().entity() == target.resource_path().scope_entity()
-        && currentness.workflow().grant().value_type()
-            == currentness.workflow().resource().value_type()
+        && currentness.workflow().is_none_or(|workflow| {
+            workflow.grant().entity() == grant
+                && workflow.resource().entity() == target.resource_path().scope_entity()
+                && workflow.grant().value_type() == workflow.resource().value_type()
+        })
         && currentness.validity().not_before().entity() == grant
         && currentness.validity().not_after().entity() == grant
         && currentness.validity().not_before().value_type()
@@ -31,10 +32,12 @@ pub(super) fn topology_is_valid(contract: &ErasedApplicationCapabilityContract) 
             == currentness.validity().timeline().scalar_family()
         && currentness.validity().not_after().scalar_family()
             == currentness.validity().timeline().scalar_family()
-        && delegation.limit().entity() == grant
-        && delegation.parent().from() == grant
-        && delegation.parent().to() == grant
-        && delegation.grantor().to() == grant
+        && delegation.lineage().is_none_or(|lineage| {
+            lineage.limit().entity() == grant
+                && lineage.parent().from() == grant
+                && lineage.parent().to() == grant
+                && lineage.grantor().to() == grant
+        })
         && delegation.grantee().to() == grant
         && delegation_activation_topology_is_valid(contract)
         && capability_revocation_topology_is_valid(contract)
@@ -77,12 +80,10 @@ fn activation_context_overlaps_governed_relation(
             target.relation(),
             ApplicationCapabilityRelationDimension::Bound(relation) if candidate == relation
         )
-        || [
-            delegation.parent(),
-            delegation.grantor(),
-            delegation.grantee(),
-        ]
-        .contains(&candidate)
+        || candidate == delegation.grantee()
+        || delegation
+            .lineage()
+            .is_some_and(|lineage| candidate == lineage.parent() || candidate == lineage.grantor())
 }
 
 fn elevation_topology_is_valid(contract: &ErasedApplicationCapabilityContract) -> bool {
@@ -173,6 +174,8 @@ fn elevation_duration_is_valid(
         crate::application_capability::ApplicationCapabilityValidityTimeline::UnixEpochMilliseconds => {
             duration.subsec_nanos().is_multiple_of(1_000_000)
         }
+        crate::application_capability::ApplicationCapabilityValidityTimeline::UtcTimestamp
+        | crate::application_capability::ApplicationCapabilityValidityTimeline::LocalDate => false,
     }
 }
 

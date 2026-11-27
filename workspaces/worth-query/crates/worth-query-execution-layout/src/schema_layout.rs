@@ -52,6 +52,7 @@ mod record_selection;
 pub use record_selection::WorthQueryUndeclaredRecordSelection;
 mod registry_lowering;
 mod relation_payload;
+mod self_grant;
 mod signed_entities;
 mod signing_lifecycle;
 mod source_registration;
@@ -110,6 +111,7 @@ pub struct WorthQueryPrimaryGraphLayout {
     projection_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
     continuation_orderings: Vec<WorthQueryPrimaryContinuationOrderingLayout>,
     capability_grant_joins: BTreeMap<(String, String), WorthQueryCapabilityGrantJoinLayout>,
+    forbidden_self_grant_relations: BTreeSet<KindId>,
     provider_idempotency: WorthQueryProviderIdempotencyLayout,
     provider_dispatch_outbox: WorthQueryDispatchOutboxLayout,
     provider_inbound_completion: WorthQueryInboundCompletionLayout,

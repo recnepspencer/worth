@@ -1,4 +1,7 @@
+use std::sync::Arc;
 use std::time::SystemTime;
+
+use super::capability_calendar::WorthQueryCapabilityCalendar;
 
 /// Failure reported by the host-installed runtime-time source.
 ///
@@ -19,6 +22,11 @@ pub trait WorthQueryRuntimeTimeSource: Send + Sync + 'static {
         &self,
     ) -> worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock;
     fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial>;
+    /// The calendar local-date grant validity is read on. `None` (the
+    /// default) refuses to open a Home that installs a local-date grant.
+    fn capability_calendar(&self) -> Option<Arc<dyn WorthQueryCapabilityCalendar>> {
+        None
+    }
 }
 
 impl<Source> WorthQueryRuntimeTimeSource for Box<Source>
@@ -33,6 +41,10 @@ where
 
     fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
         (**self).current_time()
+    }
+
+    fn capability_calendar(&self) -> Option<Arc<dyn WorthQueryCapabilityCalendar>> {
+        (**self).capability_calendar()
     }
 }
 

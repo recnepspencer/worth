@@ -166,6 +166,14 @@ pub(super) fn derive<Schema, Operation, Input, Scope>(
         }
     }
     let identity: [u8; 32] = digest.finalize().into();
+    // The durable approval keeps a `u64` expiry; every timeline maps onto it
+    // order-preservingly, and an epoch-count expiry is stored unchanged.
+    let expiry = crate::domain_computation::runtime_time::validity_ordinal(
+        authority.timeline,
+        &authority.expiry,
+    )
+    .map(worth_foundational::facade::AspectValue::UInt64)
+    .ok_or_else(|| affinity("workflow approval expiry is not on its validity timeline"))?;
     Ok(
         crate::domain_computation::primary_graph::workflow::WorkflowApprovalMeaning {
             identity,
@@ -188,7 +196,7 @@ pub(super) fn derive<Schema, Operation, Input, Scope>(
             purpose: format!("{:?}", authority.purpose),
             timeline: authority.timeline.canonical_name(),
             sampled_value: format!("{:?}", authority.sampled_value),
-            expiry: authority.expiry,
+            expiry,
             scope: admission.scope_entity_id(),
             approval_operation: required.operation().to_owned(),
             target_operation: required.target_operation().to_owned(),

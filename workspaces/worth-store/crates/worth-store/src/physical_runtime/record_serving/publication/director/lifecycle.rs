@@ -3,6 +3,14 @@ use std::sync::Arc;
 use super::{RecordPublicationDirector, RecordPublicationTerminalState};
 
 impl RecordPublicationDirector {
+    pub(in crate::physical_runtime) fn retention_checkpoint_due(&self) -> bool {
+        let (charged, limit) = self.root_owner.publication_admission().growth_usage();
+        if charged.saturating_mul(2) < limit {
+            return false;
+        }
+        self.wal.has_reclaimable_closed_prefix()
+    }
+
     pub(in crate::physical_runtime) fn stop_and_extract(
         director: Arc<Self>,
     ) -> RecordPublicationTerminalState {

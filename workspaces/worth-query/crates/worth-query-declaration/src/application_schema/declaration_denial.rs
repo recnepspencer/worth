@@ -156,6 +156,28 @@ pub enum ApplicationSchemaDeclarationDenial {
     DuplicateApplicationCapability,
     MissingApplicationCapabilityDependency,
     InvalidApplicationCapability,
+    /// Standing currentness without a standing holder (or the reverse), a
+    /// standing grant that may be delegated or activated, or a self-grant
+    /// rule on a delegable workflow-tenure grant.
+    InvalidApplicationCapabilityTenure {
+        capability: String,
+    },
+    /// A `require_active` binding names the grant kind, repeats a kind,
+    /// exceeds the installed ceiling, or names a kind the resource path
+    /// never crosses.
+    InvalidApplicationCapabilityExtentStatus {
+        capability: String,
+    },
+    /// Governed elevation adds durations to its bounds, so it needs a
+    /// Unix-epoch timeline; UTC-timestamp and local-date grants cannot elevate.
+    UnsupportedApplicationCapabilityElevationTimeline {
+        capability: String,
+    },
+    /// A declarative body links its own admitted principal as the grantee of
+    /// a grant kind declared `forbid_self_grant`.
+    SelfGrantingOperationBody {
+        operation: String,
+    },
     InvalidApplicationCapabilityDelegationActivationProgram,
     DelegationActivationIdentityNotUnique,
     DuplicateApplicationCapabilityContext,

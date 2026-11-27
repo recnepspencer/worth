@@ -15,6 +15,7 @@ mod delegation_activation_program;
 mod dependencies;
 mod elevation_lifecycle_program;
 mod resource_path;
+mod tenure;
 mod topology;
 
 use canonical_structure::validate_canonical_structure;
@@ -67,6 +68,7 @@ pub(super) fn validate_application_capability_members(
     if !lifecycle_program_targets_are_framework_owned(members, &contracts) {
         return Err(ApplicationSchemaDeclarationDenial::InvalidApplicationCapability);
     }
+    tenure::validate_self_granting_bodies(members, &contracts)?;
     Ok(())
 }
 
@@ -163,6 +165,7 @@ fn validate_contract(
     contract: &ErasedApplicationCapabilityContract,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     dependencies_are_closed(members, dimensions, contract)?;
+    tenure::validate_tenure(contract)?;
     if !resource_path::is_closed(members, dimensions, contract)
         || !topology_is_valid(contract)
         || !composition_is_closed(closure, dimensions, contract)

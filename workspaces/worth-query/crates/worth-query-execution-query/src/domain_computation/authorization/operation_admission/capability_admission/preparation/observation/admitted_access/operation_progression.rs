@@ -45,6 +45,8 @@ struct RevalidatedOperationAuthority {
     authorization:
         crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
     graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    /// The one reading validity was judged at, recorded as `admitted_at`.
+    admitted_at: worth_foundational::facade::CanonicalTimestamp,
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -260,7 +262,7 @@ where
         execution,
         home_owner,
         WorthQueryAdmittedOperationData {
-            admitted_at: runtime.runtime.authorization_clock.admission_timestamp(),
+            admitted_at: Ok(revalidated.admitted_at),
             runtime_authority: runtime.runtime.authority_identity(),
             binding_identity: operation.binding_identity().clone(),
             operation: operation.operation().to_string(),
@@ -313,6 +315,7 @@ where
         &graph_work,
     )?;
     graph_work.set_retained_decision_facts(authorization.exact_fact_count());
+    let admitted_at = authorization.sampled_at();
     let session = graph_work.identity();
     let authorization =
         crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts::capability(
@@ -329,6 +332,7 @@ where
     Ok(RevalidatedOperationAuthority {
         authorization,
         graph_work,
+        admitted_at,
     })
 }
 

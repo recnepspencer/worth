@@ -79,6 +79,7 @@ impl PhysicalPublicationAdmission {
             .map_err(|_| ())?;
         state.sealed_publications.push((segment, generation, bytes));
         state.charged_bytes = total;
+        state.add_segment_charge(segment, generation, bytes);
         Ok(())
     }
 
@@ -91,9 +92,9 @@ impl PhysicalPublicationAdmission {
         if bytes == 0 {
             return;
         }
-        self.lock()
-            .sealed_publications
-            .push((segment, generation, bytes));
+        let mut state = self.lock();
+        state.sealed_publications.push((segment, generation, bytes));
+        state.add_segment_charge(segment, generation, bytes);
     }
 
     /// Drops the publication charge once the WAL segment that carried it is gone.
@@ -117,6 +118,11 @@ impl PhysicalPublicationAdmission {
         released = released
             .checked_add(state.release_wal_publication_groups(segment, generation))
             .expect("publication charges partition retained bytes");
+        let tracked = state
+            .segment_charges
+            .remove(&(segment, generation))
+            .unwrap_or(0);
+        debug_assert_eq!(tracked, released);
         state.charged_bytes = state
             .charged_bytes
             .checked_sub(released)

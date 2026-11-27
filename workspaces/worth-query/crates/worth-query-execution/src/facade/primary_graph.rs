@@ -43,6 +43,8 @@ pub use worth_relational::facade::identity::VersionId;
 
 mod controls;
 pub use controls::*;
+mod runtime_time;
+pub use runtime_time::*;
 
 pub use worth_relational::facade::{
     indexes::{
@@ -196,7 +198,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryEntityResolutionRefusalKind, WorthQueryExecutionLeaseDenial,
     WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
     WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
-    WorthQueryFixedRuntimeTimeSource, WorthQueryFulfilledRequiredRoot, WorthQueryGeneratedEntity,
+    WorthQueryFulfilledRequiredRoot, WorthQueryGeneratedEntity,
     WorthQueryGeneratedOutputInvariantAdmissionDenial,
     WorthQueryGeneratedOutputPublicationNoEffect,
     WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputReconstruction,
@@ -285,8 +287,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryReservedRecord, WorthQueryRestoredGeneratedOutput,
     WorthQueryRetainedBatchQueryAdmissionDenial, WorthQueryRetainedGeneratedOutputEntity,
     WorthQueryRetainedSnapshotRead, WorthQueryReviewedElevation,
-    WorthQueryRuleReadableCollectionLifecycleForTest, WorthQueryRuntimeTimeDenial,
-    WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial, WorthQueryScopeFreshnessCheck,
+    WorthQueryRuleReadableCollectionLifecycleForTest, WorthQueryScopeFreshnessCheck,
     WorthQueryScopeFreshnessDiagnostic, WorthQuerySelectedApplicationProducer,
     WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
     WorthQuerySelectedProductOperation, WorthQuerySelectedProgramInspection,

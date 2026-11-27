@@ -40,6 +40,7 @@ pub(in crate::physical_runtime) use reopen::{
 pub use request::{
     PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointRequest,
 };
+pub(in crate::physical_runtime::durability) use retained_wal_tail::first_required_segment;
 pub(super) use retained_wal_tail::RetainedWalTailAdmissionDenial;
 pub use retained_wal_tail::{ContiguousRetainedWalTail, RetainedWalSegment};
 pub(in crate::physical_runtime) use runtime_owner::{

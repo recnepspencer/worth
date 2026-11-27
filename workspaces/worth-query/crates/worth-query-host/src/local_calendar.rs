@@ -2,6 +2,7 @@
 //! time zone's rules, with the operating system's zone and clock read only at
 //! the explicit [`WorthQueryTimeZone::load_system`] / [`WorthQueryTimeZone::today`]
 //! boundary.
+mod capability_calendar;
 mod posix_rule;
 mod system_zone;
 mod tzif;

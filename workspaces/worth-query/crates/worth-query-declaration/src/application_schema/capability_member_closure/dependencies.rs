@@ -40,14 +40,7 @@ pub(super) fn dependencies_are_closed(
             members,
             contract.constraints().currentness().active_status().field(),
         )
-        && field_exists(
-            members,
-            contract.constraints().currentness().workflow().grant(),
-        )
-        && field_exists(
-            members,
-            contract.constraints().currentness().workflow().resource(),
-        )
+        && tenure_dependencies_exist(members, contract)
         && field_exists(
             members,
             contract.constraints().currentness().validity().not_before(),
@@ -56,10 +49,7 @@ pub(super) fn dependencies_are_closed(
             members,
             contract.constraints().currentness().validity().not_after(),
         )
-        && relation_exists(members, contract.delegation().parent())
-        && relation_exists(members, contract.delegation().grantor())
         && relation_exists(members, contract.delegation().grantee())
-        && field_exists(members, contract.delegation().limit())
         && delegation_activation_dependencies_exist(members, contract)
         && elevation_dependencies_exist(members, dimensions, contract.elevation())
     {
@@ -67,6 +57,29 @@ pub(super) fn dependencies_are_closed(
     } else {
         Err(ApplicationSchemaDeclarationDenial::MissingApplicationCapabilityDependency)
     }
+}
+
+/// Workflow binding and delegation lineage fields, plus every extent-status
+/// field, exist exactly when the contract's tenure declares them.
+fn tenure_dependencies_exist(
+    members: &[ApplicationSchemaMember],
+    contract: &ErasedApplicationCapabilityContract,
+) -> bool {
+    let currentness = contract.constraints().currentness();
+    let workflow_exists = currentness.workflow().is_none_or(|workflow| {
+        field_exists(members, workflow.grant()) && field_exists(members, workflow.resource())
+    });
+    let lineage_exists = contract.delegation().lineage().is_none_or(|lineage| {
+        relation_exists(members, lineage.parent())
+            && relation_exists(members, lineage.grantor())
+            && field_exists(members, lineage.limit())
+    });
+    workflow_exists
+        && lineage_exists
+        && currentness
+            .extent_status()
+            .iter()
+            .all(|status| field_exists(members, status.field()))
 }
 
 fn delegation_activation_dependencies_exist(

@@ -1,6 +1,7 @@
 mod canonical_components;
 mod canonical_composition_components;
 mod canonical_elevation_components;
+mod canonical_tenure_components;
 mod capability_revocation_program;
 mod composition;
 mod context;
@@ -58,8 +59,9 @@ pub use contract::{
     ErasedApplicationCapabilityContract, WorthQueryPortableApplicationCapabilityContractParts,
 };
 pub use currentness::{
-    ApplicationCapabilityCurrentnessDefinition, ApplicationCapabilityValidityDefinition,
-    ApplicationCapabilityValidityTimeline, ApplicationCapabilityWorkflowDefinition,
+    ApplicationCapabilityCurrentnessDefinition, ApplicationCapabilityGrantTenure,
+    ApplicationCapabilityValidityDefinition, ApplicationCapabilityValidityTimeline,
+    ApplicationCapabilityWorkflowDefinition,
 };
 pub use delegation::{ApplicationCapabilityDelegationDepth, ApplicationCapabilityDelegationRule};
 pub use delegation_activation_program::application_capability_delegation_activation_program_targets;
@@ -122,9 +124,10 @@ pub use rule_clause::{
 };
 pub use scope::{
     ApplicationCapabilityCardinalityDimension, ApplicationCapabilityConstraintDefinition,
-    ApplicationCapabilityDelegationDefinition, ApplicationCapabilityFieldBinding,
-    ApplicationCapabilityFieldDimension, ApplicationCapabilityMagnitudeDimension,
-    ApplicationCapabilityRelationBinding, ApplicationCapabilityRelationDimension,
+    ApplicationCapabilityDelegationDefinition, ApplicationCapabilityDelegationLineage,
+    ApplicationCapabilityFieldBinding, ApplicationCapabilityFieldDimension,
+    ApplicationCapabilityMagnitudeDimension, ApplicationCapabilityRelationBinding,
+    ApplicationCapabilityRelationDimension, ApplicationCapabilitySelfGrantRule,
     ApplicationCapabilityTargetDefinition, ApplicationCapabilityValueBinding,
     WorthQueryPortableApplicationCapabilityConstraintParts,
     WorthQueryPortableApplicationCapabilityDelegationParts,

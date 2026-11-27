@@ -3,6 +3,7 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 mod assembly;
+mod capability_calendar;
 pub(in crate::domain_computation::primary_graph) mod home_attachment;
 mod input;
 mod owned_contributions;
