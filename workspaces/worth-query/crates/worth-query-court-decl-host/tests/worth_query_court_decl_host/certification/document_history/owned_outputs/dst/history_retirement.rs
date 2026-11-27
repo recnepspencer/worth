@@ -3,9 +3,14 @@
 //! restores the recorded state, so the same generation is still retired at
 //! the target and the reversal records; only the retirement's commit version
 //! moved. Each refusal court still refuses, for its own reason.
-use super::reference::{Action, Intent, Outcome, Stage, Stages, E2};
+use super::reference::{Action, Intent, Outcome, Stage, Stages, E1, E2};
+use super::fixture::envelope::{envelope, Executed, Push, Receipt, Undo};
+use super::fixture::history_correction::correction_envelope;
+use super::fixture::reads::{read_entities, with_request};
+use super::fixture::Call;
 use super::world::Corrected;
 use super::*;
+use worth_query_host::facade::product::WorthQueryProductBranch;
 use worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test as fact_verification;
 
 const SKIP: Stages = [Stage::Skip; 2];
@@ -237,4 +242,71 @@ fn a_retirement_reversed_after_its_recreation_was_corrected_follows_the_model() 
         "the model refuses SourceRefused: {corrected:?}"
     );
     document.release();
+}
+
+/// The document's current physical branch: each recorded step and checkout
+/// moves it, so every envelope and read follows it first.
+fn branch_of(host: &fixture::reads::Host, document: &OutputFree<'_>) -> WorthQueryProductBranch {
+    with_request(host, |request| document.selection(request).unwrap().physical_endpoint().product_branch())
+}
+
+/// Record `calls` as one envelope under `key`; the step and the receipt of
+/// `e2`'s stage, if any.
+fn record_free<'h>(
+    host: &'h fixture::reads::Host,
+    document: OutputFree<'h>,
+    key: &str,
+    calls: &[Call],
+) -> (OutputFree<'h>, WorthQueryHistoryNodeId, Option<Receipt>) {
+    let pushes: Vec<Push> = calls.iter().map(|call| Push::Dst(*call)).collect();
+    let branch = branch_of(host, &document);
+    match envelope(host, document, branch, key.into(), &pushes, Vec::new(), None) {
+        Executed::Recorded { document, step, receipts } => {
+            let e2 = receipts.into_iter().find(|(entity, _)| *entity == E2);
+            (document, step.id(), e2.map(|(_, receipt)| receipt))
+        }
+        Executed::Refused { denial, .. } => panic!("{key} must record: {denial:?}"),
+        _ => panic!("{key} must record"),
+    }
+}
+
+type OutputFree<'h> = fixture::reads::Doc<'h, WorthQueryHistoryNoOutputs>;
+
+/// Review r1 B1: with no output trees bound, a checkout away and back
+/// revives `e2` and retires the same generation again at a later commit.
+/// The reversal still carries its authored restoration (traced), and
+/// Relational refuses it at the corrective root, whose anchor must be
+/// retired by the original commit: the #465 condition without an output
+/// route. Once #465 lands it records, and an exact retirement comparison
+/// refuses it.
+#[test]
+#[ignore = "held on public #465: restoration after a navigation re-retired the source refuses; the corrective root pins the original retirement commit"]
+fn an_output_free_retirement_is_reversed_after_a_checkout_away_and_back() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let document: OutputFree<'_> = super::super::world::attach(&host);
+    let (document, first, _) = record_free(&host, document, "free:1", &[Call::Create(E1, 1), Call::Create(E2, 1)]);
+    let (document, second, retired) = record_free(&host, document, "free:2", &[Call::Retire(E2)]);
+    let retired = retired.expect("the retirement's receipt");
+    for (index, target) in [first, second].into_iter().enumerate() {
+        with_request(&host, |request| {
+            let expected = document.selection(request).unwrap();
+            super::super::courts::checkout(&document, request, target, expected, 0x445_b100 + index as u128)
+                .unwrap_or_else(|cause| panic!("checkout {index}: {cause:?}"));
+        });
+    }
+    let branch = branch_of(&host, &document);
+    assert!(read_entities(&host, branch)[E2].is_none(), "e2 is retired again");
+    fact_verification();
+    let corrected = correction_envelope(&host, document, branch, "free:3".into(), &retired, Undo::Retire(E2), &[], None);
+    let rejection = fact_verification().correction_restored_support_rejection;
+    let document = match corrected {
+        Executed::Recorded { document, .. } => document,
+        Executed::Refused { denial, .. } => panic!("the reversal must record: {denial:?}; {rejection:?}"),
+        _ => panic!("the reversal must record; {rejection:?}"),
+    };
+    assert_eq!(rejection, None);
+    assert!(read_entities(&host, branch_of(&host, &document))[E2].is_some(), "e2 is live again");
+    drop(retired);
+    host.with_host_advancement(|phase| document.close(&phase).unwrap()).unwrap();
 }

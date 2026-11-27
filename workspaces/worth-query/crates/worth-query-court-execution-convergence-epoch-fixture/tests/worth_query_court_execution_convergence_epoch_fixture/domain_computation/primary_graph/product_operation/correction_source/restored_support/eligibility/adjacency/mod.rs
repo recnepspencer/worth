@@ -1,4 +1,5 @@
-//! The adjacency comparison stays its own arm beside a relaxed retirement arm.
+//! The adjacency comparison stays its own arm beside a retirement fact, so a
+//! retirement arm (public #445, deferred to public #465) cannot end the comparison early.
 use super::retirement::payload;
 use worth_query_execution::facade::domain_computation::WorthQueryCorrectionDerivationDenial as Denial;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as DecisionDirection;
