@@ -144,7 +144,9 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationRequestQueryDenial {
         match self {
             Self::ExecutionRequest(cause) => cause.user_summary(),
             Self::PrincipalResolution(denial) => principal_resolution(denial.kind()),
-            Self::CapabilityAdmission(_) => PERMISSION,
+            // A missing grant is a permission refusal; a stopped admission keeps
+            // its own work, capacity or interruption category.
+            Self::CapabilityAdmission(denial) => authorization(&denial.kind()),
             Self::Admission(cause) => cause.user_summary(),
             Self::ScopeResolution(cause) => cause.user_summary(),
             Self::InputPreparation(cause) => cause.user_summary(),

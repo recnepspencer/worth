@@ -12,6 +12,10 @@
 //! Revealing a principal's authority is disclosure: the session's principal
 //! must hold the question's disclosure ability on the scope at the head.
 //! Nothing is retained, reserved or committed, and an entry is not authority.
+//!
+//! One trusted instant judges every capability entry, and the inventory is
+//! read at the head only: a pinned commit's grants judged against today's
+//! clock would describe neither then nor now.
 use worth_query_declaration::facade::application_schema::fragment::RecordSelection;
 use worth_query_declaration::facade::application_schema::{
     ApplicationBindingContext, ApplicationSchema,
@@ -19,7 +23,6 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_execution::facade::eligibility::{
     WorthQueryAuthorityInventory, WorthQueryAuthorityQuestion,
 };
-use worth_query_publication::facade::application_entry::WorthQueryApplicationReadObservation;
 
 use super::eligibility::WorthQueryEligibilityDenial;
 use super::WorthQueryHostSession;
@@ -39,15 +42,14 @@ impl<Schema: ApplicationSchema, Program> WorthQueryHostSession<'_, Schema, Progr
         Field: RecordSelection,
         Field::Value: Clone,
     {
-        observe_inventory(self, None, question)
+        observe_inventory(self, question)
     }
 }
 
-/// The inventory at the head or at a retained observation, under a fresh
-/// request scope and the session's current proof.
-pub(super) fn observe_inventory<Schema, Program, Context, Field>(
+/// The inventory at the head, under a fresh request scope and the
+/// session's current proof.
+fn observe_inventory<Schema, Program, Context, Field>(
     session: &WorthQueryHostSession<'_, Schema, Program>,
-    at: Option<&WorthQueryApplicationReadObservation>,
     question: &WorthQueryAuthorityQuestion<Schema, Context, Field>,
 ) -> Result<WorthQueryAuthorityInventory, WorthQueryEligibilityDenial>
 where
@@ -60,11 +62,8 @@ where
     let principal = session.call_principal();
     let request = session.request_as(&principal, &scope);
     session
-        .with_funded_advancement(&scope, |phase| match at {
-            None => request.observe_authority_inventory(&phase, question),
-            Some(observation) => request
-                .at(observation)
-                .observe_authority_inventory(&phase, question),
+        .with_funded_advancement(&scope, |phase| {
+            request.observe_authority_inventory(&phase, question)
         })
         .map_err(WorthQueryEligibilityDenial::ExecutionRequest)?
         .map_err(WorthQueryEligibilityDenial::Observation)

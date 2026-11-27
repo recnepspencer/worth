@@ -18,6 +18,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationMaterializationRequest, WorthQueryMaterializedFamilyOutcome,
     },
     runtime::ExecutionAllocationPolicy,
+    WorthQueryRefusalCategory, WorthQueryUserFacingRefusal,
 };
 
 type Access = WorthQueryGovernedReadAccess<
@@ -164,4 +165,60 @@ fn a_session_explains_its_own_branch_operation_and_refuses_others() {
         .is_ok());
     drop((on_preview, elsewhere, direct, provenance));
     preview.discard(home).unwrap();
+}
+
+#[test]
+fn every_work_budget_stop_admission_or_inspection_refuses_as_capacity() {
+    let guard = host::open_directory(host::unique_directory("source-provenance-budget"));
+    let home = guard.home();
+    let scope = request_scope();
+    let principal = authenticate_operator(home.runtime().installed_schema(), &scope);
+    let receipt = host::edit(home.runtime(), Value::Primary(13), "provenance-budget");
+    // Grow the work budget until the read completes: small budgets stop at
+    // capability admission, larger ones inside the admitted inspection.
+    let mut work = 1_u64;
+    let mut refused = Vec::new();
+    let provenance = loop {
+        let budget = worth_foundational::facade::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            Some(128 * 1024 * 1024),
+            Some(work),
+        );
+        match home
+            .session(&principal)
+            .with_budget(budget)
+            .source_provenance::<SourceDisclosure>(&receipt, inspect("numeric"))
+        {
+            Ok(provenance) => break provenance,
+            Err(denial) => refused.push(denial),
+        }
+        assert!(work < 1 << 40, "no finite budget completed the read");
+        work += work / 4 + 1;
+    };
+    let stopped_in = |inspection: bool| {
+        refused.iter().any(|denial| {
+            matches!(denial, WorthQuerySourceProvenanceDenial::Inspection(_)) == inspection
+        })
+    };
+    assert!(stopped_in(false), "no budget stopped at admission");
+    assert!(stopped_in(true), "no budget stopped inside the inspection");
+    for denial in &refused {
+        assert!(!denial.is_unsupported_field_shape(), "{denial:?}");
+        // A budget stop is a resource stop, never a permission refusal or
+        // an internal defect, wherever it lands.
+        assert!(
+            matches!(
+                denial.refusal_category(),
+                WorthQueryRefusalCategory::Capacity | WorthQueryRefusalCategory::Unavailable
+            ),
+            "{denial:?} renders {:?}",
+            denial.refusal_category()
+        );
+        assert!(denial.retryable());
+        assert!(!denial.user_message().contains("WorthQuery"));
+    }
+    assert_eq!(
+        provenance.source_effects_outcome(),
+        WorthQueryMaterializedFamilyOutcome::Provided
+    );
 }

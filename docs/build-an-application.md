@@ -4437,8 +4437,26 @@ composition rule refuse eligibility exactly as they refuse admission, with the
 same `WorthQueryApplicationAuthorizationExplanationCause`. Rosters use the
 ability roster's disclosure gate (`RosterNotDisclosed`). A capability that is
 exercised only through an approved elevation refuses the question
-(`CapabilityRequiresElevation`), and a request that does not resolve refuses
-`CapabilityRequest`.
+(`CapabilityRequiresElevation`), a capability paired with an operation it is
+not installed on refuses `CapabilityNotInstalled`, and a request that does not
+resolve refuses `CapabilityRequest`. Every refusal implements
+`WorthQueryUserFacingRefusal`, so `denial.user_message()` renders it without
+`{denial:?}`.
+
+A capability with a `recorded_actor` rule compares the acting principal with
+an actor recorded on the workflow occurrence its command consumes. A
+fact-free question carries no such occurrence, so the required role is absent
+and `eligible_for_capability` fails closed with `Denied(..)`; the authority
+inventory instead classifies the same capability `RequiresRequest`. Ask the
+workflow step itself (its command admits the recorded actor) rather than
+reading either answer as "may act".
+
+Capability verdicts judge grant validity at the trusted instant of the call,
+so they are read at the branch head: `WorthQuerySessionSnapshot` offers
+ability `eligibility` and `eligible_among` (relationship policy, no clock) but
+no capability eligibility or authority inventory, and a retained request
+offers neither either. A pinned commit's grants judged against today's clock
+would describe neither the pinned moment nor now.
 
 #### Explain a principal's authority
 
@@ -4467,7 +4485,9 @@ admission uses; `Allowed { through }` names the allowing policy paths that
 held. Every installed capability on it whose own target is a complete request
 (no elevation, related entity, field, magnitude or context entity left to the
 caller) runs admission's capability observation: allowed through its grant
-path, or denied with its explanation cause. Others report `RequiresRequest`.
+path, or denied with its explanation cause. Others report `RequiresRequest`. One
+trusted instant, read once per call, judges every capability entry, and an
+ability with several rules over the same relation chain lists that chain once.
 The inventory reveals another principal's authority, so the asker must hold
 the question's disclosure ability on the scope at the head
 (`RosterNotDisclosed`) before anything about the subject is read; an unmapped,
@@ -8350,6 +8370,23 @@ the first revision, or `Published(previous_ref)` for a revision.
 workflow must declare a `definition_metadata`
 rule naming the concrete installed read binding. Subject permission does not
 open this separate route.
+
+Declare each read binding (definition metadata, subject or audit read) in one
+item. Its input and codec are the operation's own and its principal types the
+binding context's, so the request a read admits cannot drift from the
+operation it names:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The compiled declaration is
+// .../workflow_birth_time_dx/disclosure.rs.
+worth_query_workflow_read_binding!(pub DefinitionMetadataRead in Schema {
+    identity: "app.workflow.definition-read.v1",
+    capability: DefinitionReadCapability,
+    operation: DefinitionReadOp,   // worth_query_operation!(.., input Codec)
+    binding_context: Desktop,
+});
+```
 
 <!-- illustrative -->
 ```rust,ignore

@@ -54,6 +54,8 @@ pub mod native_input_capture;
 mod standing_grants_macro;
 mod workflow_controls_macro;
 #[macro_use]
+mod workflow_read_binding_macro;
+#[macro_use]
 mod workflow_macro;
 #[macro_use]
 mod feature_spec_macro;

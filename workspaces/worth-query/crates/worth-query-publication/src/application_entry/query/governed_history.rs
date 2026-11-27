@@ -52,6 +52,19 @@ pub enum WorthQueryGovernedHistoryDenial {
     History(WorthQueryApplicationHistoryDenial),
 }
 
+impl WorthQueryGovernedHistoryDenial {
+    /// Whether the walk stopped at a retired history gap: history before it
+    /// is no longer kept. Distinct from every work, capacity, policy or
+    /// branch refusal, so an audit view can say "earlier history retired"
+    /// without reading `Debug` text.
+    pub const fn is_retired_history_gap(&self) -> bool {
+        match self {
+            Self::History(cause) => cause.is_retired_history_gap(),
+            Self::Installation(_) | Self::Request(_) => false,
+        }
+    }
+}
+
 type Access<S, C, O, I> = WorthQueryAdmittedApplicationCapabilityAccess<S, C, O, I>;
 
 impl<Schema, Intent> WorthQueryApplicationQueryRequest<'_, '_, '_, Schema, Intent>
