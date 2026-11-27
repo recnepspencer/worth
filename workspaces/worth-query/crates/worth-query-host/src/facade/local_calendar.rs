@@ -62,6 +62,31 @@
 //! clock.advance(Duration::from_secs(5 * 3_600 + 30 * 60)).unwrap();
 //! assert_eq!(mountain.date_at(clock.now()), Ok(CanonicalDate::from_ymd(2026, 11, 27).unwrap()));
 //! ```
+//!
+//! A declarative creation body stamps that same instant into a required
+//! `CanonicalTimestamp` field of the row it creates, in the same commit and
+//! with no caller input, including a workflow-enrolled birth:
+//!
+//! ```
+//! use worth_query_host::facade::declaration::application_schema::{
+//!     fragment::RecordSelection, ApplicationOperationBodyAuthoringDenial,
+//!     ApplicationOperationBodyCreationBuilder, CanonicalTimestamp,
+//!     CanonicalTimestampApplicationValueBinding,
+//! };
+//!
+//! fn stamp_created_at<S, O, I, E, F>(
+//!     creation: ApplicationOperationBodyCreationBuilder<S, O, I, E>,
+//!     created_at: F,
+//! ) -> Result<ApplicationOperationBodyCreationBuilder<S, O, I, E>, ApplicationOperationBodyAuthoringDenial>
+//! where
+//!     F: RecordSelection<Entity = E, Value = CanonicalTimestamp,
+//!         Binding = CanonicalTimestampApplicationValueBinding>,
+//! {
+//!     // The handler's `admitted_at()` and every commit invariant's
+//!     // `admitted_at()` observe exactly this stamp.
+//!     creation.initialize_from_admission_time(created_at)
+//! }
+//! ```
 pub use crate::local_calendar::{
     WorthQueryLocalCalendarDenial, WorthQueryTimeZone, WorthQueryUtcOffset,
 };

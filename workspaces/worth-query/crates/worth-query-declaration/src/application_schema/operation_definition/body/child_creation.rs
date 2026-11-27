@@ -113,6 +113,21 @@ impl<S, O, I, E> ApplicationOperationBodyChildCreationBuilder<S, O, I, E> {
             .push(super::initialization::input(field, member, true)?);
         Ok(self)
     }
+    /// Initializes a required timestamp of this child with the operation's
+    /// trusted admission instant, as the root creation's same-named method.
+    pub fn initialize_from_admission_time(
+        mut self,
+        field: impl crate::application_schema::fragment::RecordSelection<
+            Entity = E,
+            Value = worth_foundational::facade::CanonicalTimestamp,
+            Binding = crate::application_schema::CanonicalTimestampApplicationValueBinding,
+        >,
+    ) -> Result<Self, Denial> {
+        self.creation
+            .fields
+            .push(super::admission_time::step(field)?);
+        Ok(self)
+    }
     pub fn with_child<R, Child, F>(
         mut self,
         relation: ApplicationRelationRef<S, R, E, Child>,

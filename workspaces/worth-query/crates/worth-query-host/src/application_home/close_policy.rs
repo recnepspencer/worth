@@ -94,7 +94,7 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
     }
 }
 
-fn with_close_policy<Owner, Closed, CloseRefused>(
+pub(super) fn with_close_policy<Owner, Closed, CloseRefused>(
     owner: Owner,
     policy: ExecutionRequestPolicy,
     close: impl FnOnce(Owner, &ExecutionRequest<'_, '_>) -> Result<Closed, CloseRefused>,

@@ -321,11 +321,12 @@ pub use crate::background::{
 pub use crate::session::{
     WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQueryLocalSessionDenial,
     WorthQueryOwnedLiveSubscription, WorthQueryOwnedSession, WorthQueryOwnedSessionDenial,
-    WorthQueryPage, WorthQueryPageCursor, WorthQuerySessionCommit, WorthQuerySessionIndexedQuery,
-    WorthQuerySessionPrincipalSource, WorthQuerySessionQuery, WorthQuerySessionRunDenial,
-    WorthQuerySessionSnapshot, WorthQuerySessionSnapshotDenial, WorthQueryTypedLiveCloseDenial,
-    WorthQueryTypedLiveRefreshDenial, WorthQueryTypedLiveSubscription,
-    WorthQueryTypedManagedIndexRefreshDenial, WorthQueryTypedManagedIndexWatch,
+    WorthQueryOwnedWorkflowSession, WorthQueryPage, WorthQueryPageCursor, WorthQuerySessionCommit,
+    WorthQuerySessionIndexedQuery, WorthQuerySessionPrincipalSource, WorthQuerySessionQuery,
+    WorthQuerySessionRunDenial, WorthQuerySessionSnapshot, WorthQuerySessionSnapshotDenial,
+    WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,
+    WorthQueryTypedLiveSubscription, WorthQueryTypedManagedIndexRefreshDenial,
+    WorthQueryTypedManagedIndexWatch,
 };
 pub use crate::{
     worth_query_recurring_rule, worth_query_remote_codec, worth_query_scope_access,

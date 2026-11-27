@@ -332,6 +332,8 @@ pub struct OperationBodyDecisionParts<Schema, Scope> {
     pub references: PreparedBodyReferences<Schema>,
     pub creation_disposition: CreationDisposition,
     pub children: Option<PreparedBodyChildren<Schema>>,
+    /// The advancement's trusted admission instant, when a creation stamps it.
+    pub admitted_at: Option<worth_foundational::facade::CanonicalTimestamp>,
 }
 
 pub trait OperationBodyDecisionInternalPort<Schema, Scope>: Sized {
@@ -357,6 +359,7 @@ impl<Schema, Scope> OperationBodyDecisionInternalPort<Schema, Scope>
             references: parts.references,
             creation_disposition: parts.creation_disposition,
             children: parts.children,
+            admitted_at: parts.admitted_at,
         }
     }
 
@@ -375,6 +378,7 @@ impl<Schema, Scope> OperationBodyDecisionInternalPort<Schema, Scope>
             references: self.references,
             creation_disposition: self.creation_disposition,
             children: self.children,
+            admitted_at: self.admitted_at,
         }
     }
 }

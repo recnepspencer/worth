@@ -10,7 +10,10 @@ tracked scope-field preimage from the same decision observation. An unsigned
 creation may instead copy required or optional fields of one selected related
 subject, without passing those values through caller input. An unsigned
 audit field can also copy the exact admitted principal identity, with its source
-derived from the operation's mutation binding rather than input. Optional scalar
+derived from the operation's mutation binding rather than input. A required
+timestamp of the created row can be stamped with the operation's trusted
+admission instant, the same instant its handlers and commit invariants observe,
+without any caller-supplied time. Optional scalar
 fields can be set from a present scalar input, explicitly cleared, or replaced
 and initialized from one-level Option-valued input. Query installs and executes those
 values; the host does not choose a handler that independently restates them.
@@ -82,6 +85,9 @@ Declare through `worth_query_decl::facade::application_schema`:
   to copy the single live outgoing subject's required or optional preimage;
 - `creation.initialize_from_principal_identity::<Binding, _, _, _, _, _>(actor_field)`
   to attribute a created row to the operation's admitted principal;
+- `creation.initialize_from_admission_time(created_at_field)` (also on child
+  creation sites and the typed chain) to stamp a required `CanonicalTimestamp`
+  with the operation's trusted admission instant;
 - `creation.link_from_scope(relation, "link-slot")` and
   `creation.link_to_scope(relation, "link-slot")` for links to the new row;
 - `creation.replace_from_scope(relation, "link-slot")` to atomically replace an
@@ -451,6 +457,23 @@ from a scope ID, input member, display name, or fresh host lookup. The existing
 tracked scalar read and reservation retain the value through candidate creation.
 This is an unsigned actor attribution. It does not retain a signing event,
 establish freshness of authentication, or grant approval authority.
+
+`initialize_from_admission_time` targets a required, unitless field whose
+codec is the native `CanonicalTimestampApplicationValueBinding`; the type
+system rejects any other value or codec, and cold readmission and native
+installation recheck the declared field. The body reads no graph source and no
+input for it. Its decision reads the advancement's settled trusted instant
+through `DecisionReader::admitted_at()` (read once per advancement from the
+Home's runtime time source, `with_authorization_time_source`, the system clock
+by default), so a handler in another stage of the same edit envelope and every
+commit invariant (`context.admitted_at()`) observe exactly the stamped value.
+Reading it marks the decision as request context, so it is never reused for
+another request. An unavailable time source refuses the operation with
+`HandlerExecutionDenial` carrying `WorthQueryRuntimeTimeDenial`; nothing is
+fabricated and no partial candidate commits. Durable recovery keeps the
+committed stamp; it is never re-read at reopen. Signed creations and
+complete-content reuse refuse it.
+See the [body admission-time court](../../crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/body_admission_time_dx/courts.rs).
 
 An output use names a role of the exact binding's `Output` contract. The compiler
 checks operation/input, schema, contract, entity and posture, including the role's
@@ -955,6 +978,9 @@ Principal-identity initializers select portable body record v12; valid bodies
 without them retain their previous v1–v11 encoding. Their exact binding/source
 tuple enters schema and program meaning. An older record cannot consume the new
 opcode. Transported actor metadata remains descriptive, not principal authority.
+Admission-time initializers select portable body record v45 (created-field
+opcode 12); bodies without them keep their previous encoding, and a v44 profile
+refuses the opcode. Their target enters schema and program meaning.
 
 Workflow occurrence authority and approval evidence remain separate. A source
 expectation is not an approval, signature or general evaluated requirement, and
@@ -1000,7 +1026,8 @@ and Foundation Boolean requirements over scope scalar/presence, distinct
 incoming/outgoing related-item count operands and outgoing child-field lists, plus
 one in-context created entity with literal, flat-input, tracked scope-preimage or
 single outgoing related-subject required/optional preimage
-initializers or an exact unitless admitted-principal identity initializer,
+initializers, an exact unitless admitted-principal identity initializer, or a
+required unitless trusted admission-time timestamp initializer,
 links between that creation and its admitted scope, including at-most-one outgoing
 selection replacement, plus fixed
 Preserve-scope, Preserve-single-outgoing-subject and Create-slot output uses. It requires
@@ -1026,7 +1053,11 @@ performed occurrence of the named producer's ExactlyOne output. See
 [succession output affinity](../foundations/workflow-succession-output-affinity.md).
 The supplier still owns the graph and business-current selection meaning.
 Related copying has no filtered, multi-subject or reverse-selection form and
-cannot initialize a required target from an optional source. Related certified
+cannot initialize a required target from an optional source. Admission time
+initializes only a created row's required timestamp: assigning it to an existing
+scope field, an optional or zoned (`CanonicalTimestampTz`) target, or a civil
+date is not supported; convert with `WorthQueryTimeZone::date_at` in a handler
+or invariant instead. Related certified
 captures are refused, not reinterpreted as root-scope captures. Copying alone does
 not start/succeed a native workflow instance or admit a retained release pin.
 Value operands support unitless Boolean, fixed-width integer, finite float,

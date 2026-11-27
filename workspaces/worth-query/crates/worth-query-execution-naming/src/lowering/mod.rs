@@ -14,11 +14,17 @@ use worth_relational::facade::aggregate_identity::{
     AggregateContinuityRule, AggregateGroupScheme, AggregateGroupSchemeId, AggregateMemberRole,
 };
 use worth_relational::facade::lineage::{
-    InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry,
-    PersistentNameSubjectKind,
+    InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry, PersistentNameSubjectKind,
 };
 
 use crate::denial::ExecutionNamingDenial;
+
+// A structural-identity discriminator the declaration admits at compile
+// time is one Relational admits at commit.
+const _: () = assert!(
+    worth_query_declaration::facade::application_naming::MAX_STRUCTURAL_DISCRIMINATOR_BYTES
+        == worth_relational::facade::lineage::MAX_STRUCTURAL_DISCRIMINATOR_BYTES
+);
 
 /// Lowered execution contract for one installed group name scheme.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -82,12 +88,12 @@ impl LoweredExecutionNameSchemeCatalog {
 
         for layout in catalog.schemes() {
             let relational_scheme = lower_entity_or_relation_scheme(layout)?;
-            relational_registry.register(relational_scheme).map_err(|detail| {
-                ExecutionNamingDenial::SchemeLowering {
+            relational_registry
+                .register(relational_scheme)
+                .map_err(|detail| ExecutionNamingDenial::SchemeLowering {
                     scheme_id: layout.scheme_id().to_owned(),
                     detail,
-                }
-            })?;
+                })?;
             by_subject.insert(
                 (layout.subject_kind(), layout.subject_name().to_owned()),
                 layout.scheme_id().to_owned(),
@@ -173,6 +179,7 @@ fn lower_entity_or_relation_scheme(
         layout.role_order(),
         layout.split_capable(),
         layout.require_authored_occurrence(),
+        layout.structural_identity(),
     )
     .map_err(|detail| ExecutionNamingDenial::SchemeLowering {
         scheme_id: layout.scheme_id().to_owned(),

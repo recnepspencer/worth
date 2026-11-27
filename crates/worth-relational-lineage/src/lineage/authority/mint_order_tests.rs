@@ -39,11 +39,11 @@ fn registry(edge_roles: [&str; 2], face_roles: [&str; 3]) -> InstalledPersistent
     let entity = PersistentNameSubjectKind::Entity;
     for scheme in [
         InstalledPersistentNameScheme::try_from_ordered_roles_for_subject(
-            EDGE, entity, "edge", edge_roles, false, true,
+            EDGE, entity, "edge", edge_roles, false, true, false,
         )
         .expect("valid scheme"),
         InstalledPersistentNameScheme::try_from_ordered_roles_for_subject(
-            FACE, entity, "face", face_roles, false, true,
+            FACE, entity, "face", face_roles, false, true, false,
         )
         .expect("valid scheme"),
     ] {
@@ -107,6 +107,7 @@ fn identity(request: &PersistentNameBirthRequest) -> PersistentNameIdentity {
         &request.role_path,
         &request.parent_identities,
         &request.canonical_discriminator,
+        false,
     )
 }
 

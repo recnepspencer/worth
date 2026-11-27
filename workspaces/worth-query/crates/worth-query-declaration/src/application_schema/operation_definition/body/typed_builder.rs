@@ -278,7 +278,7 @@ pub struct TypedApplicationOperationBodyCreationBuilder<Schema, Operation, Input
 impl<Schema, Operation, Input, Entity>
     TypedApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Entity>
 {
-    fn step(
+    pub(super) fn step(
         self,
         apply: impl FnOnce(
             ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Entity>,

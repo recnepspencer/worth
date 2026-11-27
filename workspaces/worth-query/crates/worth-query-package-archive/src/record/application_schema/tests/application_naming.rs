@@ -39,6 +39,7 @@ fn populated_scheme(kind: ApplicationNameSubjectKind, subject: &str) -> Member {
             Some("worth.cad.face.split.v1".to_owned()),
             vec!["authored".to_owned(), "cut_piece".to_owned()],
             true,
+            true,
         ),
     }
 }
@@ -53,6 +54,8 @@ fn application_name_scheme_round_trips_every_field_and_subject_kind() {
         let member = populated_scheme(kind, subject);
         let bytes = encode_member(&member);
         assert_eq!(&bytes[..4], &[0, 57, 0, 1]);
+        // Authored occurrence (bit 0) and structural identity (bit 1).
+        assert_eq!(bytes.last(), Some(&3));
         assert_eq!(decode_member(&bytes), member);
     }
 
@@ -68,8 +71,11 @@ fn application_name_scheme_round_trips_every_field_and_subject_kind() {
             None,
             Vec::new(),
             false,
+            false,
         ),
     };
+    // A parent-inclusive scheme keeps its one-boolean wire form.
+    assert_eq!(encode_member(&minimal).last(), Some(&0));
     assert_eq!(decode_member(&encode_member(&minimal)), minimal);
 
     // Full portable schema payload round-trip containing Entity + ApplicationNameScheme.
@@ -131,9 +137,10 @@ fn application_name_scheme_refuses_malformed_version_subject_kind_bool_and_trunc
         ApplicationNameSubjectKind::Entity,
         "Face",
     ));
-    // Locate the trailing `require_authored_occurrence` byte (last byte == 1) and corrupt it to 2.
+    // The trailing scheme-flags byte admits only bits 0 (authored
+    // occurrence) and 1 (structural identity): 4 is refused.
     let mut bad_authored = valid.clone();
-    *bad_authored.last_mut().unwrap() = 2;
+    *bad_authored.last_mut().unwrap() = 4;
     assert_eq!(
         try_decode_member(&bad_authored).unwrap_err().kind(),
         Kind::InvalidBooleanEncoding
@@ -200,6 +207,7 @@ fn populated_group_scheme(
                 None,
                 Vec::new(),
                 true,
+                false,
             ),
             rule,
             anchor_role.map(str::to_owned),

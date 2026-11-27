@@ -375,6 +375,20 @@ schema using `worth_query_decl::facade::application_naming`:
   `role_order(&[...])`, optional `role_depends_on(role, earlier_role)` edges,
   `.require_authored_occurrence()`, and `.split_discriminator::<D>()` for split-capable
   kinds.
+- **Structural identity.** `.structural_identity::<D>()` (instead of
+  `.split_discriminator::<D>()`) mints the scheme's names from occurrence,
+  role and discriminator alone, never from their parents: landing two
+  sequential splits in one commit or in two mints byte-identical names for
+  every surviving piece. Relational still records every parent (in the birth
+  and as `Split`/`Merge` lineage edges), so `AllDescendants`, `UnchosenBranch`
+  and `birth_of` read the real history; two siblings with the same
+  discriminator refuse `DuplicateBirth`. `D` must have a derived wire bound
+  within `MAX_STRUCTURAL_DISCRIMINATOR_BYTES` (512): fixed-width values and
+  name references only, so a discriminator carrying text that could grow
+  with split depth does not compile, and Relational refuses an oversize
+  structural discriminator typed (`UnboundedStructuralDiscriminator`). The
+  default (no call) stays parent-inclusive: a piece's name depends on the
+  parent it was split from, and every existing scheme keeps its names.
 - **Canonical discriminators** implement `ApplicationNameDiscriminator` via
   `worth_query_decl::facade::worth_query_name_discriminator!`, encoding typed
   discriminator variants and any embedded `WorthQueryName<K>` references without
@@ -521,6 +535,10 @@ writer.name_created_entity(&face, WorthQueryOutputBirth::of_role(&occurrence, Fa
   `InCommit(WorthQuerySameCommitName<K>)`, built from either with `.into()`.
   A discriminator declared over it serves a referenced record born by an
   earlier commit and one born by the same commit, and mints the same name.
+  A committed reference may name any name the branch recorded at the basis,
+  live or retired: a cutter the same commit consumes, or an ancestor an
+  earlier commit retired, enters by its fixed 32-byte identity, so a
+  discriminator stays the same size at any split depth.
 - **`OccurrencePath`** composes an occurrence from segments:
   `root(key)`, `child(segment)`, `index(name, n)` and `anchored(name,
   &anchor)`, a segment placed relative to another occurrence
@@ -599,8 +617,9 @@ An unnamed program carries no naming plan at all.
   never the operation's name), so two independently authored occurrences with
   identical payloads keep distinct names. `.with_discriminator(&d)` tells
   siblings of one occurrence and role apart, and may embed `WorthQueryName`s
-  live at the basis and not retired by the same operation (`AbsentBasisName`
-  otherwise). A relation's name never includes its endpoints: two
+  recorded on the branch at the basis, live or retired (including one the
+  same operation retires); a name the branch never recorded refuses
+  (`UnresolvedReferencedName` while lowering, `AbsentBasisName` at commit). A relation's name never includes its endpoints: two
   same-role relations of one occurrence collide (`DuplicateBirth`) unless
   their discriminators differ.
 - **References to names born by the same commit.** An output of a later
@@ -7344,6 +7363,28 @@ fn evaluate(&self, context: &WorthQueryApplicationInvariantContext<'_, '_, S>, l
 }
 ```
 
+A declarative creation body stamps the same instant without a handler:
+`creation.initialize_from_admission_time(TicketFacts::created_at())` writes the
+operation's trusted admission instant into the created row's required
+`CanonicalTimestamp` in the same commit, so a workflow-enrolled birth (which is
+body-only) records a trusted `created_at` atomically with its instance. The
+caller supplies no time, and a second commit never backfills it:
+
+```rust,ignore
+OpenTicketOp::reference()
+    .typed_body()
+    .in_scope(Desk::reference())
+    .create_in_scope(Ticket::reference(), "ticket")
+    .initialize_input(TicketFacts::ticket_id(), OpenTicket::ticket_input())
+    .initialize_from_admission_time(TicketFacts::created_at())
+    .finish_pure_definition()?
+```
+
+The body reads the advancement's settled instant exactly as `reader.admitted_at()`
+does, so a handler stage in the same edit envelope and every commit invariant
+observe the identical stamp; an unavailable time source refuses the operation
+with `WorthQueryRuntimeTimeDenial` instead of fabricating time.
+
 The Home's runtime time source is the system clock by default. Tests and
 simulations hold it with `host::primary_graph::WorthQueryFixedRuntimeTimeSource`
 and move it on purpose; keep a clone to advance it after handing one to the
@@ -7369,7 +7410,14 @@ Home, and reopens a Directory Home after the lot has expired. Its
 [envelope and undo court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/admission_time_dx/envelope_and_undo_court.rs)
 shows two envelope stages and the commit sharing one reading of a source that
 ticks on every read, an undo committing at a trusted instant, and a redo
-refused at the current one after the redone expiry has passed.
+refused at the current one after the redone expiry has passed. The
+[body admission-time court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/body_admission_time_dx/courts.rs)
+stamps a body birth with the commit's own instant, moves it only with the held
+clock, refuses without trusted time, shares one ticking instant across a body
+stage, a handler stage and the commit invariant, and reopens a Directory Home
+with the original stamp. The
+[workflow-birth court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/workflow_birth_time_dx/courts.rs)
+stamps a workflow-enrolled birth in the same commit that starts its instance.
 
 ### Optional invariant work and original interruption
 
@@ -8603,6 +8651,78 @@ authorization. Recover deferred publication and ambiguous commits through this
 owner to obtain the original native result. Use the corresponding receivers for
 command cleanup, workflow operation cleanup and history subscription release.
 
+### 6.9 Run a workflow Home from a desktop app
+
+`WorthQueryWorkflowApplicationHome` carries the desktop surface of the ordinary
+Home with the same signatures: `session`, `local_session`, `on_commit`,
+`committed_basis_version`, `active_branch`, `open_disposition`, `home_identity`,
+`close_clean` and `close_with_policy`. Code moves between the two Homes
+unchanged. Open the Home through `WorthQueryHomeConfig` as in §4, including a
+held trusted clock for tests or a sandbox, then bind the vocabulary once:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The compiled journey is
+// workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/
+//   worth_query_court_decl_host_integration/host/application_home/workflow_durability/desktop_sessions.rs
+let trusted = WorthQueryFixedRuntimeTimeSource::new(now);   // keep a clone to move time
+let home = WorthQueryApplicationHome::<Schema, Program>::open_directory(
+    path,
+    WorthQueryHomeConfig::new(build, configuration)
+        .with_roster(roster)
+        .with_authorization_time_source(trusted.clone())
+        .with_initial_state(seed),
+)?
+.retain_workflow_spec(installed_spec, signing_owner)?;
+
+let _repaint = home.on_commit(move || ctx.request_repaint())?;   // every workflow commit
+let local = home.local_session(local_principal, &clock)?;          // renews its own proof
+let reviewer = home.session(&reviewer_principal);
+
+// Lifecycle calls take the session's request and the Home's vocabulary.
+let scope = local.fresh_scope();
+local.request(&scope).mutate(authoring_intent).without_source().idempotency(&key)
+    .prepare_workflow_publication(contract, WorkflowDefinitionExpectedPredecessor::Absent)?
+    .execute();
+
+// A snapshot pins one commit; workflow reads at it observe exactly that commit.
+let snapshot = reviewer.snapshot()?;
+let read = snapshot.with_request(|at| {
+    at.read_original_workflow::<Spec, SubjectRead, AuditRead>(
+        home.vocabulary(), &original, subject_input, audit_input)
+})?;
+
+// Off the UI thread: an owned workflow session lends a vocabulary bound to the
+// runtime its call worker reads.
+let owned = home.owned_session(reviewer.clone()).map_err(|_| ForeignSession)?;
+let pending = owned
+    .spawn_with_workflow(move |session, vocabulary| {
+        let snapshot = session.snapshot()?;
+        snapshot.with_request(|at| at.read_workflow_history::<Spec, SubjectRead, AuditRead>(
+            vocabulary, &target, subject_input, audit_input, 16,
+            WorthQueryWorkflowIndexRead::PublishedOnly, None))
+    })
+    .with_waker(move || ctx.request_repaint());
+// Later, on the UI thread: `pending.try_take()` never blocks.
+```
+
+| Call | Contract |
+|---|---|
+| `home.session(&p)`, `home.local_session(local, &clock)` | The ordinary session (§5). Its `request(&scope)` accepts `home.vocabulary()` for publication, start, proposal, advance, approval and every other §6.6 call |
+| `session.snapshot()?.with_request(\|at\| ..)` | A retained request at the pinned commit under the session's current proof and a fresh scope. Definition discovery, instance and history pages and original-start reads observe `snapshot.selected_commit()` and write nothing. Once newer commits land, an instance read at the pin reports `Historical { posture: RetainedBasis, .. }`: the same observation, but no command locator |
+| `home.on_commit(..)`, `home.committed_basis_version()` | Reports publication, start, proposal, assessment, approval and advance commits like any other commit (§4.3) |
+| `home.owned_session(session)` | A `'static` `WorthQueryOwnedWorkflowSession` holding the Home's runtime and installed configuration; it dereferences to `WorthQueryOwnedSession` (`spawn_query`, `spawn_run`, `on_commit`, ...). A session of another Home is returned unchanged |
+| `owned.with_workflow(\|session, vocabulary\| ..)`, `owned.spawn_with_workflow(..)` | Lend the session and a vocabulary bound to that call's runtime; the spawned form runs on the session's call worker and completes a `WorthQueryPending` (`with_waker`, `try_take`, `wait`) |
+| `home.close_clean()` | Retires the Home and its workflow configuration and releases every owned workflow session: later calls refuse `HomeClosed`, queued calls complete `WorthQueryBackgroundDenial::HomeClosed` |
+
+While an owned workflow session is attached, `support_workflow_spec` refuses
+`RuntimeKeepaliveRetained`; support every program vocabulary before handing out
+owned sessions. A reopened Directory Home, including one reopened under an
+advanced trusted clock, serves the same definitions, instances and history.
+Reinstall the vocabulary and signing owner, then reacquire instance locators
+through a governed read: locators are reissued per Home incarnation, with the
+same instance and definition entities.
+
 ---
 
 ## 7. Adopt a new program on a branch
@@ -8821,6 +8941,12 @@ private; execution cancellation/resource causes retain their typed category. A n
 choices; take a fresh governed view and decide again. A start after preparation
 is still fenced by the native expected head at publication. The carry-compatible
 policy explicitly applies to fresh native truth; it is not a cached inventory.
+
+A desktop workflow Home ([§6.9](#69-run-a-workflow-home-from-a-desktop-app))
+enters this chain from a session's `request(&scope).programs()`. Support the
+target program's vocabulary with `support_workflow_spec` before handing out
+owned workflow sessions: while one is attached it refuses
+`RuntimeKeepaliveRetained`.
 
 ### 7.5 Several branches
 

@@ -91,7 +91,10 @@ fn write_scheme_fields(
         definition.discriminator_referenced_roles(),
         |output, role| output.text(role),
     )?;
-    output.u8(u8::from(definition.require_authored_occurrence()))
+    // Bit 0: authored occurrence required; bit 1: structural identity. A
+    // scheme without structural identity keeps its one-boolean wire form.
+    let structural = u8::from(definition.structural_identity()) << 1;
+    output.u8(u8::from(definition.require_authored_occurrence()) | structural)
 }
 
 fn decode_scheme_fields(
@@ -116,7 +119,11 @@ fn decode_scheme_fields(
     let split_discriminator_identity = decode_optional_text(input)?;
     let discriminator_referenced_roles =
         decode_sequence(input, budget, 2, |input, _| Ok(input.text()?.to_owned()))?;
-    let require_authored_occurrence = decode_bool(input)?;
+    let flags = input.u8()?;
+    if flags > 3 {
+        return Err(Denial::new(Kind::InvalidBooleanEncoding));
+    }
+    let (require_authored_occurrence, structural_identity) = (flags & 1 == 1, flags & 2 == 2);
     Ok(ErasedApplicationNameScheme::from_untrusted_parts(
         ARCHIVE_DECODE,
         scheme_id,
@@ -128,6 +135,7 @@ fn decode_scheme_fields(
         split_discriminator_identity,
         discriminator_referenced_roles,
         require_authored_occurrence,
+        structural_identity,
     ))
 }
 

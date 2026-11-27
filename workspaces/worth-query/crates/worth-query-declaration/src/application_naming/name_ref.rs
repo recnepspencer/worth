@@ -72,7 +72,9 @@ use super::{
 /// }
 /// ```
 pub enum NameRef<K> {
-    /// A name admitted by an earlier commit, live at this commit's basis.
+    /// A name an earlier commit recorded on this branch: live at this
+    /// commit's basis, retired by it (a consumed cutter) or retired before
+    /// it (a retired ancestor), always by its fixed 32-byte identity.
     Committed(WorthQueryName<K>),
     /// The name a record created and named by this commit will be born with.
     InCommit(WorthQuerySameCommitName<K>),
@@ -124,6 +126,7 @@ impl<K> fmt::Debug for NameRef<K> {
 
 impl<K> sealed::Sealed for NameRef<K> {}
 impl<K> ApplicationNameDiscriminatorValue for NameRef<K> {
+    const MAX_ENCODED_BYTES: Option<usize> = Some(33);
     fn encode_discriminator_value(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
         match self {
             Self::Committed(name) => name.encode_discriminator_value(encoder),

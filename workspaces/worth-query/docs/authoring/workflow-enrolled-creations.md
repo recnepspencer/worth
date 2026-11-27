@@ -122,9 +122,9 @@ a host retry loop around repeated advanced mutation construction.
 
 ## Real Example
 
-A purchase-request creator can initialize its code and admitted requester and
-link company membership before attaching enrollment. These are existing typed
-body operations, not a second host implementation:
+A purchase-request creator can initialize its code, admitted requester and
+trusted birth instant and link company membership before attaching enrollment.
+These are existing typed body operations, not a second host implementation:
 
 ```rust,ignore
 let body = CreateRequestOperation::reference().body()
@@ -134,10 +134,23 @@ let body = CreateRequestOperation::reference().body()
     .initialize_from_principal_identity::<CreateRequestBinding, _, _, _, _, _>(
         RequestedBy::reference(),
     )?
+    .initialize_from_admission_time(CreatedAt::reference())?
     .link_from_scope(CompanyRequests::reference(), "company-request")?
     .enroll_in_workflow::<RequestWorkflow, CreateRequestBinding, CreatedRequest>()?
     .finish()?;
 ```
+
+`initialize_from_admission_time` stamps the required `CreatedAt` timestamp with
+the birth's trusted admission instant in the same commit that publishes the
+subject and its instance. The caller supplies no time and no second commit
+backfills it: the body reads the advancement's one settled instant, which every
+commit invariant also observes as `context.admitted_at()`. An unavailable
+trusted time source refuses the birth: neither the subject nor its instance
+publishes. See [Executable Scope-Bound Bodies](./scope-field-operation-bodies.md)
+and the [workflow-birth admission-time court](../../crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/workflow_birth_time_dx/courts.rs),
+which births through `prepare_workflow_birth`/`for_workflow_birth`, projects the
+instance from that commit's own receipt, and checks the stamp against the commit
+invariant's `context.admitted_at()` before and after advancing a held clock.
 
 After installing that body, its program action, own company-scoped capability
 and vocabulary membership, use the same intent and logical key at both calls.

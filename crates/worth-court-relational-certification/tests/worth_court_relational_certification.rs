@@ -1,9 +1,11 @@
 // Concrete retained metadata and fixed im chunks deepen auto-trait obligations.
 #![recursion_limit = "256"]
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
+/// Counts every allocation (`stats_alloc` regions) and, while a naming cost
+/// court enables tracking, attributes each one by stack (`tracking_allocator`).
 #[global_allocator]
-static TEST_ALLOCATOR: &stats_alloc::StatsAlloc<std::alloc::System> =
-    &stats_alloc::INSTRUMENTED_SYSTEM;
+static TEST_ALLOCATOR: tracking_allocator::Allocator<&stats_alloc::StatsAlloc<std::alloc::System>> =
+    tracking_allocator::Allocator::from_allocator(&stats_alloc::INSTRUMENTED_SYSTEM);
 #[path = "worth_court_relational_certification/support/canonical_commit_frame.rs"]
 pub(crate) mod canonical_commit_frame;
 #[path = "worth_court_relational_certification/content/mod.rs"]
