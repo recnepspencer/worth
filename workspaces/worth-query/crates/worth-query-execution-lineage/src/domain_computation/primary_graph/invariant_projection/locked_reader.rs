@@ -46,7 +46,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(crate) value_decode: &'runtime super::super::value_decode::ValueDecodeSession<'runtime>,
     pub(crate) execution: &'runtime worth_execution::ExecutionRequest<'runtime, 'runtime>,
     pub(crate) native: NativeProjectionRead<'runtime>,
-    pub(crate) layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    pub(crate) layout: &'runtime Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
     pub(crate) snapshot: &'runtime worth_relational::facade::snapshots::SnapshotHandle,
     pub(crate) entity_resolution: &'runtime super::super::WorthQueryInstalledEntityResolutionContext,
     pub(crate) observation: worth_relational::facade::mvcc::RelationalBranchObservation,

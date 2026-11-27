@@ -26,14 +26,33 @@ pub mod work_budget;
 use cardinality::classify_current_entities;
 use cardinality::CurrentOutputCardinality;
 use decision_plan_denial::decision_plan_denial;
+use crate::domain_computation::primary_graph::output_lineage::family_selection::{
+    select_current, select_family, CandidateVerdict, SelectionRefusal,
+};
+
+/// The denial `current_output` gives for a family's refusal.
+fn selection_denial(
+    refusal: SelectionRefusal,
+    requested_output: Option<crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead>,
+    subject: &str,
+) -> WorthQueryCurrentOutputDenial {
+    let kind = match refusal {
+        SelectionRefusal::FamilyUnavailable => WorthQueryCurrentOutputDenialKind::FamilyUnavailable,
+        SelectionRefusal::OutputUnavailable => WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+        SelectionRefusal::StaleSource => WorthQueryCurrentOutputDenialKind::StaleSource,
+    };
+    let mut denial = WorthQueryCurrentOutputDenial::new(kind, subject);
+    if refusal == SelectionRefusal::StaleSource {
+        denial.requested_output = requested_output;
+    }
+    denial
+}
 
 use super::WorthQueryCurrentOutputDenial;
 use super::WorthQueryCurrentOutputDenialKind;
 use super::WorthQueryCurrentOutputSelection;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerOutputFamily;
 use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
-use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputVerification;
 use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
@@ -256,18 +275,8 @@ where
                     Family::IDENTITY,
                 )
             })?;
-        if !resolution.family_installed {
-            return Err(WorthQueryCurrentOutputDenial::new(
-                WorthQueryCurrentOutputDenialKind::FamilyUnavailable,
-                Family::IDENTITY,
-            ));
-        }
-        if resolution.ambiguous_publication {
-            return Err(WorthQueryCurrentOutputDenial::new(
-                WorthQueryCurrentOutputDenialKind::OutputUnavailable,
-                Family::IDENTITY,
-            ));
-        }
+        select_family(resolution.family_installed, resolution.ambiguous_publication)
+            .map_err(|refusal| selection_denial(refusal, None, Family::IDENTITY))?;
 
         self.charge_current_output_work(1, Family::IDENTITY)?;
         let selected_native_root = native
@@ -279,83 +288,68 @@ where
                     Family::IDENTITY,
                 )
             })?;
-        let mut current = Vec::new();
+        let mut verdicts = Vec::new();
         let mut retained_selected_native_root = None;
-        let mut stale = false;
         let mut requested_output = None;
-        let mut obsolete = false;
         for candidate in resolution.candidates {
             self.charge_current_output_work(1, Family::IDENTITY)?;
-            let Some(verification) = self.verify_current_candidate(
+            let (facts, witness) = match self.verify_current_candidate(
                 execution,
                 &candidate,
+                producer.entity_id(),
                 native,
                 &selected_native_root,
                 Family::IDENTITY,
-            )?
-            else {
-                stale = true;
-                continue;
+            )? {
+                CandidateVerdict::Current { facts, witness }
+                | CandidateVerdict::RestoredCurrent { facts, witness } => (facts, witness),
+                CandidateVerdict::Unproven => {
+                    verdicts.push((None, false, false));
+                    continue;
+                }
+                CandidateVerdict::Obsolete => {
+                    verdicts.push((None, false, true));
+                    continue;
+                }
+                CandidateVerdict::Stale => {
+                    requested_output =
+                        Some(self.retain_requested_output(&candidate, &selected_native_root)?);
+                    verdicts.push((None, false, false));
+                    continue;
+                }
             };
-            match verification {
-                candidate_verification::VerifiedCandidate::Current {
-                    facts,
-                    witness,
-                } => {
-                    let computation = facts.computation();
-                    let evidence = ConsumedOutputEvidence::new(
-                        computation,
-                        std::sync::Arc::clone(&candidate.settlement_identity),
-                        facts.clone(),
-                        candidate.consumed_outputs_at(&selected_native_root),
-                        candidate.verification_requirement,
-                        witness,
-                        std::sync::Arc::clone(retained_selected_native_root.get_or_insert_with(
-                            || std::sync::Arc::new(selected_native_root.clone()),
-                        )),
-                        candidate.historical().cloned(),
-                    );
-                    self.reader
-                        .consumed_outputs
-                        .entry(std::sync::Arc::clone(&candidate.settlement_identity))
-                        .or_insert(evidence);
-                    current.push(super::CertifiedOutputCorrespondence::new(
-                        computation,
-                        candidate.correspondence,
-                        candidate.output_role,
-                    ));
-                }
-                candidate_verification::VerifiedCandidate::Changed(
-                    ConsumedOutputVerification::ChangedDirectFact(ordinal),
-                ) => {
-                    if candidate.observed_source_facts.for_comparison().is_some_and(|facts| matches!(facts.get(ordinal), Some(WorthQueryApplicationObservedFact::SourceEntity { entity_id }) if *entity_id == producer.entity_id()))
-                    {
-                        obsolete = true;
-                    } else {
-                        stale = true;
-                        requested_output = Some(self.retain_requested_output(&candidate, &selected_native_root)?);
-                    }
-                }
-                candidate_verification::VerifiedCandidate::Changed(_) => {
-                    stale = true;
-                    requested_output = Some(self.retain_requested_output(&candidate, &selected_native_root)?);
-                }
-            }
-        }
-        if current.is_empty() && obsolete {
-            return Err(WorthQueryCurrentOutputDenial::new(
-                WorthQueryCurrentOutputDenialKind::OutputUnavailable,
-                Family::IDENTITY,
+            let computation = facts.computation();
+            let evidence = ConsumedOutputEvidence::new(
+                computation,
+                std::sync::Arc::clone(&candidate.settlement_identity),
+                facts.clone(),
+                candidate.consumed_outputs_at(&selected_native_root),
+                candidate.verification_requirement,
+                witness,
+                std::sync::Arc::clone(retained_selected_native_root.get_or_insert_with(
+                    || std::sync::Arc::new(selected_native_root.clone()),
+                )),
+                candidate.historical().cloned(),
+            );
+            self.reader
+                .consumed_outputs
+                .entry(std::sync::Arc::clone(&candidate.settlement_identity))
+                .or_insert(evidence);
+            verdicts.push((
+                Some(super::CertifiedOutputCorrespondence::new(
+                    computation,
+                    candidate.correspondence,
+                    candidate.output_role,
+                )),
+                true,
+                false,
             ));
         }
-        if current.is_empty() && stale && !applied {
-            let mut denial = WorthQueryCurrentOutputDenial::new(
-                WorthQueryCurrentOutputDenialKind::StaleSource,
-                Family::IDENTITY,
-            );
-            denial.requested_output = requested_output;
-            return Err(denial);
-        }
+        let current = select_current(verdicts, applied)
+            .map_err(|refusal| selection_denial(refusal, requested_output, Family::IDENTITY))?
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
         if replaced.is_empty() {
             self.reader
                 .current_output_families

@@ -30,7 +30,7 @@ impl<'runtime, Schema> WorthQueryApplicationInvariantProjectionReader<'runtime, 
     #[doc(hidden)]
     pub fn layout_for_test(
         &self,
-    ) -> &&'runtime super::super::super::schema_layout::WorthQueryPrimaryGraphLayout {
+    ) -> &&'runtime std::sync::Arc<super::super::super::schema_layout::WorthQueryPrimaryGraphLayout> {
         &self.layout
     }
 }

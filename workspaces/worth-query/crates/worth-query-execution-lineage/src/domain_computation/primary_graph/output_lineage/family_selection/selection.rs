@@ -10,9 +10,7 @@ use std::sync::{Arc, OnceLock};
 use super::super::invalidation::FullVerificationReason;
 use super::super::{ComparableSourceFacts, SealedNativeOutputWitness, WorthQueryCurrentOutputCandidate};
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
-use crate::domain_computation::primary_graph::invariant_projection::consumed_output::{
-    ConsumedOutputVerification, ConsumedOutputVerificationStop,
-};
+use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputVerification;
 use worth_relational::facade::identity::EntityId;
 
 /// Why a family selects nothing a reader may use.
@@ -29,7 +27,10 @@ pub enum CandidateVerdict {
     Current { facts: ComparableSourceFacts, witness: Arc<OnceLock<SealedNativeOutputWitness>> },
     /// An unwitnessed restore root compared current; the witness that
     /// comparison built is the read's to retain.
-    RestoredCurrent { facts: ComparableSourceFacts, witness: SealedNativeOutputWitness },
+    RestoredCurrent {
+        facts: ComparableSourceFacts,
+        witness: Arc<OnceLock<SealedNativeOutputWitness>>,
+    },
     /// It has no proof a selection can compare.
     Unproven,
     /// It changed.
@@ -46,18 +47,18 @@ impl CandidateVerdict {
 
 /// Verify one candidate. `sealed` compares a witnessed candidate and
 /// `restored` an unwitnessed restore root; each caller passes its own
-/// comparison, and nothing else differs between them.
-pub fn candidate_verdict(
+/// comparison and its own stop, and nothing else differs between them.
+pub fn candidate_verdict<Stop>(
     candidate: &WorthQueryCurrentOutputCandidate,
     producer: EntityId,
     sealed: impl FnOnce(
         &ComparableSourceFacts,
         &Arc<OnceLock<SealedNativeOutputWitness>>,
-    ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop>,
+    ) -> Result<ConsumedOutputVerification, Stop>,
     restored: impl FnOnce(
         &ComparableSourceFacts,
-    ) -> Result<Option<SealedNativeOutputWitness>, ConsumedOutputVerificationStop>,
-) -> Result<CandidateVerdict, ConsumedOutputVerificationStop> {
+    ) -> Result<Option<Arc<OnceLock<SealedNativeOutputWitness>>>, Stop>,
+) -> Result<CandidateVerdict, Stop> {
     let Some(facts) = candidate.observed_source_facts.for_comparison() else {
         return Ok(CandidateVerdict::Stale);
     };
