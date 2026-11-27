@@ -4,3 +4,10 @@ defaultTargets = ["StoreM4"]
 
 [[lean_lib]]
 name = "StoreM4"
+
+# Rust <-> model conformance: `lake exe store_m4_core_conformance <trace.ndjson>`
+# checks traces emitted by real compiled Rust production code in `worth-store`
+# against all five proved StoreM4 Lean modules.
+[[lean_exe]]
+name = "store_m4_core_conformance"
+root = "StoreM4CoreConformance"

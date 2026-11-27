@@ -1,3 +1,8 @@
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/pin_table_kernel/mod.rs:21-53 sha256:86b58650ad9fca659eff97c17dda6a2f81c2e2d5f62045606245badfdb08826b
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/pin_table_kernel/mod.rs:166-193 sha256:f6c5d79b599f81fddb14f2ec5d1f443dc83bebed0ba7807968ffc187fc898bdb
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/pin_table_kernel/transitions.rs:282-328 sha256:679f25b271207da4c2a799036acaf6dd7d00cbad18b9667963f75691372d95d7
+
 namespace StoreM4.PinSafety
 
 /-- Lifecycle state of a durable whole-Home root pin lease (Milestone 4 §3.2 / §4.1). -/

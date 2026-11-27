@@ -1,3 +1,15 @@
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/slot_range.rs:68-105 sha256:608831fc5fd879fbce951c9d02f3692bde1db4f0e4500b90ab0ffbd99ff254d8
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/chunk_directory.rs:60-112 sha256:6fee9d545774df54381d5f786185a3934b1851d0f59bf7ed513c554f06ab668d
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/chunk_images.rs:101-132 sha256:8d6a629694c48555220f517c9fb0b5690167f7b4b1effbaa2ccc7321abc25f14
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/consolidation.rs:40-76 sha256:aa02b48623833df9d93802df5e28855de15b787382a96d28d4eeb23904b2c4d4
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/consolidation.rs:118-132 sha256:2f408c0caf8a8aa5dcb7c450caf696c827cfde88ec54f57b936529316d4d1043
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/semantic_entry.rs:67-92 sha256:28cfd9d236e0bf3f04b469082ba0cfab78af0c5326e353739b5def673aea0711
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/semantic_entry.rs:188-243 sha256:399ae5b0b861e06a27ea76e3dd02d9b053bd84c7ffd89dcab53b0d9f33a62074
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/sealing.rs:95-172 sha256:5fea5cebf2a809fc0240c01857e5852ad6eeda595d7d02bb320e8fcb4e89d647
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/summary_scan.rs:47-94 sha256:30365e90e8b27c45ecb16677d734b8894f442d36a99c6d20a4e5867c9076a161
+-- proof-mirror: workspaces/worth-store/crates/worth-store-blob-chunks/src/chunk_integrity/sequence.rs:64-133 sha256:78af50a5f0fc42696827b9bc0ade5714cf868c629f29271a1241975504fcae80
+
 /-!
 # `ChunkedCoverageAndSummarySound` (Store Milestone 4, Phase M4.3)
 

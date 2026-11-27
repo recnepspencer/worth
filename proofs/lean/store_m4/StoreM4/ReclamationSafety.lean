@@ -1,3 +1,10 @@
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/reclamation_plan_validator/mod.rs:32-73 sha256:907e0df3a76edb0ee0f1888a30ad7b6b78a524be0f1fe961b0f4d3e826cdb963
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/reclamation_plan_validator/mod.rs:106-198 sha256:dd4a272b0d41d3041019cd05f57f46f969fcef8630b0ad06bef87ac76562daac
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/reclamation_plan_validator/resume.rs:13-34 sha256:ba7064218f2566d6675d733527773d926b8d17d89ceb0a312d5f872749fa54f6
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/reclamation_plan_validator/resume.rs:51-84 sha256:9fe19c4287006fad3edee3f6e750778a7c7108332fef1943a4bb4f7d98ae6090
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/physical_runtime/durability/retention/reclaim_plan.rs:90-172 sha256:3b44c758b95a25d063f269bc80c3709e39cfb4f59e6087163fdb8b4f1147bfca
+
 /-!
 # Safe physical reclamation (Store Milestone 4, Phase M4.5b)
 
