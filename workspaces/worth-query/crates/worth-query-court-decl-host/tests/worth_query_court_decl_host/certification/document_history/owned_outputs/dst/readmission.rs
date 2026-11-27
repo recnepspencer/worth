@@ -123,6 +123,7 @@ fn court_as(name: &str, shape: Shape, decline: Option<bool>, ops: &[Op], tail: &
 fn chain_on_a_forked_head_reuses_marks() {
     let counts = court("chain_on_a_forked_head_reuses_marks", &PREFIX, &[]);
     assert!(counts.acceptances > 0, "the restored e1 fact must hold only through its selection evidence");
+    assert!(counts.readmitted > 0, "the forked head must readmit the chain, not execute it afresh");
     assert_eq!(counts.second_settle_registrations, 0, "the second settle must certify from the readmitted marks");
 }
 
