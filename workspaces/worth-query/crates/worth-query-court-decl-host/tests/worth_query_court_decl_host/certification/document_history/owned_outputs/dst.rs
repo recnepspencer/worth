@@ -24,6 +24,7 @@ pub(super) mod fixture;
 mod readmission;
 mod reference;
 mod regressions;
+mod selection;
 mod trace;
 mod workload;
 mod world;
