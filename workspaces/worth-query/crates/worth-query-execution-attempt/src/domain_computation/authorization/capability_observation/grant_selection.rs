@@ -257,20 +257,28 @@ fn append_grant_predicates(
     predicates: &mut Vec<RelationalAuthorizationPredicate>,
 ) {
     let ordinal = installed.grant_witness().entity_ordinal();
-    predicates.push(RelationalAuthorizationPredicate::compare(
-        ordinal,
-        installed.grant_kind(),
-        installed.request().not_before.clone(),
-        RelationalAuthorizationFieldComparison::AtMost,
-        sample.value().clone(),
-    ));
-    predicates.push(RelationalAuthorizationPredicate::compare(
-        ordinal,
-        installed.grant_kind(),
-        installed.request().not_after.clone(),
-        RelationalAuthorizationFieldComparison::AtLeast,
-        sample.value().clone(),
-    ));
+    // An open bound admits every instant on its side: it adds no predicate.
+    let bounds = [
+        (
+            &installed.request().not_before,
+            RelationalAuthorizationFieldComparison::AtMost,
+        ),
+        (
+            &installed.request().not_after,
+            RelationalAuthorizationFieldComparison::AtLeast,
+        ),
+    ];
+    for (bound, comparison) in bounds {
+        if let Some(bound) = bound {
+            predicates.push(RelationalAuthorizationPredicate::compare(
+                ordinal,
+                installed.grant_kind(),
+                bound.clone(),
+                comparison,
+                sample.value().clone(),
+            ));
+        }
+    }
     if let (Some(field), Some(value)) = (&installed.request().field, projection.field()) {
         predicates.push(RelationalAuthorizationPredicate::new(
             ordinal,

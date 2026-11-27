@@ -50,8 +50,9 @@ pub(super) fn validate_capability_identifiers(
         validate_field(workflow.grant())?;
         validate_field(workflow.resource())?;
     }
-    validate_field(currentness.validity().not_before())?;
-    validate_field(currentness.validity().not_after())?;
+    for bound in currentness.validity().bounds() {
+        validate_field(bound)?;
+    }
     for status in currentness.extent_status() {
         validate_value_binding(status)?;
     }
@@ -82,13 +83,10 @@ pub(super) fn validate_capability_identifiers(
 fn validate_elevation(
     elevation: &crate::application_capability::ApplicationCapabilityElevationDefinition,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
-    for field in [
-        elevation.identity(),
-        elevation.reason(),
-        elevation.status(),
-        elevation.validity().not_before(),
-        elevation.validity().not_after(),
-    ] {
+    for field in [elevation.identity(), elevation.reason(), elevation.status()]
+        .into_iter()
+        .chain(elevation.validity().bounds())
+    {
         validate_field(field)?;
     }
     for state in elevation.states().values() {

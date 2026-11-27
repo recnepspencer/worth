@@ -50,6 +50,8 @@ mod application_program;
 mod program_transition;
 #[doc(hidden)]
 pub mod native_input_capture;
+#[macro_use]
+mod standing_grants_macro;
 mod workflow_controls_macro;
 #[macro_use]
 mod workflow_macro;

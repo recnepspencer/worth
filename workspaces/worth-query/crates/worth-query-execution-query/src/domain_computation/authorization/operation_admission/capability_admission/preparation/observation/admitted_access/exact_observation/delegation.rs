@@ -317,23 +317,21 @@ fn predicates<Schema, Scope, Context>(
         ),
         predicate(
             installed,
-            &installed.delegation().not_before,
-            Comparison::AtMost,
-            proposed.not_before().value(),
-        ),
-        predicate(
-            installed,
-            &installed.delegation().not_after,
-            Comparison::AtLeast,
-            proposed.not_after().value(),
-        ),
-        predicate(
-            installed,
             &lineage.remaining,
             Comparison::StrictlyGreater,
             proposed.remaining_delegations().value(),
         ),
     ];
+    // The parent's window holds the child's on each closed side; an open
+    // parent side holds every child bound.
+    if let Some(not_before) = &installed.delegation().not_before {
+        let child = proposed.not_before().value();
+        predicates.push(predicate(installed, not_before, Comparison::AtMost, child));
+    }
+    if let Some(not_after) = &installed.delegation().not_after {
+        let child = proposed.not_after().value();
+        predicates.push(predicate(installed, not_after, Comparison::AtLeast, child));
+    }
     if let (Some(field), Some(value)) = (&installed.delegation().disclosure, target.field_value()) {
         predicates.push(predicate(installed, field, Comparison::Equal, value));
     }

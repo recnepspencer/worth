@@ -205,8 +205,10 @@ fn requirement_is_owned(
         || currentness
             .workflow()
             .is_some_and(|workflow| requirement.field() == workflow.grant())
-        || requirement.field() == currentness.validity().not_before()
-        || requirement.field() == currentness.validity().not_after()
+        || currentness
+            .validity()
+            .bounds()
+            .any(|bound| requirement.field() == bound)
         || delegation
             .lineage()
             .is_some_and(|lineage| requirement.field() == lineage.limit())

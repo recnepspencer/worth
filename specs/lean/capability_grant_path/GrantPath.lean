@@ -1,5 +1,6 @@
 /-
-Standing grants, extent liveness and grant validity (W9A-2).
+Standing grants, extent liveness and grant validity (W9A-2), with open
+validity bounds (W10A).
 
 Mirrors
   workspaces/worth-query/crates/worth-query-execution-lineage/src/domain_computation/
@@ -16,6 +17,10 @@ Mirrors
                                           -> `admits`
 and the validity comparison `not_before <= sample <= not_after` on one sample
 of the admission instant (`grant_selection.rs`, `append_grant_predicates`).
+An absent bound (W10A `from`, `until`, `unbounded`) adds no predicate
+                                          -> `validOpen`
+and a window open above reports the timeline's end as its expiry
+(`expiry.rs`, `observe_grant_expiry`).
 
 Properties:
   * `extent_narrows`: declaring liveness only removes admissions;
@@ -25,9 +30,20 @@ Properties:
     workflow grant minus the workflow equality, nothing else;
   * `expired_stays_expired`: on a UTC timeline expiry is permanent;
   * `expired_stays_expired_local`: on a local-date timeline it is permanent
-    exactly when the calendar's date never moves backwards (`Monotone`).
+    exactly when the calendar's date never moves backwards (`Monotone`);
+  * `validOpen_closed`: with both bounds present, open validity is exactly
+    the closed comparison, so closed grants are unchanged;
+  * `open_above_never_expires`, `unbounded_always_valid`: an open upper
+    bound never expires, and the unbounded window admits every sample;
+  * `expired_stays_expired_open`: a present upper bound still expires
+    permanently whatever the lower bound;
+  * `open_bound_is_extreme`: an absent bound admits exactly what the
+    timeline's extreme value admits, so the reported end-of-time expiry is
+    the bound the predicate omits.
 -/
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution-lineage/src/domain_computation/authorization/capability_lowering.rs:39-101 sha256:dbad2ea8453fb9ce731e9a38f4273e131d70d6f0006044cc2499cb1cda452e43
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution-attempt/src/domain_computation/authorization/capability_observation/grant_selection.rs:253-281 sha256:452c566d8fd97bfb4781b55016a95b239cf1ca5c4067a7a065d851d74e1b740f
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution-attempt/src/domain_computation/authorization/capability_observation/expiry.rs:13-16 sha256:3370e8be9356dbf95b50e0b9301008d831870e718f4f64512cb64c9d5a25e725
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution-lineage/src/domain_computation/authorization/capability_lowering/extent_status.rs:22-57 sha256:59e0cf355edea31a10bd84a851189c5c93502f62c35d51caf54af6f4f000f19c
 
 namespace CapabilityGrantPath
@@ -124,5 +140,41 @@ example : admits true .standing [⟨7, 1⟩] [⟨0, 0⟩, ⟨1, 0⟩, ⟨7, 0⟩
 example : admits true (.workflow 3 4) [] [⟨0, 0⟩, ⟨1, 0⟩, ⟨7, 1⟩] = false := by decide
 -- A grant-kind node (ordinal 1) is not an extent ordinal.
 example : admits true .standing [⟨1, 1⟩] [⟨0, 0⟩, ⟨1, 0⟩, ⟨7, 0⟩] = true := by decide
+
+/-- Validity with optional bounds: an absent bound admits every sample on
+its side, exactly as grant selection omits its predicate. -/
+def validOpen (notBefore notAfter : Option Int) (sample : Int) : Prop :=
+  (∀ b, notBefore = some b → b ≤ sample) ∧ (∀ a, notAfter = some a → sample ≤ a)
+
+theorem validOpen_closed (notBefore notAfter sample : Int) :
+    validOpen (some notBefore) (some notAfter) sample ↔ valid notBefore notAfter sample := by
+  simp [validOpen, valid]
+
+theorem open_above_never_expires (notBefore : Option Int) (t t' : Int)
+    (current : validOpen notBefore none t) (later : t ≤ t') :
+    validOpen notBefore none t' := by
+  refine ⟨fun b hb => ?_, fun a ha => by simp at ha⟩
+  have := current.1 b hb
+  omega
+
+theorem unbounded_always_valid (sample : Int) : validOpen none none sample := by
+  simp [validOpen]
+
+theorem expired_stays_expired_open (notBefore : Option Int) (notAfter t t' : Int)
+    (expired : notAfter < t) (later : t ≤ t') : ¬ validOpen notBefore (some notAfter) t' := by
+  intro h
+  have := h.2 notAfter rfl
+  omega
+
+/-- On a timeline bounded by `lo` and `hi`, an absent bound admits exactly
+what the extreme bound admits. -/
+theorem open_bound_is_extreme (lo hi sample : Int) (inRange : lo ≤ sample ∧ sample ≤ hi)
+    (notBefore notAfter : Option Int) :
+    validOpen notBefore notAfter sample ↔
+      validOpen (some (notBefore.getD lo)) (some (notAfter.getD hi)) sample := by
+  cases notBefore <;> cases notAfter <;> simp [validOpen] <;> omega
+
+example : validOpen (some 5) none 9 := by simp [validOpen]
+example : ¬ validOpen none (some 5) 9 := by simp [validOpen]
 
 end CapabilityGrantPath

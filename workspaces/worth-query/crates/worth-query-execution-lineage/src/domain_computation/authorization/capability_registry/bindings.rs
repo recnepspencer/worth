@@ -142,8 +142,10 @@ pub struct WorthQueryCapabilityRequestBindings {
     pub magnitude: Option<AspectFieldLocator>,
     pub cardinality: ApplicationCapabilityCardinalityDimension,
     pub timeline: ApplicationCapabilityValidityTimeline,
-    pub not_before: AspectFieldLocator,
-    pub not_after: AspectFieldLocator,
+    /// The grant's inclusive lower validity bound; `None` is open below.
+    pub not_before: Option<AspectFieldLocator>,
+    /// The grant's inclusive upper validity bound; `None` never expires.
+    pub not_after: Option<AspectFieldLocator>,
     pub context: String,
     pub context_type: String,
 }

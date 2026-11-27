@@ -104,8 +104,16 @@ pub fn request_bindings(
             .transpose()?,
         cardinality: constraints.cardinality(),
         timeline: currentness.validity().timeline(),
-        not_before: field_locator(layout, currentness.validity().not_before())?,
-        not_after: field_locator(layout, currentness.validity().not_after())?,
+        not_before: currentness
+            .validity()
+            .not_before()
+            .map(|bound| field_locator(layout, bound))
+            .transpose()?,
+        not_after: currentness
+            .validity()
+            .not_after()
+            .map(|bound| field_locator(layout, bound))
+            .transpose()?,
         context: constraints.context().to_string(),
         context_type: constraints.context_type().to_string(),
     })

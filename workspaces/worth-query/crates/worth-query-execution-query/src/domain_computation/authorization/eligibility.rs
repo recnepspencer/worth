@@ -6,8 +6,19 @@
 //! always admitted (and any roster disclosed) at the branch head. A verdict
 //! is not authority: acting still admits the actor freshly.
 
+mod capability;
+mod inventory;
 mod observation;
 mod prepared;
+
+pub use capability::{
+    WorthQueryCapabilityEligibility, WorthQueryCapabilityEligibilityQuestion,
+    WorthQueryCapabilityKey,
+};
+pub use inventory::{
+    role_authority, WorthQueryAuthority, WorthQueryAuthorityEntry, WorthQueryAuthorityInventory,
+    WorthQueryAuthorityPath, WorthQueryAuthorityQuestion, WorthQueryAuthorityVerdict,
+};
 
 use std::marker::PhantomData;
 
@@ -76,6 +87,13 @@ impl WorthQueryAbilityKey {
         Self {
             ability: ability.name(),
             scope_entity: ability.scope(),
+        }
+    }
+
+    pub(crate) const fn named(ability: &'static str, scope_entity: &'static str) -> Self {
+        Self {
+            ability,
+            scope_entity,
         }
     }
 
@@ -162,4 +180,11 @@ pub enum WorthQueryAbilityEligibilityDenial {
     RosterNotDisclosed { disclosure: &'static str },
     /// The policy decision was refused or stopped before a verdict.
     Authorization(WorthQueryOperationAuthorizationDenial),
+    /// The capability is not installed for its operation in this schema.
+    CapabilityNotInstalled { capability: &'static str },
+    /// The capability is exercised only through an approved elevation, which
+    /// a fact-free question cannot carry.
+    CapabilityRequiresElevation { capability: &'static str },
+    /// The capability request did not resolve at the selected basis.
+    CapabilityRequest(WorthQueryOperationAuthorizationDenial),
 }

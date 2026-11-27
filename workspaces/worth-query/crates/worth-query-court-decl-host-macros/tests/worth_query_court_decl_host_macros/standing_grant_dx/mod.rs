@@ -5,10 +5,16 @@
 //! no operation can link its own principal as a grantee. Every court runs on a
 //! Directory Home and reopens it.
 mod assign;
+mod authority_inventory;
+mod capability_eligibility;
+mod countersign;
 mod courts;
 mod grants;
+mod observers;
+mod open_validity;
 mod program;
 mod schema;
+mod typed_controls;
 
 use std::path::PathBuf;
 

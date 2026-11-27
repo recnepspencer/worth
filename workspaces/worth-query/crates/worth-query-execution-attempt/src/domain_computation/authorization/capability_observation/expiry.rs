@@ -10,7 +10,10 @@ pub(super) fn observe_grant_expiry(
     installed: &WorthQueryInstalledCapabilityPlan,
     grant: worth_relational::facade::identity::EntityId,
 ) -> Result<worth_foundational::facade::AspectValue, WorthQueryOperationAuthorizationDenial> {
-    let locator = &installed.request().not_after;
+    // A window open above never expires: its expiry is the timeline's end.
+    let Some(locator) = &installed.request().not_after else {
+        return Ok(installed.request().timeline.end_of_time());
+    };
     let field = locator
         .field_path()
         .fields()
