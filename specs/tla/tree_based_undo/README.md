@@ -99,7 +99,7 @@ TLC's exit codes are:
 ## Hand traces
 
 The DST harness writes generated traces as `seed-<n>.ndjson`. These stay
-ignored; only `hand-*.ndjson` is versioned.
+ignored; `hand-*.ndjson` and the DST baselines below are versioned.
 
 | Trace | Expected | Contents |
 | --- | --- | --- |
@@ -123,6 +123,21 @@ ignored; only `hand-*.ndjson` is versioned.
 | `hand-rejected-other-source-replays` | exit 11, pc = 5 | `hand-replay-other-source` with today's defect: the reused key on the other source answers `AlreadyRecorded`. |
 | `hand-rejected-envelope-replays-writer-key` | exit 11, pc = 4 | `hand-writer-key-envelope`, but the envelope under the writer's key replays the writer's step, as the flat pre-(v) journal said (DST seeds 0x7b020035 and 0x7b020108). |
 | `hand-rejected-stage-correction-replays-other-stage` | exit 11, pc = 3 | `hand-stage-distinct-corrections`, but `k2` on `e1`'s creation replays step 2: one meaning for two stages of one step. |
+
+## DST baselines
+
+Three owned-outputs DST traces recorded on public master `f5e92d0d36`
+(`the_document_agrees_with_the_oracle`, default 16 operations, no
+corrections), copied unchanged from `seed-<n>.ndjson`. Held seeds
+(`0x7b02000f`, public #429) are excluded. Tree-Based Undo Phase 2E
+regenerates them and compares them byte for byte; a difference is explained
+or treated as a regression.
+
+| Trace | Expected | Contents |
+| --- | --- | --- |
+| `dst-0x7b020000` | exit 0 | A stopped edit, a writer step, an edit, undo, a refused redo, a fork edit, a checkout back to the first branch, an out-of-band write, then edits and a checkout refused `HeadDiverged`, two maintenance passes, close. |
+| `dst-0x7b020019` | exit 0 | Envelope refusals (undeclared operation, empty, intent drift, stop, stage refusal), a checkout to the root and a fork there, a second fork after undo, a refused redo, a checkout, close. |
+| `dst-0x7b02002d` | exit 0 | A fork at the root (checkout to node 0, then a new edit), a checkout back, `redo_to` choosing the second child, undo, discarded writers, close. |
 
 ## Proofs of the implementation kernels
 
