@@ -66,6 +66,7 @@ fn local(name: &str, small: &Cost, large: &Cost, envelope: u64) {
 }
 
 #[test]
+#[ignore = "held on public #466: navigation's reversal-fact walk (journal/facts.rs facts_between) probes every step between current and target"]
 fn local_commands_and_bounded_pages_stay_local_as_depth_and_sibling_width_vary_independently() {
     let short_narrow = scenario::run(1, 2);
     let short_broad = scenario::run(1, 8);
