@@ -1,0 +1,72 @@
+{
+  "provenance": "captured on master f5e92d0d36 by temporary eprintln in envelope_recording/admission.rs and group/admission.rs; logs/tbu-2e-a/s0a-golden-capture.log. Data until S2 (envelope, correction) and S4 (group) add courts against the production hashers.",
+  "envelope": [
+    {
+      "history": "OwnedOutputsHistory",
+      "key": "4d174dc7db0d3a226bd4458706131e0e743e01b591b07c8e992adf023d512081",
+      "edit_intent": "73382aaf2b5a14ad01daaf3601a6417c8d1f9e0eb91497a7288f3117608a349a",
+      "key_identity": "cb13b803c03bb97fb9642f4c75aeac260013924db9405601178536e87527c31a",
+      "intent_identity": "45da9f0bbdc94d935b0170363d8831ee0337421eff1b9574664a3e419d52c56d"
+    },
+    {
+      "history": "OwnedOutputsHistory",
+      "key": "53ad346c88c4c3d35205674ede2073589fea03131fe0eb6896ee37c17e02732d",
+      "edit_intent": "5613dc5e6c0310e02c5f364ea9e9696f704caa1e4935473bcc3bda73a99d036b",
+      "key_identity": "338e6f6aeb06aa2aecf0cd2be55cdc31611600fd06a71db54af3a006ca998232",
+      "intent_identity": "a8d8f0f53017c557aa276b3152c210ec8ecf8e1782c004b1344d43ac3e9fab56"
+    },
+    {
+      "history": "OwnedOutputsHistory",
+      "key": "bd23461ee26440ed7bdcd387bcd1fed1a83d0c0a9ba1f1b2d7ec8c4ffa50429c",
+      "edit_intent": "a2a2313a7ab4b4913126b229d8610953f323f4cd15dee7d1cd952bd81c27e284",
+      "key_identity": "547177ac810d17aeebb862665e60917542b342024c518d2b2e5806b8fdea9edb",
+      "intent_identity": "c1e7c65ebfe497efbd5936216c93b2bfde24578ed9b1f24aebaa478cab5ef692"
+    },
+    {
+      "history": "OwnedOutputsHistory",
+      "key": "567b3cb923b857d1d510a0946d988dac4cfcc52b26f0666ba2eebf196c7f8d6d",
+      "edit_intent": "d6f8cc86652c0e2bc56a7fa26936368699ae745d0a6d5cd5965a0af16e63662b",
+      "correction": {
+        "binding": "owned-outputs.dst.undo-create-e2.v1",
+        "source_ordinal": 2,
+        "member": "primary"
+      },
+      "key_identity": "f50eba2e5d9d5cefcb0736bc0703e56b38db0b3814b403e45689c07618991fd0",
+      "intent_identity": "c9ebd3344f5cc628b899ff74c09ee36c9c2d06c686f1ccda419e32b154ec5ef4"
+    }
+  ],
+  "group": [
+    {
+      "history": "DocumentRetentionHistory",
+      "key": "0x91825200",
+      "members": [
+        {
+          "canonical_key": "c77ffbb9d641c785e4c60bd9a03412eb2864eaaccf21666d73b10759bacf9102",
+          "intent_text": "v2:80ebfd3faed7ee5766ff6070a28a4b689c13b02a6ed7b2c700ec465220fd6c29:source=-:operation=87d41b96efe777996c3c75e9a9bed1bf5dae7e2ba73b6602a34b44d02ad039f3:scope=a133b5dcdbee70a39d59182920faa09313792a4fc8fea51f6ed17667830dda488a3eb7a9ce1d33ca1d02154f5d8ffcde21c8e8e028a8b7d491bd4f74af43952e0000000000000000000000070000000100000000000000000000000200000001:precondition=-:input=-:proposal=-:conditional-definition=-:mutation-binding=f0d1b1070190c3ea690f3bc737bf8a30f11c7e9e4f0e7d75be0e833e9ad2325d"
+        },
+        {
+          "canonical_key": "4ead1e3afcb5719396f59fe9ef8615740b64f3b75b66e66d8f741b0efe182ec6",
+          "intent_text": "v2:b4d8168ac8a274f716384d9896f78d94eedb56f6b9e99e0175e3ab415eee8c60:source=-:operation=87d41b96efe777996c3c75e9a9bed1bf5dae7e2ba73b6602a34b44d02ad039f3:scope=a133b5dcdbee70a39d59182920faa09313792a4fc8fea51f6ed17667830dda488a3eb7a9ce1d33ca1d02154f5d8ffcde21c8e8e028a8b7d491bd4f74af43952e0000000000000000000000070000000100000000000000000000000200000001:precondition=-:input=-:proposal=-:conditional-definition=-:mutation-binding=f0d1b1070190c3ea690f3bc737bf8a30f11c7e9e4f0e7d75be0e833e9ad2325d"
+        }
+      ],
+      "key_identity": "088e43a6815944adf127226b2b71aece65d70851cde5f0a61df93de36ff999d2",
+      "intent_identity": "da15c78b824f03a4fc61cc0b8285bb658cf3d435b62205be736867b29cb5a3e6"
+    },
+    {
+      "history": "DocumentRetentionHistory",
+      "key": "0x91825201",
+      "members": [
+        {
+          "canonical_key": "c77ffbb9d641c785e4c60bd9a03412eb2864eaaccf21666d73b10759bacf9102",
+          "intent_text": "v2:80ebfd3faed7ee5766ff6070a28a4b689c13b02a6ed7b2c700ec465220fd6c29:source=-:operation=87d41b96efe777996c3c75e9a9bed1bf5dae7e2ba73b6602a34b44d02ad039f3:scope=a133b5dcdbee70a39d59182920faa09313792a4fc8fea51f6ed17667830dda488a3eb7a9ce1d33ca1d02154f5d8ffcde21c8e8e028a8b7d491bd4f74af43952e0000000000000000000000070000000100000000000000000000000200000001:precondition=-:input=-:proposal=-:conditional-definition=-:mutation-binding=f0d1b1070190c3ea690f3bc737bf8a30f11c7e9e4f0e7d75be0e833e9ad2325d"
+        },
+        {
+          "canonical_key": "4ead1e3afcb5719396f59fe9ef8615740b64f3b75b66e66d8f741b0efe182ec6",
+          "intent_text": "v2:b4d8168ac8a274f716384d9896f78d94eedb56f6b9e99e0175e3ab415eee8c60:source=-:operation=87d41b96efe777996c3c75e9a9bed1bf5dae7e2ba73b6602a34b44d02ad039f3:scope=a133b5dcdbee70a39d59182920faa09313792a4fc8fea51f6ed17667830dda488a3eb7a9ce1d33ca1d02154f5d8ffcde21c8e8e028a8b7d491bd4f74af43952e0000000000000000000000070000000100000000000000000000000200000001:precondition=-:input=-:proposal=-:conditional-definition=-:mutation-binding=f0d1b1070190c3ea690f3bc737bf8a30f11c7e9e4f0e7d75be0e833e9ad2325d"
+        }
+      ],
+      "key_identity": "e5d6c6c056f737e363c9d937f89cd406247f1f2086e0326f3b61d9e4d4c981cf",
+      "intent_identity": "da15c78b824f03a4fc61cc0b8285bb658cf3d435b62205be736867b29cb5a3e6"
+    }
+  ]
+}

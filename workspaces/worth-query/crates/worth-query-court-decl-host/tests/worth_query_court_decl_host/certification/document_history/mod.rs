@@ -6,6 +6,7 @@ mod attachment;
 mod commands;
 mod context;
 mod group;
+mod history_identity_golden;
 mod membership;
 mod metadata;
 mod navigation;
