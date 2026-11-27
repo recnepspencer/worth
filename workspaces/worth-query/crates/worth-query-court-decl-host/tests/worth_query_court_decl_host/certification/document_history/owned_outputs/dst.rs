@@ -49,9 +49,10 @@ const DEFAULT_SEED_BASE: u64 = 0x7b02_0000;
 /// re-creation was corrected records, because the performed correction pair
 /// cancels a re-creation the model counts as live on the line (held on
 /// public #456).
-const HELD_DOCUMENT_SEEDS: [(u64, bool, &str); 5] = [
+const HELD_DOCUMENT_SEEDS: [(u64, bool, &str); 6] = [
     (0x7b02_000f, true, "public #429"),
     (0x7b02_162a, true, "public #450"),
+    (0x7b02_206b, true, "public #450"),
     (0x7b02_205d, true, "public #456"),
     (0x7b02_125f, true, "public #465"),
     (0x7b02_181e, true, "public #465"),
