@@ -180,3 +180,28 @@ fn readmission_refuses_an_ambiguous_producer_family() {
         );
     }
 }
+
+/// Court 12: an undo transports `dst-mid`'s `Missing` selection to a new
+/// branch, where `dst-a` then completes for `e1`. Certifying the transported
+/// selection re-resolves the family at the certifier's coordinate, not the
+/// read's, so every observation agrees with the reference. Court 1's choices
+/// shrunk with the #358 shrinker under the read-coordinate rule (`Missing`
+/// selections only), 11 to 5.
+#[test]
+fn a_transported_missing_reader_on_a_new_branch() {
+    let equivalence =
+        worth_query_host::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install_chain();
+    let ops = [
+        Op::Edit([Set(1), Set(2)]),
+        Op::Undo,
+        Op::Edit([Set(2), Skip]),
+        Op::Correction { pick: 48, entity: 1, on_line: true, cascade: false, stop: None },
+        Op::OutOfBand([Set(1), Set(2)]),
+    ];
+    if let Err(failure) = run(&mut world::Document::attach_chain(&host), &ops, None) {
+        panic!("#429 transported chain ({ops:?}) disagrees:\n{failure:#?}");
+    }
+    assert!(equivalence.shadow_checks_for_test() > 0, "the armed shadow must check a certification");
+}
