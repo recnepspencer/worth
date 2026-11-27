@@ -189,8 +189,10 @@ pub fn select(
                     return Err(unsupported("retirement-generation", fact));
                 }
                 // The sealer records the exact committed retirement tuple.
-                // Lifecycle occurrences are selected here; strict original and
-                // target comparison still read that same full-GEN retirement.
+                // Lifecycle occurrences are selected here. The strict original
+                // comparison reads that full-GEN retirement exactly; the target
+                // comparison reads only that the same generation is still
+                // retired (public #445).
                 (1, 0)
             }
             Fact::WorkflowDefinitionPredecessor { .. } => {
