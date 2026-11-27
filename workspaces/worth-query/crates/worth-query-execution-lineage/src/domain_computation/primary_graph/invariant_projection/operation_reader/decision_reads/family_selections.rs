@@ -8,7 +8,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
 type Value = (FamilySelectionRead, Arc<ObservedFamilySelection>);
 
 pub struct IssuedFamilySelectionValues {
-    values: Vec<Value>,
+    pub(super) values: Vec<Value>,
 }
 
 impl IssuedFamilySelectionValues {

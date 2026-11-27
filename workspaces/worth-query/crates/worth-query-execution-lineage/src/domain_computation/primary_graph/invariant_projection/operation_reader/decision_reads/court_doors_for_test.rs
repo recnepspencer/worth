@@ -52,3 +52,27 @@ impl DecisionReads {
         Self::into_expected(self, execution)
     }
 }
+
+impl DecisionReads {
+    /// The `FamilySelection` values this projection issued, in issue order.
+    #[doc(hidden)]
+    pub fn family_selections_for_test(
+        &self,
+    ) -> Vec<std::sync::Arc<crate::domain_computation::primary_graph::output_lineage::family_selection::ObservedFamilySelection>> {
+        self.family_selections
+            .iter()
+            .flat_map(|issued| issued.values.iter().map(|(_, value)| std::sync::Arc::clone(value)))
+            .collect()
+    }
+
+    /// The `SourcePublication` values this projection issued, in issue order.
+    #[doc(hidden)]
+    pub fn source_publications_for_test(
+        &self,
+    ) -> Vec<std::sync::Arc<crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication>> {
+        self.source_publications
+            .iter()
+            .flat_map(|issued| issued.values.iter().map(|(_, value)| std::sync::Arc::clone(value)))
+            .collect()
+    }
+}

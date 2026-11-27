@@ -7,7 +7,7 @@ use std::sync::Arc;
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
 type Value = (SourcePublicationRead, Arc<ObservedSourcePublication>);
 pub struct IssuedSourcePublicationValues {
-    values: Vec<Value>,
+    pub(super) values: Vec<Value>,
 }
 impl IssuedSourcePublicationValues {
     pub fn get(&self, key: &SourcePublicationRead) -> Option<&Arc<ObservedSourcePublication>> {

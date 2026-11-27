@@ -54,12 +54,41 @@ pub fn commit_own_write(
         worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources,
     ),
 ) {
+    commit_producer(generated, true, |_| (), |world, receipt, cell, resources, ()| {
+        test(world, receipt, cell, resources)
+    });
+}
+
+/// The producer of [`with_committed_own_write`] without its own write, so
+/// its committed output is current. `before` runs on the installed world
+/// before the seed, whose retained-account output is the producer's first
+/// completion (public #429).
+pub fn with_first_completion<Before>(
+    before: impl FnOnce(&AuthorizationWorld) -> Before,
+    test: impl FnOnce(&AuthorizationWorld, WorthQueryApplicationCommitReceipt, Before),
+) {
+    commit_producer(false, false, before, |world, receipt, _, _, value| test(world, receipt, value));
+}
+
+fn commit_producer<Before>(
+    generated: bool,
+    own_write: bool,
+    before: impl FnOnce(&AuthorizationWorld) -> Before,
+    test: impl FnOnce(
+        &AuthorizationWorld,
+        WorthQueryApplicationCommitReceipt,
+        Arc<std::sync::OnceLock<RecordedOutput>>,
+        worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources,
+        Before,
+    ),
+) {
     let product_resources =
         worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let resources = product_resources.invalidation_resources();
     let world = crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world_with_product_resources(product_resources);
     world.declare_output_contract::<OwnWriteOutputs>("OwnWriteOutputs");
     let request = live_scope();
+    let before = before(&world);
     let seed = world
         .application
         .with_host_advancement(|phase| {
@@ -188,9 +217,11 @@ pub fn commit_own_write(
             .write_field(&output, AccountLabel::at("AccountLabel"), computed)
             .unwrap();
     }
-    effects
-        .write_field(&source, AccountStatus::at("AccountStatus"), "2".to_owned())
-        .unwrap();
+    if own_write {
+        effects
+            .write_field(&source, AccountStatus::at("AccountStatus"), "2".to_owned())
+            .unwrap();
+    }
 
         effects.finish().unwrap().with_output_demand_observation()
     }).expect("the fixture host admits its own-write preparation");
@@ -289,13 +320,14 @@ pub fn commit_own_write(
     let completed = (*(*world.application.runtime_for_test()).primary_provider_for_test())
         .observe_completed_application_for_test(receipt.commit_reference())
         .unwrap();
-    assert!(
+    assert_eq!(
         completed
             .commit_evidence()
             .source_facts_superseded_by_own_effect()
             .next()
             .is_some(),
-        "the actual commit carries the computation's own-write staleness"
+        own_write,
+        "the actual commit carries the computation's own-write staleness exactly when it writes its input"
     );
-    test(&world, receipt, cell, resources);
+    test(&world, receipt, cell, resources, before);
 }
