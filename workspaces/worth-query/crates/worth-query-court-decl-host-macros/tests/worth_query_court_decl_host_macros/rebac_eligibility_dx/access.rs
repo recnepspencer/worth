@@ -26,7 +26,7 @@ worth_query_operation_requires!(RevokeAssignmentOp => [ManageOperators]);
 worth_query_operation_requires!(PublishDocumentOp => [ManageOperators]);
 
 /// Operator → Holds → an active `role` assignment.
-fn holding(role: &str) -> ApplicationAuthorizationPathBuilder<QmsSchema, Assignment> {
+fn holding(role: &str) -> ApplicationAuthorizationPathBuilder<QmsSchema, Assignment, Operator> {
     ApplicationAuthorizationPathBuilder::from_principal(Operator::reference())
         .forward(Holds::reference())
         .where_equal(
@@ -41,11 +41,11 @@ fn holding(role: &str) -> ApplicationAuthorizationPathBuilder<QmsSchema, Assignm
         .expect("active is equality-queryable")
 }
 
-fn on_document(role: &str) -> ApplicationAuthorizationPathBuilder<QmsSchema, Document> {
+fn on_document(role: &str) -> ApplicationAuthorizationPathBuilder<QmsSchema, Document, Operator> {
     holding(role).forward(Covers::reference())
 }
 
-fn on_site(role: &str) -> ApplicationAuthorizationPathBuilder<QmsSchema, Site> {
+fn on_site(role: &str) -> ApplicationAuthorizationPathBuilder<QmsSchema, Site, Operator> {
     holding(role).forward(Administers::reference())
 }
 
