@@ -19,8 +19,8 @@ use worth_testkit_foundational::allocation_probe::{
     assert_marginal, AllocationAxis, AllocationCount, AllocationProbe, PerItem,
 };
 
-/// Traced over three runs: +312 to +328 allocations and at most +82,815 B over
-/// 180 steps, about 1.8 and 460 per step.
+/// Traced over 13 runs: +312 to +334 allocations and at most +84,102 B over
+/// 180 steps, about 1.8 and 470 per step.
 const PER_STEP: PerItem = PerItem {
     allocations_per_ten: 23,
     bytes: 600,
@@ -212,7 +212,7 @@ fn redo_choices_and_redo_to_allocate_flat_in_sibling_count() {
             items: (4, 40),
             small: small_page,
             large: large_page,
-            // Traced: +0 allocations and +263 B over 36 siblings.
+            // Traced over 13 runs: +0 allocations and +263 B over 36 siblings.
             limit: PerItem {
                 allocations_per_ten: 5,
                 bytes: 16,
@@ -223,8 +223,8 @@ fn redo_choices_and_redo_to_allocate_flat_in_sibling_count() {
             items: (4, 40),
             small: small_redo,
             large: large_redo,
-            // Traced over three runs: +93 to +105 allocations and at most +27,802 B over
-            // 36 siblings, about 2.9 and 772 per sibling.
+            // Traced over 13 runs: +89 to +107 allocations and at most +28,534 B
+            // over 36 siblings, about 3.0 and 793 per sibling.
             limit: PerItem {
                 allocations_per_ten: 34,
                 bytes: 850,

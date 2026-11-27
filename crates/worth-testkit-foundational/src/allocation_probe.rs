@@ -86,12 +86,8 @@ pub fn assert_marginal(axes: &[AllocationAxis<'_>]) {
     }
     assert!(
         failed.is_empty(),
-        "allocation growth per item:
-{}",
-        failed.join(
-            "
-"
-        )
+        "allocation growth per item:\n{}",
+        failed.join("\n")
     );
 }
 
