@@ -169,22 +169,52 @@ where
         basis: &CapabilityBasis<'_, '_, Schema, Scope>,
         principal: EntityId,
     ) -> Result<Verdict, Denial> {
-        let graph = self
-            .runtime
-            .runtime
-            .primary_graph()
-            .ok_or_else(|| authorization(AuthorizationRefusal::ForeignRuntime, self.name()))?;
-        let snapshot = basis.selected.application_basis().snapshot_handle().clone();
         let request = WorthQueryRetainedCapabilityRequest::capture(
             self.capability_identity,
             principal,
             self.projection,
             &basis.resolved,
         );
+        CapabilityVerdictSite {
+            runtime: self.runtime,
+            execution: self.execution,
+            installed: self.installed,
+            sample: &self.sample,
+            session: self.session,
+        }
+        .verdict(native, basis.selected, &request)
+    }
+}
+
+/// What one capability verdict reads besides its request and basis.
+pub(in super::super) struct CapabilityVerdictSite<'a, Schema> {
+    pub(in super::super) runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(in super::super) execution: &'a worth_execution::ExecutionRequest<'a, 'a>,
+    pub(in super::super) installed: &'a WorthQueryInstalledCapabilityPlan,
+    pub(in super::super) sample: &'a WorthQueryRuntimeTimeSample,
+    pub(in super::super) session: WorthQueryGraphWorkSessionIdentity,
+}
+
+impl<Schema: ApplicationSchema> CapabilityVerdictSite<'_, Schema> {
+    /// Admission's active-capability observation of `request` at `selected`.
+    /// A policy refusal is the verdict; any other stop refuses the question.
+    pub(in super::super) fn verdict(
+        &self,
+        native: &mut ApplicationQueryNativeAccess<'_>,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        request: &WorthQueryRetainedCapabilityRequest,
+    ) -> Result<Verdict, Denial> {
+        let name = self.installed.contract().name();
+        let graph = self
+            .runtime
+            .runtime
+            .primary_graph()
+            .ok_or_else(|| authorization(AuthorizationRefusal::ForeignRuntime, name))?;
+        let snapshot = selected.application_basis().snapshot_handle().clone();
         let observed = native.with_runtime(
             graph,
             self.execution,
-            || foreign_runtime(self.name()),
+            || foreign_runtime(name),
             |relational| {
                 FactFreeCapabilityObservation {
                     session: self.session,
@@ -192,8 +222,8 @@ where
                     snapshot: &snapshot,
                     bridge: self.runtime.runtime.authorization.bridge(),
                     installed: self.installed,
-                    request: &request,
-                    sample: &self.sample,
+                    request,
+                    sample: self.sample,
                 }
                 .observe_active_capability(self.execution, None, None)
                 // The decision is read for its outcome and dropped here.

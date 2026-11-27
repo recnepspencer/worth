@@ -105,23 +105,32 @@ pub fn admit_installed_plan<'a, Schema, Capability, Operation, Input>(
         .capability_plan(capability)
         .ok_or_else(|| policy_not_installed(capability))?;
     validate_approved_applicability(installed, capability, approved)?;
+    if !bridge_matches_plan(runtime, capability.binding_identity(), installed) {
+        return Err(policy_not_installed(capability));
+    }
+    Ok(installed)
+}
+
+/// Whether the Runtime Bridge still holds exactly the rules `installed`
+/// compiled, under the schema binding that installed them.
+pub fn bridge_matches_plan<Schema>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    binding_identity: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+    installed: &WorthQueryInstalledCapabilityPlan,
+) -> bool {
     let rules = installed.rules().iter().map(|rule| rule.bridge());
-    if !runtime
+    runtime
         .runtime
         .authorization
         .bridge()
         .matches_installed_policy(
             installed.correspondence(),
-            &bridge_authorization_binding_identity(capability.binding_identity()),
+            &bridge_authorization_binding_identity(binding_identity),
             installed.contract().name(),
             &installed.request().resource_entity,
             installed.contract().operation(),
             rules,
         )
-    {
-        return Err(policy_not_installed(capability));
-    }
-    Ok(installed)
 }
 
 pub fn project_request<Schema, Capability, Operation, Input>(

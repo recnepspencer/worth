@@ -10,7 +10,9 @@ use super::WorthQueryAbilityKey;
 use super::{
     WorthQueryAbilityEligibility as Verdict, WorthQueryAbilityEligibilityDenial as Denial,
 };
-use crate::domain_computation::authorization::admission::policy_decision::WorthQueryInstalledPolicySubject;
+use crate::domain_computation::authorization::admission::policy_decision::{
+    WorthQueryInstalledPolicyDecision, WorthQueryInstalledPolicySubject,
+};
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as AuthorizationKind;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
@@ -212,6 +214,19 @@ pub(super) fn decide_ability_on<Schema: ApplicationSchema, Scope>(
     principal_entity_id: EntityId,
     requirement: &WorthQueryInstalledAbilityRequirement,
 ) -> Result<bool, Denial> {
+    observe_ability_on(site, native, scope, principal_entity_id, requirement)
+        .map(|decision| decision.is_allowed())
+}
+
+/// [`decide_ability_on`], keeping the decision's evidence: which installed
+/// policy paths held.
+pub(super) fn observe_ability_on<Schema: ApplicationSchema, Scope>(
+    site: PolicyDecisionSite<'_, '_, Schema>,
+    native: &mut ApplicationQueryNativeAccess<'_>,
+    scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    principal_entity_id: EntityId,
+    requirement: &WorthQueryInstalledAbilityRequirement,
+) -> Result<WorthQueryInstalledPolicyDecision, Denial> {
     let graph =
         site.runtime.runtime.primary_graph().ok_or_else(|| {
             authorization(AuthorizationRefusal::ForeignRuntime, requirement.policy())
@@ -233,7 +248,6 @@ pub(super) fn decide_ability_on<Schema: ApplicationSchema, Scope>(
                 .decide(site.execution, site.runtime, requirement)
             },
         )
-        .map(|decision| decision.is_allowed())
         .map_err(Denial::Authorization)
 }
 

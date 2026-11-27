@@ -3,6 +3,7 @@
 mod ability_eligibility;
 mod admission_finish;
 mod application_entry;
+mod authority_inventory;
 mod batch_and_live_reads;
 mod capability_eligibility;
 mod continuation_and_retained_history;

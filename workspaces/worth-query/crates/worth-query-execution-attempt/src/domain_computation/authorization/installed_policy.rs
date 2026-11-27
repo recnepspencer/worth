@@ -196,6 +196,13 @@ impl WorthQueryInstalledAuthorizationRegistry {
         self.capabilities.requires_capability_calendar()
     }
 
+    /// Every installed capability plan with its identity.
+    pub fn capability_plans(
+        &self,
+    ) -> impl Iterator<Item = (&[u8; 32], &WorthQueryInstalledCapabilityPlan)> {
+        self.capabilities.plans()
+    }
+
     pub fn capability_plan_by_identity(
         &self,
         capability_identity: &[u8; 32],

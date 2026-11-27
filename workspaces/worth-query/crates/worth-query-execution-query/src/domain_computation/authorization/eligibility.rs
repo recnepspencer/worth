@@ -7,12 +7,17 @@
 //! is not authority: acting still admits the actor freshly.
 
 mod capability;
+mod inventory;
 mod observation;
 mod prepared;
 
 pub use capability::{
     WorthQueryCapabilityEligibility, WorthQueryCapabilityEligibilityQuestion,
     WorthQueryCapabilityKey,
+};
+pub use inventory::{
+    role_authority, WorthQueryAuthority, WorthQueryAuthorityEntry, WorthQueryAuthorityInventory,
+    WorthQueryAuthorityPath, WorthQueryAuthorityQuestion, WorthQueryAuthorityVerdict,
 };
 
 use std::marker::PhantomData;
@@ -82,6 +87,13 @@ impl WorthQueryAbilityKey {
         Self {
             ability: ability.name(),
             scope_entity: ability.scope(),
+        }
+    }
+
+    pub(crate) const fn named(ability: &'static str, scope_entity: &'static str) -> Self {
+        Self {
+            ability,
+            scope_entity,
         }
     }
 

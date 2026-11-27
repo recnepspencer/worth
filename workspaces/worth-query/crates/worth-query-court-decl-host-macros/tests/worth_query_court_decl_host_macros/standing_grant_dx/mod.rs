@@ -5,6 +5,7 @@
 //! no operation can link its own principal as a grantee. Every court runs on a
 //! Directory Home and reopens it.
 mod assign;
+mod authority_inventory;
 mod capability_eligibility;
 mod courts;
 mod grants;

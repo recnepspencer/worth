@@ -10,7 +10,7 @@
 //! committed. A verdict is not authority; acting still admits the actor.
 
 mod observation;
-mod prepared;
+pub(super) mod prepared;
 mod source;
 
 use std::marker::PhantomData;

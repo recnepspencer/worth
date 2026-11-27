@@ -91,6 +91,21 @@ impl WorthQueryInstalledCapabilityPlan {
     pub fn rules(&self) -> &[WorthQueryCapabilityRuleBinding] {
         self.rule_set.rules()
     }
+
+    /// Whether the contract's own target is a complete request on a scope:
+    /// no elevation, related entity, field, magnitude or context entity for
+    /// a caller to choose, so only the principal and scope vary.
+    pub fn has_fixed_target(&self) -> bool {
+        self.elevation.is_none()
+            && self.request.related_relation.is_none()
+            && self.request.field.is_none()
+            && self.request.magnitude.is_none()
+            && self
+                .rule_set
+                .paths()
+                .iter()
+                .all(|path| path.context_anchors.is_empty())
+    }
 }
 
 pub fn compile_capability_plan<Schema>(

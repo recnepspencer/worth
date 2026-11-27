@@ -165,6 +165,11 @@ impl WorthQueryInstalledCapabilityRegistry {
         self.plans.get(capability.identity().bytes())
     }
 
+    /// Every installed capability plan with its identity, in identity order.
+    pub fn plans(&self) -> impl Iterator<Item = (&[u8; 32], &WorthQueryInstalledCapabilityPlan)> {
+        self.plans.iter()
+    }
+
     pub fn plan_by_identity(
         &self,
         capability_identity: &[u8; 32],

@@ -216,6 +216,16 @@ where
         self.portable_operation_contracts.as_ref()
     }
 
+    /// Every installed ability policy on `scope_entity`, in ability order.
+    pub fn installed_ability_requirements_on<'a>(
+        &'a self,
+        scope_entity: &'a str,
+    ) -> impl Iterator<Item = &'a WorthQueryInstalledAbilityRequirement> + 'a {
+        self.authorization_policy_registry
+            .values()
+            .filter_map(move |policies| policies.get(scope_entity))
+    }
+
     pub fn installed_ability_requirement(
         &self,
         ability: &str,
