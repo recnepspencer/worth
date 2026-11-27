@@ -1,6 +1,15 @@
 //! New meaning selects a new portable profile; old bodies retain their historical version.
 use super::*;
 pub(super) fn select(body: &ApplicationOperationBodyProgram) -> u16 {
+    if body
+        .creation()
+        .into_iter()
+        .flat_map(|root| root.initialization_sites())
+        .flat_map(|site| site.fields())
+        .any(ApplicationOperationBodyCreatedField::is_admission_time)
+    {
+        return super::creation_fields::ADMISSION_TIME_PROFILE;
+    }
     if body.scope_fields().iter().any(|step| {
         matches!(
             step,

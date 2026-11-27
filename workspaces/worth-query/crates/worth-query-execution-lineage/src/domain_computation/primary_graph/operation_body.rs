@@ -53,6 +53,7 @@ pub struct WorthQueryOperationBodyDecision<Schema, Scope> {
     pub(crate) references: reference_input::PreparedBodyReferences<Schema>,
     pub(crate) creation_disposition: reuse::CreationDisposition,
     pub(crate) children: Option<PreparedBodyChildren<Schema>>,
+    pub(crate) admitted_at: Option<worth_foundational::facade::CanonicalTimestamp>,
 }
 
 /// A declared source expectation, input, requirement or handler rule refused

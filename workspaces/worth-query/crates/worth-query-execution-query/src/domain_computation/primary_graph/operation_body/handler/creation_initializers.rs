@@ -2,7 +2,8 @@
 use super::super::{value::PreparedBodyValues, PreparedBodySource};
 use super::{ApplicationMutationBinding, ApplicationSchema, CandidateWriter};
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationEffectEntity,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationEffectEntity,
 };
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::{
@@ -15,6 +16,7 @@ pub fn initialize<S: ApplicationSchema, B: ApplicationMutationBinding<S>>(
     inputs: &mut InputValues<'_>,
     sources: &mut std::vec::IntoIter<Option<PreparedBodySource>>,
     values: Option<&PreparedBodyValues>,
+    admitted_at: Option<worth_foundational::facade::CanonicalTimestamp>,
     writer: &mut CandidateWriter<'_, S, B>,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     for step in creation.fields() {
@@ -60,6 +62,16 @@ pub fn initialize<S: ApplicationSchema, B: ApplicationMutationBinding<S>>(
                 std::borrow::Cow::Owned(source)
             }
             ApplicationOperationBodyCreatedField::SigningProvenance { .. } => continue,
+            // The decision read the advancement's one instant; never a new reading.
+            ApplicationOperationBodyCreatedField::AdmissionTime { field, .. } => {
+                let Some(admitted_at) = admitted_at else {
+                    return Err(WorthQueryApplicationAttemptDenial::new(
+                        WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
+                        field.entity(),
+                    ));
+                };
+                std::borrow::Cow::Owned(AspectValue::Timestamp(admitted_at))
+            }
         };
         writer.body_initialize_field(created, step.field(), value)?;
         drop(source_reservation);

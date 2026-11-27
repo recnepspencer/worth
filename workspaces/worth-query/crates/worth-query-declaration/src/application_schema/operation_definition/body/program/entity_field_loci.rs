@@ -108,7 +108,8 @@ fn created_field(step: &ApplicationOperationBodyCreatedField) -> bool {
             scalar_family: _,
             member: _,
         }
-        | Step::SigningProvenance { field, binding: _ } => entity(field),
+        | Step::SigningProvenance { field, binding: _ }
+        | Step::AdmissionTime { field, binding: _ } => entity(field),
         Step::ScopeField {
             field,
             binding: _,

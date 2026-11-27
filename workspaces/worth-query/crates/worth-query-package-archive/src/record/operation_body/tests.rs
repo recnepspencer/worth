@@ -3,6 +3,8 @@ use super::*;
 use crate::{binary_output::BinaryOutput, limits::WorthQueryPackageArchiveLimits};
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
+#[path = "tests/admission_time.rs"]
+mod admission_time;
 #[path = "tests/children.rs"]
 mod children;
 #[path = "tests/collection_values.rs"]
