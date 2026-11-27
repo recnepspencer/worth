@@ -20,6 +20,19 @@ pub fn write(
         WorthQueryApplicationObservedFact::StructuralWalk { observation } => observation.key().write_locator(output),
         WorthQueryApplicationObservedFact::SourcePublication { observation } =>
             write!(output, "application-source-publication:{:?}", observation.address()),
+        WorthQueryApplicationObservedFact::FamilySelection { observation } => {
+            let producer = &observation.producer;
+            write!(
+                output,
+                "application-family-selection:{}:{}:{}:{}:{}:{}",
+                producer.runtime_authority,
+                producer.family,
+                producer.entity_identifier,
+                producer.scope.partition_id(),
+                producer.scope.local_slot(),
+                producer.scope.generation(),
+            )
+        }
         WorthQueryApplicationObservedFact::RetiredOutputEntity { read_locator, .. } => output.write_str(read_locator),
         WorthQueryApplicationObservedFact::PersistentGroup { read, .. } => read.write_locator(output),
         WorthQueryApplicationObservedFact::PersistentNameHistory { read, .. } => {

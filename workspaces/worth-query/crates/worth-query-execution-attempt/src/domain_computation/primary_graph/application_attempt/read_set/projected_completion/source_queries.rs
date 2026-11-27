@@ -50,6 +50,39 @@ impl<Schema, Operation, Input, Scope>
             ))
         })
     }
+    /// A `current_output` selection is the reader's issued value; its key
+    /// cannot recreate it (public #429).
+    pub(super) fn observe_family_selection(
+        &self,
+        read: &crate::domain_computation::primary_graph::application_attempt::FamilySelectionRead,
+    ) -> Result<
+        (
+            super::super::InstalledScopePosition,
+            WorthQueryApplicationObservedFact,
+        ),
+        WorthQueryApplicationAttemptDenial,
+    > {
+        let mismatch = || {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
+                self.admission.operation(),
+            )
+        };
+        if !read.admits(self.admission.admission_identity()) {
+            return Err(mismatch());
+        }
+        let observation = self
+            .expected_facts
+            .as_ref()
+            .and_then(|expected| expected.family_selection(read))
+            .ok_or_else(mismatch)?;
+        Ok((
+            super::super::InstalledScopePosition::SourceQuery,
+            WorthQueryApplicationObservedFact::FamilySelection {
+                observation: std::sync::Arc::clone(observation),
+            },
+        ))
+    }
     pub(super) fn observe_source_authorization(
         &self,
         key: &crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorizationKey,

@@ -172,6 +172,7 @@ pub fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> b
         fact,
         WorthQueryApplicationObservedFact::RetiredOutputEntity { .. }
             | WorthQueryApplicationObservedFact::SourcePublication { .. }
+            | WorthQueryApplicationObservedFact::FamilySelection { .. }
             | WorthQueryApplicationObservedFact::ManagedIndexSource { .. }
             | WorthQueryApplicationObservedFact::SourceReadAuthorization { .. }
             | WorthQueryApplicationObservedFact::DerivedSource { .. }

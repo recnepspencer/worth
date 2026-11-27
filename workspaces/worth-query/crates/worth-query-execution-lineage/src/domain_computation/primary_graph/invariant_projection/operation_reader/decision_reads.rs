@@ -8,6 +8,7 @@ pub mod components;
 pub mod computation_inputs;
 pub mod expected_keys;
 pub mod managed_sources;
+pub mod family_selections;
 pub mod source_publications;
 pub mod structural_walks;
 pub use computation_inputs::ObservedComputationInputs;
@@ -33,6 +34,7 @@ pub struct DecisionReads {
     /// lookup, which can find nothing): a refusal over it is conservative.
     unkeyed_reads: bool,
     source_publications: Option<std::sync::Arc<source_publications::IssuedSourcePublicationValues>>,
+    family_selections: Option<std::sync::Arc<family_selections::IssuedFamilySelectionValues>>,
     managed_sources: managed_sources::IssuedManagedSourceValues,
     failed_managed_source: bool,
     aspect_presence: aspect_presence::PresenceKeys,
@@ -102,6 +104,7 @@ impl DecisionReads {
                 || self.persistent_name_veto.is_some()
                 || self.failed_managed_source
                 || self.source_publications.is_some()
+                || self.family_selections.is_some()
                 || !self.managed_sources.is_empty()
                 || !self.walks.is_empty()
                 || !self.aggregates.is_empty()
@@ -233,6 +236,7 @@ impl DecisionReads {
         let Self {
             mut handler,
             source_publications,
+            family_selections,
             managed_sources,
             failed,
             mut computation,
@@ -277,7 +281,8 @@ impl DecisionReads {
             walks,
             aggregates,
             components,
-        );
+        )
+        .with_family_selections(family_selections);
         let result = match runs {
             ComputationRuns::None => (
                 ObservedComputationInputs::None,

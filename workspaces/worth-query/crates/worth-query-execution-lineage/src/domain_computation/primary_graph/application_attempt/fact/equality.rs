@@ -142,6 +142,8 @@ impl WorthQueryApplicationObservedFact {
                 .map_err(|_| SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "persistent name history comparison"))?,
             // Its candidate's evidence is compared only at a basis (public #429).
             Self::SourcePublication { .. } => false,
+            // Only re-resolution at a basis compares a selection (public #429).
+            Self::FamilySelection { .. } => false,
             Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => super::retirement_equality::remains_equal(image.view().as_ref(), execution, *entity_id, *kind, *created_at, *deleted_at).map_err(|cause| SelfDenial::relational_read_stopped(cause, "retirement comparison"))?,
             Self::SourceEntity { entity_id } => match image.view() {
                 Some(view) => {

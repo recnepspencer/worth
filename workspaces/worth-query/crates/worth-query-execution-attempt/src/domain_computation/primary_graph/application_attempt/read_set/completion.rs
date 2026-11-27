@@ -117,6 +117,22 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                             .and_then(|expected| expected.source_publication(read))
                             .is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation));
                 }
+                if let (
+                    super::InstalledScopePosition::SourceQuery,
+                    super::super::fact::WorthQueryApplicationFactKey::FamilySelection(read),
+                    super::super::fact::WorthQueryApplicationObservedFact::FamilySelection {
+                        observation,
+                    },
+                ) = (scope, fact_key, fact)
+                {
+                    // Only the exact selection this reader issued (public #429).
+                    return read.admits(self.admission.admission_identity())
+                        && self
+                            .expected_facts
+                            .as_ref()
+                            .and_then(|expected| expected.family_selection(read))
+                            .is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation));
+                }
                 if let (super::InstalledScopePosition::SourceQuery,
                     super::super::fact::WorthQueryApplicationFactKey::SourceReadAuthorization(key),
                     super::super::fact::WorthQueryApplicationObservedFact::SourceReadAuthorization { observation },

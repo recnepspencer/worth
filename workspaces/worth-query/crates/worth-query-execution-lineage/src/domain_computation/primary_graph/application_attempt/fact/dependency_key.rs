@@ -121,6 +121,10 @@ impl WorthQueryApplicationObservedFact {
                 Self::SourcePublication { observation: b },
             ) => a.address() == b.address(),
             (
+                Self::FamilySelection { observation: a },
+                Self::FamilySelection { observation: b },
+            ) => a.producer == b.producer,
+            (
                 Self::RetiredOutputEntity {
                     read_locator: a, ..
                 },

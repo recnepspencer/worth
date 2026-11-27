@@ -12,6 +12,7 @@ pub struct ExpectedFactKeys {
     components: super::components::IssuedComponentValues,
     handler: Arc<BTreeSet<Key>>,
     source_publications: Option<Arc<super::source_publications::IssuedSourcePublicationValues>>,
+    family_selections: Option<Arc<super::family_selections::IssuedFamilySelectionValues>>,
     managed_sources: super::managed_sources::IssuedManagedSourceValues,
     // Last: retains original authoring payment until every authoring map drops.
     computation: Arc<ComputationFactAttribution>,
@@ -30,11 +31,27 @@ impl ExpectedFactKeys {
             handler,
             computation,
             source_publications,
+            family_selections: None,
             managed_sources,
             walks,
             aggregates,
             components,
         }
+    }
+    /// The family selections the projection's `current_output` reads issued
+    /// (public #429).
+    pub fn with_family_selections(
+        mut self,
+        family_selections: Option<Arc<super::family_selections::IssuedFamilySelectionValues>>,
+    ) -> Self {
+        self.family_selections = family_selections;
+        self
+    }
+    pub fn family_selection(
+        &self,
+        key: &crate::domain_computation::primary_graph::application_attempt::FamilySelectionRead,
+    ) -> Option<&Arc<crate::domain_computation::primary_graph::output_lineage::family_selection::ObservedFamilySelection>> {
+        self.family_selections.as_deref()?.get(key)
     }
     pub fn component<'a>(
         &self,

@@ -26,6 +26,7 @@ use crate::domain_computation::primary_graph::{
 pub fn observation_work_bound(key: &WorthQueryApplicationFactKey) -> Option<u64> {
     match key {
         WorthQueryApplicationFactKey::SourcePublication(_)
+        | WorthQueryApplicationFactKey::FamilySelection(_)
         | WorthQueryApplicationFactKey::ManagedIndexSource(_)
         | WorthQueryApplicationFactKey::AppliedSource(_)
         | WorthQueryApplicationFactKey::SourceReadAuthorization(_)
@@ -115,6 +116,7 @@ fn observe_fact_inner(
 ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
     match key {
         WorthQueryApplicationFactKey::SourcePublication(_)
+        | WorthQueryApplicationFactKey::FamilySelection(_)
         | WorthQueryApplicationFactKey::ManagedIndexSource(_)
         | WorthQueryApplicationFactKey::AppliedSource(_)
         | WorthQueryApplicationFactKey::SourceReadAuthorization(_)

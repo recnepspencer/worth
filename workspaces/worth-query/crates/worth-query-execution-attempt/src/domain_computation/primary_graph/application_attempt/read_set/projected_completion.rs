@@ -194,6 +194,9 @@ impl<Schema, Operation, Input, Scope>
         if let WorthQueryApplicationFactKey::SourcePublication(read) = key {
             return self.observe_source_publication(execution, read);
         }
+        if let WorthQueryApplicationFactKey::FamilySelection(read) = key {
+            return self.observe_family_selection(read);
+        }
         observe_projection_dependency(
             execution,
             &self.admission,

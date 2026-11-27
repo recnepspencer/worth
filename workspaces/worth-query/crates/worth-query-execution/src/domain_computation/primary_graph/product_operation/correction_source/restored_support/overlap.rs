@@ -177,6 +177,7 @@ pub fn select(
             }
             Fact::ComponentSelection { .. } => return Err(unsupported("ComponentSelection", fact)),
             Fact::SourcePublication { .. } => return Err(unsupported("SourcePublication", fact)),
+            Fact::FamilySelection { .. } => return Err(unsupported("FamilySelection", fact)),
             Fact::ManagedIndexSource { observation } => {
                 if !observation.has_verified_realized_footprint() {
                     return Err(unsupported("unqualified-managed-influence", fact));

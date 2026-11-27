@@ -8,11 +8,17 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::BTreeSet;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 pub mod checkpoint_priors;
+pub mod observed;
 pub mod publication_heads;
+pub mod selection;
 pub use checkpoint_priors::CheckpointPriorSelectionDenial;
 pub use checkpoint_priors::CheckpointPriorStructure;
 pub use checkpoint_priors::NativePriorCheckpointOutput;
+pub use observed::{FamilySelectionProducer, LiveFamilySelectionPort, ObservedFamilySelection};
 pub use publication_heads::PublicationHeads;
+pub use selection::{
+    candidate_verdict, select_current, select_family, CandidateVerdict, SelectionRefusal,
+};
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 impl WorthQueryApplicationOutputLineage {

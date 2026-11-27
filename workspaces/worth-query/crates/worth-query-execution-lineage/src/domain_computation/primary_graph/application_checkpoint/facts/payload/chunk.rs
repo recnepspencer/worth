@@ -121,6 +121,7 @@ pub fn deep_clone_bytes(fact: &Fact) -> Option<u64> {
         | Fact::ManagedIndexSource { .. }
         | Fact::SourceReadAuthorization { .. }
         | Fact::SourcePublication { .. }
+        | Fact::FamilySelection { .. }
         | Fact::DerivedSource { .. }
         | Fact::StructuralWalk { .. }
         | Fact::Aggregate { .. }

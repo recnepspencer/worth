@@ -32,6 +32,7 @@ impl ChargedBytes for WorthQueryApplicationFactKey {
             | Self::AppliedSource(_)
             | Self::SourceReadAuthorization(_)
             | Self::SourcePublication(_)
+            | Self::FamilySelection(_)
             | Self::StructuralWalk(_)
             | Self::Aggregate(_) => 0,
             Self::Entity { entity, .. } => bytes(entity.capacity()),
@@ -92,6 +93,7 @@ impl ChargedBytes for WorthQueryApplicationObservedFact {
             | Self::ManagedIndexSource { .. }
             | Self::SourceReadAuthorization { .. }
             | Self::SourcePublication { .. }
+            | Self::FamilySelection { .. }
             | Self::DerivedSource { .. }
             | Self::StructuralWalk { .. }
             | Self::Aggregate { .. }

@@ -16,6 +16,9 @@ pub enum FactPostingKey {
             crate::domain_computation::primary_graph::application_contribution::OutputSourceAddress,
         >,
     ),
+    /// A head of this source's output family changed: every `current_output`
+    /// selection from the family re-resolves (public #429).
+    FamilySelection(crate::domain_computation::primary_graph::output_lineage::SemanticSource),
     EntityLifecycle(EntityId),
     AspectRevision {
         entity: EntityId,

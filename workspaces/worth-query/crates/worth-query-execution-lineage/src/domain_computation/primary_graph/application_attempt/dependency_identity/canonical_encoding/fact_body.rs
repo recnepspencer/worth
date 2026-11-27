@@ -95,6 +95,9 @@ pub fn append_fact(
         WorthQueryApplicationObservedFact::SourcePublication { observation } => {
             source_publication::append(entries, prefix, observation)
         }
+        WorthQueryApplicationObservedFact::FamilySelection { observation } => {
+            family_selection::append(entries, prefix, observation)
+        }
         WorthQueryApplicationObservedFact::RetiredOutputEntity {
             entity_id,
             kind: entity_kind,

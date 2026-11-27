@@ -25,6 +25,9 @@ pub fn evaluate(fact: &WorthQueryApplicationObservedFact, candidate: EntityId) -
         WorthQueryApplicationObservedFact::SourcePublication { observation } => {
             observation.touches_entity(candidate)
         }
+        WorthQueryApplicationObservedFact::FamilySelection { observation } => {
+            observation.outcome.contains(&candidate) || observation.applied.contains(&candidate)
+        }
         WorthQueryApplicationObservedFact::RetiredOutputEntity { entity_id, .. } => {
             *entity_id == candidate
         }

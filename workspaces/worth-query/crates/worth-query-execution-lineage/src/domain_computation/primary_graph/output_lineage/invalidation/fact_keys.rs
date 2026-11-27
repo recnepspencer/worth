@@ -130,6 +130,16 @@ where
                 FullVerificationReason::UnsupportedFact,
             ));
         }
+        Fact::FamilySelection { observation } => {
+            for source in observation.sources.iter() {
+                projection.key(|| Key::FamilySelection(source.clone()))?;
+            }
+            // Only re-resolving the family at a certification basis proves a
+            // selection; marks never certify it (public #429).
+            return Err(FactKeyProjectionStop::FullVerificationRequired(
+                FullVerificationReason::UnsupportedFact,
+            ));
+        }
         Fact::SourceEntity { entity_id } => {
             projection.key(|| Key::EntityLifecycle(*entity_id))?;
         }

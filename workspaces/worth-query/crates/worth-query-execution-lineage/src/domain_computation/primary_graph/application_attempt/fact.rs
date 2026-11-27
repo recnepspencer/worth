@@ -7,6 +7,7 @@ pub mod dependency_key;
 pub mod effect_support;
 pub mod entity_touch;
 pub mod equality;
+pub mod family_selection_read;
 pub mod image;
 pub mod indexed_entity_selection;
 pub use indexed_entity_selection::applied::observe as observe_applied_indexed_entity_selection;
@@ -61,6 +62,8 @@ pub enum WorthQueryApplicationFactKey {
     Aggregate(super::super::aggregate_observation::AggregateKey),
     ComponentSelection(super::super::component_selection::ComponentSelectionKey),
     SourcePublication(SourcePublicationRead),
+    /// A `current_output` read of one producer's output family (public #429).
+    FamilySelection(FamilySelectionRead),
     ManagedIndexSource(ManagedSourceReadKey),
     AppliedSource(std::sync::Arc<crate::domain_computation::primary_graph::application_query::observed_source::fact_conversion::source_fact_locator::SourceFactLocator>),
     SourceReadAuthorization(SourceReadAuthorizationKey),
@@ -125,6 +128,13 @@ pub enum WorthQueryApplicationObservedFact {
     SourcePublication {
         observation:
             std::sync::Arc<super::super::output_lineage::invalidation::ObservedSourcePublication>,
+    },
+    /// The verified-current members a `current_output` read selected from a
+    /// producer's family. Only re-resolution at a certification basis proves
+    /// it; marks never do (public #429).
+    FamilySelection {
+        observation:
+            std::sync::Arc<super::super::output_lineage::family_selection::ObservedFamilySelection>,
     },
     /// Postcondition of a committed, declared output retirement. The original
     /// read locator remains covered; the exact entity generation must stay retired.
@@ -291,6 +301,7 @@ pub mod consult_observation;
 
 mod court_doors_for_test;
 
+pub use family_selection_read::FamilySelectionRead;
 pub use source_publication_read::SourcePublicationRead;
 
 pub use managed_source_read::ManagedSourceReadKey;

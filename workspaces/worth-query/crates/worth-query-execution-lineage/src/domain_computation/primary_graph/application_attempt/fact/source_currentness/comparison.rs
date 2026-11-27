@@ -47,12 +47,11 @@ impl WorthQueryApplicationObservedFact {
             Self::StructuralWalk { observation } => {
                 observation.remains_equal(runtime, execution, snapshot)
             }
-            // Its published candidate's evidence can hold facts only a
-            // certification basis compares, so the plain path answers Moved
-            // and `source_currentness_at` compares it (public #429).
-            Self::SourcePublication { .. } => {
-                Ok(false)
-            }
+            // A published candidate's evidence can hold facts only a
+            // certification basis compares, and a family selection is proved
+            // only by re-resolving the family at one. The plain path answers
+            // Moved; `source_currentness_at` compares both (public #429).
+            Self::SourcePublication { .. } | Self::FamilySelection { .. } => Ok(false),
             Self::PersistentGroup { read, answer } => read
                 .remains_equal(answer, runtime, snapshot)
                 .map_err(|_| WorthQuerySourceCurrentnessFailure::Unavailable),

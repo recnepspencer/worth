@@ -2,6 +2,7 @@ pub use fact::AppliedSourceAlignment;
 pub use fact::IndexedSelectionReobserveDenial;
 pub use fact::ManagedSourceRead;
 pub use fact::ManagedSourceReadKey;
+pub use fact::FamilySelectionRead;
 pub use fact::SourcePublicationRead;
 pub use fact::SourceReadAuthorization;
 pub use fact::SourceReadAuthorizationKey;
