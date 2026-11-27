@@ -26,6 +26,7 @@ pub enum Code {
     Topology,
     InputFailure,
     DomainValue,
+    TestNaming,
 }
 impl Code {
     pub fn as_str(self) -> &'static str {
@@ -41,6 +42,7 @@ impl Code {
             Self::Topology => "BC9002_TEST_TOPOLOGY",
             Self::InputFailure => "BOUNDARY_INPUT_FAILURE",
             Self::DomainValue => "BC9019_DOMAIN_VALUE_REFERENCE",
+            Self::TestNaming => "BC9020_SEMANTIC_TEST_NAMING",
         }
     }
     fn legal_home(self) -> &'static str {
@@ -56,6 +58,7 @@ impl Code {
             Self::Topology => "docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts",
             Self::InputFailure => "tools/boundary-check/src/inputs.rs; restore readable Git inputs and offline Cargo metadata before judging boundaries",
             Self::DomainValue => "tools/boundary-check/config/domain-values.toml; domain bindings require a closed source type without references, keys or names",
+            Self::TestNaming => "scripts/ci/check_test_naming.py; name Rust source and test modules after the property or behavior they protect, not review rounds",
         }
     }
 }
@@ -304,6 +307,11 @@ mod tests {
                 Code::DomainValue,
                 "BC9019_DOMAIN_VALUE_REFERENCE",
                 "tools/boundary-check/config/domain-values.toml",
+            ),
+            (
+                Code::TestNaming,
+                "BC9020_SEMANTIC_TEST_NAMING",
+                "scripts/ci/check_test_naming.py",
             ),
         ] {
             let json = serde_json::to_value(diagnostic(code, "subject", "message")).unwrap();

@@ -1,11 +1,10 @@
-//! Round 10 hardening courts for Store M4.3f post-rebase Phase 7B-1/2b merge
-//! preparation guards (`[P1-1]` and `[P1-2]`):
-//! - `[P1-1]` Merge preparation still refuses `NamedGroupLineage` after
-//!   checkpoint ACK trims the resident group log AND after cold reopen when
-//!   `published_group_lineage` is empty.
-//! - `[P1-2]` Merge preparation still refuses `NamedLineage` after cold reopen
-//!   when a keep-in-place source merge's lineage event lives only in cold
-//!   paged event storage.
+//! Cold-residency courts for merge preparation refusal and pre-base page
+//! skipping across cold naming and `GROUP_LOG` storage:
+//! - Merge preparation still refuses `NamedGroupLineage` after checkpoint ACK
+//!   trims the resident group log and after cold reopen.
+//! - Merge preparation still refuses `NamedLineage` after cold reopen when a
+//!   keep-in-place source merge's lineage event lives only in cold storage.
+//! - Merge preparation skips pre-base event and `GROUP_LOG` pages after reopen.
 
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::aggregate_identity::AggregateMemberRole;
@@ -37,9 +36,9 @@ use super::bounded_naming_fixture::{
     create_named_entities, delete_entity, durable_named_runtime, group_scheme, observe_branch,
     publish_group_partition, reopen_named, GROUP_SCHEME,
 };
-use super::bounded_naming_r2::fork_retained_at;
-use super::bounded_naming_r3::durable_mixed_runtime;
-use super::bounded_naming_r3_ack::{capture_only, try_ack};
+use super::naming_ack_isolation_and_rebind::{capture_only, try_ack};
+use super::naming_branch_root_and_dissolve::fork_retained_at;
+use super::naming_historical_fork_integrity::durable_mixed_runtime;
 
 fn prepare_merge_feature_into_main(
     request: &ExecutionRequest<'_, '_>,

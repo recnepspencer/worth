@@ -1,13 +1,9 @@
-//! Round 4 hardening courts for Store M4.3f (`[P1-1]`..`[P1-4]`):
-//! - `[P1-1]` Concurrent readers on a post-capture fork `b2` during C2 ACK
-//!   never observe a torn `(C1 main route, C2 directory)` state.
-//! - `[P1-2]` Concurrent `RelationalRuntime::fork()` racing C2 ACK always
-//!   captures an atomic `(routes, directory)` generation so `b2` retains its
-//!   inherited names even after C2/C3 ACKs on the parent runtime.
-//! - `[P1-3]` Retired unnamed entities are never resurrected in a cold
-//!   historical fork's naming basis (`LIVE_LINEAGE` absent at/after retirement).
-//! - `[P1-4]` Tampered `CHK24` stripping a branch's naming, index, or group
-//!   page run while leaving its headers intact refuses `CorruptCheckpoint`.
+//! Cold-residency courts for concurrent ACK rebinding, detached fork atomicity,
+//! unnamed retirement truncation, and stripped domain page-run refusal:
+//! - Concurrent readers on a post-capture fork during C2 ACK never observe torn state.
+//! - Concurrent `RelationalRuntime::fork()` racing C2 ACK preserves inherited names.
+//! - Retired unnamed entities are never resurrected in a cold historical fork.
+//! - Tampered `CHK24` stripping naming, index, or group pages refuses `CorruptCheckpoint`.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Barrier};
@@ -38,10 +34,10 @@ use super::bounded_naming_fixture::{
     create_named_entities, delete_entity, durable_named_runtime, observe_branch,
     publish_group_partition,
 };
-use super::bounded_naming_r2::fork_retained_at;
-use super::bounded_naming_r3::durable_mixed_runtime;
-use super::bounded_naming_r3_ack::{ack_retry_busy, capture_only, try_ack};
 use super::checkpoint_wire_fixture::{array, field, replace_field, rows, CHECKPOINT_MAGIC};
+use super::naming_ack_isolation_and_rebind::{ack_retry_busy, capture_only, try_ack};
+use super::naming_branch_root_and_dissolve::fork_retained_at;
+use super::naming_historical_fork_integrity::durable_mixed_runtime;
 
 fn strip_domain_pages(
     ck: &RelationalNativeCheckpoint,

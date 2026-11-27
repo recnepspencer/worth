@@ -137,9 +137,9 @@ fn residency_failure_matrix_merge_planning_preserves_versioned_footprints() {
 #[test]
 fn stale_unnamed_naming_root_cannot_suppress_cold_named_lineage_merge_refusal() {
     use super::bounded_naming_fixture::{create_named_entities, delete_entity, observe_branch};
-    use super::bounded_naming_r2::fork_retained_at;
-    use super::bounded_naming_r3::durable_mixed_runtime;
     use super::checkpoint_wire_fixture::{array, field, replace_field, rows, CHECKPOINT_MAGIC};
+    use super::naming_branch_root_and_dissolve::fork_retained_at;
+    use super::naming_historical_fork_integrity::durable_mixed_runtime;
     use std::collections::BTreeSet;
     use worth_execution::ExecutionRequest;
     use worth_relational::facade::durability::{

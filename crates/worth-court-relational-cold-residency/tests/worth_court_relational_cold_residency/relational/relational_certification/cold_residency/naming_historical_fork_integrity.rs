@@ -1,8 +1,9 @@
-//! Round 3 hardening courts for Store M4.3f (`[P0-1]` and `[P1-2]`):
-//! - `[P0-1]` Tampered CHK24 emptying a historical fork's naming/index/group
-//!   root AFTER its parent advances past the fork cutoff refuses `CorruptCheckpoint`.
-//! - `[P1-2]` Unnamed entity at C1 + named entities & group at C2 -> ACK ->
-//!   historical fork at C1 -> child checkpoint & reopen preserves exact C1 state.
+//! Cold-residency courts for historical-fork `CHK24` integrity and mixed
+//! unnamed/named fork reopen:
+//! - Tampered CHK24 emptying a historical fork's naming/index/group root
+//!   after its parent advances past the fork cutoff refuses `CorruptCheckpoint`.
+//! - Unnamed entity at C1 + named entities & group at C2 -> ACK -> historical
+//!   fork at C1 -> child checkpoint & reopen preserves exact C1 state.
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -41,8 +42,8 @@ use super::bounded_naming_fixture::{
     create_named_entities, durable_named_runtime, observe_branch, publish_group_partition,
     ENTITY_SCHEME, GROUP_SCHEME,
 };
-use super::bounded_naming_r2::fork_retained_at;
 use super::checkpoint_wire_fixture::{array, field, replace_field, rows, CHECKPOINT_MAGIC};
+use super::naming_branch_root_and_dissolve::fork_retained_at;
 
 fn tamper_branch_root(
     c: &RelationalNativeCheckpoint,

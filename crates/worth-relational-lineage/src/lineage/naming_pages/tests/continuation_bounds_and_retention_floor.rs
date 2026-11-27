@@ -1,10 +1,6 @@
-//! Round 2 hardening unit tests (`[P1-6]`, `[P1-7]`, `[P1-8]`, `[P1-9b]`):
-//! - Shared continuation-envelope validation on both writer (>64 MiB limit and
-//!   malformed prior header rejection during stale-chunk cleanup) and reader.
-//! - Chunked `ColdNamingStore::scan` under a strict 1-page memory budget.
-//! - `PersistentNameBranchIndex::advance_retention_floor` rejecting floors
-//!   above `head` without mutating state.
-//! - Persistent `CowMap` AVL tree across 200 repeated fork/write/delete cycles.
+//! Unit tests for continuation envelope bounds, tight-budget chunked scans,
+//! retention-floor advancement beyond the last naming batch, and `CowMap` AVL
+//! balance across repeated fork/write/delete cycles.
 
 use std::sync::Arc;
 

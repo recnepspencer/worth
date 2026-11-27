@@ -1,5 +1,5 @@
-//! Sol Round 1 court for Blocker #1: generated macro names must never capture
-//! caller constants (`value`, `row`, `related`) or type aliases (`Q`, `B`).
+//! Macro hygiene court: generated macro names must never capture caller
+//! constants (`value`, `row`, `related`) or type aliases (`Q`, `B`).
 use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
 use worth_query_decl::facade::application_schema::fragment::*;
 use worth_query_decl::facade::application_schema::*;
@@ -256,6 +256,6 @@ mod hygiene_collision {
 }
 
 #[test]
-fn sol_blocker_1_hygiene_with_colliding_value_row_related_and_type_aliases() {
+fn macro_hygiene_with_colliding_value_row_related_and_type_aliases() {
     hygiene_collision::verify_definition_admits();
 }

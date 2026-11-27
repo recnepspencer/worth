@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   repository-hygiene:
-    name: Keep root build artifacts out of Git
+    name: Repository hygiene and structural guards
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +38,12 @@ jobs:
         run: python -m unittest discover -s scripts/ci -p test_root_build_artifacts.py
       - name: Reject tracked root target output
         run: python scripts/ci/check_root_build_artifacts.py
+      - name: Test semantic test naming guard
+        run: python scripts/ci/check_test_naming.py --self-test
+      - name: Enforce semantic test naming
+        run: python scripts/ci/check_test_naming.py
+      - name: Verify mirrored proof source hashes
+        run: python specs/proof_mirror_check.py
 
   relational-dag:
     name: Relational split ratchet

@@ -1,5 +1,5 @@
-//! Sol Round 1 courts for Blockers #4 (session policy enforcement & watch result
-//! ceiling) and #5 (typed live subscription & watch invalidation on refusal).
+//! Courts for session execution-policy enforcement, watch result ceilings,
+//! and typed live-subscription / watch invalidation on refusal.
 use std::num::NonZeroUsize;
 use std::time::Duration;
 
@@ -34,7 +34,7 @@ fn open_memory_home(clock: &WorthQueryAdmissionClock) -> DaymarkHome {
 }
 
 #[test]
-fn sol_blocker_4_zero_work_session_fails_closed_across_all_lanes() {
+fn zero_work_session_fails_closed_across_all_lanes() {
     let clock = WorthQueryAdmissionClock::system();
     let home = open_memory_home(&clock);
     let me = owner(&home, &clock);
@@ -142,7 +142,7 @@ fn sol_blocker_4_zero_work_session_fails_closed_across_all_lanes() {
 }
 
 #[test]
-fn sol_blocker_4_watch_refresh_enforces_result_limit_and_invalidates_stale_rows() {
+fn watch_refresh_enforces_result_limit_and_invalidates_stale_rows() {
     let clock = WorthQueryAdmissionClock::system();
     let home = open_memory_home(&clock);
     let me = owner(&home, &clock);
@@ -234,7 +234,7 @@ fn sol_blocker_4_watch_refresh_enforces_result_limit_and_invalidates_stale_rows(
 }
 
 #[test]
-fn sol_blocker_5_live_subscription_overflow_and_result_limit_clear_stale_rows() {
+fn live_subscription_overflow_and_result_limit_clear_stale_rows() {
     let clock = WorthQueryAdmissionClock::system();
     let home = open_memory_home(&clock);
     let me = owner(&home, &clock);
@@ -331,7 +331,7 @@ fn sol_blocker_5_live_subscription_overflow_and_result_limit_clear_stale_rows() 
 }
 
 #[test]
-fn sol_blocker_5_live_subscription_expired_principal_clears_stale_rows() {
+fn live_subscription_expired_principal_clears_stale_rows() {
     let time = WorthQueryAdmissionTimeController::new().expect("controlled clock initializes");
     let _ = time.hold();
     let clock = time.clock();

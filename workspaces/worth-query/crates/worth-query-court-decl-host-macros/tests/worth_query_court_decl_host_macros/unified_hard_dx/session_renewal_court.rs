@@ -16,7 +16,7 @@ use super::actions::{CorrectTaskState, SetTaskState};
 use super::program::{owner, owner_identity, HostAudience, LocalProcessMethod};
 use super::queries::{FindTasksByTitle, LiveReadyTasks, ReadyTasks};
 use super::schema::TaskRow;
-use super::sol_round2_policy_and_custody_courts::open_memory_home_with_policy;
+use super::serial_policy_and_custody_boundary_courts::open_memory_home_with_policy;
 
 fn ready() -> ReadyTasks {
     ReadyTasks {

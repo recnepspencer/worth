@@ -1,11 +1,10 @@
-//! Round 7 hardening courts for Store M4.3f (`[P1-1]` and `[P1-2]`):
-//! - `[P1-1]` Long valid `BranchId`s (e.g. 200-byte ASCII names) publish group
+//! Cold-residency courts for long `BranchId` group-log digest keys and
+//! `VALUE_CHUNK` continuation manifest integrity:
+//! - Long valid `BranchId`s (e.g. 200-byte ASCII names) publish group
 //!   transitions, checkpoint to `CHK24`, carry across C1->C2, reopen with zero
 //!   naming page reads, and replay historical group state cleanly.
-//! - `[P1-2]` Tampered `CHK24` dropping a `VALUE_CHUNK` continuation page
-//!   descriptor from `group_log` while keeping every primary `GROUP_LOG`
-//!   descriptor intact refuses `CorruptCheckpoint` before install with zero
-//!   naming page payload reads.
+//! - Tampered `CHK24` dropping or reassigning `VALUE_CHUNK` continuation
+//!   descriptors fails closed before install or on first fault.
 
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::aggregate_identity::AggregateMemberRole;
@@ -21,9 +20,9 @@ use super::bounded_naming_fixture::{
     create_named_entities, durable_named_runtime, naming_page_reads, observe_branch,
     publish_group_partition, reopen_named, GROUP_SCHEME,
 };
-use super::bounded_naming_r2::fork_retained_at;
-use super::bounded_naming_r3_ack::{capture_only, try_ack};
 use super::checkpoint_wire_fixture::{array, field, replace_field, rows, CHECKPOINT_MAGIC};
+use super::naming_ack_isolation_and_rebind::{capture_only, try_ack};
+use super::naming_branch_root_and_dissolve::fork_retained_at;
 
 fn drop_one_group_log_value_chunk_page(
     ck: &RelationalNativeCheckpoint,

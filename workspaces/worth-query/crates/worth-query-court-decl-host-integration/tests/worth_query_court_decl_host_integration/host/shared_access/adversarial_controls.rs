@@ -1,4 +1,4 @@
-//! Round 2 security, transport, nonblocking deadline, and watch-reclamation boundary courts.
+//! Security, transport, nonblocking deadline, and watch-reclamation boundary courts.
 
 use std::io::Write;
 use std::net::TcpStream;
@@ -25,7 +25,7 @@ use super::schema::SharedProjectSchema;
 worth_query_decl::facade::worth_query_principal_issuer!(EvilExampleIssuer);
 
 #[test]
-fn adversarial_round2_identity_loopback_nonblocking_bounds_and_watch_reclaim() {
+fn adversarial_identity_loopback_nonblocking_bounds_and_watch_reclaim() {
     let dir = worth_query_testkit_host::facade::host::application_home::location()
         .with_extension("shared-r2-controls");
     let lease = checkpoint_capture::lease(128 * 1024 * 1024);

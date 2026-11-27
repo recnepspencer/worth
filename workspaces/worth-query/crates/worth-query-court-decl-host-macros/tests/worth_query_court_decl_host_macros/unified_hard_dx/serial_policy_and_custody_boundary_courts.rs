@@ -1,7 +1,6 @@
-//! Sol Round 2 courts covering Blockers #3 (single metered request across
-//! occupied-key probes + installed serial World policy ceiling), #4 (watch
-//! refresh delivery handoff via `finish_next`), and #5 (retaining completion
-//! boundary on owned-history attachment).
+//! Courts covering installed serial World policy ceilings (including
+//! single-metered occupied-key probes and automatic undo/redo), watch refresh
+//! delivery handoff under cancellation, and owned-history custody retention.
 use std::num::NonZeroUsize;
 
 use worth_foundational::facade::{
@@ -46,7 +45,7 @@ pub(super) fn open_memory_home_with_policy(
 }
 
 #[test]
-fn sol_r2_blocker_3_installed_serial_ceiling_and_single_metered_probe_budget() {
+fn installed_serial_ceiling_and_single_metered_probe_budget() {
     let clock = WorthQueryAdmissionClock::system();
     let installed_ceiling = 2_000_000_u64;
     let installed_policy = ExecutionRequestPolicy::new(
@@ -194,7 +193,7 @@ fn sol_r2_blocker_3_installed_serial_ceiling_and_single_metered_probe_budget() {
 }
 
 #[test]
-fn sol_r2_blocker_4_watch_refresh_preserves_delivery_and_handles_cancellation() {
+fn watch_refresh_preserves_delivery_and_handles_cancellation() {
     let clock = WorthQueryAdmissionClock::system();
     let home = open_memory_home_with_policy(&clock, None);
     let me = owner(&home, &clock);
@@ -256,7 +255,7 @@ fn sol_r2_blocker_4_watch_refresh_preserves_delivery_and_handles_cancellation() 
 }
 
 #[test]
-fn sol_r2_blocker_5_owned_history_completion_boundary_preserves_head_custody() {
+fn owned_history_completion_boundary_preserves_head_custody() {
     let clock = WorthQueryAdmissionClock::system();
     let home = open_memory_home_with_policy(&clock, None);
     let me = owner(&home, &clock);
@@ -314,7 +313,7 @@ fn sol_r2_blocker_5_owned_history_completion_boundary_preserves_head_custody() {
 }
 
 #[test]
-fn sol_r3_blocker_3_automatic_undo_and_redo_honor_installed_serial_ceiling() {
+fn automatic_undo_and_redo_honor_installed_serial_ceiling() {
     let clock = WorthQueryAdmissionClock::system();
     let installed_policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
