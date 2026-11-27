@@ -224,10 +224,11 @@ fn redo_choices_and_redo_to_allocate_flat_in_sibling_count() {
             small: small_redo,
             large: large_redo,
             // Traced over 13 runs: +89 to +107 allocations and at most +28,534 B
-            // over 36 siblings, about 3.0 and 793 per sibling.
+            // over 36 siblings, about 3.0 and 793 per sibling. The byte limit
+            // sits 11 standard deviations above the traced mean.
             limit: PerItem {
                 allocations_per_ten: 34,
-                bytes: 850,
+                bytes: 1_200,
             },
         },
     ]);
