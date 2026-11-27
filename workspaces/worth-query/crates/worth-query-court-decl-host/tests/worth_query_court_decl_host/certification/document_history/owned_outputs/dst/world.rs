@@ -1,6 +1,7 @@
 //! The real document as a DST system: each oracle action goes through the
 //! public entry point it names, each return is classified into the model's
 //! outcome, and each observation is read with fresh requests.
+mod applied_state;
 mod coupled;
 mod roomy;
 pub use roomy::install_roomy;
@@ -110,6 +111,8 @@ pub struct Document<'h> {
     navigation: u128,
     head_diverged: bool,
     closed: bool,
+    /// Dense lineage and generation numbers for the applied-state digest.
+    applied: super::applied_state::Numbering,
 }
 
 impl<'h> Document<'h> {
@@ -189,6 +192,7 @@ impl<'h> Document<'h> {
             navigation: 0,
             head_diverged: false,
             closed: false,
+            applied: Default::default(),
         }
     }
 

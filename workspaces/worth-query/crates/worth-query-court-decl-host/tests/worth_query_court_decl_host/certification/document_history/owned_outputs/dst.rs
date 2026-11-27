@@ -13,8 +13,13 @@
 //! - `WORTH_DST_CORRECTIONS=1` adds correction workloads to the document's
 //!   sweep. Until the correction envelope exists (S2) they run through
 //!   today's route, outside the document, and the oracle disagrees.
+//! - The default sweep (base, 64 seeds, 16 choices, no scenario) compares
+//!   each call's applied state with the master digests in
+//!   `golden/applied_state.ndjson` (`applied_state`), per corrections setting;
+//!   `WORTH_DST_GOLDEN_WRITE=1` rewrites that setting's digests instead.
 //! - A disagreement prints the seed and its shrunk choices; a panic in the
 //!   real system names its seed.
+mod applied_state;
 mod corrective_cascade;
 mod driver;
 mod history_correction;
@@ -113,6 +118,7 @@ fn agree<S: System>(
             eprintln!("DST seed {seed:#x} held on {issue}");
             continue;
         }
+        applied_state::begin(seed);
         let ops = generate(seed, count, workloads.corrections, scenario(), workloads.environment);
         let mut trace = trace::Trace::new();
         let result = catch_unwind(AssertUnwindSafe(|| run(&mut system(seed), &ops, Some(&mut trace))));
@@ -171,13 +177,22 @@ fn the_document_agrees_with_the_oracle() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     const SHAPES: [Shape; 3] = [Shape::Members, Shape::WithConsumer, Shape::WithChain];
     let hosts = SHAPES.map(world::install_as);
+    let corrections = variable("WORTH_DST_CORRECTIONS", 0) == 1;
     let workloads = Workloads {
         environment: &world::ENVIRONMENT,
-        corrections: variable("WORTH_DST_CORRECTIONS", 0) == 1,
+        corrections,
     };
+    // The master digests pin the default sweep only (the S5 cutover oracle).
+    let pinned = sweep() == (DEFAULT_SEED_BASE..DEFAULT_SEED_BASE + 64, 16) && scenario().is_none();
+    if pinned {
+        applied_state::arm();
+    }
     agree("document", sweep().0, workloads, |seed| {
         let shape = (seed % SHAPES.len() as u64) as usize;
         world::Document::attach_as(&hosts[shape], SHAPES[shape])
     });
+    if pinned {
+        applied_state::check(corrections);
+    }
     assert!(equivalence.shadow_checks_for_test() > 0, "the armed shadow must check the sweep's certifications");
 }

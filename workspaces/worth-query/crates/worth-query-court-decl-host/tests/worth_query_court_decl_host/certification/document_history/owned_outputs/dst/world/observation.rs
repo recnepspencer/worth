@@ -12,7 +12,10 @@ impl Document<'_> {
             Ok(live) => live,
             Err(WorthQueryApplicationRequestQueryDenial::ProductSelection(
                 WorthQueryProductBranchAdmissionDenial::Refused(WorthQueryProductBranchAdmissionRefusalKind::RetiredBranch),
-            )) if self.closed => return self.retired(),
+            )) if self.closed => {
+                super::super::applied_state::record("retired".into());
+                return self.retired();
+            }
             Err(denial) => panic!("the member set must read: {denial:?}"),
         };
         let mut branch = Snapshot::EMPTY;
@@ -25,6 +28,9 @@ impl Document<'_> {
             }
         }
         let outputs = read_outputs(self.host, self.branch, &live);
+        if super::super::applied_state::armed() {
+            self.record_applied_state(&live);
+        }
         if self.shape == Shape::WithChain {
             // The #358 chain agrees with the outputs it reads: `dst-mid` is
             // the parity of `dst-a`'s output for `e1`, `dst-leaf` that plus 100.
