@@ -10,6 +10,25 @@
 //! re-executes it to an equal output; `dst-leaf` reads `dst-mid`'s current
 //! output plus 100. Neither reads `e1`'s value directly.
 use super::*;
+
+thread_local! {
+    /// `dst-mid` and `dst-leaf` candidates built on this thread (public #429).
+    static CHAIN_BUILDS: std::cell::Cell<[u64; 2]> = const { std::cell::Cell::new([0; 2]) };
+}
+
+/// `dst-mid` and `dst-leaf` candidates built on this thread so far: each is
+/// one execution of that output.
+pub fn chain_builds() -> [u64; 2] {
+    CHAIN_BUILDS.get()
+}
+
+/// Count a build of chain output `index`, then derive `value`.
+fn built(index: usize, value: u64) -> u64 {
+    let mut builds = CHAIN_BUILDS.get();
+    builds[index] += 1;
+    CHAIN_BUILDS.set(builds);
+    value
+}
 family!(
     dst_a,
     SourceScopeCascade,
@@ -89,7 +108,7 @@ family!(
     FirstKey,
     FirstValue,
     FirstOf,
-    |_: u64| 0
+    |_: u64| built(0, 0)
 );
 family!(
     dst_leaf,
@@ -109,7 +128,7 @@ family!(
     FirstKey,
     FirstValue,
     FirstOf,
-    |_: u64| 100
+    |_: u64| built(1, 100)
 );
 
 /// Declares the DST families' conditional operations on a root feature: a

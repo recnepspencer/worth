@@ -46,6 +46,25 @@ fn readmission_accepts_unsupported_only_when_compared() {
     assert!(counts.readmitted > 0, "a fully compared chain with an UnsupportedFact row must readmit");
 }
 
+/// Court 5: the #358 Court 5 shape. After the readmission `e1` goes 1 → 3,
+/// so `dst-mid` re-executes to an equal parity and its equal adoption links
+/// `dst-mid_old → dst-mid_new`. `dst-leaf` read `dst-mid`'s family, a
+/// `FamilySelection` that marks cannot certify, so it follows that link only
+/// through full verification of `dst-mid_new`: it is carried, not
+/// re-executed.
+#[test]
+fn equal_adoption_keeps_the_reader_current() {
+    let counts = super::readmission::court(
+        "equal adoption keeps the reader",
+        &super::readmission::PREFIX,
+        &[[super::reference::Stage::Set(3), super::reference::Stage::Skip]],
+    );
+    let [mid, leaf] = counts.tail_builds;
+    assert!(mid > 0, "dst-mid re-executes to an equal parity");
+    assert_eq!(leaf, 0, "dst-leaf follows dst-mid's equal link and is not re-executed");
+    assert!(counts.carried > 0, "the equal successor carries the readmitted projection");
+}
+
 /// Adds `dst-b`'s bindings to `dst-a`'s output family before the first call
 /// after the undo, so the family `dst-mid` reads for `e1` has a second
 /// member, `dst-b(e1)`, at the forked head.

@@ -40,15 +40,20 @@ struct SettledTwice<'h> {
     tail: &'h [Stages],
     /// Settlement registrations the second settle and its read made.
     second: Option<u64>,
+    /// `dst-mid` and `dst-leaf` executions while the tail settled.
+    tail_builds: Option<[u64; 2]>,
 }
 
 impl System for SettledTwice<'_> {
     fn act(&mut self, action: &Action) -> Outcome {
         if matches!(action, Action::Close) {
+            let builds = family::dst::chain_builds();
             for stages in self.tail {
                 self.document.write_outside_unmodelled(stages);
                 self.document.observe(1);
             }
+            let after = family::dst::chain_builds();
+            self.tail_builds = Some([after[0] - builds[0], after[1] - builds[1]]);
             // The second settle at the head the last read saw; the read after
             // it checks the chain again before close retires the branch.
             let before = registrations();
@@ -77,7 +82,9 @@ pub(super) struct Counts {
     /// Moved facts or aspects accepted only by their row's selection evidence.
     acceptances: u64,
     /// Equal successors that took a projection carrying a coordinate.
-    carried: u64,
+    pub(super) carried: u64,
+    /// `dst-mid` and `dst-leaf` executions while the tail settled.
+    pub(super) tail_builds: [u64; 2],
     /// Settlement registrations made by the second settle at the same head.
     second_settle_registrations: u64,
     /// Consumer chains readmitted with marks at their selected head.
@@ -102,7 +109,8 @@ fn court_as(name: &str, shape: Shape, decline: Option<bool>, ops: &[Op], tail: &
         decline_readmissions(consumers);
     }
     let host = world::install_as(shape);
-    let mut system = SettledTwice { document: world::Document::attach_as(&host, shape), tail, second: None };
+    let mut system =
+        SettledTwice { document: world::Document::attach_as(&host, shape), tail, second: None, tail_builds: None };
     if let Err(failure) = run(&mut system, ops, None) {
         panic!("#358 {name} ({ops:?}) disagrees:\n{failure:#?}");
     }
@@ -114,7 +122,15 @@ fn court_as(name: &str, shape: Shape, decline: Option<bool>, ops: &[Op], tail: &
         shape == Shape::Members || equivalence.shadow_checks_for_test() > 0,
         "#358 {name}: the armed shadow must check a certification"
     );
-    Counts { acceptances: acceptances(), carried: carried(), second_settle_registrations, readmitted: readmitted(), declined: declined() }
+    let tail_builds = system.tail_builds.expect("the court closes its document");
+    Counts {
+        acceptances: acceptances(),
+        carried: carried(),
+        second_settle_registrations,
+        readmitted: readmitted(),
+        declined: declined(),
+        tail_builds,
+    }
 }
 
 /// Court 2: the two-hop chain on the forked head certifies from its
