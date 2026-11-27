@@ -98,6 +98,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
                 std::mem::take(&mut self.rows),
                 std::mem::take(&mut self.typed_rows.entity_rows),
                 std::mem::take(&mut self.typed_rows.relation_rows),
+                self.seed_admission_time,
             )?
         };
         self.last_seed_commit_id = Some(commit_id);

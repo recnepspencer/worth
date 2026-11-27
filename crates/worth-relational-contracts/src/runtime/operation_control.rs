@@ -29,6 +29,7 @@ pub struct RelationalOperationControl {
     critical_section_pause: Option<RelationalCriticalSectionPause>,
     patch_position_reservation_pause: Option<RelationalPatchPositionReservationPause>,
     boundary_pause: Option<RelationalBoundaryPause>,
+    admission_time: Option<worth_foundational::facade::CanonicalTimestamp>,
 }
 
 #[derive(Debug, Clone)]
@@ -97,6 +98,21 @@ impl RelationalOperationControl {
         self
     }
 
+    /// The caller's trusted admission instant for this attempt, read once by
+    /// the caller's own clock. Installed invariants observe exactly this value;
+    /// Relational neither reads a clock nor records it.
+    pub fn with_admission_time(
+        mut self,
+        admitted_at: worth_foundational::facade::CanonicalTimestamp,
+    ) -> Self {
+        self.admission_time = Some(admitted_at);
+        self
+    }
+
+    pub fn admission_time(&self) -> Option<worth_foundational::facade::CanonicalTimestamp> {
+        self.admission_time
+    }
+
     pub fn interruption(&self) -> Option<RelationalOperationInterruption> {
         if self.cancellation.requested.load(Ordering::Acquire) {
             return Some(RelationalOperationInterruption::Cancelled);
@@ -148,6 +164,7 @@ impl From<RelationalCancellationToken> for RelationalOperationControl {
             critical_section_pause: None,
             patch_position_reservation_pause: None,
             boundary_pause: None,
+            admission_time: None,
         }
     }
 }

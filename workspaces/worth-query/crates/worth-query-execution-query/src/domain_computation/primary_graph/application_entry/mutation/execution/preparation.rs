@@ -194,6 +194,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             PreparedMutationInputs::context_use,
         ));
         let interruption = std::cell::Cell::new(None);
+        let mut admission = admission;
+        let admitted_at = phase.settle_admitted_at(|| admission.admitted_at());
+        admission.inherit_admitted_at(admitted_at);
         let mut handler_contacted = false;
         let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
@@ -226,6 +229,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             crate::domain_computation::primary_graph::handler::ConditionalDefinitionAdmission::new(
                                 self, admission.graph_work().mutation_product(),
                             ),
+                            admitted_at,
                             source_query,
                         );
                         on_contact();

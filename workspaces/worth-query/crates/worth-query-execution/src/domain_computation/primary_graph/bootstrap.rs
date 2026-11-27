@@ -101,6 +101,8 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     invariant_installation_receipt:
         worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt,
     expected_invariant_inventory_digest: [u8; 32],
+    /// The Home's trusted admission instant for its initial-state seed.
+    pub(super) seed_admission_time: Option<worth_foundational::facade::CanonicalTimestamp>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -108,6 +110,15 @@ impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>
 where
     Schema: ApplicationSchema,
 {
+    /// Stamps the seed with one reading of the Home's runtime time source, so
+    /// installed invariants judge initial state at a trusted instant too.
+    pub(crate) fn stamp_seed_admission(
+        &mut self,
+        admitted_at: Option<worth_foundational::facade::CanonicalTimestamp>,
+    ) {
+        self.seed_admission_time = admitted_at;
+    }
+
     pub(super) fn take_recovered_relational_authority(
         &mut self,
     ) -> Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority> {

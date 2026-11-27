@@ -9,6 +9,7 @@ use super::super::{
 };
 use super::DecisionContextUse;
 
+mod admission_time;
 mod interruption;
 mod managed_index;
 mod operation_body;
@@ -40,6 +41,10 @@ where
     pub(crate) context_use: &'borrow Cell<DecisionContextUse>,
     pub(crate) conditional_definitions: super::ConditionalDefinitionAdmission<'borrow, Schema>,
     interruption: &'borrow Cell<Option<HandlerInterruption>>,
+    admitted_at: Result<
+        worth_foundational::facade::CanonicalTimestamp,
+        worth_query_execution_contracts::facade::runtime_time::WorthQueryRuntimeTimeDenial,
+    >,
     pub(crate) source_query: Option<
         &'borrow crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
             'borrow,
@@ -73,6 +78,10 @@ where
         context_use: &'borrow Cell<DecisionContextUse>,
         interruption: &'borrow Cell<Option<HandlerInterruption>>,
         conditional_definitions: super::ConditionalDefinitionAdmission<'borrow, Schema>,
+        admitted_at: Result<
+            worth_foundational::facade::CanonicalTimestamp,
+            worth_query_execution_contracts::facade::runtime_time::WorthQueryRuntimeTimeDenial,
+        >,
         source_query: Option<
             &'borrow crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
                 'borrow,
@@ -90,6 +99,7 @@ where
             context_use,
             interruption,
             conditional_definitions,
+            admitted_at,
             source_query,
         }
     }
@@ -159,6 +169,22 @@ where
         self.context_use
             .set(self.context_use.get().scope().principal());
         self.operation_scope_binding
+    }
+
+    /// The trusted instant this operation was admitted at, read once from the
+    /// Home's runtime time source (`with_authorization_time_source`; the
+    /// system clock by default). Every call, and every installed commit
+    /// invariant judging this operation's candidate, observes the same
+    /// reading. Convert it to a local civil date with
+    /// `WorthQueryTimeZone::date_at`. A time-dependent decision is request
+    /// context, so it is never reused for another request.
+    pub fn admitted_at(
+        &self,
+    ) -> Result<
+        worth_foundational::facade::CanonicalTimestamp,
+        worth_query_execution_contracts::facade::runtime_time::WorthQueryRuntimeTimeDenial,
+    > {
+        admission_time::observe(self.context_use, self.admitted_at)
     }
 
     /// Polls real request interruption without making it decision data.

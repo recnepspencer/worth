@@ -11,6 +11,7 @@ use crate::validation::engine::InvariantExecutionResult;
 pub(crate) struct PreparationInvariantAuthority<'a> {
     runtime: &'a RelationalPreparationRuntime,
     names: Option<&'a dyn Names>,
+    admission_time: Option<worth_foundational::facade::CanonicalTimestamp>,
 }
 
 impl RelationalPreparationRuntime {
@@ -19,6 +20,7 @@ impl RelationalPreparationRuntime {
         PreparationInvariantAuthority {
             runtime: self,
             names,
+            admission_time: None,
         }
     }
 }
@@ -27,6 +29,15 @@ impl<'a> PreparationInvariantAuthority<'a> {
     /// Installed invariants read the proposal's persistent names from `names`.
     pub(crate) fn with_names(mut self, names: &'a dyn Names) -> Self {
         self.names = Some(names);
+        self
+    }
+
+    /// Installed invariants observe the caller's trusted admission instant.
+    pub(crate) fn with_admission_time(
+        mut self,
+        admitted_at: Option<worth_foundational::facade::CanonicalTimestamp>,
+    ) -> Self {
+        self.admission_time = admitted_at;
         self
     }
 
@@ -47,7 +58,8 @@ impl<'a> PreparationInvariantAuthority<'a> {
         let view = self
             .runtime
             .invariant_validation_view(selected.selected().state())
-            .with_names(self.names);
+            .with_names(self.names)
+            .with_admission_time(self.admission_time);
         let started = super::proposed_state::begin_proposed_state(
             &view,
             selected,
@@ -88,7 +100,8 @@ impl<'a> PreparationInvariantAuthority<'a> {
         let view = self
             .runtime
             .invariant_validation_view(selected.selected().state())
-            .with_names(self.names);
+            .with_names(self.names)
+            .with_admission_time(self.admission_time);
         let result = super::proposed_state::complete_proposed_state(
             &view,
             selected,

@@ -230,6 +230,7 @@ impl WorthQueryPrimaryGraphProvider {
             &material.branch,
             &material.product,
             &material.request,
+            material.admitted_at,
             &material.application_touches,
             material.aftermath_causality.as_ref(),
             material.restoration_publication.take(),

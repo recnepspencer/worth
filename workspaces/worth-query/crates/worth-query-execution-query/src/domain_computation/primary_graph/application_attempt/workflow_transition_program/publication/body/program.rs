@@ -84,6 +84,8 @@ where
     }
     let context = Cell::new(DecisionContextUse::default());
     let interruption = Cell::new(None);
+    let admitted_at = phase.settle_admitted_at(|| read_set.admission().admitted_at());
+    read_set.admission_mut().inherit_admitted_at(admitted_at);
     let operation_scope = read_set.admission().operation_scope_binding().clone();
     let (plan, projection, _) = runtime
         .mutation_projection
@@ -104,6 +106,7 @@ where
                     crate::domain_computation::primary_graph::handler::ConditionalDefinitionAdmission::new(
                         runtime, read_set.admission().graph_work().mutation_product(),
                     ),
+                    admitted_at,
                     None,
                 );
                 handler.prepare_decision_owned(identities.mutation_input(), reader)

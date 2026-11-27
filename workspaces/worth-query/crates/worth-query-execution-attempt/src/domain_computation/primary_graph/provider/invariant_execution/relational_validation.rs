@@ -15,6 +15,7 @@ impl WorthQueryPrimaryGraphProvider {
         branch: &worth_relational::facade::history::BranchId,
         product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        admitted_at: Option<worth_foundational::facade::CanonicalTimestamp>,
         application_touches: &worth_query_installation::facade::WorthQueryOperationTouchContract,
         aftermath_causality: Option<
             &crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
@@ -45,7 +46,8 @@ impl WorthQueryPrimaryGraphProvider {
         if basis.identity().branch_id() != branch {
             return Err(owner_failure());
         }
-        let control = super::validation_control::ValidationRequestControl::new(request);
+        let control =
+            super::validation_control::ValidationRequestControl::new(request, admitted_at);
         let allocation_control = RequestAllocationControl::new(request, allocation_policy);
         // The caller owns this before Native can snapshot any predicate posting.
         // Native only borrows the factory and retains bundled weak receipts.
@@ -287,7 +289,8 @@ mod tests {
             worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
                 Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
                 source.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
-        let control = super::super::validation_control::ValidationRequestControl::new(&request);
+        let control =
+            super::super::validation_control::ValidationRequestControl::new(&request, None);
         source.cancel();
         assert_eq!(
             control.relational().interruption(),

@@ -63,6 +63,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
             std::mem::take(&mut self.rows),
             std::mem::take(&mut self.typed_rows.entity_rows),
             std::mem::take(&mut self.typed_rows.relation_rows),
+            self.seed_admission_time,
         )?;
         self.committed_principal_count += principal_count;
         self.committed_entity_count += entity_count;

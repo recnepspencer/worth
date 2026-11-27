@@ -252,6 +252,7 @@ where
         execution,
         runtime.runtime.product_runtime.owner_ref().owner_identity(),
         WorthQueryAdmittedOperationData {
+            admitted_at: runtime.runtime.authorization_clock.admission_timestamp(),
             runtime_authority: runtime.runtime.authority_identity(),
 
             binding_identity: operation.binding_identity().clone(),

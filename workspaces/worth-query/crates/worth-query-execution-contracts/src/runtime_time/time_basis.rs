@@ -13,6 +13,19 @@ pub enum WorthQueryRuntimeTimeDenial {
     DurationNotRepresentable,
 }
 
+impl std::fmt::Display for WorthQueryRuntimeTimeDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(match self {
+            Self::SourceUnavailable => "the trusted runtime time source is unavailable",
+            Self::BeforeUnixEpoch => "the trusted time lies before the Unix epoch",
+            Self::TimelineValueOverflow => "the trusted time is not representable",
+            Self::DurationNotRepresentable => "the duration is not representable on the timeline",
+        })
+    }
+}
+
+impl std::error::Error for WorthQueryRuntimeTimeDenial {}
+
 /// One trusted-time reading taken from the host-published source.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryRuntimeTimeSample {
@@ -35,6 +48,17 @@ impl WorthQueryRuntimeTimeSample {
     }
 }
 
+/// One trusted admission instant read from `source`, before a runtime clock
+/// owns it: a Home stamps its initial-state seed with this reading.
+pub fn admission_timestamp_from(
+    source: &dyn WorthQueryRuntimeTimeSource,
+) -> Result<worth_foundational::facade::CanonicalTimestamp, WorthQueryRuntimeTimeDenial> {
+    let now = source
+        .current_time()
+        .map_err(|_| WorthQueryRuntimeTimeDenial::SourceUnavailable)?;
+    super::canonical_instant::timestamp_of(now)
+}
+
 pub struct WorthQueryRuntimeClock {
     pub admission_clock:
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
@@ -51,6 +75,15 @@ impl WorthQueryRuntimeClock {
             admission_clock: source.admission_clock(),
             source: Box::new(source),
         }
+    }
+
+    /// The trusted current instant as a canonical microsecond UTC timestamp,
+    /// read once from the host-published source. Instants before the Unix
+    /// epoch are negative; an unrepresentable instant is refused, never clamped.
+    pub fn admission_timestamp(
+        &self,
+    ) -> Result<worth_foundational::facade::CanonicalTimestamp, WorthQueryRuntimeTimeDenial> {
+        admission_timestamp_from(self.source.as_ref())
     }
 
     pub fn sample(

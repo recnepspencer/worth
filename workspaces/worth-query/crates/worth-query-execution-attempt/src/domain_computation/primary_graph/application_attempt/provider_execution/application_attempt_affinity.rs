@@ -39,6 +39,10 @@ pub struct WorthQueryApplicationAttemptCore {
     pub admitted_request:
         crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness,
     pub operation_scope: crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
+    pub admitted_at: Result<
+        worth_foundational::facade::CanonicalTimestamp,
+        crate::domain_computation::runtime_time::WorthQueryRuntimeTimeDenial,
+    >,
 }
 
 /// Inseparable authority association retained by the provider attempt store.
@@ -172,6 +176,7 @@ impl WorthQueryApplicationAttemptBasis {
                 request: admission.publication_request().clone(),
                 admitted_request: admission.retain_admitted_request(),
                 operation_scope: admission.operation_scope_binding().clone(),
+                admitted_at: admission.admitted_at(),
             },
             product: product.retained_clone(),
         })
@@ -303,6 +308,15 @@ impl WorthQueryApplicationAttemptAffinity {
         &self,
     ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
         &self.basis.request
+    }
+    /// The operation's single trusted admission instant.
+    pub const fn admitted_at(
+        &self,
+    ) -> Result<
+        worth_foundational::facade::CanonicalTimestamp,
+        crate::domain_computation::runtime_time::WorthQueryRuntimeTimeDenial,
+    > {
+        self.basis.admitted_at
     }
     pub fn product_publication(&self) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding{
         &self.product

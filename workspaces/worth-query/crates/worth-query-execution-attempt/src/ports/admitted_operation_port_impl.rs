@@ -200,6 +200,23 @@ impl<Schema, Operation, Input, Scope>
     fn governed_proposal_identity(&self) -> Option<&[u8; 32]> {
         Self::governed_proposal_identity(self)
     }
+    fn admitted_at(
+        &self,
+    ) -> Result<
+        worth_foundational::facade::CanonicalTimestamp,
+        crate::domain_computation::runtime_time::WorthQueryRuntimeTimeDenial,
+    > {
+        Self::admitted_at(self)
+    }
+    fn inherit_admitted_at(
+        &mut self,
+        admitted_at: Result<
+            worth_foundational::facade::CanonicalTimestamp,
+            crate::domain_computation::runtime_time::WorthQueryRuntimeTimeDenial,
+        >,
+    ) {
+        Self::inherit_admitted_at(self, admitted_at)
+    }
     fn record_decision_context_use(&mut self, use_mask: DecisionContextUse) {
         Self::record_decision_context_use(self, use_mask)
     }

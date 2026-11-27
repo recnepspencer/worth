@@ -33,7 +33,16 @@ pub trait AdvancementPhaseInternalPort<'scope> {
     ) -> Result<&QueryRequestExecution<'scope>, WorthQueryForeignAdvancementPhase>;
 
     fn test_host_request(&self) -> TestHostRequest<'scope>;
+
+    /// The advancement's single trusted admission instant; `first` runs only
+    /// when nothing in this advancement has fixed it yet.
+    fn settle_admitted_at(&self, first: impl FnOnce() -> AdmittedAt) -> AdmittedAt;
 }
+
+type AdmittedAt = Result<
+    worth_foundational::facade::CanonicalTimestamp,
+    worth_query_execution_contracts::facade::runtime_time::WorthQueryRuntimeTimeDenial,
+>;
 
 impl<'scope> AdvancementPhaseInternalPort<'scope> for WorthQueryAdvancementPhase<'scope> {
     fn world_owner(&self) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
@@ -70,5 +79,9 @@ impl<'scope> AdvancementPhaseInternalPort<'scope> for WorthQueryAdvancementPhase
 
     fn test_host_request(&self) -> TestHostRequest<'scope> {
         Self::test_host_request(self)
+    }
+
+    fn settle_admitted_at(&self, first: impl FnOnce() -> AdmittedAt) -> AdmittedAt {
+        Self::settle_admitted_at(self, first)
     }
 }
