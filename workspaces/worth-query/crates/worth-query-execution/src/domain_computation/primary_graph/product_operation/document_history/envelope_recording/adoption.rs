@@ -6,7 +6,6 @@ use super::super::{
     WorthQueryDocumentHistoryReservation, WorthQueryHistoryStep,
 };
 use crate::{
-    basis::WorthQueryProductBranchReadIdentity,
     domain_computation::primary_graph::{
         WorthQueryAdvancementPhase, WorthQueryApplicationCommitReceipt,
         WorthQueryExpectedProductBranch,
@@ -84,23 +83,17 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         completed: Option<&WorthQueryCompletedRecordingOutputs>,
     ) -> Result<PreparedBinding, Denial> {
         let bound = self.bind_envelope_source(phase, reserved, candidate, receipt, completed)?;
-        let step = self.index_bound_step(
-            phase,
-            reserved,
-            bound.source_commit.as_ref(),
-            bound.basis_commit,
-            &bound.endpoint,
-        )?;
         // A correction's commit posts one aftermath-causality fact, which
         // navigation retires and restores with this step (ruling (u)).
-        let posted_fact = receipt.aftermath_causality().and_then(|causality| {
-            match causality.fact_record() {
-                worth_relational::facade::transactions::RecordRef::Entity(id) => Some(*id),
-                worth_relational::facade::transactions::RecordRef::Relation(_) => None,
-            }
-        });
+        let posted_fact =
+            receipt
+                .aftermath_causality()
+                .and_then(|causality| match causality.fact_record() {
+                    worth_relational::facade::transactions::RecordRef::Entity(id) => Some(*id),
+                    worth_relational::facade::transactions::RecordRef::Relation(_) => None,
+                });
         let discovery_recipes = completed.map(|completed| completed.discovery_recipes.clone());
-        Ok(bound.into_prepared(step, posted_fact, discovery_recipes))
+        self.index_binding(phase, reserved, bound, [], posted_fact, discovery_recipes)
     }
 
     /// The checks an envelope's binding relies on, and its source, endpoint
@@ -114,14 +107,8 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         receipt: &WorthQueryApplicationCommitReceipt,
         completed: Option<&WorthQueryCompletedRecordingOutputs>,
     ) -> Result<BoundSource, Denial> {
-        self.validate_reservation(reserved)?;
+        self.check_bound_candidate(reserved, candidate)?;
         let runtime = self.application();
-        if !std::ptr::eq(runtime, candidate.application()) {
-            return Err(Denial::ForeignRuntime);
-        }
-        if candidate.expected_source() != reserved.expected {
-            return Err(Denial::HeadDiverged);
-        }
         let (selected, retained) = match completed {
             Some(completed) => {
                 completed.require_envelope_source(reserved, candidate, receipt)?;
@@ -145,16 +132,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 (selected, None)
             }
         };
-        Ok(BoundSource {
-            endpoint: WorthQueryProductBranchReadIdentity::from_observation(
-                selected.product().observation(),
-            ),
-            exact: selected.product().read_lease(),
-            source_commit: Some(receipt.committed_product_publication().composite_commit().clone()),
-            // The basis a later navigation to this step selects (its retained source).
-            basis_commit: selected.product().relational_basis().observation().commit_id(),
-            root_posture: None,
-            source: retained.unwrap_or_else(|| selected.retain_application_read()),
-        })
+        let source_commit = receipt.committed_product_publication().composite_commit();
+        Ok(BoundSource::selected(
+            selected,
+            retained,
+            |_| Some(source_commit.clone()),
+            None,
+        ))
     }
 }

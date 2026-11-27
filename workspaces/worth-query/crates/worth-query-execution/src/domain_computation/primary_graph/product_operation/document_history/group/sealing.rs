@@ -1,8 +1,7 @@
 //! One original selection guard adopts the final endpoint and completes one edge.
-use super::super::{journal::RecordedNode, sealing::PreparedBinding};
+use super::super::sealing::BoundSource;
 use super::*;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
-use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>
@@ -33,7 +32,10 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             {
                 return Err(Denial::ForeignRecording);
             }
-            let last = group.completed.last().ok_or(Denial::GroupNotComplete)?;
+            let (last, earlier) = group
+                .completed
+                .split_last()
+                .ok_or(Denial::GroupNotComplete)?;
             let source = Arc::clone(
                 group
                     .outputs
@@ -47,39 +49,29 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 .application()
                 .select_application_read_observation(phase, &source)
                 .map_err(Denial::CandidateSelection)?;
-            let endpoint = WorthQueryProductBranchReadIdentity::from_observation(
-                selected.product().observation(),
-            );
-            let exact = selected.product().read_lease();
-            // Every member's commit is a correction source for this step, and
-            // a later navigation to it selects this basis.
-            let basis_commit = selected.product().relational_basis().observation().commit_id();
-            let step = self.index_bound_step(
-                phase,
-                &group.reservation,
-                group.completed.iter().map(|member| &member.commit),
-                basis_commit,
-                &endpoint,
-            )?;
-            Ok(PreparedBinding {
-                discovery_recipes: group
+            // Every member's commit is a correction source for this step; the
+            // last one is its node's source commit.
+            let bound = BoundSource::selected(
+                selected,
+                Some(source),
+                |_| Some(last.commit.clone()),
+                group
                     .outputs
                     .as_ref()
-                    .map(|outputs| Arc::clone(&outputs.recipes)),
-                node: RecordedNode {
-                    posted_fact: None,
-                    step: step.clone(),
-                    source_commit: group.completed.last().map(|member| member.commit.clone()),
-                    root_posture: group
-                        .outputs
-                        .as_ref()
-                        .map_or(last.root_posture, |outputs| outputs.root_posture),
-                },
-                source,
-                endpoint,
-                exact,
-                returned: step,
-            })
+                    .map_or(last.root_posture, |outputs| outputs.root_posture),
+            );
+            let discovery_recipes = group
+                .outputs
+                .as_ref()
+                .map(|outputs| Arc::clone(&outputs.recipes));
+            self.index_binding(
+                phase,
+                &group.reservation,
+                bound,
+                earlier.iter().map(|member| &member.commit),
+                None,
+                discovery_recipes,
+            )
         })();
         let prepared = match prepared {
             Ok(prepared) => prepared,
