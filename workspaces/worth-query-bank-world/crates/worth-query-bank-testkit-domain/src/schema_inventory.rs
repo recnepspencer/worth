@@ -7,6 +7,8 @@ pub mod field_inventory;
 pub mod source_contract;
 #[path = "schema_inventory/support.rs"]
 pub mod support;
+#[path = "schema_inventory/workflow_controls.rs"]
+pub mod workflow_controls;
 
 pub use support::*;
 

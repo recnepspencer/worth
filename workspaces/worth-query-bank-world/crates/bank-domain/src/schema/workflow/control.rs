@@ -1,187 +1,51 @@
+//! The approved-payment workflow's control steps: authoring, instance start,
+//! advance and approval, each a `WORKFLOW_CONTROL` binding over `ApprovePayment`.
 use worth_query_decl::facade::{
-    application_capability::{
-        ApplicationCapabilityEntitySelector, ApplicationCapabilityRequest,
-        ApplicationCapabilityRequestContext, ApplicationCapabilityRequestProjection,
-        ApplicationCapabilityRequestProjectionDenial,
-    },
-    application_operation::{
-        ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
-        ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
-        NoApplicationMutationSource,
-    },
-    application_schema::{
-        ApplicationEncodedScalarValue, ApplicationPrincipalBindingRef,
-        StringApplicationValueBinding,
-    },
-    worth_query_operation,
+    application_operation::ApplicationMutationIntent, worth_query_workflow_controls,
 };
 
-use crate::{
-    model::BankPrincipalId,
-    proposals::{BankIdempotencyKey, BankProposalDenial},
-};
+use crate::proposals::BankProposalDenial;
 
 use super::super::{
-    ApprovePayment, ApprovePaymentInputBinding, ApprovePaymentMutationBinding,
-    BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping,
-    PaymentDecisionDenialBinding, PaymentDecisionResult, PaymentDecisionResultBinding,
-    PaymentIdentityField, PaymentIntent, Principal,
-};
-use super::{
-    ApprovedBusinessPaymentAdvance, ApprovedBusinessPaymentApproval,
-    ApprovedBusinessPaymentAuthoring, ApprovedBusinessPaymentInstanceStart,
+    ApprovePayment, ApprovePaymentInputBinding, ApprovePaymentMutationBinding, BankBindingContext,
+    BankSchema, PaymentDecisionDenialBinding, PaymentDecisionResult, PaymentDecisionResultBinding,
+    PaymentIdentityField, PaymentIntent,
 };
 
-pub struct ApprovedBusinessPaymentControlContext;
-
-impl worth_query_decl::facade::portable_identity::WorthQueryPortableType
-    for ApprovedBusinessPaymentControlContext
-{
-    const PORTABLE_TYPE_NAME: &'static str =
-        "worth.bank.approved-business-payment-control-context.v1";
+worth_query_workflow_controls! {
+    schema: BankSchema,
+    binding_context: BankBindingContext,
+    input: ApprovePayment => ApprovePaymentInputBinding,
+    result: PaymentDecisionResult => PaymentDecisionResultBinding,
+    denial: BankProposalDenial => PaymentDecisionDenialBinding,
+    scope: PaymentIntent, field PaymentIdentityField = PaymentIdentityField::at("PaymentIdentityField"), input.payment,
+    capability_context: pub ApprovedBusinessPaymentControlContext = "worth.bank.approved-business-payment-control-context.v1",
+    grant: "manage-approved-business-payment-workflow" for "business-payment-approval",
+    controls: [
+        pub ApprovedBusinessPaymentApproval = "worth.bank.approved-business-payment-approval" {
+            ApprovedBusinessPaymentApprovalOperation,
+            ApprovedBusinessPaymentApprovalBinding,
+            ApprovedBusinessPaymentApprovalIntent,
+        },
+        pub ApprovedBusinessPaymentAuthoring = "worth.bank.approved-business-payment-authoring" {
+            ApprovedBusinessPaymentAuthoringOperation,
+            ApprovedBusinessPaymentAuthoringBinding,
+            ApprovedBusinessPaymentAuthoringIntent,
+        },
+        pub ApprovedBusinessPaymentInstanceStart = "worth.bank.approved-business-payment-instance-start" {
+            ApprovedBusinessPaymentInstanceStartOperation,
+            ApprovedBusinessPaymentInstanceStartBinding,
+            ApprovedBusinessPaymentInstanceStartIntent,
+        },
+        pub ApprovedBusinessPaymentAdvance = "worth.bank.approved-business-payment-advance" {
+            ApprovedBusinessPaymentAdvanceOperation,
+            ApprovedBusinessPaymentAdvanceBinding,
+            ApprovedBusinessPaymentAdvanceIntent,
+        },
+    ],
 }
 
-impl worth_query_decl::facade::application_capability::ApplicationCapabilityContextMarkerIdentity
-    for ApprovedBusinessPaymentControlContext
-{
-    type Schema = BankSchema;
-    const IDENTIFIER: &'static str = "ApprovedBusinessPaymentControlContext";
-}
-
-impl ApprovedBusinessPaymentControlContext {
-    pub const fn reference(
-    ) -> worth_query_decl::facade::application_capability::ApplicationCapabilityContextRef<
-        BankSchema,
-        Self,
-    > {
-        worth_query_decl::facade::application_capability::ApplicationCapabilityContextRef::from_declaration()
-    }
-}
-
-type PaymentWorkflowScope = ApplicationMutationFieldScope<PaymentIdentityField>;
-
-macro_rules! payment_workflow_control {
-    (
-        $operation:ident, $binding:ident, $intent:ident, $capability:ident,
-        $binding_identity:literal, $handler_identity:literal, $command_identity:literal
-    ) => {
-        worth_query_operation!(
-            pub $operation for BankSchema,
-            input ApprovePaymentInputBinding
-        );
-
-
-        pub struct $binding;
-
-        impl ApplicationMutationBinding<BankSchema> for $binding {
-    fn workflow_execution_requirements() -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements {
-        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
-    }
-
-            type Input = ApprovePayment;
-            type InputBinding = ApprovePaymentInputBinding;
-            type Result = PaymentDecisionResult;
-            type ResultBinding = PaymentDecisionResultBinding;
-            type IdempotencyKey = BankIdempotencyKey;
-            type Operation = $operation;
-            type Decision = ();
-            type Denial = BankProposalDenial;
-            type DenialBinding = PaymentDecisionDenialBinding;
-            type Output = NoApplicationMutationOutputs;
-            type ScopeBinding = PaymentWorkflowScope;
-            type PrincipalBinding = BankPrincipalBinding;
-            type Mapping = ExternalPrincipalMapping;
-            type Principal = Principal;
-            type PrincipalIdentity = BankPrincipalId;
-            type PrincipalIdentityBinding = BankPrincipalIdBinding;
-            type SourceExpectation = NoApplicationMutationSource;
-
-            const IDENTITY: &'static str = $binding_identity;
-            const HANDLER_IDENTITY: &'static str = $handler_identity;
-            const IDEMPOTENCY_IDENTITY: &'static str = $command_identity;
-            const REQUIRES_APPLICATION_PROGRAM: bool = true;
-            const WORKFLOW_CONTROL: bool = true;
-
-
-            fn scope_field() -> PaymentIdentityField {
-                PaymentIdentityField::at("PaymentIdentityField")
-            }
-
-            fn principal_binding() -> ApplicationPrincipalBindingRef<
-                BankSchema,
-                BankPrincipalBinding,
-                ExternalPrincipalMapping,
-                Principal,
-                BankPrincipalId,
-                BankPrincipalIdBinding,
-            > {
-                BankPrincipalBinding::reference()
-            }
-        }
-
-        impl worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
-            for $binding
-        {
-            type Admission = worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<$capability>;
-        }
-
-        impl ApplicationCapabilityMutationBinding<BankSchema> for $binding {
-            type Capability = $capability;
-        }
-
-        #[derive(Clone, Debug, Eq, PartialEq)]
-        pub struct $intent {
-            pub input: ApprovePayment,
-        }
-
-        impl ApplicationMutationIntent<BankSchema> for $intent {
-            type Binding = $binding;
-
-            fn input(&self) -> &ApprovePayment {
-                &self.input
-            }
-
-            fn scope_binding(&self) -> PaymentWorkflowScope {
-                PaymentWorkflowScope::new(PaymentIdentityField::at("PaymentIdentityField"), self.input.payment)
-            }
-        }
-
-        impl ApplicationCapabilityRequest<BankSchema, $capability> for ApprovePayment {
-            type Scope = PaymentIntent;
-            type Context = ApprovedBusinessPaymentControlContext;
-
-            fn capability_request(
-                &self,
-            ) -> Result<
-                ApplicationCapabilityRequestProjection<BankSchema, Self::Scope, Self::Context>,
-                ApplicationCapabilityRequestProjectionDenial,
-            > {
-                Ok(ApplicationCapabilityRequestProjection::new(
-                    ApplicationCapabilityEntitySelector::new(
-                        PaymentIdentityField::at("PaymentIdentityField"),
-                        crate::schema::encoded_bank_value(self.payment),
-                    ).unwrap(),
-                    encoded("manage-approved-business-payment-workflow"),
-                    encoded("business-payment-approval"),
-                    ApplicationCapabilityRequestContext::new(
-                        ApprovedBusinessPaymentControlContext::reference(),
-                    ),
-                ))
-            }
-        }
-    };
-}
-
-payment_workflow_control!(
-    ApprovedBusinessPaymentApprovalOperation,
-    ApprovedBusinessPaymentApprovalBinding,
-    ApprovedBusinessPaymentApprovalIntent,
-    ApprovedBusinessPaymentApproval,
-    "worth.bank.approved-business-payment-approval.binding.v1",
-    "worth.bank.approved-business-payment-approval.handler.v1",
-    "worth.bank.approved-business-payment-approval.command.v1"
-);
-
+/// Applies the approved payment: the ordinary approval mutation, not a control step.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ApprovedBusinessPaymentApplyIntent {
     pub input: ApprovePayment,
@@ -194,42 +58,14 @@ impl ApplicationMutationIntent<BankSchema> for ApprovedBusinessPaymentApplyInten
         &self.input
     }
 
-    fn scope_binding(&self) -> PaymentWorkflowScope {
-        PaymentWorkflowScope::new(
+    fn scope_binding(
+        &self,
+    ) -> worth_query_decl::facade::application_operation::ApplicationMutationFieldScope<
+        PaymentIdentityField,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationMutationFieldScope::new(
             PaymentIdentityField::at("PaymentIdentityField"),
             self.input.payment,
         )
     }
-}
-payment_workflow_control!(
-    ApprovedBusinessPaymentAuthoringOperation,
-    ApprovedBusinessPaymentAuthoringBinding,
-    ApprovedBusinessPaymentAuthoringIntent,
-    ApprovedBusinessPaymentAuthoring,
-    "worth.bank.approved-business-payment-authoring.binding.v1",
-    "worth.bank.approved-business-payment-authoring.handler.v1",
-    "worth.bank.approved-business-payment-authoring.command.v1"
-);
-payment_workflow_control!(
-    ApprovedBusinessPaymentInstanceStartOperation,
-    ApprovedBusinessPaymentInstanceStartBinding,
-    ApprovedBusinessPaymentInstanceStartIntent,
-    ApprovedBusinessPaymentInstanceStart,
-    "worth.bank.approved-business-payment-instance-start.binding.v1",
-    "worth.bank.approved-business-payment-instance-start.handler.v1",
-    "worth.bank.approved-business-payment-instance-start.command.v1"
-);
-payment_workflow_control!(
-    ApprovedBusinessPaymentAdvanceOperation,
-    ApprovedBusinessPaymentAdvanceBinding,
-    ApprovedBusinessPaymentAdvanceIntent,
-    ApprovedBusinessPaymentAdvance,
-    "worth.bank.approved-business-payment-advance.binding.v1",
-    "worth.bank.approved-business-payment-advance.handler.v1",
-    "worth.bank.approved-business-payment-advance.command.v1"
-);
-
-fn encoded(value: &str) -> ApplicationEncodedScalarValue<StringApplicationValueBinding> {
-    ApplicationEncodedScalarValue::try_new(value.to_owned())
-        .expect("approved-payment workflow vocabulary is valid")
 }
