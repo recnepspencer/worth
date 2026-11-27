@@ -8,7 +8,7 @@ use worth_query_decl::facade::{
     authentication::*,
     worth_query_identity, worth_query_identity_namespace, worth_query_native_scalar_bindings,
     worth_query_principal_binding, worth_query_structured_value_binding, WorthQueryAction,
-    WorthQueryRecord, WorthQueryRelation, WorthQuerySchema,
+    WorthQueryRecord, WorthQueryRelation, WorthQuerySchema, WorthQueryVocabulary,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryInvariantMutationTarget, WorthQueryOperationBodyDenial,
@@ -137,6 +137,14 @@ pub struct SiteRow {
     pub site_status: String,
 }
 
+/// Why a role is held: a closed vocabulary stored by its durable code.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, WorthQueryVocabulary)]
+#[worth_query(identity = "standing-grant.dx.purpose.v1", bindings = Codecs)]
+pub enum GrantPurpose {
+    Quality = 1,
+    Safety = 2,
+}
+
 /// UTC bounds serve the review role; local calendar days serve approval.
 #[derive(WorthQueryRecord)]
 #[worth_query(bindings = Codecs, aspect = RoleGrantFacts, fragment = Records, entity = RoleGrant)]
@@ -146,7 +154,7 @@ pub struct RoleGrantRow {
     #[worth_query(equality)]
     pub role: String,
     #[worth_query(equality)]
-    pub purpose: String,
+    pub purpose: GrantPurpose,
     #[worth_query(equality)]
     pub grant_status: String,
     pub valid_from: CanonicalTimestamp,

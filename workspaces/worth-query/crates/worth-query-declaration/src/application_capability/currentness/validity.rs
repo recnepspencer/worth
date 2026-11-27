@@ -90,6 +90,32 @@ impl ApplicationCapabilityValidityValue for CanonicalDate {
         ApplicationCapabilityValidityTimeline::LocalDate;
 }
 
+/// A validity a declaration accepts as written: a window, or the result of a
+/// window constructor that checks its fields.
+pub trait ApplicationCapabilityValidityDeclaration {
+    fn into_validity(
+        self,
+    ) -> Result<ApplicationCapabilityValidityDefinition, ApplicationSchemaDeclarationDenial>;
+}
+
+impl ApplicationCapabilityValidityDeclaration for ApplicationCapabilityValidityDefinition {
+    fn into_validity(
+        self,
+    ) -> Result<ApplicationCapabilityValidityDefinition, ApplicationSchemaDeclarationDenial> {
+        Ok(self)
+    }
+}
+
+impl ApplicationCapabilityValidityDeclaration
+    for Result<ApplicationCapabilityValidityDefinition, ApplicationSchemaDeclarationDenial>
+{
+    fn into_validity(
+        self,
+    ) -> Result<ApplicationCapabilityValidityDefinition, ApplicationSchemaDeclarationDenial> {
+        self
+    }
+}
+
 /// The inclusive window a grant is valid in. Either bound may be open: an
 /// open lower bound admits every instant before the upper one, an open upper
 /// bound never expires, and [`Self::unbounded`] is valid at every instant.

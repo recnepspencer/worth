@@ -30,6 +30,7 @@ pub use resource_path::{
 mod request_projection;
 mod rule_clause;
 mod scope;
+mod typed_value;
 
 #[cfg(test)]
 mod request_projection_tests;
@@ -60,8 +61,9 @@ pub use contract::{
 };
 pub use currentness::{
     ApplicationCapabilityCurrentnessDefinition, ApplicationCapabilityGrantTenure,
-    ApplicationCapabilityValidityDefinition, ApplicationCapabilityValidityTimeline,
-    ApplicationCapabilityValidityValue, ApplicationCapabilityWorkflowDefinition,
+    ApplicationCapabilityValidityDeclaration, ApplicationCapabilityValidityDefinition,
+    ApplicationCapabilityValidityTimeline, ApplicationCapabilityValidityValue,
+    ApplicationCapabilityWorkflowDefinition,
 };
 pub use delegation::{ApplicationCapabilityDelegationDepth, ApplicationCapabilityDelegationRule};
 pub use delegation_activation_program::application_capability_delegation_activation_program_targets;
@@ -134,4 +136,8 @@ pub use scope::{
     WorthQueryPortableApplicationCapabilityFieldBindingParts,
     WorthQueryPortableApplicationCapabilityRelationBindingParts,
     WorthQueryPortableApplicationCapabilityValueBindingParts,
+};
+pub use typed_value::{
+    application_capability_grant_value, application_capability_request_value,
+    application_capability_selector,
 };

@@ -4,8 +4,8 @@ use super::{ApplicationCapabilityFieldBinding, ApplicationCapabilityValueBinding
 
 mod validity;
 pub use validity::{
-    ApplicationCapabilityValidityDefinition, ApplicationCapabilityValidityTimeline,
-    ApplicationCapabilityValidityValue,
+    ApplicationCapabilityValidityDeclaration, ApplicationCapabilityValidityDefinition,
+    ApplicationCapabilityValidityTimeline, ApplicationCapabilityValidityValue,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]

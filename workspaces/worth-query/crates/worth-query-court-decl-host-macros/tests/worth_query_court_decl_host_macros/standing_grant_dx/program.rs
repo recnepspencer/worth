@@ -24,7 +24,7 @@ use worth_query_host::facade::{
 };
 
 use super::assign::AssignRoleHandler;
-use super::grants::{self, ACTIVE, APPROVE, AUDIT, ENABLED, OBSERVE, PURPOSE, REVIEW, WITNESS};
+use super::grants::{self, ACTIVE, APPROVE, AUDIT, ENABLED, OBSERVE, REVIEW, WITNESS};
 use super::schema::*;
 use super::{Window, SITES};
 
@@ -131,7 +131,7 @@ fn grant(
         WorthQueryApplicationEntitySeed::new(RoleGrant::reference(), key(&grant))
             .field(RoleGrantFacts::grant_id(), grant.clone())
             .field(RoleGrantFacts::role(), role.to_owned())
-            .field(RoleGrantFacts::purpose(), PURPOSE.to_owned())
+            .field(RoleGrantFacts::purpose(), GrantPurpose::Quality)
             .field(RoleGrantFacts::grant_status(), ACTIVE.to_owned())
             .field(RoleGrantFacts::valid_from(), window.valid_from)
             .field(RoleGrantFacts::valid_until(), window.valid_until)

@@ -12,6 +12,7 @@ mod observers;
 mod open_validity;
 mod program;
 mod schema;
+mod typed_controls;
 
 use std::path::PathBuf;
 
