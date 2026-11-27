@@ -33,6 +33,7 @@ pub(super) fn reads_source(fact: &Fact) -> bool {
             | Fact::Entity { .. }
             | Fact::SourceFieldRevision { .. }
             | Fact::OptionalAspectAbsent { .. }
+            | Fact::FamilySelection { .. }
     )
 }
 
@@ -60,7 +61,7 @@ impl PreparedFactRebase {
     pub(super) fn prepare(
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
         fact: &Fact,
         retired: &std::collections::BTreeSet<worth_relational::facade::identity::EntityId>,
         producer_output: bool,
@@ -70,6 +71,7 @@ impl PreparedFactRebase {
             crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
         >,
     ) -> Result<Result<Self, RebaseVerificationFailure>, CompanionPreflightStop> {
+        let snapshot = basis.snapshot;
         let unavailable = RebaseVerificationFailure::native_unavailable();
         if let Some(retirement) = retirement::structural::prepare(
             runtime,
@@ -124,7 +126,7 @@ impl PreparedFactRebase {
             && !matches!(fact, Fact::OptionalAspectAbsent { .. })
         {
             return Ok(
-                match fact.source_currentness_in(runtime, execution, snapshot)? {
+                match fact.postcommit_currentness_at(runtime, execution, basis)? {
                     Err(WorthQuerySourceCurrentnessFailure::ManagedIndex(cause)) => Err(RebaseVerificationFailure::managed_index(cause)),
                     Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => match stop {
                         crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::ManagedIndex(cause) => Err(RebaseVerificationFailure::managed_index(cause)),

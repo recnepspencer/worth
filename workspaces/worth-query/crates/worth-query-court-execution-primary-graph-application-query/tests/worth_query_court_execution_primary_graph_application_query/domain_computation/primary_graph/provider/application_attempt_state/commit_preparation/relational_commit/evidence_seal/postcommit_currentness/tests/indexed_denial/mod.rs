@@ -232,7 +232,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
 
         }
         let original = vec![observed.clone(), observed.clone()];
-        let outcome = rebase(execution, runtime, snapshot, PreparedSourceFactRebase::admit_for_test(
+        let outcome = rebase(execution, runtime, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis::of(selected.product().lifecycle_incarnation(), selected.product().reference_generation(), snapshot), PreparedSourceFactRebase::admit_for_test(
                 original.clone(),
                 [].into(),
                 StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None),
@@ -301,7 +301,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
                             .expect("the installed source is comparable");
                         assert_eq!(current.movement_for_test(), Movement::Moved,
                             "the independently authored second matching account changes membership");
-                        let normalized = rebase(execution, runtime, snapshot,
+                        let normalized = rebase(execution, runtime, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis::of(selected.product().lifecycle_incarnation(), selected.product().reference_generation(), snapshot),
                             PreparedSourceFactRebase::admit_for_test(vec![observed.clone()], [].into(),
                                 StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
                             &BTreeSet::new(), true);

@@ -13,6 +13,7 @@ use worth_relational::facade::runtime::RelationalRuntime;
 use super::observed::ObservedFamilySelection;
 use super::{candidate_verdict, live_selection_identity, select_current, select_family};
 use super::CandidateVerdict;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Failure;
 use crate::domain_computation::primary_graph::invariant_projection::consumed_output::{
     ConsumedOutputVerificationStop, EvidenceView,
@@ -34,15 +35,31 @@ impl ObservedFamilySelection {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: CertificationBasis<'_>,
     ) -> Result<bool, Failure> {
-        self.reresolve(runtime, execution, basis, &[])
+        self.reresolve(runtime, execution, basis, &[], &[])
     }
 
-    /// The re-resolution, with `extra` members an applied overlay supplies.
+    /// Whether the family still selects, at the post-commit `basis` of the
+    /// read's own commit, what the read selected (plan §3.7). The commit's own
+    /// outputs are not yet settled heads there, so the read's overlay applies
+    /// again: its `replaced` partitions are masked and its `applied` members
+    /// are added verbatim.
+    pub fn remains_equal_rebased(
+        &self,
+        runtime: &RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: CertificationBasis<'_>,
+    ) -> Result<bool, Failure> {
+        self.reresolve(runtime, execution, basis, &self.replaced, &self.applied)
+    }
+
+    /// The re-resolution with the partitions an applied overlay masks
+    /// (`replaced`) and the members it supplies (`extra`).
     fn reresolve(
         &self,
         runtime: &RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: CertificationBasis<'_>,
+        replaced: &[(Option<TypeId>, [u8; 32])],
         extra: &[EntityId],
     ) -> Result<bool, Failure> {
         let Some(port) = self.live_port() else {
@@ -62,7 +79,7 @@ impl ObservedFamilySelection {
                 producer.family,
                 coordinate.occurrence,
                 coordinate.generation,
-                &[],
+                replaced,
             )
             .map_err(|stop| match stop {
                 CompanionPreflightStop::Execution(cause) => Failure::Execution(cause),

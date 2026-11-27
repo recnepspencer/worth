@@ -103,6 +103,27 @@ impl WorthQueryApplicationObservedFact {
         }
     }
 
+    /// Compare after the read's own commit, at the post-commit `basis`. A
+    /// family selection re-resolves with the read's overlay, since the
+    /// commit's outputs are not yet settled heads; every other fact compares
+    /// at the plain snapshot.
+    pub fn postcommit_currentness_at(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
+    ) -> Result<Result<FactMovement, WorthQuerySourceCurrentnessFailure>, CompanionPreflightStop>
+    {
+        match self {
+            Self::FamilySelection { observation } => {
+                check_request(execution)?;
+                super::super::super::fact_verification_observation::source_currentness();
+                comparison_result(observation.remains_equal_rebased(runtime, execution, basis))
+            }
+            _ => self.source_currentness_in(runtime, execution, basis.snapshot),
+        }
+    }
+
     /// Compare at the genuine selected snapshot under the original execution
     /// request. Facts only a certification basis compares answer Moved here.
     pub fn source_currentness_in(

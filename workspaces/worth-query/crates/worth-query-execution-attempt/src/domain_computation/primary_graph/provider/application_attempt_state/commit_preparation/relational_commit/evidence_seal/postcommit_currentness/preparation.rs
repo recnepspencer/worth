@@ -181,7 +181,7 @@ impl PreparedSourceFactRebase {
 pub(super) fn rebase(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
     prepared: PreparedSourceFactRebase,
     retired: &BTreeSet<EntityId>,
     producer: bool,
@@ -192,7 +192,7 @@ pub(super) fn rebase(
         Preparation::Full(full) => rebase_walk::rebase(
             execution,
             runtime,
-            snapshot,
+            basis,
             full,
             retired,
             producer,
@@ -201,7 +201,7 @@ pub(super) fn rebase(
         Preparation::Selected(selected) => selected.rebase(
             execution,
             runtime,
-            snapshot,
+            basis,
             retired,
             producer,
             prepared.predecessor.as_ref(),

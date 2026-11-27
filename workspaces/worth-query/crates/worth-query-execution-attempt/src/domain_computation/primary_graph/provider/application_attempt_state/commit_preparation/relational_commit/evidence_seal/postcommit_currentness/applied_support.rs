@@ -12,7 +12,6 @@ use crate::domain_computation::primary_graph::{
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead, RelationalRuntime,
 };
-use worth_relational::facade::snapshots::SnapshotHandle;
 type Candidate = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
 impl PreparedSourceFactRebase {
     pub fn support_equal_after_own_effect(

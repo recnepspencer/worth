@@ -65,12 +65,11 @@ pub(super) fn seal_on_runtime(
         .flatten();
     let retain_output_field_evidence = prepared_rebase.retains_output_field_evidence();
     let request = committed.attempt().affinity().publication_request().clone();
-    let committed_result = committed.committed();
     let observed_source_facts = {
         postcommit_currentness::rebase_output(
             execution,
             runtime,
-            &committed_result.snapshot,
+            committed.postcommit_basis(),
             prepared_rebase,
             &output_correspondence,
             committed.changed_records(),

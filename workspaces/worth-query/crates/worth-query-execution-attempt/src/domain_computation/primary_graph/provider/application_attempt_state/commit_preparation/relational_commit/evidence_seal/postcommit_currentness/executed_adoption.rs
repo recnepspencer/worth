@@ -5,14 +5,14 @@ impl PreparedSourceFactRebase {
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
         adoption: &worth_relational::facade::mvcc::RelationalCurrentOutputAdoption,
         correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
         control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
     ) -> Result<FactPayload, RebaseVerificationFailure> {
         let selected = runtime
             .read_truth()
-            .positioned_snapshot(snapshot)
+            .positioned_snapshot(basis.snapshot)
             .map_err(|_| RebaseVerificationFailure::native_unavailable())?;
         if selected.runtime_instance_id() != adoption.basis().runtime_instance_id()
             || selected.root_id() != adoption.basis().root_identity()
@@ -23,7 +23,7 @@ impl PreparedSourceFactRebase {
         let rebased = rebase_output(
             execution,
             runtime,
-            snapshot,
+            basis,
             self,
             correspondence,
             &[],

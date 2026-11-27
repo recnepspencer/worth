@@ -93,6 +93,19 @@ impl WorthQueryCommittedApplicationSession {
         self.committed.as_ref()
     }
 
+    /// The post-commit certification basis: the committed snapshot at the
+    /// product coordinate this commit's receipt published (public #429).
+    pub(crate) fn postcommit_basis(
+        &self,
+    ) -> crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_> {
+        let head = self.product_publication.publication().new_product_head();
+        crate::domain_computation::primary_graph::output_lineage::CertificationBasis::of(
+            head.lifecycle_incarnation(),
+            head.reference_generation(),
+            &self.committed.snapshot,
+        )
+    }
+
     pub fn publish_and_encode(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

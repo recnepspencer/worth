@@ -63,14 +63,15 @@ impl OwnEffectOnReadsUnansweredExt for OwnEffectOnReads {
     }
 }
 
-/// Rebase the candidate's facts onto the snapshot its own commit selected.
+/// Rebase the candidate's facts onto the snapshot its own commit selected,
+/// at the product coordinate of that commit's receipt (public #429).
 /// An output entity this commit retired is read as that retirement; it is not
 /// a source the effect moved.
 #[allow(clippy::too_many_arguments)]
 pub fn rebase_output(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
     prepared: PreparedSourceFactRebase,
     correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     changed_records: &[worth_relational::facade::transactions::RecordRef],
@@ -120,7 +121,7 @@ pub fn rebase_output(
     preparation::rebase(
         execution,
         runtime,
-        snapshot,
+        basis,
         prepared,
         retired,
         producer_output,
@@ -132,11 +133,11 @@ pub fn rebase_output(
 pub fn rebase(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
     prepared: PreparedSourceFactRebase,
     retired: &BTreeSet<EntityId>,
     producer: bool,
 ) -> RebasedSourceFacts {
-    preparation::rebase(execution, runtime, snapshot, prepared, retired, producer, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None))
+    preparation::rebase(execution, runtime, basis, prepared, retired, producer, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None))
 }
 pub mod rebase_walk;

@@ -3,7 +3,7 @@ use super::*;
 pub(super) fn rebase(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
     prepared: FullSourceFactRebase,
     retired: &BTreeSet<EntityId>,
     producer_output: bool,
@@ -37,7 +37,7 @@ pub(super) fn rebase(
         let prepared = match resolution::PreparedFactRebase::prepare(
             runtime,
             execution,
-            snapshot,
+            basis,
             fact,
             retired,
             producer_output,

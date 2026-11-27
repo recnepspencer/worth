@@ -184,7 +184,7 @@ pub fn sealed_rebase(
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
-            exact(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase_output(execution, runtime, selected.application_basis_for_test().snapshot_handle(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit_for_test(
+            exact(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase_output(execution, runtime, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::CertificationBasis::of(selected.product().lifecycle_incarnation(), selected.product().reference_generation(), selected.application_basis_for_test().snapshot_handle()), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit_for_test(
                     facts,
                     [].into(),
                     StorageControl::new_for_test(

@@ -171,7 +171,9 @@ impl PreparedExecutedOutputAdoption {
                 .map_err(|_| demand(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable))?;
             let witness = witness.finish(&correspondence, runtime, before.as_snapshot())
                 .ok_or_else(|| demand(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage))?;
-            let facts = rebase.verify_executed_adoption(execution, runtime, before.as_snapshot(),
+            let facts = rebase.verify_executed_adoption(execution, runtime,
+                // A no-effect adoption publishes no receipt: the head is unchanged.
+                super::consumed_output::certification_basis(&attempt, before.as_snapshot()),
                 &adoption, &correspondence,
                 crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
                     execution.allocation_policy(), Some(attempt.affinity().publication_request())))

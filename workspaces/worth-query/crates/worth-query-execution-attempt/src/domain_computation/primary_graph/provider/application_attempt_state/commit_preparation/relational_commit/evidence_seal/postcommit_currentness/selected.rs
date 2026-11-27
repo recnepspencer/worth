@@ -9,7 +9,6 @@ use worth_execution::ExecutionArray;
 use worth_execution::ExecutionArrayBuilder;
 use worth_execution::ExecutionMemoryReservation;
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_relational::facade::snapshots::SnapshotHandle;
 
 type Endpoints =
     crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints;
@@ -120,13 +119,14 @@ impl SelectedRebase {
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
         retired: &BTreeSet<EntityId>,
         producer: bool,
         predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
 
         control: StorageControl<'_, '_>,
     ) -> RebasedSourceFacts {
+        let snapshot = basis.snapshot;
         let mut failure = None;
         let mut own = OwnEffectOnReads::NONE_ASKED;
         if !self.moved.is_empty() {
@@ -146,7 +146,7 @@ impl SelectedRebase {
             let prepared = resolution::PreparedFactRebase::prepare(
                 runtime,
                 execution,
-                snapshot,
+                basis,
                 fact,
                 retired,
                 producer,
