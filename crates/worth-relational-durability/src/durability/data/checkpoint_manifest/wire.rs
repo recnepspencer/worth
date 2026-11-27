@@ -32,6 +32,7 @@ struct ManifestView<'a> {
     lineage: &'a super::CheckpointPages,
     lineage_events: &'a super::CheckpointLineageEventPages,
     lineage_basis: &'a super::CheckpointLineageBasis,
+    naming: &'a worth_relational_lineage::internal_port::lineage::naming_pages::CheckpointNamingState,
     derived_indexes: &'a RelationalDurableMemberLocator,
 }
 
@@ -64,6 +65,7 @@ struct ManifestWire {
     lineage_events: Vec<RelationalCheckpointLineageEventPage>,
     lineage_basis:
         contracts::lineage::data::artifacts::checkpoint_artifact::LineageCheckpointDigestBasis,
+    naming: worth_relational_lineage::internal_port::lineage::naming_pages::CheckpointNamingState,
     derived_indexes: RelationalDurableMemberLocator,
 }
 
@@ -95,6 +97,7 @@ impl Serialize for RelationalCheckpointManifestDraft {
             lineage: &self.lineage,
             lineage_events: &self.lineage_events,
             lineage_basis: &self.lineage_basis,
+            naming: &self.naming,
             derived_indexes: &self.derived_indexes,
         }
         .serialize(serializer)
@@ -134,6 +137,7 @@ impl<'de> Deserialize<'de> for RelationalCheckpointManifestDraft {
             lineage: super::CheckpointPages::from_ordinary(wire.lineage),
             lineage_events: super::CheckpointLineageEventPages::from_ordinary(wire.lineage_events),
             lineage_basis: super::CheckpointLineageBasis::from_ordinary(wire.lineage_basis),
+            naming: wire.naming,
             derived_indexes: wire.derived_indexes,
             allocations: Default::default(),
         })
@@ -155,7 +159,7 @@ impl Serialize for OriginalFlat<'_> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeStruct;
         let manifest = self.0;
-        let mut state = serializer.serialize_struct("RelationalCheckpointManifest", 26)?;
+        let mut state = serializer.serialize_struct("RelationalCheckpointManifest", 27)?;
         state.serialize_field("coverage", &manifest.coverage)?;
         state.serialize_field("covered_position", &manifest.covered_position)?;
         state.serialize_field("runtime_name", &manifest.runtime_name)?;
@@ -193,6 +197,7 @@ impl Serialize for OriginalFlat<'_> {
         state.serialize_field("lineage", &manifest.lineage)?;
         state.serialize_field("lineage_events", &manifest.lineage_events)?;
         state.serialize_field("lineage_basis", &manifest.lineage_basis)?;
+        state.serialize_field("naming", &manifest.naming)?;
         state.serialize_field("derived_indexes", &manifest.derived_indexes)?;
         state.end()
     }

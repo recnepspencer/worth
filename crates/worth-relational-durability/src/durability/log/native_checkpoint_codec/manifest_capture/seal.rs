@@ -45,6 +45,38 @@ impl CapturedManifest {
         Ok(members)
     }
 
+    /// Pages the frozen branch naming and group state into the manifest,
+    /// carrying unchanged prior pages that the destination already holds.
+    pub(crate) fn seal_native_naming_state(
+        &mut self,
+        frozen: &worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::FrozenLineageNaming,
+        current_members: Option<&std::collections::BTreeSet<RelationalDurableMemberLocator>>,
+        carry_metadata: bool,
+    ) -> Result<Vec<RelationalCheckpointMember>, DurabilityError> {
+        use crate::durability::log::native_checkpoint_codec::naming_pages::{
+            seal_naming_state, NamingPageCarry,
+        };
+        let carry = current_members.map_or(
+            NamingPageCarry::Prior(carry_metadata),
+            NamingPageCarry::Held,
+        );
+        let required: Vec<_> = self
+            .manifest
+            .branch_cells
+            .iter()
+            .filter(|cell| {
+                matches!(
+                    cell.observation.target(),
+                    worth_foundational::FoundationalBranchTarget::Basis(_)
+                )
+            })
+            .map(|cell| cell.branch_id.clone())
+            .collect();
+        let (naming, members) = seal_naming_state(frozen, &required, carry)?;
+        self.manifest.naming = naming;
+        Ok(members)
+    }
+
     pub(crate) fn seal_ordinary(self) -> CapturedManifest<RelationalCheckpointManifest> {
         CapturedManifest {
             manifest: self.manifest.seal_ordinary(),

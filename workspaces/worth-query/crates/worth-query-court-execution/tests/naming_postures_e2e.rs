@@ -65,7 +65,7 @@ fn end_to_end_split_and_merge_postures_commit_and_refuse_posture_mismatch() {
 
     // 2. Fail-closed: Split without deleting parent refuses LineagePostureMismatch.
     let head_before = head();
-    let basis_before = runtime.branch_live_persistent_names(&main);
+    let basis_before = runtime.branch_live_persistent_names(&main).unwrap();
     let tx_bad = begin_staged_tx(&runtime, "bad-split", vec![create_face_intent("bad-child")]);
     let mut b_bad = ExecutionNameBirthPlanBuilder::new(&catalog, [f1_rel]);
     b_bad
@@ -96,7 +96,7 @@ fn end_to_end_split_and_merge_postures_commit_and_refuse_posture_mismatch() {
         })
     ));
     assert_eq!(head(), head_before);
-    assert_eq!(runtime.branch_live_persistent_names(&main), basis_before);
+    assert_eq!(runtime.branch_live_persistent_names(&main).unwrap(), basis_before);
 
     // 3. Valid Split posture: F1 -> (F1a, F1b).
     let f1a_ref = face_ref("f1a");
@@ -149,7 +149,7 @@ fn end_to_end_split_and_merge_postures_commit_and_refuse_posture_mismatch() {
     let f1b_rel = names_split.entity_relational_identity(f1b_id).unwrap();
     release_commit_snapshot(&runtime, &res_split);
 
-    let live_after_split = runtime.branch_live_persistent_names(&main);
+    let live_after_split = runtime.branch_live_persistent_names(&main).unwrap();
     assert!(!live_after_split.contains_key(&f1_rel));
     assert_eq!(live_after_split.get(&f1a_rel), Some(&PersistentNameHolder::Entity(f1a_id)));
     assert_eq!(live_after_split.get(&f1b_rel), Some(&PersistentNameHolder::Entity(f1b_id)));
@@ -187,7 +187,7 @@ fn end_to_end_split_and_merge_postures_commit_and_refuse_posture_mismatch() {
         .iter()
         .any(|e| e.kind() == LineageEventKind::Merge));
     release_commit_snapshot(&runtime, &res_keep);
-    let live_after_keep = runtime.branch_live_persistent_names(&main);
+    let live_after_keep = runtime.branch_live_persistent_names(&main).unwrap();
     assert!(live_after_keep.contains_key(&f1a_rel));
     assert!(!live_after_keep.contains_key(&f1b_rel));
 

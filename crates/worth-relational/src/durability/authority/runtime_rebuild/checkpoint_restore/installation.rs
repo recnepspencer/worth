@@ -109,6 +109,9 @@ fn install_cold_directory(
         directory
             .commit_index()
             .bind_working_set(accountant.clone());
+        directory
+            .naming_state()
+            .bind_working_set(accountant.clone());
     }
     restored
         .durability
@@ -152,12 +155,11 @@ fn install_cold_directory(
     state.partitions.install_cells(prepared.mirror);
     state.history = history;
     cold_directory::readmit_lineage(
-        lane,
-        execution,
         &state.lineage,
         checkpoint,
         directory,
-        prepared.has_naming_schemes,
+        state.durability.checkpoint_selection(),
+        working_set,
         state.history.cold_commit_catalog(),
     )?;
     // Only an acknowledged selected checkpoint becomes the selection owner;
@@ -196,6 +198,10 @@ fn install_checkpoint_state(
     restored.install_rebuilt_partitions(prepared.partitions);
     restored.history = history;
     restored.lineage.install(prepared.lineage);
+    restored
+        .durability
+        .checkpoint_selection()
+        .register_naming_ack_hook(restored.lineage.naming_ack_hook());
     restored.indexes.install(prepared.indexes);
     Ok(prepared.index_roots)
 }

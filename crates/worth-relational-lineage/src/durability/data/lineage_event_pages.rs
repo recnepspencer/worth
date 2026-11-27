@@ -21,6 +21,10 @@ pub struct RelationalLineageEventPageRoute {
 pub struct RelationalCheckpointLineageEventPage {
     pub first_node: u64,
     pub last_node: u64,
+    #[serde(default)]
+    pub first_publication_commit: u64,
+    #[serde(default)]
+    pub last_publication_commit: u64,
     pub event_ids: Vec<u64>,
     pub routes: Vec<RelationalLineageEventPageRoute>,
     pub member: RelationalDurableMemberLocator,
@@ -42,16 +46,21 @@ impl RelationalCheckpointLineageEventPage {
         let mut routes = BTreeSet::new();
         let mut first_node = u64::MAX;
         let mut last_node = 0;
+        let mut first_publication_commit = u64::MAX;
+        let mut last_publication_commit = 0;
         let mut event_ids = Vec::new();
         for row in rows {
             if row.event.event_id() == 0
                 || row.event.event_id() >= u64::MAX - 1
+                || row.publication_commit_id.0 == 0
                 || event_ids
                     .last()
                     .is_some_and(|previous| *previous >= row.event.event_id())
             {
                 return None;
             }
+            first_publication_commit = first_publication_commit.min(row.publication_commit_id.0);
+            last_publication_commit = last_publication_commit.max(row.publication_commit_id.0);
             event_ids.push(row.event.event_id());
             let mut participant = false;
             for node in row.event.sources().iter().chain(row.event.targets()) {
@@ -73,6 +82,8 @@ impl RelationalCheckpointLineageEventPage {
         Some(Self {
             first_node,
             last_node,
+            first_publication_commit,
+            last_publication_commit,
             event_ids,
             routes: routes.into_iter().collect(),
             member,

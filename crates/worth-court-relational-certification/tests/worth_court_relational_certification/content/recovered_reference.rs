@@ -217,6 +217,7 @@ fn content_stored_authoritative_field_byte_corruption_refuses_at_physical_integr
             member_reads: Default::default(),
             paged_reads: Default::default(),
             commit_page_reads: Default::default(),
+            naming_page_reads: Default::default(),
             commit_reads: Default::default(),
             commits_damaged: Default::default(),
             failed_member: Default::default(),

@@ -92,7 +92,9 @@ pub fn reconstruct_replay_naming_plan(
         (LineageRecordTarget, PersistentNameIdentity),
         DurabilityError,
     > {
-        let Some((holder, name)) = lineage.holder_and_name_for_lineage(branch_id, lineage_id)
+        let Some((holder, name)) = lineage
+            .holder_and_name_for_lineage(branch_id, lineage_id)
+            .map_err(naming_unavailable_error)?
         else {
             return Err(DurabilityError::new(
                 RecoveryFailureClass::ReplayFailure,
@@ -254,10 +256,16 @@ pub fn reconstruct_replay_naming_plan(
                 }
             }
             LineageEventKind::Retire => {
-                if let Some(&source_lineage) = event.sources().first()
-                    && let Ok((target, name)) = resolve_basis_target(source_lineage)
-                {
-                    postures.push(LineagePostureClaim::Retire { target, name });
+                if let Some(&source_lineage) = event.sources().first() {
+                    match resolve_basis_target(source_lineage) {
+                        Ok((target, name)) => {
+                            postures.push(LineagePostureClaim::Retire { target, name });
+                        }
+                        Err(err) if err.class == RecoveryFailureClass::ColdStorageUnavailable => {
+                            return Err(err);
+                        }
+                        Err(_) => {}
+                    }
                 }
             }
             LineageEventKind::Restore => {
@@ -294,6 +302,7 @@ pub fn reconstruct_replay_naming_plan(
         }
     }
 
+    basis.settle().map_err(naming_unavailable_error)?;
     drop(basis);
     if postures.is_empty() && groups.is_empty() {
         return Ok(None);
@@ -303,6 +312,22 @@ pub fn reconstruct_replay_naming_plan(
         groups,
         ..Default::default()
     }))
+}
+
+fn naming_unavailable_error(
+    denial: worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::NamingBasisUnavailable,
+) -> DurabilityError {
+    use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::NamingBasisUnavailable;
+    match denial {
+        NamingBasisUnavailable::Storage(cause) => DurabilityError::new(
+            RecoveryFailureClass::ColdStorageUnavailable,
+            format!("cold naming page unavailable during replay: {cause:?}"),
+        ),
+        NamingBasisUnavailable::Unrecoverable => DurabilityError::new(
+            RecoveryFailureClass::ReplayFailure,
+            "branch naming basis is unavailable during replay",
+        ),
+    }
 }
 
 fn reverify_birth(birth: &PersistentNameBirthRecord) -> Result<(), DurabilityError> {
@@ -358,8 +383,8 @@ fn regenerated_births(
             LineageSubject::Entity => PersistentNameKey::Entity(name),
             LineageSubject::Relation => PersistentNameKey::Relation(name),
         };
-        let parts = lineage.read_name_index(&envelope.branch_context, |index| {
-            index.and_then(|index| index.recorded_birth(key).cloned())
+        let parts = lineage.read_name_index(&envelope.branch_context, |index, scope| {
+            index.and_then(|index| index.recorded_birth(key, scope).cloned())
         });
         let Ok(Some(parts)) = parts else {
             let detail = format!("regenerated name {name:?} has no recorded birth");

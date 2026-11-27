@@ -30,6 +30,8 @@ pub struct RelationalCheckpointDirectory {
         crate::durability::checkpoint_history::readmission::SelectedCheckpointRead,
     /// The paged commit index, opened read-free over this directory's source.
     pub(crate) commit_index: Arc<worth_relational_branch::internal_port::history::commit::paged_index::reader::ColdCommitIndex>,
+    /// The paged naming and group state, opened read-free over this directory's source.
+    pub(crate) naming_state: Arc<worth_relational_lineage::internal_port::lineage::naming_pages::store::ColdNamingStore>,
     _basis: RelationalDurableMemberCustody,
     retirement: PreparedCheckpointDirectoryRetirement,
 }
@@ -92,6 +94,12 @@ impl RelationalCheckpointDirectory {
                 Arc::clone(&self.source),
             ),
         );
+        let naming_state = Arc::new(
+            worth_relational_lineage::internal_port::lineage::naming_pages::store::ColdNamingStore::open(
+                Arc::clone(self.naming_state.state()),
+                Arc::clone(&self.source),
+            ),
+        );
         Ok(Arc::new(Self {
             admission_owner: Default::default(),
             admission_image: self.admission_image.clone(),
@@ -101,9 +109,17 @@ impl RelationalCheckpointDirectory {
             history_members: self.history_members.clone(),
             canonical_read: self.canonical_read.clone(),
             commit_index,
+            naming_state,
             _basis: self._basis.clone(),
             retirement,
         }))
+    }
+
+    pub fn naming_state(
+        &self,
+    ) -> &Arc<worth_relational_lineage::internal_port::lineage::naming_pages::store::ColdNamingStore>
+    {
+        &self.naming_state
     }
 }
 

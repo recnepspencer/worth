@@ -10,6 +10,7 @@ use worth_foundational::facade::AggregateIdentity;
 use crate::contracts::lineage::data::name_resolution::PersistentNameKey;
 
 use super::PersistentNameBranchIndex;
+use crate::lineage::tiered::NamingReadScope;
 
 impl PersistentNameBranchIndex {
     /// The key this index recorded for `digest` under `subject`, when it
@@ -24,6 +25,7 @@ impl PersistentNameBranchIndex {
         &self,
         subject: PersistentNameSubjectKind,
         digest: &[u8; PersistentNameIdentity::BYTE_LEN],
+        scope: &NamingReadScope,
     ) -> Option<PersistentNameKey> {
         let probe = match subject {
             PersistentNameSubjectKind::Entity => {
@@ -36,11 +38,15 @@ impl PersistentNameBranchIndex {
                 PersistentNameKey::Group(AggregateIdentity::from_bytes(*digest))
             }
         };
-        self.names.get_key_value(&probe).map(|(key, _)| *key)
+        self.entry_in(&probe, scope).map(|_| probe)
     }
 
     /// The persisted birth parts the index ingested for `name`, if any.
-    pub fn recorded_birth(&self, name: PersistentNameKey) -> Option<&Parts> {
-        self.names.get(&name)?.birth()
+    pub fn recorded_birth<'s>(
+        &'s self,
+        name: PersistentNameKey,
+        scope: &'s NamingReadScope,
+    ) -> Option<&'s Parts> {
+        self.entry_in(&name, scope)?.birth()
     }
 }

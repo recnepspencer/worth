@@ -29,7 +29,8 @@ use worth_relational_branch::internal_port::history::data::canonical_commit_enve
 };
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_lineage::internal_port::lineage::groups::{
-    BranchGroupState, CommittedGroupTransition, GroupStateAt, GroupTransitionKind, SchemeGroups,
+    BranchGroupState, CommittedGroupTransition, GroupStateAt, GroupStateRead, GroupTransitionKind,
+    SchemeGroupsRead,
 };
 use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::naming_basis_binding::BranchNamingBasisGuard;
 
@@ -44,7 +45,7 @@ use super::GroupRefusal;
 pub(super) fn selection_transitions(
     selection: &CanonicalOwnedGraphSelection,
     basis: &BranchNamingBasisGuard<'_>,
-    current: Option<&BranchGroupState>,
+    current: Option<GroupStateRead<'_>>,
     outcome: &CommitNameOutcome<'_, '_>,
 ) -> Result<Vec<CommittedGroupTransition>, GroupRefusal> {
     let selected = selection.selected_basis();
@@ -54,13 +55,14 @@ pub(super) fn selection_transitions(
             .group_state_at(selected.branch_id(), CommitId(target.selected_commit_id()))
             .map_err(GroupRefusal::unavailable)?,
     };
+    let target = target.read(basis.scope());
     let current_entities: BTreeSet<EntityId> =
         selection.current_entities().iter().copied().collect();
     let selected_entities: BTreeSet<EntityId> = selection
         .selected_entities()
         .map(|(entity, _)| entity)
         .collect();
-    let mut schemes: BTreeMap<&str, (Option<&SchemeGroups>, Option<&SchemeGroups>)> =
+    let mut schemes: BTreeMap<&str, (Option<SchemeGroupsRead<'_>>, Option<SchemeGroupsRead<'_>>)> =
         BTreeMap::new();
     for (scheme_id, groups) in current.iter().flat_map(|state| state.schemes()) {
         schemes.entry(scheme_id).or_default().0 = Some(groups);
@@ -112,7 +114,7 @@ pub(super) fn selection_transitions(
 }
 
 fn restore(
-    now: Option<&SchemeGroups>,
+    now: Option<SchemeGroupsRead<'_>>,
     leaving: &[&AggregatePriorGroup],
     arriving: &[&AggregatePriorGroup],
     outcome: &CommitNameOutcome<'_, '_>,
@@ -143,7 +145,7 @@ fn restore(
         let origin = match live {
             Some(live) if live.members == members => continue,
             Some(_) => AggregateGroupOrigin::Kept,
-            None if now.is_some_and(|now| now.retired().contains(&group.identity)) => {
+            None if now.is_some_and(|now| now.is_retired(&group.identity)) => {
                 transition.lineage.insert(Event::Revived {
                     group: group.identity,
                 });

@@ -173,7 +173,13 @@ impl CheckpointLineageEventPagesBuilder {
     pub(crate) fn push<'a>(
         &mut self,
         member: worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableMemberLocator,
-        events: impl Clone + Iterator<Item = &'a contracts::lineage::data::events::LineageEventRecord>,
+        events: impl Clone
+            + Iterator<
+                Item = (
+                    &'a contracts::lineage::data::events::LineageEventRecord,
+                    contracts::history::data::coordinates::CommitId,
+                ),
+            >,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), contracts::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial>{
         use super::{
@@ -187,13 +193,16 @@ impl CheckpointLineageEventPagesBuilder {
         >::default();
         let (mut first_node, mut last_node, mut count, mut last_id) =
             (u64::MAX, 0u64, 0usize, 0u64);
-        for event in events.clone() {
+        let (mut first_publication_commit, mut last_publication_commit) = (u64::MAX, 0u64);
+        for (event, publication_commit_id) in events.clone() {
             contracts::execution::request_custody::check_request(request)
                 .map_err(Denial::Request)?;
             if event.event_id() <= last_id || event.event_id() >= u64::MAX - 1 {
                 return Err(Denial::OriginalAuthorityUnavailable);
             }
             last_id = event.event_id();
+            first_publication_commit = first_publication_commit.min(publication_commit_id.0);
+            last_publication_commit = last_publication_commit.max(publication_commit_id.0);
             count = count
                 .checked_add(1)
                 .ok_or(Denial::Request(Cause::ChargedBytesOverflow))?;
@@ -239,7 +248,7 @@ impl CheckpointLineageEventPagesBuilder {
         }
         self.admit_nested(bytes, request).map_err(Denial::Request)?;
         let mut event_ids = Vec::with_capacity(count);
-        for event in events {
+        for (event, _) in events {
             contracts::execution::request_custody::check_request(request)
                 .map_err(Denial::Request)?;
             event_ids.push(event.event_id());
@@ -256,6 +265,8 @@ impl CheckpointLineageEventPagesBuilder {
         self.rows.push(RelationalCheckpointLineageEventPage {
             first_node,
             last_node,
+            first_publication_commit,
+            last_publication_commit,
             event_ids,
             routes: owned_routes,
             member,

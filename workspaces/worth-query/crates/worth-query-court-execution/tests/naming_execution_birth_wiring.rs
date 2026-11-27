@@ -169,7 +169,7 @@ fn schemed_entity_or_relation_without_birth_plan_refuses_fail_closed_with_missin
     let main = BranchId("main".to_owned());
     let head = || runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap().observation().commit_id();
 
-    let (head0, basis0) = (head(), runtime.branch_live_persistent_names(&main));
+    let (head0, basis0) = (head(), runtime.branch_live_persistent_names(&main).unwrap());
     let tx_no_plan = begin_staged_tx(&runtime, "no-plan-face", vec![create_face_intent("f")]);
     let err = runtime.commit_branch_transaction(&execution, tx_no_plan).expect_err("schemed entity must refuse");
     assert!(matches!(
@@ -177,7 +177,7 @@ fn schemed_entity_or_relation_without_birth_plan_refuses_fail_closed_with_missin
         Some(LineageNameDenial::MissingBirth { target: LineageRecordTarget::Entity(_), scheme_id }) if scheme_id == FACE_SCHEME_ID
     ));
     assert_eq!(head(), head0);
-    assert_eq!(runtime.branch_live_persistent_names(&main), basis0);
+    assert_eq!(runtime.branch_live_persistent_names(&main).unwrap(), basis0);
 
     let (f1_ref, f2_ref) = (face_ref("f1"), face_ref("f2"));
     let tx_seed = begin_staged_tx(&runtime, "seed", vec![create_face_intent("f1"), create_face_intent("f2")]);
@@ -192,7 +192,7 @@ fn schemed_entity_or_relation_without_birth_plan_refuses_fail_closed_with_missin
     let (f2_id, _) = seed_names.created_entity_name::<CadNamingSchema, Face>(&seed_res, &f2_ref).unwrap();
     release_commit_snapshot(&runtime, &seed_res);
 
-    let (head1, basis1) = (head(), runtime.branch_live_persistent_names(&main));
+    let (head1, basis1) = (head(), runtime.branch_live_persistent_names(&main).unwrap());
     let tx_no_seam = begin_staged_tx(
         &runtime,
         "no-plan-seam",
@@ -204,7 +204,7 @@ fn schemed_entity_or_relation_without_birth_plan_refuses_fail_closed_with_missin
         Some(LineageNameDenial::MissingBirth { target: LineageRecordTarget::Relation(_), scheme_id }) if scheme_id == SEAM_SCHEME_ID
     ));
     assert_eq!(head(), head1);
-    assert_eq!(runtime.branch_live_persistent_names(&main), basis1);
+    assert_eq!(runtime.branch_live_persistent_names(&main).unwrap(), basis1);
 }
 
 #[test]

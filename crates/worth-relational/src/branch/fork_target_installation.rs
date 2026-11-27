@@ -23,6 +23,10 @@ impl InstallableForkTarget {
     pub(super) fn target_branch(&self) -> &BranchId {
         self.prepared.reservation.branch_id()
     }
+
+    pub(super) fn shared_commit_id(&self) -> Option<crate::history::data::CommitId> {
+        self.prepared.shared_commit_id
+    }
 }
 
 impl RelationalForkPort {
@@ -85,6 +89,9 @@ impl RelationalForkPort {
         &self,
         source: &ValidatedForkSource,
         installable: InstallableForkTarget,
+        prepared_lineage: Option<
+            worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::PreparedForkLineage,
+        >,
     ) -> (
         RelationalForkOutcome,
         Option<AdmittedRelationalBranchBasis>,
@@ -107,7 +114,10 @@ impl RelationalForkPort {
         if let Some(indexes) = target.indexes.take() {
             indexes.publish();
         }
-        if let Some(fork_commit_id) = target.shared_commit_id {
+        if let Some(prepared_lineage) = prepared_lineage {
+            self.lineage_naming
+                .install_prepared_fork_ancestry(prepared_lineage);
+        } else if let Some(fork_commit_id) = target.shared_commit_id {
             self.lineage_naming.register_fork_ancestry(
                 target_identity.branch_id().clone(),
                 (*source.descriptor.owner_source_branch()).clone(),

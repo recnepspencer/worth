@@ -96,10 +96,26 @@ impl AggregateGroupNamingAuthority {
         scheme: &AggregateGroupScheme,
         prior: &[AggregatePriorGroup],
         retired_history: &BTreeSet<AggregateIdentity>,
+        proposed: Vec<AggregateGroupMembers>,
+    ) -> Result<AggregateGroupTransition, Denial> {
+        Self::transition_with_retired(
+            scheme,
+            prior,
+            |identity| retired_history.contains(identity),
+            proposed,
+        )
+    }
+
+    /// Names the `proposed` partition against `prior`, probing retirement via
+    /// `is_retired` (`O(touched)` point probes over cold-backed group state).
+    pub fn transition_with_retired(
+        scheme: &AggregateGroupScheme,
+        prior: &[AggregatePriorGroup],
+        is_retired: impl Fn(&AggregateIdentity) -> bool,
         mut proposed: Vec<AggregateGroupMembers>,
     ) -> Result<AggregateGroupTransition, Denial> {
         let rule = scheme.rule();
-        let old_owner = index_prior(scheme, prior, retired_history)?;
+        let old_owner = index_prior(scheme, prior, &is_retired)?;
         proposed.sort_by_key(|members| members.least_name());
         let new_owner = index_proposed(&proposed)?;
         let anchors = proposed
@@ -145,14 +161,14 @@ impl AggregateGroupNamingAuthority {
             old_owner,
         };
         plan.guard_live_collisions()?;
-        Ok(plan.assemble(retired_history))
+        Ok(plan.assemble(&is_retired))
     }
 }
 
 fn index_prior(
     scheme: &AggregateGroupScheme,
     prior: &[AggregatePriorGroup],
-    retired_history: &BTreeSet<AggregateIdentity>,
+    is_retired: &impl Fn(&AggregateIdentity) -> bool,
 ) -> Result<BTreeMap<Name, usize>, Denial> {
     let mut identities = BTreeSet::new();
     let mut owner = BTreeMap::new();
@@ -169,7 +185,7 @@ fn index_prior(
         {
             return Err(Denial::PriorIdentityMismatch { identity });
         }
-        if retired_history.contains(&identity) {
+        if is_retired(&identity) {
             return Err(Denial::RetiredIdentityLive { identity });
         }
         if group.members.is_empty() {

@@ -35,8 +35,47 @@ impl LineageSubsystem {
         *self.node_residency.write() = Some(Arc::new(nodes));
         *self.event_residency.write() = Some(Arc::new(events));
         self.event_admissions.write().clear();
+        // Paged events are no longer all resident: no full rebuild may run.
+        self.state.write().full_history = None;
     }
+
+    /// Demands the event pages routed to `nodes` within `branches`. At least
+    /// one filter is required: an unfiltered demand would fault the whole
+    /// event history, which only [`Self::demand_all_event_pages`] may do.
     pub fn demand_event_pages(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        nodes: Option<&BTreeSet<LineageId>>,
+        branches: Option<&BTreeSet<BranchId>>,
+    ) -> Result<Vec<ResidentLineageEventPage>, Failure> {
+        if nodes.is_none() && branches.is_none() {
+            return Err(Failure::StorageUnavailable(
+                crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailable {
+                    subject: crate::contracts::storage::data::storage_unavailable::RelationalStorageSubject::Lineage {
+                        first: LineageId(0),
+                        last: LineageId(0),
+                    },
+                    cause: crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause::LimitExceeded {
+                        length: u64::MAX,
+                        limit: 0,
+                    },
+                },
+            ));
+        }
+        self.demand_routed_event_pages(execution, nodes, branches)
+    }
+
+    /// Materializes every event page: the memory checkpoint door's explicit
+    /// whole-history copy, never a reopen or point read. It admits rows but
+    /// rebuilds no derived naming state.
+    pub fn demand_all_event_pages(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Vec<ResidentLineageEventPage>, Failure> {
+        self.demand_routed_event_pages(execution, None, None)
+    }
+
+    fn demand_routed_event_pages(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         nodes: Option<&BTreeSet<LineageId>>,

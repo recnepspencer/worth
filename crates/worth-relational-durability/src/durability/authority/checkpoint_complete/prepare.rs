@@ -122,6 +122,13 @@ pub fn prepare(
         &mut member_map,
         execution,
     )?;
+    super::commit_members::install_naming(
+        &mut draft,
+        &frozen.lineage_naming,
+        &placement,
+        &mut member_map,
+        execution,
+    )?;
     super::destination_members::require(&placement, &member_map, execution)?;
     let canonical_publication = canonical.publication(&draft, execution)?;
     let coverage = draft.covered_position;
@@ -135,11 +142,15 @@ pub fn prepare(
     drop(member_map);
     let (bytes, sections) =
         crate::durability::log::native_checkpoint_codec::encode_complete(&manifest, execution)?;
+    let naming_generations = frozen.lineage_naming.branch_generations().clone();
     let publication = placement
         .publication_source()
         .map(|source| {
-            RelationalHistoryMemberDirectory::empty_for_request(execution)
-                .map(|history| selection.prepare(manifest.clone(), source, history))
+            RelationalHistoryMemberDirectory::empty_for_request(execution).map(|history| {
+                selection
+                    .prepare(manifest.clone(), source, history)
+                    .with_naming_generations(naming_generations.clone())
+            })
         })
         .transpose()
         .map_err(stop)?;

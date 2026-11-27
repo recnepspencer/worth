@@ -78,8 +78,8 @@ impl RelationalRuntime {
         }
         let branch_id = observation.identity().branch_id();
         self.lineage
-            .read_name_index(branch_id, |index| {
-                read(PersistentNameObservationView::new(index, basis))
+            .read_name_index(branch_id, |index, scope| {
+                read(PersistentNameObservationView::new(index, scope, basis))
             })
             .map_err(RelationalPersistentNameReadDenial::IndexUnavailable)
     }

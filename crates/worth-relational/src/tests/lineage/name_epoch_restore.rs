@@ -138,7 +138,7 @@ fn a_refused_restore_batch_leaves_every_binding_epoch_untouched() {
     let name = world.name_of(&holder);
     let l1 = created_lineage(&born);
     let mut index = rebuild(world.log());
-    let before = index.duplicate_for_test();
+    let before = index.fork_for_test();
     // The name is still live, so a restore of it refuses and must roll back.
     let refused = restore_batch(born.commit().0 + 1, &holder, name, l1, LineageId(l1.0 + 7));
     assert!(index.apply(&refused).is_err());

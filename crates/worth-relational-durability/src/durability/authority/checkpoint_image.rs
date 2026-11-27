@@ -70,6 +70,7 @@ impl CapturedCheckpointBasis {
             lineage_nodes,
             relation_lineages,
             lineage_events: _,
+            lineage_naming: _,
             lineage_event_pages_resident: _,
             lineage_event_leases: _,
             guarded_member_sources: _,

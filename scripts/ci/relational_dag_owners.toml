@@ -10,7 +10,8 @@ layer = 0
 # +100 for the typed later-stage retirement refusal (public #348).
 # +400 for allocation-free borrowed created-binding lookups (M3 C5.4).
 # +100 for the declarative ResidencyBudget config section (Store M4.2b).
-cap = 68600
+# +100 for Persistent Naming Phase 7B-2a structural_identity and Store M4.3f finalization artifact field.
+cap = 68700
 floor = 38300
 depends = []
 
@@ -34,7 +35,19 @@ depends = ["contracts", "storage"]
 physical = true
 crate = "worth-relational-lineage"
 layer = 3
-cap = 17000
+# +3000 for Store M4.3f (P0-A) CHK24 paged persistent-naming/group store,
+# chunked continuation rows, tiered COW overlays, capability-gated rebuilds,
+# cold retained-fork slicing, commit preflight, and retention compaction.
+# +1000 for Store M4.3f Round 2 hardening (structural persistent CowMap AVL
+# tree, shared continuation-envelope validation, and Round 2 tests).
+# +500 for Store M4.3f Round 3 hardening (earliest commit headers, O(1) cold
+# fork base link + ACK rebind, Arc-wrapped CowMap values, and Round 3 tests).
+# +200 for Store M4.3f Round 6-7 hardening (deadlock-free ACK guard, bounded
+# GROUP_LOG branch digest keys, and VALUE_CHUNK continuation accounting).
+# +900 for Store M4.3f Round 11-13 hardening (per-branch O(log P) ephemeral
+# event-page & GROUP_LOG window indexes, AVL path-sharing detection, Arc-shared
+# forward edges, safe range-based OrdMap predecessor lookups, and zero-rebuild compaction).
+cap = 22600
 floor = 7100
 depends = ["contracts", "storage", "branch"]
 
@@ -85,7 +98,8 @@ layer = 6
 # +500 for #119 coupled successor supersession (retraction and completion on
 # the candidate), which fit before #389's concurrent runtime growth.
 # +300 for Persistent Naming (#421) and Store M4.3b paged identity close retirement.
-cap = 79800
+# +200 for Store M4.3f Round 3 fork-vs-retention-floor coordination and detached fork cold-source rebind.
+cap = 80000
 floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 

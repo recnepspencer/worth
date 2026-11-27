@@ -95,7 +95,12 @@ fn append_events(
         return append_events(right, request, members, directory);
     }
     let member = add(members, encoded, request)?;
-    directory.push(member, page.iter().map(|row| row.event), request)
+    directory.push(
+        member,
+        page.iter()
+            .map(|row| (row.event, row.publication_commit_id)),
+        request,
+    )
 }
 
 fn carry_member(

@@ -48,6 +48,7 @@ pub struct ProposalNameSource<'a> {
 pub enum NamePreview {
     Names(PendingCommitNames),
     Refused(LineageNameDenial),
+    Unavailable(lineage::runtime::state::subsystems::lineage::NamingBasisUnavailable),
     /// The branch's naming basis holds a later commit's lineage than the
     /// proposal's basis: a preview there would read another commit's names,
     /// so it never runs.
@@ -139,11 +140,17 @@ impl<'a> ProposalNameSource<'a> {
                 basis: &basis,
                 graph_selection: self.proposal.graph_selection,
             });
+            if let Err(denial) = basis.settle() {
+                return NamePreview::Unavailable(denial);
+            }
             preview.map_or_else(NamePreview::Refused, NamePreview::Names)
         });
         match preview {
             NamePreview::Names(names) => Ok(names),
             NamePreview::Refused(denial) => Err(Denial::Naming(denial.clone())),
+            NamePreview::Unavailable(denial) => {
+                Err(Denial::IndexUnavailable(format!("{denial:?}")))
+            }
             NamePreview::Stale { .. } => Err(Denial::StaleBasis),
         }
     }
@@ -176,6 +183,12 @@ pub fn settle_step<T>(
         Some(NamePreview::Refused(denial)) => {
             Err(TransactionCommitError::lineage_name_denial(denial.clone()))
         }
+        Some(NamePreview::Unavailable(denial)) => Err(TransactionCommitError::publication(
+            contracts::publication::data::publication_error::PublicationError::new(
+                contracts::publication::bundle::publication_status::PublicationStage::BundleAssembly,
+                format!("cold naming basis unavailable during invariant preview: {denial:?}"),
+            ),
+        )),
         Some(NamePreview::Stale { basis, latest }) => Err(TransactionCommitError::conflict(
             commit_conflict::CommitConflict::new(
                 conflict_class::ConflictClass::StaleValidationBasis {
@@ -204,11 +217,13 @@ impl CustomInvariantNameSource for ProposalNameSource<'_> {
         let index = guard
             .name_index()
             .map_err(|denial| Denial::IndexUnavailable(format!("{denial:?}")))?;
-        let committed = self
-            .proposal
-            .basis
-            .map(|basis| <PersistentNameObservationView<'_> as ViewPort<'_>>::new(index, basis));
+        let committed = self.proposal.basis.map(|basis| {
+            <PersistentNameObservationView<'_> as ViewPort<'_>>::new(index, guard.scope(), basis)
+        });
         read(&ProposalNames { committed, pending });
+        guard
+            .settle()
+            .map_err(|denial| Denial::IndexUnavailable(format!("{denial:?}")))?;
         Ok(())
     }
 

@@ -19,6 +19,8 @@ pub enum ChunkMemberKind {
     DirectoryPage,
     /// One page of a checkpoint's paged commit index (`CHK24`).
     CommitIndexPage,
+    /// One page of a checkpoint's paged persistent-naming state (`CHK24`).
+    NamingStatePage,
 }
 
 impl ChunkMemberKind {
@@ -29,6 +31,7 @@ impl ChunkMemberKind {
             Self::Continuation => 2,
             Self::DirectoryPage => 3,
             Self::CommitIndexPage => 4,
+            Self::NamingStatePage => 5,
         }
     }
 }
@@ -37,6 +40,14 @@ impl ChunkMemberKind {
 pub struct EncodedChunkMember {
     pub locator: RelationalDurableMemberLocator,
     pub bytes: Vec<u8>,
+}
+
+/// Domain-separated SHA-256 digest helper for bounded canonical page keys.
+pub fn domain_sha256(domain: &[u8], payload: &[u8]) -> [u8; 32] {
+    let mut hash = Sha256::new();
+    hash.update(domain);
+    hash.update(payload);
+    hash.finalize().into()
 }
 
 /// Encodes `payload` as a `kind` member no larger than `limit` bytes.
