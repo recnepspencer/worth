@@ -39,6 +39,18 @@ impl WorthQueryApplicationObservedFact {
                     .remains_equal(runtime, execution, basis)
                     .map_err(source_publication_denial)
             }
+            Self::FamilySelection { observation } => {
+                super::super::super::fact_verification_observation::value_comparison();
+                execution.consult().map_err(|stop| {
+                    SelfDenial::query_read_denial(
+                        worth_relational::facade::runtime::QueryReadExecutionStop::Request(stop),
+                        "decision fact comparison",
+                    )
+                })?;
+                observation
+                    .remains_equal_at(runtime, execution, basis)
+                    .map_err(family_selection_denial)
+            }
             _ => self.remains_equal_in_image(runtime, execution, basis.snapshot, applied),
         }
     }
@@ -338,11 +350,22 @@ impl WorthQueryApplicationObservedFact {
 mod court_doors_for_test;
 
 fn source_publication_denial(cause: super::WorthQuerySourceCurrentnessFailure) -> SelfDenial {
+    basis_comparison_denial(cause, "source publication comparison")
+}
+
+fn family_selection_denial(cause: super::WorthQuerySourceCurrentnessFailure) -> SelfDenial {
+    basis_comparison_denial(cause, "family selection comparison")
+}
+
+fn basis_comparison_denial(
+    cause: super::WorthQuerySourceCurrentnessFailure,
+    subject: &'static str,
+) -> SelfDenial {
     match cause {
         super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
         super::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => SelfDenial::managed_index(cause, "decision source consistency"),
-        super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause, "source publication comparison"),
-        super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded, "source publication comparison"),
-        super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "source publication comparison"),
+        super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause, subject),
+        super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded, subject),
+        super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, subject),
     }
 }

@@ -15,6 +15,7 @@ pub mod at_observation;
 pub mod candidate;
 pub mod capacity_stop;
 pub mod equality_recovery;
+pub mod mark_free;
 pub mod marked_walk;
 pub mod restored_root;
 pub mod work_budget;

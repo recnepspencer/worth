@@ -8,12 +8,15 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::BTreeSet;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 pub mod checkpoint_priors;
+pub mod live_identity;
 pub mod observed;
 pub mod publication_heads;
+pub mod reresolution;
 pub mod selection;
 pub use checkpoint_priors::CheckpointPriorSelectionDenial;
 pub use checkpoint_priors::CheckpointPriorStructure;
 pub use checkpoint_priors::NativePriorCheckpointOutput;
+pub use live_identity::{live_selection_identity, LiveSelectionRefusal};
 pub use observed::{FamilySelectionProducer, LiveFamilySelectionPort, ObservedFamilySelection};
 pub use publication_heads::PublicationHeads;
 pub use selection::{
@@ -87,9 +90,11 @@ impl WorthQueryApplicationOutputLineage {
                 family_installed: false,
                 ambiguous_publication: false,
                 candidates: Vec::new(),
+                sources: Vec::new(),
             });
         };
         let mut publications = PublicationHeads::default();
+        let mut sources = Vec::with_capacity(bindings.len());
         for (output_binding, output_role) in bindings {
             execution
                 .consult()
@@ -102,6 +107,8 @@ impl WorthQueryApplicationOutputLineage {
                     .binding_identity(*output_binding)
                     .expect("output family binding is installed"),
             };
+            // A source that never published is still watched (public #429).
+            sources.push(source.clone());
             if !self.by_source.contains_key(&source) {
                 continue;
             }
@@ -158,6 +165,7 @@ impl WorthQueryApplicationOutputLineage {
             family_installed: true,
             ambiguous_publication,
             candidates,
+            sources,
         })
     }
 }

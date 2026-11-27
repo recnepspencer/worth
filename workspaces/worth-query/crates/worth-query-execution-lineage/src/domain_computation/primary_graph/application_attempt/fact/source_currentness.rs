@@ -78,8 +78,9 @@ impl WorthQueryApplicationObservedFact {
 
     /// The one dispatch on a certification basis (public #429). A
     /// `SourcePublication` compares its published candidate's evidence on
-    /// the basis; every other fact answers exactly as `source_currentness_in`
-    /// does at the basis snapshot.
+    /// the basis and a `FamilySelection` re-resolves its family there; every
+    /// other fact answers exactly as `source_currentness_in` does at the
+    /// basis snapshot.
     pub fn source_currentness_at(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -92,6 +93,11 @@ impl WorthQueryApplicationObservedFact {
                 check_request(execution)?;
                 super::super::super::fact_verification_observation::source_currentness();
                 comparison_result(observation.remains_equal(runtime, execution, basis))
+            }
+            Self::FamilySelection { observation } => {
+                check_request(execution)?;
+                super::super::super::fact_verification_observation::source_currentness();
+                comparison_result(observation.remains_equal_at(runtime, execution, basis))
             }
             _ => self.source_currentness_in(runtime, execution, basis.snapshot),
         }

@@ -2,8 +2,9 @@
 
 use super::*;
 use std::marker::PhantomData;
-use worth_relational::facade::runtime::ProjectionAspectScope;
-use worth_relational::facade::storage::RecordLifecycleState;
+use crate::domain_computation::primary_graph::output_lineage::family_selection::{
+    live_selection_identity, LiveSelectionRefusal,
+};
 
 impl<'reader, 'runtime, Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
@@ -53,47 +54,37 @@ where
         } else {
             native.projection(self.reader.snapshot)
         };
-        let projected = view
-            .map(|view| {
-                view.entity_record_with_projection_scope(
-                    execution,
-                    entity_id,
-                    ProjectionAspectScope::empty(),
-                    |record| Some((record.kind_id(), record.lifecycle())),
-                )
-                .map_err(|cause| {
-                    self.reader.native_read_stop.get_or_insert(cause);
-                    WorthQueryCurrentOutputDenial::new(
-                        WorthQueryCurrentOutputDenialKind::ExecutionRequest(cause),
-                        role,
-                    )
-                })
-            })
-            .transpose()?
-            .flatten()
-            .filter(|(_, lifecycle)| *lifecycle == RecordLifecycleState::Live)
-            .ok_or_else(|| {
-                WorthQueryCurrentOutputDenial::new(
-                    WorthQueryCurrentOutputDenialKind::OutputUnavailable,
-                    role,
-                )
-            })?;
-        let entity = self.reader.layout.entity_name(projected.0).ok_or_else(|| {
+        let live = live_selection_identity(
+            view.as_ref(),
+            execution,
+            entity_id,
+            self.reader.layout,
+            Entity::IDENTIFIER,
+        )
+        .map_err(|cause| {
+            self.reader.native_read_stop.get_or_insert(cause);
             WorthQueryCurrentOutputDenial::new(
-                WorthQueryCurrentOutputDenialKind::EntityMismatch,
+                WorthQueryCurrentOutputDenialKind::ExecutionRequest(cause),
                 role,
             )
         })?;
-        if entity != Entity::IDENTIFIER {
-            return Err(WorthQueryCurrentOutputDenial::new(
-                WorthQueryCurrentOutputDenialKind::EntityMismatch,
+        let (kind, entity) = live.map_err(|refusal| {
+            WorthQueryCurrentOutputDenial::new(
+                match refusal {
+                    LiveSelectionRefusal::OutputUnavailable => {
+                        WorthQueryCurrentOutputDenialKind::OutputUnavailable
+                    }
+                    LiveSelectionRefusal::EntityMismatch => {
+                        WorthQueryCurrentOutputDenialKind::EntityMismatch
+                    }
+                },
                 role,
-            ));
-        }
+            )
+        })?;
         self.reader.realized_scope.record(entity_id);
         let identity = WorthQueryInvariantEntityIdentity {
             entity_id,
-            kind: projected.0,
+            kind,
             entity: std::sync::Arc::from(entity),
             authority_identity: self.reader.authority_identity,
             phase: self

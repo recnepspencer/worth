@@ -28,6 +28,10 @@ pub struct FamilySelectionProducer {
     pub family: &'static str,
     pub entity_type: TypeId,
     pub entity_identifier: &'static str,
+    /// The producer entity `scope` was bound from; a re-resolution judges a
+    /// candidate obsolete against it. Its identity is already `scope`'s, so
+    /// the canonical encoding does not repeat it.
+    pub producer: EntityId,
 }
 
 /// The lineage, invalidation owner and layout of the reader that recorded

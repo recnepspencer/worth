@@ -195,6 +195,8 @@ pub struct WorthQueryCurrentOutputFamilyResolution {
     pub family_installed: bool,
     pub ambiguous_publication: bool,
     pub candidates: Vec<WorthQueryCurrentOutputCandidate>,
+    /// Every installed source of the family, published or not (public #429).
+    pub sources: Vec<SemanticSource>,
 }
 
 impl WorthQueryApplicationOutputLineage {

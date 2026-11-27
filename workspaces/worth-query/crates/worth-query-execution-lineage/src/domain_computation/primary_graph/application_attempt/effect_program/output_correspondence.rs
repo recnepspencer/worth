@@ -240,10 +240,20 @@ impl WorthQueryApplicationOutputCorrespondence {
         &self,
         role: &str,
     ) -> Result<Option<EntityId>, WorthQueryApplicationOutputProjectionDenial> {
+        self.current_entity_of_type(role, TypeId::of::<Entity>())
+    }
+
+    /// The entity `role` currently outputs, for an entity type known only by
+    /// its id: an unbound role outputs none, a retired one none.
+    pub fn current_entity_of_type(
+        &self,
+        role: &str,
+        entity_type: TypeId,
+    ) -> Result<Option<EntityId>, WorthQueryApplicationOutputProjectionDenial> {
         let Some(binding) = self.storage.binding(role) else {
             return Ok(None);
         };
-        if binding.entity_type != TypeId::of::<Entity>() {
+        if binding.entity_type != entity_type {
             return Err(WorthQueryApplicationOutputProjectionDenial::EntityMismatch);
         }
         Ok(

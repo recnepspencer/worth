@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::invariant_projection::read_basis::NativeProjectionRead;
+use crate::domain_computation::primary_graph::output_lineage::SemanticSource;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
@@ -18,6 +19,8 @@ pub mod cardinality;
 pub mod current_identity;
 #[path = "resolution/decision_plan_denial.rs"]
 pub mod decision_plan_denial;
+#[path = "resolution/family_selection_fact.rs"]
+pub mod family_selection_fact;
 #[path = "resolution/source_liveness.rs"]
 pub mod source_liveness;
 
@@ -152,7 +155,8 @@ where
             NativeProjectionRead::Committed(native) => Some(*native),
             NativeProjectionRead::Applied { .. } => None,
         };
-        let correspondences = if let Some(native) = committed {
+        let applied_members = entities.len();
+        let (correspondences, sources) = if let Some(native) = committed {
             self.current_correspondences::<Family, Producer>(
                 execution, producer, native, &replaced, applied,
             )?
@@ -186,7 +190,11 @@ where
                 entities.push(entity);
             }
         }
-        Ok(match classify_current_entities(entities) {
+        let (applied_entities, committed_entities) = entities.split_at(applied_members);
+        let recorded = sources.map(|sources| {
+            (sources, committed_entities.to_vec(), applied_entities.to_vec())
+        });
+        let selection = match classify_current_entities(entities) {
             CurrentOutputCardinality::Missing => WorthQueryCurrentOutputSelection::Missing,
             CurrentOutputCardinality::Unique(entity) => WorthQueryCurrentOutputSelection::Unique(
                 self.live_current_identity::<Family::Entity>(execution, subject, entity)?,
@@ -201,7 +209,13 @@ where
                         .collect::<Result<Vec<_>, _>>()?,
                 )
             }
-        })
+        };
+        if let Some((sources, outcome, applied)) = recorded {
+            self.record_family_selection::<Family, Producer>(
+                producer, sources, outcome, applied, &replaced,
+            )?;
+        }
+        Ok(selection)
     }
 
     fn current_correspondences<Family, Producer>(
@@ -212,10 +226,13 @@ where
         replaced: &[(Option<TypeId>, [u8; 32])],
         applied: bool,
     ) -> Result<
-        Vec<(
-            std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
-            String,
-        )>,
+        (
+            Vec<(
+                std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
+                String,
+            )>,
+            Option<Vec<SemanticSource>>,
+        ),
         WorthQueryCurrentOutputDenial,
     >
     where
@@ -229,10 +246,14 @@ where
         if replaced.is_empty()
             && let Some(cached) = self.reader.current_output_families.get(&cache_key)
         {
-            return Ok(cached
-                .iter()
-                .map(super::CertifiedOutputCorrespondence::pair)
-                .collect());
+            // The read that cached it recorded its family selection.
+            return Ok((
+                cached
+                    .iter()
+                    .map(super::CertifiedOutputCorrespondence::pair)
+                    .collect(),
+                None,
+            ));
         }
         let occurrence = self.reader.selected_product_occurrence.ok_or_else(|| {
             WorthQueryCurrentOutputDenial::new(
@@ -355,9 +376,12 @@ where
                 .current_output_families
                 .insert(cache_key, current.clone());
         }
-        Ok(current
-            .iter()
-            .map(super::CertifiedOutputCorrespondence::pair)
-            .collect())
+        Ok((
+            current
+                .iter()
+                .map(super::CertifiedOutputCorrespondence::pair)
+                .collect(),
+            Some(resolution.sources),
+        ))
     }
 }
