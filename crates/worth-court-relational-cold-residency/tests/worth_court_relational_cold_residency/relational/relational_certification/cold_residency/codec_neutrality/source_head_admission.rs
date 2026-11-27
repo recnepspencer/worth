@@ -30,9 +30,13 @@ fn codec_only_restore_refuses_partial_branch_adoption_while_exact_restore_keeps_
             let (_, recovered) = outcome.unwrap();
             assert!(!recovered.codec_transition_pending());
             assert_eq!(
-                super::super::selected_directory::read_native(&capture(execution, &target))
-                    .branch_cells
-                    .len(),
+                super::super::selected_directory::read_native(&capture_carrying(
+                    execution,
+                    &target,
+                    &locators(&checkpoint),
+                ))
+                .branch_cells
+                .len(),
                 2
             );
         } else {

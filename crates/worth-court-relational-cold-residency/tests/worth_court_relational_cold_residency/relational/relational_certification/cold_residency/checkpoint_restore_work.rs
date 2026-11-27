@@ -1,8 +1,10 @@
 //! Work and catalog parity observed through native capture and actual restart.
-use super::selected_directory::read_native;
+use super::selected_directory::{read_native, read_native_with_members};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
-    durability::RelationalNativeCheckpoint,
+    durability::{
+        RelationalCheckpointMember, RelationalDurableMemberLocator, RelationalNativeCheckpoint,
+    },
     history::BranchId,
     identity::{EntityId, KindId, PartitionId},
     mvcc::RelationalTransactionIntent,
@@ -23,14 +25,38 @@ fn capture(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
 ) -> RelationalNativeCheckpoint {
+    capture_with_members(execution, runtime, &[])
+}
+
+fn capture_with_members(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    current_members: &[RelationalDurableMemberLocator],
+) -> RelationalNativeCheckpoint {
     runtime
         .durability_authority()
         .native_checkpoint_with_policy(
-execution,
-worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
-)
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members,
+                source: None,
+            },
+        )
         .unwrap()
+}
+
+fn external_canonical_bytes(checkpoint: &RelationalNativeCheckpoint) -> usize {
+    checkpoint
+        .members()
+        .iter()
+        .filter_map(|member| match member {
+            RelationalCheckpointMember::New { bytes, .. } if bytes.starts_with(b"WRTHRCCA") => {
+                Some(bytes.len())
+            }
+            _ => None,
+        })
+        .sum()
 }
 
 fn fork(execution: &ExecutionRequest<'_, '_>, source: &RelationalRuntime, name: &str) -> BranchId {
@@ -135,10 +161,8 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     let sibling_commit = commit_sibling(execution, &source, &sibling, "work-fork");
     release_test_commit_snapshot(&source, &sibling_commit);
     let native = capture(execution, &source);
-    assert!(
-        native.captured_sections().unwrap().envelopes
-            > grown.captured_sections().unwrap().envelopes
-    );
+    assert_eq!(native.captured_sections().unwrap().envelopes, 0);
+    assert!(external_canonical_bytes(&native) > external_canonical_bytes(&grown));
     let decoded = read_native(&native);
     let mut recovered = memory_runtime();
     let outcome = recovered
@@ -149,28 +173,30 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
             worth_testkit_relational::cold_recovery::members_source(&native),
         )
         .unwrap();
+    let distinct_heads: std::collections::BTreeSet<_> =
+        decoded.roots.iter().map(|root| root.commit_id).collect();
+    assert!(distinct_heads.len() < decoded.commits.len());
+    assert_eq!(outcome.coverage.checkpoint_commits, decoded.commits.len());
     let work = outcome.checkpoint_restore_work.unwrap();
     assert_eq!(work.native_bytes_read, Some(native.bytes().len()));
-    assert_eq!(
-        work.native_envelopes_readmitted,
-        Some(decoded.commits.len())
-    );
+    assert_eq!(work.native_envelopes_readmitted, Some(distinct_heads.len()));
     assert_eq!(work.root_images_verified, decoded.roots.len());
-    assert_eq!(
-        work.root_partition_images_restored,
+    // Cold external-members restore binds root and mirror regions lazily
+    // without eagerly restoring or examining partition images.
+    assert!(
         decoded
             .roots
             .iter()
             .map(|root| root.regions.len())
             .sum::<usize>()
+            > 0
     );
-    assert_eq!(work.mirror_partition_images_examined, decoded.mirror.len());
-    assert_eq!(
-        work.mirror_partitions_reused + work.mirror_partitions_reconstructed,
-        decoded.mirror.len()
-    );
-    assert!(work.mirror_partitions_reused > 0);
-    assert_eq!(work.history_envelopes_routed, decoded.commits.len());
+    assert!(!decoded.mirror.is_empty());
+    assert_eq!(work.root_partition_images_restored, 0);
+    assert_eq!(work.mirror_partition_images_examined, 0);
+    assert_eq!(work.mirror_partitions_reused, 0);
+    assert_eq!(work.mirror_partitions_reconstructed, 0);
+    assert_eq!(work.history_envelopes_routed, distinct_heads.len());
     assert_eq!(work.branch_cells_readmitted, decoded.branch_cells.len());
     assert_eq!(
         work.index_definitions_readmitted,
@@ -205,16 +231,15 @@ fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
 
     let native = capture(execution, &source);
     let original = read_native(&native);
+    let source_members = worth_testkit_relational::cold_recovery::members_source(&native);
     let mut recovered = memory_runtime();
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(
-            execution,
-            &native,
-            worth_testkit_relational::cold_recovery::members_source(&native),
-        )
+        .restore_native_checkpoint(execution, &native, source_members.clone())
         .unwrap();
-    let readmitted = read_native(&capture(execution, &recovered));
+    let prior_locators: Vec<_> = source_members.members.keys().copied().collect();
+    let recaptured = capture_with_members(execution, &recovered, &prior_locators);
+    let readmitted = read_native_with_members(&recaptured, Some(&source_members.members));
     for commit_id in [
         seed.commit.commit_id,
         sibling_commit.commit.commit_id,

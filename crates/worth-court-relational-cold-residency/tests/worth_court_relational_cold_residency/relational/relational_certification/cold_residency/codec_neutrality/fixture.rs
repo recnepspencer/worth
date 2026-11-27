@@ -121,14 +121,31 @@ pub(super) fn capture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
 ) -> RelationalNativeCheckpoint {
+    capture_carrying(execution, runtime, &[])
+}
+
+pub(super) fn capture_carrying(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    current_members: &[worth_relational::facade::durability::RelationalDurableMemberLocator],
+) -> RelationalNativeCheckpoint {
     runtime
         .durability_authority()
         .native_checkpoint_with_policy(
-execution,
-worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
-)
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members,
+                source: None,
+            },
+        )
         .unwrap()
+}
+
+pub(super) fn locators(
+    checkpoint: &RelationalNativeCheckpoint,
+) -> Vec<worth_relational::facade::durability::RelationalDurableMemberLocator> {
+    checkpoint.members().iter().map(|m| m.locator()).collect()
 }
 
 /// Restore `native` for codec transition through its own external members.

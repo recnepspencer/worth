@@ -83,10 +83,10 @@ fn companion_optional_survivor_omission_cannot_disguise_a_genuine_mixed_publicat
         &installed,
         owner.admit_required_output("native.fixture.mixed", [11; 32]),
     );
-    let (mut target, recovered, selected, _transaction) = staged(execution, &world);
+    let (mut target, recovered, selected, _transaction, prior) = staged(execution, &world);
     assert!(recovered.codec_transition_retires(a));
     assert!(!recovered.codec_transition_retires(b));
-    let before = capture(execution, &target);
+    let before = capture_carrying(execution, &target, &prior);
     // The complete association is genuine; Query must still refuse its MIXED
     // disposition. A copied subset cannot masquerade as either all or none.
     target
@@ -131,5 +131,5 @@ fn companion_optional_survivor_omission_cannot_disguise_a_genuine_mixed_publicat
         .basis_port()
         .compare_current_exact(&selected)
         .is_ok());
-    assert_eq!(capture(execution, &target), before);
+    assert_eq!(capture_carrying(execution, &target, &prior), before);
 }

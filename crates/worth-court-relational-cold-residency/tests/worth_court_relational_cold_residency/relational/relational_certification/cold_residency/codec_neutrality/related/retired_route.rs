@@ -2,7 +2,7 @@
 use super::{
     super::super::checkpoint_wire_fixture::{array, edit_original, field, replace_field, rows},
     super::{
-        fixture::{basis, capture},
+        fixture::{basis, capture, capture_carrying},
         publication_fixture,
     },
     fixture::*,
@@ -36,13 +36,10 @@ pub(super) fn cold_retired_route(
     target: &RelationalRuntime,
 ) {
     let saved = capture(execution, target);
+    let saved_source = worth_testkit_relational::cold_recovery::members_source(&saved);
     let (mut cold, receipt) = installed(2);
     cold.durability_recovery()
-        .restore_native_checkpoint(
-            execution,
-            &saved,
-            worth_testkit_relational::cold_recovery::members_source(&saved),
-        )
+        .restore_native_checkpoint(execution, &saved, saved_source.clone())
         .unwrap();
     let receipt = cold
         .readmit_recovered_initial_schema_installation(receipt)
@@ -78,33 +75,31 @@ pub(super) fn cold_retired_route(
         })
         .unwrap();
     for incomplete in [false, true] {
-        let untrusted = edit_original(&saved, retirement, |body| {
-            let mut events = rows(field(body, "required_output_codec_retirements"));
-            let event = events[0];
-            let amended = if incomplete {
-                let mut kinds = rows(field(event, "kinds"));
-                kinds.pop().unwrap();
-                replace_field(event, "kinds", &array(&kinds))
-            } else {
-                replace_field(event, "publication", &rmp_serde::to_vec(&foreign).unwrap())
-            };
-            events[0] = &amended;
-            replace_field(body, "required_output_codec_retirements", &array(&events))
-        });
+        let (untrusted, untrusted_source) =
+            edit_original(&saved, &saved_source, retirement, |body| {
+                let mut events = rows(field(body, "required_output_codec_retirements"));
+                let event = events[0];
+                let amended = if incomplete {
+                    let mut kinds = rows(field(event, "kinds"));
+                    kinds.pop().unwrap();
+                    replace_field(event, "kinds", &array(&kinds))
+                } else {
+                    replace_field(event, "publication", &rmp_serde::to_vec(&foreign).unwrap())
+                };
+                events[0] = &amended;
+                replace_field(body, "required_output_codec_retirements", &array(&events))
+            });
         let (mut rejected, receipt) = installed(2);
         rejected
             .durability_recovery()
-            .restore_native_checkpoint(
-                execution,
-                &untrusted,
-                worth_testkit_relational::cold_recovery::members_source(&untrusted),
-            )
+            .restore_native_checkpoint(execution, &untrusted, untrusted_source.clone())
             .unwrap();
         let receipt = rejected
             .readmit_recovered_initial_schema_installation(receipt)
             .unwrap();
         let (_, installed) = receipt.issue_application_publication_owner();
-        let before = capture(execution, &rejected);
+        let prior: Vec<_> = untrusted_source.members.keys().copied().collect();
+        let before = capture_carrying(execution, &rejected, &prior);
         let denied = rejected
             .readmit_required_output_route_absence(
                 execution,
@@ -132,6 +127,6 @@ pub(super) fn cold_retired_route(
             );
             assert_eq!(error.detail, "exact route has no canonical publication");
         }
-        assert_eq!(capture(execution, &rejected), before);
+        assert_eq!(capture_carrying(execution, &rejected, &prior), before);
     }
 }

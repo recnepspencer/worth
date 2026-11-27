@@ -29,8 +29,10 @@ fn staged(
     super::RecoveredRelationalRuntimeAuthority,
     worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     worth_relational::facade::mvcc::BranchBoundRelationalTransaction,
+    Vec<worth_relational::facade::durability::RelationalDurableMemberLocator>,
 ) {
-    let (mut target, mut recovered, _) = recovered(execution, world);
+    let (mut target, mut recovered, _, prior_saved) = recovered(execution, world);
+    let prior = locators(&prior_saved);
     let selected = basis(&target);
     let (owner, installed) = target
         .durability_recovery()
@@ -56,15 +58,15 @@ fn staged(
             activation(world.activation),
         )
         .unwrap();
-    (target, recovered, selected, transaction)
+    (target, recovered, selected, transaction, prior)
 }
 #[test]
 fn companion_native_association_requires_exact_identity_kind_and_original_payload() {
     let request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (world, companion) = independent(execution);
-    let (mut target, recovered, selected, _transaction) = staged(execution, &world);
-    let before = capture(execution, &target);
+    let (mut target, recovered, selected, _transaction, prior) = staged(execution, &world);
+    let before = capture_carrying(execution, &target, &prior);
     target
         .durability_recovery()
         .validate_recovered_codec_output_correspondence(
@@ -117,7 +119,7 @@ fn companion_native_association_requires_exact_identity_kind_and_original_payloa
             )
         )
         .is_err());
-    assert_eq!(capture(execution, &target), before);
+    assert_eq!(capture_carrying(execution, &target, &prior), before);
     // Equal ordinary writes cannot inherit the original producer association.
     let mut transaction = world
         .runtime
@@ -154,7 +156,7 @@ fn companion_native_association_requires_exact_identity_kind_and_original_payloa
         .snapshots()
         .release_snapshot(&committed.snapshot)
         .unwrap();
-    let (mut rewritten, recovered, selected, _transaction) = staged(execution, &world);
+    let (mut rewritten, recovered, selected, _transaction, _) = staged(execution, &world);
     assert!(rewritten
         .durability_recovery()
         .validate_recovered_codec_output_correspondence(
@@ -176,8 +178,8 @@ fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh
     let request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (world, companion) = independent(execution);
-    let (mut target, recovered, selected, _transaction) = staged(execution, &world);
-    let before = capture(execution, &target);
+    let (mut target, recovered, selected, _transaction, prior) = staged(execution, &world);
+    let before = capture_carrying(execution, &target, &prior);
     let limited = worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::new(Some(0)),
         worth_execution::CancellationSource::new().token(),
@@ -230,7 +232,7 @@ fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh
         .basis_port()
         .compare_current_exact(&selected)
         .is_ok());
-    assert_eq!(capture(execution, &target), before);
+    assert_eq!(capture_carrying(execution, &target, &prior), before);
     target
         .durability_recovery()
         .validate_recovered_codec_output_correspondence(

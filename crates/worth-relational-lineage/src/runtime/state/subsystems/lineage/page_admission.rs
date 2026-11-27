@@ -22,9 +22,15 @@ impl PreparedLineageColdPages {
         events: &[RelationalCheckpointLineageEventPage],
         source: &Arc<dyn RelationalDurableColdSource>,
         commits: event_residency::LineageCommitBinding,
+        may_contain_named_events: bool,
     ) -> Result<Self, RelationalStorageUnavailable> {
         let nodes = node_residency::RuntimeLineageNodeResidency::new(nodes, source)?;
-        let events = event_residency::RuntimeLineageEventResidency::new(events, source, commits)?;
+        let events = event_residency::RuntimeLineageEventResidency::new(
+            events,
+            source,
+            commits,
+            may_contain_named_events,
+        )?;
         Ok(Self { nodes, events })
     }
 }

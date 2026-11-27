@@ -2,7 +2,7 @@
 use super::super::publication_fixture;
 use super::incoming_reference::relation_payload;
 use super::{
-    super::fixture::{basis, capture, locator, protected_payload},
+    super::fixture::{basis, capture, capture_carrying, locator, protected_payload},
     fixture::*,
 };
 use worth_relational::facade::identity::{KindId, PartitionId};
@@ -82,8 +82,8 @@ fn unowned_internal_and_rewritten_owned_relations_refuse_without_any_retirement(
             .compare_current_exact(&source_basis)
             .is_ok());
         assert_eq!(capture(execution, &world.runtime), source_before);
-        let (mut target, mut recovered, _) = recover(execution, &world);
-        let before = capture(execution, &target);
+        let (mut target, mut recovered, _, prior) = recover(execution, &world);
+        let before = capture_carrying(execution, &target, &prior);
         let selected = basis(&target);
         let source = protected_payload(execution, &target, world.authored);
         let denied = candidate(
@@ -105,7 +105,7 @@ fn unowned_internal_and_rewritten_owned_relations_refuse_without_any_retirement(
             .compare_current_exact(&selected)
             .is_ok());
         assert!(recovered.codec_transition_pending());
-        assert_eq!(capture(execution, &target), before);
+        assert_eq!(capture_carrying(execution, &target, &prior), before);
         assert_eq!(
             protected_payload(execution, &target, world.authored),
             source

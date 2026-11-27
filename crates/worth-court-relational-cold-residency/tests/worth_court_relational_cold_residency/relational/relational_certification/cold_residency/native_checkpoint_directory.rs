@@ -26,13 +26,24 @@ fn capture(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
 ) -> RelationalNativeCheckpoint {
+    capture_with_members(execution, runtime, &[])
+}
+
+fn capture_with_members(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    current_members: &[RelationalDurableMemberLocator],
+) -> RelationalNativeCheckpoint {
     runtime
         .durability_authority()
         .native_checkpoint_with_policy(
-execution,
-worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
-)
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members,
+                source: None,
+            },
+        )
         .unwrap()
 }
 
@@ -43,15 +54,28 @@ fn manifest(checkpoint: &RelationalNativeCheckpoint) -> &[u8] {
     )
 }
 
-fn members(checkpoint: &RelationalNativeCheckpoint) -> Vec<&[u8]> {
-    rows(field(
-        checkpoint.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap(),
-        "members",
-    ))
+fn member_bytes(
+    checkpoint: &RelationalNativeCheckpoint,
+    selected: RelationalDurableMemberLocator,
+) -> Option<&[u8]> {
+    checkpoint.members().iter().find_map(|member| match member {
+        worth_relational::facade::durability::RelationalCheckpointMember::New {
+            locator,
+            bytes,
+        } if *locator == selected => Some(bytes.bytes()),
+        _ => None,
+    })
 }
 
-fn key(bytes: &[u8]) -> RelationalDurableMemberLocator {
-    rmp_serde::from_slice(rows(bytes)[0]).unwrap()
+fn member_count(
+    checkpoint: &RelationalNativeCheckpoint,
+    selected: RelationalDurableMemberLocator,
+) -> usize {
+    checkpoint
+        .members()
+        .iter()
+        .filter(|member| member.locator() == selected)
+        .count()
 }
 
 fn restore(
@@ -165,16 +189,14 @@ fn member_directory_preserves_divergent_sibling_roots_and_pinned_reader() {
     );
     for key in region_keys {
         assert_eq!(
-            members(&native)
-                .iter()
-                .filter(|member| self::key(member) == key)
-                .count(),
+            member_count(&native, key),
             1,
             "equal regions must have exactly one member body across roots and mirror"
         );
     }
     let restored = restore(execution, &native);
-    let recaptured = capture(execution, &restored);
+    let prior_members: Vec<_> = native.members().iter().map(|m| m.locator()).collect();
+    let recaptured = capture_with_members(execution, &restored, &prior_members);
     let restored_directory = read_native(&recaptured);
     for expected in &directory.roots {
         let actual = restored_directory
@@ -243,24 +265,18 @@ fn current_manifest_deduplicates_equal_region_members_and_round_trips() {
     let directory = read_native(&native);
     assert_eq!(directory.roots[0].regions, directory.mirror);
     let leaf = &directory.roots[0].regions[0];
-    assert_eq!(
-        members(&native)
-            .iter()
-            .filter(|member| key(member) == leaf.head)
-            .count(),
-        1
-    );
-    assert_eq!(
-        members(&native)
-            .iter()
-            .filter(|member| key(member) == leaf.history)
-            .count(),
-        1
-    );
+    assert!(rows(field(
+        native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap(),
+        "members"
+    ))
+    .is_empty());
+    assert_eq!(member_count(&native, leaf.head), 1);
+    assert_eq!(member_count(&native, leaf.history), 1);
     assert_eq!(directory.commits.len(), 1);
     let reopened = restore(execution, &native);
     assert_eq!(reopened.history().immutable_commit_count(), 1);
-    let recaptured = capture(execution, &reopened);
+    let prior_members: Vec<_> = native.members().iter().map(|m| m.locator()).collect();
+    let recaptured = capture_with_members(execution, &reopened, &prior_members);
     let restored_directory = read_native(&recaptured);
     assert_eq!(
         restored_directory.roots[0].regions,
@@ -296,15 +312,11 @@ fn native_capture_sections_count_current_directory_values() {
             let selected =
                 rmp_serde::from_slice::<RelationalDurableMemberLocator>(field(entry, "member"))
                     .unwrap();
-            let member = members(&native)
-                .into_iter()
-                .find(|member| key(member) == selected)
-                .unwrap();
-            rows(member)[1].len()
+            member_bytes(&native, selected).unwrap().len()
         })
         .sum();
     assert!(canonical_bytes > 0);
-    assert_eq!(sections.envelopes, canonical_bytes);
+    assert_eq!(sections.envelopes, 0);
     assert_eq!(
         sections.branch_roots,
         field(manifest(&native), "roots").len()

@@ -10,13 +10,9 @@ use worth_relational_storage::internal_port::storage::residency::demand_failure:
 
 use super::LineageSubsystem;
 
-fn is_named_lineage_event(event: &LineageEventRecord) -> bool {
-    event.name_birth().is_some()
-        || event.kept_name().is_some()
-        || matches!(
-            event.kind(),
-            LineageEventKind::Split | LineageEventKind::Merge
-        )
+fn is_named(e: &LineageEventRecord) -> bool {
+    use LineageEventKind::{Merge, Split};
+    e.name_birth().is_some() || e.kept_name().is_some() || matches!(e.kind(), Split | Merge)
 }
 
 impl LineageSubsystem {
@@ -45,35 +41,33 @@ impl LineageSubsystem {
             let earliest = state
                 .published_events
                 .iter()
-                .filter_map(|published| {
-                    let (event, at) = (published.event.as_ref(), published.publication_commit_id);
-                    let bound = bounds.get(event.branch_id());
-                    (is_named_lineage_event(event)
-                        && at > c
-                        && bound.is_some_and(|bound| at <= *bound))
-                    .then_some(at)
+                .filter_map(|p| {
+                    let (ev, at) = (p.event.as_ref(), p.publication_commit_id);
+                    (is_named(ev) && at > c && bounds.get(ev.branch_id()).is_some_and(|b| at <= *b))
+                        .then_some(at)
                 })
                 .min();
             (bounds, earliest)
         };
         let residency = self.event_residency.read().clone();
-        if let Some(residency) = residency {
-            let branch_bounds: BTreeMap<BranchId, CommitId> = bounds
-                .iter()
-                .filter(|&(_, &bound)| bound > c)
-                .map(|(branch, &bound)| (branch.clone(), bound))
-                .collect();
-            residency.visit_after(execution, &branch_bounds, c, |row| {
-                let at = row.publication_commit_id;
-                if at > c
-                    && is_named_lineage_event(&row.event)
-                    && branch_bounds
-                        .get(row.event.branch_id())
-                        .is_some_and(|bound| at <= *bound)
-                {
-                    earliest = Some(earliest.map_or(at, |prev| prev.min(at)));
-                }
-            })?;
+        if let Some(residency) = residency
+            && residency.may_contain_named_events
+        {
+            let branch_bounds: BTreeMap<BranchId, CommitId> =
+                bounds.into_iter().filter(|&(_, bound)| bound > c).collect();
+            if !branch_bounds.is_empty() {
+                residency.visit_after(execution, &branch_bounds, c, |row| {
+                    let at = row.publication_commit_id;
+                    if at > c
+                        && is_named(&row.event)
+                        && branch_bounds
+                            .get(row.event.branch_id())
+                            .is_some_and(|b| at <= *b)
+                    {
+                        earliest = Some(earliest.map_or(at, |prev| prev.min(at)));
+                    }
+                })?;
+            }
         }
         Ok(earliest)
     }

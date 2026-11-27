@@ -35,7 +35,7 @@ fn genuine_native_codec_adoption_preserves_raw_source_and_rebuilds_target_equali
     assert!(
         matches!(&old_generation.entries,DerivedIndexEntries::EntityField(entries) if !entries.is_empty())
     );
-    let (mut target, mut recovered, receipt) = recovered(execution, &world);
+    let (mut target, mut recovered, receipt, prior_saved) = recovered(execution, &world);
     assert_eq!(
         protected_payload(execution, &target, world.authored),
         source_before
@@ -145,15 +145,15 @@ fn genuine_native_codec_adoption_preserves_raw_source_and_rebuilds_target_equali
         protected_payload(execution, &target, world.authored),
         source_before
     );
-    let saved = capture(execution, &target);
+    let (saved, saved_source) = worth_testkit_relational::cold_recovery::capture_external_carrying(
+        execution,
+        &target,
+        &worth_testkit_relational::cold_recovery::members_source(&prior_saved),
+    );
     let (mut reopened, receipt) = fixture::installed(2);
     reopened
         .durability_recovery()
-        .restore_native_checkpoint_with_authority(
-            execution,
-            &saved,
-            worth_testkit_relational::cold_recovery::members_source(&saved),
-        )
+        .restore_native_checkpoint_with_authority(execution, &saved, saved_source)
         .unwrap();
     reopened
         .readmit_recovered_initial_schema_installation(receipt)

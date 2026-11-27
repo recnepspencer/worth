@@ -275,6 +275,22 @@ pub(super) fn assert_values(
     runtime.snapshots().release_snapshot(&snapshot).unwrap();
 }
 
+pub(super) fn recover_with_checkpoint(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &RelatedWorld,
+) -> (
+    RelationalRuntime,
+    RecoveredRelationalRuntimeAuthority,
+    RelationalInitialSchemaInstallationReceipt,
+    worth_relational::facade::durability::RelationalNativeCheckpoint,
+) {
+    let (mut target, receipt) = installed(2);
+    let saved = capture(execution, &world.runtime);
+    let (_, recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &saved)
+        .unwrap();
+    (target, recovered, receipt, saved)
+}
+
 pub(super) fn recover(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &RelatedWorld,
@@ -282,11 +298,10 @@ pub(super) fn recover(
     RelationalRuntime,
     RecoveredRelationalRuntimeAuthority,
     RelationalInitialSchemaInstallationReceipt,
+    Vec<worth_relational::facade::durability::RelationalDurableMemberLocator>,
 ) {
-    let (mut target, receipt) = installed(2);
-    let (_, recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, &world.runtime))
-        .unwrap();
-    (target, recovered, receipt)
+    let (target, recovered, receipt, saved) = recover_with_checkpoint(execution, world);
+    (target, recovered, receipt, locators(&saved))
 }
 
 pub(super) fn candidate(

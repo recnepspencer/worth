@@ -9,7 +9,7 @@ const ROSTER_BLOCK_BYTES: usize = 136;
 fn empty_checkpoint_memory_boundary_is_its_bytes_plus_one_stage() {
     let _guard = crate::leased_preparation::ordinary_context::serial();
     // The boundary is the capture's peak, when its bytes are admitted: the
-    // 2,506 external-manifest bytes + 400 bytes the one stage retains + what
+    // 2,581 external-manifest bytes + 400 bytes the one stage retains + what
     // the capture already holds beside them: the member roster the checkpoint
     // keeps for `members()`, its owner block plus one entry per external member.
     // A capture without commits retains no canonical publication.
@@ -29,18 +29,18 @@ fn empty_checkpoint_memory_boundary_is_its_bytes_plus_one_stage() {
     drop(checkpoint);
     for leased in [false, true] {
         let (bytes, held) = memory_outcome(leased, 1 << 20, false).unwrap();
-        assert_eq!(bytes, 2_506, "leased={leased}");
-        assert_eq!(held, (2_506 + roster) as u64, "leased={leased}");
-        let boundary = (2_506 + 400 + roster) as u64;
+        assert_eq!(bytes, 2_581, "leased={leased}");
+        assert_eq!(held, (2_581 + roster) as u64, "leased={leased}");
+        let boundary = (2_581 + 400 + roster) as u64;
         let fits = memory_outcome(leased, boundary, false);
-        assert!(matches!(fits, Ok((2_506, _))), "leased={leased}: {fits:?}");
+        assert!(matches!(fits, Ok((2_581, _))), "leased={leased}: {fits:?}");
         let short = memory_outcome(leased, boundary - 1, false);
         assert!(
             matches!(
                 short,
                 Err(Denial::Request(Cause::PolicyMemoryExhausted {
-                    requested: 2_506,
-                    admitted: 2_505,
+                    requested: 2_581,
+                    admitted: 2_580,
                     ancestor: 0,
                 }))
             ),

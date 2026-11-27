@@ -114,7 +114,7 @@ fn value<'a>(cursor: &mut Cursor<&'a [u8]>) -> &'a [u8] {
     &cursor.get_ref()[start..cursor.position() as usize]
 }
 
-struct Bytes<'a>(&'a [u8]);
+pub(super) struct Bytes<'a>(pub(super) &'a [u8]);
 impl Serialize for Bytes<'_> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_bytes(self.0)
@@ -129,33 +129,36 @@ struct CanonicalMemberRow {
 
 pub(super) fn edit_original(
     checkpoint: &RelationalNativeCheckpoint,
+    source: &worth_testkit_relational::durable_medium::immutable_members::ImmutableCheckpointMemberSource,
     commit_id: CommitId,
     edit: impl FnOnce(&[u8]) -> Vec<u8>,
-) -> RelationalNativeCheckpoint {
+) -> (
+    RelationalNativeCheckpoint,
+    std::sync::Arc<
+        worth_testkit_relational::durable_medium::immutable_members::ImmutableCheckpointMemberSource,
+    >,
+){
+    use worth_relational::facade::durability::RelationalCheckpointMember;
     let checkpoint = checkpoint.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap();
     let manifest = field(checkpoint, "manifest");
-    let mut members = rows(field(checkpoint, "members"));
-    let member_bytes = |members: &[&[u8]], locator: RelationalDurableMemberLocator| {
-        members
-            .iter()
-            .enumerate()
-            .find_map(|(index, row)| {
-                let [key, bytes]: [&[u8]; 2] = rows(row).try_into().unwrap();
-                let current: RelationalDurableMemberLocator = rmp_serde::from_slice(key).unwrap();
-                (current == locator).then_some((index, raw_bytes(bytes).to_vec()))
-            })
-            .unwrap()
+    let member_bytes = |locator: RelationalDurableMemberLocator| {
+        source
+            .members
+            .get(&locator)
+            .expect("external member present in source")
+            .bytes()
+            .to_vec()
     };
     // CHK24: the edited commit's row lives in one compact commit-index page.
     let index = field(manifest, "commits");
     let mut pages = rows(field(index, "pages"));
-    let (page_index, page_member, page_frame, row_index, position) = pages
+    let (page_index, page_frame, row_index, position) = pages
         .iter()
         .enumerate()
         .find_map(|(page_index, page)| {
             let locator: RelationalDurableMemberLocator =
                 rmp_serde::from_slice(field(page, "member")).unwrap();
-            let (member, frame) = member_bytes(&members, locator);
+            let frame = member_bytes(locator);
             let payload = &frame[PAGE_MAGIC.len() + 1..];
             let row_index = rows(rows(payload)[1]).iter().position(|row| {
                 let receipt: worth_relational::facade::history::RelationalCommitReceipt =
@@ -164,7 +167,7 @@ pub(super) fn edit_original(
             })?;
             let row = rows(rows(payload)[1])[row_index];
             let position: u64 = rmp_serde::from_slice(rows(row)[2]).unwrap();
-            Some((page_index, member, frame, row_index, position))
+            Some((page_index, frame, row_index, position))
         })
         .unwrap();
     let mut placements = rows(field(manifest, "canonical_members"));
@@ -176,7 +179,7 @@ pub(super) fn edit_original(
             (row.position == position).then_some((index, row.member))
         })
         .unwrap();
-    let (member_index, bytes) = member_bytes(&members, locator);
+    let bytes = member_bytes(locator);
 
     let (original, digest) = edit_frame(&bytes, edit);
     let locator = RelationalDurableMemberLocator {
@@ -184,9 +187,6 @@ pub(super) fn edit_original(
         length: original.len() as u64,
     };
     let locator_wire = rmp_serde::to_vec_named(&locator).unwrap();
-    let body = rmp_serde::to_vec(&Bytes(&original)).unwrap();
-    let member = array(&[&locator_wire, &body]);
-    members[member_index] = &member;
 
     // Re-sign the page row, its descriptor and any inline head/tail copy.
     let digest = rmp_serde::to_vec(&digest).unwrap();
@@ -205,9 +205,6 @@ pub(super) fn edit_original(
         length: frame.len() as u64,
     };
     let page_locator_wire = rmp_serde::to_vec_named(&page_locator).unwrap();
-    let page_body = rmp_serde::to_vec(&Bytes(&frame)).unwrap();
-    let page_entry = array(&[&page_locator_wire, &page_body]);
-    members[page_member] = &page_entry;
     let page = replace_field(pages[page_index], "member", &page_locator_wire);
     pages[page_index] = &page;
     let mut index = replace_field(index, "pages", &array(&pages));
@@ -239,18 +236,26 @@ pub(super) fn edit_original(
     placements[placement_index] = &changed_placement;
     let manifest = replace_field(manifest, "commits", &index);
     let manifest = replace_field(&manifest, "canonical_members", &array(&placements));
-    let with_manifest = replace_field(checkpoint, "manifest", &manifest);
-    let amended = replace_field(&with_manifest, "members", &array(&members));
-    RelationalNativeCheckpoint::from_untrusted_bytes([CHECKPOINT_MAGIC, &amended].concat())
-}
-
-fn raw_bytes(bytes: &[u8]) -> &[u8] {
-    match bytes[0] {
-        0xc4 => &bytes[2..],
-        0xc5 => &bytes[3..],
-        0xc6 => &bytes[5..],
-        marker => panic!("unexpected member byte string marker {marker:#x}"),
-    }
+    let amended = replace_field(checkpoint, "manifest", &manifest);
+    let immutable = |bytes: Vec<u8>| {
+        worth_execution::ExecutionImmutableBytes::from_external_bytes(std::sync::Arc::new(
+            bytes.into_boxed_slice(),
+        ))
+    };
+    let updated_source = source.with_published_members(&[
+        RelationalCheckpointMember::New {
+            locator,
+            bytes: immutable(original),
+        },
+        RelationalCheckpointMember::New {
+            locator: page_locator,
+            bytes: immutable(frame),
+        },
+    ]);
+    (
+        RelationalNativeCheckpoint::from_untrusted_bytes([CHECKPOINT_MAGIC, &amended].concat()),
+        updated_source,
+    )
 }
 
 pub(super) fn edit_frame(frame: &[u8], edit: impl FnOnce(&[u8]) -> Vec<u8>) -> (Vec<u8>, [u8; 32]) {
