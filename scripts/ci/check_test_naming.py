@@ -238,9 +238,12 @@ def run_self_test() -> int:
                 "const QUOTE_CHAR: char = '\"';\n"
                 'const SAMPLE: &str = "#[test] fn ignored_round1_in_string() {}";\n'
                 "#[test]\n#[ignore]\nfn catches_round2_regression() {}\n"
-                "#[\n    test\n]\nfn\n    catches_multiline_r3() {}\n"
-                "#[\n    tokio :: test\n]\nasync fn\n    catches_multiline_tokio_round4() {}\n"
                 "#[test]\nfn valid_r2d2_pool_roundtrip() {}\n",
+                encoding="utf-8",
+            )
+            (root / "tests" / "isolated_multiline.rs").write_text(
+                "#[\n    test\n]\nfn /* split */ \n    catches_multiline_r3() {}\n"
+                "#[\n    tokio :: test\n]\nasync fn\n    catches_multiline_tokio_round4() {}\n",
                 encoding="utf-8",
             )
             if use_git:
@@ -250,23 +253,26 @@ def run_self_test() -> int:
                     capture_output=True,
                 )
             scanned, violations = scan_repository(root)
-            assert scanned == 2, f"use_git={use_git}: expected 2 scanned files, got {scanned}"
+            assert scanned == 3, f"use_git={use_git}: expected 3 scanned files, got {scanned}"
             assert len(violations) == 4, f"use_git={use_git}: expected 4 violations, got {violations}"
             assert violations[0].kind == "filename" and violations[0].name == "hardening_r2.rs"
             assert (
-                violations[1].kind == "#[test] fn"
-                and violations[1].name == "catches_round2_regression"
-                and violations[1].line == 6
+                violations[1].path == "tests/isolated_multiline.rs"
+                and violations[1].kind == "#[test] fn"
+                and violations[1].name == "catches_multiline_r3"
+                and violations[1].line == 5
             )
             assert (
-                violations[2].kind == "#[test] fn"
-                and violations[2].name == "catches_multiline_r3"
-                and violations[2].line == 11
+                violations[2].path == "tests/isolated_multiline.rs"
+                and violations[2].kind == "#[test] fn"
+                and violations[2].name == "catches_multiline_tokio_round4"
+                and violations[2].line == 10
             )
             assert (
-                violations[3].kind == "#[test] fn"
-                and violations[3].name == "catches_multiline_tokio_round4"
-                and violations[3].line == 16
+                violations[3].path == "tests/semantic_property.rs"
+                and violations[3].kind == "#[test] fn"
+                and violations[3].name == "catches_round2_regression"
+                and violations[3].line == 6
             )
     print("[test-naming] SELF-TEST PASS")
     return 0
