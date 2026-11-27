@@ -8,7 +8,7 @@ use worth_query_execution::{
     facade::product::WorthQueryExpectedProductBranch,
     publication_boundary::document_history::{
         WorthQueryDocumentHistoryEnvelopeConstraint, WorthQueryDocumentHistoryRead,
-        WorthQueryDocumentHistoryReservation,
+        WorthQueryDocumentHistoryReservation, WorthQueryRecordingKind,
     },
 };
 use WorthQueryHistoryEditEnvelopeDenial as Denial;
@@ -98,7 +98,9 @@ where
     ) -> Result<Option<WorthQueryHistoryStep>, Denial> {
         let access = program_publication_access();
         let owner = &self.document.owner;
-        let (_, candidate) = owners.as_ref().expect("an unsealed envelope keeps its owners");
+        let (_, candidate) = owners
+            .as_ref()
+            .expect("an unsealed envelope keeps its owners");
         if first
             && let Err((stage, denial)) =
                 owner.confirm_history_envelope_scopes(phase, &access, candidate, self.constraint)
@@ -109,59 +111,45 @@ where
             });
         }
         let branch = candidate.branch();
-        self.document
-            .outputs
-            .with_recording(phase, branch, |mut recording| {
-                let sealed: Result<(Option<WorthQueryHistoryStep>, bool), Denial> = (|| {
-                    if let Some(forest) = recording.as_deref_mut() {
-                        let (reservation, candidate) =
-                            owners.as_ref().expect("an unsealed envelope keeps its owners");
-                        if !self.record_outputs(phase, reservation, candidate, forest)? {
-                            return Ok((None, false));
-                        }
-                    }
-                    let (reservation, candidate) =
-                        owners.take().expect("an unsealed envelope keeps its owners");
-                    let commit = self.receipt.receipt();
-                    let adopted = match recording.as_ref().and_then(|forest| forest.completed()) {
-                        Some(completed) => owner.adopt_history_envelope_output_forest(
-                            phase,
-                            &access,
-                            reservation,
-                            candidate,
-                            commit,
-                            completed,
-                        ),
-                        None => owner.adopt_history_envelope(
-                            phase,
-                            &access,
-                            reservation,
-                            candidate,
-                            commit,
-                        ),
-                    };
-                    match adopted {
-                        Ok(step) => Ok((Some(step), true)),
-                        Err(failure) => {
-                            let (reservation, candidate, denial) = failure.into_parts();
-                            *owners = Some((reservation, candidate));
-                            Err(Denial::Adoption(denial))
-                        }
-                    }
-                })();
-                match sealed {
-                    Ok((step, released)) => (Ok(step), released),
-                    Err(denial) => {
-                        // A refusal releases every tree before the candidate
-                        // closes. A forest that cannot is kept for a later release.
-                        let released = recording
-                            .as_deref_mut()
-                            .is_none_or(|forest| release(forest, phase, branch).is_ok());
-                        (Err(denial), released)
+        super::super::recording::seal(
+            &self.document.outputs,
+            phase,
+            branch,
+            WorthQueryRecordingKind::Envelope,
+            owners,
+            |owners, forest| {
+                let (reservation, candidate) = owners
+                    .as_ref()
+                    .expect("an unsealed envelope keeps its owners");
+                self.record_outputs(phase, reservation, candidate, forest)
+            },
+            |owners, completed| {
+                let (reservation, candidate) = owners
+                    .take()
+                    .expect("an unsealed envelope keeps its owners");
+                let commit = self.receipt.receipt();
+                match completed {
+                    Some(completed) => owner.adopt_history_envelope_output_forest(
+                        phase,
+                        &access,
+                        reservation,
+                        candidate,
+                        commit,
+                        completed,
+                    ),
+                    None => {
+                        owner.adopt_history_envelope(phase, &access, reservation, candidate, commit)
                     }
                 }
-            })
-            .map_err(Denial::Outputs)?
+                .map_err(|failure| {
+                    let (reservation, candidate, denial) = failure.into_parts();
+                    *owners = Some((reservation, candidate));
+                    Denial::Adoption(denial)
+                })
+            },
+            |_| Ok(()),
+        )
+        .map_err(Denial::Outputs)?
     }
 
     /// Advance every bound tree on the candidate under the envelope's own
@@ -213,7 +201,8 @@ where
                 phase,
                 None,
                 |runtime, binding, external, plan| {
-                    let read = WorthQueryDocumentHistoryRead::new(&installed, binding, external, plan);
+                    let read =
+                        WorthQueryDocumentHistoryRead::new(&installed, binding, external, plan);
                     Ok(runtime.with_document_history_envelope_recording_outputs(
                         phase,
                         &access,
@@ -237,16 +226,4 @@ where
         }
         Ok(complete)
     }
-}
-
-/// Close every tree the forest started, on the candidate it was bound to.
-fn release<S: ApplicationSchema + 'static>(
-    forest: &mut RecordingForest<S>,
-    phase: &WorthQueryAdvancementPhase<'_>,
-    current: worth_query_execution::facade::product::WorthQueryProductBranch,
-) -> Result<(), WorthQueryHistoryOutputDenial> {
-    let branch = forest
-        .origin()
-        .map_or(current, |origin| origin.candidate());
-    forest.close(phase, branch)
 }

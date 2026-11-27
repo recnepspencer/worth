@@ -1,5 +1,6 @@
 //! Selection, delivery and each original result close remain distinct owned transitions.
 use super::*;
+use worth_query_execution::publication_boundary::document_history::WorthQueryRecordingKind;
 
 pub struct WorthQueryHistoryGroupFinish<
     'runtime,
@@ -70,47 +71,53 @@ where
                         Denial::History(WorthQueryApplicationHistoryDenial::Installation(cause))
                     })?;
                 let candidate = self.candidate.as_ref().expect("actual candidate").branch();
-                document
-                    .outputs
-                    .with_recording(&phase, candidate, |forest| {
-                        if forest.is_some_and(|forest| forest.completed().is_none()) {
-                            return (Err(Denial::NotReady), false);
-                        }
-                        let result = (|| {
-                            let adopted = self.members.member(self.members.len() - 1).adopt(
-                                &phase,
-                                &current,
-                                &document.owner,
-                                &installed,
-                                self.reservation.take().expect("reserved group"),
-                                self.candidate.take().expect("actual candidate"),
-                            );
-                            match adopted {
-                                Ok(step) => {
-                                    self.selected = Some(step);
-                                    self.posture = WorthQueryHistoryGroupPosture::Selected;
-                                    self.pause_at(
-                                        WorthQueryHistoryGroupHandoffPointForTest::Adoption,
-                                    );
-                                }
-                                Err((reservation, candidate, denial)) => {
-                                    self.reservation = Some(reservation);
-                                    self.candidate = Some(candidate);
-                                    return Err(denial);
-                                }
+                super::super::recording::seal(
+                    &document.outputs,
+                    &phase,
+                    candidate,
+                    WorthQueryRecordingKind::Group,
+                    self,
+                    // The members recorded the forest; it is complete or
+                    // the group is not ready.
+                    |_, forest| match forest.completed() {
+                        Some(_) => Ok(true),
+                        None => Err(Denial::NotReady),
+                    },
+                    |group, _| {
+                        let adopted = group.members.member(group.members.len() - 1).adopt(
+                            &phase,
+                            &current,
+                            &document.owner,
+                            &installed,
+                            group.reservation.take().expect("reserved group"),
+                            group.candidate.take().expect("actual candidate"),
+                        );
+                        match adopted {
+                            Ok(step) => {
+                                group.selected = Some(step);
+                                group.posture = WorthQueryHistoryGroupPosture::Selected;
+                                group.pause_at(WorthQueryHistoryGroupHandoffPointForTest::Adoption);
+                                Ok(())
                             }
-                            document
-                                .owner
-                                .validate_record_delivery(&phase, &program_publication_access())
-                                .map_err(|cause| {
-                                    Denial::History(WorthQueryApplicationHistoryDenial::Document(
-                                        cause,
-                                    ))
-                                })
-                        })();
-                        (result, self.selected.is_some())
-                    })
-                    .map_err(Denial::Outputs)?
+                            Err((reservation, candidate, denial)) => {
+                                group.reservation = Some(reservation);
+                                group.candidate = Some(candidate);
+                                Err(denial)
+                            }
+                        }
+                    },
+                    |_| {
+                        document
+                            .owner
+                            .validate_record_delivery(&phase, &program_publication_access())
+                            .map(|_| ())
+                            .map_err(|cause| {
+                                Denial::History(WorthQueryApplicationHistoryDenial::Document(cause))
+                            })
+                    },
+                )
+                .map_err(Denial::Outputs)?
+                .map(|_| ())
             })
             .map_err(|cause| {
                 Denial::History(WorthQueryApplicationHistoryDenial::ExecutionRequest(cause))

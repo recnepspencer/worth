@@ -1,9 +1,9 @@
 //! Every member's real admission precedes reservation and candidate creation.
-use super::*;
 use super::super::recording::{
-    group_meaning, Attempt, RecordingKind, RefusedRecord, WorthQueryKeptRefusal,
+    group_meaning, Attempt, RefusedRecord, WorthQueryKeptRefusal, WorthQueryRecordingKind,
     WorthQueryRefusedCandidate,
 };
+use super::*;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
@@ -99,7 +99,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let label = &installed.definition().parts().operations[first.operation_index].label;
         let mut selected = self.selection.lock();
         let attempt = selected.lookup_and_reserve(
-            RecordingKind::Group,
+            WorthQueryRecordingKind::Group,
             meaning,
             |selection| {
                 first.parent == selection.journal.current_step().id()
@@ -253,7 +253,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         candidate: Option<WorthQueryRefusedCandidate<'runtime, S>>,
     ) -> Result<(), WorthQueryKeptRefusal<'runtime, S, WorthQueryDocumentHistoryGroupAborting>>
     {
-        self.refuse(RecordingKind::Group, group, candidate)
+        self.refuse(WorthQueryRecordingKind::Group, group, candidate)
     }
 }
 

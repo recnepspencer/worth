@@ -5,7 +5,7 @@ use super::super::{
     WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
     WorthQueryOwnedProductHead,
 };
-use super::RecordingKind;
+use super::WorthQueryRecordingKind;
 use crate::{
     basis::WorthQueryProductBranch,
     domain_computation::primary_graph::{
@@ -19,7 +19,8 @@ use worth_query_declaration::facade::{
 };
 
 /// What a refused recording does with a candidate that did not close.
-pub(in super::super) enum CandidateDisposition {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WorthQueryCandidateDisposition {
     /// The record and the candidate go back to the caller, which retries.
     KeepForRetry,
     /// The candidate moves into the record's prepaid head slot, where retention
@@ -141,7 +142,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     /// disposition. A closed or absent candidate cancels the record.
     pub(in super::super) fn refuse<R: RefusedRecord>(
         &self,
-        kind: RecordingKind,
+        kind: WorthQueryRecordingKind,
         reserved: R,
         candidate: Option<WorthQueryRefusedCandidate<'runtime, S>>,
     ) -> Result<(), WorthQueryKeptRefusal<'runtime, S, R>> {
@@ -152,10 +153,10 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         }
         match (unclosed, kind.on_refusal()) {
             (None, _) => selected.journal.cancel(reserved.into_record()),
-            (Some(candidate), CandidateDisposition::Park) => selected
+            (Some(candidate), WorthQueryCandidateDisposition::Park) => selected
                 .journal
                 .cancel_parking(reserved.into_record(), candidate.into_custody()),
-            (Some(candidate), CandidateDisposition::KeepForRetry) => {
+            (Some(candidate), WorthQueryCandidateDisposition::KeepForRetry) => {
                 return Err((reserved, Some(candidate), None))
             }
         }

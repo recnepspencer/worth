@@ -9,7 +9,9 @@ pub use court_doors_for_test::history_envelope_identities_for_test;
 pub(super) use key::{
     envelope_meaning, group_meaning, CorrectionParts, JournalKey, JournalNamespace,
 };
-pub(super) use kind::RecordingKind;
+pub use kind::WorthQueryRecordingKind;
 pub(super) use refusal::RefusedRecord;
-pub use refusal::{WorthQueryKeptRefusal, WorthQueryRefusedCandidate};
+pub use refusal::{
+    WorthQueryCandidateDisposition, WorthQueryKeptRefusal, WorthQueryRefusedCandidate,
+};
 pub(super) use reservation::Attempt;

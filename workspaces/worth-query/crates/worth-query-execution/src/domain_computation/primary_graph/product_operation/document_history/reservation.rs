@@ -2,7 +2,8 @@
 use super::{
     journal::ReservedHistoryRecord,
     recording::{
-        Attempt, RecordingKind, RefusedRecord, WorthQueryKeptRefusal, WorthQueryRefusedCandidate,
+        Attempt, RefusedRecord, WorthQueryKeptRefusal, WorthQueryRecordingKind,
+        WorthQueryRefusedCandidate,
     },
     selection::HistorySelection,
     WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
@@ -105,7 +106,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let mut selected = self.selection.lock();
         selected
             .lookup_and_reserve(
-                RecordingKind::Edit,
+                WorthQueryRecordingKind::Edit,
                 meaning,
                 |selection| selection.expected == expected,
                 |selection| {
@@ -117,7 +118,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                         .map_err(Denial::Stopped)?;
                     let record = selection.journal.reserve(
                         &execution,
-                        RecordingKind::Edit.namespace(),
+                        WorthQueryRecordingKind::Edit.namespace(),
                         meaning,
                         label,
                         &super::WorthQueryHistoryStepMetadata::none(),
@@ -187,7 +188,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         reserved: WorthQueryDocumentHistoryReservation,
         candidate: Option<WorthQueryRefusedCandidate<'runtime, S>>,
     ) -> Result<(), WorthQueryKeptRefusal<'runtime, S, WorthQueryDocumentHistoryReservation>> {
-        self.refuse(RecordingKind::Edit, reserved, candidate)
+        self.refuse(WorthQueryRecordingKind::Edit, reserved, candidate)
     }
 
     pub fn current_history_step(

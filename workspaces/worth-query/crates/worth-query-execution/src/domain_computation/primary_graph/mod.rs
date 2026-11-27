@@ -82,6 +82,7 @@ pub use product_operation::document_history::{
     WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryEnvelopeConstraint,
     WorthQueryDocumentHistoryCorrectionMeaning, WorthQueryDocumentHistoryEnvelopeIntent,
     WorthQueryDocumentHistoryGroupAborting, WorthQueryKeptRefusal, WorthQueryRefusedCandidate,
+    WorthQueryCandidateDisposition, WorthQueryRecordingKind,
     WorthQueryDocumentHistoryGroupAdoptionFailure, WorthQueryDocumentHistoryGroupPreparation,
     WorthQueryDocumentHistoryGroupReservation, WorthQueryDocumentHistoryIdentity,
     WorthQueryDocumentHistoryNavigation, WorthQueryDocumentHistoryOperation,

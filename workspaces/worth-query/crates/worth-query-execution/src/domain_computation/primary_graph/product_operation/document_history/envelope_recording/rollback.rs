@@ -1,6 +1,6 @@
 //! A refused envelope leaves the document at its prior head with no pending record.
 use super::super::{
-    recording::{RecordingKind, WorthQueryRefusedCandidate},
+    recording::{WorthQueryRecordingKind, WorthQueryRefusedCandidate},
     WorthQueryDocumentHistory, WorthQueryDocumentHistoryReservation,
 };
 use crate::{
@@ -37,7 +37,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let candidate =
             candidate.map(|candidate| WorthQueryRefusedCandidate::new(candidate).close(phase));
         if self
-            .refuse(RecordingKind::Envelope, reserved, candidate)
+            .refuse(WorthQueryRecordingKind::Envelope, reserved, candidate)
             .is_err()
         {
             panic!("an envelope abandons only the record its own document reserved");

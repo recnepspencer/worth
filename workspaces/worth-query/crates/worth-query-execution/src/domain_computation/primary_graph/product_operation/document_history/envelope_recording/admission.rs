@@ -1,6 +1,6 @@
 //! One envelope reserves one history record before any candidate exists.
 use super::super::{
-    recording::{envelope_meaning, Attempt, CorrectionParts, RecordingKind},
+    recording::{envelope_meaning, Attempt, CorrectionParts, WorthQueryRecordingKind},
     WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
     WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
     WorthQueryHistoryNodeId, WorthQueryHistoryStepMetadata,
@@ -148,13 +148,13 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let mut selected = self.selection.lock();
         selected
             .lookup_and_reserve(
-                RecordingKind::Envelope,
+                WorthQueryRecordingKind::Envelope,
                 meaning,
                 |selection| selection.expected == observed,
                 |selection| {
                     let record = selection.journal.reserve(
                         &execution,
-                        RecordingKind::Envelope.namespace(),
+                        WorthQueryRecordingKind::Envelope.namespace(),
                         meaning,
                         label,
                         step_metadata,

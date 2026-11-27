@@ -4,6 +4,7 @@ use super::*;
 mod owned_document;
 mod property;
 pub(crate) mod step_work;
+mod refused_candidate_disposition;
 mod stopped_request;
 
 type Forest<'a> = Document<'a, WorthQueryHistoryWithOutputTrees<Schema>>;

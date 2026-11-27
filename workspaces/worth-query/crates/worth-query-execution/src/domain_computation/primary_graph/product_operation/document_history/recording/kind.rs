@@ -1,16 +1,16 @@
 //! The three kinds of recorded step and the rules that differ between them.
-use super::{refusal::CandidateDisposition, JournalNamespace};
+use super::{refusal::WorthQueryCandidateDisposition, JournalNamespace};
 
 /// An edit and a gesture are writers keyed in the writer namespace; an
 /// envelope (with or without a correction) is keyed in its own.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(in super::super) enum RecordingKind {
+pub enum WorthQueryRecordingKind {
     Edit,
     Envelope,
     Group,
 }
 
-impl RecordingKind {
+impl WorthQueryRecordingKind {
     pub(in super::super) const fn namespace(self) -> JournalNamespace {
         match self {
             Self::Edit | Self::Group => JournalNamespace::Writer,
@@ -27,10 +27,10 @@ impl RecordingKind {
 
     /// An envelope parks a candidate that did not close and releases its
     /// record. An edit and a gesture keep both for the caller's retry.
-    pub(in super::super) const fn on_refusal(self) -> CandidateDisposition {
+    pub const fn on_refusal(self) -> WorthQueryCandidateDisposition {
         match self {
-            Self::Edit | Self::Group => CandidateDisposition::KeepForRetry,
-            Self::Envelope => CandidateDisposition::Park,
+            Self::Edit | Self::Group => WorthQueryCandidateDisposition::KeepForRetry,
+            Self::Envelope => WorthQueryCandidateDisposition::Park,
         }
     }
 }

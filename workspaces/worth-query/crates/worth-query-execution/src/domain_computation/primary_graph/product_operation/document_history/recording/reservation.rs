@@ -3,7 +3,7 @@ use super::super::{
     journal::AttemptLookup, selection::HistorySelection, WorthQueryDocumentHistoryDenial as Denial,
     WorthQueryHistoryStep,
 };
-use super::RecordingKind;
+use super::WorthQueryRecordingKind;
 use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
 /// A fresh attempt's reservation, or the step an earlier attempt with the same
@@ -19,7 +19,7 @@ impl HistorySelection {
     /// when any check refuses.
     pub(in super::super) fn lookup_and_reserve<T>(
         &mut self,
-        kind: RecordingKind,
+        kind: WorthQueryRecordingKind,
         meaning: WorthQueryApplicationIdempotencyBinding,
         head_is_current: impl FnOnce(&Self) -> bool,
         reserve: impl FnOnce(&mut Self) -> Result<T, Denial>,
@@ -50,7 +50,7 @@ impl HistorySelection {
 /// replays the step `node`; `Ok(None)` lets the attempt reserve. The lookup
 /// does not run when an edit's head check refuses.
 fn admit_attempt<N>(
-    kind: RecordingKind,
+    kind: WorthQueryRecordingKind,
     head_is_current: impl FnOnce() -> bool,
     recorded: impl FnOnce() -> Result<Option<N>, Denial>,
 ) -> Result<Option<N>, Denial> {
@@ -77,7 +77,7 @@ mod tests {
     use super::*;
 
     /// A retry whose attempt was recorded, on a head that has since moved.
-    fn moved_and_recorded(kind: RecordingKind) -> Result<Option<u8>, Denial> {
+    fn moved_and_recorded(kind: WorthQueryRecordingKind) -> Result<Option<u8>, Denial> {
         admit_attempt(kind, || false, || Ok(Some(7)))
     }
 
@@ -85,12 +85,15 @@ mod tests {
     fn head_check_order_is_per_kind() {
         assert!(
             matches!(
-                moved_and_recorded(RecordingKind::Edit),
+                moved_and_recorded(WorthQueryRecordingKind::Edit),
                 Err(Denial::HeadDiverged)
             ),
             "an edit refuses a moved head before replaying"
         );
-        for kind in [RecordingKind::Envelope, RecordingKind::Group] {
+        for kind in [
+            WorthQueryRecordingKind::Envelope,
+            WorthQueryRecordingKind::Group,
+        ] {
             assert!(
                 matches!(moved_and_recorded(kind), Ok(Some(7))),
                 "{kind:?} replays its recorded attempt first"
@@ -104,7 +107,8 @@ mod tests {
             );
         }
         // An edit on a moved head never reads the journal.
-        let refused = admit_attempt::<u8>(RecordingKind::Edit, || false, || unreachable!());
+        let refused =
+            admit_attempt::<u8>(WorthQueryRecordingKind::Edit, || false, || unreachable!());
         assert!(matches!(refused, Err(Denial::HeadDiverged)));
     }
 }
