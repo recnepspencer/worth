@@ -1,4 +1,6 @@
 //! Portable created-field opcodes; decoded values remain descriptive only.
+/// V45 carries the trusted admission-time initializer (opcode 12).
+pub(super) const ADMISSION_TIME_PROFILE: u16 = 45;
 use super::super::sequence::{decode_sequence, write_sequence};
 use super::{
     ApplicationFieldBindingLocus, ApplicationOperationBodyCreatedField,
@@ -26,6 +28,7 @@ pub(super) fn write(
             ApplicationOperationBodyCreatedField::RelatedField { .. } => 9,
             ApplicationOperationBodyCreatedField::Computed { .. } => 10,
             ApplicationOperationBodyCreatedField::CapturedPathField { .. } => 11,
+            ApplicationOperationBodyCreatedField::AdmissionTime { .. } => 12,
         })?;
         output.text(step.field().entity())?;
         output.text(step.field().aspect())?;
@@ -70,7 +73,8 @@ pub(super) fn write(
             ApplicationOperationBodyCreatedField::PrincipalIdentity { .. } => {
                 super::principal::write(output, step)
             }
-            ApplicationOperationBodyCreatedField::SigningProvenance { .. } => Ok(()),
+            ApplicationOperationBodyCreatedField::SigningProvenance { .. }
+            | ApplicationOperationBodyCreatedField::AdmissionTime { .. } => Ok(()),
             ApplicationOperationBodyCreatedField::CapturedScopeField { .. } => {
                 super::classified_capture::write(output, step)
             }
@@ -101,7 +105,8 @@ pub(super) fn decode(
                 || (version >= 14 && tag == 8)
                 || (version >= 20 && tag == 9)
                 || (version >= 28 && tag == 10)
-                || (version >= 29 && tag == 11);
+                || (version >= 29 && tag == 11)
+                || (version >= ADMISSION_TIME_PROFILE && tag == 12);
             if !supported {
                 return Err(Denial::new(Kind::UnsupportedRecordVariant));
             }
@@ -152,6 +157,7 @@ pub(super) fn decode(
                     ),
                 },
                 7 => ApplicationOperationBodyCreatedField::SigningProvenance { field, binding },
+                12 => ApplicationOperationBodyCreatedField::AdmissionTime { field, binding },
                 8 => super::classified_capture::decode(input, field, binding)?,
                 9 => super::related_source::decode(input, field, binding)?,
                 10 => ApplicationOperationBodyCreatedField::Computed {

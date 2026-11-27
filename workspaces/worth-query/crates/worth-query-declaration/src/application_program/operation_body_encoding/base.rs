@@ -304,6 +304,9 @@ pub(super) fn creation_record(
                 "signing-provenance",
                 "native-deferred-provenance-v1".to_owned(),
             ),
+            ApplicationOperationBodyCreatedField::AdmissionTime { .. } => {
+                ("admission-time", "trusted-admission-instant-v1".to_owned())
+            }
         };
         framed_record(
             if step.related_source().is_some() {

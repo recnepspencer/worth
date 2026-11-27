@@ -4,6 +4,8 @@
 mod access_fragment_dx;
 #[path = "worth_query_court_decl_host_macros/admission_time_dx/mod.rs"]
 mod admission_time_dx;
+#[path = "worth_query_court_decl_host_macros/body_admission_time_dx/mod.rs"]
+mod body_admission_time_dx;
 #[path = "worth_query_court_decl_host_macros/domain_refusal_dx/mod.rs"]
 mod domain_refusal_dx;
 #[path = "worth_query_court_decl_host_macros/local_calendar_dx.rs"]
@@ -20,3 +22,5 @@ mod scope_access_dx;
 mod sparse_index_dx;
 #[path = "worth_query_court_decl_host_macros/unified_hard_dx/mod.rs"]
 mod unified_hard_dx;
+#[path = "worth_query_court_decl_host_macros/workflow_birth_time_dx/mod.rs"]
+mod workflow_birth_time_dx;

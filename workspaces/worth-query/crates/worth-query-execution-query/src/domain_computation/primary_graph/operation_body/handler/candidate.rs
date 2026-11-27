@@ -174,6 +174,7 @@ where
                 &mut input_values,
                 &mut source_values,
                 decision.values.as_ref(),
+                decision.admitted_at,
                 writer,
             ) {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
@@ -249,6 +250,7 @@ where
                     &mut input_values,
                     &mut source_values,
                     decision.values.as_ref(),
+                    decision.admitted_at,
                     writer,
                 ) {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));

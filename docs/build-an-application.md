@@ -7262,6 +7262,28 @@ fn evaluate(&self, context: &WorthQueryApplicationInvariantContext<'_, '_, S>, l
 }
 ```
 
+A declarative creation body stamps the same instant without a handler:
+`creation.initialize_from_admission_time(TicketFacts::created_at())` writes the
+operation's trusted admission instant into the created row's required
+`CanonicalTimestamp` in the same commit, so a workflow-enrolled birth (which is
+body-only) records a trusted `created_at` atomically with its instance. The
+caller supplies no time, and a second commit never backfills it:
+
+```rust,ignore
+OpenTicketOp::reference()
+    .typed_body()
+    .in_scope(Desk::reference())
+    .create_in_scope(Ticket::reference(), "ticket")
+    .initialize_input(TicketFacts::ticket_id(), OpenTicket::ticket_input())
+    .initialize_from_admission_time(TicketFacts::created_at())
+    .finish_pure_definition()?
+```
+
+The body reads the advancement's settled instant exactly as `reader.admitted_at()`
+does, so a handler stage in the same edit envelope and every commit invariant
+observe the identical stamp; an unavailable time source refuses the operation
+with `WorthQueryRuntimeTimeDenial` instead of fabricating time.
+
 The Home's runtime time source is the system clock by default. Tests and
 simulations hold it with `host::primary_graph::WorthQueryFixedRuntimeTimeSource`
 and move it on purpose; keep a clone to advance it after handing one to the
@@ -7287,7 +7309,14 @@ Home, and reopens a Directory Home after the lot has expired. Its
 [envelope and undo court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/admission_time_dx/envelope_and_undo_court.rs)
 shows two envelope stages and the commit sharing one reading of a source that
 ticks on every read, an undo committing at a trusted instant, and a redo
-refused at the current one after the redone expiry has passed.
+refused at the current one after the redone expiry has passed. The
+[body admission-time court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/body_admission_time_dx/courts.rs)
+stamps a body birth with the commit's own instant, moves it only with the held
+clock, refuses without trusted time, shares one ticking instant across a body
+stage, a handler stage and the commit invariant, and reopens a Directory Home
+with the original stamp. The
+[workflow-birth court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/workflow_birth_time_dx/courts.rs)
+stamps a workflow-enrolled birth in the same commit that starts its instance.
 
 ### Optional invariant work and original interruption
 

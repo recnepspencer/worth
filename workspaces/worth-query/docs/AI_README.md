@@ -516,6 +516,11 @@ Creation `initialize_from_principal_identity::<Binding, _, _, _, _, _>(actor)`
 binds a unitless actor field to the exact mutation/principal identity codec and
 captures admission's actual principal through the tracked decision observation.
 It records unsigned actor attribution, not a signing event or approval grant.
+Creation `initialize_from_admission_time(created_at)` stamps a required unitless
+`CanonicalTimestamp` with the operation's trusted admission instant (body v45),
+the same reading handlers (`reader.admitted_at()`) and commit invariants
+(`context.admitted_at()`) observe; it works in workflow-enrolled births and
+refuses, never fabricates, when trusted time is unavailable.
 For authenticated creation, use the same body's
 [`signed_by` handoff](./authoring/signed-operation-creations.md). The v2 native
 subject-provenance codec also persists source-to-snapshot dependencies from the

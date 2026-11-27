@@ -212,6 +212,13 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                     let identity_binding = schema.value_bindings().field(source.entity(), source.aspect(), source.field()).ok_or_else(denied)?;
                     if identity_binding.identity() != step.binding() || identity_binding.scalar_family() != step.scalar_family() || identity_binding.unit() != binding.unit() { return Err(denied()); }
                 }
+                // Admission time is the native unitless timestamp, never a custom codec.
+                if step.is_admission_time()
+                    && (*step.binding() != <worth_query_declaration::facade::application_schema::CanonicalTimestampApplicationValueBinding as worth_query_declaration::facade::application_schema::ApplicationScalarValueBinding>::IDENTITY
+                        || binding.unit().is_some())
+                {
+                    return Err(denied());
+                }
                 if step.input_member().is_some() {
                     if !Binding::InputBinding::RETAIN_CANONICAL_INPUT
                         || !binding.is_readable()

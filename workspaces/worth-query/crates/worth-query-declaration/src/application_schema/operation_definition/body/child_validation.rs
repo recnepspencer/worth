@@ -43,7 +43,10 @@ impl Child {
             && c.fields().iter().all(|f| {
                 matches!(
                     f,
-                    Field::Literal { .. } | Field::Input { .. } | Field::OptionalInput { .. }
+                    Field::Literal { .. }
+                        | Field::Input { .. }
+                        | Field::OptionalInput { .. }
+                        | Field::AdmissionTime { .. }
                 )
             })
     }
