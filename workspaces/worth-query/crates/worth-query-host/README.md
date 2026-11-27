@@ -1109,6 +1109,23 @@ A vocabulary borrows the Home and cannot remain usable after it is consumed.
 Memory Homes still have their existing close-lifecycle refusal; resume returns
 the same configured owner. This is not a filesystem-close claim.
 
+The workflow Home carries the ordinary Home's desktop surface with the same
+signatures: `session`, `local_session`, `on_commit`, `committed_basis_version`,
+`primary_graph`, `active_branch`, `open_disposition`, `home_identity`,
+`home_incarnation`, `close_with_policy`, `close_clean` and
+`close_clean_with_policy`. A session's `request(&scope)` and a snapshot's
+`with_request(..)` accept `vocabulary()` for every workflow lifecycle call and
+governed read; snapshot reads observe exactly the pinned commit and write
+nothing. `owned_session(session)` turns a session of this Home into a
+`WorthQueryOwnedWorkflowSession` that also holds the installed configuration;
+`with_workflow` and `spawn_with_workflow` lend a vocabulary bound to the runtime
+that call reads, so workflow reads and commands run on the call worker and
+complete through `with_waker`. Closing the Home releases both holds (later calls
+refuse `HomeClosed`); while one is attached, `support_workflow_spec` refuses
+`RuntimeKeepaliveRetained`. Open with `WorthQueryApplicationHome::open_directory`
+or `open_memory` and a `WorthQueryHomeConfig` (including
+`with_authorization_time_source`), then `retain_workflow_spec`.
+
 A Directory workflow Home can close between completed steps and reopen with
 its graph records, approvals and original logical keys preserved. Reinstall
 workflow configuration and fresh signing authority, then reacquire current

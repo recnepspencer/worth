@@ -48,6 +48,7 @@ mod live_subscription;
 mod managed_index;
 mod owned_live_subscription;
 mod owned_session;
+mod owned_workflow_session;
 mod page;
 mod query_execution;
 mod query_intent;
@@ -65,6 +66,7 @@ pub use managed_index::{
 };
 pub use owned_live_subscription::WorthQueryOwnedLiveSubscription;
 pub use owned_session::{WorthQueryOwnedSession, WorthQueryOwnedSessionDenial};
+pub use owned_workflow_session::WorthQueryOwnedWorkflowSession;
 pub use page::{WorthQueryPage, WorthQueryPageCursor};
 pub use query_intent::{WorthQuerySessionIndexedQuery, WorthQuerySessionQuery};
 pub use renewal::{WorthQueryLocalSessionDenial, WorthQuerySessionPrincipalSource};

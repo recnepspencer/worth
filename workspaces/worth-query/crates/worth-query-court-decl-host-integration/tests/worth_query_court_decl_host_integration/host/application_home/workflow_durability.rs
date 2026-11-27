@@ -14,6 +14,7 @@ type TargetNode = ApplicationWorkflowNodeRef<ApplicationWorkflowOperationNode>;
 mod assessment;
 mod captured_resume;
 mod definition;
+mod desktop_sessions;
 mod fixture;
 mod killed_resume;
 mod observation;
