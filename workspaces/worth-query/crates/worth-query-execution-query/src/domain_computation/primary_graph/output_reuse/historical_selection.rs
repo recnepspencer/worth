@@ -15,6 +15,9 @@ use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort
 /// A borrowed view of one authentic retained row, used by selection and final
 /// endpoint verification. It grants no acceptance or producer authority.
 pub struct HistoricalOutputRead<'a> {
+    /// The row's own settlement: its coordinate is where its chain is
+    /// transported to.
+    consumer: &'a crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
     coordinate: &'a HistoricalSelectionCoordinate,
     publication: Option<&'a worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     facts: Option<&'a ComparableSourceFacts>,
@@ -30,6 +33,7 @@ impl<'a> HistoricalOutputRead<'a> {
         row: &'a crate::domain_computation::primary_graph::output_lineage::current_output::retained_candidates::WorthQueryRetainedOutputCandidate,
     ) -> Option<Self> {
         Some(Self {
+            consumer: &row.settlement_identity,
             coordinate: row.historical_selection.as_deref()?,
             publication: row.required_publication.as_ref(),
             facts: row.observed_source_facts.as_ref(),
@@ -45,6 +49,7 @@ impl<'a> HistoricalOutputRead<'a> {
         row: &'a crate::domain_computation::primary_graph::output_lineage::RetainedOutputCurrentnessRead,
     ) -> Option<Self> {
         Some(Self {
+            consumer: &row.identity,
             coordinate: row.historical_selection.as_deref()?,
             publication: row.required_publication.as_ref(),
             facts: row.facts.as_ref(),
@@ -89,19 +94,48 @@ impl<'a> HistoricalOutputRead<'a> {
             .read_truth()
             .project_snapshot(snapshot)
             .ok_or_else(evidence_unavailable)?;
+        // The upstream chain is verified first, so its rows can stand in for
+        // their own family heads when this row's facts are compared (plan
+        // §3.5, S1 STOP 3). A row's `FamilySelection` fact on a producer of
+        // its own chain re-resolves at this basis, where the producer's head
+        // is the transported row this readmission is about to post.
+        let readmitted = self.verify_upstream(execution, runtime, basis, snapshot, &evidence, *graph)?;
+        let Some(readmitted) = readmitted else {
+            return Ok(false);
+        };
         if !restored_facts_hold(
-            execution, runtime, basis, &current, &evidence, self.facts,
+            execution,
+            runtime,
+            basis.with_readmitted(&readmitted),
+            &current,
+            &evidence,
+            self.facts,
         )? {
             return Ok(false);
         }
-        if !evidence_answer(owner_read(
+        evidence_answer(owner_read(
             witness.unchanged_since_restoration(runtime, snapshot, execution, &current, &evidence),
             "restored output witness could not be compared",
-        )?)? {
-            return Ok(false);
-        }
+        )?)
+    }
+
+    /// The upstream chain verified at `basis` and re-identified at the row's
+    /// own coordinate, or `None` when it is not current there. A chain that
+    /// verifies but has no transported copy stands in for nothing.
+    fn verify_upstream(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        basis: crate::domain_computation::primary_graph::output_lineage::CertificationBasis<'_>,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        evidence: &worth_relational::facade::runtime::RelationalHistoricalSelectionRead,
+        graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
+    ) -> Result<
+        Option<Vec<std::sync::Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>>>,
+        WorthQueryOutputDemandDenial,
+    > {
         if self.upstream.is_empty() {
-            return Ok(true);
+            return Ok(Some(Vec::new()));
         }
         let selected = runtime
             .read_truth()
@@ -116,28 +150,34 @@ impl<'a> HistoricalOutputRead<'a> {
             .source_owner_ref()
             .invalidation_owner
             .capture_full_verification(runtime, basis, &selected)
-
-            .and_then(|image| image.verify_historical_upstream(execution, &upstream, &evidence));
+            .and_then(|image| image.verify_historical_upstream(execution, &upstream, evidence));
         match result {
-            Ok(FullVerificationDecision::Current) => Ok(true),
-            Ok(FullVerificationDecision::Changed) => Ok(false),
+            Ok(FullVerificationDecision::Current) => {}
+            Ok(FullVerificationDecision::Changed) => return Ok(None),
             Err(FullVerificationStop::Admission(stop)) => {
-                owner_read(Err(stop), "historical upstream comparison")
+                return owner_read::<()>(Err(stop), "historical upstream comparison").map(|()| None);
             }
             Err(FullVerificationStop::SourceRead(cause)) => {
                 use crate::domain_computation::primary_graph::{
                     invariant_projection::consumed_output::map_verification_stop,
                     output_lineage::invalidation::SettlementVerificationStop,
                 };
-                Err(retained_fact_denial(
+                return Err(retained_fact_denial(
                     RetainedFactStop::OutputObservation(map_verification_stop(
                         SettlementVerificationStop::SourceRead(cause),
                     )),
                     "historical upstream comparison",
-                ))
+                ));
             }
-            Err(_) => Ok(false),
+            Err(_) => return Ok(None),
         }
+        let readmitted = graph
+            .output_lineage_ref()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .reidentified_chain(self.consumer, self.coordinate, &upstream, &selected)
+            .unwrap_or_default();
+        Ok(Some(readmitted))
     }
 }
 

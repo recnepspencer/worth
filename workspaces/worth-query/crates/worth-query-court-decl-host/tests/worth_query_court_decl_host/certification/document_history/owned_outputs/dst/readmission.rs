@@ -23,7 +23,7 @@ use worth_query_host::facade::primary_graph::{
 /// Restores `e1 = 1` by an undo, then forks the head with an `e2` record and
 /// settles it with a write outside: the readmission of the chain on the
 /// forked head. Every later court starts here.
-const PREFIX: [Op; 5] = [
+pub(super) const PREFIX: [Op; 5] = [
     Op::Edit([Set(1), Skip]),
     Op::Edit([Set(2), Skip]),
     Op::Undo,
@@ -73,7 +73,7 @@ impl System for SettledTwice<'_> {
 }
 
 /// What a court observed on this thread.
-struct Counts {
+pub(super) struct Counts {
     /// Moved facts or aspects accepted only by their row's selection evidence.
     acceptances: u64,
     /// Equal successors that took a projection carrying a coordinate.
@@ -81,7 +81,7 @@ struct Counts {
     /// Settlement registrations made by the second settle at the same head.
     second_settle_registrations: u64,
     /// Consumer chains readmitted with marks at their selected head.
-    readmitted: u64,
+    pub(super) readmitted: u64,
     /// Verified readmissions the armed decline door refused.
     declined: u64,
 }
@@ -89,7 +89,7 @@ struct Counts {
 /// Run `ops` on a fresh chain document, write `tail` outside it, settle it
 /// a second time before close, and require that the armed shadow checked a
 /// certification.
-fn court(name: &str, ops: &[Op], tail: &[Stages]) -> Counts {
+pub(super) fn court(name: &str, ops: &[Op], tail: &[Stages]) -> Counts {
     court_as(name, Shape::WithChain, None, ops, tail)
 }
 

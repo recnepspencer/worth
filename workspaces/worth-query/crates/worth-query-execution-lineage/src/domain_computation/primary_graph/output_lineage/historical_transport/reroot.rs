@@ -64,17 +64,7 @@ impl WorthQueryApplicationOutputLineage {
         let facts = candidate.observed_source_facts.clone()?;
         let witness = Arc::clone(candidate.native_output_witness.as_ref()?);
         witness.get()?;
-        let mut walk = Walk {
-            lineage: self,
-            coordinate: candidate.settlement_identity.coordinate(),
-            selection,
-            root: Arc::new(selected.clone()),
-            nodes: Vec::new(),
-            publications: Vec::new(),
-            installs: Vec::new(),
-            done: BTreeMap::new(),
-            fully_compared,
-        };
+        let mut walk = Walk::new(self, &candidate.settlement_identity, selection, selected, fully_compared);
         let evidence = walk.all(&candidate.consumed_outputs)?;
         walk.nodes.push(ReadmittedNode {
             identity: Arc::clone(&candidate.settlement_identity),
@@ -93,6 +83,23 @@ impl WorthQueryApplicationOutputLineage {
         })
     }
 
+    /// The rows a readmission of `consumer` would post for `upstream` at
+    /// `selected`, by the same lookup and the same checks as
+    /// [`Self::reroot_consumed`]: each row is the transported copy of an
+    /// upstream node, with that node's facts, witness and upstream. `None` on
+    /// any miss. The caller has verified `upstream` at `selected` first.
+    pub fn reidentified_chain(
+        &self,
+        consumer: &RecordedSettlementIdentity,
+        selection: &HistoricalSelectionCoordinate,
+        upstream: &[ConsumedOutputEvidence],
+        selected: &PositionedRelationalSnapshot,
+    ) -> Option<Vec<Arc<RecordedSettlementIdentity>>> {
+        let mut walk = Walk::new(self, consumer, selection, selected, false);
+        walk.all(upstream)?;
+        Some(walk.nodes.into_iter().map(|node| node.identity).collect())
+    }
+
     fn cell_of(&self, identity: &Arc<RecordedSettlementIdentity>) -> Option<SharedRecordedOutputCell> {
         let coordinate = identity.coordinate();
         let cell = self
@@ -106,7 +113,27 @@ impl WorthQueryApplicationOutputLineage {
     }
 }
 
-impl Walk<'_> {
+impl<'a> Walk<'a> {
+    fn new(
+        lineage: &'a WorthQueryApplicationOutputLineage,
+        consumer: &RecordedSettlementIdentity,
+        selection: &'a HistoricalSelectionCoordinate,
+        selected: &PositionedRelationalSnapshot,
+        fully_compared: bool,
+    ) -> Self {
+        Self {
+            lineage,
+            coordinate: consumer.coordinate(),
+            selection,
+            root: Arc::new(selected.clone()),
+            nodes: Vec::new(),
+            publications: Vec::new(),
+            installs: Vec::new(),
+            done: BTreeMap::new(),
+            fully_compared,
+        }
+    }
+
     fn all(&mut self, upstream: &[ConsumedOutputEvidence]) -> Option<Arc<[ConsumedOutputEvidence]>> {
         upstream
             .iter()

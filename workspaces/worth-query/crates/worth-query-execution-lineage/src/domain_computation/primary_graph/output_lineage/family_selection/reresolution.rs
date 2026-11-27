@@ -16,7 +16,7 @@ use super::CandidateVerdict;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Failure;
 use crate::domain_computation::primary_graph::invariant_projection::consumed_output::{
-    ConsumedOutputVerificationStop, EvidenceView,
+    ConsumedOutputVerification, ConsumedOutputVerificationStop, EvidenceView,
 };
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 use crate::domain_computation::primary_graph::output_lineage::{
@@ -104,6 +104,11 @@ impl ObservedFamilySelection {
                 candidate,
                 producer.producer,
                 |facts, witness| {
+                    // A head its readmission verified as part of the consumer's
+                    // chain stands in for itself (plan §3.5, S1 STOP 3).
+                    if basis.readmitted(&candidate.settlement_identity) {
+                        return Ok(ConsumedOutputVerification::Current);
+                    }
                     ConsumedOutputEvidence::compare_mark_free(
                         execution,
                         EvidenceView {
@@ -172,4 +177,3 @@ impl ObservedFamilySelection {
         Ok(self.selects_the_same(extra, fresh))
     }
 }
-
