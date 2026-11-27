@@ -397,6 +397,11 @@ admits its reached regions under the original request. `RelationalPinnedRead::sy
 returns an owned persistent snapshot of the meanings admitted so far. For a cold
 symbol, use `with_symbol_text(request, symbol, inspect)` to borrow its native
 text after admitting only the required page; preserve typed storage refusals.
+A commit's dictionary work is `O(|touched|)` persistent writes that share every
+existing text: reserving and publishing a record's client key copies no other
+key's text and materializes no dictionary (scaling court
+`worth-court-relational-certification` `cost::relational::symbol_scaling`; step
+bound and full-snapshot equivalence proofs in `proofs/lean/relational_symbol_commit/`).
 `inspect_snapshot(request, handle)` reads live counts from that exact root's
 carried region facts without materializing record regions. Checkpoint restore
 checks the facts against the selected root commitment, and member admission
