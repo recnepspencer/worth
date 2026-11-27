@@ -21,6 +21,7 @@ use worth_testkit_relational::{
 };
 
 mod allocation_bytes;
+mod burned_symbol_frontier;
 mod shared_members;
 mod unknown_fields;
 
@@ -353,46 +354,4 @@ fn the_live_census_includes_divergent_retained_branch_roots() {
             "missing live entity from a retained branch: {entity:?}"
         );
     }
-}
-
-#[test]
-fn burned_symbol_frontier_does_not_hide_published_symbol_damage() {
-    let host = request();
-    let execution = ExecutionRequest::serial(&host);
-    let (before, _) = original(&execution);
-    let inspected = before.inspect(&execution).unwrap();
-    let rewrite_frontier = |n: u32| {
-        rewritten(before.bytes(), false, |f| {
-            f.insert(
-                "symbol_identity_frontier".into(),
-                rmp_serde::to_vec(&n).unwrap(),
-            );
-        })
-    };
-    let next = inspected.symbol_identity_frontier.checked_add(7).unwrap();
-    let advanced = rewrite_frontier(next);
-    let after = RelationalNativeCheckpoint::inspect_bytes(&execution, &advanced).unwrap();
-    assert_eq!(after.symbol_identity_frontier, next);
-    assert_eq!(
-        (after.model, after.live_records),
-        (inspected.model, inspected.live_records)
-    );
-    assert!(RelationalNativeCheckpoint::inspect_bytes(&execution, &rewrite_frontier(0)).is_err());
-    let envelope = fields(&before.bytes()[CHECKPOINT_MAGIC.len()..]);
-    let symbols = sequence(fields(envelope["manifest"])["symbols"]);
-    let symbol: RelationalDurableMemberLocator =
-        rmp_serde::from_slice(fields(symbols[0])["member"]).unwrap();
-    let base = members_source(&before);
-    let mut payload = base.members.get(&symbol).unwrap().bytes().to_vec();
-    *payload.last_mut().unwrap() ^= 1;
-    let bytes = ExecutionImmutableBytes::from_external_bytes(Arc::new(payload.into_boxed_slice()));
-    let tampered = base.with_published_members(&[RelationalCheckpointMember::New {
-        locator: symbol,
-        bytes,
-    }]);
-    assert!(
-        RelationalNativeCheckpoint::inspect_bytes_with_source(&execution, before.bytes(), tampered)
-            .is_err(),
-        "symbol payloads still undergo owner readmission and digest validation"
-    );
 }
