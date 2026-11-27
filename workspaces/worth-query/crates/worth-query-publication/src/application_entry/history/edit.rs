@@ -14,11 +14,11 @@ use worth_query_declaration::facade::{
 use worth_query_execution::{
     facade::product::{
         WorthQueryApplicationProductBranchCleanupFailure, WorthQueryExpectedProductBranch,
-        WorthQueryOwnedProductHead, WorthQueryProductBranchCreationRecovery,
-        WorthQueryProductBranchOwnerCleanupFailure,
+        WorthQueryProductBranchCreationRecovery, WorthQueryProductBranchOwnerCleanupFailure,
     },
     publication_boundary::document_history::{
         WorthQueryDocumentHistoryCandidateDenial, WorthQueryDocumentHistoryReservation,
+        WorthQueryRefusedCandidate,
     },
 };
 
@@ -123,23 +123,6 @@ pub(super) struct Selecting<
     pub(super) selected: Option<WorthQueryHistoryStep>,
 }
 
-pub(super) enum DiscardedCandidate<'runtime, S> {
-    Live {
-        head: WorthQueryOwnedProductHead<'runtime, S>,
-        denial: Option<
-            worth_query_execution::facade::product::WorthQueryApplicationProductBranchCloseDenial,
-        >,
-    },
-    Retired(WorthQueryApplicationProductBranchCleanupFailure),
-    ClosedDirect {
-        _receipt: worth_query_execution::facade::product::WorthQueryProductBranchCloseReceipt,
-    },
-    ClosedCleanup {
-        _receipt:
-            worth_query_execution::facade::product::WorthQueryProductBranchOwnerCleanupReceipt,
-    },
-}
-
 pub(super) enum Phase<
     'runtime,
     S: ApplicationSchema,
@@ -173,10 +156,10 @@ pub(super) enum Phase<
     TerminalCleanup {
         terminal: ClosedTerminal<S, I, P, A>,
         reservation: WorthQueryDocumentHistoryReservation,
-        candidate: DiscardedCandidate<'runtime, S>,
+        candidate: WorthQueryRefusedCandidate<'runtime, S>,
     },
     Discarding {
-        candidate: DiscardedCandidate<'runtime, S>,
+        candidate: WorthQueryRefusedCandidate<'runtime, S>,
         reservation: WorthQueryDocumentHistoryReservation,
     },
 }
@@ -297,14 +280,9 @@ where
         &self,
     ) -> Option<&WorthQueryApplicationProductBranchCleanupFailure> {
         match self.phase.as_ref()? {
-            Phase::Discarding {
-                candidate: DiscardedCandidate::Retired(failure),
-                ..
+            Phase::Discarding { candidate, .. } | Phase::TerminalCleanup { candidate, .. } => {
+                candidate.cleanup_failure()
             }
-            | Phase::TerminalCleanup {
-                candidate: DiscardedCandidate::Retired(failure),
-                ..
-            } => Some(failure),
             _ => None,
         }
     }
@@ -314,14 +292,9 @@ where
         &worth_query_execution::facade::product::WorthQueryApplicationProductBranchCloseDenial,
     > {
         match self.phase.as_ref()? {
-            Phase::Discarding {
-                candidate: DiscardedCandidate::Live { denial, .. },
-                ..
+            Phase::Discarding { candidate, .. } | Phase::TerminalCleanup { candidate, .. } => {
+                candidate.close_denial()
             }
-            | Phase::TerminalCleanup {
-                candidate: DiscardedCandidate::Live { denial, .. },
-                ..
-            } => denial.as_ref(),
             _ => None,
         }
     }

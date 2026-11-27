@@ -1,12 +1,11 @@
 //! A refused envelope leaves the document at its prior head with no pending record.
 use super::super::{
-    head_custody::HistoryHeadCustody, WorthQueryDocumentHistory,
-    WorthQueryDocumentHistoryReservation,
+    recording::{RecordingKind, WorthQueryRefusedCandidate},
+    WorthQueryDocumentHistory, WorthQueryDocumentHistoryReservation,
 };
 use crate::{
     domain_computation::primary_graph::{
         WorthQueryAdvancementPhase, WorthQueryExpectedProductBranch,
-        WorthQueryOwnedProductHeadCloseFailure,
     },
     publication_boundary::WorthQueryProgramPublicationAccess,
 };
@@ -35,33 +34,13 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         reserved: WorthQueryDocumentHistoryReservation,
         candidate: Option<WorthQueryExpectedProductBranch<'runtime, S>>,
     ) {
-        assert!(
-            self.validate_reservation(&reserved).is_ok(),
-            "an envelope abandons only the record its own document reserved"
-        );
-        let unclosed = match (
-            candidate.map(|candidate| candidate.into_owned_head()),
-            phase,
-        ) {
-            (None, _) => None,
-            (Some(head), None) => Some(HistoryHeadCustody::Live(head.into_detached())),
-            (Some(head), Some(phase)) => match head.close(phase) {
-                Ok(_) => None,
-                Err(WorthQueryOwnedProductHeadCloseFailure::Retained { head, denial }) => {
-                    Some(HistoryHeadCustody::Refused {
-                        head: head.into_detached(),
-                        denial,
-                    })
-                }
-                Err(WorthQueryOwnedProductHeadCloseFailure::Retired { branch, failure }) => {
-                    Some(HistoryHeadCustody::Retired { branch, failure })
-                }
-            },
-        };
-        let mut selected = self.selection.lock();
-        match unclosed {
-            None => selected.journal.cancel(reserved.record),
-            Some(custody) => selected.journal.cancel_parking(reserved.record, custody),
+        let candidate =
+            candidate.map(|candidate| WorthQueryRefusedCandidate::new(candidate).close(phase));
+        if self
+            .refuse(RecordingKind::Envelope, reserved, candidate)
+            .is_err()
+        {
+            panic!("an envelope abandons only the record its own document reserved");
         }
     }
 }

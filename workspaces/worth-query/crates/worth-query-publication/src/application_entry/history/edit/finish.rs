@@ -185,10 +185,7 @@ where
                 self.phase = Some(Phase::TerminalCleanup {
                     terminal,
                     reservation,
-                    candidate: DiscardedCandidate::Live {
-                        head: candidate.into_owned_head(),
-                        denial: None,
-                    },
+                    candidate: WorthQueryRefusedCandidate::new(candidate),
                 });
                 self.finish(request)
             }
@@ -208,26 +205,18 @@ where
         mut self,
         terminal: ClosedTerminal<S, I, P, A>,
         reservation: WorthQueryDocumentHistoryReservation,
-        candidate: DiscardedCandidate<'runtime, S>,
+        candidate: WorthQueryRefusedCandidate<'runtime, S>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<
         WorthQueryHistoryEditFinish<'runtime, S, H, I, P, A, Payload, Outputs>,
         (Self, WorthQueryHistoryEditDenial),
     > {
-        match super::discard::close_candidate(&self.document, request, candidate) {
-            Ok(_) => {
-                self.document
-                    .owner
-                    .cancel_history_record(&program_publication_access(), reservation)
-                    .unwrap_or_else(|_| {
-                        unreachable!("the same terminal edit owns this reservation")
-                    });
-                Ok(WorthQueryHistoryEditFinish {
-                    document: self.document,
-                    outcome: Mode::<S, I, A>::finish_terminal(terminal),
-                })
-            }
-            Err((candidate, denial)) => {
+        match super::discard::refuse_candidate(&self.document, request, reservation, candidate) {
+            Ok(()) => Ok(WorthQueryHistoryEditFinish {
+                document: self.document,
+                outcome: Mode::<S, I, A>::finish_terminal(terminal),
+            }),
+            Err((reservation, candidate, denial)) => {
                 self.phase = Some(Phase::TerminalCleanup {
                     terminal,
                     reservation,

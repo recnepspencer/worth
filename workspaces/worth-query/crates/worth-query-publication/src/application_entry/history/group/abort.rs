@@ -1,5 +1,6 @@
 //! Abort discharges original source owners, then candidate custody, then reserved metadata.
 use super::*;
+use worth_query_execution::publication_boundary::document_history::WorthQueryRefusedCandidate;
 
 impl<'runtime, S, H, P, M, Payload, Outputs>
     WorthQueryGroupedHistoryDocument<'runtime, S, H, P, M, Payload, Outputs>
@@ -91,31 +92,48 @@ where
             return Err((self, Denial::Member(cause)));
         }
         if let Some(candidate) = self.execution.candidate.take() {
-            self.execution.cleanup = Some(super::super::edit::DiscardedCandidate::Live {
-                head: candidate.into_owned_head(),
-                denial: None,
-            });
+            self.execution.cleanup = Some(WorthQueryRefusedCandidate::new(candidate));
         }
         if let Some(candidate) = self.execution.cleanup.take() {
             match super::super::edit::discard::close_candidate(&self.document, request, candidate) {
-                Ok(_) => {}
+                Ok(candidate) => self.execution.cleanup = Some(candidate),
                 Err((candidate, cause)) => {
                     self.execution.cleanup = Some(candidate);
                     return Err((self, Denial::Member(cause)));
                 }
             }
         }
-        if let Some(aborting) = self.execution.aborting.take()
-            && let Err((aborting, cause)) = self
-                .document
-                .owner
-                .cancel_history_group(&program_publication_access(), aborting)
-        {
-            self.execution.aborting = Some(aborting);
-            return Err((
-                self,
-                Denial::History(WorthQueryApplicationHistoryDenial::Document(cause)),
-            ));
+        match (
+            self.execution.aborting.take(),
+            self.execution.cleanup.take(),
+        ) {
+            (None, Some(candidate)) if !candidate.is_closed() => {
+                self.execution.cleanup = Some(candidate);
+                return Err((
+                    self,
+                    Denial::Member(WorthQueryHistoryEditDenial::CandidateCleanup),
+                ));
+            }
+            (None, _) => {}
+            (Some(aborting), candidate) => {
+                if let Err((aborting, candidate, denial)) = self
+                    .document
+                    .owner
+                    .refuse_history_group(&program_publication_access(), aborting, candidate)
+                {
+                    self.execution.aborting = Some(aborting);
+                    self.execution.cleanup = candidate;
+                    return Err((
+                        self,
+                        match denial {
+                            Some(cause) => {
+                                Denial::History(WorthQueryApplicationHistoryDenial::Document(cause))
+                            }
+                            None => Denial::Member(WorthQueryHistoryEditDenial::CandidateCleanup),
+                        },
+                    ));
+                }
+            }
         }
         self.execution.posture = WorthQueryHistoryGroupPosture::Aborted;
         Ok(self.document)

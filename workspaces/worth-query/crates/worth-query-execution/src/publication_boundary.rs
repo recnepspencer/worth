@@ -65,7 +65,7 @@ pub mod document_history {
         WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
         WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryEnvelopeConstraint,
         WorthQueryDocumentHistoryCorrectionMeaning, WorthQueryDocumentHistoryEnvelopeIntent,
-        WorthQueryDocumentHistoryGroupAborting,
+        WorthQueryDocumentHistoryGroupAborting, WorthQueryKeptRefusal, WorthQueryRefusedCandidate,
         WorthQueryDocumentHistoryGroupAdoptionFailure, WorthQueryDocumentHistoryGroupPreparation,
         WorthQueryDocumentHistoryGroupReservation, WorthQueryDocumentHistoryNavigation,
         WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryOperationConstraint,

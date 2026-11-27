@@ -120,7 +120,7 @@ pub struct WorthQueryHistoryGroupExecution<
     reservation:Option<WorthQueryDocumentHistoryGroupReservation>,
     candidate:Option<WorthQueryExpectedProductBranch<'runtime,S>>,
     recovery:Option<super::edit::ForkRecovery>,
-    cleanup:Option<super::edit::DiscardedCandidate<'runtime,S>>,
+    cleanup:Option<worth_query_execution::publication_boundary::document_history::WorthQueryRefusedCandidate<'runtime,S>>,
     aborting:Option<worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryGroupAborting>,
     selected:Option<WorthQueryHistoryStep>,
     next:usize,

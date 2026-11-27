@@ -1,8 +1,9 @@
 //! Explicit discard closes actual operation/candidate custody before releasing reserved slots.
 use super::*;
 use worth_query_declaration::facade::application_operation::NoApplicationMutationSource;
-use worth_query_execution::facade::product::WorthQueryOwnedProductHeadCloseFailure;
 
+/// One close attempt on a refused candidate, under its own advancement phase.
+/// Retired cleanup retries under its own request, so it takes no phase.
 pub(in crate::application_entry::history) fn close_candidate<
     'runtime,
     S: ApplicationSchema,
@@ -12,54 +13,74 @@ pub(in crate::application_entry::history) fn close_candidate<
 >(
     document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    candidate: DiscardedCandidate<'runtime, S>,
+    candidate: WorthQueryRefusedCandidate<'runtime, S>,
 ) -> Result<
-    DiscardedCandidate<'runtime, S>,
-    (DiscardedCandidate<'runtime, S>, WorthQueryHistoryEditDenial),
+    WorthQueryRefusedCandidate<'runtime, S>,
+    (
+        WorthQueryRefusedCandidate<'runtime, S>,
+        WorthQueryHistoryEditDenial,
+    ),
 > {
-    match candidate {
-        done @ (DiscardedCandidate::ClosedDirect { .. }
-        | DiscardedCandidate::ClosedCleanup { .. }) => Ok(done),
-        DiscardedCandidate::Retired(failure) => match failure.into_cleanup().retry() {
-            Ok(receipt) => Ok(DiscardedCandidate::ClosedCleanup { _receipt: receipt }),
-            Err(failure) => Err((
-                DiscardedCandidate::Retired(failure),
-                WorthQueryHistoryEditDenial::CandidateCleanup,
-            )),
-        },
-        DiscardedCandidate::Live { head, .. } => {
-            let runtime = document.owner.application();
-            let mut state = Some(DiscardedCandidate::Live { head, denial: None });
-            let result = runtime.with_application_advancement(request.scope, |phase| {
-                let Some(DiscardedCandidate::Live { head, .. }) = state.take() else {
-                    unreachable!()
-                };
-                state = Some(match head.close(&phase) {
-                    Ok(receipt) => DiscardedCandidate::ClosedDirect { _receipt: receipt },
-                    Err(WorthQueryOwnedProductHeadCloseFailure::Retained { head, denial }) => {
-                        DiscardedCandidate::Live {
-                            head,
-                            denial: Some(denial),
-                        }
-                    }
-                    Err(WorthQueryOwnedProductHeadCloseFailure::Retired { failure, .. }) => {
-                        DiscardedCandidate::Retired(failure)
-                    }
-                });
+    if !candidate.needs_phase() {
+        return Ok(candidate.close(None));
+    }
+    let mut state = Some(candidate);
+    let result =
+        document
+            .owner
+            .application()
+            .with_application_advancement(request.scope, |phase| {
+                state = state.take().map(|candidate| candidate.close(Some(&phase)));
             });
-            let state =
-                state.expect("close retains live or retired custody, or its actual closed receipt");
-            match result {
-                Err(cause) => Err((
-                    state,
-                    WorthQueryHistoryEditDenial::History(
-                        WorthQueryApplicationHistoryDenial::ExecutionRequest(cause),
-                    ),
-                )),
-                Ok(()) if matches!(state, DiscardedCandidate::ClosedDirect { .. }) => Ok(state),
-                Ok(()) => Err((state, WorthQueryHistoryEditDenial::CandidateCleanup)),
-            }
-        }
+    let state = state.expect("a close attempt keeps the candidate's custody");
+    match result {
+        Ok(()) => Ok(state),
+        Err(cause) => Err((
+            state,
+            WorthQueryHistoryEditDenial::History(
+                WorthQueryApplicationHistoryDenial::ExecutionRequest(cause),
+            ),
+        )),
+    }
+}
+
+/// A refused edit closes its candidate, then releases its record. A
+/// candidate that did not close stays with the record for the next retry.
+pub(super) fn refuse_candidate<
+    'runtime,
+    S: ApplicationSchema,
+    H: ApplicationHistoryBinding<S>,
+    Payload: WorthQueryHistoryPayloadMode<S, H>,
+    Outputs,
+>(
+    document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
+    request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    reservation: WorthQueryDocumentHistoryReservation,
+    candidate: WorthQueryRefusedCandidate<'runtime, S>,
+) -> Result<
+    (),
+    (
+        WorthQueryDocumentHistoryReservation,
+        WorthQueryRefusedCandidate<'runtime, S>,
+        WorthQueryHistoryEditDenial,
+    ),
+> {
+    let candidate = match close_candidate(document, request, candidate) {
+        Ok(candidate) => candidate,
+        Err((candidate, denial)) => return Err((reservation, candidate, denial)),
+    };
+    match document.owner.refuse_history_record(
+        &program_publication_access(),
+        reservation,
+        Some(candidate),
+    ) {
+        Ok(()) => Ok(()),
+        Err((reservation, Some(candidate), None)) => Err((
+            reservation,
+            candidate,
+            WorthQueryHistoryEditDenial::CandidateCleanup,
+        )),
+        Err(_) => unreachable!("the same refused edit owns this reservation"),
     }
 }
 
@@ -120,10 +141,7 @@ where
                 match Mode::<S, I, A>::close_operation(operation, &current) {
                     Ok(_) => {
                         self.phase = Some(Phase::Discarding {
-                            candidate: DiscardedCandidate::Live {
-                                head: candidate.into_owned_head(),
-                                denial: None,
-                            },
+                            candidate: WorthQueryRefusedCandidate::new(candidate),
                             reservation,
                         });
                         self.discard(request)
@@ -158,10 +176,9 @@ where
                 match Mode::<S, I, A>::discard_completed(completed, &current) {
                     Ok(()) => {
                         self.phase = Some(Phase::Discarding {
-                            candidate: DiscardedCandidate::Live {
-                                head: state.candidate.take().unwrap().into_owned_head(),
-                                denial: None,
-                            },
+                            candidate: WorthQueryRefusedCandidate::new(
+                                state.candidate.take().unwrap(),
+                            ),
                             reservation: state.reservation.take().unwrap(),
                         });
                         self.discard(request)
@@ -176,17 +193,9 @@ where
             Phase::Discarding {
                 candidate,
                 reservation,
-            } => match close_candidate(&self.document, request, candidate) {
-                Ok(_) => {
-                    self.document
-                        .owner
-                        .cancel_history_record(&program_publication_access(), reservation)
-                        .unwrap_or_else(|_| {
-                            unreachable!("the same discarded edit owns this reservation")
-                        });
-                    Ok(self.document)
-                }
-                Err((candidate, denial)) => {
+            } => match refuse_candidate(&self.document, request, reservation, candidate) {
+                Ok(()) => Ok(self.document),
+                Err((reservation, candidate, denial)) => {
                     self.phase = Some(Phase::Discarding {
                         candidate,
                         reservation,
@@ -237,7 +246,7 @@ where
                 (Some(reservation), None) => {
                     self.document
                         .owner
-                        .cancel_history_record(&program_publication_access(), reservation)
+                        .refuse_history_record(&program_publication_access(), reservation, None)
                         .unwrap_or_else(|_| {
                             unreachable!("the same initial edit owns this reservation")
                         });
@@ -245,10 +254,7 @@ where
                 }
                 (Some(reservation), Some(candidate)) => {
                     self.phase = Some(Phase::Discarding {
-                        candidate: DiscardedCandidate::Live {
-                            head: candidate.into_owned_head(),
-                            denial: None,
-                        },
+                        candidate: WorthQueryRefusedCandidate::new(candidate),
                         reservation,
                     });
                     self.discard(request)

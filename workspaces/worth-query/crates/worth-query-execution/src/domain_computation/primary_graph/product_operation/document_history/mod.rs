@@ -104,6 +104,7 @@ pub use candidate::WorthQueryDocumentHistoryCandidateDenial;
 pub use capture_pause::WorthQueryDocumentHistoryCapturePauseForTest;
 pub use constraint::WorthQueryDocumentHistoryOperationConstraint;
 pub use operation_context::WorthQueryDocumentHistoryOperation;
+pub use recording::{WorthQueryKeptRefusal, WorthQueryRefusedCandidate};
 pub use reservation::{
     WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
 };

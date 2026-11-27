@@ -1,7 +1,10 @@
 //! Admission precedes attempt inspection and allocation precedes candidate effects.
 use super::{
     journal::ReservedHistoryRecord,
-    recording::{Attempt, RecordingKind},
+    recording::{
+        Attempt, RecordingKind, RefusedRecord, WorthQueryKeptRefusal, WorthQueryRefusedCandidate,
+    },
+    selection::HistorySelection,
     WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
     WorthQueryDocumentHistoryOperation, WorthQueryHistoryStep,
 };
@@ -175,17 +178,16 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         Ok(())
     }
 
-    pub fn cancel_history_record(
-        &mut self,
+    /// Release a refused edit's record after its candidate's close attempt.
+    /// A candidate that did not close comes back with the record, so the
+    /// caller retries the close.
+    pub fn refuse_history_record(
+        &self,
         _access: &WorthQueryProgramPublicationAccess,
         reserved: WorthQueryDocumentHistoryReservation,
-    ) -> Result<(), (WorthQueryDocumentHistoryReservation, Denial)> {
-        let mut selected = self.selection.lock();
-        if let Err(denial) = selected.validate_reservation(&reserved) {
-            return Err((reserved, denial));
-        }
-        selected.journal.cancel(reserved.record);
-        Ok(())
+        candidate: Option<WorthQueryRefusedCandidate<'runtime, S>>,
+    ) -> Result<(), WorthQueryKeptRefusal<'runtime, S, WorthQueryDocumentHistoryReservation>> {
+        self.refuse(RecordingKind::Edit, reserved, candidate)
     }
 
     pub fn current_history_step(
@@ -196,7 +198,16 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     }
 }
 
-impl super::selection::HistorySelection {
+impl RefusedRecord for WorthQueryDocumentHistoryReservation {
+    fn check(&self, selection: &HistorySelection) -> Result<(), Denial> {
+        selection.validate_reservation(self)
+    }
+    fn into_record(self) -> ReservedHistoryRecord {
+        self.record
+    }
+}
+
+impl HistorySelection {
     pub(super) fn validate_reservation(
         &self,
         reserved: &WorthQueryDocumentHistoryReservation,

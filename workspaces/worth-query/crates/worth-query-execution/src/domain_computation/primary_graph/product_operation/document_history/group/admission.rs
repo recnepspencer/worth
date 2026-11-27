@@ -1,6 +1,9 @@
 //! Every member's real admission precedes reservation and candidate creation.
 use super::*;
-use super::super::recording::{group_meaning, Attempt, RecordingKind};
+use super::super::recording::{
+    group_meaning, Attempt, RecordingKind, RefusedRecord, WorthQueryKeptRefusal,
+    WorthQueryRefusedCandidate,
+};
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
@@ -240,22 +243,32 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         })
     }
 
-    pub fn cancel_history_group(
+    /// Release an aborted group's record after its candidate's close attempt.
+    /// A candidate that did not close comes back with the group, so the caller
+    /// retries the close.
+    pub fn refuse_history_group(
         &self,
         _access: &WorthQueryProgramPublicationAccess,
         group: WorthQueryDocumentHistoryGroupAborting,
-    ) -> Result<
-        (),
-        (
-            WorthQueryDocumentHistoryGroupAborting,
-            WorthQueryDocumentHistoryDenial,
-        ),
-    > {
-        let mut selected = self.selection.lock();
-        if !selected.journal.owns_group(&group.reservation.record) {
-            return Err((group, WorthQueryDocumentHistoryDenial::ForeignRecording));
+        candidate: Option<WorthQueryRefusedCandidate<'runtime, S>>,
+    ) -> Result<(), WorthQueryKeptRefusal<'runtime, S, WorthQueryDocumentHistoryGroupAborting>>
+    {
+        self.refuse(RecordingKind::Group, group, candidate)
+    }
+}
+
+impl RefusedRecord for WorthQueryDocumentHistoryGroupAborting {
+    fn check(
+        &self,
+        selection: &super::super::selection::HistorySelection,
+    ) -> Result<(), WorthQueryDocumentHistoryDenial> {
+        if selection.journal.owns_group(&self.reservation.record) {
+            Ok(())
+        } else {
+            Err(WorthQueryDocumentHistoryDenial::ForeignRecording)
         }
-        selected.journal.cancel(group.reservation.record);
-        Ok(())
+    }
+    fn into_record(self) -> super::super::journal::ReservedHistoryRecord {
+        self.reservation.record
     }
 }
