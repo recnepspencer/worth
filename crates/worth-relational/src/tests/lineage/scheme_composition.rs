@@ -23,6 +23,7 @@ fn entity_scheme(kind_name: &str, roles: [&str; 1]) -> InstalledPersistentNameSc
                 roles,
                 false,
                 true,
+                false,
             )
             .unwrap(),
         )

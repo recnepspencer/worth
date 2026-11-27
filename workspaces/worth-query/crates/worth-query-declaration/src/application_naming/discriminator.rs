@@ -10,6 +10,7 @@ mod decoder;
 mod field;
 mod nested;
 mod references;
+mod wire_bound;
 
 pub use decode_values::ApplicationNameDiscriminatorValueDecode;
 pub use decoder::{
@@ -20,6 +21,11 @@ pub use decoder::{
 pub use field::ApplicationNameDiscriminatorField;
 pub use nested::NestedDiscriminator;
 pub(crate) use references::recorded_name_references;
+pub(crate) use wire_bound::discriminator_fits_structural_identity;
+pub use wire_bound::{
+    bound_max, bound_sum, field_bound, max_encoded_bytes, variant_bound,
+    MAX_STRUCTURAL_DISCRIMINATOR_BYTES,
+};
 
 /// Unnameable outside this crate, so no caller can add a value type or a
 /// field form of its own.
@@ -202,11 +208,14 @@ const TAG_NESTED_DISCRIMINATOR: u8 = 0x33;
 /// let _check: fn(WorthQueryName<Face>, u32) -> Vec<u8> = encode_cut;
 /// ```
 pub trait ApplicationNameDiscriminatorValue: sealed::Sealed {
+    /// The most bytes this value encodes to; `None` when it can grow.
+    const MAX_ENCODED_BYTES: Option<usize>;
     fn encode_discriminator_value(&self, encoder: &mut ApplicationNameDiscriminatorEncoder);
 }
 
 impl sealed::Sealed for bool {}
 impl ApplicationNameDiscriminatorValue for bool {
+    const MAX_ENCODED_BYTES: Option<usize> = Some(2);
     fn encode_discriminator_value(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
         encoder.write_tag(TAG_BOOL);
         encoder.write_raw(&[u8::from(*self)]);
@@ -218,6 +227,7 @@ macro_rules! impl_signed_and_unsigned_discriminator_values {
         $(
             impl sealed::Sealed for $ty {}
             impl ApplicationNameDiscriminatorValue for $ty {
+                const MAX_ENCODED_BYTES: Option<usize> = Some(1 + std::mem::size_of::<$ty>());
                 fn encode_discriminator_value(
                     &self,
                     encoder: &mut ApplicationNameDiscriminatorEncoder,
@@ -244,6 +254,7 @@ impl_signed_and_unsigned_discriminator_values!(
 impl sealed::Sealed for str {}
 impl sealed::Sealed for &str {}
 impl ApplicationNameDiscriminatorValue for &str {
+    const MAX_ENCODED_BYTES: Option<usize> = None;
     fn encode_discriminator_value(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
         encoder.write_tag(TAG_TEXT);
         encoder.write_len_prefixed_str(self);
@@ -252,6 +263,7 @@ impl ApplicationNameDiscriminatorValue for &str {
 
 impl sealed::Sealed for String {}
 impl ApplicationNameDiscriminatorValue for String {
+    const MAX_ENCODED_BYTES: Option<usize> = None;
     fn encode_discriminator_value(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
         encoder.write_tag(TAG_TEXT);
         encoder.write_len_prefixed_str(self);
@@ -260,6 +272,7 @@ impl ApplicationNameDiscriminatorValue for String {
 
 impl sealed::Sealed for [u8; 16] {}
 impl ApplicationNameDiscriminatorValue for [u8; 16] {
+    const MAX_ENCODED_BYTES: Option<usize> = Some(17);
     fn encode_discriminator_value(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
         encoder.write_tag(TAG_UUID);
         encoder.write_raw(self);
@@ -268,6 +281,7 @@ impl ApplicationNameDiscriminatorValue for [u8; 16] {
 
 impl<K> sealed::Sealed for WorthQueryName<K> {}
 impl<K> ApplicationNameDiscriminatorValue for WorthQueryName<K> {
+    const MAX_ENCODED_BYTES: Option<usize> = Some(33);
     fn encode_discriminator_value(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
         // Referenced names enter ONLY by their fixed 32-byte canonical digest
         // so discriminator and birth-event size stays O(1) at arbitrary depth.
@@ -279,6 +293,7 @@ impl<K> ApplicationNameDiscriminatorValue for WorthQueryName<K> {
 
 impl<K> sealed::Sealed for WorthQuerySameCommitName<K> {}
 impl<K> ApplicationNameDiscriminatorValue for WorthQuerySameCommitName<K> {
+    const MAX_ENCODED_BYTES: Option<usize> = Some(33);
     fn encode_discriminator_value(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
         // The same wire form as a committed name reference, so a name does
         // not depend on whether the name it references was born earlier or
@@ -292,6 +307,7 @@ impl<K> ApplicationNameDiscriminatorValue for WorthQuerySameCommitName<K> {
 
 impl<T: ApplicationNameDiscriminatorValue> sealed::Sealed for Option<T> {}
 impl<T: ApplicationNameDiscriminatorValue> ApplicationNameDiscriminatorValue for Option<T> {
+    const MAX_ENCODED_BYTES: Option<usize> = bound_sum(&[Some(1), T::MAX_ENCODED_BYTES]);
     fn encode_discriminator_value(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
         match self {
             None => encoder.write_tag(TAG_OPTION_NONE),
@@ -310,6 +326,8 @@ impl<A: ApplicationNameDiscriminatorValue, B: ApplicationNameDiscriminatorValue>
 impl<A: ApplicationNameDiscriminatorValue, B: ApplicationNameDiscriminatorValue>
     ApplicationNameDiscriminatorValue for (A, B)
 {
+    const MAX_ENCODED_BYTES: Option<usize> =
+        bound_sum(&[Some(1), A::MAX_ENCODED_BYTES, B::MAX_ENCODED_BYTES]);
     fn encode_discriminator_value(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
         encoder.write_tag(TAG_PAIR);
         self.0.encode_discriminator_value(encoder);
@@ -332,6 +350,11 @@ pub trait ApplicationNameDiscriminator: Sized + 'static {
     fn referenced_roles() -> &'static [&'static str] {
         &[]
     }
+
+    /// The most bytes [`Self::encode_canonical`] writes, derived from the
+    /// field types by `#[derive(ApplicationNameDiscriminator)]`; `None` (the
+    /// default) when unknown or when the body can grow.
+    const MAX_BODY_BYTES: Option<usize> = None;
 
     /// Encodes this value's semantic fields into the domain-tagged encoder.
     fn encode_canonical(&self, encoder: &mut ApplicationNameDiscriminatorEncoder);

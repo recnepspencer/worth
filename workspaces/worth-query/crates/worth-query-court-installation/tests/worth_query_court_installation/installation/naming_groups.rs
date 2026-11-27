@@ -219,6 +219,7 @@ fn untrusted_erased_group_scheme_missing_continuity_role_refuses_at_installation
         None,
         Vec::new(),
         false,
+        false,
     );
     let forged = ErasedApplicationGroupNameScheme::from_untrusted_parts(
         ARCHIVE_DECODE,

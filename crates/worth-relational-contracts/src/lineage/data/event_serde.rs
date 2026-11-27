@@ -27,6 +27,8 @@ struct PersistedBirthWire {
     role_path: String,
     parent_identities: Vec<[u8; PersistentNameIdentity::BYTE_LEN]>,
     canonical_discriminator: Vec<u8>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    structural_identity: bool,
 }
 
 fn subject_to_tag(kind: PersistentNameSubjectKind) -> u8 {
@@ -66,6 +68,7 @@ pub(super) mod verified_birth {
                 .map(|id| *id.as_bytes())
                 .collect(),
             canonical_discriminator: record.parts().canonical_discriminator().to_vec(),
+            structural_identity: record.parts().structural_identity(),
         });
         wire.serialize(serializer)
     }
@@ -86,6 +89,7 @@ pub(super) mod verified_birth {
             role_path: wire.role_path.clone(),
             parent_identities: wire.parent_identities,
             canonical_discriminator: wire.canonical_discriminator.clone(),
+            structural_identity: wire.structural_identity,
         };
         verify_claim_encoding(&claim).map_err(|refusal| {
             serde::de::Error::custom(format!("corrupt persisted birth: {refusal:?}"))
@@ -100,6 +104,7 @@ pub(super) mod verified_birth {
             wire.role_path,
             parents,
             wire.canonical_discriminator,
+            wire.structural_identity,
         );
         Ok(Some(PersistentNameBirthRecord::new(
             PersistentNameIdentity::from_minted_digest(wire.identity),

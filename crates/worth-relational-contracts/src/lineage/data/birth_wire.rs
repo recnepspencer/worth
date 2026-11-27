@@ -16,6 +16,7 @@ pub struct PersistedBirthClaim {
     pub role_path: String,
     pub parent_identities: Vec<PersistedNameBytes>,
     pub canonical_discriminator: Vec<u8>,
+    pub structural_identity: bool,
 }
 
 /// Why a persisted birth claim cannot be readmitted.
@@ -61,6 +62,7 @@ pub fn verify_claim_encoding(
         &claim.role_path,
         claim.parent_identities.iter(),
         &claim.canonical_discriminator,
+        claim.structural_identity,
     );
     if recomputed != stored {
         return Err(BirthReadmissionRefusal::DigestMismatch { stored, recomputed });

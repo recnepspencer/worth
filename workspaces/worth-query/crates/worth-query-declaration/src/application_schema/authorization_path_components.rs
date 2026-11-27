@@ -3,8 +3,8 @@ use worth_foundational::facade::{
 };
 
 use super::{
-    ApplicationAuthorizationPath, ApplicationAuthorizationPathEffect,
-    ApplicationAuthorizationTraversalDirection,
+    ApplicationAuthorizationComparison, ApplicationAuthorizationPath,
+    ApplicationAuthorizationPathEffect, ApplicationAuthorizationTraversalDirection,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -75,6 +75,40 @@ pub fn application_authorization_path_canonical_components(
             format!("{prefix}.value"),
             canonical_basis_value_for_aspect_value(predicate.value()),
         ));
+        // Equality is the legacy meaning; only another comparison adds a component.
+        if predicate.comparison() != ApplicationAuthorizationComparison::Equal {
+            text(
+                &mut components,
+                format!("{prefix}.comparison"),
+                predicate.comparison().canonical_name(),
+            );
+        }
+    }
+    // Paths without principal-field constraints keep their legacy identity.
+    if !path.field_constraints().is_empty() {
+        unsigned(
+            &mut components,
+            "field-constraint-count",
+            path.field_constraints().len(),
+        );
+    }
+    for (ordinal, constraint) in path.field_constraints().iter().enumerate() {
+        let prefix = format!("field-constraint.{ordinal}");
+        unsigned(
+            &mut components,
+            format!("{prefix}.traversal-ordinal"),
+            constraint.traversal_ordinal(),
+        );
+        for (name, value) in [
+            ("entity", constraint.entity()),
+            ("aspect", constraint.aspect()),
+            ("field", constraint.field()),
+            ("comparison", constraint.comparison().canonical_name()),
+            ("principal-aspect", constraint.principal_aspect()),
+            ("principal-field", constraint.principal_field()),
+        ] {
+            text(&mut components, format!("{prefix}.{name}"), value);
+        }
     }
     components
 }

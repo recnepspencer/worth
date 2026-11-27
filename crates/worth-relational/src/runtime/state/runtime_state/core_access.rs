@@ -254,6 +254,13 @@ impl RelationalRuntime {
             .map(|scheme| (scheme.subject_kind(), scheme.subject_name().to_owned()))
     }
 
+    /// Whether installed scheme `scheme_id` mints structural identities.
+    pub fn persistent_name_scheme_structural(&self, scheme_id: &str) -> bool {
+        let registry = &self.config.schema.registry;
+        let scheme = registry.persistent_name_scheme(scheme_id);
+        scheme.is_some_and(|scheme| scheme.structural_identity())
+    }
+
     /// The installed scheme governing `subject_name` of class `subject_kind`.
     pub fn persistent_name_scheme_id(
         &self,

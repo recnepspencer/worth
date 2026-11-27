@@ -127,10 +127,10 @@ pub(super) fn validate_roles(fields: &[Step], encoding: Option<Encoding>) -> Res
 }
 pub(super) fn validate_creation(creation: &ApplicationOperationBodyCreation) -> Result<(), Denial> {
     if creation.signing().is_some()
-        && creation
-            .fields()
-            .iter()
-            .any(|step| step.related_source().is_some() || matches!(step, Step::Computed { .. }))
+        && creation.fields().iter().any(|step| {
+            step.related_source().is_some()
+                || matches!(step, Step::Computed { .. } | Step::AdmissionTime { .. })
+        })
     {
         return Err(Denial::UnclassifiedSignedCapture);
     }

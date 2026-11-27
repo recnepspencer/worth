@@ -19,6 +19,19 @@ pub(super) fn discriminator(
             }
         }
     });
+    let body_bound = match &declaration.shape {
+        Shape::Struct(members) => members_bound(&naming, members),
+        Shape::Enum(variants) => {
+            let variants = variants.iter().map(|declaration| {
+                let (name, members) = (
+                    &declaration.name,
+                    members_bound(&naming, &declaration.members),
+                );
+                quote!(#naming::bound_sum(&[#naming::variant_bound(#name), #members]))
+            });
+            quote!(#naming::bound_max(&[#(#variants),*]))
+        }
+    };
     let encode = match &declaration.shape {
         Shape::Struct(members) => struct_members(members),
         Shape::Enum(variants) => {
@@ -57,6 +70,7 @@ pub(super) fn discriminator(
         }
         impl #naming::ApplicationNameDiscriminator for #discriminator {
             const DISCRIMINATOR_IDENTITY: &'static str = #identity;
+            const MAX_BODY_BYTES: ::core::option::Option<usize> = #body_bound;
             #referenced_roles
             // A unit struct writes nothing after its identity.
             #[allow(unused_variables)]
@@ -88,6 +102,24 @@ fn construct(path: TokenStream, members: &Members) -> TokenStream {
             quote!(#path(#(#reads,)*))
         }
     }
+}
+
+/// The most bytes `members` encode to, from their field types: a named field
+/// adds its tag and length-prefixed name. `None` when any field can grow.
+fn members_bound(naming: &TokenStream, members: &Members) -> TokenStream {
+    let field = |ty: &syn::Type| quote_spanned!(ty.span()=> <#ty as #naming::ApplicationNameDiscriminatorField<_>>::MAX_ENCODED_BYTES);
+    let parts: Vec<TokenStream> = match members {
+        Members::Unit => Vec::new(),
+        Members::Named(fields) => fields
+            .iter()
+            .map(|(_, name, ty)| {
+                let value = field(ty);
+                quote!(#naming::field_bound(#name, #value))
+            })
+            .collect(),
+        Members::Positional(types) => types.iter().map(field).collect(),
+    };
+    quote!(#naming::bound_sum(&[#(#parts),*]))
 }
 
 /// One write per field of a struct, read through `self`.

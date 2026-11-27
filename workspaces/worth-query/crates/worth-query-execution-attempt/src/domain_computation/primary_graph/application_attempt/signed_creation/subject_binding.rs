@@ -146,7 +146,8 @@ fn scope_capture(
         | Field::Input { .. }
         | Field::OptionalInput { .. }
         | Field::SigningProvenance { .. }
-        | Field::PrincipalIdentity { .. } => None,
+        | Field::PrincipalIdentity { .. }
+        | Field::AdmissionTime { .. } => None,
         Field::RelatedField { .. } | Field::CapturedPathField { .. } => None,
         Field::ScopeField { .. } | Field::PresentScopeField { .. } | Field::CapturedScopeField { .. } | Field::Computed { .. } => None,
     }

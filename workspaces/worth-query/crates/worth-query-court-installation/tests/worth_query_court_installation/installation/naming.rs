@@ -245,6 +245,7 @@ fn installation_refuses_cyclic_role_order_before_runtime_starts() {
         None,
         Vec::new(),
         true,
+        false,
     );
     let dup_denial = install_name_schemes(&[duplicate_role_scheme])
         .expect_err("duplicate role in role_order is a cycle");
@@ -265,6 +266,7 @@ fn installation_refuses_cyclic_role_order_before_runtime_starts() {
         None,
         Vec::new(),
         true,
+        false,
     );
     let self_denial =
         install_name_schemes(&[self_loop_scheme]).expect_err("self-loop must refuse as cycle");
@@ -310,6 +312,7 @@ fn installation_refuses_split_scheme_missing_discriminator_and_duplicate_schemes
         None,
         Vec::new(),
         true,
+        false,
     );
     let s2 = ErasedApplicationNameScheme::from_untrusted_parts(
         ARCHIVE_DECODE,
@@ -322,6 +325,7 @@ fn installation_refuses_split_scheme_missing_discriminator_and_duplicate_schemes
         None,
         Vec::new(),
         true,
+        false,
     );
     assert!(matches!(
         install_name_schemes(&[s1, s2]),
@@ -343,6 +347,7 @@ fn installation_refuses_undeclared_role_dependency_and_missing_subject_target() 
         None,
         Vec::new(),
         true,
+        false,
     );
     assert_eq!(
         install_name_schemes(&[undeclared_dep]),

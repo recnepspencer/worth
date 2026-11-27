@@ -11,6 +11,10 @@ use crate::contracts::lineage::data::{
 use crate::lineage::authority::PersistentNameMintingAuthority;
 
 fn registry() -> InstalledPersistentNameSchemeRegistry {
+    registry_of(false)
+}
+
+fn registry_of(structural: bool) -> InstalledPersistentNameSchemeRegistry {
     let mut registry = InstalledPersistentNameSchemeRegistry::new();
     registry
         .register(
@@ -21,6 +25,7 @@ fn registry() -> InstalledPersistentNameSchemeRegistry {
                 ["authored", "cut_piece"],
                 false,
                 true,
+                structural,
             )
             .expect("valid face scheme"),
         )
@@ -51,12 +56,20 @@ fn request(
 }
 
 fn predicted(request: &PersistentNameBirthRequest) -> PersistentNameIdentity {
+    predicted_under(request, false)
+}
+
+fn predicted_under(
+    request: &PersistentNameBirthRequest,
+    structural: bool,
+) -> PersistentNameIdentity {
     PersistentNameIdentity::of_pending_birth(
         &request.scheme_id,
         &request.occurrence_key,
         &request.role_path,
         &request.parent_identities,
         &request.canonical_discriminator,
+        structural,
     )
 }
 
@@ -94,4 +107,51 @@ fn a_pending_birth_identity_is_the_identity_minting_gives() {
     assert_eq!(predicted(&forward), minted[0].identity());
     assert_eq!(predicted(&reversed), minted[0].identity());
     assert_ne!(predicted(&forward), predicted(&roots[0]));
+}
+
+/// Under a structural-identity scheme the door and minting agree, the
+/// identity is the same whichever recorded parents a birth lists, the parents
+/// stay recorded in its parts, and the default scheme still tells them apart.
+#[test]
+fn a_structural_identity_is_independent_of_parents_and_still_records_them() {
+    let structural = registry_of(true);
+    let roots = [
+        request("authored", vec![], 1),
+        request("authored", vec![], 2),
+    ];
+    let minted_roots = PersistentNameMintingAuthority::mint_commit_births_for_test(
+        &structural,
+        &BTreeMap::new(),
+        &BTreeSet::new(),
+        &roots,
+    )
+    .expect("authored births mint");
+    let mut live = BTreeMap::new();
+    for (root, minted) in roots.iter().zip(&minted_roots) {
+        live.insert(minted.identity(), root.holder.clone());
+    }
+    let (first, second) = (minted_roots[0].identity(), minted_roots[1].identity());
+    let mint = |registry: &InstalledPersistentNameSchemeRegistry, parent| {
+        PersistentNameMintingAuthority::mint_commit_births_for_test(
+            registry,
+            &live,
+            &BTreeSet::new(),
+            &[request("cut_piece", vec![parent], 3)],
+        )
+        .expect("a birth over a live parent mints")
+        .remove(0)
+    };
+    let (under_first, under_second) = (mint(&structural, first), mint(&structural, second));
+    assert_eq!(under_first.identity(), under_second.identity());
+    assert_eq!(
+        predicted_under(&request("cut_piece", vec![first], 3), true),
+        under_first.identity()
+    );
+    assert_eq!(under_first.parts().parent_identities(), [first]);
+    assert!(under_first.parts().structural_identity());
+    let default = registry();
+    assert_ne!(
+        mint(&default, first).identity(),
+        mint(&default, second).identity()
+    );
 }

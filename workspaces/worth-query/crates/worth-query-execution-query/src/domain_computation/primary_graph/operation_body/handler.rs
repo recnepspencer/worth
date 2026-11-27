@@ -167,6 +167,10 @@ where
             Ok(target) => target,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
+        let admitted_at = match reader.body_admitted_at(&self.body) {
+            Ok(admitted_at) => admitted_at,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
         let children = match reader.body_child_custody(&self.body) {
             Ok(children) => children,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
@@ -202,6 +206,7 @@ where
                     references,
                     creation_disposition,
                     children,
+                    admitted_at,
                 },
             )),
             Err(cause) => HandlerResult::ExecutionDenied(cause),

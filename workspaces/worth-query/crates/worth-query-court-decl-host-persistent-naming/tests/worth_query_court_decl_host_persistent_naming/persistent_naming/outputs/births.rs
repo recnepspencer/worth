@@ -11,7 +11,7 @@ use worth_query_decl::facade::application_naming::{
 impl World {
     /// Runs a probe over `keys` and returns its birth observations, with
     /// the debug form of how the run ended (sealed or refused).
-    fn probe_births(
+    pub(super) fn probe_births(
         &self,
         token: &str,
         keys: &[&str],
@@ -36,7 +36,10 @@ impl World {
     }
 }
 
-fn born<'o>(observed: &'o [BirthObservation], label: &str) -> &'o RecordedNameBirth<Member> {
+pub(super) fn born<'o>(
+    observed: &'o [BirthObservation],
+    label: &str,
+) -> &'o RecordedNameBirth<Member> {
     observed
         .iter()
         .find_map(|observation| match observation {
@@ -46,7 +49,7 @@ fn born<'o>(observed: &'o [BirthObservation], label: &str) -> &'o RecordedNameBi
         .unwrap_or_else(|| panic!("`{label}` must read its birth: {observed:?}"))
 }
 
-fn minted(observed: &[BirthObservation], label: &str) -> Option<WorthQueryName<Member>> {
+pub(super) fn minted(observed: &[BirthObservation], label: &str) -> Option<WorthQueryName<Member>> {
     observed
         .iter()
         .find_map(|observation| match observation {

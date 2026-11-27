@@ -1,17 +1,27 @@
-use super::fragment;
-use std::marker::PhantomData;
-
+//! Declared ReBAC paths: typed traversals from the admitted principal to a
+//! scope, with field predicates and principal-field constraints.
 use worth_foundational::facade::AspectValue;
 
-use super::references::{ApplicationEntityRef, ApplicationRelationRef};
-use super::ApplicationEncodedScalarValue;
-
+mod builder;
+mod condition;
+mod expansion;
 mod portable_parts;
+mod rule;
+
+pub use builder::{
+    ApplicationAuthorizationActor, ApplicationAuthorizationPathBuilder, AuthoredPath, ExactPath,
+};
+pub use condition::{
+    ApplicationAuthorizationCondition, ApplicationAuthorizationFieldConditions,
+    ApplicationOrderFaithfulBinding, NoActor, PrincipalActor,
+};
 pub use portable_parts::{
+    WorthQueryPortableApplicationAuthorizationFieldConstraintParts,
     WorthQueryPortableApplicationAuthorizationPathParts,
     WorthQueryPortableApplicationAuthorizationPredicateParts,
     WorthQueryPortableApplicationAuthorizationTraversalParts,
 };
+pub use rule::{ApplicationAuthorizationPathSet, ApplicationAuthorizationRule};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationAuthorizationPathEffect {
@@ -23,6 +33,44 @@ pub enum ApplicationAuthorizationPathEffect {
 pub enum ApplicationAuthorizationTraversalDirection {
     Forward,
     Reverse,
+}
+
+/// The kernel comparison a declared predicate or constraint applies.
+///
+/// Every comparison is false when the observed value is absent or belongs to
+/// another scalar family. Authored `ne` lowers to `StrictlyLess` or
+/// `StrictlyGreater`; ordered comparisons are authored only on order-faithful
+/// bindings (see [`ApplicationOrderFaithfulBinding`]).
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd)]
+pub enum ApplicationAuthorizationComparison {
+    #[default]
+    Equal,
+    AtMost,
+    AtLeast,
+    StrictlyLess,
+    StrictlyGreater,
+}
+
+impl ApplicationAuthorizationComparison {
+    pub const fn canonical_name(self) -> &'static str {
+        match self {
+            Self::Equal => "equal",
+            Self::AtMost => "at-most",
+            Self::AtLeast => "at-least",
+            Self::StrictlyLess => "strictly-less",
+            Self::StrictlyGreater => "strictly-greater",
+        }
+    }
+
+    pub(crate) const fn symbol(self) -> &'static str {
+        match self {
+            Self::Equal => "=",
+            Self::AtMost => "<=",
+            Self::AtLeast => ">=",
+            Self::StrictlyLess => "<",
+            Self::StrictlyGreater => ">",
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -58,6 +106,7 @@ pub struct ApplicationAuthorizationPredicate {
     aspect: String,
     field: String,
     value: AspectValue,
+    comparison: ApplicationAuthorizationComparison,
 }
 
 impl ApplicationAuthorizationPredicate {
@@ -80,6 +129,53 @@ impl ApplicationAuthorizationPredicate {
     pub fn value(&self) -> &AspectValue {
         &self.value
     }
+
+    pub const fn comparison(&self) -> ApplicationAuthorizationComparison {
+        self.comparison
+    }
+}
+
+/// Compares a field of the entity reached at `traversal_ordinal` with a field
+/// of the admitted principal (path position 0).
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct ApplicationAuthorizationFieldConstraint {
+    traversal_ordinal: usize,
+    entity: String,
+    aspect: String,
+    field: String,
+    comparison: ApplicationAuthorizationComparison,
+    principal_aspect: String,
+    principal_field: String,
+}
+
+impl ApplicationAuthorizationFieldConstraint {
+    pub const fn traversal_ordinal(&self) -> usize {
+        self.traversal_ordinal
+    }
+
+    pub fn entity(&self) -> &str {
+        &self.entity
+    }
+
+    pub fn aspect(&self) -> &str {
+        &self.aspect
+    }
+
+    pub fn field(&self) -> &str {
+        &self.field
+    }
+
+    pub const fn comparison(&self) -> ApplicationAuthorizationComparison {
+        self.comparison
+    }
+
+    pub fn principal_aspect(&self) -> &str {
+        &self.principal_aspect
+    }
+
+    pub fn principal_field(&self) -> &str {
+        &self.principal_field
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -89,6 +185,7 @@ pub struct ApplicationAuthorizationPath {
     scope_entity: String,
     traversals: Vec<ApplicationAuthorizationTraversal>,
     predicates: Vec<ApplicationAuthorizationPredicate>,
+    field_constraints: Vec<ApplicationAuthorizationFieldConstraint>,
 }
 
 impl ApplicationAuthorizationPath {
@@ -111,151 +208,19 @@ impl ApplicationAuthorizationPath {
     pub fn predicates(&self) -> &[ApplicationAuthorizationPredicate] {
         &self.predicates
     }
-}
 
-pub struct ApplicationAuthorizationPathBuilder<Schema, Current> {
-    principal_entity: &'static str,
-    current_entity: &'static str,
-    traversals: Vec<ApplicationAuthorizationTraversal>,
-    predicates: Vec<ApplicationAuthorizationPredicate>,
-    _marker: PhantomData<fn() -> (Schema, Current)>,
-}
-
-impl<Schema, Principal> ApplicationAuthorizationPathBuilder<Schema, Principal> {
-    pub fn from_principal(principal: ApplicationEntityRef<Schema, Principal>) -> Self {
-        Self {
-            principal_entity: principal.name(),
-            current_entity: principal.name(),
-            traversals: Vec::new(),
-            predicates: Vec::new(),
-            _marker: PhantomData,
-        }
-    }
-}
-
-impl<Schema, Current> ApplicationAuthorizationPathBuilder<Schema, Current> {
-    pub fn forward<Relation, Next>(
-        mut self,
-        relation: ApplicationRelationRef<Schema, Relation, Current, Next>,
-    ) -> ApplicationAuthorizationPathBuilder<Schema, Next> {
-        self.traversals.push(ApplicationAuthorizationTraversal {
-            relation: relation.name().to_string(),
-            from: relation.from().to_string(),
-            to: relation.to().to_string(),
-            direction: ApplicationAuthorizationTraversalDirection::Forward,
-        });
-        ApplicationAuthorizationPathBuilder {
-            principal_entity: self.principal_entity,
-            current_entity: relation.to(),
-            traversals: self.traversals,
-            predicates: self.predicates,
-            _marker: PhantomData,
-        }
+    /// Principal-field constraints; empty for every path authored before them.
+    pub fn field_constraints(&self) -> &[ApplicationAuthorizationFieldConstraint] {
+        &self.field_constraints
     }
 
-    pub fn reverse<Relation, Previous>(
-        mut self,
-        relation: ApplicationRelationRef<Schema, Relation, Previous, Current>,
-    ) -> ApplicationAuthorizationPathBuilder<Schema, Previous> {
-        self.traversals.push(ApplicationAuthorizationTraversal {
-            relation: relation.name().to_string(),
-            from: relation.from().to_string(),
-            to: relation.to().to_string(),
-            direction: ApplicationAuthorizationTraversalDirection::Reverse,
-        });
-        ApplicationAuthorizationPathBuilder {
-            principal_entity: self.principal_entity,
-            current_entity: relation.from(),
-            traversals: self.traversals,
-            predicates: self.predicates,
-            _marker: PhantomData,
-        }
-    }
-
-    /// Selects the predicate's binding from the same record used by storage.
-    pub fn where_record_equal<A, T>(
-        mut self,
-        field: super::fragment::RecordField<Current, A, T>,
-        value: T,
-    ) -> Result<Self, super::fragment::FieldEncodeRefusal> {
-        if !field.equality_queryable() {
-            return Err(super::fragment::FieldEncodeRefusal::new(
-                format!(
-                    "{}.{}.{}",
-                    field.locus().entity(),
-                    field.locus().aspect(),
-                    field.locus().field()
-                ),
-                super::ApplicationValueEncodeDenial::CodecRejected {
-                    binding_identity: field.recipe().binding_identity().clone(),
-                    reason: "field does not support equality",
-                },
-            ));
-        }
-        let value = field.encode(&value)?;
-        self.predicates.push(ApplicationAuthorizationPredicate {
-            traversal_ordinal: self.traversals.len(),
-            entity: field.locus().entity().to_owned(),
-            aspect: field.locus().aspect().to_owned(),
-            field: field.locus().field().to_owned(),
-            value,
-        });
-        Ok(self)
-    }
-
-    pub fn where_equal<Aspect, Field, Value>(
-        mut self,
-        field: Field,
-        value: ApplicationEncodedScalarValue<Field::Binding>,
-    ) -> Result<Self, super::ApplicationSchemaDeclarationDenial>
-    where
-        Field: fragment::RecordSelection<Entity = Current, Aspect = Aspect, Value = Value>,
-    {
-        let checked = field.checked()?;
-        if !checked.equality_queryable() {
-            return Err(
-                super::ApplicationSchemaDeclarationDenial::InvalidRecordField {
-                    field: checked.locus().clone(),
-                },
-            );
-        }
-
-        self.predicates.push(ApplicationAuthorizationPredicate {
-            traversal_ordinal: self.traversals.len(),
-            entity: field.entity().to_string(),
-            aspect: field.aspect().to_string(),
-            field: field.field().to_string(),
-            value: value.into_foundational_value(),
-        });
-        Ok(self)
-    }
-
-    pub fn allow(
-        self,
-        scope: ApplicationEntityRef<Schema, Current>,
-    ) -> ApplicationAuthorizationPath {
-        self.finish(scope, ApplicationAuthorizationPathEffect::Allow)
-    }
-
-    pub fn deny(
-        self,
-        scope: ApplicationEntityRef<Schema, Current>,
-    ) -> ApplicationAuthorizationPath {
-        self.finish(scope, ApplicationAuthorizationPathEffect::Deny)
-    }
-
-    fn finish(
-        self,
-        scope: ApplicationEntityRef<Schema, Current>,
-        effect: ApplicationAuthorizationPathEffect,
-    ) -> ApplicationAuthorizationPath {
-        debug_assert_eq!(self.current_entity, scope.name());
-        ApplicationAuthorizationPath {
-            effect,
-            principal_entity: self.principal_entity.to_string(),
-            scope_entity: scope.name().to_string(),
-            traversals: self.traversals,
-            predicates: self.predicates,
-        }
+    /// Whether the path uses anything beyond equality predicates. Legacy
+    /// encodings and identities apply exactly when this is false.
+    pub fn uses_extended_conditions(&self) -> bool {
+        !self.field_constraints.is_empty()
+            || self
+                .predicates
+                .iter()
+                .any(|predicate| predicate.comparison != ApplicationAuthorizationComparison::Equal)
     }
 }

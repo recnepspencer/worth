@@ -93,6 +93,11 @@ pub enum ApplicationOperationBodyCreatedField {
         principal_binding: String,
         source: ApplicationFieldBindingLocus,
     },
+    /// The operation's trusted admission instant; it reads no graph source.
+    AdmissionTime {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+    },
 }
 impl ApplicationOperationBodyCreatedField {
     pub fn field(&self) -> &ApplicationFieldBindingLocus {
@@ -107,7 +112,8 @@ impl ApplicationOperationBodyCreatedField {
             | Self::PresentScopeField { field, .. }
             | Self::CapturedScopeField { field, .. }
             | Self::SigningProvenance { field, .. }
-            | Self::PrincipalIdentity { field, .. } => field,
+            | Self::PrincipalIdentity { field, .. }
+            | Self::AdmissionTime { field, .. } => field,
         }
     }
     pub fn binding(&self) -> &WorthQueryPortableTypeIdentity {
@@ -122,7 +128,8 @@ impl ApplicationOperationBodyCreatedField {
             | Self::PresentScopeField { binding, .. }
             | Self::CapturedScopeField { binding, .. }
             | Self::SigningProvenance { binding, .. }
-            | Self::PrincipalIdentity { binding, .. } => binding,
+            | Self::PrincipalIdentity { binding, .. }
+            | Self::AdmissionTime { binding, .. } => binding,
         }
     }
     pub fn literal_value(&self) -> Option<&AspectValue> {
@@ -136,6 +143,7 @@ impl ApplicationOperationBodyCreatedField {
             Self::Literal { value, .. } => value.value_family(),
             Self::SigningProvenance { .. } => ScalarAspectType::String,
             Self::Computed { .. } => ScalarAspectType::UInt64,
+            Self::AdmissionTime { .. } => ScalarAspectType::Timestamp,
             Self::Input { scalar_family, .. }
             | Self::OptionalInput { scalar_family, .. }
             | Self::ScopeField { scalar_family, .. }
@@ -192,6 +200,10 @@ impl ApplicationOperationBodyCreatedField {
             } => Some(*source_presence),
             _ => None,
         }
+    }
+    /// Whether this initializer stamps the trusted admission instant.
+    pub fn is_admission_time(&self) -> bool {
+        matches!(self, Self::AdmissionTime { .. })
     }
     pub fn input_is_optional(&self) -> bool {
         matches!(self, Self::OptionalInput { .. })

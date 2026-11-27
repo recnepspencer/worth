@@ -92,6 +92,7 @@ pub(super) fn append(
                 Field::CapturedPathField { .. } => "classified-path-field",
                 Field::SigningProvenance { .. } => "signing-provenance",
                 Field::PrincipalIdentity { .. } => "principal-identity",
+                Field::AdmissionTime { .. } => "admission-time",
             },
         );
         basis.text(format!("{field}.entity"), step.field().entity());
@@ -187,7 +188,7 @@ pub(super) fn append(
                     scalar_family.canonical_name(),
                 );
             }
-            Field::SigningProvenance { .. } => {}
+            Field::SigningProvenance { .. } | Field::AdmissionTime { .. } => {}
             Field::PrincipalIdentity {
                 source,
                 scalar_family,

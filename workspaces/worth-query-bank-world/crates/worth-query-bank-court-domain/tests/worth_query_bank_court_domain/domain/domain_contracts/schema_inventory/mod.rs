@@ -1,6 +1,7 @@
 pub(crate) use worth_query_bank_testkit_domain::facade::domain_contracts::schema_inventory::*;
 
 pub(crate) mod source_contract;
+mod workflow_controls;
 
 #[test]
 fn bank_manifest_matches_the_frozen_schema_world() {

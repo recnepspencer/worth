@@ -192,6 +192,7 @@ impl ExecutionNameReader<'_> {
                 birth.role_path(),
                 &identities,
                 discriminator,
+                self.runtime.persistent_name_scheme_structural(&scheme_id),
             );
             match view.recorded_name(requested.kind, minted.as_bytes()) {
                 Some(key) => kind_verified_resolved_name(

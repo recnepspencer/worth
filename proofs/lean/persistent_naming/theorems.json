@@ -1,0 +1,39 @@
+{
+  "imports": [
+    "PersistentNaming",
+    "PersistentNaming.WireBound",
+    "PersistentNaming.MintOrder",
+    "PersistentNaming.PostureCost"
+  ],
+  "allowed_axioms": [],
+  "theorems": [
+    {
+      "name": "PersistentNaming.WireBound.encLen_le_bound",
+      "type": "∀ {v : PersistentNaming.WireBound.Val} {t : PersistentNaming.WireBound.Ty} {b : Nat}, PersistentNaming.WireBound.HasType v t → PersistentNaming.WireBound.bound t = Option.some b → PersistentNaming.WireBound.encLen v ≤ b"
+    },
+    {
+      "name": "PersistentNaming.WireBound.text_unbounded",
+      "type": "PersistentNaming.WireBound.bound PersistentNaming.WireBound.Ty.text = Option.none"
+    },
+    {
+      "name": "PersistentNaming.WireBound.fieldsLen_le_bound",
+      "type": "∀ {fs : List (Nat × PersistentNaming.WireBound.Ty)} {vs : List PersistentNaming.WireBound.Val} {b : Nat}, PersistentNaming.WireBound.FieldsTyped fs vs → PersistentNaming.WireBound.fieldsBound fs = Option.some b → PersistentNaming.WireBound.fieldsLen fs vs ≤ b"
+    },
+    {
+      "name": "PersistentNaming.WireBound.split_chain_birth_bounded",
+      "type": "∀ (d : PersistentNaming.WireBound.Disc) (b schemeLen occurrenceLen roleLen : Nat), PersistentNaming.WireBound.fieldsBound d.fields = Option.some b → ∃ K, ∀ (depth : Nat) (chain : Nat → List PersistentNaming.WireBound.Val) (parents : Nat → Nat), (∀ i, i < depth → PersistentNaming.WireBound.FieldsTyped d.fields (chain i) ∧ parents i ≤ 1) → ∀ i, i < depth → PersistentNaming.WireBound.birthLen schemeLen occurrenceLen roleLen (parents i) (PersistentNaming.WireBound.discLen d (chain i)) ≤ K"
+    },
+    {
+      "name": "PersistentNaming.MintOrder.kahn_steps_bounded",
+      "type": "∀ (n : Nat) (releases : Nat → List Nat), (∀ x p, p ∈ releases x → p < n) → ∀ (ready₀ : List Nat) (waits₀ : Nat → Nat), ready₀.length ≤ n → ∀ (fuel : Nat) (s' : PersistentNaming.MintOrder.State), PersistentNaming.MintOrder.run releases fuel { ready := ready₀, waits := waits₀, steps := 0 } = Option.some s' → s'.steps ≤ n + 2 * PersistentNaming.MintOrder.sumTo waits₀ n"
+    },
+    {
+      "name": "PersistentNaming.PostureCost.commit_naming_steps_bounded",
+      "type": "∀ (basis : PersistentNaming.PostureCost.Basis) (changed : Nat) (claims : List PersistentNaming.PostureCost.Claim) (mintOrderSteps : Nat) (births : List PersistentNaming.PostureCost.Birth), PersistentNaming.PostureCost.commitSteps basis changed claims mintOrderSteps births = 3 * changed + PersistentNaming.PostureCost.sumMap (fun c => 1 + c.fanout + c.lookups.length) claims + mintOrderSteps + PersistentNaming.PostureCost.sumMap (fun b => 1 + b.parents.length + b.references.length + b.discBytes) births"
+    },
+    {
+      "name": "PersistentNaming.PostureCost.commit_naming_steps_basis_independent",
+      "type": "∀ (small large : PersistentNaming.PostureCost.Basis) (changed : Nat) (claims : List PersistentNaming.PostureCost.Claim) (mintOrderSteps : Nat) (births : List PersistentNaming.PostureCost.Birth), PersistentNaming.PostureCost.commitSteps small changed claims mintOrderSteps births = PersistentNaming.PostureCost.commitSteps large changed claims mintOrderSteps births"
+    }
+  ]
+}
