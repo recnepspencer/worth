@@ -9,7 +9,8 @@
 //! and the process's resident set around it, and the latencies of forking a
 //! branch, resolving a name with its group, detaching one group member and
 //! committing one birth after the reopen (the first, and the median of the
-//! following ones on other names, groups and branch names).
+//! following ones on other names, groups and branch names; births all land
+//! in one populated partition, so the first also faults its cold records).
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -210,6 +211,8 @@ fn time_detaches(
         .collect()
 }
 
+/// Births into one populated partition: the first faults that partition's
+/// cold records in, the rest find it resident.
 fn time_births(
     request: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
@@ -218,9 +221,14 @@ fn time_births(
     (0..=REPEATS)
         .map(|i| {
             let label = [format!("after-reopen-birth-{i}")];
-            let partition = PartitionId(1 + i as u32);
             timed(|| {
-                create_named_batch_in_partition(request, runtime, &store.main, partition, &label)
+                create_named_batch_in_partition(
+                    request,
+                    runtime,
+                    &store.main,
+                    PartitionId(1),
+                    &label,
+                )
             })
             .1
         })
