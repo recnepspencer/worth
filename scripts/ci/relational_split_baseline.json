@@ -799,6 +799,7 @@
     "facade::lineage::LineageRecordTarget",
     "facade::lineage::LineageSplitChild",
     "facade::lineage::LineageSubject",
+    "facade::lineage::MAX_STRUCTURAL_DISCRIMINATOR_BYTES",
     "facade::lineage::PendingBirthTarget",
     "facade::lineage::PendingCommitBirth",
     "facade::lineage::PendingMergeClaim",

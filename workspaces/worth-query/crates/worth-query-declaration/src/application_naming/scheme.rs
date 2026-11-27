@@ -66,6 +66,7 @@ pub struct ErasedApplicationNameScheme {
     split_discriminator_identity: Option<String>,
     discriminator_referenced_roles: Vec<String>,
     require_authored_occurrence: bool,
+    structural_identity: bool,
 }
 
 impl ErasedApplicationNameScheme {
@@ -81,6 +82,7 @@ impl ErasedApplicationNameScheme {
         split_discriminator_identity: Option<String>,
         discriminator_referenced_roles: Vec<String>,
         require_authored_occurrence: bool,
+        structural_identity: bool,
     ) -> Self {
         Self {
             scheme_id,
@@ -92,6 +94,7 @@ impl ErasedApplicationNameScheme {
             split_discriminator_identity,
             discriminator_referenced_roles,
             require_authored_occurrence,
+            structural_identity,
         }
     }
 
@@ -129,6 +132,11 @@ impl ErasedApplicationNameScheme {
 
     pub const fn require_authored_occurrence(&self) -> bool {
         self.require_authored_occurrence
+    }
+
+    /// Whether names are minted from the discriminator alone, never parents.
+    pub const fn structural_identity(&self) -> bool {
+        self.structural_identity
     }
 }
 
@@ -187,6 +195,7 @@ pub struct ApplicationNameSchemeBuilder<S, K> {
     split_discriminator_identity: Option<String>,
     discriminator_referenced_roles: Vec<String>,
     require_authored_occurrence: bool,
+    structural_identity: bool,
     _marker: PhantomData<fn() -> (S, K)>,
 }
 
@@ -233,6 +242,7 @@ impl<S, K> ApplicationNameSchemeBuilder<S, K> {
             split_discriminator_identity: None,
             discriminator_referenced_roles: Vec::new(),
             require_authored_occurrence: false,
+            structural_identity: false,
             _marker: PhantomData,
         }
     }
@@ -278,6 +288,40 @@ impl<S, K> ApplicationNameSchemeBuilder<S, K> {
         self
     }
 
+    /// Mints names from `(occurrence, role, discriminator)` alone, never the
+    /// parents, with `D` the split discriminator: one commit or two mint the
+    /// same names. Relational still records every parent edge; a repeated
+    /// sibling discriminator refuses `DuplicateBirth`. `D` needs a derived
+    /// wire bound within `MAX_STRUCTURAL_DISCRIMINATOR_BYTES`, so text that
+    /// could grow with split depth does not compile:
+    ///
+    /// ```compile_fail
+    /// use worth_query_declaration::facade::application_naming::*;
+    /// struct Ancestry(String);
+    /// impl ApplicationNameDiscriminator for Ancestry {
+    ///     const DISCRIMINATOR_IDENTITY: &'static str = "example.ancestry";
+    ///     // As the derive writes it: the text field leaves the body unbounded.
+    ///     const MAX_BODY_BYTES: Option<usize> = <String as ApplicationNameDiscriminatorValue>::MAX_ENCODED_BYTES;
+    ///     fn encode_canonical(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
+    ///         encoder.value(&self.0);
+    ///     }
+    /// }
+    /// struct Schema;
+    /// let _ = ApplicationNameSchemeBuilder::<Schema, ()>::for_group("example.face", "Face")
+    ///     .structural_identity::<Ancestry>();
+    /// ```
+    pub fn structural_identity<D: ApplicationNameDiscriminator>(mut self) -> Self {
+        const {
+            assert!(
+                super::discriminator_fits_structural_identity::<D>(),
+                "a structural-identity discriminator needs a wire bound within MAX_STRUCTURAL_DISCRIMINATOR_BYTES"
+            );
+        }
+        self = self.split_discriminator::<D>();
+        self.structural_identity = true;
+        self
+    }
+
     /// Requires every birth under this scheme to carry an authored occurrence
     /// key from an authored identity family (never a bare operation identity).
     pub fn require_authored_occurrence(mut self) -> Self {
@@ -319,6 +363,7 @@ impl<S, K> ApplicationNameSchemeBuilder<S, K> {
                 split_discriminator_identity: self.split_discriminator_identity,
                 discriminator_referenced_roles: self.discriminator_referenced_roles,
                 require_authored_occurrence: self.require_authored_occurrence,
+                structural_identity: self.structural_identity,
             },
             _marker: PhantomData,
         })

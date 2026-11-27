@@ -103,10 +103,12 @@ fn path(values: impl IntoIterator<Item = u64>) -> ApplicationAuthorizationPath {
                             .into(),
                             field: "Identity".into(),
                             value: AspectValue::UInt64(value),
+                            comparison: Default::default(),
                         },
                     )
                 })
                 .collect(),
+            field_constraints: Vec::new(),
         },
     )
 }

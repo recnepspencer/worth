@@ -23,6 +23,8 @@ pub struct SchemaAuthorityNamingSchemeSnapshot {
     pub ordered_roles: Vec<String>,
     pub split_capable: bool,
     pub require_authored_occurrence: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub structural_identity: bool,
 }
 
 impl SchemaAuthorityNamingSchemeSnapshot {
@@ -86,7 +88,9 @@ pub fn update_naming_layout_digest(
             update_len_bytes(hasher, role.as_bytes());
         }
         hasher.update([u8::from(scheme.split_capable)]);
-        hasher.update([u8::from(scheme.require_authored_occurrence)]);
+        // Bit 1 marks structural identity, so other schemes keep their digest.
+        let structural = u8::from(scheme.structural_identity) << 1;
+        hasher.update([u8::from(scheme.require_authored_occurrence) | structural]);
     }
     hasher.update((bindings.len() as u64).to_le_bytes());
     for binding in bindings {
@@ -234,6 +238,7 @@ impl RelationalSchemaRegistry {
                 ordered_roles: scheme.ordered_roles(),
                 split_capable: scheme.split_capable(),
                 require_authored_occurrence: scheme.require_authored_occurrence(),
+                structural_identity: scheme.structural_identity(),
             })
             .collect()
     }
@@ -279,6 +284,7 @@ impl RelationalSchemaRegistry {
                 snapshot.ordered_roles.iter().cloned(),
                 snapshot.split_capable,
                 snapshot.require_authored_occurrence,
+                snapshot.structural_identity,
             )?;
             registry.register(scheme)?;
         }

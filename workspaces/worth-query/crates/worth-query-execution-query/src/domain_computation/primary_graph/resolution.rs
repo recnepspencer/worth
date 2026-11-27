@@ -54,6 +54,7 @@ mod admitted_lookup;
 mod admitted_observations;
 #[path = "resolution/selected_product.rs"]
 pub mod selected_product;
+pub use selected_product::WorthQueryCandidatePrincipalRefusal;
 pub use selected_product::WorthQueryIssuedSelectedPrincipal;
 
 fn principal_graph_binding<'a>(

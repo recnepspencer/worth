@@ -110,7 +110,9 @@ where
     Ok(())
 }
 
-pub fn validate_decision(
+/// The Relational evidence and Bridge decision describe the same observation
+/// and the Bridge retains its own decision. Says nothing about the verdict.
+pub fn validate_decision_consistency(
     bridge_runtime: &worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
     relational: &worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
     bridge: &worth_runtime_bridge::facade::BridgeAuthorizationDecisionEvidence,
@@ -128,16 +130,7 @@ pub fn validate_decision(
             policy,
         ));
     }
-    if bridge.is_allowed() {
-        Ok(())
-    } else {
-        Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::Refused(
-                AuthorizationRefusal::PermissionDenied,
-            ),
-            policy,
-        ))
-    }
+    Ok(())
 }
 
 pub fn admit_request(

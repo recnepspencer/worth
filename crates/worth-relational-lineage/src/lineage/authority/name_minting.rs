@@ -3,7 +3,8 @@
 //!
 //! Minting hashes strictly canonical domain-tagged bytes of:
 //! `(scheme_id, occurrence_key, role_path, sorted_parent_identities, canonical_discriminator)`
-//! into a fixed 32-byte [`PersistentNameIdentity`]. It never observes native
+//! into a fixed 32-byte [`PersistentNameIdentity`]; a structural-identity
+//! scheme omits the parents, which stay recorded. It never observes native
 //! allocation coordinates (`RecordId`, `EntityId`, `PartitionId`, `local_slot`,
 //! `generation`, `LineageId`, `CommitId`, or worker order).
 
@@ -21,6 +22,11 @@ use crate::contracts::lineage::data::naming_denial::{
 use crate::contracts::lineage::data::postures::LineageBasisView;
 
 use super::discriminator_scan::extract_embedded_name_refs;
+
+/// Wire ceiling on a structural-identity birth's discriminator: its names
+/// are told apart by the discriminator alone, which stays bounded at any
+/// split depth. The Query declaration fence mirrors it at compile time.
+pub const MAX_STRUCTURAL_DISCRIMINATOR_BYTES: usize = 512;
 
 /// Relational authority that validates birth provenance, resolves referenced
 /// discriminator and parent names, mints fixed-size persistent name identities,
@@ -116,7 +122,6 @@ impl PersistentNameMintingAuthority {
                 scheme,
                 role_rank,
                 basis,
-                retired_in_commit,
                 &minted_in_occurrence,
             )?;
 
@@ -156,13 +161,8 @@ impl PersistentNameMintingAuthority {
                 }
             }
 
-            let identity = mint_identity_digest(
-                &request.scheme_id,
-                &request.occurrence_key,
-                &request.role_path,
-                &sorted_parents,
-                &request.canonical_discriminator,
-            );
+            let structural = scheme.structural_identity();
+            let identity = mint_identity_digest(request, &sorted_parents, structural);
 
             // Same-commit sibling collision guard.
             if let Some(first) = commit_holders.get(&identity) {
@@ -195,6 +195,7 @@ impl PersistentNameMintingAuthority {
                 request.role_path.clone(),
                 sorted_parents,
                 request.canonical_discriminator.clone(),
+                structural,
             );
             records.push(PersistentNameBirthRecord::new(
                 identity,
@@ -212,9 +213,16 @@ fn verify_discriminator_references(
     scheme: &crate::contracts::lineage::data::naming::InstalledPersistentNameScheme,
     role_rank: u32,
     basis: &dyn LineageBasisView,
-    retired_in_commit: &BTreeSet<PersistentNameIdentity>,
     minted_in_occurrence: &BTreeMap<(String, String), BTreeSet<PersistentNameIdentity>>,
 ) -> Result<(), LineageNameDenial> {
+    let len = request.canonical_discriminator.len();
+    if scheme.structural_identity() && len > MAX_STRUCTURAL_DISCRIMINATOR_BYTES {
+        return Err(LineageNameDenial::InvalidDiscriminatorBasis {
+            scheme_id: request.scheme_id.clone(),
+            role_path: request.role_path.clone(),
+            reason: DiscriminatorBasisDenialReason::UnboundedStructuralDiscriminator { len },
+        });
+    }
     // 1. Scan canonical discriminator bytes so callers cannot smuggle raw
     //    `TAG_NAME_REF` digests without declaring them in `referenced_names`.
     let embedded = extract_embedded_name_refs(&request.canonical_discriminator).map_err(|()| {
@@ -241,14 +249,16 @@ fn verify_discriminator_references(
         }
     }
 
-    // 2. Verify every declared reference against authoritative live holders or
-    //    earlier-role births minted in the same occurrence during this commit.
+    // 2. Verify every declared reference against names recorded on the branch
+    //    at the basis (live, retired earlier, or retired by this commit: a
+    //    consumed cutter or retired ancestor keeps its fixed 32-byte identity)
+    //    or earlier-role births minted in the same occurrence this commit.
     for reference in &request.referenced_names {
         match &reference.basis {
             PersistentNameReferenceBasis::Basis => {
-                let live_at_basis = basis.contains_live_holder(&reference.identity)
-                    && !retired_in_commit.contains(&reference.identity);
-                if !live_at_basis {
+                let recorded_at_basis = basis.contains_live_holder(&reference.identity)
+                    || basis.contains_retired(&reference.identity);
+                if !recorded_at_basis {
                     return Err(LineageNameDenial::InvalidDiscriminatorBasis {
                         scheme_id: request.scheme_id.clone(),
                         role_path: request.role_path.clone(),
@@ -291,18 +301,17 @@ fn verify_discriminator_references(
 /// Computes the canonical 32-byte SHA-256 identity from sorted, domain-tagged
 /// birth parts.
 fn mint_identity_digest(
-    scheme_id: &str,
-    occurrence_key: &str,
-    role_path: &str,
+    request: &PersistentNameBirthRequest,
     sorted_parents: &[PersistentNameIdentity],
-    canonical_discriminator: &[u8],
+    structural_identity: bool,
 ) -> PersistentNameIdentity {
     PersistentNameIdentity::from_minted_digest(canonical_birth_digest(
-        scheme_id,
-        occurrence_key,
-        role_path,
+        &request.scheme_id,
+        &request.occurrence_key,
+        &request.role_path,
         sorted_parents.iter().map(PersistentNameIdentity::as_bytes),
-        canonical_discriminator,
+        &request.canonical_discriminator,
+        structural_identity,
     ))
 }
 

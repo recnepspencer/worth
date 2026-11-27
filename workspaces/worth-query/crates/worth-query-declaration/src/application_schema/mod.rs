@@ -9,8 +9,14 @@ mod application_naming_authoring;
 mod application_query_authoring;
 mod application_resource_authoring;
 mod authoring_context;
+#[cfg(test)]
+mod authorization_absence_tests;
 mod authorization_path_components;
+#[cfg(test)]
+mod authorization_path_components_tests;
 mod authorization_policy;
+mod authorization_roles;
+mod authorization_rule_denial;
 mod binding_context;
 mod binding_identity;
 mod canonical_authorization_identity;
@@ -176,13 +182,23 @@ pub use authorization_path_components::{
     ApplicationAuthorizationPathCanonicalComponent,
 };
 pub use authorization_policy::{
-    ApplicationAuthorizationPath, ApplicationAuthorizationPathBuilder,
-    ApplicationAuthorizationPathEffect, ApplicationAuthorizationPredicate,
-    ApplicationAuthorizationTraversal, ApplicationAuthorizationTraversalDirection,
+    ApplicationAuthorizationActor, ApplicationAuthorizationComparison,
+    ApplicationAuthorizationCondition, ApplicationAuthorizationFieldConditions,
+    ApplicationAuthorizationFieldConstraint, ApplicationAuthorizationPath,
+    ApplicationAuthorizationPathBuilder, ApplicationAuthorizationPathEffect,
+    ApplicationAuthorizationPathSet, ApplicationAuthorizationPredicate,
+    ApplicationAuthorizationRule, ApplicationAuthorizationTraversal,
+    ApplicationAuthorizationTraversalDirection, ApplicationOrderFaithfulBinding, AuthoredPath,
+    ExactPath, NoActor, PrincipalActor,
+    WorthQueryPortableApplicationAuthorizationFieldConstraintParts,
     WorthQueryPortableApplicationAuthorizationPathParts,
     WorthQueryPortableApplicationAuthorizationPredicateParts,
     WorthQueryPortableApplicationAuthorizationTraversalParts,
 };
+pub use authorization_roles::{
+    ApplicationAbilityVocabulary, ApplicationRoleMatrix, ApplicationValueVocabulary,
+};
+pub use authorization_rule_denial::ApplicationAuthorizationRuleDenial;
 pub use binding_context::ApplicationBindingContext;
 pub use binding_identity::ApplicationSchemaBindingIdentity;
 pub use capabilities::{

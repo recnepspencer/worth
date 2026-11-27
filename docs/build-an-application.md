@@ -375,6 +375,20 @@ schema using `worth_query_decl::facade::application_naming`:
   `role_order(&[...])`, optional `role_depends_on(role, earlier_role)` edges,
   `.require_authored_occurrence()`, and `.split_discriminator::<D>()` for split-capable
   kinds.
+- **Structural identity.** `.structural_identity::<D>()` (instead of
+  `.split_discriminator::<D>()`) mints the scheme's names from occurrence,
+  role and discriminator alone, never from their parents: landing two
+  sequential splits in one commit or in two mints byte-identical names for
+  every surviving piece. Relational still records every parent (in the birth
+  and as `Split`/`Merge` lineage edges), so `AllDescendants`, `UnchosenBranch`
+  and `birth_of` read the real history; two siblings with the same
+  discriminator refuse `DuplicateBirth`. `D` must have a derived wire bound
+  within `MAX_STRUCTURAL_DISCRIMINATOR_BYTES` (512): fixed-width values and
+  name references only, so a discriminator carrying text that could grow
+  with split depth does not compile, and Relational refuses an oversize
+  structural discriminator typed (`UnboundedStructuralDiscriminator`). The
+  default (no call) stays parent-inclusive: a piece's name depends on the
+  parent it was split from, and every existing scheme keeps its names.
 - **Canonical discriminators** implement `ApplicationNameDiscriminator` via
   `worth_query_decl::facade::worth_query_name_discriminator!`, encoding typed
   discriminator variants and any embedded `WorthQueryName<K>` references without
@@ -521,6 +535,10 @@ writer.name_created_entity(&face, WorthQueryOutputBirth::of_role(&occurrence, Fa
   `InCommit(WorthQuerySameCommitName<K>)`, built from either with `.into()`.
   A discriminator declared over it serves a referenced record born by an
   earlier commit and one born by the same commit, and mints the same name.
+  A committed reference may name any name the branch recorded at the basis,
+  live or retired: a cutter the same commit consumes, or an ancestor an
+  earlier commit retired, enters by its fixed 32-byte identity, so a
+  discriminator stays the same size at any split depth.
 - **`OccurrencePath`** composes an occurrence from segments:
   `root(key)`, `child(segment)`, `index(name, n)` and `anchored(name,
   &anchor)`, a segment placed relative to another occurrence
@@ -599,8 +617,9 @@ An unnamed program carries no naming plan at all.
   never the operation's name), so two independently authored occurrences with
   identical payloads keep distinct names. `.with_discriminator(&d)` tells
   siblings of one occurrence and role apart, and may embed `WorthQueryName`s
-  live at the basis and not retired by the same operation (`AbsentBasisName`
-  otherwise). A relation's name never includes its endpoints: two
+  recorded on the branch at the basis, live or retired (including one the
+  same operation retires); a name the branch never recorded refuses
+  (`UnresolvedReferencedName` while lowering, `AbsentBasisName` at commit). A relation's name never includes its endpoints: two
   same-role relations of one occurrence collide (`DuplicateBirth`) unless
   their discriminators differ.
 - **References to names born by the same commit.** An output of a later
@@ -4315,6 +4334,209 @@ Managed-index root selection and related-collection continuation remain distinct
 declared shapes. Combining them refuses during declaration; a managed candidate
 hit supplies no child-page position or root-pagination authority.
 
+### Who may act: abilities, eligibility and runtime principals
+
+Authorization is relationship-based. An ability is scoped to one entity
+(`worth_query_ability!(pub Approve scoped_to Document, in Schema)`), and its
+installed policy is a set of paths from the principal entity through ordinary
+relations and field predicates to that scope. Allow paths grant; a matching
+deny path refuses even when an allow path holds. Operations require abilities
+with `worth_query_operation_requires!` and `operation_requires_ability`; there
+are no role tables to keep in step. The compiled
+[QMS court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/rebac_eligibility_dx/access.rs) declares approvers, a separation-of-duties deny
+path for authors, a roster ability and a site-administration ability. To
+declare those paths as typed rules and a role matrix, see
+[roles, abilities and ReBAC rules](#who-may-act-roles-abilities-and-rebac-rules).
+
+#### Gate a query, and every page of it, by ability
+
+`#[worth_query(ability = ReadDocuments::reference())]` on a `WorthQuery`
+requires that ability on the query's scope. The ability and the query share
+one scope type parameter, so a mismatch does not compile, and schema build
+refuses an undeclared ability or one without an installed policy. A missing
+ability refuses `Admission(Authorization(Refused(PermissionDenied)))`, which
+the refusal summary reports as `PermissionDenied`. A page cursor carries a
+keyset position and never a grant: each `query_page`, through a session or a
+pinned snapshot, freshly admits the reader's current ability, so revoking it
+between page 1 and page 2 refuses page 2
+([paging court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/rebac_eligibility_dx/paging_court.rs)).
+
+#### Ask who may act without acting
+
+`WorthQueryEligibilityQuestion::new(Context, ability, field, value)` names one
+ability on one scope through the principal binding's context. The answer is
+read from the same installed policy decision admission uses, so a verdict and
+the next action agree, but asking mints no decision fact, reserves no grant,
+commits nothing and advances no sequence:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The compiled courts are
+// .../rebac_eligibility_dx/eligibility_court.rs and registry_court.rs.
+use worth_query_host::facade::eligibility::WorthQueryEligibilityQuestion;
+
+let approve = WorthQueryEligibilityQuestion::new(
+    Qms, Approve::reference(), DocumentFacts::document_id(), "D1".to_owned(),
+);
+if session.eligibility(&approve)?.is_eligible() {
+    // show the Approve button
+}
+let roster = session.eligible_among(&approve, ViewApprovers::reference(), &candidates)?;
+let approvers: Vec<_> = roster.eligible().collect();
+```
+
+A verdict is `Eligible`, `Denied` (no allow path, or a deny path), or the
+reason admission would refuse the identity itself: `Unmapped`, `Disabled` or
+`Ambiguous`. Asking about oneself needs no disclosure. Revealing other
+principals' authority does: `eligible_among` requires the asker to hold the
+named disclosure ability on the same scope and otherwise refuses
+`RosterNotDisclosed` before evaluating any candidate. The asker is admitted
+before any scope is resolved, and disclosure is decided before a pinned scope
+is resolved, so a refused asker gets the same answer whether or not the scope
+exists. A question the platform
+cannot answer (an unknown scope, an ability without a policy, or a policy that
+does not start at the binding's principal entity) refuses with a typed
+`WorthQueryEligibilityDenial` instead of a verdict.
+
+`snapshot.eligibility` and `snapshot.eligible_among` report verdicts as of the
+snapshot's pinned commit, beside rows read there. The asker is still admitted,
+and any roster disclosed, at the branch head, so a pin never widens who may
+ask. A workflow Home's `session` is the same session type, so these calls work
+there unchanged. A verdict grants nothing: acting admits the actor afresh.
+
+#### Onboard principals at runtime
+
+`worth_query_principal_registry!` declares how runtime users map to
+principals in one place:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The compiled declaration is
+// .../rebac_eligibility_dx/schema.rs.
+worth_query_principal_registry! {
+    pub mod accounts for QmsSchema {
+        context: Qms {
+            idempotency: u64 = worth_query_identity!(QMS, idempotency),
+            denial: BodyDenial,
+        },
+        principal: Operator => OperatorId = OperatorFacts::operator_id(),
+        directory: Site => SiteId = SiteFacts::site_id(),
+        onboarding: ManageOperators,
+    }
+}
+```
+
+It generates the `PrincipalAccount` record, whose external identity is
+declared `unique` so no write path can map one identity twice; the `Registry`
+principal binding and its context; and the `OnboardPrincipal` and
+`SetPrincipalStatus` actions with their handlers. Both actions require the
+`onboarding` ability on the named directory entity. Add
+`accounts::RegistryMembers` to the contribution members and both actions to a
+feature, then onboard on an open Home with
+`admin.run(accounts::OnboardPrincipal { directory, identity, principal })`.
+Onboarding an already-mapped identity, or a principal identity already held,
+refuses before any effect; recover the reason with
+`WorthQueryPrincipalRegistryRefusal::of(&refusal)` on the run's
+`domain_refusal()`. A disabled account no longer acts or asks. Grant the new
+principal authority through ordinary relationship actions; it survives
+Directory reopen like any other commit
+([registry court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/rebac_eligibility_dx/registry_court.rs)).
+
+Each principal belongs to the directory it joined (`PrincipalDirectory`).
+`SetPrincipalStatus` names a directory and refuses
+`IdentityNotOnboarded` for an account of any other directory, exactly as for
+an identity that exists nowhere, so one directory's operators can neither
+disable another's accounts nor learn they exist. External identities stay
+globally unique, so onboarding an identity mapped anywhere refuses
+`IdentityAlreadyOnboarded`. Seed accounts with
+`accounts::seed_principal(graph, installed, directory, key, id, identity, status)`,
+which binds the principal through `bind_principal` and enrolls it in the
+directory, the same shape onboarding commits. The
+principal is created with only its identity field, so its other aspects must
+be optional or written by a later action.
+
+
+### Who may act: roles, abilities and ReBAC rules
+
+An ability is a permission on one scope entity. An operation requires it with
+`schema.operation_requires_ability(Op::reference(), ability)`, and a query with
+`#[worth_query(ability = ..)]`. WORTH evaluates the ability's installed paths
+against the admitted principal and the request's scope on every admission and
+rechecks them at commit; no application code decides access.
+
+Declare the role vocabulary, the abilities and the matrix between them once:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: the compiled court is
+// workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/rebac_dx/.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, WorthQueryVocabulary)]
+#[worth_query(identity = "qms.role.v1", bindings = Codecs)]
+pub enum StaffRole { Reviewer = 1, Manager = 2, Auditor = 3 } // durable codes
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, WorthQueryAbilities)]
+#[worth_query(schema = QmsSchema, scoped_to = Case)]
+pub enum CaseAbility { Annotate, Close, ReadCase }           // markers in `case_ability::`
+
+impl ApplicationRoleMatrix<CaseAbility> for StaffRole {
+    fn abilities(self) -> &'static [CaseAbility] {
+        match self {
+            Self::Reviewer => &[CaseAbility::Annotate, CaseAbility::ReadCase],
+            Self::Manager => &[CaseAbility::Annotate, CaseAbility::Close, CaseAbility::ReadCase],
+            Self::Auditor => &[CaseAbility::ReadCase],
+        }
+    }
+}
+```
+
+Then install one rule per ability over exactly the roles that grant it:
+
+<!-- illustrative -->
+```rust,ignore
+fn at_case_site(roles: &[StaffRole], level: u64) -> ApplicationAuthorizationPathSet<QmsSchema, User, Case> {
+    ApplicationAuthorizationPathBuilder::from_principal(User::reference())
+        .forward(UserAssignments::reference())
+        .when(AssignmentFacts::role().one_of(roles.iter().copied()))
+        .when(AssignmentFacts::level().ge(level))
+        .forward(AssignmentSite::reference())
+        .reverse(CaseSite::reference())
+        .allow(Case::reference())
+}
+
+schema
+    .policy(CaseAccess::reference())
+    .role_abilities(CaseAccess::reference(), |ability, roles| match ability {
+        CaseAbility::Close => ApplicationAuthorizationRule::new()
+            .path(at_case_site(roles, 2))
+            .actor_is_not_target_of(CaseAuthor::reference()), // the author may not close
+        _ => at_case_site(roles, 0).into(),
+    })
+    .operation_requires_ability(CloseCaseOp::reference(), case_ability::Close::reference())
+```
+
+The conditions, authored on typed field selections:
+
+| Condition | Meaning | Lowered to |
+|---|---|---|
+| `field.eq(v)`, `field.one_of(vs)` | present and equal to `v` (one of `vs`) | one `Equal` path per value |
+| `field.ne(v)` | present, same family, different | `StrictlyLess` ∪ `StrictlyGreater`, sound on every family |
+| `field.lt/le/gt/ge(v)` | ordered comparison | one path; compiles only on an order-faithful binding (`ApplicationOrderFaithfulBinding`: integers, `CanonicalDate`, `CanonicalTime`, `CanonicalTimestamp`). Decimal and big-integer text, floats, rationals, strings and vocabulary codes do not order as their values |
+| `field.eq_actor(p)`, `field.ne_actor(p)` | compares with field `p` of the admitted principal | a principal-field constraint; `p` must belong to the path's own principal (a compile error otherwise) |
+| `rule.actor_is_not_target_of(R)` / `actor_is_not_source_of(R)` | deny the principal the scope's relation names (a case's author) | a one-step deny path; compiles only when the relation guarantees the edge (`source_min >= 1` / `target_min >= 1`), so a missing edge cannot let the deny fail open |
+
+Every condition is false on an absent value or another scalar family, so allow
+paths fail closed. A deny path does not fire on an absent value, so every
+value a deny path reads must be a required field of an aspect every entity of
+the kind has: a deny condition on an optional field, or on any field of an
+`Option<A>`, extension or `Exclusive<..>` case aspect, is refused at
+declaration. Declaration also
+refuses an empty `one_of`, a field that is not equality-queryable, a path that
+lowers to more than 16 kernel paths, a rule without an allow path, and an
+ability no role grants (`RoleLessAbility`). Each refusal is an
+`ApplicationAuthorizationRuleDenial` naming the path as written, for example
+`User -UserAssignments-> Assignment [Assignment.Role one of [...]] -AssignmentSite-> Site`.
+Paths with only equality keep their existing identity and archive bytes. The
+lowering is proved in Lean (`specs/lean/rebac_predicates/`).
 
 The entity a mutation acts on is its intent's *scope binding*, shown next.
 
@@ -7564,47 +7786,41 @@ stage again; keeping only its denial would discard retry custody.
 **Control bindings.** Each control step (authoring, instance start, advance,
 approval) is a mutation intent whose binding sets `WORKFLOW_CONTROL = true`.
 The workflow kernel authorizes and records these steps itself. No handler may
-serve one, and installing one is refused. `worth_query_mutation_binding!` does
-not set that constant, so a control binding is written by hand. Bank writes
-its four with one local macro. This is the part that differs from an ordinary
-binding:
+serve one, and installing one is refused. Declare all of a workflow's controls
+with `worth_query_workflow_controls!`, which writes each capability marker,
+control operation, binding, intent and capability request from one entry:
 
 <!-- illustrative -->
 ```rust,ignore
-// Illustrative: not compiled.
-// The Bank control-binding shape, using current operation-access authoring:
-worth_query_operation!(pub $operation for BankSchema, input ApprovePaymentInputBinding;
-    access { read_fields: [PaymentIdentityField]; }
-);
-
-pub struct $binding;
-
-impl ApplicationMutationBinding<BankSchema> for $binding {
-    type Input = ApprovePayment;
-    type Operation = $operation;
-    type Decision = ();                       // no handler decides a control step
-    // ... the same associated types as any mutation binding (§5.2) ...
-    const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const WORKFLOW_CONTROL: bool = true;
-    // ... identities, scope_field, and principal_binding ...
-}
-
-impl ApplicationCapabilityMutationBinding<BankSchema> for $binding {
-    type Capability = $capability;            // the marker passed to *_capability above
-}
-
-impl ApplicationMutationIntent<BankSchema> for $intent { /* input, scope_binding */ }
-impl ApplicationCapabilityRequest<BankSchema, $capability> for ApprovePayment {
-    /* project the request onto the capability's entity and context */
+// workspaces/worth-query-bank-world/crates/bank-domain/src/schema/workflow/control.rs (abridged)
+worth_query_workflow_controls! {
+    schema: BankSchema,
+    binding_context: BankBindingContext,               // principal and idempotency types
+    input: ApprovePayment => ApprovePaymentInputBinding,
+    result: PaymentDecisionResult => PaymentDecisionResultBinding,
+    denial: BankProposalDenial => PaymentDecisionDenialBinding,
+    scope: PaymentIntent, field PaymentIdentityField = PaymentIdentityField::at("PaymentIdentityField"), input.payment,
+    capability_context: pub ApprovedBusinessPaymentControlContext = "worth.bank.approved-business-payment-control-context.v1",
+    grant: "manage-approved-business-payment-workflow" for "business-payment-approval",
+    controls: [
+        pub ApprovedBusinessPaymentApproval = "worth.bank.approved-business-payment-approval" {
+            ApprovedBusinessPaymentApprovalOperation,
+            ApprovedBusinessPaymentApprovalBinding,
+            ApprovedBusinessPaymentApprovalIntent,
+        },
+        // ... Authoring, InstanceStart and Advance in the same form ...
+    ],
 }
 ```
 
-Install its access with `schema.declared_operation::<Operation>(definition)`
-and the existing explicit policy. Keep the workflow-control binding's native
-authorization rules. The macro is invoked once for each control step, for example
-`ApprovedBusinessPaymentAuthoringOperation`, `…AuthoringBinding`,
-`…AuthoringIntent`, and `ApprovedBusinessPaymentAuthoring`. The whole file is
-244 lines.
+Each control `Capability = "identity"` gets the portable type `identity.v1` and
+the binding, handler and command identities `identity.binding.v1`,
+`identity.handler.v1` and `identity.command.v1`. The capability request names
+the same action and purpose literals as the grant target, so the two cannot
+disagree. Install each capability contract with `schema.capability(..)` as
+before. Bank's migration from its hand-written local macro was byte-identical
+(the whole installed schema was compared at the move), and
+`worth-query-bank-court-domain` keeps pinning every control's wire identity.
 
 #### Create and enroll through one retained action
 

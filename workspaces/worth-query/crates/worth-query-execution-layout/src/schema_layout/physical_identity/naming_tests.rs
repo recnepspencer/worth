@@ -25,6 +25,7 @@ fn original_readmission_refuses_differing_persistent_name_schemes() {
                 ["authored"],
                 false,
                 false,
+                false,
             )
             .unwrap(),
         )

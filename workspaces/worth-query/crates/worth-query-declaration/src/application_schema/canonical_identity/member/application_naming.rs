@@ -51,6 +51,10 @@ fn append_scheme_fields(
         format!("{prefix}.require-authored-occurrence"),
         definition.require_authored_occurrence(),
     );
+    // Absent unless set, so every parent-inclusive scheme keeps its identity.
+    if definition.structural_identity() {
+        basis.bool(format!("{prefix}.structural-identity"), true);
+    }
     for (index, role) in definition.role_order().iter().enumerate() {
         basis.text(format!("{prefix}.role[{index}]"), role);
     }

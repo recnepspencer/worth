@@ -158,6 +158,9 @@ pub(super) fn resolve_same_commit_names<'program, T: 'program>(
             &birth.role_path,
             &parents,
             &canonical_discriminator,
+            catalog
+                .scheme_by_id(&output.scheme_id)
+                .is_some_and(|layout| layout.structural_identity()),
         );
         resolved.push(ResolvedOutputName {
             identity,

@@ -13,7 +13,7 @@ use super::{canonical_label_discriminator, entity_holder, face_registry};
 
 /// Builds a domain-tagged canonical discriminator payload embedding one
 /// `TAG_NAME_REF` (0x20) 32-byte digest matching `ApplicationNameDiscriminatorEncoder`.
-fn encoded_name_ref_discriminator(identity: &PersistentNameIdentity) -> Vec<u8> {
+pub(super) fn encoded_name_ref_discriminator(identity: &PersistentNameIdentity) -> Vec<u8> {
     let mut bytes = Vec::new();
     bytes.extend_from_slice(b"worth.query.name-discriminator.v1\0");
     let disc_id = b"worth.cad.face.split.v1";

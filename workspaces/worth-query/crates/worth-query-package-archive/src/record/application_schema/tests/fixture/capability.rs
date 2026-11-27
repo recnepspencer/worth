@@ -255,8 +255,10 @@ pub(super) fn authorization_path() -> ApplicationAuthorizationPath {
                     aspect: text("Aspect"),
                     field: text("field"),
                     value: AspectValue::UInt64(7),
+                    comparison: Default::default(),
                 },
             )],
+            field_constraints: Vec::new(),
         },
     )
 }

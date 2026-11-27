@@ -203,6 +203,8 @@ pub enum ApplicationSchemaDeclarationDenial {
     MissingAbilityDependency,
     MissingAbilityPolicyDependency,
     InvalidAbilityPolicy,
+    /// A ReBAC rule could not lower; the cause names the authored path or condition.
+    InvalidAuthorizationRule(super::ApplicationAuthorizationRuleDenial),
     PortableCanonicalSourceBytesBudgetExceeded {
         observed: u64,
         maximum: u64,

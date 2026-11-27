@@ -28,3 +28,4 @@ pub use crate::lineage::data::{
 pub use crate::lineage::index::{
     PersistentNameBranchIndex, PersistentNameCommittedBatch, PersistentNameIndexDenial,
 };
+pub use crate::lineage::MAX_STRUCTURAL_DISCRIMINATOR_BYTES;
