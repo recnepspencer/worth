@@ -1,11 +1,12 @@
-//! Round 3 hardening courts for Store M4.3f (`[P1-4]`, `[P1-5]`, `[P1-6]`, `[P1-8]`):
-//! - `[P1-4]` Detached runtime (`RelationalRuntime::fork`) isolates its cold
-//!   naming source from later checkpoints acknowledged on the original runtime.
-//! - `[P1-5]` Concurrent `advance_naming_retention_floor` vs `fork_retained_branch`
+//! Cold-residency courts for detached runtime isolation, retention-floor/fork
+//! coordination, and post-capture fork rebinding on checkpoint ACK:
+//! - Detached runtime (`RelationalRuntime::fork`) isolates its cold naming
+//!   source from later checkpoints acknowledged on the original runtime.
+//! - Concurrent `advance_naming_retention_floor` vs `fork_retained_branch`
 //!   coordination never durably publishes a child whose naming state is pruned.
-//! - `[P1-6]` Equal-coverage ACK cannot roll back a persisted `retention_floor`.
-//! - `[P1-8]` Post-capture fork before C2 ACK rebinds onto its nearest C2
-//!   ancestor so parent deletions in C2 cannot bleed into the descendant.
+//! - Equal-coverage ACK cannot roll back a persisted `retention_floor`.
+//! - Post-capture fork before C2 ACK rebinds onto its nearest C2 ancestor so
+//!   parent deletions in C2 cannot bleed into the descendant.
 
 use std::sync::{Arc, Barrier};
 use std::thread;
@@ -26,7 +27,7 @@ use worth_testkit_relational::durable_medium::TestDurableMedium;
 use super::bounded_naming_fixture::{
     create_named_entities, delete_entity, durable_named_runtime, observe_branch,
 };
-use super::bounded_naming_r2::fork_retained_at;
+use super::naming_branch_root_and_dissolve::fork_retained_at;
 
 fn recover_from_medium(
     request: &ExecutionRequest<'_, '_>,

@@ -7,7 +7,7 @@ fn activation_proof_rejects_foreign_owner_and_changed_exact_description_before_e
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution, true);
     for foreign_owner in [false, true] {
-        let (mut target, mut recovered, _) = recovered(execution, &world);
+        let (mut target, mut recovered, _, _) = recovered(execution, &world);
         let selected = basis(&target);
         let (owner, installed) = target
             .durability_recovery()

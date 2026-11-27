@@ -271,7 +271,7 @@ pub fn set_site_status_operation(
     schema = QmsSchema, context = Desktop, namespace = QMS, member,
     input = AssignRoleInput, operation = AssignRoleOp, binding = AssignRoleBinding,
     delivery = RoleAssigned, result = UnitApplicationValueBinding, decision = AssignDecision,
-    program,
+    program, inspection_disclosure = super::provenance::AssignRoleProvenance,
     access(
         read_entities: [Site, Member];
         read_fields: [SiteFacts::site_id(), MemberFacts::member_id()];

@@ -198,15 +198,15 @@ impl WorthQueryEntityImpact {
                     }
                     roles.extend(self.traversal_roles(path.traversals()));
                 }
-                roles.dedup();
-                self.dependencies.extend(roles.into_iter().map(|role| {
-                    WorthQueryImpactDependency::AbilityPolicy {
-                        ability: ability.clone(),
-                        scope_entity: scope_entity.clone(),
-                        policy: policy.clone(),
-                        role,
-                    }
-                }));
+                self.dependencies
+                    .extend(distinct(roles).into_iter().map(|role| {
+                        WorthQueryImpactDependency::AbilityPolicy {
+                            ability: ability.clone(),
+                            scope_entity: scope_entity.clone(),
+                            policy: policy.clone(),
+                            role,
+                        }
+                    }));
             }
             _ => {}
         }
@@ -237,8 +237,7 @@ impl WorthQueryEntityImpact {
                 roles.push(WorthQueryImpactRole::TargetRelation(target));
             }
         }
-        roles.dedup();
-        roles
+        distinct(roles)
     }
 
     fn traversal_roles<'path>(
@@ -296,6 +295,18 @@ impl WorthQueryEntityImpact {
             }
         }
     }
+}
+
+/// Each role once, in first-occurrence order: two paths of one policy (or a
+/// path and its contract's head) may reach the entity the same way.
+fn distinct(roles: Vec<WorthQueryImpactRole>) -> Vec<WorthQueryImpactRole> {
+    let mut seen: Vec<WorthQueryImpactRole> = Vec::with_capacity(roles.len());
+    for role in roles {
+        if !seen.contains(&role) {
+            seen.push(role);
+        }
+    }
+    seen
 }
 
 impl<Schema: ApplicationSchema, Program> WorthQueryHostSession<'_, Schema, Program> {

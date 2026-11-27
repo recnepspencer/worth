@@ -6,7 +6,7 @@ fn native_codec_candidate_requires_exact_recovered_owner_before_any_movement() {
     let request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution, true);
-    let (mut target, mut recovered, receipt) = recovered(execution, &world);
+    let (mut target, mut recovered, receipt, _) = recovered(execution, &world);
     let selected = basis(&target);
     let source = protected_payload(execution, &target, world.authored);
     let count = target.history().immutable_commit_count();

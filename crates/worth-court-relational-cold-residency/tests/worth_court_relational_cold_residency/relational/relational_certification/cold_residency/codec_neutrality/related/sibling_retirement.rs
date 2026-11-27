@@ -4,7 +4,7 @@ use super::{
         array, edit_frame, edit_original, field, replace_field, rows,
     },
     super::{
-        fixture::{activation, activation_proof, basis, capture},
+        fixture::{activation, activation_proof, basis, capture_carrying},
         publication_fixture,
         retained_records::RetainedRecords,
         serial_request,
@@ -128,7 +128,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
     let (runtime, receipt) = installed(1);
     let (world, publisher) = world_with_publication(execution, runtime, receipt);
     let sibling = super::coupled_sibling::publish(execution, &world, &publisher);
-    let (mut target, mut recovered, _) = recover(execution, &world);
+    let (mut target, mut recovered, _, prior_saved) = recover_with_checkpoint(execution, &world);
     let selected = basis(&target);
     let (owner, source_installed) = target
         .durability_recovery()
@@ -173,7 +173,12 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         .unwrap()
         .into_parts();
     recovered.admit_basis(basis(&target)).unwrap();
-    let saved = capture(execution, &target);
+    let prior_source = worth_testkit_relational::cold_recovery::members_source(&prior_saved);
+    let (saved, saved_source) = worth_testkit_relational::cold_recovery::capture_external_carrying(
+        execution,
+        &target,
+        &prior_source,
+    );
     let actual = frames(execution, &target);
     let (retiring, retirement) = actual
         .iter()
@@ -290,20 +295,17 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
             };
         let (refined, _) = edit_frame(retirement, edit);
         RelationalCanonicalCommitArtifact::readmit(&refined, execution).unwrap();
-        let checkpoint = edit_original(&saved, *retiring, edit);
+        let (checkpoint, checkpoint_source) = edit_original(&saved, &saved_source, *retiring, edit);
         let (mut cold, receipt) = installed(2);
         cold.durability_recovery()
-            .restore_native_checkpoint(
-                execution,
-                &checkpoint,
-                worth_testkit_relational::cold_recovery::members_source(&checkpoint),
-            )
+            .restore_native_checkpoint(execution, &checkpoint, checkpoint_source.clone())
             .unwrap();
         let receipt = cold
             .readmit_recovered_initial_schema_installation(receipt)
             .unwrap();
         let (_, installed) = receipt.issue_application_publication_owner();
-        let before = capture(execution, &cold);
+        let prior: Vec<_> = checkpoint_source.members.keys().copied().collect();
+        let before = capture_carrying(execution, &cold, &prior);
         let eligibility = cold.readmit_required_output_route_absence(
             execution,
             &installed,
@@ -315,7 +317,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
                 eligibility.is_err(),
                 "a malformed sibling or hidden write must deny the valid route"
             );
-            assert_eq!(capture(execution, &cold), before);
+            assert_eq!(capture_carrying(execution, &cold, &prior), before);
         } else {
             assert!(eligibility.unwrap().is_some());
             assert!(!RetainedRecords::capture(execution, &cold).entity(sibling).0);

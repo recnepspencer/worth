@@ -42,6 +42,7 @@ pub(super) struct RuntimeLineageEventResidency {
     routes: BTreeMap<RelationalLineageEventPageRoute, Vec<Arc<EventPageCell>>>,
     branch_windows: branch_window::BranchEventWindowIndex,
     commit_bindings: LineageCommitBinding,
+    pub(super) may_contain_named_events: bool,
 }
 /// The checkpoint's indexed receipt for a commit, read lazily from its paged
 /// commit index so admission never materializes every commit.
@@ -59,6 +60,7 @@ impl RuntimeLineageEventResidency {
         page_descriptors: &[RelationalCheckpointLineageEventPage],
         source: &Arc<dyn RelationalDurableColdSource>,
         commits: LineageCommitBinding,
+        may_contain_named_events: bool,
     ) -> Result<Self, RelationalStorageUnavailable> {
         let members = page_descriptors
             .iter()
@@ -106,6 +108,7 @@ impl RuntimeLineageEventResidency {
             routes,
             branch_windows,
             commit_bindings: commits,
+            may_contain_named_events,
         })
     }
     pub(super) fn member_subjects(

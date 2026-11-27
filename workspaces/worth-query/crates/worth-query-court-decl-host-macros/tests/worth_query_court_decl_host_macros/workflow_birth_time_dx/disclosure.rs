@@ -4,11 +4,10 @@
 //! `subject_contract` is the same rooted shape the instance steps use.
 use serde::{Deserialize, Serialize};
 use worth_query_decl::facade::application_capability::*;
-use worth_query_decl::facade::application_program::ApplicationWorkflowReadBinding;
 use worth_query_decl::facade::application_schema::*;
 use worth_query_decl::facade::{
     worth_query_capability, worth_query_capability_context_entity_slot, worth_query_operation,
-    worth_query_structured_value_binding,
+    worth_query_structured_value_binding, worth_query_workflow_read_binding,
 };
 
 use super::control::{CompanyControl, CompanyControlInput};
@@ -75,57 +74,20 @@ impl ApplicationCapabilityRequest<BirthSchema, DefinitionReadCapability> for Com
     }
 }
 
-type ContextBinding = <Desktop as ApplicationBindingContext<BirthSchema>>::PrincipalBinding;
-type ContextMapping = <Desktop as ApplicationBindingContext<BirthSchema>>::Mapping;
-type ContextPrincipal = <Desktop as ApplicationBindingContext<BirthSchema>>::Principal;
-type ContextIdentity = <Desktop as ApplicationBindingContext<BirthSchema>>::PrincipalIdentity;
-type ContextIdentityBinding =
-    <Desktop as ApplicationBindingContext<BirthSchema>>::PrincipalIdentityBinding;
-
-macro_rules! read_binding {
-    ($Binding:ident, $Capability:ty, $Operation:ty, $Input:ty, $Codec:ty, $name:literal) => {
-        pub struct $Binding;
-        impl ApplicationWorkflowReadBinding<BirthSchema> for $Binding {
-            const IDENTITY: &'static str = concat!("workflow-birth-time.dx.", $name, ".v1");
-            type Capability = $Capability;
-            type Input = $Input;
-            type InputBinding = $Codec;
-            type Operation = $Operation;
-            type PrincipalBinding = ContextBinding;
-            type Mapping = ContextMapping;
-            type Principal = ContextPrincipal;
-            type PrincipalIdentity = ContextIdentity;
-            type PrincipalIdentityBinding = ContextIdentityBinding;
-            fn principal_binding() -> ApplicationPrincipalBindingRef<
-                BirthSchema,
-                ContextBinding,
-                ContextMapping,
-                ContextPrincipal,
-                ContextIdentity,
-                ContextIdentityBinding,
-            > {
-                <Desktop as ApplicationBindingContext<BirthSchema>>::principal_binding()
-            }
-        }
-    };
-}
-
-read_binding!(
-    SubjectRead,
-    SubjectReadCapability,
-    SubjectReadOp,
-    RequestSubject,
-    RequestSubjectBinding,
-    "subject-read"
-);
-read_binding!(
-    DefinitionRead,
-    DefinitionReadCapability,
-    DefinitionReadOp,
-    CompanyControl,
-    CompanyControlInput,
-    "definition-read"
-);
+// The native declaration: input and codec are each operation's own, and the
+// principal types are `Desktop`'s, so no binding repeats them.
+worth_query_workflow_read_binding!(pub SubjectRead in BirthSchema {
+    identity: "workflow-birth-time.dx.subject-read.v1",
+    capability: SubjectReadCapability,
+    operation: SubjectReadOp,
+    binding_context: Desktop,
+});
+worth_query_workflow_read_binding!(pub DefinitionRead in BirthSchema {
+    identity: "workflow-birth-time.dx.definition-read.v1",
+    capability: DefinitionReadCapability,
+    operation: DefinitionReadOp,
+    binding_context: Desktop,
+});
 
 /// Owner → grant → company ← request: the company grant reaches each request
 /// born there, and the request's company must be the requested one.

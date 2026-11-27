@@ -47,9 +47,13 @@
 //!     Err(WorthQueryDomainRefusalDenial::MessageTooLong { maximum: 256, observed: 257 })
 //! ));
 //! ```
+mod audit_inspection;
 mod correction;
 mod custody;
+mod eligibility;
+mod history_read;
 mod home;
+mod inspection_owner;
 mod live_open;
 mod local_setup;
 mod managed_index;
@@ -63,7 +67,12 @@ mod summary;
 mod temporal_occurrence;
 mod transition;
 mod validation;
+mod workflow_read;
 mod world_history;
+
+/// The shared operator-safety assertion of the refusal summary tests.
+#[cfg(test)]
+mod operator_safety;
 
 pub use summary::{
     WorthQueryRefusalCategory, WorthQueryRefusalSummary, WorthQueryUserFacingRefusal,

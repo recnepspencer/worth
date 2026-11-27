@@ -1,6 +1,6 @@
-//! Sol Round 1 courts for Blockers #6 (custody retention on preview/history
-//! refusal), #7 (active-branch close protection), and #8 (restart-safe auto
-//! idempotency keys under frozen clocks and pre-occupied keys).
+//! Courts for custody retention on preview and history refusal, active-branch
+//! close protection, and restart-safe auto idempotency keys under frozen
+//! clocks and pre-occupied keys.
 use worth_query_host::facade::{
     admission::authenticated_principal::{
         WorthQueryAdmissionClock, WorthQueryAdmissionTimeController, WorthQueryCancellationSource,
@@ -37,7 +37,7 @@ fn cancelled_scope(clock: &WorthQueryAdmissionClock) -> WorthQueryRequestScope {
 }
 
 #[test]
-fn sol_blocker_6_owned_history_preserves_head_on_attachment_and_advancement_refusal() {
+fn owned_history_preserves_head_on_attachment_and_advancement_refusal() {
     let clock = WorthQueryAdmissionClock::system();
     let home = open_memory_home(&clock);
     let me = owner(&home, &clock);
@@ -100,7 +100,7 @@ fn sol_blocker_6_owned_history_preserves_head_on_attachment_and_advancement_refu
 }
 
 #[test]
-fn sol_blocker_6_continue_preview_recovery_preserves_recovery_custody_on_refusal() {
+fn continue_preview_recovery_preserves_recovery_custody_on_refusal() {
     let path = temp_home_path("sol-blocker-6-recovery");
     let clock = WorthQueryAdmissionClock::system();
     let home = open_daymark(&path, &clock);
@@ -179,7 +179,7 @@ fn sol_blocker_6_continue_preview_recovery_preserves_recovery_custody_on_refusal
 }
 
 #[test]
-fn sol_blocker_7_close_branch_refuses_active_branch_protection() {
+fn close_branch_refuses_active_branch_protection() {
     let clock = WorthQueryAdmissionClock::system();
     let home = open_memory_home(&clock);
     let active = home.active_branch();
@@ -208,7 +208,7 @@ fn sol_blocker_7_close_branch_refuses_active_branch_protection() {
 }
 
 #[test]
-fn sol_blocker_8_auto_keys_survive_frozen_clock_restarts_and_preoccupied_keys() {
+fn auto_keys_survive_frozen_clock_restarts_and_preoccupied_keys() {
     // 1. Directory Home reopen with repeated frozen clock (t = 0 across restarts).
     let path = temp_home_path("sol-blocker-8-frozen-clock");
     let first_entry = {

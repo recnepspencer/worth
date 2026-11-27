@@ -204,6 +204,7 @@ pub fn readmit_lineage(
     selection: &crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection,
     working_set: Option<Arc<worth_relational_storage::internal_port::storage::residency::working_set::WorkingSetAccountant>>,
     commits: Option<Arc<worth_relational_branch::internal_port::history::commit::cold_catalog::ColdCommitCatalog>>,
+    has_naming_schemes: bool,
 ) -> Result<(), RelationalRecoveryStop> {
     // Event rows resolve their commits through the history's cold catalog,
     // which follows the selected checkpoint and holds no source past close.
@@ -211,7 +212,15 @@ pub fn readmit_lineage(
     let binding = worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::event_residency::LineageCommitBinding(
         Arc::new(move |commit| commits.entry(commit).map(|entry| entry.map(|entry| entry.commit))),
     );
-    lineage.install_cold_pages(directory.prepare_lineage_cold_pages(binding)?);
+    let may_contain_named_events = has_naming_schemes
+        || directory.manifest.naming.branches.iter().any(|root| {
+            root.groups.is_some()
+                || root.naming.is_some_and(|header| header.unavailable)
+                || root.index.is_some_and(|header| header.unavailable)
+        });
+    lineage.install_cold_pages(
+        directory.prepare_lineage_cold_pages(binding, may_contain_named_events)?,
+    );
     for cell in &checkpoint.branch_cells {
         if let (Some(source_branch), Some(provenance)) =
             (&cell.fork_source_branch_id, &cell.fork_provenance)

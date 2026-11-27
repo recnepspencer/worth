@@ -122,10 +122,15 @@ fn complete_empty_archive_and_initial_installation_preserve_unused_original_sche
     struct Directory {
         coverage: worth_relational::facade::durability::CheckpointCoverage,
         schemas: Vec<Schema>,
-        commits: Vec<serde::de::IgnoredAny>,
+        commits: CommitIndex,
         canonical_members: Vec<serde::de::IgnoredAny>,
         retained_empty_components: Vec<serde::de::IgnoredAny>,
         roots: Vec<serde::de::IgnoredAny>,
+    }
+    #[derive(serde::Deserialize)]
+    struct CommitIndex {
+        count: u64,
+        pages: Vec<serde::de::IgnoredAny>,
     }
     #[derive(serde::Deserialize)]
     struct Schema {
@@ -146,7 +151,8 @@ fn complete_empty_archive_and_initial_installation_preserve_unused_original_sche
     )
     .unwrap();
     let directory = &decoded.manifest;
-    assert!(directory.commits.is_empty());
+    assert_eq!(directory.commits.count, 0);
+    assert!(directory.commits.pages.is_empty());
     assert!(directory.canonical_members.is_empty());
     assert_eq!(directory.coverage.up_to_branch_transition.0, 1);
     assert_eq!(directory.retained_empty_components.len(), 1);

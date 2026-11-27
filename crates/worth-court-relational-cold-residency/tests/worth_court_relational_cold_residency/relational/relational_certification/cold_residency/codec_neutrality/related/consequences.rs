@@ -1,6 +1,6 @@
 //! Native relation-only invariant ownership remains a pre-publication fence.
 use super::{
-    super::fixture::{basis, capture, installed_with},
+    super::fixture::{basis, capture, capture_carrying, installed_with, locators},
     fixture::*,
 };
 use worth_relational::facade::identity::KindId;
@@ -19,9 +19,11 @@ fn relation_only_custom_invariant_refuses_closed_retirement_before_effects() {
     let (runtime, receipt) = install(1);
     let world = world_with_installation(execution, runtime, receipt);
     let (mut target, _) = install(2);
-    let (_, mut recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, &world.runtime))
+    let saved = capture(execution, &world.runtime);
+    let prior = locators(&saved);
+    let (_, mut recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &saved)
         .unwrap();
-    let before = capture(execution, &target);
+    let before = capture_carrying(execution, &target, &prior);
     let selected = basis(&target);
     let denied = candidate(
         execution,
@@ -42,7 +44,7 @@ fn relation_only_custom_invariant_refuses_closed_retirement_before_effects() {
         .compare_current_exact(&selected)
         .is_ok());
     assert!(recovered.codec_transition_pending());
-    assert_eq!(capture(execution, &target), before);
+    assert_eq!(capture_carrying(execution, &target, &prior), before);
     assert_order(execution, &target, &world.outputs, &world.relations);
 }
 

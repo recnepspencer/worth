@@ -1,44 +1,71 @@
 //! Independent authenticated-frame rewrites exercise the codec's closed schema.
 use crate::messagepack_value_spans::{fields, sequence};
-use std::collections::BTreeMap;
-use worth_execution::ExecutionRequest;
+use std::{collections::BTreeMap, sync::Arc};
+use worth_execution::{ExecutionAllocationPolicy, ExecutionImmutableBytes, ExecutionRequest};
 use worth_relational::facade::{
     durability::{
         CheckpointRecordIdentity, RecordAllocationClass, RecoveryFailureClass,
+        RelationalCheckpointArtifactPolicy::ExternalMembers, RelationalCheckpointMember,
         RelationalDurableMemberLocator, RelationalNativeCheckpoint, RelationalRecoveryStop,
     },
     history::BranchId,
     mvcc::RelationalTransactionIntent,
+    transactions::WorkerIntentBatch,
 };
 use worth_testkit_relational::{
     aspect_storage::publications::{changed_entities, release_test_commit_snapshot},
+    cold_recovery::members_source,
     durable_publication::{batch_create, memory_runtime},
     maintenance::relation_laws::{request, World},
     ordinary_records::create_entity,
 };
 
 mod allocation_bytes;
+mod burned_symbol_frontier;
 mod shared_members;
 mod unknown_fields;
 
 const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK24\n";
 
+fn capture_external(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+) -> RelationalNativeCheckpoint {
+    let policy = ExternalMembers {
+        current_members: &[],
+        source: None,
+    };
+    runtime
+        .durability_authority()
+        .native_checkpoint_with_policy(
+            execution,
+            ExecutionAllocationPolicy::SystemAllocation,
+            policy,
+        )
+        .unwrap()
+}
+
 fn original(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> (RelationalNativeCheckpoint, [CheckpointRecordIdentity; 2]) {
     let world = World::new(execution, 1);
-    let entity = world.nodes[0];
-    let relation = world.edges[0].0;
+    let (_, basis) = world
+        .runtime
+        .observe_branch(&world.runtime.main_branch_identity())
+        .unwrap();
+    let mut tx = world
+        .runtime
+        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
+        .unwrap();
+    let batch = WorkerIntentBatch::new("pending").push(world.insert(0, 3, "pending-edge"));
+    tx.push_batch(batch, execution.allocation_policy()).unwrap();
+    let _pending = world
+        .runtime
+        .prepare_branch_transaction(execution, tx)
+        .unwrap();
+    let (entity, relation) = (world.nodes[0], world.edges[0].0);
     (
-        world
-            .runtime
-            .durability_authority()
-            .native_checkpoint_with_policy(
-execution,
-worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
-)
-            .unwrap(),
+        capture_external(execution, &world.runtime),
         [
             CheckpointRecordIdentity {
                 class: RecordAllocationClass::Entity,
@@ -152,7 +179,12 @@ fn inspection_compares_every_native_model_value_as_original_bytes() {
     let host = request();
     let execution = ExecutionRequest::serial(&host);
     let (before, identities) = original(&execution);
-    let decoded = before.inspect(&execution).unwrap();
+    let decoded = RelationalNativeCheckpoint::inspect_bytes_with_source(
+        &execution,
+        before.bytes(),
+        members_source(&before),
+    )
+    .unwrap();
     for identity in identities {
         assert!(
             decoded.live_records.contains(&identity),
@@ -217,11 +249,7 @@ fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
     let mut control = World::empty_runtime(0);
     control
         .durability_recovery()
-        .restore_native_checkpoint(
-            &execution,
-            &original,
-            worth_testkit_relational::cold_recovery::members_source(&original),
-        )
+        .restore_native_checkpoint(&execution, &original, members_source(&original))
         .unwrap();
     assert!(control.history().immutable_commit_count() > 0);
     for owner in [
@@ -253,21 +281,10 @@ fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
         });
         let checkpoint = RelationalNativeCheckpoint::from_untrusted_bytes(bytes);
         let mut target = World::empty_runtime(0);
-        let before = target
-            .durability_authority()
-            .native_checkpoint_with_policy(
-&execution,
-execution.allocation_policy(),
-worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
-)
-            .unwrap();
+        let before = capture_external(&execution, &target);
         let denied = target
             .durability_recovery()
-            .restore_native_checkpoint(
-                &execution,
-                &checkpoint,
-                worth_testkit_relational::cold_recovery::members_source(&checkpoint),
-            )
+            .restore_native_checkpoint(&execution, &checkpoint, members_source(&checkpoint))
             .unwrap_err();
         let RelationalRecoveryStop::Durability(error) = denied else {
             panic!("wrong restore refusal: {denied:?}")
@@ -281,14 +298,7 @@ worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::Extern
             error.detail.contains("unknown field") && error.detail.contains("future_field"),
             "{owner}: {error:?}"
         );
-        let after = target
-            .durability_authority()
-            .native_checkpoint_with_policy(
-&execution,
-execution.allocation_policy(),
-worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
-)
-            .unwrap();
+        let after = capture_external(&execution, &target);
         assert_eq!(
             before.bytes(),
             after.bytes(),
@@ -311,30 +321,28 @@ fn the_live_census_includes_divergent_retained_branch_roots() {
         runtime
             .fork_branch(&execution, branch_id.clone(), source)
             .unwrap();
-        let branch = runtime.branch_identity(&branch_id).unwrap();
-        let (_, basis) = runtime.observe_branch(&branch).unwrap();
-        let mut transaction = runtime
+        let (_, basis) = runtime
+            .observe_branch(&runtime.branch_identity(&branch_id).unwrap())
+            .unwrap();
+        let mut tx = runtime
             .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
             .unwrap();
-        transaction
-            .push_batch(
-                batch_create(branch_id.0.as_str()),
-                execution.allocation_policy(),
-            )
-            .unwrap();
-        let commit = transaction.commit(&execution, &runtime).unwrap();
+        tx.push_batch(
+            batch_create(branch_id.0.as_str()),
+            execution.allocation_policy(),
+        )
+        .unwrap();
+        let commit = tx.commit(&execution, &runtime).unwrap();
         expected.extend(changed_entities(&commit));
         release_test_commit_snapshot(&runtime, &commit);
     }
-    let checkpoint = runtime
-        .durability_authority()
-        .native_checkpoint_with_policy(
-&execution,
-worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
-)
-        .unwrap();
-    let inspected = checkpoint.inspect(&execution).unwrap();
+    let checkpoint = capture_external(&execution, &runtime);
+    let inspected = RelationalNativeCheckpoint::inspect_bytes_with_source(
+        &execution,
+        checkpoint.bytes(),
+        members_source(&checkpoint),
+    )
+    .unwrap();
     for entity in expected {
         assert!(
             inspected.live_records.contains(&CheckpointRecordIdentity {
@@ -346,49 +354,4 @@ worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::Extern
             "missing live entity from a retained branch: {entity:?}"
         );
     }
-}
-
-#[test]
-fn burned_symbol_frontier_does_not_hide_published_symbol_damage() {
-    let host = request();
-    let execution = ExecutionRequest::serial(&host);
-    let (before, _) = original(&execution);
-    let inspected = before.inspect(&execution).unwrap();
-    let next = inspected.symbol_identity_frontier.checked_add(7).unwrap();
-    let advanced = rewritten(before.bytes(), false, |fields| {
-        fields.insert(
-            "symbol_identity_frontier".into(),
-            rmp_serde::to_vec(&next).unwrap(),
-        );
-    });
-    let after = RelationalNativeCheckpoint::inspect_bytes(&execution, &advanced).unwrap();
-    assert_eq!(after.symbol_identity_frontier, next);
-    assert_eq!(after.model, inspected.model);
-    assert_eq!(after.live_records, inspected.live_records);
-    let invalid = rewritten(before.bytes(), false, |fields| {
-        fields.insert(
-            "symbol_identity_frontier".into(),
-            rmp_serde::to_vec(&0_u32).unwrap(),
-        );
-    });
-    assert!(RelationalNativeCheckpoint::inspect_bytes(&execution, &invalid).is_err());
-    let envelope = fields(&before.bytes()[CHECKPOINT_MAGIC.len()..]);
-    let symbols = sequence(fields(envelope["manifest"])["symbols"]);
-    let symbol: RelationalDurableMemberLocator =
-        rmp_serde::from_slice(fields(symbols[0])["member"]).unwrap();
-    let member = sequence(envelope["members"])
-        .into_iter()
-        .map(sequence)
-        .find(|member| {
-            rmp_serde::from_slice::<RelationalDurableMemberLocator>(member[0]).unwrap() == symbol
-        })
-        .expect("the checkpoint contains the fixture's symbol payload");
-    let encoded = member[1];
-    let offset = encoded.as_ptr() as usize - before.bytes().as_ptr() as usize;
-    let mut tampered = before.bytes().to_vec();
-    tampered[offset + encoded.len() - 1] ^= 1;
-    assert!(
-        RelationalNativeCheckpoint::inspect_bytes(&execution, &tampered).is_err(),
-        "symbol payloads still undergo owner readmission and digest validation"
-    );
 }

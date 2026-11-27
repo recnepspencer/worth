@@ -77,19 +77,27 @@ worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::Extern
             .install(RelationalSchemaRegistry::new())
             .unwrap();
         cold.durability_recovery()
-            .restore_native_checkpoint(execution, &saved, worth_testkit_relational::cold_recovery::members_source(&saved))
+            .restore_native_checkpoint(
+                execution,
+                &saved,
+                worth_testkit_relational::cold_recovery::members_source(&saved),
+            )
             .unwrap();
         let receipt = cold
             .readmit_recovered_initial_schema_installation(receipt)
             .unwrap();
         let (_, installed) = receipt.issue_application_publication_owner();
+        let prior_members: Vec<_> = saved.members().iter().map(|m| m.locator()).collect();
         let before = cold
             .durability_authority()
             .native_checkpoint_with_policy(
-execution,
-execution.allocation_policy(),
-worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
-)
+                execution,
+                execution.allocation_policy(),
+                worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &prior_members,
+                    source: None,
+                },
+            )
             .unwrap();
         let basis = cold
             .admit_branch_basis(&cold.main_branch_identity())
@@ -109,10 +117,13 @@ worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::Extern
         assert_eq!(
             cold.durability_authority()
                 .native_checkpoint_with_policy(
-execution,
-execution.allocation_policy(),
-worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
-)
+                    execution,
+                    execution.allocation_policy(),
+                    worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                        current_members: &prior_members,
+                        source: None,
+                    },
+                )
                 .unwrap(),
             before
         );

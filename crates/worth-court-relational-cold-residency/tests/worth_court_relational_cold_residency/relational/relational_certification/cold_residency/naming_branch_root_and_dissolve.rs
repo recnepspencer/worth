@@ -1,4 +1,5 @@
-//! Round 2 hardening courts for Store M4.3f (`[P0-1]` and `[P1-2]`).
+//! Cold-residency courts for per-branch `CHK24` root integrity and
+//! dissolve-only commit refusal when `GROUP_MEMBER_OWNER` pages are damaged.
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::aggregate_identity::AggregateMemberRole;
 use worth_relational::facade::durability::{

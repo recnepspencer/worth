@@ -1,6 +1,6 @@
 //! The complete relation closure keeps its original refusal for an exact retry.
 use super::{
-    super::fixture::{activation, activation_proof, basis, capture, protected_payload},
+    super::fixture::{activation, activation_proof, basis, capture_carrying, protected_payload},
     fixture::*,
 };
 use worth_relational::facade::durability::RecoveredCheckpointTransitionError;
@@ -11,9 +11,9 @@ fn closed_relation_insufficient_funding_preserves_source_for_fresh_funded_retry(
     let request = super::super::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution);
-    let (mut target, mut recovered, _) = recover(execution, &world);
+    let (mut target, mut recovered, _, prior) = recover(execution, &world);
     let selected = basis(&target);
-    let before = capture(execution, &target);
+    let before = capture_carrying(execution, &target, &prior);
     let (owner, installed) = target
         .durability_recovery()
         .issue_recovered_codec_source_publication_owner(execution, &recovered)
@@ -53,7 +53,7 @@ fn closed_relation_insufficient_funding_preserves_source_for_fresh_funded_retry(
         .basis_port()
         .compare_current_exact(&selected)
         .is_ok());
-    assert_eq!(capture(execution, &target), before);
+    assert_eq!(capture_carrying(execution, &target, &prior), before);
     let candidate = candidate(
         execution,
         &mut target,
@@ -81,9 +81,9 @@ fn closed_relation_cancellation_refuses_before_effects_then_exact_retry_settles(
     let request = super::super::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution);
-    let (mut target, mut recovered, receipt) = recover(execution, &world);
+    let (mut target, mut recovered, receipt, prior) = recover(execution, &world);
     let selected = basis(&target);
-    let before = capture(execution, &target);
+    let before = capture_carrying(execution, &target, &prior);
     let cancellation = worth_relational::facade::mvcc::RelationalCancellationSource::new();
     let candidate = candidate(
         execution,
@@ -107,7 +107,7 @@ fn closed_relation_cancellation_refuses_before_effects_then_exact_retry_settles(
         .basis_port()
         .compare_current_exact(&selected)
         .is_ok());
-    assert_eq!(capture(execution, &target), before);
+    assert_eq!(capture_carrying(execution, &target, &prior), before);
     assert_order(execution, &target, &world.outputs, &world.relations);
     let candidate = super::fixture::candidate(
         execution,

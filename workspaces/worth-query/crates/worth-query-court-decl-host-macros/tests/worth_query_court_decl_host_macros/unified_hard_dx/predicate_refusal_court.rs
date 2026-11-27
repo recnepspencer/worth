@@ -1,5 +1,5 @@
-//! Sol Round 1 court for Blocker #3: unit-bearing comparison predicates and
-//! exact duplicate filter clauses refuse cleanly through definition validation
+//! Predicate refusal court: unit-bearing comparison predicates and exact
+//! duplicate filter clauses refuse cleanly through definition validation
 //! without panicking, while distinct upper/lower bounds remain legal.
 use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
 use worth_query_decl::facade::application_query::{
@@ -269,7 +269,7 @@ mod predicate_refusal_fixtures {
 }
 
 #[test]
-fn sol_blocker_3_unit_bearing_and_duplicate_filter_refuse_without_panic_and_range_admits() {
+fn unit_bearing_and_duplicate_filter_refuse_without_panic_and_range_admits() {
     let unit_err = declaration_builder(predicate_refusal_fixtures::UnitSchema)
         .expect("base UnitSchema builder initializes")
         .application_query(predicate_refusal_fixtures::UnitLengthCompareQuery::definition())

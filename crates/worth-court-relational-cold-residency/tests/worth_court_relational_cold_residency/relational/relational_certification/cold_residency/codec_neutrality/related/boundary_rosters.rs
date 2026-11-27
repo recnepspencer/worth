@@ -2,7 +2,7 @@
 use super::{
     super::super::checkpoint_wire_fixture::{edit_original, field, replace_field},
     super::{
-        fixture::{basis, capture},
+        fixture::{basis, capture, capture_carrying},
         publication_fixture, serial_request,
     },
     fixture::*,
@@ -54,9 +54,10 @@ fn refuse_missing_and_foreign() {
         .unwrap()
         .clone();
     let saved = capture(execution, &world.runtime);
+    let saved_source = worth_testkit_relational::cold_recovery::members_source(&saved);
     let commit = CommitId(publication.authority().publication_coordinate().0);
     for missing in [true, false] {
-        let untrusted = edit_original(&saved, commit, |bytes| {
+        let (untrusted, untrusted_source) = edit_original(&saved, &saved_source, commit, |bytes| {
             edit_relations(bytes, |relations| {
                 if missing {
                     relations.retain(|entry| entry.id != boundary);
@@ -68,18 +69,15 @@ fn refuse_missing_and_foreign() {
         });
         let (mut cold, receipt) = installed_references(1);
         cold.durability_recovery()
-            .restore_native_checkpoint(
-                execution,
-                &untrusted,
-                worth_testkit_relational::cold_recovery::members_source(&untrusted),
-            )
+            .restore_native_checkpoint(execution, &untrusted, untrusted_source.clone())
             .unwrap();
         let receipt = cold
             .readmit_recovered_initial_schema_installation(receipt)
             .unwrap();
         let (_, installed) = receipt.issue_application_publication_owner();
         let selected = basis(&cold);
-        let before = capture(execution, &cold);
+        let prior: Vec<_> = untrusted_source.members.keys().copied().collect();
+        let before = capture_carrying(execution, &cold, &prior);
         let denied = cold
             .readmit_required_output_publication(
                 execution,
@@ -108,7 +106,7 @@ fn refuse_missing_and_foreign() {
             .basis_port()
             .compare_current_exact(&selected)
             .is_ok());
-        assert_eq!(capture(execution, &cold), before);
+        assert_eq!(capture_carrying(execution, &cold, &prior), before);
         assert_eq!(
             relation_payload(execution, &cold, boundary),
             relation_payload(execution, &world.runtime, boundary)

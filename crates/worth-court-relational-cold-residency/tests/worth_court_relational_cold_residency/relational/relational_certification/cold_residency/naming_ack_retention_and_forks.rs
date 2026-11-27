@@ -1,4 +1,5 @@
-//! Round 2 hardening courts for Store M4.3f (`[P1-3]`, `[P1-4]`, `[P1-5]`, `[P1-8]`):
+//! Cold-residency courts for checkpoint ACK, retirement propagation, inherited
+//! cold historical group forks, and retention-floor fork refusal:
 //! - Fresh-runtime C1 ACK preserves historical group on checkout and fork.
 //! - Retirement between C1 capture and C1 ACK does not reappear in C2.
 //! - Cold historical fork with inherited groups survives child checkpoint, ACK,
@@ -29,7 +30,7 @@ use super::bounded_naming_fixture::{
     create_named_entities, delete_entity, durable_named_runtime, group_scheme, observe_branch,
     publish_group_partition, GROUP_SCHEME,
 };
-use super::bounded_naming_r2::fork_retained_at;
+use super::naming_branch_root_and_dissolve::fork_retained_at;
 
 fn recover_from_medium(
     request: &ExecutionRequest<'_, '_>,
