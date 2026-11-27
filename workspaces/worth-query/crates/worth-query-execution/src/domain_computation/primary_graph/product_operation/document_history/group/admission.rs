@@ -1,6 +1,6 @@
 //! Every member's real admission precedes reservation and candidate creation.
 use super::*;
-use super::super::recording::{group_meaning, JournalNamespace};
+use super::super::recording::{group_meaning, Attempt, RecordingKind};
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
@@ -61,7 +61,6 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         key: u128,
         members: Vec<WorthQueryHistoryGroupMemberAdmission>,
     ) -> Result<WorthQueryDocumentHistoryGroupPreparation, WorthQueryDocumentHistoryDenial> {
-        use super::super::journal::AttemptLookup;
         use WorthQueryDocumentHistoryDenial as Denial;
         let resources = installed.group_resources();
         if members.is_empty() {
@@ -94,47 +93,48 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let execution = phase
             .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
+        let label = &installed.definition().parts().operations[first.operation_index].label;
         let mut selected = self.selection.lock();
-        match selected.journal.lookup(JournalNamespace::Writer, meaning) {
-            AttemptLookup::Completed(node) => {
+        let attempt = selected.lookup_and_reserve(
+            RecordingKind::Group,
+            meaning,
+            |selection| {
+                first.parent == selection.journal.current_step().id()
+                    && first.expected == selection.expected
+            },
+            |selection| {
+                let bytes = members
+                    .len()
+                    .checked_mul(
+                        std::mem::size_of::<WorthQueryApplicationIdempotencyBinding>()
+                            + std::mem::size_of::<HistoryOperationScope>()
+                            + std::mem::size_of::<CapturedMember>(),
+                    )
+                    .ok_or(Denial::GroupMemberLimitExceeded)?;
+                let (allocation, _) =
+                    allocation::HistoryInsertionAllocation::reserve::<Self>(&execution, 0, bytes)
+                        .map_err(Denial::Recording)?;
+                let record = selection
+                    .journal
+                    .reserve_group(&execution, meaning, label)?;
+                Ok((record, selection.expected.clone(), allocation))
+            },
+        )?;
+        drop(selected);
+        let (record, expected, allocation) = match attempt {
+            Attempt::Fresh(reserved) => reserved,
+            Attempt::Recorded(step) => {
                 return Ok(WorthQueryDocumentHistoryGroupPreparation::AlreadyRecorded(
-                    selected
-                        .journal
-                        .step(node)
-                        .expect("completed group")
-                        .clone(),
+                    step,
                 ))
             }
-            AttemptLookup::Drift => return Err(Denial::IntentDrift),
-            AttemptLookup::Reserved => return Err(Denial::AttemptInFlight),
-            AttemptLookup::Unseen => {}
-        }
-        if first.parent != selected.journal.current_step().id()
-            || first.expected != selected.expected
-        {
-            return Err(Denial::HeadDiverged);
-        }
-        let bytes = members
-            .len()
-            .checked_mul(
-                std::mem::size_of::<WorthQueryApplicationIdempotencyBinding>()
-                    + std::mem::size_of::<HistoryOperationScope>()
-                    + std::mem::size_of::<CapturedMember>(),
-            )
-            .ok_or(Denial::GroupMemberLimitExceeded)?;
-        let (allocation, _) =
-            allocation::HistoryInsertionAllocation::reserve::<Self>(&execution, 0, bytes)
-                .map_err(Denial::Recording)?;
+        };
         let scopes = members
             .iter()
             .map(|member| member.operation_scope.clone())
             .collect();
         let completed = Vec::with_capacity(members.len());
-        let label = &installed.definition().parts().operations[first.operation_index].label;
         let members = members.into_iter().map(|member| member.meaning).collect();
-        let record = selected.journal.reserve_group(&execution, meaning, label)?;
-        let expected = selected.expected.clone();
-        drop(selected);
         Ok(WorthQueryDocumentHistoryGroupPreparation::Reserved(
             WorthQueryDocumentHistoryGroupReservation {
                 reservation: WorthQueryDocumentHistoryReservation {

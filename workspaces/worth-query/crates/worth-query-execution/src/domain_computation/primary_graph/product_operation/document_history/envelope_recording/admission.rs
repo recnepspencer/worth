@@ -1,7 +1,6 @@
 //! One envelope reserves one history record before any candidate exists.
 use super::super::{
-    journal::AttemptLookup,
-    recording::{envelope_meaning, CorrectionParts, JournalNamespace},
+    recording::{envelope_meaning, Attempt, CorrectionParts, RecordingKind},
     WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
     WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
     WorthQueryHistoryNodeId, WorthQueryHistoryStepMetadata,
@@ -9,8 +8,7 @@ use super::super::{
 use crate::{
     basis::WorthQueryProductBranchReadIdentity,
     domain_computation::primary_graph::{
-        WorthQueryAdvancementPhase, WorthQueryApplicationIdempotencyBinding,
-        WorthQueryApplicationProjection,
+        WorthQueryAdvancementPhase, WorthQueryApplicationProjection,
     },
     publication_boundary::{
         document_history::WorthQueryDocumentHistoryRead, WorthQueryProgramPublicationAccess,
@@ -148,34 +146,28 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let mut selected = self.selection.lock();
-        match selected.journal.lookup(JournalNamespace::Envelope, meaning) {
-            AttemptLookup::Completed(node) => {
-                return Ok(WorthQueryDocumentHistoryRecordPreparation::AlreadyRecorded(
-                    selected
-                        .journal
-                        .step(node)
-                        .expect("completed envelope binds a completed node")
-                        .clone(),
-                ))
-            }
-            AttemptLookup::Drift => return Err(Denial::IntentDrift),
-            AttemptLookup::Reserved => return Err(Denial::AttemptInFlight),
-            AttemptLookup::Unseen => {}
-        }
-        if selected.expected != observed {
-            return Err(Denial::HeadDiverged);
-        }
-        let record = selected
-            .journal
-            .reserve(&execution, JournalNamespace::Envelope, meaning, label, step_metadata)?;
-        Ok(WorthQueryDocumentHistoryRecordPreparation::Reserved(
-            WorthQueryDocumentHistoryReservation {
-                operation_scope: None,
-                record,
-                expected: selected.expected.clone(),
+        selected
+            .lookup_and_reserve(
+                RecordingKind::Envelope,
                 meaning,
-            },
-        ))
+                |selection| selection.expected == observed,
+                |selection| {
+                    let record = selection.journal.reserve(
+                        &execution,
+                        RecordingKind::Envelope.namespace(),
+                        meaning,
+                        label,
+                        step_metadata,
+                    )?;
+                    Ok(WorthQueryDocumentHistoryReservation {
+                        operation_scope: None,
+                        record,
+                        expected: selection.expected.clone(),
+                        meaning,
+                    })
+                },
+            )
+            .map(Attempt::into_preparation)
     }
 }
 

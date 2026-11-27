@@ -1,6 +1,7 @@
 //! Admission precedes attempt inspection and allocation precedes candidate effects.
 use super::{
-    journal::{AttemptLookup, ReservedHistoryRecord},
+    journal::ReservedHistoryRecord,
+    recording::{Attempt, RecordingKind},
     WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
     WorthQueryDocumentHistoryOperation, WorthQueryHistoryStep,
 };
@@ -37,6 +38,17 @@ pub struct WorthQueryDocumentHistoryReservation {
 pub enum WorthQueryDocumentHistoryRecordPreparation {
     Reserved(WorthQueryDocumentHistoryReservation),
     AlreadyRecorded(WorthQueryHistoryStep),
+}
+
+impl Attempt<WorthQueryDocumentHistoryReservation> {
+    pub(super) fn into_preparation(self) -> WorthQueryDocumentHistoryRecordPreparation {
+        match self {
+            Self::Fresh(reserved) => WorthQueryDocumentHistoryRecordPreparation::Reserved(reserved),
+            Self::Recorded(step) => {
+                WorthQueryDocumentHistoryRecordPreparation::AlreadyRecorded(step)
+            }
+        }
+    }
 }
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
@@ -88,44 +100,36 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let expected =
             WorthQueryProductBranchReadIdentity::from_observation(selected.product().observation());
         let mut selected = self.selection.lock();
-        if selected.expected != expected {
-            return Err(Denial::HeadDiverged);
-        }
-        match selected.journal.lookup(super::recording::JournalNamespace::Writer, meaning) {
-            AttemptLookup::Drift => return Err(Denial::IntentDrift),
-            AttemptLookup::Reserved => return Err(Denial::AttemptInFlight),
-            AttemptLookup::Completed(node) => {
-                return Ok(WorthQueryDocumentHistoryRecordPreparation::AlreadyRecorded(
-                    selected
-                        .journal
-                        .step(node)
-                        .expect("completed attempt binds a completed node")
-                        .clone(),
-                ))
-            }
-            AttemptLookup::Unseen => {}
-        }
-        let label = installed
-            .operation_label::<M>()
-            .expect("membership was admitted");
-        let execution = phase
-            .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
-            .map_err(Denial::Stopped)?;
-        let record = selected.journal.reserve(
-            &execution,
-            super::recording::JournalNamespace::Writer,
-            meaning,
-            label,
-            &super::WorthQueryHistoryStepMetadata::none(),
-        )?;
-        Ok(WorthQueryDocumentHistoryRecordPreparation::Reserved(
-            WorthQueryDocumentHistoryReservation {
-                operation_scope: Some(super::HistoryOperationScope::from_admitted(admitted)),
-                record,
-                expected: selected.expected.clone(),
+        selected
+            .lookup_and_reserve(
+                RecordingKind::Edit,
                 meaning,
-            },
-        ))
+                |selection| selection.expected == expected,
+                |selection| {
+                    let label = installed
+                        .operation_label::<M>()
+                        .expect("membership was admitted");
+                    let execution = phase
+                        .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
+                        .map_err(Denial::Stopped)?;
+                    let record = selection.journal.reserve(
+                        &execution,
+                        RecordingKind::Edit.namespace(),
+                        meaning,
+                        label,
+                        &super::WorthQueryHistoryStepMetadata::none(),
+                    )?;
+                    Ok(WorthQueryDocumentHistoryReservation {
+                        operation_scope: Some(super::HistoryOperationScope::from_admitted(
+                            admitted,
+                        )),
+                        record,
+                        expected: selection.expected.clone(),
+                        meaning,
+                    })
+                },
+            )
+            .map(Attempt::into_preparation)
     }
 
     pub(super) fn validate_reservation(
