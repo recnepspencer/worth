@@ -41,7 +41,13 @@ const DEFAULT_SEED_BASE: u64 = 0x7b02_0000;
 /// `0x7b02000f` (corrections on): a `current_output` read that returned
 /// `Missing` is not a verifiable consumer fact, so the chain keeps a stale
 /// `dst-mid` once `dst-a` is readmitted after it (held on public #429).
-const HELD_DOCUMENT_SEEDS: [(u64, bool, &str); 1] = [(0x7b02_000f, true, "public #429")];
+/// `0x7b02162a` (corrections on): re-correcting a retirement after its
+/// correction was undone is refused at Relational publication, "exact route
+/// has no canonical publication" (held on public #450).
+const HELD_DOCUMENT_SEEDS: [(u64, bool, &str); 2] = [
+    (0x7b02_000f, true, "public #429"),
+    (0x7b02_162a, true, "public #450"),
+];
 
 fn variable(name: &str, default: u64) -> u64 {
     std::env::var(name)
