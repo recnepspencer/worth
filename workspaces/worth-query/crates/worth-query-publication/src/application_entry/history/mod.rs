@@ -134,6 +134,7 @@ pub use payload::{
 mod preview;
 pub use preview::{WorthQueryApplicationHistoryPreview, WorthQueryHistoryPreviewResult};
 mod read;
+mod recording;
 mod redo;
 mod request_context;
 use request_context::{DocumentRequestContext, Governed, MetadataAuthority, Ungoverned};

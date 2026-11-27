@@ -1,11 +1,8 @@
 //! Fresh document READ and actual source-side preparation precede any protected attempt lookup.
 use super::*;
 use worth_query_declaration::facade::application_operation::NoApplicationMutationSource;
-use worth_query_execution::{
-    facade::product::WorthQueryProductBranchCreateError,
-    publication_boundary::document_history::{
-        WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryRecordPreparation,
-    },
+use worth_query_execution::publication_boundary::document_history::{
+    WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryRecordPreparation,
 };
 
 impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>
@@ -47,53 +44,45 @@ where
         };
         let current = context.request();
         let mut already = None;
-        let result = current
-            .application
-            .with_application_advancement(current.scope, |phase| {
-                let Phase::Admission(state) = self.phase.as_mut().expect("admission phase") else {
-                    unreachable!()
-                };
-                let (prepared, selected) = Mode::<S, I, A>::prepare(
-                    state.operation.as_ref().expect("original action"),
-                    &phase,
-                    current,
-                )
-                .map_err(|cause| {
-                    WorthQueryHistoryEditDenial::History(
-                        WorthQueryApplicationHistoryDenial::Mutation(cause),
+        let result = context.advance(|phase| {
+            let Phase::Admission(state) = self.phase.as_mut().expect("admission phase") else {
+                unreachable!()
+            };
+            let (prepared, selected) = Mode::<S, I, A>::prepare(
+                state.operation.as_ref().expect("original action"),
+                phase,
+                current,
+            )
+            .map_err(WorthQueryApplicationHistoryDenial::Mutation)?;
+            let prepared_record = context.admit_metadata(
+                phase,
+                self.document.access.clone(),
+                &self.document.payload,
+                metadata,
+                |_, installed, read| {
+                    self.document.owner.reserve_history_record::<I::Binding>(
+                        phase,
+                        &program_publication_access(),
+                        installed,
+                        WorthQueryDocumentHistoryOperation::new(
+                            &selected,
+                            &prepared.admission,
+                            prepared.idempotency,
+                        ),
+                        read,
                     )
-                })?;
-                let prepared_record = context
-                    .admit_metadata(
-                        &phase,
-                        self.document.access.clone(),
-                        &self.document.payload,
-                        metadata,
-                        |_, installed, read| {
-                            self.document.owner.reserve_history_record::<I::Binding>(
-                                &phase,
-                                &program_publication_access(),
-                                installed,
-                                WorthQueryDocumentHistoryOperation::new(
-                                    &selected,
-                                    &prepared.admission,
-                                    prepared.idempotency,
-                                ),
-                                read,
-                            )
-                        },
-                    )
-                    .map_err(WorthQueryHistoryEditDenial::History)?;
-                match prepared_record {
-                    WorthQueryDocumentHistoryRecordPreparation::Reserved(reserved) => {
-                        state.reservation = Some(reserved)
-                    }
-                    WorthQueryDocumentHistoryRecordPreparation::AlreadyRecorded(step) => {
-                        already = Some(step)
-                    }
+                },
+            )?;
+            match prepared_record {
+                WorthQueryDocumentHistoryRecordPreparation::Reserved(reserved) => {
+                    state.reservation = Some(reserved)
                 }
-                Ok(())
-            });
+                WorthQueryDocumentHistoryRecordPreparation::AlreadyRecorded(step) => {
+                    already = Some(step)
+                }
+            }
+            Ok(())
+        });
         if let Some(step) = already {
             let Some(Phase::Admission(mut state)) = self.phase.take() else {
                 unreachable!()
@@ -109,7 +98,7 @@ where
             };
             self.phase = Some(Phase::Forking(state));
         }
-        self.after_opening(result)
+        self.after_opening(result.map_err(WorthQueryHistoryEditDenial::History))
     }
 
     #[inline(never)]
@@ -120,80 +109,76 @@ where
         let Some(Phase::Forking(state)) = self.phase.as_mut() else {
             unreachable!()
         };
-        if let Err(cause) = ForkRecovery::release_in_request(&mut state.recovery, request) {
-            return WorthQueryHistoryEditAdvance::Refused {
-                edit: self,
-                denial: cause,
-            };
-        }
+        let mut recovery = state.recovery.take();
         let runtime = self.document.owner.application();
-        let result = runtime.with_application_advancement(request.scope, |phase| {
-            self.document
-                .read_in_advancement(&phase, request)
-                .map_err(WorthQueryHistoryEditDenial::History)?;
-            let current = WorthQueryApplicationRequest {
-                application: runtime,
-                principal: request.principal,
-                scope: request.scope,
-                branch: self.document.owner.branch(),
-            };
-            let Some(Phase::Forking(state)) = self.phase.as_mut() else {
-                unreachable!()
-            };
-            let (prepared, selected) = Mode::<S, I, A>::prepare(
-                state.operation.as_ref().expect("original initial action"),
-                &phase,
-                &current,
-            )
-            .map_err(|cause| {
-                WorthQueryHistoryEditDenial::History(WorthQueryApplicationHistoryDenial::Mutation(
-                    cause,
-                ))
-            })?;
-            let installed = runtime
-                .installed_schema()
-                .installed_history::<H>()
-                .map_err(|cause| {
-                    WorthQueryHistoryEditDenial::History(
-                        WorthQueryApplicationHistoryDenial::Installation(cause),
-                    )
-                })?;
-            self.document
-                .owner
-                .readmit_history_record::<I::Binding>(
-                    &phase,
-                    &program_publication_access(),
-                    &installed,
-                    WorthQueryDocumentHistoryOperation::new(
-                        &selected,
-                        &prepared.admission,
-                        prepared.idempotency,
-                    ),
-                    state.reservation.as_ref().expect("actual reserved storage"),
+        let document = &self.document;
+        let edit_phase = &mut self.phase;
+        let result = super::super::recording::fork_candidate(
+            document,
+            request,
+            &mut recovery,
+            |phase, recovery| {
+                let current = WorthQueryApplicationRequest {
+                    application: runtime,
+                    principal: request.principal,
+                    scope: request.scope,
+                    branch: document.owner.branch(),
+                };
+                let Some(Phase::Forking(state)) = edit_phase.as_mut() else {
+                    unreachable!()
+                };
+                let (prepared, selected) = Mode::<S, I, A>::prepare(
+                    state.operation.as_ref().expect("original initial action"),
+                    phase,
+                    &current,
                 )
                 .map_err(|cause| {
                     WorthQueryHistoryEditDenial::History(
-                        WorthQueryApplicationHistoryDenial::Document(cause),
+                        WorthQueryApplicationHistoryDenial::Mutation(cause),
                     )
                 })?;
-            if state.candidate.is_none() {
-                match self.document.owner.create_history_candidate(
-                    &phase,
-                    &program_publication_access(),
-                    state.reservation.as_ref().unwrap(),
-                ) {
-                    Ok(candidate) => state.candidate = Some(candidate),
-                    Err(WorthQueryDocumentHistoryCandidateDenial::Creation(
-                        WorthQueryProductBranchCreateError::ProductUnpublished(recovery),
-                    )) => {
-                        state.recovery = Some(ForkRecovery::Creation(recovery));
-                        return Err(WorthQueryHistoryEditDenial::ForkRecovery);
+                let installed = runtime
+                    .installed_schema()
+                    .installed_history::<H>()
+                    .map_err(|cause| {
+                        WorthQueryHistoryEditDenial::History(
+                            WorthQueryApplicationHistoryDenial::Installation(cause),
+                        )
+                    })?;
+                document
+                    .owner
+                    .readmit_history_record::<I::Binding>(
+                        phase,
+                        &program_publication_access(),
+                        &installed,
+                        WorthQueryDocumentHistoryOperation::new(
+                            &selected,
+                            &prepared.admission,
+                            prepared.idempotency,
+                        ),
+                        state.reservation.as_ref().expect("actual reserved storage"),
+                    )
+                    .map_err(|cause| {
+                        WorthQueryHistoryEditDenial::History(
+                            WorthQueryApplicationHistoryDenial::Document(cause),
+                        )
+                    })?;
+                if state.candidate.is_none() {
+                    match document.owner.create_history_candidate(
+                        phase,
+                        &program_publication_access(),
+                        state.reservation.as_ref().unwrap(),
+                    ) {
+                        Ok(candidate) => state.candidate = Some(candidate),
+                        Err(cause) => return Err(ForkRecovery::creation_refused(recovery, cause)),
                     }
-                    Err(cause) => return Err(WorthQueryHistoryEditDenial::Candidate(cause)),
                 }
-            }
-            Ok(())
-        });
+                Ok(())
+            },
+        );
+        if let Some(Phase::Forking(state)) = self.phase.as_mut() {
+            state.recovery = recovery;
+        }
         if matches!(&self.phase, Some(Phase::Forking(state)) if state.candidate.is_some()) {
             let Some(Phase::Forking(mut state)) = self.phase.take() else {
                 unreachable!()
@@ -240,20 +225,11 @@ where
 
     fn after_opening(
         self,
-        result: Result<
-            Result<(), WorthQueryHistoryEditDenial>,
-            worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
-        >,
+        result: Result<(), WorthQueryHistoryEditDenial>,
     ) -> WorthQueryHistoryEditAdvance<Self> {
         match result {
-            Err(cause) => WorthQueryHistoryEditAdvance::Refused {
-                edit: self,
-                denial: WorthQueryHistoryEditDenial::History(
-                    WorthQueryApplicationHistoryDenial::ExecutionRequest(cause),
-                ),
-            },
-            Ok(Err(denial)) => WorthQueryHistoryEditAdvance::Refused { edit: self, denial },
-            Ok(Ok(()))
+            Err(denial) => WorthQueryHistoryEditAdvance::Refused { edit: self, denial },
+            Ok(())
                 if matches!(
                     self.posture(),
                     WorthQueryHistoryEditPosture::AlreadyRecorded
@@ -261,7 +237,7 @@ where
             {
                 WorthQueryHistoryEditAdvance::Ready(self)
             }
-            Ok(Ok(())) => WorthQueryHistoryEditAdvance::Progress(self),
+            Ok(()) => WorthQueryHistoryEditAdvance::Progress(self),
         }
     }
 }

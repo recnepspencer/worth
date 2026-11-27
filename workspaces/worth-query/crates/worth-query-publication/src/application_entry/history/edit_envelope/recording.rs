@@ -179,13 +179,19 @@ where
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {
     let access = program_publication_access();
-    let current = WorthQueryApplicationRequest {
-        application: document.owner.application(),
-        principal: context.principal,
-        scope: context.scope,
-        branch: document.owner.branch(),
+    let request = match DocumentRequestContext::bind(
+        &document.owner,
+        &WorthQueryApplicationRequest {
+            application: context.application,
+            principal: context.principal,
+            scope: context.scope,
+            branch: context.branch,
+        },
+    ) {
+        Ok(request) => request,
+        Err(cause) => return Admission::Refused(Denial::History(cause)),
     };
-    if let Err(cause) = document.read_in_advancement(phase, &current) {
+    if let Err(cause) = document.read_in_advancement(phase, request.request()) {
         return Admission::Refused(Denial::History(cause));
     }
     let correction = match correction {
@@ -205,11 +211,11 @@ where
     // Only a refused correction arrives without a captured intent, and it
     // returned above.
     let captured = captured.expect("an envelope with an intent past its correction check");
-    let prepared = super::super::metadata::with_metadata_read::<S, H, _>(
+    let prepared = request.admit_metadata(
         phase,
-        &current,
         document.access.clone(),
         &document.payload,
+        Ungoverned,
         |_, installed, read| {
             let envelope = WorthQueryDocumentHistoryEnvelopeIntent::new(
                 &captured.key,
