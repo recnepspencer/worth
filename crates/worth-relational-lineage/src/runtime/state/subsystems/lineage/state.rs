@@ -6,29 +6,38 @@ use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
 use crate::contracts::lineage::data::events::LineageEventRecord;
 use crate::contracts::lineage::data::graph::LineageNode;
+use crate::lineage::tiered::ColdNamingSource;
 
 use super::name_indexes::BranchNameIndexes;
-use super::naming_basis::{rebuild_all_branch_naming_states, AuthoritativeBranchNamingState};
+use super::naming_basis::{AuthoritativeBranchNamingState, NamingBasisUnavailable};
+use super::naming_rebuild::{rebuild_all_branch_naming_states, BranchNaming};
+use super::recovery_token::FullLineageRecoveryToken;
 use super::resolution_indexes::LineageResolutionIndexes;
 
 crate::lineage::clone_fences::assert_not_clone!(LineageState);
 crate::lineage::clone_fences::assert_not_clone!(super::name_indexes::BranchNameIndexes);
 crate::lineage::clone_fences::assert_not_clone!(super::group_states::BranchGroupStates);
 
-/// The lineage subsystem's authoritative contents.
+/// The lineage subsystem's authoritative contents (`!Clone`; use `fork_detached`).
 #[derive(Debug)]
 pub struct LineageState {
+    pub(super) state_id: super::recovery_token::LineageStateId,
     pub nodes: BTreeMap<crate::contracts::identity::data::primitives::LineageId, LineageNode>,
     pub(super) relation_lineages: BTreeMap<RelationId, LineageId>,
     pub(super) relation_lineage_holders: BTreeMap<LineageId, RelationId>,
     pub(super) branch_forks: BTreeMap<BranchId, (BranchId, CommitId)>,
-    pub(super) branch_naming_states: BTreeMap<BranchId, AuthoritativeBranchNamingState>,
+    pub(super) fork_children: BTreeMap<BranchId, BTreeMap<CommitId, BTreeSet<BranchId>>>,
+    pub(super) branch_naming_states: BTreeMap<BranchId, BranchNaming>,
     pub(super) name_indexes: BranchNameIndexes,
     pub(super) naming_rebuilt_event_frontier: Option<u64>,
     pub(super) published_events: Vec<PublishedLineageEvent>,
     pub(super) published_event_positions: BTreeMap<u64, usize>,
     pub(super) published_group_lineage: Vec<super::group_states::PublishedGroupLineage>,
     pub(super) group_states: super::group_states::BranchGroupStates,
+    pub(super) cold_naming: Option<Arc<dyn ColdNamingSource>>,
+    pub(super) branch_generations: BTreeMap<BranchId, u64>,
+    pub(super) next_generation: u64,
+    pub(super) full_history: Option<FullLineageRecoveryToken>,
     resolution_indexes: LineageResolutionIndexes,
     pub(crate) identity_allocator: super::LineageIdentityAllocator,
 }
@@ -41,41 +50,18 @@ pub(super) struct PublishedLineageEvent {
     pub(super) publication_commit_id: CommitId,
 }
 
-pub struct ValidatedLineageEventBatch {
-    events: Vec<LineageEventRecord>,
-    groups: Option<(
-        BranchId,
-        Vec<crate::lineage::groups::CommittedGroupTransition>,
-    )>,
-}
-
-impl ValidatedLineageEventBatch {
-    pub fn from_reserved(events: Vec<LineageEventRecord>) -> Self {
-        Self {
-            events,
-            groups: None,
-        }
-    }
-
-    /// Adds `branch`'s decoded canonical group lineage frame.
-    pub fn with_group_lineage(
-        mut self,
-        branch: &BranchId,
-        frame: &[u8],
-    ) -> Result<Self, crate::durability::naming::PersistentNameDurabilityError> {
-        let transitions = crate::durability::naming::decode_group_lineage_frame(frame)?;
-        self.groups = Some((branch.clone(), transitions));
-        Ok(self)
-    }
-}
+pub use super::published_batch::ValidatedLineageEventBatch;
 
 impl LineageState {
     pub(super) fn empty() -> Self {
+        let state_id = super::recovery_token::next_state_id();
         Self {
+            state_id,
             nodes: BTreeMap::new(),
             relation_lineages: BTreeMap::new(),
             relation_lineage_holders: BTreeMap::new(),
             branch_forks: BTreeMap::new(),
+            fork_children: BTreeMap::new(),
             branch_naming_states: BTreeMap::new(),
             name_indexes: BranchNameIndexes::default(),
             naming_rebuilt_event_frontier: None,
@@ -83,9 +69,19 @@ impl LineageState {
             published_event_positions: BTreeMap::new(),
             published_group_lineage: Vec::new(),
             group_states: Default::default(),
+            cold_naming: None,
+            branch_generations: BTreeMap::new(),
+            next_generation: 1,
+            full_history: Some(FullLineageRecoveryToken::fresh(state_id)),
             resolution_indexes: LineageResolutionIndexes::default(),
             identity_allocator: super::LineageIdentityAllocator::new(),
         }
+    }
+
+    pub(super) fn bump_branch_generation(&mut self, branch: &BranchId) {
+        let generation = self.next_generation;
+        self.next_generation = self.next_generation.saturating_add(1);
+        self.branch_generations.insert(branch.clone(), generation);
     }
 
     fn record_event(&mut self, event: LineageEventRecord, publication_commit_id: CommitId) {
@@ -113,15 +109,22 @@ impl LineageState {
         }
         self.resolution_indexes.append_event(event_position, &event);
         if apply_naming {
-            self.branch_naming_states
-                .entry(event.branch_id().clone())
-                .or_default()
-                .apply_event(
+            let branch = event.branch_id().clone();
+            self.bump_branch_generation(&branch);
+            let slot = self
+                .branch_naming_states
+                .entry(branch)
+                .or_insert_with(|| Ok(AuthoritativeBranchNamingState::over(None, None, None)));
+            if let Ok(state) = slot
+                && let Err(cause) = state.apply_event(
                     &event,
                     publication_commit_id,
                     &self.nodes,
                     &self.relation_lineage_holders,
-                );
+                )
+            {
+                *slot = Err(NamingBasisUnavailable::Storage(cause));
+            }
         }
         self.published_events.push(PublishedLineageEvent {
             event,
@@ -249,48 +252,43 @@ impl LineageState {
     pub(crate) fn event_publication_commit(&self, position: usize) -> Option<CommitId> {
         self.published_events
             .get(position)
-            .map(|published| published.publication_commit_id)
+            .map(|p| p.publication_commit_id)
     }
 
     pub(crate) fn event(&self, position: usize) -> Option<Arc<LineageEventRecord>> {
         self.published_events
             .get(position)
-            .map(|published| Arc::clone(&published.event))
+            .map(|p| Arc::clone(&p.event))
     }
 
     pub(crate) fn events(&self) -> impl DoubleEndedIterator<Item = &LineageEventRecord> {
-        self.published_events
-            .iter()
-            .map(|published| published.event.as_ref())
+        self.published_events.iter().map(|p| p.event.as_ref())
     }
 
     pub(crate) fn published_rows(&self) -> Vec<(Arc<LineageEventRecord>, CommitId)> {
         self.published_events
             .iter()
-            .map(|row| (row.event.clone(), row.publication_commit_id))
+            .map(|r| (r.event.clone(), r.publication_commit_id))
             .collect()
     }
 
     pub(crate) fn shared_events(&self) -> Vec<Arc<LineageEventRecord>> {
         self.published_events
             .iter()
-            .map(|published| Arc::clone(&published.event))
+            .map(|p| Arc::clone(&p.event))
             .collect()
     }
 
     pub fn rebuild_derived_indexes(
         &mut self,
         lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
+        full: &FullLineageRecoveryToken,
     ) {
+        full.assert_owner(self.state_id);
         let relation_bindings: Vec<_> = self
             .published_events
             .iter()
-            .filter_map(|published| {
-                Some((
-                    published.event.relation_id()?,
-                    *published.event.targets().first()?,
-                ))
-            })
+            .filter_map(|p| Some((p.event.relation_id()?, *p.event.targets().first()?)))
             .collect();
         for (relation_id, lineage_id) in relation_bindings {
             self.record_relation_lineage(relation_id, lineage_id);
@@ -302,32 +300,17 @@ impl LineageState {
             .map(|(position, published)| (published.event.event_id(), position))
             .collect();
         let nodes = self.nodes.values();
-        let events = self
-            .published_events
-            .iter()
-            .map(|published| published.event.as_ref());
+        let events = self.published_events.iter().map(|p| p.event.as_ref());
         self.resolution_indexes.rebuild(lane, nodes, events);
-        self.rebuild_group_states();
+        self.rebuild_group_states(full);
         self.branch_naming_states = rebuild_all_branch_naming_states(
+            full,
             &self.published_events,
             &self.nodes,
             &self.relation_lineage_holders,
             &self.branch_forks,
         );
-        self.rebuild_name_indexes();
-    }
-
-    pub(crate) fn finalize_cold_naming_basis(
-        &mut self,
-        lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
-    ) {
-        self.published_events
-            .sort_by_key(|published| published.event.event_id());
-        self.rebuild_derived_indexes(lane);
-        self.naming_rebuilt_event_frontier = self
-            .published_events
-            .last()
-            .map(|published| published.event.event_id());
+        self.rebuild_name_indexes(full);
     }
 
     pub fn replace_events(
@@ -342,7 +325,10 @@ impl LineageState {
                 publication_commit_id,
             })
             .collect();
-        self.rebuild_derived_indexes(lane);
+        self.cold_naming = None;
+        let full = FullLineageRecoveryToken::full_replay(self.state_id);
+        self.rebuild_derived_indexes(lane, &full);
+        self.full_history = Some(full);
         self.naming_rebuilt_event_frontier = self
             .published_events
             .last()
@@ -357,13 +343,48 @@ impl LineageState {
         self.name_indexes.clear();
         std::mem::take(&mut self.published_events)
             .into_iter()
-            .map(|published| {
+            .map(|p| (Arc::unwrap_or_clone(p.event), p.publication_commit_id))
+    }
+
+    /// An independent state for a forked runtime (`O(resident)` COW fork).
+    pub fn fork_detached(&self) -> Self {
+        let state_id = super::recovery_token::next_state_id();
+        let branch_naming_states = self
+            .branch_naming_states
+            .iter()
+            .map(|(b, s)| {
                 (
-                    Arc::try_unwrap(published.event)
-                        .unwrap_or_else(|shared| shared.as_ref().clone()),
-                    published.publication_commit_id,
+                    b.clone(),
+                    s.as_ref()
+                        .map(|s| s.fork(s.base().cloned()))
+                        .map_err(|e| *e),
                 )
             })
+            .collect();
+        Self {
+            state_id,
+            nodes: self.nodes.clone(),
+            relation_lineages: self.relation_lineages.clone(),
+            relation_lineage_holders: self.relation_lineage_holders.clone(),
+            branch_forks: self.branch_forks.clone(),
+            fork_children: self.fork_children.clone(),
+            branch_naming_states,
+            name_indexes: self.name_indexes.fork_all(),
+            naming_rebuilt_event_frontier: self.naming_rebuilt_event_frontier,
+            published_events: self.published_events.clone(),
+            published_event_positions: self.published_event_positions.clone(),
+            published_group_lineage: self.published_group_lineage.clone(),
+            group_states: self.group_states.fork_all(),
+            cold_naming: self.cold_naming.clone(),
+            branch_generations: self.branch_generations.clone(),
+            next_generation: self.next_generation,
+            full_history: self
+                .full_history
+                .as_ref()
+                .map(|_| FullLineageRecoveryToken::fresh(state_id)),
+            resolution_indexes: self.resolution_indexes.clone(),
+            identity_allocator: self.identity_allocator.detached(),
+        }
     }
 }
 

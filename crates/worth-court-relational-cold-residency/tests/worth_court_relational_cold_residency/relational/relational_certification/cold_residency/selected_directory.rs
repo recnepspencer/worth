@@ -28,6 +28,23 @@ pub(super) struct Directory {
     pub derived_indexes: RelationalDurableMemberLocator,
     pub index_definitions: Vec<DerivedIndexDefinition>,
     pub symbol_buckets: Vec<SymbolBucket>,
+    #[serde(default)]
+    pub naming: NamingDirectory,
+}
+#[derive(Default, Deserialize)]
+pub(super) struct NamingDirectory {
+    pub branches: Vec<BranchNamingDirectory>,
+    pub group_log: Vec<NamingPageDescriptor>,
+}
+#[derive(Deserialize)]
+pub(super) struct BranchNamingDirectory {
+    pub pages: Vec<NamingPageDescriptor>,
+}
+#[derive(Deserialize, Clone)]
+pub(super) struct NamingPageDescriptor {
+    pub first: Vec<u8>,
+    pub last: Vec<u8>,
+    pub member: RelationalDurableMemberLocator,
 }
 #[derive(Deserialize)]
 pub(super) struct SymbolBucket {

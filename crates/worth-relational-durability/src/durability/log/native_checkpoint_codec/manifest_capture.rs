@@ -151,6 +151,7 @@ impl CapturedManifest {
                 lineage_basis: CheckpointLineageBasis::from_ordinary(
                     checkpoint.lineage.digest_basis().clone(),
                 ),
+                naming: Default::default(),
                 derived_indexes,
                 allocations: Default::default(),
             },
@@ -327,6 +328,12 @@ impl CapturedManifest {
         for member in
             captured.seal_commit_index(super::commit_pages::CommitPageCarry::Prior(false))?
         {
+            members.entry(member.locator()).or_insert(member);
+        }
+        let (naming, naming_members) =
+            super::naming_pages::capture_expanded_naming(lane, checkpoint)?;
+        captured.manifest.naming = naming;
+        for member in naming_members {
             members.entry(member.locator()).or_insert(member);
         }
         captured.members = members;

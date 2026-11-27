@@ -5,7 +5,9 @@ use worth_relational_contracts::internal_port as contracts;
 
 use super::checkpoint_capture::CapturedCheckpointBasis;
 use crate::durability::data::*;
-use crate::durability::log::native_checkpoint_codec::CapturedManifest;
+use crate::durability::log::native_checkpoint_codec::{
+    CapturedManifest, CheckpointEncodingControl,
+};
 
 impl CapturedCheckpointBasis {
     pub(super) fn build_native_capture(
@@ -14,13 +16,7 @@ impl CapturedCheckpointBasis {
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         source: Option<std::sync::Arc<dyn worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource>>,
         placement: &RelationalCheckpointArtifactPolicy<'_>,
-        control: &mut crate::durability::log::native_checkpoint_codec::CheckpointEncodingControl<
-            '_,
-            '_,
-            '_,
-            '_,
-            '_,
-        >,
+        control: &mut CheckpointEncodingControl<'_, '_, '_, '_, '_>,
     ) -> Result<CapturedManifest, RelationalNativeCheckpointCaptureDenial> {
         let mut symbols = contracts::symbols::data::string_interner::StringInterner::default();
         contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane::enter_reconstruction(|lane| {
@@ -45,13 +41,13 @@ impl CapturedCheckpointBasis {
         }
         let mut event_rows = std::mem::take(&mut self.lineage_events);
         if carry_metadata && let Some(prior) = &prior {
-            // Ids above the prior maximum answer from descriptors alone.
-            let (index, mut kept) = (prior.commit_index(), Vec::new());
+            let index = prior.commit_index();
+            let mut kept = Vec::new();
             for row in event_rows {
                 let id = row.publication_commit_id;
-                if index.max_commit().is_none_or(|max| id > max)
-                    || prior.commit_entry(id).map_err(contracts::durability::data::native_checkpoint_capture_denial::capture_stop)?.is_none()
-                {
+                let missing = index.max_commit().is_none_or(|max| id > max)
+                    || prior.commit_entry(id).map_err(contracts::durability::data::native_checkpoint_capture_denial::capture_stop)?.is_none();
+                if missing {
                     kept.push(row);
                 }
             }
@@ -59,6 +55,7 @@ impl CapturedCheckpointBasis {
         }
         let guarded_member_sources = std::mem::take(&mut self.guarded_member_sources);
         let _lineage_event_leases = std::mem::take(&mut self.lineage_event_leases);
+        let lineage_naming = self.lineage_naming.take();
         let carried_record_identity = self.carried_record_identity.take();
         let carried_index_image = self.carried_index_image;
         let roots = std::mem::take(&mut self.branch_roots);
@@ -320,9 +317,18 @@ impl CapturedCheckpointBasis {
                 .as_ref()
                 .map_or(carry_metadata, |held| held.contains(&locator))
         };
-        let pages = captured.seal_native_commit_index(current_members.as_ref(), carry_metadata)?;
-        for member in pages {
+        for member in captured.seal_native_commit_index(current_members.as_ref(), carry_metadata)? {
             insert_member(&mut captured, member);
+        }
+        if let Some(naming) = &lineage_naming {
+            let members = captured.seal_native_naming_state(
+                naming,
+                current_members.as_ref(),
+                carry_metadata,
+            )?;
+            members
+                .into_iter()
+                .for_each(|m| insert_member(&mut captured, m));
         }
         captured.manifest.schemas =
             CheckpointSchemaImages::from_ordinary(schemas.into_values().collect());
@@ -330,37 +336,38 @@ impl CapturedCheckpointBasis {
             .into_iter()
             .map(|(member, bases)| RelationalCheckpointHistoryDependency { member, bases })
             .collect();
-        captured.history_members =
-            contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane::enter_reconstruction(
-                |lane| captured.manifest.readmit_history_members(lane),
-            )
-            .map_err(|cause| corrupt(format!("captured history dependencies: {cause:?}")))?;
+        captured.history_members = contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane::enter_reconstruction(
+            |lane| captured.manifest.readmit_history_members(lane),
+        )
+        .map_err(|cause| corrupt(format!("captured history dependencies: {cause:?}")))?;
         captured.validate_lineage_events()?;
         crate::durability::checkpoint_history::capture::capture(&mut captured, execution, &held)?;
         Ok(captured)
     }
 }
 
+type Locator = worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableMemberLocator;
+type StorageUnavail = contracts::storage::data::storage_unavailable::RelationalStorageUnavailable;
+
 fn merge_history_dependencies(
-    declarations: &mut BTreeMap<
-        worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableMemberLocator,
-        Vec<worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableMemberLocator>,
-    >,
+    declarations: &mut BTreeMap<Locator, Vec<Locator>>,
     incoming: Vec<RelationalCheckpointHistoryDependency>,
     partition: contracts::identity::data::primitives::PartitionId,
-) -> Result<(), contracts::storage::data::storage_unavailable::RelationalStorageUnavailable> {
-    for declaration in incoming {
-        if let Some(prior) = declarations.get(&declaration.member) {
-            if prior != &declaration.bases {
-                return Err(contracts::storage::data::storage_unavailable::RelationalStorageUnavailable {
-                    subject: contracts::storage::data::storage_unavailable::RelationalStorageSubject::Region(partition),
-                    cause:
-                        contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause::IntegrityMismatch,
-                });
-            }
-        } else {
-            declarations.insert(declaration.member, declaration.bases);
+) -> Result<(), StorageUnavail> {
+    use contracts::storage::data::storage_unavailable::{
+        RelationalStorageSubject as Sub, RelationalStorageUnavailableCause as Cause,
+    };
+    for dec in incoming {
+        if declarations
+            .get(&dec.member)
+            .is_some_and(|p| p != &dec.bases)
+        {
+            return Err(StorageUnavail {
+                subject: Sub::Region(partition),
+                cause: Cause::IntegrityMismatch,
+            });
         }
+        declarations.entry(dec.member).or_insert(dec.bases);
     }
     Ok(())
 }
@@ -373,16 +380,10 @@ fn insert_member(captured: &mut CapturedManifest, member: RelationalCheckpointMe
         captured.members.entry(key).or_insert(member);
     }
 }
-
 fn corrupt(detail: impl Into<String>) -> DurabilityError {
     DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
 }
-
 type RegionCapture = worth_relational_storage::internal_port::storage::residency::checkpoint_capture::RelationalCapturedRegionCheckpoint;
-
-/// Capturing a region, from its recorded checkpoint or by reconstructing its
-/// images, and checking a root region against its selection, is its residency
-/// owner's work: one named phase, apart from the capture's encoding rate.
 fn region_capture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     capture: impl FnOnce() -> Result<RegionCapture, RelationalNativeCheckpointCaptureDenial>,

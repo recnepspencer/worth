@@ -65,7 +65,7 @@ fn group(byte: u8) -> AggregateIdentity {
 #[test]
 fn refused_batches_leave_the_index_exactly_as_it_was() {
     let (log, mut index, _) = mixed_history();
-    let before = index.duplicate_for_test();
+    let before = index.fork_for_test();
     let head = index.head().unwrap();
     assert_eq!(
         index.apply(&log[1]),
@@ -134,7 +134,7 @@ fn refused_batches_leave_the_index_exactly_as_it_was() {
         [],
     );
     let mut fresh = rebuild(&world.log()[..1]);
-    let snapshot = fresh.duplicate_for_test();
+    let snapshot = fresh.fork_for_test();
     assert!(matches!(
         fresh.apply(&unbound),
         Err(PersistentNameIndexDenial::MissingHolder { .. })
@@ -149,7 +149,7 @@ fn refused_batches_leave_the_index_exactly_as_it_was() {
 
 /// Applies `batch`, which must refuse, and proves the index is untouched.
 fn refuses(index: &mut PersistentNameBranchIndex, batch: &PersistentNameCommittedBatch) -> String {
-    let before = index.duplicate_for_test();
+    let before = index.fork_for_test();
     let denial = index.apply(batch).expect_err("corrupt batch refuses");
     assert_eq!(
         *index, before,
@@ -343,47 +343,36 @@ fn corrupt_restore_batches_refuse_atomically_leaving_index_unchanged() {
         .find(|e| e.name_birth().is_some_and(|n| n.identity() == b_name))
         .unwrap()
         .targets()[0];
-    let mut check = |expected: &str, f: fn(&mut crate::facade::lineage::LineageEventRecord)| {
-        let mut bad = restore_batch.clone();
-        f(&mut bad.lineage_events_mut_for_test()[0]);
-        let detail = refuses(&mut index, &bad);
-        assert!(
-            detail.contains(expected),
-            "expected `{expected}`, got `{detail}`"
-        );
-    };
-    check("kept_name", |e| (*e.owner_kept_name_mut()) = None);
-    check("event subject", |e| {
-        (*e.owner_subject_mut()) = LineageSubject::Relation
-    });
-    check("one source", |e| (*e.owner_sources_mut()).clear());
-    check("one target", |e| (*e.owner_targets_mut()).clear());
-    check("differ", |e| {
-        (*e.owner_targets_mut()) = vec![(*e.owner_sources())[0]]
-    });
-    for (expected, mut bad) in [
-        ("live name", restore_batch.clone()),
-        ("does not exist", restore_batch.clone()),
-        ("name_birth", restore_batch.clone()),
-        ("second name", restore_batch.clone()),
-        ("source lineage", restore_batch.clone()),
+    for expected in [
+        "kept_name",
+        "event subject",
+        "one source",
+        "one target",
+        "differ",
+        "live name",
+        "does not exist",
+        "name_birth",
+        "second name",
+        "source lineage",
     ] {
+        let mut bad = restore_batch.clone();
         let ev = &mut bad.lineage_events_mut_for_test()[0];
         match expected {
+            "kept_name" => *ev.owner_kept_name_mut() = None,
+            "event subject" => *ev.owner_subject_mut() = LineageSubject::Relation,
+            "one source" => ev.owner_sources_mut().clear(),
+            "one target" => ev.owner_targets_mut().clear(),
+            "differ" => *ev.owner_targets_mut() = vec![ev.owner_sources()[0]],
             "live name" => {
-                (*ev.owner_kept_name_mut()) = Some(b_name);
-                (*ev.owner_sources_mut()) = vec![b_lin];
+                *ev.owner_kept_name_mut() = Some(b_name);
+                *ev.owner_sources_mut() = vec![b_lin];
             }
-            "does not exist" => (*ev.owner_kept_name_mut()) = Some(synthetic_name(0xee, 99)),
-            "name_birth" => (*ev.owner_name_birth_mut()) = birth.clone(),
-            "second name" => (*ev.owner_targets_mut()) = vec![b_lin],
-            _ => (*ev.owner_sources_mut()) = vec![b_lin],
+            "does not exist" => *ev.owner_kept_name_mut() = Some(synthetic_name(0xee, 99)),
+            "name_birth" => *ev.owner_name_birth_mut() = birth.clone(),
+            "second name" => *ev.owner_targets_mut() = vec![b_lin],
+            _ => *ev.owner_sources_mut() = vec![b_lin],
         }
-        let detail = refuses(&mut index, &bad);
-        assert!(
-            detail.contains(expected),
-            "expected `{expected}`, got `{detail}`"
-        );
+        assert!(refuses(&mut index, &bad).contains(expected));
     }
     // Canonical restore ingests cleanly; a second retire + stale-source restore refuses.
     index.apply(&restore_batch).expect("canonical restore");

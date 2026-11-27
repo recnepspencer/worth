@@ -217,8 +217,18 @@ pub fn reconcile_recovered_lineage_artifacts(
     lineage: &LineageSubsystem,
     tail_log: &[PositionedCanonicalCommit],
 ) -> Result<(), DurabilityError> {
+    let cold_backed = lineage.has_cold_naming();
     let mut events_by_id = BTreeMap::new();
-    for (event, publication_commit_id) in lineage.drain_events() {
+    let rows: Vec<_> = if cold_backed {
+        lineage
+            .published_rows()
+            .into_iter()
+            .map(|(event, commit)| ((*event).clone(), commit))
+            .collect()
+    } else {
+        lineage.drain_events()
+    };
+    for (event, publication_commit_id) in rows {
         match events_by_id.entry(event.event_id()) {
             Entry::Vacant(entry) => {
                 entry.insert((event, publication_commit_id));
@@ -281,7 +291,9 @@ pub fn reconcile_recovered_lineage_artifacts(
             events_by_id.values().map(|(event, _)| event),
         ))
         .and_then(|lineage_id| lineage_id.checked_add(1));
-    lineage.replace_events(lane, events_by_id.into_values().collect());
+    if !cold_backed {
+        lineage.replace_events(lane, events_by_id.into_values().collect());
+    }
     lineage.advance_identity_to(next_lineage_id, next_event_id);
     Ok(())
 }

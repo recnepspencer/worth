@@ -2,8 +2,8 @@
 //!
 //! Proves that restoring a native external-member checkpoint through
 //! `cold_directory::restore`:
-//! 1. Keeps record regions cold while eagerly materializing and rebuilding the
-//!    self-derived naming basis and non-head relation lineage bindings.
+//! 1. Keeps record regions and lineage/naming pages cold at restore (Store M4.3f
+//!    lazy CHK24 naming pages) while faulting naming state lazily on demand.
 //! 2. Preserves exact `branch_live_persistent_names` and non-head `relation_lineage`.
 //! 3. Refuses `DuplicateBirth` for both a pre-checkpoint entity and a non-head
 //!    pre-checkpoint relation with zero effects.
@@ -169,7 +169,7 @@ fn external_cold_directory_checkpoint_preserves_basis_nonhead_relation_and_tail_
     let (f3_id, _) = names2.created_entity_name::<CadNamingSchema, Face>(&res2, &f3_ref).unwrap();
     release_commit_snapshot(&source, &res2);
 
-    let expected_ckpt_basis = source.branch_live_persistent_names(&main);
+    let expected_ckpt_basis = source.branch_live_persistent_names(&main).unwrap();
     let expected_s1_lin = source.relation_lineage(s1_id).expect("non-head seam lineage exists");
 
     // Capture an external-member native checkpoint so reopen MUST go through cold_directory::restore.
@@ -219,7 +219,7 @@ fn external_cold_directory_checkpoint_preserves_basis_nonhead_relation_and_tail_
     let f1a_rel = names3.entity_relational_identity(f1a_id).unwrap();
     release_commit_snapshot(&source, &res3);
 
-    let expected_tail_basis = source.branch_live_persistent_names(&main);
+    let expected_tail_basis = source.branch_live_persistent_names(&main).unwrap();
     assert!(!expected_tail_basis.contains_key(&f1_rel));
     assert!(expected_tail_basis.contains_key(&f1a_rel));
     // S1 ran from F1, so it retired with its endpoint in the tail split and its
@@ -244,15 +244,15 @@ fn external_cold_directory_checkpoint_preserves_basis_nonhead_relation_and_tail_
         .recover(&execution, plan_ckpt)
         .expect("cold checkpoint restore succeeds");
     assert_eq!(*cold_source_ckpt.region_reads.lock().unwrap(), 0, "record regions remain cold");
-    assert!(*cold_source_ckpt.lineage_reads.lock().unwrap() > 0, "cold_directory eagerly materialized lineage pages");
-    assert_eq!(reopened_ckpt.branch_live_persistent_names(&main), expected_ckpt_basis);
+    assert_eq!(*cold_source_ckpt.lineage_reads.lock().unwrap(), 0, "Store M4.3f keeps lineage and naming pages cold at reopen");
+    assert_eq!(reopened_ckpt.branch_live_persistent_names(&main).unwrap(), expected_ckpt_basis);
     assert_eq!(reopened_ckpt.relation_lineage(s1_id), Some(expected_s1_lin));
 
     let head_a = reopened_ckpt.admit_branch_basis(&reopened_ckpt.main_branch_identity()).unwrap().observation().commit_id();
     assert_dup_entity_refuses(&reopened_ckpt, &execution, "occ.cold.f1", "authored", f1_rel, f1_id);
     assert_dup_seam_refuses(&reopened_ckpt, &execution, f2_id, f3_id, "occ.cold.s1", s1_rel, s1_id);
     assert_eq!(reopened_ckpt.admit_branch_basis(&reopened_ckpt.main_branch_identity()).unwrap().observation().commit_id(), head_a);
-    assert_eq!(reopened_ckpt.branch_live_persistent_names(&main), expected_ckpt_basis);
+    assert_eq!(reopened_ckpt.branch_live_persistent_names(&main).unwrap(), expected_ckpt_basis);
 
     // Part B: Cold checkpoint + journal-tail Split of pre-checkpoint F1.
     let tail_commits: Vec<RelationalCanonicalCommitArtifact> = source
@@ -285,14 +285,14 @@ fn external_cold_directory_checkpoint_preserves_basis_nonhead_relation_and_tail_
         .recover(&execution, plan_tail)
         .expect("cold checkpoint + tail Split replay succeeds");
     assert_eq!(outcome.recovered_commits, 3);
-    assert_eq!(reopened_tail.branch_live_persistent_names(&main), expected_tail_basis);
+    assert_eq!(reopened_tail.branch_live_persistent_names(&main).unwrap(), expected_tail_basis);
     assert_eq!(reopened_tail.relation_lineage(s1_id), Some(expected_s1_lin));
-    let live_ids: BTreeSet<_> = reopened_tail.branch_live_persistent_names(&main).keys().copied().collect();
+    let live_ids: BTreeSet<_> = reopened_tail.branch_live_persistent_names(&main).unwrap().keys().copied().collect();
     assert!(live_ids.contains(&f1a_rel) && live_ids.contains(&s2_rel));
     assert!(!live_ids.contains(&s1_rel) && !live_ids.contains(&f1_rel));
 
     let head_b = reopened_tail.admit_branch_basis(&reopened_tail.main_branch_identity()).unwrap().observation().commit_id();
     assert_dup_seam_refuses(&reopened_tail, &execution, f2_id, f3_id, "occ.cold.s2", s2_rel, s2_id);
     assert_eq!(reopened_tail.admit_branch_basis(&reopened_tail.main_branch_identity()).unwrap().observation().commit_id(), head_b);
-    assert_eq!(reopened_tail.branch_live_persistent_names(&main), expected_tail_basis);
+    assert_eq!(reopened_tail.branch_live_persistent_names(&main).unwrap(), expected_tail_basis);
 }

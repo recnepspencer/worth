@@ -187,7 +187,13 @@ fn borrowed_lineage_rows_and_funded_routes_keep_original_wire() {
     );
     let mut directory = CheckpointLineageEventPages::allocate_for_request(1, &request).unwrap();
     directory
-        .push(encoded.0, borrowed.iter().map(|row| row.event), &request)
+        .push(
+            encoded.0,
+            borrowed
+                .iter()
+                .map(|row| (row.event, row.publication_commit_id)),
+            &request,
+        )
         .unwrap();
     let directory = directory.seal();
     let legacy = RelationalCheckpointLineageEventPage::from_rows(encoded.0, &old).unwrap();

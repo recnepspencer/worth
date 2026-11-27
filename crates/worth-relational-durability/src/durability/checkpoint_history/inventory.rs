@@ -199,6 +199,7 @@ pub(crate) fn validate(
             .lineage_events
             .iter()
             .any(|page| canonical(page.member))
+        || manifest.naming.page_members().into_iter().any(canonical)
     {
         return Err(malformed().into());
     }

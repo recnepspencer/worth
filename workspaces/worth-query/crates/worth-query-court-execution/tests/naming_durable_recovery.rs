@@ -105,7 +105,7 @@ fn durable_checkpoint_restore_preserves_entity_and_relation_naming_basis() {
     let s1_rel = names1.relation_relational_identity(s1_id).unwrap();
     release_commit_snapshot(&source, &res1);
 
-    let expected_basis = source.branch_live_persistent_names(&main);
+    let expected_basis = source.branch_live_persistent_names(&main).unwrap();
     let expected_s1_lin = source.relation_lineage(s1_id).expect("seam lineage exists");
 
     source.durability_authority().checkpoint(&execution).expect("checkpoint succeeds");
@@ -119,7 +119,7 @@ fn durable_checkpoint_restore_preserves_entity_and_relation_naming_basis() {
     let mut reopened = fresh_cad_runtime();
     let outcome = reopened.durability_recovery().recover(&execution, plan).expect("checkpoint restore succeeds");
     assert_eq!(outcome.recovered_commits, 1);
-    assert_eq!(reopened.branch_live_persistent_names(&main), expected_basis);
+    assert_eq!(reopened.branch_live_persistent_names(&main).unwrap(), expected_basis);
     assert_eq!(reopened.relation_lineage(s1_id), Some(expected_s1_lin));
 
     let head0 = reopened.admit_branch_basis(&reopened.main_branch_identity()).unwrap().observation().commit_id();
@@ -149,7 +149,7 @@ fn durable_checkpoint_restore_preserves_entity_and_relation_naming_basis() {
         s1_id,
     );
     assert_eq!(reopened.admit_branch_basis(&reopened.main_branch_identity()).unwrap().observation().commit_id(), head0);
-    assert_eq!(reopened.branch_live_persistent_names(&main), expected_basis);
+    assert_eq!(reopened.branch_live_persistent_names(&main).unwrap(), expected_basis);
 }
 
 #[test]
@@ -227,7 +227,7 @@ fn durable_journal_tail_replay_reconstructs_entity_relation_and_split_naming_bas
     let s1_rel = names3.relation_relational_identity(s1_id).unwrap();
     release_commit_snapshot(&source, &res3);
 
-    let expected_basis = source.branch_live_persistent_names(&main);
+    let expected_basis = source.branch_live_persistent_names(&main).unwrap();
     let expected_s1_lin = source.relation_lineage(s1_id).expect("seam lineage exists");
 
     // Round-trip every tail entry through wire serialization + readmit (verifies persisted digests).
@@ -267,7 +267,7 @@ fn durable_journal_tail_replay_reconstructs_entity_relation_and_split_naming_bas
     let mut reopened = fresh_cad_runtime();
     let outcome = reopened.durability_recovery().recover(&execution, plan).expect("checkpoint + tail replay succeeds");
     assert_eq!(outcome.recovered_commits, 3);
-    assert_eq!(reopened.branch_live_persistent_names(&main), expected_basis);
+    assert_eq!(reopened.branch_live_persistent_names(&main).unwrap(), expected_basis);
     assert_eq!(reopened.relation_lineage(s1_id), Some(expected_s1_lin));
 
     assert_dup_relation_refuses(
@@ -281,5 +281,5 @@ fn durable_journal_tail_replay_reconstructs_entity_relation_and_split_naming_bas
         s1_rel,
         s1_id,
     );
-    assert_eq!(reopened.branch_live_persistent_names(&main), expected_basis);
+    assert_eq!(reopened.branch_live_persistent_names(&main).unwrap(), expected_basis);
 }

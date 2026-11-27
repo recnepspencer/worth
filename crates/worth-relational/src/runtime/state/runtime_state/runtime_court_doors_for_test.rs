@@ -62,7 +62,10 @@ impl RelationalRuntime {
     pub(crate) fn rebuild_lineage_derived_indexes_for_test(&self) -> crate::runtime::LineageState {
         crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
             let mut snapshot = self.lineage.snapshot_for_reconstruction(lane);
-            snapshot.rebuild_derived_indexes(lane);
+            assert!(
+                snapshot.rebuild_derived_indexes_if_full(lane),
+                "full-history test runtime holds recovery token"
+            );
             snapshot
         })
     }

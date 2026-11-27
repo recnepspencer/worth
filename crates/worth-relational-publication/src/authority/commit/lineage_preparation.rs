@@ -5,6 +5,9 @@ use contracts::lineage::data::artifacts::finalization_artifact::PreparedLineageF
 use contracts::lineage::data::postures::CommitNamingPlan;
 use contracts::lineage::data::postures::{GroupPartitionClaim, LineagePostureClaim};
 use contracts::transactions::data::intents::mutation_intent::MutationIntent;
+use contracts::transactions::data::outcomes::commit_preparation::{
+    CommitPreparationError, CommitPreparationErrorOwnerPort as _,
+};
 use contracts::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
 use contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
@@ -14,6 +17,7 @@ use worth_relational_branch::internal_port as branch;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_lineage::internal_port::lineage::authority::commit_finalization::resolve_commit_naming_plan;
 use worth_relational_lineage::internal_port::lineage::authority::posture_finalization::prepare_posture_finalization;
+use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::NamingBasisUnavailable;
 use worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState;
 
 use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::naming_basis_binding::LineageNamingBasisBinding;
@@ -73,7 +77,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
     ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
         let schema = self.schema;
         let basis = self.naming.read_guard(commit.branch_id.clone());
-        let mut prepared = prepare_posture_finalization(
+        let prepared = prepare_posture_finalization(
             self.identities,
             staged,
             commit,
@@ -84,13 +88,36 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
             &basis,
             postures,
             graph_selection,
-        )?;
-        super::group_finalization::finalize_commit_groups(
+        );
+        basis
+            .settle()
+            .map_err(|denial| naming_basis_commit_error(commit, denial))?;
+        let mut prepared = prepared?;
+        let groups_result = super::group_finalization::finalize_commit_groups(
+            commit,
             groups,
             graph_selection,
             &basis,
             &mut prepared,
-        )?;
+        );
+        basis
+            .settle()
+            .map_err(|denial| naming_basis_commit_error(commit, denial))?;
+        let transitions = groups_result?;
+        let relation_bindings: Vec<_> = prepared
+            .relation_lineages()
+            .iter()
+            .map(|(&rel, &lin)| (rel, lin))
+            .collect();
+        basis.preflight_commit_settlement(
+            prepared.artifact().event_batch().events(),
+            prepared.entity_bindings(),
+            &relation_bindings,
+            &transitions,
+        );
+        basis
+            .settle()
+            .map_err(|denial| naming_basis_commit_error(commit, denial))?;
         install_lineage_bindings(execution, staged, &mut prepared)?;
         drop(basis);
         self.instrumentation.count(|counters| {
@@ -118,7 +145,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         input: &worth_relational_lineage::internal_port::lineage::authority::posture_fixture::LineageCommitPostureInput,
     ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
         let basis = self.naming.read_guard(commit.branch_id.clone());
-        let mut prepared = prepare_posture_finalization(
+        let prepared = prepare_posture_finalization(
             self.identities,
             staged,
             commit,
@@ -129,7 +156,11 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
             &basis,
             &input.postures,
             None,
-        )?;
+        );
+        basis
+            .settle()
+            .map_err(|denial| naming_basis_commit_error(commit, denial))?;
+        let mut prepared = prepared?;
         install_lineage_bindings(execution, staged, &mut prepared)?;
         drop(basis);
         self.instrumentation.count(|counters| {
@@ -139,6 +170,34 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
             );
         });
         Ok(prepared)
+    }
+}
+
+pub(super) fn naming_basis_commit_error(
+    commit: &RelationalCommitReceipt,
+    denial: NamingBasisUnavailable,
+) -> TransactionCommitError {
+    match denial {
+        NamingBasisUnavailable::Storage(cause) => {
+            TransactionCommitError::preparation(CommitPreparationError::storage_unavailable(
+                commit.branch_id.clone(),
+                Some(commit.commit_id.0),
+                commit.version_id,
+                contracts::storage::data::storage_unavailable::RelationalStorageUnavailable {
+                    subject: contracts::storage::data::storage_unavailable::RelationalStorageSubject::Lineage {
+                        first: contracts::identity::data::primitives::LineageId(0),
+                        last: contracts::identity::data::primitives::LineageId(0),
+                    },
+                    cause,
+                },
+            ))
+        }
+        NamingBasisUnavailable::Unrecoverable => TransactionCommitError::publication(
+            contracts::publication::data::publication_error::PublicationError::new(
+                contracts::publication::bundle::publication_status::PublicationStage::BundleAssembly,
+                "branch naming basis is unavailable",
+            ),
+        ),
     }
 }
 

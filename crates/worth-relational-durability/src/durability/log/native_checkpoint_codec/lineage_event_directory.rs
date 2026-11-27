@@ -12,6 +12,8 @@ pub(super) fn validate(
         if page.first_node == 0
             || page.last_node < page.first_node
             || page.last_node >= u64::MAX - 1
+            || (page.first_publication_commit == 0) != (page.last_publication_commit == 0)
+            || page.last_publication_commit < page.first_publication_commit
             || page.event_ids.is_empty()
             || page.event_ids.len() > LINEAGE_EVENT_PAGE_ROWS
             || page.event_ids.windows(2).any(|pair| pair[0] >= pair[1])

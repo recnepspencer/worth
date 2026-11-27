@@ -137,7 +137,7 @@ fn duplicate_birth_and_invalid_discriminator_refuse_with_zero_effects_using_self
 
     // 1. Same-commit sibling collision: two created entities claim identical birth.
     let head_before = head_commit(&runtime);
-    let basis_before = runtime.branch_live_persistent_names(&main);
+    let basis_before = runtime.branch_live_persistent_names(&main).unwrap();
     let dup_a = face_ref("sib-a");
     let dup_b = face_ref("sib-b");
     let tx_sib = begin_staged_tx(
@@ -178,7 +178,7 @@ fn duplicate_birth_and_invalid_discriminator_refuse_with_zero_effects_using_self
         }) if e1 != e2
     ));
     assert_eq!(head_commit(&runtime), head_before);
-    assert_eq!(runtime.branch_live_persistent_names(&main), basis_before);
+    assert_eq!(runtime.branch_live_persistent_names(&main).unwrap(), basis_before);
 
     // 2. Seed entity F1 + F2 + relation S1, then prove Relational self-derives
     //    live holders across commits with zero caller-supplied live maps.
@@ -239,7 +239,7 @@ fn duplicate_birth_and_invalid_discriminator_refuse_with_zero_effects_using_self
     release_commit_snapshot(&runtime, &c1_res);
 
     let head_after_seed = head_commit(&runtime);
-    let basis_after_seed = runtime.branch_live_persistent_names(&main);
+    let basis_after_seed = runtime.branch_live_persistent_names(&main).unwrap();
     assert!(runtime.relation_lineage(s1_id).is_some());
 
     // Cross-commit duplicate entity birth.
@@ -273,7 +273,7 @@ fn duplicate_birth_and_invalid_discriminator_refuse_with_zero_effects_using_self
             && other != f1_id
     ));
     assert_eq!(head_commit(&runtime), head_after_seed);
-    assert_eq!(runtime.branch_live_persistent_names(&main), basis_after_seed);
+    assert_eq!(runtime.branch_live_persistent_names(&main).unwrap(), basis_after_seed);
 
     // Cross-commit duplicate relation birth (distinct endpoints f2 -> f1).
     let dup_s_ref = seam_ref(
@@ -316,7 +316,7 @@ fn duplicate_birth_and_invalid_discriminator_refuse_with_zero_effects_using_self
             && other != s1_id
     ));
     assert_eq!(head_commit(&runtime), head_after_seed);
-    assert_eq!(runtime.branch_live_persistent_names(&main), basis_after_seed);
+    assert_eq!(runtime.branch_live_persistent_names(&main).unwrap(), basis_after_seed);
 
     // 3. Smuggled/undeclared embedded name reference in discriminator bytes
     //    refuses via Relational's scanner (`InvalidDiscriminatorBasis`).
@@ -353,5 +353,5 @@ fn duplicate_birth_and_invalid_discriminator_refuse_with_zero_effects_using_self
         }) if raw_digest == f1_name.as_bytes()
     ));
     assert_eq!(head_commit(&runtime), head_after_seed);
-    assert_eq!(runtime.branch_live_persistent_names(&main), basis_after_seed);
+    assert_eq!(runtime.branch_live_persistent_names(&main).unwrap(), basis_after_seed);
 }

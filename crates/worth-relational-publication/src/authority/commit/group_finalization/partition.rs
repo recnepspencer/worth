@@ -21,7 +21,7 @@ use contracts::lineage::data::postures::GroupPartitionClaim;
 use worth_foundational::facade::AggregateIdentity;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_lineage::internal_port::lineage::groups::{
-    BranchGroupState, CommittedGroupTransition, GroupTransitionKind, SchemeGroups,
+    CommittedGroupTransition, GroupStateRead, GroupTransitionKind, SchemeGroupsRead,
 };
 use worth_relational_mutation::internal_port::aggregate_identity::AggregateGroupNamingAuthority;
 
@@ -40,7 +40,7 @@ struct SchemeScope {
 /// Complexity: O(S * (M log M)) for S touched schemes of M scoped members.
 pub(super) fn partition_transitions(
     claims: &[GroupPartitionClaim],
-    state: Option<&BranchGroupState>,
+    state: Option<GroupStateRead<'_>>,
     outcome: &CommitNameOutcome<'_, '_>,
 ) -> Result<Vec<CommittedGroupTransition>, GroupRefusal> {
     let mut scopes: BTreeMap<String, SchemeScope> = BTreeMap::new();
@@ -111,7 +111,7 @@ fn scheme_of(
 
 fn name_scope(
     scope: SchemeScope,
-    groups: Option<&SchemeGroups>,
+    groups: Option<SchemeGroupsRead<'_>>,
     retired: &[PersistentNameIdentity],
     outcome: &CommitNameOutcome<'_, '_>,
 ) -> Result<Option<CommittedGroupTransition>, Denial> {
@@ -160,10 +160,12 @@ fn name_scope(
         }
         prior.push(group);
     }
-    let empty = BTreeSet::new();
-    let retired_history = groups.map_or(&empty, SchemeGroups::retired);
-    let transition =
-        AggregateGroupNamingAuthority::transition(&scheme, &prior, retired_history, declared)?;
+    let transition = AggregateGroupNamingAuthority::transition_with_retired(
+        &scheme,
+        &prior,
+        |identity| groups.is_some_and(|groups| groups.is_retired(identity)),
+        declared,
+    )?;
     let noop = transition.retired.is_empty()
         && transition.lineage.is_empty()
         && transition.assignments.iter().all(|assignment| {

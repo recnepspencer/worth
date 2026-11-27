@@ -111,7 +111,12 @@ impl<'runtime> MergeAccess<'runtime> {
         let bound_executable_plan =
             compile_bound_executable_plan(self.runtime, &normalized_request, &execution_ready_plan)
                 .map_err(MergeExecutionPreparationError::Compilation)?;
-        named_outputs::refuse(self.runtime, &normalized_request, &bound_executable_plan)?;
+        named_outputs::refuse(
+            execution,
+            self.runtime,
+            &normalized_request,
+            &bound_executable_plan,
+        )?;
 
         let compiled = CompiledMergeExecution::new(
             normalized_request,

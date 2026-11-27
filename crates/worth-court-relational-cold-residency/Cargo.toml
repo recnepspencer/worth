@@ -17,6 +17,7 @@ rmp-serde = "1.3"
 "worth-proof" = { "path" = "../worth-proof" }
 "worth-relational" = { "path" = "../worth-relational" }
 "worth-testkit-relational" = { "path" = "../worth-testkit-relational" }
+"tracking-allocator" = { "version" = "0.4", "default-features" = false }
 
 [[test]]
 name = "worth_court_relational_cold_residency"

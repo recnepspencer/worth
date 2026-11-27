@@ -255,6 +255,7 @@ fn reopen_refuses_schema_mismatch_with_zero_effects_when_naming_schemes_omitted_
     );
     assert!(target_omitted
         .branch_live_persistent_names(&main)
+        .unwrap()
         .is_empty());
     assert_eq!(target_omitted.relation_lineage(s1_id), None);
 
@@ -293,6 +294,7 @@ fn reopen_refuses_schema_mismatch_with_zero_effects_when_naming_schemes_omitted_
     );
     assert!(target_changed
         .branch_live_persistent_names(&main)
+        .unwrap()
         .is_empty());
     assert_eq!(target_changed.relation_lineage(s1_id), None);
 
@@ -360,7 +362,10 @@ fn reopen_refuses_schema_mismatch_with_zero_effects_when_naming_schemes_omitted_
                 .commit_id(),
             head_before
         );
-        assert!(target.branch_live_persistent_names(&main).is_empty());
+        assert!(target
+            .branch_live_persistent_names(&main)
+            .unwrap()
+            .is_empty());
         assert_eq!(target.relation_lineage(s1_id), None);
     }
 }

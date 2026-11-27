@@ -139,6 +139,7 @@ pub(in super::super) fn capture(
             )
             .collect(),
         lineage_events,
+        lineage_naming: Some(runtime.lineage.freeze_naming()),
         index_definitions: index_state.definition_snapshot(),
         carried_index_image: index_original
             .as_ref()

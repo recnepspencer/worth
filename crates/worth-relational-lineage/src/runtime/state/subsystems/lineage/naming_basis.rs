@@ -3,14 +3,13 @@
 //! persisted relation lineage bindings, and fork ancestry.
 //!
 //! Commit finalization queries this derived basis through
-//! a branch naming guard implementing `LineageBasisView` with O(delta)
-//! point lookups and zero map clones, and reconstruction
-//! (`LineageState::rebuild_derived_indexes`) rebuilds it across fork ancestry
-//! from canonical events and holder bindings alone.
+//! a branch naming guard implementing `LineageBasisView` with `O(log N)`
+//! point lookups and zero map clones. Every table is tiered: a reopened
+//! runtime faults only the rows a lookup or an applied event touches.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
-use crate::contracts::history::data::coordinates::{BranchId, CommitId};
+use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::identity::data::record_ids::RelationId;
 use crate::contracts::lineage::data::events::{
@@ -18,9 +17,9 @@ use crate::contracts::lineage::data::events::{
 };
 use crate::contracts::lineage::data::graph::LineageNode;
 use crate::contracts::lineage::data::naming::{PersistentNameHolder, PersistentNameIdentity};
-
-use super::state::PublishedLineageEvent;
-use super::LineageState;
+use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
+use crate::lineage::naming_pages::tables;
+use crate::lineage::tiered::{NamingBaseLink, NamingReadScope, RowRef, TieredMap};
 
 /// Snapshot of live persistent-name holders, live record lineages, and
 /// previously retired persistent-name lineages for one branch (test-only
@@ -32,90 +31,236 @@ pub struct AuthoritativeLineageBasis {
     pub retired_lineages: BTreeMap<PersistentNameIdentity, (LineageSubject, LineageId)>,
 }
 
+/// Why a branch's naming basis cannot answer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NamingBasisUnavailable {
+    /// A cold naming page it needed is missing or damaged.
+    Storage(Cause),
+    /// It cannot be derived from the resident state: the reopened checkpoint
+    /// recorded it unavailable, or a fork needed a rebuild from history the
+    /// cold runtime does not hold.
+    Unrecoverable,
+}
+
+/// A retired name's subject, lineage and retirement commit.
+pub(super) type RetiredLineage = (LineageSubject, LineageId, CommitId);
+
 crate::lineage::clone_fences::assert_not_clone!(AuthoritativeBranchNamingState);
 
-/// Incrementally maintained, rebuildable per-branch naming basis inside
-/// `LineageState`.
+/// Incrementally maintained per-branch naming basis inside `LineageState`.
 ///
-/// Not `Clone`: it holds every live and retired name of the branch. A fork
-/// copies it only through [`Self::duplicate_for_branch_fork`].
-#[derive(Debug, Default)]
-pub(super) struct AuthoritativeBranchNamingState {
-    lineage_holders: BTreeMap<LineageId, PersistentNameHolder>,
-    holder_names: BTreeMap<PersistentNameHolder, PersistentNameIdentity>,
-    live_holders: BTreeMap<PersistentNameIdentity, PersistentNameHolder>,
-    live_lineages: BTreeMap<PersistentNameHolder, LineageId>,
-    retired_lineages: BTreeMap<PersistentNameIdentity, (LineageSubject, LineageId)>,
-    latest_event_commit: Option<CommitId>,
+/// Deliberately not `Clone`: [`Self::fork`] shares tables copy-on-write.
+#[derive(Debug)]
+pub(crate) struct AuthoritativeBranchNamingState {
+    pub(super) lineage_holders: TieredMap<LineageId, PersistentNameHolder>,
+    pub(super) holder_names: TieredMap<PersistentNameHolder, PersistentNameIdentity>,
+    pub(super) live_holders: TieredMap<PersistentNameIdentity, PersistentNameHolder>,
+    pub(super) live_lineages: TieredMap<PersistentNameHolder, LineageId>,
+    pub(super) retired_lineages: TieredMap<PersistentNameIdentity, RetiredLineage>,
+    pub(super) earliest_event_commit: Option<CommitId>,
+    pub(super) latest_event_commit: Option<CommitId>,
 }
 
 impl AuthoritativeBranchNamingState {
-    /// A forked branch's (or whole-state copy's) explicit O(names) copy.
-    pub(super) fn duplicate_for_branch_fork(&self) -> Self {
+    pub(super) fn over(
+        base: Option<NamingBaseLink>,
+        earliest: Option<CommitId>,
+        latest: Option<CommitId>,
+    ) -> Self {
         Self {
-            lineage_holders: self.lineage_holders.clone(),
-            holder_names: self.holder_names.clone(),
-            live_holders: self.live_holders.clone(),
-            live_lineages: self.live_lineages.clone(),
-            retired_lineages: self.retired_lineages.clone(),
+            lineage_holders: TieredMap::over(tables::LINEAGE_HOLDER, base.clone()),
+            holder_names: TieredMap::over(tables::HOLDER_NAME, base.clone()),
+            live_holders: TieredMap::over(tables::LIVE_HOLDER, base.clone()),
+            live_lineages: TieredMap::over(tables::LIVE_LINEAGE, base.clone()),
+            retired_lineages: TieredMap::over(tables::RETIRED_LINEAGE, base),
+            earliest_event_commit: earliest,
+            latest_event_commit: latest,
+        }
+    }
+
+    /// Complexity: O(1): tables are shared copy-on-write.
+    pub(super) fn fork(&self, base: Option<NamingBaseLink>) -> Self {
+        Self {
+            lineage_holders: self.lineage_holders.fork(base.clone()),
+            holder_names: self.holder_names.fork(base.clone()),
+            live_holders: self.live_holders.fork(base.clone()),
+            live_lineages: self.live_lineages.fork(base.clone()),
+            retired_lineages: self.retired_lineages.fork(base),
+            earliest_event_commit: self.earliest_event_commit,
             latest_event_commit: self.latest_event_commit,
         }
     }
 
-    pub(super) fn snapshot(&self) -> AuthoritativeLineageBasis {
-        AuthoritativeLineageBasis {
-            live_holders: self.live_holders.clone(),
-            live_lineages: self.live_lineages.clone(),
-            retired_lineages: self.retired_lineages.clone(),
+    /// Rebinds every table cleanly onto an acknowledged cold base, dropping
+    /// resident deltas.
+    pub(super) fn rebind_clean(&mut self, base: NamingBaseLink) {
+        self.lineage_holders.rebind_clean(base.clone());
+        self.holder_names.rebind_clean(base.clone());
+        self.live_holders.rebind_clean(base.clone());
+        self.live_lineages.rebind_clean(base.clone());
+        self.retired_lineages.rebind_clean(base);
+    }
+
+    /// Rebinds existing cold bases onto `source` (and optional `checkpointed_root`).
+    pub(super) fn rebind_source(
+        &mut self,
+        source: &std::sync::Arc<dyn crate::lineage::tiered::ColdNamingSource>,
+        root: Option<&crate::contracts::history::data::coordinates::BranchId>,
+    ) {
+        self.lineage_holders.rebind_source(source, root);
+        self.holder_names.rebind_source(source, root);
+        self.live_holders.rebind_source(source, root);
+        self.live_lineages.rebind_source(source, root);
+        self.retired_lineages.rebind_source(source, root);
+    }
+
+    /// Probes every cold row `apply_event` will read for `events`, latching
+    /// any storage failure into `scope` before durable publication.
+    pub(super) fn preflight_events(&self, events: &[LineageEventRecord], scope: &NamingReadScope) {
+        for event in events {
+            if matches!(
+                event.kind(),
+                LineageEventKind::Retire
+                    | LineageEventKind::Replace
+                    | LineageEventKind::Split
+                    | LineageEventKind::Merge
+            ) {
+                for &source in event.sources() {
+                    if event.targets().contains(&source) {
+                        continue;
+                    }
+                    if let Some(holder) = self.lineage_holders.get_in(&source, scope)
+                        && let Some(&name) = self.holder_names.get_in(holder, scope)
+                    {
+                        let _ = self.live_holders.get_in(&name, scope);
+                    }
+                }
+            }
         }
     }
 
-    pub(super) fn live_holders(&self) -> &BTreeMap<PersistentNameIdentity, PersistentNameHolder> {
-        &self.live_holders
+    /// The actual cold base link backing this naming basis, if any.
+    pub(super) fn base(&self) -> Option<&NamingBaseLink> {
+        self.live_holders.base()
+    }
+
+    /// Every table's resident changes, for capture.
+    pub(super) fn encoded_changes(&self) -> Vec<(Vec<u8>, Option<Vec<u8>>)> {
+        let mut changes = self.lineage_holders.encoded_changes();
+        changes.extend(self.holder_names.encoded_changes());
+        changes.extend(self.live_holders.encoded_changes());
+        changes.extend(self.live_lineages.encoded_changes());
+        changes.extend(self.retired_lineages.encoded_changes());
+        changes
+    }
+
+    /// Every live row across all naming-basis tables merged against `store`,
+    /// for mixed-base branch capture.
+    pub(super) fn collect_encoded_in(
+        &self,
+        store: Option<&crate::lineage::naming_pages::store::ColdNamingStore>,
+    ) -> Result<Vec<(Vec<u8>, Option<Vec<u8>>)>, Cause> {
+        let mut rows = self.lineage_holders.collect_encoded_in(store)?;
+        rows.extend(self.holder_names.collect_encoded_in(store)?);
+        rows.extend(self.live_holders.collect_encoded_in(store)?);
+        rows.extend(self.live_lineages.collect_encoded_in(store)?);
+        rows.extend(self.retired_lineages.collect_encoded_in(store)?);
+        Ok(rows)
+    }
+
+    /// Complexity: O(N) full scan; audits and courts only.
+    pub(crate) fn snapshot(&self) -> Result<AuthoritativeLineageBasis, Cause> {
+        Ok(AuthoritativeLineageBasis {
+            live_holders: self.live_holders.collect_merged()?.into_iter().collect(),
+            live_lineages: self.live_lineages.collect_merged()?.into_iter().collect(),
+            retired_lineages: self
+                .retired_lineages
+                .collect_merged()?
+                .into_iter()
+                .map(|(name, (subject, lineage, _))| (name, (subject, lineage)))
+                .collect(),
+        })
+    }
+
+    pub(super) fn live_holders(
+        &self,
+    ) -> Result<BTreeMap<PersistentNameIdentity, PersistentNameHolder>, Cause> {
+        Ok(self.live_holders.collect_merged()?.into_iter().collect())
+    }
+
+    pub(super) fn earliest_event_commit(&self) -> Option<CommitId> {
+        self.earliest_event_commit
     }
 
     pub(super) fn latest_event_commit(&self) -> Option<CommitId> {
         self.latest_event_commit
     }
 
-    pub(super) fn live_holder(&self, id: &PersistentNameIdentity) -> Option<&PersistentNameHolder> {
-        self.live_holders.get(id)
-    }
-
-    pub(super) fn live_lineage(&self, holder: &PersistentNameHolder) -> Option<LineageId> {
-        self.live_lineages.get(holder).copied()
-    }
-
-    pub(super) fn retired_lineage(
-        &self,
+    pub(super) fn live_holder_in<'s>(
+        &'s self,
         id: &PersistentNameIdentity,
-    ) -> Option<(LineageSubject, LineageId)> {
-        self.retired_lineages.get(id).copied()
+        scope: &'s NamingReadScope,
+    ) -> Option<&'s PersistentNameHolder> {
+        self.live_holders.get_in(id, scope)
     }
 
-    pub(super) fn holder_name(
+    pub(super) fn live_lineage_in(
         &self,
         holder: &PersistentNameHolder,
+        scope: &NamingReadScope,
+    ) -> Option<LineageId> {
+        self.live_lineages.get_in(holder, scope).copied()
+    }
+
+    pub(super) fn retired_lineage_in(
+        &self,
+        id: &PersistentNameIdentity,
+        scope: &NamingReadScope,
+    ) -> Option<(LineageSubject, LineageId)> {
+        self.retired_lineages
+            .get_in(id, scope)
+            .map(|(subject, lineage, _)| (*subject, *lineage))
+    }
+
+    pub(super) fn holder_name_in(
+        &self,
+        holder: &PersistentNameHolder,
+        scope: &NamingReadScope,
     ) -> Option<PersistentNameIdentity> {
-        self.holder_names.get(holder).copied()
+        self.holder_names.get_in(holder, scope).copied()
     }
 
     pub(super) fn holder_and_name_for_lineage(
         &self,
         lineage_id: LineageId,
-    ) -> Option<(PersistentNameHolder, PersistentNameIdentity)> {
-        let holder = self.lineage_holders.get(&lineage_id)?.clone();
-        let name = *self.holder_names.get(&holder)?;
-        Some((holder, name))
+    ) -> Result<Option<(PersistentNameHolder, PersistentNameIdentity)>, Cause> {
+        let Some(holder) = self
+            .lineage_holders
+            .get(&lineage_id)?
+            .map(RowRef::into_owned)
+        else {
+            return Ok(None);
+        };
+        let name = self.holder_names.get(&holder)?.map(|name| *name);
+        Ok(name.map(|name| (holder, name)))
     }
 
+    /// Applies one event, faulting only the rows it names.
+    ///
+    /// Complexity: O(sources + targets) point lookups.
     pub(super) fn apply_event(
         &mut self,
         event: &LineageEventRecord,
         publication_commit_id: CommitId,
         entity_nodes: &BTreeMap<LineageId, LineageNode>,
         relation_holders: &BTreeMap<LineageId, RelationId>,
-    ) {
+    ) -> Result<(), Cause> {
+        self.earliest_event_commit = Some(
+            self.earliest_event_commit
+                .map_or(publication_commit_id, |prev| {
+                    prev.min(publication_commit_id)
+                }),
+        );
         self.latest_event_commit = Some(
             self.latest_event_commit
                 .map_or(publication_commit_id, |prev| {
@@ -125,7 +270,7 @@ impl AuthoritativeBranchNamingState {
         match event.kind() {
             LineageEventKind::Create | LineageEventKind::Restore => {
                 let Some(&target_lineage) = event.targets().first() else {
-                    return;
+                    return Ok(());
                 };
                 let Some(holder) = resolve_holder(
                     event.subject(),
@@ -133,19 +278,18 @@ impl AuthoritativeBranchNamingState {
                     entity_nodes,
                     relation_holders,
                 ) else {
-                    return;
+                    return Ok(());
                 };
                 self.lineage_holders.insert(target_lineage, holder.clone());
                 self.live_lineages.insert(holder.clone(), target_lineage);
-                if let Some(birth) = event.name_birth() {
-                    let identity = birth.identity();
+                let named = event
+                    .name_birth()
+                    .map(|birth| birth.identity())
+                    .or_else(|| event.kept_name());
+                if let Some(identity) = named {
                     self.holder_names.insert(holder.clone(), identity);
                     self.live_holders.insert(identity, holder);
-                    self.retired_lineages.remove(&identity);
-                } else if let Some(kept) = event.kept_name() {
-                    self.holder_names.insert(holder.clone(), kept);
-                    self.live_holders.insert(kept, holder);
-                    self.retired_lineages.remove(&kept);
+                    self.retired_lineages.remove_blind(&identity);
                 }
             }
             LineageEventKind::Retire
@@ -156,96 +300,35 @@ impl AuthoritativeBranchNamingState {
                     if event.targets().contains(&source) {
                         continue;
                     }
-                    let Some(holder) = self.lineage_holders.get(&source).cloned().or_else(|| {
-                        resolve_holder(event.subject(), source, entity_nodes, relation_holders)
-                    }) else {
-                        continue;
+                    let holder = match self.lineage_holders.get(&source)? {
+                        Some(holder) => holder.into_owned(),
+                        None => match resolve_holder(
+                            event.subject(),
+                            source,
+                            entity_nodes,
+                            relation_holders,
+                        ) {
+                            Some(holder) => holder,
+                            None => continue,
+                        },
                     };
-                    self.live_lineages.remove(&holder);
-                    if let Some(&name) = self.holder_names.get(&holder)
-                        && self.live_holders.get(&name) == Some(&holder)
+                    self.live_lineages.remove_blind(&holder);
+                    let name = self.holder_names.get(&holder)?.map(|name| *name);
+                    if let Some(name) = name
+                        && self.live_holders.get(&name)?.as_deref() == Some(&holder)
                     {
-                        self.live_holders.remove(&name);
+                        self.live_holders.remove_blind(&name);
                         self.retired_lineages
-                            .insert(name, (event.subject(), source));
+                            .insert(name, (event.subject(), source, publication_commit_id));
                     }
                 }
             }
         }
+        Ok(())
     }
 }
 
-pub(super) fn rebuild_branch_naming_state_for_branch(
-    branch_id: &BranchId,
-    published_events: &[PublishedLineageEvent],
-    entity_nodes: &BTreeMap<LineageId, LineageNode>,
-    relation_holders: &BTreeMap<LineageId, RelationId>,
-    branch_forks: &BTreeMap<BranchId, (BranchId, CommitId)>,
-) -> AuthoritativeBranchNamingState {
-    let cutoffs = ancestor_commit_cutoffs(branch_id, branch_forks);
-    let mut state = AuthoritativeBranchNamingState::default();
-    for published in published_events {
-        let Some(&max_commit) = cutoffs.get(published.event.branch_id()) else {
-            continue;
-        };
-        if published.publication_commit_id <= max_commit {
-            state.apply_event(
-                &published.event,
-                published.publication_commit_id,
-                entity_nodes,
-                relation_holders,
-            );
-        }
-    }
-    state
-}
-
-pub(super) fn rebuild_all_branch_naming_states(
-    published_events: &[PublishedLineageEvent],
-    entity_nodes: &BTreeMap<LineageId, LineageNode>,
-    relation_holders: &BTreeMap<LineageId, RelationId>,
-    branch_forks: &BTreeMap<BranchId, (BranchId, CommitId)>,
-) -> BTreeMap<BranchId, AuthoritativeBranchNamingState> {
-    let mut branches = BTreeSet::new();
-    for published in published_events {
-        branches.insert(published.event.branch_id().clone());
-    }
-    for target in branch_forks.keys() {
-        branches.insert(target.clone());
-    }
-    let mut states = BTreeMap::new();
-    for branch_id in branches {
-        let state = rebuild_branch_naming_state_for_branch(
-            &branch_id,
-            published_events,
-            entity_nodes,
-            relation_holders,
-            branch_forks,
-        );
-        states.insert(branch_id, state);
-    }
-    states
-}
-
-fn ancestor_commit_cutoffs(
-    branch_id: &BranchId,
-    branch_forks: &BTreeMap<BranchId, (BranchId, CommitId)>,
-) -> BTreeMap<BranchId, CommitId> {
-    let mut cutoffs = BTreeMap::new();
-    let mut current = branch_id.clone();
-    let mut current_cutoff = CommitId(u64::MAX);
-    while !cutoffs.contains_key(&current) {
-        cutoffs.insert(current.clone(), current_cutoff);
-        let Some((parent, fork_commit)) = branch_forks.get(&current) else {
-            break;
-        };
-        current_cutoff = current_cutoff.min(*fork_commit);
-        current = parent.clone();
-    }
-    cutoffs
-}
-
-fn resolve_holder(
+pub(super) fn resolve_holder(
     subject: LineageSubject,
     lineage_id: LineageId,
     entity_nodes: &BTreeMap<LineageId, LineageNode>,
@@ -259,101 +342,5 @@ fn resolve_holder(
             .get(&lineage_id)
             .copied()
             .map(PersistentNameHolder::Relation),
-    }
-}
-
-impl LineageState {
-    pub fn record_relation_lineage(&mut self, relation_id: RelationId, lineage_id: LineageId) {
-        self.relation_lineages.insert(relation_id, lineage_id);
-        self.relation_lineage_holders
-            .insert(lineage_id, relation_id);
-    }
-
-    pub(crate) fn relation_lineage(&self, relation_id: RelationId) -> Option<LineageId> {
-        self.relation_lineages.get(&relation_id).copied()
-    }
-
-    pub(crate) fn relation_lineages_snapshot(&self) -> Vec<(RelationId, LineageId)> {
-        self.relation_lineages
-            .iter()
-            .map(|(&r, &l)| (r, l))
-            .collect()
-    }
-
-    pub fn record_fork_ancestry_metadata(
-        &mut self,
-        target: BranchId,
-        source: BranchId,
-        fork_commit_id: CommitId,
-    ) {
-        self.branch_forks.insert(target, (source, fork_commit_id));
-    }
-
-    pub(crate) fn register_fork_ancestry(
-        &mut self,
-        target: BranchId,
-        source: BranchId,
-        fork_commit_id: CommitId,
-    ) {
-        self.branch_forks
-            .insert(target.clone(), (source.clone(), fork_commit_id));
-        let can_clone_head = self.branch_naming_states.get(&source).is_some_and(|s| {
-            s.latest_event_commit()
-                .is_none_or(|latest| latest <= fork_commit_id)
-        });
-        let seeded = if can_clone_head {
-            self.branch_naming_states
-                .get(&source)
-                .map(AuthoritativeBranchNamingState::duplicate_for_branch_fork)
-                .unwrap_or_default()
-        } else {
-            rebuild_branch_naming_state_for_branch(
-                &target,
-                &self.published_events,
-                &self.nodes,
-                &self.relation_lineage_holders,
-                &self.branch_forks,
-            )
-        };
-        self.fork_group_state(&target, &source, fork_commit_id);
-        self.fork_name_index(&target, &source, fork_commit_id);
-        self.branch_naming_states.insert(target, seeded);
-    }
-
-    pub(super) fn branch_naming_state(
-        &self,
-        branch_id: &BranchId,
-    ) -> Option<&AuthoritativeBranchNamingState> {
-        self.branch_naming_states.get(branch_id)
-    }
-
-    pub(crate) fn holder_and_name_for_lineage(
-        &self,
-        branch_id: &BranchId,
-        lineage_id: LineageId,
-    ) -> Option<(PersistentNameHolder, PersistentNameIdentity)> {
-        self.branch_naming_states
-            .get(branch_id)
-            .and_then(|s| s.holder_and_name_for_lineage(lineage_id))
-    }
-
-    pub fn authoritative_branch_naming_basis(
-        &self,
-        branch_id: &BranchId,
-    ) -> AuthoritativeLineageBasis {
-        self.branch_naming_states
-            .get(branch_id)
-            .map(AuthoritativeBranchNamingState::snapshot)
-            .unwrap_or_default()
-    }
-
-    pub(crate) fn branch_live_persistent_names(
-        &self,
-        branch_id: &BranchId,
-    ) -> BTreeMap<PersistentNameIdentity, PersistentNameHolder> {
-        self.branch_naming_states
-            .get(branch_id)
-            .map(|s| s.live_holders().clone())
-            .unwrap_or_default()
     }
 }

@@ -87,8 +87,15 @@ impl CheckpointDirectoryAdmission {
                 draft.source.clone(),
             ),
         );
+        let naming_state = std::sync::Arc::new(
+            worth_relational_lineage::internal_port::lineage::naming_pages::store::ColdNamingStore::open(
+                std::sync::Arc::new(draft.manifest.naming.clone()),
+                draft.source.clone(),
+            ),
+        );
         if let Some(accountant) = &self.working_set {
             commit_index.bind_working_set(accountant.clone());
+            naming_state.bind_working_set(accountant.clone());
         }
         Ok(RelationalCheckpointDirectory {
             admission_owner: Default::default(),
@@ -99,6 +106,7 @@ impl CheckpointDirectoryAdmission {
             history_members: draft.history_members,
             canonical_read: self.read.take().expect("admitted original selected read"),
             commit_index,
+            naming_state,
             _basis: self.basis.take().expect("admitted original member custody"),
             retirement: self
                 .retirement

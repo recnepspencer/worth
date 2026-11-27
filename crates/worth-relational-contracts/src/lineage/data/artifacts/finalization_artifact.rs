@@ -147,6 +147,10 @@ impl PreparedLineageFinalization {
         self.artifact.group_lineage = group_lineage;
     }
 
+    pub fn entity_bindings(&self) -> &[(crate::identity::data::EntityId, LineageId)] {
+        &self.entity_bindings
+    }
+
     pub fn take_entity_bindings(&mut self) -> Vec<(crate::identity::data::EntityId, LineageId)> {
         std::mem::take(&mut self.entity_bindings)
     }
@@ -155,7 +159,7 @@ impl PreparedLineageFinalization {
         &self.artifact
     }
 
-    pub(crate) fn relation_lineages(&self) -> &BTreeMap<RelationId, LineageId> {
+    pub fn relation_lineages(&self) -> &BTreeMap<RelationId, LineageId> {
         &self.new_relation_lineages
     }
 

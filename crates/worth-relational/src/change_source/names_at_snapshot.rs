@@ -33,9 +33,43 @@ impl RelationalRuntime {
             return Err(Denial::SettlementInFlight { basis });
         }
         self.lineage
-            .read_name_index(snapshot.branch_id(), |index| {
-                read(PersistentNameObservationView::new(index, basis))
+            .read_name_index(snapshot.branch_id(), |index, scope| {
+                read(PersistentNameObservationView::new(index, scope, basis))
             })
             .map_err(Denial::IndexUnavailable)
+    }
+
+    /// Raises `branch`'s persistent-name retention floor, compacting
+    /// superseded name timelines, holder epochs, and member tenures strictly
+    /// below `floor`. Refuses if `floor` exceeds the branch's committed head.
+    pub fn advance_naming_retention_floor(
+        &self,
+        branch: &crate::history::data::BranchId,
+        floor: crate::history::data::CommitId,
+    ) -> Result<(), crate::lineage::index::PersistentNameIndexDenial> {
+        let Some(cell) = self.history.branch_cell(branch) else {
+            return Err(
+                crate::lineage::index::PersistentNameIndexDenial::RetentionFloorExceedsHead {
+                    floor,
+                    head: None,
+                },
+            );
+        };
+        // Serialize against in-flight branch fork cutovers so a floor raise
+        // cannot overtake a fork between its preflight and durable cutover.
+        let publication_cell = cell.publication_cell();
+        let _coordination = publication_cell.coordination().enter();
+        let branch_head = cell
+            .root()
+            .and_then(|root| root.commit_receipt().map(|receipt| receipt.commit_id));
+        if branch_head.is_none_or(|head| floor > head) {
+            return Err(
+                crate::lineage::index::PersistentNameIndexDenial::RetentionFloorExceedsHead {
+                    floor,
+                    head: branch_head,
+                },
+            );
+        }
+        self.lineage.advance_naming_retention_floor(branch, floor)
     }
 }
