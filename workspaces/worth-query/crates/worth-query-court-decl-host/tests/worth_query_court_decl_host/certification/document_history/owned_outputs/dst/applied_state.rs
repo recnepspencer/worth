@@ -63,7 +63,7 @@ pub struct Numbering {
 
 impl Numbering {
     /// `key=L<lineage>g<generation>:<value>` for a live record, `key=-` otherwise.
-    pub fn record(&mut self, key: &str, row: Option<(EntityId, u64)>) -> String {
+    pub fn label(&mut self, key: &str, row: Option<(EntityId, u64)>) -> String {
         let Some((id, value)) = row else {
             return format!("{key}=-");
         };

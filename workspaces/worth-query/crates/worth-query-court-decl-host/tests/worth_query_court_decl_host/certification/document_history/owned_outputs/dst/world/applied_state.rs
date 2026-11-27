@@ -34,13 +34,13 @@ impl Document<'_> {
         });
         let mut digest = Vec::new();
         for entity in ENTITIES {
-            digest.push(self.applied.record(
+            digest.push(self.applied.label(
                 NAMES[entity],
                 live[entity].map(|member| (member.id, member.value)),
             ));
         }
         for (key, row) in rows {
-            digest.push(self.applied.record(&key, row));
+            digest.push(self.applied.label(&key, row));
         }
         record(digest.join(" "));
     }
