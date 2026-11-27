@@ -19,6 +19,7 @@ mod corrective_cascade;
 mod driver;
 mod history_correction;
 mod history_navigation;
+mod history_retirement;
 mod history_reversal_facts;
 pub(super) mod fixture;
 mod readmission;
@@ -44,9 +45,14 @@ const DEFAULT_SEED_BASE: u64 = 0x7b02_0000;
 /// `0x7b02162a` (corrections on): re-correcting a retirement after its
 /// correction was undone is refused at Relational publication, "exact route
 /// has no canonical publication" (held on public #450).
-const HELD_DOCUMENT_SEEDS: [(u64, bool, &str); 2] = [
+/// `0x7b02205d` (corrections on): a retirement reversed after its
+/// re-creation was corrected records, because the performed correction pair
+/// cancels a re-creation the model counts as live on the line (held on
+/// public #456).
+const HELD_DOCUMENT_SEEDS: [(u64, bool, &str); 3] = [
     (0x7b02_000f, true, "public #429"),
     (0x7b02_162a, true, "public #450"),
+    (0x7b02_205d, true, "public #456"),
 ];
 
 fn variable(name: &str, default: u64) -> u64 {

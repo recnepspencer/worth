@@ -35,6 +35,31 @@ const PINNED: &[(u64, &[Op], &str)] = &[
         &[Op::Begin { gesture: false }, Op::Edit([Retire, Skip]), Op::Replay { pick: 122, change: Change::Stages }],
         "an envelope under an `.edit` writer's key records a new step: the journal is keyed by namespace (refinement (v))",
     ),
+    (
+        0x7b02_125f,
+        &[
+            Op::Edit([Set(1), Set(2)]),
+            Op::Edit([Skip, Retire]),
+            Op::Checkout { pick: 196 },
+            Op::Checkout { pick: 52 },
+            Op::Edit([Set(2), Set(2)]),
+            Op::Edit([Skip, Set(1)]),
+            Op::Checkout { pick: 106 },
+            Op::Correction { pick: 220, entity: 0, on_line: true, cascade: false, stop: None },
+        ],
+        "a correction across the document's own navigation compared a re-retired output's commit version (public #445)",
+    ),
+    (
+        0x7b02_181e,
+        &[
+            Op::Edit([Set(2), Skip]),
+            Op::Edit([Retire, Skip]),
+            Op::Checkout { pick: 163 },
+            Op::Checkout { pick: 221 },
+            Op::Correction { pick: 242, entity: 1, on_line: true, cascade: false, stop: None },
+        ],
+        "reversing a retirement after a checkout away and back compared its commit version (public #445)",
+    ),
 ];
 
 /// Each edit settles on a new product branch occurrence. The chain consumer
