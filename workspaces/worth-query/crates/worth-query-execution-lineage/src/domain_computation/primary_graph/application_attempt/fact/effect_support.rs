@@ -155,14 +155,20 @@ impl Fact {
                 if let Some(equal) = retired(*anchor)? {
                     return Ok(equal);
                 }
-                a.compare_live_source_adjacency_support(execution, &b, *anchor, *relation_kind, *direction)
-                    .map_err(|cause| match cause {
-                        EdgeStop::Execution(cause) => physical(cause),
-                        EdgeStop::Allocation(cause) => {
-                            Denial::allocation_denied("coupled adjacency support", cause)
-                        }
-                        _ => unavailable(),
-                    })
+                a.compare_live_source_adjacency_support(
+                    execution,
+                    &b,
+                    *anchor,
+                    *relation_kind,
+                    *direction,
+                )
+                .map_err(|cause| match cause {
+                    EdgeStop::Execution(cause) => physical(cause),
+                    EdgeStop::Allocation(cause) => {
+                        Denial::allocation_denied("coupled adjacency support", cause)
+                    }
+                    _ => unavailable(),
+                })
             }
             Self::IndexedEntitySelection { .. } => {
                 super::indexed_entity_selection::applied::compare(
@@ -197,19 +203,21 @@ impl Fact {
                 if observation.applied_alignment().is_some() =>
             {
                 let alignment = observation.applied_alignment().expect("guarded alignment");
-                Ok(self.remains_equal_in_image(runtime, execution, before, None)?
-                    && alignment.unchanged_between(
-                        after_own.candidate_identity(),
-                        complete.candidate_identity(),
-                    )
-                    && observation.authorization().permission_equal_between(
-                        execution,
-                        &runtime
-                            .read_truth()
-                            .project_snapshot(before)
-                            .ok_or_else(unavailable)?,
-                        &b,
-                    )?)
+                Ok(
+                    self.remains_equal_in_image(runtime, execution, before, None)?
+                        && alignment.unchanged_between(
+                            after_own.candidate_identity(),
+                            complete.candidate_identity(),
+                        )
+                        && observation.authorization().permission_equal_between(
+                            execution,
+                            &runtime
+                                .read_truth()
+                                .project_snapshot(before)
+                                .ok_or_else(unavailable)?,
+                            &b,
+                        )?,
+                )
             }
             Self::SourcePublication { observation }
                 if observation.applied_candidate().is_some() =>
@@ -247,6 +255,10 @@ impl Fact {
                 }
                 Ok(true)
             }
+            // A name-history answer rests on the published name index, which
+            // an unpublished stage image does not carry: it never supports a
+            // later stage (the comparison fails closed on applied images).
+            Self::PersistentNameHistory { .. } => Ok(false),
             // Control and external publication observations retain their ordinary
             // owners. A moved unsupported observation refuses, never grants support.
             _ => Ok(

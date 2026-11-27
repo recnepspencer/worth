@@ -73,7 +73,6 @@ where
     let RawNonLiveKernelOutcome {
         mut raw,
         persistent_names,
-        persistent_name_facts: _,
     } = kernel;
     let rows = decode_projection_tree::<Schema, Query, QueryResult, Denial>(
         execution,

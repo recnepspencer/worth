@@ -14,10 +14,20 @@ impl WorthQueryObservedSourceFootprint {
             aspects,
             adjacencies,
             root_selection: _root_selection,
+            member_groups,
         } = self;
         let entity_bytes = entities
             .capacity()
             .saturating_mul(std::mem::size_of::<EntityId>());
+        let member_bytes = member_groups.iter().fold(
+            member_groups.capacity().saturating_mul(std::mem::size_of::<
+                super::member_groups::WorthQueryObservedMemberGroups,
+            >()),
+            |bytes, member| {
+                bytes.saturating_add(usize::try_from(member.owned_bytes()).unwrap_or(usize::MAX))
+            },
+        );
+        let entity_bytes = entity_bytes.saturating_add(member_bytes);
         let aspect_bytes = aspects.iter().fold(
             aspects
                 .capacity()

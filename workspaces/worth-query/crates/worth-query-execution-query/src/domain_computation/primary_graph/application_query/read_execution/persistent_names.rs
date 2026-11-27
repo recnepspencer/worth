@@ -5,12 +5,8 @@ use std::collections::BTreeSet;
 
 use worth_query_execution_naming::facade::{ExecutionNameReader, NameReadDependencies};
 use worth_relational::facade::identity::EntityId;
-use worth_relational::facade::lineage::PersistentNameSubjectKind;
 
-use crate::domain_computation::primary_graph::application_attempt::fact::persistent_name_history::{
-    PersistentNameHistoryAnswer, PersistentNameHistoryQuestion, PersistentNameHistoryRead,
-};
-use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
+use crate::domain_computation::primary_graph::application_query::observed_source::member_groups::WorthQueryObservedMemberGroups;
 
 use super::super::projection::WorthQueryApplicationProjectionNode;
 use super::super::WorthQueryAdmittedApplicationQueryPlan;
@@ -25,9 +21,9 @@ use super::RawNonLiveKernelOutcome;
 /// rows that project no name are unaffected. A projected record name adds
 /// no source dependency: a record's name changes only when its lineage ends,
 /// which ends the record its row's footprint already tracks. A projected
-/// group name does: regrouping a member changes no record, so every named
-/// member's group membership is kept as a `PersistentNameHistory` fact
-/// (`persistent_name_facts`) for the consumer that keeps the result current.
+/// group name does (`groups`): regrouping a member changes no record, so each
+/// row's footprint keeps every named member's complete group membership,
+/// which every consumer of the observed source re-verifies.
 ///
 /// Complexity: O(materialized rows) expected index probes.
 pub fn observe_persistent_names<S, Q, P, R, A, I, C>(
@@ -35,6 +31,7 @@ pub fn observe_persistent_names<S, Q, P, R, A, I, C>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     plan: &WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, C>,
     kernel: &mut RawNonLiveKernelOutcome,
+    groups: bool,
 ) {
     let mut entities = BTreeSet::new();
     collect(kernel.raw.rows.raw_rows(), &mut entities);
@@ -43,20 +40,23 @@ pub fn observe_persistent_names<S, Q, P, R, A, I, C>(
     kernel.persistent_names = reader
         .observed_entity_names(entities, &mut NameReadDependencies::new())
         .ok();
-    let members = kernel
-        .persistent_names
-        .iter()
-        .flat_map(|names| names.member_groups());
-    kernel.persistent_name_facts = members
-        .map(|(member, kind, groups)| Fact::PersistentNameHistory {
-            read: PersistentNameHistoryRead {
+    let (true, Some(names)) = (groups, kernel.persistent_names.as_ref()) else {
+        return;
+    };
+    for footprint in &mut kernel.raw.source_footprints {
+        let read = std::iter::once(footprint.root).chain(footprint.entities.iter().copied());
+        let mut members: Vec<WorthQueryObservedMemberGroups> = read
+            .filter_map(|entity| names.member_groups_of(entity))
+            .map(|(member, kind, groups)| WorthQueryObservedMemberGroups {
+                member,
                 kind: kind.to_owned(),
-                subject: PersistentNameSubjectKind::Entity,
-                question: PersistentNameHistoryQuestion::MemberGroups(member),
-            },
-            answer: PersistentNameHistoryAnswer::MemberGroups(groups),
-        })
-        .collect();
+                groups,
+            })
+            .collect();
+        members.sort();
+        members.dedup();
+        footprint.member_groups = members;
+    }
 }
 
 fn collect(rows: &[WorthQueryApplicationProjectionNode], entities: &mut BTreeSet<EntityId>) {

@@ -35,6 +35,9 @@ impl NameReadDependencies {
             && let Some(members) = by_group.get_mut(&group)
         {
             members.remove(&member);
+            if members.is_empty() {
+                by_group.remove(&group);
+            }
         }
         if let Some(group) = answer {
             by_group.entry(group).or_default().insert(member);
@@ -69,7 +72,7 @@ impl NameReadDependencies {
                 stale.extend(deps.groups.iter().copied());
                 let lookups = deps.group_members.values().flat_map(BTreeMap::iter);
                 stale.extend(lookups.map(|(member, answer)| answer.unwrap_or(*member)));
-                return staleness(stale, BTreeSet::new());
+                return staleness(stale, deps.awaited_births.clone());
             }
         };
         let mut births = BTreeSet::new();

@@ -54,6 +54,10 @@ impl PreparedSourceFactMaterialization<'_, '_, '_> {
                     entity_id: *entity_id,
                 });
             }
+            for member in observed.member_groups {
+                control.poll(subject)?;
+                facts.push(member.fact());
+            }
             for _ in observed.aspects {
                 control.poll(subject)?;
                 fields

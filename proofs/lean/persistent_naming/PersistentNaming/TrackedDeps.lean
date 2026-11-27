@@ -32,8 +32,8 @@ event step); dependency keys and digests are natural numbers; the
 event-local work (filtering sources against the event's own targets,
 building the touched-group set) and inserting a hit into the stale set are
 not counted; the undecodable-frame path, which stales every group read by
-design, is not modelled; the reverse answer index is part of the design
-being implemented, not of the current Rust.
+design, is not modelled. The reverse answer index the group check probes is
+`members_by_group` in `dependencies/groups.rs`.
 -/
 namespace PersistentNaming.TrackedDeps
 

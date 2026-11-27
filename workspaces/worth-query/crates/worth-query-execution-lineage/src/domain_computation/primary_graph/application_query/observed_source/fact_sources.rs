@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 pub struct FactSource<'a> {
     pub entities: &'a [EntityId],
+    pub member_groups: &'a [super::member_groups::WorthQueryObservedMemberGroups],
     pub aspects: &'a [WorthQueryObservedFieldRevision],
     pub adjacencies: &'a [WorthQueryObservedAdjacencyRevision],
     pub derived: Option<
@@ -23,6 +24,7 @@ impl<'a> FactSource<'a> {
     fn row(value: &'a WorthQueryObservedSourceFootprint) -> Self {
         Self {
             entities: &value.entities,
+            member_groups: &value.member_groups,
             aspects: &value.aspects,
             adjacencies: &value.adjacencies,
             walks: None,
@@ -34,6 +36,7 @@ impl<'a> FactSource<'a> {
     fn selection(value: &'a WorthQueryObservedRootSelection) -> Self {
         Self {
             entities: &value.entities,
+            member_groups: &[],
             aspects: &value.aspects,
             adjacencies: &value.adjacencies,
             walks: value.walks.as_ref(),
@@ -45,6 +48,7 @@ impl<'a> FactSource<'a> {
     pub fn count(&self) -> Option<usize> {
         self.entities
             .len()
+            .checked_add(self.member_groups.len())?
             .checked_add(self.aspects.len())?
             .checked_add(self.adjacencies.len())?
             .checked_add(self.walks.map_or(0, |x| x.values().len()))?

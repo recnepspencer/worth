@@ -124,10 +124,11 @@ impl PersistentNameHistoryRead {
                 }
             }
             PersistentNameHistoryQuestion::Birth(digest) => {
+                // Entity and relation births only, exactly what posting keys
+                // (`visit_lineage`) and selection lowering address.
                 let subjects = [
                     PersistentNameSubjectKind::Entity,
                     PersistentNameSubjectKind::Relation,
-                    PersistentNameSubjectKind::Group,
                 ];
                 let recorded = subjects
                     .into_iter()

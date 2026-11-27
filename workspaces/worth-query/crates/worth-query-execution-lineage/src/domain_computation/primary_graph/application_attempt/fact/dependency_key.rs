@@ -311,6 +311,10 @@ impl WorthQueryApplicationObservedFact {
                 Self::WorkflowHistoryBasis { instance: a, .. },
                 Self::WorkflowHistoryBasis { instance: b, .. },
             ) => a == b,
+            (
+                Self::PersistentNameHistory { read: a, .. },
+                Self::PersistentNameHistory { read: b, .. },
+            ) => a == b,
             _ => false,
         }
     }

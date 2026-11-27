@@ -350,15 +350,21 @@ fn name_read(optional: bool, group: bool) -> syn::Ident {
 
 fn projects_names(input: &DeriveInput, projection: &ProjectionDeclaration) -> TokenStream {
     let (vis, own) = (&input.vis, !projection.names.is_empty());
+    let own_groups = projection.names.iter().any(|name| name.group);
     let nested = projection.slots.iter().filter_map(|slot| match &slot.kind {
         SlotKind::Relation(Traversal { child, .. }) => Some(child),
         SlotKind::Field { .. } => None,
     });
+    let nested_groups = nested.clone();
     quote! {
         /// Whether this projection, or a related row it nests, projects a
         /// persistent name.
         #vis const PROJECTS_PERSISTENT_NAMES: bool =
             #own #(|| <#nested>::PROJECTS_PERSISTENT_NAMES)*;
+        /// Whether this projection, or a related row it nests, projects a
+        /// group name.
+        #vis const PROJECTS_GROUP_NAMES: bool =
+            #own_groups #(|| <#nested_groups>::PROJECTS_GROUP_NAMES)*;
     }
 }
 
@@ -376,6 +382,7 @@ fn project(
             #bounds
         {
             const PROJECTS_PERSISTENT_NAMES: bool = <#row>::PROJECTS_PERSISTENT_NAMES;
+            const PROJECTS_GROUP_NAMES: bool = <#row>::PROJECTS_GROUP_NAMES;
             fn project(
                 #row_local: &#graph::primary_graph::WorthQueryApplicationProjectionRow<'_, #schema_alias, #q_ty>,
             ) -> ::core::result::Result<

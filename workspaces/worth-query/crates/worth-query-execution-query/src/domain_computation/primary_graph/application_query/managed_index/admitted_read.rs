@@ -87,7 +87,11 @@ where
             )?;
             if ResultValue::<S, B>::PROJECTS_PERSISTENT_NAMES {
                 read_execution::persistent_names::observe_persistent_names(
-                    runtime, execution, plan, &mut raw,
+                    runtime,
+                    execution,
+                    plan,
+                    &mut raw,
+                    ResultValue::<S, B>::PROJECTS_GROUP_NAMES,
                 );
             }
             Ok(raw)
@@ -259,7 +263,12 @@ where
         let dependency = DecisionSource::Committed(match alignment {
             Some(alignment) => {
                 allocation.claim_arc::<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>(execution)?;
-                Arc::new(dependency.as_ref().clone().with_applied_alignment(alignment))
+                Arc::new(
+                    dependency
+                        .as_ref()
+                        .clone()
+                        .with_applied_alignment(alignment),
+                )
             }
             None => Arc::clone(dependency),
         });

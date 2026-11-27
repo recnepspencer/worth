@@ -6,12 +6,10 @@ impl ChargedBytes for RawNonLiveKernelOutcome {
         let Self {
             raw,
             persistent_names,
-            persistent_name_facts,
         } = self;
         let names = persistent_names
             .as_ref()
-            .map_or(0, |names| names.retained_bytes() as u64)
-            .saturating_add(persistent_name_facts.additional_charged_bytes());
+            .map_or(0, |names| names.retained_bytes() as u64);
         let RawOneShotRows {
             material_source: _material_source,
             rows,

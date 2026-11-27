@@ -47,6 +47,7 @@ pub fn collect_source_footprints(
             entities: Vec::new(),
             aspects: Vec::new(),
             adjacencies: Vec::new(),
+            member_groups: Vec::new(),
             root_selection: root_path_source
                 .map(|sources| {
                     sources

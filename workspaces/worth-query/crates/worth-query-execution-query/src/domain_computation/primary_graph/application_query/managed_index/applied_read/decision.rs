@@ -164,6 +164,7 @@ fn retain_decision_facts<S, Q, P, R, A, I, C>(
         entities: Vec::new(),
         aspects: Vec::new(),
         adjacencies: Vec::new(),
+        member_groups: Vec::new(),
         root_selection: Some(selection),
     };
     let mut facts = Vec::new();

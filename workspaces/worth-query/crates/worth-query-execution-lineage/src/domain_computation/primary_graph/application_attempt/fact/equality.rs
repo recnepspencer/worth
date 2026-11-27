@@ -94,6 +94,10 @@ impl WorthQueryApplicationObservedFact {
             Self::PersistentGroup { read, answer } => read
                 .remains_equal(answer, runtime, snapshot)
                 .map_err(|_| SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "persistent group comparison"))?,
+            // An unpublished candidate has no published name index: what it
+            // births, ends or regroups is invisible at `snapshot`, so a
+            // name-history answer never holds on an applied image.
+            Self::PersistentNameHistory { .. } if applied.is_some() => false,
             Self::PersistentNameHistory { read, answer } => read
                 .remains_equal(answer, runtime, snapshot)
                 .map_err(|_| SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "persistent name history comparison"))?,

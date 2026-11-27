@@ -153,6 +153,7 @@ pub fn same_footprint_membership(
         return false;
     };
     if !same_entities(&left.entities, &right.entities)
+        || left.member_groups != right.member_groups
         || !same_fields(&left.aspects, &right.aspects)
         || !same_adjacencies(&left.adjacencies, &right.adjacencies)
     {

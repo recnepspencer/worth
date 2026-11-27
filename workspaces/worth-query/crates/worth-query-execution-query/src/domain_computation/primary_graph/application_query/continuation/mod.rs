@@ -125,7 +125,13 @@ where
             execute_authorized_read(execution, self, &plan, |runtime, graph, plan| {
                 let mut raw = read_continuation_page(runtime, execution, graph, plan, after)?;
                 if QueryResult::PROJECTS_PERSISTENT_NAMES {
-                    observe_persistent_names(runtime, execution, plan, &mut raw);
+                    observe_persistent_names(
+                        runtime,
+                        execution,
+                        plan,
+                        &mut raw,
+                        QueryResult::PROJECTS_GROUP_NAMES,
+                    );
                 }
                 Ok(raw)
             })

@@ -45,6 +45,7 @@ fn compare(
         if left.root != right.root
             || left.complete != right.complete
             || left.entities != right.entities
+            || left.member_groups != right.member_groups
             || left.aspects != right.aspects
             || left.adjacencies != right.adjacencies
         {

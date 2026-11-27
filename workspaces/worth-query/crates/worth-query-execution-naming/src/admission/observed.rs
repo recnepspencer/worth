@@ -104,20 +104,22 @@ impl ObservedEntityNames {
         }
     }
 
-    /// Every named record's member name with its installed subject and the
+    /// The named record `entity`'s member name, installed subject and the
     /// `(group kind, group)` pairs holding it, ascending: what a projected
-    /// group name rests on, whichever kind the projection asks for.
+    /// group name rests on, whichever kind the projection asks for. `None`
+    /// for a record the read did not observe or that carries no live name.
     ///
-    /// Complexity: O(named records + their groups).
-    pub fn member_groups(&self) -> impl Iterator<Item = ([u8; 32], &str, Vec<(String, [u8; 32])>)> {
-        self.records.iter().filter_map(|(entity, observed)| {
-            let Observed::Named { scheme, digest } = observed else {
-                return None;
-            };
-            let mut groups = self.groups.get(entity).cloned().unwrap_or_default();
-            groups.sort();
-            Some((*digest, self.schemes[*scheme].1.as_str(), groups))
-        })
+    /// Complexity: O(log observed records + groups of the record).
+    pub fn member_groups_of(
+        &self,
+        entity: EntityId,
+    ) -> Option<([u8; 32], &str, Vec<(String, [u8; 32])>)> {
+        let Some(Observed::Named { scheme, digest }) = self.records.get(&entity) else {
+            return None;
+        };
+        let mut groups = self.groups.get(&entity).cloned().unwrap_or_default();
+        groups.sort();
+        Some((*digest, self.schemes[*scheme].1.as_str(), groups))
     }
 
     /// How many records the read observed.

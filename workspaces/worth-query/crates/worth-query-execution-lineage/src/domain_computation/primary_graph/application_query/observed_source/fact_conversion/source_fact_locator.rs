@@ -1,6 +1,7 @@
 //! Native coordinates for deduplicating one observed source fact set.
 
 use super::Fact;
+use crate::domain_computation::primary_graph::application_attempt::fact::persistent_name_history::PersistentNameHistoryQuestion as Question;
 use worth_foundational::facade::{AspectFieldLocator, AspectKey};
 use worth_relational::facade::{
     identity::{EntityId, KindId},
@@ -22,6 +23,8 @@ pub enum SourceFactLocator {
     DerivedSource(crate::domain_computation::primary_graph::derived_source::DerivedSourceKey),
     StructuralWalk(crate::domain_computation::primary_graph::structural_walk::StructuralWalkKey),
     Entity(EntityId),
+    /// A projected group name's member: every group holding it.
+    MemberGroups([u8; 32]),
     Aspect(EntityId, AspectKey),
     Field(EntityId, AspectFieldLocator),
     OutgoingAdjacency(EntityId, KindId),
@@ -42,6 +45,12 @@ impl SourceFactLocator {
             Fact::DerivedSource { observation } => Self::DerivedSource(observation.key().clone()),
             Fact::StructuralWalk { observation } => Self::StructuralWalk(observation.key().clone()),
             Fact::SourceEntity { entity_id } => Self::Entity(*entity_id),
+            Fact::PersistentNameHistory { read, .. } => match read.question {
+                Question::MemberGroups(member) => Self::MemberGroups(member),
+                Question::Resolution { .. } | Question::Birth(_) => {
+                    unreachable!("source conversion emits only member-group name history")
+                }
+            },
             Fact::SourceAspectRevision {
                 entity_id, aspect, ..
             } => Self::Aspect(*entity_id, aspect.clone()),

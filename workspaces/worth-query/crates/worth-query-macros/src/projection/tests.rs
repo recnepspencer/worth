@@ -180,6 +180,16 @@ fn a_name_slot_projects_the_root_name_and_refuses_slot_keys() {
         grouped.contains("const PROJECTS_PERSISTENT_NAMES : bool = true ;"),
         "{grouped}"
     );
+    assert!(
+        grouped.contains("const PROJECTS_GROUP_NAMES : bool = true ;"),
+        "{grouped}"
+    );
+    assert!(
+        expanded.contains(
+            "const PROJECTS_GROUP_NAMES : bool = false || < TaskRow > :: PROJECTS_GROUP_NAMES ;"
+        ),
+        "a row naming only its record projects no group name of its own: {expanded}"
+    );
     // A name is not a result slot: no marker, selector or shape member.
     assert!(!expanded.contains("struct Name ;"), "{expanded}");
     assert!(!expanded.contains("fn name < __WorthProjQ >"), "{expanded}");
@@ -189,6 +199,10 @@ fn a_name_slot_projects_the_root_name_and_refuses_slot_keys() {
     ));
     assert!(
         plain.contains("const PROJECTS_PERSISTENT_NAMES : bool = false ;"),
+        "{plain}"
+    );
+    assert!(
+        plain.contains("const PROJECTS_GROUP_NAMES : bool = false ;"),
         "{plain}"
     );
 

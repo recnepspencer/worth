@@ -21,6 +21,9 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<outputs::sculpt::Binding, _>(outputs::sculpt::Handler)?;
         setup.handler::<stored::Binding, _>(stored::Handler)?;
         setup.handler::<retarget::Binding, _>(retarget::Handler)?;
+        setup.handler::<groups::source_currentness::Binding, _>(
+            groups::source_currentness::Handler,
+        )?;
         coupled::producer::install(setup)?;
         invariant_names::install(setup)?;
         setup.handler::<edit::member::Binding, _>(edit::member::Handler)

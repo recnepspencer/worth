@@ -71,6 +71,21 @@ fn append_footprint<E>(
     if let Some(selection) = &footprint.root_selection {
         emit(&selection.identity())?;
     }
+    // Written only when present, so a footprint with no projected group name
+    // keeps its existing checkpoint identity.
+    if !footprint.member_groups.is_empty() {
+        emit(b"member-groups")?;
+        length(emit, footprint.member_groups.len())?;
+        for member in &footprint.member_groups {
+            emit(&member.member)?;
+            text(emit, &member.kind)?;
+            length(emit, member.groups.len())?;
+            for (kind, group) in &member.groups {
+                text(emit, kind)?;
+                emit(group)?;
+            }
+        }
+    }
     Ok(())
 }
 fn entity<E>(

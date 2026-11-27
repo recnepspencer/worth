@@ -247,7 +247,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 )?;
                 if ResultValue::<S, B>::PROJECTS_PERSISTENT_NAMES {
                     read_execution::persistent_names::observe_persistent_names(
-                        runtime, execution, plan, &mut raw,
+                        runtime,
+                        execution,
+                        plan,
+                        &mut raw,
+                        ResultValue::<S, B>::PROJECTS_GROUP_NAMES,
                     );
                 }
                 Ok(raw)
