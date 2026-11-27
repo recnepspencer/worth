@@ -4,58 +4,13 @@
 //! binary's global allocator attributes every allocation on every thread
 //! by stack: it is naming work when the stack passes through the lineage
 //! owner (`worth_relational_lineage`: minting, mint order, posture
-//! validation, finalization, the name index) or the lineage birth codec. No
-//! production counter is involved and no naming path can opt out. Nextest
-//! runs each court in its own process, so no other court allocates here.
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering::Relaxed};
-use tracking_allocator::{AllocationGroupId, AllocationRegistry, AllocationTracker};
-
-mod world;
-
-use world::World;
+//! validation, finalization, the name index) or the lineage birth codec
+//! (`allocation_attribution`). No production counter is involved and no
+//! naming path can opt out. Nextest runs each court in its own process, so
+//! no other court allocates here.
+use super::allocation_attribution::{self, ratio};
+use super::composed_world::World;
 use worth_relational::facade::lineage::PersistentNameIdentity;
-
-static MEASURING: AtomicBool = AtomicBool::new(false);
-static COUNTS: [AtomicUsize; 6] = [const { AtomicUsize::new(0) }; 6];
-/// The derived name index: ingestion, the tail-only journal, carrier deltas
-/// and member tenures (hot path #4).
-const INDEX_OWNER: &str = "::lineage::index::";
-const NAMING_OWNERS: [&str; 4] = [
-    "worth_relational_lineage::",
-    "::lineage::data::",
-    "group_finalization::",
-    "lineage_preparation::",
-];
-
-struct Attribution;
-impl AllocationTracker for Attribution {
-    fn allocated(&self, _: usize, bytes: usize, _: usize, _: AllocationGroupId) {
-        if !MEASURING.load(Relaxed) {
-            return;
-        }
-        COUNTS[0].fetch_add(1, Relaxed);
-        COUNTS[1].fetch_add(bytes, Relaxed);
-        // The capture's own allocations are not re-entered by the tracker.
-        let stack = std::backtrace::Backtrace::force_capture().to_string();
-        if NAMING_OWNERS.iter().any(|owner| stack.contains(owner)) {
-            COUNTS[2].fetch_add(1, Relaxed);
-            COUNTS[3].fetch_add(bytes, Relaxed);
-        }
-        if stack.contains(INDEX_OWNER) {
-            COUNTS[4].fetch_add(1, Relaxed);
-            COUNTS[5].fetch_add(bytes, Relaxed);
-        }
-    }
-    fn deallocated(
-        &self,
-        _: usize,
-        _: usize,
-        _: usize,
-        _: AllocationGroupId,
-        _: AllocationGroupId,
-    ) {
-    }
-}
 
 /// Allocation calls and bytes of one commit: in all, naming's share, and
 /// the derived name index's share of that.
@@ -70,33 +25,19 @@ struct Cost {
 }
 
 fn measure(run: impl FnOnce()) -> Cost {
-    static INSTALL: std::sync::Once = std::sync::Once::new();
-    INSTALL.call_once(|| {
-        AllocationRegistry::set_global_tracker(Attribution).expect("one tracker per binary");
-        AllocationRegistry::enable_tracking();
-    });
-    COUNTS.iter().for_each(|count| count.store(0, Relaxed));
-    MEASURING.store(true, Relaxed);
-    run();
-    MEASURING.store(false, Relaxed);
-    let [count, bytes, naming_count, naming_bytes, index_count, index_bytes] =
-        COUNTS.each_ref().map(|c| c.load(Relaxed));
+    let measured = allocation_attribution::measure(run);
     assert!(
-        naming_count > 0,
+        measured.naming.count > 0,
         "naming work is attributed: stacks carry symbols"
     );
     Cost {
-        count,
-        bytes,
-        naming_count,
-        naming_bytes,
-        index_count,
-        index_bytes,
+        count: measured.all.count,
+        bytes: measured.all.bytes,
+        naming_count: measured.naming.count,
+        naming_bytes: measured.naming.bytes,
+        index_count: measured.name_index.count,
+        index_bytes: measured.name_index.bytes,
     }
-}
-
-fn ratio(large: usize, small: usize) -> f64 {
-    large as f64 / small as f64
 }
 
 /// Naming's allocation calls and bytes stay within `bound` of `small`. The
@@ -252,8 +193,8 @@ fn regroup_after(history: usize) -> Cost {
 /// carrier set's path copy gaining a level (`members_ratio` = log2 large /
 /// log2 small group size), never with a copy of the set.
 fn assert_index_flat(large: Cost, small: Cost, bound: f64, members_ratio: f64, axis: &str) {
-    let calls = ratio(large.index_count, small.index_count.max(1));
-    let bytes = ratio(large.index_bytes, small.index_bytes.max(1));
+    let calls = ratio(large.index_count, small.index_count);
+    let bytes = ratio(large.index_bytes, small.index_bytes);
     println!("{axis}: derived index calls x{calls:.3}, bytes x{bytes:.3} (log bound x{members_ratio:.3})");
     assert!(
         calls <= bound && bytes <= members_ratio,

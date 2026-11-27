@@ -1,4 +1,6 @@
+mod allocation_attribution;
 pub(crate) mod checkpoint_stage;
+mod composed_world;
 mod durability_append_matrix;
 mod embedded_cost;
 mod index_retirement;
@@ -22,6 +24,7 @@ mod reopen_growth;
 mod snapshot_counts;
 
 mod symbol_admission;
+mod symbol_scaling;
 
 mod shared_aspect_reads;
 

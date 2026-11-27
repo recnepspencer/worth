@@ -1,6 +1,7 @@
 //! A Relational runtime with real persistent naming composed: a
 //! structural-identity member scheme, Anchor group partitions and a forked
-//! branch, driven only through public Native transactions.
+//! branch, driven only through public Native transactions. The scaling
+//! courts share it; `World::unnamed` is the same runtime without the scheme.
 use worth_execution::{CancellationToken, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 use worth_relational::facade::aggregate_identity::{
     AggregateContinuityRule, AggregateGroupScheme, AggregateGroupSchemeId, AggregateMemberRole,
@@ -60,7 +61,7 @@ fn created(key: &str) -> CreatedEntityRef {
     }
 }
 
-fn create(key: &str) -> MutationIntent {
+pub fn create(key: &str) -> MutationIntent {
     MutationIntent::Create(CreateIntent::Entity(EntitySpec {
         partition_id: PartitionId::main(),
         kind_id: MEMBER,
@@ -77,6 +78,15 @@ fn delete(entity_id: EntityId) -> MutationIntent {
 
 impl World {
     pub fn new() -> Self {
+        Self::with_member_names(true)
+    }
+
+    /// The same world without the member naming scheme: plain commits.
+    pub fn unnamed() -> Self {
+        Self::with_member_names(false)
+    }
+
+    fn with_member_names(named: bool) -> Self {
         let fixture = AspectSchemaFixture::default();
         let registry = fixture
             .build_registry()
@@ -88,25 +98,29 @@ impl World {
                 aspect_contract_declarations: KindAspectContractDeclarations::default(),
             })
             .unwrap();
-        let scheme = InstalledPersistentNameScheme::try_from_ordered_roles_for_subject(
-            SCHEME,
-            PersistentNameSubjectKind::Entity,
-            "Member",
-            ["authored", PIECE],
-            true,
-            false,
-            true,
-        )
-        .unwrap();
-        let mut schemes = InstalledPersistentNameSchemeRegistry::new();
-        schemes.register(scheme).unwrap();
-        let binding = (
-            (PersistentNameSubjectKind::Entity, MEMBER),
-            SCHEME.to_owned(),
-        );
-        let registry = registry
-            .install_persistent_name_schemes(schemes, [binding].into())
+        let registry = if named {
+            let scheme = InstalledPersistentNameScheme::try_from_ordered_roles_for_subject(
+                SCHEME,
+                PersistentNameSubjectKind::Entity,
+                "Member",
+                ["authored", PIECE],
+                true,
+                false,
+                true,
+            )
             .unwrap();
+            let mut schemes = InstalledPersistentNameSchemeRegistry::new();
+            schemes.register(scheme).unwrap();
+            let binding = (
+                (PersistentNameSubjectKind::Entity, MEMBER),
+                SCHEME.to_owned(),
+            );
+            registry
+                .install_persistent_name_schemes(schemes, [binding].into())
+                .unwrap()
+        } else {
+            registry
+        };
         let mut runtime = RelationalRuntimeApi::builder()
             .schema_registry(registry)
             .build()

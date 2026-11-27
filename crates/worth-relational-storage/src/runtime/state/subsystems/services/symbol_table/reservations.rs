@@ -99,13 +99,9 @@ impl RuntimeSymbolTable {
             return state.admit_text(text);
         };
         let symbol = meaning.symbol;
-        state
-            .import_canonical_snapshot(&SymbolTableSnapshot {
-                entries: vec![(symbol, text)],
-            })
-            .map_err(|_| {
-                crate::symbols::data::RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary
-            })?;
+        state.import_canonical_meaning(symbol, &text).map_err(|_| {
+            crate::symbols::data::RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary
+        })?;
         drop(meaning);
         Ok(symbol)
     }
@@ -199,9 +195,7 @@ impl PendingSymbolMeanings {
         }
         for (symbol, text) in &prior.admitted {
             self.interner
-                .import_canonical_snapshot(&SymbolTableSnapshot {
-                    entries: vec![(*symbol, text.clone())],
-                })
+                .import_canonical_meaning(*symbol, text)
                 .map_err(|_| SymbolReservationDenial::InvalidDictionary)?;
             self.admitted.insert(*symbol, text.clone());
         }
@@ -301,9 +295,7 @@ impl PendingSymbolMeanings {
         };
         drop(state);
         self.interner
-            .import_canonical_snapshot(&SymbolTableSnapshot {
-                entries: vec![(symbol, text.clone())],
-            })
+            .import_canonical_meaning(symbol, &text)
             .map_err(|_| SymbolReservationDenial::InvalidDictionary)?;
         if let Some(reservation) = reservation {
             self.reserved.insert(symbol, reservation);

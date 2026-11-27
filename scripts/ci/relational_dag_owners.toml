@@ -10,7 +10,7 @@ layer = 0
 # +100 for the typed later-stage retirement refusal (public #348).
 # +400 for allocation-free borrowed created-binding lookups (M3 C5.4).
 # +100 for the declarative ResidencyBudget config section (Store M4.2b).
-# +100 for Persistent Naming Phase 7B-2a structural_identity and Store M4.3f finalization artifact field.
+# +100 for Persistent Naming Phase 7B-2a structural_identity, Store M4.3f finalization artifact field, and public #446 shared-byte symbol custody.
 cap = 68700
 floor = 38300
 depends = []

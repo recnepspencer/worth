@@ -7,39 +7,57 @@ use std::{
     borrow::Borrow,
     cmp::Ordering,
     hash::{Hash, Hasher},
+    sync::Arc,
 };
 use worth_execution::{
     ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder,
     ExecutionRequestArrayDenial,
 };
 
-#[derive(Clone, Debug)]
+/// One immutable, reference-counted byte owner. External backing is explicit
+/// System custody (never charged); execution-allocated backing is Managed
+/// custody (charged, or admitted under an explicit System policy). Clones share
+/// the bytes: a persistent dictionary copies every sibling entry of a node on a
+/// path copy, so a deep-copying carrier would make each commit pay for the
+/// client keys already in the dictionary (public #446).
+#[derive(Clone)]
 pub struct StoredSymbolText {
-    backing: Backing,
+    bytes: ExecutionImmutableBytes,
 }
-#[derive(Clone, Debug)]
-enum Backing {
-    System(String),
-    Managed(ExecutionImmutableBytes),
-}
+// A shared handle like SymbolTextLookupKey, never an inline owned String.
+const _: () = assert!(std::mem::size_of::<StoredSymbolText>() <= 2 * std::mem::size_of::<usize>());
+
 impl StoredSymbolText {
     pub fn as_str(&self) -> &str {
-        match &self.backing {
-            Backing::System(text) => text,
-            Backing::Managed(bytes) => std::str::from_utf8(bytes.bytes()).expect(/* Proof: StoredText is constructed only from str/String or after UTF-8 admission; its private bytes cannot subsequently be mutated. */ "admitted UTF-8"),
-        }
+        std::str::from_utf8(self.bytes.bytes()).expect(/* Proof: StoredText is constructed only from str/String or after UTF-8 admission; its private bytes cannot subsequently be mutated. */ "admitted UTF-8")
     }
     /// Native field-text custody/readmission, which may use explicit System policy.
     /// This predicate never asserts a lease charge; inspect charged_payload_bytes.
     pub fn is_managed(&self) -> bool {
-        matches!(self.backing, Backing::Managed(_))
+        !self.bytes.is_external_backing()
     }
     /// None includes explicit System custody; it is never reported as a lease charge.
     pub fn charged_payload_bytes(&self) -> Option<u64> {
-        match &self.backing {
-            Backing::System(_) => None,
-            Backing::Managed(bytes) => bytes.charged_payload_bytes(),
+        self.bytes.charged_payload_bytes()
+    }
+    /// Whether `other` is this exact custody: equal System text, or the same
+    /// Managed allocation. Replacing one with the other changes nothing.
+    pub fn is_same_custody(&self, other: &Self) -> bool {
+        match (self.is_managed(), other.is_managed()) {
+            (false, false) => self.as_str() == other.as_str(),
+            (true, true) => {
+                !self.as_str().is_empty() && std::ptr::eq(self.as_str(), other.as_str())
+            }
+            (false, true) | (true, false) => false,
         }
+    }
+}
+impl std::fmt::Debug for StoredSymbolText {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("StoredSymbolText")
+            .field("text", &self.as_str())
+            .field("managed", &self.is_managed())
+            .finish()
     }
 }
 fn array_denial(cause: ExecutionRequestArrayDenial) -> Denial {
@@ -51,13 +69,19 @@ fn array_denial(cause: ExecutionRequestArrayDenial) -> Denial {
 impl From<String> for StoredSymbolText {
     fn from(text: String) -> Self {
         Self {
-            backing: Backing::System(text),
+            bytes: ExecutionImmutableBytes::from_external_bytes(Arc::new(
+                text.into_bytes().into_boxed_slice(),
+            )),
         }
     }
 }
 impl From<&str> for StoredSymbolText {
     fn from(text: &str) -> Self {
-        text.to_owned().into()
+        Self {
+            bytes: ExecutionImmutableBytes::from_external_bytes(Arc::new(Box::from(
+                text.as_bytes(),
+            ))),
+        }
     }
 }
 impl Borrow<str> for StoredSymbolText {
@@ -108,15 +132,13 @@ impl PartialEq<String> for StoredSymbolText {
 }
 impl Serialize for StoredSymbolText {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match &self.backing {
-            Backing::System(text) => serializer.serialize_str(text),
-            Backing::Managed(_) => {
-                use serde::ser::SerializeMap;
-                let mut map = serializer.serialize_map(Some(1))?;
-                map.serialize_entry("managed_utf8_v1", self.as_str())?;
-                map.end()
-            }
+        if !self.is_managed() {
+            return serializer.serialize_str(self.as_str());
         }
+        use serde::ser::SerializeMap;
+        let mut map = serializer.serialize_map(Some(1))?;
+        map.serialize_entry("managed_utf8_v1", self.as_str())?;
+        map.end()
     }
 }
 impl<'de> Deserialize<'de> for StoredSymbolText {
@@ -157,11 +179,9 @@ impl StoredSymbolTextOwnerPort for StoredSymbolText {
         bytes
             .extend_from_slice(text.as_bytes())
             .map_err(array_denial)?;
-        let backing = bytes.seal().map_err(array_denial)?.into_immutable_bytes();
+        let bytes = bytes.seal().map_err(array_denial)?.into_immutable_bytes();
         execution.check_live().map_err(Denial::Stopped)?;
-        Ok(Self {
-            backing: Backing::Managed(backing),
-        })
+        Ok(Self { bytes })
     }
 
     fn admit(
@@ -181,9 +201,7 @@ impl StoredSymbolTextOwnerPort for StoredSymbolText {
             );
         };
         execution.check_live().map_err(Denial::Stopped)?;
-        Ok(Self {
-            backing: Backing::Managed(bytes),
-        })
+        Ok(Self { bytes })
     }
 }
 
@@ -217,6 +235,27 @@ mod tests {
             StoredSymbolText::copy_from_str(&request, "must refuse"),
             Err(Denial::Stopped(_))
         ));
+    }
+
+    #[test]
+    fn clones_and_lookup_keys_share_the_bytes_and_keep_custody() {
+        let serial = SerialRequest::from_memory(
+            SerialMemoryBudget::new(Some(2 << 20)),
+            CancellationSource::new().token(),
+            None,
+        );
+        let request = ExecutionRequest::serial(&serial);
+        let system = StoredSymbolText::from("system text");
+        let managed = StoredSymbolText::copy_from_str(&request, "managed text").unwrap();
+        for text in [system, managed] {
+            let keyed = SymbolTextLookupKey::from_text(&text).retained_text();
+            for copy in [text.clone(), keyed] {
+                assert!(std::ptr::eq(copy.as_str(), text.as_str()));
+                assert_eq!(copy.is_managed(), text.is_managed());
+                assert_eq!(copy.charged_payload_bytes(), text.charged_payload_bytes());
+                assert!(copy.is_same_custody(&text));
+            }
+        }
     }
 
     #[test]
