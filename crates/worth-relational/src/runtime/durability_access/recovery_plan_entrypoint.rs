@@ -1,5 +1,3 @@
-#[cfg(test)]
-use crate::capabilities::DurabilityRead;
 use crate::durability::data::{RecoveryPlan, RecoveryVerificationMode};
 use crate::runtime::durability_access::retained_recovery_plan::retained_recovery_plan;
 use crate::runtime::RelationalRuntime;
@@ -85,6 +83,6 @@ impl<'runtime> DurabilityAccess<'runtime> {
     pub(crate) fn durable_log(
         &self,
     ) -> Vec<std::sync::Arc<crate::history::data::PositionedCanonicalCommit>> {
-        DurabilityRead::durable_log(self.runtime)
+        self.runtime.durable_log()
     }
 }

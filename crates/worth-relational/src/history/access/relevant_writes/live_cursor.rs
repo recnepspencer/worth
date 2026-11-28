@@ -36,7 +36,7 @@ impl RelationalAuthoredWriteCursor {
             self.source
                 .prepare_page(self.next, execution, context, limits, |commit| {
                     runtime
-                        .history_access()
+                        .history()
                         .demand_commit_envelope(&execution, commit)
                         .map_err(Denial::Execution)?
                         .ok_or(Denial::CanonicalEvidenceUnavailable)

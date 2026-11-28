@@ -138,8 +138,7 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         main_digest_before
     );
     assert!(recovered
-        .replay()
-        .canonical_commit_envelope(execution, latest_commit_before.unwrap().commit_id)
+        .replay_commit_envelope(execution, latest_commit_before.unwrap().commit_id)
         .unwrap()
         .is_some());
 }
@@ -153,8 +152,7 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
     let parent = create_entity_outcome(execution, &runtime, "main-a");
     let child = create_entity_outcome(execution, &runtime, "main-b");
     let child_envelope = runtime
-        .replay()
-        .canonical_commit_envelope(execution, child.commit.commit_id)
+        .replay_commit_envelope(execution, child.commit.commit_id)
         .unwrap()
         .unwrap();
     let corrupt_plan = RecoveryPlan::new(

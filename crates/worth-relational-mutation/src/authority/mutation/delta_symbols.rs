@@ -3,7 +3,7 @@ use super::canonical_deltas::CanonicalRecordAspectDelta;
 use super::field_versions::visit_changed_fields;
 use worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::mutation_input::MutationSymbolMeanings;
 use worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::reservations::SymbolReservationDenial;
-use worth_relational_contracts::internal_port::symbols::data::symbol::Symbol;
+use worth_relational_contracts::internal_port::symbols::data::Symbol;
 use worth_foundational::facade::{AspectKey, FieldKey};
 
 pub(super) struct AdmittedDeltaSymbols<'delta, 'symbols> {

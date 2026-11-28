@@ -24,6 +24,17 @@ pub trait ChunkMemberSource {
     ) -> Result<usize, Cause>;
 }
 
+impl<S: ChunkMemberSource + ?Sized> ChunkMemberSource for Arc<S> {
+    fn read_range(
+        &self,
+        member: RelationalDurableMemberLocator,
+        offset: u64,
+        target: &mut [u8],
+    ) -> Result<usize, Cause> {
+        (**self).read_range(member, offset, target)
+    }
+}
+
 /// A member's bytes together with the fill charge that funds them.
 pub struct LoadedMember {
     pub bytes: Vec<u8>,

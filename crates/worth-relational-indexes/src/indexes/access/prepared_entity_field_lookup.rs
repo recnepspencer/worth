@@ -154,7 +154,7 @@ impl PreparedEntityFieldLookup {
             overflowed,
             parity,
         );
-        if parity == BoundedIndexParityMode::Certification {
+        super::selected_index::certify_parity(parity, &self.instrumentation, || {
             super::prepared_field_certification::certify(
                 execution,
                 self,
@@ -162,9 +162,8 @@ impl PreparedEntityFieldLookup {
                 limit,
                 &outcome,
                 &mut admission,
-            )?;
-            self.instrumentation.count_query_index_parity_verification();
-        }
+            )
+        })?;
         super::prepared_lookup_admission::admit(execution, self.index_id(), &mut admission)?;
         self.instrumentation.count_query_index_path();
         Ok(outcome)

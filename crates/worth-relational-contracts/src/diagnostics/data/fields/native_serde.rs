@@ -51,7 +51,7 @@ pub mod diagnostic_mask_locator {
 
     #[derive(Serialize, Deserialize)]
     struct NativeDiagnosticMaskLocator {
-        authority: NativeLocatorAuthority,
+        authority: LocatorAuthority,
         aspect_key: AspectKey,
         paths: Vec<Vec<FieldKey>>,
     }
@@ -64,7 +64,7 @@ pub mod diagnostic_mask_locator {
         S: Serializer,
     {
         NativeDiagnosticMaskLocator {
-            authority: locator.authority().into(),
+            authority: locator.authority(),
             aspect_key: locator.aspect_key().clone(),
             paths: field_paths_to_native(locator.paths()),
         }
@@ -82,46 +82,10 @@ pub mod diagnostic_mask_locator {
             field_paths_from_native(locator.paths).map_err(serde::de::Error::custom)?,
         );
         Ok(AspectMaskLocator::diagnostic(
-            locator.authority.into(),
+            locator.authority,
             locator.aspect_key,
             &mask,
         ))
-    }
-}
-
-#[derive(Clone, Copy, Serialize, Deserialize)]
-enum NativeLocatorAuthority {
-    Authoritative,
-    Derived,
-    Projected,
-    SupportOnly,
-    Planned,
-    ReceiptBearing,
-}
-
-impl From<LocatorAuthority> for NativeLocatorAuthority {
-    fn from(authority: LocatorAuthority) -> Self {
-        match authority {
-            LocatorAuthority::Authoritative => Self::Authoritative,
-            LocatorAuthority::Derived => Self::Derived,
-            LocatorAuthority::Projected => Self::Projected,
-            LocatorAuthority::SupportOnly => Self::SupportOnly,
-            LocatorAuthority::Planned => Self::Planned,
-            LocatorAuthority::ReceiptBearing => Self::ReceiptBearing,
-        }
-    }
-}
-
-impl From<NativeLocatorAuthority> for LocatorAuthority {
-    fn from(authority: NativeLocatorAuthority) -> Self {
-        match authority {
-            NativeLocatorAuthority::Authoritative => Self::Authoritative,
-            NativeLocatorAuthority::Derived => Self::Derived,
-            NativeLocatorAuthority::Projected => Self::Projected,
-            NativeLocatorAuthority::SupportOnly => Self::SupportOnly,
-            NativeLocatorAuthority::Planned => Self::Planned,
-            NativeLocatorAuthority::ReceiptBearing => Self::ReceiptBearing,
-        }
     }
 }
 

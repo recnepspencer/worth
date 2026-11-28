@@ -45,13 +45,11 @@ fn recovered_main_and_sibling_reexport_the_original_canonical_subjects_and_envel
         (main_commit.commit.commit_id, main_recorded),
     ] {
         let original = source
-            .replay()
-            .canonical_commit_envelope(execution, commit_id)
+            .replay_commit_envelope(execution, commit_id)
             .unwrap()
             .unwrap();
         let readmitted = recovered
-            .replay()
-            .canonical_commit_envelope(execution, commit_id)
+            .replay_commit_envelope(execution, commit_id)
             .unwrap()
             .unwrap();
         assert_eq!(readmitted.commit, original.commit);

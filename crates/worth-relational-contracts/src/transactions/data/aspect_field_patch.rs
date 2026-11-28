@@ -113,21 +113,17 @@ impl<'de> Deserialize<'de> for AspectFieldPatch {
     }
 }
 
-/// Operations used by the Relational owners.
-pub trait AspectFieldPatchOwnerPort: Sized {
-    fn from_sorted_owned_entries(locators: Vec<(AspectFieldLocator, AspectValue)>) -> Self;
-    fn owned_allocation_capacity_bytes(&self) -> u64;
-}
-
-impl AspectFieldPatchOwnerPort for AspectFieldPatch {
-    fn from_sorted_owned_entries(locators: Vec<(AspectFieldLocator, AspectValue)>) -> Self {
+impl AspectFieldPatch {
+    pub(crate) fn from_sorted_owned_entries(
+        locators: Vec<(AspectFieldLocator, AspectValue)>,
+    ) -> Self {
         debug_assert!(locators.windows(2).all(|pair| pair[0].0 < pair[1].0));
         Self {
             locators: locators.into_boxed_slice(),
         }
     }
 
-    fn owned_allocation_capacity_bytes(&self) -> u64 {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
         self.locators.iter().fold(
             std::mem::size_of_val(self.locators.as_ref()) as u64,
             |bytes, (locator, value)| {

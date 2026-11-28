@@ -123,12 +123,8 @@ pub(super) fn open_diamond_home(
     execution: &ExecutionRequest<'_, '_>,
 ) -> worth_store_application::ReadmittedApplicationHome {
     let builder = RelationalRuntimeApi::builder()
-        .runtime_setup(|r| {
-            r.runtime_name("diamond-merge-court");
-        })
-        .schema_setup(|s| {
-            s.schema_registry(two_aspect_registry());
-        });
+        .runtime_name("diamond-merge-court")
+        .schema_registry(two_aspect_registry());
     worth_store_testkit_application_oracle::facade::home_opening::open(
         worth_store_testkit_application_oracle::facade::home_opening::request(dir, builder),
         execution,

@@ -1,7 +1,6 @@
 //! Before-copy admission for the canonical carried descriptor and its Arc.
 use crate::execution::denial_cause::RelationalExecutionDenialCause as Denial;
-use crate::internal_port::derived_relation::definition::DerivedRelationDefinitionPartsOwnerPort as _;
-use crate::internal_port::projected_member_domain::definition::ProjectedMemberDomainPartsOwnerPort as _;
+
 use crate::internal_port::schema::data::authority_snapshot::carried_projection::SchemaAuthoritySnapshotOwnerPort as _;
 use crate::schema::data::*;
 

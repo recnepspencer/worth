@@ -74,8 +74,7 @@ fn durable_recovery_and_schema_mismatch_test() {
         .recover(execution, plan.clone())
         .unwrap();
     let recovered_envelope = recovered
-        .replay()
-        .canonical_commit_envelope(execution, transitioned.commit.commit_id)
+        .replay_commit_envelope(execution, transitioned.commit.commit_id)
         .unwrap()
         .expect("recovered transitioned envelope");
     assert_eq!(

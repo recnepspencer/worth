@@ -46,8 +46,7 @@ fn fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches() {
             create_entity_outcome(execution, &runtime, "touch-value")
         };
         let envelope = runtime
-            .replay()
-            .canonical_commit_envelope(execution, committed.commit.commit_id)
+            .replay_commit_envelope(execution, committed.commit.commit_id)
             .unwrap()
             .expect("performed commit has sealed envelope");
         let touches = envelope
@@ -102,8 +101,7 @@ fn installed_field_index_commit_touch_carries_native_old_and_new_keys() {
         .expect("index fixture has identity capacity");
     let committed = create_entity_outcome(execution, &runtime, "indexed-value");
     let envelope = runtime
-        .replay()
-        .canonical_commit_envelope(execution, committed.commit.commit_id)
+        .replay_commit_envelope(execution, committed.commit.commit_id)
         .unwrap()
         .expect("performed indexed commit has envelope");
     let touches = envelope

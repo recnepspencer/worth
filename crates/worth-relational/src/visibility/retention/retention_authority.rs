@@ -211,7 +211,7 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
 }
 
 impl RelationalRuntime {
-    pub(crate) fn retention_authority(&self) -> VisibilityRetentionAuthority<'_> {
+    pub fn retention(&self) -> VisibilityRetentionAuthority<'_> {
         VisibilityRetentionAuthority::new(self)
     }
 }

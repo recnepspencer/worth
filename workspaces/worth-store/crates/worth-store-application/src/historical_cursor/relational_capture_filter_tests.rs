@@ -72,9 +72,7 @@ fn capture_skips_deleted_and_excluded_kind_patches_before_replay() {
         })
         .unwrap();
     let rt = RelationalRuntimeApi::builder()
-        .schema_setup(|s| {
-            s.schema_registry(reg);
-        })
+        .schema_registry(reg)
         .build()
         .unwrap();
     let serial = SerialRequest::from_memory(

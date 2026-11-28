@@ -172,12 +172,7 @@ impl Eq for RelationalDiagnosticFields {}
 #[path = "fields/fields_tests.rs"]
 mod fields_tests;
 
-/// Operations used by the Relational owners.
-pub trait RelationalDiagnosticValueOwnerPort: Sized {
-    fn owned_allocation_capacity_bytes(&self) -> u64;
-}
-
-impl RelationalDiagnosticValueOwnerPort for RelationalDiagnosticValue {
+impl RelationalDiagnosticValue {
     fn owned_allocation_capacity_bytes(&self) -> u64 {
         match self {
             Self::String(value) => value.capacity() as u64,

@@ -1,10 +1,7 @@
 use worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request;
 
 use worth_relational::facade::{
-    config::{
-        ConfigValueSource, MvccConfig, RelationalRuntimeProfile, RetentionBackend,
-        SnapshotReleasePolicy,
-    },
+    config::{MvccConfig, RelationalRuntimeProfile, RetentionBackend, SnapshotReleasePolicy},
     runtime::{RelationalRuntime, RelationalRuntimeApi},
     snapshots::SnapshotHandle,
 };
@@ -93,33 +90,6 @@ fn profile_resolution_and_provenance_are_explicit() {
     assert_eq!(runtime.config().storage.initial_entity_capacity, 999);
     assert!(runtime.config().diagnostics.profile.detailed_traces_enabled);
     assert_eq!(runtime.config().storage.layout.entity_chunk_size, 2048);
-    assert_eq!(
-        runtime
-            .config()
-            .provenance
-            .source_for("storage.initial_entity_capacity")
-            .unwrap()
-            .source,
-        ConfigValueSource::BuilderOverride
-    );
-    assert_eq!(
-        runtime
-            .config()
-            .provenance
-            .source_for("storage.layout")
-            .unwrap()
-            .source,
-        ConfigValueSource::ProfileDefault
-    );
-    assert_eq!(
-        runtime
-            .config()
-            .provenance
-            .source_for("visibility.cache_policy")
-            .unwrap()
-            .source,
-        ConfigValueSource::ProfileDefault
-    );
     assert!(runtime.config().visibility.cache_policy.enabled);
 }
 

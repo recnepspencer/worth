@@ -250,14 +250,10 @@ fn damage_descriptor(
 
 fn open_as_another_runtime(location: &Path, execution: &ExecutionRequest<'_, '_>) -> Opened {
     let foreign = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .runtime_setup(|runtime| {
-            runtime.runtime_name("another-runtime");
-        })
-        .schema_setup(|setup| {
-            setup.schema_registry(crate::schema_transition::registry(
-                crate::schema_transition::SOURCE,
-            ));
-        });
+        .runtime_name("another-runtime")
+        .schema_registry(crate::schema_transition::registry(
+            crate::schema_transition::SOURCE,
+        ));
     worth_store_testkit_application_oracle::facade::home_opening::open(
         worth_store_testkit_application_oracle::facade::home_opening::request(location, foreign),
         execution,

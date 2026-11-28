@@ -7,25 +7,31 @@ use worth_proof::TransitionOutcome;
 
 use crate::canonical_basis_ready_sequence::canonical_basis_ready_sequence;
 
-pub mod grammar;
-pub mod value;
-
-use grammar::{NativeDomain, NativeEntry};
-
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 struct NativeCanonicalBasis {
     version: String,
-    domain: NativeDomain,
-    entries: Vec<NativeEntry>,
+    domain: CanonicalBasisDomain,
+    entries: Vec<CanonicalBasisEntry>,
 }
 
 pub fn serialize<S>(basis: &CanonicalBasisReadyArtifact, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    NativeCanonicalBasis::try_from(basis)
-        .map_err(serde::ser::Error::custom)?
-        .serialize(serializer)
+    #[derive(Serialize)]
+    struct NativeCanonicalBasisRef<'a> {
+        version: &'a str,
+        domain: CanonicalBasisDomain,
+        entries: &'a [CanonicalBasisEntry],
+    }
+
+    let ready = canonical_basis_ready_sequence(basis);
+    NativeCanonicalBasisRef {
+        version: ready.version().as_str(),
+        domain: ready.domain(),
+        entries: ready.entries(),
+    }
+    .serialize(serializer)
 }
 
 pub fn deserialize<'de, D>(deserializer: D) -> Result<CanonicalBasisReadyArtifact, D::Error>
@@ -35,44 +41,10 @@ where
     let basis = NativeCanonicalBasis::deserialize(deserializer)?;
     let version = CanonicalizationRuleVersion::new(basis.version)
         .ok_or_else(|| serde::de::Error::custom("invalid diagnostic canonical basis version"))?;
-    let domain = CanonicalBasisDomain::try_from(basis.domain).map_err(serde::de::Error::custom)?;
-    let entries = basis
-        .entries
-        .into_iter()
-        .map(CanonicalBasisEntry::try_from)
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(serde::de::Error::custom)?;
-
-    match prepare_canonical_basis_sequence(version, domain, entries) {
+    match prepare_canonical_basis_sequence(version, basis.domain, basis.entries) {
         TransitionOutcome::Success(ready) => Ok(ready),
         other => Err(serde::de::Error::custom(format!(
             "diagnostic canonical basis was not ready: {other:?}"
         ))),
-    }
-}
-
-impl TryFrom<&CanonicalBasisReadyArtifact> for NativeCanonicalBasis {
-    type Error = String;
-
-    fn try_from(basis: &CanonicalBasisReadyArtifact) -> Result<Self, Self::Error> {
-        let ready_sequence = canonical_basis_ready_sequence(basis);
-        Ok(Self {
-            version: ready_sequence.version().as_str().to_string(),
-            domain: ready_sequence.domain().try_into()?,
-            entries: ready_sequence
-                .entries()
-                .iter()
-                .map(NativeEntry::try_from)
-                .collect::<Result<Vec<_>, _>>()?,
-        })
-    }
-}
-
-impl crate::diagnostics::data::RelationalDiagnosticFields {
-    /// Actual private native entry roster layout; nested payloads are separate.
-    pub fn native_basis_roster_storage_bytes(capacity: usize) -> Option<usize> {
-        std::alloc::Layout::array::<NativeEntry>(capacity)
-            .ok()
-            .map(|layout| layout.size())
     }
 }

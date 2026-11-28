@@ -17,13 +17,11 @@ fn original_input_observation_preserves_complete_attribution_across_schema_check
     let (source, medium) = schema_transition_history(request, 8, 2);
     let head = current_head(&source, &BranchId("main".into())).unwrap();
     let original = source
-        .replay()
-        .canonical_commit_envelope(request, head.commit_id)
+        .replay_commit_envelope(request, head.commit_id)
         .unwrap()
         .unwrap();
     let predecessor = source
-        .replay()
-        .canonical_commit_envelope(request, head.parents[0])
+        .replay_commit_envelope(request, head.parents[0])
         .unwrap()
         .unwrap();
     let observation = original
@@ -57,8 +55,7 @@ fn original_input_observation_preserves_complete_attribution_across_schema_check
         .unwrap();
     let (_, receiver) = recover(request, &medium, receiver);
     let restored = receiver
-        .replay()
-        .canonical_commit_envelope(request, head.commit_id)
+        .replay_commit_envelope(request, head.commit_id)
         .unwrap()
         .unwrap();
     let recovered = restored

@@ -1,7 +1,6 @@
 //! Direct heap backing retained by a native rule, without encoding or cloning it.
 use super::InvariantRule;
 use crate::identity::data::KindId;
-use crate::internal_port::schema::data::relation_integrity::contract_id::ContractIdOwnerPort as _;
 
 impl InvariantRule {
     pub fn owned_allocation_capacity_bytes(&self) -> u64 {

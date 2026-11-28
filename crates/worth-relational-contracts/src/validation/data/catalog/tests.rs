@@ -1,4 +1,3 @@
-use crate::internal_port::validation::data::catalog::InvariantCatalogOwnerPort as _;
 use crate::internal_port::validation::data::catalog::InvariantRegistrationOwnerPort as _;
 use crate::internal_port::validation::data::rules::InvariantRuleOwnerPort as _;
 use worth_foundational::facade::{

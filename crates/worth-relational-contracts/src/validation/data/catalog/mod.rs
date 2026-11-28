@@ -5,6 +5,7 @@ pub mod canonical_registration_tags;
 pub mod relation_integrity_registration_plan;
 
 #[cfg(test)]
+#[cfg(test)]
 mod registration_examples;
 #[cfg(test)]
 mod tests;
@@ -152,15 +153,9 @@ impl InvariantRegistrationOwnerPort for InvariantRegistration {
     }
 }
 
-/// Operations used by the Relational owners.
-pub trait InvariantCatalogOwnerPort: Sized {
+impl InvariantCatalog {
     #[cfg(test)]
-    fn contains_registration_kind(&self, rule: &InvariantRule) -> bool;
-}
-
-impl InvariantCatalogOwnerPort for InvariantCatalog {
-    #[cfg(test)]
-    fn contains_registration_kind(&self, rule: &InvariantRule) -> bool {
+    pub(crate) fn contains_registration_kind(&self, rule: &InvariantRule) -> bool {
         self.registrations
             .iter()
             .any(|registration| registration.rule.same_registration_kind(rule))

@@ -7,10 +7,9 @@ fn explicit_record_limit_changes_no_other_profile_policy() {
         WorthQueryApplicationProfile::GeometryKernel,
         WorthQueryApplicationProfile::WorkflowScale,
     ] {
-        assert_eq!(profile.publication_override_for_test(None), None, "omission must preserve profile-default provenance, not install a numerically equal override");
-        let default = worth_relational::facade::runtime::RelationalRuntimeConfig::resolved(
+        assert_eq!(profile.publication_override_for_test(None), None, "omission preserves the runtime profile default");
+        let default = worth_relational::facade::runtime::RelationalRuntimeConfig::for_profile(
             profile.relational_profile_for_test(),
-            Default::default(),
         )
         .publication
         .policy;

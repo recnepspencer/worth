@@ -97,32 +97,14 @@ pub enum CustomInvariantVerdict {
     Violation(crate::validation::data::custom_rule::refusal::CustomInvariantRefusal),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CustomInvariantRuntimePhase {
-    Preparation,
-    Execution,
-}
-
-impl CustomInvariantRuntimePhase {
-    pub const fn diagnostic_label(self) -> &'static str {
-        match self {
-            Self::Preparation => "preparation",
-            Self::Execution => "execution",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CustomInvariantFailureKind {
-    PreparationError,
-    ExecutionError,
-    Panic,
-}
+pub use crate::validation::data::results::{
+    CustomInvariantFailureKind, CustomInvariantFailurePhase,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CustomInvariantFailure {
     pub identity: CustomInvariantSemanticIdentity,
-    pub phase: CustomInvariantRuntimePhase,
+    pub phase: CustomInvariantFailurePhase,
     pub kind: CustomInvariantFailureKind,
     pub detail: Arc<str>,
     pub cause: Option<
@@ -138,7 +120,7 @@ impl CustomInvariantFailure {
         let (detail, cause) = error.into_parts();
         Self {
             identity: identity.clone(),
-            phase: CustomInvariantRuntimePhase::Preparation,
+            phase: CustomInvariantFailurePhase::Preparation,
             kind: CustomInvariantFailureKind::PreparationError,
             detail,
             cause,
@@ -152,7 +134,7 @@ impl CustomInvariantFailure {
         let (detail, cause) = error.into_parts();
         Self {
             identity: identity.clone(),
-            phase: CustomInvariantRuntimePhase::Execution,
+            phase: CustomInvariantFailurePhase::Execution,
             kind: CustomInvariantFailureKind::ExecutionError,
             detail,
             cause,
@@ -161,7 +143,7 @@ impl CustomInvariantFailure {
 
     pub fn panic(
         identity: &CustomInvariantSemanticIdentity,
-        phase: CustomInvariantRuntimePhase,
+        phase: CustomInvariantFailurePhase,
         detail: Arc<str>,
     ) -> Self {
         Self {

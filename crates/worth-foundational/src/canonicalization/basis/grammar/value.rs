@@ -1,7 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 use crate::identities::CanonicalDigestId;
 use crate::values::InternedString;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum CanonicalIntegerWidth {
     Bits8,
     Bits16,
@@ -10,13 +12,13 @@ pub enum CanonicalIntegerWidth {
     Bits128,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum CanonicalFloatWidth {
     Bits32,
     Bits64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum CanonicalBasisValue {
     Null,
     Bool(bool),

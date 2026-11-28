@@ -33,13 +33,11 @@ pub(crate) fn assert_recovered_commit_truth_matches(
     lineage_ids: &[LineageId],
 ) {
     let original_envelope = original_runtime
-        .replay()
-        .canonical_commit_envelope(execution, commit_id)
+        .replay_commit_envelope(execution, commit_id)
         .unwrap()
         .unwrap();
     let recovered_envelope = recovered_runtime
-        .replay()
-        .canonical_commit_envelope(execution, commit_id)
+        .replay_commit_envelope(execution, commit_id)
         .unwrap()
         .unwrap();
     let original_bundle = capture_aspect_truth_bundle(
@@ -87,4 +85,61 @@ fn durable_commit_data(
     body.diagnostics_summary.entries.clear();
     body.derived_index_artifacts = Default::default();
     copied
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct AspectTruthBundle {
+    pub visible_truth: crate::tests::harness::model::truth_model::VisibleTruthSummary,
+    pub latest_patch: Option<crate::facade::publication::PublishedAuthoritativePatchEnvelope>,
+    pub diagnostics: crate::facade::diagnostics::RelationalDiagnosticsFacade,
+    pub entity_history_digests: Vec<(
+        crate::facade::identity::EntityId,
+        crate::facade::history::AspectHistoryDigest,
+    )>,
+    pub relation_history_digests: Vec<(RelationId, crate::facade::history::AspectHistoryDigest)>,
+    pub lineage_history_digests: Vec<(
+        LineageId,
+        crate::facade::history::LineageAspectResolutionDigest,
+    )>,
+}
+
+pub(crate) fn capture_aspect_truth_bundle(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    entity_ids: &[crate::facade::identity::EntityId],
+    relation_ids: &[RelationId],
+    lineage_ids: &[LineageId],
+) -> AspectTruthBundle {
+    AspectTruthBundle {
+        visible_truth: crate::tests::harness::model::truth_model::VisibleTruthSummary::capture(execution, runtime),
+        latest_patch: latest_committed_patch(runtime),
+        diagnostics: runtime.publication().diagnostics(),
+        entity_history_digests: entity_ids
+            .iter()
+            .map(|entity_id| {
+                (
+                    *entity_id,
+                    entity_aspect_history_digest(execution, runtime, *entity_id, None),
+                )
+            })
+            .collect(),
+        relation_history_digests: relation_ids
+            .iter()
+            .map(|relation_id| {
+                (
+                    *relation_id,
+                    relation_aspect_history_digest(execution, runtime, *relation_id, None),
+                )
+            })
+            .collect(),
+        lineage_history_digests: lineage_ids
+            .iter()
+            .map(|lineage_id| {
+                (
+                    *lineage_id,
+                    lineage_aspect_history_digest(execution, runtime, *lineage_id, None),
+                )
+            })
+            .collect(),
+    }
 }

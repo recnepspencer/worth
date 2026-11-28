@@ -259,7 +259,7 @@ impl RelationalPreparationHistory {
         #[cfg(test)]
         if self.root_capture_sabotage.swap(false, Ordering::Relaxed) {
             return Err(RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(
-                contracts::symbols::data::symbol::Symbol(u32::MAX),
+                contracts::symbols::data::Symbol(u32::MAX),
             ));
         }
         RelationalBranchRoot::prepare_capture(

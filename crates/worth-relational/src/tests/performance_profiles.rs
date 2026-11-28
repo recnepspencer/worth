@@ -9,7 +9,6 @@ use super::domains::fintech::{
     perf_stress_intraday_risk, setup_intraday_risk_perf_world, setup_trade_correction_perf_world,
 };
 use super::performance_support::*;
-use crate::capabilities::DurabilityRead;
 use crate::facade::config::{AdjacencyBackend, RelationalRuntimeProfile};
 use crate::facade::history::BranchId;
 use crate::facade::indexes::{

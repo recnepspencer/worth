@@ -1,4 +1,3 @@
-use crate::capabilities::{HistorySource, ReplayRead};
 use crate::history::data::HistoryDriftClass;
 use crate::replay::data::{
     CanonicalCommitEnvelope, RelationalReplayRequest, ReplayMismatch, ReplayMismatchClass,

@@ -5,7 +5,7 @@ fn schema_boundary_fingerprint_is_explicit_256_bit_authority_surface() {
     let bytes = [7_u8; 32];
     let fingerprint = SchemaBoundaryFingerprint::new(bytes);
 
-    assert_eq!(fingerprint, SchemaBoundaryFingerprint(bytes));
+    assert_eq!(fingerprint, SchemaBoundaryFingerprint::new(bytes));
     assert_ne!(fingerprint, SchemaBoundaryFingerprint::ZERO);
 }
 

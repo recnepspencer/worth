@@ -2,7 +2,7 @@
 use contracts::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial as Denial;
 use contracts::symbols::data::stored_text::StoredSymbolText;
 use contracts::symbols::data::string_interner::{StringInterner, StringInternerOwnerPort as _};
-use contracts::symbols::data::symbol::Symbol;
+use contracts::symbols::data::Symbol;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational_contracts::internal_port as contracts;
 

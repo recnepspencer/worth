@@ -3,7 +3,7 @@
 use crate::contracts::validation::data::catalog::InvariantRegistrationOwnerPort as _;
 use crate::contracts::validation::data::custom_rule::errors::{
     CustomInvariantExecutionError, CustomInvariantFailure, CustomInvariantFailureKind,
-    CustomInvariantRuntimePhase, CustomInvariantVerdict,
+    CustomInvariantFailurePhase, CustomInvariantVerdict,
     PreparedCustomInvariantExecutionOutcome as Outcome,
 };
 use crate::contracts::validation::data::execution::{InvariantReportedRule, InvariantVerdict};
@@ -209,7 +209,7 @@ fn evaluate_custom_registration<'state>(
         )],
         Outcome::Failure(failure) => {
             if failure.kind == CustomInvariantFailureKind::Panic
-                && failure.phase == CustomInvariantRuntimePhase::Execution
+                && failure.phase == CustomInvariantFailurePhase::Execution
             {
                 runtime.performance_access().count_custom_invariant_panic();
             }
@@ -265,40 +265,10 @@ fn custom_invariant_failure_violation(
                 identity: crate::contracts::validation::data::results::custom_invariant_failure::CustomInvariantFailureIdentity::new(
                     failure.identity.clone(),
                 ),
-                phase: custom_invariant_failure_phase(failure.phase),
-                failure: custom_invariant_failure_kind(failure.kind),
+                phase: failure.phase,
+                failure: failure.kind,
                 cause: failure.cause.clone(),
                 detail: failure.detail.to_string(),
             },
-    }
-}
-
-fn custom_invariant_failure_phase(
-    phase: CustomInvariantRuntimePhase,
-) -> crate::contracts::validation::data::results::custom_invariant_failure::CustomInvariantFailurePhase{
-    match phase {
-        CustomInvariantRuntimePhase::Preparation => {
-            crate::contracts::validation::data::results::custom_invariant_failure::CustomInvariantFailurePhase::Preparation
-        }
-        CustomInvariantRuntimePhase::Execution => {
-            crate::contracts::validation::data::results::custom_invariant_failure::CustomInvariantFailurePhase::Execution
-        }
-    }
-}
-
-fn custom_invariant_failure_kind(
-    failure: CustomInvariantFailureKind,
-) -> crate::contracts::validation::data::results::custom_invariant_failure::CustomInvariantFailureKind
-{
-    match failure {
-        CustomInvariantFailureKind::PreparationError => {
-            crate::contracts::validation::data::results::custom_invariant_failure::CustomInvariantFailureKind::PreparationError
-        }
-        CustomInvariantFailureKind::ExecutionError => {
-            crate::contracts::validation::data::results::custom_invariant_failure::CustomInvariantFailureKind::ExecutionError
-        }
-        CustomInvariantFailureKind::Panic => {
-            crate::contracts::validation::data::results::custom_invariant_failure::CustomInvariantFailureKind::Panic
-        }
     }
 }

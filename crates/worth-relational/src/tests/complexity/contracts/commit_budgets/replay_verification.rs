@@ -22,7 +22,7 @@ fn complexity_budget_replay_verification_tracks_digest_and_deep_layers_separatel
             execution,
         )
         .unwrap();
-    assert!(runtime.replay().compare_outcome(&normal));
+    assert!(normal.matches_recorded_truth());
     let normal_counters = runtime.performance_access().counters();
     assert!(normal_counters.replay_digest_parity_checks > 0);
     assert_eq!(normal_counters.replay_deep_artifact_parity_checks, 0);

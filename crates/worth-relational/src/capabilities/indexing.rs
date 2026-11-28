@@ -2,16 +2,8 @@ use crate::identity::data::VersionId;
 use crate::replay::data::ReplaySnapshotSurface;
 use crate::runtime::RelationalRuntime;
 
-pub(crate) trait ReplayRead {
-    fn replay_snapshot_surface_at_version(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        version_id: VersionId,
-    ) -> Result<ReplaySnapshotSurface, crate::execution::RelationalExecutionDenialCause>;
-}
-
-impl ReplayRead for RelationalRuntime {
-    fn replay_snapshot_surface_at_version(
+impl RelationalRuntime {
+    pub(crate) fn replay_snapshot_surface_at_version(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: VersionId,

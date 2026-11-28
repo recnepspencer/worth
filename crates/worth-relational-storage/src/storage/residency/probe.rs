@@ -11,10 +11,34 @@ pub enum PartitionProbe<'view> {
     Resident(&'view PartitionState),
 }
 
-struct FullReadRound<'source, 'round> {
-    source: &'source dyn PartitionAccess,
+pub(super) struct ReadRound<'source, 'round, S: ?Sized> {
+    pub(super) source: &'source S,
     source_index: usize,
     misses: &'round Mutex<MissFootprint>,
+}
+
+pub(super) type FullReadRound<'source, 'round> =
+    ReadRound<'source, 'round, dyn PartitionAccess + 'source>;
+
+impl<S: ?Sized> ReadRound<'_, '_, S> {
+    pub(super) fn record_miss(&self, partition: PartitionId, base: bool) {
+        self.misses
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .record(ReadMiss {
+                source_index: self.source_index,
+                base,
+                partition,
+            });
+    }
+
+    pub(super) fn has_misses(&self) -> bool {
+        self.misses
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .first()
+            .is_some()
+    }
 }
 
 impl<'source> FullReadRound<'source, '_> {
@@ -28,14 +52,7 @@ impl<'source> FullReadRound<'source, '_> {
             PartitionProbe::Resident(partition) => Some(partition),
             PartitionProbe::Absent => None,
             PartitionProbe::Cold => {
-                self.misses
-                    .lock()
-                    .unwrap_or_else(|error| error.into_inner())
-                    .record(ReadMiss {
-                        source_index: self.source_index,
-                        base,
-                        partition: id,
-                    });
+                self.record_miss(id, base);
                 None
             }
         }
@@ -96,11 +113,7 @@ impl crate::storage::overlay::CurrentPartitionAccess for FullReadRound<'_, '_> {
     }
 
     fn has_read_misses(&self) -> bool {
-        self.misses
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .first()
-            .is_some()
+        self.has_misses()
     }
 
     fn touched_partition_ids(&self) -> Option<Vec<PartitionId>> {
@@ -166,24 +179,37 @@ pub fn probe_full_sources<const N: usize, T>(
     sources: [&dyn PartitionAccess; N],
     mut read: impl FnMut([&dyn PartitionAccess; N]) -> T,
 ) -> Result<T, super::RelationalResidencyDemandFailure> {
+    probe_sources(
+        execution,
+        sources,
+        |views| read(views.each_ref().map(|view| view as &dyn PartitionAccess)),
+        |source| source.base_source(),
+        |source, id| source.demand_full_partition(execution, id),
+    )
+}
+
+/// Each round borrows the same retained sources and builds an inline miss ledger.
+/// Only the projection and demand operation depend on the source's authority.
+pub(super) fn probe_sources<'source, const N: usize, S: ?Sized, T>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    sources: [&'source S; N],
+    mut read: impl FnMut([ReadRound<'source, '_, S>; N]) -> T,
+    base_source: impl Fn(&'source S) -> Option<&'source S>,
+    demand: impl Fn(&S, PartitionId) -> Result<(), super::RelationalResidencyDemandFailure>,
+) -> Result<T, super::RelationalResidencyDemandFailure> {
     discover(
         execution,
         |misses| {
-            let views: [_; N] = std::array::from_fn(|source_index| FullReadRound {
+            read(std::array::from_fn(|source_index| ReadRound {
                 source: sources[source_index],
                 source_index,
                 misses,
-            });
-            read(std::array::from_fn(|index| {
-                &views[index] as &dyn PartitionAccess
             }))
         },
         |miss| {
             let source = sources[miss.source_index];
             let source = if miss.base {
-                source
-                    .base_source()
-                    .ok_or(crate::storage::data::RelationalStorageUnavailable {
+                base_source(source).ok_or(crate::storage::data::RelationalStorageUnavailable {
                     subject: crate::storage::data::RelationalStorageSubject::Region(miss.partition),
                     cause:
                         crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
@@ -191,7 +217,7 @@ pub fn probe_full_sources<const N: usize, T>(
             } else {
                 source
             };
-            source.demand_full_partition(execution, miss.partition)
+            demand(source, miss.partition)
         },
     )
 }

@@ -3,6 +3,7 @@
 //! `(class, partition)` merges that partition's rows into the resident maps.
 //! Every later operation on it is the ordinary resident algorithm, so slot
 //! reuse, generations, frontiers and pending reservations stay exact.
+use crate::storage::residency::chunked::cold_member_port::ConfinedMemberSource;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -80,7 +81,7 @@ impl PagedIdentityBase {
         accountant: Arc<WorkingSetAccountant>,
         source: Arc<dyn ChunkMemberSource + Send + Sync>,
     ) -> Self {
-        let confined = Arc::new(validation::ConfinedMemberSource::new(source, &paged.pages));
+        let confined = Arc::new(ConfinedMemberSource::new(source, paged.pages.clone()));
         Self {
             directories: IdentityDirectories::open(&paged.roots, accountant),
             roots: paged.roots,

@@ -124,17 +124,6 @@ impl LineageEventRecord {
     }
 }
 
-/// Operations used by the Relational owners.
-pub trait LineageSubjectOwnerPort: Sized {
-    fn is_entity(&self) -> bool;
-}
-
-impl LineageSubjectOwnerPort for LineageSubject {
-    fn is_entity(&self) -> bool {
-        matches!(self, Self::Entity)
-    }
-}
-
 pub trait LineageEventRecordFieldsPort {
     fn event_id_mut_for_test(&mut self) -> &mut u64;
     fn lineage_event_branch_mut_for_test(&mut self) -> &mut BranchId;
@@ -224,5 +213,11 @@ pub fn assemble_lineage_event_record(parts: LineageEventRecordParts) -> LineageE
         kept_name: parts.kept_name,
         relation_id: parts.relation_id,
         entity_id: parts.entity_id,
+    }
+}
+
+impl LineageSubject {
+    fn is_entity(&self) -> bool {
+        matches!(self, Self::Entity)
     }
 }

@@ -1,5 +1,5 @@
 use crate::branch::transition::RelationalBranchTransitionSequence;
-use crate::capabilities::{DurabilityRead, RuntimeConfigSource};
+use crate::capabilities::RuntimeConfigSource;
 use crate::durability::data::RecoveryPlan;
 use crate::history::data::CommitId;
 use crate::replay::planning::{

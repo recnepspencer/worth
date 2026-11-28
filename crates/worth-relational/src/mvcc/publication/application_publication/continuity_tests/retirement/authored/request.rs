@@ -137,7 +137,7 @@ fn cascade_refuses_tampered_carried_origin_and_membership_records() {
                 registry, &schema, version,
             )
             .unwrap();
-        let mut runtime = crate::presentation::api::RelationalRuntimeApi::builder()
+        let mut runtime = crate::runtime::builder::RelationalRuntimeApi::builder()
             .profile(crate::config::data::RelationalRuntimeProfile::CertificationCore)
             .schema_registry(registry)
             .build()

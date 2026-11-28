@@ -68,13 +68,8 @@ impl PartialEq<String> for ContractId {
     }
 }
 
-/// Operations used by the Relational owners.
-pub trait ContractIdOwnerPort: Sized {
-    fn owned_allocation_capacity_bytes(&self) -> u64;
-}
-
-impl ContractIdOwnerPort for ContractId {
-    fn owned_allocation_capacity_bytes(&self) -> u64 {
+impl ContractId {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
         self.0.capacity() as u64
     }
 }

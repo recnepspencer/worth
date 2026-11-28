@@ -1,11 +1,11 @@
 //! Immutable source allocator image; clones retain the same data and admission.
 use crate::identity::data::PartitionId;
+use crate::storage::substrate::storage_allocation::StorageAllocation;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::sync::Arc;
 use worth_execution::ExecutionMemoryReservation;
 
 #[derive(Debug, Clone)]
-pub struct DurableRecordIdentityState(Arc<RecordIdentityImageData>);
+pub struct DurableRecordIdentityState(StorageAllocation<RecordIdentityImageData>);
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(rename = "DurableRecordIdentityState", deny_unknown_fields)]
@@ -19,8 +19,6 @@ pub struct RecordIdentityImageData {
     pub append_frontiers: Vec<DurableRecordSlotFrontier>,
     #[serde(default)]
     pub pending_reservations: Vec<DurablePendingRecordReservation>,
-    #[serde(skip)]
-    _memory: Option<ExecutionMemoryReservation>,
 }
 
 impl DurableRecordIdentityState {
@@ -33,24 +31,23 @@ impl DurableRecordIdentityState {
         pending_reservations: Vec<DurablePendingRecordReservation>,
         memory: Option<ExecutionMemoryReservation>,
     ) -> Self {
-        Self(Arc::new(RecordIdentityImageData {
-            schema_version: Self::CURRENT_SCHEMA_VERSION,
-            generation_high_water,
-            reusable_slots,
-            append_frontiers,
-            pending_reservations,
-            _memory: memory,
-        }))
+        Self(StorageAllocation::from_reserved(
+            RecordIdentityImageData {
+                schema_version: Self::CURRENT_SCHEMA_VERSION,
+                generation_high_water,
+                reusable_slots,
+                append_frontiers,
+                pending_reservations,
+            },
+            memory,
+        ))
     }
 
     /// The actual private Arc allocation, excluding the four array backings.
     pub fn control_storage_bytes() -> Option<usize> {
-        let layout = std::alloc::Layout::new::<(usize, usize)>()
-            .extend(std::alloc::Layout::new::<RecordIdentityImageData>())
-            .ok()?
-            .0
-            .pad_to_align();
-        Some(layout.size())
+        StorageAllocation::<RecordIdentityImageData>::layout()
+            .ok()
+            .map(|layout| layout.size())
     }
 }
 
@@ -62,7 +59,7 @@ impl std::ops::Deref for DurableRecordIdentityState {
 }
 impl Default for DurableRecordIdentityState {
     fn default() -> Self {
-        Self(Arc::new(RecordIdentityImageData::default()))
+        Self(StorageAllocation::new(RecordIdentityImageData::default()))
     }
 }
 impl PartialEq for DurableRecordIdentityState {
@@ -82,7 +79,8 @@ impl Serialize for DurableRecordIdentityState {
 }
 impl<'de> Deserialize<'de> for DurableRecordIdentityState {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        RecordIdentityImageData::deserialize(deserializer).map(|data| Self(Arc::new(data)))
+        RecordIdentityImageData::deserialize(deserializer)
+            .map(|data| Self(StorageAllocation::new(data)))
     }
 }
 

@@ -14,6 +14,10 @@ pub struct VisibilityAuthority<'runtime> {
 }
 
 impl RelationalRuntime {
+    pub fn snapshots(&self) -> VisibilityAuthority<'_> {
+        self.visibility_authority()
+    }
+
     pub(crate) fn visibility_authority(&self) -> VisibilityAuthority<'_> {
         VisibilityAuthority::new(self)
     }

@@ -3,7 +3,6 @@ mod diagnostics;
 mod stream_reading;
 mod stream_reads;
 
-use crate::capabilities::PublicationDiagnosticsSource;
 use crate::diagnostics::data::RelationalDiagnosticArtifact;
 use crate::diagnostics::data::RelationalDiagnosticsFacade;
 use crate::publication::cdc::data::{
@@ -39,7 +38,7 @@ pub struct PublicationSubscriberStreamAccess<'runtime> {
 }
 
 impl RelationalRuntime {
-    pub(crate) fn publication_access(&self) -> PublicationSurface<'_> {
+    pub fn publication(&self) -> PublicationSurface<'_> {
         PublicationSurface::new(self)
     }
 }

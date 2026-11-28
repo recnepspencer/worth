@@ -2,7 +2,7 @@
 use crate::durability::log::native_checkpoint_codec::member_frame;
 use contracts::durability::data::recovery_stop::RelationalRecoveryStop;
 use contracts::symbols::data::stored_text::StoredSymbolText;
-use contracts::symbols::data::symbol::Symbol;
+use contracts::symbols::data::Symbol;
 use serde::{
     ser::{SerializeSeq, SerializeStruct},
     Serialize, Serializer,

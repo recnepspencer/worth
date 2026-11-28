@@ -52,8 +52,8 @@ pub(super) fn may_carry_metadata(
     if !basis.symbol_pages_resident {
         return Err(unavailable(
             contracts::storage::data::storage_unavailable::RelationalStorageSubject::Symbols {
-                first: contracts::symbols::data::symbol::Symbol(0),
-                last: contracts::symbols::data::symbol::Symbol(u32::MAX - 1),
+                first: contracts::symbols::data::Symbol(0),
+                last: contracts::symbols::data::Symbol(u32::MAX - 1),
             },
         ));
     }

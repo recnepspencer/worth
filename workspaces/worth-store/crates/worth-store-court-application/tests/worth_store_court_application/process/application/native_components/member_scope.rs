@@ -25,9 +25,7 @@ fn seeded_home(path: &std::path::Path, execution: &ExecutionRequest<'_, '_>) -> 
         .unwrap();
     let fixture = super::coupled_home::open(
         path,
-        RelationalRuntimeApi::builder().schema_setup(move |schema| {
-            schema.schema_registry(registry);
-        }),
+        RelationalRuntimeApi::builder().schema_registry(registry),
         true,
         execution,
     );

@@ -29,7 +29,6 @@ impl RelationalRuntime {
     /// `Clone + Send + Sync`. The runnable owner workflow is
     /// `examples/branch_local_mvcc.rs`.
     pub fn fork_port(&self) -> crate::branch::RelationalForkPort {
-        use crate::capabilities::VisibilityPolicySource;
         crate::branch::RelationalForkPort::new(
             self.runtime_instance_id(),
             self.owner_binding(),

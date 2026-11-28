@@ -3,37 +3,23 @@ use crate::history::data::CommitId;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::RelationalRuntime;
 
-use super::CommitEnvelopeSource;
-
 #[cfg(test)]
 pub(crate) use crate::publication::patch::data::stream_commit_ref::PatchStreamCommitRef;
 
-pub(crate) trait PatchStreamSource: CommitEnvelopeSource {
-    fn latest_patch_stream_position(&self) -> Option<PatchStreamPosition>;
-    fn commit_id_at_patch_stream_position(&self, position: PatchStreamPosition)
-        -> Option<CommitId>;
-    #[cfg(test)]
-    fn patch_stream_commits_after(
-        &self,
-        after_position: Option<PatchStreamPosition>,
-        max_commits: usize,
-    ) -> Vec<PatchStreamCommitRef>;
-
-    fn contains_patch_stream_position(&self, position: PatchStreamPosition) -> bool {
+impl RelationalRuntime {
+    pub(crate) fn contains_patch_stream_position(&self, position: PatchStreamPosition) -> bool {
         self.commit_id_at_patch_stream_position(position).is_some()
     }
 
-    fn commit_envelope_at_patch_stream_position(
+    pub(crate) fn commit_envelope_at_patch_stream_position(
         &self,
         position: PatchStreamPosition,
     ) -> Option<std::sync::Arc<CanonicalCommitEnvelope>> {
         self.commit_id_at_patch_stream_position(position)
             .and_then(|commit_id| self.resident_commit_envelope(commit_id))
     }
-}
 
-impl PatchStreamSource for RelationalRuntime {
-    fn latest_patch_stream_position(&self) -> Option<PatchStreamPosition> {
+    pub(crate) fn latest_patch_stream_position(&self) -> Option<PatchStreamPosition> {
         let projected = self.history.latest_recorded_patch_position();
         projected.max(
             self.history
@@ -42,7 +28,7 @@ impl PatchStreamSource for RelationalRuntime {
         )
     }
 
-    fn commit_id_at_patch_stream_position(
+    pub(crate) fn commit_id_at_patch_stream_position(
         &self,
         position: PatchStreamPosition,
     ) -> Option<CommitId> {
@@ -56,7 +42,7 @@ impl PatchStreamSource for RelationalRuntime {
     }
 
     #[cfg(test)]
-    fn patch_stream_commits_after(
+    pub(crate) fn patch_stream_commits_after(
         &self,
         after_position: Option<PatchStreamPosition>,
         max_commits: usize,

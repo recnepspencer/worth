@@ -67,11 +67,7 @@ impl RelationalRuntime {
             original,
             target,
             input,
-            |_, commit| {
-                self.history_access()
-                    .immutable_commit_receipt(commit)
-                    .is_some()
-            },
+            |_, commit| self.history().immutable_commit_receipt(commit).is_some(),
             |_, commit| self.history.authored_write_generation(commit),
             || {
                 let catalog = self.indexes.catalog_binding().snapshot();

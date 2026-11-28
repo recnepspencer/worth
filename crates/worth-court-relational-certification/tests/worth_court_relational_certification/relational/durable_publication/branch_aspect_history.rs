@@ -83,8 +83,7 @@ fn durability_contract_recovery_preserves_aspect_bearing_patch_truth_and_history
         .unwrap()
         .aspect_history_digest();
     let expected_envelope = runtime
-        .replay()
-        .canonical_commit_envelope(execution, updated.commit.commit_id)
+        .replay_commit_envelope(execution, updated.commit.commit_id)
         .unwrap()
         .unwrap();
     checkpoint(execution, &runtime, &medium);
@@ -99,9 +98,8 @@ fn durability_contract_recovery_preserves_aspect_bearing_patch_truth_and_history
         .entity_aspect_history_with_trace(execution, &BranchId("main".to_string()), entity, None)
         .unwrap()
         .aspect_history_digest();
-    let recovered_replay = recovered.replay();
-    let recovered_envelope = recovered_replay
-        .canonical_commit_envelope(execution, updated.commit.commit_id)
+    let recovered_envelope = recovered
+        .replay_commit_envelope(execution, updated.commit.commit_id)
         .unwrap()
         .unwrap();
 

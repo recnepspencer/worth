@@ -76,8 +76,7 @@ fn two_v1_siblings_transition_independently_and_retained_v1_truth_stays_exact() 
 
         let envelope = world
             .runtime
-            .replay()
-            .canonical_commit_envelope(execution, committed.commit.commit_id)
+            .replay_commit_envelope(execution, committed.commit.commit_id)
             .unwrap()
             .unwrap()
             .clone();

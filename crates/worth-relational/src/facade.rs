@@ -17,9 +17,8 @@ mod runtime_validation_exports;
 pub mod config {
     pub use crate::config::data::{
         AdjacencyBackend, AdjacencyPolicy, CascadeDeletePolicy, CompiledLanePolicy,
-        ConfigProvenance, ConfigProvenanceEntry, ConfigValueSource, CrossContextPolicy,
-        DiagnosticsBoundary, DurabilityPolicy, DurableLogPolicy, DurableLogRetentionMode,
-        MvccConfig, PublicationConfig, RelationalConfigOverride, RelationalRuntimeProfile,
+        CrossContextPolicy, DiagnosticsBoundary, DurabilityPolicy, DurableLogPolicy,
+        DurableLogRetentionMode, MvccConfig, PublicationConfig, RelationalRuntimeProfile,
         ResidencyBudget, RetentionBackend, RetentionPolicy, RuntimeExecutionLane,
         RuntimeProfileBoundaryPolicy, SnapshotReleasePolicy, StorageLayoutConfig,
         VisibilityCachePolicy,
@@ -112,14 +111,13 @@ pub mod lineage;
 pub mod runtime {
     pub use super::runtime_validation_exports::*;
     pub use crate::execution::request_work::observation::RelationalWorkAccountRecorderForTest;
-    pub use crate::presentation::facade::runtime::{
-        ImmutableReadContract, RelationalBoundaryContract, RelationalRuntimeApi,
-    };
     #[doc(hidden)]
     pub use crate::publication::ownership::{
         CurrentOwnershipContactsForTest, CurrentOwnershipLocalityForTest,
     };
-    pub use crate::runtime::builder::{RelationalRuntimeBuilder, RelationalRuntimeDefinition};
+    pub use crate::runtime::builder::{
+        RelationalRuntimeApi, RelationalRuntimeBuilder, RelationalRuntimeDefinition,
+    };
     #[cfg(test)]
     pub use crate::runtime::HarnessAuditMode;
     pub use crate::runtime::RelationalColdSymbolPlacementForTest;
@@ -189,7 +187,7 @@ pub mod runtime {
 
 #[cfg(test)]
 pub mod harness {
-    pub use crate::presentation::facade::harness::{
+    pub use crate::presentation::harness::{
         default_harness_expectations, FixtureEntity, FixtureRelation, RelationalFixture,
         RelationalHarnessAdapter, RelationalHarnessError, RelationalHarnessExpectations,
         RelationalHarnessPlan,

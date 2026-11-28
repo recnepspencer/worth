@@ -92,7 +92,7 @@ fn replay_uses_retained_owner_envelope_only_in_normal_mode() {
         .replay_commit(replay_request(created.commit.commit_id), execution)
         .unwrap();
 
-    assert!(runtime.replay().compare_outcome(&replay));
+    assert!(replay.matches_recorded_truth());
     assert_eq!(
         replay
             .lineage_authority_basis
@@ -148,7 +148,7 @@ fn audit_replay_uses_checkpoint_owner_basis_when_tail_is_absent() {
         .replay_commit(request, execution)
         .unwrap();
 
-    assert!(runtime.replay().compare_outcome(&replay));
+    assert!(replay.matches_recorded_truth());
     assert_eq!(
         replay
             .lineage_authority_basis

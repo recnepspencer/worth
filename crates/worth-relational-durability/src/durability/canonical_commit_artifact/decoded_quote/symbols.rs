@@ -1,8 +1,8 @@
 //! Borrowed dictionary staging and final typed text rosters have distinct peaks.
 use super::*;
 use contracts::symbols::data::stored_text::StoredSymbolText;
-use contracts::symbols::data::symbol::Symbol;
 use contracts::symbols::data::text_wire::SymbolSnapshotWire;
+use contracts::symbols::data::Symbol;
 use worth_relational_contracts::internal_port as contracts;
 
 pub(super) fn quote(

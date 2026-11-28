@@ -16,9 +16,8 @@ impl WorthQueryApplicationProfile {
         maximum_records: Option<std::num::NonZeroUsize>,
     ) -> Option<worth_relational::facade::config::PublicationConfig> {
         let maximum = maximum_records?;
-        let mut policy = worth_relational::facade::runtime::RelationalRuntimeConfig::resolved(
+        let mut policy = worth_relational::facade::runtime::RelationalRuntimeConfig::for_profile(
             self.relational_profile(),
-            Default::default(),
         )
         .publication
         .policy;

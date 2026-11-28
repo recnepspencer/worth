@@ -188,7 +188,7 @@ pub(super) fn arena<K: CheckpointArenaKind>(
     }
     let _diagnostic_rows = admission.scratch::<StorageAllocation<
         std::collections::BTreeMap<
-            worth_relational_contracts::internal_port::symbols::data::symbol::Symbol,
+            worth_relational_contracts::internal_port::symbols::data::Symbol,
             String,
         >,
     >>(n)?;
@@ -196,7 +196,7 @@ pub(super) fn arena<K: CheckpointArenaKind>(
     for row in image.diagnostics_enrichment {
         let mut bytes = StorageAllocation::<
             std::collections::BTreeMap<
-                worth_relational_contracts::internal_port::symbols::data::symbol::Symbol,
+                worth_relational_contracts::internal_port::symbols::data::Symbol,
                 String,
             >,
         >::layout_bytes();
@@ -204,7 +204,7 @@ pub(super) fn arena<K: CheckpointArenaKind>(
             usize,
             u16,
             u16,
-            [worth_relational_contracts::internal_port::symbols::data::symbol::Symbol; 11],
+            [worth_relational_contracts::internal_port::symbols::data::Symbol; 11],
             [String; 11],
             [usize; 12],
         )>()
@@ -227,7 +227,7 @@ pub(super) fn arena<K: CheckpointArenaKind>(
         }
         admission.charge(StorageAllocation::<
             std::collections::BTreeMap<
-                worth_relational_contracts::internal_port::symbols::data::symbol::Symbol,
+                worth_relational_contracts::internal_port::symbols::data::Symbol,
                 String,
             >,
         >::layout_bytes())?;

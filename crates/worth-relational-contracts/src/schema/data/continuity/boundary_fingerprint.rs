@@ -1,24 +1,27 @@
 use serde::{Deserialize, Serialize};
+use worth_foundational::facade::CanonicalDigestId;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SchemaBoundaryFingerprint(pub [u8; 32]);
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct SchemaBoundaryFingerprint(CanonicalDigestId);
 
 impl SchemaBoundaryFingerprint {
-    pub const ZERO: Self = Self([0; 32]);
+    pub const ZERO: Self = Self::new([0; 32]);
 
-    pub fn new(bytes: [u8; 32]) -> Self {
-        Self(bytes)
+    pub const fn new(bytes: [u8; 32]) -> Self {
+        Self(CanonicalDigestId::new(bytes))
+    }
+
+    pub const fn bytes(&self) -> &[u8; 32] {
+        self.0.bytes()
     }
 }
 
-impl Serialize for SchemaBoundaryFingerprint {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        worth_foundational::CanonicalDigestId::new(self.0).serialize(serializer)
-    }
-}
-impl<'de> Deserialize<'de> for SchemaBoundaryFingerprint {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        worth_foundational::CanonicalDigestId::deserialize(deserializer)
-            .map(|digest| Self(*digest.bytes()))
+impl std::fmt::Debug for SchemaBoundaryFingerprint {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_tuple("SchemaBoundaryFingerprint")
+            .field(self.bytes())
+            .finish()
     }
 }

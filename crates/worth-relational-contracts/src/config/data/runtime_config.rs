@@ -1,6 +1,4 @@
-use super::overrides::RelationalConfigOverride;
 use super::policies::RuntimeProfileBoundaryPolicy;
-use super::provenance::ConfigProvenance;
 use super::sections::{
     DiagnosticsConfig, DurabilityConfig, ExecutionConfig, HistoryConfig, IdentityConfig,
     PublicationRuntimeConfig, SchemaConfig, StorageConfig, VisibilityConfig,
@@ -19,8 +17,6 @@ pub struct RelationalRuntimeConfig {
     pub visibility: VisibilityConfig,
     pub publication: PublicationRuntimeConfig,
     pub durability: DurabilityConfig,
-    pub overrides: RelationalConfigOverride,
-    pub provenance: ConfigProvenance,
 }
 
 impl RelationalRuntimeConfig {

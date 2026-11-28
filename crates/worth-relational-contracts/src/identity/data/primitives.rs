@@ -2,64 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::symbols::data::Symbol;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct PartitionId(pub u32);
-
-impl PartitionId {
-    pub const fn new(value: u32) -> Self {
-        Self(value)
-    }
-
-    pub const fn main() -> Self {
-        Self(0)
-    }
-
-    pub const fn as_u32(self) -> u32 {
-        self.0
-    }
-
-    pub const fn as_u64(self) -> u64 {
-        self.0 as u64
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct LocalSlot(pub u64);
-
-impl LocalSlot {
-    pub const fn new(value: u64) -> Self {
-        Self(value)
-    }
-
-    pub const fn as_u64(self) -> u64 {
-        self.0
-    }
-
-    pub const fn index(self) -> usize {
-        self.0 as usize
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct Generation(pub u32);
-
-impl Generation {
-    pub const fn new(value: u32) -> Self {
-        Self(value)
-    }
-
-    pub const fn as_u32(self) -> u32 {
-        self.0
-    }
-
-    pub const fn as_u64(self) -> u64 {
-        self.0 as u64
-    }
-
-    pub const fn is_zero(self) -> bool {
-        self.0 == 0
-    }
-}
+pub use worth_foundational::facade::{Generation, LocalSlot, PartitionId};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct VersionId(pub u64);

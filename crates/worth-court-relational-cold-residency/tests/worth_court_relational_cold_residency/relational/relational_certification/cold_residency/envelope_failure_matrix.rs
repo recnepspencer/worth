@@ -70,9 +70,7 @@ fn residency_failure_matrix_envelope_doors_preserve_every_failure_class() {
                     .count();
                 if sticky {
                     assert_eq!(
-                        runtime
-                            .replay()
-                            .canonical_commit_envelope(execution, receipt.commit_id),
+                        runtime.replay_commit_envelope(execution, receipt.commit_id),
                         Err(expected),
                         "body reads must share export/capture damage"
                     );

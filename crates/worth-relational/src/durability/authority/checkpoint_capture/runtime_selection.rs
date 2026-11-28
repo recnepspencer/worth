@@ -1,6 +1,5 @@
 //! Capture the actual runtime roots under one performed publication selection.
 use super::CapturedCheckpointBasis;
-use crate::capabilities::RuntimeIdentitySource;
 use crate::durability::data::DurabilityError;
 use crate::runtime::RelationalRuntime;
 use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;

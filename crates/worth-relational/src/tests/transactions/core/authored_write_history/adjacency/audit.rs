@@ -21,7 +21,7 @@ fn audit_lifecycle_recovery_preserves_exact_original_payload_bytes() {
     create_relation(&execution, &runtime, a, b, "audit-edge");
     let retired = delete_entity(&execution, &runtime, b);
     let canonical = runtime
-        .history_access()
+        .history()
         .demand_commit_envelope(&execution, retired.commit.commit_id)
         .unwrap()
         .unwrap();
@@ -44,7 +44,7 @@ fn audit_lifecycle_recovery_preserves_exact_original_payload_bytes() {
         .recover(&execution, plan)
         .unwrap();
     let cold = recovered
-        .history_access()
+        .history()
         .demand_commit_envelope(&execution, retired.commit.commit_id)
         .unwrap()
         .unwrap();

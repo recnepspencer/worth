@@ -14,3 +14,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         self.runtime
     }
 }
+
+impl RelationalRuntime {
+    pub fn read_truth(&self) -> VisibilityReadContext<'_> {
+        VisibilityReadContext::new(self)
+    }
+}

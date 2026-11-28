@@ -40,7 +40,7 @@ impl RelationalRuntime {
         self.history.current_version_id()
     }
 
-    pub(crate) fn history_access(&self) -> HistoryAccess<'_> {
+    pub fn history(&self) -> HistoryAccess<'_> {
         HistoryAccess::new(self)
     }
 }

@@ -1,4 +1,3 @@
-use crate::capabilities::PublicationDiagnosticsSource;
 use crate::diagnostics::data::RelationalDiagnosticArtifact;
 use crate::diagnostics::data::RelationalDiagnosticsFacade;
 

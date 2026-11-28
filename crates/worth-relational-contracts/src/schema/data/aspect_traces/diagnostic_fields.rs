@@ -1,7 +1,9 @@
+use serde::Serialize;
+use worth_foundational::facade::AspectKey;
+
 use crate::diagnostics::data::{
-    aspect_shape_diagnostic_value, RelationalDiagnosticFields, RelationalDiagnosticValue,
+    aspect_shape_diagnostic_value, RelationalDiagnosticFields, RelationalDiagnosticValue as Value,
 };
-use crate::identity::data::KindId;
 use crate::schema::data::aspect_merge_policy::{
     AspectMergePolicyDeclaration, AspectMergePolicyKind,
 };
@@ -9,308 +11,302 @@ use crate::schema::data::identity_declarations::{
     IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
 };
 
-use super::{
-    AspectBinding, AspectContractPlanRevision, AspectDeclarationTrace, AspectDeclarationTraceRow,
-    AspectLoweringTrace, AspectLoweringTraceRow,
-};
+use super::{AspectBinding, AspectDeclarationTrace, AspectLoweringTrace};
 
 pub(super) fn declaration_trace_diagnostic_fields(
     trace: &AspectDeclarationTrace,
 ) -> RelationalDiagnosticFields {
-    RelationalDiagnosticValue::object([
-        ("kind_id", kind_id_value(trace.kind_id)),
-        ("plan_revision", plan_revision_value(trace.plan_revision)),
-        (
-            "declarations",
-            RelationalDiagnosticValue::array(
-                trace
-                    .declarations
-                    .iter()
-                    .map(aspect_declaration_trace_row_value),
-            ),
-        ),
-        (
-            "identity_declarations",
-            RelationalDiagnosticValue::array(
-                trace
-                    .identity_declarations
-                    .iter()
-                    .map(identity_basis_declaration_value),
-            ),
-        ),
-        (
-            "merge_policy_declarations",
-            RelationalDiagnosticValue::array(
-                trace
-                    .merge_policy_declarations
-                    .iter()
-                    .map(aspect_merge_policy_declaration_value),
-            ),
-        ),
-    ])
-    .into()
+    let mut leaves = TypedLeaves::default();
+    let trace = DeclarationTrace {
+        kind_id: trace.kind_id.as_u64(),
+        plan_revision: trace.plan_revision.0.to_string(),
+        declarations: trace
+            .declarations
+            .iter()
+            .map(|row| DeclarationRow {
+                aspect_key: leaves.aspect_key(&row.aspect_key),
+                binding: Binding::declaration(&row.binding, &mut leaves),
+                contract_identity: row.contract_identity,
+                contract_revision: row.contract_revision,
+                aspect_shape: leaves.insert(aspect_shape_diagnostic_value(&row.aspect_shape)),
+            })
+            .collect(),
+        identity_declarations: trace
+            .identity_declarations
+            .iter()
+            .map(|declaration| IdentityDeclaration::new(declaration, &mut leaves))
+            .collect(),
+        merge_policy_declarations: trace
+            .merge_policy_declarations
+            .iter()
+            .map(|declaration| MergePolicyDeclaration::new(declaration, &mut leaves))
+            .collect(),
+    };
+    leaves.project(trace)
 }
 
 pub(super) fn lowering_trace_diagnostic_fields(
     trace: &AspectLoweringTrace,
 ) -> RelationalDiagnosticFields {
-    RelationalDiagnosticValue::object([
-        ("kind_id", kind_id_value(trace.kind_id)),
-        ("plan_revision", plan_revision_value(trace.plan_revision)),
-        (
-            "bindings",
-            RelationalDiagnosticValue::array(
-                trace.bindings.iter().map(aspect_lowering_trace_row_value),
-            ),
-        ),
-    ])
-    .into()
+    let mut leaves = TypedLeaves::default();
+    let trace = LoweringTrace {
+        kind_id: trace.kind_id.as_u64(),
+        plan_revision: trace.plan_revision.0.to_string(),
+        bindings: trace
+            .bindings
+            .iter()
+            .map(|row| LoweringRow {
+                aspect_key: leaves.aspect_key(&row.aspect_key),
+                target: Binding::lowered(&row.target, &mut leaves),
+                aspect_shape: leaves.insert(aspect_shape_diagnostic_value(&row.aspect_shape)),
+            })
+            .collect(),
+    };
+    leaves.project(trace)
 }
 
-fn aspect_declaration_trace_row_value(
-    row: &AspectDeclarationTraceRow,
-) -> RelationalDiagnosticValue {
-    RelationalDiagnosticValue::object([
-        (
-            "aspect_key",
-            RelationalDiagnosticValue::AspectKey(row.aspect_key.clone()),
-        ),
-        ("binding", aspect_binding_value(&row.binding)),
-        (
-            "contract_identity",
-            RelationalDiagnosticValue::Unsigned(row.contract_identity),
-        ),
-        (
-            "contract_revision",
-            RelationalDiagnosticValue::Unsigned(row.contract_revision),
-        ),
-        (
-            "aspect_shape",
-            aspect_shape_diagnostic_value(&row.aspect_shape),
-        ),
-    ])
+#[derive(Serialize)]
+struct DeclarationTrace<'a> {
+    kind_id: u64,
+    plan_revision: String,
+    declarations: Vec<DeclarationRow>,
+    identity_declarations: Vec<IdentityDeclaration<'a>>,
+    merge_policy_declarations: Vec<MergePolicyDeclaration<'a>>,
 }
 
-fn aspect_lowering_trace_row_value(row: &AspectLoweringTraceRow) -> RelationalDiagnosticValue {
-    RelationalDiagnosticValue::object([
-        (
-            "aspect_key",
-            RelationalDiagnosticValue::AspectKey(row.aspect_key.clone()),
-        ),
-        ("target", aspect_binding_target_value(&row.target)),
-        (
-            "aspect_shape",
-            aspect_shape_diagnostic_value(&row.aspect_shape),
-        ),
-    ])
+#[derive(Serialize)]
+struct LoweringTrace {
+    kind_id: u64,
+    plan_revision: String,
+    bindings: Vec<LoweringRow>,
 }
 
-fn aspect_binding_value(binding: &AspectBinding) -> RelationalDiagnosticValue {
-    match binding {
-        AspectBinding::EntityField { field } => RelationalDiagnosticValue::object([
-            (
-                "binding_target",
-                RelationalDiagnosticValue::string("entity_field"),
-            ),
-            ("field", RelationalDiagnosticValue::FieldKey(field.clone())),
-        ]),
-        AspectBinding::RelationField { field } => RelationalDiagnosticValue::object([
-            (
-                "binding_target",
-                RelationalDiagnosticValue::string("relation_field"),
-            ),
-            ("field", RelationalDiagnosticValue::FieldKey(field.clone())),
-        ]),
-        AspectBinding::RelationSourceEndpoint => RelationalDiagnosticValue::object([(
-            "binding_target",
-            RelationalDiagnosticValue::string("relation_source_endpoint"),
-        )]),
-        AspectBinding::RelationTargetEndpoint => RelationalDiagnosticValue::object([(
-            "binding_target",
-            RelationalDiagnosticValue::string("relation_target_endpoint"),
-        )]),
-        AspectBinding::LifecycleTransition => RelationalDiagnosticValue::object([(
-            "binding_target",
-            RelationalDiagnosticValue::string("lifecycle_transition"),
-        )]),
-        _ => RelationalDiagnosticValue::object([(
-            "binding_target",
-            RelationalDiagnosticValue::string(binding.canonical_name()),
-        )]),
+#[derive(Serialize)]
+struct DeclarationRow {
+    aspect_key: TypedValue,
+    binding: Binding,
+    contract_identity: u64,
+    contract_revision: u64,
+    aspect_shape: TypedValue,
+}
+
+#[derive(Serialize)]
+struct LoweringRow {
+    aspect_key: TypedValue,
+    target: Binding,
+    aspect_shape: TypedValue,
+}
+
+#[derive(Serialize)]
+struct Binding {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    binding_target: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    target_kind: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    field: Option<TypedValue>,
+}
+
+impl Binding {
+    fn declaration(binding: &AspectBinding, leaves: &mut TypedLeaves) -> Self {
+        Self {
+            binding_target: Some(Self::name(binding)),
+            target_kind: None,
+            field: Self::field(binding, leaves),
+        }
+    }
+
+    fn lowered(binding: &AspectBinding, leaves: &mut TypedLeaves) -> Self {
+        Self {
+            binding_target: None,
+            target_kind: Some(Self::name(binding)),
+            field: Self::field(binding, leaves),
+        }
+    }
+
+    fn name(binding: &AspectBinding) -> String {
+        match binding {
+            AspectBinding::EntityField { .. } => "entity_field".into(),
+            AspectBinding::RelationField { .. } => "relation_field".into(),
+            AspectBinding::RelationSourceEndpoint => "relation_source_endpoint".into(),
+            AspectBinding::RelationTargetEndpoint => "relation_target_endpoint".into(),
+            AspectBinding::LifecycleTransition => "lifecycle_transition".into(),
+            _ => binding.canonical_name(),
+        }
+    }
+
+    fn field(binding: &AspectBinding, leaves: &mut TypedLeaves) -> Option<TypedValue> {
+        match binding {
+            AspectBinding::EntityField { field } | AspectBinding::RelationField { field } => {
+                Some(leaves.insert(Value::FieldKey(field.clone())))
+            }
+            _ => None,
+        }
     }
 }
 
-fn aspect_binding_target_value(target: &AspectBinding) -> RelationalDiagnosticValue {
-    match target {
-        AspectBinding::EntityField { field } => RelationalDiagnosticValue::object([
-            (
-                "target_kind",
-                RelationalDiagnosticValue::string("entity_field"),
-            ),
-            ("field", RelationalDiagnosticValue::FieldKey(field.clone())),
-        ]),
-        AspectBinding::RelationField { field } => RelationalDiagnosticValue::object([
-            (
-                "target_kind",
-                RelationalDiagnosticValue::string("relation_field"),
-            ),
-            ("field", RelationalDiagnosticValue::FieldKey(field.clone())),
-        ]),
-        AspectBinding::RelationSourceEndpoint => RelationalDiagnosticValue::object([(
-            "target_kind",
-            RelationalDiagnosticValue::string("relation_source_endpoint"),
-        )]),
-        AspectBinding::RelationTargetEndpoint => RelationalDiagnosticValue::object([(
-            "target_kind",
-            RelationalDiagnosticValue::string("relation_target_endpoint"),
-        )]),
-        AspectBinding::LifecycleTransition => RelationalDiagnosticValue::object([(
-            "target_kind",
-            RelationalDiagnosticValue::string("lifecycle_transition"),
-        )]),
-        _ => RelationalDiagnosticValue::object([(
-            "target_kind",
-            RelationalDiagnosticValue::string(target.canonical_name()),
-        )]),
+#[derive(Serialize)]
+struct IdentityDeclaration<'a> {
+    scope: Scope,
+    basis: Basis<'a>,
+}
+
+impl<'a> IdentityDeclaration<'a> {
+    fn new(value: &'a IdentityBasisDeclaration, leaves: &mut TypedLeaves) -> Self {
+        Self {
+            scope: Scope::new(&value.scope, leaves),
+            basis: Basis::new(&value.basis, leaves),
+        }
     }
 }
 
-fn identity_basis_declaration_value(
-    declaration: &IdentityBasisDeclaration,
-) -> RelationalDiagnosticValue {
-    RelationalDiagnosticValue::object([
-        ("scope", identity_basis_scope_value(&declaration.scope)),
-        ("basis", identity_basis_kind_value(&declaration.basis)),
-    ])
+#[derive(Serialize)]
+#[serde(tag = "scope_kind", rename_all = "snake_case")]
+enum Scope {
+    EntityKind { kind_id: u64 },
+    RelationKind { kind_id: u64 },
+    AspectKey { aspect_key: TypedValue },
 }
 
-fn identity_basis_scope_value(scope: &IdentityBasisScope) -> RelationalDiagnosticValue {
-    match scope {
-        IdentityBasisScope::EntityKind(kind_id) => RelationalDiagnosticValue::object([
-            (
-                "scope_kind",
-                RelationalDiagnosticValue::string("entity_kind"),
-            ),
-            ("kind_id", kind_id_value(*kind_id)),
-        ]),
-        IdentityBasisScope::RelationKind(kind_id) => RelationalDiagnosticValue::object([
-            (
-                "scope_kind",
-                RelationalDiagnosticValue::string("relation_kind"),
-            ),
-            ("kind_id", kind_id_value(*kind_id)),
-        ]),
-        IdentityBasisScope::AspectKey(aspect_key) => RelationalDiagnosticValue::object([
-            (
-                "scope_kind",
-                RelationalDiagnosticValue::string("aspect_key"),
-            ),
-            (
-                "aspect_key",
-                RelationalDiagnosticValue::AspectKey(aspect_key.clone()),
-            ),
-        ]),
+impl Scope {
+    fn new(scope: &IdentityBasisScope, leaves: &mut TypedLeaves) -> Self {
+        match scope {
+            IdentityBasisScope::EntityKind(kind_id) => Self::EntityKind {
+                kind_id: kind_id.as_u64(),
+            },
+            IdentityBasisScope::RelationKind(kind_id) => Self::RelationKind {
+                kind_id: kind_id.as_u64(),
+            },
+            IdentityBasisScope::AspectKey(key) => Self::AspectKey {
+                aspect_key: leaves.aspect_key(key),
+            },
+        }
     }
 }
 
-fn identity_basis_kind_value(basis: &IdentityBasisKind) -> RelationalDiagnosticValue {
-    match basis {
-        IdentityBasisKind::StorageIdentity => RelationalDiagnosticValue::object([(
-            "basis_kind",
-            RelationalDiagnosticValue::string("storage_identity"),
-        )]),
-        IdentityBasisKind::LineageIdentity => RelationalDiagnosticValue::object([(
-            "basis_kind",
-            RelationalDiagnosticValue::string("lineage_identity"),
-        )]),
-        IdentityBasisKind::StructuralFingerprint => RelationalDiagnosticValue::object([(
-            "basis_kind",
-            RelationalDiagnosticValue::string("structural_fingerprint"),
-        )]),
-        IdentityBasisKind::DeclaredKeySet(aspect_keys) => RelationalDiagnosticValue::object([
-            (
-                "basis_kind",
-                RelationalDiagnosticValue::string("declared_key_set"),
-            ),
-            (
-                "aspect_keys",
-                RelationalDiagnosticValue::array(
-                    aspect_keys
-                        .iter()
-                        .cloned()
-                        .map(RelationalDiagnosticValue::AspectKey),
-                ),
-            ),
-        ]),
-        IdentityBasisKind::Custom(identity) => RelationalDiagnosticValue::object([
-            ("basis_kind", RelationalDiagnosticValue::string("custom")),
-            (
-                "name",
-                RelationalDiagnosticValue::string(identity.name.as_ref()),
-            ),
-            (
-                "semantic_version",
-                RelationalDiagnosticValue::Unsigned(identity.semantic_version as u64),
-            ),
-        ]),
+#[derive(Serialize)]
+#[serde(tag = "basis_kind", rename_all = "snake_case")]
+enum Basis<'a> {
+    StorageIdentity,
+    LineageIdentity,
+    StructuralFingerprint,
+    DeclaredKeySet {
+        aspect_keys: Vec<TypedValue>,
+    },
+    Custom {
+        name: &'a str,
+        semantic_version: u32,
+    },
+}
+
+impl<'a> Basis<'a> {
+    fn new(basis: &'a IdentityBasisKind, leaves: &mut TypedLeaves) -> Self {
+        match basis {
+            IdentityBasisKind::StorageIdentity => Self::StorageIdentity,
+            IdentityBasisKind::LineageIdentity => Self::LineageIdentity,
+            IdentityBasisKind::StructuralFingerprint => Self::StructuralFingerprint,
+            IdentityBasisKind::DeclaredKeySet(keys) => Self::DeclaredKeySet {
+                aspect_keys: keys.iter().map(|key| leaves.aspect_key(key)).collect(),
+            },
+            IdentityBasisKind::Custom(identity) => Self::Custom {
+                name: &identity.name,
+                semantic_version: identity.semantic_version,
+            },
+        }
     }
 }
 
-fn aspect_merge_policy_declaration_value(
-    declaration: &AspectMergePolicyDeclaration,
-) -> RelationalDiagnosticValue {
-    RelationalDiagnosticValue::object([
-        (
-            "aspect_key",
-            RelationalDiagnosticValue::AspectKey(declaration.aspect_key.clone()),
-        ),
-        (
-            "policy",
-            aspect_merge_policy_kind_value(&declaration.policy),
-        ),
-    ])
+#[derive(Serialize)]
+struct MergePolicyDeclaration<'a> {
+    aspect_key: TypedValue,
+    policy: Policy<'a>,
 }
 
-fn aspect_merge_policy_kind_value(policy: &AspectMergePolicyKind) -> RelationalDiagnosticValue {
-    match policy {
-        AspectMergePolicyKind::FailOnConflict => RelationalDiagnosticValue::object([(
-            "policy_kind",
-            RelationalDiagnosticValue::string("fail_on_conflict"),
-        )]),
-        AspectMergePolicyKind::RetiredWriterOrder => RelationalDiagnosticValue::object([(
-            "policy_kind",
-            RelationalDiagnosticValue::string("last_writer_wins"),
-        )]),
-        AspectMergePolicyKind::MonotonicCounter => RelationalDiagnosticValue::object([(
-            "policy_kind",
-            RelationalDiagnosticValue::string("monotonic_counter"),
-        )]),
-        AspectMergePolicyKind::AdditiveSet => RelationalDiagnosticValue::object([(
-            "policy_kind",
-            RelationalDiagnosticValue::string("additive_set"),
-        )]),
-        AspectMergePolicyKind::RetiredValueShape => RelationalDiagnosticValue::object([(
-            "policy_kind",
-            RelationalDiagnosticValue::string("prefer_richer"),
-        )]),
-        AspectMergePolicyKind::Custom(identity) => RelationalDiagnosticValue::object([
-            ("policy_kind", RelationalDiagnosticValue::string("custom")),
-            (
-                "name",
-                RelationalDiagnosticValue::string(identity.name.as_ref()),
-            ),
-            (
-                "semantic_version",
-                RelationalDiagnosticValue::Unsigned(identity.semantic_version as u64),
-            ),
-        ]),
+impl<'a> MergePolicyDeclaration<'a> {
+    fn new(value: &'a AspectMergePolicyDeclaration, leaves: &mut TypedLeaves) -> Self {
+        Self {
+            aspect_key: leaves.aspect_key(&value.aspect_key),
+            policy: Policy::from(&value.policy),
+        }
     }
 }
 
-fn kind_id_value(kind_id: KindId) -> RelationalDiagnosticValue {
-    RelationalDiagnosticValue::Unsigned(kind_id.as_u64())
+#[derive(Serialize)]
+#[serde(tag = "policy_kind", rename_all = "snake_case")]
+enum Policy<'a> {
+    FailOnConflict,
+    LastWriterWins,
+    MonotonicCounter,
+    AdditiveSet,
+    PreferRicher,
+    Custom {
+        name: &'a str,
+        semantic_version: u32,
+    },
 }
 
-fn plan_revision_value(plan_revision: AspectContractPlanRevision) -> RelationalDiagnosticValue {
-    RelationalDiagnosticValue::string(plan_revision.0.to_string())
+impl<'a> From<&'a AspectMergePolicyKind> for Policy<'a> {
+    fn from(policy: &'a AspectMergePolicyKind) -> Self {
+        match policy {
+            AspectMergePolicyKind::FailOnConflict => Self::FailOnConflict,
+            AspectMergePolicyKind::RetiredWriterOrder => Self::LastWriterWins,
+            AspectMergePolicyKind::MonotonicCounter => Self::MonotonicCounter,
+            AspectMergePolicyKind::AdditiveSet => Self::AdditiveSet,
+            AspectMergePolicyKind::RetiredValueShape => Self::PreferRicher,
+            AspectMergePolicyKind::Custom(identity) => Self::Custom {
+                name: &identity.name,
+                semantic_version: identity.semantic_version,
+            },
+        }
+    }
+}
+
+/// Typed leaves stay in custody while serde captures only the field structure.
+#[derive(Serialize)]
+struct TypedValue {
+    typed_leaf: usize,
+}
+
+#[derive(Default)]
+struct TypedLeaves(Vec<Value>);
+
+impl TypedLeaves {
+    fn insert(&mut self, value: Value) -> TypedValue {
+        let typed_leaf = self.0.len();
+        self.0.push(value);
+        TypedValue { typed_leaf }
+    }
+
+    fn aspect_key(&mut self, key: &AspectKey) -> TypedValue {
+        self.insert(Value::AspectKey(key.clone()))
+    }
+
+    fn project(mut self, trace: impl Serialize) -> RelationalDiagnosticFields {
+        let tree = serde_json::to_value(trace).expect("trace DTO contains serializable values");
+        project_fields(tree, &mut self.0).into()
+    }
+}
+
+fn project_fields(tree: serde_json::Value, leaves: &mut [Value]) -> Value {
+    match tree {
+        serde_json::Value::Object(mut fields) => {
+            if let Some(leaf) = fields.remove("typed_leaf") {
+                let index = leaf.as_u64().expect("trace leaf index") as usize;
+                return std::mem::replace(&mut leaves[index], Value::Null);
+            }
+            Value::object(
+                fields
+                    .into_iter()
+                    .map(|(key, value)| (key, project_fields(value, leaves))),
+            )
+        }
+        serde_json::Value::Array(rows) => {
+            Value::array(rows.into_iter().map(|row| project_fields(row, leaves)))
+        }
+        serde_json::Value::String(text) => Value::String(text),
+        serde_json::Value::Number(number) => {
+            Value::Unsigned(number.as_u64().expect("unsigned trace field"))
+        }
+        _ => unreachable!("trace DTO serializes objects, arrays, text and unsigned integers"),
+    }
 }

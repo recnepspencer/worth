@@ -13,7 +13,7 @@ use crate::validation::engine::HarnessAuditMode;
 use crate::validation::engine::{InvariantExecutionResult, InvariantRequestProfile};
 
 impl RelationalRuntime {
-    pub(crate) fn invariant_access(&self) -> InvariantAccess<'_> {
+    pub fn validation(&self) -> InvariantAccess<'_> {
         InvariantAccess::new(self)
     }
 }

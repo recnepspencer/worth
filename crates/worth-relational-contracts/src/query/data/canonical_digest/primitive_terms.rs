@@ -1,4 +1,4 @@
-use crate::aspect_wire;
+use crate::aspect_wire::{self, CanonicalAspectOutput, CollectCanonicalAspect};
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId};
 use crate::schema::data::{DescriptorSemanticsVersion, SchemaId, SchemaVersionId};
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, FieldKey};
@@ -80,13 +80,7 @@ pub(super) fn encode_length_prefixed_aspect_field_locator(
 }
 
 pub(super) fn encode_optional_kind_id(bytes: &mut Vec<u8>, kind_id: Option<KindId>) {
-    match kind_id {
-        Some(kind_id) => {
-            bytes.push(1);
-            encode_kind_id(bytes, kind_id);
-        }
-        None => bytes.push(0),
-    }
+    encode_optional_u32(bytes, kind_id.map(|kind| kind.0));
 }
 
 pub(super) fn encode_optional_u32(bytes: &mut Vec<u8>, value: Option<u32>) {
@@ -108,9 +102,9 @@ pub(super) fn encode_usize(bytes: &mut Vec<u8>, value: usize) {
 }
 
 pub(super) fn encode_u64(bytes: &mut Vec<u8>, value: u64) {
-    bytes.extend_from_slice(&value.to_le_bytes());
+    CollectCanonicalAspect(bytes).u64_le(value).unwrap();
 }
 
 pub(super) fn encode_u128(bytes: &mut Vec<u8>, value: u128) {
-    bytes.extend_from_slice(&value.to_be_bytes());
+    CollectCanonicalAspect(bytes).u128_be(value).unwrap();
 }

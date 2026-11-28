@@ -23,7 +23,6 @@ pub mod migration;
 #[cfg(test)]
 pub mod native_region_fixture;
 pub mod published_medium;
-pub mod recovery;
 pub mod recovery_transition_history;
 pub mod source_initial_inputs;
 pub mod transition_admission_denial;

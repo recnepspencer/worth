@@ -16,8 +16,8 @@ use contracts::lineage::data::events::{
 use contracts::lineage::data::graph::assemble_lineage_node;
 use contracts::schema::data::SchemaVersionId;
 use contracts::symbols::data::stored_text::StoredSymbolText;
-use contracts::symbols::data::symbol::Symbol;
 use contracts::symbols::data::symbol_table_snapshot::SymbolTableSnapshot;
+use contracts::symbols::data::Symbol;
 use std::{alloc::Layout, sync::Arc};
 use worth_execution::{
     CancellationSource, ExecutionMemoryReservation, ExecutionRequest, SerialMemoryBudget,

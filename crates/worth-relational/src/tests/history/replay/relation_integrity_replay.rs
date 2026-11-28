@@ -66,13 +66,12 @@ fn replay_contract_preserves_relation_integrity_declared_schema() {
             execution,
         )
         .unwrap();
-    let replay_access = runtime.replay();
-    let envelope = replay_access
-        .canonical_commit_envelope(execution, outcome.commit.commit_id)
+    let envelope = runtime
+        .replay_commit_envelope(execution, outcome.commit.commit_id)
         .unwrap()
         .unwrap();
 
-    assert!(runtime.replay().compare_outcome(&replay));
+    assert!(replay.matches_recorded_truth());
     let relation_authority = envelope
         .schema_authority
         .relation_kinds
@@ -190,7 +189,7 @@ fn replay_contract_preserves_branch_local_relation_integrity_truth_after_rejecte
         )
         .unwrap();
 
-    assert!(runtime.replay().compare_outcome(&replay));
+    assert!(replay.matches_recorded_truth());
     assert!(replay
         .compared_surfaces
         .contains(&ReplayObservableSurface::History));

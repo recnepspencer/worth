@@ -172,54 +172,6 @@ impl OwnedTestDurableMedium {
         self.lock().retain_transition_wires = true;
     }
 
-    pub(crate) fn start_recording_commit_reads(&self, position: PatchStreamPosition) {
-        let mut contents = self.lock();
-        let sha256: [u8; 32] = Sha256::digest(
-            contents
-                .commits
-                .entries
-                .get(&position.0)
-                .unwrap_or_else(|| panic!("medium holds no commit at {position:?}")),
-        )
-        .into();
-        contents.canonical_member_positions.insert(sha256, position);
-        contents.commit_reads.clear();
-        self.observe_commit_reads.store(true, Ordering::Release);
-    }
-
-    pub(crate) fn set_commit_read_failure(
-        &self,
-        position: PatchStreamPosition,
-        cause: StorageCause,
-    ) {
-        let mut contents = self.lock();
-        let sha256: [u8; 32] = Sha256::digest(
-            contents
-                .commits
-                .entries
-                .get(&position.0)
-                .unwrap_or_else(|| panic!("medium holds no commit at {position:?}")),
-        )
-        .into();
-        contents.canonical_member_positions.insert(sha256, position);
-        contents.commit_read_failures.insert(position, cause);
-        self.has_commit_read_failures.store(true, Ordering::Release);
-    }
-
-    pub(crate) fn clear_commit_read_failures(&self) {
-        self.lock().commit_read_failures.clear();
-        self.has_commit_read_failures
-            .store(false, Ordering::Release);
-    }
-
-    pub(crate) fn commit_read_count(&self, position: PatchStreamPosition) -> usize {
-        self.lock()
-            .commit_reads
-            .iter()
-            .filter(|read| **read == position)
-            .count()
-    }
-
     pub(crate) fn artifact_sha256(&self, position: PatchStreamPosition) -> [u8; 32] {
         let bytes = self
             .artifact_bytes(position)
@@ -272,9 +224,7 @@ impl OwnedTestDurableMedium {
     ) -> Result<(), StorageCause> {
         let recording = self.observe_member_reads.load(Ordering::Acquire);
         let forbidding = self.has_forbidden_members.load(Ordering::Acquire);
-        let recording_commits = self.observe_commit_reads.load(Ordering::Acquire);
-        let failing_commits = self.has_commit_read_failures.load(Ordering::Acquire);
-        if !recording && !forbidding && !recording_commits && !failing_commits {
+        if !recording && !forbidding {
             return Ok(());
         }
         let mut contents = self.lock();
@@ -283,35 +233,6 @@ impl OwnedTestDurableMedium {
         }
         if forbidding && contents.forbidden_members.contains(&sha256) {
             return Err(StorageCause::MissingMember);
-        }
-        if (recording_commits || failing_commits)
-            && let Some(&position) = contents.canonical_member_positions.get(&sha256)
-        {
-            if recording_commits {
-                contents.commit_reads.push(position);
-            }
-            if failing_commits && let Some(&cause) = contents.commit_read_failures.get(&position) {
-                return Err(cause);
-            }
-        }
-        Ok(())
-    }
-
-    pub(super) fn check_and_record_commit_read(
-        &self,
-        position: PatchStreamPosition,
-    ) -> Result<(), StorageCause> {
-        let recording = self.observe_commit_reads.load(Ordering::Acquire);
-        let failing = self.has_commit_read_failures.load(Ordering::Acquire);
-        if !recording && !failing {
-            return Ok(());
-        }
-        let mut contents = self.lock();
-        if recording {
-            contents.commit_reads.push(position);
-        }
-        if failing && let Some(&cause) = contents.commit_read_failures.get(&position) {
-            return Err(cause);
         }
         Ok(())
     }
@@ -340,22 +261,5 @@ impl OwnedTestDurableMedium {
         )
         .expect("a rewritten envelope still encodes");
         self.replace_commit_bytes(position, Box::from(rewritten.as_bytes()));
-    }
-    pub(crate) fn rewrite_commit_envelope(
-        &self,
-        execution: &Req<'_, '_>,
-        commit_id: crate::history::data::CommitId,
-        edit: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelopeBody),
-    ) {
-        let position = self
-            .positions()
-            .into_iter()
-            .find(|p| {
-                self.artifact_bytes(*p)
-                    .and_then(|b| CommitArt::from_untrusted_bytes(b).ok())
-                    .is_some_and(|a| a.commit_id() == commit_id)
-            })
-            .unwrap_or_else(|| panic!("medium holds no artifact for {commit_id:?}"));
-        self.rewrite_artifact_envelope(execution, position, edit);
     }
 }

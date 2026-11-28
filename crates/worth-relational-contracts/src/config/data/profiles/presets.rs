@@ -66,11 +66,6 @@ pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> Relat
             policy: publication,
         },
         durability: DurabilityConfig { policy: durability },
-        overrides: RelationalConfigOverride::default(),
-        provenance: ConfigProvenance {
-            profile,
-            entries: Default::default(),
-        },
     };
 
     match profile {

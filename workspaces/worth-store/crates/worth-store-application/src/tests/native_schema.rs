@@ -21,9 +21,7 @@ pub(crate) fn definition() -> RelationalRuntimeDefinition {
         })
         .unwrap();
     RelationalRuntimeApi::builder()
-        .schema_setup(move |setup| {
-            setup.schema_registry(registry);
-        })
+        .schema_registry(registry)
         .resolve()
 }
 

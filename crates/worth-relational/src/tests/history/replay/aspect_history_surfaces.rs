@@ -50,7 +50,7 @@ fn replay_contract_preserves_aspect_bearing_patch_and_history_surfaces() {
         )
         .unwrap();
 
-    assert!(runtime.replay().compare_outcome(&replay));
+    assert!(replay.matches_recorded_truth());
     assert!(replay
         .compared_surfaces
         .contains(&ReplayObservableSurface::Patch));

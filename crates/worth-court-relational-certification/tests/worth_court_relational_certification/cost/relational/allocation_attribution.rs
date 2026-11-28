@@ -20,7 +20,7 @@ const NAMING: &[&str] = &[
 const NAME_INDEX: &[&str] = &["::lineage::index::"];
 /// The Relational symbol dictionary: its text carrier and interner, the
 /// runtime table, candidate reservations and publication. Owner paths, not
-/// `symbols::data::symbol::Symbol`, which storage column types also name.
+/// `symbols::data::Symbol`, which storage column types also name.
 const SYMBOLS: &[&str] = &[
     "::symbols::data::string_interner::",
     "::symbols::data::stored_text::",

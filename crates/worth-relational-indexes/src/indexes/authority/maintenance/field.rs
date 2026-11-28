@@ -154,15 +154,7 @@ pub(super) fn apply_changes(
                 changed,
                 ..
             } => {
-                *changed = !edits.is_empty();
-                grouped(
-                    entries,
-                    std::mem::take(edits),
-                    Ord::cmp,
-                    |key| key.canonical_value_bytes().len() + 1,
-                    !*patch,
-                    work,
-                )?;
+                apply_field_edits(entries, edits, *patch, changed, work)?;
             }
             PendingField::Relation {
                 entries,
@@ -171,19 +163,29 @@ pub(super) fn apply_changes(
                 changed,
                 ..
             } => {
-                *changed = !edits.is_empty();
-                grouped(
-                    entries,
-                    std::mem::take(edits),
-                    Ord::cmp,
-                    |key| key.canonical_value_bytes().len() + 1,
-                    !*patch,
-                    work,
-                )?;
+                apply_field_edits(entries, edits, *patch, changed, work)?;
             }
         }
     }
     Ok(())
+}
+
+fn apply_field_edits<Id: Ord + Copy>(
+    entries: &mut DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, Id>,
+    edits: &mut BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<Id>>>,
+    patch: bool,
+    changed: &mut bool,
+    work: &mut MaintenanceWork,
+) -> Result<(), Denial> {
+    *changed = !edits.is_empty();
+    grouped(
+        entries,
+        std::mem::take(edits),
+        Ord::cmp,
+        |key| key.canonical_value_bytes().len() + 1,
+        !patch,
+        work,
+    )
 }
 
 fn refresh_entities(
@@ -226,7 +228,16 @@ fn refresh_entities(
                 continue;
             }
             work.prepare(1, 0)?;
-            super::field_delta::entity_keys(execution, *id, locator, before, after, edits, work)?;
+            super::field_delta::refresh_keys(
+                execution,
+                *id,
+                locator,
+                before,
+                after,
+                edits,
+                work,
+                super::field_keys::entity,
+            )?;
         }
     }
     Ok(())
@@ -274,24 +285,16 @@ fn refresh_relations(
                 continue;
             }
             work.prepare(1, 0)?;
-            let (old_key, new_key) = (
-                super::field_keys::relation(execution, before, *id, locator, work)?,
-                super::field_keys::relation(execution, Some(after), *id, locator, work)?,
-            );
-            super::field_keys::prepare_key_comparison(
-                old_key.as_ref().map(|(key, _)| key),
-                new_key.as_ref().map(|(key, _)| key),
+            super::field_delta::refresh_keys(
+                execution,
+                *id,
+                locator,
+                before,
+                after,
+                edits,
                 work,
+                super::field_keys::relation,
             )?;
-            if old_key == new_key {
-                continue;
-            }
-            if let Some((key, record_id)) = old_key {
-                super::field_delta::queue(edits, key, record_id, false, work)?;
-            }
-            if let Some((key, record_id)) = new_key {
-                super::field_delta::queue(edits, key, record_id, true, work)?;
-            }
         }
     }
     Ok(())

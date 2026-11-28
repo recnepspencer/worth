@@ -220,9 +220,8 @@ fn lineage_graph_replace_commit_publishes_replace_decision_log_entry() {
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn.commit(execution, &runtime).unwrap();
-    let replay = runtime.replay();
-    let envelope = replay
-        .canonical_commit_envelope(execution, outcome.commit.commit_id)
+    let envelope = runtime
+        .replay_commit_envelope(execution, outcome.commit.commit_id)
         .unwrap()
         .unwrap();
 

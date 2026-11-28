@@ -1,4 +1,3 @@
-use crate::internal_port::transactions::data::aspect_field_patch::AspectFieldPatchOwnerPort as _;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 pub mod borrowed_allocation;
 pub use borrowed_allocation::decoded_bytes as field_patch_decoded_bytes;

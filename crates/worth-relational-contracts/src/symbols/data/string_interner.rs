@@ -57,9 +57,9 @@ impl StringInterner {
         &mut self,
         value: InternedString,
     ) -> Result<InternedString, super::RelationalSymbolExhausted> {
-        match value {
-            InternedString::Raw(raw) => self.intern(&raw).map(InternedString::Symbol),
-            symbol => Ok(symbol),
+        match value.raw_text() {
+            Some(raw) => self.intern(raw).map(InternedString::Symbol),
+            None => Ok(value),
         }
     }
 
@@ -155,7 +155,7 @@ mod tests {
         let mut restored = StringInterner::default();
         restored.restore_snapshot(
             &{
-                use crate::storage::substrate::maintenance::reconstruction::ReconstructionLaneOwnerPort as _;
+
                 crate::storage::substrate::maintenance::reconstruction::ReconstructionLane::oracle()
             },
             snapshot,

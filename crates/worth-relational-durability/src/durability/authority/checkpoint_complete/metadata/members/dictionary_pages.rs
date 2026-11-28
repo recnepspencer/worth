@@ -3,7 +3,7 @@
 use super::super::encode_dictionary;
 use super::*;
 use contracts::symbols::data::stored_text::StoredSymbolText;
-use contracts::symbols::data::symbol::Symbol;
+use contracts::symbols::data::Symbol;
 use sha2::{Digest, Sha256};
 use worth_execution::ExecutionRequestArrayBuilder;
 use worth_relational_contracts::internal_port as contracts;

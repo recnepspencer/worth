@@ -35,8 +35,7 @@ fn branch_local_sparse_slot_create_publishes_and_recovers_exact_lineage() {
         .node()
         .lineage_id();
     let event_targets = runtime
-        .replay()
-        .canonical_commit_envelope(execution, feature_create.commit.commit_id)
+        .replay_commit_envelope(execution, feature_create.commit.commit_id)
         .unwrap()
         .expect("feature create envelope")
         .lineage_events()[0]

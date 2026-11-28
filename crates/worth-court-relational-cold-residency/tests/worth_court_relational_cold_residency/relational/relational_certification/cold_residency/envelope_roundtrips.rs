@@ -25,8 +25,7 @@ fn live_nonhead_history_reads_original_patches_from_memory_and_durable_owners() 
         let commit = basis.observation().commit_id().unwrap();
         drop(basis);
         let body = runtime
-            .replay()
-            .canonical_commit_envelope(request, commit)
+            .replay_commit_envelope(request, commit)
             .unwrap()
             .unwrap();
         let witness = runtime
@@ -114,8 +113,7 @@ fn live_history_remains_in_external_capture_and_retained_recovery() {
     for id in &ids {
         assert_eq!(
             recovered
-                .replay()
-                .canonical_commit_envelope(request, *id)
+                .replay_commit_envelope(request, *id)
                 .unwrap()
                 .unwrap()
                 .commit
@@ -141,8 +139,7 @@ fn live_history_remains_in_external_capture_and_retained_recovery() {
     for id in ids {
         assert_eq!(
             receiver
-                .replay()
-                .canonical_commit_envelope(request, id)
+                .replay_commit_envelope(request, id)
                 .unwrap()
                 .unwrap()
                 .commit
@@ -199,8 +196,7 @@ fn recovered_nonhead_tail_envelopes_keep_their_original_receipt_and_source_read_
         .unwrap();
     let body = fixture
         .runtime
-        .replay()
-        .canonical_commit_envelope(request, receipt.commit_id)
+        .replay_commit_envelope(request, receipt.commit_id)
         .unwrap()
         .unwrap();
     assert_eq!(body.commit, receipt);
@@ -218,8 +214,7 @@ fn recovered_nonhead_tail_envelopes_keep_their_original_receipt_and_source_read_
     assert_eq!(
         fixture
             .runtime
-            .replay()
-            .canonical_commit_envelope(request, receipt.commit_id)
+            .replay_commit_envelope(request, receipt.commit_id)
             .unwrap()
             .unwrap()
             .commit,

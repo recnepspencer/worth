@@ -15,8 +15,7 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
     assert!(built.failed_indexes.is_empty());
     let committed = runtime.history().latest_commit().unwrap();
     let envelope = runtime
-        .replay()
-        .canonical_commit_envelope(execution, committed.commit_id)
+        .replay_commit_envelope(execution, committed.commit_id)
         .unwrap()
         .unwrap();
     assert!(

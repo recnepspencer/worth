@@ -1,7 +1,7 @@
 use crate::contracts::identity::data::primitives::{KindId, PartitionId};
 use crate::contracts::symbols::data::client_key::ClientKey;
 use crate::contracts::symbols::data::string_interner::StringInterner;
-use crate::contracts::symbols::data::symbol::Symbol;
+use crate::contracts::symbols::data::Symbol;
 use crate::contracts::transactions::data::intents::mutation_intent::{
     CreateIntent, MutationIntent, RelationMutationIntent,
 };

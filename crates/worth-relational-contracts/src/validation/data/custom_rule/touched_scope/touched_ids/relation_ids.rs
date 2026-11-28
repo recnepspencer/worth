@@ -1,25 +1,27 @@
 //! Opaque shared RelationId observations keep their original decode admission.
+use crate::admitted_shared::AdmittedShared;
 use crate::identity::data::RelationId;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::sync::{Arc, OnceLock};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use worth_execution::ExecutionMemoryReservation;
 
-pub struct InvariantRelationIds(Arc<Backing>);
-struct Backing {
-    values: Arc<[RelationId]>,
-    memory: OnceLock<Option<ExecutionMemoryReservation>>,
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct InvariantRelationIds(AdmittedShared<[RelationId]>);
+
+impl std::fmt::Debug for InvariantRelationIds {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(&self.0, formatter)
+    }
 }
 impl InvariantRelationIds {
     pub fn as_slice(&self) -> &[RelationId] {
-        &self.0.values
+        &self.0
     }
 }
 impl From<Arc<[RelationId]>> for InvariantRelationIds {
     fn from(values: Arc<[RelationId]>) -> Self {
-        Self(Arc::new(Backing {
-            values,
-            memory: OnceLock::new(),
-        }))
+        Self(AdmittedShared::new(values))
     }
 }
 impl From<Vec<RelationId>> for InvariantRelationIds {
@@ -30,11 +32,6 @@ impl From<Vec<RelationId>> for InvariantRelationIds {
 impl<const N: usize> From<[RelationId; N]> for InvariantRelationIds {
     fn from(values: [RelationId; N]) -> Self {
         Self::from(Arc::<[RelationId]>::from(values))
-    }
-}
-impl Clone for InvariantRelationIds {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
     }
 }
 impl Default for InvariantRelationIds {
@@ -60,27 +57,6 @@ impl<'a> IntoIterator for &'a InvariantRelationIds {
         self.as_slice().iter()
     }
 }
-impl std::fmt::Debug for InvariantRelationIds {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.values.fmt(f)
-    }
-}
-impl PartialEq for InvariantRelationIds {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.values == other.0.values
-    }
-}
-impl Eq for InvariantRelationIds {}
-impl Serialize for InvariantRelationIds {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.0.values.serialize(serializer)
-    }
-}
-impl<'de> Deserialize<'de> for InvariantRelationIds {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Arc::<[RelationId]>::deserialize(deserializer).map(Self::from)
-    }
-}
 
 /// Operations used by the Relational owners.
 pub trait InvariantRelationIdsOwnerPort: Sized {
@@ -96,15 +72,10 @@ impl InvariantRelationIdsOwnerPort for InvariantRelationIds {
         &self,
         memory: Option<ExecutionMemoryReservation>,
     ) -> Result<(), Option<ExecutionMemoryReservation>> {
-        self.0.memory.set(memory)
+        self.0.retain_decoded_memory(memory)
     }
 
     fn control_bytes() -> Option<u64> {
-        let layout = std::alloc::Layout::new::<(usize, usize)>()
-            .extend(std::alloc::Layout::new::<Backing>())
-            .ok()?
-            .0
-            .pad_to_align();
-        u64::try_from(layout.size()).ok()
+        AdmittedShared::<[RelationId]>::control_bytes()
     }
 }

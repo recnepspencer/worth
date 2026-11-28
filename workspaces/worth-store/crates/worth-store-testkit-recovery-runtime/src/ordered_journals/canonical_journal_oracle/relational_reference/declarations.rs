@@ -64,12 +64,8 @@ impl RelationalReference {
         });
         let request = serial_request();
         let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-            .runtime_setup(|runtime| {
-                runtime.runtime_name("journal-oracle");
-            })
-            .schema_setup(|schema| {
-                schema.schema_registry(schema_registry());
-            })
+            .runtime_name("journal-oracle")
+            .schema_registry(schema_registry())
             .build()
             .expect("valid native runtime configuration");
         let execution = worth_execution::ExecutionRequest::serial(&request);

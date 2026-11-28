@@ -43,7 +43,6 @@ pub(super) use crate::publication::patch::data::{
     ordered_aspect_keys, PatchDetail, RecordStructuralChange,
 };
 pub(super) use crate::symbols::data::ClientKeySymbolPolicy;
-use crate::tests::harness::model::truth_model::VisibleTruthSummary;
 pub(super) use worth_foundational::facade::AspectKey;
 
 // Test helper index:
@@ -109,63 +108,6 @@ pub(crate) fn diagnostic_field_optional<'a>(
     fields.get(field)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct AspectTruthBundle {
-    pub visible_truth: VisibleTruthSummary,
-    pub latest_patch: Option<crate::facade::publication::PublishedAuthoritativePatchEnvelope>,
-    pub diagnostics: crate::facade::diagnostics::RelationalDiagnosticsFacade,
-    pub entity_history_digests: Vec<(
-        crate::facade::identity::EntityId,
-        crate::facade::history::AspectHistoryDigest,
-    )>,
-    pub relation_history_digests: Vec<(RelationId, crate::facade::history::AspectHistoryDigest)>,
-    pub lineage_history_digests: Vec<(
-        LineageId,
-        crate::facade::history::LineageAspectResolutionDigest,
-    )>,
-}
-
-pub(super) fn capture_aspect_truth_bundle(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    entity_ids: &[crate::facade::identity::EntityId],
-    relation_ids: &[RelationId],
-    lineage_ids: &[LineageId],
-) -> AspectTruthBundle {
-    AspectTruthBundle {
-        visible_truth: VisibleTruthSummary::capture(execution, runtime),
-        latest_patch: latest_committed_patch(runtime),
-        diagnostics: runtime.publication().diagnostics(),
-        entity_history_digests: entity_ids
-            .iter()
-            .map(|entity_id| {
-                (
-                    *entity_id,
-                    entity_aspect_history_digest(execution, runtime, *entity_id, None),
-                )
-            })
-            .collect(),
-        relation_history_digests: relation_ids
-            .iter()
-            .map(|relation_id| {
-                (
-                    *relation_id,
-                    relation_aspect_history_digest(execution, runtime, *relation_id, None),
-                )
-            })
-            .collect(),
-        lineage_history_digests: lineage_ids
-            .iter()
-            .map(|lineage_id| {
-                (
-                    *lineage_id,
-                    lineage_aspect_history_digest(execution, runtime, *lineage_id, None),
-                )
-            })
-            .collect(),
-    }
-}
-
 pub(super) fn planned_explicit_query(
     runtime: &RelationalRuntime,
     snapshot: &crate::snapshots::data::SnapshotHandle,
@@ -210,106 +152,6 @@ pub(super) fn execute_explicit_query(
         .expect("request remains live")
         .map(|read| read.outcome)
         .expect("query execution outcome")
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct InspectionTruthBundle {
-    pub graph_summary: crate::facade::inspection::GraphInspectionSummary,
-    pub kind_summary: crate::facade::inspection::KindInspectionSummary,
-    pub connectivity_summary: crate::facade::inspection::ConnectivityInspectionSummary,
-    pub historical_record: crate::facade::inspection::HistoricalRecordInspection,
-    pub retention_summary: crate::facade::inspection::RetentionInspectionSummary,
-    pub record_retention: crate::facade::inspection::RecordRetentionInspection,
-    pub branch_head: Option<crate::facade::inspection::CommitInspection>,
-    pub latest_commit: crate::facade::inspection::CommitInspection,
-    pub recent_commits: crate::facade::inspection::RecentCommitInspectionWindow,
-}
-
-pub(super) fn capture_inspection_truth_bundle(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    branch_id: &BranchId,
-    entity_id: crate::facade::identity::EntityId,
-    historical_version: crate::facade::identity::VersionId,
-) -> InspectionTruthBundle {
-    let inspection = runtime.inspect_what_happened();
-    let latest_commit_id = runtime
-        .history()
-        .latest_commit()
-        .map(|commit| commit.commit_id)
-        .expect("latest commit");
-    InspectionTruthBundle {
-        graph_summary: inspection
-            .graph_summary(
-                execution,
-                &crate::facade::inspection::GraphInspectionRequest {
-                    scope: crate::facade::inspection::InspectionScope::Current,
-                    partition_scope: None,
-                    relation_kind_scope: None,
-                    summary_only: true,
-                    budget: crate::tests::support::inspection::default_graph_budget(),
-                },
-            )
-            .expect("read request remains live"),
-        kind_summary: inspection
-            .kind_summary(
-                execution,
-                &crate::facade::inspection::KindInspectionRequest {
-                    scope: crate::facade::inspection::InspectionScope::Current,
-                    partition_scope: None,
-                    kind_id: KindId(1),
-                    record_class: crate::facade::inspection::InspectionRecordClass::Entity,
-                },
-            )
-            .expect("read request remains live"),
-        connectivity_summary: inspection
-            .connectivity_summary(
-                execution,
-                &crate::facade::inspection::ConnectivityInspectionRequest {
-                    scope: crate::facade::inspection::InspectionScope::Current,
-                    partition_scope: None,
-                    relation_kind_scope: None,
-                    include_members: false,
-                    budget: crate::tests::support::inspection::default_connectivity_budget(),
-                },
-            )
-            .expect("read request remains live"),
-        historical_record: inspection
-            .inspect_historical_record(
-                execution,
-                branch_id,
-                historical_version,
-                RecordRef::Entity(entity_id),
-                crate::facade::inspection::HistoricalInspectionMode::AllowCanonicalReconstruction,
-            )
-            .expect("read request remains live"),
-        retention_summary: inspection
-            .retention_summary(
-                execution,
-                &crate::tests::support::inspection::default_retention_request(),
-            )
-            .unwrap(),
-        record_retention: inspection
-            .inspect_record_retention(execution, RecordRef::Entity(entity_id))
-            .unwrap()
-            .expect("record retention"),
-        branch_head: inspection
-            .inspect_branch_head(execution, branch_id)
-            .unwrap(),
-        latest_commit: inspection
-            .inspect_commit(execution, latest_commit_id)
-            .unwrap()
-            .expect("latest commit inspection"),
-        recent_commits: inspection
-            .inspect_recent_commits(
-                execution,
-                &crate::facade::inspection::RecentCommitInspectionRequest {
-                    branch_id: Some(branch_id.clone()),
-                    limit: 8,
-                },
-            )
-            .unwrap(),
-    }
 }
 
 pub(super) fn assert_patch_truth_invariants(result: &CommitResult) -> PatchVsTruthDeltaReport {
@@ -369,7 +211,7 @@ pub(super) fn assert_lineage_history_origin_invariants(
 mod truth_comparison;
 pub(crate) use truth_comparison::assert_durable_commit_meaning_eq;
 pub(super) use truth_comparison::assert_recovered_commit_truth_matches;
-pub(super) use truth_comparison::assert_stable_aspect_truth_bundle_eq;
+pub(super) use truth_comparison::{assert_stable_aspect_truth_bundle_eq, capture_aspect_truth_bundle};
 mod worker_completion;
 pub(super) use worker_completion::join_completed_worker;
 

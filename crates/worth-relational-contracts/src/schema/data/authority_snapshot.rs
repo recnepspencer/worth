@@ -1,6 +1,5 @@
 use crate::internal_port::content::schema::RelationalContentSchemaSnapshotOwnerPort as _;
-use crate::internal_port::derived_relation::definition::DerivedRelationDefinitionPartsOwnerPort as _;
-use crate::internal_port::projected_member_domain::definition::ProjectedMemberDomainPartsOwnerPort as _;
+
 #[cfg(test)]
 use crate::internal_port::schema::data::authority_snapshot::carried_projection::SchemaAuthoritySnapshotOwnerPort as _;
 use serde::{Deserialize, Serialize};
@@ -191,13 +190,8 @@ fn cascade_delete_policy_tag(policy: CascadeDeletePolicy) -> u8 {
 #[cfg(test)]
 mod tests;
 
-/// Operations used by the Relational owners.
-pub trait SchemaAuthoritySnapshotPartsOwnerPort: Sized {
-    fn owned_allocation_capacity_bytes(&self) -> u64;
-}
-
-impl SchemaAuthoritySnapshotPartsOwnerPort for SchemaAuthoritySnapshotParts {
-    fn owned_allocation_capacity_bytes(&self) -> u64 {
+impl SchemaAuthoritySnapshotParts {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
         let entity_storage = (self.entity_kinds.capacity() as u64)
             .saturating_mul(std::mem::size_of::<SchemaAuthorityKindSnapshot>() as u64);
         let relation_storage = (self.relation_kinds.capacity() as u64)

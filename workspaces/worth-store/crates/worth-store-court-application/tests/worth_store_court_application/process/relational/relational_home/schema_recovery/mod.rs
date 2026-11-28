@@ -113,12 +113,8 @@ fn a_registry_with_other_kind_contracts_refuses_before_service() {
     crate::durable_run::world::close(home, &execution);
 
     let foreign = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .runtime_setup(|runtime| {
-            runtime.runtime_name(crate::workload::RUNTIME_NAME);
-        })
-        .schema_setup(|setup| {
-            setup.schema_registry(foreign_registry());
-        });
+        .runtime_name(crate::workload::RUNTIME_NAME)
+        .schema_registry(foreign_registry());
     let refused = worth_store_testkit_application_oracle::facade::home_opening::open(
         worth_store_testkit_application_oracle::facade::home_opening::request(&location, foreign),
         &execution,

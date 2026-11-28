@@ -77,18 +77,11 @@ impl PreparedGenerationBatch {
             .enter(|| prepare(0, 0))
             .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         // Do not invoke payment callbacks under the indexing state lock.
-        let (generation_quote, basis_quote) = {
-            let state = self.catalog.read();
-            let generations = state
-                .generations
-                .deferred_quote(&self.generations)
-                .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
-            let basis = state
-                .bases
-                .prepared_publication_quote(&self.generations, self.basis.as_ref())
-                .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
-            (generations, basis)
-        };
+        let (generation_quote, basis_quote) = self
+            .catalog
+            .read()
+            .publication_quote(&self.generations, self.basis.as_ref())
+            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
         generation_quote.admit(&mut prepare)?;
         prepare(basis_quote.0, basis_quote.1)
             .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;

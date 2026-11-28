@@ -229,8 +229,7 @@ fn selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on
     }
     let later = create_entity_outcome(&execution, &runtime, "publication-while-ack-pending");
     let canonical = runtime
-        .replay()
-        .canonical_commit_envelope(&execution, later.commit.commit_id)
+        .replay_commit_envelope(&execution, later.commit.commit_id)
         .unwrap()
         .unwrap();
     assert_eq!(canonical.index_definition_additions(), &[definition]);

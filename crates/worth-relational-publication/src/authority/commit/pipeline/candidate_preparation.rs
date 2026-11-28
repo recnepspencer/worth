@@ -15,7 +15,7 @@ use super::phase_backing::CommitPhaseBacking;
 pub struct SelectedCandidateSymbols {
     pub dictionary:
         worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
-    pub references: std::collections::BTreeSet<contracts::symbols::data::symbol::Symbol>,
+    pub references: std::collections::BTreeSet<contracts::symbols::data::Symbol>,
 }
 
 pub struct CandidateArtifactSelection<'a> {
