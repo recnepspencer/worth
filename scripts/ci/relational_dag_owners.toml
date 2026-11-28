@@ -333,6 +333,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admi
 # Index packet descriptors carry index keys. Read-only proof vocabulary and
 # packet placement are shared contracts; the paid ordered reducer is substrate.
 "authority/commit/preparation/reduction/merge/checked.rs" = "runtime"
+"authorization/recorded_actor.rs" = "runtime"
 "authorization/runtime_dependencies.rs" = "runtime"
 "authorization/runtime_freshness.rs" = "runtime"
 "authorization/runtime_observation.rs" = "runtime"

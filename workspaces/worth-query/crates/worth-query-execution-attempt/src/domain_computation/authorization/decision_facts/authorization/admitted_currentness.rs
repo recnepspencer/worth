@@ -27,11 +27,7 @@ impl WorthQueryAuthorizationDecisionFact {
             return Ok(false);
         }
 
-        if !bridge_matches(
-            &self.relational,
-            &self.bridge,
-            self.recorded_actor.as_deref(),
-        ) {
+        if !bridge_matches(&self.relational, &self.bridge) {
             return Ok(false);
         }
         let freshness = runtime.compare_authorization_observation(
