@@ -217,3 +217,19 @@ pub enum RuntimeWorldBootstrapOutcome {
 #[cfg(test)]
 #[path = "bootstrap_tests.rs"]
 mod tests;
+
+use worth_execution::report::Disposition::*;
+use worth_execution::report::RetryHint::WithFreshAuthority;
+
+crate::denial_report::world_denial_report!(RuntimeWorldBootstrapNoEffectCause, "bootstrap", {
+    Self::DurableBootstrapRequired => ("durable_bootstrap_required", InvalidInput, CorrectInput, "Use the durable World bootstrap operation."),
+    Self::AlreadyBootstrapped => ("already_bootstrapped", Conflict, Final, "The World is already bootstrapped."),
+    Self::ForeignBasis => ("foreign_basis", Authorization, Reauthorize, "The bootstrap basis does not belong to this World."),
+    Self::IncompatibleCorrespondence => ("incompatible_correspondence", RelationLaw, CorrectInput, "The component bases do not satisfy the bootstrap correspondence."),
+    Self::CapacityExhausted => ("capacity_exhausted", Exhausted, Final, "The World has no capacity for bootstrap."),
+    Self::IdentityExhausted => ("identity_exhausted", Exhausted, Escalate, "The World cannot issue another bootstrap identity."),
+    Self::Cancelled => ("cancelled", Cancelled, Final, "Bootstrap was cancelled before effects."),
+    Self::OwnerUnavailable => ("owner_unavailable", Unavailable, Retry(WithFreshAuthority), "The World owner is unavailable."),
+});
+
+impl std::error::Error for RuntimeWorldBootstrapNoEffectCause {}

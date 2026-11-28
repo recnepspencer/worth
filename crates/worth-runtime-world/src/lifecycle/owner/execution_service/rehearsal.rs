@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::SyncSender;
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use worth_signal::facade::branch::SignalOwnerCancellationToken;
 
@@ -152,25 +152,17 @@ fn reach(
 }
 
 fn park_until_released(
-    mut armed: MutexGuard<'static, RehearsalEntries>,
+    armed: MutexGuard<'static, RehearsalEntries>,
     owner: RuntimeWorldOwnerIdentity,
 ) {
-    let deadline = Instant::now() + REHEARSAL_RELEASE_BUDGET;
-    loop {
-        match armed.get(&owner) {
-            None => return,
-            Some(entry) if entry.released => return,
-            Some(_) => {}
-        }
-        let remaining = deadline.saturating_duration_since(Instant::now());
-        assert!(
-            !remaining.is_zero(),
-            "an armed execution rehearsal was never released within its budget"
-        );
-        let (next, _) = registry()
-            .1
-            .wait_timeout(armed, remaining)
-            .unwrap_or_else(|error| error.into_inner());
-        armed = next;
-    }
+    let still_armed =
+        |entries: &mut RehearsalEntries| entries.get(&owner).is_some_and(|entry| !entry.released);
+    let (mut armed, _) = registry()
+        .1
+        .wait_timeout_while(armed, REHEARSAL_RELEASE_BUDGET, still_armed)
+        .unwrap_or_else(|error| error.into_inner());
+    assert!(
+        !still_armed(&mut armed),
+        "an armed execution rehearsal was never released within its budget"
+    );
 }

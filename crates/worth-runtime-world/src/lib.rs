@@ -16,6 +16,7 @@
 mod basis;
 mod branch;
 mod budget;
+mod denial_report;
 mod durability;
 mod history;
 mod identity;

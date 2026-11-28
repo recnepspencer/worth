@@ -92,7 +92,7 @@ where
             let mut scope = Some(scope);
             let mut guarded = None;
             let mut cutoff_stop = None;
-            let mut perform = |native, native_deadline| {
+            let mut perform = |native, narrowing_deadline| {
                 if let Err(cause) = pre_lock_stop() {
                     cutoff_stop = Some(cause);
                     return;
@@ -101,7 +101,7 @@ where
                     scope
                         .take()
                         .expect("one World token consumes one scope")
-                        .perform_memory_publication(native, native_deadline, &cutoff),
+                        .perform_memory_publication(native, narrowing_deadline, &cutoff),
                 );
             };
             let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {

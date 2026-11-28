@@ -3,6 +3,7 @@ use super::{RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerRoot};
 /// Private dispatch only for World capabilities; component bundles stay concrete.
 pub(crate) trait RuntimeWorldAvailability {
     fn is_available(&self) -> bool;
+    fn is_bootstrapped(&self) -> bool;
 }
 
 impl<D, I, E, Ctx, T> RuntimeWorldAvailability for RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -20,5 +21,16 @@ where
         };
         self.owner_is_present()
             && self.lifecycle_observation() == RuntimeWorldOwnerLifecycleObservation::Open
+    }
+
+    fn is_bootstrapped(&self) -> bool {
+        matches!(
+            *self
+                .state
+                .bootstrap
+                .lock()
+                .unwrap_or_else(|error| error.into_inner()),
+            super::owner::RuntimeWorldBootstrapState::Performed
+        )
     }
 }

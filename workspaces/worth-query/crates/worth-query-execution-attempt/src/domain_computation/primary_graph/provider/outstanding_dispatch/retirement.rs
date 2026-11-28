@@ -12,7 +12,7 @@ impl OutstandingDispatchOwner {
     pub fn protect_for_durable_close(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-        inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
+        custody: &worth_runtime_world::facade::RuntimeWorldHistoryCustodyPort,
     ) -> Result<(), Denial> {
         let mut entries = self
             .entries
@@ -21,7 +21,7 @@ impl OutstandingDispatchOwner {
         for entry in entries.by_correlation.values_mut() {
             request.consult().map_err(Denial::Execution)?;
             if let Some(OutstandingDispatchOriginal::Performed(publication)) = &entry.original {
-                let protection = inspection
+                let protection = custody
                     .protect_performed_publication(publication.composite_commit())
                     .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?;
                 // Capture the real source guard before releasing any duplicate receipt.
@@ -88,9 +88,9 @@ impl super::super::WorthQueryPrimaryGraphProvider {
     pub fn protect_dispatch_originals_for_close(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-        inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
+        custody: &worth_runtime_world::facade::RuntimeWorldHistoryCustodyPort,
     ) -> Result<(), Denial> {
         self.outstanding_dispatch
-            .protect_for_durable_close(request, inspection)
+            .protect_for_durable_close(request, custody)
     }
 }

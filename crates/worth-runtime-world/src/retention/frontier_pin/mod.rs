@@ -185,3 +185,17 @@ pub trait RuntimeWorldRetentionPort: Send + Sync {
     /// reached `Expired`.
     fn settle_drained(&self) -> Result<usize, RetentionPortDenial>;
 }
+
+use worth_execution::report::Disposition::*;
+
+crate::denial_report::world_denial_report!(RetentionPortDenial, "retention", {
+    Self::PinNotFound => ("pin_not_found", NotFound, Final, "The requested frontier pin is unavailable."),
+    Self::ParentPinNotActive => ("parent_pin_not_active", Conflict, CorrectInput, "The parent pin must be active."),
+    Self::LeaseExpired => ("lease_expired", Conflict, Final, "The frontier lease no longer admits reader loans."),
+    Self::PinnedByChild => ("pinned_by_child", Conflict, Final, "An active child pin prevents release."),
+    Self::StorageUnavailable => ("storage_unavailable", Unavailable, Final, "The storage owner cannot admit a frontier pin."),
+    Self::StorageIndeterminate => ("storage_indeterminate", Indeterminate, Escalate, "Reopen the Home to determine whether the frontier pin was recorded."),
+    Self::CorruptManifest => ("corrupt_manifest", RelationLaw, Escalate, "The recorded frontier manifest failed its seal."),
+});
+
+impl std::error::Error for RetentionPortDenial {}

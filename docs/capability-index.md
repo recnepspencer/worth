@@ -432,6 +432,10 @@ retires the name permanently (`RetiredTarget` on recreate, across crashes). Cand
 prepared concurrently on independent branches publish in FIFO reservation order and both
 survive reopen, whatever order their record slots were reserved in.
 
+Use `RuntimeWorldOwner::history_custody_port()` to issue
+a weak port for exact publication protection. The returned guard retains that
+publication against history reclamation until it drops.
+
 Whole-Home frontier pins: a Home's `frontier_retention()` (Store Application) implements
 World's `RuntimeWorldRetentionPort`: `capture_and_pin_frontier(PinSpec)` returns a
 `PinnedFrontierLease` holding a sealed `HomeRootManifest`; `expire_lease`,

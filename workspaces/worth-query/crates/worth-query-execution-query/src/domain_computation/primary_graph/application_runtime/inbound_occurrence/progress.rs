@@ -149,7 +149,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .runtime
                 .product_runtime
                 .owner_ref()
-                .inspection_port()
+                .history_custody_port()
                 .protect_performed_publication(
                     terminal.publication().publication().commit().identity(),
                 )

@@ -11,7 +11,6 @@ pub(crate) trait RuntimeWorldInspectionService:
         crate::durability::WorldProgramActivationHistory,
         crate::durability::WorldReadmissionDenial,
     >;
-    fn bootstrap_is_complete(&self) -> bool;
     fn history_snapshot(&self) -> super::RuntimeWorldHistorySnapshot;
     fn retention_costs(&self) -> crate::retention::RetentionCostSnapshot;
     fn trace_ancestry(
@@ -25,14 +24,6 @@ pub(crate) trait RuntimeWorldInspectionService:
         after: Option<&crate::history::RuntimeWorldPublicationCursor>,
         maximum: NonZeroUsize,
     ) -> Result<crate::history::RuntimeWorldPublicationPage, CompositeHistoryCatalogDenial>;
-
-    fn protect_performed_publication(
-        &self,
-        identity: &CompositeCommitIdentity,
-    ) -> Result<
-        crate::history::RuntimeWorldPerformedPublicationProtection,
-        CompositeHistoryCatalogDenial,
-    >;
 
     fn publication_frontier_is_current(
         &self,

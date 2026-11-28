@@ -139,8 +139,7 @@ fn callback_can_move_control_before_the_guard_and_signal_runs_after_the_callback
                 Ok(())
             },
             |cutover| {
-                cutover
-                    .perform_before(std::time::Instant::now() + std::time::Duration::from_secs(30));
+                cutover.perform_before(RuntimeWorldInstant::from_ticks(u64::MAX));
                 callback_finished.set(true);
                 Err::<(), _>("caller status")
             },

@@ -15,18 +15,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .inbound_custody_ref()
             .try_lock()
             .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?;
-        let inspection = self
+        let history_custody = self
             .inner
             .runtime
             .product_runtime_ref()
             .owner_ref()
-            .inspection_port();
+            .history_custody_port();
         for terminal in custody.terminal_sources_for_home_retirement() {
             request.consult().map_err(Denial::Execution)?;
             if !terminal.settle_fresh_delivery() {
                 return Err(Denial::Busy(Owner::PublicationReceipts));
             }
-            let protection = inspection
+            let protection = history_custody
                 .protect_performed_publication(
                     terminal.publication().publication().commit().identity(),
                 )

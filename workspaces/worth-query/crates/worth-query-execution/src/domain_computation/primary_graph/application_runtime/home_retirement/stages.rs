@@ -109,7 +109,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         .runtime
                         .product_runtime_ref()
                         .owner_ref()
-                        .inspection_port(),
+                        .history_custody_port(),
                 )?;
         }
         self.inner

@@ -5,6 +5,14 @@ use crate::lifecycle::{RuntimeWorldOwnerUnavailable, RuntimeWorldServiceDenial};
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Weak};
 /// Weak access to bounded, read-only World inspection.
+///
+/// ```compile_fail,E0599
+/// use worth_runtime_world::facade::{CompositeCommitIdentity, RuntimeWorldInspectionPort};
+///
+/// fn protect(port: &RuntimeWorldInspectionPort, identity: &CompositeCommitIdentity) {
+///     port.protect_performed_publication(identity);
+/// }
+/// ```
 #[derive(Clone)]
 pub struct RuntimeWorldInspectionPort {
     owner: Weak<dyn RuntimeWorldInspectionService + Send + Sync>,
@@ -23,7 +31,7 @@ impl RuntimeWorldInspectionPort {
             .owner
             .upgrade()
             .ok_or_else(RuntimeWorldOwnerUnavailable::new)?;
-        if !service.is_available() || !service.bootstrap_is_complete() {
+        if !service.is_available() || !service.is_bootstrapped() {
             return Err(RuntimeWorldOwnerUnavailable::new());
         }
         Ok(service)
@@ -71,18 +79,6 @@ impl RuntimeWorldInspectionPort {
     > {
         self.service()?
             .performed_publication_page(after, maximum)
-            .map_err(RuntimeWorldServiceDenial::Denied)
-    }
-
-    pub fn protect_performed_publication(
-        &self,
-        identity: &CompositeCommitIdentity,
-    ) -> Result<
-        crate::history::RuntimeWorldPerformedPublicationProtection,
-        RuntimeWorldServiceDenial<CompositeHistoryCatalogDenial>,
-    > {
-        self.service()?
-            .protect_performed_publication(identity)
             .map_err(RuntimeWorldServiceDenial::Denied)
     }
 

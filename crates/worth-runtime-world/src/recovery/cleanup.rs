@@ -114,7 +114,7 @@ impl super::catalog::ProductUnpublishedRecoveryCatalog {
                 return false;
             }
             if let Some((now, minimum)) = age {
-                let Some(elapsed) = now.ticks().checked_sub(record.admitted_at().ticks()) else {
+                let Some(elapsed) = now.elapsed_ticks_since(record.admitted_at()) else {
                     denial = RecoveryCleanupDenial::ClockRegressed;
                     return false;
                 };
