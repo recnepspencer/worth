@@ -238,63 +238,6 @@ impl LineageState {
         Ok(state)
     }
 
-    /// The first group lineage `b`'s history (with fork ancestors) published after `c`,
-    /// checking both the selected checkpoint's cold `GROUP_LOG` and the resident tail.
-    pub(super) fn group_lineage_after(
-        &self,
-        b: &BranchId,
-        c: CommitId,
-    ) -> Result<
-        Option<(CommitId, String)>,
-        crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
-    > {
-        use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
-        use crate::lineage::naming_pages::tables::branch_key_digest;
-
-        let bounds: BTreeMap<_, _> = self.ancestry(b, CommitId(u64::MAX)).into_iter().collect();
-        let mut through = None;
-        if let Some(source) = &self.cold_naming {
-            let store = source.store().ok_or(Cause::SourceUnavailable)?;
-            through = store.state().group_log_through.map(CommitId);
-            if through.is_some_and(|t| t > c) {
-                let digest_bounds: BTreeMap<[u8; 32], CommitId> = bounds
-                    .iter()
-                    .filter(|&(_, &bound)| bound > c)
-                    .map(|(branch, &bound)| (branch_key_digest(branch), bound))
-                    .collect();
-                if !digest_bounds.is_empty() {
-                    let mut found: Option<(CommitId, String)> = None;
-                    store.scan_group_log_window(&digest_bounds, Some(c), |at, frame| {
-                        let transitions =
-                            crate::durability::naming::decode_group_lineage_frame(frame)
-                                .map_err(|_| Cause::Damaged)?;
-                        if let Some(first) = transitions.first() {
-                            if found.as_ref().is_none_or(|(prev, _)| at < *prev) {
-                                found = Some((at, first.scheme_id().to_owned()));
-                            }
-                            return Ok(false);
-                        }
-                        Ok(true)
-                    })?;
-                    if found.is_some() {
-                        return Ok(found);
-                    }
-                }
-            }
-        }
-        let record = self.published_group_lineage.iter().find(|record| {
-            let bound = bounds.get(&record.branch);
-            through.is_none_or(|t| record.commit > t)
-                && record.commit > c
-                && bound.is_some_and(|bound| record.commit <= *bound)
-        });
-        Ok(record.and_then(|r| {
-            r.transitions
-                .first()
-                .map(|t| (r.commit, t.scheme_id().to_owned()))
-        }))
-    }
-
     /// Published group lineage records of `branch` through `bound`.
     pub(super) fn own_group_lineage(
         &self,

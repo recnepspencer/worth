@@ -104,15 +104,6 @@ pub(in crate::internal_port::history::data::canonical_commit_envelope::required_
             ),
         );
     }
-    if let Publication::HistoricalSelection {
-        admission,
-        selections,
-    } = publication
-    {
-        return super::super::historical_selection::install::install(
-            envelope, basis, state, installed, &admission, selections, lease, context,
-        );
-    }
     if let Publication::CoupledAuthored { group } = publication {
         return super::super::coupled_authored_install::install(
             envelope,
@@ -212,8 +203,7 @@ pub(in crate::internal_port::history::data::canonical_commit_envelope::required_
             )?;
             (meaning, roles, Some(origin))
         }
-        Publication::HistoricalSelection { .. }
-        | Publication::CoupledAuthored { .. }
+        Publication::CoupledAuthored { .. }
         | Publication::AuthoredCascadeRetirement { .. }
         | Publication::AuthoredCascadeRestoration { .. } => {
             unreachable!("cascade consumed before ordinary installation")

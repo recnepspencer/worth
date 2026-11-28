@@ -1,6 +1,5 @@
 pub mod basis_denial;
 pub mod identity;
-pub mod model_ownership;
 pub mod recorded_basis;
 pub mod reference;
 pub mod reference_checkpoint_data;

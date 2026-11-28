@@ -10,7 +10,6 @@
 //! allocated or written; an envelope that refuses or aborts leaves no trace.
 
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasis;
-use worth_relational_mutation::internal_port::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
 use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
 
 use super::{contracts, ProposalNameCarry, ProposalNameInputs, ProposalNameSource};
@@ -31,7 +30,6 @@ impl<'a> ProposalNameSource<'a> {
         lineage: LineagePreparationAuthority<'a>,
         before: &AdmittedRelationalBranchBasis,
         mutation: &'a AppliedMutationCore,
-        plan: RelationalSemanticPlan<'a>,
         identity: &RelationalMutationProposalIdentity,
         naming_plan: Option<&'a contracts::lineage::data::CommitNamingPlan>,
         carry: ProposalNameCarry,
@@ -43,7 +41,6 @@ impl<'a> ProposalNameSource<'a> {
             version_id: identity.proposed_version_id(),
             outcome: &mutation.outcome,
             naming_plan,
-            graph_selection: plan.graph_selection(),
         };
         Self::new(lineage.naming, lineage.schema, proposal, carry)
     }

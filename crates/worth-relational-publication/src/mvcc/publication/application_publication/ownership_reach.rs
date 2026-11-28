@@ -28,20 +28,12 @@ impl RequiredOutputPublication {
                     .meaning
                     .source_scope
             }
-            Self::HistoricalSelection { selections, .. } => {
-                selections.first()?.publication.origin.meaning.source_scope
-            }
             Self::CoupledAuthored { group } => group.binding.owners.source.subject(),
         })
     }
 
     pub(crate) fn ownership_seeds(&self, into: &mut Vec<RecordRef>) {
         match self {
-            Self::HistoricalSelection { selections, .. } => into.extend(
-                selections
-                    .iter()
-                    .map(|s| RecordRef::Entity(s.publication.origin.meaning.source_scope)),
-            ),
             Self::Birth { meaning, .. } | Self::Preserve { meaning, .. } => {
                 into.push(RecordRef::Entity(meaning.source_scope))
             }

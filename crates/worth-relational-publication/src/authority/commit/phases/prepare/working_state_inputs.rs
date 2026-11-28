@@ -41,12 +41,10 @@ pub struct WorkingStateDraft<'a> {
     pub footprint: &'a mut RelationalTransactionFootprint,
     pub basis_schema: &'a RelationalSchemaRegistry,
     pub mutation_schema: &'a Arc<RelationalBranchRootSchemaAuthority>,
-    pub merge_parent_count: usize,
     pub coupled_commands: Option<&'a Mutex<Option<Arc<OwnedNormalizedPlan>>>>,
 }
 
 pub struct WorkingStateScope<'a> {
     pub footprint: &'a RelationalTransactionFootprint,
     pub schema: &'a Arc<RelationalBranchRootSchemaAuthority>,
-    pub merge_parent_count: usize,
 }

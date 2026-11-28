@@ -1,5 +1,4 @@
 //! Exact mutation truth projected from one owner-validated mutation.
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelectionOwnerPort as _;
 
 pub mod member_restoration;
 pub mod relation_mutations;
@@ -161,12 +160,6 @@ impl ValidatedMutationFootprintProjection {
                 record: RecordRef::Entity(selection.entity()),
             });
             work.record_materialized_targets(1);
-        }
-        if let Some(selection) = plan.graph_selection() {
-            for record in selection.targets() {
-                targets.push(ValidatedFieldMutationTarget::WholeRecord { record });
-                work.record_materialized_targets(1);
-            }
         }
         for intent in validated_intents {
             work.record_validated_intent();

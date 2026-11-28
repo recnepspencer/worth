@@ -33,7 +33,6 @@ pub mod fork;
 pub mod fork_materialization;
 pub mod fork_source_basis;
 pub mod head_visibility_inputs;
-pub mod historical_selection;
 pub mod home_program_step;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
@@ -42,7 +41,6 @@ pub mod lifecycle;
 pub mod maintenance;
 pub mod managed_source_affinity;
 pub mod materialization;
-pub mod model_ownership;
 #[cfg(test)]
 pub mod pinned_walk_request_tests;
 pub mod projection_view;

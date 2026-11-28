@@ -42,12 +42,8 @@ impl FrozenCustomInvariantRegistry {
         // Preserve the original public-Source-before-duplicate refusal order.
         let public = SourcePreparationGroup::for_public_sources(registry, public_sources, control)?;
         let mut index = BTreeMap::new();
-        let mut model_ownership_index = None;
         for (slot, registration) in registrations.iter().enumerate() {
             control.checkpoint().map_err(Denial::Execution)?;
-            if registration.model_ownership.is_some() {
-                model_ownership_index = Some(slot);
-            }
             let identity = registration.descriptor().identity.clone();
             let execution_point = registration.execution_point();
             if index
@@ -95,7 +91,6 @@ impl FrozenCustomInvariantRegistry {
         }
         let result = Self {
             points: Arc::new(points),
-            model_ownership_index,
             registrations: registrations.into(),
             source_groups: Arc::new(SourcePreparationInventory::new(groups, funding.clone())),
             source_postings: Arc::new(postings),

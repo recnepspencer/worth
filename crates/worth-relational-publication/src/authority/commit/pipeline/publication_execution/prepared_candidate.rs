@@ -16,16 +16,6 @@ impl PreparedCommitPublicationExecution {
     ) -> &std::sync::Arc<worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelope>{
         self.publication.value().canonical_envelope()
     }
-    pub(crate) fn owned_graph_selection_model(
-        &self,
-    ) -> Option<contracts::identity::data::record_ids::EntityId> {
-        self.admitted
-            .value()
-            .semantic_plan()
-            .graph_selection()
-            .map(|graph| graph.model())
-    }
-
     pub(crate) fn caller_association(
         &self,
     ) -> Option<worth_relational_branch::internal_port::history::data::caller_association::RelationalCallerAssociation>{

@@ -19,7 +19,6 @@ pub struct FrozenCustomInvariantRegistry {
     source_groups: Arc<SourcePreparationInventory>,
     source_postings: Arc<crate::validation::candidate_source::routing::SourceProgramPostings>,
     points: Arc<[Vec<usize>; InvariantExecutionPoint::COUNT]>,
-    model_ownership_index: Option<usize>,
     pub source_history:
         Arc<worth_relational_branch::internal_port::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog>,
     index_by_identity_and_execution_point: Arc<
@@ -40,16 +39,6 @@ impl FrozenCustomInvariantRegistry {
     }
 
     /// The exact tagged registration; no request-time applicability scan or parallel meaning.
-    pub fn model_ownership(
-        &self,
-    ) -> Option<(
-        &CustomInvariantRegistration,
-        &crate::branch::model_ownership::RelationalModelOwnership,
-    )> {
-        let registration = self.registrations.get(self.model_ownership_index?)?;
-        Some((registration, registration.model_ownership.as_deref()?))
-    }
-
     pub fn source_inventory(&self) -> Arc<SourcePreparationInventory> {
         self.source_groups.clone()
     }

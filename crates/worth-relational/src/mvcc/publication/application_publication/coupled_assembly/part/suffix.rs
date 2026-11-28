@@ -88,13 +88,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             custody,
             plan.plan(),
         )?;
-        let (_, mut state, _) = prepare_authoritative_working_state_scope_for_base(
-            &runtime,
-            root,
-            plan.plan(),
-            0,
-            None,
-        );
+        let (_, mut state, _) =
+            prepare_authoritative_working_state_scope_for_base(&runtime, root, plan.plan(), None);
         crate::aggregate_identity::guard::ordinary_plan(
             execution,
             runtime.commit_work_budget.as_ref(),

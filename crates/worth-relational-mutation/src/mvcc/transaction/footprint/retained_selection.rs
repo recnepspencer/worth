@@ -8,36 +8,6 @@ use crate::contracts::identity::data::record_ids::EntityId;
 use crate::contracts::transactions::data::primitives::RecordRef;
 
 impl RelationalTransactionFootprint {
-    pub(crate) fn record_owned_graph_selection(
-        &mut self,
-        targets: impl Iterator<Item = RecordRef> + Clone,
-        partitions: impl Iterator<Item = crate::contracts::identity::data::primitives::PartitionId>
-            + Clone,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<(), Denial> {
-        let reads = self.reads.with_inserted(
-            targets
-                .clone()
-                .map(|record| Ok(Read::Existing(record)))
-                .chain(
-                    partitions
-                        .clone()
-                        .map(|partition| Ok(Read::ValidationPartition(partition))),
-                ),
-            policy,
-        )?;
-        let writes = self.writes.with_inserted(
-            targets.clone().map(|record| Ok(Write::Existing(record))),
-            policy,
-        )?;
-        let partitions = self
-            .write_partitions
-            .with_inserted(partitions.map(Ok), policy)?;
-        self.reads = reads;
-        self.writes = writes;
-        self.write_partitions = partitions;
-        Ok(())
-    }
     pub(crate) fn record_retained_entity_selection(
         &mut self,
         entity: EntityId,
@@ -67,14 +37,6 @@ impl RelationalTransactionFootprint {
 
 #[doc(hidden)]
 pub trait RelationalTransactionFootprintOwnerPort: Sized {
-    fn record_owned_graph_selection(
-        &mut self,
-        targets: impl Iterator<Item = RecordRef> + Clone,
-        partitions: impl Iterator<Item = crate::contracts::identity::data::primitives::PartitionId>
-            + Clone,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<(), Denial>;
-
     fn record_retained_entity_selection(
         &mut self,
         entity: EntityId,
@@ -84,16 +46,6 @@ pub trait RelationalTransactionFootprintOwnerPort: Sized {
 }
 
 impl RelationalTransactionFootprintOwnerPort for RelationalTransactionFootprint {
-    fn record_owned_graph_selection(
-        &mut self,
-        targets: impl Iterator<Item = RecordRef> + Clone,
-        partitions: impl Iterator<Item = crate::contracts::identity::data::primitives::PartitionId>
-            + Clone,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<(), Denial> {
-        self.record_owned_graph_selection(targets, partitions, policy)
-    }
-
     fn record_retained_entity_selection(
         &mut self,
         entity: EntityId,

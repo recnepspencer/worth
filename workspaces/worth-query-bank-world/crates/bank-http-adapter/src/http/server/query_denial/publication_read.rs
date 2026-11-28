@@ -71,7 +71,6 @@ fn conflict(cause: ConflictClass) -> BankHttpDenial {
         | D::InvalidMergeParent { .. }
         | D::ForeignRuntime { .. }
         | D::TransactionSavepointIdentityExhausted
-        | D::MergeConflictOverlap { .. }
         | D::MissingMergeBase { .. }
         | D::UndeclaredSchemaTransition { .. }
         | D::DescriptorSemanticsVersionUnsupported { .. }

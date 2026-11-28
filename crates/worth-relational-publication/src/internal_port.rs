@@ -1,5 +1,4 @@
 pub mod authority;
-pub mod branch;
 pub mod durability;
 pub mod history;
 pub mod lineage;

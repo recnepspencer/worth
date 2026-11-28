@@ -1,6 +1,4 @@
 //! Canonical authored targets, independent of semantic-delta equality.
-use worth_relational_contracts::internal_port as contracts;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelectionOwnerPort as _;
 use super::*;
 use contracts::identity::data::record_ids::EntityId;
 use contracts::indexes::data::definition::DerivedIndexKind;
@@ -37,14 +35,6 @@ impl Projection<'_, '_, '_, '_, '_> {
         if let Some(selection) = plan.selection() {
             work(self.context, 1)?;
             self.record(selection.entity(), None)?;
-        }
-        if let Some(selection) = plan.graph_selection() {
-            for target in selection.targets() {
-                work(self.context, 1)?;
-                if let RecordRef::Entity(entity) = target {
-                    self.record(entity, None)?;
-                }
-            }
         }
         for intent in &plan.commands().merged_intents {
             work(self.context, 1)?;

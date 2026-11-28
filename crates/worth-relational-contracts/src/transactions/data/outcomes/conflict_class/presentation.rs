@@ -45,7 +45,6 @@ impl ConflictClass {
             | Self::TransactionSavepointIdentityExhausted
             | Self::MaterializationAuthorityRequired
             | Self::MaterializationModeMismatch => DiagnosticCode::PreparationFailure,
-            Self::MergeConflictOverlap { .. } => DiagnosticCode::MergeConflictOverlap,
             Self::MissingMergeBase { .. } => DiagnosticCode::MissingMergeBase,
             Self::UndeclaredSchemaTransition { .. }
             | Self::DescriptorSemanticsVersionUnsupported { .. }
@@ -78,7 +77,6 @@ impl ConflictClass {
             | Self::AspectDeltaFailure { detail, .. }
             | Self::InvalidMergeParent { detail }
             | Self::StaleValidationBasis { detail }
-            | Self::MergeConflictOverlap { detail }
             | Self::MissingMergeBase { detail }
             | Self::UnsupportedBridgeDescriptor { detail }
             | Self::HistoricalReinterpretationViolation { detail }

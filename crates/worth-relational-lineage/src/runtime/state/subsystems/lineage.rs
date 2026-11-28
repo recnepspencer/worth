@@ -14,7 +14,6 @@ pub mod event_page;
 pub mod event_residency;
 pub mod group_history;
 pub mod group_states;
-mod merge_guards;
 pub mod name_indexes;
 pub mod naming_basis;
 pub mod naming_basis_binding;

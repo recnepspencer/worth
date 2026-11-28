@@ -23,18 +23,14 @@ impl CommitStructuralSummary {
     pub(crate) fn derive(
         current_state: &impl CurrentPartitionAccess,
         merged_plan: &MergedCommitPlan,
-        merge_parent_count: usize,
     ) -> Self {
         let invariant_contract = merged_plan.invariant_contract();
-        let commit_topology = merged_plan.inferred_topology(merge_parent_count);
+        let commit_topology = merged_plan.inferred_topology();
         let touched_partitions = match commit_topology {
             CommitTopology::FlatEntityBatch if !merged_plan.revalidates_relations() => {
                 touched_partitions_for_flat_plan_set(merged_plan)
             }
-            CommitTopology::FlatEntityBatch => {
-                touched_partitions_for_plan_set(current_state, merged_plan)
-            }
-            CommitTopology::GraphMutation | CommitTopology::BranchMerge => {
+            CommitTopology::FlatEntityBatch | CommitTopology::GraphMutation => {
                 touched_partitions_for_plan_set(current_state, merged_plan)
             }
         };

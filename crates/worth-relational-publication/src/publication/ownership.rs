@@ -11,15 +11,13 @@ pub mod cold_pairing_court;
 pub mod locality_court;
 pub use locality_court::CurrentOwnershipLocalityObservation;
 pub mod completion;
-pub mod merge_custody;
 pub mod metadata_guard_court;
-pub mod selection_pairing;
 pub(crate) use completion::complete;
 pub use worth_relational_branch::internal_port::publication::ownership::evidence::PublicationEvidence;
 pub(crate) use worth_relational_branch::internal_port::publication::ownership::read::linked::selectors as linked_selectors;
 pub use worth_relational_branch::internal_port::publication::ownership::read::roster::CurrentPublicationRoster;
 pub(crate) use worth_relational_branch::internal_port::publication::ownership::read::{
-    read, read_candidate, read_selected,
+    read, read_selected,
 };
 
 pub(crate) fn select_current(

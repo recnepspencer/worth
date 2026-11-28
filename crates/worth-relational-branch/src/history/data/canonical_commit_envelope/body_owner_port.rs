@@ -80,9 +80,6 @@ pub trait CanonicalCommitEnvelopeBodyFieldsPort {
     fn owner_coupled_authored_publication(
         &self,
     ) -> &Option<Arc<CanonicalCoupledAuthoredPublication>>;
-    fn owner_historical_output_selection_mut(
-        &mut self,
-    ) -> &mut Option<Arc<CanonicalHistoricalOutputSelection>>;
     fn owner_historical_output_selection(&self)
         -> &Option<Arc<CanonicalHistoricalOutputSelection>>;
     fn owner_index_definition_delta(&self) -> &CanonicalIndexDefinitionDelta;
@@ -156,11 +153,6 @@ impl CanonicalCommitEnvelopeBodyFieldsPort for CanonicalCommitEnvelopeBody {
         &self,
     ) -> &Option<Arc<CanonicalCoupledAuthoredPublication>> {
         &self.coupled_authored_publication
-    }
-    fn owner_historical_output_selection_mut(
-        &mut self,
-    ) -> &mut Option<Arc<CanonicalHistoricalOutputSelection>> {
-        &mut self.historical_output_selection
     }
     fn owner_historical_output_selection(
         &self,

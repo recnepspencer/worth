@@ -206,9 +206,6 @@ pub enum ConflictClass {
     TransactionSavepointIdentityExhausted,
     MaterializationAuthorityRequired,
     MaterializationModeMismatch,
-    MergeConflictOverlap {
-        detail: String,
-    },
     MissingMergeBase {
         detail: String,
     },

@@ -6,7 +6,6 @@ use crate::publication::authority::diagnostic_emission::PreparationDiagnostics;
 use worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::IndexDefinitionReadBinding;
 use worth_relational_storage::internal_port::runtime::state::subsystems::storage::residency_demand::MirrorResidencyDemandBinding;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistry;
-use worth_relational_mutation::internal_port::validation::custom_registry::FrozenCustomInvariantRegistry;
 
 pub struct PublicationPhaseOwners<'a, Attach> {
     pub root: PublicationRootCapture<'a, Attach>,
@@ -14,7 +13,6 @@ pub struct PublicationPhaseOwners<'a, Attach> {
     pub diagnostics: PreparationDiagnostics<'a>,
     pub lineage: LineagePreparationAuthority<'a>,
     pub fallback_schema: &'a RelationalSchemaRegistry,
-    pub custom_invariants: &'a FrozenCustomInvariantRegistry,
     pub invariant_generation: u64,
     pub max_patch_records: Option<usize>,
     pub mirror: &'a MirrorResidencyDemandBinding,

@@ -41,7 +41,6 @@ impl RelationalPreparationRuntime {
             diagnostics: self.preparation_diagnostics(),
             lineage: self.lineage_preparation_authority(),
             fallback_schema: &self.config.schema.registry,
-            custom_invariants: &self.schema_contract_runtime.custom_invariant_registries,
             invariant_generation: self.schema_contract_runtime.custom_invariant_generation,
             max_patch_records: self.config.publication.policy.max_patch_records_per_commit,
             mirror: &self.mirror_residency,

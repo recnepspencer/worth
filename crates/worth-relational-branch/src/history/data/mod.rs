@@ -41,8 +41,6 @@ pub use required_output_positions::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::identity::data::{EntityId, RelationId};
-
 pub use aspect_history::{
     AspectHistoryCommitSpan, AspectHistoryDigest, AspectHistoryEntry,
     AspectHistoryLineageEventSpan, AspectHistoryOrigin, AspectHistoryQueryResult,

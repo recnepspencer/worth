@@ -26,12 +26,6 @@ pub struct InvariantPlanContract {
 }
 
 impl InvariantPlanContract {
-    pub fn owned_graph_selection() -> Self {
-        Self {
-            may_invalidate: InvariantGroupSet::all(),
-            must_rejudge: InvariantGroupSet::all(),
-        }
-    }
     pub fn retained_entity_selection() -> Self {
         Self {
             may_invalidate: InvariantGroupSet::of(InvariantGroup::IdentityCoherence)

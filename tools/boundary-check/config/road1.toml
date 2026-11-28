@@ -1532,3 +1532,24 @@ guidance = "Semantic Git Phase 0 retires the merge execution and inspection surf
 root = "crates"
 forbidden_identifiers = ["BridgeMergeError", "ArtifactMergeAuthority", "MergeSupportRebuildProof", "MergeAuthorityRejected"]
 guidance = "Signal and Bridge legacy branch merge are retired; use the current branch lifecycle and lineage surfaces"
+
+[[source_identifier_denials]]
+root = "crates"
+forbidden_identifiers = [
+  "model_ownership",
+  "observe_candidate_custody_reads",
+  "PreparedOwnedGraphSelection",
+  "RelationalCandidateCustodyReads",
+  "RelationalOwnedGraphCompanions",
+  "prepare_historical_output_selection",
+  "validate_consulted_owned_graph_selection",
+]
+forbidden_identifier_fragments = [
+  "RelationalModelOwnership",
+  "RelationalOwnedModel",
+  "RelationalOwnedGraphSelection",
+  "RelationalHistoricalOutputSelection",
+  "RelationalHistoricalSelectionRead",
+  "RelationalHistoricalSource",
+]
+guidance = "Live Native Relational model ownership and history selection are retired. Canonical selection records remain readable for replay."
