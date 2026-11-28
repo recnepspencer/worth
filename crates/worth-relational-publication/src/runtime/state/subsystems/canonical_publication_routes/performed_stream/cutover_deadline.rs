@@ -44,12 +44,23 @@ pub(super) fn prepare_frame<'a, 'b>(
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use std::{sync::Arc, time::Duration};
+    use worth_execution::time::{ControlledTime, TimeSampler};
+
+    #[test]
+    fn reboot_expires_a_live_cutover_deadline() {
+        let clock = Arc::new(ControlledTime::at_unix_secs(0));
+        let sampler = TimeSampler::new(clock.clone());
+        let deadline = RelationalCutoverDeadline::after(&sampler, Duration::from_secs(1));
+
+        assert!(!deadline.is_elapsed());
+        clock.reboot_epoch();
+        assert!(deadline.is_elapsed());
+    }
+
     #[test]
     fn frame_preparation_rechecks_deadline_before_position_admission() {
         let prepared = std::cell::Cell::new(false);
-        use std::{sync::Arc, time::Duration};
-        use worth_execution::time::{ControlledTime, TimeSampler};
-
         let clock = Arc::new(ControlledTime::at_unix_secs(0));
         let sampler = TimeSampler::new(clock.clone());
         let deadline = RelationalCutoverDeadline::after(&sampler, Duration::from_secs(1));

@@ -127,10 +127,12 @@ display_error!(ConflictClass, cause => &cause.detail(); cause => match cause {
     ConflictClass::ContentAdmission { denial } => Some(denial),
     ConflictClass::ExecutionAllocationDenied { denial } => Some(denial),
     ConflictClass::InvariantViolation { fields: crate::validation::data::results::InvariantViolationFields::CustomInvariantViolation { refusal, .. }, .. } => Some(refusal),
+    ConflictClass::InvariantViolation { fields: crate::validation::data::results::InvariantViolationFields::CustomInvariantFailure { cause: Some(cause), .. }, .. } => Some(cause.as_ref()),
     _ => None,
 });
 
-display_error!(CommitPreparationError, error => &error.detail(); _error => None);
+display_error!(CommitPreparationError, error => &error.detail(); error =>
+    error.storage_unavailable().map(|cause| cause as &dyn Error));
 display_error!(RelationalPublicationDeferred, _error => "Publication was deferred."; _error => None);
 display_error!(RelationalPublicationFailure, error => error.detail(); error => match error.kind() {
     RelationalPublicationFailureKind::PreparedBasisDescriptor(cause)

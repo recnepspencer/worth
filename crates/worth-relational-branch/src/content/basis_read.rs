@@ -21,13 +21,17 @@ impl AdmittedRelationalBranchBasis {
 }
 
 impl VisibilityProjectionView {
-    /// Read a content identity through the selected root and its installed codec.
+    /// Read a content identity through an exact root and its installed codec.
+    /// Historical projections do not carry an exact content directory.
     pub fn read_content(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         identity: ContentRefId,
         format: CanonicalDigestId,
     ) -> Result<RelationalContentFrame, Denial> {
+        if !self.is_exact_basis() {
+            return Err(Denial::HistoryNotResident);
+        }
         let root = self.selected_root().ok_or(Denial::MissingContent)?;
         read_root_content(root, execution, identity, format)
     }

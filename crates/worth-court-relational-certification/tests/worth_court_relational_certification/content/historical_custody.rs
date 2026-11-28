@@ -88,6 +88,17 @@ fn content_original_field_custody_restores_after_current_root_collects_the_ident
             .unwrap_err(),
         RelationalContentDenial::MissingContent
     );
+    assert!(current.read_content(&execution, current_id, FORMAT).is_ok());
+    let historical = runtime
+        .read_truth()
+        .try_project_historical_version(committed.version_id)
+        .unwrap();
+    assert_eq!(
+        historical
+            .read_content(&execution, current_id, FORMAT)
+            .unwrap_err(),
+        RelationalContentDenial::HistoryNotResident
+    );
     assert_eq!(
         pin.read_content(&execution, old_id, FORMAT)
             .unwrap()

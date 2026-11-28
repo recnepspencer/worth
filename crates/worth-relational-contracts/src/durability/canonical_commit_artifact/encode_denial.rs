@@ -75,6 +75,7 @@ impl std::error::Error for RelationalCanonicalCommitArtifactEncodeDenial {
         match self {
             Self::Allocation(denial) => Some(denial),
             Self::Readmission(cause) => Some(cause),
+            Self::Frame(cause) => Some(cause),
             Self::Request(cause) => Some(cause),
             Self::StorageUnavailable(cause) => Some(cause),
             _ => None,
