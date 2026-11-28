@@ -1,6 +1,9 @@
 //! Version-first integrity framing for Native's initialization artifact.
 use sha2::{Digest, Sha256};
-use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
+use worth_execution::{
+    decode_framed_envelope, encode_framed_bytes, ExecutionImmutableBytes, ExecutionRequest,
+    FramedEnvelopeError, FramedEnvelopeSpec, FRAMED_ENVELOPE_HEADER_BYTES,
+};
 use worth_foundational::facade::{
     BoundaryProtocolCompatibilityWindow, BoundaryProtocolIdentity,
     BoundaryProtocolUnsupportedVersion, BoundaryProtocolVersion,
@@ -11,15 +14,19 @@ pub const PROTOCOL: BoundaryProtocolIdentity =
     BoundaryProtocolIdentity::new("worth.relational.source.initial-inputs");
 // Current original-input commitments bind canonical artifact v8. Older carriers
 // are refused before their commitment DATA is decoded or used.
-pub const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(2);
+pub const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(3);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalInitialInputsPublicationDetail {
     UnsupportedProvider,
     Request(contracts::execution::denial_cause::RelationalExecutionDenialCause),
     Physical(String),
 }
-const MAGIC: &[u8; 8] = b"WRTHRSI1";
-const HEADER: usize = 60;
+const HEADER: usize = FRAMED_ENVELOPE_HEADER_BYTES + 8;
+const SPEC: FramedEnvelopeSpec = FramedEnvelopeSpec {
+    magic: *b"WRTHRSI1",
+    supported_versions: &[VERSION.get()],
+    max_payload_bytes: (isize::MAX as usize - FRAMED_ENVELOPE_HEADER_BYTES) as u64,
+};
 
 #[derive(Debug)]
 pub enum RelationalInitialInputsRefusal {
@@ -53,40 +60,16 @@ impl RelationalSourceInitialInputsArtifact {
             request,
         )
         .map_err(Refusal::Native)?;
-        let digest = digest(payload.bytes(), request)?;
-        let length = HEADER
-            .checked_add(payload.len())
-            .ok_or(Refusal::Malformed)?;
-        let mut bytes =
-            ExecutionRequestArrayBuilder::allocate(*request, length).map_err(|cause| {
-                Refusal::Native(
-                    contracts::durability::data::native_checkpoint_capture_denial::array_capture_stop(cause)
-                        .into(),
-                )
-            })?;
-        for chunk in [
-            MAGIC.as_slice(),
-            VERSION.get().to_le_bytes().as_slice(),
-            revision.to_le_bytes().as_slice(),
-            (payload.len() as u64).to_le_bytes().as_slice(),
-            digest.as_slice(),
-            payload.bytes(),
-        ] {
-            bytes.extend_from_slice(chunk).map_err(|cause| {
-                Refusal::Native(
-                    contracts::durability::data::native_checkpoint_capture_denial::array_capture_stop(cause)
-                        .into(),
-                )
-            })?;
-        }
-        let bytes = bytes.seal_immutable_bytes().map_err(|cause| {
-            Refusal::Native(
-                contracts::durability::data::native_checkpoint_capture_denial::array_capture_stop(
-                    cause,
-                )
-                .into(),
-            )
-        })?;
+        let bytes = encode_framed_bytes(
+            SPEC,
+            VERSION.get(),
+            request,
+            |sink| {
+                sink(&revision.to_le_bytes())?;
+                sink(payload.bytes())
+            },
+            backing_refusal,
+        )?;
         Self::from_owned(bytes, request)
     }
     pub(crate) fn from_owned(
@@ -103,43 +86,15 @@ impl RelationalSourceInitialInputsArtifact {
     ) -> Result<Self, RelationalInitialInputsRefusal> {
         use RelationalInitialInputsRefusal as Refusal;
         let raw = bytes.get(region.clone()).ok_or(Refusal::Malformed)?;
-        if raw.get(..8) != Some(MAGIC.as_slice()) {
+        let (_, payload) = decode_framed_envelope(SPEC, raw, request)?;
+        let (revision_bytes, payload) = payload.split_at_checked(8).ok_or(Refusal::Malformed)?;
+        let revision = u64::from_le_bytes(revision_bytes.try_into().unwrap());
+        if revision == 0 {
             return Err(Refusal::Malformed);
         }
-        let version = BoundaryProtocolVersion::try_new(u32::from_le_bytes(
-            raw.get(8..12)
-                .ok_or(Refusal::Malformed)?
-                .try_into()
-                .map_err(|_| Refusal::Malformed)?,
-        ))
-        .map_err(|_| Refusal::Malformed)?;
-        BoundaryProtocolCompatibilityWindow::inclusive(VERSION, VERSION)
-            .admit(version)
-            .map_err(Refusal::UnsupportedVersion)?;
-        let revision = u64::from_le_bytes(
-            raw.get(12..20)
-                .ok_or(Refusal::Malformed)?
-                .try_into()
-                .map_err(|_| Refusal::Malformed)?,
-        );
-        let length = u64::from_le_bytes(
-            raw.get(20..28)
-                .ok_or(Refusal::Malformed)?
-                .try_into()
-                .map_err(|_| Refusal::Malformed)?,
-        );
-        let digest: [u8; 32] = raw
-            .get(28..HEADER)
-            .ok_or(Refusal::Malformed)?
-            .try_into()
-            .map_err(|_| Refusal::Malformed)?;
-        let payload = raw.get(HEADER..).ok_or(Refusal::Malformed)?;
-        if revision == 0
-            || length != payload.len() as u64
-            || digest != self::digest(payload, request)?
-        {
-            return Err(Refusal::Malformed);
-        }
+        // The source predecessor coordinate still identifies the original
+        // input payload independently of its revision and wire envelope.
+        let digest = digest(payload, request)?;
         Ok(Self {
             bytes,
             region,
@@ -173,4 +128,40 @@ fn digest(
         digest.update(chunk);
     }
     Ok(digest.finalize().into())
+}
+
+impl From<FramedEnvelopeError> for RelationalInitialInputsRefusal {
+    fn from(error: FramedEnvelopeError) -> Self {
+        frame_refusal(error, VERSION)
+    }
+}
+
+pub(super) fn frame_refusal(
+    error: FramedEnvelopeError,
+    version: BoundaryProtocolVersion,
+) -> RelationalInitialInputsRefusal {
+    use RelationalInitialInputsRefusal as Refusal;
+    match error {
+        FramedEnvelopeError::Execution(cause) => Refusal::Request(cause.into()),
+        FramedEnvelopeError::UnsupportedVersion { found } => {
+            BoundaryProtocolVersion::try_new(found)
+                .ok()
+                .and_then(|found| {
+                    BoundaryProtocolCompatibilityWindow::inclusive(version, version)
+                        .admit(found)
+                        .err()
+                })
+                .map_or(Refusal::Malformed, Refusal::UnsupportedVersion)
+        }
+        _ => Refusal::Malformed,
+    }
+}
+
+pub(super) fn backing_refusal(
+    cause: worth_execution::ExecutionRequestArrayDenial,
+) -> RelationalInitialInputsRefusal {
+    RelationalInitialInputsRefusal::Native(
+        contracts::durability::data::native_checkpoint_capture_denial::array_capture_stop(cause)
+            .into(),
+    )
 }

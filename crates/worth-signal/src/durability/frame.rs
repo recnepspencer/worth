@@ -1,7 +1,11 @@
 //! Versioned Signal owner envelopes, independent of snapshots and derived state.
 use super::SignalAuthoredImageDenial;
 use sha2::{Digest, Sha256};
-use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
+use worth_execution::{
+    charge_framed_bytes, encode_framed_array, inspect_framed_envelope, write_framed_envelope,
+    ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder, FramedEnvelopeError,
+    FramedEnvelopeSpec, FRAMED_ENVELOPE_HEADER_BYTES,
+};
 use worth_foundational::facade::{
     BoundaryProtocolCompatibilityWindow, BoundaryProtocolIdentity, BoundaryProtocolVersion,
 };
@@ -9,10 +13,16 @@ mod fields;
 pub(super) use fields::{AssociationFields, Reader, Writer};
 pub const SIGNAL_OWNER_FRAME_PROTOCOL: BoundaryProtocolIdentity =
     BoundaryProtocolIdentity::new("worth.signal.owner-frame");
-pub const SIGNAL_OWNER_FRAME_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(1);
-pub(super) const HEADER: usize = 56;
+pub const SIGNAL_OWNER_FRAME_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(2);
+pub(super) const HEADER: usize = FRAMED_ENVELOPE_HEADER_BYTES + 4;
 pub const SIGNAL_OWNER_FRAME_MAXIMUM_BYTES: usize = 96 << 20;
-const MAGIC: &[u8; 8] = b"WSIGOWNR";
+fn spec(maximum: usize) -> FramedEnvelopeSpec {
+    FramedEnvelopeSpec {
+        magic: *b"WSIGOWNR",
+        supported_versions: const { &[SIGNAL_OWNER_FRAME_VERSION.get()] },
+        max_payload_bytes: maximum.saturating_sub(FRAMED_ENVELOPE_HEADER_BYTES) as u64,
+    }
+}
 
 /// Bind transient owner meaning with the same field grammar, without an artifact.
 pub(super) fn commitment(
@@ -31,7 +41,8 @@ pub(super) fn commitment(
     admit_work(execution, size.saturating_mul(2))?;
     let mut hash = Sha256::new();
     hash.update(domain);
-    hash.update(SIGNAL_OWNER_FRAME_VERSION.get().to_le_bytes());
+    // Transient commitments retain their original field grammar and version.
+    hash.update(1u32.to_le_bytes());
     emit(&mut Writer::new(&mut |bytes| {
         hash.update(bytes);
         Ok(())
@@ -65,64 +76,42 @@ pub(super) fn encode_bounded(
     maximum: usize,
     emit: &mut dyn FnMut(&mut Writer<'_>) -> Result<(), SignalDurableFrameDenial>,
 ) -> Result<ExecutionImmutableBytes, SignalDurableFrameDenial> {
-    use SignalDurableFrameDenial as D;
-    let header = framing(kind, maximum, execution, emit)?;
-    let size = u64::from_le_bytes(header[16..24].try_into().unwrap()) as usize;
-    let mut out =
-        ExecutionRequestArrayBuilder::allocate(*execution, HEADER + size).map_err(D::Backing)?;
-    out.extend_from_slice(&header).map_err(D::Backing)?;
-    emit(&mut Writer::new(&mut |bytes| {
-        out.extend_from_slice(bytes).map_err(D::Backing)
-    }))?;
-    Ok(out.seal().map_err(D::Backing)?.into_immutable_bytes())
+    encode_framed_array(
+        spec(maximum),
+        SIGNAL_OWNER_FRAME_VERSION.get(),
+        execution,
+        |sink| {
+            sink(&kind.to_le_bytes())?;
+            emit(&mut Writer::new(sink))
+        },
+        SignalDurableFrameDenial::Backing,
+    )
+    .map(|array| array.into_immutable_bytes())
 }
 
-/// Emit the same owner frame into another owner's admitted transport without
-/// allocating a second byte buffer or exposing Signal's field grammar.
+/// Emit the frame into another owner's admitted transport without another buffer.
 pub(super) fn write(
     kind: u32,
     execution: &ExecutionRequest<'_, '_>,
     emit: &mut dyn FnMut(&mut Writer<'_>) -> Result<(), SignalDurableFrameDenial>,
     sink: &mut dyn FnMut(&[u8]) -> Result<(), SignalDurableFrameDenial>,
 ) -> Result<(), SignalDurableFrameDenial> {
-    let header = framing(kind, SIGNAL_OWNER_FRAME_MAXIMUM_BYTES, execution, emit)?;
-    sink(&header)?;
-    emit(&mut Writer::new(sink))
-}
-
-fn framing(
-    kind: u32,
-    maximum: usize,
-    execution: &ExecutionRequest<'_, '_>,
-    emit: &mut dyn FnMut(&mut Writer<'_>) -> Result<(), SignalDurableFrameDenial>,
-) -> Result<[u8; HEADER], SignalDurableFrameDenial> {
-    let mut size = 0usize;
-    emit(&mut Writer::new(&mut |bytes| {
-        size = size
-            .checked_add(bytes.len())
-            .filter(|n| *n <= maximum.saturating_sub(HEADER))
-            .ok_or(SignalDurableFrameDenial::SizeLimit)?;
-        Ok(())
-    }))?;
-    admit_work_bounded(execution, size.saturating_mul(3), maximum)?;
-    let mut header = [0u8; HEADER];
-    header[..8].copy_from_slice(MAGIC);
-    header[8..12].copy_from_slice(&SIGNAL_OWNER_FRAME_VERSION.get().to_le_bytes());
-    header[12..16].copy_from_slice(&kind.to_le_bytes());
-    header[16..24].copy_from_slice(&(size as u64).to_le_bytes());
-    let mut checksum = Sha256::new();
-    checksum.update(&header[8..24]);
-    emit(&mut Writer::new(&mut |bytes| {
-        checksum.update(bytes);
-        Ok(())
-    }))?;
-    header[24..].copy_from_slice(&checksum.finalize());
-    Ok(header)
+    write_framed_envelope(
+        spec(SIGNAL_OWNER_FRAME_MAXIMUM_BYTES),
+        SIGNAL_OWNER_FRAME_VERSION.get(),
+        execution,
+        |sink| {
+            sink(&kind.to_le_bytes())?;
+            emit(&mut Writer::new(sink))
+        },
+        sink,
+    )
 }
 
 pub(super) fn payload(bytes: &[u8], kind: u32) -> Result<Reader<'_>, SignalDurableFrameDenial> {
     payload_bounded(bytes, kind, SIGNAL_OWNER_FRAME_MAXIMUM_BYTES)
 }
+
 pub(super) fn payload_bounded(
     bytes: &[u8],
     kind: u32,
@@ -132,31 +121,35 @@ pub(super) fn payload_bounded(
     if bytes.len() > maximum {
         return Err(D::SizeLimit);
     }
-    if bytes.len() < HEADER || &bytes[..8] != MAGIC {
+    let (_, payload) = inspect_framed_envelope(spec(maximum), bytes, |_| Ok::<_, D>(()))?;
+    let (recorded, payload) = payload.split_at_checked(4).ok_or(D::Malformed)?;
+    if recorded != kind.to_le_bytes() {
         return Err(D::Malformed);
     }
-    let version =
-        BoundaryProtocolVersion::try_new(u32::from_le_bytes(bytes[8..12].try_into().unwrap()))
-            .map_err(|_| D::Malformed)?;
-    BoundaryProtocolCompatibilityWindow::inclusive(
-        SIGNAL_OWNER_FRAME_VERSION,
-        SIGNAL_OWNER_FRAME_VERSION,
-    )
-    .admit(version)
-    .map_err(D::UnsupportedVersion)?;
-    if u32::from_le_bytes(bytes[12..16].try_into().unwrap()) != kind
-        || u64::from_le_bytes(bytes[16..24].try_into().unwrap()) != (bytes.len() - HEADER) as u64
-    {
-        return Err(D::Malformed);
+    Ok(Reader::new(payload))
+}
+
+impl From<FramedEnvelopeError> for SignalDurableFrameDenial {
+    fn from(error: FramedEnvelopeError) -> Self {
+        use FramedEnvelopeError as Error;
+        match error {
+            Error::Execution(cause) => Self::Request(cause),
+            Error::ChecksumMismatch => Self::ChecksumMismatch,
+            Error::PayloadTooLarge { .. } | Error::Allocation => Self::SizeLimit,
+            Error::UnsupportedVersion { found } => BoundaryProtocolVersion::try_new(found)
+                .ok()
+                .and_then(|found| {
+                    BoundaryProtocolCompatibilityWindow::inclusive(
+                        SIGNAL_OWNER_FRAME_VERSION,
+                        SIGNAL_OWNER_FRAME_VERSION,
+                    )
+                    .admit(found)
+                    .err()
+                })
+                .map_or(Self::Malformed, Self::UnsupportedVersion),
+            _ => Self::Malformed,
+        }
     }
-    let mut hash = Sha256::new();
-    hash.update(&bytes[8..24]);
-    hash.update(&bytes[HEADER..]);
-    let digest: [u8; 32] = hash.finalize().into();
-    if digest.as_slice() != &bytes[24..56] {
-        return Err(D::ChecksumMismatch);
-    }
-    Ok(Reader::new(&bytes[HEADER..]))
 }
 pub(super) fn copy_bytes(
     execution: &ExecutionRequest<'_, '_>,
@@ -185,17 +178,5 @@ pub(super) fn admit_work_bounded(
     if size > maximum.saturating_mul(3) {
         return Err(SignalDurableFrameDenial::SizeLimit);
     }
-    execution
-        .run_native_with_checkpoint(|context| {
-            if context.has_accounting() {
-                context.checkpoint(size as u64)
-            } else {
-                context.poll()
-            }
-        })
-        .map_err(SignalDurableFrameDenial::Request)?
-        .0
-        .map_err(|cause| {
-            SignalDurableFrameDenial::Request(worth_execution::WorkCeilingDenial::Stopped(cause))
-        })
+    charge_framed_bytes(execution, size).map_err(SignalDurableFrameDenial::Request)
 }

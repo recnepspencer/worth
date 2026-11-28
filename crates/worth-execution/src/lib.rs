@@ -97,3 +97,19 @@ pub use backend::{ExecutionScopeSetupCountsForTest, ExecutionScopeSetupObservati
 
 #[cfg(test)]
 pub(crate) use authority::ExecutionAllocationDenialKind;
+
+mod framing;
+pub use framing::{
+    charge_framed_bytes, decode_framed_envelope, encode_framed_array, encode_framed_bytes,
+    encode_framed_envelope, fill_admitted_framed_buffer, inspect_framed_envelope,
+    write_framed_envelope, FramedEnvelopeError, FramedEnvelopeSpec, FRAMED_ENVELOPE_HEADER_BYTES,
+};
+
+/// The original execution request's admission or in-flight stop.
+pub type ExecutionStop = WorkCeilingDenial;
+
+mod cooperative_retirement;
+pub use cooperative_retirement::{
+    drain_cooperative_retirement, try_lock_retirement, CooperativeRetireTask,
+    CooperativeRetirementLockDenial, CooperativeRetirementState, CooperativeStep,
+};

@@ -1,9 +1,9 @@
 //! Cryptographic verification and deterministic hashing of the non-`WRTHRCS1`
 //! continuation-relevant checkpoint sections inside `WAPHCKP1` v3:
 //! - `WSRCAI01` child 1: `WRTHCAI1` v1 (Relational admission image)
-//! - `WSRCAI01` child 2: `WRWMREG1` v1 (World admission companion)
+//! - `WSRCAI01` child 2: `WRWMREG1` v2 (World admission companion)
 //! - `WAPHCKP1` section 1: `WWRLDCP1` (World checkpoint section)
-//! - `WAPHCKP1` section 2: `WSIGOWNR` v1 kind 5 (Signal checkpoint section)
+//! - `WAPHCKP1` section 2: `WSIGOWNR` v2 kind 5 (Signal checkpoint section)
 //!
 //! Any malformed framing, checksum mismatch, cross-section binding drift, or
 //! non-empty World table fails closed (`None`) so World continuation runs.

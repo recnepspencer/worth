@@ -136,30 +136,32 @@ fn parse_wsrcai01(native: &[u8]) -> Option<([u8; 80], Wsrcai01Bindings<'_>, &[u8
 }
 
 fn parse_wrthrcs1_checkpoint(source: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
-    const HEADER: usize = 84;
-    if source.len() < HEADER || &source[..8] != b"WRTHRCS1" {
-        return None;
-    }
-    if u32::from_le_bytes(source[8..12].try_into().ok()?) != 2 {
-        return None;
-    }
-    let cp_end = HEADER.checked_add(u64_le(source, 28)?)?;
-    let init_end = cp_end.checked_add(u64_le(source, 36)?)?;
-    let end = init_end.checked_add(u64_le(source, 44)?)?;
-    if end != source.len() {
-        return None;
-    }
-    let mut digest = Sha256::new();
-    digest.update(&source[..52]);
-    digest.update(&source[HEADER..end]);
-    if digest.finalize().as_slice() != &source[52..84] {
+    const METADATA: usize = 40;
+    let payload = verify_frame(source, b"WRTHRCS1", 3)?;
+    let cp_end = METADATA.checked_add(u64_le(payload, 16)?)?;
+    let init_end = cp_end.checked_add(u64_le(payload, 24)?)?;
+    let end = init_end.checked_add(u64_le(payload, 32)?)?;
+    if end != payload.len() {
         return None;
     }
     Some((
-        &source[12..28],
-        &source[HEADER..cp_end],
-        &source[cp_end..end],
+        &payload[..16],
+        &payload[METADATA..cp_end],
+        &payload[cp_end..end],
     ))
+}
+
+// Independent wire oracle for the three migrated chapter formats.
+pub(super) fn verify_frame<'a>(bytes: &'a [u8], magic: &[u8; 8], version: u32) -> Option<&'a [u8]> {
+    let payload = bytes.get(52..)?;
+    if &bytes[..8] != magic
+        || bytes[8..12] != version.to_le_bytes()
+        || u64_le(bytes, 12)? != payload.len()
+        || bytes[20..52] != Sha256::digest(payload)[..]
+    {
+        return None;
+    }
+    Some(payload)
 }
 
 pub(super) fn hash_normalized_relational_bytes(cp: &[u8], hasher: &mut Sha256) -> Option<usize> {
@@ -265,29 +267,22 @@ fn msgpack_uint_len(bytes: &[u8]) -> Option<usize> {
 }
 
 fn verify_wrwmreg1(companion: &[u8], b: &Wsrcai01Bindings<'_>) -> Option<()> {
-    const PAYLOAD: usize = 229;
-    if companion.len() != PAYLOAD + 32 || &companion[..8] != b"WRWMREG1" {
-        return None;
-    }
-    if u32::from_le_bytes(companion[8..12].try_into().ok()?) != 1 || companion[12] != 1 {
-        return None;
-    }
-    if &companion[13..29] != b.home
-        || &companion[29..37] != b.covered
-        || &companion[37..45] != b.covered_transitions
-        || &companion[45..77] != b.checkpoint_digest
-        || &companion[77..109] != b.native_origin
-        || &companion[109..141] != b.source_digest
-        || &companion[141..165] != b.world_through
-        || &companion[165..197] != b.world_image_digest
-        || &companion[197..229] != b.image_digest
+    let companion = verify_frame(companion, b"WRWMREG1", 2)?;
+    if companion.len() != 217
+        || companion[0] != 1
+        || &companion[1..17] != b.home
+        || &companion[17..25] != b.covered
+        || &companion[25..33] != b.covered_transitions
+        || &companion[33..65] != b.checkpoint_digest
+        || &companion[65..97] != b.native_origin
+        || &companion[97..129] != b.source_digest
+        || &companion[129..153] != b.world_through
+        || &companion[153..185] != b.world_image_digest
+        || &companion[185..217] != b.image_digest
     {
         return None;
     }
-    let mut h = Sha256::new();
-    h.update(b"worth.world.receipt-registry.home.v1\0");
-    h.update(&companion[..PAYLOAD]);
-    (h.finalize().as_slice() == &companion[PAYLOAD..]).then_some(())
+    Some(())
 }
 
 pub(crate) fn encode_canonical_home_cut(b: &Wsrcai01Bindings<'_>) -> Vec<u8> {

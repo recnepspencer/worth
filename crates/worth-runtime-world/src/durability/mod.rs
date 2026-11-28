@@ -4,6 +4,7 @@ mod association;
 mod binding;
 mod checkpoint;
 mod codec;
+mod framed_denial;
 pub(crate) use checkpoint::PreparedCheckpointOccurrence;
 pub(crate) use checkpoint::WorldCheckpointImage;
 #[cfg(test)]

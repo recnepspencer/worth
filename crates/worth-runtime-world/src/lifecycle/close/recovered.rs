@@ -158,12 +158,10 @@ impl OriginalRecoveredClose {
         request: &ExecutionRequest<'_, '_>,
         native_owner: &worth_relational::facade::runtime::RelationalRuntime,
     ) -> Result<bool, Denial> {
-        if let Some(native) = self.native.take() {
-            let (native, progress) = native.advance(request, native_owner);
-            self.native = Some(native);
-            if !progress? {
-                return Ok(false);
-            }
+        if let Some(native) = &mut self.native
+            && !native.advance(request, native_owner)?
+        {
+            return Ok(false);
         }
         // Release the actual recovered Signal loan while its owner is still
         // present, before the surrounding Home advances Signal retirement.
@@ -225,7 +223,7 @@ pub(in crate::lifecycle) fn retire(
 ) -> Result<(), Denial> {
     // This try-only task guard serializes its own progress. No World catalog,
     // lifecycle or branch lock spans the concrete nonwaiting Native protocol.
-    let mut progress = task.try_lock().map_err(|_| Denial::Busy)?;
+    let mut progress = worth_execution::try_lock_retirement(task).map_err(|_| Denial::Busy)?;
     loop {
         checkpoint_close_step(request, 1)?;
         if progress.pending_recovered.is_none() {

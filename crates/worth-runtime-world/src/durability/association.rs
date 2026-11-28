@@ -30,7 +30,7 @@ pub(crate) fn decode_association(
     } else {
         bytes
     };
-    let payload = super::codec::payload(bytes, MAGIC)?;
+    let payload = super::codec::association_payload(bytes, MAGIC)?;
     let mut read = super::codec::Read::new(payload, home);
     let association = read.association()?;
     read.finished()?;

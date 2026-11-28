@@ -15,67 +15,43 @@ use super::artifact::WORLD_ARTIFACT_VERSION;
 use super::{WorldDurableFrameDenial as Denial, WorldDurableMediumDenial, WorldRecord};
 use fields::*;
 pub(super) use fields::{association as write_association, Read};
-use sha2::{Digest, Sha256};
-use worth_execution::{ExecutionArray, ExecutionRequest, ExecutionRequestArrayBuilder};
-use worth_foundational::facade::{
-    BoundaryProtocolCompatibilityWindow, BoundaryProtocolVersion, HomeIdentity, HomeIncarnation,
+use worth_execution::{
+    decode_framed_envelope, encode_framed_array, inspect_framed_envelope, ExecutionArray,
+    ExecutionRequest, FramedEnvelopeSpec, FRAMED_ENVELOPE_HEADER_BYTES,
 };
+use worth_foundational::facade::{HomeIdentity, HomeIncarnation};
+
 const MAGIC: &[u8; 8] = b"WWRLDART";
-const HEADER: usize = 52;
 const MAXIMUM: usize = 64 << 10;
+const fn spec(magic: &[u8; 8]) -> FramedEnvelopeSpec {
+    FramedEnvelopeSpec {
+        magic: *magic,
+        supported_versions: const { &[WORLD_ARTIFACT_VERSION.get()] },
+        max_payload_bytes: (MAXIMUM - FRAMED_ENVELOPE_HEADER_BYTES) as u64,
+    }
+}
+
 pub(crate) fn encode(
     record: &WorldRecord,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionArray<u8>, WorldDurableMediumDenial> {
     encode_payload(MAGIC, execution, &mut |out| write_record(record, out))
 }
+
 pub(super) fn encode_payload(
     magic: &[u8; 8],
     execution: &ExecutionRequest<'_, '_>,
     payload: &mut dyn FnMut(&mut Emit<'_>) -> Result<(), Denial>,
 ) -> Result<ExecutionArray<u8>, WorldDurableMediumDenial> {
-    let mut digest = Sha256::new();
-    let mut size = 0usize;
-    payload(&mut |bytes| {
-        size = size
-            .checked_add(bytes.len())
-            .filter(|size| *size <= MAXIMUM - HEADER)
-            .ok_or(Denial::SizeLimit)?;
-        digest.update(bytes);
-        Ok(())
-    })
-    .map_err(WorldDurableMediumDenial::Frame)?;
-    let digest: [u8; 32] = digest.finalize().into();
-    let mut builder = ExecutionRequestArrayBuilder::allocate(*execution, HEADER + size)
-        .map_err(WorldDurableMediumDenial::Backing)?;
-    for bytes in [
-        magic.as_slice(),
-        WORLD_ARTIFACT_VERSION.get().to_le_bytes().as_slice(),
-        (size as u64).to_le_bytes().as_slice(),
-        digest.as_slice(),
-    ] {
-        for byte in bytes {
-            builder
-                .push(*byte)
-                .map_err(WorldDurableMediumDenial::Backing)?;
-        }
-    }
-    let mut stopped = None;
-    payload(&mut |bytes| {
-        for byte in bytes {
-            if let Err(stop) = builder.push(*byte) {
-                stopped = Some(stop);
-                return Err(Denial::Malformed);
-            }
-        }
-        Ok(())
-    })
-    .map_err(|denial| match stopped {
-        Some(stop) => WorldDurableMediumDenial::Backing(stop),
-        None => WorldDurableMediumDenial::Frame(denial),
-    })?;
-    builder.seal().map_err(WorldDurableMediumDenial::Backing)
+    encode_framed_array(
+        spec(magic),
+        WORLD_ARTIFACT_VERSION.get(),
+        execution,
+        |sink| super::framed_denial::forward_payload(payload, sink),
+        WorldDurableMediumDenial::Backing,
+    )
 }
+
 pub(crate) fn decode(
     bytes: &[u8],
     home: HomeIdentity,
@@ -84,22 +60,10 @@ pub(crate) fn decode(
     if bytes.len() > MAXIMUM {
         return Err(Denial::SizeLimit.into());
     }
-    execution
-        .run_native_with_checkpoint(|context| {
-            if context.has_accounting() {
-                context.checkpoint(bytes.len() as u64)
-            } else {
-                context.poll()
-            }
-        })
-        .map_err(WorldDurableMediumDenial::Request)?
-        .0
-        .map_err(|cause| {
-            WorldDurableMediumDenial::Request(worth_execution::WorkCeilingDenial::Stopped(cause))
-        })?;
-    let payload = payload(bytes, MAGIC)?;
+    let (_, payload) = decode_framed_envelope(spec(MAGIC), bytes, execution)?;
     decoded::admit(payload, home, execution)
 }
+
 fn decode_record(
     payload: &[u8],
     home: HomeIdentity,
@@ -210,28 +174,17 @@ fn decode_record(
     read.finished()?;
     Ok(record)
 }
-pub(super) fn payload<'a>(bytes: &'a [u8], magic: &[u8; 8]) -> Result<&'a [u8], Denial> {
-    if bytes.len() < HEADER || bytes.len() > MAXIMUM || &bytes[..8] != magic {
-        return Err(Denial::Malformed);
-    }
-    let version = BoundaryProtocolVersion::try_new(u32::from_le_bytes(
-        bytes[8..12].try_into().map_err(|_| Denial::Malformed)?,
-    ))
-    .map_err(|_| Denial::Malformed)?;
-    BoundaryProtocolCompatibilityWindow::inclusive(WORLD_ARTIFACT_VERSION, WORLD_ARTIFACT_VERSION)
-        .admit(version)
-        .map_err(Denial::UnsupportedVersion)?;
-    let size = u64::from_le_bytes(bytes[12..20].try_into().map_err(|_| Denial::Malformed)?);
-    let payload = &bytes[HEADER..];
-    if size != payload.len() as u64 {
-        return Err(Denial::Malformed);
-    }
-    let digest: [u8; 32] = Sha256::digest(payload).into();
-    if digest.as_slice() != &bytes[20..HEADER] {
-        return Err(Denial::DigestMismatch);
-    }
-    Ok(payload)
+pub(super) fn association_payload<'a>(
+    bytes: &'a [u8],
+    magic: &[u8; 8],
+) -> Result<&'a [u8], Denial> {
+    inspect_framed_envelope(spec(magic), bytes, |_| {
+        Ok::<_, worth_execution::FramedEnvelopeError>(())
+    })
+    .map(|(_, payload)| payload)
+    .map_err(|cause| super::framed_denial::wire(cause, WORLD_ARTIFACT_VERSION))
 }
+
 pub(in crate::durability) fn write_record(
     record: &WorldRecord,
     out: &mut Emit<'_>,

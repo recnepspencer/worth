@@ -85,3 +85,12 @@ pub use facade::*;
 pub use physical_integrity_observation::*;
 
 mod projected_candidate_content;
+
+mod sha256_digest;
+pub use sha256_digest::Sha256Digest;
+
+mod dag_reachability;
+pub use dag_reachability::{
+    DagDirtyEdit, DagDirtyLinks, DagDirtyList, DagReachability, DagReferenceCount,
+    DagReferenceOverflow,
+};

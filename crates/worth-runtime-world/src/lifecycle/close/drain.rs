@@ -1,7 +1,10 @@
 //! Original-request close admission and retained one-head progression.
 use super::{RuntimeWorldCloseDenial as Denial, RuntimeWorldCloseReport, RuntimeWorldCloseState};
 use crate::lifecycle::owner::RuntimeWorldOwnerState;
-use worth_execution::ExecutionRequest;
+use worth_execution::{
+    drain_cooperative_retirement, try_lock_retirement, CooperativeRetirementLockDenial,
+    CooperativeStep, ExecutionRequest,
+};
 
 #[derive(Debug, Default)]
 pub(in crate::lifecycle) struct CloseProgress {
@@ -97,10 +100,7 @@ where
     // lends it out, restores it, or drops its last Arc on a budgeted return.
     // The guard spans only World-local nonwaiting metadata steps below, never
     // Native/Signal/provider calls, I/O, or live capability destruction.
-    let mut progress = task.try_lock().map_err(|cause| match cause {
-        std::sync::TryLockError::WouldBlock => Denial::Busy,
-        std::sync::TryLockError::Poisoned(_) => Denial::CloseProgressPoisoned,
-    })?;
+    let mut progress = try_lock_retirement(&task).map_err(retirement_lock_denial)?;
     drain_heads(state, request, &mut progress)?;
     let mut report = finish_report(&state.close, &mut progress)?;
     report.retain_close_task(task.clone());
@@ -117,39 +117,54 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    while progress.report.is_none() {
-        request.check_live().map_err(Denial::Stopped)?;
-        if progress.pending.is_none() {
-            progress.pending = state
-                .branches
-                .try_take_next_for_close()
-                .map_err(|_| Denial::Busy)?;
-        }
-        if let Some(pending) = progress.pending.as_mut() {
-            // The actual entry is already retained before either owner phase.
+    drain_cooperative_retirement(
+        request,
+        |request| {
+            if progress.report.is_some() {
+                return Ok(CooperativeStep::Complete(()));
+            }
             request.check_live().map_err(Denial::Stopped)?;
-            pending.advance(&state.history, request)?;
-            progress.released_heads += 1;
-            drop(progress.pending.take());
-            continue;
-        }
-        state
-            .recovery
-            .validate_close_reports(&progress.recovered, request)?;
-        state.recovery.cancel_uninstalled_for_close(request)?;
-        progress.report = Some(RuntimeWorldCloseReport::new(
-            Vec::new(),
-            std::mem::take(&mut progress.recovered),
-            progress.recovered_funding.take(),
-            super::report::RuntimeWorldCloseReleaseCounts {
-                released_product_head_pins: progress.released_heads,
-                ..Default::default()
-            },
-            state.retention.active_observation_count(),
-            Vec::new(),
-        ));
+            if progress.pending.is_none() {
+                progress.pending = state
+                    .branches
+                    .try_take_next_for_close()
+                    .map_err(|_| Denial::Busy)?;
+            }
+            if let Some(pending) = progress.pending.as_mut() {
+                // The actual entry is already retained before either owner phase.
+                request.check_live().map_err(Denial::Stopped)?;
+                pending.advance(&state.history, request)?;
+                progress.released_heads += 1;
+                drop(progress.pending.take());
+                return Ok(CooperativeStep::Continue);
+            }
+            state
+                .recovery
+                .validate_close_reports(&progress.recovered, request)?;
+            state.recovery.cancel_uninstalled_for_close(request)?;
+            progress.report = Some(RuntimeWorldCloseReport::new(
+                Vec::new(),
+                std::mem::take(&mut progress.recovered),
+                progress.recovered_funding.take(),
+                super::report::RuntimeWorldCloseReleaseCounts {
+                    released_product_head_pins: progress.released_heads,
+                    ..Default::default()
+                },
+                state.retention.active_observation_count(),
+                Vec::new(),
+            ));
+            Ok(CooperativeStep::Complete(()))
+        },
+        || Denial::Busy,
+        Denial::Execution,
+    )
+}
+
+fn retirement_lock_denial(cause: CooperativeRetirementLockDenial) -> Denial {
+    match cause {
+        CooperativeRetirementLockDenial::Busy => Denial::Busy,
+        CooperativeRetirementLockDenial::Poisoned => Denial::CloseProgressPoisoned,
     }
-    Ok(())
 }
 
 fn finish_report(
@@ -158,10 +173,7 @@ fn finish_report(
 ) -> Result<RuntimeWorldCloseReport, Denial> {
     // Once the terminal report exists, preserve it even if this metadata lock
     // is busy. A late stop does not erase already completed owner retirement.
-    let mut close = contract.try_lock().map_err(|cause| match cause {
-        std::sync::TryLockError::WouldBlock => Denial::Busy,
-        std::sync::TryLockError::Poisoned(_) => Denial::CloseProgressPoisoned,
-    })?;
+    let mut close = try_lock_retirement(contract).map_err(retirement_lock_denial)?;
     if progress.report.is_none() {
         return Err(Denial::CloseProgressInvariant);
     }

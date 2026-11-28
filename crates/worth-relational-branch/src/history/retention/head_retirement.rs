@@ -77,20 +77,21 @@ impl RelationalBranchRetentionBinding {
         let mut inserted = false;
         let generation = match roots.entry(root_key) {
             Entry::Occupied(mut entry) => {
-                let next = entry
-                    .get()
+                entry
+                    .get_mut()
                     .reservations
-                    .checked_add(1)
-                    .ok_or(RelationalRetentionAcquisitionDenial::IdentityExhausted)?;
+                    .acquire()
+                    .map_err(|_| RelationalRetentionAcquisitionDenial::IdentityExhausted)?;
                 replaced_binding = entry
                     .get_mut()
                     .branch_bindings
                     .insert(identity.branch_id().clone(), branch_binding);
-                entry.get_mut().reservations = next;
                 entry.get().generation
             }
             Entry::Vacant(entry) => {
                 let generation = reserve_retirement_slot(&owner)?;
+                let mut reservations = worth_foundational::DagReferenceCount::default();
+                reservations.acquire().expect("first reservation fits");
                 entry.insert(RelationalRetiredBranchRoot {
                     root: Arc::clone(root),
                     branch_bindings: std::collections::BTreeMap::from([(
@@ -98,7 +99,8 @@ impl RelationalBranchRetentionBinding {
                         branch_binding,
                     )]),
                     historical_binding: RelationalBranchRetentionBinding::new(&owner, None),
-                    reservations: 1,
+                    reservations,
+                    dirty: Default::default(),
                     retired: false,
                     generation,
                 });
@@ -165,21 +167,18 @@ impl RelationalHeadRetirementReservation {
         let mut roots = self.owner.write_retired_roots();
         let entry = roots.get_mut(&self.root_key)
             .expect(/* Proof: A live retirement reservation registers this exact root key and pins its inventory entry; reclamation cannot remove an entry with live reservations. */ "reserved root remains in the concurrent inventory");
-        entry.reservations = entry
-            .reservations
-            .checked_sub(1)
-            .expect(/* Proof: Each non-Clone reservation increments once at construction and decrements once on consuming transfer or Drop; Drop is disarmed after transfer. */ "retirement reservation accounting remains balanced");
+        entry.reservations.release();
         let first_retirement = !entry.retired;
         entry.retired = true;
-        drop(roots);
         if first_retirement {
             self.owner
                 .retired_root_count
                 .fetch_add(1, Ordering::Release);
+            roots.mark_changed(self.root_key);
+        }
+        drop(roots);
+        if first_retirement {
             self.retention_binding.record_retired_root_enqueue();
-            self.owner
-                .retired_root_order
-                .push((self.root_key, self.generation));
             self.owner
                 .retired_enqueue_count
                 .fetch_add(1, Ordering::Relaxed);
@@ -196,16 +195,15 @@ impl RelationalHeadRetirementReservation {
             let mut roots = self.owner.write_retired_roots();
             let entry = roots.get_mut(&self.root_key)
                 .expect(/* Proof: A live retirement reservation registers this exact root key and pins its inventory entry; reclamation cannot remove an entry with live reservations. */ "live reservation remains in the concurrent inventory");
-            entry.reservations = entry
-                .reservations
-                .checked_sub(1)
-                .expect(/* Proof: Each non-Clone reservation increments once at construction and decrements once on consuming transfer or Drop; Drop is disarmed after transfer. */ "retirement reservation accounting remains balanced");
-            entry.reservations == 0 && !entry.retired
+            entry.reservations.release();
+            entry.reservations.count() == 0 && !entry.retired
         };
         let removed = if removable {
             let mut roots = self.owner.write_retired_roots();
             if roots.get(&self.root_key).is_some_and(|entry| {
-                entry.generation == self.generation && entry.reservations == 0 && !entry.retired
+                entry.generation == self.generation
+                    && entry.reservations.count() == 0
+                    && !entry.retired
             }) {
                 roots.remove(&self.root_key)
             } else {

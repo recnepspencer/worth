@@ -20,9 +20,9 @@ mod selected_subject;
 mod wire;
 fn initial(artifact: &RelationalCompleteSourceArtifact) -> serde_json::Value {
     let raw = artifact.as_bytes();
-    let cp = u64::from_le_bytes(raw[28..36].try_into().unwrap()) as usize;
-    let len = u64::from_le_bytes(raw[36..44].try_into().unwrap()) as usize;
-    crate::source_wire_value::read(&raw[84 + cp + 60..84 + cp + len])
+    let cp = u64::from_le_bytes(raw[68..76].try_into().unwrap()) as usize;
+    let len = u64::from_le_bytes(raw[76..84].try_into().unwrap()) as usize;
+    crate::source_wire_value::read(&raw[92 + cp + 60..92 + cp + len])
 }
 fn selected_members(
     image: &CompleteRelationalNativeCheckpoint,

@@ -45,13 +45,10 @@ fn build_envelope(opts: EnvelopeOptions<'_>) -> Vec<u8> {
     cp.extend_from_slice(b"\xafrecord_identity");
     cp.push(opts.hwm);
 
-    let mut source = vec![0u8; 84];
-    source[..8].copy_from_slice(b"WRTHRCS1");
-    source[8..12].copy_from_slice(&2u32.to_le_bytes());
-    source[28..36].copy_from_slice(&(cp.len() as u64).to_le_bytes());
-    let s_dig = sha256_all(&[&source[..52], &cp]);
-    source[52..84].copy_from_slice(&s_dig);
-    source.extend_from_slice(&cp);
+    let mut source_payload = vec![0u8; 40];
+    source_payload[16..24].copy_from_slice(&(cp.len() as u64).to_le_bytes());
+    source_payload.extend_from_slice(&cp);
+    let source = framed(b"WRTHRCS1", 3, &source_payload);
 
     let mut world_payload = vec![0u8; 229 + 48];
     world_payload[0..4].copy_from_slice(&1u32.to_le_bytes());
@@ -105,16 +102,13 @@ fn build_envelope(opts: EnvelopeOptions<'_>) -> Vec<u8> {
     image.extend_from_slice(b"r");
     let image_digest: [u8; 32] = Sha256::digest(&image).into();
 
-    let mut companion = vec![0u8; 229 + 32];
-    companion[..8].copy_from_slice(b"WRWMREG1");
-    companion[8..12].copy_from_slice(&1u32.to_le_bytes());
-    companion[12] = 1;
-    companion[13..29].copy_from_slice(&opts.home_id);
-    companion[109..141].copy_from_slice(&source_digest);
-    companion[165..197].copy_from_slice(&world_image_digest);
-    companion[197..229].copy_from_slice(&image_digest);
-    let c_dig = sha256_all(&[b"worth.world.receipt-registry.home.v1\0", &companion[..229]]);
-    companion[229..261].copy_from_slice(&c_dig);
+    let mut companion_payload = [0u8; 217];
+    companion_payload[0] = 1;
+    companion_payload[1..17].copy_from_slice(&opts.home_id);
+    companion_payload[97..129].copy_from_slice(&source_digest);
+    companion_payload[153..185].copy_from_slice(&world_image_digest);
+    companion_payload[185..217].copy_from_slice(&image_digest);
+    let companion = framed(b"WRWMREG1", 2, &companion_payload);
 
     let mut native = vec![0u8; 292];
     native[..8].copy_from_slice(b"WSRCAI01");
@@ -132,21 +126,24 @@ fn build_envelope(opts: EnvelopeOptions<'_>) -> Vec<u8> {
     native.extend_from_slice(&image);
     native.extend_from_slice(&companion);
 
-    let mut sig_payload = vec![0u8; 97];
-    sig_payload[..16].copy_from_slice(&opts.home_id);
-    sig_payload[24] = opts.signal_byte;
-    let mut signal = vec![0u8; 56];
-    signal[..8].copy_from_slice(b"WSIGOWNR");
-    signal[8..12].copy_from_slice(&1u32.to_le_bytes());
-    signal[12..16].copy_from_slice(&5u32.to_le_bytes());
-    signal[16..24].copy_from_slice(&(sig_payload.len() as u64).to_le_bytes());
-    let sig_dig = sha256_all(&[&signal[8..24], &sig_payload]);
-    signal[24..56].copy_from_slice(&sig_dig);
+    let mut sig_payload = [0u8; 101];
+    sig_payload[..4].copy_from_slice(&5u32.to_le_bytes());
+    sig_payload[4..20].copy_from_slice(&opts.home_id);
+    sig_payload[28] = opts.signal_byte;
+    let mut signal = framed(b"WSIGOWNR", 2, &sig_payload);
     if opts.fault == Fault::SignalChecksum {
-        signal[24] ^= 0x01;
+        signal[20] ^= 0x01;
     }
-    signal.extend_from_slice(&sig_payload);
     assemble_waphckp1([0, 1, 2], [&native, &world, &signal])
+}
+
+fn framed(magic: &[u8; 8], version: u32, payload: &[u8]) -> Vec<u8> {
+    let mut output = magic.to_vec();
+    output.extend_from_slice(&version.to_le_bytes());
+    output.extend_from_slice(&(payload.len() as u64).to_le_bytes());
+    output.extend_from_slice(&Sha256::digest(payload));
+    output.extend_from_slice(payload);
+    output
 }
 
 fn build_group_header(cut: &[u8], pos: u64, commit: u64, meaning: u8, body: &[u8]) -> [u8; 41] {
@@ -258,10 +255,10 @@ fn mutate_real_world_nonterminal_pos1_digest(real_waph: &[u8]) -> Vec<u8> {
     new_img[32..64].copy_from_slice(&dir.finalize());
     let new_img_digest: [u8; 32] = Sha256::digest(&new_img).into();
 
-    companion[165..197].copy_from_slice(&new_world_digest);
-    companion[197..229].copy_from_slice(&new_img_digest);
-    let c_dig = sha256_all(&[b"worth.world.receipt-registry.home.v1\0", &companion[..229]]);
-    companion[229..261].copy_from_slice(&c_dig);
+    companion[205..237].copy_from_slice(&new_world_digest);
+    companion[237..269].copy_from_slice(&new_img_digest);
+    let c_dig = Sha256::digest(&companion[52..]);
+    companion[20..52].copy_from_slice(&c_dig);
 
     let mut native = native_orig[..292].to_vec();
     native[140..172].copy_from_slice(&new_world_digest);

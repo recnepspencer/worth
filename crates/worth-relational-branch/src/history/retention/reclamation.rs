@@ -62,11 +62,8 @@ impl super::RelationalBranchRetentionOwner {
         let mut examined = 0_u64;
         let mut reclaimed = 0_u64;
         let mut unique_bytes = 0_u64;
-        let pass_limit = maximum_roots.min(self.inner.retired_root_order.len());
+        let pass_limit = maximum_roots.min(self.inner.read_retired_roots().changed_count());
         for _ in 0..pass_limit {
-            let Some((root_key, generation)) = self.inner.retired_root_order.pop() else {
-                break;
-            };
             // Serialize measurement + removal through actual `drop(root)` so no
             // concurrent pass can observe an already-removed root as an external
             // holder of shared regions/backing, without holding `retired_roots`
@@ -75,6 +72,8 @@ impl super::RelationalBranchRetentionOwner {
             enum StepOutcome {
                 Reclaimed {
                     retired: super::owner::RelationalRetiredBranchRoot,
+                    root_key: usize,
+                    generation: u64,
                     next_examined: u64,
                     next_reclaimed: u64,
                     next_unique_bytes: u64,
@@ -86,14 +85,14 @@ impl super::RelationalBranchRetentionOwner {
             }
             let step = {
                 let mut roots = self.inner.write_retired_roots();
+                let Some(root_key) = roots.pop_changed() else {
+                    break;
+                };
                 let mut counters = super::owner::lock_maintenance_counters(&self.inner);
-                let entry = roots.get(&root_key);
-                let still_retired = entry
-                    .is_some_and(|retired| retired.generation == generation && retired.retired);
-                let removable = still_retired
-                    && entry.is_some_and(|retired| {
-                        retired.reservations == 0 && Arc::strong_count(&retired.root) == 1
-                    });
+                let entry = &roots[&root_key];
+                let generation = entry.generation;
+                let removable =
+                    entry.reservations.count() == 0 && Arc::strong_count(&entry.root) == 1;
                 if removable {
                     let root_bytes = roots[&root_key]
                         .root
@@ -115,31 +114,31 @@ impl super::RelationalBranchRetentionOwner {
                             .expect(/* Proof: `removable` verified `root_key` is present while holding the exclusive `roots` write lock. */ "removable retired root remains present");
                         StepOutcome::Reclaimed {
                             retired,
+                            root_key,
+                            generation,
                             next_examined,
                             next_reclaimed,
                             next_unique_bytes,
                         }
                     } else {
-                        self.inner.retired_root_order.push((root_key, generation));
+                        roots.mark_changed(root_key);
                         StepOutcome::Overflow
                     }
                 } else if let Some(next_examined) = examined.checked_add(1)
                     && super::cost_counters::try_record_reclamation(&mut counters, 1, 0, 0).is_ok()
                 {
-                    if still_retired {
-                        self.inner.retired_root_order.push((root_key, generation));
-                    }
+                    roots.mark_changed(root_key);
                     StepOutcome::Retained { next_examined }
                 } else {
-                    if still_retired {
-                        self.inner.retired_root_order.push((root_key, generation));
-                    }
+                    roots.mark_changed(root_key);
                     StepOutcome::Overflow
                 }
             };
             match step {
                 StepOutcome::Reclaimed {
                     retired,
+                    root_key,
+                    generation,
                     next_examined,
                     next_reclaimed,
                     next_unique_bytes,

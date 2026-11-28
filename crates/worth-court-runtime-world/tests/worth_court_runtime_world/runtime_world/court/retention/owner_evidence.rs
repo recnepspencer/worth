@@ -161,7 +161,7 @@ fn embedded_signal_envelope_version_is_checked_before_world_occurrence_admission
             .windows(8)
             .position(|part| part == b"WSIGOWNR")
             .unwrap();
-        bytes[offset + 8..offset + 12].copy_from_slice(&2u32.to_le_bytes());
+        bytes[offset + 8..offset + 12].copy_from_slice(&3u32.to_le_bytes());
         rehash(bytes)
     });
     assert!(matches!(
