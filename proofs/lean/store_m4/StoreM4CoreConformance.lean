@@ -285,6 +285,8 @@ private def checkRelationalChunkConsolidation (j : Json) : Except String Unit :=
   expect (canonicalAfter == modelCanonAfter)
     s!"relational_chunk_consolidation canonical_after mismatch: Rust={repr canonicalAfter}, model={repr modelCanonAfter}"
   if isFlattened then
+    expect (layersAfter.length == chunkConsolidated.layers.length)
+      s!"relational_chunk_consolidation flattened candidate has {layersAfter.length} layers, expected {chunkConsolidated.layers.length}"
     let modelCanonCons := ChunkedCoverage.canonical chunkConsolidated
     expect (modelCanonAfter == modelCanonCons)
       s!"relational_chunk_consolidation flattened canonical {repr modelCanonAfter} != consolidate model {repr modelCanonCons}"

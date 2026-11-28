@@ -241,3 +241,10 @@ impl CanonicalChunkVisitor for ChunkCommitmentHasher {
         Ok(())
     }
 }
+
+#[cfg(test)]
+impl DerivedChunkMeaning {
+    pub(crate) fn omit_head_kind_for_mutant(&mut self, kind: crate::identity::data::KindId) {
+        self.head_summary.omit_record_kind_for_mutant(kind);
+    }
+}

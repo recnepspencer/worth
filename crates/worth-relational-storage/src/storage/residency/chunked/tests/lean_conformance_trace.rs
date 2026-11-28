@@ -229,15 +229,65 @@ fn relational_chunked_substrate_conforms_to_store_m4_chunked_coverage() {
         );
     }
 
-    // Real Mutant M3: construct an incomplete summary omitting KindId(7), run
-    // real `scan_chunks`, observe pruned scan drops the record while canonical
-    // finds it, and verify the Lean checker catches it.
-    let mut entry_json = serde_json::to_value(&tampered_sealed[1].0).unwrap();
-    entry_json["head_summary"]["record_kinds"] = serde_json::json!([1]);
-    tampered_sealed[1].0 = serde_json::from_value(entry_json).unwrap();
-    let tampered_dir = RegionChunkDirectory::admit(LAYOUT, 192, 0, tampered_sealed).unwrap();
+    // Coherent multi-layer candidate control: even if canonical history is preserved,
+    // a candidate marked `is_flattened_candidate:true` that still has 2 layers must fail.
+    {
+        let mut lines = trace.lines.clone();
+        let (idx, line) = lines
+            .iter_mut()
+            .enumerate()
+            .find(|(_, l)| {
+                l.contains(r#""kind":"relational_chunk_consolidation""#)
+                    && l.contains(r#""is_flattened_candidate":true"#)
+            })
+            .expect("missing flattened consolidation trace line");
+        let mut parsed: serde_json::Value = serde_json::from_str(line).unwrap();
+        parsed["layers_after"] = parsed["layers_before"].clone();
+        *line = serde_json::to_string(&parsed).unwrap();
+        let tampered = format!("{}\n", lines.join("\n"));
+        let res = run_checker(bin, &tampered);
+        assert!(
+            !res.status.success(),
+            "control `multi-layer flattened candidate` unexpectedly passed"
+        );
+        let stderr = String::from_utf8_lossy(&res.stderr);
+        let expected = format!(
+            "step {idx} fails: relational_chunk_consolidation flattened candidate has 2 layers, expected 1"
+        );
+        assert!(
+            stderr.contains(&expected),
+            "control `multi-layer flattened candidate`: expected `{expected}`, got `{stderr}`"
+        );
+    }
+
+    // Real Mutant M3: omit KindId(7) BEFORE `DerivedChunkMeaning::commit` so
+    // the semantic commitment is hashed over the incomplete summary, then run
+    // real `scan_chunks` to observe canonical hit + pruned miss and Lean rejection.
     let residency =
         ChunkResidency::new(&accountant(1 << 20, 1 << 20, 4096), ResidencyPoolKind::Head);
+    let mut hasher = super::super::semantic_entry::ChunkCommitmentHasher::new(
+        super::super::slot_range::SlotDomain::Entity,
+        tampered_sealed[1].1.slot_range(),
+    );
+    super::super::canonical_read::read_chunk_canonical(
+        &residency,
+        &store,
+        super::super::slot_range::SlotDomain::Entity,
+        &tampered_sealed[1].1,
+        super::super::canonical_read::SlotSelection::All,
+        &mut hasher,
+    )
+    .unwrap();
+    let mut meaning = hasher.finish();
+    meaning.omit_head_kind_for_mutant(KindId::new(7));
+    let original_commitment = tampered_sealed[1].0.semantic_chunk_commitment();
+    tampered_sealed[1].0 = meaning.commit();
+    assert_ne!(
+        tampered_sealed[1].0.semantic_chunk_commitment(),
+        original_commitment,
+        "Mutant M3 omission must be folded into DerivedChunkMeaning::commit"
+    );
+    let tampered_dir = RegionChunkDirectory::admit(LAYOUT, 192, 0, tampered_sealed).unwrap();
     let mut m3_trace = Trace::default();
     summary::record_scan_step(
         &mut m3_trace,

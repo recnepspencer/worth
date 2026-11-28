@@ -300,6 +300,11 @@ pub(super) fn record_consolidation_cases(trace: &mut Trace) {
         flatten_history_image(&residency, &store, &mut &store, LAYOUT, &layered_bind).unwrap();
     assert_ne!(flat_loc, layered_enc.locator);
     let flat_img = residency.history_image(&store, flat_loc).unwrap();
+    assert_eq!(
+        flat_img.layers.len(),
+        1,
+        "consolidated history image must be single-layer"
+    );
     let flat_bind = layered_bind.with_history_locator(flat_loc);
     let v_ok = verify_bound_chunk(&residency, &store, &sealed.semantic, &flat_bind).is_ok();
     let cons = consolidate_history_chunk(

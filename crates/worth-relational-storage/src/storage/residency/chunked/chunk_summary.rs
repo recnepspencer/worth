@@ -147,3 +147,10 @@ impl ClaimedChunkSummaries {
         }
     }
 }
+
+#[cfg(test)]
+impl ChunkKindAdjacencySummary {
+    pub(crate) fn omit_record_kind_for_mutant(&mut self, kind: KindId) {
+        self.record_kinds.retain(|existing| *existing != kind);
+    }
+}
