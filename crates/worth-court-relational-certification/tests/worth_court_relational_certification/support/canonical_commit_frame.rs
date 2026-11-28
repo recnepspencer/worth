@@ -1,9 +1,9 @@
-//! Independently reseal actual hostile v10 DATA; do not invoke producer commitments.
+//! Independently reseal hostile V11 data using the published digest grammar.
 use sha2::{Digest, Sha256};
 
 pub(crate) fn reseal(frame: &mut [u8]) {
     assert_eq!(&frame[..8], b"WRTHRCCA");
-    assert_eq!(u16::from_le_bytes(frame[8..10].try_into().unwrap()), 10);
+    assert_eq!(u16::from_le_bytes(frame[8..10].try_into().unwrap()), 11);
     let mut digest = Sha256::new();
     digest.update(b"worth.relational.canonical.v8\0");
     digest.update(&frame[10..26]);

@@ -1,7 +1,6 @@
 pub(crate) use worth_foundational::FoundationalBranchReferenceMismatchAxis;
 pub(crate) use {
     worth_signal::facade::branch::SignalBranchForkOperationDenial,
-    worth_signal::facade::branch::SignalBranchMergeDenial,
     worth_signal::facade::branch::SignalBranchRestoreDenial,
     worth_signal::facade::branch::SignalBranchSnapshotCaptureDenial,
 };

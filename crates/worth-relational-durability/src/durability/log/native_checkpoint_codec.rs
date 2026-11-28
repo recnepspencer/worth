@@ -8,6 +8,7 @@ use worth_relational_contracts::internal_port::durability::data::recovery_errors
 
 pub const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK25\n";
 pub const CHECKPOINT_VERSION: u16 = 25;
+const LEGACY_CHECKPOINT_VERSION: u16 = 24;
 const LEGACY_CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK24\n";
 
 #[derive(Clone, Copy)]
@@ -69,7 +70,7 @@ fn framed_checkpoint_version(bytes: &[u8]) -> Option<u16> {
         return None;
     }
     let found: u16 = std::str::from_utf8(major).ok()?.parse().ok()?;
-    (found != CHECKPOINT_VERSION).then_some(found)
+    (found != CHECKPOINT_VERSION && found != LEGACY_CHECKPOINT_VERSION).then_some(found)
 }
 
 pub mod checkpoint_decoding;
@@ -132,6 +133,7 @@ mod tests {
             );
         }
         for malformed in [
+            b"WORTH-REL-CHK24.1\n".as_slice(),
             b"WORTH-REL-CHK25.1\n".as_slice(),
             b"WORTH-REL-CHK024\n".as_slice(),
             b"WORTH-REL-CHK0\n".as_slice(),

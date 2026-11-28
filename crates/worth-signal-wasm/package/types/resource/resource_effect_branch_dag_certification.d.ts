@@ -45,7 +45,6 @@ export interface ConcurrentResourceEffectCertificationEvidence {
     readonly recoveredWithoutDuplicateCommit: true;
     readonly phases: readonly (
       | "responseRecorded"
-      | "canonicalReconciliation"
       | "projectionRefresh"
       | "branchRetirement"
     )[];

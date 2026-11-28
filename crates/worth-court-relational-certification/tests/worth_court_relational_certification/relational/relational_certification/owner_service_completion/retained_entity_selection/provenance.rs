@@ -10,7 +10,7 @@ use worth_relational::facade::{
 };
 
 #[test]
-fn rehashed_selection_artifacts_refuse_wrong_source_identity_predecessor_and_mixed_profiles() {
+fn rehashed_selection_artifacts_refuse_wrong_source_identity_predecessor_and_record_meaning() {
     let request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let runtime = fixture().build_runtime();
@@ -73,11 +73,6 @@ fn rehashed_selection_artifacts_refuse_wrong_source_identity_predecessor_and_mix
         wrong_predecessor,
         Denial::TargetPredecessor,
     ));
-    let parents = value_after(original, 66, b"merge_parent_branches");
-    assert_eq!(original[parents], 0x90);
-    let mut merge = original.to_vec();
-    merge.splice(parents..parents + 1, [0x91, 0xa4, b'm', b'a', b'i', b'n']);
-    cases.push(("mixed merge profile", merge, Denial::UnsupportedProfile));
     let structural = value_after(original, 66, b"structural_change");
     assert_eq!(&original[structural..structural + 8], b"\xa7Updated");
     let mut created = original.to_vec();

@@ -101,7 +101,6 @@ describe("concurrent resource effect branch DAG certification", { concurrency: f
 
   test("Concurrent Effect Crash Restore Replay Test", async () => {
     for (const fault of [
-      "canonicalReconciliation",
       "projectionRefresh",
       "branchRetirement",
     ]) {
@@ -114,7 +113,6 @@ describe("concurrent resource effect branch DAG certification", { concurrency: f
       recoveredWithoutDuplicateCommit: true,
       phases: Object.freeze([
         "responseRecorded",
-        "canonicalReconciliation",
         "projectionRefresh",
         "branchRetirement",
         "admissionProjectionCleanup",
@@ -189,13 +187,6 @@ async function proveRetryAfterFault(faultKind) {
   let armedFault = null;
   let underlyingCloseoutCount = 0;
   const runtime = await createRealResourceTestRuntime({
-    plan_merge_branches_with_proof(history, ...args) {
-      if (armedFault === "canonicalReconciliation") {
-        armedFault = null;
-        throw new Error("injected reconciliation interruption");
-      }
-      return history.plan_merge_branches_with_proof(...args);
-    },
     closeout_effect_branch(history, request) {
       if (armedFault === "branchRetirement") {
         armedFault = null;

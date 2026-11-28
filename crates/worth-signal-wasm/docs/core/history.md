@@ -17,8 +17,6 @@ extremely exact and still belong to a process-local execution engine.
 - `history.current_branch()`
 - `history.create_branch(name)`
 - `history.switch_branch(branchId)`
-- `history.plan_merge_branches(...)`
-- `history.merge_branches(...)`
 - `graph.inspectHistory()`
 
 ## Inspect Replay And Lineage
@@ -66,15 +64,12 @@ registry and never expire.
 
 A runtime snapshot belongs to the branch it was captured on. Restoring it
 reactivates that branch first, so a snapshot taken before a branch was
-created, switched to, or merged remains restorable afterwards. A restore that
+created or switched to remains restorable afterwards. A restore that
 is refused (unknown snapshot, callback unavailability) leaves the active
 branch unchanged.
 
 Capturing a snapshot, branch snapshot, branch-state proof, or replay view is
-an observation. It never changes what a later merge adopts: edits made on a
-branch stay merge-visible however many artifacts were minted in between
-(the worker-first root mints them after every mutation). Restoring a snapshot
-is different: it reinstates the merge boundary the snapshot was captured at.
+an observation. Restoring a snapshot reinstates the branch state it captured.
 Importing a portable snapshot artifact also refreshes the history views
 (`replay`, `lineage`, diagnostics) so they describe the imported runtime.
 
@@ -84,7 +79,7 @@ branch is active, `history.snapshot()` still works, but
 `invalidInput` ("exact runtime restore artifacts require the root branch to
 be active") on every deployment; a worker-first root reports the same denial
 from its cached artifacts instead of minting on a child branch. Switch to the
-root branch, or merge first, then export.
+root branch before exporting.
 
 ## Runtime Branches
 
@@ -96,27 +91,12 @@ const experiment = await history.create_branch("experiment");
 await history.switch_branch(experiment.id);
 await count.set(12);
 
-const plan = await history.plan_merge_branches(experiment.id, main.id);
-console.log(plan);
+await history.switch_branch(main.id);
 ```
 
 A runtime branch stages an alternative runtime state and retains branch
 ancestry. It is useful for execution experiments, replay, and exact runtime
 restore.
-
-After a merge the merged parent's published outputs are recomputed from the
-merged inputs when you switch to it (they are standing demand), so the first
-read sees the merged truth. Other computeds recompute on their next read.
-
-## Runtime Merge Versus Application Merge
-
-Runtime merge operates on native Signal branch state. It does not understand
-that `teeth`, `thickness`, or `approval` are application aspects requiring a
-human decision.
-
-Use [Local Truth](../local-truth/README.md) when application values need declared
-aspects, stale-basis denial, conflict alternatives, and manual resolution.
-Signal then consumes the committed result as derivation.
 
 ## Worker-First Parity
 
@@ -127,7 +107,6 @@ portable application posture.
 ## Anti-Patterns
 
 - Do not store business records only in runtime snapshots.
-- Do not use a runtime branch ID as an application-value merge decision.
 - Do not edit restore tokens.
 - Do not mint an exact artifact you will not restore; discard the ones you
   abandon, and do not expect an artifact minted 64 exports ago to still be
@@ -139,4 +118,3 @@ portable application posture.
 
 - [Diagnostics And Explanation](./diagnostics.md)
 - [Graphs And Controllers](./graphs-and-controllers.md)
-- [Branch Merge And Manual Resolution](../local-truth/branch-merge.md)

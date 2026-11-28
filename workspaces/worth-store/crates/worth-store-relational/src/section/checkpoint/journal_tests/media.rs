@@ -67,3 +67,73 @@ pub(super) fn corrupt_original(root: &std::path::Path, fragment: &[u8]) -> usize
         .map(|path| visit(&path, fragment))
         .sum()
 }
+
+/// Carry original Relational records through a closed physical Store Directory.
+pub(super) fn persist_legacy_relational_records(root: &std::path::Path, mut bytes: &[u8]) {
+    use sha2::{Digest, Sha256};
+    use worth_store::physical_runtime::{
+        AnchoredRecordMember, AnchoredRecordName, AnchoredRecordPublication,
+        OrderedJournalPublication, PhysicalMutationDeadline, RecordServingTerminalPosture,
+    };
+
+    fn count(bytes: &mut &[u8]) -> u32 {
+        let (value, rest) = bytes.split_first_chunk::<4>().unwrap();
+        *bytes = rest;
+        u32::from_le_bytes(*value)
+    }
+
+    fn blob<'a>(bytes: &mut &'a [u8]) -> &'a [u8] {
+        let size = count(bytes) as usize;
+        let (value, rest) = bytes.split_at(size);
+        *bytes = rest;
+        value
+    }
+
+    let checkpoint = blob(&mut bytes);
+    let members = (0..count(&mut bytes))
+        .map(|_| {
+            let member = blob(&mut bytes);
+            AnchoredRecordMember::New {
+                key: Sha256::digest(member).into(),
+                bytes: member.to_vec(),
+            }
+        })
+        .collect();
+    let serving = crate::cold_source::test_store::initialize(root);
+    let placement = worth_store_testkit_store::fixture::placement();
+    let deadline = || PhysicalMutationDeadline::after_milliseconds(30_000).unwrap();
+    serving
+        .anchored_records()
+        .unwrap()
+        .publish(
+            AnchoredRecordPublication::new(
+                AnchoredRecordName::new("home.checkpoint").unwrap(),
+                0,
+                checkpoint.to_vec(),
+                placement,
+                deadline(),
+            )
+            .with_members(members),
+        )
+        .unwrap();
+    for journal in [
+        serving.canonical_commits().unwrap(),
+        serving.branch_transitions().unwrap(),
+    ] {
+        for position in 1..=u64::from(count(&mut bytes)) {
+            journal
+                .publish(OrderedJournalPublication::new(
+                    position,
+                    blob(&mut bytes).to_vec(),
+                    placement,
+                    deadline(),
+                ))
+                .unwrap();
+        }
+    }
+    assert!(bytes.is_empty());
+    assert_eq!(
+        serving.close().records().posture(),
+        RecordServingTerminalPosture::NoInspectionRequired,
+    );
+}

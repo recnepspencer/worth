@@ -7,8 +7,6 @@ HOTSPOT_OWNERS = {
     ("commit_delta_matrix", "persisted_single_entity_create"): "durability/authority",
     ("durability_append_matrix", "append_canonical_envelope_fresh_store"): "durability/log/local_store",
     ("durability_append_matrix", "append_canonical_envelope_existing_segment"): "durability/log/local_store",
-    ("merge_lineage_matrix", "merge_execution_feature_adoption"): "merge/facade + durability",
-    ("merge_lineage_matrix", "merge_execute_phase_timing_feature_adoption"): "merge/facade + durability",
     ("query_packet_matrix", "connectivity_traversal_cross_partition"): "visibility/materialization/read_records/reader",
     ("query_packet_matrix", "entity_kind_scan_partition_matrix"): "visibility/materialization/read_records/reader",
     ("query_packet_matrix", "explicit_targets_cross_partition"): "visibility/materialization/read_records/reader",

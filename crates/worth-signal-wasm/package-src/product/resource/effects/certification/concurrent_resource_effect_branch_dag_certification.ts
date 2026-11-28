@@ -97,7 +97,6 @@ function requireCompleteEvidence(evidence) {
   requireTrueFields(crash, ["recoveredWithoutDuplicateCommit"]);
   const requiredPhases = new Set([
     "responseRecorded",
-    "canonicalReconciliation",
     "projectionRefresh",
     "branchRetirement",
     "admissionProjectionCleanup",

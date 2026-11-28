@@ -1,9 +1,8 @@
-//! Actual registered branch authoring and owner-bound merge selection.
+//! Ordinary branch authoring for the cold residency courts.
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     history::BranchId,
     identity::*,
-    merge::{MergeExecutionRequest, MergeIntent, OwnerBoundMergeExecutionRequest},
     mvcc::{BranchBoundRelationalTransaction, RelationalTransactionIntent},
     runtime::RelationalRuntime,
     transactions::*,
@@ -58,13 +57,4 @@ pub(super) fn create(
     let entity = changed_entities(&result)[0];
     release_test_commit_snapshot(runtime, &result);
     entity
-}
-pub(super) fn request(runtime: &RelationalRuntime) -> OwnerBoundMergeExecutionRequest {
-    runtime
-        .bind_merge_execution_request(MergeExecutionRequest::new(
-            BranchId("main".into()),
-            BranchId("cold-merge-feature".into()),
-            MergeIntent::ReconcileIntoTarget,
-        ))
-        .unwrap()
 }

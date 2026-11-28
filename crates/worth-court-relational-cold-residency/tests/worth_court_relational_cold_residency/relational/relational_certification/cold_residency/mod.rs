@@ -89,12 +89,7 @@ mod index_read_failure_matrix;
 mod adjacency_member_scope;
 mod checkpoint_receiver;
 mod checkpoint_restart_reads;
-mod merge_index_reads;
-mod merge_member_matrix;
-mod merge_member_targets;
-mod merge_publications;
-mod merge_reads;
-mod merge_source;
+mod branch_publications;
 mod preparation_matrix;
 mod projection_adjacency_doors;
 mod projection_adjacency_matrix;
@@ -113,7 +108,6 @@ mod tail_recovery_matrix;
 mod tail_recovery_source;
 mod tail_recovery_subject;
 
-mod merge_history_contributions;
 
 mod checkpoint_capture_abandonment;
 
@@ -140,8 +134,6 @@ mod naming_continuation_integrity;
 mod naming_group_scheme_isolation;
 mod naming_historical_fork_group_replay;
 mod naming_historical_fork_integrity;
-mod naming_merge_preparation_guards;
-mod naming_sibling_merge_window_guards;
 mod working_set_eviction;
 mod working_set_fixture;
 mod working_set_stress;

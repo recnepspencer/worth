@@ -1,7 +1,7 @@
 //! Reserved candidate publication survives actual selected member replacement and ACK.
 use super::{
     current_field_meanings::name_field_patch, current_publications::create_entity,
-    merge_publications, selected_directory,
+    branch_publications, selected_directory,
 };
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
@@ -47,7 +47,7 @@ fn a_reserved_candidate_published_after_another_branch_checkpoint_keeps_its_page
     let medium = TestDurableMedium::new();
     let runtime = durable_runtime(&medium);
     create_entity(execution, &runtime, "reservation-anchor");
-    let other = merge_publications::branch(execution, &runtime, "reservation-other");
+    let other = branch_publications::branch(execution, &runtime, "reservation-other");
     let mut transaction = begin_main_transaction(&runtime);
     transaction
         .push_batch(
@@ -65,7 +65,7 @@ fn a_reserved_candidate_published_after_another_branch_checkpoint_keeps_its_page
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .unwrap();
-    merge_publications::create(
+    branch_publications::create(
         execution,
         &runtime,
         "published-higher-page-id",

@@ -168,18 +168,6 @@ fn visibility_commitment_binds_every_visible_tuple_axis() {
     authority_kind.body_mut_for_test().authority_kind =
         crate::history::data::CanonicalCommitAuthorityKind::BranchReferenceMovement;
     mutants.push(("authority kind", authority_kind));
-    let mut merge_parents = envelope.independent_fixture_image();
-    merge_parents
-        .body_mut_for_test()
-        .merge_parent_branches
-        .push(BranchId("merge-mutant".to_owned()));
-    mutants.push(("merge branches", merge_parents));
-    let mut merge_bases = envelope.independent_fixture_image();
-    merge_bases
-        .body_mut_for_test()
-        .merge_base_commits
-        .push(CommitId(47));
-    mutants.push(("merge bases", merge_bases));
     let mut schema_version = envelope.independent_fixture_image();
     schema_version.body_mut_for_test().schema_version.0 += 1;
     mutants.push(("schema version", schema_version));

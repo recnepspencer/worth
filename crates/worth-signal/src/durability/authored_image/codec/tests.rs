@@ -274,3 +274,33 @@ fn lowered_conditional_roles_cannot_replace_a_missing_definition() {
         ));
     }
 }
+
+#[test]
+fn authored_image_configuration_refuses_legacy_merge_policy_data() {
+    let config = NodeEvaluationConfig::default();
+    let mut ordinary = Vec::new();
+    configuration::write(
+        &mut Write::new(branch(), &mut |part| {
+            ordinary.extend_from_slice(part);
+            Ok(())
+        }),
+        &config,
+    )
+    .unwrap();
+    let mut read = Read::new(&ordinary, branch());
+    read.materialize = true;
+    assert_eq!(configuration::read(&mut read).unwrap(), config);
+    read.finish().unwrap();
+
+    // With the schema binding absent, the six legacy presence bits follow
+    // the schema flag, then the little-endian legacy aspect binding count.
+    assert_eq!(&ordinary[..11], &[0; 11]);
+    for legacy_slot in 1..=7 {
+        let mut populated = ordinary.clone();
+        populated[legacy_slot] = 1;
+        assert!(matches!(
+            configuration::read(&mut Read::new(&populated, branch())),
+            Err(Denial::LegacyMergeArtifactRetired)
+        ));
+    }
+}
