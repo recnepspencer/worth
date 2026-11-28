@@ -3,3 +3,4 @@ import StoreM4.GCPinSafety
 import StoreM4.ChunkedCoverage
 import StoreM4.ExtentGenerationSafety
 import StoreM4.ReclamationSafety
+import StoreM4.RetainedBasisCursor

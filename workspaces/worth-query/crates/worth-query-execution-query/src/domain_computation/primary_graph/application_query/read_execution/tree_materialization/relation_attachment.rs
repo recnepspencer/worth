@@ -13,7 +13,7 @@ use super::relation_distribution::distribute_relation_rows;
 use super::relation_occurrence::{attach_occurrences, RelationProjectionTarget};
 use super::relation_target_filter::retain_matching_targets;
 use super::{
-    project_nodes, ActiveResultTreeCollectionSelection, ResultTreeWork, TargetedCollectionChild,
+    project_nodes, ActiveResultTreeCollectionSelection, ResultTreeWork,
     WorthQueryApplicationProjectionNode, WorthQueryApplicationReadExecutionDenial,
 };
 use crate::domain_computation::primary_graph::application_query::read_execution::{
@@ -22,8 +22,12 @@ use crate::domain_computation::primary_graph::application_query::read_execution:
 
 mod omitted_relation;
 mod ordered;
+mod streamed_budget;
+mod targeted;
 pub use omitted_relation::advance_omitted_relation;
 use ordered::attach_ordered_relation;
+use streamed_budget::attach_relation_within_window_budget;
+use targeted::attach_targeted_relation;
 
 #[allow(clippy::too_many_arguments)]
 pub fn attach_relation(
@@ -79,6 +83,22 @@ pub fn attach_relation(
         | ActiveResultTreeCollectionSelection::Ordered(_)
         | ActiveResultTreeCollectionSelection::Targeted(_) => {}
     }
+    if work.has_window_budget() {
+        return attach_relation_within_window_budget(
+            execution,
+            read,
+            projection,
+            graph,
+            contract,
+            governance,
+            parameters,
+            relation,
+            layout.kind,
+            parents,
+            work,
+            collection_selection,
+        );
+    }
     work.checkpoint(relation.result_path())?;
     let adjacency = match relation.direction() {
         ApplicationQueryResultTraversalDirection::Forward => projection
@@ -106,6 +126,12 @@ pub fn attach_relation(
     let mut targets = BTreeMap::<EntityId, Vec<RelationProjectionTarget>>::new();
     for record in adjacency.into_records() {
         work.checkpoint(relation.result_path())?;
+        if relation.predicate().is_none() {
+            work.charge_window_bytes(
+                std::mem::size_of::<RelationProjectionTarget>(),
+                relation.result_path(),
+            )?;
+        }
         let (parent, child) = match relation.direction() {
             ApplicationQueryResultTraversalDirection::Forward => (record.source, record.target),
             ApplicationQueryResultTraversalDirection::Reverse => (record.target, record.source),
@@ -241,114 +267,6 @@ pub fn attach_relation(
         false,
         predicate_counts,
         predicate_sources,
-    )
-}
-
-#[allow(clippy::too_many_arguments)]
-fn attach_targeted_relation(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    read: &crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization::read_basis::ResultTreeRead<'_>,
-    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-    contract: &WorthQueryInstalledGraphReadContract,
-    governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
-    parameters: &WorthQueryAdmittedApplicationQueryParameters,
-    relation: &WorthQueryInstalledGraphRelation,
-    parents: &mut [WorthQueryApplicationProjectionNode],
-    work: &mut ResultTreeWork,
-    target: &TargetedCollectionChild,
-) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-    let [parent] = parents else {
-        return Err(traversal_denial(relation.result_path()));
-    };
-    let layout = graph
-        .relation(relation.relation())
-        .ok_or_else(|| traversal_denial(relation.result_path()))?;
-    let frontier = BTreeSet::from([target.child_entity_id]);
-    work.checkpoint(relation.result_path())?;
-    let adjacency = match relation.direction() {
-        ApplicationQueryResultTraversalDirection::Forward => projection
-            .bounded_incoming_relations_for_frontier(
-                execution,
-                &frontier,
-                layout.kind,
-                None,
-            ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
-        ApplicationQueryResultTraversalDirection::Reverse => projection
-            .bounded_outgoing_relations_for_frontier(
-                execution,
-                &frontier,
-                layout.kind,
-                None,
-            ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
-    }
-    .map_err(|_| work_limit_denial(relation.result_path()))?;
-    work.charge_adjacency(
-        adjacency.adjacency_lists_read(),
-        adjacency.relation_records_examined(),
-        adjacency.endpoint_records_reserved(),
-        relation.result_path(),
-    )?;
-    let matching_memberships = adjacency
-        .into_records()
-        .into_iter()
-        .filter(|record| match relation.direction() {
-            ApplicationQueryResultTraversalDirection::Forward => {
-                record.source == parent.entity_id() && record.target == target.child_entity_id
-            }
-            ApplicationQueryResultTraversalDirection::Reverse => {
-                record.source == target.child_entity_id && record.target == parent.entity_id()
-            }
-        })
-        .count();
-    if matching_memberships != 1 {
-        return Err(traversal_denial(relation.result_path()));
-    }
-    let mut filtered_target = vec![target.child_entity_id];
-    retain_matching_targets(
-        execution,
-        projection,
-        graph,
-        governance,
-        parameters,
-        relation,
-        &mut filtered_target,
-        |entity| *entity,
-        work,
-    )?;
-    if filtered_target.len() != 1 {
-        return Err(traversal_denial(relation.result_path()));
-    }
-    let mut nested_selection = ActiveResultTreeCollectionSelection::Complete;
-    let children = project_nodes(
-        execution,
-        read,
-        projection,
-        graph,
-        contract,
-        governance,
-        parameters,
-        Some(relation.result_path_identity()),
-        relation.result_path(),
-        relation.child_entity(),
-        &[target.child_entity_id],
-        work,
-        &mut nested_selection,
-    )?;
-    distribute_relation_rows(
-        parents,
-        relation,
-        vec![1],
-        children,
-        contract,
-        governance,
-        work,
-        true,
-        vec![usize::from(relation.predicate().is_some())],
-        relation
-            .predicate()
-            .map(|_| vec![target.child_entity_id])
-            .unwrap_or_default(),
     )
 }
 

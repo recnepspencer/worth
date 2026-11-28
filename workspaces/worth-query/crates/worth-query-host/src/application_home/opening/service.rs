@@ -74,21 +74,41 @@ pub(in crate::application_home) fn finish_service<
             )),
         }
     })?;
-    let home = settled.consume(|SettledHomeService { query, home }| {
-        let query = query.into_home_program_runtime();
-        let active_head = std::sync::Mutex::new(query.runtime().current_world());
-        WorthQueryApplicationHome {
-            query,
-            directory: Some(super::super::runtime::ErasedDirectoryHome::new(
-                home.into_no_pending_home(),
-            )),
-            checkpoint_limits,
-            open_disposition,
-            active_head,
-            owned: std::sync::Arc::default(),
-            commit_watch: std::sync::Arc::default(),
-        }
+    let (query, dir_home) = settled.consume(|SettledHomeService { query, home }| {
+        (
+            query.into_home_program_runtime(),
+            home.into_no_pending_home(),
+        )
     });
+    let retained_branch_custody = match super::super::historical_cursor::branch_custody::reconcile_persisted_historical_branches_on_open(
+        phase,
+        query.runtime(),
+        &dir_home,
+    ) {
+        Ok(custody) => custody,
+        Err(cause) => {
+            return Err(WorthQueryApplicationHomeOpenRefused::from_phase(
+                WorthQueryApplicationHomeOpenRefusedPhase::HistoricalBranchReconciliation {
+                    query,
+                    home: dir_home,
+                    cause,
+                },
+            ));
+        }
+    };
+    let active_head = std::sync::Mutex::new(query.runtime().current_world());
+    let home = WorthQueryApplicationHome {
+        query,
+        directory: Some(super::super::runtime::ErasedDirectoryHome::new(dir_home)),
+        checkpoint_limits,
+        open_disposition,
+        active_head,
+        owned: std::sync::Arc::default(),
+        commit_watch: std::sync::Arc::default(),
+        durable_historical_bases: std::sync::OnceLock::new(),
+        memory_historical_bases: std::sync::OnceLock::new(),
+        retained_branch_custody: std::sync::Mutex::new(retained_branch_custody),
+    };
     observation.arrive_for_test(
         ApplicationHomeOpeningStage::ServiceHandoff,
         ApplicationHomeOpeningEdge::After,

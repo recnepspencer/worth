@@ -37,6 +37,13 @@ impl WorthQueryApplicationReadObservation {
         self.retained.selected_commit()
     }
 
+    /// Exact Relational truth version pinned by this read observation.
+    pub fn relational_snapshot_version(
+        &self,
+    ) -> worth_query_execution::facade::primary_graph::VersionId {
+        self.retained.relational_snapshot_version()
+    }
+
     /// Retains another read-only lease for this exact product occurrence.
     pub fn retain(&self) -> Self {
         Self::new(Arc::clone(&self.retained))

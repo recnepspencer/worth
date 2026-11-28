@@ -46,6 +46,17 @@ pub struct WorthQueryExpectedProductBranchCloseFailure<'runtime, Schema> {
 }
 
 impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'runtime, Schema> {
+    /// Atomically reserves the next deterministic product branch ordinal and
+    /// planned name so crash-recoverable journals can record intent before fork.
+    pub fn reserve_planned_branch_ordinal(
+        &self,
+    ) -> Result<
+        (u64, String),
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchCreationDenial,
+    >{
+        self.branches.reserve_planned_branch_ordinal()
+    }
+
     /// Consume an admitted selection without selecting a newer source at creation.
     pub fn fork_expected(
         self,
@@ -94,6 +105,11 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranchFork<'r
         choose: impl FnOnce(WorthQueryProductBranchComponents) -> WorthQueryProductBranchComponents,
     ) -> Self {
         self.fork = self.fork.components(choose);
+        self
+    }
+
+    pub fn with_reserved_ordinal(mut self, ordinal: u64) -> Self {
+        self.fork = self.fork.with_reserved_ordinal(ordinal);
         self
     }
 

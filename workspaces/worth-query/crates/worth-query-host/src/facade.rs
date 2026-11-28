@@ -333,6 +333,7 @@ pub use worth_query_macros::*;
 pub use worth_query_publication::facade as publication;
 pub use worth_query_publication::facade::application_entry;
 /// Relational data for a Home transition author, without owner authority.
+pub mod historical_cursor;
 pub mod home_program_transition;
 /// Declarative Directory Home program transitions (`worth_query_program_transition!`),
 /// single-call open-with-transition helpers, and package-default build identity resolution.

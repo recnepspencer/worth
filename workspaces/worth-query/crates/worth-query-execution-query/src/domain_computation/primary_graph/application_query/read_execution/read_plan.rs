@@ -28,19 +28,40 @@ pub struct ReadPlan<'a> {
 
     pub(crate) maximum_result_count: usize,
     pub(crate) root_window: Option<&'a super::super::root_window::WorthQueryApplicationRootWindow>,
+    pub(crate) request_binding_digest: [u8; 32],
 }
 
 impl<'a> ReadPlan<'a> {
     pub fn of<S, Q, P, R, A, I, C>(
         plan: &'a WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, C>,
     ) -> Self {
+        let contract = plan.query.read_family_binding().planning_contract();
+        let param_refs: Vec<(&str, &worth_foundational::facade::AspectValue)> = plan
+            .parameters
+            .bindings()
+            .iter()
+            .map(|(name, value)| (name.as_ref(), value))
+            .collect();
+        let scope_is_principal = plan.scope.entity_id() == plan.graph_work_principal_entity_id();
+        let scope_value = (!scope_is_principal).then(|| plan.scope.identity_value());
+        let external = plan.principal.external_identity();
+        let request_binding_digest =
+            super::super::root_window::compute_admitted_request_binding_digest(
+                contract.digest().bytes(),
+                plan.query.identity().as_bytes(),
+                &param_refs,
+                plan.scope.entity_name(),
+                scope_value,
+                external.issuer(),
+                external.subject(),
+            );
         Self {
             parent_session: plan.graph_work.identity(),
             managed_rows: None,
             applied_managed_rows: None,
             binding: plan.query.binding_identity(),
             name: plan.query.name(),
-            contract: plan.query.read_family_binding().planning_contract(),
+            contract,
             root: plan.scope.entity_id(),
             snapshot: plan.basis.snapshot_handle(),
             parameters: &plan.parameters,
@@ -48,6 +69,7 @@ impl<'a> ReadPlan<'a> {
             material_source: None,
             maximum_result_count: plan.controls.maximum_result_count().get(),
             root_window: plan.root_window.as_ref(),
+            request_binding_digest,
         }
     }
     pub fn public_worker<S, Q, P, R, A, I, C>(
@@ -79,6 +101,7 @@ impl worth_execution::ChargedBytes for ReadPlan<'_> {
 
             maximum_result_count: _maximum_result_count,
             root_window: _root_window,
+            request_binding_digest: _request_binding_digest,
         } = self;
         0
     }
@@ -104,6 +127,7 @@ impl ReadPlan<'_> {
 
             maximum_result_count: self.maximum_result_count,
             root_window: self.root_window,
+            request_binding_digest: self.request_binding_digest,
         }
     }
 }

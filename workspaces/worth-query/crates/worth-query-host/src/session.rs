@@ -52,7 +52,7 @@ mod live_subscription;
 mod managed_index;
 mod owned_live_subscription;
 mod owned_session;
-mod page;
+pub(crate) mod page;
 mod query_execution;
 mod query_intent;
 mod renewal;
@@ -287,6 +287,15 @@ impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Sch
     pub const fn on_branch(mut self, branch: WorthQueryProductBranch) -> Self {
         self.settings.branch = branch;
         self
+    }
+
+    pub(crate) fn for_branch(&self, branch: WorthQueryProductBranch) -> Self {
+        let mut settings = self.settings.clone();
+        settings.branch = branch;
+        Self {
+            home: self.home,
+            settings,
+        }
     }
 
     /// Constructs a fresh request scope for one operation.

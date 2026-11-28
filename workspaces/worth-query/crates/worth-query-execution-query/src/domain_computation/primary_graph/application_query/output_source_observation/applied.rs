@@ -1,10 +1,10 @@
 //! Proposed truth uses the exact D identity; all authority remains at C.
 use super::*;
+use crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay;
 use crate::domain_computation::primary_graph::{
     WorthQueryEntityResolutionDenialKind as Resolution,
     WorthQueryEntityResolutionRefusalKind as Refusal,
 };
-use crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay;
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };

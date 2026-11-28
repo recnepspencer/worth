@@ -231,6 +231,7 @@ pub fn admit_home(
             location,
             descriptor,
             serving: recovered.serving,
+            historical_bases: std::sync::Mutex::new(None),
         };
         if let Some(data) = world_data {
             context.world_preparation = Some(

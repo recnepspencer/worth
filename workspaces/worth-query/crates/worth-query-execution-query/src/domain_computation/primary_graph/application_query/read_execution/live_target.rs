@@ -147,6 +147,10 @@ pub fn read_live_target<
             next_boundary: None,
             has_more: false,
             actual_work,
+            window_progress: None,
+            row_projected_bytes: Vec::new(),
+            root_window_request: None,
+            window_boundaries: Vec::new(),
         },
     })
 }

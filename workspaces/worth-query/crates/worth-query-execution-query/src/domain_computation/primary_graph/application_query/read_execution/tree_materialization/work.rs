@@ -2,9 +2,17 @@ use super::super::OneShotReadWorkObservation;
 use super::WorthQueryApplicationReadExecutionDenial;
 use crate::domain_computation::primary_graph::read_observation::WorthQueryInvariantProjectionWork;
 
+#[derive(Clone, Copy, Debug)]
+struct WindowByteBudget {
+    remaining_bytes: usize,
+    charged_bytes: usize,
+    exceeded_requested_bytes: Option<usize>,
+}
+
 pub struct ResultTreeWork<'a, 'request, 'authority> {
     material: Option<super::material_storage::MaterialTreeStorage<'request, 'authority>>,
     interruption: super::super::ReadInterruption<'a>,
+    window_budget: Option<WindowByteBudget>,
 
     pub projected_records: usize,
     pub projected_fields: usize,
@@ -35,6 +43,7 @@ impl<'a, 'request, 'authority> ResultTreeWork<'a, 'request, 'authority> {
                 )
             }),
             interruption,
+            window_budget: None,
 
             projected_records: 0,
             projected_fields: 0,
@@ -45,6 +54,69 @@ impl<'a, 'request, 'authority> ResultTreeWork<'a, 'request, 'authority> {
             work_units: 0,
             spent,
         }
+    }
+
+    pub fn set_window_budget(&mut self, remaining_bytes: usize) {
+        self.window_budget = Some(WindowByteBudget {
+            remaining_bytes,
+            charged_bytes: 0,
+            exceeded_requested_bytes: None,
+        });
+    }
+
+    pub fn clear_window_budget(&mut self) {
+        self.window_budget = None;
+    }
+
+    pub const fn has_window_budget(&self) -> bool {
+        self.window_budget.is_some()
+    }
+
+    pub fn window_charged_bytes(&self) -> usize {
+        self.window_budget.map_or(0, |budget| budget.charged_bytes)
+    }
+
+    pub fn window_budget_exceeded(&self) -> Option<usize> {
+        self.window_budget
+            .and_then(|budget| budget.exceeded_requested_bytes)
+    }
+
+    /// Checks and deducts `bytes` from the active streaming window budget BEFORE
+    /// allocating or cloning fields/children into the materialized tree.
+    pub fn charge_window_bytes(
+        &mut self,
+        bytes: usize,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        let Some(budget) = self.window_budget.as_mut() else {
+            return Ok(());
+        };
+        let next_charged = budget.charged_bytes.saturating_add(bytes);
+        if bytes > budget.remaining_bytes {
+            budget.exceeded_requested_bytes = Some(next_charged);
+            return Err(super::result_buffer_denial(subject));
+        }
+        budget.remaining_bytes -= bytes;
+        budget.charged_bytes = next_charged;
+        Ok(())
+    }
+
+    /// Checks temporary iterator/scratch memory against the remaining streaming
+    /// window budget without permanently retaining it after the step finishes.
+    pub fn check_transient_window_bytes(
+        &mut self,
+        bytes: u64,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        let Some(budget) = self.window_budget.as_mut() else {
+            return Ok(());
+        };
+        if bytes > budget.remaining_bytes as u64 {
+            let requested = usize::try_from(bytes).unwrap_or(usize::MAX);
+            budget.exceeded_requested_bytes = Some(budget.charged_bytes.saturating_add(requested));
+            return Err(super::result_buffer_denial(subject));
+        }
+        Ok(())
     }
 
     pub fn materialized(&self) -> bool {
@@ -177,6 +249,23 @@ impl<'a, 'request, 'authority> ResultTreeWork<'a, 'request, 'authority> {
         self.charge_work(2, subject)?;
         self.relation_predicate_work_units = self.relation_predicate_work_units.saturating_add(2);
         Ok(())
+    }
+
+    pub fn charge_traversal_work(
+        &mut self,
+        units: u64,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        if units == 0 {
+            return self.checkpoint(subject);
+        }
+        let units = usize::try_from(units).map_err(|_| {
+            super::super::denial::relational_read_denial(
+                worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow,
+                subject,
+            )
+        })?;
+        self.charge_work(units, subject)
     }
 
     fn charge_work(

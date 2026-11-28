@@ -64,6 +64,8 @@ pub struct WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult> {
     result_set_observation: Option<super::WorthQueryObservedResultSet<Query>>,
     request_affinity: Option<WorthQueryApplicationQueryRequestAffinity>,
     receipt: WorthQueryApplicationQueryAccessReceipt,
+    window_progress: Option<super::root_window::WorthQueryApplicationRootWindowProgress>,
+    row_projected_bytes: Vec<usize>,
 }
 
 /// Linear proof that one governed application query completed disclosure.
@@ -83,6 +85,8 @@ pub struct WorthQueryApplicationOutputDemandDisclosure<Query> {
 pub struct WorthQueryApplicationOutputDemandSource<Query, QueryResult> {
     rows: Vec<QueryResult>,
     disclosure: WorthQueryApplicationOutputDemandDisclosure<Query>,
+    window_progress: Option<super::root_window::WorthQueryApplicationRootWindowProgress>,
+    row_projected_bytes: Vec<usize>,
 }
 
 impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult> {
@@ -96,6 +100,8 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
             result_set_observation: None,
             request_affinity: None,
             receipt,
+            window_progress: None,
+            row_projected_bytes: Vec::new(),
         }
     }
 
@@ -105,6 +111,8 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
         result_set_observation: super::WorthQueryObservedResultSet<Query>,
         request_affinity: WorthQueryApplicationQueryRequestAffinity,
         receipt: WorthQueryApplicationQueryAccessReceipt,
+        window_progress: Option<super::root_window::WorthQueryApplicationRootWindowProgress>,
+        row_projected_bytes: Vec<usize>,
     ) -> Self {
         Self {
             rows,
@@ -112,6 +120,8 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
             result_set_observation: Some(result_set_observation),
             request_affinity: Some(request_affinity),
             receipt,
+            window_progress,
+            row_projected_bytes,
         }
     }
 
@@ -181,8 +191,20 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
     pub fn into_output_demand_source(
         self,
     ) -> WorthQueryApplicationOutputDemandSource<Query, QueryResult> {
-        let (rows, disclosure) = self.into_parts();
-        WorthQueryApplicationOutputDemandSource { rows, disclosure }
+        let window_progress = self.window_progress;
+        let row_projected_bytes = self.row_projected_bytes;
+        let disclosure = WorthQueryApplicationOutputDemandDisclosure {
+            observed_sources: self.observed_sources,
+            result_set_observation: self.result_set_observation,
+            request_affinity: self.request_affinity,
+            receipt: self.receipt,
+        };
+        WorthQueryApplicationOutputDemandSource {
+            rows: self.rows,
+            disclosure,
+            window_progress,
+            row_projected_bytes,
+        }
     }
 }
 
@@ -278,6 +300,27 @@ impl<Query, QueryResult> WorthQueryApplicationOutputDemandSource<Query, QueryRes
 
     pub fn into_rows(self) -> Vec<QueryResult> {
         self.rows
+    }
+
+    /// Consumes a completed root-window query read into an owner-sealed page
+    /// pairing the exact projected rows, progress receipt, and measured row
+    /// byte sizes minted by that single execution.
+    pub fn into_root_window_page(
+        self,
+    ) -> Option<super::root_window::WorthQueryApplicationRootWindowPage<QueryResult>> {
+        let progress = self.window_progress?;
+        if self.rows.len() != progress.returned_rows()
+            || self.rows.len() != self.row_projected_bytes.len()
+        {
+            return None;
+        }
+        Some(
+            super::root_window::WorthQueryApplicationRootWindowPage::from_executed(
+                self.rows,
+                progress,
+                self.row_projected_bytes,
+            ),
+        )
     }
 }
 

@@ -70,6 +70,10 @@ pub struct RawOneShotRows {
     pub(crate) next_boundary: Option<RelatedEntityOrderingBoundary>,
     pub(crate) has_more: bool,
     pub(crate) actual_work: usize,
+    pub(crate) window_progress: Option<super::root_window::WorthQueryApplicationRootWindowProgress>,
+    pub(crate) row_projected_bytes: Vec<usize>,
+    pub(crate) root_window_request: Option<super::root_window::WorthQueryApplicationRootWindow>,
+    pub(crate) window_boundaries: Vec<super::root_window::WorthQueryApplicationRootWindowBoundary>,
 }
 
 pub struct RawNonLiveKernelOutcome {
@@ -170,22 +174,61 @@ pub fn read_prepared_root_rows(
     let roots = window
         .as_ref()
         .map_or(selection.candidates.as_slice(), |window| &window.roots);
-    let tree = materialize_result_tree(
-        execution,
-        runtime,
-        plan.snapshot,
-        graph,
-        contract,
-        plan.governance,
-        plan.parameters,
-        roots,
-        &selection.selected_predicate_sources,
-        selection.root_path_source.as_ref(),
-        ResultTreeCollectionSelection::Complete,
-        interruption,
-        spent,
-        plan.material_source,
-    )?;
+    let (tree, row_projected_bytes, truncated_by_bytes) = if let (
+        Some(req_window),
+        Some(max_bytes),
+    ) = (
+        plan.root_window,
+        plan.root_window
+            .and_then(super::root_window::WorthQueryApplicationRootWindow::max_projected_bytes),
+    ) {
+        tree_materialization::root_window::materialize_window_bounded_tree(
+            execution,
+            runtime,
+            plan.snapshot,
+            graph,
+            contract,
+            plan.governance,
+            plan.parameters,
+            roots,
+            &selection.selected_predicate_sources,
+            selection.root_path_source.as_ref(),
+            max_bytes,
+            req_window,
+            interruption,
+            spent,
+            plan.material_source,
+        )?
+    } else {
+        let tree = materialize_result_tree(
+            execution,
+            runtime,
+            plan.snapshot,
+            graph,
+            contract,
+            plan.governance,
+            plan.parameters,
+            roots,
+            &selection.selected_predicate_sources,
+            selection.root_path_source.as_ref(),
+            ResultTreeCollectionSelection::Complete,
+            interruption,
+            spent,
+            plan.material_source,
+        )?;
+        let row_bytes = if plan.root_window.is_some() {
+            tree.rows
+                .raw_rows()
+                .iter()
+                .map(|node| {
+                    tree_materialization::root_window::disclosed_node_bytes(node, plan.governance)
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+        (tree, row_bytes, false)
+    };
     if let Some(components) = selection
         .result_set_source
         .as_ref()
@@ -197,6 +240,38 @@ pub fn read_prepared_root_rows(
             plan.name,
         ));
     }
+    let window_progress = match (plan.root_window, window.as_ref()) {
+        (Some(req_window), Some(sel)) => {
+            let returned = tree.rows.raw_rows().len();
+            let last_boundary = returned
+                .checked_sub(1)
+                .and_then(|idx| sel.boundaries.get(idx).cloned());
+            let has_more_window = sel.has_more_after_width || truncated_by_bytes;
+            let next = if has_more_window {
+                last_boundary.clone()
+            } else {
+                None
+            };
+            Some(req_window.report(
+                *contract.digest().bytes(),
+                plan.request_binding_digest,
+                plan.snapshot.version_id(),
+                returned,
+                sel.started_at_beginning,
+                sel.resume_anchor_proof,
+                last_boundary,
+                next,
+            ))
+        }
+        _ => None,
+    };
+    let window_boundaries = window
+        .as_ref()
+        .map(|sel| {
+            let returned = tree.rows.raw_rows().len().min(sel.boundaries.len());
+            sel.boundaries[..returned].to_vec()
+        })
+        .unwrap_or_default();
     let (window_reads, window_comparisons, window_work) = window.map_or_else(
         || (WorthQueryInvariantProjectionWork::default(), 0, 0),
         |window| (window.reads, window.ordering_comparisons, window.work_units),
@@ -227,6 +302,10 @@ pub fn read_prepared_root_rows(
             next_boundary: None,
             has_more: false,
             actual_work,
+            window_progress,
+            row_projected_bytes,
+            root_window_request: plan.root_window.cloned(),
+            window_boundaries,
         },
         persistent_names: None,
     })
@@ -274,6 +353,7 @@ fn select_root_window_roots(
         graph,
         plan.contract,
         plan.governance,
+        &plan.request_binding_digest,
         candidates,
         window,
         interruption,

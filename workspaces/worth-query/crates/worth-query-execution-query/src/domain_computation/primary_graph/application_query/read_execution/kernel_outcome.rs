@@ -74,16 +74,39 @@ where
         mut raw,
         persistent_names,
     } = kernel;
-    let rows = decode_projection_tree::<Schema, Query, QueryResult, Denial>(
-        execution,
-        decode,
-        &raw.rows,
-        governance,
-        persistent_names.as_ref(),
-        validate,
-        map_projection_denial,
-    )?;
+    let max_projected_bytes = raw
+        .root_window_request
+        .as_ref()
+        .and_then(super::super::root_window::WorthQueryApplicationRootWindow::max_projected_bytes);
+    let (rows, effective_row_bytes, truncated_in_projection) =
+        decode_projection_tree_budgeted::<Schema, Query, QueryResult, Denial>(
+            execution,
+            decode,
+            &raw.rows,
+            governance,
+            persistent_names.as_ref(),
+            &raw.row_projected_bytes,
+            max_projected_bytes,
+            raw.root_window_request.as_ref(),
+            validate,
+            map_projection_denial,
+        )?;
     raw.rows.clear();
+    if !raw.row_projected_bytes.is_empty() || max_projected_bytes.is_some() {
+        raw.row_projected_bytes = effective_row_bytes;
+    }
+    if truncated_in_projection {
+        let kept = rows.len();
+        let kept_last_boundary = kept
+            .checked_sub(1)
+            .and_then(|idx| raw.window_boundaries.get(idx).cloned());
+        if let Some(progress) = raw.window_progress.as_mut() {
+            progress.truncate_to_projected_rows(kept, kept_last_boundary);
+            if let Some(window) = raw.root_window_request.as_ref() {
+                window.update_progress(progress.clone());
+            }
+        }
+    }
     let result_count = rows.len();
     let truncation_count = usize::from(raw.has_more);
     Ok(ProjectedNonLiveKernelOutcome {
@@ -104,16 +127,51 @@ pub fn decode_projection_tree<Schema, Query, QueryResult, Denial>(
     tree: &super::super::projection::WorthQueryApplicationDisclosedProjectionTree,
     governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
     names: Option<&worth_query_execution_naming::facade::ObservedEntityNames>,
-    mut validate: impl FnMut() -> Result<(), Denial>,
+    validate: impl FnMut() -> Result<(), Denial>,
     map_projection_denial: impl Fn(WorthQueryApplicationProjectionDenial) -> Denial,
 ) -> Result<Vec<QueryResult>, Denial>
 where
     Schema: ApplicationSchema,
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
+    let (rows, _, _) = decode_projection_tree_budgeted::<Schema, Query, QueryResult, Denial>(
+        execution,
+        decode,
+        tree,
+        governance,
+        names,
+        &[],
+        None,
+        None,
+        validate,
+        map_projection_denial,
+    )?;
+    Ok(rows)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn decode_projection_tree_budgeted<Schema, Query, QueryResult, Denial>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    decode: &ValueDecodeState,
+    tree: &super::super::projection::WorthQueryApplicationDisclosedProjectionTree,
+    governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
+    names: Option<&worth_query_execution_naming::facade::ObservedEntityNames>,
+    tree_row_bytes: &[usize],
+    max_projected_bytes: Option<usize>,
+    root_window: Option<&super::super::root_window::WorthQueryApplicationRootWindow>,
+    mut validate: impl FnMut() -> Result<(), Denial>,
+    map_projection_denial: impl Fn(WorthQueryApplicationProjectionDenial) -> Denial,
+) -> Result<(Vec<QueryResult>, Vec<usize>, bool), Denial>
+where
+    Schema: ApplicationSchema,
+    QueryResult: WorthQueryApplicationProjection<Schema, Query>,
+{
     let projected = decode.run(execution, |session| {
         let mut rows = Vec::with_capacity(tree.raw_rows().len());
-        for node in tree.iter() {
+        let mut effective_bytes = Vec::with_capacity(tree.raw_rows().len());
+        let mut acc_bytes = 0usize;
+        let mut truncated = false;
+        for (idx, node) in tree.iter().enumerate() {
             validate()?;
             let value = QueryResult::project(
                 &WorthQueryApplicationProjectionRow::new(node, governance, session)
@@ -124,9 +182,30 @@ where
             if session.stopped() {
                 break;
             }
-            rows.push(value.map_err(&map_projection_denial)?);
+            let value = value.map_err(&map_projection_denial)?;
+            let tree_bytes = tree_row_bytes.get(idx).copied().unwrap_or(0);
+            let typed_bytes = value.projected_row_bytes();
+            let row_bytes = tree_bytes.max(typed_bytes);
+            if let Some(limit) = max_projected_bytes {
+                let next_total = acc_bytes.saturating_add(row_bytes);
+                if row_bytes > limit || next_total > limit {
+                    if rows.is_empty() {
+                        if let Some(window) = root_window {
+                            window.report_oversized_row(row_bytes.max(next_total));
+                        }
+                        return Err(map_projection_denial(
+                            WorthQueryApplicationProjectionDenial::reject("streaming-window-bytes"),
+                        ));
+                    }
+                    truncated = true;
+                    break;
+                }
+                acc_bytes = next_total;
+            }
+            effective_bytes.push(row_bytes);
+            rows.push(value);
         }
-        Ok(rows)
+        Ok((rows, effective_bytes, truncated))
     });
     let map_decode_denial = |cause| {
         map_projection_denial(WorthQueryApplicationProjectionDenial::new(
@@ -139,8 +218,7 @@ where
     // checkpoint scope does not by itself prove that request remained live.
     decode.check(execution).map_err(map_decode_denial)?;
     let projected = projected.map_err(map_decode_denial)?;
-    let rows = projected?;
-    Ok(rows)
+    projected
 }
 
 /// Internal completion carrier only: () is not the application's result binding.

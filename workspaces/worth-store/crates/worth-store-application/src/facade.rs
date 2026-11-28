@@ -22,6 +22,23 @@ pub use crate::descriptor::ApplicationHomeDescriptorDenial;
 pub use crate::discard::{
     discard_home, ApplicationHomeDiscard, ApplicationHomeDiscardDenial, ApplicationHomeDiscardStage,
 };
+pub use crate::historical_cursor::{
+    capture_relational_branch_revision, compute_chunk_semantic_commitment,
+    compute_root_semantic_commitment, compute_row_history_digest, consolidate_chunk,
+    encode_canonical_entity_payload, encode_canonical_history_version,
+    encode_canonical_relation_payload, member_id, reconstruct_verified_chunk_rows,
+    seal_basis_chunks, AdmittedQueryWindowBinding, AdmittedQueryWindowPage,
+    AdmittedQueryWindowSource, BorrowedHistoricalRow, CapturedRelationalRevision, ChunkMemberId,
+    DurableHistoricalBasisStore, HeadWorkingSetGuard, HistoricalChunkGeometry, HistoricalCursor,
+    HistoricalCursorPage, HistoricalCursorStream, HistoricalPoolBorrow, HistoricalWorkingSetPool,
+    MemoryHistoricalBasisStore, ReaderLoan, ReaderLoanGuard, RetainedBasisToken,
+    RetainedRevisionReceipt, SealedBasisChunks, SealedChunkDescriptor, DEFAULT_CHUNK_ROWS,
+    DEFAULT_CONTINUATION_PAGE_VERSIONS, DEFAULT_INLINE_HISTORY_LIMIT,
+};
+#[cfg(feature = "certification-test-authority")]
+pub use crate::historical_cursor::{
+    DurableHistoricalCrashCut, HistoricalCursorCertificationMutant,
+};
 pub use crate::home_context::{
     AdmittedApplicationHome, ReadmittedApplicationHome, RecoveredPhysicalHome,
 };

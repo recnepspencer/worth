@@ -2275,6 +2275,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "tempfile",
+ "tracking-allocator",
  "worth-execution",
  "worth-foundational",
  "worth-proof",

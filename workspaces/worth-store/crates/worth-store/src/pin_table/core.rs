@@ -201,6 +201,20 @@ impl<T> RootPinCore<T> {
     pub(crate) fn live_pins(&self) -> usize {
         self.attachments.len()
     }
+
+    /// Pin identities that currently protect a root (`Active` or `Expiring`),
+    /// in ascending order.
+    pub(crate) fn live_pin_ids(&self) -> Vec<RootPinId> {
+        self.attachments
+            .keys()
+            .filter(|pin| {
+                self.kernel
+                    .record(**pin)
+                    .is_some_and(|record| record.state != PinLifecycleState::Expired)
+            })
+            .map(|pin| RootPinId(*pin))
+            .collect()
+    }
 }
 
 const fn drained(record: PinRecord) -> bool {

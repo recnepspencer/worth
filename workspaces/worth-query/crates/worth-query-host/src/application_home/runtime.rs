@@ -1,6 +1,6 @@
 //! One non-cloneable Home wrapper owns the concrete lifecycle and Query service.
 use std::ops::Deref;
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 use worth_query_execution::facade::{
     application_installation::WorthQueryProgramApplicationRuntime,
     primary_graph::WorthQueryPrimaryGraphApplicationRuntime, product::WorthQueryProductBranch,
@@ -72,6 +72,14 @@ pub struct WorthQueryApplicationHome<Schema, Program> {
     pub(crate) owned: std::sync::Arc<super::owned_holds::OwnedRuntimeHolds>,
     /// Commit callbacks of this Home and their notifier.
     pub(crate) commit_watch: std::sync::Arc<crate::background::commit_watch::CommitWatchRegistry>,
+    /// Shared Home-owned durable retained-basis cursor store (Directory Homes).
+    pub(super) durable_historical_bases:
+        OnceLock<worth_store_application::DurableHistoricalBasisStore>,
+    /// Shared Home-owned memory retained-basis cursor store (Memory Homes).
+    pub(super) memory_historical_bases:
+        OnceLock<worth_store_application::MemoryHistoricalBasisStore>,
+    /// Active ReaderLoan refcounts and deferred retirement for retained Query branches.
+    pub(super) retained_branch_custody: Mutex<super::historical_cursor::RetainedBranchCustody>,
 }
 impl<Schema, Program> WorthQueryApplicationHome<Schema, Program>
 where

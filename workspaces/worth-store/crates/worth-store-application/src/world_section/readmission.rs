@@ -287,6 +287,30 @@ where
     pub fn incarnation(&self) -> worth_foundational::facade::HomeIncarnation {
         self.home.incarnation()
     }
+    /// Durable retained-basis historical cursor store over this Home's physical Store.
+    pub fn historical_basis_store(
+        &self,
+        budget: worth_relational::facade::config::ResidencyBudget,
+    ) -> Result<
+        crate::historical_cursor::DurableHistoricalBasisStore,
+        worth_runtime_world::facade::HistoricalReadDenial,
+    > {
+        self.home.historical_basis_store(budget)
+    }
+    /// Cold Home startup reconciliation for persisted historical basis catalog state.
+    pub fn recover_persisted_historical_basis_catalog(
+        &self,
+    ) -> Result<Vec<String>, worth_runtime_world::facade::HistoricalReadDenial> {
+        self.home.recover_persisted_historical_basis_catalog()
+    }
+    /// Marks a retired historical branch cleared in durable catalog state after closure.
+    pub fn mark_persisted_historical_branch_retired(
+        &self,
+        branch_name: &str,
+    ) -> Result<(), worth_runtime_world::facade::HistoricalReadDenial> {
+        self.home
+            .mark_persisted_historical_branch_retired(branch_name)
+    }
     pub fn checkpoint(
         &self,
         request: &ExecutionRequest<'_, '_>,

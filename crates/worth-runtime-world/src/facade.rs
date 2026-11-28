@@ -159,6 +159,15 @@ pub use crate::retention::frontier_pin::{
     NestedDropPolicy, PhysicalRootPointer, PinId, PinScope, PinSpec, PinnedFrontierLease,
     RetentionPortDenial, RuntimeWorldRetentionPort, HOME_ROOT_MANIFEST_VERSION,
 };
+pub use crate::retention::historical_cursor::{
+    AdmittedHistoricalProjection, BranchOriginIdentity, CanonicalCursorKey, CanonicalKeyDomain,
+    HistoricalBasisRetentionKind, HistoricalBasisRow, HistoricalQueryContract,
+    HistoricalReadDenial, HistoricalResidencyPoolSnapshot, RetainedBasisTokenDecodeError,
+    RetainedBasisTokenFields, SchemaVersionIdentity, MAX_BRANCH_ID_BYTES,
+    MAX_CANONICAL_CURSOR_KEY_BYTES, MAX_SCHEMA_ID_BYTES, ORDERING_CANONICAL_ASC,
+    PROJECTION_CANONICAL_FULL, PROJECTION_CANONICAL_HEAD_ONLY, PROJECTION_CANONICAL_KEYS_ONLY,
+    PROJECTION_QUERY_ROWS, RETAINED_BASIS_TOKEN_PREFIX, RETAINED_BASIS_TOKEN_VERSION,
+};
 pub use crate::retention::{RetentionObligationDenial, RetentionTransferDenial};
 
 pub use worth_relational::facade::transactions::CommitResult;

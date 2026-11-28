@@ -181,6 +181,12 @@ impl<'runtime> PhysicalRootPins<'runtime> {
         self.serving.root_protection().pins().live_pins()
     }
 
+    /// Pin identities that still protect a root (`Active` or `Expiring`),
+    /// restored from the durable pin journal before serving.
+    pub fn live_pin_ids(&self) -> Vec<RootPinId> {
+        self.serving.root_protection().pins().live_pin_ids()
+    }
+
     /// Whether open replayed the pin journal. An unrestored table protects
     /// every root and admits no pin operation.
     pub fn restored(&self) -> bool {

@@ -21,8 +21,8 @@ fn nested_distinct_child_serial_advancement_respects_enclosing_parent_room_and_d
         worth_execution::CancellationToken::new(),
         None,
     );
-    let preopened_exec = QueryRequestExecution::open_serial_request(
-        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(installed_policy),
+    let preopened_exec = open_serial(
+        installed_policy,
         worth_execution::ExecutionRequest::serial(&preopened_req),
     );
 
@@ -35,10 +35,8 @@ fn nested_distinct_child_serial_advancement_respects_enclosing_parent_room_and_d
                 worth_execution::CancellationToken::new(),
                 None,
             );
-            let exec = QueryRequestExecution::open_serial_request(
-                worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
-                    installed_policy,
-                ),
+            let exec = open_serial(
+                installed_policy,
                 worth_execution::ExecutionRequest::serial(&child_req),
             );
             exec.run_advancement(None, None, |phase| {
@@ -91,10 +89,8 @@ fn nested_distinct_child_serial_advancement_respects_enclosing_parent_room_and_d
                 worth_execution::CancellationToken::new(),
                 None,
             );
-            let shared_exec = QueryRequestExecution::open_serial_request(
-                worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
-                    installed_policy,
-                ),
+            let shared_exec = open_serial(
+                installed_policy,
                 worth_execution::ExecutionRequest::serial(&shared_req),
             );
             shared_exec
@@ -122,10 +118,8 @@ fn nested_distinct_child_serial_advancement_respects_enclosing_parent_room_and_d
                 None,
             );
             assert!(unbounded_req.memory().is_none());
-            let unbounded_exec = QueryRequestExecution::open_serial_request(
-                worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
-                    worker_only_policy,
-                ),
+            let unbounded_exec = open_serial(
+                worker_only_policy,
                 worth_execution::ExecutionRequest::serial(&unbounded_req),
             );
             unbounded_exec
@@ -148,4 +142,39 @@ fn nested_distinct_child_serial_advancement_respects_enclosing_parent_room_and_d
     assert_eq!(parent_budget.charged_memory_bytes(), 10 * 1024);
     drop(parent_hold);
     assert_eq!(parent_budget.charged_memory_bytes(), 0);
+}
+
+#[test]
+fn serial_caller_is_capped_to_one_worker_on_multiworker_leased_placement() {
+    let four = NonZeroUsize::new(4).unwrap();
+    let policy = worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Automatic,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        ExecutionBudget::new(four, Some(1024 * 1024), Some(10_000)),
+    );
+    let authority = worth_execution::ExecutionAuthority::try_construct(
+        worth_execution::ExecutionAuthorityConfig {
+            max_workers: four,
+            charged_memory_bytes: Some(4 * 1024 * 1024),
+        },
+    )
+    .unwrap();
+    let serial = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let caller = worth_execution::ExecutionRequest::serial(&serial);
+    let exec = QueryRequestExecution::open_serial_request(
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+            authority: &authority,
+            policy,
+        },
+        caller,
+        Some(policy),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let req = exec.execution_request().expect("admitted serial lease");
+    assert_eq!(req.max_workers(), 1);
 }

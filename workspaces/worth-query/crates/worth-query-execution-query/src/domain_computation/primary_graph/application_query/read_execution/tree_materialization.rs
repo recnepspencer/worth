@@ -233,6 +233,12 @@ fn project_nodes(
             .iter()
             .all(|relation| governance.is_disclosed(relation.slot_key_identity().as_ref()));
     work.charge_projection(entity_ids.len(), fields.len(), result_path)?;
+    work.charge_window_bytes(
+        entity_ids
+            .len()
+            .saturating_mul(std::mem::size_of::<WorthQueryApplicationProjectionNode>()),
+        result_path,
+    )?;
     work.material_slots::<WorthQueryApplicationProjectionNode>(entity_ids.len())?;
     let mut nodes = allocate_result_vector::<WorthQueryApplicationProjectionNode>(
         entity_ids.len(),
@@ -253,11 +259,28 @@ fn project_nodes(
                         let projected = allocate_result_vector::<
                             WorthQueryApplicationProjectedField,
                         >(fields.len(), result_path)?;
-                        project_fields(execution, projection, record, &fields, projected, work)
+                        project_fields(
+                            execution,
+                            projection,
+                            record,
+                            governance,
+                            &fields,
+                            projected,
+                            work,
+                        )
                     },
                 )
             }).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, result_path))?
             .ok_or_else(|| projection_denial(result_path))??;
+        let disclosed_relations = relations
+            .iter()
+            .filter(|rel| governance.is_disclosed(rel.slot_key_identity().as_ref()))
+            .count();
+        work.charge_window_bytes(
+            disclosed_relations
+                .saturating_mul(std::mem::size_of::<WorthQueryApplicationProjectedRelation>()),
+            result_path,
+        )?;
         work.material_slots::<WorthQueryApplicationProjectedRelation>(relations.len())?;
         let projected_relations = allocate_result_vector::<WorthQueryApplicationProjectedRelation>(
             relations.len(),

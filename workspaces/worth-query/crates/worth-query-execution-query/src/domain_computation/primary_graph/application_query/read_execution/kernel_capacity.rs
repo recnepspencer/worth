@@ -29,6 +29,10 @@ impl ChargedBytes for RawNonLiveKernelOutcome {
             next_boundary,
             has_more: _has_more,
             actual_work: _actual_work,
+            window_progress: _window_progress,
+            row_projected_bytes: _row_projected_bytes,
+            root_window_request: _root_window_request,
+            window_boundaries: _window_boundaries,
         } = raw;
         // The closed pair read always selects Complete, which cannot mint a
         // native continuation. Refuse unsupported output rather than undercount

@@ -202,6 +202,9 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
             active_head,
             owned,
             commit_watch,
+            durable_historical_bases,
+            memory_historical_bases,
+            retained_branch_custody,
         } = self;
         let active_head = active_head
             .into_inner()
@@ -216,9 +219,15 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
                     active_head: std::sync::Mutex::new(active_head),
                     owned,
                     commit_watch,
+                    durable_historical_bases,
+                    memory_historical_bases,
+                    retained_branch_custody,
                 }),
             ));
         };
+        drop(retained_branch_custody);
+        drop(durable_historical_bases);
+        drop(memory_historical_bases);
         if let Err(cause) = home.preflight_world_close(request) {
             return Err(WorthQueryApplicationHomeCloseRefused::from_custody(
                 CloseCustody::WorldAdmission {
@@ -312,6 +321,9 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
                 active_head: std::sync::Mutex::new(active_head),
                 owned: std::sync::Arc::default(),
                 commit_watch: std::sync::Arc::default(),
+                durable_historical_bases: std::sync::OnceLock::new(),
+                memory_historical_bases: std::sync::OnceLock::new(),
+                retained_branch_custody: std::sync::Mutex::default(),
             }),
             CloseCustody::QueryAdmission {
                 query,
@@ -328,6 +340,9 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
                 active_head: std::sync::Mutex::new(active_head),
                 owned: std::sync::Arc::default(),
                 commit_watch: std::sync::Arc::default(),
+                durable_historical_bases: std::sync::OnceLock::new(),
+                memory_historical_bases: std::sync::OnceLock::new(),
+                retained_branch_custody: std::sync::Mutex::default(),
             }),
             CloseCustody::World {
                 query,
@@ -344,6 +359,9 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
                     active_head: std::sync::Mutex::new(active_head),
                     owned: std::sync::Arc::default(),
                     commit_watch: std::sync::Arc::default(),
+                    durable_historical_bases: std::sync::OnceLock::new(),
+                    memory_historical_bases: std::sync::OnceLock::new(),
+                    retained_branch_custody: std::sync::Mutex::default(),
                 }),
                 Err(home) => Err(Self::from_custody(CloseCustody::World {
                     query,

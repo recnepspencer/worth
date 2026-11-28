@@ -174,6 +174,7 @@ mod domain_computation_primary_graph_application_contribution_producer_demand_pr
 mod domain_computation_primary_graph_application_contribution_request_execution_advancement_installed_opening {
     use worth_query_execution_query::facade::domain_computation::primary_graph::application_contribution::request_execution::advancement::WorthQueryAdvancementDenial;
     use worth_query_execution_query::facade::domain_computation::primary_graph::application_contribution::request_execution::advancement::WorthQueryAdvancementPhase;
+    use worth_query_execution_query::facade::domain_computation::primary_graph::application_contribution::request_execution::advancement::WorthQueryBootstrapAdvancementPhase;
     use worth_query_execution_query::facade::domain_computation::primary_graph::application_contribution::request_execution::advancement::WorthQueryForeignAdvancementPhase;
     use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
     use worth_query_installation::facade::ApplicationSchema;
@@ -201,6 +202,28 @@ mod domain_computation_primary_graph_application_contribution_request_execution_
         ) -> Result<R, WorthQueryAdvancementDenial> {
             self.inner
                 .with_execution_request_advancement::<R>(execution, body)
+        }
+        pub fn with_scoped_execution_request_advancement<R>(
+            &self,
+            execution: worth_execution::ExecutionRequest<'_, '_>,
+            policy: worth_foundational::ExecutionRequestPolicy,
+            request: &WorthQueryRequestScope,
+            body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+        ) -> Result<R, WorthQueryAdvancementDenial> {
+            self.inner
+                .with_scoped_execution_request_advancement::<R>(execution, policy, request, body)
+        }
+        pub fn with_bootstrap_handed_off_advancement<R>(
+            &self,
+            bootstrap: &WorthQueryBootstrapAdvancementPhase<'_>,
+            retain_returned_outcome: bool,
+            body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+        ) -> Result<R, WorthQueryAdvancementDenial> {
+            self.inner.with_bootstrap_handed_off_advancement::<R>(
+                bootstrap,
+                retain_returned_outcome,
+                body,
+            )
         }
         pub fn with_funded_application_advancement<R>(
             &self,

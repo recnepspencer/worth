@@ -84,20 +84,92 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
+        self.run_caller_request_advancement(
+            caller,
+            None,
+            worth_execution::CancellationToken::new(),
+            None,
+            false,
+            body,
+        )
+    }
+
+    /// Runs a call carrying the caller's exact original `ExecutionRequest`,
+    /// narrowed by BOTH the installed World placement and an explicit session
+    /// policy + request scope (cancellation and deadline).
+    pub(crate) fn with_scoped_execution_request_advancement<R>(
+        &self,
+        caller: worth_execution::ExecutionRequest<'_, '_>,
+        policy: worth_foundational::ExecutionRequestPolicy,
+        request: &WorthQueryRequestScope,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        let _custody = OpeningCustody::enter()?;
+        self.run_caller_request_advancement(
+            caller,
+            Some(policy),
+            request.cancellation().execution_token(),
+            request.deadline(),
+            false,
+            body,
+        )
+    }
+
+    /// Explicit bootstrap-to-Home advancement handoff for post-admission
+    /// opening work (such as crash-recovered orphan branch retirement).
+    /// Reuses the caller's active bootstrap opening custody on the current
+    /// thread without spawning a worker thread, preserving the opening
+    /// request's cancellation, deadline, work, and memory controls end-to-end.
+    pub(crate) fn with_bootstrap_handed_off_advancement<R>(
+        &self,
+        bootstrap: &WorthQueryBootstrapAdvancementPhase<'_>,
+        retain_returned_outcome: bool,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        let caller = bootstrap.execution_request();
+        caller.consult().map_err(advancement_denial)?;
+        self.run_caller_request_advancement(
+            caller,
+            None,
+            worth_execution::CancellationToken::new(),
+            None,
+            retain_returned_outcome,
+            body,
+        )
+    }
+
+    fn run_caller_request_advancement<R>(
+        &self,
+        caller: worth_execution::ExecutionRequest<'_, '_>,
+        ceiling_policy: Option<worth_foundational::ExecutionRequestPolicy>,
+        scope_cancellation: worth_execution::CancellationToken,
+        scope_deadline: Option<worth_execution::MonotonicDeadline>,
+        retain_returned_outcome: bool,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
         self.with_execution_placement(|placement| {
             let execution = match caller.allocation_policy() {
                 worth_execution::ExecutionAllocationPolicy::Execution(lease) => {
                     QueryRequestExecution::under_lease_within_placement(
                         lease,
                         placement,
+                        ceiling_policy,
+                        scope_cancellation,
                         caller.deadline(),
+                        scope_deadline,
                     )
                 }
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation => {
-                    QueryRequestExecution::open_serial_request(placement, caller)
+                    QueryRequestExecution::open_serial_request(
+                        placement,
+                        caller,
+                        ceiling_policy,
+                        scope_cancellation,
+                        scope_deadline,
+                    )
                 }
             };
-            execution.run_product_advancement(self, false, body)
+            execution.run_product_advancement(self, retain_returned_outcome, body)
         })?
     }
 

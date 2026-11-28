@@ -61,6 +61,8 @@ pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
     result_set_observation: super::WorthQueryObservedResultSet<Query>,
     request_affinity: super::admitted_result::WorthQueryApplicationQueryRequestAffinity,
     receipt: WorthQueryApplicationQueryAccessReceipt,
+    window_progress: Option<super::root_window::WorthQueryApplicationRootWindowProgress>,
+    row_projected_bytes: Vec<usize>,
 }
 
 pub use worth_query_execution_lineage::facade::primary_graph::application_query::one_shot::WorthQueryAdmittedOneShotStop;

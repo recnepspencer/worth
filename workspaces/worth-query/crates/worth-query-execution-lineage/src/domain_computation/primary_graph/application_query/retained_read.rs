@@ -101,6 +101,16 @@ impl WorthQueryApplicationReadObservation {
         self.product.selected_commit()
     }
 
+    /// Exact Relational MVCC snapshot version pinned by this read observation.
+    pub fn relational_snapshot_version(&self) -> worth_relational::facade::identity::VersionId {
+        self.product
+            .observation()
+            .basis()
+            .relational_basis()
+            .observation()
+            .version_id()
+    }
+
     pub(crate) fn matches_occurrence(
         &self,
         runtime_authority: u64,

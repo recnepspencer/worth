@@ -206,6 +206,11 @@ pub enum WorthQueryApplicationHomeOpenRefusedPhase<Schema: ApplicationSchemaComp
         query: UnadmittedHomeQueryService<Schema, Program>,
         home: ApplicationHomeOwnerAdmissionRefused,
     },
+    HistoricalBranchReconciliation {
+        query: worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>,
+        home: DirectoryHome,
+        cause: worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    },
 }
 
 #[derive(Debug)]
@@ -298,6 +303,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             Self::QueryAttachment { query, .. } => query.detail(),
             Self::CustodyReadmission { cause, .. } => format!("{cause:?}"),
             Self::OwnerAdmission { home, .. } => format!("{:?}", home.reason()),
+            Self::HistoricalBranchReconciliation { cause, .. } => format!("{cause:?}"),
         }
     }
 }

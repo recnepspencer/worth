@@ -7,6 +7,7 @@ pub fn project_fields(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     native: &worth_relational::facade::runtime::VisibilityProjectionView,
     record: worth_relational::facade::runtime::EntityProjectionRecord<'_>,
+    governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
     fields: &[&WorthQueryInstalledGraphProjection],
     mut projected: Vec<WorthQueryApplicationProjectedField>,
     work: &mut ResultTreeWork,
@@ -25,6 +26,11 @@ pub fn project_fields(
             return Err(projection_denial(projection.result_path()));
         }
 
+        if governance.is_disclosed(projection.slot_key_identity().as_ref()) {
+            let field_bytes = std::mem::size_of::<WorthQueryApplicationProjectedField>()
+                .saturating_add(value.owned_allocation_capacity_bytes());
+            work.charge_window_bytes(field_bytes, projection.result_path())?;
+        }
         work.material_field(projection.slot_type(), value)?;
         let field = if matches!(
             value,
