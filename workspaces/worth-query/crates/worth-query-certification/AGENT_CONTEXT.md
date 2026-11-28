@@ -17,7 +17,7 @@ Canonical machine constitution: `tools/boundary-check/config/road1.toml`
 Boundary guidance (the compiler and retained checks own enforcement):
 - Cold certification facade over `worth-query-host`, `worth-query-replay`; ordinary Query packages must not depend on it.
 - Selected explicitly for compiler, replay, or hostile certification; absent from the ordinary workspace default members.
-- Configured downstream certification owners: `worth-ui-certification`; all other consumers are denied.
+- Configured downstream certification owners: none; all other consumers are denied.
 - May expose provider-neutral scenario, evidence, and oracle contracts; must not expose pre-solved Query authority constructors or production runner state.
 
 Skeleton fence:

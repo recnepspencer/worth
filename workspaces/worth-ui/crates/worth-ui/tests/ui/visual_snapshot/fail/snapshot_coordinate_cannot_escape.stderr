@@ -1,5 +1,0 @@
-error: lifetime may not live long enough
- --> $WORKSPACE/crates/worth-ui/tests/ui/visual_snapshot/fail/snapshot_coordinate_cannot_escape.rs
- note: requirement occurs because of the type `UiSnapshotClientPixel<'_>`, which makes the generic argument `'_` invariant
- note: the struct `UiSnapshotClientPixel<'snapshot>` is invariant over the parameter `'snapshot`
- help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance

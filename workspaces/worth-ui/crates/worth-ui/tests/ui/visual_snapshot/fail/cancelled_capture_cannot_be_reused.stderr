@@ -1,2 +1,0 @@
-error[E0382]: use of moved value: `pending`
- --> $WORKSPACE/crates/worth-ui/tests/ui/visual_snapshot/fail/cancelled_capture_cannot_be_reused.rs

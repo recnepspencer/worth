@@ -48,7 +48,6 @@ WORKSPACE_GLOBS = (
     "crates/**/*.rs",
     "workspaces/worth-query-bank-world/crates/**/*.rs",
     "workspaces/worth-query/crates/**/*.rs",
-    "workspaces/worth-ui/crates/**/*.rs",
     "workspaces/worth-store/crates/**/*.rs",
     "workspaces/worth-store/tools/**/*.rs",
 )

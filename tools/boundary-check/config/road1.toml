@@ -407,13 +407,6 @@ root = "workspaces"
 forbidden_identifiers = ["worth_relational_contracts", "worth_relational_storage", "worth_relational_branch", "worth_relational_indexes", "worth_relational_lineage", "worth_relational_commit_admission", "worth_relational_merge", "worth_relational_mutation", "worth_relational_durability", "worth_relational_publication"]
 guidance = "Workspaces consume Relational through its public facade"
 
-# UI still references the Query monolith retired by b24dce87c3. Its source seal
-# does not require loading the unresolved UI workspace graph.
-[[source_identifier_denials]]
-root = "workspaces/worth-ui"
-forbidden_identifiers = ["internal_port", "worth_relational_publication"]
-guidance = "UI must not use a Relational implementation port"
-
 [[source_identifier_denials]]
 root = "crates/worth-relational/src/facade"
 forbidden_identifiers = ["internal_port", "worth_relational_contracts", "worth_relational_storage", "worth_relational_branch", "worth_relational_indexes", "worth_relational_lineage", "worth_relational_commit_admission", "worth_relational_merge", "worth_relational_mutation", "worth_relational_durability", "worth_relational_publication"]
@@ -605,96 +598,6 @@ forbidden_identifiers = [
 guidance = "C5.1 physical work foundations must not import serialization shortcuts or future branch/MVCC authority"
 
 [[source_identifier_denials]]
-root = "workspaces/worth-ui/apps/platform-pulse/tests/executable_world"
-forbidden_identifiers = [
-  "eframe",
-  "egui",
-  "PlatformPulseCompositionLayout",
-  "product_world",
-  "worth_ui_certification",
-  "worth_ui_dsl",
-  "worth_ui_runtime",
-  "worth_ui_test_support",
-]
-forbidden_identifier_fragments = []
-guidance = "Milestones 3.10.3 and 3.14.1: the executable runner observes the Cargo-built product through typed stdout, PID-bound native APIs, and independently qualified pixel adapters; it cannot import product internals, certification authority, or adapter mechanics"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/apps/platform-pulse/src/product_world"
-forbidden_identifiers = [
-  "include_bytes",
-  "include_str",
-  "platform_pulse_visual_contract",
-  "serde_json",
-  "worth_ui_runtime",
-  "worth_ui_test_support",
-]
-forbidden_identifier_fragments = []
-guidance = "Milestone 3.15 Phase 1: the Pulse product composition is fixed typed application data and cannot derive its design contract from the independent executable-world manifest or runtime/test mechanics"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/apps/platform-pulse/src"
-exclude_paths = [
-  "workspaces/worth-ui/apps/platform-pulse/src/application.rs",
-  "workspaces/worth-ui/apps/platform-pulse/src/query_source",
-]
-forbidden_identifiers = [
-  "worth_query",
-  "worth_query_decl",
-  "worth_query_host",
-]
-forbidden_identifier_fragments = ["WorthQuery"]
-guidance = "Milestone 3.13 Phase 4: direct Query declaration, host, workspace, result, operation, and live-handle authority is confined to query_source/** and the application composition seam; native-frame, visual, observation, and host-adapter modules consume only Worth UI or Pulse-owned contracts"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-host-contract/src"
-exclude_paths = [
-  "workspaces/worth-ui/crates/worth-ui-host-contract/src/presentation_work.rs",
-]
-forbidden_identifiers = ["Sha256"]
-forbidden_identifier_fragments = []
-guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-text/src"
-exclude_paths = [
-  "workspaces/worth-ui/crates/worth-ui-text/src/font_collection/application_alpha_raster_controls.rs",
-  "workspaces/worth-ui/crates/worth-ui-text/src/font_collection/application_fallback_tests.rs",
-  "workspaces/worth-ui/crates/worth-ui-text/src/font_collection/application_format_tests.rs",
-  "workspaces/worth-ui/crates/worth-ui-text/src/raster/color/tests.rs",
-  "workspaces/worth-ui/crates/worth-ui-text/src/raster/demand_alpha_tests.rs",
-  "workspaces/worth-ui/crates/worth-ui-text/src/raster/tests.rs",
-  "workspaces/worth-ui/crates/worth-ui-text/src/shaping/reference_fixture_tests.rs",
-]
-forbidden_identifiers = ["Sha256"]
-forbidden_identifier_fragments = []
-guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-host-native/src"
-exclude_paths = [
-  "workspaces/worth-ui/crates/worth-ui-host-native/src/native/mechanics_adapter/text_atlas_dx12_tests.rs",
-  "workspaces/worth-ui/crates/worth-ui-host-native/src/native/mechanics_adapter/text_atlas_signal_failure_tests.rs",
-  "workspaces/worth-ui/crates/worth-ui-host-native/src/native/mechanics_adapter/text_atlas_tests.rs",
-  "workspaces/worth-ui/crates/worth-ui-host-native/src/qualification_tests.rs",
-]
-forbidden_identifiers = ["Sha256"]
-forbidden_identifier_fragments = []
-guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-runtime/src"
-forbidden_identifiers = ["Sha256"]
-forbidden_identifier_fragments = []
-guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-query-binding/src"
-forbidden_identifiers = ["Sha256"]
-forbidden_identifier_fragments = []
-guidance = "Milestone 3.16.2: presentation hashing goes through worth-ui-host-contract::UiCountedSha256, the exact SHA-256 whose digested bytes the presentation work ledger counts; only the ledger owns the raw hasher, and tests keep raw SHA-256 as an independent oracle"
-
-[[source_identifier_denials]]
 root = "workspaces/worth-store/crates/worth-store/src/physical_runtime"
 forbidden_identifiers = [
   "serde_json",
@@ -737,184 +640,6 @@ forbidden_identifier_fragments = [
 ]
 guidance = "C5.1's complete physical runtime may own physical tree branches and generic Signal branch epochs, but must not own serialization shortcuts, branch/MVCC authority, semantic writers, semantic generations, or branch-labelled concurrency"
 
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-runtime/src"
-forbidden_identifiers = [
-  "portal_anchored_allocation",
-  "scroll_owned_allocation",
-  "tokenize_module_source",
-  "WorthUiArtifactInput",
-  "WorthUiArtifactInputNormalizer",
-  "WorthUiCanonicalModuleOrder",
-  "WorthUiParsedSourceDeclaration",
-  "WorthUiParsedSourceModule",
-  "WorthUiParsedSourcePackage",
-  "WorthUiParsedSourceToArtifactInputLowerer",
-  "WorthUiRustAuthoredToArtifactInputLowerer",
-  "WorthUiSourceImportGraph",
-  "WorthUiSourceModuleRecord",
-  "WorthUiSourcePackageLoader",
-  "WorthUiSourceParser",
-  "WorthUiSourceToken",
-  "WorthUiSourceTokenKind",
-  "WorthUiStructuralBodyParser",
-]
-guidance = "Milestones 3.10.1 and 3.15: runtime may transport sealed source and admit runtime capabilities, but authored text, syntax trees, language normalization, and sealing belong only to worth-ui-dsl; portal-anchor and scroll-allocation imports use their canonical family axes with no legacy module lane"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-runtime/src"
-exclude_paths = [
-  "workspaces/worth-ui/crates/worth-ui-runtime/src/units.rs",
-  "workspaces/worth-ui/crates/worth-ui-runtime/src/facade/observation_report.rs",
-]
-forbidden_identifiers = ["UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT"]
-guidance = "Hardening 3: host subpixels and logical points cross only through crate::units, so every crossing rounds one way and refuses the same values; lines and pages the host encodes at that scale are counts read through units::host_count_thousandths, never distances. observation_report only re-exports the contract constant to hosts"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-runtime/src"
-forbidden_identifiers = ["UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT"]
-guidance = "Hardening 3b: appearance subpixels and logical points cross only through worth_foundational's logical_points (appearance_coordinate_nearest, appearance_extent_nearest, appearance_points) and the appearance regions' canonical_box, so paint and hit read one conversion"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-host-native/src"
-forbidden_identifiers = ["UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT"]
-guidance = "Hardening 3b: appearance subpixels and logical points cross only through worth_foundational's logical_points (appearance_coordinate_nearest, appearance_extent_nearest, appearance_points) and the appearance regions' canonical_box, so paint and hit read one conversion"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-runtime/src"
-exclude_paths = [
-  "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/scroll/staged_offset.rs",
-  "workspaces/worth-ui/crates/worth-ui-runtime/src/mounting/session_state/scroll_staged_pose.rs",
-]
-forbidden_identifiers = ["staged_pose_offset"]
-guidance = "Hardening 4: an offset Scroll staged past the frame the host shows is a UiStagedScrollOffset, and only mounted pose staging reads the offset inside, so no staged offset stands in for or compares with the accepted one that UiScrollRuntimeState::offset reads"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/session/service_proposal"
-forbidden_identifiers = [
-  "AuthorityMarker",
-  "String",
-  "serde_json",
-  "worth_query",
-]
-guidance = "Milestone 3.15: the common service request/proposal foundation carries exact concrete origin authority and explicitly bounded typed axes; it cannot use an open authority marker, string/JSON payload bag, or Query lane"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/session/service_proposal/compiler"
-exclude_paths = [
-  "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/session/service_proposal/compiler/evidence_tests.rs",
-]
-forbidden_identifiers = [
-  "WorthUiPreparedApplicationPublication",
-  "WorthUiHostMechanicsAdapter",
-  "mint_unbound",
-]
-guidance = "Milestone 3.15: the proposal compiler orders and validates typed semantic stages; it cannot publish successor truth, perform host effects, or reconstruct authority. Exhaustive family-switch absence is enforced by compiler source evidence because the closed family identity itself is legitimate compiler vocabulary"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/allocation_receipt"
-exclude_paths = [
-  "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/allocation_receipt/committed_truth/equivalence_basis.rs",
-  "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/allocation_receipt/committed_truth/geometry_evidence.rs",
-  "workspaces/worth-ui/crates/worth-ui-runtime/src/runtime/allocation_receipt/ledger_lifecycle/mounted_projection/row.rs",
-]
-forbidden_identifiers = [
-  "UiMountedCanonicalBox",
-  "UiMountedCoordinateSpace",
-  "UiMeasurementCoordinateSpace",
-  "UiHostSurfaceCoordinateUnit",
-]
-guidance = "Milestone 3.15: admitted, committed, presentation-sampled, and host geometry are distinct compiler types; a generic rectangle plus a runtime coordinate-kind field is not a phase brand"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-runtime/src/mounting/presentation/motion_sampling"
-forbidden_identifiers = [
-  "UiMountedCanonicalBox",
-  "UiMountedCoordinateSpace",
-  "UiMeasurementCoordinateSpace",
-  "UiHostSurfaceCoordinateUnit",
-]
-guidance = "Milestone 3.15: presentation-sampled geometry remains a distinct phase brand and cannot collapse back into a generic coordinate-kind rectangle"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-runtime/src/mounting/presentation"
-forbidden_identifiers = [
-  "UiMotionProducedFact",
-  "UiMotionRuntimeState",
-  "UiStagedMotionServiceProposal",
-  "UiDerivedMotionServiceProposal",
-]
-guidance = "Milestone 3.15 Phase 4: presentation may sample committed Motion track copies, but it cannot own semantic Motion state, stage or derive tracks, or publish semantic Motion facts"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-runtime/src/mounting/presentation/motion_sampling"
-forbidden_identifiers = [
-  "UiMotionTransitionRequest",
-  "UiMotionTerminalReceipt",
-]
-guidance = "Milestone 3.15 Phase 4: the sampler consumes committed tracks and emits presentation samples; it cannot construct semantic transition requests or terminalize canonical tracks"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-host-contract/src/runtime"
-exclude_paths = [
-  "workspaces/worth-ui/crates/worth-ui-host-contract/src/runtime/measurement_context.rs",
-  "workspaces/worth-ui/crates/worth-ui-host-contract/src/runtime/mod.rs",
-]
-forbidden_identifiers = [
-  "UiMountedCanonicalBox",
-  "UiMountedCoordinateSpace",
-  "UiMeasurementCoordinateSpace",
-  "UiHostSurfaceCoordinateUnit",
-]
-guidance = "Milestone 3.15: host logical and physical geometry are protocol types, not aliases of runtime allocation or measurement rectangles"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-host-contract/src/runtime/solicited_effect"
-forbidden_identifiers = [
-  "UiRuntimeServiceFamily",
-  "UiServiceRequest",
-  "String",
-  "Vec",
-  "serde_json",
-  "worth_query",
-]
-guidance = "Milestone 3.15: the host solicited-effect contract is a narrow protocol family with exact host, presentation, binding, and mounted-target coordinates; runtime proposal policy, dynamic payloads, and Query authority cannot leak into it"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-host-contract/src/observation_report"
-forbidden_identifiers = ["Focus"]
-guidance = "Milestone 3.15: host observation reports name window-focus state explicitly; semantic focus placement is a separate solicited-effect protocol and cannot reappear as an ambiguous observation payload"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-host-contract/src/runtime"
-forbidden_identifiers = ["NativeFocus", "ServiceMechanics"]
-guidance = "Milestone 3.15: legacy native-focus capability naming and catch-all service-mechanics ownership are forbidden; use semantic focus placement and one owner per service family"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-runtime/src"
-forbidden_identifiers = ["NativeFocus", "ServiceMechanics"]
-guidance = "Milestone 3.15: legacy native-focus capability naming and catch-all service-mechanics ownership are forbidden; use semantic focus placement and one owner per service family"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/crates/worth-ui-dsl/src"
-forbidden_identifiers = [
-  "UiHostAdapterSessionAuthority",
-  "UiMountedFrame",
-  "UiMountedPresentation",
-  "WorthUiActiveApplicationSession",
-  "WorthUiAllocationCatalog",
-  "WorthUiApplicationPublication",
-  "WorthUiCanvasSpatialPlan",
-  "WorthUiFrameworkTurn",
-  "WorthUiHostSession",
-  "WorthUiMountedApplication",
-  "WorthUiOrdinaryPlan",
-  "WorthUiPreparedApplicationGeneration",
-  "WorthUiRealtimePlan",
-  "WorthUiVirtualizedPlan",
-]
-guidance = "Milestone 3.10.1: DSL owns authored meaning but must not define or import runtime generation, plan, allocation, mounted, publication, or host-session authority"
-
 [machine_authority]
 canonical_config = "tools/boundary-check/config/road1.toml"
 mirrored_docs = []
@@ -925,7 +650,7 @@ mirrored_docs = []
 workspace = "workspaces/worth-query"
 certification_package = "worth-query-certification"
 certification_authority_packages = ["worth-query-host", "worth-query-replay"]
-certification_consumers = ["worth-ui-certification"]
+certification_consumers = []
 internal_packages = [
   "worth-query-testkit-certification",
   "worth-query-testkit-certification-application-graph",
@@ -1307,7 +1032,6 @@ forbidden_identifier_fragments = [
 guidance = "Milestone 3 Track C5 (D13/D18 retirement): interim application-checkpoint restoration and unclean-recovery-unsupported surfaces are retired; use Directory Home durability"
 [[source_identifier_denials]]
 root = "workspaces"
-exclude_paths = ["workspaces/worth-ui"]
 forbidden_identifiers = [
   "WorthQueryInterimCheckpointRestore",
   "WorthQueryApplicationCheckpoint",

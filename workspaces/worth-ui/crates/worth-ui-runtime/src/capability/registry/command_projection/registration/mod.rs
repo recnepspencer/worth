@@ -1,4 +1,0 @@
-mod command_projection_accepted_registration_proof;
-mod command_projection_registration;
-
-pub(crate) use command_projection_accepted_registration_proof::CommandProjectionAcceptedRegistrationProof;

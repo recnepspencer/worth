@@ -1,6 +1,4 @@
-use super::governed_crate::{
-    discover_born_crates, discover_context_crates, parse_governed_crate_identity, DiscoveredCrate,
-};
+use super::governed_crate::{discover_born_crates, parse_governed_crate_identity, DiscoveredCrate};
 use super::model::CrateOrientation;
 use super::query_audience::{
     framework_audience_orientations, framework_certification_orientation,
@@ -20,14 +18,6 @@ pub(crate) fn load_orientations(
         .into_iter()
         .map(|born| project_governed_orientation(root, born, &contract))
         .collect::<Result<Vec<_>, String>>()?;
-    for workspace in &contract.context_workspaces {
-        orientations.extend(
-            discover_context_crates(root, workspace)?
-                .into_iter()
-                .map(|born| project_context_orientation(root, born, workspace, &contract))
-                .collect::<Result<Vec<_>, String>>()?,
-        );
-    }
     orientations.extend(super::relational_owners::orientations(
         root,
         &contract.machine_constitution,
@@ -46,42 +36,6 @@ pub(crate) fn load_orientations(
     }
     orientations.sort_by(|left, right| left.crate_name.cmp(&right.crate_name));
     Ok(orientations)
-}
-
-fn project_context_orientation(
-    root: &Path,
-    discovered: DiscoveredCrate,
-    workspace: &crate::authority_inputs::ContextWorkspaceSpec,
-    contract: &OrientationContract,
-) -> Result<CrateOrientation, String> {
-    let crate_root = root.join(&discovered.relative_path);
-    let domain = discovered
-        .package
-        .strip_prefix(&workspace.package_prefix)
-        .and_then(|suffix| suffix.strip_prefix('-'))
-        .unwrap_or("facade")
-        .to_owned();
-    Ok(CrateOrientation {
-        crate_name: discovered.package,
-        relative_path: discovered.relative_path,
-        constitutional_class: "worth/ui".to_owned(),
-        domain,
-        exemplar_role: "WORTH UI workspace-owned implementation surface.".to_owned(),
-        deferred_routes: Vec::new(),
-        public_surface: "workspace-owned; package targets remain the explicit export or composition owners".to_owned(),
-        allowed_target_bands: vec!["WORTH UI manifest-declared dependencies".to_owned()],
-        facade_exports: Vec::new(),
-        owned_modules: collect_owned_modules(&crate_root.join("src"))?,
-        machine_fences: vec![
-            "Must not depend on worthy-* crates.".to_owned(),
-            format!(
-                "Replay dependencies are admitted only for configured certification packages: {}.",
-                workspace.certification_packages.join(", ")
-            ),
-        ],
-        skeleton_fence: "No Road 1 seed skeleton applies; WORTH UI topology is workspace-owned and mechanically discovered.".to_owned(),
-        machine_constitution: contract.machine_constitution.clone(),
-    })
 }
 
 fn project_governed_orientation(

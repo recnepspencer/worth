@@ -1,2 +1,0 @@
-error[E0382]: use of moved value: `published`
- --> $WORKSPACE/crates/worth-ui/tests/ui/visual_snapshot/fail/published_overlay_cannot_clear_twice.rs

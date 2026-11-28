@@ -1,3 +1,0 @@
-error[E0080]: evaluation panicked: intent interaction families must be unique and in canonical order
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/accepted_interactions_require_canonical_order.rs
- note: inside `UiIntentAcceptedInteractions::new`

@@ -1,2 +1,0 @@
-error[E0432]: unresolved imports `worth_ui::facade::query_binding::WorthUiCollectionChangeConsequence`, `worth_ui::facade::query_binding::WorthUiOperationLiveResource`, `worth_ui::facade::query_binding::WorthUiSettledSnapshotProjection`
- --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_diagnostics/fail/query_progression_authority_is_not_a_product_facade.rs

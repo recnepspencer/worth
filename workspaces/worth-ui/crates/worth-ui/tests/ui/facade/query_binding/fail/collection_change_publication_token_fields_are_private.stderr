@@ -1,2 +1,0 @@
-error[E0451]: fields `consequence` and `receipt` of struct `WorthUiAdmittedCollectionChangePublication` are private
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/query_binding/fail/collection_change_publication_token_fields_are_private.rs

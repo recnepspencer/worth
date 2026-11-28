@@ -1,8 +1,0 @@
-[package]
-name = "fake-inspection-consumer"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-runtime-bypass = { package = "worth-ui-runtime", path = "../../../../../../../worth-ui-runtime" }
-inspection-bypass = { package = "worth-ui-inspection", path = "../../../../../../../worth-ui-inspection" }

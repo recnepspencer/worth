@@ -1,2 +1,0 @@
-error[E0624]: method `bind_qualified_native` is private
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/construction/host_binding/product_cannot_bind_native_host.rs

@@ -1,2 +1,0 @@
-error[E0451]: fields `candidate` and `decision` of struct `UiIntentOperabilityProof` are private
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/operability_proof_fields_are_private.rs

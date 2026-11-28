@@ -1,2 +1,0 @@
-error[E0451]: field `required_capabilities` of struct `UiMeasurementCapabilityGrant` is private
- --> tests/ui/capability_grant_private.rs

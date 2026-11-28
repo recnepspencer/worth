@@ -1,3 +1,0 @@
-error[E0432]: unresolved imports `worth_ui_host_native::UiNativeTextAtlasGeneration`, `worth_ui_host_native::UiNativeTextAtlasPin`, `worth_ui_host_native::UiNativeTextAtlasRecovery`, `worth_ui_host_native::UiNativeTextAtlasTransactionPlan`
- --> tests/ui/phase_five/native_plan_pin_recovery_are_unforgeable.rs
- help: a similar name exists in the module

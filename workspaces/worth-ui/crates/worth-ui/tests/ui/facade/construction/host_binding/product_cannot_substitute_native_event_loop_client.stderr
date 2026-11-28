@@ -1,4 +1,0 @@
-error[E0277]: the trait bound `ForgedNativeClient: UiNativeApplicationDefinition` is not satisfied
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/construction/host_binding/product_cannot_substitute_native_event_loop_client.rs
- help: the trait `UiNativeApplicationDefinition` is not implemented for `ForgedNativeClient`
- note: required by a bound in `UiPreparedNativePlatform::run`

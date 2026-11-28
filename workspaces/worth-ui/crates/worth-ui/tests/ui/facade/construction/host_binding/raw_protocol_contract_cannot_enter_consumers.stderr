@@ -1,5 +1,0 @@
-error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/construction/host_binding/raw_protocol_contract_cannot_enter_consumers.rs
- note: expected reference `&UiMountedFrameConsumptionView<'_>`
-   found reference `&UiHostProtocolContract`
- note: method defined here

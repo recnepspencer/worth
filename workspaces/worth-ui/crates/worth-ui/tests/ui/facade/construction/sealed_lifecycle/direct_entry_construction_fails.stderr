@@ -1,2 +1,0 @@
-error[E0451]: field `_sealed` of struct `WorthUi` is private
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/construction/sealed_lifecycle/direct_entry_construction_fails.rs

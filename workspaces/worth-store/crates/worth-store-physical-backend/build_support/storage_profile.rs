@@ -80,20 +80,13 @@ fn approved_flags(encoded: &str) -> bool {
         if flag == "--verbose" {
             continue;
         }
-        let option = if flag == "-C" {
-            flags.next().map(|value| ("codegen", value))
-        } else if flag == "--cfg" {
-            flags.next().map(|value| ("cfg", value))
-        } else if let Some(value) = flag.strip_prefix("-C") {
-            Some(("codegen", value))
+        let codegen = if flag == "-C" {
+            flags.next()
         } else {
-            flag.strip_prefix("--cfg=").map(|value| ("cfg", value))
+            flag.strip_prefix("-C")
         };
-        match option {
-            Some(("codegen", "overflow-checks=on"))
-            | Some(("cfg", "worth_ui_windowing=\"wayland\""))
-            | Some(("cfg", "worth_ui_adapter=\"hardware\"")) => {}
-            _ => return false,
+        if codegen != Some("overflow-checks=on") {
+            return false;
         }
     }
     true
@@ -241,15 +234,19 @@ mod tests {
             inputs.pop();
         }
         for profile in [
-            "-C\u{1f}overflow-checks=on\u{1f}--cfg\u{1f}worth_ui_windowing=\"wayland\"\u{1f}--cfg\u{1f}worth_ui_adapter=\"hardware\"",
-            "-Coverflow-checks=on\u{1f}--cfg=worth_ui_windowing=\"wayland\"\u{1f}--cfg=worth_ui_adapter=\"hardware\"",
+            "-C\u{1f}overflow-checks=on",
+            "-Coverflow-checks=on",
             "--verbose",
-            "-C\u{1f}overflow-checks=on\u{1f}--verbose\u{1f}--cfg\u{1f}worth_ui_windowing=\"wayland\"\u{1f}--cfg\u{1f}worth_ui_adapter=\"hardware\"",
-            "-Coverflow-checks=on\u{1f}--cfg=worth_ui_windowing=\"wayland\"\u{1f}--cfg=worth_ui_adapter=\"hardware\"\u{1f}--verbose",
+            "-C\u{1f}overflow-checks=on\u{1f}--verbose",
+            "-Coverflow-checks=on\u{1f}--verbose",
         ] {
             inputs.push(("CARGO_ENCODED_RUSTFLAGS", profile.into()));
             assert!(is_supported(COMPILER, &inputs, &lock));
-            assert!(is_supported("rustc 1.99.1 (58cf8f9c3 2026-10-13)", &inputs, &lock));
+            assert!(is_supported(
+                "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+                &inputs,
+                &lock
+            ));
             inputs.pop();
         }
         for profile in [
@@ -267,7 +264,6 @@ mod tests {
             "--cfg",
             "-C",
             "-C\u{1f}\u{1f}overflow-checks=on",
-            "--cfg=worth_ui_adapter=\"software\"",
         ] {
             assert!(!approved_flags(profile));
         }

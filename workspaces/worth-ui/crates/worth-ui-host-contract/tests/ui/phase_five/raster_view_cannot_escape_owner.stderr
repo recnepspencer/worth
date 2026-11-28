@@ -1,2 +1,0 @@
-error[E0515]: cannot return value referencing local variable `records`
- --> tests/ui/phase_five/raster_view_cannot_escape_owner.rs

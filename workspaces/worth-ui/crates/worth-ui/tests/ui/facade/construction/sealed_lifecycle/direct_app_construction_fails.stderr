@@ -1,7 +1,0 @@
-error[E0560]: struct `WorthUiApp` has no field named `capability_snapshot`
- --> tests/ui/facade/construction/sealed_lifecycle/direct_app_construction_fails.rs:8:9
-  |
-8 |         capability_snapshot: capability_snapshot(),
-  |         ^^^^^^^^^^^^^^^^^^^ `WorthUiApp` does not have this field
-  |
-  = note: all struct fields are already assigned

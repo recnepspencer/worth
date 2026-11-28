@@ -1,4 +1,0 @@
-error[E0277]: the trait bound `worth_query::runtime::async_source_binding::WorthQueryAsyncResultTransitionBatch: From<UiQueryObservationReportingProjection>` is not satisfied
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/query_binding/fail/reporting_projection_cannot_enter_consumption.rs
- help: the trait `From<UiQueryObservationReportingProjection>` is not implemented for `worth_query::runtime::async_source_binding::WorthQueryAsyncResultTransitionBatch`
- note: required for `UiQueryObservationReportingProjection` to implement `Into<worth_query::runtime::async_source_binding::WorthQueryAsyncResultTransitionBatch>`

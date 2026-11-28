@@ -88,13 +88,11 @@ impl Inputs {
             &files,
             &format!("{CONFIG}domain-values.toml"),
         )?);
-        for key in ["subworkspaces", "context_workspaces"] {
-            workspaces.extend(
-                table(&config, key)
-                    .iter()
-                    .map(|v| workspace_manifest(string(v, "path"))),
-            );
-        }
+        workspaces.extend(
+            table(&config, "subworkspaces")
+                .iter()
+                .map(|v| workspace_manifest(string(v, "path"))),
+        );
         workspaces.extend(
             files[&format!("{CONFIG}test-workspaces.txt")]
                 .lines()

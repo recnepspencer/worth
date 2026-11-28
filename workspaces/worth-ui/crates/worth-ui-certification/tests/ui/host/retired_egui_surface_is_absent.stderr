@@ -1,2 +1,0 @@
-error[E0425]: cannot find value `WorthUiLegacyEguiApplicationTransition` in module `worth_ui_runtime::facade::entry`
- --> tests/ui/host/retired_egui_surface_is_absent.rs

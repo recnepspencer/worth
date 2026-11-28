@@ -1,4 +1,0 @@
-mod runtime_outcome_projection_accepted_registration_proof;
-mod runtime_outcome_projection_registration;
-
-pub(crate) use runtime_outcome_projection_accepted_registration_proof::RuntimeOutcomeProjectionAcceptedRegistrationProof;

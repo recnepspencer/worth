@@ -1,5 +1,0 @@
-mod mosaic_placement_accepted_registration_proof;
-mod mosaic_placement_policy_legality;
-mod mosaic_placement_registration;
-
-pub(crate) use mosaic_placement_accepted_registration_proof::MosaicPlacementAcceptedRegistrationProof;

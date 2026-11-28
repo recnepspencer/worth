@@ -1,3 +1,0 @@
-error: cannot construct `UiAdmittedObservation` with struct literal syntax due to private fields
- --> $WORKSPACE/crates/worth-ui/tests/ui/observation/fail/admitted_observation_cannot_be_constructed.rs
- help: you might have meant to use the `seal` associated function

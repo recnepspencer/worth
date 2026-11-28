@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui_runtime::facade::WorthUiRuntimeHost`
- --> tests/ui/facade_export/runtime_facade_root_does_not_export_runtime_host.rs:1:5
-  |
-1 | use worth_ui_runtime::facade::WorthUiRuntimeHost;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^------------------
-  |     |                         |
-  |     |                         help: a similar name exists in the module: `WorthUiRuntime`
-  |     no `WorthUiRuntimeHost` in `facade`

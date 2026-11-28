@@ -1,3 +1,0 @@
-error[E0599]: no method named `into_dsl_spec` found for struct `UiIntentDeclaration<Intent>` in the current scope
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/missing_operability_contracts_cannot_lower.rs
- note: the method was found for `UiIntentDeclaration<I, UiIntentDeclarationOperabilityBound, UiIntentDeclarationConfirmationBound, UiIntentDeclarationConcurrencyBound, UiIntentDeclarationConsequencesBound>`

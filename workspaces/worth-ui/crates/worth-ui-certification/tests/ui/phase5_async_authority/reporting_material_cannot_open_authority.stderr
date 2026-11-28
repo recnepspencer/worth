@@ -1,4 +1,0 @@
-error[E0308]: mismatched types
- --> tests/ui/phase5_async_authority/reporting_material_cannot_open_authority.rs
- note: expected `WorthUiPresentationRuntimeCorrespondence`, found `String`
- note: method defined here

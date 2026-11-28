@@ -15,16 +15,6 @@ rustflags = [
     # diagnostics here, rather than appending a court-only flag that recompiles
     # shared units (and avoid unstable .long-type-* diagnostic file paths).
     "--verbose",
-    # WORTH UI selects its Linux windowing system at compile time. The arms and
-    # their exhaustiveness guard are nested under cfg(target_os = "linux"), so
-    # carrying this on every target is inert off Linux. It lives in [build]
-    # rather than a [target.*] block because those REPLACE [build].rustflags
-    # rather than merging, which would silently drop overflow-checks.
-    "--cfg", "worth_ui_windowing=\"wayland\"",
-    # The adapter class the selected profile admits. "software" exists only for
-    # the X11 certification lane, whose X server (Xvfb) has no DRI3 and so
-    # offers hardware adapters no surface formats; products build "hardware".
-    "--cfg", "worth_ui_adapter=\"hardware\"",
 ]
 
 # Relocate executable metadata away from the arm64 dyld shared-cache slide
@@ -33,7 +23,7 @@ rustflags = [
 [target.aarch64-apple-darwin]
 linker = "scripts/macos_linker"
 
-# Keep the compiler's safety/windowing flags above when choosing LLVM's linker.
+# Keep the compiler's safety flags above when choosing LLVM's linker.
 # The wrapper forwards to rust-lld unchanged and raises every PDB's page size,
 # so a large test binary's debug information can exceed 4 GiB.
 [target.x86_64-pc-windows-msvc]

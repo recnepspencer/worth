@@ -1,2 +1,0 @@
-error[E0599]: no method named `continuation` found for reference `&worth_ui_query_binding::projection_consumption::scalar::UiScalarProjectionFactReceipt` in the current scope
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/query_binding/fail/scalar_fact_has_no_continuation.rs

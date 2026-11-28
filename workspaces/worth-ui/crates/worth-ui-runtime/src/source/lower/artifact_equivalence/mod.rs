@@ -1,9 +1,0 @@
-mod worth_ui_artifact_descriptor_basis;
-mod worth_ui_artifact_digestor;
-mod worth_ui_artifact_equivalence_comparator;
-mod worth_ui_artifact_equivalence_metrics;
-mod worth_ui_artifact_semantic_basis;
-
-pub(crate) use worth_ui_artifact_digestor::WorthUiArtifactDigestor;
-pub(crate) use worth_ui_artifact_equivalence_comparator::WorthUiArtifactEquivalenceComparator;
-pub(crate) use worth_ui_artifact_equivalence_metrics::WorthUiArtifactEquivalenceMetrics;

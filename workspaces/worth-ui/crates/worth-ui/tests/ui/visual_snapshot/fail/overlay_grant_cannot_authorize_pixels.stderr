@@ -1,5 +1,0 @@
-error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-ui/tests/ui/visual_snapshot/fail/overlay_grant_cannot_authorize_pixels.rs
- note: expected reference `&UiVisualPixelCaptureGrant`
-   found reference `&UiVisualOverlayGrant`
- note: method defined here

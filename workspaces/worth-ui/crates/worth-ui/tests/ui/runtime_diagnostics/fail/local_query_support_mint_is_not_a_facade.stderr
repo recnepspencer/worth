@@ -1,2 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::query_binding::WorthUiQuerySupportReceipt`
- --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_diagnostics/fail/local_query_support_mint_is_not_a_facade.rs

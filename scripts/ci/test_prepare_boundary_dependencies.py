@@ -18,13 +18,13 @@ class BoundaryDependencyPreparationTests(unittest.TestCase):
         self.config = self.root/'tools/boundary-check/config'
         self.config.mkdir(parents=True)
         (self.config/'road1.toml').write_text(
-            '[[subworkspaces]]\npath="contracts"\n[[context_workspaces]]\npath="context"\n'
+            '[[subworkspaces]]\npath="contracts"\n'
             '[[dependency_denials]]\nworkspace_manifest="denied/Cargo.toml"\n'
             '[[source_dependency_allowlists]]\nworkspace_manifest="allowed/Cargo.toml"\n'
             '[[dependency_target_allowlists]]\nworkspace_manifest="target/Cargo.toml"\n')
         (self.config/'test-workspaces.txt').write_text('# inventory\n. | root\ncourts | stem\n')
         (self.config/'domain-values.toml').write_text('workspace_manifests=["domain/Cargo.toml"]\n')
-        self.expected = ['Cargo.toml', 'allowed/Cargo.toml', 'context/Cargo.toml', 'contracts/Cargo.toml',
+        self.expected = ['Cargo.toml', 'allowed/Cargo.toml', 'contracts/Cargo.toml',
                          'courts/Cargo.toml', 'denied/Cargo.toml', 'domain/Cargo.toml', 'target/Cargo.toml']
         for relative in self.expected:
             manifest = self.root/relative; manifest.parent.mkdir(parents=True, exist_ok=True)

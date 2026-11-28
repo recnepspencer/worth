@@ -1,5 +1,0 @@
-mod mosaic_state_owner_identity;
-mod mosaic_state_reconciliation_key;
-
-pub use mosaic_state_owner_identity::MosaicStateOwnerIdentity;
-pub use mosaic_state_reconciliation_key::MosaicStateReconciliationKey;

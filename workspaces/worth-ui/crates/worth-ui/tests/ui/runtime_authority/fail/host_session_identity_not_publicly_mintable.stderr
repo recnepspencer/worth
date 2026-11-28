@@ -1,2 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::host`
- --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/host_session_identity_not_publicly_mintable.rs

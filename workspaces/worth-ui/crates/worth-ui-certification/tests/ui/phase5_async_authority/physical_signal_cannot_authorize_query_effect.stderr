@@ -1,4 +1,0 @@
-error[E0308]: mismatched types
- --> tests/ui/phase5_async_authority/physical_signal_cannot_authorize_query_effect.rs
- note: expected `WorthUiPresentationValidatedCompletion`, found `UiNativePhysicalSignalTransitionObservation`
- note: method defined here

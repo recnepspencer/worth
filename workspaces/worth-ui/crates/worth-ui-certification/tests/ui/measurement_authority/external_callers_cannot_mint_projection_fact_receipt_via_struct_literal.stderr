@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui_runtime::facade::evidence::UiProjectionFactReceipt`
- --> tests/ui/measurement_authority/external_callers_cannot_mint_projection_fact_receipt_via_struct_literal.rs:1:5
-  |
-1 | use worth_ui_runtime::facade::evidence::UiProjectionFactReceipt;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-----------------------
-  |     |                                   |
-  |     |                                   help: a similar name exists in the module: `UiInspectionCostReceipt`
-  |     no `UiProjectionFactReceipt` in `facade::evidence`

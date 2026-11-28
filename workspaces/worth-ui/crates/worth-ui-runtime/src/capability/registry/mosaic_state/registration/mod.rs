@@ -1,4 +1,0 @@
-mod mosaic_state_slot_accepted_registration_proof;
-mod mosaic_state_slot_registration;
-
-pub(crate) use mosaic_state_slot_accepted_registration_proof::MosaicStateSlotAcceptedRegistrationProof;

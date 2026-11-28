@@ -171,6 +171,9 @@ fn render_bands(bands: &[String]) -> String {
 }
 
 fn render_packages(packages: &[String]) -> String {
+    if packages.is_empty() {
+        return "none".to_owned();
+    }
     packages
         .iter()
         .map(|package| format!("`{package}`"))

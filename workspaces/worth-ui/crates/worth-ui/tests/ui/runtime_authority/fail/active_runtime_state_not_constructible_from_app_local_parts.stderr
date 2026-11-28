@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::WorthUiActiveRuntimeState`
- --> tests/ui/runtime_authority/fail/active_runtime_state_not_constructible_from_app_local_parts.rs:1:5
-  |
-1 | use worth_ui::facade::WorthUiActiveRuntimeState;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `WorthUiActiveRuntimeState` in `facade`

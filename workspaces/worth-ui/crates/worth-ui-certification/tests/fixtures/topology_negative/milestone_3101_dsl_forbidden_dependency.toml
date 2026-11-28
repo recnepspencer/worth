@@ -1,6 +1,0 @@
-[package]
-name = "hostile-worth-ui-dsl"
-version = "0.0.0"
-
-[dependencies]
-worth-ui-runtime = { path = "../worth-ui-runtime" }

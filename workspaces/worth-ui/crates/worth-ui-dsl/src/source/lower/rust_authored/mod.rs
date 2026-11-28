@@ -1,9 +1,0 @@
-mod worth_ui_rust_authored_artifact_input;
-mod worth_ui_rust_authored_artifact_input_module;
-mod worth_ui_rust_authored_to_artifact_input_lowerer;
-
-pub use worth_ui_rust_authored_artifact_input::WorthUiRustAuthoredArtifactInput;
-pub use worth_ui_rust_authored_artifact_input_module::WorthUiRustAuthoredArtifactInputModule;
-pub(crate) use worth_ui_rust_authored_to_artifact_input_lowerer::{
-    WorthUiRustAuthoredInputLoweringDenial, WorthUiRustAuthoredToArtifactInputLowerer,
-};
