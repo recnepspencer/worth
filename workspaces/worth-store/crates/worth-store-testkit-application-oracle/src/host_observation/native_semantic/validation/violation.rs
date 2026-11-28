@@ -42,6 +42,7 @@ fn endpoints(value: &F) -> Option<(&EntityReference, &EntityReference)> {
         | F::RelationEndpointKindCrossContext { .. }
         | F::RelationCardinalityEndpoint { .. }
         | F::RelationEndpointDeletionIntegrity { .. }
+        | F::EntityAspectExclusion { .. }
         | F::StorageInconsistency { .. }
         | F::CustomInvariantFailure { .. }
         | F::CustomInvariantViolation { .. }
@@ -83,8 +84,11 @@ pub(super) fn correspond(
             };
             endpoint(map, entity_id, r)?;
         }
-        F::RelationEndpointDeletionIntegrity { entity_id, .. } => {
-            let F::RelationEndpointDeletionIntegrity { entity_id: r, .. } = r else {
+        F::RelationEndpointDeletionIntegrity { entity_id, .. }
+        | F::EntityAspectExclusion { entity_id, .. } => {
+            let (F::RelationEndpointDeletionIntegrity { entity_id: r, .. }
+            | F::EntityAspectExclusion { entity_id: r, .. }) = r
+            else {
                 return Err(bad());
             };
             entity(map, entity_id, *r)?;
