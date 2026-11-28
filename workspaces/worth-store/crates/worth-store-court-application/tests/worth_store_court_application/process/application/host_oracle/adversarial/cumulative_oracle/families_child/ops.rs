@@ -1,29 +1,23 @@
 //! Domain operations, receipt identity projection, & inspection helpers for C4b.4 families.
 use super::super::super::build_id;
-use super::super::super::correction_fixture::{scope as corr_scope, LabelHome};
 use std::collections::BTreeMap;
 use std::io::Write;
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::{atomic::AtomicUsize, Arc};
-use std::time::Duration;
 use worth_execution::ExecutionRequest;
 use worth_query_host::facade::{
     admission::authenticated_principal::*,
     application_contribution::with_bootstrap_advancement_from_request,
     application_entry::{
-        WorthQueryApplicationCorrectionDenial as CorrDenial,
-        WorthQueryApplicationCorrectionPreparation as Prepared,
         WorthQueryApplicationMutationOutcome as Outcome, WorthQueryApplicationRequestExt,
-        WorthQueryBranchAdoptionPublicationOutcome, WorthQueryCorrectionHistoryLimits,
+        WorthQueryBranchAdoptionPublicationOutcome,
     },
     application_installation::WorthQueryProgramOwner,
     primary_graph::{
-        QueryCorrectionMaterialDenial, WorthQueryApplicationCommitReceipt,
-        WorthQueryCorrectionDerivationDenial, WorthQueryCorrectionSourceCoordinates,
-        WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,
-        WorthQueryExternalTransportOutcome as TransportOutcome,
-        WorthQueryRecordedCorrectionSource, WorthQueryRecoveredApplicationCommitReceipt,
+        WorthQueryApplicationCommitReceipt, WorthQueryExternalDispatchRequest,
+        WorthQueryExternalEffectTransport, WorthQueryExternalTransportOutcome as TransportOutcome,
+        WorthQueryRecoveredApplicationCommitReceipt,
     },
     runtime::ExecutionAllocationPolicy,
     WorthQueryApplicationHome, WorthQueryApplicationHomeLocation as Location,
@@ -33,7 +27,6 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
     programs::{RetentionProgramP0, RetentionProgramP1},
     schema::DocumentRetentionSchema as Schema,
 };
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture as label;
 use worth_query_testkit_host::facade::host::{
     application_runtime_surface as identity,
     dispatch_home::{
@@ -80,15 +73,6 @@ impl ReceiptId {
             world_commit: h.commit,
         }
     }
-}
-
-pub(super) enum ReverseFate {
-    Committed(ReceiptId),
-    RecoveredCommitted(ReceiptId),
-    AlreadyCommitted(ReceiptId),
-    ProductUnpublished,
-    PreparationDischarged,
-    SourceAlreadyReversed,
 }
 
 pub(in super::super) fn cadence_map<S, P>(
@@ -257,108 +241,4 @@ pub(super) fn notify_dispatch(
         .idempotency(&key)
         .execute_in_program(home.runtime(), ExecutionAllocationPolicy::SystemAllocation)
         .unwrap()
-}
-
-pub(super) fn corr_summary(home: &LabelHome) -> (String, String) {
-    let sc = corr_scope();
-    let rt = home.runtime();
-    let p = label::authentication::authenticate_external(
-        rt.runtime().installed_schema(),
-        "alice",
-        Duration::from_secs(120),
-        &sc,
-    );
-    let rows = rt
-        .request(&p, &sc)
-        .query(label::AccountSummaryParameters)
-        .execute()
-        .unwrap();
-    let r = &rows.rows()[0];
-    (r.status.clone(), r.label.clone())
-}
-
-pub(super) fn seed_label_edit(home: &LabelHome) -> WorthQueryCorrectionSourceCoordinates {
-    let sc = corr_scope();
-    let rt = home.runtime();
-    let p = label::authentication::authenticate_external(
-        rt.runtime().installed_schema(),
-        "alice",
-        Duration::from_secs(120),
-        &sc,
-    );
-    let Outcome::Committed { receipt, .. } = rt
-        .request(&p, &sc)
-        .advanced()
-        .mutate(label::correction_source::label_edit::LabelEdit {
-            status: "open".into(),
-            label: "changed".into(),
-        })
-        .without_source()
-        .idempotency(&"orig".to_owned())
-        .execute_in_program(rt, ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap()
-    else {
-        panic!("seed edit");
-    };
-    receipt.correction_source().coordinates()
-}
-
-pub(super) fn reverse_attempt(
-    home: &LabelHome,
-    coords: &WorthQueryCorrectionSourceCoordinates,
-    key: &str,
-) -> ReverseFate {
-    let sc = corr_scope();
-    let rt = home.runtime();
-    let limits = WorthQueryCorrectionHistoryLimits::new(None, NonZeroUsize::new(8).unwrap());
-    let p = label::authentication::authenticate_external(
-        rt.runtime().installed_schema(),
-        "alice",
-        Duration::from_secs(120),
-        &sc,
-    );
-    let src = rt
-        .request(&p, &sc)
-        .corrections()
-        .select_coordinates(coords, limits)
-        .unwrap();
-    let fate = match rt
-        .request(&p, &sc)
-        .corrections()
-        .reverse(&src)
-        .idempotency(key)
-        .limits(limits)
-        .prepare()
-    {
-        Ok(Prepared::Prepared(prep)) => match prep.publish().unwrap() {
-            Outcome::Committed { receipt, .. } => {
-                ReverseFate::Committed(ReceiptId::from_live(&receipt))
-            }
-            Outcome::RecoveredCommitted(r) => {
-                ReverseFate::RecoveredCommitted(ReceiptId::from_recovered(&r))
-            }
-            Outcome::AlreadyCommitted(r) => ReverseFate::AlreadyCommitted(ReceiptId::from_live(&r)),
-            other => panic!("reverse publish unexpected: {other:?}"),
-        },
-        Ok(Prepared::Settled(Outcome::AlreadyCommitted(r))) => {
-            ReverseFate::AlreadyCommitted(ReceiptId::from_live(&r))
-        }
-        Ok(Prepared::Settled(Outcome::RecoveredCommitted(r))) => {
-            ReverseFate::RecoveredCommitted(ReceiptId::from_recovered(&r))
-        }
-        Ok(Prepared::ProductUnpublished(_))
-        | Ok(Prepared::Settled(Outcome::Commit(
-            worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(_),
-        ))) => ReverseFate::ProductUnpublished,
-        Err(CorrDenial::Derivation(WorthQueryCorrectionDerivationDenial::Material(
-            QueryCorrectionMaterialDenial::PreparationDischarged,
-        ))) => ReverseFate::PreparationDischarged,
-        Err(CorrDenial::Derivation(
-            WorthQueryCorrectionDerivationDenial::SourceAlreadyReversed,
-        )) => ReverseFate::SourceAlreadyReversed,
-        Ok(_) => panic!("reverse prepare returned unexpected variant"),
-        Err(e) => panic!("reverse prepare failed: {e:?}"),
-    };
-    drop(src);
-    fate
 }

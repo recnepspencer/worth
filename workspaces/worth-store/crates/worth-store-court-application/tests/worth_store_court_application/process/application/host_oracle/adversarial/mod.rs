@@ -2,8 +2,6 @@
 //! boundaries and media faults across every supported owner family, verified
 //! against MemoryOnly under a single run-wide DurableIdentityCorrespondence.
 mod adoption_io_kills;
-mod correction_fixture;
-mod correction_io_kills;
 mod cumulative_oracle;
 mod dimensions_matrix;
 mod dimensions_signal;
