@@ -7,10 +7,13 @@ use crate::domain_computation::primary_graph::application_installation::WorthQue
 use crate::domain_computation::primary_graph::application_runtime::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphApplicationRuntimeInner,
 };
-use crate::domain_computation::primary_graph::product_operation::SharedPrimaryRuntime;
 use worth_query_declaration::facade::{
     application_program::ApplicationProgramDefinition, application_schema::ApplicationSchema,
 };
+
+trait SharedPrimaryRuntime<Schema>: Send + Sync {
+    fn runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema>;
+}
 
 /// Keeps an installed runtime alive for live subscriptions moved onto it.
 ///
@@ -32,6 +35,16 @@ impl<Schema> WorthQueryLiveRuntimeKeepalive<Schema> {
     /// The same custody as a live lease's runtime backing.
     pub fn live_backing(&self) -> Arc<dyn WorthQuerySharedLiveRuntime<Schema>> {
         Arc::clone(&self.live)
+    }
+}
+
+impl<S, P> SharedPrimaryRuntime<S> for WorthQueryProgramApplicationRuntime<S, P>
+where
+    S: ApplicationSchema,
+    P: ApplicationProgramDefinition<S>,
+{
+    fn runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<S> {
+        self.backing.runtime()
     }
 }
 

@@ -84,11 +84,7 @@ pub use product_activation::{
 pub use product_operation::{
     WorthQueryAdmittedApplicationConditionalDefinition,
     WorthQueryApplicationConditionalDefinitionAdmissionDenial, WorthQueryCorrectionIntent,
-    WorthQueryDocumentHistoryDenial, WorthQueryExpectedProductBranchAdoptionDenial,
-    WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryNavigationDenial,
-    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNodeId,
-    WorthQueryHistoryOutputControlDenial, WorthQueryHistoryOutputReadDenial,
-    WorthQueryHistoryPageDenial, WorthQueryHistoryStep, WorthQueryProductQueryControls,
+    WorthQueryProductQueryControls,
 };
 pub use conditional_operation::installation::{
     WorthQueryConditionalClockHandle, WorthQueryConditionalRuntimeInstallationDenial,

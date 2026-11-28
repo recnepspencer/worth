@@ -55,34 +55,6 @@ impl WorthQueryPreparedProductPublication {
         ))
     }
 
-    pub fn execute_with_memory_cutover<R>(
-        self,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-        handoff: impl for<'action, 'native, 'policy, 'request> FnOnce(
-            worth_runtime_world::facade::PreparedWorldRelationalCutover<
-                'action,
-                'native,
-                'policy,
-                'request,
-            >,
-        ) -> R,
-    ) -> (
-        Option<R>,
-        Result<Outcome, Denial<NoEffectCompositePublication>>,
-    ) {
-        let Self {
-            publication,
-            prepared,
-            control,
-        } = self;
-        let (handoff, outcome) = publication.execute_without_signal_with_memory_cutover(
-            execution,
-            prepared,
-            control.cancellation(),
-            handoff,
-        );
-        (handoff, relational_outcome(outcome))
-    }
 }
 
 fn relational_outcome(
@@ -185,37 +157,18 @@ impl WorthQueryProductPublicationBinding {
         })
     }
 
+
     pub(crate) fn prepare_relational_candidate(
         &self,
         candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
         request: &WorthQueryRequestScope,
         successor_observation_requested: bool,
     ) -> Result<WorthQueryPreparedProductPublication, Denial<NoEffectCompositePublication>> {
-        self.prepare_relational_candidate_with_current_read(
-            candidate,
-            request,
-            successor_observation_requested,
-            None,
-        )
-    }
-
-    pub(crate) fn prepare_relational_candidate_with_current_read(
-        &self,
-        candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
-        request: &WorthQueryRequestScope,
-        successor_observation_requested: bool,
-        current_read: Option<&worth_runtime_world::facade::ProductBranchObservation>,
-    ) -> Result<WorthQueryPreparedProductPublication, Denial<NoEffectCompositePublication>> {
         let control = self.request_control(request).ok_or(Denial::ClockMismatch)?;
-        let mut intent = CompositePublicationIntent::without_signal(
+        let intent = CompositePublicationIntent::without_signal(
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )
         .with_prepared_relational_candidate(candidate);
-        if let Some(current) = current_read {
-            intent
-                .require_current_read(current.clone())
-                .expect("new intent has no current-read dependency");
-        }
         let intent = if successor_observation_requested {
             intent.with_successor_observation()
         } else {

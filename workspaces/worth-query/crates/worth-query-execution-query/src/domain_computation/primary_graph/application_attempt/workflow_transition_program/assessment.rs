@@ -334,8 +334,7 @@ where
         let identity = match &restored.origin {
             RestoredOutputOrigin::Checkpoint(_) => Some(
                 crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(restored.source_identity),
-            ),
-            RestoredOutputOrigin::HistoricalSelection(origin) => origin.source_identity(),
+            )
         };
         source.selected_product_occurrence() == Some(restored.observation.lifecycle_incarnation())
             && identity.is_some_and(|identity| {

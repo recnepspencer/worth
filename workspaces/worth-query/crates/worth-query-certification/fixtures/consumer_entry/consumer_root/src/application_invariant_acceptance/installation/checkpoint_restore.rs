@@ -99,32 +99,7 @@ where
                         .unwrap(),
                         WorthQueryPrincipalMappingStatus::Enabled,
                     )?;
-                    seed::seed_cycles_with(bootstrap_phase, graph, |graph| {
-                        worth_query_topology_entry::bind_retention_grants(
-                            graph,
-                            "model-owner",
-                            "anchor-a",
-                        )
-                        .unwrap();
-                        worth_query_topology_entry::bind_navigation_grant(
-                            graph,
-                            "model-owner",
-                            "anchor-a",
-                        )
-                        .unwrap();
-                        worth_query_topology_entry::bind_navigation_grant(
-                            graph,
-                            "model-owner",
-                            "remote-a",
-                        )
-                        .unwrap();
-                        worth_query_topology_entry::bind_navigation_grant(
-                            graph,
-                            "sibling-owner",
-                            "anchor-a",
-                        )
-                        .unwrap();
-                    });
+                    seed::seed_cycles(bootstrap_phase, graph);
                     Ok(())
                 },
             )

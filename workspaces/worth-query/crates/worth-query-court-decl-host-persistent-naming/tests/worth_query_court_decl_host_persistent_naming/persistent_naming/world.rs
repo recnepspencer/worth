@@ -2,7 +2,6 @@ use super::*;
 pub mod home;
 pub use home::Runtime;
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
-pub type Document<'a> = WorthQueryApplicationHistoryDocument<'a, Schema, History>;
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = ();
     fn contracts(
@@ -130,44 +129,7 @@ pub fn seed(
         WorthQueryApplicationEntityKey::new("b").unwrap(),
         WorthQueryApplicationEntityKey::new("loose").unwrap(),
     ))?;
-    navigation::seed(graph)?;
     Ok(())
-}
-pub fn attach(host: &Host) -> Document<'_> {
-    attach_as::<History>(host)
-}
-pub fn attach_as<H>(host: &Host) -> WorthQueryApplicationHistoryDocument<'_, Schema, H>
-where
-    H: ApplicationHistoryBinding<Schema, Access = query::model::Read>,
-{
-    attach_in(host)
-}
-/// Attaches history `H` to a fork of `host`'s current world, on program `P`.
-pub fn attach_in<H, P>(
-    host: &WorthQueryProgramApplicationRuntime<Schema, P>,
-) -> WorthQueryApplicationHistoryDocument<'_, Schema, H>
-where
-    H: ApplicationHistoryBinding<Schema, Access = query::model::Read>,
-    P: ApplicationProgramDefinition<Schema>,
-{
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    host.with_host_advancement(|phase| {
-        let selected = host.on_branch(host.current_world()).select(&phase).unwrap();
-        let head = host
-            .branches()
-            .fork_expected(selected)
-            .unwrap()
-            .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
-            .create(&phase)
-            .unwrap()
-            .into_owned_head();
-        host.request(&principal, &scope)
-            .on_branch(head.branch())
-            .attach_history::<H>(&phase, head, query::model::Read("a".into()))
-            .unwrap()
-    })
-    .unwrap()
 }
 /// A description for independent comparison; it never admits an edit or owner.
 pub fn member_identity<P>(

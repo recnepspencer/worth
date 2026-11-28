@@ -70,8 +70,7 @@ fn restored_output_identities(
     // The accepted checkpoint and historical selection retain their original
     // producer key, not a live commit receipt. Keep that provenance explicit.
     let provenance = match &restored.origin {
-        RestoredOutputOrigin::Checkpoint(_) => "checkpoint",
-        RestoredOutputOrigin::HistoricalSelection(_) => "historical-selection",
+        RestoredOutputOrigin::Checkpoint(_) => "checkpoint"
     };
     let publication = format!("{provenance}:{}", hex(restored.origin.key()));
     let mut output = Sha256::new();

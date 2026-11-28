@@ -9,7 +9,7 @@ use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::super::super::{ComparableSourceFacts, RecordedSettlementIdentity};
-use super::super::super::{SealedNativeOutputWitness, SelectionCoordinate};
+use super::super::super::SealedNativeOutputWitness;
 use super::super::derived::SourceSettlementCurrentness as Currentness;
 use super::super::mark_state::FullVerificationReason;
 use super::super::verification::SettlementVerificationStop;
@@ -22,7 +22,6 @@ pub struct ReadmittedNode {
     pub witness: Arc<OnceLock<SealedNativeOutputWitness>>,
     /// The re-identified rows this one consumed; empty for a root.
     pub upstream: im::OrdSet<Arc<RecordedSettlementIdentity>>,
-    pub historical: Option<SelectionCoordinate>,
 }
 
 impl SourceInvalidationOwner {
@@ -68,7 +67,6 @@ impl SourceInvalidationOwner {
                         &node.identity,
                         &node.facts,
                         witness,
-                        node.historical.as_ref(),
                     )? {
                         return Ok(false);
                     }
@@ -79,7 +77,6 @@ impl SourceInvalidationOwner {
                         &node.facts,
                         witness,
                         node.upstream.clone(),
-                        node.historical.as_ref(),
                     )?;
                 }
                 continue;

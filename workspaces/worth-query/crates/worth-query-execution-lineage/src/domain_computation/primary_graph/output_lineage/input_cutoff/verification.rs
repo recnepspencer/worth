@@ -187,7 +187,7 @@ impl RetainedInputCutoffCandidate {
                 return Ok(None);
             }
             observation::reach(Gate::MatchedRoots);
-            let Some(rebound) = matched_roots::rebound(&self.consumed_outputs_at(selected), matched, selected)?
+            let Some(rebound) = matched_roots::rebound(&std::sync::Arc::clone(&self.recorded().consumed_outputs), matched, selected)?
             else {
                 return Ok(None);
             };
@@ -209,11 +209,10 @@ impl RetainedInputCutoffCandidate {
                 match ConsumedOutputEvidence::own_evidence_is_current(
                     execution,
                     &facts.slice(0..count),
-                    &self.consumed_outputs_at(selected),
+                    &std::sync::Arc::clone(&self.recorded().consumed_outputs),
                     witness,
                     runtime,
                     snapshot,
-                    self.recorded().historical_selection.as_ref(),
                 ) {
                     Ok(false) => return Ok(None),
                     Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => {}
@@ -289,7 +288,7 @@ impl RetainedInputCutoffCandidate {
             execution,
             &verified_consumed
                 .clone()
-                .unwrap_or_else(|| self.consumed_outputs_at(selected)),
+                .unwrap_or_else(|| std::sync::Arc::clone(&self.recorded().consumed_outputs)),
             owner,
             runtime,
             snapshot,

@@ -52,7 +52,6 @@ impl WorthQueryRestoredAcceptedOutput {
     ) -> crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture {
         use crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture as Posture;
         match &self.origin {
-            RestoredOutputOrigin::HistoricalSelection(_) => Posture::HistoricallySelected,
             RestoredOutputOrigin::Checkpoint(checkpoint) => match checkpoint.posture {
                 super::WorthQueryAcceptedOutputCheckpointPosture::Performed => {
                     Posture::RecoveredPerformed

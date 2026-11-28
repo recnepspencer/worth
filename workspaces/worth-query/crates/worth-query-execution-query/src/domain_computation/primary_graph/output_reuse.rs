@@ -1,9 +1,7 @@
 pub use verification_denial_mod::verification_denial;
 pub use worth_query_execution_lineage::facade::primary_graph::output_reuse::verification_denial as verification_denial_mod;
 mod dependency;
-pub use restored_facts::{evidence_answer, evidence_unavailable, restored_facts_hold};
 pub use verification_extent::RetainedFactVerification;
-pub use worth_query_execution_lineage::facade::primary_graph::output_reuse::restored_facts;
 pub use worth_query_execution_lineage::facade::primary_graph::output_reuse::selection;
 pub use worth_query_execution_lineage::facade::primary_graph::output_reuse::verification_extent;
 
@@ -15,7 +13,3 @@ pub use selection::{
 };
 
 pub use selection::{owner_read, preflight_stop, retained_fact_denial};
-
-mod historical_selection;
-pub use historical_selection::HistoricalOutputRead;
-pub(crate) use historical_selection::publication_owned_at;

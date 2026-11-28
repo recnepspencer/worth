@@ -22,24 +22,7 @@ impl<'request, Schema> WorthQueryApplicationQueryControls<'request, Schema> {
         // no Bridge source; Query cannot turn these controls into publication.
 
         let security_product = product.retained_clone();
-        Ok(Self::selected_read_one_shot_with_control(
-            security_product,
-            product,
-            application_basis,
-            maximum_result_count,
-            request_scope,
-        ))
-    }
-
-    /// Current control and candidate truth keep their own owner-issued leases.
-    pub fn selected_read_one_shot_with_control(
-        security_product: WorthQueryProductObservationLease,
-        product: WorthQueryProductObservationLease,
-        application_basis: WorthQueryApplicationBasisLease,
-        maximum_result_count: NonZeroUsize,
-        request_scope: &'request WorthQueryRequestScope,
-    ) -> Self {
-        Self {
+        Ok(Self {
             basis: WorthQueryApplicationQueryBasis::Selected {
                 product,
                 application_basis,
@@ -53,7 +36,7 @@ impl<'request, Schema> WorthQueryApplicationQueryControls<'request, Schema> {
             producer: None,
             selection_origin: Default::default(),
             _schema: PhantomData,
-        }
+        })
     }
 }
 

@@ -952,7 +952,6 @@ root = "workspaces/worth-query/crates"
 exclude_paths = [
   "workspaces/worth-query/crates/worth-query-execution-contracts/src/publication_access.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/publication_boundary.rs",
-  "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/publication_boundary/mod.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/retained_dependencies/cumulative_court.rs",
   "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/root_selection/declared_root_paths_retain_per_row_native_witnesses/mod.rs",
   "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/currentness/mod.rs",
@@ -976,11 +975,8 @@ root = "workspaces/worth-query/crates"
 exclude_paths = [
   "workspaces/worth-query/crates/worth-query-execution/src",
   # Moved worth-query-execution tests, exempt inside the library before the move:
-  "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/publication_boundary/mod.rs",
   "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution.rs",
   "workspaces/worth-query/crates/worth-query-court-execution-package-archive/tests/worth_query_court_execution_package_archive/domain_computation/primary_graph/tests/application_attempt/erased_core_forgery/workflow_entry/mod.rs",
-  "workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/product_operation/document_history/constraint/installed_entry_tests/mod.rs",
-  "workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/product_operation/document_history/constraint/ownership_tests/mod.rs",
   "workspaces/worth-query/crates/worth-query-court-decl-execution-package-archive/tests/worth_query_court_decl_execution_package_archive/domain_computation/primary_graph/tests/application_attempt/optional_output_role/source_disclosure/mod.rs",
   "workspaces/worth-query/crates/worth-query-court-execution-package-archive/tests/worth_query_court_execution_package_archive/domain_computation/primary_graph/tests/application_attempt/optional_output_role/source_disclosure/mod.rs",
   "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/currentness/mod.rs",
@@ -1423,3 +1419,18 @@ forbidden_identifiers = [
 ]
 guidance = "Milestone 3 Track C5.2.3: DurabilityAuthority::native_checkpoint (embedded placement) is retired; use native_checkpoint_with_policy with RelationalCheckpointArtifactPolicy::ExternalMembers"
 
+
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates"
+forbidden_identifiers = [
+  "application_history",
+  "document_history",
+  "owned_history",
+  "model_ownership",
+  "ApplicationHistoryBinding",
+  "ApplicationHistoryDefinition",
+  "OwnedModelGraph",
+  "WorthQueryApplicationHistoryDocument",
+  "WorthQueryOwnedApplicationHistoryDocument",
+]
+guidance = "In-place document history is retired. Branch-native workspace history is planned separately."

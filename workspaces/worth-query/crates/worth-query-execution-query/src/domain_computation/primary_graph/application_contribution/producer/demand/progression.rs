@@ -4,7 +4,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::{ProducerInvocationAuthority, WorthQueryProducerCommitAuthority};
+use super::super::WorthQueryProducerCommitAuthority;
 use super::disclosure::validate_disclosure;
 use super::own_effect_observation::{self, Stage};
 use super::WorthQueryOutputDemandDenialKind;
@@ -145,7 +145,7 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
-        commit_authority: ProducerInvocationAuthority<'_>,
+        commit_authority: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
 
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
@@ -158,7 +158,6 @@ where
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        let history = commit_authority.history_control();
         self.advance_output_demand_with_prepared_source(
             execution,
             phase,
@@ -174,7 +173,6 @@ where
                     principal,
                     request_scope,
                     delivery_branch,
-                    history,
                 )
                 .map(Some)
             },
@@ -231,50 +229,6 @@ where
         })
     }
 
-    /// One advance a caller starts, on a fresh request meter. A custody
-    /// refusal reaches the caller as that caller meets it; advances nested
-    /// in this one keep the rows' own stops.
-    pub fn advance_history_output_demand<Family>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request_scope: &WorthQueryRequestScope,
-        delivery_branch: crate::basis::WorthQueryProductBranch,
-        history: crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'_>,
-    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
-    where
-        Family: WorthQueryProducerOutputFamily<Schema>,
-        FamilySourceValue<Schema, Family>:
-            crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
-                    Schema,
-                    FamilySourceQuery<Schema, Family>,
-                > + 'static,
-        FamilySourceQuery<Schema, Family>: 'static,
-    {
-        self.readmit_recorded_prerequisites(
-            execution,
-            principal,
-            request_scope,
-            demand.interest.as_ref(),
-        )?;
-        self.advance_as_caller(execution, demand, |demand, performed| {
-            self.advance_retained_with_commit_authority(
-                execution,
-                phase,
-                demand,
-                principal,
-                request_scope,
-                delivery_branch,
-                ProducerInvocationAuthority::history(
-                    WorthQueryProducerCommitAuthority::ProgramOutput,
-                    history,
-                ),
-                performed,
-            )
-        })
-    }
 
     pub fn advance_as_caller<Family>(
         &self,
@@ -360,7 +314,7 @@ where
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
-        commit_authority: ProducerInvocationAuthority<'_>,
+        commit_authority: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
 
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>

@@ -21,21 +21,10 @@ impl BoundCurrentAcceptedOutput<'_> {
     }
     /// The upstream this row consumed, as its root reads it (public #358).
     pub fn consumed_upstream(&self) -> std::sync::Arc<[ConsumedOutputEvidence]> {
-        self._proof
+        std::sync::Arc::clone(&self._proof
             .candidate
             .selected
-            .recorded()
-            .consumed_outputs_at(self._proof._selected)
-    }
-    pub fn consumed_historical(
-        &self,
-    ) -> Option<super::super::super::SelectionCoordinate> {
-        self._proof
-            .candidate
-            .selected
-            .recorded()
-            .historical_selection
-            .clone()
+            .recorded().consumed_outputs)
     }
     pub fn consumed_witness(
         &self,

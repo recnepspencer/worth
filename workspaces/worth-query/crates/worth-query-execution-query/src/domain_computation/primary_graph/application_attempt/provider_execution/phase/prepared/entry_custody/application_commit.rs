@@ -1,5 +1,4 @@
 use super::*;
-use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
@@ -14,22 +13,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
     pub fn compare_and_commit_application_in_advancement(
         self,
         idempotency: WorthQueryApplicationIdempotencyBinding,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> WorthQueryApplicationCommitOutcome
-    where
-        Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-    {
-        self.compare_and_commit_application_in_advancement_with_history(
-            idempotency,
-            None,
-            allocation_policy,
-        )
-    }
-    pub(crate) fn compare_and_commit_application_in_advancement_with_history(
-        self,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        history: Option<HistoryProducerInvocation<'_>>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
@@ -63,7 +46,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             &execution,
             idempotency,
             false,
-            history,
             allocation_policy,
         )
     }

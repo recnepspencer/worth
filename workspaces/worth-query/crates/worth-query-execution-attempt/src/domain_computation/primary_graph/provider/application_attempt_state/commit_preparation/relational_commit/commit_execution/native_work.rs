@@ -10,7 +10,6 @@ pub(super) fn prepare_before_native(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     prepared: WorthQueryPreparedApplicationCommit,
-    owned_history: bool,
 ) -> Result<
     QueryPreparingApplicationCommit,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -54,7 +53,6 @@ pub(super) fn prepare_before_native(
         provider,
         &attempt,
         required_prerequisites.as_ref(),
-        owned_history,
     )?;
     let predecessor = match (
         required_prerequisites.as_ref(),

@@ -1,5 +1,4 @@
 pub(crate) use worth_query_testkit_package_archive::facade::package_archive::archive_protocol::application_schema_record::*;
-mod document_history;
 
 #[test]
 fn current_minimal_application_schema_matches_the_frozen_vector() {

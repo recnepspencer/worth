@@ -1,8 +1,5 @@
+use worth_query_execution::facade::application_installation::WorthQuerySettledProgramOutput;
 mod fulfillment;
-mod history;
-mod native_custody;
-use crate::application_entry::mutation::program_output_continuation::ProgramOutputParentAuthority;
-use native_custody::NativeProgramDemandCustody;
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
@@ -42,7 +39,7 @@ pub(in crate::application_entry) enum WorthQueryApplicationProgramDemandProgress
     Progressed,
     Settled {
         settlement: WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, Demand>>,
-        authority: ProgramOutputParentAuthority<Schema, Program, Demand>,
+        authority: std::sync::Arc<WorthQuerySettledProgramOutput<Schema, Program, Demand>>,
     },
 }
 
@@ -55,7 +52,7 @@ pub(in crate::application_entry) struct WorthQueryApplicationProgramDemandHandle
     Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
-    admitted: NativeProgramDemandCustody<Schema, Program, Demand>,
+    admitted: WorthQueryAdmittedProgramOutput<Schema, Program, Demand>,
     demand: Demand,
     source_observation: Option<
         std::sync::Arc<
@@ -89,7 +86,7 @@ where
         >,
     ) -> Self {
         Self {
-            admitted: NativeProgramDemandCustody::Ordinary(admitted),
+            admitted,
             demand,
             source_observation,
         }
@@ -98,11 +95,7 @@ where
     pub(in crate::application_entry) fn original_root_result(
         &self,
     ) -> Option<WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, Demand>>> {
-        let NativeProgramDemandCustody::Ordinary(admitted) = &self.admitted else {
-            // History has its independent exact-candidate original-root owner.
-            return None;
-        };
-        admitted
+        self.admitted
             .original_root_result(
                 &worth_query_execution::publication_boundary::program_publication_access(),
             )
@@ -118,7 +111,7 @@ where
         WorthQueryApplicationOutputDemandDenial,
     > {
         self.admitted
-            .ordinary()?
+
             .notifications()
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)
     }
@@ -166,13 +159,12 @@ where
         if !std::ptr::eq(application.runtime(), request.application) {
             return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
         }
-        self.admitted.ordinary()?;
         let disclosure = self.disclose(phase, request)?;
         application
             .finish_unavailable_program_output::<Root>(
                 phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
-                self.admitted.ordinary_mut()?,
+                &mut self.admitted,
                 prepared,
                 request.principal,
                 request.scope,
@@ -196,13 +188,12 @@ where
         if !std::ptr::eq(application.runtime(), request.application) {
             return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
         }
-        self.admitted.ordinary()?;
         let disclosure = self.disclose(phase, request)?;
         match application
             .advance_program_output(
                 phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
-                self.admitted.ordinary_mut()?,
+                &mut self.admitted,
                 request.principal,
                 request.scope,
                 request.branch,
@@ -223,7 +214,7 @@ where
                 );
                 Ok(WorthQueryApplicationProgramDemandProgress::Settled {
                     settlement,
-                    authority: ProgramOutputParentAuthority::ordinary(authority),
+                    authority: std::sync::Arc::new(authority),
                 })
             }
         }
@@ -248,11 +239,6 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
-    pub(in crate::application_entry) fn require_ordinary(
-        &self,
-    ) -> Result<(), WorthQueryApplicationOutputDemandDenial> {
-        self.admitted.ordinary().map(|_| ())
-    }
 
     pub(in crate::application_entry) fn close_read_request(
         &mut self,
@@ -263,6 +249,6 @@ where
         branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     ) -> Result<(), worth_query_execution::facade::primary_graph::WorthQueryOutputReadCloseDenial>
     {
-        self.admitted.close_read_request(phase, application, branch)
+        self.admitted.close_read_request(phase, &worth_query_execution::publication_boundary::program_publication_access(), application, branch)
     }
 }

@@ -35,7 +35,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         parameters: worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters,
         controls: super::super::WorthQueryApplicationQueryControls<'a, Schema>,
         selected: &'a WorthQuerySelectedProductOperation<'_, Schema>,
-        truth: Option<&'a WorthQuerySelectedProductOperation<'_, Schema>>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         issue_access: impl FnOnce(
             &WorthQueryApplicationQueryAccessContext<
@@ -64,10 +63,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
-        let truth_selected = truth.unwrap_or(selected);
-        let selected_observation = truth_selected.product().observation();
+        let selected_observation = selected.product().observation();
 
-        let selected_snapshot = truth_selected.application_basis().snapshot_handle();
+        let selected_snapshot = selected.application_basis().snapshot_handle();
 
         // A disclosure-owner denial and its Query translation can own the
         // query name simultaneously. Reserve both before that owner runs.
@@ -88,19 +86,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
 
         let selected_access = issue_access(&access)?;
-        // Reuse the actual funded C share. D remains the independent truth basis;
-        // retaining C here creates no new Native snapshot or authorization.
-        let security_basis = truth.map(|_| WorthQueryApplicationQueryBasisCustody::from_issued_selected(self, selected))
-            .transpose().map_err(|cause| {
-                use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop as Stop;
-                match cause {
-                    Stop::Basis => denial(WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis, query.name()),
-                    Stop::Admission(stop) => denial(match stop {
-                        worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => WorthQueryApplicationQueryAdmissionDenialKind::CanonicalWorkDenied,
-                        _ => WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted,
-                    }, query.name()),
-                }
-            })?;
         crate::domain_computation::primary_graph::application_query::admission_preparation::validate_admission_request(request, query.name())?;
         let (basis_selection, security_product, controls) = controls.into_admission_parts();
         let shape = crate::domain_computation::primary_graph::application_query::execution_shape::prepare_one_shot_shape_admitted(query, &controls)?;
@@ -112,9 +97,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 native,
             )?;
         if !selected.application_basis().selected_program_inspected()
-            || !truth_selected
-                .application_basis()
-                .selected_program_inspected()
+
         {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis,
@@ -155,12 +138,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 &session,
                 native,
             )?;
-        selected_access.require_source_after_authorization(
-            self,
-            execution,
-            native,
-            query.name(),
-        )?;
+        selected_access.require_applied_source_after_authorization(self, execution, query.name())?;
         Ok(PreparedApplicationQueryPermission {
             issuer: self,
             query,
@@ -168,7 +146,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             parameters,
             controls,
             basis,
-            security_basis,
             security_product,
             session,
             disclosure,

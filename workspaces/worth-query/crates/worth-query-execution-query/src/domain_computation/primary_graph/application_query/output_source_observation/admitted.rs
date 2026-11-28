@@ -24,7 +24,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 .map_err(SourceQueryObservationStop::Read)
         };
         let completed = result.map_err(|stop| self.record_control_refusal(stop))?;
-        self.confirm_control(execution, native, completed)
+        self.confirm_current_control(execution, native, completed)
             .map_err(|stop| self.record_control_refusal(stop))
     }
     /// Only the completed public read crosses into producer re-admission.

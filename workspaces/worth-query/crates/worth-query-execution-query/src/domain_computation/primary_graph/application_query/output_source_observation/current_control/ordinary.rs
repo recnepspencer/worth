@@ -50,8 +50,7 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
         mut self,
         proof: CurrentReadControl<'a>,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
-        if self.history.is_some()
-            || self.shared.selected().product().observation() != proof.current().observation()
+        if self.shared.selected().product().observation() != proof.current().observation()
             || !proof.admits_request(self.request)
         {
             return Err(WorthQueryOutputDemandDenial::new(
@@ -90,10 +89,7 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
         Ok(admitted)
     }
     pub fn read_control(&self) -> Option<CurrentReadControl<'_>> {
-        self.history
-            .as_ref()
-            .map(|history| history.invocation.read_control())
-            .or_else(|| self.current.as_ref().map(|current| current.proof))
+        self.current.as_ref().map(|current| current.proof)
     }
     pub fn confirm_current_control<T>(
         &self,

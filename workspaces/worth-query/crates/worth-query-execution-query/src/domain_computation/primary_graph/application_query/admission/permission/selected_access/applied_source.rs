@@ -40,8 +40,6 @@ impl<'a, S: ApplicationSchema, P, I, E> SelectedIssuedAccessRoot<'a, S, P, I, E>
             snapshot: principal.issued_snapshot(),
             product: current.product().observation(),
             request: principal.request(),
-            truth: None,
-            historical_source: None,
             applied_source: Some(AppliedSourceTruth { before, candidate }),
         })
     }
@@ -51,10 +49,9 @@ impl<'a, S: ApplicationSchema, P, I, E> SelectedIssuedAccessRoot<'a, S, P, I, E>
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         subject: &str,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
-        let truth = self
-            .applied_source
-            .as_ref()
-            .expect("applied source posture");
+        let Some(truth) = &self.applied_source else {
+            return Ok(());
+        };
         let graph = runtime.runtime.primary_graph().ok_or_else(|| {
             super::super::denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::RuntimeSupportUnavailable,

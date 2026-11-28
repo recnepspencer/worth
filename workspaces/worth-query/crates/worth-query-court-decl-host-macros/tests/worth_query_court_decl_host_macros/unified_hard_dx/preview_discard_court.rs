@@ -1,16 +1,14 @@
-//! Memory Home verification of explicit preview discard, branch retirement, and owned history close.
+//! Memory Home verification of explicit preview discard and branch retirement.
 use worth_foundational::facade::CanonicalDate;
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryAdmissionClock,
-    application_entry::WorthQueryOwnedApplicationHistoryDocument,
     application_installation::ApplicationBuildIdentity, WorthQueryApplicationHome,
     WorthQueryHomeConfig, WorthQueryHomeOpenDisposition,
 };
 
 use super::actions::RescheduleTask;
 use super::program::{owner, seed, DaymarkHome, DaymarkRuntime};
-use super::queries::{DaymarkHistory, ReadProjectTasks, ReadTaskDetails};
-use super::schema::DaymarkSchema;
+use super::queries::ReadTaskDetails;
 
 #[test]
 fn target_dx_3_memory_home_preview_discard_and_close_branch() {
@@ -70,14 +68,6 @@ fn target_dx_3_memory_home_preview_discard_and_close_branch() {
             Some(CanonicalDate::parse_iso("2026-12-20").unwrap())
         );
 
-        let doc: WorthQueryOwnedApplicationHistoryDocument<DaymarkSchema, DaymarkHistory> = home
-            .owned_history::<DaymarkHistory>(&me, ReadProjectTasks { project: 1 })
-            .unwrap();
-        let close_scope = home.session(&me).fresh_scope();
-        home.primary_graph()
-            .with_application_advancement(&close_scope, |phase| doc.close(&phase))
-            .unwrap()
-            .unwrap();
     }
     drop(home);
 }

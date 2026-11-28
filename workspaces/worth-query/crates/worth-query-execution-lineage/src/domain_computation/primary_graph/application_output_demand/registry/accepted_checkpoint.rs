@@ -284,24 +284,7 @@ fn checkpoint_record_with_source(
         WorthQueryAcceptedOutputAuthority::Restored(restored) => {
             Some((
                 match &restored.origin {
-                    RestoredOutputOrigin::Checkpoint(checkpoint) => checkpoint.clone(),
-                    RestoredOutputOrigin::HistoricalSelection(origin) => {
-                        WorthQueryAcceptedOutputCheckpointIdentity {
-                            implementation: origin.implementation(),
-                            producer: Arc::new(origin.publication().producer().to_owned()),
-                            posture: WorthQueryAcceptedOutputCheckpointPosture::StableReused,
-                            source: key.source.checkpoint_identity().bytes(),
-                            scope: restored.source_scope,
-                            source_partition: restored.origin.partition(),
-                            producer_dependency: origin.dependency(),
-                            idempotency_key: origin.key(),
-                            roles: Arc::new(restored.correspondence.checkpoint_roles()),
-                            // Original selected revisions were not rebased into checkpoint evidence.
-                            producer_facts: None,
-                            producer_fact_wire_version: 0,
-                            metadata: None,
-                        }
-                    }
+                    RestoredOutputOrigin::Checkpoint(checkpoint) => checkpoint.clone()
                 },
                 None,
                 restored.correspondence.binding_type(),

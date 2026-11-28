@@ -15,19 +15,15 @@ type SelectedWithEntry<'a, Schema> = (
 
 // Lifecycle inspection selects the producer for live output. Demand admission
 // may instead rejoin an already committed Ready, which performs no producer run.
-// After a declined historical readmission it selects as though that row were
-// stale, so the demand executes instead of reselecting the declined row.
 enum SelectionPurpose {
     Lifecycle,
     OutputDelivery,
-    DeclinedReadmission,
 }
 
 mod native_restoration;
 pub mod native_selection;
 pub use native_selection::VerifiedAppliedParent;
 mod recovered_candidates;
-mod restored_reuse;
 pub mod retained_liveness;
 pub mod selected_basis;
 

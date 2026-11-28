@@ -92,7 +92,6 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             computation_source,
             performed_origin: Some(self.candidate.recorded().performed_origin.as_ref()
                 .map(Arc::clone).unwrap_or_else(|| Arc::clone(&self.candidate.cell))),
-            historical_selection: None,
             consumed_outputs: attempt.retain_consumed_outputs(),
             completed_handler_facts: Some(boundary),
             completed_decision_reuse: required.take_completed_decision_reuse(),

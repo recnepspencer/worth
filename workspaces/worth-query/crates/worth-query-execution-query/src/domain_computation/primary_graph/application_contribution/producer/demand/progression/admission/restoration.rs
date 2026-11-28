@@ -195,8 +195,6 @@ where
             },
             settlement,
             verified_at,
-            historical: None,
-            marks_posted: false,
         }))
     }
 
@@ -207,11 +205,7 @@ where
         readmitted: &ReadmittedOutput,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let restored = &readmitted.restored;
-        let crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin::Checkpoint(checkpoint) = &restored.origin else {
-            // A historical row is the transported row itself, already recorded.
-            self.mark_recorded_output(execution, readmitted);
-            return Ok(());
-        };
+        let crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin::Checkpoint(checkpoint) = &restored.origin;
         let output_binding = restored.correspondence.binding_type().ok_or_else(|| {
             denial(
                 WorthQueryOutputDemandDenialKind::ProducerUnavailable,
@@ -259,7 +253,7 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         readmitted: &ReadmittedOutput,
     ) {
-        if readmitted.verified_at.is_none() || readmitted.marks_posted {
+        if readmitted.verified_at.is_none() {
             return;
         }
         let facts = self
@@ -306,7 +300,7 @@ use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as Nati
                         | NativeStop::HeadUnavailable)) => false,
                 }
             }) {
-                let _ = source_owner.invalidation_owner.establish_verified_root(head, identity, &facts, witness, readmitted.historical.as_ref());
+                let _ = source_owner.invalidation_owner.establish_verified_root(head, identity, &facts, witness);
             }
         }
     }
@@ -322,11 +316,6 @@ pub struct ReadmittedOutput {
         crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
     >,
     pub verified_at: Option<worth_relational::facade::runtime::PositionedRelationalSnapshot>,
-    /// The transported row's selection coordinate; `None` for a checkpoint.
-    pub historical: Option<crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
-    /// Readmission already posted this row's chain at `verified_at`
-    /// (public #358); nothing is marked again.
-    pub marks_posted: bool,
 }
 
 fn restoration_resource_denial(

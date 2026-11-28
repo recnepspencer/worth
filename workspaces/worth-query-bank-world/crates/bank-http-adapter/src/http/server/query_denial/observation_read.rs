@@ -4,7 +4,7 @@ use crate::http::server::relational_execution_denial;
 use worth_query_host::facade::{
     application_contribution::WorthQueryProducerObservationReadDenial,
     primary_graph::{
-        RelationalPredecessorBasisDenial, WorthQueryInvariantProjectionDenial,
+        RelationalBranchBasisDenial, RelationalPredecessorBasisDenial, WorthQueryInvariantProjectionDenial,
         WorthQueryInvariantProjectionDenialKind,
     },
 };
@@ -31,9 +31,37 @@ fn native(cause: RelationalPredecessorBasisDenial) -> BankHttpDenial {
             unavailable()
         }
         D::PredecessorMismatch => stale(),
-        D::BasisAdmission(cause) => history_output::native_basis(cause),
+        D::BasisAdmission(cause) => native_basis(cause),
         D::Selection(cause) => publication_read::denial(cause),
         D::Execution(cause) => relational_execution_denial::denial(cause),
+    }
+}
+
+fn native_basis(cause: RelationalBranchBasisDenial) -> BankHttpDenial {
+    use RelationalBranchBasisDenial as D;
+    match cause {
+        D::Cancelled => cancelled(),
+        D::TimedOut => deadline(),
+        D::RetentionCapacityExhausted | D::OwnerUnavailable | D::MaterializationUnavailable => {
+            unavailable()
+        }
+        D::RetentionIdentityExhausted
+        | D::SnapshotIdentityExhausted
+        | D::UnavailableRetainedTarget => {
+            BankHttpDenial::new(Kind::Unavailable, Next::ContactOperator)
+        }
+        D::UnknownBranch(_)
+        | D::ArchivedBranch(_)
+        | D::DeletingBranch(_)
+        | D::StaleReferenceGeneration
+        | D::WrongBranchLocalTruthVersion => stale(),
+        D::MalformedDescriptor
+        | D::UnsupportedDescriptorVersion { .. }
+        | D::ForeignRuntime { .. }
+        | D::EmptyCommittedTargetMismatch
+        | D::WrongImmutableTarget
+        | D::MixedAxis(_)
+        | D::OwnerFailure => operator(),
     }
 }
 

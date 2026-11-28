@@ -201,11 +201,7 @@ impl<Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope
             }
             AdmissionKind::StaleScope
             | AdmissionKind::ForeignScope
-            | AdmissionKind::ScopeTypeMismatch
-            | AdmissionKind::HistoricalSourceNotLive { .. }
-            | AdmissionKind::HistoricalSourceKindMismatch { .. }
-            | AdmissionKind::HistoricalSourceOutsideDomain { .. }
-            | AdmissionKind::HistoricalSourceOwnershipUnavailable { .. } => {
+            | AdmissionKind::ScopeTypeMismatch => {
                 self.terminate_outcome(Outcome::StaleScope)
             }
             AdmissionKind::Authorization(_) => {

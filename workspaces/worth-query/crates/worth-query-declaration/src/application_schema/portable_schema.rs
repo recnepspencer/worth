@@ -196,11 +196,6 @@ fn validate_portable_application_queries(
     members: &[ApplicationSchemaMember],
 ) -> Result<(), Denial> {
     members.iter().try_for_each(|member| {
-        if let ApplicationSchemaMember::ApplicationHistory { definition } = member {
-            return definition
-                .validate()
-                .map_err(|_| Denial::InvalidApplicationHistory);
-        }
         if let ApplicationSchemaMember::ApplicationQueryInspection { definition } = member {
             return definition
                 .validate()

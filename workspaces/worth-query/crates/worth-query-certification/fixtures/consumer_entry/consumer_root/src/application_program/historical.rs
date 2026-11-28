@@ -65,9 +65,7 @@ macro_rules! historical_program {
                     && spec.feature().identity()==<PlanarSourceFeature as ApplicationFeature<ConsumerSchema>>::IDENTITY));
                 specs.push(ApplicationFeatureSpec::at::<ConsumerSchema,InitialDiscoveredPlanarRoot,PlanarSourceFeature>()
                     .provides::<PlanarBodyOutput>().action::<Binding, $delivery>().finish_action()
-                    .action::<worth_query_topology_entry::SetPlanarHistoryStatusBinding<ConsumerSchema>,
-                        crate::application_program::source_completion::ConsumerSourceCompletion>()
-                    .finish_action().finish());
+.finish());
                 specs.extend($additional);
                 specs
             }
@@ -94,8 +92,6 @@ historical_program!(
 pub(crate) mod branching;
 #[cfg(test)]
 pub(crate) mod eligibility;
-#[cfg(test)]
-pub(crate) mod owner_discovery;
 
 // Initiation/replay can move this intent; no runtime source observation enters its durable identity.
 pub(crate) struct Original(pub PlanarInitialAdjustment);

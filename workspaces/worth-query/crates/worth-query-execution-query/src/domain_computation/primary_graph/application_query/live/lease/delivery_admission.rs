@@ -150,10 +150,6 @@ where
                 self.terminate_delivery_outcome(Outcome::StalePrincipal)
             }
             WorthQueryApplicationQueryAdmissionDenialKind::StaleScope
-            | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceNotLive { .. }
-            | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceKindMismatch { .. }
-            | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceOutsideDomain { .. }
-            | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceOwnershipUnavailable { .. }
             | WorthQueryApplicationQueryAdmissionDenialKind::ForeignScope
             | WorthQueryApplicationQueryAdmissionDenialKind::ScopeTypeMismatch => {
                 self.terminate_delivery_outcome(Outcome::StaleScope)

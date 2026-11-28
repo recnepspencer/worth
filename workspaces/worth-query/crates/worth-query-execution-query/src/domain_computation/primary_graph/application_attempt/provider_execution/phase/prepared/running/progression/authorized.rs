@@ -161,19 +161,7 @@ where
                 dispatch_outbox,
                 provider_session,
             );
-            let compared = candidate.compare_and_commit_with(|prepared| {
-                match authority.history {
-                    Some(history) => {
-                        let request = authority.admission().retain_admitted_request();
-                        prepared.commit_using(|_provider, session| {
-                            authority.provider().commit_prepared_application_in_history(
-                                session, worth_query_execution_attempt::facade::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover::new(&history.bind_producer_request(&request)), control.policy(),
-                            )
-                        })
-                    }
-                    None => prepared.commit(control.policy()),
-                }
-            }, |read_authority, fresh| {
+            let compared = candidate.compare_and_commit_with(|prepared| prepared.commit(control.policy()), |read_authority, fresh| {
                 authority.provider().recompare_application_read_set(execution,
                     read_authority, fresh,
                     crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(

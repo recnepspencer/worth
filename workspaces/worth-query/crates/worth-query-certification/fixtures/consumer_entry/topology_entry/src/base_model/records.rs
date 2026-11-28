@@ -30,9 +30,9 @@ impl fragment::Entity for Principal {
     const NAME: &'static str = "Principal";
     type Aspects = (PrincipalFacts,);
     #[cfg(not(test))]
-    type Relations = PrincipalRelations;
+    type Relations = ();
     #[cfg(test)]
-    type Relations = (PrincipalRelations, crate::checkpoint_recovery::computation_partition::entry_correction::capability::CorrectionGrantee, crate::checkpoint_recovery::computation_partition::entry_correction::capability::CorrectionGrantor);
+    type Relations = (crate::checkpoint_recovery::computation_partition::entry_correction::capability::CorrectionGrantee, crate::checkpoint_recovery::computation_partition::entry_correction::capability::CorrectionGrantor);
 }
 impl Principal {
     pub fn reference<Schema: TopologyModelBinding>() -> ApplicationEntityRef<Schema, Self> {
@@ -132,8 +132,4 @@ type BodyRelations = (
     PlanarDiscoverySource,
     UndeclaredPlanarRelation,
     PlanarCoupling,
-);
-type PrincipalRelations = (
-    super::document_history::PlanarHistoryGrantor,
-    super::document_history::PlanarHistoryGrantee,
 );

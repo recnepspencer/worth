@@ -108,7 +108,6 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             parameters,
             controls,
             selected,
-            None,
             request,
             |access| {
                 SelectedIssuedAccessRoot::from_applied_source(

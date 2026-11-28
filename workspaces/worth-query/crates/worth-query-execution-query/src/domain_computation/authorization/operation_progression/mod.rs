@@ -2,8 +2,8 @@
 
 pub mod authority_validation;
 pub use authority_validation::{
-    authorize_applied_control_mutation_on_selected, authorize_current_control_mutation_on_selected,
-    authorize_historical_control_mutation_on_selected, authorize_public_mutation_on_selected,
+    authorize_applied_control_mutation_on_selected,
+    authorize_public_mutation_on_selected,
     SelectedConventionalAdmissionStop,
 };
 

@@ -8,7 +8,7 @@ use worth_query_publication::facade::application_entry::{
 
 use crate::application_home::{
     WorthQueryHomeAuthoredCorrectionOutcome, WorthQueryHomeCorrectionOutcome,
-    WorthQueryHomeOwnedHistoryDenial,
+
 };
 use crate::source_custody::{WorthQueryAnyTerminalSourceEvidence, WorthQuerySourceCustodyPending};
 
@@ -108,18 +108,6 @@ impl WorthQueryHomeCorrectionOutcome {
             Self::DomainDenied(_) => Some(RULE_REFUSED),
             Self::Other(outcome) => uncommitted_outcome(outcome),
             Self::PublicationPending | Self::ProductUnpublished(_) => Some(STILL_SAVING),
-        }
-    }
-}
-
-impl<Schema> WorthQueryUserFacingRefusal for WorthQueryHomeOwnedHistoryDenial<'_, Schema> {
-    fn user_summary(&self) -> Summary {
-        match self {
-            Self::Fork(cause) => cause.user_summary(),
-            Self::Advancement { denial, .. } | Self::AdvancementAfterConsume(denial) => {
-                denial.user_summary()
-            }
-            Self::Attachment { .. } => BUSY,
         }
     }
 }

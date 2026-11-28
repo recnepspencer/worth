@@ -2,10 +2,7 @@
 use std::time::Duration;
 
 use worth_foundational::facade::CanonicalDate;
-use worth_query_decl::facade::{
-    application_history::ApplicationHistoryDefinition,
-    application_query::ApplicationQueryDisclosureContract, authentication::*,
-};
+use worth_query_decl::facade::authentication::*;
 use worth_query_host::facade::admission::authenticated_principal::*;
 use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationContributionSetup, WorthQueryApplicationManagedIndexRegistration,
@@ -53,12 +50,6 @@ worth_query_application_program! {
                     .declared_operation(restore_task_state_definition())
                     .declared_operation(restore_task_title_definition())
                     .declared_operation(restore_task_details_definition())
-                    .application_history(
-                        ApplicationHistoryDefinition::<DaymarkSchema, DaymarkHistory>::for_binding(
-                            ApplicationQueryDisclosureContract::public(),
-                        )
-                        .operation::<RenameProjectBinding>("Rename project"),
-                    )
             };
             query(ReadyTasksBinding) { definition: ReadyTasksQuery::definition(); };
             query(LiveReadyTasksBinding) { definition: LiveReadyTasksQuery::definition(); };

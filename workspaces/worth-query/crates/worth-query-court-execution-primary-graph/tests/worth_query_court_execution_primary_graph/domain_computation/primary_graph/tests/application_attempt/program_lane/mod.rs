@@ -308,7 +308,6 @@ fn program_output_producer_names_an_operation_not_installed_as_conditional() {
                         program,
                         idempotency(39, 39),
                         None,
-                        None,
                     )
             })
             .unwrap();

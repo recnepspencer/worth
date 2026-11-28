@@ -34,7 +34,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryOperationCloseDenial {
             Self::Recovery(cause) => recovery(cause),
             Self::Owner(cause) => owner(cause),
             Self::DeferredFixedCompletionUnsupported { .. } => UNSUPPORTED,
-            Self::FreshRequestMismatch | Self::HistoryGroup(_) => INTERNAL,
+            Self::FreshRequestMismatch => INTERNAL,
         }
     }
 }

@@ -55,14 +55,13 @@ impl AcceptedCurrentCandidate {
             execution,
             &recorded.settlement_identity,
             facts,
-            &recorded.consumed_outputs_at(selected),
+            &std::sync::Arc::clone(&recorded.consumed_outputs),
             Some(FullVerificationReason::UnsupportedFact),
             witness,
             owner,
             runtime,
             snapshot,
             selected,
-            recorded.historical_selection.as_ref(),
         );
         let verified = match verified {
             Ok(verified) => verified,

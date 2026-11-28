@@ -3,8 +3,6 @@
 pub mod demand;
 #[path = "execution/mod.rs"]
 pub mod execution;
-#[path = "invocation/mod.rs"]
-pub mod invocation;
 #[path = "output_equivalence_contract/mod.rs"]
 pub mod output_equivalence_contract;
 #[path = "output_evaluation/mod.rs"]

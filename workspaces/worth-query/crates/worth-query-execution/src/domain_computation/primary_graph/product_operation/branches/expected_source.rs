@@ -18,7 +18,6 @@ use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort
 
 mod adoption;
 mod continuation;
-pub(in crate::domain_computation::primary_graph) use adoption::ProductBranchAdoptionRelease;
 pub use adoption::{
     WorthQueryExpectedProductBranchAdoptionDenial, WorthQueryExpectedProductBranchAdoptionFailure,
 };
@@ -30,86 +29,14 @@ pub struct WorthQueryExpectedProductBranchFork<'runtime, Schema> {
     fork: WorthQueryProductBranchFork<'runtime>,
 }
 
-/// Move-only, runtime-bound expected-source candidate detached from
-/// `&'runtime Runtime<Schema>`.
-///
-/// Constructible only by consuming a genuine `WorthQueryExpectedProductBranch`
-/// and rebindable only to the exact runtime allocation that created it.
-#[must_use = "rebind the detached expected-source candidate to its original runtime"]
-pub(in crate::domain_computation::primary_graph) struct DetachedExpectedProductBranch {
-    root_identity: std::sync::Arc<
-        worth_query_execution_runtime::facade::execution_runtime::product_world::WorthQueryProductRootIdentity,
-    >,
-    branch: WorthQueryProductBranch,
-    source: WorthQueryProductBranchLease,
-}
-
-impl DetachedExpectedProductBranch {
-    pub(in crate::domain_computation::primary_graph) const fn branch(
-        &self,
-    ) -> WorthQueryProductBranch {
-        self.branch
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn into_detached_head(
-        self,
-    ) -> super::DetachedOwnedProductHead {
-        let Self {
-            root_identity,
-            branch,
-            source,
-        } = self;
-        drop(source);
-        super::DetachedOwnedProductHead::from_detached_branch(root_identity, branch)
-    }
-}
-
 /// A candidate together with the actual source admission from which it was forked.
 /// The branch selector permits ordinary candidate requests; it does not certify
 /// adoption as an application model's head.
 #[must_use = "retain the expected-source continuation or explicitly close the candidate"]
 pub struct WorthQueryExpectedProductBranch<'runtime, Schema> {
-    application: WorthQueryRuntimeCustody<'runtime, Schema>,
+    application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     branch: WorthQueryProductBranch,
     source: WorthQueryProductBranchLease,
-}
-
-impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runtime, Schema> {
-    pub(in crate::domain_computation::primary_graph) fn into_detached(
-        self,
-    ) -> DetachedExpectedProductBranch {
-        let root_identity = self
-            .application
-            .inner
-            .runtime
-            .product_runtime_ref()
-            .root_identity();
-        DetachedExpectedProductBranch {
-            root_identity,
-            branch: self.branch,
-            source: self.source,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn from_detached(
-        application: WorthQueryRuntimeCustody<'runtime, Schema>,
-        detached: DetachedExpectedProductBranch,
-    ) -> Self {
-        let target = application
-            .inner
-            .runtime
-            .product_runtime_ref()
-            .root_identity();
-        assert!(
-            std::sync::Arc::ptr_eq(&detached.root_identity, &target),
-            "detached expected-source candidate may only rebind to its exact original runtime allocation"
-        );
-        Self {
-            application,
-            branch: detached.branch,
-            source: detached.source,
-        }
-    }
 }
 
 /// A failed close retains both the candidate and its exact source continuation.
@@ -175,22 +102,9 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranchFork<'r
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryExpectedProductBranch<'runtime, Schema>, WorthQueryProductBranchCreateError>
     {
-        let custody = WorthQueryRuntimeCustody::Borrowed(self.application);
-        self.create_in(custody, phase)
-    }
-
-    /// Create the candidate for an owner that reaches this fork's runtime
-    /// through its own custody. The fork itself never outlives this call.
-    pub(in crate::domain_computation::primary_graph) fn create_in<'owner>(
-        self,
-        custody: WorthQueryRuntimeCustody<'owner, Schema>,
-        phase: &WorthQueryAdvancementPhase<'_>,
-    ) -> Result<WorthQueryExpectedProductBranch<'owner, Schema>, WorthQueryProductBranchCreateError>
-    {
-        assert!(custody.same_runtime(self.application));
         let (branch, source) = self.fork.create_retaining_source(phase)?;
         Ok(WorthQueryExpectedProductBranch {
-            application: custody,
+            application: self.application,
             branch,
             source,
         })
@@ -224,13 +138,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
     pub(in crate::domain_computation::primary_graph) fn application(
         &self,
     ) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        &self.application
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn retained_expected_source(
-        &self,
-    ) -> crate::basis::WorthQueryProductObservationLease {
-        self.source.read_lease()
+        self.application
     }
 
     pub fn close(

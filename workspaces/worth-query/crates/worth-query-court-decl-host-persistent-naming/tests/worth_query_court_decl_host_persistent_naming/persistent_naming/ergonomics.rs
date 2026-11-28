@@ -3,114 +3,12 @@
 //! carries them as input fields, a later decision reads them back and
 //! resolves them, and a derived projection returns each row's own name in
 //! the read that returns the row.
-use super::history::{named, navigate, record_edit, resolution, Navigate};
 use super::named_read::{MaybeNamedModel, NamedMember};
 use super::outputs::sculpt::{Plan, Step};
-use super::outputs::{birth, keys, piece, read, resolved_to, World};
+use super::outputs::{birth, keys, named, piece, read, resolution, resolved_to, World};
 use super::*;
 use probe::Observation;
 use worth_query_decl::facade::application_naming::NamedTarget;
-
-type HoldAction = ApplicationActionReference<
-    Schema,
-    ApplicationRootComposition,
-    Entry,
-    stored::Binding,
-    Completion,
->;
-
-/// Whether a probe observed anything the model's record holds.
-fn holds_nothing(observed: &[Observation]) -> bool {
-    !observed.iter().any(|observation| match observation {
-        Observation::ResolvedTo { label, .. }
-        | Observation::Retired { label }
-        | Observation::Ambiguous { label, .. }
-        | Observation::ResolveRefused { label, .. } => label.starts_with("stored-"),
-        _ => false,
-    })
-}
-
-#[test]
-fn a_record_holds_a_member_by_name_through_edits_and_history() {
-    let token = "stored-names";
-    let keys = ["direct", "nested"];
-    let host = world::install();
-    let document = world::attach(&host);
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.request(&principal, &scope);
-
-    let (document, observed) = history::probe(&host, document, &request, token, &keys, 0);
-    let (direct, nested) = (named(&observed, "direct"), named(&observed, "nested"));
-    assert!(holds_nothing(&observed), "{observed:?}");
-
-    // The action carries both names as input fields; the record stores them.
-    let document = record_edit!(
-        &host,
-        document,
-        &request,
-        stored::Intent {
-            target: NamedTarget::exact(direct),
-            anchor: Some(nested),
-        },
-        HoldAction,
-        "hold-direct"
-    );
-    // The probe rewrites another column of the same record: the held names
-    // survive that edit and resolve to the members they were read from.
-    let (document, observed) = history::probe(&host, document, &request, token, &keys, 1);
-    let held_direct = document.current_step(&request).unwrap();
-    assert_eq!(
-        resolution(&observed, "stored-target"),
-        &resolved_to("stored-target", "direct")
-    );
-    assert_eq!(
-        resolution(&observed, "stored-anchor"),
-        &resolved_to("stored-anchor", "nested")
-    );
-
-    // Holding another target with another selection replaces both columns.
-    let document = record_edit!(
-        &host,
-        document,
-        &request,
-        stored::Intent {
-            target: NamedTarget::all_descendants(nested),
-            anchor: None,
-        },
-        HoldAction,
-        "hold-nested"
-    );
-    let (document, observed) = history::probe(&host, document, &request, token, &keys, 2);
-    assert_eq!(
-        resolution(&observed, "stored-target"),
-        &resolved_to("stored-target", "nested")
-    );
-    assert!(
-        !observed.iter().any(|observation| matches!(
-            observation,
-            Observation::ResolvedTo { label, .. } if label == "stored-anchor"
-        )),
-        "a cleared anchor holds nothing: {observed:?}"
-    );
-
-    // History checkout restores the record, and with it the earlier names.
-    navigate(
-        &document,
-        &request,
-        Navigate::Checkout(held_direct.id()),
-        0x5e2_0001,
-    );
-    let (_, observed) = history::probe(&host, document, &request, token, &keys, 3);
-    assert_eq!(
-        resolution(&observed, "stored-target"),
-        &resolved_to("stored-target", "direct")
-    );
-    assert_eq!(
-        resolution(&observed, "stored-anchor"),
-        &resolved_to("stored-anchor", "nested")
-    );
-}
 
 #[test]
 fn a_stored_exact_target_refuses_ambiguous_once_its_member_splits() {

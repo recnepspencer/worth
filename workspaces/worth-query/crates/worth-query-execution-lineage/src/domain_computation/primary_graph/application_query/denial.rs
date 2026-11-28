@@ -28,23 +28,6 @@ pub enum WorthQueryApplicationQueryAdmissionDenialKind {
     StalePrincipal,
     /// The request scope no longer resolves as it did.
     StaleScope,
-    /// The exact navigation candidate does not contain this source generation.
-    HistoricalSourceNotLive {
-        source: worth_relational::facade::identity::EntityId,
-    },
-    /// The exact navigation candidate contains a different source kind.
-    HistoricalSourceKindMismatch {
-        source: worth_relational::facade::identity::EntityId,
-        actual: worth_relational::facade::identity::KindId,
-    },
-    /// The source is live at D but outside this navigation's owned boundary.
-    HistoricalSourceOutsideDomain {
-        source: worth_relational::facade::identity::EntityId,
-    },
-    /// Current recorded ownership could not be proved for this exact source.
-    HistoricalSourceOwnershipUnavailable {
-        source: worth_relational::facade::identity::EntityId,
-    },
     /// The request scope is not the kind the query binding expects.
     ScopeTypeMismatch,
     /// Authorization refused the read; the full denial is attached.
@@ -126,7 +109,6 @@ pub struct WorthQueryApplicationQueryAdmissionDenial {
     kind: WorthQueryApplicationQueryAdmissionDenialKind,
     authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
     subject: String,
-    historical_source: Option<(worth_relational::facade::identity::EntityId, &'static str)>,
 }
 
 impl WorthQueryApplicationQueryAdmissionDenial {
@@ -138,7 +120,6 @@ impl WorthQueryApplicationQueryAdmissionDenial {
             kind,
             authorization_denial: None,
             subject: subject.into(),
-            historical_source: None,
         }
     }
 
@@ -149,27 +130,9 @@ impl WorthQueryApplicationQueryAdmissionDenial {
             // would add an unretained allocation to the admitted path.
             subject: String::new(),
             authorization_denial: Some(Box::new(denial)),
-            historical_source: None,
         }
     }
 
-    pub fn with_historical_source(
-        mut self,
-        source: worth_relational::facade::identity::EntityId,
-        family: &'static str,
-    ) -> Self {
-        self.historical_source = Some((source, family));
-        self
-    }
-    pub fn without_historical_source(mut self) -> Self {
-        self.historical_source = None;
-        self
-    }
-    pub fn historical_source(
-        &self,
-    ) -> Option<(worth_relational::facade::identity::EntityId, &'static str)> {
-        self.historical_source
-    }
     pub const fn kind(&self) -> WorthQueryApplicationQueryAdmissionDenialKind {
         self.kind
     }

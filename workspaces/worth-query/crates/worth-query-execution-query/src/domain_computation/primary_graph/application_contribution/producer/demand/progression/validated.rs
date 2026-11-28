@@ -41,7 +41,7 @@ where
             FamilySourceValue<Schema, Family>,
         >,
         entry: &InstalledProducerProvider<Schema>,
-        commit_authority: ProducerInvocationAuthority<'_>,
+        commit_authority: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
 
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<

@@ -1,10 +1,8 @@
-//! Unified `#[derive(WorthQuery)]`, `#[derive(WorthManagedIndex)]`, and history
-//! declarations for the Daymark acceptance court.
-use worth_query_decl::facade::application_history::ApplicationHistoryBinding;
+//! Query and managed-index declarations for the Daymark acceptance court.
 use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
 use worth_query_decl::facade::application_schema::*;
 use worth_query_decl::facade::{
-    worth_query_identity_namespace, worth_query_portable_type, WorthManagedIndex, WorthQuery,
+    worth_query_identity_namespace, WorthManagedIndex, WorthQuery,
 };
 
 use super::schema::*;
@@ -215,11 +213,4 @@ pub struct BacklogTasks {
 pub struct TasksByPriority {
     #[worth_query(scope)]
     pub project: u64,
-}
-
-pub struct DaymarkHistory;
-worth_query_portable_type!(DaymarkHistory => "daymark.unified.history.v1");
-impl ApplicationHistoryBinding<DaymarkSchema> for DaymarkHistory {
-    type Access = ReadProjectTasks;
-    const IDENTITY: &'static str = "DaymarkHistory";
 }

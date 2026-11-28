@@ -32,7 +32,7 @@ pub fn collect<'a, Schema: ApplicationSchema + 'static>(
     caller_storage: &'a mut PreparedContinuationWave<'_, Schema>,
     caller_installed: &InstalledProducerProvider<Schema>,
     caller_contacts: usize,
-    authority: &ProducerInvocationAuthority<'_>,
+    authority: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     performed: &std::cell::RefCell<super::super::performed::PerformedMembers>,
 ) -> Result<FrozenRequiredWave<'a, Schema>, WorthQueryOutputDemandDenial> {
     if let Some(delivery) = caller_storage.awaited_delivery(&runtime.runtime.output_demands)? {
@@ -48,7 +48,7 @@ pub fn collect<'a, Schema: ApplicationSchema + 'static>(
             .ready
             .selected()
             .completion()
-            .advanced_in(authority.mode());
+            .advanced_in(&authority);
 
         let mut inspected = super::super::performed::certification::certify_frozen_ready(
             execution,

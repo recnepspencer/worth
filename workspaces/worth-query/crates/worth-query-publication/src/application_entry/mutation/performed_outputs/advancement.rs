@@ -1,4 +1,4 @@
-//! One tree progression for the actual ordinary or history Native custody.
+//! Advance the admitted program output tree.
 use super::*;
 impl<Schema, Program, Root>
     WorthQueryApplicationProgramOutputHandle<Schema, Program, Root>
@@ -107,30 +107,6 @@ where
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<WorthQueryApplicationProgramOutputProgress<Query<Schema, RootDemand<Schema, Root>>>, crate::application_entry::WorthQueryRequiredOutputPreparationDenial> {
-        self.advance_tree(phase, application, request, None)
-    }
-
-    pub(super) fn advance_tree(
-        &mut self,
-        phase: &AdvancementPhase<'_>,
-        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-        request: &crate::application_entry::WorthQueryApplicationRequest<
-            '_,
-            '_,
-            '_,
-            Schema,
-        >,
-        history: Option<super::super::program_output_continuation::ProgramOutputHistoryFrame<'_, '_, '_>>,
-    ) -> Result<
-        WorthQueryApplicationProgramOutputProgress<
-            Query<Schema, RootDemand<Schema, Root>>,
-        >,
-        crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
-    > {
-        if history.is_none()
-            && let Some(root) = &self.root {
-                root.require_ordinary().map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?;
-            }
         if self.complete {
             return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Closed);
         }
@@ -138,7 +114,7 @@ where
             return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(crate::application_entry::WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch));
         }
         let access = worth_query_execution::publication_boundary::program_publication_access();
-        if history.is_none() { match (&self.source_receipt, &self.source_preparation) {
+        match (&self.source_receipt, &self.source_preparation) {
             (Some(receipt), Some(prepared)) => match self.source_binding.as_ref() {
                 Some(binding) => (binding.validate)(phase, application, prepared, receipt, &self.source_observation, request),
                 None => return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery),
@@ -148,11 +124,11 @@ where
         }.map_err(|denial| crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
             if denial.kind() == worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded {
                 crate::application_entry::WorthQueryApplicationOutputDemandDenial::Superseded
-            } else { crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial) }))?; }
+            } else { crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial) }))?;
         if self.root_settlement.is_none() {
             let root = self.root.as_mut().expect("an unsettled root retains its admitted demand");
             match root
-                .advance_with_frame(phase, application, request, history)
+                .advance(phase, application, request)
                 .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?
             {
                 WorthQueryApplicationProgramDemandProgress::Progressed => {
@@ -192,16 +168,13 @@ where
                 request,
                 self.controls,
             )?);
-            if let Some((origin, index)) = &self.recording_recipes {
-                self.continuation.as_mut().expect("constructed ordinary continuation").record_history_discovery(std::sync::Arc::clone(origin), *index);
-            }
             self.pending_root_authority = None;
         }
         let continuation = self
             .continuation
             .as_mut()
             .expect("a settled root installs its typed output continuation");
-        match continuation.advance(phase, application, request, history)? {
+        match continuation.advance(phase, application, request)? {
             ProgramOutputContinuationProgress::Progressed => {
                 Ok(WorthQueryApplicationProgramOutputProgress::Progressed)
             }

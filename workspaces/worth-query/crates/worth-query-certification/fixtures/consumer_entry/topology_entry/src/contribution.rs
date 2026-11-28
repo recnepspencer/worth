@@ -156,9 +156,7 @@ impl TopologyContribution {
         setup.handler::<super::PlanarInitialAdjustmentBinding<Schema>, _>(
             super::PlanarInitialAdjustmentHandler,
         )?;
-        setup.handler::<super::document_history::SetPlanarHistoryStatusBinding<Schema>, _>(
-            super::document_history::SetPlanarHistoryStatusHandler,
-        )?;
+
         setup.handler::<super::PlanarIslandCouplingBinding<Schema>, _>(
             super::island_coupling::PlanarIslandCouplingHandler,
         )?;

@@ -22,7 +22,6 @@ pub mod equality;
 pub mod fact_coverage;
 pub mod fact_projection;
 pub mod preparation;
-pub mod restored;
 pub mod retirement;
 use retirement::RetirementMetadata;
 

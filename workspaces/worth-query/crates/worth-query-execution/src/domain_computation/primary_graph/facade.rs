@@ -300,10 +300,6 @@ pub use super::ordinary_read::{
     WorthQueryOrdinaryReadVersion,
 };
 pub use super::output_lineage::invalidation::{
-    carried_historical_projections_on_this_thread_for_test,
-    decline_historical_readmissions_on_this_thread_for_test,
-    declined_historical_readmissions_on_this_thread_for_test,
-    historical_acceptances_on_this_thread_for_test,
     inexact_native_deliveries_on_this_thread_for_test, native_marking_on_this_thread_for_test,
     readmitted_chains_on_this_thread_for_test, settlement_registrations_on_this_thread_for_test,
     WorthQueryMarkedOutputForTest, WorthQueryNativeMarkingForTest,

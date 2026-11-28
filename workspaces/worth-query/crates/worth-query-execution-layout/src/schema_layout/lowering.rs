@@ -299,12 +299,6 @@ impl WorthQueryPrimaryGraphLayout {
             field_capability_keys(fields.values().filter(|layout| layout.equality_queryable));
         let projection_field_keys = field_capability_keys(fields.values());
 
-        let history_ownership = history_ownership::lower(
-            schema,
-            &entity_kinds,
-            &relation_layouts,
-            &live_control_entity_kinds,
-        )?;
         let (registry, persistent_names) =
             persistent_naming::lower(registry, schema, &entity_kinds, &relation_kinds)?;
         let registry = if current_publication_ownership {
@@ -317,7 +311,6 @@ impl WorthQueryPrimaryGraphLayout {
         let physical_roles = roles.finish(&registry, entity_kinds, relation_kinds)?;
         Ok((
             Self {
-                history_ownership,
                 value_bindings: value_bindings.clone(),
                 principal_bindings,
                 live_control_entity_kinds,

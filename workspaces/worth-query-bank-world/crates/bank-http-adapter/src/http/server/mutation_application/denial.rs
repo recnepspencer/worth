@@ -50,8 +50,7 @@ pub(in crate::http::server) fn request_mutation_denial(
         // another input, the runtime serves no handler for it, the key's
         // record cannot be checked against the request, or the server's own
         // admission resolved the key against another runtime.
-        Denial::DocumentHistory
-        | Denial::Identity
+        Denial::Identity
         | Denial::WorkflowControl
         | Denial::WorkflowCapturedInput
         | Denial::InputNotAdmitted

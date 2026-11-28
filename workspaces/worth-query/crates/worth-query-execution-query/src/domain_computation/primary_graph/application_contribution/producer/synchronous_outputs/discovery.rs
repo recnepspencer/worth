@@ -104,14 +104,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
                 );
                 super::super::execution::denial::selected_source_read_denied(B::IDENTITY, stop)
             })?;
-        let reader = SourceQueryReaderAccess::new(
-            runtime,
-            &shared,
-            None,
-            None,
-            external,
-            self.owner.request,
-        )?;
+        let reader = SourceQueryReaderAccess::ordinary(runtime, &shared, external, self.owner.request);
         reader
             .with_applied_plan::<B, _, SourceQueryObservationStop>(
                 self.execution,

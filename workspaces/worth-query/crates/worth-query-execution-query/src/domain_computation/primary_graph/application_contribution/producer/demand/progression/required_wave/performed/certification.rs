@@ -4,7 +4,6 @@ use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleI
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use super::super::*;
 use super::PerformedMembers;
-use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
 pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::current_basis;
 pub use current_basis::CurrentBasis;
 
@@ -61,7 +60,7 @@ pub fn certify_required_ready<'owner, Schema>(
     resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
     producer_contacts_in_this_demand: usize,
     refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
-    invocation: ProducerInvocationAuthority<'owner>,
+    invocation: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     performed: &'owner std::cell::RefCell<performed::PerformedMembers>,
 ) -> Result<RequiredWaveStep<'owner, Schema>, WorthQueryOutputDemandDenial>
 where
@@ -155,7 +154,7 @@ pub fn certify_frozen_ready<'call, Schema: ApplicationSchema + 'static>(
     request: &WorthQueryRequestScope,
     wave: &RequiredWaveSelection<'_, Schema>,
     caller: FrozenCaller<'_, Schema>,
-    invocation: &ProducerInvocationAuthority<'call>,
+    invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     performed: &std::cell::RefCell<PerformedMembers>,
 ) -> Result<FrozenCallerInspection<Schema>, WorthQueryOutputDemandDenial> {
     let FrozenCaller {

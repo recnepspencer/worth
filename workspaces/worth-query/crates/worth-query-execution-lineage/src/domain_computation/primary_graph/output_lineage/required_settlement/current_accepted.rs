@@ -120,7 +120,7 @@ impl AcceptedCurrentCandidate {
         }
         ConsumedOutputEvidence::select_exact_pending_dependency(
             execution,
-            &self.selected.recorded().consumed_outputs_at(selected),
+            &std::sync::Arc::clone(&self.selected.recorded().consumed_outputs),
             owner,
             runtime,
             snapshot,
@@ -208,7 +208,7 @@ impl AcceptedCurrentCandidate {
         };
         match ConsumedOutputEvidence::verify_many_with_admission(
             execution,
-            &recorded.consumed_outputs_at(selected),
+            &std::sync::Arc::clone(&recorded.consumed_outputs),
             owner,
             runtime,
             snapshot,
@@ -224,7 +224,7 @@ impl AcceptedCurrentCandidate {
                 }
                 return ConsumedOutputEvidence::select_exact_pending_dependency(
                     execution,
-                    &recorded.consumed_outputs_at(selected),
+                    &std::sync::Arc::clone(&recorded.consumed_outputs),
                     owner,
                     runtime,
                     snapshot,
@@ -245,7 +245,7 @@ impl AcceptedCurrentCandidate {
                 }
                 return ConsumedOutputEvidence::select_exact_pending_dependency(
                     execution,
-                    &recorded.consumed_outputs_at(selected),
+                    &std::sync::Arc::clone(&recorded.consumed_outputs),
                     owner,
                     runtime,
                     snapshot,

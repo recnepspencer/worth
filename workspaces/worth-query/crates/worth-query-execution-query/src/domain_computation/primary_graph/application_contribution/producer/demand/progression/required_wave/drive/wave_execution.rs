@@ -25,7 +25,7 @@ pub fn run<'owner, Schema, Family>(
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
-    authority: &ProducerInvocationAuthority<'owner>,
+    authority: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     wave: &'owner RequiredWaveSelection<'owner, Schema>,
     frontier: &mut RequiredFrontier,
     resolved: &mut ResolvedOnWave,

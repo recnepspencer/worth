@@ -84,7 +84,7 @@ pub fn resume_held_upstream<Schema>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: crate::basis::WorthQueryProductBranch,
-    invocation: &ProducerInvocationAuthority<'_>,
+    invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     custody: ContinuationCustody<'_, Schema>,
     key: &WorthQueryOutputDemandKey,
 
@@ -131,7 +131,7 @@ pub fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: crate::basis::WorthQueryProductBranch,
-    invocation: &ProducerInvocationAuthority<'_>,
+    invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     custody: &mut RequiredContinuations<Schema>,
     held: HeldRequiredSuccessor,
 
@@ -208,11 +208,10 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
-        invocation: &ProducerInvocationAuthority<'_>,
+        invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
 
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
-        self.authorize_current_source(phase, runtime, principal, request, invocation)?;
         let registry = &runtime.runtime.output_demands;
         if registry
             .interest_ready_readmission(self.interest())?
@@ -245,25 +244,6 @@ where
 }
 
 impl<Schema: ApplicationSchema + 'static> RequiredFreshProgress<Schema> {
-    pub fn authorize_current_source(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request: &WorthQueryRequestScope,
-        invocation: &ProducerInvocationAuthority<'_>,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
-            .map_err(|cause| {
-                WorthQueryOutputDemandDenial::new(
-                    super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
-                    "required successor source phase",
-                )
-            })?;
-        self.successor
-            .authorize_current_source(&execution, runtime, principal, request, invocation)
-    }
 }
 
 impl<Schema, Family> TypedRequiredSuccessor<Schema, Family>
@@ -285,7 +265,7 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
-        invocation: &ProducerInvocationAuthority<'_>,
+        invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         let demand = self.demand.as_mut().ok_or_else(|| {
@@ -313,7 +293,7 @@ where
             principal,
             request,
             branch,
-            invocation.for_mode(authority),
+            authority,
             performed,
         )
     }

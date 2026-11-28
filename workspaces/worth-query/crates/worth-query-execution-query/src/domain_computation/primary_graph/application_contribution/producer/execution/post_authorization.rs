@@ -18,9 +18,6 @@ pub fn execute_authorized<Schema, Binding>(
     phase: &WorthQueryAdvancementPhase<'_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     shared: &crate::domain_computation::primary_graph::SharedSelectedProductOperation<'_, Schema>,
-    control: Option<
-        &crate::domain_computation::primary_graph::SharedSelectedProductOperation<'_, Schema>,
-    >,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
@@ -49,7 +46,7 @@ pub fn execute_authorized<Schema, Binding>(
     input: <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Input,
     matched_predecessors: Option<super::super::demand::MatchedRequiredPredecessors<'_>>,
     successor_of: Option<[u8; 32]>,
-    commit_authority: ProducerInvocationAuthority<'_>,
+    commit_authority: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     edition: super::super::InstalledProducerEdition,
     producer_contacts: &mut usize,
 ) -> Result<ProducerExecutionOutcome, ProducerExecutionStop>
@@ -74,7 +71,6 @@ where
         phase,
         runtime,
         shared,
-        control,
         external_principal,
         request_scope,
         principal,

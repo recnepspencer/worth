@@ -43,7 +43,6 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
         aftermath_causality: Option<
             crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
         >,
-        history: Option<HistoryProducerInvocation<'a>>,
         coupled_outputs: &'a crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
     ) -> Self {
         Self {
@@ -57,7 +56,6 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
             product,
             original_completion,
             aftermath_causality,
-            history,
             coupled_outputs,
         }
     }

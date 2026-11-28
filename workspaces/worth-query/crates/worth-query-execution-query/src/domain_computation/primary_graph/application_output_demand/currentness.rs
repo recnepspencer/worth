@@ -5,9 +5,6 @@ use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort a
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod consumed;
 mod facts;
-mod native_routes;
-pub mod owned_route;
-pub use owned_route::CurrentOwnedRouteDenial;
 mod settlements;
 mod verification_context;
 use facts::require_current_facts;
@@ -137,11 +134,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         receipt: Option<super::OutputPublicationView<'_>>,
         verification: &mut crate::domain_computation::primary_graph::output_reuse::RetainedFactVerification<'_, '_, '_>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        if let Some(historical) = crate::domain_computation::primary_graph::output_reuse::HistoricalOutputRead::from_current_read(read) {
-            return if historical.is_current(execution, relational, self)? {
-                Ok(())
-            } else { Err(denial(WorthQueryOutputDemandDenialKind::Superseded)) };
-        }
         let Some(facts) = read.facts.as_ref().filter(|facts| !facts.is_empty()) else {
             // No computation comparison can replace the original factless
             // publication decision, including a rebase that could not compare.
@@ -200,7 +192,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     &read.identity,
                     facts,
                     witness,
-                    read.historical_selection.as_ref(),
                 );
             }
             // A row that cannot be re-established keeps requiring verification.

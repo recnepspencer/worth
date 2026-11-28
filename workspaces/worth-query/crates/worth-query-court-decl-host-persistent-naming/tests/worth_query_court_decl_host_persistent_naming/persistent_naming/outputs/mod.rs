@@ -18,14 +18,12 @@ use sculpt::{Held, HeldSeam, Keeper, Plan, SeamKeeper, Step};
 mod births;
 mod ergonomics;
 mod grouping;
-mod history;
 mod invalidation;
 mod lifecycle;
 mod recorded_basis;
 mod refusals;
 mod relations;
 mod same_commit;
-mod seam_history;
 mod seam_invalidation;
 pub(crate) mod seam_names;
 
@@ -353,11 +351,30 @@ pub fn exact() -> NameSelection {
 }
 
 pub fn named(observed: &[probe::Observation], key: &str) -> WorthQueryName<Member> {
-    super::history::named(observed, key)
+    observed
+        .iter()
+        .find_map(|observation| match observation {
+            probe::Observation::Named { key: named, name } if named == key => Some(*name),
+            _ => None,
+        })
+        .unwrap_or_else(|| panic!("`{key}` must carry its seeded name: {observed:?}"))
 }
 
 pub fn resolution<'o>(observed: &'o [probe::Observation], label: &str) -> &'o probe::Observation {
-    super::history::resolution(observed, label)
+    observed
+        .iter()
+        .find(|observation| match observation {
+            probe::Observation::ResolvedTo { label: l, .. }
+            | probe::Observation::ResolvedElsewhere { label: l }
+            | probe::Observation::Retired { label: l }
+            | probe::Observation::ResolveRefused { label: l, .. }
+            | probe::Observation::Plural { label: l, .. }
+            | probe::Observation::Ambiguous { label: l, .. }
+            | probe::Observation::AmbiguousOwned { label: l, .. }
+            | probe::Observation::NotInOwner { label: l, .. } => l == label,
+            _ => false,
+        })
+        .unwrap_or_else(|| panic!("`{label}` must be resolved: {observed:?}"))
 }
 
 pub fn resolved_to(label: &str, key: &str) -> probe::Observation {

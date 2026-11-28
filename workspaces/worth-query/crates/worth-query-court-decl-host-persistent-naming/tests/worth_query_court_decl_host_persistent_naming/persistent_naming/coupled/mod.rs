@@ -16,7 +16,6 @@ use worth_query_host::facade::application_naming::{
 pub(crate) mod candidate;
 mod composition;
 mod endpoints;
-mod history;
 mod invalidation;
 pub(crate) mod producer;
 mod refusals;

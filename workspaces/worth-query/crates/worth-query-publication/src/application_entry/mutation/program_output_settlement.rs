@@ -59,22 +59,6 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
         )
     }
 
-    /// Split this completed tree's operational receipts from its move-only
-    /// discovery custody. Recording qualifies final output versions; the public
-    /// original-root view remains separate immutable delivery evidence.
-    pub(in crate::application_entry) fn original_tree_parts(&mut self) -> (
-        std::sync::Arc<worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>,
-        impl ExactSizeIterator<Item = std::sync::Arc<worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>> + '_,
-        &mut Option<worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies>,
-    ){
-        (
-            self.current_root.retain_settlement(),
-            self.outputs
-                .iter()
-                .map(|output| std::sync::Arc::clone(&output.retained_settlement)),
-            &mut self.dependencies,
-        )
-    }
 
     /// Borrows the original root's immutable settlement, including typed output roles.
     ///
@@ -219,13 +203,6 @@ pub struct ProgramOutputRecord {
 }
 
 impl ProgramOutputRecord {
-    pub(in crate::application_entry) fn retain_settlement(
-        &self,
-    ) -> std::sync::Arc<
-        worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement,
-    > {
-        std::sync::Arc::clone(&self.retained_settlement)
-    }
 
     pub(in crate::application_entry) fn retained_settlement(
         &self,

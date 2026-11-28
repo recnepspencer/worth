@@ -79,9 +79,6 @@ impl OutputDemandSettlementReusedExt for WorthQueryOutputDemandSettlement {
                 RestoredOutputOrigin::Checkpoint(checkpoint) => {
                     SettlementProducerIdentity::from_checkpoint(checkpoint)
                 }
-                RestoredOutputOrigin::HistoricalSelection(origin) => {
-                    SettlementProducerIdentity::HistoricalSelection(origin.publication().clone())
-                }
             },
             output_family_identity: output_family_identity.to_owned(),
             receipt: None,

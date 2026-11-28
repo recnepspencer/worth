@@ -36,10 +36,10 @@ where
             None => application.compare_and_commit_selected_edit_envelope::<Self, B>(phase, &access, owner, program, binding, unseen, allocation),
         }
     }
-    fn inverse<K>(target: &WorthQuerySelectedProductOperation<'_, S>, phase: &WorthQueryAdvancementPhase<'_>, principal: &WorthQueryAuthenticatedExternalPrincipal<S>, scope: &WorthQueryRequestScope, source: &WorthQuerySelectedCorrectionSource<'_, S>, key: &WorthQueryCorrectionCommandKey, maximum_history: Option<NonZeroUsize>, maximum_results: NonZeroUsize, navigation: Option<&dyn worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionNavigationLineage>) -> SelectedSource<S, B>
+    fn inverse<K>(target: &WorthQuerySelectedProductOperation<'_, S>, phase: &WorthQueryAdvancementPhase<'_>, principal: &WorthQueryAuthenticatedExternalPrincipal<S>, scope: &WorthQueryRequestScope, source: &WorthQuerySelectedCorrectionSource<'_, S>, key: &WorthQueryCorrectionCommandKey, maximum_history: Option<NonZeroUsize>, maximum_results: NonZeroUsize) -> SelectedSource<S, B>
     where K: ApplicationCorrectionBinding<S>, K::InverseIntent: ApplicationMutationIntent<S, Binding = B>,
     {
-        target.derive_required_output_correction::<K, Self>(&worth_query_execution::publication_boundary::program_publication_access(), phase, principal, scope, source, key, maximum_history, maximum_results, navigation)
+        target.derive_required_output_correction::<K, Self>(&worth_query_execution::publication_boundary::program_publication_access(), phase, principal, scope, source, key, maximum_history, maximum_results)
     }
     fn reapplication<K>(target: &WorthQuerySelectedProductOperation<'_, S>, phase: &WorthQueryAdvancementPhase<'_>, principal: &WorthQueryAuthenticatedExternalPrincipal<S>, scope: &WorthQueryRequestScope, source: &WorthQuerySelectedCorrectionAlternative<'_, S>, key: &WorthQueryCorrectionCommandKey, maximum_history: Option<NonZeroUsize>, maximum_results: NonZeroUsize) -> SelectedSource<S, B>
     where K: ApplicationCorrectionBinding<S, Source = B>, B::Input: ApplicationMutationInputScope<S, B>,

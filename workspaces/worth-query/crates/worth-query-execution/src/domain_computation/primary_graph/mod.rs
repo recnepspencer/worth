@@ -57,9 +57,6 @@ pub use application_output_demand::{
     WorthQueryOriginalReadOutputDenial, WorthQueryOutputSourceEvidence,
     WorthQueryOutputSourceReplay, WorthQueryRecoveredProducerPublication,
 };
-pub use application_query::{
-    WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputNavigationDenial,
-};
 pub(crate) use conditional_operation::classify_bridge_signal;
 pub use conditional_operation::conditional_intent_read_is_active_for_test;
 #[doc(hidden)]
@@ -70,51 +67,6 @@ pub use fragment_view::{
 pub(crate) use managed_bridge::build_primary_graph_product_bridge;
 pub(in crate::domain_computation) use output_lineage::SourceInvalidationOwner;
 pub(in crate::domain_computation) use principal_currentness_capture::capture_principal_currentness_admitted;
-pub use product_operation::document_history::{
-    WorthQueryAdmittedHistoryProgramOutput, WorthQueryCompletedHistoryOutputs,
-    WorthQueryCompletedRecordingOutputs, WorthQueryDocumentHistory,
-    WorthQueryDocumentHistoryAdoptionFailure, WorthQueryDocumentHistoryAttachmentFailure,
-    WorthQueryDocumentHistoryCandidateDenial, WorthQueryDocumentHistoryCapturePauseForTest,
-    WorthQueryDocumentHistoryCloseFailure, WorthQueryDocumentHistoryCloseReceipt,
-    WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
-    WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryEnvelopeConstraint,
-    WorthQueryDocumentHistoryCorrectionMeaning, WorthQueryDocumentHistoryEnvelopeIntent,
-    WorthQueryDocumentHistoryGroupAborting,
-    WorthQueryDocumentHistoryGroupAdoptionFailure, WorthQueryDocumentHistoryGroupPreparation,
-    WorthQueryDocumentHistoryGroupReservation, WorthQueryDocumentHistoryIdentity,
-    WorthQueryDocumentHistoryNavigation, WorthQueryDocumentHistoryOperation,
-    WorthQueryDocumentHistoryOperationConstraint, WorthQueryDocumentHistoryRecordPreparation,
-    WorthQueryDocumentHistoryReservation, WorthQueryHistoryCommandContextDenial,
-    WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
-    WorthQueryHistoryContextRefreshPauseForTest, WorthQueryHistoryDependentOutputRead,
-    WorthQueryHistoryDescriptionContext, WorthQueryHistoryEnrollmentObservationForTest,
-    WorthQueryHistoryEnrollmentReportForTest, WorthQueryHistoryReversalFactForTest,
-    WorthQueryHeldNavigationLineageForTest, WorthQueryHistorySourceIndexForTest,
-    WorthQueryHistoryGroupCandidateCreation,
-    WorthQueryHistoryGroupMemberAdmission, WorthQueryHistoryNavigationCompletion,
-    WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
-    WorthQueryHistoryNavigationIntent, WorthQueryHistoryNavigationPauseForTest,
-    WorthQueryHistoryNavigationPosture, WorthQueryHistoryNodeId,
-    WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputAuthority,
-    WorthQueryHistoryOutputDiscovery, WorthQueryHistoryOutputNavigationAdvance,
-    WorthQueryHistoryOutputProfile, WorthQueryHistoryOutputQualificationDenial,
-    WorthQueryHistoryOutputSource, WorthQueryHistoryPage,
-    WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
-    WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits,
-    WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary, WorthQueryHistoryPreview,
-    WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRecordingOutputOrigin,
-    WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
-    WorthQueryHistoryRetentionChangePauseForTest, WorthQueryHistoryRetentionStatus,
-    WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
-    WorthQueryHistoryStepMetadata,
-    WorthQueryRecordingOutputQualificationDenial, WorthQueryRetainedHistoryOutputTree,
-    WorthQueryRetainedRecordingOutputTree, WorthQuerySettledHistoryProgramOutput,
-    WorthQueryVerifiedHistoryParent,
-};
-pub use product_operation::{
-    WorthQueryHistoryOutputControlDenial, WorthQueryHistoryOutputReadDenial,
-    WorthQueryHistoryRootOutputRead,
-};
 pub(in crate::domain_computation) use program_occurrence::OriginalProgramMeaning;
 pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispatchInFlightLease;
 pub use retained_correction::WorthQueryCorrectionRetentionDenial;

@@ -1,6 +1,6 @@
 //! Crate facade for primary-graph query evaluation, managed indexes, derived
 //! views, handlers, invariants, resources, bootstrap, installation, conditional
-//! operations, causal inspection, correction sources, document history, and
+//! operations, causal inspection, correction sources and
 //! producer computation.
 
 pub mod domain_computation {
@@ -26,9 +26,6 @@ pub mod ports {
     pub use crate::domain_computation::primary_graph::causal_inspection::application_observation::declared_query::ApplicationQueryObservationInternalPort;
     pub use crate::domain_computation::primary_graph::conditional_operation::installation::clock_handle::ConditionalClockHandleInternalPort;
     pub use crate::domain_computation::primary_graph::conditional_operation::installation::denial::ConditionalRuntimeInstallationDenialInternalPort;
-    pub use crate::domain_computation::primary_graph::product_operation::document_history::internal_port::{
-        HistoryNodeIdInternalPort, HistoryPreviewInternalPort,
-    };
     pub use crate::domain_computation::primary_graph::product_operation::entry_internal_port::ProductEntryInternalPort;
     pub use crate::domain_computation::primary_graph::product_operation::query_controls::ProductQueryControlsInternalPort;
     pub use crate::ports::*;

@@ -26,7 +26,7 @@ where
         returned: &mut Option<Checkpoint>,
         finish: PreparedSelectedCheckpointFinish<'_>,
         principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        invocation: &super::super::super::ProducerInvocationAuthority<'_>,
+        invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         match checkpoint {
             Checkpoint::PublicationPending {

@@ -56,24 +56,12 @@ pub use denial::{
 pub use read_close::WorthQueryOutputReadCleanup;
 pub use read_close::WorthQueryOutputReadCloseDenial;
 
-/// The one installed producer chosen for an output family and source, with the
-/// applicability it was chosen for.
-///
-/// Returned by `select_output_producer`. It records the choice only; admitting
-/// and advancing the demand re-check that the producer is still installed.
-/// Which existing readmission owner an exact retained selection reaches.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum RetainedOutputReadPosture {
-    Ordinary,
-    HistoricalSelection,
-}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQuerySelectedApplicationProducer {
     pub(crate) identity: String,
     pub(crate) applicability: WorthQueryProducerApplicability,
     pub(crate) exact_retained_output: bool,
-    pub(crate) retained_read_posture: RetainedOutputReadPosture,
     pub(crate) retained_idempotency_key: Option<[u8; 32]>,
     pub(crate) retained_output_binding: Option<TypeId>,
     // An exact selection whose producer declares no Preserve posture reuses
@@ -88,11 +76,6 @@ impl WorthQuerySelectedApplicationProducer {
     ) {
         self.retained_idempotency_key = Some(candidate.idempotency_key_identity);
         self.retained_output_binding = Some(candidate.binding);
-        self.retained_read_posture = if candidate.historical_selection.is_some() {
-            RetainedOutputReadPosture::HistoricalSelection
-        } else {
-            RetainedOutputReadPosture::Ordinary
-        };
     }
 }
 
@@ -257,7 +240,6 @@ where
                 identity: selected.declaration.identity.clone(),
                 applicability,
                 exact_retained_output: false,
-                retained_read_posture: RetainedOutputReadPosture::Ordinary,
 
                 retained_idempotency_key: None,
                 retained_output_binding: None,

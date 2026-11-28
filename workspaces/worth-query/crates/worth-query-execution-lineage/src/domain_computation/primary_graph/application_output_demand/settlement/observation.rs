@@ -5,7 +5,7 @@ pub mod provenance;
 
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::{
-    output_lineage::{HistoricalAcceptedOrigin, RecordedSettlementIdentity},
+    output_lineage::RecordedSettlementIdentity,
     source_disclosure::OriginalSourceInspectionDisclosure,
     WorthQueryApplicationCommittedChanges, WorthQueryApplicationOutputCorrespondence,
 };
@@ -33,9 +33,6 @@ pub enum OriginalSettledProducerSource {
     },
     Restored {
         checkpoint: super::super::WorthQueryAcceptedOutputCheckpointIdentity,
-    },
-    HistoricalSelection {
-        origin: HistoricalAcceptedOrigin,
     },
 }
 

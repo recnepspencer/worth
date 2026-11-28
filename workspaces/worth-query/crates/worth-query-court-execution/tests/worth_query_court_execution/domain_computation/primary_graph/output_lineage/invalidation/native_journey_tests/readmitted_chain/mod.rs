@@ -61,7 +61,6 @@ fn readmitted_chain_after_declared_change_settles_clean() {
                 .unwrap(),
             witness: account_witness(execution, &world, runtime, snapshot, entity),
             upstream: upstream.iter().map(|identity| Arc::clone(identity)).collect(),
-            historical: None,
         };
         let read = |identity: &Arc<RecordedSettlementIdentity>| currentness(owner, &head, identity);
 

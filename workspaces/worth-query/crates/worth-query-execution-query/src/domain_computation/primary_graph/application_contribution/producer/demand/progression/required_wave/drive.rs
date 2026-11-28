@@ -15,7 +15,6 @@ use super::frontier::RequiredFrontier;
 use super::frontier::RequiredUpstream;
 use super::queued::QueuedRequiredRoots;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
 pub mod canonical_apply;
 pub mod member_refusal;
 pub mod member_stop;
@@ -35,7 +34,7 @@ pub fn drive_required_wave<'runtime, Schema, Family>(
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
-    authority: &ProducerInvocationAuthority<'_>,
+    authority: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     mut wave: RequiredWaveSelection<'runtime, Schema>,
     queue: &mut QueuedRequiredRoots,
     queue_custody: &mut RequiredContinuations<Schema>,

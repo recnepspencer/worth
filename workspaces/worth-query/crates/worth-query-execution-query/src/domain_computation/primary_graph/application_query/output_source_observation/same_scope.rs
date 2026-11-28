@@ -112,8 +112,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             selector,
         )?;
         if let Some((before, candidate)) = applied {
-            if self.history.is_some()
-                || candidate
+            if candidate
                     .candidate_identity()
                     .proposal()
                     .branch_observation()
@@ -171,10 +170,9 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         self.with_resolved_plan::<B, _, _>(
             execution,
             &installed,
-            super::permission::SourceQueryParameters::Live(ApplicationQueryParameterSet::new()),
+            ApplicationQueryParameterSet::new(),
             &principal,
             &scope,
-            super::permission::SourceScopePosture::Current,
             native,
             consume,
         )

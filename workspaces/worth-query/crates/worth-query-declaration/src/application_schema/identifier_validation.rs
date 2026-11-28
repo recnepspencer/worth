@@ -238,11 +238,6 @@ pub(super) fn validate_member_identifiers(
                     .validate()
                     .map_err(|_| ApplicationSchemaDeclarationDenial::InvalidApplicationResource)?;
             }
-            ApplicationSchemaMember::ApplicationHistory { definition } => {
-                definition
-                    .validate()
-                    .map_err(|_| ApplicationSchemaDeclarationDenial::InvalidApplicationHistory)?;
-            }
             ApplicationSchemaMember::ApplicationQueryInspection { .. }
             | ApplicationSchemaMember::ApplicationHistoryQuery { .. } => {
                 application_query::validate_metadata(member)?;

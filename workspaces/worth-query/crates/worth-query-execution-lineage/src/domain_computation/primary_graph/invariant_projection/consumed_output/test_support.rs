@@ -26,7 +26,6 @@ impl ConsumedOutputEvidence {
             verification_requirement: requirement,
             native_output_witness: None,
             selected_native_root: super::ConsumedReadRoot::Selected(selected),
-            historical: None,
         })
     }
 }

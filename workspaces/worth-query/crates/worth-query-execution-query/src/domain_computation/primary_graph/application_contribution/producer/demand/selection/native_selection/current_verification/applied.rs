@@ -159,8 +159,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                         && candidate.required_publication.is_none()
                 }
             };
-            if candidate.historical_selection.is_some()
-                || !origin_matches
+            if !origin_matches
                 || !source_identity_matches(
                     &candidate,
                     source.runtime_source_identity(),

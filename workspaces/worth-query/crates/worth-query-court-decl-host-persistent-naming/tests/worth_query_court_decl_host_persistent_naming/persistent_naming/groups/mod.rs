@@ -12,7 +12,6 @@ use super::outputs::{birth, keys, named, World};
 use super::*;
 use worth_query_host::facade::application_naming::{NameSelection, WorthQueryName};
 
-mod history;
 mod invalidation;
 mod lifecycle;
 mod projection;

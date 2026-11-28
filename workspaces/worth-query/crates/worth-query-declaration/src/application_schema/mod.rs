@@ -2,7 +2,6 @@ pub use worth_foundational::facade::RelationDirection;
 
 mod application_capability_authoring;
 mod application_correction_authoring;
-mod application_history_authoring;
 mod application_managed_index_authoring;
 mod application_mutation_authoring;
 mod application_naming_authoring;
@@ -74,7 +73,6 @@ mod field_reference;
 pub mod fragment;
 mod graph_member;
 pub use graph_member::{ApplicationGraphMemberMeaning, ApplicationGraphMemberSelector};
-mod history_member_closure;
 mod identifier_validation;
 mod inbound_occurrence;
 mod invariant;

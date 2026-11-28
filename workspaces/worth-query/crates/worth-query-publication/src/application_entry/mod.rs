@@ -53,56 +53,7 @@ mod elevation_close;
 mod elevation_request;
 mod lifecycle_idempotency;
 pub use lifecycle_idempotency::WorthQueryCapabilityLifecycleIdempotencyDenial;
-mod history;
 mod inbound_occurrence;
-#[doc(hidden)]
-pub use history::WorthQueryHistoryEditHandoffPauseForTest;
-pub use history::{
-    OrdinaryHistoryPayload, WorthQueryApplicationHistoryAttachmentFailure,
-    WorthQueryApplicationHistoryCloseFailure, WorthQueryApplicationHistoryDenial,
-    WorthQueryApplicationHistoryDocument, WorthQueryApplicationHistoryPreview,
-    WorthQueryDocumentHistoryCandidateDenial, WorthQueryDocumentHistoryCloseReceipt,
-    WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
-    WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryIdentity,
-    WorthQueryDocumentHistoryInstallationDenialKind, WorthQueryFixedHistoryEditOutcome,
-    WorthQueryGovernedHistoryPayload, WorthQueryGroupedHistoryDocument,
-    WorthQueryHistoryCheckoutDescription, WorthQueryHistoryCheckoutTarget,
-    WorthQueryHistoryClosingOutputs, WorthQueryHistoryCommandContextDenial,
-    WorthQueryHistoryCommands, WorthQueryHistoryContextRefreshDenial,
-    WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryDescriptionContext,
-    WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance, WorthQueryHistoryEditBuilder,
-    WorthQueryHistoryEditCaptureDenial, WorthQueryHistoryEditCaptureFailure,
-    WorthQueryHistoryEditDenial, WorthQueryHistoryEditDescription, WorthQueryHistoryEditEnvelope,
-    WorthQueryHistoryEditEnvelopeDenial, WorthQueryHistoryEditEnvelopeFailure,
-    WorthQueryHistoryEditEnvelopeOutcome, WorthQueryHistoryEditFinish,
-    WorthQueryHistoryEditOutcome, WorthQueryHistoryEditPosture, WorthQueryHistoryExpectedCheckout,
-    WorthQueryHistoryGestureCompletion, WorthQueryHistoryGestureIntent,
-    WorthQueryHistoryGestureMembers, WorthQueryHistoryGroupCompletionIter,
-    WorthQueryHistoryGroupCompletionKind, WorthQueryHistoryGroupCompletions,
-    WorthQueryHistoryGroupDenial, WorthQueryHistoryGroupExecution, WorthQueryHistoryGroupFinish,
-    WorthQueryHistoryGroupMembers, WorthQueryHistoryGroupPosture, WorthQueryHistoryNavigation,
-    WorthQueryHistoryNavigationAdvance, WorthQueryHistoryNavigationAdvanceDenial,
-    WorthQueryHistoryNavigationBuilder, WorthQueryHistoryNavigationCompletion,
-    WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
-    WorthQueryHistoryNavigationIntent, WorthQueryHistoryNavigationPosture,
-    WorthQueryHistoryNoOutputs, WorthQueryHistoryNodeId, WorthQueryHistoryOutputAdvanceDenial,
-    WorthQueryHistoryOutputControlDenial, WorthQueryHistoryOutputDenial,
-    WorthQueryHistoryOutputQualificationDenial, WorthQueryHistoryOutputReadDenial,
-    WorthQueryHistoryOutputsMode, WorthQueryHistoryPage, WorthQueryHistoryPageCursor,
-    WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits,
-    WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary, WorthQueryHistoryPayloadMode,
-    WorthQueryHistoryPreviewResult, WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,
-    WorthQueryHistoryReleaseOutcome, WorthQueryHistoryRetentionStatus,
-    WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
-    WorthQueryHistoryStepMetadata, WorthQueryHistoryTypedMembers, WorthQueryHistoryWindowChange,
-    WorthQueryHistoryWithOutputTrees, WorthQueryHistoryWithOutputs,
-    WorthQueryOriginalReadOutputDenial, WorthQueryOwnedApplicationHistoryDocument,
-    WorthQueryRecordingOutputQualificationDenial,
-};
-#[doc(hidden)]
-pub use history::{
-    WorthQueryHistoryGroupHandoffPauseForTest, WorthQueryHistoryGroupHandoffPointForTest,
-};
 mod live;
 mod live_whole_result;
 mod mandatory_review;
@@ -115,7 +66,7 @@ pub use operation::{
     WorthQueryClosedFixedDelivery, WorthQueryClosedFixedTerminal, WorthQueryClosedOperation,
     WorthQueryCompletedSourceOperation, WorthQueryCompletedWorkflowOperation,
     WorthQueryCompletedWorkflowSelection, WorthQueryDiscoveredOperation, WorthQueryFixedOperation,
-    WorthQueryHistoryOperationMode, WorthQueryOperationAdvance, WorthQueryOperationAdvanceDenial,
+    WorthQueryOperationAdvance, WorthQueryOperationAdvanceDenial,
     WorthQueryOperationCleanup, WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial,
     WorthQueryOperationConstructionDenial, WorthQueryOperationDeliveryDenial,
     WorthQueryOperationDeliveryPolicy, WorthQueryOperationDescription,
@@ -310,5 +261,3 @@ pub use worth_query_execution::facade::primary_graph::WorthQueryApplicationQuery
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
-
-pub use history::WorthQueryHistoryPublicationCorrespondenceMismatch;

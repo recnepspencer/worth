@@ -40,7 +40,7 @@ pub trait InstalledSelectedProducerExecutor<Schema>: Send + Sync {
         delivery_branch: WorthQueryProductBranch,
         producer_contacts_in_this_demand: usize,
         refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
-        invocation: ProducerInvocationAuthority<'owner>,
+        invocation: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         performed: &'owner std::cell::RefCell<PerformedMembers>,
     ) -> Result<
         super::required_cue::RequiredCueProgress<'basis, 'owner, Schema>,
@@ -72,7 +72,7 @@ pub trait InstalledSelectedProducerExecutor<Schema>: Send + Sync {
         required_output: RequiredOutputExecution,
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
-        commit_authority: ProducerInvocationAuthority<'owner>,
+        commit_authority: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         edition: super::super::InstalledProducerEdition,
         producer_contacts: &mut usize,
     ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop>;
@@ -130,7 +130,7 @@ where
         delivery_branch: WorthQueryProductBranch,
         producer_contacts_in_this_demand: usize,
         refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
-        invocation: ProducerInvocationAuthority<'owner>,
+        invocation: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         performed: &'owner std::cell::RefCell<PerformedMembers>,
     ) -> Result<
         super::required_cue::RequiredCueProgress<'basis, 'owner, Schema>,
@@ -219,7 +219,6 @@ where
                     shared,
                     installed.edition,
                 )?;
-                let fresh = invocation.confirm_source(&execution, runtime, fresh)?;
                 let Some(readiness) = performed.borrow_mut().fresh(
                     &execution,
                     selected.key(),
@@ -335,7 +334,7 @@ where
         required_output: RequiredOutputExecution,
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
-        commit_authority: ProducerInvocationAuthority<'owner>,
+        commit_authority: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         edition: super::super::InstalledProducerEdition,
         producer_contacts: &mut usize,
     ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop> {

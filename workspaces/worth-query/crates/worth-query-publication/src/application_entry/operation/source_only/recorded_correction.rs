@@ -66,7 +66,7 @@ where
             preconditions: Default::default(),
             source: None,
             branch,
-            history: None,
+
         };
         WorthQuerySourceOperationAdmission::construct_with_correction(
             description,

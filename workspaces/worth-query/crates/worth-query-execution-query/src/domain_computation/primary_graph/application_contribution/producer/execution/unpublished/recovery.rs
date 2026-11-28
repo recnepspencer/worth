@@ -25,14 +25,14 @@ impl ContinuationState {
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &WorthQueryRequestScope,
-        invocation: &ProducerInvocationAuthority<'_>,
+        invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         edition: super::super::super::InstalledProducerEdition,
     ) -> Result<Option<RecoveredProducerPublication>, WorthQueryOutputDemandDenial>
     where
         S: ApplicationSchema + 'static,
         B: WorthQueryApplicationProducerBinding<S>,
     {
-        if self.edition != edition || &self.mode != invocation.mode() {
+        if self.edition != edition || &self.mode != invocation {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
                 B::IDENTITY,
@@ -88,14 +88,12 @@ impl ContinuationState {
                     B::IDENTITY,
                 ))
             })?;
-        require_selected_program(&selected, invocation.mode()).map_err(readmission_denial)?;
+        require_selected_program(&selected, invocation).map_err(readmission_denial)?;
         let shared = selected.prepare_shared_query_basis().map_err(|(_, stop)| {
             readmission_denial(
                 source_readmission::ready_resource_denial(B::IDENTITY, stop).into_output_denial(),
             )
         })?;
-        let control = select_invocation_control(&execution, runtime, invocation)
-            .map_err(|stop| stop.into_output_denial().with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable))?;
         let input = self
             .input
             .as_deref()
@@ -109,8 +107,6 @@ impl ContinuationState {
             installed,
             runtime,
             &shared,
-            control.as_ref(),
-            invocation.history_control(),
             principal,
             request,
             input.input(),

@@ -20,8 +20,8 @@ pub use transition::WorthQueryAdmittedApplicationOperation;
 pub use transition::WorthQueryOperationAdmissionIdentity;
 pub use transition::{admit_capability_access, admit_encoded_capability_access};
 pub use transition::{
-    authorize_applied_control_mutation_on_selected, authorize_current_control_mutation_on_selected,
-    authorize_historical_control_mutation_on_selected, authorize_public_mutation_on_selected,
+    authorize_applied_control_mutation_on_selected,
+    authorize_public_mutation_on_selected,
     SelectedConventionalAdmissionStop,
 };
 pub use transition::{transition_capability_operation, transition_conventional_operation};

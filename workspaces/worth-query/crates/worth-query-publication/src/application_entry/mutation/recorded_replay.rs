@@ -67,8 +67,7 @@ impl StepRefusal for PerformedDenial {
                     | Correction::ProgramOwner(_)
                     | Correction::ProductSelection(_)
                     | Correction::Source(_)
-                    | Correction::Derivation(_)
-                    | Correction::CandidateMeaningChanged => false,
+                    | Correction::Derivation(_) => false,
                 }
             }
             Self::Action(_)

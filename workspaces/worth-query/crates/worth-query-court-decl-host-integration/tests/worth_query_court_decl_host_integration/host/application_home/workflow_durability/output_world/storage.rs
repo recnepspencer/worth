@@ -27,7 +27,6 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
     type Members = (
         RetentionModel,
         WorkflowGrants,
-        document::document_history::control_roles::ControlGrants,
         Declaration,
     );
 }

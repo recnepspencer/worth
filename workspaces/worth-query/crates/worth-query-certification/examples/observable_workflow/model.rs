@@ -10,8 +10,6 @@ pub mod assessment_output;
 pub mod assessment_readiness;
 #[path = "../../../worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/correctable_retention.rs"]
 pub mod correctable_retention;
-#[path = "../../../worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/document_history.rs"]
-pub mod document_history;
 #[path = "../../../worth-query-testkit-document-retention/src/certification/application_graph/document_retention_model/host.rs"]
 pub mod host;
 #[path = "installation.rs"]

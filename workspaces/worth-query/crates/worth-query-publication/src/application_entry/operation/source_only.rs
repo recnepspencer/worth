@@ -9,7 +9,6 @@ use worth_query_execution::facade::primary_graph::{
 mod advancement;
 mod authorization;
 mod binding;
-mod history;
 mod original;
 pub(super) use advancement::Step as SourceStep;
 pub(in crate::application_entry) use binding::sealed::Driver as SourceAssessmentDriver;
@@ -20,8 +19,6 @@ pub use submission::{
     WorthQuerySourcelessMutation,
 };
 mod completion;
-mod disposal;
-pub(in crate::application_entry) use disposal::WorthQueryClosingSourceOperation;
 #[doc(hidden)]
 mod entrance;
 mod native_posture;

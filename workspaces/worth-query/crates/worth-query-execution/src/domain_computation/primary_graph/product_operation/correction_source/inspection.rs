@@ -61,7 +61,6 @@ impl<Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema>
             ancestry,
             self.maximum_history,
             None,
-            None,
         )
         .map(|_| ())
     }

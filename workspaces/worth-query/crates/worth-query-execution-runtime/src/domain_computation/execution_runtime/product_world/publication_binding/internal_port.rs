@@ -63,23 +63,12 @@ pub trait ProductPublicationBindingInternalPort {
         WorthQueryProductPublicationDenial<NoEffectCompositePublication>,
     >;
 
-    fn prepare_relational_candidate_with_current_read(
-        &self,
-        candidate: PreparedRelationalCommitCandidate,
-        request: &WorthQueryRequestScope,
-        successor_observation_requested: bool,
-        current_read: Option<&ProductBranchObservation>,
-    ) -> Result<
-        WorthQueryPreparedProductPublication,
-        WorthQueryProductPublicationDenial<NoEffectCompositePublication>,
-    >;
 
     fn prepare_combined_candidate(
         &self,
         candidate: PreparedRelationalCommitCandidate,
         request: &WorthQueryRequestScope,
         successor_observation_requested: bool,
-        current_read: Option<&ProductBranchObservation>,
     ) -> Result<
         WorthQueryPreparedCombinedProductPublication,
         WorthQueryProductPublicationDenial<NoEffectCompositePublication>,
@@ -183,31 +172,12 @@ impl ProductPublicationBindingInternalPort for WorthQueryProductPublicationBindi
         )
     }
 
-    fn prepare_relational_candidate_with_current_read(
-        &self,
-        candidate: PreparedRelationalCommitCandidate,
-        request: &WorthQueryRequestScope,
-        successor_observation_requested: bool,
-        current_read: Option<&ProductBranchObservation>,
-    ) -> Result<
-        WorthQueryPreparedProductPublication,
-        WorthQueryProductPublicationDenial<NoEffectCompositePublication>,
-    > {
-        Self::prepare_relational_candidate_with_current_read(
-            self,
-            candidate,
-            request,
-            successor_observation_requested,
-            current_read,
-        )
-    }
 
     fn prepare_combined_candidate(
         &self,
         candidate: PreparedRelationalCommitCandidate,
         request: &WorthQueryRequestScope,
         successor_observation_requested: bool,
-        current_read: Option<&ProductBranchObservation>,
     ) -> Result<
         WorthQueryPreparedCombinedProductPublication,
         WorthQueryProductPublicationDenial<NoEffectCompositePublication>,
@@ -217,7 +187,6 @@ impl ProductPublicationBindingInternalPort for WorthQueryProductPublicationBindi
             candidate,
             request,
             successor_observation_requested,
-            current_read,
         )
     }
 

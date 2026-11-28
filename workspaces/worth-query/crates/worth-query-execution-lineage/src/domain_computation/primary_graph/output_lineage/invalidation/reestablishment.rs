@@ -33,7 +33,6 @@ impl SourceInvalidationOwner {
         identity: &Arc<RecordedSettlementIdentity>,
         facts: &super::super::ComparableSourceFacts,
         witness: &SealedNativeOutputWitness,
-        historical: Option<&super::super::SelectionCoordinate>,
     ) -> Result<bool, SettlementRegistrationStop> {
         let Some(cell) = self.cell_for_read(read_basis)? else {
             return Ok(false);
@@ -44,7 +43,7 @@ impl SourceInvalidationOwner {
             return Ok(true);
         }
         drop(image);
-        let Some(output_facts) = self.prepare_performed_output_facts(witness, historical)? else {
+        let Some(output_facts) = self.prepare_performed_output_facts(witness)? else {
             return Ok(false);
         };
         self.register_settlement(SettlementRegistration {
@@ -57,7 +56,6 @@ impl SourceInvalidationOwner {
             stale_at_read_basis: im::OrdSet::new(),
             requirement: None,
             upstream: im::OrdSet::new(),
-            historical: historical.cloned(),
         })?;
         Ok(true)
     }
@@ -72,10 +70,9 @@ impl SourceInvalidationOwner {
         facts: &super::super::ComparableSourceFacts,
         witness: &SealedNativeOutputWitness,
         upstream: im::OrdSet<Arc<RecordedSettlementIdentity>>,
-        historical: Option<&super::super::SelectionCoordinate>,
     ) -> Result<(), SettlementRegistrationStop> {
         let output_facts = self
-            .prepare_performed_output_facts(witness, historical)?
+            .prepare_performed_output_facts(witness)?
             .ok_or(SettlementRegistrationStop::SourceUnavailable)?;
         self.register_settlement(SettlementRegistration {
             computation: None,
@@ -87,7 +84,6 @@ impl SourceInvalidationOwner {
             stale_at_read_basis: im::OrdSet::new(),
             requirement: None,
             upstream,
-            historical: historical.cloned(),
         })
     }
 

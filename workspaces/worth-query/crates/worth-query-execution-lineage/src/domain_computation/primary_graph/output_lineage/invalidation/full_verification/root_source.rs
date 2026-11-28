@@ -14,15 +14,8 @@ impl FullVerificationImage<'_> {
         let Some(facts) = source.source_facts() else {
             return Ok(false);
         };
-        let acceptance = super::super::super::RestoredAcceptance::new(
-            execution,
-            self.runtime,
-            self.snapshot,
-            source.historical,
-        );
         for fact in facts {
-            if !(fact_is_current(execution, fact, self.runtime, self.snapshot)?
-                || acceptance.moved_fact_holds(fact)?)
+            if !fact_is_current(execution, fact, self.runtime, self.snapshot)?
             {
                 return Ok(false);
             }

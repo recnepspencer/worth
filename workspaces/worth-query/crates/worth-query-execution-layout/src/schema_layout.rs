@@ -28,7 +28,6 @@ mod equality_fields;
 pub mod field_coordinate;
 mod field_optionality;
 pub use field_coordinate::InstalledFieldCoordinate;
-mod history_ownership;
 mod installation_primitives;
 mod kind_lookup;
 mod live_control_roles;
@@ -89,7 +88,6 @@ pub use registry_lowering::{register_entity, register_relation, register_relatio
 
 #[derive(Debug)]
 pub struct WorthQueryPrimaryGraphLayout {
-    history_ownership: history_ownership::HistoryOwnershipLayouts,
     value_bindings:
         worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     principal_bindings: BTreeMap<String, WorthQueryPrimaryPrincipalBindingLayout>,

@@ -10,7 +10,6 @@ mod close;
 mod conditional_definition;
 pub(crate) mod context;
 pub(crate) mod correction_source;
-pub(crate) mod document_history;
 pub use correction_source::{
     WorthQueryCorrectionActionInputSelection, WorthQueryCorrectionAlternativeRef,
     WorthQueryCorrectionAlternativeResolution, WorthQueryCorrectionAlternativesContinuation,
@@ -18,7 +17,7 @@ pub use correction_source::{
     WorthQueryCorrectionDerivationDenial, WorthQueryCorrectionHistoryDenial,
     WorthQueryCorrectionHistoryRecord, WorthQueryCorrectionHistoryState,
     WorthQueryCorrectionInputSelection, WorthQueryCorrectionIntent,
-    WorthQueryCorrectionNavigationLineage, WorthQueryCorrectionOutputProjectionDenial,
+    WorthQueryCorrectionOutputProjectionDenial,
     WorthQueryCorrectionRestoredSupportDenial, WorthQueryCorrectionSelectionDenial,
     WorthQueryPreparedCorrectionSource, WorthQuerySelectedCorrectionAlternative,
     WorthQuerySelectedCorrectionSource,
@@ -30,10 +29,6 @@ pub(crate) mod query;
 mod relational_change_delivery;
 mod transaction;
 
-pub(in crate::domain_computation::primary_graph) use branches::{
-    DetachedExpectedProductBranch, DetachedOwnedProductHead, SharedPrimaryRuntime,
-    WorthQueryRuntimeCustody,
-};
 pub use branches::{
     WorthQueryApplicationProductBranches, WorthQueryExpectedProductBasisSelectionDenial,
     WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
@@ -94,9 +89,6 @@ pub use program_adoption::{
     WorthQueryProgramMigrationPreparationDenial, WorthQueryStoppedBranchSetAdoption,
     WorthQueryUnpublishedBranchAdoption,
 };
-pub use query::WorthQueryHistoryOutputControlDenial;
-pub use query::WorthQueryHistoryOutputReadDenial;
-pub use query::WorthQueryHistoryRootOutputRead;
 pub use query::WorthQueryProductQueryControls;
 pub use query::WorthQueryRetainedBatchQueryAdmissionDenial;
 pub use transaction::{

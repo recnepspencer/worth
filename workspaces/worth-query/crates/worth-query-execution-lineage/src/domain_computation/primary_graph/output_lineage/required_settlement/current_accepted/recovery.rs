@@ -16,7 +16,7 @@ impl AcceptedCurrentCandidate {
     ) -> Result<CurrentAcceptedResult<'basis>, CurrentAcceptedStop> {
         let recorded = self.selected.recorded();
         // Recovery posts the upstream ids this head reads (public #358).
-        let consumed = recorded.consumed_outputs_at(selected);
+        let consumed = std::sync::Arc::clone(&recorded.consumed_outputs);
         let Some(witness) = self.selected.native_output_witness_cell() else {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         };
@@ -32,7 +32,6 @@ impl AcceptedCurrentCandidate {
             runtime,
             snapshot,
             selected,
-            recorded.historical_selection.as_ref(),
         ) {
             Ok(answer) => answer,
             Err(ConsumedOutputVerificationStop::PendingUpstream) => {
@@ -58,7 +57,6 @@ impl AcceptedCurrentCandidate {
                     &recorded.settlement_identity,
                     &facts,
                     witness.get().expect("selected performed witness is sealed"),
-                    recorded.historical_selection.as_ref(),
                 )
                 .map_err(CurrentAcceptedStop::Registration)?
             {
@@ -103,7 +101,6 @@ impl AcceptedCurrentCandidate {
                     &facts,
                     witness.get().expect("selected performed witness is sealed"),
                     upstream,
-                    recorded.historical_selection.as_ref(),
                 )
                 .map_err(CurrentAcceptedStop::Registration)?;
         }

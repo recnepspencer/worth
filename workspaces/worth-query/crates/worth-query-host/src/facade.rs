@@ -9,8 +9,7 @@
 //!   typed queries (`session.query(..)`), live subscriptions ([`WorthQueryTypedLiveSubscription`]),
 //!   managed-index watches and readiness (`session.watch(..)`, `session.ensure_index_ready(..)`).
 //! - Fork and adopt "what-if" branches ([`WorthQueryApplicationHome::fork_preview`],
-//!   [`WorthQueryApplicationHome::adopt_preview`]), attach `'static` document history
-//!   ([`WorthQueryApplicationHome::owned_history`]), undo/redo restart-safely
+//!   [`WorthQueryApplicationHome::adopt_preview`]), undo/redo restart-safely
 //!   ([`WorthQueryApplicationHome::undo`], [`WorthQueryApplicationHome::redo`] and their
 //!   `_authored` forms), and list what to undo after a restart with
 //!   [`WorthQueryApplicationHome::correction_history`]. Audit reads are in [`audit`].
@@ -287,7 +286,7 @@ pub use crate::application_home::{
     WorthQueryCorrectionHistoryLimit, WorthQueryDirectoryOpenDenial,
     WorthQueryDirectoryOpenRetired, WorthQueryHomeAuthoredCorrectionOutcome,
     WorthQueryHomeClosePolicyRefused, WorthQueryHomeConfig, WorthQueryHomeCorrectionOutcome,
-    WorthQueryHomeOpenDisposition, WorthQueryHomeOwnedHistoryDenial,
+    WorthQueryHomeOpenDisposition,
     WorthQueryHomeProgramTransition, WorthQueryHomeProgramTransitionDenial,
     WorthQueryHomeProgramTransitionOpenPhase, WorthQueryHomeProgramTransitionOpenRefused,
     WorthQueryHomeProgramTransitionPlan, WorthQueryHomeProgramTransitionStep,

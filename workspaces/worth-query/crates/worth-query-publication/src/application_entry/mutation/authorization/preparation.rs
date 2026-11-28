@@ -98,19 +98,6 @@ where
     };
     let idempotency = extension
         .apply(WorthQueryApplicationIdempotencyBinding::for_mutation_identities(identities));
-    if let Some(restriction) = request.history_constraint {
-        request
-            .request
-            .application
-            .validate_history_operation(
-                phase,
-                &worth_query_execution::publication_boundary::program_publication_access(),
-                restriction,
-                &admission,
-                idempotency,
-            )
-            .map_err(WorthQueryApplicationRequestMutationDenial::DocumentHistory)?;
-    }
     Ok(PreparedMutation {
         principal_identity,
         admission,

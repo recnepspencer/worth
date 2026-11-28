@@ -20,7 +20,6 @@ pub enum WorthQueryInspectionSupplierEvidence {
     CommittedOutput,
     StableInputReuse,
     CheckpointRestoration,
-    HistoricalSelection,
 }
 
 /// A metadata snapshot of the original's owners, not a new evidence owner or
@@ -65,8 +64,7 @@ impl WorthQueryInspectionEvidenceAvailability {
                 Supplier::NotRetained => "not-retained",
                 Supplier::CommittedOutput => "committed-output",
                 Supplier::StableInputReuse => "stable-input-reuse",
-                Supplier::CheckpointRestoration => "checkpoint-restoration",
-                Supplier::HistoricalSelection => "historical-selection",
+                Supplier::CheckpointRestoration => "checkpoint-restoration"
             },
             retained(self.native_observation),
         ]
@@ -101,9 +99,6 @@ impl WorthQueryInspectionEvidenceAvailability {
             }
             Some(OriginalSettledProducerSource::Restored { .. }) => {
                 (Supplier::CheckpointRestoration, NotRetained)
-            }
-            Some(OriginalSettledProducerSource::HistoricalSelection { .. }) => {
-                (Supplier::HistoricalSelection, NotRetained)
             }
         };
         Self {

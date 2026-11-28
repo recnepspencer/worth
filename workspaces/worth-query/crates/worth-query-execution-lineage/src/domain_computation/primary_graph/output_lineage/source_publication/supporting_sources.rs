@@ -10,7 +10,7 @@ impl WorthQueryApplicationOutputLineage {
         candidate: &WorthQueryCurrentOutputCandidate,
         aliases: &mut Vec<(SemanticSource, [u8; 32])>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let consumed = candidate.consumed_outputs_for_aliases();
+        let consumed = std::sync::Arc::clone(&candidate.consumed_outputs);
         let mut pending = Vec::new();
         let mut visited = OrdSet::new();
         self.push_supports(&consumed, &mut pending)?;

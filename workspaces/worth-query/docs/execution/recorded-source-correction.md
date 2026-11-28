@@ -21,14 +21,6 @@ owns declared inverse/reapplication meaning and the publication of those actions
 
 ## Declare the corrective action and disclosure query
 
-For an undo or redo button that selects an existing document state, use
-[history navigation](../foundations/branches-and-previews.md#select-a-historical-step-for-editing):
-`undo_step()` selects the parent and `redo_to(child)` selects an explicit child.
-Those commands create a writable context for the selected state and preserve
-alternate futures. They do not execute the inverse or reapplication handlers
-described here. Use correction when the application must publish a new inverse,
-compensation or reconciliation effect under current authority.
-
 Implement `decl::application_aftermath::ApplicationCorrectionBinding<Schema>`
 and list it in the contribution's `corrections: [RecordedEdit]` declaration.
 
@@ -1153,8 +1145,7 @@ resolves the original World idempotency before any further advancement.
 The old process token refuses with `StaleIncarnation`. Missing recorded input,
 source, installed action or native ownership material answers
 `OwnershipMaterialUnavailable`; a resolving original never executes a fresh
-replacement when Native no longer has that original. Durable document-history
-owners and branch retirement remain assigned to track C2.
+replacement when Native no longer has that original.
 
 ## Related guidance
 

@@ -4,4 +4,3 @@
 crates/worth-foundational/src/facade.rs
 # Verus proof artifact outside Cargo (not compiled by any workspace): one
 # transliterated model plus its proofs; split only with the proof (public #56).
-specs/verus/tree_based_undo/jump_pointer_lift.rs

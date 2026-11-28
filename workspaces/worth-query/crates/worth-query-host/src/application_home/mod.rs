@@ -36,7 +36,7 @@ pub use failure_close::{
 pub use history_and_undo::{
     WorthQueryCorrectionEntry, WorthQueryCorrectionHistory, WorthQueryCorrectionHistoryEntry,
     WorthQueryCorrectionHistoryLimit, WorthQueryHomeAuthoredCorrectionOutcome,
-    WorthQueryHomeCorrectionOutcome, WorthQueryHomeOwnedHistoryDenial, WorthQueryHomeUndoDenial,
+    WorthQueryHomeCorrectionOutcome, WorthQueryHomeUndoDenial,
     DEFAULT_CORRECTION_HISTORY_LIMITS,
 };
 pub use preview::{

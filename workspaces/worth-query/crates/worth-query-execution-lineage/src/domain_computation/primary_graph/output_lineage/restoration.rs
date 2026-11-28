@@ -221,7 +221,6 @@ impl WorthQueryApplicationOutputLineage {
                 .map(super::native_prior_checkpoint::NativePriorCheckpointLocator::Recovered),
             computation_source,
             performed_origin: None,
-            historical_selection: None,
             consumed_outputs: Arc::from([]),
             completed_handler_facts: None,
             completed_decision_reuse: None,

@@ -6,7 +6,6 @@ use crate::domain_computation::primary_graph::{
 use std::sync::Arc;
 pub enum SettlementProducerIdentity {
     Current(String),
-    HistoricalSelection(worth_relational::facade::mvcc::RelationalRequiredOutputPublication),
     Recovered {
         text: Arc<String>,
         _funding: Option<Arc<CheckpointMetadataFunding>>,
@@ -27,7 +26,6 @@ impl SettlementProducerIdentity {
     pub fn as_str(&self) -> &str {
         match self {
             Self::Current(text) => text,
-            Self::HistoricalSelection(publication) => publication.producer(),
             Self::Recovered { text, .. } => text,
         }
     }

@@ -16,7 +16,6 @@ use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenia
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
 mod access;
-pub mod historical_source;
 
 type Parameters<Schema, Binding> =
     <<Binding as ApplicationQueryBinding<Schema>>::ParameterBinding as ApplicationStructuredValueBinding>::Value;
@@ -51,9 +50,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         observed: &WorthQueryObservedSource<Binding::Query>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-        truth: Option<&WorthQuerySelectedProductOperation<'_, Schema>>,
         controls: WorthQueryApplicationQueryControls<'a, Schema>,
-        history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'_>>,
         inspect: impl for<'prepared> FnOnce(
             PreparedApplicationQueryPermission<
                 'prepared,
@@ -70,20 +67,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Binding: ApplicationQueryBinding<Schema>,
     {
-        if let Some(history) = history {
-            return self.with_historical_source_permission(
-                execution,
-                installed,
-                validated_principal,
-                external,
-                observed,
-                selected,
-                truth,
-                controls,
-                history,
-                inspect,
-            );
-        }
         let request = controls.request_scope();
         self.with_fresh_retained_query_access(
             execution,
@@ -101,7 +84,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         access,
                         source,
                         selected,
-                        truth,
                         request,
                         principal,
                         scope,

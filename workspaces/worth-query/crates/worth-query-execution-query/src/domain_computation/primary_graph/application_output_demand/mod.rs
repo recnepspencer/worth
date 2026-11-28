@@ -17,7 +17,6 @@ pub use original_outputs::{
 pub mod currentness;
 pub use completed_outputs::WorthQueryCompletedRequiredOutputs;
 pub use completed_read::WorthQueryCompletedReadOutputs;
-pub use currentness::CurrentOwnedRouteDenial;
 pub use fulfilled_root::WorthQueryFulfilledRequiredRoot;
 pub use publication::WorthQueryRecoveredProducerPublication;
 pub use publication::{OutputPublicationView, RecoveredProducerOutputFacts};

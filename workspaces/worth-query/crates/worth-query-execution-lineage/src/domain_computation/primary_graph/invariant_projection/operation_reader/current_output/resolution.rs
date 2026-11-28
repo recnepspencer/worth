@@ -307,13 +307,12 @@ where
                         computation,
                         std::sync::Arc::clone(&candidate.settlement_identity),
                         facts.clone(),
-                        candidate.consumed_outputs_at(&selected_native_root),
+                        std::sync::Arc::clone(&candidate.consumed_outputs),
                         candidate.verification_requirement,
                         witness,
                         std::sync::Arc::clone(retained_selected_native_root.get_or_insert_with(
                             || std::sync::Arc::new(selected_native_root.clone()),
                         )),
-                        candidate.historical().cloned(),
                     );
                     self.reader
                         .consumed_outputs

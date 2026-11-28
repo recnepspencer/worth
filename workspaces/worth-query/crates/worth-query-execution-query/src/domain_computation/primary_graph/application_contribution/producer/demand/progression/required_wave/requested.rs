@@ -20,7 +20,7 @@ pub fn advance_requested_output<Schema, Family>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
-    authority: &super::super::super::super::ProducerInvocationAuthority<'_>,
+    authority: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     stop: &mut WorthQueryOutputDemandDenial,
     performed: &std::cell::RefCell<performed::PerformedMembers>,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>

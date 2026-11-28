@@ -258,7 +258,6 @@ pub fn while_peer_is_registered(
         &product,
         &original_completion,
         aftermath_causality,
-        None,
         &coupled_outputs,
     );
     let peer = finish_application_commit(

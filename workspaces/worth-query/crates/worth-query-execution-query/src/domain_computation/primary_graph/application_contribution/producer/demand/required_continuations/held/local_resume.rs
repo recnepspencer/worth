@@ -9,11 +9,9 @@ pub fn resume<Schema: ApplicationSchema + 'static>(
     custody: &mut RequiredContinuations<Schema>,
     caller_contacts: Option<&mut usize>,
     index: usize,
-    invocation: &ProducerInvocationAuthority<'_>,
+    invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     performed: &std::cell::RefCell<PerformedMembers>,
 ) -> Result<HeldUpstream, WorthQueryOutputDemandDenial> {
-    custody.entries[index]
-        .authorize_current_source(phase, runtime, principal, request, invocation)?;
     let result = match runtime
         .runtime
         .output_demands

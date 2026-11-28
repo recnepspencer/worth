@@ -17,7 +17,6 @@ mod sealed {
     pub trait Mode {}
 }
 mod assessment;
-mod history;
 impl sealed::Mode for ApplicationSourceCompletion {}
 impl sealed::Mode for ApplicationRetainedCommit {}
 /// Sealed no-output delivery choices preserve ordinary versus retained native commit outcomes.

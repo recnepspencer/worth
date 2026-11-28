@@ -365,7 +365,7 @@ pub(super) fn map_query_denial(
         }
         WorthQueryApplicationRequestQueryDenialKind::Admission
         | WorthQueryApplicationRequestQueryDenialKind::Execution
-        | WorthQueryApplicationRequestQueryDenialKind::HistoryOutput
+
         | WorthQueryApplicationRequestQueryDenialKind::BindingInstallation
         | WorthQueryApplicationRequestQueryDenialKind::ProductSelection
         | WorthQueryApplicationRequestQueryDenialKind::OutputSettlement

@@ -7,6 +7,7 @@
 //! settlement consumed, at its own snapshot.
 
 use super::*;
+use super::work_budget::fact_is_current;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 
 /// Whether a reader at `selected` reads at or after the position `observed`
@@ -42,8 +43,6 @@ impl ConsumedOutputEvidence {
             direct,
             runtime,
             snapshot,
-            evidence.historical,
-            evidence.historical,
         )
     }
 
@@ -55,15 +54,9 @@ impl ConsumedOutputEvidence {
         direct: bool,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        source_historical: Option<&crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
-        output_historical: Option<&crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
     ) -> Result<Option<ConsumedOutputVerification>, ConsumedOutputVerificationStop> {
-        // Restored facts and aspects hold through the coordinate of the row
-        // they belong to (public #358); the witness is the output's own.
-        let source = crate::domain_computation::primary_graph::output_lineage::RestoredAcceptance::new(execution, runtime, snapshot, source_historical);
-        let output = crate::domain_computation::primary_graph::output_lineage::RestoredAcceptance::new(execution, runtime, snapshot, output_historical);
         for (ordinal, fact) in source_facts.iter().enumerate() {
-            if !source.fact_holds(fact)? {
+            if !fact_is_current(execution, fact, runtime, snapshot)? {
                 return Ok(Some(if direct {
                     ConsumedOutputVerification::ChangedDirectFact(ordinal)
                 } else {
@@ -73,7 +66,7 @@ impl ConsumedOutputEvidence {
         }
         if let Some(output_facts) = output_facts {
             for fact in output_facts {
-                if !output.fact_holds(fact)? {
+                if !fact_is_current(execution, fact, runtime, snapshot)? {
                     return Ok(Some(ConsumedOutputVerification::ChangedOutput));
                 }
             }
@@ -81,8 +74,7 @@ impl ConsumedOutputEvidence {
             let witness = witness
                 .get()
                 .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
-            if !output
-                .witness_holds(witness)
+            if !witness.unchanged_in(runtime, snapshot, execution)
                 .map_err(map_admission_stop)?
             {
                 return Ok(Some(ConsumedOutputVerification::ChangedOutput));
@@ -102,9 +94,7 @@ impl ConsumedOutputEvidence {
         witness: &SealedNativeOutputWitness,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        historical: Option<&crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
     ) -> Result<bool, ConsumedOutputVerificationStop> {
-        let acceptance = crate::domain_computation::primary_graph::output_lineage::RestoredAcceptance::new(execution, runtime, snapshot, historical);
         for fact in facts.iter() {
             let mut child_content = false;
             for child in consumed {
@@ -122,12 +112,11 @@ impl ConsumedOutputEvidence {
                     break;
                 }
             }
-            if !child_content && !acceptance.fact_holds(fact)? {
+            if !child_content && !fact_is_current(execution, fact, runtime, snapshot)? {
                 return Ok(false);
             }
         }
-        acceptance
-            .witness_holds(witness)
+        witness.unchanged_in(runtime, snapshot, execution)
             .map_err(map_admission_stop)
     }
 
@@ -147,7 +136,6 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        historical: Option<&crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         Self::observe_at_observation(
             execution,
@@ -160,7 +148,6 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            historical,
         )?
         .driving()
     }
@@ -176,7 +163,6 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        historical: Option<&crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         let marked = Self::observe_candidate_at(
             execution,
@@ -190,7 +176,6 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            historical,
         );
         if marked != Err(ConsumedOutputVerificationStop::Unavailable) {
             return marked;
@@ -205,7 +190,6 @@ impl ConsumedOutputEvidence {
                 verification_requirement,
                 native_output_witness: Some(native_output_witness),
                 selected_native_root: selected,
-                historical,
             },
             runtime,
             snapshot,

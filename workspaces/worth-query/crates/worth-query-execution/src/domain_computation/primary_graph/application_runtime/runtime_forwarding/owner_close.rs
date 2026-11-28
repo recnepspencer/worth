@@ -10,15 +10,6 @@ mod domain_computation_product_publication_owner_close {
     use worth_query_execution_query::facade::domain_computation::product_publication::WorthQueryProductUnpublishedRecoveryReleaseFailure as Failure;
     use worth_query_installation::facade::ApplicationSchema;
     impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-        pub fn close_owned_product_publication_recovery(
-            &self,
-            phase: &WorthQueryAdvancementPhase<'_>,
-            _access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-            recovery: Recovery,
-        ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, Failure> {
-            self.inner
-                .close_owned_product_publication_recovery(phase, _access, recovery)
-        }
         pub(crate) fn close_product_publication_recovery_in_advancement(
             &self,
             phase: &WorthQueryAdvancementPhase<'_>,

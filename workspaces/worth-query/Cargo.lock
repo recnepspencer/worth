@@ -1518,7 +1518,6 @@ dependencies = [
 name = "worth-query-court-decl-host"
 version = "0.1.0"
 dependencies = [
- "proptest",
  "rmp-serde",
  "serde",
  "serde_json",
@@ -1638,27 +1637,12 @@ dependencies = [
 name = "worth-query-court-decl-host-persistent-naming"
 version = "0.1.0"
 dependencies = [
- "proptest",
  "serde",
  "worth-execution",
  "worth-query-decl",
  "worth-query-host",
  "worth-query-testkit-document-retention",
  "worth-query-testkit-host",
-]
-
-[[package]]
-name = "worth-query-court-decl-host-replay"
-version = "0.1.0"
-dependencies = [
- "worth-execution",
- "worth-foundational",
- "worth-query-decl",
- "worth-query-host",
- "worth-query-replay",
- "worth-query-testkit-document-retention",
- "worth-relational",
- "worth-testkit-relational",
 ]
 
 [[package]]
@@ -1924,6 +1908,16 @@ dependencies = [
 [[package]]
 name = "worth-query-court-source"
 version = "0.1.0"
+
+[[package]]
+name = "worth-query-court-source-native-cost"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-relational",
+ "worth-testkit-relational",
+]
 
 [[package]]
 name = "worth-query-decl"

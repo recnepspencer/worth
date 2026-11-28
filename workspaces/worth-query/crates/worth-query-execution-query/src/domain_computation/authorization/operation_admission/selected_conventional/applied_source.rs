@@ -90,11 +90,7 @@ where
     authorize_mutation_products(
         execution,
         runtime,
-        SelectedMutationProducts {
-            mutation: current_product,
-            control: None,
-            history: None,
-        },
+        current_product,
         current,
         prepared,
         principal,

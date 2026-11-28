@@ -9,7 +9,6 @@ mod authorization;
 mod capability;
 mod derived_relation;
 mod field;
-mod history;
 mod invariant;
 mod invariant_source;
 mod managed_index;
@@ -49,9 +48,6 @@ pub(super) fn append_member(
                 format!("{prefix}.maximum-frame-bytes"),
                 declaration.maximum_frame_bytes,
             );
-        }
-        ApplicationSchemaMember::ApplicationHistory { definition } => {
-            history::append(basis, &prefix, definition)
         }
         ApplicationSchemaMember::InvariantManagedIndexSource { .. } => {
             invariant_source::append(basis, &prefix, member)

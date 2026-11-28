@@ -198,8 +198,7 @@ fn capture_settled_observation<Schema: worth_query_installation::facade::Applica
         OriginalSettledProducerSource::Committed {
             settlement: None, ..
         }
-        | OriginalSettledProducerSource::Restored { .. }
-        | OriginalSettledProducerSource::HistoricalSelection { .. } => None,
+        | OriginalSettledProducerSource::Restored { .. } => None,
     };
     Ok(Arc::new(OriginalSettledProducerObservation {
         runtime_authority: runtime.runtime.authority_identity().as_u64(),
@@ -219,11 +218,6 @@ fn restored_source(
         super::super::RestoredOutputOrigin::Checkpoint(checkpoint) => {
             OriginalSettledProducerSource::Restored {
                 checkpoint: checkpoint.clone(),
-            }
-        }
-        super::super::RestoredOutputOrigin::HistoricalSelection(origin) => {
-            OriginalSettledProducerSource::HistoricalSelection {
-                origin: origin.clone(),
             }
         }
     }

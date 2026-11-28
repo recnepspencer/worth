@@ -1,4 +1,4 @@
-//! Courts for custody retention on preview and history refusal, active-branch
+//! Courts for custody retention on preview refusal, active-branch
 //! close protection, and restart-safe auto idempotency keys under frozen
 //! clocks and pre-occupied keys.
 use worth_query_host::facade::{
@@ -12,13 +12,13 @@ use worth_query_host::facade::{
     application_installation::ApplicationBuildIdentity,
     product::WorthQueryProductBranchCreateError,
     WorthQueryApplicationHome, WorthQueryHomeAuthoredCorrectionOutcome, WorthQueryHomeConfig,
-    WorthQueryHomeOwnedHistoryDenial, WorthQueryPreviewDiscardDenial, WorthQueryPreviewForkDenial,
+    WorthQueryPreviewDiscardDenial, WorthQueryPreviewForkDenial,
 };
 
 use super::actions::{CorrectTaskState, ProbeOccupiedTaskState, SequencedAutoKey, SetTaskState};
 use super::courts::{open_daymark, temp_home_path};
 use super::program::{owner, seed, DaymarkHome, DaymarkRuntime};
-use super::queries::{DaymarkHistory, ReadProjectTasks, ReadTaskDetails};
+use super::queries::ReadTaskDetails;
 
 fn open_memory_home(clock: &WorthQueryAdmissionClock) -> DaymarkHome {
     let build = ApplicationBuildIdentity::parse("5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a").unwrap();
@@ -36,68 +36,6 @@ fn cancelled_scope(clock: &WorthQueryAdmissionClock) -> WorthQueryRequestScope {
     WorthQueryRequestScope::new(None, cancel.token(), clock.clone())
 }
 
-#[test]
-fn owned_history_preserves_head_on_attachment_and_advancement_refusal() {
-    let clock = WorthQueryAdmissionClock::system();
-    let home = open_memory_home(&clock);
-    let me = owner(&home, &clock);
-
-    // 1. Attachment refusal (non-existent project 999) retains the owned head.
-    let attach_err = home
-        .owned_history::<DaymarkHistory>(&me, ReadProjectTasks { project: 999 })
-        .expect_err("missing project scope must refuse history attachment");
-    assert!(
-        matches!(
-            attach_err,
-            WorthQueryHomeOwnedHistoryDenial::Attachment { .. }
-        ),
-        "expected Attachment refusal preserving head, got {attach_err:?}"
-    );
-    let retained_head = attach_err
-        .into_owned_head()
-        .expect("Attachment refusal must retain WorthQueryOwnedProductHead");
-
-    // 2. Pre-entry advancement refusal (cancelled scope) retains the exact same head.
-    let cancelled = cancelled_scope(&clock);
-    let adv_err = home
-        .attach_owned_history_head::<DaymarkHistory>(
-            retained_head,
-            &me,
-            ReadProjectTasks { project: 1 },
-            &cancelled,
-        )
-        .expect_err("cancelled scope must refuse pre-entry advancement");
-    assert!(
-        matches!(
-            adv_err,
-            WorthQueryHomeOwnedHistoryDenial::Advancement {
-                denial: WorthQueryAdvancementDenial::Interrupted(
-                    WorthQueryManagedComputationInterruption::Cancelled
-                ),
-                ..
-            }
-        ),
-        "expected Cancelled Advancement refusal preserving head, got {adv_err:?}"
-    );
-    let retained_again = adv_err
-        .into_owned_head()
-        .expect("Advancement refusal must retain WorthQueryOwnedProductHead");
-
-    // 3. Retrying with a healthy scope succeeds using the retained head!
-    let healthy = home.session(&me).fresh_scope();
-    let doc = home
-        .attach_owned_history_head::<DaymarkHistory>(
-            retained_again,
-            &me,
-            ReadProjectTasks { project: 1 },
-            &healthy,
-        )
-        .expect("retrying attachment with retained head under healthy scope succeeds");
-    home.primary_graph()
-        .with_application_advancement(&healthy, |phase| doc.close(&phase))
-        .unwrap()
-        .unwrap();
-}
 
 #[test]
 fn continue_preview_recovery_preserves_recovery_custody_on_refusal() {

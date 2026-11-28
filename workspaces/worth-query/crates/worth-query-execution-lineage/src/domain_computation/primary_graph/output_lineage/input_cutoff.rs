@@ -113,13 +113,6 @@ impl RetainedInputCutoffCandidate {
         &self.recorded().settlement_identity
     }
 
-    /// The consumed evidence that answers at `selected` (public #358).
-    pub fn consumed_outputs_at(
-        &self,
-        selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
-    ) -> Arc<[ConsumedOutputEvidence]> {
-        self.recorded().consumed_outputs_at(selected)
-    }
 
     /// Provenance, for a performed coupled completion only, which is never
     /// transported (`historical_transport` copies performed rows alone).

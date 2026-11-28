@@ -3,7 +3,6 @@ pub mod conditional_definition;
 pub mod context;
 pub mod correction_source;
 pub mod current_read;
-pub mod document_history;
 pub(crate) mod entry_internal_port;
 pub mod observation_room;
 pub mod operation;
@@ -44,13 +43,6 @@ pub use context::{
     SelectedQueryOrigin, WorthQueryProductEntry, WorthQuerySelectedProductOperation,
 };
 pub use correction_source::WorthQueryCorrectionIntent;
-pub use document_history::{
-    WorthQueryDocumentHistoryDenial, WorthQueryExpectedProductBranchAdoptionDenial,
-    WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryNavigationDenial,
-    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNodeId,
-    WorthQueryHistoryOutputControlDenial, WorthQueryHistoryOutputReadDenial,
-    WorthQueryHistoryPageDenial, WorthQueryHistoryStep,
-};
 pub use query_controls::WorthQueryProductQueryControls;
 pub use security_basis::{
     SelectedPermissionSecurityStop, WorthQueryProductSecurityBasis,

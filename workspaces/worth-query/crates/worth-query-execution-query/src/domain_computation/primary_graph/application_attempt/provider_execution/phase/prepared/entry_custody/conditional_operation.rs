@@ -57,7 +57,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             execution,
             idempotency,
             false,
-            None,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     }

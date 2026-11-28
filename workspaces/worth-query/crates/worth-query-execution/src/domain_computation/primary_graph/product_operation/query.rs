@@ -14,11 +14,6 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod batch;
-mod history_outputs;
-pub use history_outputs::WorthQueryHistoryOutputControlDenial;
-pub use history_outputs::WorthQueryHistoryOutputReadDenial;
-pub use history_outputs::WorthQueryHistoryRootOutputRead;
-mod preview;
 pub use batch::WorthQueryRetainedBatchQueryAdmissionDenial;
 
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::WorthQueryProductQueryControls;

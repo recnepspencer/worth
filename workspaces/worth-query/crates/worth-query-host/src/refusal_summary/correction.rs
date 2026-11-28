@@ -67,9 +67,6 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationCorrectionDenial {
             Self::Derivation(cause) => cause.user_summary(),
             Self::SourceBindingUnavailable | Self::ProgramOwner(_) => VERSION_MISMATCH,
             Self::RecordedOutcomeUnavailable => HISTORY_GONE,
-            // The source changed between the history head pass and the
-            // private candidate (tree-based undo, #56).
-            Self::CandidateMeaningChanged => CHANGED_SINCE,
             Self::RequiredOutputs(_) | Self::ProductSelection(_) => BUSY,
             Self::SourceOperation(_) => INTERNAL,
         }

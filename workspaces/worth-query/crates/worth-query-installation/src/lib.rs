@@ -10,7 +10,6 @@ mod admission;
 mod application_ability;
 mod application_aftermath;
 mod application_capability;
-mod application_history;
 mod application_home;
 mod application_operation;
 mod application_principal_binding;
@@ -87,10 +86,6 @@ mod package_validation_tests;
 /// Inspection accessors describe retained installed meaning; they do not grant
 /// execution, correction, recovery, or external-effect authority.
 pub mod facade {
-    pub use crate::application_history::{
-        WorthQueryDocumentHistoryInstallationDenial,
-        WorthQueryDocumentHistoryInstallationDenialKind, WorthQueryInstalledDocumentHistory,
-    };
     pub use crate::application_home::{
         WorthQueryHomeBindingAdmission, WorthQueryHomeBindingDenial,
     };

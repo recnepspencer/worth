@@ -6,7 +6,6 @@ use crate::domain_computation::primary_graph::application_attempt::{
     provider_binding::WorthQueryPreparedApplicationProviderAttempt,
     snapshot_lease::WorthQueryApplicationSnapshotLease, WorthQueryApplicationIdempotencyBinding,
 };
-use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::provider::{
     WorthQueryApplicationBranchCommitCoordination, WorthQueryPrimaryGraphProvider,
 };
@@ -120,7 +119,6 @@ pub struct WorthQueryApplicationCommitProgressionAuthority<
     product: &'a crate::basis::WorthQueryProductBranchLease,
     original_completion:
         &'a crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
-    history: Option<HistoryProducerInvocation<'a>>,
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
@@ -179,7 +177,6 @@ pub fn progress_application_commit<Schema, Operation, Input, Scope>(
     phase: &WorthQueryAdvancementPhase<'_>,
     application: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
     running_commit: WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
-    history: Option<HistoryProducerInvocation<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     held: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
 ) -> super::completion_storage::CompletedApplicationCommit
@@ -193,7 +190,6 @@ where
         application.runtime_inner(),
         application.outer_application_any(),
         running_commit,
-        history,
         allocation_policy,
         held,
     )
@@ -209,7 +205,6 @@ pub(crate) fn progress_application_commit_with_outer<Schema, Operation, Input, S
     >,
     outer_application: Option<&(dyn std::any::Any + Send + Sync)>,
     running_commit: WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
-    history: Option<HistoryProducerInvocation<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     held: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
 ) -> super::completion_storage::CompletedApplicationCommit
@@ -252,7 +247,6 @@ where
         },
         mutation_run,
         &original_completion,
-        history,
         allocation_policy,
         held,
         outer_application,
@@ -274,7 +268,6 @@ fn progress_provider_application<Schema, Operation, Input, Scope>(
     progression: WorthQueryProviderProgression<'_, Schema, Operation, Input, Scope>,
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
     original_completion: &crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
-    history: Option<HistoryProducerInvocation<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     held: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
     outer_application: Option<&(dyn std::any::Any + Send + Sync)>,
@@ -361,7 +354,6 @@ where
         coordination,
         product: &product,
         original_completion,
-        history,
         aftermath_causality,
     };
     registered_session.progress(execution, phase, &authority, allocation_policy)

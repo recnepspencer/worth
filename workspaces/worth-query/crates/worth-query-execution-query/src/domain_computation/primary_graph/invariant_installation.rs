@@ -57,9 +57,6 @@ type Factory<Schema> = Box<
 >;
 
 pub struct WorthQueryApplicationInvariantFactories<Schema> {
-    histories: Vec<
-        worth_query_declaration::facade::application_history::ErasedApplicationHistoryDefinition,
-    >,
     binding_identity: ApplicationSchemaBindingIdentity,
     content_bindings:
         worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
@@ -94,11 +91,6 @@ where
             })
             .collect();
         Self {
-            histories: schema.installed_declaration().members().iter().filter_map(|member| {
-                if let worth_query_installation::facade::ApplicationSchemaMember::ApplicationHistory { definition } = member {
-                    Some(definition.clone())
-                } else { None }
-            }).collect(),
             binding_identity: schema.binding_identity(),
             content_bindings: schema.value_bindings().clone(),
             expected,
@@ -302,24 +294,6 @@ where
             lowered.push(registration);
         }
         lowered.push(workflow_publication::registration(layout.workflow())?);
-        if self
-            .histories
-            .iter()
-            .any(|history| !history.parts().ownership.is_empty()
-                || history.parts().model_domain == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph)
-        {
-            lowered.push(
-                layout
-                    .all_history_ownership()
-                    .invariant_registration()
-                    .map_err(|cause| {
-                        denial(
-                            WorthQueryPrimaryGraphInstallationDenialKind::InvariantFactoryRejected,
-                            format!("model ownership: {cause:?}"),
-                        )
-                    })?,
-            );
-        }
         Ok((lowered, sources, initializer))
     }
 }

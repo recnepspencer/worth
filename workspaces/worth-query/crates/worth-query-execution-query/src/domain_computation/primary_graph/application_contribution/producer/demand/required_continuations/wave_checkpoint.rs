@@ -46,7 +46,7 @@ impl<Schema: ApplicationSchema + 'static> CheckpointStage<'_, Schema> {
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &WorthQueryRequestScope,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        invocation: &ProducerInvocationAuthority<'_>,
+        invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         self.progress
             .successor

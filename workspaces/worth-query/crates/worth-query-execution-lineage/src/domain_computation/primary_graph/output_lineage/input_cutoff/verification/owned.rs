@@ -111,7 +111,7 @@ impl OwnedVerifiedInputCutoff {
             &self
                 .verified_consumed
                 .clone()
-                .unwrap_or_else(|| self.candidate.consumed_outputs_at(selected)),
+                .unwrap_or_else(|| std::sync::Arc::clone(&self.candidate.recorded().consumed_outputs)),
             owner,
             runtime,
             snapshot,

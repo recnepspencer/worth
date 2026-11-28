@@ -54,7 +54,6 @@ pub struct PreparedApplicationQueryPermission<
         worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters,
     pub controls: WorthQueryAdmittedApplicationQueryControls<'a>,
     pub basis: WorthQueryApplicationQueryBasisCustody,
-    pub security_basis: Option<WorthQueryApplicationQueryBasisCustody>,
     pub security_product: crate::basis::WorthQueryProductObservationLease,
     pub session: WorthQueryPreparedProductReadSessionIdentity,
     pub disclosure: WorthQueryAdmittedApplicationDisclosureContract,
@@ -93,7 +92,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         >,
         source: PreparedApplicationQuerySourceReadmission<'a, Schema>,
         selected: &'a WorthQuerySelectedProductOperation<'_, Schema>,
-        truth: Option<&'a WorthQuerySelectedProductOperation<'_, Schema>>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         issued_principal: &'a WorthQueryIssuedSelectedPrincipal<
             '_,
@@ -125,7 +123,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             parameters,
             controls,
             selected,
-            truth,
             request,
             issued_principal,
             issued_scope,

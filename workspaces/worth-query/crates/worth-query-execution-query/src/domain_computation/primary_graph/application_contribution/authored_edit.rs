@@ -20,7 +20,6 @@ mod dependencies;
 mod envelope;
 mod envelope_admission;
 mod execution;
-mod history_producers;
 mod planning;
 mod positioned;
 pub use dependencies::DeclaredQueryRead;

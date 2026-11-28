@@ -21,25 +21,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             access, phase, principal, request, wire_key,
         )
     }
-    /// A history correction's per-attempt command key: the caller's command
-    /// key composed with the document's attempt identity (plan §10.1 step
-    /// 5), so a retry after a stopped attempt never meets the parked one's
-    /// reversal. The caller's idempotency key itself is left untouched, so
-    /// structured and numeric keys keep decoding.
-    pub fn history_attempt_command_key(
-        &self,
-        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        command: &WorthQueryCorrectionCommandKey,
-        attempt: &str,
-    ) -> Result<WorthQueryCorrectionCommandKey, WorthQueryCorrectionDerivationDenial> {
-        let canonical = application_value_identity(
-            ApplicationValueIdentityDomain::RecordedCorrectionKey,
-            "history-attempt",
-            &(command.identity(), attempt),
-        )
-        .map_err(WorthQueryCorrectionDerivationDenial::CommandKey)?;
-        Ok(WorthQueryCorrectionCommandKey::from_canonical(access, canonical))
-    }
     pub fn reapplication_command_key<C: ApplicationCorrectionBinding<Schema>>(
         &self,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
