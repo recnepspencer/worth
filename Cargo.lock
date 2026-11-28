@@ -1108,6 +1108,7 @@ version = "0.1.0"
 dependencies = [
  "allocator-api2",
  "rayon",
+ "serde_json",
  "stacker",
  "worth-foundational",
  "worth-proof",
