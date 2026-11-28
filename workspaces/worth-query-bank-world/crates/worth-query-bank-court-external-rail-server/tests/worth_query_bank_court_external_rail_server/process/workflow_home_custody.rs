@@ -5,9 +5,7 @@ use bank_domain::{
     schema::ApprovedBusinessPaymentWorkflow,
 };
 use bank_server::{open_bank_application_home, BankPrincipalSeed, BankWorldSeed};
-use worth_query_bank_testkit_server::facade::{
-    recorded_correction::fixture::home_policy, support::DynamicIdentity,
-};
+use worth_query_bank_testkit_server::facade::support::DynamicIdentity;
 use worth_query_host::facade::{WorthQueryApplicationHomeLocation, WorthQueryHomeOpenDisposition};
 
 #[test]
@@ -51,7 +49,7 @@ fn directory_home_keeps_bank_workflow_custody_through_close_and_reopen() {
             .workflow_vocabulary::<ApprovedBusinessPaymentWorkflow>()
             .unwrap();
         assert!(std::ptr::eq(vocabulary.runtime(), home.primary_graph()));
-        home.close_clean_with_policy(home_policy()).unwrap();
+        home.close_clean().unwrap();
     }
     std::fs::remove_dir_all(directory).unwrap();
 }
