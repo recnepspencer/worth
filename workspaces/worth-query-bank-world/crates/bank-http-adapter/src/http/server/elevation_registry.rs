@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use bank_domain::estate::EstateAction;
 use bank_domain::proposals::BankIdempotencyKey;
@@ -121,7 +121,7 @@ impl BankHttpElevationRegistry {
                 approval: None,
                 close: None,
                 review: None,
-                expires_at: Instant::now() + self.lifetime,
+                expires_at: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + self.lifetime,
             },
         );
         token
@@ -175,7 +175,7 @@ impl BankHttpElevationRegistry {
         if let Some(record) = self.records.get_mut(token) {
             record.state = BankHttpElevationState::Approved(authority);
             record.approval = Some(BankHttpElevationTransitionReplay { actor, key, facts });
-            record.expires_at = Instant::now() + self.lifetime;
+            record.expires_at = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + self.lifetime;
         }
     }
 
@@ -217,7 +217,7 @@ impl BankHttpElevationRegistry {
         if let Some(record) = self.records.get_mut(token) {
             record.state = BankHttpElevationState::MandatoryReview(authority);
             record.close = Some(BankHttpElevationTransitionReplay { actor, key, facts });
-            record.expires_at = Instant::now() + self.lifetime;
+            record.expires_at = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + self.lifetime;
         }
     }
 
@@ -267,7 +267,7 @@ impl BankHttpElevationRegistry {
         if let Some(record) = self.records.get_mut(token) {
             record.state = BankHttpElevationState::Terminal;
             record.review = Some(BankHttpElevationTransitionReplay { actor, key, facts });
-            record.expires_at = Instant::now() + self.lifetime;
+            record.expires_at = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + self.lifetime;
         }
     }
 
@@ -303,7 +303,7 @@ impl BankHttpElevationRegistry {
     fn install_state(&mut self, token: &str, state: BankHttpElevationState) {
         if let Some(record) = self.records.get_mut(token) {
             record.state = state;
-            record.expires_at = Instant::now() + self.lifetime;
+            record.expires_at = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + self.lifetime;
         }
     }
 
@@ -320,7 +320,7 @@ impl BankHttpElevationRegistry {
     }
 
     fn purge_expired(&mut self) {
-        let now = Instant::now();
+        let now = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now();
         self.records.retain(|_, record| record.expires_at > now);
         self.request_tokens
             .retain(|_, token| self.records.contains_key(token));

@@ -1,6 +1,8 @@
 //! The desk program: the ticket birth body, the noting handler and the
 //! `StampedAtAdmission` invariant, opened over a trusted runtime time source.
+
 use std::time::Duration;
+use worth_query_host::facade::runtime::time::ControlledTime;
 
 use worth_query_decl::facade::application_program::*;
 use worth_query_decl::facade::application_schema::fragment::Registration;
@@ -139,7 +141,7 @@ fn seed(
 }
 
 fn config(
-    trusted_time: impl WorthQueryRuntimeTimeSource,
+    trusted_time: impl Into<WorthQueryRuntimeClock>,
 ) -> WorthQueryHomeConfig<'static, DeskSchema, DeskProgram> {
     let build = ApplicationBuildIdentity::parse("de5c0000-0000-4000-8000-de5c00000001").unwrap();
     WorthQueryHomeConfig::new(build, (DeskRuntime::new(NoteDeskHandler),))
@@ -148,7 +150,7 @@ fn config(
 }
 
 /// Opens an in-memory Home over any trusted runtime time source.
-pub fn open(trusted_time: impl WorthQueryRuntimeTimeSource) -> DeskHome {
+pub fn open(trusted_time: impl Into<WorthQueryRuntimeClock>) -> DeskHome {
     WorthQueryApplicationHome::open_memory(config(trusted_time))
         .unwrap_or_else(|denial| panic!("desk Home opens: {denial}"))
 }
@@ -156,7 +158,7 @@ pub fn open(trusted_time: impl WorthQueryRuntimeTimeSource) -> DeskHome {
 /// Opens or reopens a Directory Home over a held trusted clock.
 pub fn open_directory(
     path: &std::path::Path,
-    trusted_time: WorthQueryFixedRuntimeTimeSource,
+    trusted_time: std::sync::Arc<ControlledTime>,
 ) -> DeskHome {
     WorthQueryApplicationHome::open_directory(path, config(trusted_time))
         .unwrap_or_else(|denial| panic!("desk Directory Home opens: {denial}"))

@@ -4,7 +4,7 @@ use bank_domain::estate::{CapabilityGrantId, CapabilityValidity, EstateMoment};
 
 pub(in crate::http::server::tests) fn application_with_expiring_notification(
     account: AccountId,
-    source: impl WorthQueryRuntimeTimeSource,
+    source: impl Into<WorthQueryRuntimeClock>,
     valid_until: u64,
 ) -> CausalHttpApplication {
     let mut estate = estate_world(

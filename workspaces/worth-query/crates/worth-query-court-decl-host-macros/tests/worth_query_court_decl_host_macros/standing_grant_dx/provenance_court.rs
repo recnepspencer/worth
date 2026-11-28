@@ -2,13 +2,14 @@
 //! diagnostics refuse the root-path disclosure shape after both evidence
 //! capabilities are admitted, with a typed `Unsupported` refusal rather than
 //! a permission or capacity one, and the governed receipt stays readable.
+use crate::time::controlled_at;
+
 use worth_query_host::facade::{
     application_entry::WorthQueryApplicationRequestExt,
     audit::{
         WorthQueryGovernedReadAccess, WorthQuerySourceProvenanceDenial,
         WorthQuerySourceProvenanceRequest,
     },
-    primary_graph::WorthQueryFixedRuntimeTimeSource,
     WorthQueryRefusalCategory, WorthQueryUserFacingRefusal,
 };
 
@@ -37,7 +38,7 @@ fn evidence() -> Evidence {
 #[test]
 fn a_parent_scoped_creation_refuses_field_detail_by_shape_and_keeps_its_receipt() {
     let path = temp_home_path("provenance-root-path");
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0));
+    let clock = controlled_at(at(2026, 11, 15, 12, 0));
     let home = home(&path, &clock);
     let alice = caller(&home, "alice");
     let session = home.session(alice.principal.clone());

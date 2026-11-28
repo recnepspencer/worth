@@ -38,7 +38,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
     use worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource;
 
     #[tokio::test]
@@ -55,7 +55,7 @@ mod tests {
     async fn elapsed_scope_refuses_before_polling_authentication() {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() - Duration::from_secs(1)),
+            Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() - Duration::from_secs(1)),
             cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         assert_eq!(
             await_in_scope(&scope, async {

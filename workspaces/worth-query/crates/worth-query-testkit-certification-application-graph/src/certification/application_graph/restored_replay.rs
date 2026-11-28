@@ -77,7 +77,7 @@ pub fn assert_the_key_resolves_by_its_durable_record(
     }
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(std::time::Instant::now() + std::time::Duration::from_secs(30)),
+        Some(worth_execution::MonotonicClock::system().now() + std::time::Duration::from_secs(30)),
         cancellation.token(),
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );

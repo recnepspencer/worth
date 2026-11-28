@@ -3,11 +3,11 @@
 //! It returns the referencing rows the principal may see at the head, the
 //! same rows at a pin taken before a new grant links, and the entity impact
 //! advertises it as the relation's reverse read.
+use crate::time::controlled_at;
 use worth_query_decl::facade::{
     application_query::{ApplicationQueryDefinitionBuilder, ApplicationQueryRootPath},
     WorthQuery, WorthQueryRow,
 };
-use worth_query_host::facade::primary_graph::WorthQueryFixedRuntimeTimeSource;
 
 use super::observers::home;
 use super::program::{caller, QmsHome};
@@ -77,7 +77,7 @@ fn link_bob_review(home: &QmsHome) {
 #[test]
 fn referenced_by_returns_the_referencing_rows_at_the_head_and_at_a_pin() {
     let path = temp_home_path("referenced-by");
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0));
+    let clock = controlled_at(at(2026, 11, 15, 12, 0));
     let home = home(&path, &clock);
     let session = home.session(caller(&home, "bob").principal);
     let north = || SiteGrants {

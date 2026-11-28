@@ -1,7 +1,6 @@
 use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
-use std::time::Instant;
 
 use axum::extract::DefaultBodyLimit;
 use bank_http_adapter::{
@@ -62,7 +61,7 @@ impl BankUserNodeBinding {
             .map_err(BankUserNodeInstallError::OidcConfiguration)?;
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + configuration.maximum_deadline),
+            Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + configuration.maximum_deadline),
             cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let oidc = AuthentikOidcAdapter::discover(oidc_configuration, &scope)
             .await

@@ -6,7 +6,7 @@ mod encoding;
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::Notify;
@@ -87,10 +87,11 @@ impl CompletionDelivery {
     pub(super) fn reserve(
         self: &Arc<Self>,
     ) -> Result<Option<DeliveryReservation>, DeliveryRecordDenial> {
-        let issued = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
+        let issued = worth_execution::time::system_time_sampler()
+            .wall()
             .map_err(|_| DeliveryRecordDenial::ClockUnavailable)?
-            .as_secs();
+            .unix_nanos()
+            / 1_000_000_000;
         issued
             .checked_add(self.configuration.validity_seconds)
             .ok_or(DeliveryRecordDenial::ClockUnavailable)?;
@@ -178,8 +179,9 @@ impl CompletionDelivery {
             Obligation {
                 signed,
                 attempts: 0,
-                next_attempt: Instant::now(),
-                deadline: Instant::now() + Duration::from_secs(self.configuration.validity_seconds),
+                next_attempt: worth_execution::MonotonicClock::system().now(),
+                deadline: worth_execution::MonotonicClock::system().now()
+                    + Duration::from_secs(self.configuration.validity_seconds),
                 exhausted: false,
                 in_flight: false,
             },
@@ -207,7 +209,7 @@ impl CompletionDelivery {
     }
 
     fn next_turn(&self) -> SenderTurn {
-        let now = Instant::now();
+        let now = worth_execution::MonotonicClock::system().now();
         let mut custody = self.lock();
         let mut next_wake: Option<Instant> = None;
         for (correlation, obligation) in &mut custody.obligations {
@@ -269,7 +271,7 @@ impl CompletionDelivery {
         }
         obligation.in_flight = false;
         if obligation.attempts >= self.configuration.maximum_attempts
-            || Instant::now() >= obligation.deadline
+            || worth_execution::MonotonicClock::system().now() >= obligation.deadline
         {
             obligation.exhausted = true;
             return;
@@ -279,7 +281,8 @@ impl CompletionDelivery {
             .configuration
             .retry_delay_millis
             .saturating_mul(1 << shift);
-        obligation.next_attempt = Instant::now() + Duration::from_millis(delay);
+        obligation.next_attempt =
+            worth_execution::MonotonicClock::system().now() + Duration::from_millis(delay);
     }
 }
 

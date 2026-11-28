@@ -49,7 +49,7 @@ async fn abandoned_response_cancels_before_closing_worker_reply() {
         .unwrap(),
         controls: super::super::super::protocol::BankHttpRequestControls::new(60_000, 1),
         account: bank_domain::model::AccountId::new(1).unwrap(),
-        deadline: Instant::now() + Duration::from_secs(60),
+        deadline: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60),
     };
     let mut pending = Box::pin(queue.execute(request));
     assert!(pending

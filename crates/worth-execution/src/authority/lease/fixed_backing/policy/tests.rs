@@ -36,7 +36,10 @@ fn owned_payload_reservation_keeps_real_funding_and_typed_refusal_until_drop() {
     let stopped = CancellationSource::new();
     let child = parent.controlled_child(
         stopped.token(),
-        Some(crate::MonotonicClock::system().deadline_at(Instant::now() - Duration::from_secs(1))),
+        Some(
+            crate::MonotonicClock::system()
+                .deadline_at(crate::MonotonicClock::system().now() - Duration::from_secs(1)),
+        ),
     );
     let elapsed = ExecutionAllocationPolicy::Execution(&child)
         .reserve_memory(1)

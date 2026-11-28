@@ -2,7 +2,7 @@
 use bank_domain::model::AccountId;
 use bank_server::BankReadControls;
 use std::num::NonZeroUsize;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use worth_foundational::ExecutionBudget;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -18,7 +18,7 @@ async fn one_unit_short_at_currency_has_the_execution_http_status() {
     let application = super::fixture::application(account);
     let source = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         source.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = application.authenticate(&scope).await;
     let indexes = application

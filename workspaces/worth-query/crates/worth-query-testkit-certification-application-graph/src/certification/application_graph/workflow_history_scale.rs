@@ -156,7 +156,7 @@ impl HistoryCourt {
             .workflow_compilation_reuse_counters();
         let mut micros = Vec::new();
         for _ in 0..SAMPLES {
-            let start = Instant::now();
+            let start = worth_execution::MonotonicClock::system().now();
             self.advance();
             micros.push(start.elapsed().as_micros());
         }
@@ -232,7 +232,7 @@ impl HistoryCourt {
             .runtime()
             .workflow_instance_progress_counters();
         assert_eq!(released.retained_charge_bytes(), 0);
-        let start = Instant::now();
+        let start = worth_execution::MonotonicClock::system().now();
         self.advance();
         let rebuilt = self
             .application

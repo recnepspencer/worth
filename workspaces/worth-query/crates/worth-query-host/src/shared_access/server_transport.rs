@@ -66,7 +66,7 @@ impl RemoteTcpPool {
             &[u8],
         ) -> Result<(FrameKind, Vec<u8>), SharedAccessDenial>,
     ) -> Result<(usize, Vec<u64>), SharedAccessDenial> {
-        let now = Instant::now();
+        let now = worth_execution::MonotonicClock::system().now();
         self.accept_bounded(now, limits)?;
         let ids: Vec<u64> = self.connections.keys().copied().collect();
         let mut dispatched = 0_usize;

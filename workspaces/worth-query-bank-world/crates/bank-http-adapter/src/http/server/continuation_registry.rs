@@ -72,7 +72,7 @@ impl BankHttpContinuationRegistry {
         }
     }
     fn purge_expired(&mut self) {
-        let now = Instant::now();
+        let now = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now();
         let expired: Vec<_> = self
             .records
             .iter()

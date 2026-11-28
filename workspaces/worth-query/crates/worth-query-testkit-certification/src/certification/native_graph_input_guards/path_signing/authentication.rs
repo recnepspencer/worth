@@ -92,7 +92,7 @@ pub fn install(app: &mut App) -> Arc<Owner> {
         install_authentication_event_owner::<Schema, Clock, _, _>(
             app.installed_schema(),
             Source {
-                started: Instant::now(),
+                started: worth_execution::MonotonicClock::system().now(),
                 sequence: AtomicU64::new(1),
             },
             Verifier,

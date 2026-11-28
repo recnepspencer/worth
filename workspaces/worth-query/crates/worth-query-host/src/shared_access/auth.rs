@@ -5,7 +5,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Mutex;
 use std::task::{Context, Poll, Waker};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, UNIX_EPOCH};
 
 use worth_foundational::facade::{HomeIdentity, HomeIncarnation};
 use worth_query_admission::facade::authenticated_principal::{
@@ -372,8 +372,8 @@ fn poll_ready_once<F: Future>(future: F) -> F::Output {
 }
 
 pub(super) fn current_unix_secs() -> Result<u64, SharedAccessDenial> {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
+    worth_execution::time::system_time_sampler()
+        .wall()
+        .map(|at| at.unix_nanos() / 1_000_000_000)
         .map_err(|_| SharedAccessDenial::HostUnavailable)
 }

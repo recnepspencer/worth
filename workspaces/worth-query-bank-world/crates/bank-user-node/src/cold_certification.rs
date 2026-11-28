@@ -4,8 +4,6 @@
 //! changes only trust of the courtroom's ephemeral self-signed certificate;
 //! the real OIDC and Bank authentication boundaries remain in force.
 
-use std::time::Instant;
-
 use bank_http_adapter::cold_certification_for_test;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -26,7 +24,7 @@ pub async fn install_for_test(
         .map_err(BankUserNodeInstallError::OidcConfiguration)?;
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + configuration.maximum_deadline),
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + configuration.maximum_deadline),
         cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let oidc = cold_certification_for_test::discover_adapter_for_test(
         oidc_configuration,

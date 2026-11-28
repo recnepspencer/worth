@@ -8,7 +8,9 @@ fn late_runtime_time_failure_preserves_the_observed_lost_response() {
         rail.test_control_addr(),
     ));
     transport.under(FaultScript::CommitThenLoseResponse, Duration::from_secs(5));
-    let time = AuthorizationTimeController::at_epoch_seconds(7_000);
+    let time = std::sync::Arc::new(
+        worth_query_host::facade::runtime::time::ControlledTime::at_unix_secs(7_000),
+    );
     let fixture = notification_world_with_authorization_time(
         "external-dispatch-time-denial",
         DeathNoticeStatus::Reported,
@@ -19,7 +21,9 @@ fn late_runtime_time_failure_preserves_the_observed_lost_response() {
         .runtime
         .install_external_effect_transport(transport.clone())
         .expect("rail transport installs");
-    transport.after_next_dispatch(move || time.make_unavailable());
+    transport.after_next_dispatch(move || {
+        time.set_wall_available(false);
+    });
 
     let outcome_closed = {
         let source_actor = &fixture.authenticate_specialist();

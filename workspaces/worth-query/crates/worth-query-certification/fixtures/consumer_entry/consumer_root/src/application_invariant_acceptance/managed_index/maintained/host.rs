@@ -197,7 +197,8 @@ fn try_install_root_with_sources(
             super::peer_scope::seed(graph)?;
             Ok(())
         },
-        super::super::super::resources::RuntimeTime(clock),
+        worth_query_host::facade::primary_graph::WorthQueryRuntimeClock::system()
+            .with_admission_clock(clock),
     )
 }
 

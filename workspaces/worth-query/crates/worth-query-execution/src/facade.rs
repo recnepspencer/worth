@@ -85,6 +85,9 @@ pub mod domain_computation;
 /// delivery, direct and workflow runs with their cleanup, and Runtime World
 /// budgets and cancellation.
 pub mod runtime {
+    pub use worth_execution::time;
+    pub use worth_foundational::time::{BootEpoch, ClockSourceIdentity, TimeUnavailable};
+
     pub use crate::domain_computation::execution_runtime::product_world::{
         WorthQueryPerformedRelationalProductChange,
         WorthQueryPerformedRelationalProductChangeDeliveryDenial,

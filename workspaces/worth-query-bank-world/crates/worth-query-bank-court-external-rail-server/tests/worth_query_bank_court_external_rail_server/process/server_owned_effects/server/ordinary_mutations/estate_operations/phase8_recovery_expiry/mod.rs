@@ -33,7 +33,9 @@ fn current_expiry_evidence_remains_descriptive() {
 
 #[test]
 fn clock_advanced_expiry_terminalizes_through_bank() {
-    let authorization_time = AuthorizationTimeController::at_epoch_seconds(2_000);
+    let authorization_time = std::sync::Arc::new(
+        worth_query_host::facade::runtime::time::ControlledTime::at_unix_secs(2_000),
+    );
     let world = cross_gate_world_with_authorization_time(
         "expiry-terminal",
         Some(authorization_time.clone()),
@@ -46,7 +48,7 @@ fn clock_advanced_expiry_terminalizes_through_bank() {
         .live_receipt()
         .expect("fresh source retains its full native owner");
     let handle = world.open_recovery(receipt);
-    authorization_time.advance_to_epoch_seconds(5_601);
+    authorization_time.set_wall_unix_nanos((5_601) * 1_000_000_000);
     let BankRecoveryExpiryEvaluation::Expired(decision) = world
         .fixture
         .world

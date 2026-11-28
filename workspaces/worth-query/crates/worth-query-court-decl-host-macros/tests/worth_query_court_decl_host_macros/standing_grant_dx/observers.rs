@@ -1,6 +1,7 @@
 //! The two observers every W10A court compares: a Host session's capability
 //! eligibility and capability admission on the selected branch head, for one
 //! site role. They must agree on the outcome and on its policy cause.
+use worth_query_host::facade::runtime::time::ControlledTime;
 use worth_query_decl::facade::application_capability::ApplicationCapabilityRef;
 use worth_query_decl::facade::application_schema::ApplicationOperationRef;
 use worth_query_host::facade::{
@@ -10,8 +11,7 @@ use worth_query_host::facade::{
     local_calendar::WorthQueryTimeZone,
     primary_graph::{
         WorthQueryApplicationAuthorizationExplanationCause as Cause,
-        WorthQueryFixedRuntimeTimeSource, WorthQueryOperationAuthorizationDenial,
-        WorthQueryPrincipalResolutionMode,
+        WorthQueryOperationAuthorizationDenial, WorthQueryPrincipalResolutionMode,
     },
 };
 
@@ -35,7 +35,7 @@ impl<Cap, Op> Clone for SiteRole<Cap, Op> {
     }
 }
 
-pub fn home(path: &std::path::Path, clock: &WorthQueryFixedRuntimeTimeSource) -> QmsHome {
+pub fn home(path: &std::path::Path, clock: &std::sync::Arc<ControlledTime>) -> QmsHome {
     let denver = WorthQueryTimeZone::from_tz_variable("MST7MDT,M3.2.0,M11.1.0").unwrap();
     open(path, clock.clone(), Some(denver), november())
         .unwrap_or_else(|denial| panic!("QMS Home opens: {denial}"))

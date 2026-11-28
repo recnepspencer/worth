@@ -138,11 +138,7 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
             limits: state.limits,
             build_identity: state.build_identity,
             authorization_clock: match state.authorization_time_source {
-                Some(source) => {
-                    crate::domain_computation::authorization::WorthQueryRuntimeClock::from_source(
-                        source,
-                    )
-                }
+                Some(source) => source,
                 None => crate::domain_computation::authorization::WorthQueryRuntimeClock::system(),
             },
         };

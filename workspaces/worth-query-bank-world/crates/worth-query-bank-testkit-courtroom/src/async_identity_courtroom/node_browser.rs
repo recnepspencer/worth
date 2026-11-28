@@ -1,4 +1,4 @@
-pub use std::time::{Duration, Instant};
+pub use std::time::Duration;
 
 pub use thirtyfour::prelude::{ChromiumLikeCapabilities, DesiredCapabilities, WebDriver};
 
@@ -53,7 +53,7 @@ pub async fn authenticate(
     )
     .await?;
     submit_focused_stage(driver, "password").await?;
-    let deadline = Instant::now() + Duration::from_secs(90);
+    let deadline = worth_execution::MonotonicClock::system().now() + Duration::from_secs(90);
     loop {
         let body = driver
             .source()
@@ -62,7 +62,7 @@ pub async fn authenticate(
         if body.contains("authenticated") {
             return Ok(());
         }
-        if Instant::now() >= deadline {
+        if worth_execution::MonotonicClock::system().now() >= deadline {
             return Err("node callback did not complete before deadline".to_string());
         }
         tokio::time::sleep(Duration::from_millis(250)).await;

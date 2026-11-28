@@ -81,7 +81,7 @@ pub fn in_memory_rostered_program_with_authorization_time_source_in_advancement<
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-    source: impl crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource,
+    source: impl Into<crate::domain_computation::runtime_time::WorthQueryRuntimeClock>,
 ) -> Result<
     WorthQueryProgramApplicationRuntime<Schema, Program>,
     WorthQueryApplicationPreparationDenial,
@@ -109,6 +109,6 @@ where
         build_identity,
         limits,
         initial_state,
-        Some(Box::new(source)),
+        Some(source.into()),
     )
 }

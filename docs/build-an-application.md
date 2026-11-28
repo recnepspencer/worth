@@ -6790,20 +6790,24 @@ does, so a handler stage in the same edit envelope and every commit invariant
 observe the identical stamp; an unavailable time source refuses the operation
 with `WorthQueryRuntimeTimeDenial` instead of fabricating time.
 
-The Home's runtime time source is the system clock by default. Tests and
-simulations hold it with `host::primary_graph::WorthQueryFixedRuntimeTimeSource`
-and move it on purpose; keep a clone to advance it after handing one to the
-Home:
+The Home samples system time by default. Tests and simulations can pass a shared
+`host::runtime::time::ControlledTime` to either Home builder and keep a clone to
+advance it after opening. When using a custom request clock, pass a
+`WorthQueryRuntimeClock` with `.with_admission_clock(request_clock)`.
 
 ```rust,ignore
-let clock = WorthQueryFixedRuntimeTimeSource::new(
-    CanonicalTimestamp::from_ymd_hms_micros(2026, 11, 27, 1, 30, 0, 0)?,
-); // add `.with_admission_clock(clock)` when the Home uses `with_clock`
+use std::sync::Arc;
+use worth_query_host::facade::runtime::time::ControlledTime;
+
+let start = CanonicalTimestamp::from_ymd_hms_micros(2026, 11, 27, 1, 30, 0, 0)?;
+let clock = Arc::new(ControlledTime::at_unix_nanos(
+    u64::try_from(start.micros_since_unix_epoch)? * 1_000,
+));
 let home = WorthQueryApplicationHome::open_memory(
     WorthQueryHomeConfig::new(build, configuration)
         .with_authorization_time_source(clock.clone()),
 )?;
-clock.advance(Duration::from_secs(5 * 3_600 + 30 * 60))?; // 00:00 Mountain on the 27th
+clock.advance(Duration::from_secs(5 * 3_600 + 30 * 60)); // 00:00 Mountain on the 27th
 ```
 
 The [admission-time court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/admission_time_dx/courts.rs)
@@ -8221,7 +8225,9 @@ then register its installed workflow before issuing owned sessions.
 // Illustrative: not compiled. The compiled journey is
 // workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/
 //   worth_query_court_decl_host_integration/host/application_home/workflow_durability/desktop_sessions.rs
-let trusted = WorthQueryFixedRuntimeTimeSource::new(now);   // keep a clone to move time
+let trusted = Arc::new(ControlledTime::at_unix_nanos(
+    u64::try_from(now.micros_since_unix_epoch)? * 1_000,
+));
 let home = WorthQueryApplicationHome::<Schema, Program>::open_directory(
     path,
     WorthQueryHomeConfig::new(build, configuration)

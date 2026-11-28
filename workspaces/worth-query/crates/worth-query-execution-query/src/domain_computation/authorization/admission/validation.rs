@@ -69,7 +69,7 @@ where
     if !runtime
         .runtime
         .authorization_clock
-        .admission_clock
+        .admission_clock()
         .same_clock(principal.clock())
     {
         return Err(denial(
@@ -170,7 +170,7 @@ pub fn validate_admission_clock(
 ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
     if runtime
         .authorization_clock
-        .admission_clock
+        .admission_clock()
         .same_clock(principal)
         && principal.same_clock(request.clock())
     {

@@ -18,7 +18,9 @@ use crate::{
 
 #[test]
 fn lifecycle_commits_report_request_work_and_retries_preserve_original_meaning() {
-    let time = AuthorizationTimeController::at_epoch_seconds(100);
+    let time = std::sync::Arc::new(
+        worth_query_host::facade::runtime::time::ControlledTime::at_unix_secs(100),
+    );
     let fixture = emergency_request_world_at(
         "estate-lifecycle-canonical-work",
         GrantSpec::emergency_view(),
@@ -139,7 +141,7 @@ fn lifecycle_commits_report_request_work_and_retries_preserve_original_meaning()
     assert_request_identities(mandatory.close_canonical_work().admission(), 199, 356, 7);
     // Recorded data cannot produce a second phase owner. Its exact original
     // artifact remains observable after later transitions and request expiry.
-    time.advance_to_epoch_seconds(401);
+    time.set_wall_unix_nanos((401) * 1_000_000_000);
     assert_eq!(
         fixture.lifecycle_original(&approver, approve, &approval_key, &scope),
         approval_data

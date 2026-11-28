@@ -209,6 +209,7 @@ dependencies = [
  "sha2",
  "tokio",
  "tokio-rustls",
+ "worth-execution",
  "worth-foundational",
 ]
 

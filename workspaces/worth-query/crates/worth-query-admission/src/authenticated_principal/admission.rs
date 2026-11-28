@@ -1,5 +1,4 @@
 use std::marker::PhantomData;
-use std::time::SystemTime;
 
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaBindingIdentity,
@@ -173,7 +172,11 @@ where
                 WorthQueryAuthenticationDenialKind::MethodMismatch,
             ));
         }
-        let wall_now = SystemTime::now();
+        let wall_now = worth_execution::time::system_time_sampler()
+            .system_time()
+            .map_err(|_| {
+                WorthQueryAuthenticationDenial::new(WorthQueryAuthenticationDenialKind::Expired)
+            })?;
         let monotonic_now = self.clock.now();
         if candidate.validated_at() > wall_now {
             return Err(WorthQueryAuthenticationDenial::new(

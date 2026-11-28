@@ -1,11 +1,12 @@
 //! Standing role admission on a Directory Home: rooted site revocation, UTC
 //! and local-date validity at the admission instant, the calendar the Home
 //! must carry, and the self-grant refusal at the link.
+use crate::time::{controlled_at, unix_nanos};
+use worth_query_host::facade::runtime::time::ControlledTime;
 use worth_query_host::facade::{
     local_calendar::WorthQueryTimeZone,
     primary_graph::{
-        WorthQueryFixedRuntimeTimeSource, WorthQueryOperationAuthorizationDenialKind as Denial,
-        WorthQueryPrincipalResolutionMode,
+        WorthQueryOperationAuthorizationDenialKind as Denial, WorthQueryPrincipalResolutionMode,
     },
 };
 
@@ -21,7 +22,7 @@ fn denver() -> WorthQueryTimeZone {
     WorthQueryTimeZone::from_tz_variable("MST7MDT,M3.2.0,M11.1.0").expect("POSIX rule parses")
 }
 
-fn home(path: &std::path::Path, clock: &WorthQueryFixedRuntimeTimeSource) -> QmsHome {
+fn home(path: &std::path::Path, clock: &std::sync::Arc<ControlledTime>) -> QmsHome {
     open(path, clock.clone(), Some(denver()), november())
         .unwrap_or_else(|denial| panic!("QMS Home opens: {denial}"))
 }
@@ -93,7 +94,7 @@ fn set_site(home: &QmsHome, site: &str, status: &str) {
 #[test]
 fn deactivating_a_site_revokes_its_standing_roles_without_touching_a_grant() {
     let path = temp_home_path("rooted");
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0));
+    let clock = controlled_at(at(2026, 11, 15, 12, 0));
     let home = home(&path, &clock);
     assert_eq!(admit(&home, "alice", Role::Review, "north"), None);
     // bob holds no grant: the standing path admits only an actual holder.
@@ -117,20 +118,20 @@ fn deactivating_a_site_revokes_its_standing_roles_without_touching_a_grant() {
 fn utc_validity_is_inclusive_at_the_admission_instant_across_reopen() {
     let path = temp_home_path("utc");
     let window = november();
-    let clock = WorthQueryFixedRuntimeTimeSource::new(window.valid_until);
+    let clock = controlled_at(window.valid_until);
     let home = home(&path, &clock);
     assert_eq!(admit(&home, "alice", Role::Review, "north"), None);
-    clock.set(micros(window.valid_until, 1));
+    clock.set_wall_unix_nanos(unix_nanos(micros(window.valid_until, 1)));
     let expired = admit(&home, "alice", Role::Review, "north");
     assert!(expired.is_some(), "one microsecond past the bound expires");
-    clock.set(micros(window.valid_from, -1));
+    clock.set_wall_unix_nanos(unix_nanos(micros(window.valid_from, -1)));
     assert!(admit(&home, "alice", Role::Review, "north").is_some());
     drop(home);
 
-    clock.set(micros(window.valid_until, 1));
+    clock.set_wall_unix_nanos(unix_nanos(micros(window.valid_until, 1)));
     let home = self::home(&path, &clock);
     assert_eq!(admit(&home, "alice", Role::Review, "north"), expired);
-    clock.set(window.valid_from);
+    clock.set_wall_unix_nanos(unix_nanos(window.valid_from));
     assert_eq!(admit(&home, "alice", Role::Review, "north"), None);
 }
 
@@ -139,16 +140,16 @@ fn local_date_validity_turns_at_the_calendar_midnight_not_utc_midnight() {
     let path = temp_home_path("local-date");
     // 2026-11-27T06:59:59.999999Z is still November 26 in Denver (UTC-7).
     let local_midnight = at(2026, 11, 27, 7, 0);
-    let clock = WorthQueryFixedRuntimeTimeSource::new(micros(local_midnight, -1));
+    let clock = controlled_at(micros(local_midnight, -1));
     let home = home(&path, &clock);
     assert_eq!(admit(&home, "alice", Role::Approve, "north"), None);
-    clock.set(local_midnight);
+    clock.set_wall_unix_nanos(unix_nanos(local_midnight));
     assert!(admit(&home, "alice", Role::Approve, "north").is_some());
     // The UTC review role is already past its bound at the same instant.
     assert!(admit(&home, "alice", Role::Review, "north").is_some());
     drop(home);
 
-    clock.set(micros(local_midnight, -1));
+    clock.set_wall_unix_nanos(unix_nanos(micros(local_midnight, -1)));
     let home = self::home(&path, &clock);
     assert_eq!(admit(&home, "alice", Role::Approve, "south"), None);
 }
@@ -156,7 +157,7 @@ fn local_date_validity_turns_at_the_calendar_midnight_not_utc_midnight() {
 #[test]
 fn a_home_installing_local_date_roles_refuses_to_open_without_a_calendar() {
     let path = temp_home_path("no-calendar");
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0));
+    let clock = controlled_at(at(2026, 11, 15, 12, 0));
     let Err(refused) = open(&path, clock, None, november()) else {
         panic!("a local-date role needs the Home's calendar");
     };
@@ -169,7 +170,7 @@ fn a_home_installing_local_date_roles_refuses_to_open_without_a_calendar() {
 #[test]
 fn an_operation_cannot_link_its_own_principal_as_a_role_holder() {
     let path = temp_home_path("self-grant");
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0));
+    let clock = controlled_at(at(2026, 11, 15, 12, 0));
     let home = home(&path, &clock);
     let assign = |member: u64, grant: &str| {
         home.session(caller(&home, "alice").principal)

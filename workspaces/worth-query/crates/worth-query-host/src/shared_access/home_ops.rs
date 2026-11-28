@@ -2,7 +2,7 @@
 
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use sha2::{Digest, Sha256};
 use worth_query_admission::facade::authenticated_principal::{
@@ -214,7 +214,10 @@ where
 fn owner_request_scope() -> (WorthQueryCancellationSource, WorthQueryRequestScope) {
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(OWNER_OPERATION_DEADLINE_SECS)),
+        Some(
+            worth_execution::MonotonicClock::system().now()
+                + Duration::from_secs(OWNER_OPERATION_DEADLINE_SECS),
+        ),
         cancellation.token(),
         WorthQueryAdmissionClock::system(),
     );

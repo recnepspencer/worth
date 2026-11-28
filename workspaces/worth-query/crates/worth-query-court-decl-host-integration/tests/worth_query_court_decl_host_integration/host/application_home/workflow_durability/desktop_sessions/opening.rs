@@ -1,5 +1,6 @@
 //! A workflow Home opened through `WorthQueryHomeConfig` under a held trusted
 //! clock, and the principals its sessions act under.
+use worth_query_host::facade::runtime::time::ControlledTime;
 use super::*;
 use document::programs::WorkflowOwnerProgram;
 use document::schema::DocumentRetentionSchema;
@@ -11,7 +12,6 @@ use worth_query_host::facade::{
         WorthQueryLocalProcessPrincipal,
     },
     application_installation::WorthQueryApplicationProgramRoster,
-    primary_graph::WorthQueryFixedRuntimeTimeSource,
     WorthQueryApplicationHome, WorthQueryHomeConfig,
 };
 
@@ -21,11 +21,17 @@ worth_query_decl::facade::worth_query_authentication_method!(CertificationMethod
 
 /// Trusted time held at the current instant, so the fixture's real proofs
 /// (valid for an hour from now) stay inside every admission window.
-pub(super) fn trusted_now() -> WorthQueryFixedRuntimeTimeSource {
+pub(super) fn trusted_now() -> std::sync::Arc<ControlledTime> {
     let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-    WorthQueryFixedRuntimeTimeSource::new(CanonicalTimestamp {
-        micros_since_unix_epoch: i64::try_from(since_epoch.as_micros()).unwrap(),
-    })
+    std::sync::Arc::new(ControlledTime::at_unix_nanos(
+        (CanonicalTimestamp {
+            micros_since_unix_epoch: i64::try_from(since_epoch.as_micros()).unwrap(),
+        })
+        .micros_since_unix_epoch
+        .try_into()
+        .map(|micros: u64| micros * 1_000)
+        .unwrap(),
+    ))
 }
 
 /// Opens (or reopens) the Home at `location` through the desktop
@@ -33,7 +39,7 @@ pub(super) fn trusted_now() -> WorthQueryFixedRuntimeTimeSource {
 /// installed workflow vocabulary.
 pub(super) fn open(
     location: &Location,
-    trusted: &WorthQueryFixedRuntimeTimeSource,
+    trusted: &std::sync::Arc<ControlledTime>,
 ) -> (Home, CertificationAuthenticationOwner) {
     let config = WorthQueryHomeConfig::<DocumentRetentionSchema, WorkflowOwnerProgram>::new(
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),

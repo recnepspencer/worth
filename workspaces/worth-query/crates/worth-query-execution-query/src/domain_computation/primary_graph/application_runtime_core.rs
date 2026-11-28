@@ -118,7 +118,7 @@ impl WorthQueryApplicationRuntimeCore {
 
 impl WorthQueryApplicationRuntimeCore {
     pub fn authentication_is_expired(&self, valid_until: std::time::Instant) -> bool {
-        self.authorization_clock.admission_clock.now() >= valid_until
+        self.authorization_clock.admission_clock().now() >= valid_until
     }
 }
 

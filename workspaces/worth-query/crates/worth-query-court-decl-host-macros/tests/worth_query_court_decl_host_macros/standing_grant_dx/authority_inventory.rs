@@ -3,6 +3,10 @@
 //! the policy cause that refuses it, behind the roster disclosure gate. Its
 //! capability verdicts are admission's, so withdrawing an assignment moves
 //! exactly the audit entry, as admission itself does.
+use crate::time::controlled_at;
+use worth_query_host::facade::runtime::time::ControlledTime;
+use worth_query_host::facade::runtime::time::RawClockAdapter;
+use worth_query_host::facade::runtime::{BootEpoch, ClockSourceIdentity, TimeUnavailable};
 use worth_query_host::facade::{
     audit::{WorthQueryImpactDependency, WorthQueryImpactRole},
     eligibility::{
@@ -12,11 +16,7 @@ use worth_query_host::facade::{
         WorthQueryCapabilityEligibilityQuestion, WorthQueryEligibilityDenial,
     },
     local_calendar::WorthQueryTimeZone,
-    primary_graph::{
-        WorthQueryApplicationAuthorizationExplanationCause as Cause,
-        WorthQueryFixedRuntimeTimeSource, WorthQueryRuntimeTimeSource,
-        WorthQueryRuntimeTimeSourceDenial,
-    },
+    primary_graph::WorthQueryApplicationAuthorizationExplanationCause as Cause,
 };
 
 use super::countersign::{CountersignCapability, CountersignOp, CountersignRequest};
@@ -79,7 +79,7 @@ fn path(relations: &[&str]) -> WorthQueryAuthorityPath {
 #[test]
 fn an_inventory_explains_every_installed_authority_on_a_scope() {
     let path_on_disk = temp_home_path("authority-inventory");
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0));
+    let clock = controlled_at(at(2026, 11, 15, 12, 0));
     let home = home(&path_on_disk, &clock);
     let alice = inventory(&home, "alice", "alice").expect("alice may see north's roster");
     assert_eq!(
@@ -147,7 +147,7 @@ fn an_inventory_explains_every_installed_authority_on_a_scope() {
 #[test]
 fn an_inventory_is_disclosed_only_to_a_holder_of_the_disclosure_ability() {
     let path_on_disk = temp_home_path("authority-disclosure");
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0));
+    let clock = controlled_at(at(2026, 11, 15, 12, 0));
     let home = home(&path_on_disk, &clock);
     let refused = inventory(&home, "bob", "alice").expect_err("bob holds no role over north");
     assert!(
@@ -170,7 +170,7 @@ fn an_inventory_is_disclosed_only_to_a_holder_of_the_disclosure_ability() {
 #[test]
 fn two_policy_rules_over_one_chain_name_each_impact_role_once() {
     let path_on_disk = temp_home_path("authority-impact");
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0));
+    let clock = controlled_at(at(2026, 11, 15, 12, 0));
     let home = home(&path_on_disk, &clock);
     let impact = home
         .session(caller(&home, "alice").principal)
@@ -199,29 +199,31 @@ fn two_policy_rules_over_one_chain_name_each_impact_role_once() {
 /// The fixed trusted clock, counting every read of the current instant.
 #[derive(Clone)]
 struct CountingClock {
-    inner: WorthQueryFixedRuntimeTimeSource,
+    inner: std::sync::Arc<ControlledTime>,
     reads: std::sync::Arc<std::sync::atomic::AtomicUsize>,
 }
 
-impl WorthQueryRuntimeTimeSource for CountingClock {
-    fn admission_clock(
-        &self,
-    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
-    {
-        self.inner.admission_clock()
+impl RawClockAdapter for CountingClock {
+    fn read_monotonic_ticks(&self) -> (u64, BootEpoch) {
+        self.inner.read_monotonic_ticks()
     }
-    fn current_time(&self) -> Result<std::time::SystemTime, WorthQueryRuntimeTimeSourceDenial> {
+
+    fn source_identity(&self) -> ClockSourceIdentity {
+        self.inner.source_identity()
+    }
+
+    fn read_wall_unix_nanos(&self) -> Result<u64, TimeUnavailable> {
         self.reads.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        self.inner.current_time()
+        self.inner.read_wall_unix_nanos()
     }
 }
 
 #[test]
 fn one_inventory_reads_the_trusted_clock_once_for_every_capability() {
-    let clock = CountingClock {
-        inner: WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0)),
+    let clock = std::sync::Arc::new(CountingClock {
+        inner: controlled_at(at(2026, 11, 15, 12, 0)),
         reads: Default::default(),
-    };
+    });
     let denver = WorthQueryTimeZone::from_tz_variable("MST7MDT,M3.2.0,M11.1.0").unwrap();
     let home = open(
         &temp_home_path("authority-one-instant"),

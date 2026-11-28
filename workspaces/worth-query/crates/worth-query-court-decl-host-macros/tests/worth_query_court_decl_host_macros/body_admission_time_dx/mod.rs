@@ -12,7 +12,6 @@ mod handler;
 mod invariant;
 mod program;
 mod schema;
-mod switchable;
 
 use program::{owner, DeskHome};
 use schema::{DeskView, EntryView, ReadDesk, ReadEntry, ReadTicket, TicketView};

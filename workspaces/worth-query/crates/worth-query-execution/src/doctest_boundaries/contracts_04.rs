@@ -155,7 +155,7 @@ pub struct BoundaryContract078;
 /// let _ = WorthQueryAuthenticatedPrincipal::<(), (), u64> {
 ///     external_identity: todo!(),
 ///     attributes: Vec::new(),
-///     valid_until: std::time::Instant::now(),
+///     valid_until: worth_execution::MonotonicClock::system().now(),
 ///     application_principal: todo!(),
 ///     binding_identity: todo!(),
 ///     binding: String::new(),

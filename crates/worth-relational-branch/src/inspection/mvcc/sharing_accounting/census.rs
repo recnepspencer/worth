@@ -13,7 +13,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         runtime_instance_id: u64,
         root: &RelationalBranchRoot,
     ) -> Result<(), Denial> {
-        let start = std::time::Instant::now();
+        let start = worth_execution::MonotonicClock::system().now();
         self.census_work.as_mut().unwrap().roots += 1;
         let result = root.try_visit_authoritative_allocation_union(&mut CensusRootWalk {
             accounting: self,
@@ -77,7 +77,7 @@ impl RelationalRootAllocationVisitor for CensusRootWalk<'_> {
         >,
         partition: Result<&PartitionState, RelationalStorageUnavailable>,
     ) -> Result<(), Denial> {
-        let start = std::time::Instant::now();
+        let start = worth_execution::MonotonicClock::system().now();
         let region = region.map_err(|_| Denial::AuthoritativeByteBoundOverflow)?;
         let partition = partition.map_err(Denial::StorageUnavailable)?;
         self.accounting.census_work.as_mut().unwrap().region_entries += 1;

@@ -79,7 +79,8 @@ fn expired_serial_request_preserves_callers_input_hold() {
         work_ceiling: None,
         memory: Some(budget.clone()),
         deadline: Some(
-            crate::MonotonicClock::system().deadline_at(Instant::now() - Duration::from_secs(1)),
+            crate::MonotonicClock::system()
+                .deadline_at(crate::MonotonicClock::system().now() - Duration::from_secs(1)),
         ),
         cancellation: crate::CancellationSource::new().token(),
     };
@@ -110,7 +111,7 @@ fn expired_serial_request_preserves_callers_input_hold() {
 #[test]
 fn admitted_serial_owned_map_deadline_preserves_prefix_and_custody() {
     let _lock = TEST_LOCK.lock().unwrap();
-    let watchdog = Instant::now() + Duration::from_secs(60);
+    let watchdog = crate::MonotonicClock::system().now() + Duration::from_secs(60);
     loop {
         let budget = SerialMemoryBudget::new(Some(BUDGET));
         let ledger = Ledger::Serial(&budget);
@@ -119,7 +120,7 @@ fn admitted_serial_owned_map_deadline_preserves_prefix_and_custody() {
         let drops: Vec<_> = (0..ITEMS).map(|_| AtomicUsize::new(0)).collect();
         let violations = AtomicUsize::new(0);
         let entered = AtomicUsize::new(0);
-        let deadline = Instant::now() + Duration::from_millis(100);
+        let deadline = crate::MonotonicClock::system().now() + Duration::from_millis(100);
         let request = SerialRequest {
             work_ceiling: None,
             memory: Some(budget.clone()),
@@ -140,7 +141,7 @@ fn admitted_serial_owned_map_deadline_preserves_prefix_and_custody() {
                 assert!(ledger.charged() >= BASELINE + input_bytes());
                 // The first result completes after observed expiry, so the
                 // next item's safe point must stop regardless of scheduling.
-                while Instant::now() <= deadline {
+                while crate::MonotonicClock::system().now() <= deadline {
                     std::thread::yield_now();
                 }
                 drop(input);
@@ -192,7 +193,7 @@ fn admitted_serial_owned_map_deadline_preserves_prefix_and_custody() {
         // Retry expired setup rather than assume scope/kernel entry beats a
         // timer. Passing evidence requires the first kernel to have run.
         assert!(
-            Instant::now() < watchdog,
+            crate::MonotonicClock::system().now() < watchdog,
             "deadline test never admitted its first kernel"
         );
     }

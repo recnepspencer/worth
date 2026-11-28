@@ -57,7 +57,7 @@ fn record_canonical_log_phase(
     } = input;
     let branch_id = &positioned_commit.envelope().commit.branch_id;
     commit_log.begin_phase(CommitPhase::DurableAppend);
-    let phase_started = std::time::Instant::now();
+    let phase_started = worth_execution::MonotonicClock::system().now();
     commit_log.record_durable_append_prepared(
         commit_id,
         &branch_id.0,
@@ -115,7 +115,7 @@ pub(super) fn finalize_publication_phase(
         relation_lineages,
     );
     commit_log.begin_phase(CommitPhase::Publication);
-    let phase_started = std::time::Instant::now();
+    let phase_started = worth_execution::MonotonicClock::system().now();
     let mut publication_phase_timing =
         crate::authority::commit::phases::finalize::PublicationPhaseTiming::default();
     finalize_published_commit(

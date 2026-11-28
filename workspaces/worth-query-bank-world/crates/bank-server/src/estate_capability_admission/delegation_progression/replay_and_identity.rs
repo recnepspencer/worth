@@ -71,7 +71,9 @@ fn two_principals_can_revoke_with_the_same_client_key() {
 
 #[test]
 fn exact_delegation_replays_after_parent_expiry_but_fresh_child_is_denied() {
-    let time = AuthorizationTimeController::at_epoch_seconds(100);
+    let time = std::sync::Arc::new(
+        worth_query_host::facade::runtime::time::ControlledTime::at_unix_secs(100),
+    );
     let fixture = delegation_world_with_parent_spec_at(
         "capability-delegation-expired-parent-replay",
         GrantSpec {
@@ -94,7 +96,7 @@ fn exact_delegation_replays_after_parent_expiry_but_fresh_child_is_denied() {
 
     let _closed_command_95 =
         assert_committed(delegate(&fixture, &principal, action, key.clone()).unwrap());
-    time.advance_to_epoch_seconds(201);
+    time.set_wall_unix_nanos((201) * 1_000_000_000);
     let replay = delegate(&fixture, &principal, action, key.clone())
         .expect("an exact prior commit must replay after its parent expires");
     assert!(matches!(replay, CommandCourtOutcome::RecoveredCommitted(_)));

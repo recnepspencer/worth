@@ -8,7 +8,6 @@ mod system_zone;
 mod tzif;
 mod windows_zone;
 
-use std::time::{SystemTime, UNIX_EPOCH};
 use worth_foundational::facade::{CanonicalDate, CanonicalTimestamp};
 
 const MICROS_PER_SECOND: i64 = 1_000_000;
@@ -191,14 +190,12 @@ impl WorthQueryTimeZone {
     }
 }
 
-/// The system clock as a canonical instant, including before the epoch.
+/// The sampled system wall clock as a canonical instant.
 fn system_now() -> Result<CanonicalTimestamp, WorthQueryLocalCalendarDenial> {
-    let micros = match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(after) => i64::try_from(after.as_micros()),
-        Err(before) => i64::try_from(before.duration().as_micros()).map(|micros| -micros),
-    }
-    .map_err(|_| WorthQueryLocalCalendarDenial::InstantOutOfRange)?;
+    let wall = worth_execution::time::system_time_sampler()
+        .wall()
+        .map_err(|_| WorthQueryLocalCalendarDenial::InstantOutOfRange)?;
     Ok(CanonicalTimestamp {
-        micros_since_unix_epoch: micros,
+        micros_since_unix_epoch: (wall.unix_nanos() / 1_000) as i64,
     })
 }

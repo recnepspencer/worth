@@ -2,7 +2,6 @@
 
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
-use std::time::Instant;
 
 use worth_foundational::facade::{HomeIdentity, HomeIncarnation};
 use worth_query_admission::facade::authenticated_principal::{
@@ -102,7 +101,10 @@ where
     fn request_scope(&self) -> (WorthQueryCancellationSource, WorthQueryRequestScope) {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + self.auth_config.limits().request_timeout()),
+            Some(
+                worth_execution::MonotonicClock::system().now()
+                    + self.auth_config.limits().request_timeout(),
+            ),
             cancellation.token(),
             WorthQueryAdmissionClock::system(),
         );

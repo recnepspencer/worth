@@ -46,7 +46,7 @@ pub(super) fn finalize_published_commit(
         mirror_publication,
         phase_timing,
     );
-    let started = std::time::Instant::now();
+    let started = worth_execution::MonotonicClock::system().now();
     prepared_history.install(inputs.history, patch_position);
     phase_timing.history_publish_micros = phase_timing
         .history_publish_micros
@@ -94,7 +94,7 @@ fn publish_storage(
     prepared: worth_relational_storage::internal_port::storage::mirror_plan::PreparedMirrorPublication,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
-    let started = std::time::Instant::now();
+    let started = worth_execution::MonotonicClock::system().now();
     worth_relational_storage::internal_port::storage::mirror_publication::publish_prepared_mirror(
         partitions, counters, prepared,
     );
@@ -109,7 +109,7 @@ fn advance_visibility(
     published_snapshot_basis: &branch::history::retention::selected_snapshot::VisibilitySnapshotBasis,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
-    let started = std::time::Instant::now();
+    let started = worth_execution::MonotonicClock::system().now();
     inputs.visibility.move_residency(
         branch_id,
         previous_branch_head_version,
@@ -125,7 +125,7 @@ fn reconcile_published_retention(
     version_id: contracts::identity::data::primitives::VersionId,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
-    let started = std::time::Instant::now();
+    let started = worth_execution::MonotonicClock::system().now();
     let fence = inputs
         .visibility
         .directory
@@ -139,7 +139,7 @@ fn compact_durability(
     policy: &contracts::config::data::policies::DurableLogPolicy,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
-    let started = std::time::Instant::now();
+    let started = worth_execution::MonotonicClock::system().now();
     log.compact_if_needed(policy);
     timing.compaction_micros = started.elapsed().as_micros() as u64;
 }
@@ -153,7 +153,7 @@ fn publish_artifacts(
     slot: branch::runtime::state::subsystems::visibility::snapshot_handles::published_capacity::PublishedSnapshotSlotReservation,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) -> contracts::snapshots::data::coordinates::SnapshotId {
-    let started = std::time::Instant::now();
+    let started = worth_execution::MonotonicClock::system().now();
     let snapshot_id =
         publication.publish_artifacts(version_id, artifacts, patch_position, basis, slot);
     timing.bundle_publish_micros = started.elapsed().as_micros() as u64;
@@ -172,7 +172,7 @@ fn consume_post_commit_artifacts(
     input: PostCommitArtifactInput<'_>,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
-    let started = std::time::Instant::now();
+    let started = worth_execution::MonotonicClock::system().now();
     publication.consume_post_commit_artifacts(
         input.commit_id,
         input.snapshot_id,

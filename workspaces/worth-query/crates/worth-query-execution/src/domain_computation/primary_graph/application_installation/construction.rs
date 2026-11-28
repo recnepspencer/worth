@@ -27,7 +27,7 @@ pub(super) fn construct_with_contributions_in_advancement<Schema, Contributions>
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
     authorization_time_source: Option<
-        Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
+        crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     >,
     program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
 ) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryApplicationPreparationDenial>

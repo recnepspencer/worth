@@ -4,7 +4,7 @@ use std::pin::pin;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Waker};
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_declaration::facade::application_schema::{
@@ -76,7 +76,9 @@ impl WorthQueryAuthenticationAdapter for PrincipalAdapter {
         _scope: &'a WorthQueryRequestScope,
     ) -> WorthQueryAuthenticationFuture<'a> {
         Box::pin(async move {
-            let now = SystemTime::now();
+            let now = worth_execution::time::system_time_sampler()
+                .system_time()
+                .unwrap();
             Ok(WorthQueryValidatedExternalPrincipal::new(
                 WorthQueryExternalPrincipalIdentity::new(Issuer, credential).unwrap(),
                 WorthQueryAuthenticationAudience::of(ApprovalAudience),

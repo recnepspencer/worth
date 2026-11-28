@@ -3,7 +3,8 @@
 //! open side admits every instant on that side, a present side still fails
 //! closed at the one trusted admission instant, and eligibility agrees with
 //! admission throughout and after reopening.
-use worth_query_host::facade::primary_graph::WorthQueryFixedRuntimeTimeSource;
+
+use crate::time::{controlled_at, unix_nanos};
 
 use super::grants::{
     AuditCapability, AuditOp, ObserveCapability, ObserveOp, ReviewCapability, ReviewOp,
@@ -34,7 +35,7 @@ fn open_windows_admit_past_their_missing_bound_and_fail_closed_at_a_present_one(
     let path = temp_home_path("open-validity");
 
     // Before the window opens: only the closed review role is not yet valid.
-    let clock = WorthQueryFixedRuntimeTimeSource::new(micros(window.valid_from, -1));
+    let clock = controlled_at(micros(window.valid_from, -1));
     let home = home(&path, &clock);
     assert!(review.agreed(&home, "alice", "north").is_some());
     assert_eq!(audit.agreed(&home, "alice", "north"), None, "open below");
@@ -43,7 +44,7 @@ fn open_windows_admit_past_their_missing_bound_and_fail_closed_at_a_present_one(
 
     // Years after every bound: the roles open above still admit, and the
     // present upper bounds have expired.
-    clock.set(at(2031, 6, 1, 12, 0));
+    clock.set_wall_unix_nanos(unix_nanos(at(2031, 6, 1, 12, 0)));
     assert!(review.agreed(&home, "alice", "north").is_some());
     assert!(
         audit.agreed(&home, "alice", "north").is_some(),

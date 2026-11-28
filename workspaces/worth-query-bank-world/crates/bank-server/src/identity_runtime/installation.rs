@@ -27,7 +27,7 @@ use worth_query_host::facade::{
     },
     primary_graph::{
         WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
-        WorthQueryPrimaryGraphInstallationDenial, WorthQueryRuntimeTimeSource,
+        WorthQueryPrimaryGraphInstallationDenial, WorthQueryRuntimeClock,
     },
 };
 
@@ -45,7 +45,7 @@ use crate::{
 
 pub(super) enum BankAuthorizationTimeInstallation {
     System,
-    Installed(Box<dyn WorthQueryRuntimeTimeSource>),
+    Installed(WorthQueryRuntimeClock),
 }
 
 pub(super) fn install_prepared(

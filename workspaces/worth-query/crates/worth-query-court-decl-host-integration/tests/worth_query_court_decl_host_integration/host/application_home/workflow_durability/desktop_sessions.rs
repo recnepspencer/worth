@@ -2,15 +2,17 @@
 //! held trusted time, distinct principal sessions driving the workflow, owned
 //! off-thread workflow reads completed through a waker, commit notification,
 //! pinned snapshots, and a Directory reopen under advanced trusted time.
+
+use worth_query_host::facade::runtime::time::ControlledTime;
 use super::*;
 use document::programs::WorkflowOwnerProgram;
 use document::schema::DocumentRetentionSchema;
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryAdmissionClock,
     application_installation::WorthQueryWorkflowRuntimeBindingDenial,
-    primary_graph::WorthQueryFixedRuntimeTimeSource, WorthQueryApplicationHomeLocation as Location,
-    WorthQueryBackgroundDenial, WorthQueryHomeOpenDisposition, WorthQueryHostSession,
-    WorthQueryOwnedSession, WorthQueryOwnedSessionDenial,
+    WorthQueryApplicationHomeLocation as Location, WorthQueryBackgroundDenial,
+    WorthQueryHomeOpenDisposition, WorthQueryHostSession, WorthQueryOwnedSession,
+    WorthQueryOwnedSessionDenial,
 };
 mod audit;
 mod opening;
@@ -149,7 +151,7 @@ fn reopen(
     mut home: Home,
     authentication: CertificationAuthenticationOwner,
     location: &Location,
-    trusted: &WorthQueryFixedRuntimeTimeSource,
+    trusted: &std::sync::Arc<ControlledTime>,
     original: &Original,
     reached: &Frontier,
 ) -> (Home, CertificationAuthenticationOwner) {
@@ -177,7 +179,7 @@ fn reopen(
         Err(WorthQueryBackgroundDenial::HomeClosed)
     ));
 
-    trusted.advance(Duration::from_secs(60)).unwrap();
+    trusted.advance(Duration::from_secs(60));
     let (home, authentication) = open(location, trusted);
     assert_eq!(
         home.open_disposition(),

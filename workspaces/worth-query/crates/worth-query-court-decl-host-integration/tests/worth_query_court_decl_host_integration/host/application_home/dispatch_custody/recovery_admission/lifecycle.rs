@@ -123,7 +123,9 @@ fn a_recovered_claim_expires_at_its_original_owner_deadline_and_stays_expired() 
     let handle = recover(&home, 0x8503);
     assert_eq!(handle.binding().expires_at_unix_ms(), Some(expiry));
     drop(old);
-    owners.now.store(expiry / 1000 + 1, Ordering::SeqCst);
+    owners
+        .now
+        .set_wall_unix_nanos((expiry / 1000 + 1) * 1_000_000_000);
     let WorthQueryRecoveryExpiryEvaluation::Expired(decision) = home
         .runtime()
         .runtime()
@@ -197,7 +199,7 @@ fn a_relinquished_claim_records_its_release_before_a_new_generation_is_admitted(
             .unwrap(),
         Status::Unclaimed
     );
-    owners.now.fetch_add(3, Ordering::SeqCst);
+    owners.now.advance(Duration::from_secs(3));
     drop((left, right));
     close(home, &execution);
     let (home, rail) = owners.open(execution, false, &[]);

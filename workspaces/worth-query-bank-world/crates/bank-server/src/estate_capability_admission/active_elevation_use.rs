@@ -26,7 +26,9 @@ use crate::{queries, BankApplicationQueryDenial, BankReadControls};
 
 #[test]
 fn real_approved_elevation_expires_at_the_installed_time_boundary() {
-    let authorization_time = AuthorizationTimeController::at_epoch_seconds(100);
+    let authorization_time = std::sync::Arc::new(
+        worth_query_host::facade::runtime::time::ControlledTime::at_unix_secs(100),
+    );
     let fixture = emergency_request_world_at(
         "estate-emergency-expired-publication",
         GrantSpec::emergency_view(),
@@ -39,7 +41,7 @@ fn real_approved_elevation_expires_at_the_installed_time_boundary() {
     let query =
         queries::estate_emergency_account_details(ESTATE, EmergencyAccessId::new(391).unwrap());
 
-    authorization_time.advance_to_epoch_seconds(101);
+    authorization_time.set_wall_unix_nanos((101) * 1_000_000_000);
     let current = fixture
         .runtime
         .query(query)
@@ -52,7 +54,7 @@ fn real_approved_elevation_expires_at_the_installed_time_boundary() {
         BankDisclosure::Disclosed(_)
     ));
 
-    authorization_time.advance_to_epoch_seconds(102);
+    authorization_time.set_wall_unix_nanos((102) * 1_000_000_000);
     let denial = match fixture
         .runtime
         .query(query)

@@ -2,7 +2,7 @@
 //! `DecisionReader::admitted_at()`, a commit invariant from
 //! `WorthQueryApplicationInvariantContext::admitted_at()`, and both see the
 //! same reading of the Home's runtime time source; a held
-//! `WorthQueryFixedRuntimeTimeSource` makes them deterministic, while the
+//! `std::sync::Arc<ControlledTime>` makes them deterministic, while the
 //! default Home reads the system clock. Caller-forged dates are refused at
 //! commit, judged in the zone the application chooses.
 mod courts;
@@ -13,6 +13,7 @@ mod program;
 mod recovery_court;
 mod schema;
 
+use worth_query_host::facade::runtime::time::ControlledTime;
 use program::{owner, DatedHome};
 use schema::{LotView, ReadLot};
 use worth_query_decl::facade::application_schema::{CanonicalDate, CanonicalTimestamp};

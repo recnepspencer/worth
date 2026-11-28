@@ -35,7 +35,7 @@ pub fn output_with_deadline_and_stdin(
     let (finished, completion) = mpsc::channel();
     let stdout = capture(child.stdout.take().unwrap(), finished.clone());
     let stderr = capture(child.stderr.take().unwrap(), finished);
-    let started = Instant::now();
+    let started = worth_execution::MonotonicClock::system().now();
     let deadline = started + bound;
     let mut streams = 2;
     let mut status = None;
@@ -51,16 +51,18 @@ pub fn output_with_deadline_and_stdin(
                 stderr: stderr.lock().unwrap().clone(),
             });
         }
-        let remaining = deadline.saturating_duration_since(Instant::now());
+        let remaining =
+            deadline.saturating_duration_since(worth_execution::MonotonicClock::system().now());
         if remaining.is_zero() {
             let mut child = running.child.take().unwrap();
             let killed = child.kill();
-            let cleanup_deadline = Instant::now() + bound;
+            let cleanup_deadline = worth_execution::MonotonicClock::system().now() + bound;
             let reaped = wait_for_exit(&mut child, cleanup_deadline);
             // Reaping can precede EOF delivery. Retain the final captured bytes
             // when readers finish, without giving cleanup an unbounded wait.
             while streams != 0 {
-                let remaining = cleanup_deadline.saturating_duration_since(Instant::now());
+                let remaining = cleanup_deadline
+                    .saturating_duration_since(worth_execution::MonotonicClock::system().now());
                 match completion.recv_timeout(remaining) {
                     Ok(_) => streams -= 1,
                     Err(_) => break,
@@ -105,7 +107,7 @@ struct RunningChild {
 impl Drop for RunningChild {
     fn drop(&mut self) {
         if let Some(mut child) = self.child.take() {
-            let started = Instant::now();
+            let started = worth_execution::MonotonicClock::system().now();
             let killed = child.kill();
             let reaped = wait_for_exit(&mut child, started + self.bound);
             if killed.is_err() || !matches!(reaped, Ok(Some(_))) {
@@ -124,7 +126,7 @@ fn wait_for_exit(child: &mut Child, deadline: Instant) -> io::Result<Option<Exit
         if let Some(status) = child.try_wait()? {
             return Ok(Some(status));
         }
-        if Instant::now() >= deadline {
+        if worth_execution::MonotonicClock::system().now() >= deadline {
             return Ok(None);
         }
         std::thread::yield_now();

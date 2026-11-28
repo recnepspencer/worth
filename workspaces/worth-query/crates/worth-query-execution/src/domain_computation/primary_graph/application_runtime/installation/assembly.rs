@@ -42,7 +42,7 @@ where
         .map_err(super::super::super::bootstrap::request_read_denial::read)?;
     if !graph
         .product_world_resources
-        .admits_clock(&authorization_clock.admission_clock)
+        .admits_clock(authorization_clock.admission_clock())
     {
         return Err(WorthQueryPrimaryGraphInstallationDenial::new(
             WorthQueryPrimaryGraphInstallationDenialKind::AdmissionClockMismatch,

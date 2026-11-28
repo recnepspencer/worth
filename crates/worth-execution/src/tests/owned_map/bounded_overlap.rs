@@ -19,7 +19,7 @@ impl Overlap {
         }
     }
     pub(super) fn wait(&self) {
-        let deadline = Instant::now() + Duration::from_secs(60);
+        let deadline = crate::MonotonicClock::system().now() + Duration::from_secs(60);
         let mut state = self.state.lock().unwrap();
         let generation = state.1;
         state.0 += 1;
@@ -29,7 +29,8 @@ impl Overlap {
             return;
         }
         while state.1 == generation {
-            let remaining = deadline.saturating_duration_since(Instant::now());
+            let remaining =
+                deadline.saturating_duration_since(crate::MonotonicClock::system().now());
             let (next, timeout) = self.changed.wait_timeout(state, remaining).unwrap();
             state = next;
             assert!(

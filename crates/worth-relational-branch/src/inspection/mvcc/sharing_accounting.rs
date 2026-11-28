@@ -1,3 +1,4 @@
+use worth_execution::MonotonicClock;
 use super::allocation_inventory::{
     RelationalAuthoritativeAllocationKind, RelationalAuthoritativeAllocationLocator,
     RelationalAuthoritativeAllocationObservation,
@@ -160,7 +161,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         runtime_instance_id: u64,
         root: &RelationalBranchRoot,
     ) -> Result<(), Denial> {
-        let start = self.census_work.as_ref().map(|_| std::time::Instant::now());
+        let start = self.census_work.as_ref().map(|_| MonotonicClock::system().now());
         for region in root.storage_regions() {
             let region = region.map_err(|_| Denial::AuthoritativeByteBoundOverflow)?;
             if let Some(work) = self.census_work.as_mut() {
@@ -210,7 +211,7 @@ impl RelationalAuthoritativeAllocationAccounting {
                 ),
                 region.partition_state_bytes,
             );
-            let excluded_start = self.census_work.as_ref().map(|_| std::time::Instant::now());
+            let excluded_start = self.census_work.as_ref().map(|_| MonotonicClock::system().now());
             if let Some(work) = self.census_work.as_mut() {
                 work.excluded_partition_walks += 1;
             }
@@ -256,7 +257,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         root: &RelationalBranchRoot,
     ) -> Result<(), Denial> {
         use Denial::AuthoritativeByteBoundOverflow;
-        let start = self.census_work.as_ref().map(|_| std::time::Instant::now());
+        let start = self.census_work.as_ref().map(|_| MonotonicClock::system().now());
         if let Some(work) = self.census_work.as_mut() {
             work.schema_inventory_computations += 1;
         }
@@ -332,7 +333,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         derived_cache_bytes: u64,
     ) -> Result<(), Denial> {
         use Denial::AuthoritativeByteBoundOverflow;
-        let start = self.census_work.as_ref().map(|_| std::time::Instant::now());
+        let start = self.census_work.as_ref().map(|_| MonotonicClock::system().now());
         for allocation in artifact.authoritative_allocation_observations() {
             let kind = match allocation.kind {
                 RelationalCommitAuthoritativeAllocationKind::ArtifactObject => {

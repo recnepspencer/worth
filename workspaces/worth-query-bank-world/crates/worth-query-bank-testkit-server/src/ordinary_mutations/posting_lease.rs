@@ -33,7 +33,7 @@ pub fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
     let owner = fixture.authenticate(OWNER);
     let source = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(120)),
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(120)),
         source.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let balance = || {
         fixture

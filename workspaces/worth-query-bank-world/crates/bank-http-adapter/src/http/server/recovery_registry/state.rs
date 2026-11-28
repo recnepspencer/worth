@@ -40,7 +40,7 @@ impl RecoveryRecord {
             owner: replay.owner,
             action,
             commit: registration.commit,
-            expires_at: Instant::now() + lifetime,
+            expires_at: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + lifetime,
             handle: Some(registration.handle),
             settled: None,
         }

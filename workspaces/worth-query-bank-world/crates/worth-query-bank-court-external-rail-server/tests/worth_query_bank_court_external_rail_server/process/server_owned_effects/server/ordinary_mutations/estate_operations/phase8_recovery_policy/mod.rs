@@ -2,7 +2,9 @@ pub(crate) use worth_query_bank_testkit_server::facade::estate_operations::phase
 
 #[test]
 fn expired_grant_after_mint_denies_fresh_admission_not_foreign_principal() {
-    let authorization_time = AuthorizationTimeController::at_epoch_seconds(300);
+    let authorization_time = std::sync::Arc::new(
+        worth_query_host::facade::runtime::time::ControlledTime::at_unix_secs(300),
+    );
     let world = cross_gate_world_with_clock_and_grant_validity(
         "grant-expired-after-mint",
         Some(authorization_time.clone()),
@@ -19,7 +21,7 @@ fn expired_grant_after_mint_denies_fresh_admission_not_foreign_principal() {
     let specialist = world.fixture.authenticate_specialist();
     let action = world.specialist_action();
     let scope = request_scope();
-    authorization_time.advance_to_epoch_seconds(401);
+    authorization_time.set_wall_unix_nanos((401) * 1_000_000_000);
     let denied = world
         .fixture
         .world

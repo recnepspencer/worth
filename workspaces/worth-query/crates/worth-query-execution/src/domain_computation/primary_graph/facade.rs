@@ -342,10 +342,8 @@ pub use crate::basis::{
     WorthQueryProductObservationLease,
 };
 pub use crate::domain_computation::runtime_time::{
-    WorthQueryCalendaredRuntimeTimeSource, WorthQueryCapabilityCalendar,
-    WorthQueryCapabilityCalendarDenial, WorthQueryFixedRuntimeTimeSource,
-    WorthQueryRuntimeTimeDenial, WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
-    WorthQuerySystemRuntimeTimeSource,
+    WorthQueryCapabilityCalendar, WorthQueryCapabilityCalendarDenial, WorthQueryRuntimeClock,
+    WorthQueryRuntimeTimeDenial,
 };
 pub use crate::domain_computation::{
     WorthQueryCustomInvariantDenial, WorthQueryProductStaleApplication,

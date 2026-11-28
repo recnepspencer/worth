@@ -2,7 +2,7 @@
 
 use std::io;
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, UNIX_EPOCH};
 
 use tokio::sync::{watch, Notify};
 use tokio::task::JoinHandle;
@@ -54,7 +54,7 @@ pub(in crate::http::server) fn start_maintenance(
                 if *shutdown.borrow() {
                     return Ok(());
                 }
-                let Some(deadline) = Instant::now().checked_add(maximum_deadline) else {
+                let Some(deadline) = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now().checked_add(maximum_deadline) else {
                     return Err(io::Error::other("rail maintenance deadline overflow"));
                 };
                 let route = Arc::clone(&route);
@@ -122,7 +122,11 @@ fn expiry_instant(expiry_unix_seconds: u64) -> Option<tokio::time::Instant> {
     let expiry =
         UNIX_EPOCH.checked_add(Duration::from_secs(expiry_unix_seconds.checked_add(1)?))?;
     let delay = expiry
-        .duration_since(SystemTime::now())
+        .duration_since(
+            worth_execution::time::system_time_sampler()
+                .system_time()
+                .ok()?,
+        )
         .unwrap_or(Duration::ZERO);
     tokio::time::Instant::now().checked_add(delay)
 }

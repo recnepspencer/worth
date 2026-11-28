@@ -2,7 +2,6 @@
 use std::fmt;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
-use std::time::SystemTime;
 
 use worth_foundational::facade::{
     ApplicationBuildIdentity, DeterminismContract, ExecutionBudget, ExecutionPosture,
@@ -29,7 +28,7 @@ use worth_query_execution::facade::{
     },
     primary_graph::{
         WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
-        WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
+        WorthQueryRuntimeClock,
     },
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
@@ -89,7 +88,7 @@ where
     limits: Option<WorthQueryApplicationLimits>,
     checkpoint_limits: ApplicationHomeCheckpointLimits,
     roster: WorthQueryApplicationProgramRoster<'authoring, Schema>,
-    authorization_time_source: Option<Box<dyn WorthQueryRuntimeTimeSource>>,
+    authorization_time_source: Option<WorthQueryRuntimeClock>,
     capability_calendar: Option<
         std::sync::Arc<
             dyn worth_query_execution::facade::primary_graph::WorthQueryCapabilityCalendar,
@@ -173,9 +172,9 @@ where
     /// Supplies the trusted clock used when admitting and checking capabilities.
     pub fn with_authorization_time_source(
         mut self,
-        source: impl WorthQueryRuntimeTimeSource,
+        source: impl Into<WorthQueryRuntimeClock>,
     ) -> Self {
-        self.authorization_time_source = Some(Box::new(source));
+        self.authorization_time_source = Some(source.into());
         self
     }
 
@@ -274,20 +273,6 @@ impl<Schema: ApplicationSchemaComposition, Program> fmt::Display
     }
 }
 
-struct ConfiguredAdmissionClockTimeSource {
-    clock: WorthQueryAdmissionClock,
-}
-
-impl WorthQueryRuntimeTimeSource for ConfiguredAdmissionClockTimeSource {
-    fn admission_clock(&self) -> WorthQueryAdmissionClock {
-        self.clock.clone()
-    }
-
-    fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
-        Ok(SystemTime::now())
-    }
-}
-
 impl<Schema, Program> WorthQueryApplicationHome<Schema, Program>
 where
     Schema: ApplicationSchemaComposition,
@@ -345,12 +330,9 @@ where
             config.initial_state,
         )
         .with_checkpoint_limits(config.checkpoint_limits);
-        let source: Box<dyn WorthQueryRuntimeTimeSource> = match config.authorization_time_source {
-            Some(source) => source,
-            None => Box::new(ConfiguredAdmissionClockTimeSource {
-                clock: admission_clock,
-            }),
-        };
+        let source = config.authorization_time_source.unwrap_or_else(|| {
+            WorthQueryRuntimeClock::system().with_admission_clock(admission_clock)
+        });
         request.authorization_time_source = Some(match config.capability_calendar {
             Some(calendar) => super::capability_calendar::with_calendar(Some(source), calendar),
             None => source,

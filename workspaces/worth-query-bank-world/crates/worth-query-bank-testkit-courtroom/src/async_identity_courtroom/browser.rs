@@ -1,4 +1,4 @@
-pub use std::time::{Duration, Instant};
+pub use std::time::Duration;
 pub use thirtyfour::prelude::{
     By, ChromiumLikeCapabilities, DesiredCapabilities, Key, WebDriver, WebElement,
 };
@@ -134,12 +134,12 @@ pub async fn find_visible_semantic_field(
     driver: &WebDriver,
     selector: &str,
 ) -> Result<WebElement, String> {
-    let deadline = Instant::now() + ELEMENT_WAIT;
+    let deadline = worth_execution::MonotonicClock::system().now() + ELEMENT_WAIT;
     loop {
         if let Some(element) = deep_visible_field(driver, selector).await? {
             return Ok(element);
         }
-        if Instant::now() >= deadline {
+        if worth_execution::MonotonicClock::system().now() >= deadline {
             return Err("no visible enabled semantic field appeared before deadline".to_string());
         }
         tokio::time::sleep(ELEMENT_POLL).await;

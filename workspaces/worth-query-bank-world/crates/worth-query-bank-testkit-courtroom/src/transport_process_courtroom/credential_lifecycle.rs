@@ -1,4 +1,4 @@
-pub use std::time::{Duration, Instant};
+pub use std::time::Duration;
 
 pub use bank_http_adapter::{BankHttpAccountSummaryOutcome, BankHttpDenialKind};
 pub use bank_user_node::{BankUserNodeAccountSummaryOutcome, BankUserNodeAuthorizationOutcome};
@@ -29,7 +29,7 @@ pub async fn assert_expired_session_fails_closed(world: &TransportProcessWorld) 
     read_until(&mut stream, &mut transcript, "unauthenticated").await;
     drop(stream);
 
-    let deadline = Instant::now() + Duration::from_secs(8);
+    let deadline = worth_execution::MonotonicClock::system().now() + Duration::from_secs(8);
     loop {
         let outcome = summary(world).await;
         if matches!(
@@ -41,7 +41,7 @@ pub async fn assert_expired_session_fails_closed(world: &TransportProcessWorld) 
             break;
         }
         assert!(
-            Instant::now() < deadline,
+            worth_execution::MonotonicClock::system().now() < deadline,
             "short-lived process credential remained authoritative: {outcome:?}"
         );
         tokio::time::sleep(Duration::from_millis(100)).await;

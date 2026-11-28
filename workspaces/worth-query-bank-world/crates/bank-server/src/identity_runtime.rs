@@ -44,7 +44,7 @@ use worth_query_host::facade::domain::{
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationInvariantProjectionAuthority, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryPrincipalResolutionMode, WorthQueryRuntimeTimeSource,
+    WorthQueryPrincipalResolutionMode, WorthQueryRuntimeClock,
 };
 
 use crate::application_definition::BankApplication;
@@ -179,13 +179,13 @@ impl BankIdentityRuntime {
     /// authority. Operation callers cannot replace it or provide samples.
     pub fn install_world_with_authorization_time_source(
         seed: BankWorldSeed,
-        source: impl WorthQueryRuntimeTimeSource,
+        source: impl Into<WorthQueryRuntimeClock>,
     ) -> Result<Self, BankIdentityRuntimeBuildError> {
         let (principals, world) = prepare_world(seed)?;
         installation::install_prepared(
             principals,
             Some(world),
-            installation::BankAuthorizationTimeInstallation::Installed(Box::new(source)),
+            installation::BankAuthorizationTimeInstallation::Installed(source.into()),
             BankApprovalAuthenticationConfiguration::denying(),
         )
     }

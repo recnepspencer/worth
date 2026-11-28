@@ -80,7 +80,7 @@ impl BankHttpContinuationRegistry {
             ActivityRecord {
                 owner: owner.clone(),
                 account,
-                expires_at: Instant::now() + self.lifetime,
+                expires_at: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + self.lifetime,
                 state,
                 initial_request_id: request_id.clone(),
                 initial_outcome: outcome.clone(),
@@ -156,7 +156,7 @@ impl BankHttpContinuationRegistry {
                 continuation.map_or(ContinuationState::Terminal, ContinuationState::Ready);
             record.last_request_id = request_id;
             record.last_outcome = outcome.clone();
-            record.expires_at = Instant::now() + self.lifetime;
+            record.expires_at = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + self.lifetime;
         }
         Ok(outcome)
     }
@@ -181,7 +181,7 @@ impl BankHttpContinuationRegistry {
                 record.initial_outcome = denied(record.initial_request_id.clone(), *denial);
             }
             record.last_outcome = outcome;
-            record.expires_at = Instant::now() + self.lifetime;
+            record.expires_at = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + self.lifetime;
         }
     }
 
@@ -198,7 +198,7 @@ impl BankHttpContinuationRegistry {
             }
             record.initial_outcome = denied(record.initial_request_id.clone(), denial);
             record.last_outcome = denied(record.last_request_id.clone(), denial);
-            record.expires_at = Instant::now() + self.lifetime;
+            record.expires_at = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + self.lifetime;
         }
     }
 }

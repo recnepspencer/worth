@@ -35,7 +35,7 @@ async fn account_activity_sse_preserves_open_and_deadline_postures() {
     let releases = Arc::new(AtomicUsize::new(0));
     let application = Arc::new(fixture::application_with_authorization_time(
         account,
-        TrackedAuthorizationTime::new(Arc::clone(&releases)),
+        Arc::new(TrackedAuthorizationTime::new(Arc::clone(&releases))),
     ));
     assert_live_fixture_admits(application.as_ref(), account).await;
     let retained_application = Arc::clone(&application);
@@ -285,7 +285,7 @@ async fn assert_live_fixture_admits(application: &CausalHttpApplication, account
 
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(std::time::Instant::now() + Duration::from_secs(5)),
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(5)),
         cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = application.authenticate(&scope).await;
     let controls = WorthQueryApplicationLiveControls::bounded(scope, 16, 8).unwrap();

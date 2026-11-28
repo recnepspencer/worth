@@ -1,4 +1,4 @@
-pub use std::time::{Duration, Instant, SystemTime};
+pub use std::time::{Duration, SystemTime};
 
 pub use bank_server::{
     BankApprovalAuthenticationConfiguration, BankAuthenticatedPrincipal,
@@ -32,7 +32,9 @@ impl DynamicIdentity {
         let unique = format!(
             "{}-{}",
             std::process::id(),
-            SystemTime::now()
+            worth_query_host::facade::runtime::time::system_time_sampler()
+                .system_time()
+                .unwrap()
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .expect("system clock should follow the Unix epoch")
                 .as_nanos()
@@ -119,7 +121,7 @@ pub fn authentication_configuration() -> BankAuthenticationConfiguration {
 pub fn request_scope() -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
     WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
         worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
     )

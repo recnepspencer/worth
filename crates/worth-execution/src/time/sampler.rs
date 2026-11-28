@@ -2,6 +2,7 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc,
 };
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use worth_foundational::time::{
     AttestedTime, BootEpoch, ClockSourceIdentity, MonotonicInstant, TimeSourceEpoch,
@@ -86,6 +87,13 @@ impl TimeSampler {
             unix_nanos,
             TimeSourceEpoch::new(self.source),
         ))
+    }
+
+    /// Projects the sampled wall evidence for APIs that accept OS wall values.
+    pub fn system_time(&self) -> Result<SystemTime, TimeUnavailable> {
+        UNIX_EPOCH
+            .checked_add(Duration::from_nanos(self.wall()?.unix_nanos()))
+            .ok_or(TimeUnavailable::WallOutOfRange)
     }
 
     pub fn monotonic(&self) -> MonotonicInstant {

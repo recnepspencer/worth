@@ -8,7 +8,7 @@
 pub use std::future::Future;
 pub use std::pin::pin;
 pub use std::task::{Context, Poll, Waker};
-pub use std::time::{Duration, SystemTime};
+pub use std::time::Duration;
 
 pub use worth_query_host::facade::admission::authenticated_principal::{
     admit_authentication_adapter, WorthQueryAdmittedAuthenticationAdapter,
@@ -44,7 +44,9 @@ impl WorthQueryAuthenticationAdapter for OperatorAdapter {
         _scope: &'a WorthQueryRequestScope,
     ) -> WorthQueryAuthenticationFuture<'a> {
         Box::pin(async move {
-            let now = SystemTime::now();
+            let now = worth_query_host::facade::runtime::time::system_time_sampler()
+                .system_time()
+                .unwrap();
             WorthQueryValidatedExternalPrincipal::new(
                 operator_identity(),
                 audience(),

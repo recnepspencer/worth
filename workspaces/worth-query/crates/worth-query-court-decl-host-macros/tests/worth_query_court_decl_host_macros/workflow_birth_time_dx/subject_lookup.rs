@@ -4,6 +4,7 @@
 //! on, and after its Directory Home closes and reopens. The reacquired v1
 //! locator advances; principals without a read path to the request see
 //! nothing.
+use crate::time::controlled_at;
 use std::path::PathBuf;
 use std::sync::mpsc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -16,7 +17,6 @@ use worth_query_host::facade::application_discovery::{
     WorthQueryWorkflowObservedState as State, WorthQueryWorkflowReadExtent,
 };
 use worth_query_host::facade::application_entry::*;
-use worth_query_host::facade::primary_graph::WorthQueryFixedRuntimeTimeSource;
 
 use super::birth::birth_in;
 use super::disclosure::{RequestSubject, SubjectRead};
@@ -165,7 +165,7 @@ fn scratch_directory() -> PathBuf {
 #[test]
 fn a_born_request_is_reacquired_by_subject_after_supersession_and_reopen() {
     let directory = scratch_directory();
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 26, 15, 30));
+    let clock = controlled_at(at(2026, 11, 26, 15, 30));
     let (home, signing) = open_home(clock.clone(), Some(&directory));
     let caller = owner(home.runtime().runtime().installed_schema());
     let v1 = publish(&home, &caller, 1, None);

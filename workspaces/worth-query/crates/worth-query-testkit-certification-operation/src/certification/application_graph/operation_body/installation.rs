@@ -1,7 +1,6 @@
 //! Installs the real literal-body fixture and retains its projection owner.
 pub use super::*;
 #[path = "installation/admission_time.rs"]
-mod admission_time;
 
 pub fn install<const DESTINATION: u64>() -> WorthQueryProgramApplicationRuntime<
     DocumentRetentionSchema<DESTINATION>,
@@ -48,7 +47,7 @@ pub fn install_with_projection_on_clock<const DESTINATION: u64>(
             projection = Some(graph.retain_invariant_projection_authority());
             seed_body_graph::<DESTINATION>(graph, installed)
         },
-        admission_time::FixtureAdmissionTime(clock),
+        worth_query_host::facade::primary_graph::WorthQueryRuntimeClock::system().with_admission_clock(clock),
     )
     .unwrap();
     (app, projection.unwrap())
@@ -80,7 +79,7 @@ pub fn open_directory<const DESTINATION: u64>(
                 host_limits(clock.clone()),
                 |_phase, graph, installed| seed_body_graph::<DESTINATION>(graph, installed),
             )
-            .with_authorization_time_source(admission_time::FixtureAdmissionTime(clock))
+            .with_authorization_time_source(worth_query_host::facade::primary_graph::WorthQueryRuntimeClock::system().with_admission_clock(clock))
             .open_in_advancement(phase)
         },
     )

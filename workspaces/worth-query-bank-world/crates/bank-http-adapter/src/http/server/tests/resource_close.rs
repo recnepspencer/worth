@@ -1,32 +1,33 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::time::SystemTime;
-
-use worth_query_host::facade::primary_graph::{
-    WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
-};
+use worth_query_host::facade::runtime::time::{RawClockAdapter, SystemClockAdapter};
+use worth_query_host::facade::runtime::{BootEpoch, ClockSourceIdentity, TimeUnavailable};
 
 pub(super) struct TrackedAuthorizationTime {
     releases: Arc<AtomicUsize>,
-    admission_clock:
-        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
+    clock: SystemClockAdapter,
 }
 
 impl TrackedAuthorizationTime {
     pub(super) fn new(releases: Arc<AtomicUsize>) -> Self {
-        Self { releases, admission_clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system() }
+        Self {
+            releases,
+            clock: SystemClockAdapter::new(ClockSourceIdentity::new(0)),
+        }
     }
 }
 
-impl WorthQueryRuntimeTimeSource for TrackedAuthorizationTime {
-    fn admission_clock(
-        &self,
-    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
-    {
-        self.admission_clock.clone()
+impl RawClockAdapter for TrackedAuthorizationTime {
+    fn read_monotonic_ticks(&self) -> (u64, BootEpoch) {
+        self.clock.read_monotonic_ticks()
     }
-    fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
-        Ok(SystemTime::now())
+
+    fn source_identity(&self) -> ClockSourceIdentity {
+        self.clock.source_identity()
+    }
+
+    fn read_wall_unix_nanos(&self) -> Result<u64, TimeUnavailable> {
+        self.clock.read_wall_unix_nanos()
     }
 }
 

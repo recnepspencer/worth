@@ -7,4 +7,5 @@ mod system;
 
 pub use controlled::ControlledTime;
 pub use sampler::{RawClockAdapter, RecordedTimeSample, TimeSampler};
-pub use system::SystemClockAdapter;
+pub(crate) use system::system_deadline_now;
+pub use system::{system_time_sampler, SystemClockAdapter};

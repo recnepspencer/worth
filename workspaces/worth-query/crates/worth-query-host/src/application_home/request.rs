@@ -40,7 +40,7 @@ pub struct WorthQueryApplicationHomeRequest<
     pub(super) opening_control:
         Option<worth_store_application::ApplicationHomeOpeningControlForTest>,
     pub(super) authorization_time_source:
-        Option<Box<dyn worth_query_execution::facade::primary_graph::WorthQueryRuntimeTimeSource>>,
+        Option<worth_query_execution::facade::primary_graph::WorthQueryRuntimeClock>,
     pub(super) initial_state: Box<
         dyn FnOnce(
                 &WorthQueryBootstrapAdvancementPhase<'_>,
@@ -117,11 +117,11 @@ where
     /// Supplies the trusted clock used when admitting and checking capabilities.
     pub fn with_authorization_time_source(
         mut self,
-        source: impl worth_query_execution::facade::primary_graph::WorthQueryRuntimeTimeSource,
+        source: impl Into<worth_query_execution::facade::primary_graph::WorthQueryRuntimeClock>,
     ) -> Self {
         self.authorization_time_source = Some(super::capability_calendar::replacing_source(
             self.authorization_time_source.as_ref(),
-            Box::new(source),
+            source.into(),
         ));
         self
     }

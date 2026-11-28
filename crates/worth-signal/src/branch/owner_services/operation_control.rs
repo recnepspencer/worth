@@ -179,14 +179,16 @@ mod deterministic {
     )]
     impl SignalOwnerOperationPauseForTest {
         pub fn wait_until_reached(&self, timeout: Duration) -> bool {
-            let deadline = Instant::now() + timeout;
+            let deadline = worth_execution::MonotonicClock::system().now() + timeout;
             let mut state = self
                 .latch
                 .state
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
             while !state.reached {
-                let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
+                let Some(remaining) = deadline
+                    .checked_duration_since(worth_execution::MonotonicClock::system().now())
+                else {
                     return false;
                 };
                 let (next, timed) = self

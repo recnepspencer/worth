@@ -1,7 +1,7 @@
 //! Public Bank audience path: payment wait declaration and installed callback.
 
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::UNIX_EPOCH;
 
 use bank_domain::model::AccountId;
 use bank_domain::schema::approved_payment_inbound_binding;
@@ -51,7 +51,9 @@ async fn public_payment_wait_and_callback_installation_refuse_unowned_completion
         .iter()
         .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
         .collect::<Vec<_>>();
-    let now = SystemTime::now()
+    let now = worth_execution::time::system_time_sampler()
+        .system_time()
+        .unwrap()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs();

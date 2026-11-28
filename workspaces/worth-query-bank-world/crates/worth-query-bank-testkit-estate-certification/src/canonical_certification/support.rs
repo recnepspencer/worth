@@ -1,4 +1,4 @@
-pub use std::time::{Duration, Instant, SystemTime};
+pub use std::time::Duration;
 
 pub use bank_domain::{
     estate::{
@@ -167,7 +167,7 @@ pub fn external_identity(subject: &str) -> WorthQueryExternalPrincipalIdentity {
 
 pub fn request_scope() -> WorthQueryRequestScope {
     WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 

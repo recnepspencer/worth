@@ -4,31 +4,34 @@ pub use super::*;
 pub use std::collections::VecDeque;
 pub use std::num::NonZeroUsize;
 pub use std::sync::{Arc, Mutex};
-pub use std::time::{Duration, Instant, SystemTime};
+pub use std::time::{Duration, Instant};
 pub use worth_query_host::facade::admission::authenticated_principal::*;
 pub use worth_query_host::facade::application_entry::{
     WorthQueryBranchSetAdoptionAdvanceDenial, WorthQueryBranchSetAdoptionProgress,
 };
-pub use worth_query_host::facade::primary_graph::{
-    WorthQueryOperationAuthorizationRefusalKind, WorthQueryRuntimeTimeSource,
-    WorthQueryRuntimeTimeSourceDenial,
-};
+pub use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind;
+use worth_query_host::facade::primary_graph::WorthQueryRuntimeClock;
+use worth_query_host::facade::runtime::time::{RawClockAdapter, SystemClockAdapter};
+use worth_query_host::facade::runtime::{BootEpoch, ClockSourceIdentity, TimeUnavailable};
 
 worth_query_decl::facade::worth_query_authentication_method!(CertificationMethod);
 worth_query_decl::facade::worth_query_authentication_audience!(DocumentRetentionHostAudience);
 #[derive(Clone)]
 pub struct ExpiryClock {
     scheduled: Arc<Mutex<VecDeque<Option<Instant>>>>,
+    wall: Arc<SystemClockAdapter>,
     pub time: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionTimeController,
 }
-impl WorthQueryRuntimeTimeSource for ExpiryClock {
-    fn admission_clock(
-        &self,
-    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
-    {
-        self.time.clock()
+impl RawClockAdapter for ExpiryClock {
+    fn read_monotonic_ticks(&self) -> (u64, BootEpoch) {
+        self.wall.read_monotonic_ticks()
     }
-    fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
+
+    fn source_identity(&self) -> ClockSourceIdentity {
+        self.wall.source_identity()
+    }
+
+    fn read_wall_unix_nanos(&self) -> Result<u64, TimeUnavailable> {
         let wait = self.scheduled.lock().unwrap().pop_front().flatten();
         if let Some(deadline) = wait {
             let elapsed = deadline
@@ -38,7 +41,7 @@ impl WorthQueryRuntimeTimeSource for ExpiryClock {
                 .advance(elapsed + Duration::from_nanos(1))
                 .unwrap();
         }
-        Ok(SystemTime::now())
+        self.wall.read_wall_unix_nanos()
     }
 }
 impl ExpiryClock {
@@ -109,7 +112,15 @@ impl Default for ExpiryClock {
         time.hold();
         Self {
             scheduled: Default::default(),
+            wall: Arc::new(SystemClockAdapter::new(ClockSourceIdentity::new(0))),
             time,
         }
+    }
+}
+
+impl From<ExpiryClock> for WorthQueryRuntimeClock {
+    fn from(source: ExpiryClock) -> Self {
+        let clock = source.time.clock();
+        Self::from(Arc::new(source)).with_admission_clock(clock)
     }
 }

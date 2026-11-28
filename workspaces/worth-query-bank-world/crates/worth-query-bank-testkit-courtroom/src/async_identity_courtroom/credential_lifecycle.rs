@@ -1,4 +1,4 @@
-pub use std::time::{Duration, Instant};
+pub use std::time::Duration;
 
 pub use bank_domain::model::BankPrincipalId;
 pub use bank_http_adapter::{
@@ -171,14 +171,14 @@ pub async fn await_real_expiration(
     credential: AuthentikOidcCredential,
     scope: &WorthQueryRequestScope,
 ) -> AuthentikBankAuthenticationError {
-    let deadline = Instant::now() + Duration::from_secs(5);
+    let deadline = worth_execution::MonotonicClock::system().now() + Duration::from_secs(5);
     loop {
         match identity
             .authenticate_credential(credential.clone(), scope)
             .await
         {
             Err(error) => return error,
-            Ok(_) if Instant::now() < deadline => {
+            Ok(_) if worth_execution::MonotonicClock::system().now() < deadline => {
                 tokio::time::sleep(Duration::from_millis(100)).await;
             }
             Ok(_) => panic!("real one-second token did not expire before the five-second ceiling"),

@@ -4,7 +4,6 @@ use std::task::Context;
 use std::task::Poll;
 use std::task::Waker;
 use std::time::Duration;
-use std::time::SystemTime;
 
 use worth_query_admission::facade::authenticated_principal::*;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
@@ -73,7 +72,9 @@ impl WorthQueryAuthenticationAdapter for CausalIdentityAdapter {
         _scope: &'a WorthQueryRequestScope,
     ) -> WorthQueryAuthenticationFuture<'a> {
         Box::pin(async move {
-            let now = SystemTime::now();
+            let now = worth_execution::time::system_time_sampler()
+                .system_time()
+                .unwrap();
             WorthQueryValidatedExternalPrincipal::new(
                 external_identity(&credential.subject),
                 WorthQueryAuthenticationAudience::of(BankAudience),

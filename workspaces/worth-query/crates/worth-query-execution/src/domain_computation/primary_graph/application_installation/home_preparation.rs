@@ -92,7 +92,7 @@ struct HomeApplicationState<Schema: ApplicationSchemaComposition, Program> {
     limits: WorthQueryApplicationLimits,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     authorization_time_source:
-        Option<Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>>,
+        Option<crate::domain_computation::runtime_time::WorthQueryRuntimeClock>,
 }
 
 /// Installs actual schema/program meaning before Store construction starts.
@@ -105,7 +105,7 @@ pub fn prepare_home_program<Schema, Program>(
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryApplicationLimits,
     authorization_time_source: Option<
-        Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
+        crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     >,
 ) -> Result<PreparedHomeApplication<Schema, Program>, WorthQueryApplicationPreparationDenial>
 where
