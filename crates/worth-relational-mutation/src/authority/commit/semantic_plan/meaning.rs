@@ -9,10 +9,6 @@ use worth_relational_contracts::internal_port::validation::data::contracts::Inva
 #[derive(Clone, Copy, Debug)]
 pub enum RelationalSemanticPlan<'plan> {
     Mutation(&'plan MergedCommitPlan),
-    OwnedGraphSelection {
-        commands: &'plan MergedCommitPlan,
-        selection: &'plan Arc<crate::branch_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelection>,
-    },
     RetainedEntitySelection {
         commands: &'plan MergedCommitPlan,
         selection: &'plan Arc<CanonicalRetainedEntitySelection>,
@@ -29,12 +25,6 @@ impl<'plan> RelationalSemanticPlan<'plan> {
     {
         match self {
             Self::Mutation(_) => RelationalSemanticPlan::Mutation(commands),
-            Self::OwnedGraphSelection { selection, .. } => {
-                RelationalSemanticPlan::OwnedGraphSelection {
-                    commands,
-                    selection,
-                }
-            }
             Self::RetainedEntitySelection { selection, .. } => {
                 RelationalSemanticPlan::RetainedEntitySelection {
                     commands,
@@ -48,8 +38,7 @@ impl<'plan> RelationalSemanticPlan<'plan> {
     pub fn commands(self) -> &'plan MergedCommitPlan {
         match self {
             Self::Mutation(plan) => plan,
-            Self::RetainedEntitySelection { commands, .. }
-            | Self::OwnedGraphSelection { commands, .. } => commands,
+            Self::RetainedEntitySelection { commands, .. } => commands,
         }
     }
 
@@ -57,16 +46,8 @@ impl<'plan> RelationalSemanticPlan<'plan> {
         self.commands().transaction_id
     }
 
-    pub fn graph_selection(
-        self,
-    ) -> Option<&'plan crate::branch_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelection>{
-        match self {
-            Self::OwnedGraphSelection { selection, .. } => Some(selection),
-            Self::Mutation(_) | Self::RetainedEntitySelection { .. } => None,
-        }
-    }
     pub fn has_selection(self) -> bool {
-        self.selection().is_some() || self.graph_selection().is_some()
+        self.selection().is_some()
     }
     pub(crate) fn operation_count(self) -> usize {
         self.commands().merged_intents.len() + usize::from(self.has_selection())
@@ -74,7 +55,7 @@ impl<'plan> RelationalSemanticPlan<'plan> {
 
     pub fn selection(self) -> Option<&'plan CanonicalRetainedEntitySelection> {
         match self {
-            Self::Mutation(_) | Self::OwnedGraphSelection { .. } => None,
+            Self::Mutation(_) => None,
             Self::RetainedEntitySelection { selection, .. } => Some(selection),
         }
     }
@@ -83,9 +64,6 @@ impl<'plan> RelationalSemanticPlan<'plan> {
         let commands = self.commands().invariant_contract();
         match self {
             Self::Mutation(_) => commands,
-            Self::OwnedGraphSelection { .. } => {
-                commands.union(InvariantPlanContract::owned_graph_selection())
-            }
             Self::RetainedEntitySelection { .. } => {
                 commands.union(InvariantPlanContract::retained_entity_selection())
             }
@@ -99,9 +77,6 @@ impl<'plan> RelationalSemanticPlan<'plan> {
         use crate::branch_port::history::data::canonical_commit_envelope::CanonicalCommitAuthorityKind;
         match self {
             Self::Mutation(_) => CanonicalCommitAuthorityKind::VersionedTransaction,
-            Self::OwnedGraphSelection { selection, .. } => {
-                CanonicalCommitAuthorityKind::OwnedGraphSelection(Arc::clone(selection))
-            }
             Self::RetainedEntitySelection { selection, .. } => {
                 CanonicalCommitAuthorityKind::RetainedEntitySelection(Arc::clone(selection))
             }

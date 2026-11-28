@@ -68,19 +68,6 @@ impl ReadmittedSchemas {
             Self::Original(rows) => rows.rows.get(digest),
         }
     }
-
-    pub(crate) fn has_persistent_name_schemes(&self) -> bool {
-        match self {
-            Self::Source(catalog) => catalog
-                .rows
-                .iter()
-                .any(|(_, schema)| !schema.registry().persistent_name_schemes().is_empty()),
-            Self::Original(rows) => rows
-                .rows
-                .values()
-                .any(|schema| !schema.registry().persistent_name_schemes().is_empty()),
-        }
-    }
 }
 
 impl ReadmittedRegionDirectory {

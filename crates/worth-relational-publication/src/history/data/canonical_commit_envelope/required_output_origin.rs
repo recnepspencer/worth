@@ -1,6 +1,5 @@
 use branch::history::data::canonical_commit_envelope::required_output_origin::retention::origin_request;
 use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBody;
-use contracts::history::data::coordinates::CommitId;
 use contracts::identity::data::record_ids::EntityId;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_relational_branch::internal_port as branch;
@@ -9,7 +8,6 @@ pub mod authored_cascade_install;
 pub mod authored_restoration_install;
 pub mod coupled_authored_install;
 pub mod coupled_source;
-pub mod historical_selection;
 pub mod history_request;
 pub mod installation;
 pub mod members;

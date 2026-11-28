@@ -90,15 +90,6 @@ pub(super) fn prepare(
         RelationalProposalSource::Transaction { lowered: None, .. } => {
             prepare_working_state_scope(&runtime, transaction, selected, execution)?
         }
-        RelationalProposalSource::OwnedGraphSelection(retained) => {
-            crate::authority::commit::phases::prepare::owned_graph_selection::prepare(
-                execution,
-                &runtime,
-                transaction,
-                selected,
-                retained,
-            )?
-        }
         RelationalProposalSource::RetainedEntitySelection(retained) => {
             crate::authority::commit::phases::prepare::retained_entity_selection::prepare(
                 &runtime,
@@ -110,8 +101,8 @@ pub(super) fn prepare(
         }
     };
     let validation_input = RelationalTransactionValidationInput::from_transaction(transaction);
-    let mutation = if let Some(retained) = prepared.plan.owned_graph() {
-        crate::authority::commit::phases::applied_mutation::owned_graph_selection::apply(
+    let mutation = match prepared.plan.retained() {
+        Some(retained) => apply_retained_entity_selection_draft(
             execution,
             &runtime,
             &selected,
@@ -123,35 +114,19 @@ pub(super) fn prepare(
             source_interpretation,
             &validation_input.content,
         )
-        .map(AppliedDraftCustody::ordinary)
-    } else {
-        match prepared.plan.retained() {
-            Some(retained) => apply_retained_entity_selection_draft(
-                execution,
-                &runtime,
-                &selected,
-                &prepared.working_state,
-                retained,
-                prepared.schema_authority.as_ref(),
-                &identity,
-                symbols,
-                source_interpretation,
-                &validation_input.content,
-            )
-            .map(AppliedDraftCustody::ordinary),
-            None => apply_mutation_draft(
-                execution,
-                &runtime,
-                &selected,
-                &prepared.working_state,
-                prepared.plan.view().commands(),
-                prepared.schema_authority.as_ref(),
-                &identity,
-                symbols,
-                source_interpretation,
-                &validation_input.content,
-            ),
-        }
+        .map(AppliedDraftCustody::ordinary),
+        None => apply_mutation_draft(
+            execution,
+            &runtime,
+            &selected,
+            &prepared.working_state,
+            prepared.plan.view().commands(),
+            prepared.schema_authority.as_ref(),
+            &identity,
+            symbols,
+            source_interpretation,
+            &validation_input.content,
+        ),
     }?;
     Ok(storage.fill(PreparedProposalCandidate {
         prepared,
@@ -184,7 +159,6 @@ pub(super) fn validate(
         round.lineage_preparation_authority(),
         &validation_input,
         validation_input.naming_plan(),
-        prepared.plan.view(),
         &identity,
         Default::default(),
     );
@@ -232,7 +206,6 @@ pub(super) fn validate(
         round.lineage_preparation_authority(),
         &validation_input,
         validation_input.naming_plan(),
-        prepared.plan.view(),
         &identity,
         carried.kept_while(aggregate_admission.is_none()),
     );

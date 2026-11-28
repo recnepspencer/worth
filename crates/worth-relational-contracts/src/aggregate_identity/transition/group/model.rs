@@ -53,12 +53,7 @@ impl AggregateGroupSchemeId {
     /// characters, no leading/trailing `.`, and no empty `..` segment.
     pub fn new(id: impl Into<String>) -> Result<Self, AggregateGroupNamingDenial> {
         let id = id.into();
-        let invalid = id.is_empty()
-            || id.starts_with('.')
-            || id.ends_with('.')
-            || id.contains("..")
-            || id.chars().any(|ch| ch.is_whitespace() || ch.is_control());
-        if invalid {
+        if !crate::schema::identifier::is_dotted(&id) {
             return Err(AggregateGroupNamingDenial::InvalidSchemeId { scheme_id: id });
         }
         Ok(Self(id))

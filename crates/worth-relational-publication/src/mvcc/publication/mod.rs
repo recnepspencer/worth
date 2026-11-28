@@ -14,7 +14,6 @@ pub use application_publication::RelationalCoupledAuthoredSourceEffects;
 pub use application_publication::RelationalCoupledContribution;
 pub use application_publication::RelationalCoupledProducerPosture;
 pub use application_publication::RelationalDeclaredCoupledOwner;
-pub use application_publication::RelationalHistoricalOutputSelection;
 pub use application_publication::RelationalInstalledApplicationPublicationAuthority;
 pub use application_publication::RelationalPerformedOutputPublications;
 pub use application_publication::RelationalPredecessorBasisDenial;

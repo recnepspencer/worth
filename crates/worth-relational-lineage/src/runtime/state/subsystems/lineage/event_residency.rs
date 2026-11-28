@@ -3,7 +3,6 @@ use crate::contracts::storage::data::storage_unavailable::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause, RelationalStorageUnavailableCauseOwnerPort as _,
 };
-mod branch_window;
 pub mod member_export;
 use super::event_page::{self, ReadmittedLineageEventPage};
 use crate::contracts::history::data::commit_receipt::RelationalCommitReceipt;
@@ -40,9 +39,7 @@ pub(super) struct RuntimeLineageEventResidency {
     pub(super) custody: Mutex<NativeSourceMemberState>,
     pages: BTreeMap<RelationalDurableMemberLocator, Arc<EventPageCell>>,
     routes: BTreeMap<RelationalLineageEventPageRoute, Vec<Arc<EventPageCell>>>,
-    branch_windows: branch_window::BranchEventWindowIndex,
     commit_bindings: LineageCommitBinding,
-    pub(super) may_contain_named_events: bool,
 }
 /// The checkpoint's indexed receipt for a commit, read lazily from its paged
 /// commit index so admission never materializes every commit.
@@ -60,7 +57,6 @@ impl RuntimeLineageEventResidency {
         page_descriptors: &[RelationalCheckpointLineageEventPage],
         source: &Arc<dyn RelationalDurableColdSource>,
         commits: LineageCommitBinding,
-        may_contain_named_events: bool,
     ) -> Result<Self, RelationalStorageUnavailable> {
         let members = page_descriptors
             .iter()
@@ -101,14 +97,11 @@ impl RuntimeLineageEventResidency {
             }
             pages.insert(descriptor.member, cell);
         }
-        let branch_windows = branch_window::BranchEventWindowIndex::build(pages.values().cloned());
         Ok(Self {
             custody: Mutex::new(NativeSourceMemberState::new(source.clone(), placement)),
             pages,
             routes,
-            branch_windows,
             commit_bindings: commits,
-            may_contain_named_events,
         })
     }
     pub(super) fn member_subjects(
@@ -197,47 +190,6 @@ impl EventPageCell {
             }
         }
         Ok(page)
-    }
-
-    fn visit_ephemeral(
-        self: &Arc<Self>,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &dyn RelationalDurableColdSource,
-        bindings: &LineageCommitBinding,
-        visit: &mut impl FnMut(&RelationalCheckpointLineageEventRow),
-    ) -> Result<(), Failure> {
-        crate::contracts::execution::request_custody::check_request(execution)
-            .map_err(Failure::Request)?;
-        let cached = {
-            let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-            match &*state {
-                EventPageState::Resident(page) => Some(page.clone()),
-                EventPageState::Damaged(failure) => return Err((*failure).into()),
-                EventPageState::Cold => None,
-            }
-        };
-        if let Some(page) = cached {
-            for row in page.rows.elements() {
-                visit(row);
-            }
-            return Ok(());
-        }
-        match self.load_verified(execution, source, bindings) {
-            Ok(page) => {
-                for row in page.rows.elements() {
-                    visit(row);
-                }
-                Ok(())
-            }
-            Err(Failure::StorageUnavailable(failure)) => {
-                if failure.cause.is_proven_damage() {
-                    let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-                    *state = EventPageState::Damaged(failure);
-                }
-                Err(failure.into())
-            }
-            Err(stop) => Err(stop),
-        }
     }
 
     fn demand(

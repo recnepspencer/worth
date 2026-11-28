@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 pub enum CommitTopology {
     FlatEntityBatch,
     GraphMutation,
-    BranchMerge,
 }
 
 impl CommitTopology {
@@ -21,7 +20,6 @@ impl CommitTopology {
         match self {
             Self::FlatEntityBatch => 1 << 0,
             Self::GraphMutation => 1 << 1,
-            Self::BranchMerge => 1 << 2,
         }
     }
 }
@@ -325,11 +323,7 @@ impl crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan {
         InvariantPlanContract::from_merged_plan(self)
     }
 
-    pub fn inferred_topology(&self, merge_parent_count: usize) -> CommitTopology {
-        if merge_parent_count > 0 {
-            return CommitTopology::BranchMerge;
-        }
-
+    pub fn inferred_topology(&self) -> CommitTopology {
         let invalidated_groups = self.invariant_contract().may_invalidate_groups();
         if invalidated_groups == InvariantGroupSet::of(InvariantGroup::StorageCoherence) {
             CommitTopology::FlatEntityBatch

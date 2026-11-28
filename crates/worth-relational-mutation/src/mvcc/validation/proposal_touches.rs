@@ -15,8 +15,6 @@ pub mod collection;
 pub mod intent_projection;
 #[path = "proposal_touches/inverse_projection.rs"]
 pub mod inverse_projection;
-#[path = "proposal_touches/owned_graph.rs"]
-pub mod owned_graph;
 #[path = "proposal_touches/preparation.rs"]
 pub mod preparation;
 

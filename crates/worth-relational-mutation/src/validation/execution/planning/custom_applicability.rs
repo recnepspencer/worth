@@ -1,6 +1,5 @@
 //! Candidate-local kind narrowing before a custom rule spends its own work budget.
 
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelectionOwnerPort as _;
 use std::collections::BTreeSet;
 
 use crate::contracts::identity::data::primitives::KindId;
@@ -51,15 +50,6 @@ impl CandidateTouchedKinds {
         if let Some(selection) = semantic.selection() {
             pay_visit(budget)?;
             kinds.entities.insert(selection.kind());
-        }
-        if let Some(selection) = semantic.graph_selection() {
-            for target in selection.targets() {
-                pay_visit(budget)?;
-                match target {
-                    RecordRef::Entity(id) => kinds.entity(id, &proposed, before.as_ref())?,
-                    RecordRef::Relation(id) => kinds.relation(id, &proposed, before.as_ref())?,
-                }
-            }
         }
         for partition in partitions {
             proposed.state().get_current_partition(partition)?;

@@ -3,6 +3,7 @@ use super::RegisteredProjectedMemberDomain;
 use super::{ProjectedMemberDomainDenial as Denial, ProjectedMemberDomainHandle as Handle};
 use super::{ProjectedMemberDomainIdentity as Identity, ProjectedMemberDomainParts as Parts};
 use crate::schema::data::RelationalSchemaRegistry;
+use crate::schema::identifier;
 use std::sync::Arc;
 
 impl RelationalSchemaRegistry {
@@ -36,7 +37,9 @@ impl RelationalSchemaRegistry {
         additions: Vec<Parts>,
     ) -> Result<Self, Denial> {
         for parts in additions {
-            if !valid_name(&parts.identity.name) || !valid_name(&parts.identity.schema.0) {
+            if !identifier::is_simple(&parts.identity.name)
+                || !identifier::is_dotted(&parts.identity.schema.0)
+            {
                 return Err(Denial::InvalidIdentity);
             }
             let carrier = self
@@ -50,7 +53,7 @@ impl RelationalSchemaRegistry {
             if parts.cases.is_empty() {
                 return Err(Denial::EmptyCases);
             }
-            if parts.cases.iter().any(|case| !valid_name(case))
+            if parts.cases.iter().any(|case| !identifier::is_simple(case))
                 || parts.cases.windows(2).any(|pair| pair[0] >= pair[1])
             {
                 return Err(Denial::NoncanonicalCases);
@@ -88,6 +91,70 @@ impl RelationalSchemaRegistry {
     }
 }
 
-fn valid_name(name: &str) -> bool {
-    !name.is_empty() && name.trim() == name
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::identity::data::KindId;
+    use crate::schema::data::{EntityKindRegistration, SchemaId, SchemaVersionId};
+
+    #[test]
+    fn registration_requires_simple_domain_and_case_names() {
+        let schema = SchemaId("example.schema".into());
+        let version = SchemaVersionId(1);
+        let carrier = KindId(1);
+        let registry = RelationalSchemaRegistry::new()
+            .register_entity_kind(EntityKindRegistration {
+                kind_id: carrier,
+                kind_name: "carrier".into(),
+                schema_id: schema.clone(),
+                schema_version_id: version,
+                aspect_contract_declarations: Default::default(),
+            })
+            .unwrap();
+        let valid = Parts {
+            identity: Identity {
+                schema,
+                version,
+                name: "domain".into(),
+            },
+            carrier,
+            cases: vec!["case".into()],
+        };
+        for invalid in ["a b", "a\tb", "a\nb", "a\0b", "a.b"] {
+            let mut parts = valid.clone();
+            parts.identity.name = invalid.into();
+            assert_eq!(
+                registry
+                    .clone()
+                    .register_projected_member_domains(vec![parts]),
+                Err(Denial::InvalidIdentity),
+            );
+            let mut parts = valid.clone();
+            parts.cases = vec![invalid.into()];
+            assert_eq!(
+                registry
+                    .clone()
+                    .register_projected_member_domains(vec![parts]),
+                Err(Denial::NoncanonicalCases),
+            );
+        }
+        for invalid in [".schema", "schema.", "schema..name", "bad schema"] {
+            let mut parts = valid.clone();
+            parts.identity.schema = SchemaId(invalid.into());
+            assert_eq!(
+                registry
+                    .clone()
+                    .register_projected_member_domains(vec![parts]),
+                Err(Denial::InvalidIdentity),
+            );
+        }
+        let registry = registry
+            .register_projected_member_domains(vec![valid.clone()])
+            .unwrap();
+        assert!(registry
+            .projected_member_domain(&valid.identity)
+            .unwrap()
+            .case("case")
+            .is_some());
+    }
 }

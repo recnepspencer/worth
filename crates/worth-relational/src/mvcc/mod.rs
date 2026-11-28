@@ -11,11 +11,7 @@ pub use publication::{
     RecordedRequiredOutputRole, RelationalPublicationAdoptionRequest,
     RelationalPublicationAppendix, RelationalPublicationBodySelection,
 };
-pub(crate) mod owned_graph_selection;
 pub(crate) mod retained_entity_selection;
-pub use owned_graph_selection::{
-    RelationalOwnedGraphSelection, RelationalOwnedGraphSelectionPreparationError,
-};
 pub(crate) mod transaction;
 #[cfg(test)]
 pub(crate) use transaction::split_contacts;
@@ -52,8 +48,8 @@ pub use publication::{
     RelationalCoupledAssemblyFailure, RelationalCoupledAuthoredPublication,
     RelationalCoupledAuthoredSourceEffects, RelationalCoupledContribution,
     RelationalCoupledProducerPosture, RelationalDeclaredCoupledOwner,
-    RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
-    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
+    RelationalPerformedOutputPublications, RelationalPredecessorBasisDenial,
+    RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
     RelationalPreparedOutputPublications, RelationalRequiredOutputInput,
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
     RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
@@ -90,8 +86,6 @@ pub use validation::{
 };
 
 pub(crate) use validation::ValidatedProposalState;
-
-pub(crate) use publication::require_graph_coverage;
 
 pub use publication::companion::registration::port::{
     PendingCompanionRegistration, PublicationCompanionRegistration,

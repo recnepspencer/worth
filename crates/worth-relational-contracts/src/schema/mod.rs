@@ -8,6 +8,7 @@ pub mod continuity;
 pub mod current_publication_ownership;
 pub mod data;
 pub mod home_program_catalog_receipt;
+pub(crate) mod identifier;
 pub mod installed_source_scopes;
 pub mod portable_patch;
 pub mod snapshot_compilation;

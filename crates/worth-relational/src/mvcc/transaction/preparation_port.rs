@@ -3,7 +3,6 @@ use worth_relational_contracts::internal_port::transactions::data::outcomes::com
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::runtime::{RelationalPreparationOwnerBinding, RelationalPreparationRuntime};
 use crate::transactions::data::TransactionCommitError;
-mod owned_graph_selection;
 #[path = "preparation_port/selection_admission.rs"]
 mod selection_admission;
 #[path = "preparation_port/selection_preparation.rs"]

@@ -83,7 +83,6 @@ pub struct ProposalNameInputs<'a> {
     pub version_id: contracts::identity::data::primitives::VersionId,
     pub outcome: &'a worth_relational_mutation::internal_port::authority::mutation::execution::MutationApplyOutcome,
     pub naming_plan: Option<&'a contracts::lineage::data::CommitNamingPlan>,
-    pub graph_selection: Option<&'a worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelection>,
 }
 
 impl<'a> ProposalNameSource<'a> {
@@ -138,7 +137,7 @@ impl<'a> ProposalNameSource<'a> {
                 scheme_registry: self.schema.persistent_name_schemes(),
                 schema_registry: Some(self.schema),
                 basis: &basis,
-                graph_selection: self.proposal.graph_selection,
+                graph_selection: None,
             });
             if let Err(denial) = basis.settle() {
                 return NamePreview::Unavailable(denial);
@@ -296,7 +295,6 @@ impl crate::authority::commit::phases::applied_mutation::AppliedDraftCustody {
         lineage: crate::authority::commit::lineage_preparation::LineagePreparationAuthority<'a>,
         input: &'a impl crate::authority::commit::pipeline::publication_validation::DraftValidationInput,
         naming_plan: Option<&'a contracts::lineage::data::CommitNamingPlan>,
-        plan: worth_relational_mutation::internal_port::authority::commit::semantic_plan::meaning::RelationalSemanticPlan<'a>,
         identity: &worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
         carry: ProposalNameCarry,
     ) -> ProposalNameSource<'a> {
@@ -307,7 +305,6 @@ impl crate::authority::commit::phases::applied_mutation::AppliedDraftCustody {
             version_id: identity.proposed_version_id(),
             outcome: &self.outcome,
             naming_plan,
-            graph_selection: plan.graph_selection(),
         };
         ProposalNameSource::new(lineage.naming, lineage.schema, proposal, carry)
     }

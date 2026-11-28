@@ -12,7 +12,6 @@ use worth_relational_storage::internal_port::storage::overlay::current_access::C
 pub mod candidate_sources;
 pub mod home_target;
 pub mod incidence_collection;
-pub mod owned_graph;
 pub mod planned_incidence;
 pub mod relation_changes;
 pub mod scope_completion;
@@ -48,9 +47,6 @@ pub(super) fn prepare_relation_integrity_scopes(
     if let Some(plan) = semantic_plan {
         if let Some(selection) = plan.selection() {
             accumulator.collect_revalidated_entity(selection.entity())?;
-        }
-        if let Some(selection) = plan.graph_selection() {
-            accumulator.collect_owned_graph(selection)?;
         }
         accumulator.collect_plan(plan.commands())?;
     }

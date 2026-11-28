@@ -11,6 +11,7 @@ use crate::derived_relation::definition::{
 use crate::graph_member::NativeMemberDomain as Domain;
 use crate::identity::data::KindId;
 use crate::schema::data::RelationalSchemaRegistry;
+use crate::schema::identifier;
 
 pub(super) struct ValidatedExpression {
     pub(super) dependencies: BTreeSet<Identity>,
@@ -22,9 +23,8 @@ pub(super) fn expression(
     definitions: &BTreeMap<Identity, Parts>,
     registry: &RelationalSchemaRegistry,
 ) -> Result<ValidatedExpression, Denial> {
-    if parts.identity.name.trim().is_empty()
-        || parts.identity.name.trim() != parts.identity.name
-        || parts.identity.schema.0.is_empty()
+    if !identifier::is_simple(&parts.identity.name)
+        || !identifier::is_dotted(&parts.identity.schema.0)
     {
         return Err(Denial::InvalidIdentity);
     }
@@ -210,4 +210,47 @@ fn entity_kind(
         return Err(Denial::InvalidPhysicalSource(kind));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::schema::data::{SchemaId, SchemaVersionId};
+
+    #[test]
+    fn registration_rejects_malformed_relation_and_schema_names() {
+        for invalid in ["a b", "a\tb", "a\nb", "a\0b", "a.b"] {
+            assert_invalid_identity("example.schema", invalid);
+        }
+        for invalid in [
+            ".schema",
+            "schema.",
+            "schema..name",
+            "a b",
+            "a\tb",
+            "a\nb",
+            "a\0b",
+        ] {
+            assert_invalid_identity(invalid, "relation");
+        }
+    }
+
+    fn assert_invalid_identity(schema: &str, name: &str) {
+        let parts = Parts {
+            identity: Identity {
+                schema: SchemaId(schema.into()),
+                version: SchemaVersionId(1),
+                name: name.into(),
+            },
+            from: Domain::Entity(KindId(1)),
+            to: Domain::Entity(KindId(1)),
+            nodes: Vec::new(),
+            laws: None,
+        };
+        assert_eq!(
+            RelationalSchemaRegistry::new().register_derived_relations(vec![parts]),
+            Err(Denial::InvalidIdentity),
+            "{schema:?}, {name:?}",
+        );
+    }
 }

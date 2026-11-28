@@ -161,7 +161,6 @@ fn install_cold_directory(
         state.durability.checkpoint_selection(),
         working_set,
         state.history.cold_commit_catalog(),
-        prepared.has_naming_schemes,
     )?;
     // Only an acknowledged selected checkpoint becomes the selection owner;
     // an unacknowledged directory restores data without claiming selection.

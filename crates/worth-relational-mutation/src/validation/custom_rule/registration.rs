@@ -315,8 +315,6 @@ fn run_custom_rule_safely<T>(
 pub struct CustomInvariantRegistration {
     descriptor: CustomInvariantDescriptor,
     executable: Arc<dyn ErasedCustomInvariantRule>,
-    pub(crate) model_ownership:
-        Option<Arc<crate::branch::model_ownership::RelationalModelOwnership>>,
     pub(crate) managed_sources: Arc<[ManagedIndexSourceProgram]>,
 }
 
@@ -345,7 +343,6 @@ impl CustomInvariantRegistration {
         Ok(Self {
             descriptor,
             executable,
-            model_ownership: None,
             managed_sources: Arc::from([]),
         })
     }

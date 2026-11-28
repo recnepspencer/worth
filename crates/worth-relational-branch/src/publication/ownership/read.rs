@@ -19,13 +19,11 @@ pub mod selector;
 pub use linked::selectors as linked_selectors;
 pub mod anchors;
 pub mod reach;
+pub use reach::claims as publication_claims;
 pub mod roster;
 pub use roster::CurrentPublicationRoster;
 pub(super) use roster::LinkRow;
 pub use roster::PublicationRow;
-pub mod source;
-pub use reach::claims as publication_claims;
-use source::OwnershipReadSource;
 
 pub fn read(
     execution: &ExecutionRequest<'_, '_>,
@@ -46,46 +44,21 @@ pub fn read_selected(
     after: Option<&StructuralStateView<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
-    let roster = read_source(
-        execution,
-        OwnershipReadSource::Admitted(basis),
-        records,
-        scopes,
-        after,
-        context,
-    )?;
+    let roster = read_source(execution, basis, records, scopes, after, context)?;
     super::observation::record(&roster, basis);
     Ok(roster)
 }
 
-/// A candidate observation cannot be reused as admitted current publication custody.
-pub fn read_candidate(
-    execution: &ExecutionRequest<'_, '_>,
-    root: &crate::branch::root::RelationalBranchRoot,
-    records: &[RecordRef],
-    context: &mut MapKernelContext<'_, '_>,
-) -> Result<CurrentPublicationRoster, TransactionCommitError> {
-    let read = root.read();
-    read_source(
-        execution,
-        OwnershipReadSource::Candidate(&read),
-        records,
-        records,
-        None,
-        context,
-    )
-}
-
 fn read_source(
     execution: &ExecutionRequest<'_, '_>,
-    source: OwnershipReadSource<'_>,
+    basis: &AdmittedRelationalBranchBasis,
     records: &[RecordRef],
     scopes: &[RecordRef],
     after: Option<&StructuralStateView<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
-    let mut roster = empty(execution, source)?;
-    let root = source.root();
+    let mut roster = empty(execution, basis)?;
+    let root = &basis.inner.root;
     let Some(storage) = root
         .schema_authority()
         .registry()
@@ -94,12 +67,12 @@ fn read_source(
         return Ok(roster);
     };
     let view = StructuralStateView::new(
-        source.partitions(),
+        basis,
         crate::identity::data::VersionId(root.axes().map_or(0, |a| a.storage_version)),
     );
     reach::read(
         execution,
-        source,
+        basis,
         storage,
         &view,
         records,
@@ -134,7 +107,7 @@ fn retain<T>(funding: &mut ExecutionMemoryReservation) -> Result<(), Transaction
 
 fn empty(
     execution: &ExecutionRequest<'_, '_>,
-    source: OwnershipReadSource<'_>,
+    basis: &AdmittedRelationalBranchBasis,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
     let funding = execution
         .in_scope(|lease| ExecutionMemoryReservation::reserve_in_scope(lease, 0))
@@ -146,7 +119,7 @@ fn empty(
         reached_scopes: Default::default(),
         reached_entities: Default::default(),
         reached_relations: Default::default(),
-        basis: source.descriptor(),
+        basis: Some(basis.descriptor().clone()),
         publications: Vec::new(),
         codec_retired: Vec::new(),
         catalogs: Vec::new(),

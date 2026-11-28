@@ -27,7 +27,6 @@ pub(crate) use worth_relational_branch::internal_port::branch::fork_materializat
 mod fork_port;
 pub(crate) use worth_relational_branch::internal_port::branch::fork_source_basis;
 pub(crate) use worth_relational_branch::internal_port::branch::head_visibility_inputs;
-pub(crate) mod historical_selection;
 pub(crate) use worth_relational_branch::internal_port::branch::home_program_step;
 pub use worth_relational_branch::internal_port::branch::maintenance;
 mod retained_fork_admission;
@@ -38,21 +37,8 @@ pub use retained_fork_source::AdmittedRelationalRetainedForkSource;
 pub(crate) use worth_relational_contracts::internal_port::branch::identity;
 pub(crate) mod lifecycle;
 pub(crate) mod materialization;
-pub(crate) mod model_ownership;
 mod owner_services;
 pub(crate) mod recorded_basis;
-pub use model_ownership::current_publications::{
-    RelationalOwnedModelOutputRoute, RelationalOwnedModelPublicationRead,
-    RelationalOwnedModelPublishedRoute,
-};
-pub use model_ownership::{
-    observe_candidate_custody_reads, RelationalCandidateCustodyReads, RelationalModelOwnership,
-    RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
-    RelationalModelOwnershipDomain, RelationalOwnedModelEntityBoundary,
-    RelationalOwnedGraphCompanions, RelationalOwnedModelForeignRelation,
-    RelationalOwnedModelGraphSelection,
-    RelationalOwnedModelSelectionDenial,
-};
 pub use record_advance::{
     RelationalRecordAdvanceDenial, RelationalRecordAdvanceLimits,
     RelationalRecordAdvanceObservation,
@@ -115,10 +101,10 @@ pub use lifecycle::{
 pub use materialization::completion::{
     PendingRelationalMaterializationSuspension,
     PendingRelationalMaterializationSuspensionCompletion, PendingRelationalRematerialization,
-    PendingRelationalRematerializationCompletion, PreparedRelationalMaterializationSuspension, PreparedRelationalRematerialization,
-    RelationalMaterializationError, RelationalMaterializationSuspension,
-    RelationalMaterializationSuspensionCompletion, RelationalRematerializationCompletion,
-    RelationalRematerializationFailure,
+    PendingRelationalRematerializationCompletion, PreparedRelationalMaterializationSuspension,
+    PreparedRelationalRematerialization, RelationalMaterializationError,
+    RelationalMaterializationSuspension, RelationalMaterializationSuspensionCompletion,
+    RelationalRematerializationCompletion, RelationalRematerializationFailure,
 };
 pub use materialization::{
     RelationalEntityMaterialization, RelationalMaterializationCustody,

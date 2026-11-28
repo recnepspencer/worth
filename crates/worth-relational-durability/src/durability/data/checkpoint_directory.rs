@@ -162,7 +162,6 @@ impl RelationalCheckpointDirectory {
     pub(crate) fn prepare_lineage_cold_pages(
         &self,
         commits: worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::event_residency::LineageCommitBinding,
-        may_contain_named_events: bool,
     ) -> Result<
         worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::page_admission::PreparedLineageColdPages,
         contracts::storage::data::storage_unavailable::RelationalStorageUnavailable,
@@ -172,7 +171,6 @@ impl RelationalCheckpointDirectory {
             &self.manifest.lineage_events,
             &self.source,
             commits,
-            may_contain_named_events,
         )
     }
 }

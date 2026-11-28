@@ -26,7 +26,6 @@ pub use coupled_return::AppliedDraftCustody;
 pub use coupled_return::CoupledPreparationCleanup;
 pub mod content;
 pub mod ordinary_apply;
-pub mod owned_graph_selection;
 pub use ordinary_apply::AppliedMutationCore;
 
 pub struct AppliedMutationDraft {

@@ -39,7 +39,6 @@ pub(super) fn prepare_publication_phase<
             diagnostics,
             lineage,
             fallback_schema,
-            custom_invariants,
             invariant_generation,
             max_patch_records,
             mirror,
@@ -281,17 +280,6 @@ pub(super) fn prepare_publication_phase<
         .map_err(|denial| {
             preparation_denial::transaction_error(denial, &branch_basis, commit_log.clone())
         })?;
-        worth_relational_mutation::internal_port::branch::model_ownership::publication::validate_candidate_ownership(
-            execution,
-            custom_invariants,
-            prepared_history.root(),
-            &canonical_commit_envelope,
-        )?;
-        crate::publication::ownership::selection_pairing::validate(
-            execution,
-            prepared_history.root(),
-            &canonical_commit_envelope,
-        )?;
         lineage_identities
             .validate_reserved_lineage_events(canonical_commit_envelope.lineage_events())
             .map_err(|detail| {

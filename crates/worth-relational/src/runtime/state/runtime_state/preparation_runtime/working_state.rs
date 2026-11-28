@@ -39,7 +39,6 @@ impl<'a> From<&'a mut BranchBoundRelationalTransaction> for WorkingStateDraft<'a
             footprint: &mut transaction.footprint,
             basis_schema: transaction.schema_authority.registry(),
             mutation_schema,
-            merge_parent_count: 0,
             coupled_commands: transaction
                 .authored_coupling
                 .as_ref()
@@ -52,7 +51,6 @@ impl<'a> From<&'a BranchBoundRelationalTransaction> for WorkingStateScope<'a> {
         Self {
             footprint: &transaction.footprint,
             schema: transaction.mutation_schema_authority(),
-            merge_parent_count: 0,
         }
     }
 }

@@ -152,7 +152,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admi
 "storage/residency/tests.rs" = "runtime"
 "authority/mod.rs" = "runtime"
 "authorization/mod.rs" = "runtime"
-"branch/model_ownership/mod.rs" = "runtime"
 "commit_strategies/data/mod.rs" = "runtime"
 "commit_strategies/execution/mod.rs" = "runtime"
 "commit_strategies/mod.rs" = "runtime"
@@ -171,7 +170,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admi
 "validation/engine/tests/mod.rs" = "runtime"
 "validation/invariant_authority/diagnostic_projection.rs" = "runtime"
 "branch/fork.rs" = "runtime"
-"branch/historical_selection.rs" = "runtime"
 "branch/lifecycle.rs" = "runtime"
 "branch/materialization.rs" = "runtime"
 "branch/recorded_basis/memory_component.rs" = "runtime"
@@ -231,8 +229,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admi
 "durability/authority/runtime_rebuild/envelope_replay/interruption_tests/recovered_state_comparison.rs" = "runtime"
 "durability/authority/runtime_rebuild.rs" = "runtime"
 "durability/authority/runtime_rebuild/checkpoint_restore/installation.rs" = "runtime"
-"branch/historical_selection/chain.rs" = "runtime"
-"branch/historical_selection/runtime_reads.rs" = "runtime"
 "branch/root_snapshot_custody/exact_observation/runtime_reads.rs" = "runtime"
 "visibility/materialization/read_records/projection/admitted_snapshot.rs" = "runtime"
 "visibility/materialization/read_records/projection/exact_observation.rs" = "runtime"
@@ -321,8 +317,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admi
 "runtime/authored_publication_reads.rs" = "runtime"
 "runtime/candidate_consumption.rs" = "runtime"
 "runtime/candidate_preparation.rs" = "runtime"
-"runtime/historical_ancestry.rs" = "runtime"
-"runtime/historical_output_selection.rs" = "runtime"
 "runtime/ownership_certification.rs" = "runtime"
 "runtime/publication_capture.rs" = "runtime"
 "runtime/publication_settlement.rs" = "runtime"
@@ -363,8 +357,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admi
 "branch/mod.rs" = "runtime"
 # Native custody stays below the live candidate and its completion receipt.
 "branch/materialization/completion.rs" = "runtime"
-"branch/model_ownership/runtime_publications.rs" = "runtime"
-"branch/model_ownership/runtime_selection.rs" = "runtime"
 "branch/owner_services" = "runtime"
 "branch/record_advance" = "runtime"
 # Export authenticates the retained member against Durability's selected image.
@@ -758,8 +750,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "durability/authority/runtime_rebuild/checkpoint_restore/installation.rs" = "runtime"
 "durability/canonical_commit_artifact/retained_frame_reads.rs" = "durability"
 "durability/canonical_commit_artifact/journal_source_read.rs" = "durability"
-"branch/historical_selection/chain.rs" = "runtime"
-"branch/historical_selection/runtime_reads.rs" = "runtime"
 "branch/root_snapshot_custody/exact_observation/runtime_reads.rs" = "runtime"
 "visibility/materialization/read_records/projection/admitted_snapshot.rs" = "runtime"
 "visibility/materialization/read_records/projection/exact_observation.rs" = "runtime"
@@ -802,7 +792,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "durability/initial_schema_installation_denial.rs" = "durability"
 "durability/authority/checkpoint_capture/runtime_selection.rs" = "runtime"
 # Explicit ownership restored by Stage 2.4C r2 and Stage 2.5A.
-"branch/model_ownership/read_denial.rs" = "contracts"
 "schema/home_program_catalog_receipt.rs" = "contracts"
 "durability/artifact_payload_emission.rs" = "durability"
 "durability/canonical_commit_artifact/body_read.rs" = "durability"
@@ -938,9 +927,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # Publication owns its operation-scoped diagnostic capture and stored artifacts.
 
-# Runtime supplies owner identity to the publication-owned historical selection.
-"runtime/historical_output_selection.rs" = "runtime"
-
 # Visibility issues snapshot identities from one owner-bound allocator.
 
 # Root linkage consumes the completed envelope at the custody boundary.
@@ -1041,8 +1027,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "authorization/runtime_dependencies.rs" = "runtime"
 "authorization/runtime_freshness.rs" = "runtime"
 "authorization/runtime_observation.rs" = "runtime"
-"branch/model_ownership/runtime_publications.rs" = "runtime"
-"branch/model_ownership/runtime_selection.rs" = "runtime"
 "validation/preparation_invariant_authority.rs" = "runtime"
 
 # Transaction packet vocabulary is shared. Branch owns denials for selected reads.
@@ -1075,9 +1059,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # The ordinary mirror publisher owns partition installation and copy counters.
 "storage/mirror_publication.rs" = "storage"
-
-# Runtime lends the installed canonical history to historical selection.
-"runtime/historical_ancestry.rs" = "runtime"
 
 # The canonical patch coordinate is consumed independently of Runtime stream access.
 "publication/patch/data/stream_commit_ref.rs" = "contracts"

@@ -44,14 +44,6 @@ impl VisibilityProjectionView {
         )
     }
 
-    pub(crate) fn selected_branch_id(&self) -> &crate::history::data::BranchId {
-        self.basis.branch_id()
-    }
-
-    pub(crate) fn shares_runtime_with(&self, other: &Self) -> bool {
-        self.is_from_runtime(other.runtime_identity)
-    }
-
 
 
 

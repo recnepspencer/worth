@@ -5,8 +5,6 @@ pub use publication_appendix::{
     RelationalPublicationAdoptionRequest, RelationalPublicationAppendix,
     RelationalPublicationBodySelection,
 };
-pub mod historical_selection;
-pub use historical_selection::RelationalHistoricalOutputSelection;
 pub mod authored_cascade;
 pub mod authored_publication_reads;
 pub(crate) use authored_publication_reads::AuthoredPublicationReads;

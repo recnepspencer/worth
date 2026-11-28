@@ -114,19 +114,6 @@ fn run<'p>(
                     return Err(failure);
                 }
             }
-            if inputs.plan.graph_selection().is_some() {
-                for delta in inputs.deltas {
-                    (sink.checkpoint)(1)?;
-                    sink.insert(super::owned_graph::whole_record(
-                        &delta.target,
-                        delta.kind_id,
-                        delta.structural_change,
-                    ));
-                    if let Some(failure) = sink.failure.take() {
-                        return Err(failure);
-                    }
-                }
-            }
         }
         let commands = commands.unwrap_or_else(|| &inputs.plan.commands().merged_intents);
         for intent in commands {

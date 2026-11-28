@@ -8,9 +8,7 @@ use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
 use crate::validation::engine::state_view::InvariantStateView;
 pub mod content;
 pub mod derived_admission;
-pub mod record_presence;
 pub(crate) use derived_admission::DerivedAdmissionCache;
-pub(crate) use record_presence::StructuralPresenceDenial;
 
 pub use crate::contracts::validation::data::structural_read::{
     StructuralReadError, StructuralRelationRecord,

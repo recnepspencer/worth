@@ -1,4 +1,3 @@
-pub(crate) use application_publication::require_graph_coverage;
 pub(crate) use application_publication::BoundAuthoredCoupling;
 pub(crate) use application_publication::CoupledSource;
 pub use application_publication::RelationalInstalledApplicationPublicationAuthority;
@@ -8,9 +7,8 @@ pub use application_publication::{
     RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
     RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
     RelationalCoupledContribution, RelationalCoupledProducerPosture,
-    RelationalDeclaredCoupledOwner, RelationalHistoricalOutputSelection,
-    RelationalPerformedOutputPublications, RelationalPredecessorBasisDenial,
-    RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
+    RelationalDeclaredCoupledOwner, RelationalPerformedOutputPublications,
+    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
     RelationalPreparedOutputPublications, RelationalPublicationAdoptionRequest,
     RelationalPublicationAppendix, RelationalPublicationBodySelection,
     RelationalRequiredOutputInput, RelationalRequiredOutputPublication,

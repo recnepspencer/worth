@@ -24,8 +24,6 @@ use worth_relational_storage::internal_port::storage::overlay::partition::{
     summarize_entity_chunk_plan, EntityWorkingSetLayout, PartitionCloneMode,
 };
 use worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState;
-#[path = "prepare/owned_graph_selection.rs"]
-pub mod owned_graph_selection;
 #[path = "prepare/retained_entity_selection.rs"]
 pub mod retained_entity_selection;
 pub mod working_state_inputs;
@@ -220,7 +218,6 @@ where
         WorkingStateScope {
             footprint: draft.footprint,
             schema: draft.mutation_schema,
-            merge_parent_count: draft.merge_parent_count,
         },
         selected,
         merged_plan,
@@ -257,7 +254,6 @@ fn prepare_lowered_with_scope(
             inputs,
             &selected,
             merged_plan.plan(),
-            transaction.merge_parent_count,
             Some(transaction.footprint),
         );
 
@@ -276,14 +272,12 @@ pub fn prepare_authoritative_working_state_scope_for_base<'a>(
     inputs: impl Into<working_state_inputs::WorkingStatePreparation<'a>>,
     base_state: &impl CurrentPartitionAccess,
     merged_plan: &MergedCommitPlan,
-    merge_parent_count: usize,
     footprint: Option<&mutation::mvcc::transaction::footprint::RelationalTransactionFootprint>,
 ) -> (CommitStructuralSummary, WorkingState, CommitPhaseTiming) {
     let inputs = inputs.into();
     let mut phase_timing = CommitPhaseTiming::default();
     let summary_started = Instant::now();
-    let mut structural_summary =
-        CommitStructuralSummary::derive(base_state, merged_plan, merge_parent_count);
+    let mut structural_summary = CommitStructuralSummary::derive(base_state, merged_plan);
     if let Some(footprint) = footprint {
         structural_summary
             .touched_partitions
@@ -298,7 +292,6 @@ pub fn prepare_authoritative_working_state_scope_for_base<'a>(
         }
         CommitTopology::FlatEntityBatch => PartitionCloneMode::EntityOnly,
         CommitTopology::GraphMutation => PartitionCloneMode::GraphSparseEntities,
-        CommitTopology::BranchMerge => PartitionCloneMode::Full,
     };
     let cloned_partition_count = structural_summary.touched_partitions.len();
     let cloned_entity_slots = structural_summary

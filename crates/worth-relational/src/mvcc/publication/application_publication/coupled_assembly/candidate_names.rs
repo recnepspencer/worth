@@ -55,7 +55,6 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             self.runtime.lineage_preparation_authority(),
             self.binding.owners.before(),
             self.mutation,
-            self.prepared.plan.view(),
             self.identity,
             plan.as_ref(),
             std::mem::take(kept),

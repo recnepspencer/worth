@@ -47,7 +47,7 @@ pub fn verify(
         plan,
     )?;
     let (_, mut state, _) =
-        prepare_authoritative_working_state_scope_for_base(working_state, root, plan, 0, None);
+        prepare_authoritative_working_state_scope_for_base(working_state, root, plan, None);
     guard::ordinary_plan(
         execution,
         work,
