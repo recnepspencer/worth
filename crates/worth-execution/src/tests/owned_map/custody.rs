@@ -1,7 +1,7 @@
 use std::{
     cell::Cell,
     sync::atomic::{AtomicUsize, Ordering},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use super::{authority, map, request, ChargedBytes, MapKernelStop, MapStop, TEST_LOCK};
@@ -266,10 +266,10 @@ fn owned_map_drops_and_leased_custody_on_every_stop() {
                 source.cancel();
             }
             if matches!(stop, Stop::Deadline) {
-                req.deadline = Some(
-                    crate::MonotonicClock::system()
-                        .deadline_at(Instant::now() - Duration::from_secs(1)),
-                );
+                req.deadline =
+                    Some(crate::MonotonicClock::system().deadline_at(
+                        crate::MonotonicClock::system().now() - Duration::from_secs(1),
+                    ));
             }
             let child = parent.child(req).unwrap();
             let outcome = if matches!(stop, Stop::Unrelated) {

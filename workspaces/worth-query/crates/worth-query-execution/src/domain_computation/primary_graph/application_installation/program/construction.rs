@@ -67,7 +67,7 @@ pub fn in_memory_program_with_authorization_time_source<Schema, Program>(
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-    source: impl crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource,
+    source: impl Into<crate::domain_computation::runtime_time::WorthQueryRuntimeClock>,
 ) -> Result<
     WorthQueryProgramApplicationRuntime<Schema, Program>,
     WorthQueryApplicationPreparationDenial,
@@ -87,7 +87,7 @@ where
         build_identity,
         limits,
         initial_state,
-        Some(Box::new(source)),
+        Some(source.into()),
     )
 }
 
@@ -148,7 +148,7 @@ pub fn in_memory_rostered_program_with_authorization_time_source<Schema, Program
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-    source: impl crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource,
+    source: impl Into<crate::domain_computation::runtime_time::WorthQueryRuntimeClock>,
 ) -> Result<
     WorthQueryProgramApplicationRuntime<Schema, Program>,
     WorthQueryApplicationPreparationDenial,
@@ -168,7 +168,7 @@ where
         build_identity,
         limits,
         initial_state,
-        Some(Box::new(source)),
+        Some(source.into()),
     )
 }
 
@@ -185,7 +185,7 @@ pub(super) fn construct_program_with_optional_authorization_time_source<Schema, 
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
     authorization_time_source: Option<
-        Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
+        crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     >,
 ) -> Result<
     WorthQueryProgramApplicationRuntime<Schema, Program>,
@@ -235,7 +235,7 @@ pub(super) fn construct_program_in_advancement<Schema, Program>(
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
     authorization_time_source: Option<
-        Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
+        crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     >,
 ) -> Result<
     WorthQueryProgramApplicationRuntime<Schema, Program>,

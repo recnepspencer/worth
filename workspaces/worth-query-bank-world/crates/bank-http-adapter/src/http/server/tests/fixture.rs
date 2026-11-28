@@ -1,6 +1,6 @@
 use std::future::Future;
 use std::pin::Pin;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::Duration;
 
 use bank_domain::estate::{DeathNoticeStatus, EstateCaseId};
 use bank_domain::model::{
@@ -24,7 +24,7 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryRequestScope, WorthQueryValidatedExternalPrincipal,
 };
 use worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity;
-use worth_query_host::facade::primary_graph::WorthQueryRuntimeTimeSource;
+use worth_query_host::facade::primary_graph::WorthQueryRuntimeClock;
 
 use super::super::super::protocol::{BankHttpCredential, BankHttpDenial};
 use super::super::authentication::BankHttpApplicationAuthenticator;
@@ -111,7 +111,7 @@ impl CausalHttpApplication {
     pub(super) async fn death_notice_status(&self, estate: EstateCaseId) -> DeathNoticeStatus {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(5)),
+            Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(5)),
             cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let principal = self.authenticate(&scope).await;
         self.runtime
@@ -139,7 +139,9 @@ impl WorthQueryAuthenticationAdapter for CausalAuthenticationAdapter {
         _scope: &'a WorthQueryRequestScope,
     ) -> WorthQueryAuthenticationFuture<'a> {
         Box::pin(async move {
-            let now = SystemTime::now();
+            let now = worth_execution::time::system_time_sampler()
+                .system_time()
+                .unwrap();
             WorthQueryValidatedExternalPrincipal::new(
                 credential.identity,
                 audience(),
@@ -165,14 +167,14 @@ pub(in crate::http::server) fn application(account: AccountId) -> CausalHttpAppl
 
 pub(super) fn application_with_authorization_time(
     account: AccountId,
-    source: impl WorthQueryRuntimeTimeSource,
+    source: impl Into<WorthQueryRuntimeClock>,
 ) -> CausalHttpApplication {
     application_from_timed_seed(world_seed(account), source)
 }
 
 fn application_from_timed_seed(
     seed: BankWorldSeed,
-    source: impl WorthQueryRuntimeTimeSource,
+    source: impl Into<WorthQueryRuntimeClock>,
 ) -> CausalHttpApplication {
     let runtime = BankIdentityRuntime::install_world_with_authorization_time_source(seed, source)
         .expect("bank HTTP runtime should install with authorization time");

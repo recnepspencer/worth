@@ -36,7 +36,7 @@ fn canceled_foreign_branch_is_refused_and_the_next_good_request_delivers() {
         .unwrap();
     let cancellation = WorthQueryCancellationSource::new();
     let canceled_scope = WorthQueryRequestScope::new(
-        Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + std::time::Duration::from_secs(60)),
         cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     cancellation.cancel();
     let foreign_request = application

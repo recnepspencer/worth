@@ -29,7 +29,7 @@ impl PreparedBranchPublicationPreflight {
             ) {
                 return Some(RelationalPublicationOutcome::RequestStopped(stop));
             }
-            if std::time::Instant::now() >= deadline {
+            if worth_execution::MonotonicClock::system().now() >= deadline {
                 return Some(cutover_deadline_elapsed());
             }
         }

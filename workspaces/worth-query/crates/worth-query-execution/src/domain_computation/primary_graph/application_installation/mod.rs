@@ -136,7 +136,7 @@ pub(super) fn in_memory_with_contributions<Schema, Contributions>(
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
     authorization_time_source: Option<
-        Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
+        crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     >,
     program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
 ) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryApplicationPreparationDenial>

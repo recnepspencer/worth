@@ -137,8 +137,9 @@ fn destruction_panic_does_not_release_an_interruption() {
                 .child(LeaseRequest {
                     cancellation: cancellation.token(),
                     deadline: deadline.then(|| {
-                        crate::MonotonicClock::system()
-                            .deadline_at(Instant::now() - Duration::from_secs(1))
+                        crate::MonotonicClock::system().deadline_at(
+                            crate::MonotonicClock::system().now() - Duration::from_secs(1),
+                        )
                     }),
                     ..request(1, 1_000, 100)
                 })

@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use worth_foundational::facade::{HomeIdentity, HomeIncarnation};
 use worth_query_declaration::facade::{
@@ -166,12 +166,12 @@ where
     /// Polls until at least one request is serviced or `timeout` elapses, never blocking
     /// on partial/trickle frames past `timeout`.
     pub fn serve_once(&mut self, timeout: Duration) -> Result<bool, SharedAccessDenial> {
-        let deadline = Instant::now() + timeout;
+        let deadline = worth_execution::MonotonicClock::system().now() + timeout;
         loop {
             if self.serve_pending()? > 0 {
                 return Ok(true);
             }
-            let now = Instant::now();
+            let now = worth_execution::MonotonicClock::system().now();
             if now >= deadline {
                 return Ok(false);
             }

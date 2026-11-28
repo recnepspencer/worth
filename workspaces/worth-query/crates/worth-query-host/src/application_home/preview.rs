@@ -1,6 +1,6 @@
 //! Expected-source preview forks ("what-if" branches) with atomic adoption,
 //! custody-preserving continuation recovery, and active-branch close protection.
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use worth_execution::ExecutionAllocationPolicy;
 use worth_query_admission::facade::authenticated_principal::{
@@ -112,8 +112,8 @@ pub(super) fn continue_expected_recovery<'home, Schema: ApplicationSchema, Progr
 ) -> Result<WorthQueryExpectedProductBranch<'home, Schema>, WorthQueryPreviewForkDenial> {
     use WorthQueryExpectedProductBranchCreationContinuation as Continued;
     let graph = home.primary_graph();
-    let deadline = Instant::now() + FORK_CONTINUATION_TIMEOUT;
-    while Instant::now() < deadline {
+    let deadline = worth_execution::MonotonicClock::system().now() + FORK_CONTINUATION_TIMEOUT;
+    while worth_execution::MonotonicClock::system().now() < deadline {
         let mut slot = Some(recovery);
         let step = match graph.with_funded_application_completion(
             scope,

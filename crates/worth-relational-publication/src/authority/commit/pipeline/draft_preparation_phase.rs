@@ -14,7 +14,7 @@ pub(super) fn record_draft_preparation_phase(
     public_structural_summary: &contracts::transactions::data::outcomes::commit_summaries::CommitStructuralSummary,
 ) {
     commit_log.begin_phase(CommitPhase::DraftPreparation);
-    let phase_started = std::time::Instant::now();
+    let phase_started = worth_execution::MonotonicClock::system().now();
     record_preparation_counters(instrumentation, working_state, structural_summary);
     commit_log.record_structural_summary(public_structural_summary);
     commit_log.complete_phase(CommitPhase::DraftPreparation);

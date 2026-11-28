@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use bank_domain::estate::EstateAction;
 use bank_server::{
@@ -148,7 +148,7 @@ impl BankHttpRecoveryRegistry {
     }
 
     pub(super) fn purge_expired(&mut self, runtime: &BankIdentityRuntime) {
-        let now = Instant::now();
+        let now = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now();
         self.records.retain(|_, record| {
             if record.expires_at > now {
                 return true;

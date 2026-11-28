@@ -4,40 +4,11 @@ use super::super::super::super::protocol::{
 use super::super::fixture::application_with_authorization_time;
 use super::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
 use worth_query_host::facade::primary_graph::{
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,
-    WorthQueryExternalTransportOutcome, WorthQueryRuntimeTimeSource,
-    WorthQueryRuntimeTimeSourceDenial,
+    WorthQueryExternalTransportOutcome,
 };
-
-#[derive(Clone)]
-struct ControlledTime(
-    Arc<std::sync::atomic::AtomicU64>,
-    worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
-);
-
-impl ControlledTime {
-    fn at(seconds: u64) -> Self {
-        Self(Arc::new(std::sync::atomic::AtomicU64::new(seconds)), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
-    }
-
-    fn advance_to(&self, seconds: u64) {
-        self.0.store(seconds, Ordering::SeqCst);
-    }
-}
-
-impl WorthQueryRuntimeTimeSource for ControlledTime {
-    fn admission_clock(
-        &self,
-    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
-    {
-        self.1.clone()
-    }
-    fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
-        Ok(UNIX_EPOCH + Duration::from_secs(self.0.load(Ordering::SeqCst)))
-    }
-}
+use worth_query_host::facade::runtime::time::ControlledTime;
 
 struct TwiceUnresolvedTransport(AtomicUsize);
 
@@ -136,7 +107,7 @@ async fn unresolved_http_retry_keeps_the_same_token_until_completion() {
 
 #[tokio::test]
 async fn expired_query_recovery_replay_reports_operator_required() {
-    let time = ControlledTime::at(2_000);
+    let time = Arc::new(ControlledTime::at_unix_secs(2_000));
     let application =
         application_with_authorization_time(AccountId::new(100).unwrap(), time.clone());
     application
@@ -161,7 +132,7 @@ async fn expired_query_recovery_replay_reports_operator_required() {
         )
         .await,
     );
-    time.advance_to(5_601);
+    time.set_wall_unix_nanos(5_601 * 1_000_000_000);
     let replay = notify(&client, server.local_address(), &action, "expired-replay").await;
     let replay = close_notification(&client, server.local_address(), replay).await;
     assert!(matches!(
@@ -183,7 +154,7 @@ async fn expired_query_recovery_replay_reports_operator_required() {
 
 #[tokio::test]
 async fn an_expired_capability_cannot_disclose_a_retained_retry_token_on_close() {
-    let time = ControlledTime::at(2_000);
+    let time = Arc::new(ControlledTime::at_unix_secs(2_000));
     let application =
         super::super::fixture::expiring_notification::application_with_expiring_notification(
             AccountId::new(100).unwrap(),
@@ -211,7 +182,7 @@ async fn an_expired_capability_cannot_disclose_a_retained_retry_token_on_close()
             outcome: crate::http::protocol::BankHttpMutationOutcome::Recorded { .. }
         }
     ));
-    time.advance_to(2_101);
+    time.set_wall_unix_nanos(2_101 * 1_000_000_000);
     let refused = close_notification(&client, address, retry).await;
     assert!(
         matches!(refused, crate::http::protocol::BankHttpMutationOutcome::Refused { denial, .. }

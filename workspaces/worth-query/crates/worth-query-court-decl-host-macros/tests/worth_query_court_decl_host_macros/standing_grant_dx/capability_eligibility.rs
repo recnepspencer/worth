@@ -3,15 +3,14 @@
 //! admission refuses. The audit role needs a current standing grant and an
 //! enabled site assignment; each is withdrawn while the other stays intact,
 //! and both observers must agree on the outcome and its policy cause.
+use crate::time::{controlled_at, unix_nanos};
+
 use worth_query_host::facade::{
     eligibility::{
         WorthQueryAbilityEligibilityDenial, WorthQueryCapabilityEligibility as Verdict,
         WorthQueryEligibilityDenial,
     },
-    primary_graph::{
-        WorthQueryApplicationAuthorizationExplanationCause as Cause,
-        WorthQueryFixedRuntimeTimeSource,
-    },
+    primary_graph::WorthQueryApplicationAuthorizationExplanationCause as Cause,
 };
 
 use worth_query_host::facade::{WorthQueryRefusalCategory, WorthQueryUserFacingRefusal};
@@ -56,7 +55,7 @@ fn grant(home: &QmsHome, status: &str) {
 #[test]
 fn eligibility_and_admission_refuse_identically_when_either_half_is_withdrawn() {
     let path = temp_home_path("single-source");
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0));
+    let clock = controlled_at(at(2026, 11, 15, 12, 0));
     let home = home(&path, &clock);
     assert_eq!(agreed(&home, "alice", "north"), None);
     // bob is assigned but holds no grant; alice holds a south grant but no
@@ -81,7 +80,7 @@ fn eligibility_and_admission_refuse_identically_when_either_half_is_withdrawn() 
     assert_eq!(agreed(&home, "alice", "north"), None);
 
     // 3. Let the grant expire at the trusted instant; nothing is written.
-    clock.set(micros(november().valid_until, 1));
+    clock.set_wall_unix_nanos(unix_nanos(micros(november().valid_until, 1)));
     let expired = agreed(&home, "alice", "north");
     assert!(expired.is_some(), "an expired grant refuses both");
     drop(home);
@@ -89,14 +88,14 @@ fn eligibility_and_admission_refuse_identically_when_either_half_is_withdrawn() 
     // The same verdicts hold on durable state after reopening.
     let home = self::home(&path, &clock);
     assert_eq!(agreed(&home, "alice", "north"), expired);
-    clock.set(november().valid_until);
+    clock.set_wall_unix_nanos(unix_nanos(november().valid_until));
     assert_eq!(agreed(&home, "alice", "north"), None);
 }
 
 #[test]
 fn a_capability_roster_shares_the_ability_roster_disclosure_gate() {
     let path = temp_home_path("capability-roster");
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0));
+    let clock = controlled_at(at(2026, 11, 15, 12, 0));
     let home = home(&path, &clock);
     let staff = [identity("alice"), identity("bob"), identity("carol")];
     let roster = home
@@ -141,7 +140,7 @@ fn a_capability_roster_shares_the_ability_roster_disclosure_gate() {
 #[test]
 fn a_capability_paired_with_an_operation_it_is_not_installed_on_refuses_typed() {
     let path = temp_home_path("capability-not-installed");
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 15, 12, 0));
+    let clock = controlled_at(at(2026, 11, 15, 12, 0));
     let home = home(&path, &clock);
     // Review is installed on ReviewOp only; AuditOp carries the same request.
     let mismatched = SiteRole {

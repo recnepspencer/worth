@@ -49,7 +49,7 @@ pub(super) fn assemble_authoritative_publication_phase(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<CommitPhaseBacking<PublicationPreparation>, TransactionCommitError> {
     commit_log.begin_phase(CommitPhase::ArtifactAssembly);
-    let phase_started = std::time::Instant::now();
+    let phase_started = worth_execution::MonotonicClock::system().now();
     let mut effect = input.effect;
     let patch_fragments = std::mem::take(&mut effect.publication.patch_fragments);
     let lease = contracts::execution::request_custody::request_lease(execution);

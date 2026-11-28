@@ -5,7 +5,7 @@ use std::future::Future;
 use std::pin::pin;
 use std::sync::Arc;
 use std::task::{Context, Poll, Waker};
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 use worth_query_host::facade::{admission, declaration, domain, primary_graph};
 
@@ -246,7 +246,9 @@ impl admission::authenticated_principal::WorthQueryAuthenticationAdapter for Ide
         _scope: &'a admission::authenticated_principal::WorthQueryRequestScope,
     ) -> admission::authenticated_principal::WorthQueryAuthenticationFuture<'a> {
         Box::pin(async move {
-            let now = SystemTime::now();
+            let now = worth_execution::time::system_time_sampler()
+                .system_time()
+                .unwrap();
             admission::authenticated_principal::WorthQueryValidatedExternalPrincipal::new(
                 worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
                     IssuerExampleIssuer,

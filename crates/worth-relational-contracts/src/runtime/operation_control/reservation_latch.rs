@@ -1,5 +1,4 @@
 //! Latch of one caller-owned patch-position pause.
-use std::time::Instant;
 
 /// Release gate for the reservation-held pause. Opening never blocks, so an
 /// observer can free the publisher before it asserts, and waiting is bounded, so
@@ -24,13 +23,15 @@ impl PatchPositionReservationLatch {
     }
 
     pub(super) fn wait_for_open(&self, budget: std::time::Duration) {
-        let deadline = Instant::now() + budget;
+        let deadline = worth_execution::MonotonicClock::system().now() + budget;
         let mut opened = self
             .opened
             .lock()
             .unwrap_or_else(|error| error.into_inner());
         while !*opened {
-            let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
+            let Some(remaining) =
+                deadline.checked_duration_since(worth_execution::MonotonicClock::system().now())
+            else {
                 return;
             };
             opened = self

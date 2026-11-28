@@ -209,7 +209,9 @@ fn unresolved_redispatch_retains_the_handle_for_a_later_completed_attempt() {
 
 #[test]
 fn expired_handle_safe_retry_denies_before_transport() {
-    let authorization_time = AuthorizationTimeController::at_epoch_seconds(2_000);
+    let authorization_time = std::sync::Arc::new(
+        worth_query_host::facade::runtime::time::ControlledTime::at_unix_secs(2_000),
+    );
     let world = world::cross_gate_world_with_authorization_time(
         "safe-retry-expired",
         Some(authorization_time.clone()),
@@ -228,7 +230,7 @@ fn expired_handle_safe_retry_denies_before_transport() {
     let attempts_before = world.transport.attempts().len();
     let admissions_before = world.transport.admission_count();
 
-    authorization_time.advance_to_epoch_seconds(5_601);
+    authorization_time.set_wall_unix_nanos((5_601) * 1_000_000_000);
     let denied = world
         .fixture
         .world

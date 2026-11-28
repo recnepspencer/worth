@@ -23,7 +23,7 @@ pub(super) struct PreparedMemoryApplication<S: ApplicationSchemaComposition> {
     pub(super) build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     pub(super) conditional_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
     pub(super) authorization_time_source:
-        Option<Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>>,
+        Option<crate::domain_computation::runtime_time::WorthQueryRuntimeClock>,
     pub(super) admitted_program_support: Option<WorthQueryAdmittedProgramSupport<S>>,
     pub(super) activation: WorthQueryProgramActivationCell,
 }
@@ -41,7 +41,7 @@ pub(super) fn prepare_native<Schema, Contributions>(
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
     authorization_time_source: Option<
-        Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
+        crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     >,
     program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
 ) -> Result<
@@ -135,10 +135,8 @@ where
         );
     }
     graph.stamp_seed_admission(
-        match authorization_time_source.as_deref() {
-            Some(source) => {
-                crate::domain_computation::runtime_time::admission_timestamp_from(source)
-            }
+        match authorization_time_source.as_ref() {
+            Some(source) => source.admission_timestamp(),
             None => crate::domain_computation::runtime_time::WorthQueryRuntimeClock::system()
                 .admission_timestamp(),
         }

@@ -4,7 +4,7 @@ pub use super::super::super::document_retention_model::{
     workflow::{WorkflowAdvanceInput, WorkflowApprovalIntent},
 };
 pub use super::*;
-pub use std::time::{Duration, SystemTime};
+pub use std::time::Duration;
 pub use worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial;
 pub use worth_query_host::facade::{
     admission::authenticated_principal::*,
@@ -26,7 +26,9 @@ impl WorthQueryAuthenticationAdapter for SecondarySigner {
         _: &'a WorthQueryRequestScope,
     ) -> WorthQueryAuthenticationFuture<'a> {
         Box::pin(async {
-            let now = SystemTime::now();
+            let now = worth_execution::time::system_time_sampler()
+                .system_time()
+                .unwrap();
             WorthQueryValidatedExternalPrincipal::new(
                 secondary_signer_identity(),
                 WorthQueryAuthenticationAudience::of(DocumentRetentionHostAudience),

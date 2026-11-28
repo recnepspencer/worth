@@ -1,5 +1,5 @@
 //! Synchronous authentication of the local operating-system process.
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 use worth_query_declaration::facade::authentication::{
     WorthQueryAuthenticationAudienceIdentity, WorthQueryAuthenticationMethodIdentity,
@@ -118,7 +118,9 @@ impl WorthQueryLocalProcessPrincipal {
                 WorthQueryAuthenticationAdapterFailureKind::ProtocolViolation,
             )
         };
-        let validated_at = SystemTime::now();
+        let validated_at = worth_execution::time::system_time_sampler()
+            .system_time()
+            .map_err(|_| protocol_violation())?;
         let expires_at = validated_at
             .checked_add(self.lifetime)
             .ok_or_else(protocol_violation)?;

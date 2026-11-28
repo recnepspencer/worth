@@ -49,7 +49,7 @@ impl Default for CertificationAuthenticationClockSource {
 impl CertificationAuthenticationClockSource {
     pub fn new() -> Self {
         Self {
-            started: Instant::now(),
+            started: worth_execution::MonotonicClock::system().now(),
             sequence: Arc::new(AtomicU64::new(1)),
             offset_nanoseconds: Arc::new(AtomicU64::new(0)),
         }

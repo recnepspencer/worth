@@ -1,4 +1,4 @@
-pub use std::time::{Duration, Instant};
+pub use std::time::Duration;
 
 pub use bank_http_adapter::{AuthentikBankIdentity, AuthentikOidcFlowError};
 pub use worth_query_host::facade::admission::authenticated_principal::{
@@ -135,7 +135,7 @@ pub async fn prove_cancellation_denial(
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_execution::MonotonicClock::system().now() + Duration::from_secs(60)),
         cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let error = identity
         .finish_authorization(pending, callback_value, &scope)

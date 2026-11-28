@@ -1,38 +1,22 @@
 //! The production Directory Home, actual original operation and current selected admission.
 use super::*;
-use std::sync::atomic::AtomicU64;
-use worth_query_host::facade::primary_graph::{
-    WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
-};
+use worth_query_host::facade::runtime::time::{ControlledTime, system_time_sampler};
+
 type Admission =
     WorthQueryAdmittedApplicationOperation<DispatchHomeSchema, RecoverableNotice, u64, Account>;
 pub(super) struct Owners {
     pub location: std::path::PathBuf,
     pub handlers: Arc<AtomicUsize>,
-    pub now: Arc<AtomicU64>,
+    pub now: Arc<ControlledTime>,
 }
-struct Clock(Arc<AtomicU64>);
-impl WorthQueryRuntimeTimeSource for Clock {
-    fn admission_clock(
-        &self,
-    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
-    {
-        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()
-    }
-    fn current_time(&self) -> Result<std::time::SystemTime, WorthQueryRuntimeTimeSourceDenial> {
-        Ok(std::time::UNIX_EPOCH + Duration::from_secs(self.0.load(Ordering::SeqCst)))
-    }
-}
+
 impl Owners {
     pub fn new() -> Self {
         Self {
             location: dispatch::location(),
             handlers: Arc::new(AtomicUsize::new(0)),
-            now: Arc::new(AtomicU64::new(
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs(),
+            now: Arc::new(ControlledTime::at_unix_secs(
+                system_time_sampler().wall().unwrap().unix_nanos() / 1_000_000_000,
             )),
         }
     }
@@ -48,7 +32,7 @@ impl Owners {
             self.handlers.clone(),
             seed,
         )
-        .with_authorization_time_source(Clock(self.now.clone()));
+        .with_authorization_time_source(self.now.clone());
         let home = Arc::new(
             with_bootstrap_advancement_from_request(execution, |phase| {
                 request.open_in_advancement(&phase)

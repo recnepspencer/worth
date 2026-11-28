@@ -52,7 +52,7 @@ pub fn removed_parent_rechecks_current_read_cancellation_and_expiry() {
     assert!(denial.producer_connection_refusal().is_none());
     drop(denial);
     let expired = WorthQueryRequestScope::new(
-        Some(std::time::Instant::now() - std::time::Duration::from_secs(1)),
+        Some(worth_execution::MonotonicClock::system().now() - std::time::Duration::from_secs(1)),
         WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let [qm, qd, sm, sd] =
         std::array::from_fn(|_| journey::access(&application, &principal, &scope));

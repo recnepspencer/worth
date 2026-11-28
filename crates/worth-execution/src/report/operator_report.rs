@@ -208,6 +208,10 @@ fn project(error: &dyn Reportable, detail: DiagnosticDetail) -> OperatorReport {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "The allocation address detects cycles in one error source chain"
+)]
 fn project_chain(
     error: &dyn Reportable,
     detail: DiagnosticDetail,

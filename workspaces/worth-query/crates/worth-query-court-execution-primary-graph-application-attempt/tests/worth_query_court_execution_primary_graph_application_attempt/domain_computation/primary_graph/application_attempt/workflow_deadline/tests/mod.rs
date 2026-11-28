@@ -1,6 +1,4 @@
 use std::time::Duration;
-use std::time::SystemTime;
-use std::time::UNIX_EPOCH;
 
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenial;
     use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
@@ -8,27 +6,15 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationAtte
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_deadline::ensure_before;
 
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_deadline::start_deadline;
-    use worth_query_execution::facade::domain_computation::WorthQueryRuntimeTimeSource;
-    use worth_query_execution::facade::domain_computation::WorthQueryRuntimeTimeSourceDenial;
-
-/// Trusted time fixed at `Some(milliseconds)`, or unreadable at `None`.
-pub struct FixedTime(Option<u64>);
-
-impl WorthQueryRuntimeTimeSource for FixedTime {
-    fn admission_clock(
-        &self,
-    ) -> worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock {
-        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()
-    }
-    fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
-        self.0
-            .map(|milliseconds| UNIX_EPOCH + Duration::from_millis(milliseconds))
-            .ok_or(WorthQueryRuntimeTimeSourceDenial::Unavailable)
-    }
-}
 
 pub fn clock(now: Option<u64>) -> WorthQueryRuntimeClock {
-    WorthQueryRuntimeClock::from_source_for_test(FixedTime(now))
+    let source = std::sync::Arc::new(worth_execution::time::ControlledTime::at_unix_nanos(
+        now.unwrap_or(0) * 1_000_000,
+    ));
+    if now.is_none() {
+        source.step_wall_back(Duration::from_nanos(1));
+    }
+    source.into()
 }
 
 pub fn kind<Value>(

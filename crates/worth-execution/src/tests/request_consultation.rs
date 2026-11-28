@@ -30,7 +30,7 @@ fn consultation_reads_both_backings() {
             Err(WorkCeilingDenial::Stopped(KernelStop::Cancelled))
         );
     }
-    let expired = Instant::now() - Duration::from_secs(1);
+    let expired = crate::MonotonicClock::system().now() - Duration::from_secs(1);
     let serial = SerialRequest::from_policy(
         &policy,
         CancellationToken::new(),
@@ -131,9 +131,9 @@ fn consultation_reads_inherited_cancellation_before_a_backing_deadline() {
     let child = parent
         .clone()
         .with_cancellation(CancellationToken::new())
-        .with_deadline(Some(
-            crate::MonotonicClock::system().deadline_at(Instant::now() - Duration::from_secs(1)),
-        ));
+        .with_deadline(Some(crate::MonotonicClock::system().deadline_at(
+            crate::MonotonicClock::system().now() - Duration::from_secs(1),
+        )));
     let outcome = crate::backend::run_scope_within::<(), (), _>(
         None,
         0,

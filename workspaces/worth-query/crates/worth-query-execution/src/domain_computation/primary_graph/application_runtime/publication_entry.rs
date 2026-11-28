@@ -11,11 +11,10 @@ use std::sync::Arc;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 
-use crate::domain_computation::authorization::WorthQueryRuntimeClock;
 use crate::domain_computation::execution_runtime::{
     WorthQueryExecutionInstallationAuthority, WorthQueryExecutionRuntime,
 };
-use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource;
+use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 
 use super::super::conditional_operation::{
     WorthQueryConditionalApplicationRuntimeInstallation,
@@ -97,7 +96,7 @@ where
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
         conditional_evaluation_budget: SignalConditionalEvaluationBudget,
-        source: impl WorthQueryRuntimeTimeSource,
+        source: impl Into<WorthQueryRuntimeClock>,
     ) -> Result<
         WorthQueryConditionalApplicationRuntimeInstallation<Schema>,
         WorthQueryConditionalRuntimeInstallationDenial,
@@ -109,7 +108,7 @@ where
                 runtime,
                 authority,
                 installed_schema,
-                authorization_clock: WorthQueryRuntimeClock::from_source(source),
+                authorization_clock: source.into(),
                 fault_port: production_fault_port(),
                 conditional_evaluation_budget,
             },
@@ -129,7 +128,7 @@ where
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
         conditional_evaluation_budget: SignalConditionalEvaluationBudget,
-        source: impl WorthQueryRuntimeTimeSource,
+        source: impl Into<WorthQueryRuntimeClock>,
     ) -> Result<
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         WorthQueryPrimaryGraphInstallationDenial,
@@ -152,7 +151,7 @@ where
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
         conditional_evaluation_budget: SignalConditionalEvaluationBudget,
-        source: impl WorthQueryRuntimeTimeSource,
+        source: impl Into<WorthQueryRuntimeClock>,
         fault_port: Arc<dyn WorthQueryPrimaryGraphFaultPort>,
     ) -> Result<
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -165,7 +164,7 @@ where
                 runtime,
                 authority,
                 installed_schema,
-                authorization_clock: WorthQueryRuntimeClock::from_source(source),
+                authorization_clock: source.into(),
                 fault_port,
                 conditional_evaluation_budget,
             },

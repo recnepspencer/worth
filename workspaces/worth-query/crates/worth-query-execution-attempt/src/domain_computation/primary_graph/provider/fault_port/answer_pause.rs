@@ -1,7 +1,7 @@
 //! One-shot certification pause gate right after commit resolution and before
 //! the answer is returned to the caller.
 use std::sync::{Arc, Condvar, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 #[derive(Default)]
 struct State {
@@ -17,10 +17,12 @@ pub struct WorthQueryCommitAnswerPauseForTest {
 impl WorthQueryCommitAnswerPauseForTest {
     pub fn wait_until_reached(&self, timeout: Duration) -> bool {
         let (lock, condvar) = &*self.inner;
-        let deadline = Instant::now() + timeout;
+        let deadline = worth_execution::MonotonicClock::system().now() + timeout;
         let mut guard = lock.lock().unwrap_or_else(|p| p.into_inner());
         while !guard.reached {
-            let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
+            let Some(remaining) =
+                deadline.checked_duration_since(worth_execution::MonotonicClock::system().now())
+            else {
                 return false;
             };
             let (next, result) = condvar

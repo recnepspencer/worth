@@ -55,6 +55,24 @@ fn wall_underflow_refuses_until_the_clock_advances_back_into_range() {
 }
 
 #[test]
+fn a_wall_outage_preserves_monotonic_progress_and_issuance_sequence() {
+    let clock = Arc::new(ControlledTime::at_unix_nanos(42));
+    let sampler = TimeSampler::new(clock.clone());
+    let start = sampler.monotonic();
+    clock.set_wall_available(false);
+    clock.advance(Duration::from_nanos(3));
+    assert_eq!(sampler.sample(), Err(TimeUnavailable::WallUnavailable));
+    assert_eq!(
+        sampler.monotonic().checked_duration_since(start),
+        Ok(Duration::from_nanos(3)),
+    );
+    clock.set_wall_available(true);
+    let first = sampler.sample().unwrap();
+    assert_eq!(first.at().unix_nanos(), 45);
+    assert_eq!(first.seq(), 1);
+}
+
+#[test]
 fn distinct_clocks_using_one_logical_source_have_incomparable_boots() {
     let source = ClockSourceIdentity::new(12);
     let start = || TimeSampler::new(Arc::new(ControlledTime::with_source_identity(0, source)));

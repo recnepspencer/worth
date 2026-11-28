@@ -63,7 +63,7 @@ pub fn validate_execution_lifetimes<Schema, Principal, PrincipalIdentity>(
     if !application
         .runtime
         .authorization_clock
-        .admission_clock
+        .admission_clock()
         .same_clock(principal.clock())
         || !principal
             .clock()

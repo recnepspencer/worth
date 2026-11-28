@@ -38,7 +38,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_home_application_ser
 ) -> Result<HomeApplicationServices<Schema>, WorthQueryPrimaryGraphInstallationDenial> {
     if !bootstrap
         .product_world_resources
-        .admits_clock(&authorization_clock.admission_clock)
+        .admits_clock(authorization_clock.admission_clock())
     {
         return Err(WorthQueryPrimaryGraphInstallationDenial::new(
             WorthQueryPrimaryGraphInstallationDenialKind::AdmissionClockMismatch,

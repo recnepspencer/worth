@@ -1,7 +1,7 @@
 //! Owner-scoped rendezvous for publication/exclusive-snapshot lock-order races.
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{mpsc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 #[derive(Default)]
 pub(super) struct LifecycleOrderControl {
@@ -78,10 +78,10 @@ impl super::RelationalCanonicalPublicationRoutes {
         })
     }
     pub fn await_transition_lifecycle_contact_for_test(&self, prior: u64) {
-        let deadline = Instant::now() + Duration::from_secs(10);
+        let deadline = worth_execution::MonotonicClock::system().now() + Duration::from_secs(10);
         while self.transition_lifecycle_contacts_for_test() == prior {
             assert!(
-                Instant::now() < deadline,
+                worth_execution::MonotonicClock::system().now() < deadline,
                 "transition reached lifecycle admission"
             );
             std::thread::yield_now();

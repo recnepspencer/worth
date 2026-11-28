@@ -1,7 +1,7 @@
 //! Expired real authentication retains native adoption custody.
 pub use super::*;
 pub use std::num::NonZeroUsize;
-pub use std::time::{Duration, SystemTime};
+pub use std::time::Duration;
 pub use worth_query_host::facade::admission::authenticated_principal::*;
 pub use worth_query_host::facade::application_entry::{
     WorthQueryBranchSetAdoptionAdvanceDenial, WorthQueryBranchSetAdoptionProgress,
@@ -24,7 +24,9 @@ impl WorthQueryAuthenticationAdapter for ExpiringOperator {
         _: &'a WorthQueryRequestScope,
     ) -> WorthQueryAuthenticationFuture<'a> {
         Box::pin(async move {
-            let now = SystemTime::now();
+            let now = worth_execution::time::system_time_sampler()
+                .system_time()
+                .unwrap();
             WorthQueryValidatedExternalPrincipal::new(
                 worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::operator_identity(),
                 WorthQueryAuthenticationAudience::of(DocumentRetentionHostAudience),

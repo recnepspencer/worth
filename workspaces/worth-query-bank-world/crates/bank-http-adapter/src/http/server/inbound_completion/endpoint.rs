@@ -1,7 +1,7 @@
 //! Separate callback route: bounded bytes, fixed verifier, Query custody, ACK.
 
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use axum::body::Bytes;
 use axum::extract::State;
@@ -69,7 +69,7 @@ pub(in crate::http::server) async fn receive(
     };
     let cancellation = WorthQueryCancellationSource::new();
     let _cancel_on_drop = CancelOnDrop(cancellation.clone());
-    let deadline = Instant::now() + state.maximum_deadline;
+    let deadline = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + state.maximum_deadline;
     let wake = state.wake;
     let route = state.route;
     let task = tokio::task::spawn_blocking(move || {

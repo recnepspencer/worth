@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use bank_http_adapter::{
     AuthentikAuthorizationCallback, AuthentikOidcAdapter, AuthentikOidcCredential,
@@ -154,7 +154,7 @@ impl BankUserSession {
         };
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + self.maximum_deadline),
+            Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + self.maximum_deadline),
             cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         match self
             .oidc
@@ -178,7 +178,7 @@ impl BankUserSession {
         };
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + self.maximum_deadline),
+            Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + self.maximum_deadline),
             cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         if self
             .oidc

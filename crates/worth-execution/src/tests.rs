@@ -5,7 +5,7 @@ use std::{
         Mutex, OnceLock,
     },
     thread,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use worth_foundational::{
@@ -225,8 +225,10 @@ fn least_identity_failure_wins_after_later_partition_finishes() {
                 later_finished.store(true, Ordering::Release);
                 return Err(KernelFailure::Domain("later"));
             }
-            let limit = Instant::now() + Duration::from_secs(2);
-            while !later_finished.load(Ordering::Acquire) && Instant::now() < limit {
+            let limit = crate::MonotonicClock::system().now() + Duration::from_secs(2);
+            while !later_finished.load(Ordering::Acquire)
+                && crate::MonotonicClock::system().now() < limit
+            {
                 thread::yield_now();
             }
             assert!(
@@ -333,7 +335,7 @@ fn cancellation_and_deadline_stop_at_kernel_checkpoint() {
         .request_lease(LeaseRequest {
             deadline: Some(
                 crate::MonotonicClock::system()
-                    .deadline_at(Instant::now() - Duration::from_secs(1)),
+                    .deadline_at(crate::MonotonicClock::system().now() - Duration::from_secs(1)),
             ),
             ..accounted_request(1, 10)
         })

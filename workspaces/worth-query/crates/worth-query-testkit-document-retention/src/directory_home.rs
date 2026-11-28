@@ -8,7 +8,7 @@ pub use native_checkpoint::{
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::UNIX_EPOCH;
 use worth_execution::{CancellationToken, ExecutionRequest, ExecutionResourceLease, LeaseRequest};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -23,7 +23,9 @@ pub fn unique_directory(label: &str) -> PathBuf {
     std::env::temp_dir().join(format!(
         "worth-dir-{label}-{}-{}-{}",
         std::process::id(),
-        SystemTime::now()
+        worth_query_host::facade::runtime::time::system_time_sampler()
+            .system_time()
+            .unwrap()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos(),

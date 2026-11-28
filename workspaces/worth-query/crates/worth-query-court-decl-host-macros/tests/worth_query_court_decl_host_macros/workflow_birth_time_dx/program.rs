@@ -2,7 +2,9 @@
 //! actions and the `BornAtAdmission` invariant, opened over a held trusted
 //! clock. The owner holds every acme grant and, at globex, every grant but
 //! the subject read; the outsider holds the acme command grants only.
+
 use std::time::Duration;
+use worth_query_host::facade::runtime::time::ControlledTime;
 
 use worth_query_decl::facade::application_program::*;
 use worth_query_decl::facade::application_schema::fragment::Registration;
@@ -213,7 +215,7 @@ fn seed(
 /// Opens an in-memory Home, or creates or reopens the Directory Home at
 /// `directory`, whose trusted time is the held clock.
 pub fn open(
-    trusted_time: WorthQueryFixedRuntimeTimeSource,
+    trusted_time: std::sync::Arc<ControlledTime>,
     directory: Option<&std::path::Path>,
 ) -> BirthHome {
     let build = ApplicationBuildIdentity::parse("b1e70000-0000-4000-8000-b1e700000001").unwrap();

@@ -1,5 +1,4 @@
 use super::{leased_signal_support, summarize, version_ab, PerfRecord, ASPECT_A};
-use std::time::Instant;
 use worth_signal::facade::runtime::{mark_dirty_batch, RuntimePolicy};
 use worth_signal::facade::specialist::RunMode;
 use worth_signal::facade::{
@@ -59,12 +58,12 @@ pub(super) fn run_deep_chain(
         &BatchChange::from_sources([(chain[0], ASPECT_A)]),
     )
     .unwrap();
-    let plan_start = Instant::now();
+    let plan_start = worth_execution::MonotonicClock::system().now();
     let plan = graph
         .build_evaluation_plan(&chain, RunMode::Default)
         .unwrap();
     let planning_nanos = plan_start.elapsed().as_nanos();
-    let execute_start = Instant::now();
+    let execute_start = worth_execution::MonotonicClock::system().now();
     let lease = leased_signal_support::lease(host, workers);
     let report = graph
         .execute_prepared_plan_checked(
@@ -129,12 +128,12 @@ pub(super) fn run_wide_stage(
         &BatchChange::from_sources(requested.iter().copied().map(|node| (node, ASPECT_A))),
     )
     .unwrap();
-    let plan_start = Instant::now();
+    let plan_start = worth_execution::MonotonicClock::system().now();
     let plan = graph
         .build_evaluation_plan(&requested, RunMode::Default)
         .unwrap();
     let planning_nanos = plan_start.elapsed().as_nanos();
-    let execute_start = Instant::now();
+    let execute_start = worth_execution::MonotonicClock::system().now();
     let lease = leased_signal_support::lease(host, workers);
     let report = graph
         .execute_prepared_plan_checked(
@@ -242,12 +241,12 @@ pub(super) fn run_partition_tolerance(
         ),
     )
     .unwrap();
-    let plan_start = Instant::now();
+    let plan_start = worth_execution::MonotonicClock::system().now();
     let plan = graph
         .build_evaluation_plan(&[target], RunMode::Default)
         .unwrap();
     let planning_nanos = plan_start.elapsed().as_nanos();
-    let execute_start = Instant::now();
+    let execute_start = worth_execution::MonotonicClock::system().now();
     let execute_branches = branches.clone();
     let lease = leased_signal_support::lease(host, workers);
     let report = graph

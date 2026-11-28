@@ -118,7 +118,7 @@ impl BankApprovalClockSource {
         getrandom::fill(&mut identity)
             .map_err(|_| WorthQueryAuthenticationEventDenial::EntropyUnavailable)?;
         Ok(Self {
-            started: Instant::now(),
+            started: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now(),
             timeline: WorthQueryClockTimelineIdentity::declare(format!(
                 "bank-workflow-approval-{:032x}",
                 u128::from_be_bytes(identity)

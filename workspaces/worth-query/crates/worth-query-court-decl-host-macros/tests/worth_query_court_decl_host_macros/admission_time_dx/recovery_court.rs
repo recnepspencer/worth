@@ -1,11 +1,12 @@
 //! Reopening a Directory Home recovers commits that were judged at their own
 //! admission instant: recovery never re-judges them against a later clock.
+use crate::time::{controlled_at, unix_nanos};
 use std::path::PathBuf;
+use worth_query_host::facade::runtime::time::ControlledTime;
 
 use super::program::{open_directory, owner};
 use super::schema::StampLot;
 use super::{at, date, lot};
-use worth_query_host::facade::primary_graph::WorthQueryFixedRuntimeTimeSource;
 
 fn temp_home_path(label: &str) -> PathBuf {
     let mut path =
@@ -15,7 +16,7 @@ fn temp_home_path(label: &str) -> PathBuf {
     path
 }
 
-fn stamp_last_day(clock: &WorthQueryFixedRuntimeTimeSource, path: &std::path::Path, clean: bool) {
+fn stamp_last_day(clock: &std::sync::Arc<ControlledTime>, path: &std::path::Path, clean: bool) {
     let home = open_directory(path, clock.clone());
     let last_day = date(2026, 11, 26);
     home.session(owner(&home))
@@ -34,10 +35,10 @@ fn stamp_last_day(clock: &WorthQueryFixedRuntimeTimeSource, path: &std::path::Pa
 fn a_directory_home_reopens_its_stamped_commit_after_the_lot_has_expired() {
     for clean in [true, false] {
         let path = temp_home_path(if clean { "clean" } else { "dropped" });
-        let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 27, 1, 30));
+        let clock = controlled_at(at(2026, 11, 27, 1, 30));
         stamp_last_day(&clock, &path, clean);
         // Weeks later the lot is long expired, yet its commit was judged then.
-        clock.set(at(2026, 12, 15, 12, 0));
+        clock.set_wall_unix_nanos(unix_nanos(at(2026, 12, 15, 12, 0)));
         let home = open_directory(&path, clock.clone());
         let recovered = lot(&home);
         assert_eq!(recovered.expires_on, date(2026, 11, 26));

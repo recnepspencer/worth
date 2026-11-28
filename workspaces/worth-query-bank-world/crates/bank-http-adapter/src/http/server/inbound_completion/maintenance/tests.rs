@@ -204,7 +204,9 @@ async fn successful_intermediate_recovery_cues_next_ready_stage() {
 
 #[tokio::test]
 async fn new_terminal_schedules_one_expiry_cleanup_without_polling() {
-    let now = SystemTime::now()
+    let now = worth_execution::time::system_time_sampler()
+        .system_time()
+        .unwrap()
         .duration_since(UNIX_EPOCH)
         .expect("test wall clock follows Unix epoch")
         .as_secs();

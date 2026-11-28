@@ -1,6 +1,6 @@
 pub use super::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::UNIX_EPOCH;
 pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
@@ -11,7 +11,9 @@ fn unique_dir(label: &str) -> std::path::PathBuf {
     std::env::temp_dir().join(format!(
         "worth-host-{label}-{}-{}-{}",
         std::process::id(),
-        SystemTime::now()
+        worth_execution::time::system_time_sampler()
+            .system_time()
+            .unwrap()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos(),

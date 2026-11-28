@@ -9,6 +9,7 @@ description = "Real, separate-process, TCP-reachable Bank external service bound
 publish = false
 
 [dependencies]
+worth-execution.workspace = true
 worth-foundational.workspace = true
 serde.workspace = true
 serde_json.workspace = true

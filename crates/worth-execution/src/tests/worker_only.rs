@@ -209,7 +209,7 @@ fn worker_only_cancellation_and_deadline_refuse_before_callback() {
         if expired {
             declared.deadline = Some(
                 crate::MonotonicClock::system()
-                    .deadline_at(Instant::now() - Duration::from_secs(1)),
+                    .deadline_at(crate::MonotonicClock::system().now() - Duration::from_secs(1)),
             );
         } else {
             source.cancel();

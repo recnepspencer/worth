@@ -14,6 +14,7 @@ pub struct ControlledTime {
 
 struct ClockState {
     wall: i128,
+    wall_available: bool,
     ticks: u64,
     boot: BootEpoch,
 }
@@ -23,6 +24,26 @@ impl ControlledTime {
     pub fn at_unix_secs(unix_secs: u64) -> Self {
         let (boot, id) = next_boot();
         Self::start(unix_secs, ClockSourceIdentity::new(id), boot)
+    }
+
+    /// Starts at an exact Unix nanosecond with zero monotonic ticks.
+    pub fn at_unix_nanos(unix_nanos: u64) -> Self {
+        let clock = Self::at_unix_secs(0);
+        clock.set_wall_unix_nanos(unix_nanos);
+        clock
+    }
+
+    /// Sets the wall coordinate without changing monotonic time.
+    pub fn set_wall_unix_nanos(&self, unix_nanos: u64) {
+        self.state.lock().expect("controlled clock poisoned").wall = i128::from(unix_nanos);
+    }
+
+    /// Controls whether the adapter can report its wall coordinate.
+    pub fn set_wall_available(&self, available: bool) {
+        self.state
+            .lock()
+            .expect("controlled clock poisoned")
+            .wall_available = available;
     }
 
     /// Starts a fresh boot with an explicitly assigned logical wall source.
@@ -35,6 +56,7 @@ impl ControlledTime {
         Self {
             state: Mutex::new(ClockState {
                 wall: i128::from(unix_secs) * 1_000_000_000,
+                wall_available: true,
                 ticks: 0,
                 boot,
             }),
@@ -75,6 +97,9 @@ impl ControlledTime {
 impl RawClockAdapter for ControlledTime {
     fn read_wall_unix_nanos(&self) -> Result<u64, TimeUnavailable> {
         let state = self.state.lock().expect("controlled clock poisoned");
+        if !state.wall_available {
+            return Err(TimeUnavailable::WallUnavailable);
+        }
         u64::try_from(state.wall).map_err(|_| TimeUnavailable::WallOutOfRange)
     }
 

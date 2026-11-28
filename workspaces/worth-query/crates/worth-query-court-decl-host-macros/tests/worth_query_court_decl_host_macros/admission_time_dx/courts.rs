@@ -1,10 +1,11 @@
 //! Anti-backdating, the Mountain day boundary, single-stamp consistency and
 //! the system-clock default, each through a real Home commit.
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use crate::time::controlled_at;
+use std::time::Duration;
+use worth_query_host::facade::runtime::time::{ControlledTime, system_time_sampler};
 
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitDenialKind as Kind, WorthQueryApplicationUncommitted,
-    WorthQueryFixedRuntimeTimeSource,
 };
 use worth_query_host::facade::WorthQuerySessionRunDenial;
 
@@ -14,8 +15,8 @@ use super::schema::StampLot;
 use super::{assert_refusal, at, date, lot};
 
 /// 18:30 on 26 November in Mountain time, already 27 November in UTC.
-fn thanksgiving_evening() -> WorthQueryFixedRuntimeTimeSource {
-    WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 27, 1, 30))
+fn thanksgiving_evening() -> std::sync::Arc<ControlledTime> {
+    controlled_at(at(2026, 11, 27, 1, 30))
 }
 
 #[test]
@@ -65,10 +66,7 @@ fn a_lot_is_valid_through_its_last_mountain_day_and_refused_at_mountain_midnight
     assert_eq!(stamped.stamped_at, at(2026, 11, 27, 1, 30));
 
     // 07:00Z is 00:00 on the 27th in Mountain time.
-    clock
-        .advance(Duration::from_secs(5 * 3_600 + 30 * 60))
-        .expect("the advance is representable");
-    assert_eq!(clock.now(), at(2026, 11, 27, 7, 0));
+    clock.advance(Duration::from_secs(5 * 3_600 + 30 * 60));
     let denial = session
         .run(stamp(date(2026, 11, 27)))
         .expect_err("expired at Mountain midnight");
@@ -89,17 +87,14 @@ fn the_handler_and_the_invariant_observe_one_instant_that_moves_only_with_the_cl
     // The handler reads twice and the invariant refuses any stamp other than
     // its own reading, so a commit proves all three readings are one.
     session.run(stamp.clone()).expect("first stamp commits");
-    assert_eq!(lot(&home).stamped_at, clock.now());
-    clock
-        .advance(Duration::from_secs(3_600))
-        .expect("the advance is representable");
+    assert_eq!(lot(&home).stamped_at, at(2026, 11, 27, 1, 30));
+    clock.advance(Duration::from_secs(3_600));
     session.run(stamp).expect("second stamp commits");
     assert_eq!(lot(&home).stamped_at, at(2026, 11, 27, 2, 30));
 }
 
-fn micros(instant: SystemTime) -> i64 {
-    let elapsed = instant.duration_since(UNIX_EPOCH).expect("after the epoch");
-    i64::try_from(elapsed.as_micros()).expect("representable")
+fn sampled_wall_micros() -> i64 {
+    (system_time_sampler().wall().unwrap().unix_nanos() / 1_000) as i64
 }
 
 #[test]
@@ -109,7 +104,7 @@ fn a_default_home_admits_with_the_live_system_clock() {
     let zone = mountain();
     // A run straddling Mountain midnight retries once with the new day.
     let committed = (0..2).find_map(|_| {
-        let before = micros(SystemTime::now());
+        let before = sampled_wall_micros();
         let today = zone.today().expect("today in Mountain time");
         let stamp = StampLot {
             lot: 1,
@@ -117,7 +112,7 @@ fn a_default_home_admits_with_the_live_system_clock() {
             expires_on: date(2999, 12, 31),
         };
         let outcome = session.run(stamp);
-        let after = micros(SystemTime::now());
+        let after = sampled_wall_micros();
         outcome.ok().map(|_| (before, after))
     });
     let (before, after) = committed.expect("a default Home stamps live time");

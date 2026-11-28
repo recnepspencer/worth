@@ -23,7 +23,9 @@ impl WorthQueryAuthenticationAdapter for ReviewAdapter {
         _: &'a WorthQueryRequestScope,
     ) -> WorthQueryAuthenticationFuture<'a> {
         Box::pin(async move {
-            let now = SystemTime::now();
+            let now = worth_query_host::facade::runtime::time::system_time_sampler()
+                .system_time()
+                .unwrap();
             WorthQueryValidatedExternalPrincipal::new(
                 if granted {
                     reviewer_identity()

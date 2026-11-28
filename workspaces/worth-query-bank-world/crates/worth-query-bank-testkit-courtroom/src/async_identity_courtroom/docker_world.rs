@@ -4,7 +4,7 @@ pub mod blueprint;
 pub mod tls;
 pub use std::path::{Path, PathBuf};
 pub use std::process::{Command, Output};
-pub use std::time::{Duration, Instant, SystemTime};
+pub use std::time::{Duration, SystemTime};
 
 pub use super::fixture::IdentityFixture;
 
@@ -82,7 +82,7 @@ impl DockerIdentityWorld {
             )
             .build()
             .map_err(|error| format!("readiness client failed: {error}"))?;
-        let deadline = Instant::now() + Duration::from_secs(360);
+        let deadline = worth_execution::MonotonicClock::system().now() + Duration::from_secs(360);
         loop {
             let discovery_ready = endpoint_ready(&client, &endpoints.discovery_url()).await;
             let alternate_discovery_ready = endpoint_ready(
@@ -94,7 +94,7 @@ impl DockerIdentityWorld {
             if discovery_ready && alternate_discovery_ready && selenium_ready {
                 return Ok(endpoints);
             }
-            if Instant::now() >= deadline {
+            if worth_execution::MonotonicClock::system().now() >= deadline {
                 return Err(
                     "Authentik or Selenium did not become ready before deadline".to_string()
                 );
@@ -261,7 +261,9 @@ pub fn verified_courtroom_directory(path: &Path) -> bool {
 }
 
 pub fn unique_suffix() -> String {
-    let nanos = SystemTime::now()
+    let nanos = worth_execution::time::system_time_sampler()
+        .system_time()
+        .unwrap()
         .duration_since(SystemTime::UNIX_EPOCH)
         .map_or(0, |duration| duration.as_nanos());
     format!("{}{}", std::process::id(), nanos)

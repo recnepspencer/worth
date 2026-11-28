@@ -3,7 +3,7 @@
 use std::fmt;
 use std::io;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -66,7 +66,7 @@ impl BankRailCompletionContinuation {
         reason = "async-runtime async-blocking=1: Bank process and HTTP transport own this Tokio or dedicated process executor thread."
     )]
     pub async fn continue_once(&self) -> BankRailCloseAssessment {
-        let Some(deadline) = Instant::now().checked_add(self.maximum_deadline) else {
+        let Some(deadline) = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now().checked_add(self.maximum_deadline) else {
             return BankRailCloseAssessment::Unavailable;
         };
         let route = Arc::clone(&self.route);

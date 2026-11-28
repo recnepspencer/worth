@@ -17,7 +17,8 @@ pub(super) fn require<'a, 'b>(
                 .map_err(CanonicalPublicationRecordError::ReservationWaitStopped)?;
         }
     }
-    if deadline.is_some_and(|deadline| std::time::Instant::now() >= deadline) {
+    if deadline.is_some_and(|deadline| worth_execution::MonotonicClock::system().now() >= deadline)
+    {
         return Err(CanonicalPublicationRecordError::CutoverDeadlineElapsed);
     }
     if allow_effect.is_some_and(|allow| !allow()) {
@@ -46,7 +47,7 @@ pub mod tests {
     #[test]
     fn frame_preparation_rechecks_deadline_before_position_admission() {
         let prepared = std::cell::Cell::new(false);
-        let deadline = std::time::Instant::now();
+        let deadline = worth_execution::MonotonicClock::system().now();
         let result = prepare_frame(
             PatchPositionReservationAdmission::DeferWhenHeld,
             Some(deadline),

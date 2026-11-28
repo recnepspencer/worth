@@ -33,7 +33,7 @@ pub(crate) async fn validate_credential(
         result => result,
     }
     .map_err(LocalValidationError::failure)?;
-    require_unexpired(local.expires_at, SystemTime::now())?;
+    require_unexpired(local.expires_at, sampled_wall()?)?;
 
     let introspection = {
         let client = adapter.client.read().await;
@@ -47,7 +47,7 @@ pub(crate) async fn validate_credential(
                 failure(WorthQueryAuthenticationAdapterFailureKind::DependencyUnavailable)
             })?
     };
-    let validated_at = SystemTime::now();
+    let validated_at = sampled_wall()?;
     require_unexpired(local.expires_at, validated_at)?;
     validate_introspection(adapter, &local, &introspection)?;
     if let Some(introspection_expiry) = introspection.exp().map(SystemTime::from) {
@@ -71,6 +71,12 @@ pub(crate) async fn validate_credential(
         local.attributes,
     )
     .map_err(|_| failure(WorthQueryAuthenticationAdapterFailureKind::ProtocolViolation))
+}
+
+fn sampled_wall() -> Result<SystemTime, WorthQueryAuthenticationAdapterFailure> {
+    worth_execution::time::system_time_sampler()
+        .system_time()
+        .map_err(|_| failure(WorthQueryAuthenticationAdapterFailureKind::DependencyUnavailable))
 }
 
 fn require_unexpired(

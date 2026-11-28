@@ -1,6 +1,6 @@
 //! Repeated public components at exact 100/1k/10k expanded-node sizes.
 
-pub use std::time::{Duration, Instant};
+pub use std::time::Duration;
 
 pub use worth_query_host::facade::{
     admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
@@ -143,7 +143,7 @@ pub fn qualify(occurrences: u16, key: u64) -> (u64, u64) {
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    let started_at = Instant::now();
+    let started_at = worth_execution::MonotonicClock::system().now();
     let authored = component_definition(occurrences);
     let authored_ms = started_at.elapsed().as_millis();
     let validated = authored
@@ -190,7 +190,7 @@ pub fn qualify(occurrences: u16, key: u64) -> (u64, u64) {
         "repeated component nodes={nodes} ordinary_draft_ms={}",
         started_at.elapsed().as_millis()
     );
-    let publication_started_at = Instant::now();
+    let publication_started_at = worth_execution::MonotonicClock::system().now();
     let publication = draft
         .publish(WorkflowDefinitionExpectedPredecessor::Absent)
         .idempotency(&key)
@@ -224,7 +224,7 @@ pub fn qualify(occurrences: u16, key: u64) -> (u64, u64) {
     );
     let through_publication_ms = started_at.elapsed().as_millis();
     let before = runtime.workflow_compilation_reuse_counters();
-    let cold_started_at = Instant::now();
+    let cold_started_at = worth_execution::MonotonicClock::system().now();
     assert!(matches!(
         start_instance(&application, published.definition().clone(), key + 1)
             .expect("cold start fits its own operation budget"),

@@ -1,14 +1,15 @@
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::time::SystemTime;
-
-use worth_query_execution::facade::domain_computation::WorthQueryRuntimeTimeSource;
-use worth_query_execution::facade::domain_computation::WorthQueryRuntimeTimeSourceDenial;
+use std::time::{SystemTime, UNIX_EPOCH};
+use worth_execution::time::{system_time_sampler, ControlledTime, RawClockAdapter};
+use worth_foundational::time::{BootEpoch, ClockSourceIdentity, TimeUnavailable};
+use worth_query_execution::facade::primary_graph::WorthQueryRuntimeClock;
 
 #[derive(Clone)]
 pub struct AuthorizationTimeController {
     pub state: Arc<Mutex<AuthorizationTimeState>>,
+    timeline: Arc<ControlledTime>,
     pub admission_clock:
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
 }
@@ -48,29 +49,49 @@ impl AuthorizationTimeController {
     }
 }
 
-impl WorthQueryRuntimeTimeSource for AuthorizationTimeController {
-    fn admission_clock(
-        &self,
-    ) -> worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock {
-        self.admission_clock.clone()
+impl RawClockAdapter for AuthorizationTimeController {
+    fn read_monotonic_ticks(&self) -> (u64, BootEpoch) {
+        self.timeline.read_monotonic_ticks()
     }
-    fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
+
+    fn source_identity(&self) -> ClockSourceIdentity {
+        self.timeline.source_identity()
+    }
+
+    fn read_wall_unix_nanos(&self) -> Result<u64, TimeUnavailable> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        match &mut *state {
-            AuthorizationTimeState::System => Ok(SystemTime::now()),
+        let wall = match &mut *state {
+            AuthorizationTimeState::System => {
+                return system_time_sampler().wall().map(|at| at.unix_nanos())
+            }
             AuthorizationTimeState::Held(sample) => Ok(*sample),
-            AuthorizationTimeState::Scripted(samples) => samples
-                .pop_front()
-                .ok_or(WorthQueryRuntimeTimeSourceDenial::Unavailable),
-        }
+            AuthorizationTimeState::Scripted(samples) => {
+                samples.pop_front().ok_or(TimeUnavailable::WallUnavailable)
+            }
+        }?;
+        wall.duration_since(UNIX_EPOCH)
+            .ok()
+            .and_then(|delta| u64::try_from(delta.as_nanos()).ok())
+            .ok_or(TimeUnavailable::WallOutOfRange)
     }
 }
 
 impl Default for AuthorizationTimeController {
     fn default() -> Self {
-        Self { state: Default::default(), admission_clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system() }
+        Self {
+            state: Default::default(),
+            timeline: Arc::new(ControlledTime::at_unix_secs(0)),
+            admission_clock: worth_execution::MonotonicClock::system(),
+        }
+    }
+}
+
+impl From<AuthorizationTimeController> for WorthQueryRuntimeClock {
+    fn from(source: AuthorizationTimeController) -> Self {
+        let clock = source.admission_clock.clone();
+        Self::from(Arc::new(source)).with_admission_clock(clock)
     }
 }

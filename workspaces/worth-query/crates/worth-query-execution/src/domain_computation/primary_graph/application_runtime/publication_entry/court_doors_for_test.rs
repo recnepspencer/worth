@@ -13,7 +13,7 @@ where
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
         conditional_evaluation_budget: SignalConditionalEvaluationBudget,
-        source: impl WorthQueryRuntimeTimeSource,
+        source: impl Into<WorthQueryRuntimeClock>,
         fault_port: Arc<dyn WorthQueryPrimaryGraphFaultPort>,
     ) -> Result<
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,

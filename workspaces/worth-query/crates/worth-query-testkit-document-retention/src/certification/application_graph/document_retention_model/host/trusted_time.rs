@@ -1,16 +1,13 @@
 //! A P0-initial host whose trusted time the certification sets, so deadline
 //! law is exercised without waiting on the wall clock.
 
-pub use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-pub use std::sync::Arc;
-pub use std::time::{Duration, SystemTime};
+use std::{sync::Arc, time::Duration};
 pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
+use worth_query_host::facade::primary_graph::WorthQueryRuntimeClock;
+use worth_query_host::facade::runtime::time::{system_time_sampler, ControlledTime};
 
 pub use worth_query_host::facade::application_installation::{
     in_memory_rostered_program_with_authorization_time_source, WorthQueryApplicationProgramRoster,
-};
-pub use worth_query_host::facade::primary_graph::{
-    WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
 };
 
 pub use super::super::{
@@ -23,11 +20,9 @@ pub use super::{host_limits, seed_host, DocumentRetentionRuntime};
 /// be made unreadable.
 #[derive(Clone)]
 pub struct CertificationTrustedTime {
-    pub origin: SystemTime,
+    control: Arc<ControlledTime>,
     pub admission_clock:
         worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
-    pub offset_milliseconds: Arc<AtomicU64>,
-    pub unavailable: Arc<AtomicBool>,
 }
 
 impl Default for CertificationTrustedTime {
@@ -41,43 +36,27 @@ impl CertificationTrustedTime {
         admission_clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
     ) -> Self {
         Self {
-            origin: SystemTime::now(),
+            control: Arc::new(ControlledTime::at_unix_nanos(
+                system_time_sampler().wall().unwrap().unix_nanos(),
+            )),
             admission_clock,
-            offset_milliseconds: Arc::new(AtomicU64::new(0)),
-            unavailable: Arc::new(AtomicBool::new(false)),
         }
     }
 
     pub fn advance(&self, duration: Duration) {
-        let milliseconds = u64::try_from(duration.as_millis()).expect("finite test advance");
-        self.offset_milliseconds
-            .fetch_add(milliseconds, Ordering::SeqCst);
+        self.control.advance(duration);
     }
 
     pub fn set_unavailable(&self, unavailable: bool) {
-        self.unavailable.store(unavailable, Ordering::SeqCst);
-    }
-}
-
-impl WorthQueryRuntimeTimeSource for CertificationTrustedTime {
-    fn admission_clock(
-        &self,
-    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
-    {
-        self.admission_clock.clone()
-    }
-    fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
-        if self.unavailable.load(Ordering::SeqCst) {
-            return Err(WorthQueryRuntimeTimeSourceDenial::Unavailable);
-        }
-        Ok(self.origin + Duration::from_millis(self.offset_milliseconds.load(Ordering::SeqCst)))
+        self.control.set_wall_available(!unavailable);
     }
 }
 
 /// Publishes the P0-initial host with P1 rostered, on the given trusted time.
 pub fn publish_on_first_program_with_trusted_time(
-    time: impl WorthQueryRuntimeTimeSource + 'static,
+    time: impl Into<WorthQueryRuntimeClock>,
 ) -> DocumentRetentionRuntime<RetentionProgramP0> {
+    let time = time.into();
     let initial = validated_first_program();
     let roster = super::with_lifecycle_programs(
         WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
@@ -90,9 +69,15 @@ pub fn publish_on_first_program_with_trusted_time(
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(time.admission_clock()),
+        host_limits(time.admission_clock().clone()),
         seed_host,
         time,
     )
     .expect("the trusted-time host must install")
+}
+
+impl From<CertificationTrustedTime> for WorthQueryRuntimeClock {
+    fn from(source: CertificationTrustedTime) -> Self {
+        Self::from(source.control).with_admission_clock(source.admission_clock)
+    }
 }

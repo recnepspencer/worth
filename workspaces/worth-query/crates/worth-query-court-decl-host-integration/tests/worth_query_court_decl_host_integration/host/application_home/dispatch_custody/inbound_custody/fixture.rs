@@ -2,41 +2,26 @@
 use super::*;
 use dispatch::{inbound_action::InboundNoticeIntent, inbound_source as sources};
 use std::collections::BTreeMap;
-use std::sync::atomic::AtomicU64;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_host::facade::primary_graph::{
     WorthQueryInboundOccurrenceClaims, WorthQueryInboundOccurrenceVerifier,
     WorthQueryInboundVerificationDenial, WorthQueryInboundVerifierHandle,
-    WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
 };
+use worth_query_host::facade::runtime::time::{ControlledTime, RawClockAdapter, system_time_sampler};
 
 pub(super) struct Owners {
     pub location: std::path::PathBuf,
     pub handlers: Arc<AtomicUsize>,
-    pub now: Arc<AtomicU64>,
+    pub now: Arc<ControlledTime>,
 }
-struct Clock(Arc<AtomicU64>);
-impl WorthQueryRuntimeTimeSource for Clock {
-    fn admission_clock(
-        &self,
-    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
-    {
-        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()
-    }
-    fn current_time(&self) -> Result<std::time::SystemTime, WorthQueryRuntimeTimeSourceDenial> {
-        Ok(std::time::UNIX_EPOCH + Duration::from_secs(self.0.load(Ordering::SeqCst)))
-    }
-}
+
 impl Owners {
     pub fn new() -> Self {
         Self {
             location: dispatch::location(),
             handlers: Arc::new(AtomicUsize::new(0)),
-            now: Arc::new(AtomicU64::new(
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs(),
+            now: Arc::new(ControlledTime::at_unix_secs(
+                system_time_sampler().wall().unwrap().unix_nanos() / 1_000_000_000,
             )),
         }
     }
@@ -52,7 +37,7 @@ impl Owners {
             self.handlers.clone(),
             seed,
         )
-        .with_authorization_time_source(Clock(self.now.clone()));
+        .with_authorization_time_source(self.now.clone());
         let home = with_bootstrap_advancement_from_request(execution, |phase| {
             request.open_in_advancement(&phase)
         })
@@ -72,7 +57,7 @@ impl Owners {
         (home, rail)
     }
     pub fn expire_messages(&self) {
-        self.now.fetch_add(31, Ordering::SeqCst);
+        self.now.advance(Duration::from_secs(31));
     }
 }
 
@@ -159,7 +144,7 @@ impl Route {
         nonce: u8,
         validity: u64,
     ) -> Vec<u8> {
-        let now = owners.now.load(Ordering::SeqCst);
+        let now = owners.now.read_wall_unix_nanos().unwrap() / 1_000_000_000;
         let mut claims = WorthQueryInboundOccurrenceClaims {
             audience: self.verifier.audience.clone(),
             source_identity: effect.source.clone(),

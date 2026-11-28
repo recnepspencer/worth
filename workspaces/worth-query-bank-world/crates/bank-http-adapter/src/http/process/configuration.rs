@@ -2,7 +2,7 @@
     clippy::result_large_err,
     reason = "A refused process configuration hands back the original Home owner without allocating on failure"
 )]
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use std::{net::SocketAddr, sync::Arc};
 
 use serde::Deserialize;
@@ -76,7 +76,7 @@ impl BankHttpProcessConfiguration {
             .map_err(|_| BankHttpProcessConfigurationError::World)?;
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(300)),
+            Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(300)),
             cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let identity = install_identity(
             oidc,

@@ -142,9 +142,10 @@ where
             Ok(())
         },
     )
-    .with_authorization_time_source(super::admission_time::FixtureAdmissionTime(
-        authentication::WorthQueryAdmissionClock::system(),
-    ))
+    .with_authorization_time_source(
+        worth_query_host::facade::primary_graph::WorthQueryRuntimeClock::system()
+            .with_admission_clock(authentication::WorthQueryAdmissionClock::system()),
+    )
     .open_in_advancement(phase)
     .map_err(Box::new)?;
     Ok(DirectoryApp::wrap(home, directory))
@@ -265,7 +266,8 @@ pub(in crate::checkpoint_recovery) fn install_on_clock(
             seed_cycle(graph);
             Ok(())
         },
-        super::admission_time::FixtureAdmissionTime(clock),
+        worth_query_host::facade::primary_graph::WorthQueryRuntimeClock::system()
+            .with_admission_clock(clock),
     )
     .expect("the checkpoint source installs on its owned clock")
 }
@@ -327,9 +329,8 @@ where
             seed(graph);
             Ok(())
         },
-        super::admission_time::FixtureAdmissionTime(
-            authentication::WorthQueryAdmissionClock::system(),
-        ),
+        worth_query_host::facade::primary_graph::WorthQueryRuntimeClock::system()
+            .with_admission_clock(authentication::WorthQueryAdmissionClock::system()),
     )
     .map_err(Box::new)
 }

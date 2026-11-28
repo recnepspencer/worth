@@ -1,6 +1,7 @@
 //! The dated-lot program: the stamping action plus the `TrustedDates`
 //! invariant, opened over a held trusted clock or the default system clock.
 use std::time::Duration;
+use worth_query_host::facade::runtime::time::ControlledTime;
 
 use worth_query_decl::facade::application_program::*;
 use worth_query_decl::facade::application_schema::fragment::Registration;
@@ -142,7 +143,7 @@ fn seed(
 }
 
 fn config(
-    trusted_time: Option<impl WorthQueryRuntimeTimeSource>,
+    trusted_time: Option<impl Into<WorthQueryRuntimeClock>>,
 ) -> WorthQueryHomeConfig<'static, DatedSchema, DatedProgram> {
     let build = ApplicationBuildIdentity::parse("ad0117ed-0000-4000-8000-ad0117ed0000").unwrap();
     let config = WorthQueryHomeConfig::new(build, (DatedRuntime::new(StampLotHandler),))
@@ -154,13 +155,13 @@ fn config(
 }
 
 /// Opens an in-memory Home; `trusted_time` replaces the default system clock.
-pub fn open(trusted_time: Option<WorthQueryFixedRuntimeTimeSource>) -> DatedHome {
+pub fn open(trusted_time: Option<std::sync::Arc<ControlledTime>>) -> DatedHome {
     WorthQueryApplicationHome::open_memory(config(trusted_time))
         .unwrap_or_else(|denial| panic!("dated Home opens: {denial}"))
 }
 
 /// Opens an in-memory Home over any trusted runtime time source.
-pub fn open_with(trusted_time: impl WorthQueryRuntimeTimeSource) -> DatedHome {
+pub fn open_with(trusted_time: impl Into<WorthQueryRuntimeClock>) -> DatedHome {
     WorthQueryApplicationHome::open_memory(config(Some(trusted_time)))
         .unwrap_or_else(|denial| panic!("dated Home opens: {denial}"))
 }
@@ -168,7 +169,7 @@ pub fn open_with(trusted_time: impl WorthQueryRuntimeTimeSource) -> DatedHome {
 /// Opens or reopens a Directory Home over a held trusted clock.
 pub fn open_directory(
     path: &std::path::Path,
-    trusted_time: WorthQueryFixedRuntimeTimeSource,
+    trusted_time: std::sync::Arc<ControlledTime>,
 ) -> DatedHome {
     WorthQueryApplicationHome::open_directory(path, config(Some(trusted_time)))
         .unwrap_or_else(|denial| panic!("dated Directory Home opens: {denial}"))

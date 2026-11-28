@@ -354,7 +354,7 @@ fn validate_principal_clock(
 ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
     if runtime
         .authorization_clock
-        .admission_clock
+        .admission_clock()
         .same_clock(principal)
         && principal.same_clock(request.clock())
     {

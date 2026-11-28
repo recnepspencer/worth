@@ -1,6 +1,5 @@
 //! World-side replay lookup remains local as recorded history grows.
 use super::*;
-use std::time::Instant;
 
 pub(super) const REPLAY_SAMPLES: usize = 15;
 
@@ -56,7 +55,7 @@ pub(super) fn timed_replay(
         })
         .without_source();
     let key = 0x5e92_0000;
-    let started = Instant::now();
+    let started = worth_execution::MonotonicClock::system().now();
     let (replay, work) = request
         .idempotency(&key)
         .execute_in_program_report(host, Policy::Execution(stopped))

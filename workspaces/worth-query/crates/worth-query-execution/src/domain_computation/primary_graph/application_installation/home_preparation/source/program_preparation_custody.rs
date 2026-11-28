@@ -131,14 +131,12 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
         // assembly::prepare already moved these exact registries into bootstrap.
         drop((handlers, resources, managed_indexes));
         let clock = match authorization_time_source {
-            Some(source) => {
-                crate::domain_computation::authorization::WorthQueryRuntimeClock::from_source(
-                    source,
-                )
-            }
+            Some(source) => source,
             None => crate::domain_computation::authorization::WorthQueryRuntimeClock::system(),
         };
-        bootstrap.stamp_seed_admission(clock.admission_timestamp().ok());
+        if bootstrap.program_activation_seed.is_some() {
+            bootstrap.stamp_seed_admission(clock.admission_timestamp().ok());
+        }
         Box::new(Self {
             core: ProgramCore {
                 program,

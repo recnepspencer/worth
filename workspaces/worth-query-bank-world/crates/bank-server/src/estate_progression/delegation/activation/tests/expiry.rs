@@ -1,4 +1,4 @@
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, UNIX_EPOCH};
 
 use super::*;
 use crate::estate_capability_admission::fixture::{delegation_world_with_parent_spec, GrantSpec};
@@ -53,7 +53,9 @@ fn parent_expiry_after_activation_materialization_denies_final_commit() {
 }
 
 fn epoch_seconds() -> u64 {
-    SystemTime::now()
+    worth_query_host::facade::runtime::time::system_time_sampler()
+        .system_time()
+        .unwrap()
         .duration_since(UNIX_EPOCH)
         .expect("test time follows the Unix epoch")
         .as_secs()

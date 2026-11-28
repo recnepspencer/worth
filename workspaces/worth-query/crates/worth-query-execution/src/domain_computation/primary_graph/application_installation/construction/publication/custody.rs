@@ -23,7 +23,7 @@ pub(super) struct PlainMemoryService<S: ApplicationSchemaComposition> {
     pub(super) installed: WorthQueryInstalledApplicationSchema<S>,
     pub(super) conditional_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
     pub(super) authorization_time_source:
-        Option<Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>>,
+        Option<crate::domain_computation::runtime_time::WorthQueryRuntimeClock>,
 }
 pub(super) enum MemoryServiceRoute<S: ApplicationSchemaComposition> {
     Plain(BootstrapPublicationStorage<PlainMemoryService<S>>),

@@ -1,4 +1,4 @@
-use super::super::fixture::{emergency_request_world_at, AuthorizationTimeController};
+use super::super::fixture::emergency_request_world_at;
 use super::*;
 use crate::{
     BankAuthorizationDenialKind, BankEstateElevationApprovalOutcome,
@@ -7,7 +7,9 @@ use crate::{
 
 #[test]
 fn lifecycle_replays_through_query_after_each_prior_transition() {
-    let authorization_time = AuthorizationTimeController::at_epoch_seconds(100);
+    let authorization_time = std::sync::Arc::new(
+        worth_query_host::facade::runtime::time::ControlledTime::at_unix_secs(100),
+    );
     let fixture = emergency_request_world_at(
         "estate-approval-entry-replay",
         GrantSpec::emergency_view(),
@@ -133,7 +135,7 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
         .clone();
     let original_close_data =
         fixture.lifecycle_original(&approver, close_action, &close_key, &scope);
-    authorization_time.advance_to_epoch_seconds(101);
+    authorization_time.set_wall_unix_nanos((101) * 1_000_000_000);
     let close_data = fixture.lifecycle_original(&approver, close_action, &close_key, &scope);
     assert_eq!(
         close_data.changed_record_count(),
@@ -192,7 +194,7 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
     let original_review_data =
         fixture.lifecycle_original(&reviewer, review_action, &review_key, &scope);
     let first_reviewed_at = reviewed.reviewed_at().clone();
-    authorization_time.advance_to_epoch_seconds(102);
+    authorization_time.set_wall_unix_nanos((102) * 1_000_000_000);
     let review_data = fixture.lifecycle_original(&reviewer, review_action, &review_key, &scope);
     assert_eq!(review_data, original_review_data);
     super::lifecycle_observation::assert_selected_original(
@@ -262,7 +264,7 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
         .unwrap()
         .selected_commit()
         .clone();
-    authorization_time.advance_to_epoch_seconds(403);
+    authorization_time.set_wall_unix_nanos((403) * 1_000_000_000);
     let unapproved_denial = match fixture.runtime.approve_estate_emergency_access_with_key(
         &approver,
         unapproved,

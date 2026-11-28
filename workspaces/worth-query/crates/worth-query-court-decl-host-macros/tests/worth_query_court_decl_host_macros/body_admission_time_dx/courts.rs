@@ -1,22 +1,22 @@
 //! A body birth stamps the commit's own trusted instant, deterministically,
 //! and refuses without trusted time.
+use crate::time::controlled_at;
 use std::time::Duration;
 
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial as Request;
 use worth_query_host::facade::primary_graph::{
-    MutationHandlerExecutionDenial as Handler, WorthQueryFixedRuntimeTimeSource,
-    WorthQueryRuntimeTimeDenial,
+    MutationHandlerExecutionDenial as Handler, WorthQueryRuntimeTimeDenial,
 };
 use worth_query_host::facade::WorthQuerySessionRunDenial;
 
 use super::program::{open, owner};
 use super::schema::OpenTicket;
-use super::switchable::Switchable;
+
 use super::{at, entry, ticket};
 
 #[test]
 fn a_body_birth_stamps_the_commit_instant_and_moves_only_with_the_clock() {
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 27, 1, 30));
+    let clock = controlled_at(at(2026, 11, 27, 1, 30));
     let home = open(clock.clone());
     let session = home.session(owner(&home));
 
@@ -30,15 +30,13 @@ fn a_body_birth_stamps_the_commit_instant_and_moves_only_with_the_clock() {
     // The child site is stamped in the same commit with the same instant.
     assert_eq!(entry(&home, 7).opened_at, at(2026, 11, 27, 1, 30));
 
-    let later = clock
-        .advance(Duration::from_secs(3_600))
-        .expect("the advance is representable");
+    clock.advance(Duration::from_secs(3_600));
+    let later = at(2026, 11, 27, 2, 30);
     session
         .run(OpenTicket { desk: 1, ticket: 8 })
         .expect("the second birth commits");
     assert_eq!(ticket(&home, 8).created_at, later);
     assert_eq!(entry(&home, 8).opened_at, later);
-    assert_eq!(later, at(2026, 11, 27, 2, 30));
     assert_eq!(
         ticket(&home, 7).created_at,
         at(2026, 11, 27, 1, 30),
@@ -48,14 +46,12 @@ fn a_body_birth_stamps_the_commit_instant_and_moves_only_with_the_clock() {
 
 #[test]
 fn an_unavailable_trusted_time_source_refuses_the_birth_and_writes_nothing() {
-    let source = Switchable::new(WorthQueryFixedRuntimeTimeSource::new(at(
-        2026, 11, 27, 1, 30,
-    )));
+    let source = controlled_at(at(2026, 11, 27, 1, 30));
     let home = open(source.clone());
     let session = home.session(owner(&home));
     let before = home.committed_basis_version();
 
-    source.fail();
+    source.set_wall_available(false);
     let denial = session
         .run(OpenTicket { desk: 1, ticket: 9 })
         .expect_err("no birth without trusted time");

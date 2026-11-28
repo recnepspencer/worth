@@ -1,30 +1,36 @@
 //! Trusted Host time reaches actual capability admission on both Home recipes.
 use super::*;
-use std::time::{SystemTime, UNIX_EPOCH};
 use worth_query_host::facade::primary_graph::{
     WorthQueryOperationAuthorizationDenialKind as Denial,
-    WorthQueryOperationAuthorizationRefusalKind as Refusal, WorthQueryRuntimeTimeSource,
-    WorthQueryRuntimeTimeSourceDenial,
+    WorthQueryOperationAuthorizationRefusalKind as Refusal,
 };
+use worth_query_host::facade::runtime::time::{ControlledTime, RawClockAdapter};
+use worth_query_host::facade::runtime::{BootEpoch, ClockSourceIdentity, TimeUnavailable};
 
 struct Clock {
     calls: Arc<AtomicUsize>,
-    available: bool,
+    time: ControlledTime,
 }
-impl WorthQueryRuntimeTimeSource for Clock {
-    fn admission_clock(
-        &self,
-    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
-    {
-        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()
+impl Clock {
+    fn new(calls: Arc<AtomicUsize>, available: bool) -> Arc<Self> {
+        let time = ControlledTime::at_unix_secs(1_700_000_000);
+        time.set_wall_available(available);
+        Arc::new(Self { calls, time })
     }
-    fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
+}
+
+impl RawClockAdapter for Clock {
+    fn read_monotonic_ticks(&self) -> (u64, BootEpoch) {
+        self.time.read_monotonic_ticks()
+    }
+
+    fn source_identity(&self) -> ClockSourceIdentity {
+        self.time.source_identity()
+    }
+
+    fn read_wall_unix_nanos(&self) -> Result<u64, TimeUnavailable> {
         self.calls.fetch_add(1, Ordering::SeqCst);
-        if self.available {
-            Ok(UNIX_EPOCH + Duration::from_secs(1_700_000_000))
-        } else {
-            Err(WorthQueryRuntimeTimeSourceDenial::Unavailable)
-        }
+        self.time.read_wall_unix_nanos()
     }
 }
 
@@ -40,30 +46,24 @@ fn directory_reopen_uses_the_new_trusted_clock_without_sampling_during_open() {
                 WorthQueryApplicationHomeLocation::Directory(path.clone()),
                 true,
             )
-            .with_authorization_time_source(Clock {
-                calls: calls.clone(),
-                available: false,
-            })
+            .with_authorization_time_source(Clock::new(calls.clone(), false))
             .open_in_advancement(&phase)
             .unwrap_or_else(|refused| opening_failed("unavailable clock writer", &refused)),
         )
     })
     .unwrap();
-    assert_eq!(calls.load(Ordering::SeqCst), 0);
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
     assert_eq!(
         admission(home.runtime()),
         Some(Denial::Refused(Refusal::TrustedTimeUnavailable))
     );
-    assert!(calls.load(Ordering::SeqCst) > 0);
+    assert!(calls.load(Ordering::SeqCst) > 1);
     drop(home);
     let calls = Arc::new(AtomicUsize::new(0));
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
         Box::new(
             request(WorthQueryApplicationHomeLocation::Directory(path), false)
-                .with_authorization_time_source(Clock {
-                    calls: calls.clone(),
-                    available: true,
-                })
+                .with_authorization_time_source(Clock::new(calls.clone(), true))
                 .open_in_advancement(&phase)
                 .unwrap_or_else(|refused| opening_failed("new clock reader", &refused)),
         )
@@ -82,21 +82,18 @@ fn memory_home_uses_its_supplied_trusted_authorization_clock() {
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
         Box::new(
             request(WorthQueryApplicationHomeLocation::MemoryOnly, true)
-                .with_authorization_time_source(Clock {
-                    calls: calls.clone(),
-                    available: false,
-                })
+                .with_authorization_time_source(Clock::new(calls.clone(), false))
                 .open_in_advancement(&phase)
                 .unwrap_or_else(|refused| opening_failed("memory clock", &refused)),
         )
     })
     .unwrap();
-    assert_eq!(calls.load(Ordering::SeqCst), 0);
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
     assert_eq!(
         admission(home.runtime()),
         Some(Denial::Refused(Refusal::TrustedTimeUnavailable))
     );
-    assert!(calls.load(Ordering::SeqCst) > 0);
+    assert!(calls.load(Ordering::SeqCst) > 1);
 }
 
 fn admission(

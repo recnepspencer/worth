@@ -79,10 +79,10 @@ pub fn qualify(occurrences: u16, key: u64) -> (u16, u64) {
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    let authored_at = Instant::now();
+    let authored_at = worth_execution::MonotonicClock::system().now();
     let authored = control_definition(occurrences);
     let authored_ms = authored_at.elapsed().as_millis();
-    let validation_at = Instant::now();
+    let validation_at = worth_execution::MonotonicClock::system().now();
     let validated = authored.validate().expect("control expansion validates");
     let validation_ms = validation_at.elapsed().as_millis();
     assert_eq!(validated.nodes().len(), usize::from(nodes));
@@ -151,7 +151,7 @@ pub fn qualify(occurrences: u16, key: u64) -> (u16, u64) {
                 .expect("the branch remains measurable")
         })
         .expect("installed host call opens");
-    let publication_at = Instant::now();
+    let publication_at = worth_execution::MonotonicClock::system().now();
     let publication = runtime
         .with_host_advancement(|host_phase| {
             runtime
@@ -188,7 +188,7 @@ pub fn qualify(occurrences: u16, key: u64) -> (u16, u64) {
     let sharing = cost.relational().sharing_cost_delta();
     assert_eq!(sharing.copied_truth_bytes, 0);
     let before = runtime.workflow_compilation_reuse_counters();
-    let cold_at = Instant::now();
+    let cold_at = worth_execution::MonotonicClock::system().now();
     assert!(matches!(
         start_instance(&application, published.definition().clone(), key + 1)
             .expect("cold control start fits admission"),
@@ -197,7 +197,7 @@ pub fn qualify(occurrences: u16, key: u64) -> (u16, u64) {
     let cold_ms = cold_at.elapsed().as_millis();
     let cold = runtime.workflow_compilation_reuse_counters();
     assert_eq!(cold.cold_misses(), before.cold_misses() + 1);
-    let warm_at = Instant::now();
+    let warm_at = worth_execution::MonotonicClock::system().now();
     assert!(matches!(
         start_instance(&application, published.definition().clone(), key + 2)
             .expect("warm control start reuses compiled meaning"),

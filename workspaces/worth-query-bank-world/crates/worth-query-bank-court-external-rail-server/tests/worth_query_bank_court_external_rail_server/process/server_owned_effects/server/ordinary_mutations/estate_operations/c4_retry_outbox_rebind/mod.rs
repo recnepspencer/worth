@@ -111,7 +111,9 @@ fn ordinary_equivalent_retry_skips_materialization_and_the_external_rail() {
 
 #[test]
 fn equivalent_binding_does_not_bypass_fresh_authorization_currentness() {
-    let time = AuthorizationTimeController::at_epoch_seconds(300);
+    let time = std::sync::Arc::new(
+        worth_query_host::facade::runtime::time::ControlledTime::at_unix_secs(300),
+    );
     let world = cross_gate_world_with_clock_and_grant_validity(
         "c4-currentness",
         Some(time.clone()),
@@ -125,7 +127,7 @@ fn equivalent_binding_does_not_bypass_fresh_authorization_currentness() {
     let receipt = receipt_closed
         .live_receipt()
         .expect("fresh source retains its full native owner");
-    time.advance_to_epoch_seconds(401);
+    time.set_wall_unix_nanos((401) * 1_000_000_000);
 
     let (_denied_source_custody, denied) = {
         let source_actor = &world.fixture.authenticate_specialist();

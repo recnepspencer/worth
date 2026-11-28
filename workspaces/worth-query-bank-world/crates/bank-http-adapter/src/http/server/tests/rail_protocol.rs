@@ -1,6 +1,6 @@
 //! An installed Bank route rejects a signed incompatible version before custody.
 
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, UNIX_EPOCH};
 
 use bank_domain::model::AccountId;
 use ed25519_dalek::{Signer, SigningKey};
@@ -46,7 +46,9 @@ async fn valid_signature_on_unsupported_version_denies_before_owner_custody() {
         .iter()
         .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
         .collect::<Vec<_>>();
-    let now = SystemTime::now()
+    let now = worth_execution::time::system_time_sampler()
+        .system_time()
+        .unwrap()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs();
@@ -69,7 +71,7 @@ async fn valid_signature_on_unsupported_version_denies_before_owner_custody() {
 
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(5)),
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(5)),
         cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let route = server.rail_completion.as_ref().unwrap();
     let before = server.observe_estate_rail_completion_cost().unwrap();

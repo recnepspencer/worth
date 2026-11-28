@@ -67,7 +67,9 @@ impl WorthQueryAuthenticationAdapter for Adapter {
         _scope: &'a WorthQueryRequestScope,
     ) -> WorthQueryAuthenticationFuture<'a> {
         Box::pin(async move {
-            let now = SystemTime::now();
+            let now = worth_query_host::facade::runtime::time::system_time_sampler()
+                .system_time()
+                .unwrap();
             WorthQueryValidatedExternalPrincipal::new(
                 identity(actor),
                 WorthQueryAuthenticationAudience::of(CapabilityRetentionHostAudience),

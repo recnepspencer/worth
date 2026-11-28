@@ -1,4 +1,4 @@
-pub use std::time::{Duration, Instant};
+pub use std::time::Duration;
 
 pub use crate::facade::certification::query_probe::{assert_ordinary_work, read};
 pub use worth_query_testkit_host::facade::host::world::CourtroomWorld;
@@ -29,12 +29,12 @@ pub fn run_scheduled_public_read_timings() {
             let world = CourtroomWorld::publish_with_intent_population("blocked", population);
             let root = world.application.current_world();
 
-            let started = Instant::now();
+            let started = worth_execution::MonotonicClock::system().now();
             let cold_read = read(&world, root);
             cold.push(started.elapsed());
             assert_ordinary_work(cold_read.work);
 
-            let started = Instant::now();
+            let started = worth_execution::MonotonicClock::system().now();
             let warm_read = read(&world, root);
             warm.push(started.elapsed());
             assert_ordinary_work(warm_read.work);

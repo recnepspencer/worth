@@ -209,7 +209,7 @@ pub fn revoked_cancelled_and_expired_requests_release_source_inspection() {
     drop(refused);
     assert_eq!(readers.observe().active(), baseline);
     let expired = WorthQueryRequestScope::new(
-        Some(std::time::Instant::now() - std::time::Duration::from_secs(1)),
+        Some(worth_execution::MonotonicClock::system().now() - std::time::Duration::from_secs(1)),
         WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let refused = application
         .runtime()

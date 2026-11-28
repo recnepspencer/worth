@@ -4,9 +4,11 @@
 //! on, and after its Directory Home closes and reopens. The reacquired v1
 //! locator advances; principals without a read path to the request see
 //! nothing.
+use crate::time::controlled_at;
 use std::path::PathBuf;
 use std::sync::mpsc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
+use worth_query_host::facade::runtime::time::system_time_sampler;
 
 use worth_query_decl::facade::application_program::{
     ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowDefinitionReadTarget,
@@ -16,7 +18,6 @@ use worth_query_host::facade::application_discovery::{
     WorthQueryWorkflowObservedState as State, WorthQueryWorkflowReadExtent,
 };
 use worth_query_host::facade::application_entry::*;
-use worth_query_host::facade::primary_graph::WorthQueryFixedRuntimeTimeSource;
 
 use super::birth::birth_in;
 use super::disclosure::{RequestSubject, SubjectRead};
@@ -154,10 +155,7 @@ fn complete(home: &WorkflowHome, caller: &Caller, instance: PublishedWorkflowIns
 }
 
 fn scratch_directory() -> PathBuf {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
+    let nanos = system_time_sampler().wall().unwrap().unix_nanos();
     let process = std::process::id();
     std::env::temp_dir().join(format!("worth-birth-subject-{process}-{nanos}"))
 }
@@ -165,7 +163,7 @@ fn scratch_directory() -> PathBuf {
 #[test]
 fn a_born_request_is_reacquired_by_subject_after_supersession_and_reopen() {
     let directory = scratch_directory();
-    let clock = WorthQueryFixedRuntimeTimeSource::new(at(2026, 11, 26, 15, 30));
+    let clock = controlled_at(at(2026, 11, 26, 15, 30));
     let (home, signing) = open_home(clock.clone(), Some(&directory));
     let caller = owner(home.runtime().runtime().installed_schema());
     let v1 = publish(&home, &caller, 1, None);

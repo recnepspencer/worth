@@ -83,7 +83,7 @@ impl UnadmittedBankHttpControls {
         if deadline_duration.is_zero() || deadline_duration > maximum_deadline {
             return Err(malformed(Some(request_id)));
         }
-        let Some(deadline) = Instant::now().checked_add(deadline_duration) else {
+        let Some(deadline) = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now().checked_add(deadline_duration) else {
             return Err(malformed(Some(request_id)));
         };
         Ok(AdmittedBankHttpControls {

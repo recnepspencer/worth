@@ -1,6 +1,6 @@
 //! The Bank historical read retains master's HTTP cancellation and remedy.
 use std::num::NonZeroUsize;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use bank_domain::model::{AccountId, InstitutionId, Money};
 use bank_domain::proposals::BankIdempotencyKey;
@@ -22,7 +22,7 @@ async fn historical_account_activity_cancellation_preserves_http_class_and_remed
     let application = application(account);
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = application.authenticate(&scope).await;
     let committed = application

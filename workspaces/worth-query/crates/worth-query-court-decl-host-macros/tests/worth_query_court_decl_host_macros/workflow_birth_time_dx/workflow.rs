@@ -8,7 +8,8 @@ use worth_query_host::facade::domain::{
     WorthQueryApplicationWorkflowResourceCeiling, WorthQueryApplicationWorkflowSpecInstallation,
     WorthQueryInstalledApplicationWorkflowSpec,
 };
-use worth_query_host::facade::primary_graph::WorthQueryFixedRuntimeTimeSource;
+use worth_query_host::facade::runtime::time::ControlledTime;
+
 use worth_query_host::facade::WorthQueryApplicationHome;
 
 use super::control::{Author, AuthorOp, CompanyControl};
@@ -153,7 +154,7 @@ pub fn publish(
 
 /// Opens the in-memory Home over `clock`, binds the vocabulary and
 /// publishes the first definition.
-pub fn open(clock: WorthQueryFixedRuntimeTimeSource) -> World {
+pub fn open(clock: std::sync::Arc<ControlledTime>) -> World {
     let (home, signing) = open_home(clock, None);
     let caller = owner(home.runtime().runtime().installed_schema());
     let definition = publish(&home, &caller, 1, None);
@@ -167,7 +168,7 @@ pub fn open(clock: WorthQueryFixedRuntimeTimeSource) -> World {
 /// Opens (or reopens the Directory Home at `directory`) and binds a freshly
 /// installed vocabulary. Nothing is published.
 pub fn open_home(
-    clock: WorthQueryFixedRuntimeTimeSource,
+    clock: std::sync::Arc<ControlledTime>,
     directory: Option<&std::path::Path>,
 ) -> (WorkflowHome, SigningOwner) {
     let home = program::open(clock, directory);

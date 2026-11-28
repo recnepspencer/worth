@@ -1,4 +1,4 @@
-pub use std::time::{Duration, Instant};
+pub use std::time::Duration;
 
 pub use bank_domain::model::BankPrincipalId;
 pub use bank_http_adapter::cold_certification_for_test;
@@ -101,7 +101,7 @@ pub fn principal_seeds(fixture: &IdentityFixture) -> Result<Vec<BankPrincipalSee
 
 pub fn request_scope(duration: Duration) -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
-    WorthQueryRequestScope::new(Some(Instant::now() + duration), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
+    WorthQueryRequestScope::new(Some(worth_execution::MonotonicClock::system().now() + duration), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 
 pub fn configuration(

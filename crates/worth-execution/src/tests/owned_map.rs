@@ -205,7 +205,8 @@ fn owned_map_differential_stops_and_schedules() {
                     }
                     if matches!(scenario, Scenario::Deadline) {
                         req.deadline = Some(crate::MonotonicClock::system().deadline_at(
-                            std::time::Instant::now() - std::time::Duration::from_secs(1),
+                            crate::MonotonicClock::system().now()
+                                - std::time::Duration::from_secs(1),
                         ));
                     }
                     let holder = (taking && matches!(scenario, Scenario::Memory)).then(|| {

@@ -77,7 +77,9 @@ fn a_completed_bank_transition_spends_the_recovery_permanently() {
 
 #[test]
 fn expiry_decision_is_consumed_only_by_the_bank_transition() {
-    let authorization_time = AuthorizationTimeController::at_epoch_seconds(2_000);
+    let authorization_time = std::sync::Arc::new(
+        worth_query_host::facade::runtime::time::ControlledTime::at_unix_secs(2_000),
+    );
     let world = cross_gate_world_with_authorization_time(
         "bank-owned-expiry-transition",
         Some(authorization_time.clone()),
@@ -90,7 +92,7 @@ fn expiry_decision_is_consumed_only_by_the_bank_transition() {
         .live_receipt()
         .expect("fresh source retains its full native owner");
     let handle = world.open_recovery(receipt);
-    authorization_time.advance_to_epoch_seconds(5_601);
+    authorization_time.set_wall_unix_nanos((5_601) * 1_000_000_000);
     let evaluation = world
         .fixture
         .world

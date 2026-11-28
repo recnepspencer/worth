@@ -1,8 +1,9 @@
 use std::future::Future;
 use std::pin::pin;
 use std::task::{Context, Poll, Waker};
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
+use worth_execution::time::system_time_sampler;
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
 };
@@ -67,7 +68,7 @@ impl WorthQueryAuthenticationAdapter for CausalAdapter {
         _scope: &'a WorthQueryRequestScope,
     ) -> WorthQueryAuthenticationFuture<'a> {
         Box::pin(async move {
-            let now = SystemTime::now();
+            let now = system_time_sampler().system_time().unwrap();
             let (audience, expires_at) = match credential {
                 TestCredential::Valid => (BANK, now + Duration::from_secs(60)),
                 TestCredential::WrongAudience => (

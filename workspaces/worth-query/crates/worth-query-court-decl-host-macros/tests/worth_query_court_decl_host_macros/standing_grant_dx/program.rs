@@ -212,7 +212,7 @@ fn assign(
 }
 
 fn config(
-    clock: impl WorthQueryRuntimeTimeSource,
+    clock: impl Into<WorthQueryRuntimeClock>,
     calendar: Option<WorthQueryTimeZone>,
     window: Window,
 ) -> WorthQueryHomeConfig<'static, QmsSchema, QmsProgram> {
@@ -229,7 +229,7 @@ fn config(
 /// Opens (or reopens) the Directory Home at `path` over `clock`.
 pub fn open(
     path: &std::path::Path,
-    clock: impl WorthQueryRuntimeTimeSource,
+    clock: impl Into<WorthQueryRuntimeClock>,
     calendar: Option<WorthQueryTimeZone>,
     window: Window,
 ) -> Result<QmsHome, worth_query_host::facade::WorthQueryDirectoryOpenDenial<QmsSchema, QmsProgram>>
