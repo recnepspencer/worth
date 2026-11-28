@@ -193,37 +193,34 @@ where
             journal_position,
             artifact_digest,
             recorded_before_component,
-        ) = match self.read_verified_occurrence_direct(execution, &effect)? {
-            Some((open, owners, publishing_incarnation, position, digest))
-                if !include_before_component || open.expected.generation.get() > 0 =>
-            {
-                (open, owners, publishing_incarnation, position, digest, None)
-            }
-            None if !include_before_component => return Err(Denial::NotReadmitted),
-            _ => {
-                let (image, occurrence) = self.read_verified_occurrence(execution, &effect)?;
-                let open = occurrence.open().clone();
-                let recorded_before_component =
-                    image.history.get(&open.expected.commit).and_then(|head| {
-                        match &head.record().record {
-                            crate::durability::WorldRecord::Branch { components, .. } => {
-                                Some(components.relational.clone())
-                            }
-                            crate::durability::WorldRecord::BranchCreated(created) => {
-                                Some(created.components.relational.clone())
-                            }
-                            _ => None,
+        ) = if include_before_component {
+            let (image, occurrence) = self.read_verified_occurrence(execution, &effect)?;
+            let open = occurrence.open().clone();
+            let recorded_before_component =
+                image.recorded_reference(&open.expected).and_then(|head| {
+                    match &head.record().record {
+                        crate::durability::WorldRecord::Branch { components, .. } => {
+                            Some(components.relational.clone())
                         }
-                    });
-                (
-                    open,
-                    occurrence.owners().clone(),
-                    occurrence.publishing_incarnation(),
-                    occurrence.location().position(),
-                    *occurrence.location().digest(),
-                    recorded_before_component,
-                )
-            }
+                        crate::durability::WorldRecord::BranchCreated(created) => {
+                            Some(created.components.relational.clone())
+                        }
+                        _ => None,
+                    }
+                });
+            (
+                open,
+                occurrence.owners().clone(),
+                occurrence.publishing_incarnation(),
+                occurrence.location().position(),
+                *occurrence.location().digest(),
+                recorded_before_component,
+            )
+        } else {
+            let (open, owners, publishing_incarnation, position, digest) = self
+                .read_verified_occurrence_direct(execution, &effect)?
+                .ok_or(Denial::NotReadmitted)?;
+            (open, owners, publishing_incarnation, position, digest, None)
         };
         if open.expected.branch.owner() != expected_owner || open.commit.owner() != expected_owner {
             return Err(Denial::ForeignHome);

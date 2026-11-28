@@ -11,7 +11,11 @@ impl ProductBranchReferenceCell {
             || successor.snapshot() != &record.after
             || current.movement.denial().is_some()
             || current.protection.is_none()
-            || current.snapshot.generation().advance().ok() != Some(record.after.generation())
+            || super::successor_validation::validate_successor_snapshot(
+                &current.snapshot,
+                &record.after,
+            )
+            .is_err()
         {
             return Err(successor);
         }

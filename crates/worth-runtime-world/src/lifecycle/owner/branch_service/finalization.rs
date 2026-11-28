@@ -8,7 +8,9 @@ mod state;
 
 use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::branch::RuntimeWorldBranchAdmissionDenial;
-use crate::identity::{ProductBranchIdentity, ProductBranchIncarnation};
+use crate::identity::{
+    ProductBranchIdentity, ProductBranchIncarnation, ProductBranchReferenceGeneration,
+};
 use crate::lifecycle::RuntimeWorldBranchCreationOutcome;
 use crate::publication::{CompositeAttemptProgress, ReservedBranchCreationAttempt};
 
@@ -17,6 +19,7 @@ use super::super::super::RuntimeWorldOwnerRoot;
 pub(super) struct ForkedBranchInstallation {
     pub(super) branch: ProductBranchIdentity,
     pub(super) lifecycle: ProductBranchIncarnation,
+    pub(super) generation: ProductBranchReferenceGeneration,
     pub(super) reservation: crate::branch::registry::ProductBranchRegistryReservation,
     pub(super) attempt: ReservedBranchCreationAttempt,
     pub(super) progress: CompositeAttemptProgress,

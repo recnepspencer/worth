@@ -130,6 +130,7 @@ pub(crate) struct ReadmittedHorizonInstall<'a> {
     pub(crate) generation: worth_foundational::facade::DurableProductReferenceGeneration,
     pub(crate) commit: worth_foundational::facade::DurableCompositeCommitIdentity,
     pub(crate) is_root_branch: bool,
+    pub(crate) initial_generation: crate::identity::ProductBranchReferenceGeneration,
     pub(crate) retirement_boundary:
         Option<worth_foundational::facade::DurableCompositeCommitIdentity>,
     pub(crate) branch_previous: Option<&'a ProductBranchReferenceSnapshot>,
@@ -261,8 +262,11 @@ where
                     .map_err(|_| Denial::BranchLineage)?;
             } else {
                 let mut cell = Some(
-                    ProductBranchReferenceCell::new(protection)
-                        .map_err(|_| Denial::BranchLineage)?,
+                    ProductBranchReferenceCell::new_at_horizon(
+                        protection,
+                        install.initial_generation,
+                    )
+                    .map_err(|_| Denial::BranchLineage)?,
                 );
                 if install.is_root_branch {
                     let mut reservation = self

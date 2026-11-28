@@ -285,6 +285,11 @@ impl WorldCheckpointImage {
             if self.recorded_reference(&open.expected).is_none() {
                 return Err(WorldReadmissionDenial::MissingPredecessor);
             }
+            if let super::ExpectedReclaim::Pending(expected) = self.reclaim_expected(open)
+                && self.retired_history.contains_key(&expected.commit)
+            {
+                return Err(WorldReadmissionDenial::MissingPredecessor);
+            }
         }
         for original in self.creations.values() {
             let intent = original.intent();

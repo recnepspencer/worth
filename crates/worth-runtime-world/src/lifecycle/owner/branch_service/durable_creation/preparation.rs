@@ -39,6 +39,7 @@ where
             .ok_or(Denial::ProgramSourceRequired)?
             .admit(&program_source, &commitment)
             .map_err(|_| Denial::ForeignProgramSource)?;
+        let generation = fork_generation(&source)?;
         let name = intent.name().clone();
         let mut attempt = RuntimeWorldPreparationService::prepare_creation(
             self,
@@ -56,7 +57,7 @@ where
             .issue_branch_identities(name)
             .map_err(|()| Denial::IdentityExhausted)?;
         let witness = reservation
-            .bind_creation_destination(branch.clone(), incarnation)
+            .bind_creation_destination(branch.clone(), incarnation, generation)
             .map_err(map_registry_denial)?;
         attempt.bind_destination(witness.clone());
         let owner = self
@@ -154,7 +155,7 @@ where
                         owner,
                         incarnation.ordinal(),
                     ),
-                    generation: DurableProductReferenceGeneration::from_recorded(0),
+                    generation: DurableProductReferenceGeneration::from_recorded(generation.get()),
                     commit: DurableCompositeCommitIdentity::from_recorded(owner, commit),
                 },
                 program_revision: revision,

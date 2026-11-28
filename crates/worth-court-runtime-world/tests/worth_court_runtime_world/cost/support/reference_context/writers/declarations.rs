@@ -128,7 +128,10 @@ pub(crate) fn run(
     );
     for head in heads {
         let updated = court.observe(&head);
-        assert_eq!(updated.reference_generation().get(), 1);
+        assert_eq!(
+            updated.reference_generation().get(),
+            head.reference_generation().get() + 1
+        );
         let rel = court
             .records
             .runtime

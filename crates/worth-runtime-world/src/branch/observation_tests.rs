@@ -123,10 +123,9 @@ fn observation_denials_issue_no_managed_authority_or_stranded_token() {
 }
 
 #[test]
-fn cloned_observations_share_authority_and_release_final_sibling_head() {
+fn cloned_observations_share_authority_and_release_final_retired_head() {
     let (mut fixture, catalog, root) = fixture::installed_root();
     let selected = fixture::install_ordinary(&mut fixture, &catalog, root.as_ref());
-    let successor = fixture::install_ordinary(&mut fixture, &catalog, root.as_ref());
     let initial = fixture::initial_snapshot(&mut fixture, Arc::clone(&selected));
     let cell = product_cell(initial.clone(), &catalog, &fixture);
     let observation = cell
@@ -149,22 +148,16 @@ fn cloned_observations_share_authority_and_release_final_sibling_head() {
         fixture.owner.cost_snapshot().signal_contacts(),
         retention_after_observe.signal_contacts()
     );
-    assert_eq!(fixture.owner.active_component_obligation_count(), 10);
+    assert_eq!(fixture.owner.active_component_obligation_count(), 8);
 
-    let successor_snapshot = fixture::successor_snapshot(&initial, Arc::clone(&successor));
-    assert!(!successor_snapshot.matches_observation(&observation));
-    cell.compare_and_publish(
-        &observation,
-        fixture::product_head_protection(&fixture, &catalog, successor_snapshot),
-    )
-    .expect("move to sibling successor");
+    drop(cell);
     assert!(
         initial.matches_observation(&observation),
-        "historical correspondence survives head movement"
+        "historical correspondence survives retirement of the reference"
     );
-    let history_after_move = catalog.counters();
+    let history_after_retirement = catalog.counters();
     assert_eq!(
-        history_after_move.direct_protection_releases(),
+        history_after_retirement.direct_protection_releases(),
         history_after_observe.direct_protection_releases() + 1
     );
 
@@ -177,13 +170,13 @@ fn cloned_observations_share_authority_and_release_final_sibling_head() {
     };
     let blocked = catalog
         .reclaim_batch(reclaim_request())
-        .expect("live explicit observation protects selected sibling");
+        .expect("live explicit observation protects retired head");
     assert_eq!(blocked.skipped_protected(), 1);
     drop(observation);
     drop(second);
     let blocked_until_final = catalog
         .reclaim_batch(reclaim_request())
-        .expect("the final observation clone still protects selected sibling");
+        .expect("the final observation clone still protects retired head");
     assert_eq!(blocked_until_final.skipped_protected(), 1);
     let releases_before_final = catalog.counters().direct_protection_releases();
     let dependency_releases_before_final = fixture.owner.cost_snapshot().dependency_releases();
@@ -196,10 +189,10 @@ fn cloned_observations_share_authority_and_release_final_sibling_head() {
         fixture.owner.cost_snapshot().dependency_releases(),
         dependency_releases_before_final + 2
     );
-    assert_eq!(fixture.owner.active_component_obligation_count(), 8);
+    assert_eq!(fixture.owner.active_component_obligation_count(), 4);
     let reclaimed = catalog
         .reclaim_batch(reclaim_request())
-        .expect("final exact releases permit selected sibling reclamation");
+        .expect("final exact releases permit retired head reclamation");
     assert_eq!(
         reclaimed.reclaimed_commits(),
         &[selected.identity().clone()]
@@ -210,7 +203,7 @@ fn cloned_observations_share_authority_and_release_final_sibling_head() {
 fn concurrent_observations_are_each_old_or_new_and_basis_coherent() {
     let (mut fixture, catalog, root) = fixture::installed_root();
     let selected = fixture::install_ordinary(&mut fixture, &catalog, root.as_ref());
-    let successor = fixture::install_ordinary(&mut fixture, &catalog, root.as_ref());
+    let successor = fixture::install_ordinary(&mut fixture, &catalog, selected.as_ref());
     let initial = fixture::initial_snapshot(&mut fixture, Arc::clone(&selected));
     let cell = product_cell(initial.clone(), &catalog, &fixture);
     let expected = cell

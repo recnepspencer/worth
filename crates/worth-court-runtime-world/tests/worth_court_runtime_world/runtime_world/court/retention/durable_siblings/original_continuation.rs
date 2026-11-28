@@ -41,7 +41,10 @@ fn pending_creation_keeps_its_original_seat_with_zero_owner_effects_and_resumes_
     let RuntimeWorldBranchCreationOutcome::Performed(child) = outcome else {
         panic!("same creation: {outcome:?}")
     };
-    assert_eq!(child.reference_generation().get(), 0);
+    assert_eq!(
+        child.reference_generation().get(),
+        parent.reference_generation().get() + 1
+    );
     assert_eq!(
         f.world
             .inspection_port()

@@ -70,6 +70,7 @@ impl ReferenceCellState {
 #[derive(Debug, Clone)]
 pub(crate) struct ProductBranchReferenceCell {
     state: ReferenceCellState,
+    initial_generation: ProductBranchReferenceGeneration,
 }
 
 /// Why a reference movement could not replace the selected product head.
@@ -88,6 +89,7 @@ pub(crate) enum ProductBranchReferenceCellDenial {
         expected: ProductBranchReferenceGeneration,
         actual: ProductBranchReferenceGeneration,
     },
+    FastForwardRequired,
     SuccessorProtectionMismatch,
     GenerationExhausted,
     Cutoff(crate::publication::ProductMovementCutoffDenial),
@@ -180,9 +182,18 @@ impl ProductBranchReferenceCell {
     pub(crate) fn new(
         protection: ProductBranchHeadProtection,
     ) -> Result<Self, ProductBranchHeadProtectionAdmissionFailure> {
+        let initial_generation = protection.snapshot().generation();
+        Self::new_at_horizon(protection, initial_generation)
+    }
+
+    pub(crate) fn new_at_horizon(
+        protection: ProductBranchHeadProtection,
+        initial_generation: ProductBranchReferenceGeneration,
+    ) -> Result<Self, ProductBranchHeadProtectionAdmissionFailure> {
         let initial = protection.snapshot().clone();
         match protection.validate() {
             Ok(()) => Ok(Self {
+                initial_generation,
                 state: ReferenceCellState::new(ProductBranchReferenceImage {
                     movement: ProductMovementPhase::Idle,
                     snapshot: initial,
@@ -191,6 +202,10 @@ impl ProductBranchReferenceCell {
             }),
             Err(denial) => Err(protection.into_admission_failure(denial)),
         }
+    }
+
+    pub(crate) fn initial_generation(&self) -> ProductBranchReferenceGeneration {
+        self.initial_generation
     }
 
     /// Capture an immutable image whose commit stays alive across movement.
@@ -339,26 +354,6 @@ impl ProductBranchReferenceCell {
             drop(current);
             return observation;
         }
-    }
-
-    /// Replace only if the complete expected observation is still selected.
-    /// Expected-currentness, successor validation, and pair replacement use
-    /// one short branch-local lock; no owner call occurs while it is held.
-    #[cfg(test)]
-    pub(crate) fn compare_and_publish(
-        &self,
-        expected: &ProductBranchObservation,
-        successor: ProductBranchHeadProtection,
-    ) -> Result<ProductBranchReferenceMovement, ProductBranchReferencePublishFailure> {
-        let mut held = Some(successor);
-        self.replace_expected(expected, &mut held, |held| held, None)
-            .map_err(|loss| ProductBranchReferencePublishFailure {
-                denial: loss.denial,
-                observed_head: loss.observed_head,
-                successor_protection: held
-                    .take()
-                    .expect("a losing test CAS retains its successor"),
-            })
     }
 
     pub(crate) fn hold_for_test(&self) -> impl Drop + '_ {

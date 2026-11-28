@@ -31,6 +31,7 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    let generation = super::fork_generation(&source)?;
     let name = intent.name().clone();
     let mut reservation = owner
         .state
@@ -42,7 +43,7 @@ where
         .map_err(|()| RuntimeWorldBranchAdmissionDenial::IdentityExhausted)?;
     let destination = CreationDestination {
         witness: reservation
-            .bind_creation_destination(branch.clone(), incarnation)
+            .bind_creation_destination(branch.clone(), incarnation, generation)
             .map_err(super::map_registry_denial)?,
         branch: branch.clone(),
         incarnation,
@@ -74,6 +75,7 @@ where
             finalization::ForkedBranchInstallation {
                 branch,
                 lifecycle: incarnation,
+                generation,
                 reservation,
                 attempt,
                 progress,

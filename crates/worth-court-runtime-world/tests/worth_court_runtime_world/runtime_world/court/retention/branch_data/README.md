@@ -1,5 +1,5 @@
 These frozen bytes are untrusted World DATA, not an application Home or Native admission.
-They encode World artifact version 4 / checkpoint version 2: owner [7;16], slot 0,
+They encode World artifact version 6 / checkpoint version 3: owner [7;16], slot 0,
 program revision [3;32], two selected branch origins (primary, sibling), and one
 original Branches journal tail at position 4 (other). There are no effects.
 The JSON files state the three distinct Native component descriptions expected

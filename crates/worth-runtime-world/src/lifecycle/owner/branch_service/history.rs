@@ -71,7 +71,11 @@ where
         .filter(|cell| !cell.is_retired_or_retiring())
         .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
     let snapshot = cell.atomic_snapshot();
-    let branch_depth = usize::try_from(snapshot.reference_generation().get())
+    let movements = snapshot
+        .reference_generation()
+        .get()
+        .saturating_sub(cell.initial_generation().get());
+    let branch_depth = usize::try_from(movements)
         .unwrap_or(usize::MAX)
         .saturating_add(1);
     let limit = maximum;

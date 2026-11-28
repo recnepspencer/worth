@@ -272,7 +272,10 @@ pub(super) fn assert_new_branch_observation(
         child.lifecycle_incarnation(),
         source.lifecycle_incarnation()
     );
-    assert_eq!(child.reference_generation().get(), 0);
+    assert_eq!(
+        child.reference_generation().get(),
+        source.reference_generation().get() + 1
+    );
     assert_ne!(child.selected_commit(), source.selected_commit());
     assert_ne!(child.basis(), source.basis());
     let observed =

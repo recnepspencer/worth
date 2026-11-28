@@ -7,6 +7,26 @@ pub(super) fn validate_successor(
     successor: &ProductBranchHeadProtection,
 ) -> Result<(), ProductBranchReferenceCellDenial> {
     let successor_snapshot = successor.snapshot();
+    validate_successor_snapshot(current, successor_snapshot)?;
+    if successor.product_head().owner_identity() != successor_snapshot.owner()
+        || !successor
+            .product_head()
+            .matches_basis(successor_snapshot.commit().basis())
+        || successor.product_head_history().owner_identity() != successor_snapshot.owner()
+        || !successor
+            .product_head_history()
+            .matches_commit(successor_snapshot.commit())
+        || successor.transfer_receipt().is_none()
+    {
+        return Err(ProductBranchReferenceCellDenial::SuccessorProtectionMismatch);
+    }
+    Ok(())
+}
+
+pub(super) fn validate_successor_snapshot(
+    current: &ProductBranchReferenceSnapshot,
+    successor_snapshot: &ProductBranchReferenceSnapshot,
+) -> Result<(), ProductBranchReferenceCellDenial> {
     if successor_snapshot.owner() != current.owner() {
         return Err(ProductBranchReferenceCellDenial::SuccessorOwnerMismatch);
     }
@@ -28,17 +48,12 @@ pub(super) fn validate_successor(
             },
         );
     }
-    if successor.product_head().owner_identity() != successor_snapshot.owner()
-        || !successor
-            .product_head()
-            .matches_basis(successor_snapshot.commit().basis())
-        || successor.product_head_history().owner_identity() != successor_snapshot.owner()
-        || !successor
-            .product_head_history()
-            .matches_commit(successor_snapshot.commit())
-        || successor.transfer_receipt().is_none()
-    {
-        return Err(ProductBranchReferenceCellDenial::SuccessorProtectionMismatch);
+    if !matches!(
+        successor_snapshot.commit().parent(),
+        crate::history::CompositeCommitParent::Ordinary(parent)
+            if parent.commit() == current.selected_commit()
+    ) {
+        return Err(ProductBranchReferenceCellDenial::FastForwardRequired);
     }
     Ok(())
 }

@@ -144,9 +144,7 @@ where
                             .branch_id()
                             .clone(),
                     );
-                    horizon
-                        .creation_boundaries
-                        .insert(key.0, created.intent.source.commit);
+                    horizon.note_creation_head(key.0, created);
                     if let Ok(before) = find(&observations, &created.intent.source) {
                         let before_native = descriptors
                             .get(&created.intent.source.commit)

@@ -48,8 +48,8 @@ impl ProductBranchIncarnation {
     }
 }
 
-/// Generation of one mutable product reference cell. It advances only after
-/// a successful product-reference movement.
+/// Generation of a product reference. A fork starts one generation above
+/// its source reference. Movement advances the selected generation by one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ProductBranchReferenceGeneration(u64);
 

@@ -36,7 +36,14 @@ fn inherited_source_selection_crosses_real_fork_roots_and_refuses_a_sibling() {
             SignalBranchCreationPlan::ReuseExact,
         ),
     );
-    assert_eq!(target.reference_generation().get(), 0);
+    assert_eq!(
+        fork.reference_generation().get(),
+        source.reference_generation().get() + 1
+    );
+    assert_eq!(
+        target.reference_generation().get(),
+        fork.reference_generation().get() + 1
+    );
     let branch_history = owner
         .trace_product_branch_ancestry(&execution, target.lifecycle_incarnation(), None)
         .unwrap();

@@ -62,24 +62,23 @@ impl ActiveAttemptCustody {
             // The installed permit protects this exact expected head. Actual
             // history/pin work runs outside the cell's reference lock, after
             // its durable witness and before the short prepared-head swap.
-            lease.install_successor(commit, snapshot);
-            counters.record_history_slot_installed();
-            permit
-                .validate_successor(
-                    lease
-                        .resources_mut()
-                        .product_head
-                        .as_ref()
-                        .expect("prepared exact successor"),
+            permit.admit_candidate(&snapshot).and_then(|()| {
+                lease.install_successor(commit, snapshot.clone());
+                counters.record_history_slot_installed();
+                permit.publish_recorded(
+                    expected,
+                    &snapshot,
+                    &mut lease.resources_mut().product_head,
+                    record,
                 )
-                .expect("the original occurrence selects the prepared successor");
-            permit.publish_recorded(expected, &mut lease.resources_mut().product_head, record)
+            })
         } else {
             cell.publish_recorded(
                 expected,
+                &snapshot,
                 &mut lease,
                 |lease| {
-                    lease.install_successor(commit, snapshot);
+                    lease.install_successor(commit, snapshot.clone());
                     counters.record_history_slot_installed();
                     &mut lease.resources_mut().product_head
                 },

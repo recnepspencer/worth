@@ -98,6 +98,7 @@ where
         // reused as the exact commit the caller observed, which that
         // observation keeps alive in history.
         self.admit_source_head(&source)?;
+        let generation = fork_generation(&source)?;
         let observation_capacity = self
             .state
             .retention
@@ -121,7 +122,7 @@ where
             .issue_branch_identities(name)
             .map_err(|_| RuntimeWorldBranchAdmissionDenial::IdentityExhausted)?;
         let (cell, snapshot) =
-            self.issue_reused_head(branch.clone(), lifecycle, Arc::clone(&commit))?;
+            self.issue_reused_head(branch.clone(), lifecycle, generation, Arc::clone(&commit))?;
         let observation = self.issue_reused_observation(snapshot, commit, observation_capacity)?;
 
         #[cfg(test)]
@@ -137,6 +138,7 @@ where
         &self,
         branch: ProductBranchIdentity,
         lifecycle: ProductBranchIncarnation,
+        generation: ProductBranchReferenceGeneration,
         commit: Arc<crate::history::CompositeRuntimeWorldCommit>,
     ) -> Result<
         (ProductBranchReferenceCell, ProductBranchReferenceSnapshot),
@@ -156,7 +158,7 @@ where
             self.owner_identity(),
             branch.clone(),
             lifecycle,
-            ProductBranchReferenceGeneration::initial(),
+            generation,
             Arc::clone(&commit),
         )
         .map_err(|_| RuntimeWorldBranchAdmissionDenial::OwnerUnavailable)?;
@@ -171,7 +173,7 @@ where
         Ok((cell, snapshot))
     }
 
-    pub(in crate::lifecycle::owner) fn issue_reused_observation(
+    pub(in crate::lifecycle) fn issue_reused_observation(
         &self,
         snapshot: ProductBranchReferenceSnapshot,
         commit: Arc<crate::history::CompositeRuntimeWorldCommit>,
@@ -195,6 +197,15 @@ where
         .map_err(|_| RuntimeWorldBranchAdmissionDenial::OwnerUnavailable)?;
         Ok(observation)
     }
+}
+
+fn fork_generation(
+    source: &ProductBranchObservation,
+) -> Result<ProductBranchReferenceGeneration, RuntimeWorldBranchAdmissionDenial> {
+    source
+        .reference_generation()
+        .advance()
+        .map_err(|_| RuntimeWorldBranchAdmissionDenial::IdentityExhausted)
 }
 
 fn map_registry_denial(

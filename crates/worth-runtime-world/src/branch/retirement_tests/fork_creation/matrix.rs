@@ -18,7 +18,6 @@ fn assert_name_keyed_identity(
         &ProductBranchIdentity::issued(owner.owner_identity(), intent_name.clone()),
         "a created branch is the name-keyed identity its intent asked for"
     );
-    assert_eq!(child.reference_generation().get(), 0);
 }
 
 /// The matrix cell where only the Relational owner is asked to move: the Signal
