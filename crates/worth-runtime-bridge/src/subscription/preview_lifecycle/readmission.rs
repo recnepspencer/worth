@@ -96,18 +96,24 @@ impl BridgeSubscriptionAuthoritativePreviewReadmission {
     pub(crate) fn prepare(
         promotion: BridgeSubscriptionPreviewLifecyclePromotion,
         promoted_activation_ready: &BridgeSubscriptionActivationReady,
-    ) -> Result<Self, BridgeSubscriptionAuthoritativePreviewReadmissionRejection> {
+    ) -> Result<
+        Self,
+        (
+            BridgeSubscriptionPreviewLifecyclePromotion,
+            BridgeSubscriptionAuthoritativePreviewReadmissionRejection,
+        ),
+    > {
         if promoted_activation_ready
             .admitted()
             .admitted_subscription_identity()
             != promotion.admitted_subscription_identity()
         {
-            return Err(
+            let denial =
                 BridgeSubscriptionAuthoritativePreviewReadmissionRejection::promoted_subscription_mismatch(
                     &promotion,
                     promoted_activation_ready,
-                ),
-            );
+                );
+            return Err((promotion, denial));
         }
 
         let readmission_class =

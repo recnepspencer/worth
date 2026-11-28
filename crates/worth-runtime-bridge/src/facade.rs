@@ -86,7 +86,7 @@ pub use crate::authorization::{
     BridgeAuthorizationRequirementContract, BridgeAuthorizationRequirementObservation,
     BridgeAuthorizationRetentionStop, BridgeAuthorizationRuleContract,
     BridgeAuthorizationRuleDecisionEvidence, BridgeAuthorizationRuleEffect,
-    BridgeAuthorizationRuleObservation, BridgeAuthorizationRuntime,
+    BridgeAuthorizationRuleObservation, BridgeAuthorizationRuntime, BridgeRecordedActorComparison,
 };
 pub use crate::correspondence::{
     AdmittedRuntimeWorldCorrespondenceBasis, BridgeCorrespondenceAdmissionIdentity,

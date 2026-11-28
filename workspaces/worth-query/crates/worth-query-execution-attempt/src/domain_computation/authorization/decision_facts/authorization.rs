@@ -157,11 +157,7 @@ impl WorthQueryAuthorizationDecisionFact {
 
     pub fn bridge_is_retained(&self, bridge: &BridgeAuthorizationRuntime) -> bool {
         bridge.retains(&self.bridge)
-            && bridge_matches(
-                &self.relational,
-                &self.bridge,
-                self.recorded_actor.as_deref(),
-            )
+            && bridge_matches(&self.relational, &self.bridge)
             && self
                 .delegation
                 .as_ref()
@@ -209,11 +205,8 @@ impl WorthQueryAuthorizationDecisionFact {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
-        if !bridge_matches(
-            &self.relational,
-            &self.bridge,
-            self.recorded_actor.as_deref(),
-        ) || !observation_is_current(execution, runtime, snapshot, &self.relational)?
+        if !bridge_matches(&self.relational, &self.bridge)
+            || !observation_is_current(execution, runtime, snapshot, &self.relational)?
         {
             return Ok(false);
         }
@@ -260,12 +253,8 @@ pub(super) fn observation_is_current(
 fn bridge_matches(
     relational: &RelationalAuthorizationObservationEvidence,
     bridge: &BridgeAuthorizationDecisionEvidence,
-    recorded: Option<&crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>,
 ) -> bool {
-    let identity = recorded.map_or(*relational.observation_identity().bytes(), |recorded| {
-        recorded.combined_identity(relational.observation_identity().bytes())
-    });
-    bridge.is_allowed() && bridge.dependency_identity() == &identity
+    bridge.is_allowed() && bridge.dependency_identity() == relational.observation_identity().bytes()
 }
 
 fn bridge_dependency_count(evidence: &BridgeAuthorizationDecisionEvidence) -> usize {

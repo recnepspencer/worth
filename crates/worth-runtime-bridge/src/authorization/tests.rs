@@ -150,21 +150,10 @@ fn correspondence_rejects_clause_reordering_and_non_exhaustive_facts() {
     reordered.rules[0].requirements[0].clauses.swap(0, 1);
     assert!(runtime.evaluate(reordered).is_err());
 
-    let incomplete = observation(identity, &rules, [4; 32], true, false);
-    let BridgeAuthorizationObservation {
-        correspondence,
-        dependency_identity,
-        mut rules,
-    } = incomplete;
-    rules[0].requirements[0].clauses[0] =
-        clause_observation(*rules[0].requirements[0].clauses[0].identity(), true, false);
-    assert!(runtime
-        .evaluate(BridgeAuthorizationObservation {
-            correspondence,
-            dependency_identity,
-            rules,
-        })
-        .is_err());
+    let mut incomplete = observation(identity, &rules, [4; 32], true, false);
+    let clause = &mut incomplete.rules[0].requirements[0].clauses[0];
+    *clause = clause_observation(*clause.identity(), true, false);
+    assert!(runtime.evaluate(incomplete).is_err());
 }
 
 fn rules() -> Vec<BridgeAuthorizationRuleContract> {
@@ -206,10 +195,11 @@ fn observation(
     allowed: bool,
     prohibited: bool,
 ) -> BridgeAuthorizationObservation {
-    BridgeAuthorizationObservation::new(
-        identity,
+    BridgeAuthorizationObservation {
+        correspondence: identity,
         dependency_identity,
-        [
+        source_matches: true,
+        rules: vec![
             rule_observation(
                 &rules[0],
                 [requirement_observation(
@@ -225,7 +215,7 @@ fn observation(
                 )],
             ),
         ],
-    )
+    }
 }
 
 fn rule_observation(

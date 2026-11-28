@@ -19,15 +19,7 @@ fn runtime_activates_and_discards_preview_session_with_zero_authoritative_residu
     assert_eq!(execution_record.counters().preview_artifact_count(), 3);
 
     let (discarded, discard_record) = runtime
-        .discard_preview_session(
-            active,
-            &execution_record,
-            vec![
-                BridgePreviewResidueClass::PreviewExecutionRetained,
-                BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
-                BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
-            ],
-        )
+        .discard_preview_session(active, &execution_record)
         .expect("preview discard should succeed");
 
     assert_eq!(
@@ -40,7 +32,11 @@ fn runtime_activates_and_discards_preview_session_with_zero_authoritative_residu
             .authoritative_residue_count(),
         0
     );
-    assert_eq!(discard_record.counters().destroyed_artifact_count(), 1);
+    assert_eq!(
+        discard_record.residue_report().residue_classes(),
+        &[BridgePreviewResidueClass::PreviewExecutionRetained]
+    );
+    assert_eq!(discard_record.counters().destroyed_artifact_count(), 0);
     assert_eq!(runtime.diagnostics().preview_execution_records().len(), 1);
     assert_eq!(runtime.diagnostics().preview_discard_records().len(), 1);
     assert_eq!(
@@ -54,7 +50,7 @@ fn runtime_activates_and_discards_preview_session_with_zero_authoritative_residu
 }
 
 #[test]
-fn runtime_rejects_preview_discard_when_authoritative_residue_remains() {
+fn runtime_rejects_discard_with_another_sessions_execution_record() {
     let runtime = runtime(BridgeRuntimePolicy::default());
     let admitted = runtime
         .admit_preview_session(
@@ -64,28 +60,31 @@ fn runtime_rejects_preview_discard_when_authoritative_residue_remains() {
         .expect("preview declaration should admit");
     let (active, execution_record) = runtime.activate_preview_session(admitted, 2, 1, 1);
 
+    let unrelated = runtime
+        .admit_preview_session(
+            BridgePreviewSessionIdentity::from_stable_name("preview-session:unrelated"),
+            preview_declaration(),
+        )
+        .unwrap();
+    let (_, unrelated_record) = runtime.activate_preview_session(unrelated, 0, 0, 0);
     let original_digest = active.digest().to_owned();
     let (active, error) = runtime
-        .discard_preview_session(
-            active,
-            &execution_record,
-            vec![BridgePreviewResidueClass::AuthoritativeRoutingResidue],
-        )
-        .expect_err("authoritative residue must block discard");
+        .discard_preview_session(active, &unrelated_record)
+        .expect_err("a foreign execution record must block discard");
 
     assert_eq!(
         error.kind(),
-        crate::error::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch
+        crate::error::BridgeSpeculationErrorKind::PreviewBranchBindingMismatch
     );
     assert_eq!(active.digest(), original_digest);
     assert!(runtime.diagnostics().preview_discard_records().is_empty());
     let (discarded, _) = runtime
-        .discard_preview_session(active, &execution_record, Vec::new())
+        .discard_preview_session(active, &execution_record)
         .unwrap();
     assert_eq!(
         discarded.session_identity().as_str(),
         "preview-session:authority"
     );
-    assert_eq!(runtime.diagnostics().preview_execution_records().len(), 1);
+    assert_eq!(runtime.diagnostics().preview_execution_records().len(), 2);
     assert_eq!(runtime.diagnostics().preview_discard_records().len(), 1);
 }

@@ -57,7 +57,6 @@ impl BridgeSpeculativeSessionHandle {
     /// Discards the active session, returning the same owner on refusal.
     pub fn discard(
         self,
-        residue_classes: Vec<BridgePreviewResidueClass>,
     ) -> Result<BridgeSpeculativeDiscardOutcome, (Self, BridgeSpeculationError)> {
         let Self {
             runtime,
@@ -65,7 +64,7 @@ impl BridgeSpeculativeSessionHandle {
             execution_record,
             liveness,
         } = self;
-        match runtime.discard_preview_session(session, &execution_record, residue_classes) {
+        match runtime.discard_preview_session(session, &execution_record) {
             Ok((session, record)) => Ok(BridgeSpeculativeDiscardOutcome::new(session, record)),
             Err((session, denial)) => Err((
                 Self {

@@ -46,11 +46,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_discard_bundle(
         .expect("speculative branch should still see shock pricing");
 
     let discarded = session
-        .discard(vec![
-            BridgePreviewResidueClass::PreviewExecutionRetained,
-            BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
-            BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
-        ])
+        .discard()
         .expect("discard should succeed with zero authoritative residue");
 
     let post_discard_main_eval = runtime

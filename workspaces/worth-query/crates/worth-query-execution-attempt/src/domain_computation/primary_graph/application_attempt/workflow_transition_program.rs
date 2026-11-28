@@ -57,6 +57,7 @@ fn denial(
 }
 
 pub mod actor_selection;
+pub(crate) use actor_selection::ReadmittedWorkflowActor;
 pub mod approval;
 pub mod approval_decision;
 pub mod local_actions;

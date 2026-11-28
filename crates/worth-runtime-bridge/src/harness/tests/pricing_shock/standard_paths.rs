@@ -96,11 +96,7 @@ fn pricing_shock_standard_path_routes_evaluates_and_keeps_speculation_local() {
             2,
         ))
         .expect("pricing shock preview should activate")
-        .discard(vec![
-            BridgePreviewResidueClass::PreviewExecutionRetained,
-            BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
-            BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
-        ])
+        .discard()
         .expect("pricing shock discard should succeed");
 
     let promoted = runtime

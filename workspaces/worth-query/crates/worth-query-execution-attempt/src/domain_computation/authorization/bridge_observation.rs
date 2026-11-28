@@ -3,9 +3,8 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence;
 use worth_runtime_bridge::facade::{
-    BridgeAuthorizationClauseObservation, BridgeAuthorizationDependencyCardinality,
-    BridgeAuthorizationObservation, BridgeAuthorizationRequirementObservation,
-    BridgeAuthorizationRuleObservation,
+    BridgeAuthorizationClauseObservation, BridgeAuthorizationObservation,
+    BridgeAuthorizationRequirementObservation, BridgeAuthorizationRuleObservation,
 };
 
 use super::installed_policy::WorthQueryInstalledAuthorizationPolicy;
@@ -14,7 +13,6 @@ use super::{WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthoriza
 pub fn lower_bridge_observation(
     installed: &WorthQueryInstalledAuthorizationPolicy,
     evidence: &RelationalAuthorizationObservationEvidence,
-    dependency_identity: [u8; 32],
     policy: &str,
 ) -> Result<BridgeAuthorizationObservation, WorthQueryOperationAuthorizationDenial> {
     if evidence.paths().len() != installed.bridge_path_bindings().len() {
@@ -37,7 +35,7 @@ pub fn lower_bridge_observation(
     }
     Ok(BridgeAuthorizationObservation::new(
         installed.correspondence(),
-        dependency_identity,
+        evidence,
         observed_rules,
     ))
 }
@@ -89,16 +87,9 @@ impl ObservationBinding<'_> {
             return Err(invalid_shape(self.policy));
         }
         *was_observed = true;
-        Ok(BridgeAuthorizationClauseObservation::new(
+        Ok(BridgeAuthorizationClauseObservation::from_relational_path(
             binding.identity,
-            path.matched(),
-            path.exhaustive(),
-            BridgeAuthorizationDependencyCardinality {
-                entities: path.entities().len(),
-                relations: path.relations().len(),
-                adjacency_lists: path.adjacency_lists().len(),
-                fields: path.fields().len(),
-            },
+            path,
         ))
     }
 }

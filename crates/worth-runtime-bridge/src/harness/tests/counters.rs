@@ -5,12 +5,12 @@ use super::support::{
     registration,
 };
 use crate::facade::{
-    BridgeDeliveryIntent, BridgePreviewResidueClass, BridgePreviewSessionDeclaration,
-    BridgePreviewSessionDeclarationIdentity, BridgeReplayMode, BridgeRequestKind,
-    BridgeSignalBranchIdentity, BridgeSourceCapability, BridgeSourceCapabilitySet,
-    BridgeSpeculativeBranchBinding, BridgeSpeculativeBranchBindingIdentity,
-    BridgeTruthViewSelector, HistoricalEvaluationDeclaration, SnapshotReadPacket,
-    TruthBranchIdentity, TruthSnapshotIdentity,
+    BridgeDeliveryIntent, BridgePreviewSessionDeclaration, BridgePreviewSessionDeclarationIdentity,
+    BridgeReplayMode, BridgeRequestKind, BridgeSignalBranchIdentity, BridgeSourceCapability,
+    BridgeSourceCapabilitySet, BridgeSpeculativeBranchBinding,
+    BridgeSpeculativeBranchBindingIdentity, BridgeTruthViewSelector,
+    HistoricalEvaluationDeclaration, SnapshotReadPacket, TruthBranchIdentity,
+    TruthSnapshotIdentity,
 };
 use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBridgeSink};
 use crate::speculation::BridgePreviewSessionIdentity;
@@ -185,27 +185,19 @@ fn speculation_counters_capture_preview_discard_promotion_and_replay_widths() {
     );
 
     let (discarded, discard_record) = runtime
-        .discard_preview_session(
-            active,
-            &execution_record,
-            vec![
-                BridgePreviewResidueClass::PreviewExecutionRetained,
-                BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
-                BridgePreviewResidueClass::TemporaryRoutingResidue,
-            ],
-        )
+        .discard_preview_session(active, &execution_record)
         .expect("discard should succeed");
 
     assert_eq!(discard_record.counters().preview_session_count_touched(), 1);
-    assert_eq!(discard_record.counters().discard_artifact_count(), 1);
-    assert_eq!(discard_record.counters().destroyed_artifact_count(), 1);
+    assert_eq!(discard_record.counters().discard_artifact_count(), 0);
+    assert_eq!(discard_record.counters().destroyed_artifact_count(), 0);
     assert_eq!(
         discard_record
             .counters()
             .retained_non_authoritative_artifact_count(),
-        2
+        1
     );
-    assert_eq!(discard_record.counters().replay_bundle_width(), 2);
+    assert_eq!(discard_record.counters().replay_bundle_width(), 1);
 
     let replay_bundle = runtime
         .replay_preview_bundle(discarded.session_identity())

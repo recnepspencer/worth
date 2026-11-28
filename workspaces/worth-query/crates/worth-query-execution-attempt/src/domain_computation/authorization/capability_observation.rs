@@ -191,7 +191,7 @@ pub(super) fn observe_capability_policy(
         paths,
     )?;
     let bridge_evidence =
-        evaluate_exact_policy(bridge, installed, request, &evidence, recorded.as_deref())?;
+        evaluate_exact_policy(bridge, installed, request, &evidence, recorded.as_ref())?;
     let grant = extract_exact_grant(installed, &evidence)?;
     if exact_grant != grant {
         return Err(WorthQueryOperationAuthorizationDenial::new(
@@ -211,7 +211,7 @@ pub(super) fn observe_capability_policy(
             relational,
             evidence,
             bridge_evidence,
-            recorded,
+            recorded.map(|actor| actor.native),
         )?
         .with_preparatory_relational_work(preparatory_relational_work),
         grant,
@@ -286,21 +286,13 @@ fn evaluate_exact_policy(
     installed: &WorthQueryInstalledCapabilityPlan,
     request: &WorthQueryRetainedCapabilityRequest,
     evidence: &worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
-    recorded: Option<&crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>,
+    recorded: Option<&recorded_actor::ReadmittedActor>,
 ) -> Result<
     worth_runtime_bridge::facade::BridgeAuthorizationDecisionEvidence,
     WorthQueryOperationAuthorizationDenial,
 > {
-    let dependency_identity = recorded.map_or(*evidence.observation_identity().bytes(), |actor| {
-        actor.combined_identity(evidence.observation_identity().bytes())
-    });
-    let bridge_observation = bridge_observation::lower_bridge_observation(
-        installed,
-        request,
-        evidence,
-        dependency_identity,
-        recorded,
-    )?;
+    let bridge_observation =
+        bridge_observation::lower_bridge_observation(installed, request, evidence, recorded)?;
     let bridge_evidence = bridge.evaluate(bridge_observation).map_err(|_| {
         WorthQueryOperationAuthorizationDenial::new(
             WorthQueryOperationAuthorizationDenialKind::Refused(
@@ -309,7 +301,7 @@ fn evaluate_exact_policy(
             installed.contract().name(),
         )
     })?;
-    if bridge_evidence.dependency_identity() != &dependency_identity
+    if bridge_evidence.dependency_identity() != evidence.observation_identity().bytes()
         || !bridge.retains(&bridge_evidence)
     {
         return Err(WorthQueryOperationAuthorizationDenial::new(
@@ -324,7 +316,7 @@ fn evaluate_exact_policy(
             installed.decision_rules(),
             &bridge_evidence,
             decision_denial::elevation_denial_kind(installed, evidence),
-            recorded,
+            recorded.map(|actor| actor.native.as_ref()),
         )?;
         return Err(WorthQueryOperationAuthorizationDenial::from_ordered_causes(
             causes,

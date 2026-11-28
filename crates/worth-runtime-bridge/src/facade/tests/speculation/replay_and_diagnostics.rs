@@ -3,8 +3,8 @@ use crate::facade::tests::speculation::{
     preview_declaration, structural_basis, StructuralBasisInput, StructuralSemanticsVersion,
 };
 use crate::facade::{
-    BridgePreviewLifecycleStateKind, BridgePreviewResidueClass, BridgeRuntimePolicy,
-    StructuralIdentityDeclarationIdentity, StructuralSchemaIdentity,
+    BridgePreviewLifecycleStateKind, BridgeRuntimePolicy, StructuralIdentityDeclarationIdentity,
+    StructuralSchemaIdentity,
 };
 use crate::speculation::BridgePreviewSessionIdentity;
 
@@ -19,14 +19,7 @@ fn runtime_replays_discarded_preview_bundle_from_retained_records() {
         .expect("preview declaration should admit");
     let (active, execution_record) = runtime.activate_preview_session(admitted, 3, 2, 1);
     let (discarded, discard_record) = runtime
-        .discard_preview_session(
-            active,
-            &execution_record,
-            vec![
-                BridgePreviewResidueClass::PreviewDiagnosticsRetained,
-                BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
-            ],
-        )
+        .discard_preview_session(active, &execution_record)
         .expect("discard should succeed");
 
     let replay_bundle = runtime
@@ -58,15 +51,7 @@ fn runtime_rejects_post_discard_reentry_and_preserves_canonical_discard_bundle()
         .expect("preview declaration should admit");
     let (active, execution_record) = runtime.activate_preview_session(admitted, 4, 2, 2);
     let (discarded, discard_record) = runtime
-        .discard_preview_session(
-            active,
-            &execution_record,
-            vec![
-                BridgePreviewResidueClass::PreviewExecutionRetained,
-                BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
-                BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
-            ],
-        )
+        .discard_preview_session(active, &execution_record)
         .expect("discard should succeed");
 
     let initial_replay = runtime
@@ -189,14 +174,7 @@ fn runtime_explains_preview_discard_from_retained_records() {
         .expect("preview declaration should admit");
     let (active, execution_record) = runtime.activate_preview_session(admitted, 2, 1, 1);
     let (_discarded, discard_record) = runtime
-        .discard_preview_session(
-            active,
-            &execution_record,
-            vec![
-                BridgePreviewResidueClass::PreviewDiagnosticsRetained,
-                BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
-            ],
-        )
+        .discard_preview_session(active, &execution_record)
         .expect("discard should succeed");
 
     let discard_explanation = runtime
@@ -209,5 +187,5 @@ fn runtime_explains_preview_discard_from_retained_records() {
         discard_record.record_identity().as_str()
     );
     assert_eq!(discard_explanation.authoritative_residue_count(), 0);
-    assert_eq!(discard_explanation.destroyed_artifact_count(), 1);
+    assert_eq!(discard_explanation.destroyed_artifact_count(), 0);
 }

@@ -30,6 +30,49 @@ fn runtime_admits_and_activates_reused_preview_session_only_for_exact_equivalenc
         .admit_preview_reuse(&source_active, &source_execution_record, &target_admitted)
         .expect("exactly equivalent preview declarations should admit reuse");
 
+    let unrelated = runtime
+        .admit_preview_session(
+            BridgePreviewSessionIdentity::from_stable_name("preview-session:reuse-other"),
+            preview_declaration(),
+        )
+        .unwrap();
+    let (_, unrelated_record) = runtime.activate_preview_session(unrelated, 0, 0, 0);
+    let original_digest = target_admitted.digest().to_owned();
+    let (target_admitted, denial) = runtime
+        .activate_preview_session_with_reuse(
+            target_admitted,
+            &source_active,
+            &unrelated_record,
+            &reuse_equivalence,
+        )
+        .expect_err("the source record must belong to the source session");
+    assert_eq!(
+        denial.kind(),
+        crate::error::BridgeSpeculationErrorKind::PreviewBranchBindingMismatch
+    );
+    let unrelated_target = runtime
+        .admit_preview_session(
+            BridgePreviewSessionIdentity::from_stable_name("preview-session:reuse-other-target"),
+            preview_declaration(),
+        )
+        .unwrap();
+    let unrelated_proof = runtime
+        .admit_preview_reuse(&source_active, &source_execution_record, &unrelated_target)
+        .unwrap();
+    let (target_admitted, denial) = runtime
+        .activate_preview_session_with_reuse(
+            target_admitted,
+            &source_active,
+            &source_execution_record,
+            &unrelated_proof,
+        )
+        .expect_err("a proof for another target must refuse activation");
+    assert_eq!(
+        denial.kind(),
+        crate::error::BridgeSpeculationErrorKind::PreviewReuseEquivalenceMismatch
+    );
+    assert_eq!(target_admitted.digest(), original_digest);
+
     let (target_active, target_execution_record) = runtime
         .activate_preview_session_with_reuse(
             target_admitted,
@@ -47,7 +90,7 @@ fn runtime_admits_and_activates_reused_preview_session_only_for_exact_equivalenc
         target_execution_record.counters().preview_artifact_count(),
         source_execution_record.counters().preview_artifact_count()
     );
-    assert_eq!(runtime.diagnostics().preview_execution_records().len(), 2);
+    assert_eq!(runtime.diagnostics().preview_execution_records().len(), 3);
 }
 
 #[test]

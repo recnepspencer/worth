@@ -80,12 +80,7 @@ where
         self.validate_installation(runtime, installed, requirement)?;
         let relational = self.observe_relational(execution, installed, requirement)?;
         let dependency_identity = *relational.observation_identity().bytes();
-        let observation = lower_bridge_observation(
-            installed,
-            &relational,
-            dependency_identity,
-            requirement.policy(),
-        )?;
+        let observation = lower_bridge_observation(installed, &relational, requirement.policy())?;
         let bridge_runtime = runtime.runtime.authorization.bridge();
         let bridge = bridge_runtime.evaluate(observation).map_err(|_| {
             refused(

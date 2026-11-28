@@ -247,3 +247,98 @@ mod serial_memory;
 
 #[path = "snapshot_request_work_tests.rs"]
 mod request_work;
+
+#[test]
+fn guarded_authorization_lowers_only_actual_relational_matches() {
+    use crate::facade::{
+        BridgeAuthorizationBindingIdentity, BridgeAuthorizationClauseContract,
+        BridgeAuthorizationClauseObservation, BridgeAuthorizationInstallationRequest,
+        BridgeAuthorizationObservation, BridgeAuthorizationRequirementContract,
+        BridgeAuthorizationRequirementObservation, BridgeAuthorizationRuleContract,
+        BridgeAuthorizationRuleEffect, BridgeAuthorizationRuleObservation,
+        BridgeAuthorizationRuntime,
+    };
+    use worth_foundational::facade::CanonicalDigestId;
+    use worth_relational::facade::{
+        authorization::{RelationalAuthorizationObservationPlan, RelationalAuthorizationPathPlan},
+        identity::KindId,
+    };
+
+    let host = crate::snapshot::test_serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let runtime = runtime_with_test_schema();
+    let principal = create_entity(execution, &runtime, "principal");
+    let scope = create_entity_outcome(execution, &runtime, "other scope");
+    let other = crate::relational_source::relational_test_support::changed_entities(&scope)[0];
+    let mut bridge = BridgeAuthorizationRuntime::new();
+    let digest = CanonicalDigestId::new([4; 32]);
+    let identity = [5; 32];
+    let correspondence = bridge
+        .install(BridgeAuthorizationInstallationRequest::new(
+            &digest,
+            BridgeAuthorizationBindingIdentity::new(1, 1, digest.clone(), digest.clone()),
+            "read",
+            "subject",
+            "self",
+            [BridgeAuthorizationRuleContract::all(
+                BridgeAuthorizationRuleEffect::Required,
+                [BridgeAuthorizationRequirementContract::any([
+                    BridgeAuthorizationClauseContract::new(identity),
+                ])],
+            )],
+        ))
+        .unwrap();
+
+    let observe = |target| {
+        let plan = RelationalAuthorizationObservationPlan::try_new(
+            scope.snapshot.clone(),
+            principal,
+            target,
+            KindId(1),
+            KindId(1),
+            [RelationalAuthorizationPathPlan::new([], [])],
+            [],
+        )
+        .unwrap();
+        runtime.observe_authorization(plan, execution).unwrap()
+    };
+    let positive = observe(principal);
+    let negative = observe(other);
+    let rules = |clause| {
+        [BridgeAuthorizationRuleObservation::all(
+            BridgeAuthorizationRuleEffect::Required,
+            [BridgeAuthorizationRequirementObservation::any([clause])],
+        )]
+    };
+    for (evidence, guard, expected) in [
+        (&positive, true, true),
+        (&positive, false, false),
+        (&negative, true, false),
+    ] {
+        let clause = BridgeAuthorizationClauseObservation::from_guarded_relational_path(
+            identity,
+            &evidence.paths()[0],
+            guard,
+        );
+        let observation =
+            BridgeAuthorizationObservation::new(correspondence, evidence, rules(clause));
+        let decision = bridge.evaluate(observation).unwrap();
+        assert_eq!(decision.is_allowed(), expected);
+        assert_eq!(
+            decision.dependency_identity(),
+            evidence.observation_identity().bytes()
+        );
+    }
+
+    let forged =
+        BridgeAuthorizationClauseObservation::from_relational_path(identity, &positive.paths()[0]);
+    let observation = BridgeAuthorizationObservation::new(correspondence, &negative, rules(forged));
+    assert_eq!(
+        bridge
+            .evaluate(observation)
+            .err()
+            .expect("mixed evidence must be rejected")
+            .kind(),
+        crate::facade::BridgeAuthorizationDenialKind::ObservationShapeMismatch
+    );
+}

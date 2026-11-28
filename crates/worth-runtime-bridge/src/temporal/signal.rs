@@ -43,6 +43,14 @@ pub struct AdmittedBridgeTemporalSignalBasis {
     canonical_digest: CanonicalDerivedDigest,
 }
 
+/// Wake evidence issued after Bridge admits a Signal promotion.
+///
+/// ```compile_fail,E0624
+/// use worth_runtime_bridge::facade::{AdmittedBridgeTemporalWakeEvidence, BridgeTemporalWakeEvidence};
+/// fn forge(wake: BridgeTemporalWakeEvidence) {
+///     let _ = AdmittedBridgeTemporalWakeEvidence::admit(wake);
+/// }
+/// ```
 #[derive(Debug, Clone)]
 pub struct AdmittedBridgeTemporalWakeEvidence {
     evidence: BridgeTemporalWakeEvidence,
@@ -89,7 +97,7 @@ impl BridgeTemporalSignalBasis {
 }
 
 impl BridgeTemporalWakeEvidence {
-    pub fn new(
+    pub(crate) fn new(
         wake_id: TemporalWakeId,
         wake_ready_ordinal: WakeOrdinal,
         wake_tick: ClockTick,
@@ -183,7 +191,7 @@ impl PartialEq for AdmittedBridgeTemporalSignalBasis {
 impl Eq for AdmittedBridgeTemporalSignalBasis {}
 
 impl AdmittedBridgeTemporalWakeEvidence {
-    pub fn admit(evidence: BridgeTemporalWakeEvidence) -> Self {
+    pub(crate) fn admit(evidence: BridgeTemporalWakeEvidence) -> Self {
         let canonical_ready = transition_canonical_ready(
             canonical_version(WAKE_EVIDENCE_CANONICAL_VERSION),
             [

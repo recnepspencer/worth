@@ -9,7 +9,7 @@ pub(in crate::harness::tests::pricing_shock) use crate::facade::{
     BridgeAspectRegistration, BridgeAspectRegistrationId, BridgeCommittedPatchEnvelope,
     BridgeCommittedPatchItem, BridgeDiagnosticsTier, BridgeExecutionPolicyClass,
     BridgeFailureClass, BridgeMappingId, BridgeMappingRegistration, BridgePolicyDeclaration,
-    BridgePolicyDeclarationIdentity, BridgePreviewResidueClass, BridgePreviewSessionDeclaration,
+    BridgePolicyDeclarationIdentity, BridgePreviewSessionDeclaration,
     BridgePreviewSessionDeclarationIdentity, BridgeReplayErrorKind, BridgeRequestKind,
     BridgeRuntimePolicy, BridgeSignalBranchIdentity, BridgeSourceCapability,
     BridgeSourceCapabilitySet, BridgeSpeculativeBranchBinding,

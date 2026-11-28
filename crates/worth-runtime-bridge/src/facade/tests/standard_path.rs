@@ -5,7 +5,7 @@ use super::{
 };
 use crate::facade::BridgeSpeculativeSessionRequest;
 use crate::speculation::{
-    BridgePreviewResidueClass, BridgePreviewRetainedArtifactSchema, BridgePreviewSessionBasis,
+    BridgePreviewRetainedArtifactSchema, BridgePreviewSessionBasis,
     BridgePreviewSessionDeclaration, BridgePreviewSessionDeclarationIdentity,
     BridgePreviewSessionIdentity, BridgeRequestKind, BridgeSignalBranchIdentity,
     BridgeSpeculativeBranchBinding, BridgeSpeculativeBranchBindingIdentity,
@@ -220,11 +220,7 @@ fn standard_speculation_flow_activates_discards_and_promotes() {
             2,
         ))
         .expect("standard speculation should activate")
-        .discard(vec![
-            BridgePreviewResidueClass::PreviewExecutionRetained,
-            BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
-            BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
-        ])
+        .discard()
         .expect("standard speculation discard should succeed");
 
     assert_eq!(
@@ -283,23 +279,8 @@ fn preview_liveness_observer_tracks_handle_disposal_without_retaining_session() 
         .expect("the live handle must admit a lifecycle guard");
     drop(guard);
 
-    let original_execution = handle.execution_record().digest().to_owned();
-    let (handle, denial) = handle
-        .discard(vec![BridgePreviewResidueClass::AuthoritativeRoutingResidue])
-        .unwrap_err();
-    let refusal = crate::harness::adapter::BridgeHarnessError::preview_refused(handle, denial);
-    let (handle, denial) = refusal
-        .into_preview()
-        .expect("certification refusal must return the same active preview");
-    assert_eq!(
-        denial.kind(),
-        crate::error::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch
-    );
-    assert!(observer.admit_active_session().is_some());
-    assert_eq!(handle.execution_record().digest(), original_execution);
-    assert!(runtime.diagnostics().preview_discard_records().is_empty());
     handle
-        .discard(Vec::new())
+        .discard()
         .expect("zero-residue preview discard should succeed");
     assert!(observer.admit_active_session().is_none());
 

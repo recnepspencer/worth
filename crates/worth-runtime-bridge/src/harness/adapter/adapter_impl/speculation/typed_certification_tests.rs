@@ -148,12 +148,12 @@ fn discard_certification_retains_typed_residue_counter_and_route_evidence() {
         0
     );
     assert_eq!(discard_record.counters().preview_session_count_touched(), 1);
-    assert_eq!(discard_record.counters().discard_artifact_count(), 2);
+    assert_eq!(discard_record.counters().discard_artifact_count(), 0);
     assert_eq!(
         discard_record
             .counters()
             .retained_non_authoritative_artifact_count(),
-        2
+        1
     );
     assert!(routing_digest.is_some());
 }

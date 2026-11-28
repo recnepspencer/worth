@@ -1,5 +1,5 @@
 use crate::facade::{
-    BridgePreviewLifecycleStateKind, BridgePreviewResidueClass, BridgePreviewSessionDeclaration,
+    BridgePreviewLifecycleStateKind, BridgePreviewSessionDeclaration,
     BridgePreviewSessionDeclarationIdentity, BridgeRequestKind, BridgeSignalBranchIdentity,
     BridgeSpeculativeBranchBinding, BridgeSpeculativeBranchBindingIdentity,
 };
@@ -101,14 +101,7 @@ fn bridge_harness_speculation_discard_replay_remains_queryable() {
         .expect("preview declaration should admit");
     let (active, execution_record) = runtime.activate_preview_session(admitted, 2, 1, 1);
     let (_discarded, discard_record) = runtime
-        .discard_preview_session(
-            active,
-            &execution_record,
-            vec![
-                BridgePreviewResidueClass::PreviewExecutionRetained,
-                BridgePreviewResidueClass::TemporaryRoutingResidue,
-            ],
-        )
+        .discard_preview_session(active, &execution_record)
         .expect("discard should succeed");
     let replay_bundle = runtime
         .replay_preview_bundle(&BridgePreviewSessionIdentity::admit_bridge_owned(

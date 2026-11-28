@@ -154,10 +154,7 @@ let speculative_eval = bridge.evaluate(
 Discard:
 
 ```rust
-let discarded = session.discard(vec![
-    worth_runtime_bridge::facade::BridgePreviewResidueClass::PreviewExecutionRetained,
-    worth_runtime_bridge::facade::BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
-])?;
+let discarded = session.discard()?;
 ```
 
 Promote:

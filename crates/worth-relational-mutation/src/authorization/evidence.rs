@@ -42,13 +42,26 @@ pub struct RelationalAuthorizationObservationCounters {
     pub maximum_frontier_width: usize,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct RelationalAuthorizationPathObservation {
+    observation: Option<RelationalAuthorizationObservationIdentity>,
     matched: bool,
     witness: Option<RelationalAuthorizationPathWitness>,
     dependencies: RelationalAuthorizationPathDependencies,
     exhaustive: bool,
 }
+
+// Path equality compares the observed meaning across equivalent reads.
+// The issuing observation is checked independently by a crossing.
+impl PartialEq for RelationalAuthorizationPathObservation {
+    fn eq(&self, other: &Self) -> bool {
+        self.has_same_decision_and_witness(other)
+            && self.dependencies == other.dependencies
+            && self.exhaustive == other.exhaustive
+    }
+}
+
+impl Eq for RelationalAuthorizationPathObservation {}
 
 /// One complete branch that independently satisfied an authorization path.
 ///
@@ -123,11 +136,16 @@ impl RelationalAuthorizationPathObservation {
         exhaustive: bool,
     ) -> Self {
         Self {
+            observation: None,
             matched,
             witness,
             dependencies,
             exhaustive,
         }
+    }
+
+    pub const fn observation_identity(&self) -> Option<RelationalAuthorizationObservationIdentity> {
+        self.observation
     }
 
     pub const fn matched(&self) -> bool {
@@ -179,9 +197,12 @@ impl RelationalAuthorizationObservationEvidence {
     pub(crate) fn mint(
         plan: RelationalAuthorizationObservationPlan,
         observation_identity: RelationalAuthorizationObservationIdentity,
-        paths: Vec<RelationalAuthorizationPathObservation>,
+        mut paths: Vec<RelationalAuthorizationPathObservation>,
         counters: RelationalAuthorizationObservationCounters,
     ) -> Self {
+        for path in &mut paths {
+            path.observation = Some(observation_identity);
+        }
         Self {
             plan,
             observation_identity,

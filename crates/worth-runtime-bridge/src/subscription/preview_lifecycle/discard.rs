@@ -180,11 +180,17 @@ impl BridgeSubscriptionPreviewLifecycleDiscardProof {
     pub(crate) fn prove(
         preview_active: BridgePreviewActiveSubscription,
         residue_envelope: BridgeSubscriptionPreviewLifecycleResidueEnvelope,
-    ) -> Result<Self, BridgeSubscriptionPreviewLifecycleDiscardRejection> {
+    ) -> Result<
+        Self,
+        (
+            BridgePreviewActiveSubscription,
+            BridgeSubscriptionPreviewLifecycleDiscardRejection,
+        ),
+    > {
         if residue_envelope.preview_active_subscription_identity()
             != preview_active.preview_active_subscription_identity()
         {
-            return Err(BridgeSubscriptionPreviewLifecycleDiscardRejection::new(
+            let denial = BridgeSubscriptionPreviewLifecycleDiscardRejection::new(
                 BridgeSubscriptionPreviewLifecycleDiscardRejectionKind::PreviewActiveMismatch,
                 BridgeSubscriptionPreviewLifecycleDiscardRejectionContext::PreviewActiveMismatch {
                     preview_active_subscription_identity: preview_active
@@ -196,12 +202,13 @@ impl BridgeSubscriptionPreviewLifecycleDiscardProof {
                 },
                 false,
                 0,
-            ));
+            );
+            return Err((preview_active, denial));
         }
         if residue_envelope.preview_residue_scope_identity()
             != preview_active.preview_residue_scope_identity()
         {
-            return Err(BridgeSubscriptionPreviewLifecycleDiscardRejection::new(
+            let denial = BridgeSubscriptionPreviewLifecycleDiscardRejection::new(
                 BridgeSubscriptionPreviewLifecycleDiscardRejectionKind::PreviewResidueScopeMismatch,
                 BridgeSubscriptionPreviewLifecycleDiscardRejectionContext::PreviewResidueScopeMismatch {
                     preview_residue_scope_identity: preview_active
@@ -213,7 +220,8 @@ impl BridgeSubscriptionPreviewLifecycleDiscardProof {
                 },
                 false,
                 0,
-            ));
+            );
+            return Err((preview_active, denial));
         }
 
         let residue_check_count = residue_envelope.residue_records().len();
@@ -221,27 +229,29 @@ impl BridgeSubscriptionPreviewLifecycleDiscardProof {
         let mut seen = BTreeSet::<BridgeSubscriptionPreviewLifecycleResidueKind>::new();
         for record in residue_envelope.residue_records() {
             if !seen.insert(record.kind()) {
-                return Err(BridgeSubscriptionPreviewLifecycleDiscardRejection::new(
+                let denial = BridgeSubscriptionPreviewLifecycleDiscardRejection::new(
                     BridgeSubscriptionPreviewLifecycleDiscardRejectionKind::DuplicateResidueKind,
                     BridgeSubscriptionPreviewLifecycleDiscardRejectionContext::DuplicateResidueKind(
                         record.kind(),
                     ),
                     false,
                     residue_check_count,
-                ));
+                );
+                return Err((preview_active, denial));
             }
             *counts.entry(record.kind()).or_default() += record.residue_count();
         }
         for required in BridgeSubscriptionPreviewLifecycleResidueKind::all() {
             if !seen.contains(&required) {
-                return Err(BridgeSubscriptionPreviewLifecycleDiscardRejection::new(
+                let denial = BridgeSubscriptionPreviewLifecycleDiscardRejection::new(
                     BridgeSubscriptionPreviewLifecycleDiscardRejectionKind::MissingResidueKind,
                     BridgeSubscriptionPreviewLifecycleDiscardRejectionContext::MissingResidueKind(
                         required,
                     ),
                     false,
                     residue_check_count,
-                ));
+                );
+                return Err((preview_active, denial));
             }
         }
 
@@ -254,14 +264,15 @@ impl BridgeSubscriptionPreviewLifecycleDiscardProof {
                     BridgeSubscriptionPreviewLifecycleResidueKindCount::new(*kind, *count)
                 })
                 .collect::<Vec<_>>();
-            return Err(BridgeSubscriptionPreviewLifecycleDiscardRejection::new(
+            let denial = BridgeSubscriptionPreviewLifecycleDiscardRejection::new(
                 BridgeSubscriptionPreviewLifecycleDiscardRejectionKind::NonzeroResidue,
                 BridgeSubscriptionPreviewLifecycleDiscardRejectionContext::NonzeroResidue(
                     Arc::from(nonzero),
                 ),
                 true,
                 residue_check_count,
-            ));
+            );
+            return Err((preview_active, denial));
         }
 
         let record_digests = residue_envelope

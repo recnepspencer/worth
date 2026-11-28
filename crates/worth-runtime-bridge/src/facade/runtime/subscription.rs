@@ -278,7 +278,13 @@ impl RuntimeBridge {
         checkpoint_ready: BridgeSubscriptionCheckpointReady,
         active_subscription: &BridgeActiveSubscription,
         duplicate_replay_policy_kind: BridgeSubscriptionDuplicateReplayPolicyKind,
-    ) -> Result<BridgeSubscriptionCheckpoint, BridgeSubscriptionCheckpointRejection> {
+    ) -> Result<
+        BridgeSubscriptionCheckpoint,
+        (
+            BridgeSubscriptionCheckpointReady,
+            BridgeSubscriptionCheckpointRejection,
+        ),
+    > {
         let _ = self;
         BridgeSubscriptionCheckpoint::publish(
             checkpoint_ready,
@@ -296,7 +302,13 @@ impl RuntimeBridge {
         active_subscription: &BridgeActiveSubscription,
         fanout_layout: &BridgeSubscriptionFanoutLayout,
         duplicate_replay_policy_kind: BridgeSubscriptionDuplicateReplayPolicyKind,
-    ) -> Result<BridgeSubscriptionCheckpoint, BridgeSubscriptionCheckpointRejection> {
+    ) -> Result<
+        BridgeSubscriptionCheckpoint,
+        (
+            BridgeSubscriptionCheckpointReady,
+            BridgeSubscriptionCheckpointRejection,
+        ),
+    > {
         let _ = self;
         BridgeSubscriptionCheckpoint::publish(
             checkpoint_ready,
