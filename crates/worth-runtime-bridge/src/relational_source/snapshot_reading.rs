@@ -12,7 +12,7 @@ use super::snapshot_values::{
     export_entity_aspect_snapshot_value, export_relation_aspect_snapshot_value,
 };
 use worth_relational::facade::change_source::{
-    RelationalObservationReadDenial, RelationalRuntimeHandle,
+    RelationalPinnedCommitObservation, RelationalRuntimeHandle,
 };
 use worth_relational::facade::identity::PartitionId;
 use worth_relational::facade::mvcc::RelationalBranchObservation;
@@ -27,11 +27,31 @@ use worth_relational::facade::transactions::RecordRef;
 pub(crate) struct RuntimePublicationSnapshotReader {
     runtime: RelationalRuntimeHandle,
     snapshot_identity: TruthSnapshotIdentity,
-    observation: RelationalBranchObservation,
+    observation: SnapshotObservation,
     partition: Option<PartitionId>,
 }
 
+#[derive(Debug, Clone)]
+pub(super) enum SnapshotObservation {
+    Branch(RelationalBranchObservation),
+    Commit(std::sync::Arc<RelationalPinnedCommitObservation>),
+}
+
 impl RuntimePublicationSnapshotReader {
+    pub(super) fn for_pinned_commit(
+        runtime: RelationalRuntimeHandle,
+        snapshot_identity: TruthSnapshotIdentity,
+        observation: RelationalPinnedCommitObservation,
+        partition: Option<PartitionId>,
+    ) -> Self {
+        Self {
+            runtime,
+            snapshot_identity,
+            partition,
+            observation: SnapshotObservation::Commit(std::sync::Arc::new(observation)),
+        }
+    }
+
     pub(super) fn for_observation_authority(
         runtime: RelationalRuntimeHandle,
         snapshot_identity: TruthSnapshotIdentity,
@@ -41,7 +61,7 @@ impl RuntimePublicationSnapshotReader {
         Self {
             runtime,
             snapshot_identity,
-            observation,
+            observation: SnapshotObservation::Branch(observation),
             partition,
         }
     }
@@ -81,7 +101,7 @@ impl TruthSnapshotReader for RuntimePublicationSnapshotReader {
 fn read_packet(
     runtime: &RelationalRuntime,
     request: &SnapshotReadPacket,
-    observation: &RelationalBranchObservation,
+    observation: &SnapshotObservation,
     partition: Option<PartitionId>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     execution: worth_execution::ExecutionRequest<'_, '_>,
@@ -120,48 +140,66 @@ fn read_packet(
         let record_ref = record_ref_from_identity_parts(identity_parts)
             .map_err(|error| BridgeSnapshotReadError::new(error.to_string()))?;
         let aspect = read.aspect_key();
-        let aspect_value = match record_ref {
-            RecordRef::Entity(entity_id) => {
-                match runtime
-                    .entity_record_at_observation(&execution, observation, entity_id)
-                    .map_err(snapshot_observation_denial)?
-                {
-                    Some(record) => {
-                        require_declared_aspect(
-                            observation.entity_kind_declares_aspect(record.kind.kind_id, aspect),
-                            aspect,
-                        )?;
-                        export_entity_aspect_snapshot_value(&record, aspect)
+        let aspect_value =
+            match record_ref {
+                RecordRef::Entity(entity_id) => {
+                    match match observation {
+                        SnapshotObservation::Branch(branch) => {
+                            runtime.entity_record_at_observation(&execution, branch, entity_id)
+                        }
+                        SnapshotObservation::Commit(commit) => {
+                            runtime.entity_record_at_pinned_commit(&execution, commit, entity_id)
+                        }
                     }
-                    None => None,
-                }
-            }
-            RecordRef::Relation(relation_id) => {
-                match runtime
-                    .relation_record_at_observation(&execution, observation, relation_id)
-                    .map_err(snapshot_observation_denial)?
-                {
-                    Some(record) => {
-                        require_declared_aspect(
-                            observation.relation_kind_declares_aspect(record.kind.kind_id, aspect),
-                            aspect,
-                        )?;
-                        export_relation_aspect_snapshot_value(&record, aspect)
+                    .map_err(BridgeSnapshotReadError::observation_read)?
+                    {
+                        Some(record) => {
+                            require_declared_aspect(
+                                match observation {
+                                    SnapshotObservation::Branch(branch) => branch
+                                        .entity_kind_declares_aspect(record.kind.kind_id, aspect),
+                                    SnapshotObservation::Commit(commit) => commit
+                                        .entity_kind_declares_aspect(record.kind.kind_id, aspect),
+                                },
+                                aspect,
+                            )?;
+                            export_entity_aspect_snapshot_value(&record, aspect)
+                        }
+                        None => None,
                     }
-                    None => None,
                 }
-            }
-        };
+                RecordRef::Relation(relation_id) => {
+                    match match observation {
+                        SnapshotObservation::Branch(branch) => {
+                            runtime.relation_record_at_observation(&execution, branch, relation_id)
+                        }
+                        SnapshotObservation::Commit(commit) => runtime
+                            .relation_record_at_pinned_commit(&execution, commit, relation_id),
+                    }
+                    .map_err(BridgeSnapshotReadError::observation_read)?
+                    {
+                        Some(record) => {
+                            require_declared_aspect(
+                                match observation {
+                                    SnapshotObservation::Branch(branch) => branch
+                                        .relation_kind_declares_aspect(record.kind.kind_id, aspect),
+                                    SnapshotObservation::Commit(commit) => commit
+                                        .relation_kind_declares_aspect(record.kind.kind_id, aspect),
+                                },
+                                aspect,
+                            )?;
+                            export_relation_aspect_snapshot_value(&record, aspect)
+                        }
+                        None => None,
+                    }
+                }
+            };
         records.push(match aspect_value {
             Some(value) => SnapshotReadRecord::for_request(read, value),
             None => SnapshotReadRecord::absent_for_request(read),
         });
     }
     Ok((records, memory))
-}
-
-fn snapshot_observation_denial(denial: RelationalObservationReadDenial) -> BridgeSnapshotReadError {
-    BridgeSnapshotReadError::observation_read(denial)
 }
 
 /// Relation endpoints and lifecycle are readable on every record; any other

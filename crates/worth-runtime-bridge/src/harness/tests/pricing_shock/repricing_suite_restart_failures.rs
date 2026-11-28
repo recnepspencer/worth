@@ -82,7 +82,6 @@ fn pricing_shock_suites_25_through_27_emit_canonical_machine_checkable_artifacts
     assert!(diagnostics_entrypoints.source);
     assert!(diagnostics_entrypoints.preview);
     assert!(diagnostics_entrypoints.writeback);
-    assert!(diagnostics_entrypoints.residue);
     assert!(diagnostics_entrypoints.historical_provenance);
     assert!(diagnostics_entrypoints.portfolio);
     assert!(diagnostics_entrypoints.crisis);
@@ -95,7 +94,6 @@ fn pricing_shock_suites_25_through_27_emit_canonical_machine_checkable_artifacts
     assert!(completeness.has_source_artifact);
     assert!(completeness.has_preview_artifact);
     assert!(completeness.has_writeback_artifact);
-    assert!(completeness.has_residue_artifact);
     assert!(completeness.has_historical_provenance_artifact);
     assert!(completeness.has_portfolio_artifact);
     assert!(completeness.has_crisis_artifact);

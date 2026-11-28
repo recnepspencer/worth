@@ -12,7 +12,7 @@ impl WorthQueryApplicationPreviewSession {
 
 impl WorthQueryApplicationPreviewSession {
     #[doc(hidden)]
-    pub fn handle_for_test(&self) -> &BridgeSpeculativeSessionHandle {
+    pub fn handle_for_test(&self) -> &BridgePreviewSessionHandle {
         &self.handle
     }
 }

@@ -17,10 +17,8 @@ impl PricingWorkloadCertificationBundle {
                     self.matrix.reference.speculative_rubber_cost_cents
                     - self.matrix.reference.main_rubber_cost_cents,
                 "fanout_target_count": self.fanout.second_delivery_target_count,
-                "discard_zero_residue": self.discard.has_discard_record
-                    && !self.discard.has_promotion_record
-                    && self.discard.promotion_record_count == 0,
-                "promotion_outcome": format!("{:?}", self.promotion.lifecycle_state),
+                "discard_closed_preview": self.discard.session_closed,
+                "finished_preview_closed": self.promotion.session_closed,
                 "writeback_commit_outcome": format!("{:?}", self.writeback.commit_outcome_class),
                 "writeback_noop_outcome": format!("{:?}", self.writeback.noop_outcome_class),
             },

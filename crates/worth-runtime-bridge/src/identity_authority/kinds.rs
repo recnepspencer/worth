@@ -11,8 +11,6 @@ pub struct BridgeCausalEnvelopeIdentityKind;
 pub struct BridgeCausalReferenceIdentityKind;
 pub struct BridgeReceiptIdentityKind;
 pub struct BridgePreviewSessionIdentityKind;
-pub struct BridgePreviewSessionDeclarationIdentityKind;
-pub struct BridgePreviewExecutionRecordIdentityKind;
 pub struct BridgeWritebackDeclarationIdentityKind;
 
 impl FoundationalIdentityKind for BridgeCommitIdentityKind {}
@@ -26,8 +24,6 @@ impl FoundationalIdentityKind for BridgeCausalEnvelopeIdentityKind {}
 impl FoundationalIdentityKind for BridgeCausalReferenceIdentityKind {}
 impl FoundationalIdentityKind for BridgeReceiptIdentityKind {}
 impl FoundationalIdentityKind for BridgePreviewSessionIdentityKind {}
-impl FoundationalIdentityKind for BridgePreviewSessionDeclarationIdentityKind {}
-impl FoundationalIdentityKind for BridgePreviewExecutionRecordIdentityKind {}
 impl FoundationalIdentityKind for BridgeWritebackDeclarationIdentityKind {}
 
 pub struct BridgeCanonicalDigestIdentityBasis;

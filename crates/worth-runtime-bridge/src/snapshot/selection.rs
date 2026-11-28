@@ -26,7 +26,7 @@ impl BridgeTruthViewAuthorityBasis {
         )
     }
 
-    pub(crate) fn from_resolved_envelope(
+    pub(crate) fn from_resolved_snapshot(
         selector: &BridgeTruthViewSelector,
         commit_identity: TruthCommitIdentity,
         snapshot_identity: TruthSnapshotIdentity,
@@ -90,6 +90,7 @@ pub struct PlannedTruthViewPacket {
     resolved_policy: ResolvedTruthViewPolicy,
     authority_basis: BridgeTruthViewAuthorityBasis,
     read_packet: SnapshotReadPacket,
+    pinned_commit: Option<Arc<PinnedCommitSnapshot>>,
     canonical_basis: Arc<str>,
     digest: Arc<str>,
 }
@@ -115,9 +116,19 @@ impl PlannedTruthViewPacket {
             resolved_policy,
             authority_basis,
             read_packet,
+            pinned_commit: None,
             canonical_basis,
             digest: Arc::from(format!("planned-truth-view-packet:sha256:{digest:x}")),
         }
+    }
+
+    pub(crate) fn with_pinned_commit(mut self, pinned: Option<PinnedCommitSnapshot>) -> Self {
+        self.pinned_commit = pinned.map(Arc::new);
+        self
+    }
+
+    pub(crate) fn pinned_commit(&self) -> Option<&PinnedCommitSnapshot> {
+        self.pinned_commit.as_deref()
     }
 
     pub fn declaration(&self) -> &HistoricalEvaluationDeclaration {
@@ -144,6 +155,29 @@ impl PlannedTruthViewPacket {
         self.digest.as_ref()
     }
 }
+
+#[derive(Clone)]
+pub(crate) struct PinnedCommitSnapshot {
+    pub(crate) source: Arc<dyn crate::facade::SnapshotReadSource>,
+    pub(crate) reader: crate::relational_source::snapshot_reading::RuntimePublicationSnapshotReader,
+}
+
+impl std::fmt::Debug for PinnedCommitSnapshot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PinnedCommitSnapshot")
+            .finish_non_exhaustive()
+    }
+}
+
+impl PartialEq for PinnedCommitSnapshot {
+    fn eq(&self, other: &Self) -> bool {
+        use crate::snapshot::TruthSnapshotReader as _;
+        Arc::ptr_eq(&self.source, &other.source)
+            && self.reader.snapshot_identity() == other.reader.snapshot_identity()
+    }
+}
+
+impl Eq for PinnedCommitSnapshot {}
 
 #[cfg(test)]
 mod tests {

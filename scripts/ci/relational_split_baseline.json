@@ -188,6 +188,8 @@
     "facade::change_source::RelationalMemoryCloseObservation",
     "facade::change_source::RelationalMemoryCloseRefused",
     "facade::change_source::RelationalObservationReadDenial",
+    "facade::change_source::RelationalPinnedCommitDenial",
+    "facade::change_source::RelationalPinnedCommitObservation",
     "facade::change_source::RelationalReadCustodyHolders",
     "facade::change_source::RelationalRetainedObservation",
     "facade::change_source::RelationalRetainedObservationRetirement",

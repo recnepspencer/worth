@@ -36,9 +36,6 @@ impl BridgeHarnessTargetId {
             Self::PolicyProvenanceCertification => "policy-provenance-certify".to_owned(),
             Self::PolicyRejectionCertification => "policy-rejection-certify".to_owned(),
             Self::PolicyAmbientLeakCertification => "policy-ambient-leak-certify".to_owned(),
-            Self::SpeculationDiscardCertification => "speculation-discard-certify".to_owned(),
-            Self::SpeculationPromotionCertification => "speculation-promotion-certify".to_owned(),
-            Self::SpeculationChurnCertification => "speculation-churn-certify".to_owned(),
             Self::HistoricalCommit {
                 branch_identity,
                 commit_identity,

@@ -341,3 +341,10 @@ mod tests {
         assert!(!policy.allow_replay_artifacts());
     }
 }
+
+/// Whether a request can produce authoritative effects.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum BridgeRequestKind {
+    Authoritative,
+    Preview,
+}

@@ -9,6 +9,7 @@ impl BridgeSourceAdapter for RuntimeBridgeRelationalSource {
     fn declared_capabilities(&self) -> BridgeSourceCapabilitySet {
         BridgeSourceCapabilitySet::new(vec![
             BridgeSourceCapability::SnapshotRead,
+            BridgeSourceCapability::HistoricalRead,
             BridgeSourceCapability::BranchRead,
         ])
     }

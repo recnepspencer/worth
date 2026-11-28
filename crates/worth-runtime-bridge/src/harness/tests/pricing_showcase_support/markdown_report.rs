@@ -35,8 +35,8 @@ impl PricingWorkloadCertificationBundle {
                 "- Recommended strategy: `{}`\n",
                 "- Promotion strategy: `{}`\n",
                 "- Top damaging shock material across simulation: `{}`\n",
-                "- Discard proved zero residue: `{}`\n",
-                "- Promotion outcome: `{:?}`\n",
+                "- Discarded preview closed: `{}`\n",
+                "- Finished preview closed: `{}`\n",
                 "- Writeback commit outcome: `{:?}`\n\n",
                 "## Trust Attacks\n\n",
                 "- Missing snapshot basis: `{:?}`\n",
@@ -89,10 +89,8 @@ impl PricingWorkloadCertificationBundle {
             self.strategy.recommended_strategy,
             self.strategy.promotion_strategy,
             top_damage_material,
-            self.discard.has_discard_record
-                && !self.discard.has_promotion_record
-                && self.discard.promotion_record_count == 0,
-            self.promotion.lifecycle_state,
+            self.discard.session_closed,
+            self.promotion.session_closed,
             self.writeback.commit_outcome_class,
             self.hostile_failure.failure_class,
             self.restart_failure.error_kind,

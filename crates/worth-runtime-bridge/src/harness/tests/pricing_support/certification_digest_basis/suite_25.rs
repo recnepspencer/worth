@@ -131,15 +131,7 @@ impl PricingWorkloadCertificationBundle {
                 "post_discard_main_snapshot",
                 &self.discard.post_discard_main_snapshot,
             ),
-            PricingCertificationBasisEntry::debug("lifecycle_state", self.discard.lifecycle_state),
-            PricingCertificationBasisEntry::new(
-                "discard_record_count",
-                self.discard.discard_record_count,
-            ),
-            PricingCertificationBasisEntry::new(
-                "promotion_record_count",
-                self.discard.promotion_record_count,
-            ),
+            PricingCertificationBasisEntry::debug("session_closed", self.discard.session_closed),
         ]
     }
 
@@ -152,17 +144,10 @@ impl PricingWorkloadCertificationBundle {
                 "speculative_snapshot",
                 &self.promotion.speculative_snapshot,
             ),
-            PricingCertificationBasisEntry::debug(
-                "lifecycle_state",
-                self.promotion.lifecycle_state,
-            ),
+            PricingCertificationBasisEntry::debug("session_closed", self.promotion.session_closed),
             PricingCertificationBasisEntry::new(
                 "promotion_session_identity",
                 &self.promotion.promotion_session_identity,
-            ),
-            PricingCertificationBasisEntry::new(
-                "authoritative_artifact_digest",
-                &self.promotion.authoritative_artifact_digest,
             ),
         ]
     }
@@ -240,12 +225,12 @@ impl PricingWorkloadCertificationBundle {
                 &self.aspect.aspect_registration_id,
             ),
             PricingCertificationBasisEntry::debug(
-                "discard_lifecycle",
-                self.discard.lifecycle_state,
+                "discard_session_closed",
+                self.discard.session_closed,
             ),
             PricingCertificationBasisEntry::debug(
-                "promotion_lifecycle",
-                self.promotion.lifecycle_state,
+                "finished_session_closed",
+                self.promotion.session_closed,
             ),
             PricingCertificationBasisEntry::new(
                 "fanout_second_commit",

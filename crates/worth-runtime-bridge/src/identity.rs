@@ -9,8 +9,7 @@ use worth_foundational::facade::FoundationalIdentityKind;
 use crate::clone_budget::CheapClone;
 use crate::identity_authority::{
     admit_bridge_truth_authority_identity, admit_bridge_truth_authority_identity_for_kind,
-    BridgeEvidenceReferenceIdentityKind, BridgePreviewExecutionRecordIdentityKind,
-    BridgePreviewSessionDeclarationIdentityKind, BridgePreviewSessionIdentityKind,
+    BridgeEvidenceReferenceIdentityKind, BridgePreviewSessionIdentityKind,
     BridgeTruthAuthorityIdentity, BridgeTruthBoundaryBridgedIdentity,
     BridgeWritebackDeclarationIdentityKind,
 };
@@ -168,9 +167,9 @@ bridge_identity_tags! {
 
     SourceDeclarationIdentityTag, SourceContractIdentityTag, SourceMaterializationRecordIdentityTag,
     SourceFailureRecordIdentityTag, SpeculativeSignalBranchIdentityTag,
-    PreviewBranchBindingIdentityTag, PreviewSessionDeclarationIdentityTag, PreviewSessionIdentityTag,
-    PreviewExecutionRecordIdentityTag, PreviewDiscardRecordIdentityTag, PreviewPromotionRecordIdentityTag,
-    PromotionAdmissibilityProofIdentityTag, PreviewReuseEquivalenceIdentityTag, TemporalBasisIdentityTag,
+    PreviewSessionIdentityTag,
+
+    TemporalBasisIdentityTag,
     TemporalCdcCursorIdentityTag, AsyncSourceDeclarationIdentityTag, AsyncSourceLoweringIdentityTag,
     AsyncRequestTruthViewBasisIdentityTag, AsyncRequestSubscriptionInstanceIdentityTag,
     AsyncRequestBasisBindingIdentityTag, AsyncRequestIdentityTag, AsyncInFlightRequestIdentityTag,
@@ -194,14 +193,6 @@ bridge_identity_tags! {
 
 impl BridgeIdentityAuthorityKind for PreviewSessionIdentityTag {
     type Kind = BridgePreviewSessionIdentityKind;
-}
-
-impl BridgeIdentityAuthorityKind for PreviewSessionDeclarationIdentityTag {
-    type Kind = BridgePreviewSessionDeclarationIdentityKind;
-}
-
-impl BridgeIdentityAuthorityKind for PreviewExecutionRecordIdentityTag {
-    type Kind = BridgePreviewExecutionRecordIdentityKind;
 }
 
 impl BridgeIdentityAuthorityKind for WritebackDeclarationIdentityTag {

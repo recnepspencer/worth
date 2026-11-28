@@ -9,7 +9,6 @@ use worth_harness::runtime::HarnessAdapter;
 fn bridge_harness_executes_historical_commit_view() {
     let adapter = BridgeHarnessAdapter;
     let (truth, commit) = ScenarioRelationalTruth::named("alice", true);
-    let snapshot = truth.snapshot().clone();
     let fixture = ScenarioPlan::new(
         "bridge-historical-commit-view",
         BridgeHarnessFixture::new(vec![NamedTruth::mapping()]).with_relational_truth(truth),
@@ -40,10 +39,10 @@ fn bridge_harness_executes_historical_commit_view() {
     let record = last_historical_record(&session);
     assert_native_historical_record(
         &record,
-        &snapshot,
+        record.decision_log().snapshot_identity(),
         &crate::facade::TruthBranchIdentity::from_relational_branch_id("main"),
         &commit,
-        BridgeHistoricalMaterializationPath::CommitEnvelopeSnapshot,
+        BridgeHistoricalMaterializationPath::PinnedCommitObservation,
     );
 }
 

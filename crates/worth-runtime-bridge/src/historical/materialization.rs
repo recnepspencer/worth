@@ -3,16 +3,15 @@ use std::sync::Arc;
 use crate::facade::{
     BridgeCanonicalHistoricalEvaluationRecord, BridgeDeliveryError, BridgeDeliveryErrorKind,
     BridgeHistoricalEvaluationCounters, BridgeHistoricalEvaluationDecisionLog,
-    BridgeHistoricalEvaluationFailureClass, BridgeHistoricalEvaluationRecord, RuntimeBridge,
-    TruthSnapshotIdentity,
+    BridgeHistoricalEvaluationRecord, RuntimeBridge, TruthSnapshotIdentity,
 };
 use crate::historical::failures::{
     historical_failure_class_for_delivery_error, historical_failure_counters_for_delivery_error,
     historical_materialization_path_for,
 };
 use crate::snapshot::{
-    BridgeTruthViewPolicyRejection, LoweredHistoricalEvaluationArtifact,
-    MaterializedTruthViewObservation, PlannedTruthViewPacket, TruthViewPolicyRejectionKind,
+    AdmittedSnapshotContext, BridgeSnapshotContext, LoweredHistoricalEvaluationArtifact,
+    MaterializedTruthViewObservation, PlannedTruthViewPacket, TruthSnapshotReader,
 };
 
 impl RuntimeBridge {
@@ -21,53 +20,32 @@ impl RuntimeBridge {
         planned: PlannedTruthViewPacket,
         execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<MaterializedTruthViewObservation, BridgeDeliveryError> {
-        let snapshot_identity: TruthSnapshotIdentity = match planned
-            .authority_basis()
-            .snapshot_identity()
-        {
-            Some(snapshot_identity) => snapshot_identity.clone(),
-            None => {
-                let rejection = BridgeTruthViewPolicyRejection::new(
-                planned.declaration(),
-                TruthViewPolicyRejectionKind::UnsupportedTruthViewSelector,
-                "planned truth-view packet did not carry a snapshot identity; historical lookup materialization is not wired yet",
-            );
+        self.materialize_planned_truth_view(planned.clone(), execution)
+            .inspect_err(|error| {
                 self.record_historical_evaluation_failure(
                     planned.declaration(),
-                    BridgeHistoricalEvaluationFailureClass::UnsupportedTruthViewSelector,
-                    rejection.detail(),
-                    BridgeHistoricalEvaluationCounters::from_failed_materialization(
-                        planned.declaration(),
-                        historical_materialization_path_for(&planned),
-                    ),
+                    historical_failure_class_for_delivery_error(error),
+                    error.to_string(),
+                    historical_failure_counters_for_delivery_error(planned.declaration(), error),
                 );
-                return Err(BridgeDeliveryError::new(
-                    BridgeDeliveryErrorKind::HistoricalPolicyRejected,
-                    format!(
-                        "Truth-view materialization rejected declaration `{}`: {}",
-                        rejection.declaration_identity().as_str(),
-                        rejection.detail()
-                    ),
-                ));
-            }
-        };
+            })
+    }
 
-        let admitted =
-            match crate::delivery::open_planned_snapshot(self, &snapshot_identity, execution) {
-                Ok(admitted) => admitted,
-                Err(error) => {
-                    self.record_historical_evaluation_failure(
-                        planned.declaration(),
-                        historical_failure_class_for_delivery_error(&error),
-                        error.to_string(),
-                        historical_failure_counters_for_delivery_error(
-                            planned.declaration(),
-                            &error,
-                        ),
-                    );
-                    return Err(error);
-                }
-            };
+    pub(crate) fn materialize_planned_truth_view(
+        &self,
+        planned: PlannedTruthViewPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<MaterializedTruthViewObservation, BridgeDeliveryError> {
+        let snapshot_identity = planned
+            .authority_basis()
+            .snapshot_identity()
+            .ok_or_else(|| {
+                BridgeDeliveryError::new(
+                    BridgeDeliveryErrorKind::HistoricalPolicyRejected,
+                    "planned truth-view packet did not carry a snapshot identity",
+                )
+            })?;
+        let admitted = self.open_truth_view_snapshot(&planned, snapshot_identity, execution)?;
         let snapshot_token = crate::snapshot::BridgeSnapshotToken::issued(
             snapshot_identity.clone(),
             format!(
@@ -85,6 +63,38 @@ impl RuntimeBridge {
             materialization_path,
             admitted,
         ))
+    }
+
+    fn open_truth_view_snapshot(
+        &self,
+        planned: &PlannedTruthViewPacket,
+        identity: &TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<AdmittedSnapshotContext<Box<dyn TruthSnapshotReader>>, BridgeDeliveryError> {
+        let Some(pinned) = planned.pinned_commit() else {
+            return crate::delivery::open_planned_snapshot(self, identity, execution);
+        };
+        crate::execution_contact::admit(execution).map_err(|cause| {
+            BridgeDeliveryError::new(
+                BridgeDeliveryErrorKind::ExecutionDenied(cause),
+                cause.label(),
+            )
+        })?;
+        if !Arc::ptr_eq(&pinned.source, &self.snapshot_read_source) {
+            return Err(BridgeDeliveryError::new(
+                BridgeDeliveryErrorKind::SourceContractMismatch,
+                "historical commit plan belongs to another snapshot source",
+            ));
+        }
+        let reader: Box<dyn TruthSnapshotReader> = Box::new(pinned.reader.clone());
+        AdmittedSnapshotContext::admit_for(BridgeSnapshotContext::bind(reader), identity).map_err(
+            |_| {
+                BridgeDeliveryError::new(
+                    BridgeDeliveryErrorKind::SnapshotIdentityMismatch,
+                    "pinned historical reader did not match its planned snapshot",
+                )
+            },
+        )
     }
 
     pub fn canonicalize_historical_evaluation_record(

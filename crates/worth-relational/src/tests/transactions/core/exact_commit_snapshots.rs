@@ -4,6 +4,71 @@ use crate::facade::runtime::RelationalRetainedCommitSnapshotDenialKind;
 use crate::tests::support::*;
 
 #[test]
+fn pinned_commit_reads_live_authoring_head_after_fork_retirement_is_reclaimed() {
+    use super::snapshot_and_retention::ColdRetentionCompanion;
+    use crate::facade::{runtime::RelationalRuntimeApi, schema::RelationalSchemaRegistry};
+    use std::sync::Arc;
+
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let (registry, source) = managed_cache_schema();
+    let mut runtime = RelationalRuntimeApi::builder()
+        .schema_registry(registry)
+        .managed_index_source(source)
+        .build()
+        .unwrap();
+    runtime
+        .prepare_initial_schema_installation()
+        .unwrap()
+        .install_with_managed_sources(RelationalSchemaRegistry::new(), vec![], vec![])
+        .unwrap();
+    let _registration = runtime
+        .publication_companion_port()
+        .begin_required_registration()
+        .unwrap()
+        .activate(Arc::new(ColdRetentionCompanion::default()))
+        .unwrap();
+    let original = create_entity_outcome(&execution, &runtime, "main-value");
+    let inherited = original.commit.commit_id;
+    let entity = changed_entities(&original)[0];
+    release_test_commit_snapshot(&runtime, &original);
+
+    let feature = create_branch_from_main(&runtime, "pinned-feature");
+    let child = update_entity_on_branch(
+        &execution,
+        &runtime,
+        entity,
+        "feature-value",
+        feature.clone(),
+    );
+    release_test_commit_snapshot(&runtime, &child);
+    let (_, selected) = runtime
+        .observe_branch(&runtime.branch_identity(&feature).unwrap())
+        .unwrap();
+    let observed = selected.observation();
+    assert_eq!(observed.commit_id(), Some(child.commit.commit_id));
+
+    let retired = runtime.history.retain_historical_root(inherited).unwrap();
+    assert!(retired.is_some());
+    drop(retired);
+    runtime.run_branch_root_reclamation_pass();
+    assert!(runtime
+        .history
+        .retain_historical_root(inherited)
+        .unwrap()
+        .is_none());
+
+    let pinned = runtime
+        .pin_commit_observation(execution, &observed, inherited)
+        .expect("the inherited commit still has its exact live authoring root");
+    let record = runtime
+        .entity_record_at_pinned_commit(&execution, &pinned, entity)
+        .unwrap()
+        .expect("the entity exists in the pinned root");
+    assert_eq!(read_entity_name(&record).as_deref(), Some("main-value"));
+}
+
+#[test]
 fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

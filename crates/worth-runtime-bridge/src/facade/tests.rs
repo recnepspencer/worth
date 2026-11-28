@@ -25,7 +25,6 @@ mod policy_phase2;
 mod replay;
 mod request_lanes;
 mod source;
-mod speculation;
 mod standard_path;
 pub(crate) mod subscription;
 mod writeback;

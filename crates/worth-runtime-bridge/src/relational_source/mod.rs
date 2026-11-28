@@ -20,7 +20,7 @@ pub(crate) mod relational_test_support;
 mod runtime_source;
 #[cfg(test)]
 mod snapshot_catalog_tests;
-mod snapshot_reading;
+pub(crate) mod snapshot_reading;
 #[cfg(test)]
 mod snapshot_reading_tests;
 mod snapshot_values;

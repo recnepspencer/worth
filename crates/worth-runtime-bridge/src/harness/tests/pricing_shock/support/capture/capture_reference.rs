@@ -13,33 +13,14 @@ fn capture_pricing_reference_bundle(
         .diagnostics()
         .route_record_for_source_commit(route.result().result_summary().source_commit())
         .expect("pricing reference route should retain its route record");
-    let main_eval = runtime
-        .evaluate(
-            BridgeTruthViewEvaluationRequest::for_branch_head(
-                TruthBranchIdentity::from_relational_branch_id("main"),
-            )
-            .with_read_packet(truth.rubber_read_packet()),
+    let preview = truth.begin_preview(runtime, preview_session_identity);
+    let (main_eval, speculative_eval) = preview
+        .compare_to_main(
+            TruthBranchIdentity::from_relational_branch_id("main"),
+            truth.rubber_read_packet(),
             execution,
         )
-        .expect("pricing main evaluation should succeed");
-    let comparison = runtime
-        .speculate(BridgeSpeculativeSessionRequest::new(
-            preview_session_identity,
-            truth.preview_declaration(),
-            4,
-            2,
-            2,
-        ))
-        .expect("pricing reference preview should activate")
-        .compare_to_main();
-    let speculative_eval = runtime
-        .evaluate(
-            comparison
-                .speculative_evaluation_request()
-                .with_read_packet(truth.rubber_read_packet()),
-            execution,
-        )
-        .expect("pricing speculative evaluation should succeed");
+        .expect("pricing main and preview should evaluate");
 
     PricingReferenceBundle {
         source_branch: route_record.source_branch().clone(),
@@ -57,8 +38,8 @@ fn capture_pricing_reference_bundle(
         main_rubber_cost_cents: read_cost(&main_eval, execution)
             .parse()
             .expect("native pricing cost"),
-        speculative_truth_branch: comparison.truth_branch_identity().clone(),
-        speculative_signal_branch: comparison.signal_branch_identity().clone(),
+        speculative_truth_branch: preview.branches().relational().clone(),
+        speculative_signal_branch: preview.branches().signal().clone(),
         speculative_commit: truth.shock_commit.clone(),
         speculative_snapshot: speculative_eval.snapshot_identity().clone(),
         speculative_rubber_cost_cents: read_cost(&speculative_eval, execution)

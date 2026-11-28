@@ -18,7 +18,5 @@ mod pricing_support;
 mod replay;
 mod routing;
 mod source;
-mod speculation;
-mod speculation_certification;
 mod subscription_certification;
 mod support;

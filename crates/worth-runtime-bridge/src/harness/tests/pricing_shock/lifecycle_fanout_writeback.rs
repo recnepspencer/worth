@@ -1,7 +1,7 @@
 use super::support::*;
 
 #[test]
-fn pricing_shock_discard_stays_zero_residue_under_interleaved_main_churn() {
+fn pricing_shock_discard_closes_preview_during_main_churn() {
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
@@ -21,22 +21,11 @@ fn pricing_shock_discard_stays_zero_residue_under_interleaved_main_churn() {
         discard.post_discard_main_steel_cost_cents,
         scenario.live_main_steel_cost
     );
-    assert_eq!(
-        discard.lifecycle_state,
-        BridgePreviewLifecycleStateKind::Discarded
-    );
-    assert_eq!(discard.discard_record_count, 1);
-    assert_eq!(discard.promotion_record_count, 0);
-    assert_eq!(
-        discard.replay_outcome,
-        BridgePreviewLifecycleStateKind::Discarded
-    );
-    assert!(discard.has_discard_record);
-    assert!(!discard.has_promotion_record);
+    assert!(discard.session_closed);
 }
 
 #[test]
-fn pricing_shock_promotion_stays_distinct_from_interleaved_main_truth() {
+fn pricing_shock_finish_closes_preview_after_comparing_advanced_main() {
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
@@ -53,25 +42,7 @@ fn pricing_shock_promotion_stays_distinct_from_interleaved_main_truth() {
         promotion.speculative_rubber_cost_cents,
         scenario.speculative_rubber_cost
     );
-    assert_eq!(
-        promotion.lifecycle_state,
-        BridgePreviewLifecycleStateKind::Promoted
-    );
-    assert_eq!(
-        promotion.promotion_session_identity,
-        BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-promote-churn")
-    );
-    assert!(promotion
-        .authoritative_commit_boundary_digest
-        .starts_with("preview-promotion-commit-boundary:sha256:"));
-    assert!(promotion
-        .authoritative_artifact_digest
-        .starts_with("preview-promotion-authoritative-artifact:sha256:"));
-    assert_eq!(
-        promotion.replay_outcome,
-        BridgePreviewLifecycleStateKind::Promoted
-    );
-    assert!(promotion.has_promotion_explanation);
+    assert!(promotion.session_closed);
 }
 
 #[test]

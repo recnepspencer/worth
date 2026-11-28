@@ -8,16 +8,8 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_discard_bundle(
     let runtime = truth.runtime(RecordingSignalBridgeSink::default());
     let discard_session_identity =
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-discard-churn");
-    let session = runtime
-        .speculate(BridgeSpeculativeSessionRequest::new(
-            discard_session_identity.clone(),
-            truth.preview_declaration(),
-            4,
-            2,
-            2,
-        ))
-        .expect("discard churn preview should activate");
-    let comparison = session.compare_to_main();
+    let session = truth.begin_preview(&runtime, discard_session_identity);
+    let observer = session.liveness_observer();
 
     let updated_steel = truth.publish_main_cost(
         execution,
@@ -28,18 +20,14 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_discard_bundle(
     let live_main_route = runtime
         .route(updated_steel, execution)
         .expect("main branch should keep routing during speculative churn");
-    let speculative_eval = runtime
-        .evaluate(
-            comparison
-                .speculative_evaluation_request()
-                .with_read_packet(truth.rubber_read_packet()),
+    let (_, speculative_eval) = session
+        .compare_to_main(
+            TruthBranchIdentity::from_relational_branch_id("main"),
+            truth.rubber_read_packet(),
             execution,
         )
-        .expect("speculative branch should still see shock pricing");
-
-    let discarded = session
-        .discard()
-        .expect("discard should succeed with zero authoritative residue");
+        .expect("preview should still see its pinned shock pricing");
+    session.discard();
 
     let post_discard_main_eval = runtime
         .evaluate(
@@ -50,10 +38,6 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_discard_bundle(
             execution,
         )
         .expect("main branch should still evaluate after discard");
-    let replay_bundle = runtime
-        .replay_preview_bundle(&discard_session_identity)
-        .expect("discard replay bundle should be retained");
-
     assert_eq!(
         post_discard_main_eval.snapshot_identity(),
         truth.main_snapshot()
@@ -77,12 +61,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_discard_bundle(
         post_discard_main_steel_cost_cents: read_cost(&post_discard_main_eval, execution)
             .parse()
             .expect("native pricing cost"),
-        lifecycle_state: discarded.session().lifecycle_state_kind(),
-        discard_record_count: runtime.diagnostics().preview_discard_records().len(),
-        promotion_record_count: runtime.diagnostics().preview_promotion_records().len(),
-        replay_outcome: replay_bundle.lifecycle_outcome(),
-        has_discard_record: replay_bundle.preview_discard_record().is_some(),
-        has_promotion_record: replay_bundle.preview_promotion_record().is_some(),
+        session_closed: observer.admit_active_session().is_none(),
     }
 }
 
@@ -94,16 +73,8 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_promotion_bundle
     let runtime = truth.runtime(RecordingSignalBridgeSink::default());
     let promotion_session_identity =
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-promote-churn");
-    let session = runtime
-        .speculate(BridgeSpeculativeSessionRequest::new(
-            promotion_session_identity.clone(),
-            truth.preview_declaration(),
-            4,
-            2,
-            2,
-        ))
-        .expect("promotion churn preview should activate");
-    let comparison = session.compare_to_main();
+    let session = truth.begin_preview(&runtime, promotion_session_identity);
+    let observer = session.liveness_observer();
 
     truth.publish_main_cost(
         execution,
@@ -111,32 +82,14 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_promotion_bundle
         scenario.interleaved_main_rubber_cost,
     );
 
-    let main_eval = runtime
-        .evaluate(
-            comparison
-                .main_evaluation_request(TruthBranchIdentity::from_relational_branch_id("main"))
-                .with_read_packet(truth.rubber_read_packet()),
+    let (main_eval, speculative_eval) = session
+        .compare_to_main(
+            TruthBranchIdentity::from_relational_branch_id("main"),
+            truth.rubber_read_packet(),
             execution,
         )
-        .expect("interleaved main branch should remain independently readable");
-    let speculative_eval = runtime
-        .evaluate(
-            comparison
-                .speculative_evaluation_request()
-                .with_read_packet(truth.rubber_read_packet()),
-            execution,
-        )
-        .expect("speculative branch should keep its isolated shock view");
-
-    let promoted = session
-        .promote()
-        .expect("promotion should succeed after interleaved main churn");
-    let replay_bundle = runtime
-        .replay_preview_bundle(&promotion_session_identity)
-        .expect("promotion replay bundle should be retained");
-    let promotion_record = replay_bundle
-        .preview_promotion_record()
-        .expect("promotion replay bundle should retain the promotion record");
+        .expect("the preview and the advanced main should both evaluate");
+    let finished = session.finish();
 
     assert_eq!(main_eval.snapshot_identity(), truth.main_snapshot());
     assert_eq!(speculative_eval.snapshot_identity(), truth.shock_snapshot());
@@ -150,21 +103,8 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_promotion_bundle
         speculative_rubber_cost_cents: read_cost(&speculative_eval, execution)
             .parse()
             .expect("native pricing cost"),
-        lifecycle_state: promoted.session().lifecycle_state_kind(),
-        promotion_session_identity: BridgePreviewSessionIdentity::admit_bridge_owned(
-            promotion_record.preview_session_identity(),
-        ),
-        authoritative_commit_boundary_digest: promotion_record
-            .authoritative_commit_boundary_digest()
-            .to_owned(),
-        authoritative_artifact_digest: promotion_record.authoritative_artifact_digest().to_owned(),
-        replay_outcome: replay_bundle.lifecycle_outcome(),
-        has_promotion_explanation: matches!(
-            runtime.diagnostics().explain_session(
-                &BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-promote-churn",)
-            ),
-            Some(crate::facade::BridgeStandardSessionExplanation::PreviewPromotion(_))
-        ),
+        promotion_session_identity: finished.session_identity().clone(),
+        session_closed: observer.admit_active_session().is_none(),
     }
 }
 

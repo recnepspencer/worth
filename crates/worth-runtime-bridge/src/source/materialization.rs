@@ -168,7 +168,7 @@ mod tests {
                 TruthViewSourceCapability::HistoricalLookupAndSnapshotRead,
                 TruthViewReplayContinuity::ReplayPermitted,
             ),
-            BridgeTruthViewAuthorityBasis::from_resolved_envelope(
+            BridgeTruthViewAuthorityBasis::from_resolved_snapshot(
                 declaration.selector(),
                 crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
                 crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),

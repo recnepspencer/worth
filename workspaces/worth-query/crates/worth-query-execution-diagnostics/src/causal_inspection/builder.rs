@@ -215,7 +215,7 @@ impl CausalInspection {
             .evidence_families([
                 CausalEvidenceFamily::QueryInspection,
                 CausalEvidenceFamily::BridgeRoute,
-                CausalEvidenceFamily::BridgePreview,
+                CausalEvidenceFamily::BridgeEvaluation,
             ])
     }
 

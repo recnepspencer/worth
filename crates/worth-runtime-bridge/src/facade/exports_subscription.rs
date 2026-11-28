@@ -139,8 +139,6 @@ pub use crate::subscription::{
     BridgeSubscriptionOfflineAuditPlanRejectionKind, BridgeSubscriptionOfflineAuditReport,
     BridgeSubscriptionPreviewAuthoritativeReadmissionIdentity,
     BridgeSubscriptionPreviewBasisBinding, BridgeSubscriptionPreviewBasisIdentity,
-    BridgeSubscriptionPreviewBasisRejection, BridgeSubscriptionPreviewBasisRejectionContext,
-    BridgeSubscriptionPreviewBasisRejectionKind,
     BridgeSubscriptionPreviewDiscardResidueProofIdentity,
     BridgeSubscriptionPreviewLifecycleDiscardProof,
     BridgeSubscriptionPreviewLifecycleDiscardRejection,

@@ -2,8 +2,7 @@ use super::super::support::RelationalPricing;
 use super::super::support::{
     capture_pricing_workload_certification_bundle_at_truth, generated_pricing_scenario,
     BridgeAspectRegistrationId, BridgeDeliveryErrorKind, BridgeFailureClass,
-    BridgePreviewLifecycleStateKind, BridgePreviewSessionIdentity, BridgeReplayErrorKind,
-    BridgeRuntimePolicy,
+    BridgePreviewSessionIdentity, BridgeReplayErrorKind, BridgeRuntimePolicy,
 };
 use super::EXPECTED_COST_USD_TARGET_BASIS;
 
@@ -114,20 +113,8 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
         bundle.matrix.replay.source_snapshot,
         truth.steel_snapshot().clone()
     );
-    assert_eq!(
-        bundle.discard.replay_outcome,
-        BridgePreviewLifecycleStateKind::Discarded
-    );
-    assert_eq!(
-        bundle.promotion.replay_outcome,
-        BridgePreviewLifecycleStateKind::Promoted
-    );
-    assert_ne!(
-        bundle.discard.lifecycle_state,
-        bundle.promotion.lifecycle_state
-    );
-    assert!(!bundle.discard.has_promotion_record);
-    assert!(bundle.promotion.has_promotion_explanation);
+    assert!(bundle.discard.session_closed);
+    assert!(bundle.promotion.session_closed);
     assert_eq!(bundle.fanout.second_delivery_target_count, 100);
     assert_ne!(bundle.fanout.second_source_commit, truth.steel_commit);
     assert_eq!(bundle.restart_replay.source_commit, truth.steel_commit);
@@ -146,9 +133,9 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
     assert_eq!(bundle.writeback.authority_commit_count, 1);
     assert_eq!(bundle.provenance.main_commit, truth.rubber_commit);
     assert_eq!(bundle.provenance.shock_commit, truth.shock_commit);
-    assert_eq!(
+    assert_ne!(
         bundle.provenance.shock_snapshot,
-        truth.shock_snapshot().clone()
+        bundle.provenance.main_snapshot
     );
     assert_eq!(
         bundle.provenance.shock_delta_microunits,
@@ -199,8 +186,6 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
     assert_eq!(counters.trust_attack_classification_count, 6);
     assert_eq!(counters.diagnostics_entrypoint_reconstruction_count, 1);
     assert_eq!(counters.speculative_branch_bundle_count, 1);
-    assert_eq!(counters.speculative_discard_residue_check_count, 1);
-    assert_eq!(counters.speculative_discard_residue_nonzero_count, 0);
     assert_eq!(counters.branch_comparison_bundle_count, 1);
     assert_eq!(counters.offline_bundle_diagnosis_count, 1);
     assert_eq!(counters.offline_bundle_insufficiency_count, 0);
@@ -221,7 +206,6 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
         bundle.restart_failure.error_kind,
         BridgeReplayErrorKind::RouteMismatch
     );
-    assert_eq!(counters.speculative_discard_residue_nonzero_count, 0);
     assert!(completeness.offline_sufficient);
     assert_eq!(completeness.insufficiency_count, 0);
     assert!(diagnostics_entrypoints.all_entrypoints_available());

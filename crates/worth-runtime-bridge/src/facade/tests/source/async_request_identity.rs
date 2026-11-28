@@ -220,7 +220,8 @@ fn preview_truth_basis_must_match_preview_subscription_instance() {
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let preview_active = preview_active_subscription(&runtime, "phase6-preview", resource_request);
+    let (_preview, preview_active) =
+        preview_active_subscription(&runtime, "phase6-preview", resource_request);
     let authoritative_ready = activation_ready_for_snapshot(
         &runtime,
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),

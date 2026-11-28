@@ -13,6 +13,9 @@ use crate::snapshot::{
 pub(crate) fn historical_materialization_path_for(
     planned: &PlannedTruthViewPacket,
 ) -> BridgeHistoricalMaterializationPath {
+    if planned.pinned_commit().is_some() {
+        return BridgeHistoricalMaterializationPath::PinnedCommitObservation;
+    }
     match planned.declaration().selector().view_kind() {
         BridgeTruthViewKind::CommittedSnapshot | BridgeTruthViewKind::BranchSnapshot => {
             BridgeHistoricalMaterializationPath::DirectSnapshotRead

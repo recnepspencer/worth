@@ -55,18 +55,6 @@ impl BridgeHarnessTargetId {
         Self::PolicyAmbientLeakCertification
     }
 
-    pub fn speculation_discard_certification() -> Self {
-        Self::SpeculationDiscardCertification
-    }
-
-    pub fn speculation_promotion_certification() -> Self {
-        Self::SpeculationPromotionCertification
-    }
-
-    pub fn speculation_churn_certification() -> Self {
-        Self::SpeculationChurnCertification
-    }
-
     pub fn historical_commit(
         branch_identity: TruthBranchIdentity,
         commit_identity: TruthCommitIdentity,

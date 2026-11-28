@@ -9,11 +9,10 @@ pub(in crate::harness::tests::pricing_shock) use crate::facade::{
     BridgeAspectRegistration, BridgeAspectRegistrationId, BridgeCommittedPatchItem,
     BridgeDiagnosticsTier, BridgeExecutionPolicyClass, BridgeFailureClass, BridgeMappingId,
     BridgeMappingRegistration, BridgePolicyDeclaration, BridgePolicyDeclarationIdentity,
-    BridgePreviewSessionDeclaration, BridgePreviewSessionDeclarationIdentity,
-    BridgeReplayErrorKind, BridgeRequestKind, BridgeRuntimePolicy, BridgeSignalBranchIdentity,
-    BridgeSourceCapability, BridgeSourceCapabilitySet, BridgeSpeculativeBranchBinding,
-    BridgeSpeculativeBranchBindingIdentity, BridgeSpeculativeSessionRequest,
-    BridgeStandardRouteError, BridgeSubscriptionReferenceWorkloadComponentIdSet,
+    BridgePreviewBranchBinding, BridgePreviewSessionHandle, BridgeReplayErrorKind,
+    BridgeRequestKind, BridgeRuntimePolicy, BridgeSignalBranchIdentity, BridgeSourceCapability,
+    BridgeSourceCapabilitySet, BridgeStandardRouteError,
+    BridgeSubscriptionReferenceWorkloadComponentIdSet,
     BridgeSubscriptionReferenceWorkloadFamilyKind, BridgeSubscriptionReferenceWorkloadLaneIdSet,
     BridgeSubscriptionReferenceWorkloadLaneKind, BridgeSubscriptionReferenceWorkloadLaneRequest,
     BridgeSubscriptionReferenceWorkloadManifestSealed,
@@ -32,14 +31,13 @@ pub(in crate::harness::tests::pricing_shock) use crate::facade::{
 pub(in crate::harness::tests::pricing_shock) use crate::harness::fixtures::{
     BridgeHarnessFixture, RecordingSignalBridgeSink, RecordingTruthWritebackAuthority,
 };
+pub(in crate::harness::tests::pricing_shock) use crate::preview::BridgePreviewSessionIdentity;
 pub(in crate::harness::tests::pricing_shock) use crate::snapshot::{
     SnapshotReadPacket, SnapshotReadRequest,
 };
 pub(in crate::harness::tests::pricing_shock) use crate::source::{
     SourceDeclaration, SourceDeclarationIdentity,
 };
-pub(in crate::harness::tests::pricing_shock) use crate::speculation::BridgePreviewLifecycleStateKind;
-pub(in crate::harness::tests::pricing_shock) use crate::speculation::BridgePreviewSessionIdentity;
 pub(in crate::harness::tests::pricing_shock) use std::collections::BTreeMap;
 pub(in crate::harness::tests::pricing_shock) use worth_foundational::facade::{
     AspectKey, AspectValue,

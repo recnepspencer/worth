@@ -89,26 +89,18 @@ impl RelationalPricing {
         provenance_packet(bridge_entity_identity(self.rubber))
     }
 
-    pub fn preview_declaration(&self) -> BridgePreviewSessionDeclaration {
-        let branch = TruthBranchIdentity::from_relational_branch_id("pricing-shock");
-        BridgePreviewSessionDeclaration::new(
-            BridgePreviewSessionDeclarationIdentity::admit_bridge_owned(
-                "pricing:preview-declaration",
+    pub fn begin_preview(
+        &self,
+        runtime: &RuntimeBridge,
+        identity: BridgePreviewSessionIdentity,
+    ) -> BridgePreviewSessionHandle {
+        runtime.begin_preview(
+            identity,
+            BridgePreviewBranchBinding::new(
+                TruthBranchIdentity::from_relational_branch_id("pricing-shock"),
+                BridgeSignalBranchIdentity::from_stable_name("signal:pricing-shock"),
             ),
-            BridgeRequestKind::Preview,
-            BridgeSpeculativeBranchBinding::new(
-                BridgeSpeculativeBranchBindingIdentity::admit_bridge_owned("pricing:binding"),
-                branch.clone(),
-                BridgeSignalBranchIdentity::admit_bridge_owned("signal:pricing-shock"),
-            ),
-            crate::facade::BridgePreviewSessionBasis::new(
-                BridgeTruthViewSelector::branch_snapshot(branch, self.shock_snapshot().clone()),
-                BridgeSourceCapabilitySet::new(vec![
-                    BridgeSourceCapability::SnapshotRead,
-                    BridgeSourceCapability::BranchRead,
-                ]),
-                crate::facade::BridgePreviewRetainedArtifactSchema::PreviewLifecycleArtifactsV1,
-            ),
+            self.shock_snapshot().clone(),
         )
     }
 }
@@ -183,6 +175,18 @@ impl RelationalPricing {
         self.builder(self.native.source.clone(), sink, policy)
             .build()
             .expect("native pricing runtime")
+    }
+
+    pub fn runtime_with_historical_source(&self, declaration: SourceDeclaration) -> RuntimeBridge {
+        self.builder(
+            self.native.source.clone(),
+            RecordingSignalBridgeSink::default(),
+            BridgeRuntimePolicy::development(),
+        )
+        .with_source_adapter(self.native.source.clone())
+        .register_source(declaration)
+        .build()
+        .expect("native pricing runtime with a historical source")
     }
 
     pub fn aspect_runtime(&self, policy: BridgeRuntimePolicy) -> RuntimeBridge {

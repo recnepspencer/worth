@@ -13,6 +13,9 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
             "preview_active_subscription_identity",
         );
         owner.field::<Option<Arc<str>>>("preview_parent_truth_view_basis_digest");
+        owner.field::<Option<crate::facade::BridgePreviewSessionLivenessObserver>>(
+            "preview_session",
+        );
         owner.field::<Arc<str>>("canonical_basis");
         owner.field::<Arc<str>>("digest");
     }

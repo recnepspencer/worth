@@ -109,8 +109,7 @@ pub use crate::error::{
     BridgeDeliveryError, BridgeDeliveryErrorKind, BridgeErrorContext, BridgeLineageSourceError,
     BridgeLineageSourceErrorKind, BridgePatchTargetCoordinate, BridgeReplayError,
     BridgeReplayErrorKind, BridgeRouteError, BridgeRouteErrorKind, BridgeSnapshotReadCoordinate,
-    BridgeSpeculationError, BridgeSpeculationErrorKind, BridgeWritebackError,
-    BridgeWritebackErrorKind,
+    BridgeWritebackError, BridgeWritebackErrorKind,
 };
 pub use crate::execution_basis::{
     BridgeBoundExecutionBasis, BridgeExecutionBasisCounters, BridgeExecutionBasisDenial,
@@ -159,6 +158,7 @@ pub use crate::mapping::{
     SliceWideningPolicy, SubscriptionSliceKind, TruthDeltaSurfaceKind, TruthPatchScope,
     TruthPatchTargetSelector,
 };
+pub use crate::policy::BridgeRequestKind;
 pub use crate::policy::{
     AdmittedBridgePolicyContract, BridgeArtifactPolicyBaseline, BridgeDiagnosticsPolicyBaseline,
     BridgeDiagnosticsRetentionBudget, BridgeDiagnosticsTier, BridgeExecutionPolicyBaseline,
@@ -169,6 +169,11 @@ pub use crate::policy::{
     BridgePolicyRejectionStage, BridgePolicyReplayBundle, BridgePolicyResolution,
     BridgePolicySourceClass, BridgeRoutePlanningPolicy, BridgeRuntimePolicy, BridgeRuntimePosture,
     LoweredBridgeExecutionPolicy, ValidatedBridgePolicyDeclaration,
+};
+pub use crate::preview::{
+    BridgePreviewBranchBinding, BridgePreviewSessionHandle, BridgePreviewSessionIdentity,
+    BridgePreviewSessionLivenessGuard, BridgePreviewSessionLivenessObserver,
+    BridgeSignalBranchIdentity, FinishedBridgePreviewSession,
 };
 pub use crate::routing::{
     AdmittedBridgeExecutionPlan, AdmittedPreparationPartitionSet, BridgeAdmissionProfileIdentity,
@@ -271,21 +276,6 @@ pub use crate::source::{
     StagedBridgeAsyncWritebackEffect, ValidatedBridgeAsyncCompletionEnvelope,
     ValidatedBridgeAsyncRequestBasisBinding, ValidatedBridgeAsyncSourceDeclaration,
     ValidatedSourceDeclaration,
-};
-pub use crate::speculation::{
-    BranchForkPosture, BridgePreviewDiscardCleanupOutcome, BridgePreviewDiscardRecord,
-    BridgePreviewDiscardRecordIdentity, BridgePreviewExecutionRecord,
-    BridgePreviewLifecycleStateKind, BridgePreviewLifecycleTransitionKind,
-    BridgePreviewPromotionRecord, BridgePreviewPromotionRecordIdentity, BridgePreviewReplayBundle,
-    BridgePreviewResidueClass, BridgePreviewResidueReport, BridgePreviewRetainedArtifactSchema,
-    BridgePreviewReuseEquivalence, BridgePreviewSession, BridgePreviewSessionBasis,
-    BridgePreviewSessionDeclaration, BridgePreviewSessionDeclarationIdentity,
-    BridgePreviewSessionIdentity, BridgePreviewStructuralBasis, BridgePromotionAdmissibilityProof,
-    BridgeRequestKind, BridgeSignalBranchIdentity, BridgeSpeculationCounters,
-    BridgeSpeculationFailureClass, BridgeSpeculativeBranchBinding,
-    BridgeSpeculativeBranchBindingIdentity, PreviewActive, PreviewAdmitted, PreviewDeclared,
-    PreviewDiscarded, PreviewExecutionRecordIdentity, PreviewPromoted, RelationalForkAxis,
-    SignalForkAxis, ValidatedBridgePreviewSessionDeclaration,
 };
 pub use crate::temporal::{
     AdmittedBridgeTemporalBasis, AdmittedBridgeTemporalSignalBasis,

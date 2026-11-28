@@ -25,9 +25,6 @@ pub enum BridgeCausalEvidenceFamily {
     BridgeConditionalObservation,
     BridgeHistoricalEvaluation,
     BridgeHistoricalEvaluationFailure,
-    BridgePreviewExecution,
-    BridgePreviewDiscard,
-    BridgePreviewPromotion,
     BridgeSourceMaterialization,
     BridgeSourceFailure,
     BridgeContinuity,
@@ -49,9 +46,6 @@ impl BridgeCausalEvidenceFamily {
             Self::BridgeConditionalObservation => "bridge_conditional_observation",
             Self::BridgeHistoricalEvaluation => "bridge_historical_evaluation",
             Self::BridgeHistoricalEvaluationFailure => "bridge_historical_evaluation_failure",
-            Self::BridgePreviewExecution => "bridge_preview_execution",
-            Self::BridgePreviewDiscard => "bridge_preview_discard",
-            Self::BridgePreviewPromotion => "bridge_preview_promotion",
             Self::BridgeSourceMaterialization => "bridge_source_materialization",
             Self::BridgeSourceFailure => "bridge_source_failure",
             Self::BridgeContinuity => "bridge_continuity",
@@ -73,9 +67,6 @@ impl BridgeCausalEvidenceFamily {
             | Self::BridgeConditionalObservation
             | Self::BridgeHistoricalEvaluation
             | Self::BridgeHistoricalEvaluationFailure
-            | Self::BridgePreviewExecution
-            | Self::BridgePreviewDiscard
-            | Self::BridgePreviewPromotion
             | Self::BridgeSourceMaterialization
             | Self::BridgeSourceFailure
             | Self::BridgeContinuity => BridgeCausalEvidenceOwner::RuntimeBridge,

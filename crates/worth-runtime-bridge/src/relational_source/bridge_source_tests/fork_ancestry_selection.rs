@@ -83,7 +83,8 @@ fn advanced_fork_selects_inherited_ancestor_but_not_post_fork_source_sibling() {
         .expect("historical evaluation must retain the advanced fork's ancestor");
 
     let after_evaluation = source.selection_work_totals();
-    assert_eq!(after_evaluation, (2, 2 * ancestry_work));
+    // Historical reads use Native pinning without going through patch publication.
+    assert_eq!(after_evaluation, (1, ancestry_work));
     let denial = source
         .load_committed_patch(
             RelationalCommittedPatchRequest::at_snapshot(

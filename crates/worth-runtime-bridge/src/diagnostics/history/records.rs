@@ -26,6 +26,7 @@ pub type BridgeHistoricalEvaluationDecisionLogIdentity =
 pub enum BridgeHistoricalMaterializationPath {
     DirectSnapshotRead,
     CommitEnvelopeSnapshot,
+    PinnedCommitObservation,
     BranchHeadEnvelopeSnapshot,
 }
 

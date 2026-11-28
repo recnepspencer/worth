@@ -76,7 +76,7 @@ pub(crate) fn admitted_preview_subscription_backed_completion(
     suffix: &str,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> AdmittedBridgeAsyncCompletion {
-    let preview_active = preview_active_subscription_with_basis(
+    let (_preview_active_session, preview_active) = preview_active_subscription_with_basis(
         runtime,
         suffix,
         crate::truth_identity_fixtures::truth_branch_fixture(format!("truth-preview:{suffix}")),

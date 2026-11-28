@@ -175,7 +175,7 @@ impl EvidenceFlags {
             async_completion: has(CausalEvidenceFamily::SignalEvaluation)
                 || has(CausalEvidenceFamily::SignalForensicAvailability),
             replay: has(CausalEvidenceFamily::SignalReplayCursor),
-            preview: has(CausalEvidenceFamily::BridgePreview),
+            preview: has(CausalEvidenceFamily::BridgeEvaluation),
             stale_failure: has(CausalEvidenceFamily::BridgeSourceFailure)
                 || bridge_denial_family == Some(BridgeCausalEvidenceFamily::BridgeSourceFailure),
             continuity: has(CausalEvidenceFamily::BridgeContinuity)

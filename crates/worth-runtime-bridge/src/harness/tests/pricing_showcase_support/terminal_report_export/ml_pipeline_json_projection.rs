@@ -49,11 +49,7 @@ impl PricingWorkloadCertificationBundle {
                     "promotion_main_snapshot": self.promotion.main_snapshot.as_str(),
                     "promotion_speculative_snapshot": self.promotion.speculative_snapshot.as_str(),
                     "promotion_session_identity": self.promotion.promotion_session_identity.as_str(),
-                    "promotion_lifecycle_state": format!("{:?}", self.promotion.lifecycle_state),
-                    "promotion_authoritative_commit_boundary_digest":
-                        self.promotion.authoritative_commit_boundary_digest,
-                    "promotion_authoritative_artifact_digest":
-                        self.promotion.authoritative_artifact_digest,
+                    "finished_preview_closed": self.promotion.session_closed,
                 },
                 "fanout_and_restart_lineage": {
                     "fanout_second_source_commit": self.fanout.second_source_commit.as_str(),

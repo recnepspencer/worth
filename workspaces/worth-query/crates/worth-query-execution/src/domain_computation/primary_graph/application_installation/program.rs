@@ -51,8 +51,9 @@ pub use program_runtime::{
 pub use roster_authoring::WorthQueryApplicationProgramRoster;
 pub use specialized_action::WorthQueryAdmittedProgramOperation;
 pub use speculation::{
-    WorthQueryApplicationPreviewReadmissionDenial, WorthQueryApplicationPreviewRequest,
-    WorthQueryApplicationPreviewSession, WorthQueryReadmittedApplicationPreview,
+    WorthQueryApplicationPreviewDiscardDenial, WorthQueryApplicationPreviewReadmissionDenial,
+    WorthQueryApplicationPreviewRequest, WorthQueryApplicationPreviewSession,
+    WorthQueryReadmittedApplicationPreview,
 };
 pub use supported_program::WorthQuerySupportedProgramHandle;
 pub(crate) use workflow_runtime::workflow_approval_authentication_intent;

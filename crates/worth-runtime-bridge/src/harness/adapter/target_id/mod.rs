@@ -30,9 +30,6 @@ pub enum BridgeHarnessTargetId {
     PolicyProvenanceCertification,
     PolicyRejectionCertification,
     PolicyAmbientLeakCertification,
-    SpeculationDiscardCertification,
-    SpeculationPromotionCertification,
-    SpeculationChurnCertification,
     HistoricalCommit {
         branch_identity: TruthBranchIdentity,
         commit_identity: TruthCommitIdentity,

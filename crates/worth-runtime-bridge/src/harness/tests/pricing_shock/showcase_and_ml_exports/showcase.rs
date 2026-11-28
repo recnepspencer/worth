@@ -85,7 +85,7 @@ fn pricing_shock_showcase_artifact_explains_retained_commit_without_hidden_memor
         shock_commit["snapshot"]
             .as_str()
             .expect("shock commit snapshot should be exported as string"),
-        truth.shock_snapshot().as_str()
+        bundle.provenance.shock_snapshot.as_str()
     );
     assert_eq!(
         shock_commit["representative_retail_price_cents"]

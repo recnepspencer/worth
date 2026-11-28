@@ -23,6 +23,7 @@ mod continuity_lineage;
 mod lock_observation;
 mod named_continuity;
 mod observation_bindings;
+mod pinned_commit;
 mod retained_entity_projection;
 mod retained_snapshot;
 mod retirement;

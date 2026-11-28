@@ -3,10 +3,6 @@ use std::sync::{Arc, RwLock};
 use crate::error::{BridgeDeliveryError, BridgeReplayError};
 use crate::policy::{BridgeDiagnosticsTier, BridgeRuntimePolicy};
 use crate::routing::BridgeCanonicalBulkPlanRecord;
-use crate::speculation::{
-    BridgePreviewDiscardRecord, BridgePreviewExecutionRecord, BridgePreviewPromotionRecord,
-    BridgePreviewSessionIdentity,
-};
 
 use super::bulk::BridgeBulkPlanExplanation;
 use super::continuity::{BridgeCanonicalContinuityRecord, BridgeContinuityExplanation};
@@ -18,10 +14,6 @@ use super::history::{
 };
 use super::records::{BridgeFailureClass, BridgeFailureRecord, BridgeRouteRecord};
 use super::replay::{BridgeCanonicalRouteRecord, BridgeReplayRecord};
-use super::speculation::{
-    BridgePreviewDiscardExplanation, BridgePreviewExecutionExplanation,
-    BridgePreviewPromotionExplanation, BridgePreviewReplayExplanation,
-};
 use super::state::{BridgeDiagnosticsConfig, BridgeDiagnosticsState};
 use super::BridgeRouteExplanation;
 
@@ -31,7 +23,6 @@ mod operator_reports;
 mod policy;
 mod query;
 mod record;
-mod speculation;
 
 #[derive(Debug, Clone)]
 pub struct BridgeDiagnosticsFacade {

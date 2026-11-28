@@ -111,6 +111,7 @@ impl BridgeErrorKind for crate::adapter::RelationalBridgeSourceErrorTag {
             ),
             Self::Binding(_) => (Authorization, Reauthorize, "bridge.source.binding"),
             Self::CommitSelection(_) => (Unavailable, Escalate, "bridge.source.commit_selection"),
+            Self::PinnedCommit(_) => (Unavailable, Escalate, "bridge.source.pinned_commit"),
             Self::ObservationRead(_) => (Unavailable, Escalate, "bridge.source.observation_read"),
             Self::ExecutionDenied(denial) => (
                 denial.denial_class(),

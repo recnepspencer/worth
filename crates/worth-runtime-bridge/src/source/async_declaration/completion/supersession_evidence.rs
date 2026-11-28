@@ -28,7 +28,6 @@ pub struct BridgeAsyncCompletionSupersessionClassificationRequest {
     current_truth_view_basis: BridgeAsyncRequestTruthViewBasis,
     current_subscription_instance: Option<BridgeAsyncRequestSubscriptionInstance>,
     displacing_request_identity: Option<AdmittedBridgeAsyncRequestIdentity>,
-    preview_discarded: bool,
 }
 
 impl BridgeAsyncCompletionSupersessionClassificationRequest {
@@ -41,7 +40,6 @@ impl BridgeAsyncCompletionSupersessionClassificationRequest {
             current_truth_view_basis,
             current_subscription_instance: None,
             displacing_request_identity: None,
-            preview_discarded: false,
         }
     }
 
@@ -55,7 +53,6 @@ impl BridgeAsyncCompletionSupersessionClassificationRequest {
             current_truth_view_basis,
             current_subscription_instance: Some(current_subscription_instance),
             displacing_request_identity: None,
-            preview_discarded: false,
         }
     }
 
@@ -64,11 +61,6 @@ impl BridgeAsyncCompletionSupersessionClassificationRequest {
         displacing_request_identity: &AdmittedBridgeAsyncRequestIdentity,
     ) -> Self {
         self.displacing_request_identity = Some(displacing_request_identity.clone());
-        self
-    }
-
-    pub fn mark_preview_discarded(mut self) -> Self {
-        self.preview_discarded = true;
         self
     }
 
@@ -89,7 +81,12 @@ impl BridgeAsyncCompletionSupersessionClassificationRequest {
     }
 
     pub fn preview_discarded(&self) -> bool {
-        self.preview_discarded
+        self.denied_completion
+            .request_identity()
+            .basis_binding()
+            .truth_view_basis()
+            .preview_session()
+            .is_some_and(|session| session.admit_active_session().is_none())
     }
 }
 
@@ -110,6 +107,7 @@ impl BridgeAsyncCompletionSupersessionEvidence {
     pub(crate) fn new(
         request: &BridgeAsyncCompletionSupersessionClassificationRequest,
         supersession_class: super::BridgeAsyncCompletionSupersessionClass,
+        preview_discarded: bool,
     ) -> Self {
         let denied_completion = request.denied_completion();
         let request_identity = denied_completion.request_identity();
@@ -130,7 +128,7 @@ impl BridgeAsyncCompletionSupersessionEvidence {
                 .displacing_request_identity()
                 .map(|request| request.request_identity().as_str())
                 .unwrap_or("-"),
-            request.preview_discarded(),
+            preview_discarded,
         ));
         let digest = Sha256::digest(canonical_basis.as_bytes());
         Self {

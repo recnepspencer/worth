@@ -163,14 +163,14 @@ fn preview_basis_drift_revalidation_outranks_generic_subscription_drift() {
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime();
-    let prior_preview = preview_active_subscription_with_basis(
+    let (_prior_preview_session, prior_preview) = preview_active_subscription_with_basis(
         &runtime,
         "prior",
         crate::truth_identity_fixtures::truth_branch_fixture("truth-preview"),
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-preview-a"),
         resource_request,
     );
-    let current_preview = preview_active_subscription_with_basis(
+    let (_current_preview_session, current_preview) = preview_active_subscription_with_basis(
         &runtime,
         "current",
         crate::truth_identity_fixtures::truth_branch_fixture("truth-preview"),

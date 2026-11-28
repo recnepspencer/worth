@@ -1,12 +1,12 @@
 use super::super::support::*;
 use crate::facade::{
-    BridgePreviewSessionDeclarationIdentity, BridgeRuntimePolicy, BridgeSignalBranchIdentity,
-    BridgeSpeculativeBranchBindingIdentity, BridgeSubscriptionAuthoritativePreviewReadmissionClass,
+    BridgePreviewBranchBinding, BridgeRuntimePolicy, BridgeSignalBranchIdentity,
+    BridgeSubscriptionAuthoritativePreviewReadmissionClass,
     BridgeSubscriptionDeliveryDensityPosture, BridgeSubscriptionPreviewLifecycleResidueInput,
     BridgeSubscriptionPreviewLifecycleResidueKind, BridgeSubscriptionPreviewWorkInput,
     BridgeSubscriptionPreviewWorkKind, BridgeSubscriptionPreviewWorkTraceRejectionKind,
 };
-use crate::speculation::BridgePreviewSessionIdentity;
+use crate::preview::BridgePreviewSessionIdentity;
 
 #[test]
 fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_explicit() {
@@ -46,12 +46,6 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
                 "preview-session:subscription:{suffix}"
             )),
             SubscriptionPreviewSessionIdentities {
-                declaration_identity: BridgePreviewSessionDeclarationIdentity::admit_bridge_owned(
-                    format!("preview:subscription:{suffix}"),
-                ),
-                binding_identity: BridgeSpeculativeBranchBindingIdentity::admit_bridge_owned(
-                    format!("preview-binding:subscription:{suffix}"),
-                ),
                 truth_branch_identity: crate::truth_identity_fixtures::truth_branch_fixture(
                     "analysis",
                 ),
@@ -132,12 +126,6 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
             "preview-session:subscription:malformed-work",
         ),
         SubscriptionPreviewSessionIdentities {
-            declaration_identity: BridgePreviewSessionDeclarationIdentity::admit_bridge_owned(
-                "preview:subscription:malformed-work",
-            ),
-            binding_identity: BridgeSpeculativeBranchBindingIdentity::admit_bridge_owned(
-                "preview-binding:subscription:malformed-work",
-            ),
             truth_branch_identity: crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
             signal_branch_identity: BridgeSignalBranchIdentity::admit_bridge_owned(
                 "signal:subscription:malformed-work",
@@ -183,12 +171,6 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
         &runtime,
         BridgePreviewSessionIdentity::admit_bridge_owned("preview-session:subscription:other-work"),
         SubscriptionPreviewSessionIdentities {
-            declaration_identity: BridgePreviewSessionDeclarationIdentity::admit_bridge_owned(
-                "preview:subscription:other-work",
-            ),
-            binding_identity: BridgeSpeculativeBranchBindingIdentity::admit_bridge_owned(
-                "preview-binding:subscription:other-work",
-            ),
             truth_branch_identity: crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
             signal_branch_identity: BridgeSignalBranchIdentity::admit_bridge_owned(
                 "signal:subscription:other-work",
@@ -217,35 +199,15 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
     );
 
     let promotion_ready = activation_ready_for(&runtime, &detail, resource_request);
-    let admitted_preview = runtime
-        .admit_preview_session(
-            BridgePreviewSessionIdentity::admit_bridge_owned(
-                "preview-session:subscription:promotion",
-            ),
-            preview_declaration(&SubscriptionPreviewSessionIdentities {
-                declaration_identity: BridgePreviewSessionDeclarationIdentity::admit_bridge_owned(
-                    "preview:subscription:promotion",
-                ),
-                binding_identity: BridgeSpeculativeBranchBindingIdentity::admit_bridge_owned(
-                    "preview-binding:subscription:promotion",
-                ),
-                truth_branch_identity: crate::truth_identity_fixtures::truth_branch_fixture(
-                    "analysis",
-                ),
-                signal_branch_identity: BridgeSignalBranchIdentity::admit_bridge_owned(
-                    "signal:subscription:promotion",
-                ),
-                snapshot_identity: crate::truth_identity_fixtures::truth_snapshot_fixture(
-                    "snapshot:subscription:promotion",
-                ),
-            }),
-        )
-        .expect("preview session should admit for promotion");
-    let (active_preview_session, execution_record) =
-        runtime.activate_preview_session(admitted_preview, 3, 1, 2);
-    let preview_basis = runtime
-        .admit_subscription_preview_basis(&active_preview_session, &execution_record)
-        .expect("preview basis should admit");
+    let session = runtime.begin_preview(
+        BridgePreviewSessionIdentity::from_stable_name("preview-session:subscription:promotion"),
+        BridgePreviewBranchBinding::new(
+            crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
+            BridgeSignalBranchIdentity::from_stable_name("signal:subscription:promotion"),
+        ),
+        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:subscription:promotion"),
+    );
+    let preview_basis = runtime.admit_subscription_preview_basis(&session);
     let cost_profile = runtime
         .admit_subscription_delivery_cost_profile(
             BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
@@ -260,10 +222,6 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
         cost_profile,
         canonical_consumer(&runtime),
     );
-    let proof = active_preview_session.promotion_admissibility_proof();
-    let (_promoted_session, speculation_promotion) = runtime
-        .promote_preview_session(active_preview_session, &execution_record, &proof)
-        .expect("speculation promotion should succeed");
     let promoted_ready = activation_ready_for(&runtime, &detail, resource_request);
     let preview_identity = preview_active
         .preview_active_subscription_identity()
@@ -284,19 +242,32 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
         .admitted_subscription_identity()
         .clone();
     let residue = capture_zero_residue(&preview_active, &promotion_work_trace);
+    let unrelated = runtime.begin_preview(
+        session.session_identity().clone(),
+        session.branches().clone(),
+        session.snapshot_identity().clone(),
+    );
+    let refused = runtime
+        .admit_preview_lifecycle_promotion(
+            &preview_active,
+            &promotion_work_trace,
+            &residue,
+            &unrelated.finish(),
+        )
+        .expect_err("a different occurrence of the same session label has no custody");
+    assert_eq!(
+        refused.rejection_kind(),
+        crate::facade::BridgeSubscriptionPreviewLifecyclePromotionRejectionKind::PromotionSessionMismatch,
+    );
     let promotion = runtime
         .admit_preview_lifecycle_promotion(
             &preview_active,
             &promotion_work_trace,
             &residue,
-            &speculation_promotion,
+            &session.finish(),
         )
         .expect("subscription lifecycle promotion should admit");
 
-    assert_eq!(
-        promotion.promotion_record_digest(),
-        speculation_promotion.digest()
-    );
     assert_eq!(
         promotion.preview_work_trace_identity(),
         promotion_work_trace.preview_work_trace_identity()

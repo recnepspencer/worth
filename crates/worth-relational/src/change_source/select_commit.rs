@@ -21,9 +21,53 @@ impl RelationalRuntime {
             Err(denial) => return unselected(denial),
         };
         let ancestry = self.history().inspect_commit_ancestry(selected);
+        self.classify_selected_commit(observation, selected, requested, &ancestry)
+    }
+
+    pub(super) fn select_commit_for_pinned_read(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        observation: &RelationalBranchObservation,
+        requested: CommitId,
+    ) -> Result<RelationalSelectedCommit, super::RelationalPinnedCommitDenial> {
+        use super::RelationalPinnedCommitDenial as Denial;
+
+        let selected = self
+            .observed_commit(observation)
+            .map_err(Denial::Selection)?;
+        let (selection, _) = execution
+            .run_native_with_checkpoint(|context| {
+                context.checkpoint(1)?;
+                if selected == requested {
+                    return Ok(self.select_exact_commit(observation, requested));
+                }
+                let history = self.history();
+                let ancestry =
+                    crate::history::access::ancestry_walk::inspect_commit_ancestry_with_checkpoint(
+                        selected,
+                        |id| history.immutable_commit_receipt(id),
+                        |units| context.checkpoint(units),
+                    )?;
+                context.checkpoint(1)?;
+                Ok(self.classify_selected_commit(observation, selected, requested, &ancestry))
+            })
+            .map_err(|error| Denial::Execution(error.into()))?;
+        selection
+            .map_err(|error: worth_execution::MapKernelStop| Denial::Execution(error.into()))?
+            .into_outcome()
+            .map_err(Denial::Selection)
+    }
+
+    fn classify_selected_commit(
+        &self,
+        observation: &RelationalBranchObservation,
+        selected: CommitId,
+        requested: CommitId,
+        ancestry: &crate::history::access::ancestry_walk::CommitAncestryInspection,
+    ) -> RelationalCommitSelection {
         let classification = self
             .history()
-            .classify_commit_in_ancestry(&ancestry, requested);
+            .classify_commit_in_ancestry(ancestry, requested);
         let work = self.count_commit_selection(classification.traversal_work());
         let outcome = match classification.posture() {
             CommitAncestryPosture::SelectedCommitUnavailable => {

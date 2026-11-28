@@ -9,9 +9,6 @@ use crate::identity::BridgeIdentityEvidence;
 pub(super) enum ExpectedRetainedCausalDigestArtifact {
     ContinuityRecord,
     HistoricalEvaluationRecord,
-    PreviewDiscardRecord,
-    PreviewExecutionRecord,
-    PreviewPromotionRecord,
     RouteRecord,
     SourceMaterializationRecord,
 }
@@ -22,15 +19,6 @@ impl From<ExpectedRetainedCausalDigestArtifact> for RetainedCausalMappingDigestA
             ExpectedRetainedCausalDigestArtifact::ContinuityRecord => Self::ContinuityRecord,
             ExpectedRetainedCausalDigestArtifact::HistoricalEvaluationRecord => {
                 Self::HistoricalEvaluationRecord
-            }
-            ExpectedRetainedCausalDigestArtifact::PreviewDiscardRecord => {
-                Self::PreviewDiscardRecord
-            }
-            ExpectedRetainedCausalDigestArtifact::PreviewExecutionRecord => {
-                Self::PreviewExecutionRecord
-            }
-            ExpectedRetainedCausalDigestArtifact::PreviewPromotionRecord => {
-                Self::PreviewPromotionRecord
             }
             ExpectedRetainedCausalDigestArtifact::RouteRecord => Self::RouteRecord,
             ExpectedRetainedCausalDigestArtifact::SourceMaterializationRecord => {
@@ -86,9 +74,6 @@ fn expected_bridge_identity_index(
         ExpectedRetainedCausalDigestArtifact::HistoricalEvaluationRecord => {
             matches!(index, 0..=2)
         }
-        ExpectedRetainedCausalDigestArtifact::PreviewDiscardRecord => matches!(index, 0 | 1),
-        ExpectedRetainedCausalDigestArtifact::PreviewExecutionRecord => index == 0,
-        ExpectedRetainedCausalDigestArtifact::PreviewPromotionRecord => matches!(index, 0 | 1),
         ExpectedRetainedCausalDigestArtifact::RouteRecord => matches!(index, 0..=2),
         ExpectedRetainedCausalDigestArtifact::SourceMaterializationRecord => index == 0,
     }
@@ -98,9 +83,6 @@ fn expected_shape_index(artifact: ExpectedRetainedCausalDigestArtifact, index: u
     match artifact {
         ExpectedRetainedCausalDigestArtifact::ContinuityRecord => index == 1,
         ExpectedRetainedCausalDigestArtifact::HistoricalEvaluationRecord
-        | ExpectedRetainedCausalDigestArtifact::PreviewDiscardRecord
-        | ExpectedRetainedCausalDigestArtifact::PreviewExecutionRecord
-        | ExpectedRetainedCausalDigestArtifact::PreviewPromotionRecord
         | ExpectedRetainedCausalDigestArtifact::RouteRecord
         | ExpectedRetainedCausalDigestArtifact::SourceMaterializationRecord => false,
     }
