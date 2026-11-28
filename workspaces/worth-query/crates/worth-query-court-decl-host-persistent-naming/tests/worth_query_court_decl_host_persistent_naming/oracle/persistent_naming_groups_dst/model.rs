@@ -10,7 +10,7 @@
 //! anchor and keeper.
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::super::persistent_naming_dst::Rng;
+use worth_dst::Rng;
 
 /// Group labels the trace model declares.
 pub const MAX_GROUPS: usize = 8;

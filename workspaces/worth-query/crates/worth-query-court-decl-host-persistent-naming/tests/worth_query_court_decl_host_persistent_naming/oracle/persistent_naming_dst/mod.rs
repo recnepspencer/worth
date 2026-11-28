@@ -27,8 +27,10 @@
 //! for `tools/tla/run_tlc.py trace`. The durable sweep (`durable`) runs the
 //! same walks on a Directory Home crashed and reopened after every step.
 use std::collections::BTreeSet;
+use std::fs::{create_dir_all, File};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
+use worth_dst::{DstRunner, Seed, Spec};
 
 mod candidate;
 mod driver;
@@ -36,7 +38,6 @@ mod durable;
 mod durable_step;
 mod observe;
 mod ops;
-pub(super) use ops::Rng;
 mod reference;
 mod trace;
 
@@ -44,7 +45,6 @@ use driver::Driver;
 use observe::Observed;
 use ops::{next_op, Op};
 use reference::{Event, Oracle};
-use trace::Trace;
 
 /// Actions per seed.
 const STEPS: usize = 10;
@@ -211,17 +211,16 @@ fn run_seed(
     trace_dir: Option<&std::path::Path>,
     durable: bool,
 ) -> Result<Coverage, String> {
-    let mut rng = Rng::new(seed);
     let mut model = Oracle::default();
     let mut driver = Driver::new(seed, durable);
     let mut authored = BTreeSet::new();
     let mut minted = 0;
-    let mut trace = Trace::default();
     let mut coverage = Coverage::default();
     let mut ops = Vec::new();
     let steps = if durable { durable::steps() } else { STEPS };
-    for step in 0..steps {
-        let op = next_op(&mut rng, &model, &authored, minted, coverage.rebuilds > 0);
+    let spec = Spec::new(Seed::new(seed), 0, steps);
+    let trace = DstRunner::run(&spec, |step, run| {
+        let op = next_op(run.rng(), &model, &authored, minted, coverage.rebuilds > 0);
         let op = driver.settle(op);
         ops.push(op.clone());
         let fail = |cause: String| format!("seed {seed} step {step}: {cause}\n  ops: {ops:?}");
@@ -268,9 +267,8 @@ fn run_seed(
         let observed = driver.observe(step).map_err(fail)?;
         let born: BTreeSet<usize> = driver.names.keys().copied().collect();
         agree(&model, &observed, &born).map_err(fail)?;
-        trace.step(&op, &observed, &born, driver.naming_commits);
+        trace::step(run.trace(), &op, &observed, &born, driver.naming_commits).map_err(fail)?;
         if durable {
-            let (trace, coverage) = (&mut trace, &mut coverage);
             durable_step::reopen_after(
                 &mut driver,
                 &model,
@@ -278,26 +276,34 @@ fn run_seed(
                 &observed,
                 step,
                 recovered,
-                trace,
-                coverage,
+                run.trace(),
+                &mut coverage,
             )
             .map_err(|cause| format!("seed {seed} reopen after step {step}: {cause}"))?;
         }
-    }
+        Ok::<_, String>(())
+    })?;
     if let Some(dir) = trace_dir {
-        let file = format!("{}seed-{seed}", if durable { "durable-" } else { "" });
-        trace
-            .write(dir, &file)
-            .map_err(|cause| format!("trace: {cause}"))?;
+        let prefix = if durable { "durable-" } else { "" };
+        let path = dir.join(format!("{prefix}seed-{seed}.ndjson"));
+        create_dir_all(dir)
+            .and_then(|()| File::create(&path))
+            .and_then(|file| trace.write(file))
+            .map_err(|cause| format!("seed {seed} trace {}: {cause}", path.display()))?;
     }
     Ok(coverage)
 }
 
-fn seeds() -> Vec<u64> {
-    let var = |name: &str| std::env::var(name).ok().and_then(|v| v.parse::<u64>().ok());
+fn var(name: &str) -> Option<u64> {
+    std::env::var(name)
+        .ok()
+        .and_then(|value| value.parse().ok())
+}
+
+fn seeds(count_var: &str, default_count: u64) -> Vec<u64> {
     match var("WORTH_DST_SEED") {
         Some(seed) => vec![seed],
-        None => (0..var("WORTH_DST_SEEDS").unwrap_or(64)).collect(),
+        None => (0..var(count_var).unwrap_or(default_count)).collect(),
     }
 }
 
@@ -335,7 +341,7 @@ fn sweep(seeds: &[u64], durable: bool) -> Coverage {
 
 #[test]
 fn seeded_walks_agree_with_the_reference_oracle() {
-    let seeds = seeds();
+    let seeds = seeds("WORTH_DST_SEEDS", 64);
     let total = sweep(&seeds, false);
     eprintln!(
         "persistent-naming DST: {} seeds x {STEPS} steps, {total:?}",

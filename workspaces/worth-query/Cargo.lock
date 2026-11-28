@@ -1394,6 +1394,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-dst"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "worth-execution",
+ "worth-foundational",
+]
+
+[[package]]
 name = "worth-execution"
 version = "0.1.0"
 dependencies = [
@@ -1639,6 +1648,7 @@ name = "worth-query-court-decl-host-persistent-naming"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "worth-dst",
  "worth-execution",
  "worth-query-decl",
  "worth-query-host",

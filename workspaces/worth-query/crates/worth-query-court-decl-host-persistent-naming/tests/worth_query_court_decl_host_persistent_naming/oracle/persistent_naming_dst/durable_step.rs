@@ -7,13 +7,14 @@
 //! the documented recovery settles by ending the Home and reopening the same
 //! location; such a step already reopened before it was observed.
 use std::collections::BTreeSet;
+use worth_dst::Trace;
 
 use super::candidate;
 use super::driver::Driver;
 use super::observe::Observed;
 use super::ops::Op;
 use super::reference::Oracle;
-use super::trace::Trace;
+use super::trace;
 use super::{agree, Coverage};
 
 /// Whether `op` must refuse typed, leaving pending recovery custody on a
@@ -41,13 +42,11 @@ pub fn reopen_after(
 ) -> Result<(), String> {
     coverage.reopens += 1;
     if already_reopened {
-        trace.reopen(false, observed, born, driver.naming_commits);
-        return Ok(());
+        return trace::reopen(trace, false, observed, born, driver.naming_commits);
     }
     let checkpointed = driver.reopen(step % 2 == 1);
     coverage.checkpointed_reopens += usize::from(checkpointed);
     let observed = driver.observe(step)?;
     agree(model, &observed, born)?;
-    trace.reopen(checkpointed, &observed, born, driver.naming_commits);
-    Ok(())
+    trace::reopen(trace, checkpointed, &observed, born, driver.naming_commits)
 }

@@ -4,16 +4,12 @@
 //! carry every resolution the world answered. Sets use `{"__set__": [...]}`,
 //! which `tools/tla/run_tlc.py trace` compiles to TLA+ sets.
 use std::collections::BTreeSet;
+use worth_dst::Trace;
 
+use super::candidate::{First, Read};
 use super::observe::Observed;
 use super::ops::{Op, Placement};
-use super::reference::owner_name;
-
-/// One seed's trace, kept in memory and written when the seed ends.
-#[derive(Default)]
-pub struct Trace {
-    lines: Vec<String>,
-}
+use super::reference::{owner_name, Answer};
 
 fn name(index: usize) -> String {
     format!("\"n{}\"", index + 1)
@@ -100,7 +96,7 @@ fn action(op: &Op) -> String {
             first,
             read,
             expected,
-        } => super::candidate::trace_fields(first, *read, expected),
+        } => candidate_fields(first, *read, expected),
     }
 }
 
@@ -114,51 +110,108 @@ fn post(observed: &Observed, born: &BTreeSet<usize>, events: usize) -> String {
     )
 }
 
-impl Trace {
-    /// Records `op` and then an `Observe` of every answer the world gave.
-    pub fn step(&mut self, op: &Op, observed: &Observed, born: &BTreeSet<usize>, events: usize) {
-        let post = post(observed, born, events);
-        self.lines.push(format!("{{{},{post}}}", action(op)));
-        self.observe(observed, &post);
-    }
+/// Records `op` and then an `Observe` of every answer the world gave.
+pub fn step(
+    trace: &mut Trace,
+    op: &Op,
+    observed: &Observed,
+    born: &BTreeSet<usize>,
+    events: usize,
+) -> Result<(), String> {
+    record(trace, &action(op), observed, born, events)
+}
 
-    /// Records a Store crash and reopen (from a checkpoint captured at this
-    /// boundary when `checkpointed`) and the reopened world's answers.
-    pub fn reopen(
-        &mut self,
-        checkpointed: bool,
-        observed: &Observed,
-        born: &BTreeSet<usize>,
-        events: usize,
-    ) {
-        let post = post(observed, born, events);
-        self.lines.push(format!(
-            "{{\"action\":\"ReopenFromStore\",\"checkpoint\":{checkpointed},{post}}}"
-        ));
-        self.observe(observed, &post);
-    }
+/// Records a Store crash and reopen and the reopened world's answers.
+pub fn reopen(
+    trace: &mut Trace,
+    checkpointed: bool,
+    observed: &Observed,
+    born: &BTreeSet<usize>,
+    events: usize,
+) -> Result<(), String> {
+    let action = format!("\"action\":\"ReopenFromStore\",\"checkpoint\":{checkpointed}");
+    record(trace, &action, observed, born, events)
+}
 
-    fn observe(&mut self, observed: &Observed, post: &str) {
-        let resolved = observed.answers.iter().map(|((n, scope, all), answer)| {
-            format!(
-                "{{\"name\":{},\"scope\":{},\"sel\":{},\"status\":{},\"targets\":{}}}",
-                name(*n),
-                text(scope.map_or("all", |owner| owner_name(Some(owner)))),
-                text(if *all { "AllDescendants" } else { "Exact" }),
-                text(answer.status),
-                set(answer.targets.iter().map(|t| name(*t)))
-            )
-        });
-        self.lines.push(format!(
+fn record(
+    trace: &mut Trace,
+    action: &str,
+    observed: &Observed,
+    born: &BTreeSet<usize>,
+    events: usize,
+) -> Result<(), String> {
+    let post = post(observed, born, events);
+    let trace_error = |cause| format!("trace: {cause}");
+    trace
+        .push_json(&format!("{{{action},{post}}}"))
+        .map_err(trace_error)?;
+    let resolved = observed.answers.iter().map(|((n, scope, all), answer)| {
+        format!(
+            "{{\"name\":{},\"scope\":{},\"sel\":{},\"status\":{},\"targets\":{}}}",
+            name(*n),
+            text(scope.map_or("all", |owner| owner_name(Some(owner)))),
+            text(if *all { "AllDescendants" } else { "Exact" }),
+            text(answer.status),
+            set(answer.targets.iter().map(|t| name(*t)))
+        )
+    });
+    trace
+        .push_json(&format!(
             "{{\"action\":\"Observe\",\"resolved\":{},{post}}}",
             set(resolved)
-        ));
-    }
+        ))
+        .map_err(trace_error)
+}
 
-    pub fn write(&self, dir: &std::path::Path, file: &str) -> std::io::Result<std::path::PathBuf> {
-        std::fs::create_dir_all(dir)?;
-        let path = dir.join(format!("{file}.ndjson"));
-        std::fs::write(&path, self.lines.join("\n") + "\n")?;
-        Ok(path)
-    }
+/// The `CandidateEnvelope` record's fields, as the model's action takes them.
+fn candidate_fields(first: &First, read: Read, answer: &Answer) -> String {
+    let none = Placement::Issued;
+    let (kind, [x, y, z], [o1, o2], part) = match first {
+        First::Edit(n) => ("Edit", [*n; 3], [None; 2], none.part()),
+        First::Commit(op) => match op.as_ref() {
+            Op::Create { name, at } => ("Create", [*name; 3], [at.owner(); 2], at.part()),
+            Op::Preserve { name, at } => ("Preserve", [*name; 3], [at.owner(); 2], at.part()),
+            Op::Restore { name, at } => ("Restore", [*name; 3], [at.owner(); 2], at.part()),
+            Op::Retire { name } => ("Retire", [*name; 3], [None; 2], none.part()),
+            Op::Split { parent, pieces, at } => (
+                "Split",
+                [*parent, pieces[0], pieces[1]],
+                [at[0].owner(), at[1].owner()],
+                at[0].part(),
+            ),
+            Op::MergeKeep { keeper, other, .. } => (
+                "MergeKeep",
+                [*keeper, *other, *other],
+                [None; 2],
+                none.part(),
+            ),
+            other => panic!("not a candidate first stage: {other:?}"),
+        },
+    };
+    let (rk, rn, scope, sel) = match read {
+        Read::Resolve { name, scope, all } => (
+            "Resolve",
+            name,
+            scope.map_or("all", |owner| owner_name(Some(owner))),
+            if all { "AllDescendants" } else { "Exact" },
+        ),
+        Read::NameOf(name) => ("NameOf", name, "all", "Exact"),
+        Read::NameOfCreated => ("NameOfCreated", 0, "all", "Exact"),
+    };
+    format!(
+        "\"action\":\"CandidateEnvelope\",\"kind\":{},\"x\":{},\"y\":{},\"z\":{},\"o1\":{},\"o2\":{},\"part\":{},\"rk\":{},\"rn\":{},\"scope\":{},\"sel\":{},\"status\":{},\"targets\":{}",
+        text(kind),
+        name(x),
+        name(y),
+        name(z),
+        text(owner_name(o1)),
+        text(owner_name(o2)),
+        text(part),
+        text(rk),
+        name(rn),
+        text(scope),
+        text(sel),
+        text(answer.status),
+        set(answer.targets.iter().map(|target| name(*target)))
+    )
 }
