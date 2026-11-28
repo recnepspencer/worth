@@ -4,7 +4,8 @@ use std::sync::Arc;
 use worth_signal::facade::adapters::{
     branch_state_proof_report, merge_plan_proof_report, merge_result_proof_report,
     replay_artifact_proof_report, replay_parity_proof_report, runtime_proof_report,
-    BranchStateProofReport, MergePlanProofReport, MergeResultProofReport, ReplayArtifactProofInput,
+    BranchStateDenseGridProofBasis, BranchStateProofBasis, BranchStateProofReport,
+    MergePlanProofReport, MergeResultProofReport, ReplayArtifactProofInput,
     ReplayArtifactProofReport, ReplayParityProofReport, RuntimeProofReport,
     BRANCH_STATE_PROOF_BASIS_VERSION,
 };
@@ -17,12 +18,13 @@ use crate::runtime::adapters::{
     HostCapabilityTransportArtifact, RuntimeDefinitionEnvelope, RuntimeEnvelope,
     UnavailableCallbackArtifact,
 };
-use crate::runtime::summaries::{public_callback_read_ids, RuntimeSnapshotEnvelope};
+use crate::runtime::summaries::{
+    public_callback_read_ids, RuntimeSnapshotEnvelope, RuntimeStoreSnapshot,
+};
 
-use super::merge_state::build_branch_state_proof_basis;
 use super::state::{
-    CallbackDiagnosticState, CatalogEntry, DenseGridFamily, RuntimeStore, StoredRecipeDefinition,
-    WebRuntimeMetrics, WebSignalKind,
+    BranchRuntimeState, CallbackDiagnosticState, CatalogEntry, DenseGridFamily, RuntimeStore,
+    StoredRecipeDefinition, WebRuntimeMetrics, WebSignalKind,
 };
 use super::RuntimeCore;
 
@@ -323,5 +325,34 @@ impl RuntimeCore {
         result: &BranchMergeResult,
     ) -> Result<MergeResultProofReport, WorthSignalJsError> {
         Ok(merge_result_proof_report(result))
+    }
+}
+
+fn build_branch_state_proof_basis(
+    state: &BranchRuntimeState,
+) -> BranchStateProofBasis<RuntimeStoreSnapshot> {
+    let mut catalog_ids = state.metadata.catalog.keys().cloned().collect::<Vec<_>>();
+    catalog_ids.sort();
+    let mut dense_grids = state
+        .metadata
+        .dense_grids
+        .iter()
+        .map(|(family_id, grid)| BranchStateDenseGridProofBasis {
+            family_id: family_id.clone(),
+            width: grid.width,
+            height: grid.height,
+            key_count: grid.key_to_index.len(),
+            ids: grid.ids.clone(),
+        })
+        .collect::<Vec<_>>();
+    dense_grids.sort_by(|left, right| left.family_id.cmp(&right.family_id));
+    for grid in &mut dense_grids {
+        grid.ids.sort();
+    }
+    BranchStateProofBasis {
+        proof_schema_version: BRANCH_STATE_PROOF_BASIS_VERSION.to_owned(),
+        catalog_ids,
+        dense_grids,
+        store: state.store.clone(),
     }
 }

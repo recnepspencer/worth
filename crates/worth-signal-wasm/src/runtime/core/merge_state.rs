@@ -1,43 +1,11 @@
 use std::collections::BTreeMap;
 
-use worth_signal::facade::adapters::{
-    ArtifactMergeAction, BranchMergeResult, BranchStateDenseGridProofBasis, BranchStateProofBasis,
-    BRANCH_STATE_PROOF_BASIS_VERSION,
-};
+use worth_signal::facade::adapters::{ArtifactMergeAction, BranchMergeResult};
 
 use crate::expression::model::SignalValue;
 use crate::runtime::summaries::{AspectVersionSummary, RuntimeStoreSnapshot, StoredSourceSnapshot};
 
-use super::state::{BranchRuntimeMetadata, BranchRuntimeState};
-
-pub(super) fn build_branch_state_proof_basis(
-    state: &BranchRuntimeState,
-) -> BranchStateProofBasis<RuntimeStoreSnapshot> {
-    let mut catalog_ids = state.metadata.catalog.keys().cloned().collect::<Vec<_>>();
-    catalog_ids.sort();
-    let mut dense_grids = state
-        .metadata
-        .dense_grids
-        .iter()
-        .map(|(family_id, grid)| BranchStateDenseGridProofBasis {
-            family_id: family_id.clone(),
-            width: grid.width,
-            height: grid.height,
-            key_count: grid.key_to_index.len(),
-            ids: grid.ids.clone(),
-        })
-        .collect::<Vec<_>>();
-    dense_grids.sort_by(|left, right| left.family_id.cmp(&right.family_id));
-    for grid in &mut dense_grids {
-        grid.ids.sort();
-    }
-    BranchStateProofBasis {
-        proof_schema_version: BRANCH_STATE_PROOF_BASIS_VERSION.to_owned(),
-        catalog_ids,
-        dense_grids,
-        store: state.store.clone(),
-    }
-}
+use super::state::BranchRuntimeMetadata;
 
 pub(super) fn merge_branch_metadata(
     target: &BranchRuntimeMetadata,
