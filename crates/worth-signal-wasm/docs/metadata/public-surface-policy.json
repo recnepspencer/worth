@@ -45,7 +45,7 @@
       "evidence": [
         "package/product/signals_runtime/authoring/opaque_authoring_equivalence.test.mjs",
         "package/product/signals_runtime/entrypoint/construction/create_signals_assets_admission.test.mjs", "package/product/signals_runtime/authoring/compatibility_host_tip_commit.test.mjs"],
-      "baseline": {"declarationCount":88,"directMemberCount":339,"signatureDigest":"e199ab821ce26b5ea0305265d41a1b44c4c748949b66fcf3467b841a2f0c6649","declarationFileCount":10,"declarationFileDigest":"50d769e51413234aa1cef8f84f703180030143ac58d8d98ed4f0f13151369700"}
+      "baseline": {"declarationCount":88,"directMemberCount":331,"signatureDigest":"fb693cc1f1ee127614d5832348deeb704bc5b0770fffc10d3bbcd20f166a479d","declarationFileCount":10,"declarationFileDigest":"ea5553aae190520208f4c2ec11db3bf084ecb19f21787da589e8f36bcba404c7"}
     },
     {
       "id": "core.graphs",
@@ -73,7 +73,7 @@
       "canonicalDocs": ["core/diagnostics", "reference/support-status"],
       "truthOwners": ["src/boundary/diagnostics.rs", "src/runtime/core/diagnostics", "package-src/product/canonical_diagnostic_digest.ts"],
       "evidence": ["package/product/signals_runtime/entrypoint/sessions/worker_first_diagnostics.test.mjs"],
-      "baseline": {"declarationCount":127,"directMemberCount":781,"signatureDigest":"7875a1725ff2168ee141f410aec0096446a540703ded6ca8fa738379bfaf5d74","declarationFileCount":13,"declarationFileDigest":"925dc0ecff4624de8fc65e84ecd000b9a6ddb1b428198da01f065a7ed4cb19a9"}
+      "baseline": {"declarationCount":103,"directMemberCount":583,"signatureDigest":"46cc492a6e44a4f35507e127e8852476cc2a89e50046e2bf941a62d63f2e96f2","declarationFileCount":12,"declarationFileDigest":"ad40e7db9e0e1a6f50eb03cc06c2764e1ec5f3fd3409a45586cc528754890f27"}
     },
     {
       "id": "core.history",
@@ -87,7 +87,7 @@
       "canonicalDocs": ["core/history"],
       "truthOwners": ["src/boundary/history.rs", "src/runtime/core/branches.rs", "src/runtime/core/snapshots.rs"],
       "evidence": ["package/product/signals_runtime/entrypoint/sessions/worker_first_history.test.mjs"],
-      "baseline": { "declarationCount": 12, "directMemberCount": 40, "signatureDigest": "0abaefd2d40dc96076ee50a171bd95a1b747317a9c856d37f2363b3008784482", "declarationFileCount": 1, "declarationFileDigest": "82edb0d5560a44defdbf168e4321afc67f0f62aeca043c33829d2a29bb0667f7" }
+      "baseline": {"declarationCount":12,"directMemberCount":40,"signatureDigest":"782b9027426eef53a5b31571f4e947e247295337d70e9076bf2afbfe74f5862b","declarationFileCount":1,"declarationFileDigest":"a28b4ff864dbe9d099ed07f0c2d622fd8e6ecf24205c54dc49108dbf4c5e940a"}
     },
     {
       "id": "resources",
@@ -101,7 +101,7 @@
       "canonicalDocs": ["resources/index", "api-reference/resources", "api-reference/resource-family-authoring", "api-reference/resource-line"],
       "truthOwners": ["package-src/product/resource", "package-src/product/api"],
       "evidence": ["package/product/resource.runtime.test.mjs"],
-      "baseline": {"declarationCount":378,"directMemberCount":1278,"signatureDigest":"784d361f2129ecd92fa6e02f1aaea4eb5247c3a01b2f901f28f6174671723455","declarationFileCount":56,"declarationFileDigest":"14667949c8f51d75ff49938c5e1070ff9dbe90fb28c0268588f1fd3c46feb7b3"}
+      "baseline": {"declarationCount":351,"directMemberCount":1194,"signatureDigest":"6a943f55af38823f3b442cf789cc6e4c7fcccb320fdbb0970e76194baaef04e8","declarationFileCount":55,"declarationFileDigest":"97fa2a2b9289bec314edce89e191a291bae618bbfc9b792d6d4fff0a86af25a4"}
     },
     {
       "id": "forms",
@@ -115,7 +115,7 @@
       "canonicalDocs": ["forms/index", "forms/getting-started/your-first-form", "forms/state/README", "forms/validation/README", "forms/availability/README", "forms/actions/README", "forms/steps/README", "forms/layout/README", "forms/resource-backed/README", "forms/lifecycle/README", "forms/collaboration/README", "forms/diagnostics/README", "api-reference/forms", "api-reference/form-export-catalog"],
       "truthOwners": ["package-src/product/forms"],
       "evidence": ["package/product/signals_runtime/forms/closeout/full_forms_hostile_convergence.test.mjs", "package/product/documentation/form_export_catalog.test.mjs"],
-      "baseline": {"declarationCount":234,"directMemberCount":1327,"signatureDigest":"dadb15b4d6e2773f9f24f3be0f29ef24e5d1e5c109bf24f084b0dc93b2682659","declarationFileCount":39,"declarationFileDigest":"3bcfe899b6f3a3739406ef88a3e82c214ef4c49afc3988e1244a66e65549e90b"}
+      "baseline": {"declarationCount":231,"directMemberCount":1299,"signatureDigest":"c85ba2da5784b7e56be8fe9c12ab2114546748907ac2219f2e9d2e1f224b9dae","declarationFileCount":38,"declarationFileDigest":"004da7bac330166acb4c5fc65c6b2263fbdcbe8ef14773e1e2ccc5d9936a96f8"}
     },
     {
       "id": "router",
@@ -129,7 +129,7 @@
       "canonicalDocs": ["router/index", "router/projection/route_schema_authoring", "router/projection/projected_candidates", "router/admission/admit", "router/transitions/transition_artifacts", "router/history/browser_history_story", "router/recovery/stale_deep_link_recovery", "router/breadcrumbs/breadcrumb_declarations", "router/resources/route_resource_declarations", "router/forms/route_authority_handoff", "router/runtime_placement/worker_first_default", "router/diagnostics/diagnostics_surfaces"],
       "truthOwners": ["package-src/product/router"],
       "evidence": ["package/product/signals_runtime/authoring/router/phase11/callable_router_phase11_sequence_simulation.test.mjs"],
-      "baseline": { "declarationCount": 208, "directMemberCount": 1005, "signatureDigest": "45aae6353471b93f4e5ef83400a83a34f5a21310493fc436c0c3f65738d15794", "declarationFileCount": 20, "declarationFileDigest": "a3b8da4bb615a38aba9e9d484761ebb61531a72ea8d8bc1c533aa868a6c62332" }
+      "baseline": {"declarationCount":179,"directMemberCount":841,"signatureDigest":"5621e91bde25b768c995f2e8ee40be559f60f60dbfe65fda5cffdd2dd028d327","declarationFileCount":19,"declarationFileDigest":"6734fad53f2916d24d1648238c8c06c2427060d9778f5b8581bba013dabd1705"}
     },
     {
       "id": "local-truth",
@@ -143,7 +143,7 @@
       "canonicalDocs": ["local-truth/README", "local-truth/getting-started", "local-truth/branches-and-snapshots", "local-truth/history-and-rebuild", "local-truth/authority-boundaries", "local-truth/api-reference"],
       "truthOwners": ["package-src/product/local_truth"],
       "evidence": ["package/product/signals_runtime/local_truth/local_truth_closeout_certification.test.mjs"],
-      "baseline": { "declarationCount": 39, "directMemberCount": 198, "signatureDigest": "558fc2848f513e770c0cfaf9fda200d5a627bba67f3c5386830a804da12bfe40", "declarationFileCount": 7, "declarationFileDigest": "e8e9324c0bdcf9a76550749c84a9c44a12eab267360beefbc07f5502c43df8f7" }
+      "baseline": {"declarationCount":28,"directMemberCount":135,"signatureDigest":"0e45df9059fd56071cfd5e6c9ac88f2786b2cecf3b63e9b6d7d62e4888d95b46","declarationFileCount":6,"declarationFileDigest":"bed2f577909ebded43b54baaaa487bc5515d38ac9d8a07db84928f58309d83cb"}
     },
     {
       "id": "compatibility.root-raw-types",
@@ -157,7 +157,7 @@
       "canonicalDocs": ["api-reference/compatibility-surface", "reference/package-entrypoints-and-contracts", "reference/support-status"],
       "truthOwners": ["package-src/raw_surface.ts", "src/lib.rs"],
       "evidence": ["package/product/signals_runtime/entrypoint/construction/explicit_compatibility_construction.test.mjs"],
-      "baseline": { "declarationCount": 11, "directMemberCount": 171, "signatureDigest": "1c43d06448d5f1b982085fc05045b5026fb8fdebaff921bf85263e524ecabfa0", "declarationFileCount": 1, "declarationFileDigest": "a14c05a79f046612759f4e2dcf88fff8a47c41830106e0b1175ae8d895da9050" }
+      "baseline": {"declarationCount":11,"directMemberCount":163,"signatureDigest":"046733e31dbaf8f28132cf150b1ee67590169f17f1e994f24be2712f05484741","declarationFileCount":1,"declarationFileDigest":"f6efb9317cbd10d014d911bf99010e1aa6f01d37be3edd44cb4480f4783aedb4"}
     },
     {
       "id": "compatibility.raw-entrypoint",
@@ -171,7 +171,7 @@
       "canonicalDocs": ["api-reference/compatibility-surface", "reference/package-entrypoints-and-contracts", "reference/support-status"],
       "truthOwners": ["package-src/raw_surface.ts", "src/lib.rs"],
       "evidence": ["package/product/signals_runtime/entrypoint/construction/explicit_compatibility_construction.test.mjs"],
-      "baseline": { "declarationCount": 58, "directMemberCount": 542, "signatureDigest": "c852cbd483f820b1696ae74ac1b61ff892e368478dfb071d7e7bcdeda5ce7c3a", "declarationFileCount": 1, "declarationFileDigest": "a6a2ced8ad9dca77402c8ab23a4e30ad6a8720de0fa4c2b458877de45707fe24" }
+      "baseline": {"declarationCount":58,"directMemberCount":526,"signatureDigest":"7bf19177e5fe84ee2bf985877847fa3eaddaf1604ab24fe6c059c9aa6a404163","declarationFileCount":1,"declarationFileDigest":"a6a2ced8ad9dca77402c8ab23a4e30ad6a8720de0fa4c2b458877de45707fe24"}
     },
     {
       "id": "react",
