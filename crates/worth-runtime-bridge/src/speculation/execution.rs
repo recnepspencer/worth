@@ -19,7 +19,7 @@ pub struct BridgePreviewExecutionRecord {
 }
 
 impl BridgePreviewExecutionRecord {
-    pub fn from_admitted_session(
+    pub(crate) fn from_admitted_session(
         session: &BridgePreviewSession<PreviewAdmitted>,
         counters: BridgeSpeculationCounters,
     ) -> Self {
@@ -53,7 +53,7 @@ impl BridgePreviewExecutionRecord {
         }
     }
 
-    pub fn from_reused_active_session(
+    pub(crate) fn from_reused_active_session(
         source_session: &BridgePreviewSession<PreviewActive>,
         target_session: &BridgePreviewSession<PreviewAdmitted>,
         source_execution_record: &BridgePreviewExecutionRecord,

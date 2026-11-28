@@ -10,7 +10,7 @@ use super::{runtime, BridgeRuntimePolicy};
 use crate::facade::{
     BridgeCausalEnvelopeAssemblyRequest, BridgeCausalEnvelopeDenialKind,
     BridgeCausalEvidenceBinding, BridgeCausalEvidenceBindingClass, BridgeCausalEvidenceFamily,
-    BridgeCausalEvidenceOwner, BridgeCausalEvidenceReferenceIdentity, BridgePreviewResidueClass,
+    BridgeCausalEvidenceOwner, BridgeCausalEvidenceReferenceIdentity,
     BridgePreviewSessionDeclarationIdentity, BridgeSignalBranchIdentity,
     BridgeSpeculativeBranchBindingIdentity,
 };
@@ -62,14 +62,7 @@ fn causal_envelope_maps_retained_preview_records_into_bridge_owned_bindings() {
     let (discard_active, discard_execution) =
         runtime.activate_preview_session(discard_admitted, 3, 1, 2);
     let (_, discard_record) = runtime
-        .discard_preview_session(
-            discard_active,
-            &discard_execution,
-            vec![
-                BridgePreviewResidueClass::PreviewExecutionRetained,
-                BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
-            ],
-        )
+        .discard_preview_session(discard_active, &discard_execution)
         .expect("discard should close with zero authoritative residue");
     let promotion_admitted = runtime
         .admit_preview_session(

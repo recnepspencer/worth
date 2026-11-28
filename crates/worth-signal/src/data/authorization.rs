@@ -94,24 +94,54 @@ pub struct SignalAuthorizationDependencyCardinality {
     pub fields: usize,
 }
 
+/// A clause observation admitted under an installed Signal policy.
+///
+/// ```compile_fail,E0624
+/// use worth_signal::facade::{
+///     SignalAuthorizationClauseObservation, SignalAuthorizationDependencyCardinality,
+/// };
+/// use worth_signal::facade::InstalledSignalAuthorizationPolicy;
+/// fn forge(policy: &InstalledSignalAuthorizationPolicy) {
+///     let _ = SignalAuthorizationClauseObservation::new(
+///         policy, true, true, SignalAuthorizationDependencyCardinality::default(),
+///     );
+/// }
+/// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SignalAuthorizationClauseObservation {
+    graph_instance_id: u64,
+    policy_identity: SignalAuthorizationPolicyIdentity,
     matched: bool,
     exhaustive: bool,
     dependencies: SignalAuthorizationDependencyCardinality,
 }
 
 impl SignalAuthorizationClauseObservation {
-    pub const fn new(
+    pub(crate) const fn new(
+        policy: &InstalledSignalAuthorizationPolicy,
         matched: bool,
         exhaustive: bool,
         dependencies: SignalAuthorizationDependencyCardinality,
     ) -> Self {
         Self {
+            graph_instance_id: policy.graph_instance_id,
+            policy_identity: policy.identity,
             matched,
             exhaustive,
             dependencies,
         }
+    }
+}
+
+impl InstalledSignalAuthorizationPolicy {
+    /// Lowers an observed clause under this exact installed policy's custody.
+    pub const fn admit_clause_observation(
+        &self,
+        matched: bool,
+        exhaustive: bool,
+        dependencies: SignalAuthorizationDependencyCardinality,
+    ) -> SignalAuthorizationClauseObservation {
+        SignalAuthorizationClauseObservation::new(self, matched, exhaustive, dependencies)
     }
 }
 

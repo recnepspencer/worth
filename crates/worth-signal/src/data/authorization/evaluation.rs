@@ -70,14 +70,20 @@ fn validate_observation(
     if !same_shape(&policy.rules, &observation.rules) {
         return Err(SignalAuthorizationDenial::ObservationShapeMismatch);
     }
-    if observation
+    for clause in observation
         .rules
         .iter()
         .flat_map(|rule| &rule.requirements)
         .flat_map(|requirement| &requirement.clauses)
-        .any(|clause| !clause.exhaustive)
     {
-        return Err(SignalAuthorizationDenial::NonExhaustiveObservation);
+        if clause.graph_instance_id != policy.graph_instance_id
+            || clause.policy_identity != policy.identity
+        {
+            return Err(SignalAuthorizationDenial::ObservationShapeMismatch);
+        }
+        if !clause.exhaustive {
+            return Err(SignalAuthorizationDenial::NonExhaustiveObservation);
+        }
     }
     Ok(())
 }

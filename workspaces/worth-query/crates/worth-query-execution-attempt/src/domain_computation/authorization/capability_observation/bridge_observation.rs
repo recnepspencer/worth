@@ -1,14 +1,13 @@
 //! Runtime Bridge observation lowering from exact Relational evidence.
 
 use worth_runtime_bridge::facade::{
-    BridgeAuthorizationClauseObservation, BridgeAuthorizationDependencyCardinality,
-    BridgeAuthorizationObservation, BridgeAuthorizationRequirementObservation,
-    BridgeAuthorizationRuleObservation,
+    BridgeAuthorizationClauseObservation, BridgeAuthorizationObservation,
+    BridgeAuthorizationRequirementObservation, BridgeAuthorizationRuleObservation,
 };
 
 use super::super::capability_registry::{
-    WorthQueryCapabilityRequestGuard, WorthQueryCapabilityRequestValueAxis,
-    WorthQueryInstalledCapabilityPlan,
+    bridge_recorded_actor_comparison, WorthQueryCapabilityRequestGuard,
+    WorthQueryCapabilityRequestValueAxis, WorthQueryInstalledCapabilityPlan,
 };
 use super::super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
 use super::super::WorthQueryOperationAuthorizationDenial;
@@ -17,14 +16,12 @@ pub(super) fn lower_bridge_observation(
     installed: &WorthQueryInstalledCapabilityPlan,
     projection: &WorthQueryRetainedCapabilityRequest,
     evidence: &worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
-    dependency_identity: [u8; 32],
-    recorded: Option<&crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>,
+    recorded: Option<&super::recorded_actor::ReadmittedActor>,
 ) -> Result<BridgeAuthorizationObservation, WorthQueryOperationAuthorizationDenial> {
     lower_observation(
         installed,
         projection,
         evidence,
-        dependency_identity,
         recorded,
         installed.correspondence(),
         installed.rules(),
@@ -36,8 +33,7 @@ pub(super) fn lower_upper_bound_observation(
     installed: &WorthQueryInstalledCapabilityPlan,
     projection: &WorthQueryRetainedCapabilityRequest,
     evidence: &worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
-    dependency_identity: [u8; 32],
-    recorded: Option<&crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>,
+    recorded: Option<&super::recorded_actor::ReadmittedActor>,
 ) -> Result<BridgeAuthorizationObservation, WorthQueryOperationAuthorizationDenial> {
     let upper_bound = installed
         .upper_bound()
@@ -47,7 +43,6 @@ pub(super) fn lower_upper_bound_observation(
         installed,
         projection,
         evidence,
-        dependency_identity,
         recorded,
         upper_bound.correspondence,
         &upper_bound.rules,
@@ -59,8 +54,7 @@ fn lower_observation(
     installed: &WorthQueryInstalledCapabilityPlan,
     projection: &WorthQueryRetainedCapabilityRequest,
     evidence: &worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
-    dependency_identity: [u8; 32],
-    recorded: Option<&crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>,
+    recorded: Option<&super::recorded_actor::ReadmittedActor>,
     correspondence: worth_runtime_bridge::facade::BridgeAuthorizationCorrespondenceIdentity,
     rules: &[super::super::capability_registry::WorthQueryCapabilityRuleBinding],
     path_count: usize,
@@ -71,22 +65,13 @@ fn lower_observation(
     let mut observed_rules = Vec::with_capacity(rules.len());
     for rule in rules {
         let observed_requirements = if let Some((requirement, identity)) = rule.recorded_actor() {
-            let observed = recorded;
-            let counts = observed.map_or([0; 3], |observed| observed.dependencies().counts());
-            let matches = observed.is_some_and(|observed| {
-                observed.requirement() == requirement && observed.matches(projection.principal())
-            });
+            let comparison = bridge_recorded_actor_comparison(requirement.comparison());
+            let observed = recorded
+                .filter(|actor| actor.native.requirement() == requirement)
+                .and_then(|actor| actor.evidence.observation());
             vec![BridgeAuthorizationRequirementObservation::any([
-                BridgeAuthorizationClauseObservation::new(
-                    identity,
-                    matches,
-                    true,
-                    BridgeAuthorizationDependencyCardinality {
-                        entities: counts[0],
-                        relations: 0,
-                        adjacency_lists: counts[1],
-                        fields: counts[2],
-                    },
+                BridgeAuthorizationClauseObservation::from_recorded_actor(
+                    identity, evidence, observed, comparison,
                 ),
             ])]
         } else {
@@ -108,7 +93,7 @@ fn lower_observation(
     }
     Ok(BridgeAuthorizationObservation::new(
         correspondence,
-        dependency_identity,
+        evidence,
         observed_rules,
     ))
 }
@@ -127,18 +112,16 @@ fn observe_clause(
         .paths()
         .get(index)
         .ok_or_else(|| super::invalid_policy(installed.contract().name()))?;
-    let guard = guard_matches(&template.guard, projection);
-    Ok(BridgeAuthorizationClauseObservation::new(
-        template.identity,
-        path.matched() && guard,
-        path.exhaustive(),
-        BridgeAuthorizationDependencyCardinality {
-            entities: path.entities().len(),
-            relations: path.relations().len(),
-            adjacency_lists: path.adjacency_lists().len(),
-            fields: path.fields().len(),
-        },
-    ))
+    Ok(match &template.guard {
+        WorthQueryCapabilityRequestGuard::Unconditional => {
+            BridgeAuthorizationClauseObservation::from_relational_path(template.identity, path)
+        }
+        guard => BridgeAuthorizationClauseObservation::from_guarded_relational_path(
+            template.identity,
+            path,
+            guard_matches(guard, projection),
+        ),
+    })
 }
 
 fn guard_matches(

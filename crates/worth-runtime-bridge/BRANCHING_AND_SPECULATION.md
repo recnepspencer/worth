@@ -100,10 +100,7 @@ The bridge is responsible for the boundary behavior, not the pricing semantics.
 Discard is the "walk away cleanly" path:
 
 ```rust
-let discarded = session.discard(vec![
-    worth_runtime_bridge::facade::BridgePreviewResidueClass::PreviewExecutionRetained,
-    worth_runtime_bridge::facade::BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
-])?;
+let discarded = session.discard()?;
 ```
 
 The important product rule is:

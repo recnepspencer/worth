@@ -16,6 +16,10 @@ pub enum BridgePreviewDiscardCleanupOutcome {
     ZeroAuthoritativeResidue,
 }
 
+/// ```compile_fail,E0624
+/// use worth_runtime_bridge::facade::BridgePreviewResidueReport;
+/// let _ = BridgePreviewResidueReport::new(Vec::new());
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgePreviewResidueReport {
     residue_classes: Arc<[BridgePreviewResidueClass]>,
@@ -27,7 +31,7 @@ pub struct BridgePreviewResidueReport {
 }
 
 impl BridgePreviewResidueReport {
-    pub fn new(residue_classes: Vec<BridgePreviewResidueClass>) -> Self {
+    pub(crate) fn new(residue_classes: Vec<BridgePreviewResidueClass>) -> Self {
         let authoritative_residue_count = residue_classes
             .iter()
             .filter(|class| {
@@ -111,6 +115,16 @@ impl BridgePreviewResidueReport {
     }
 }
 
+/// ```compile_fail,E0624
+/// use worth_runtime_bridge::facade::{
+///     BridgePreviewDiscardRecord, BridgePreviewExecutionRecord, BridgePreviewResidueReport,
+///     BridgePreviewSession, BridgeSpeculationCounters, PreviewActive,
+/// };
+/// fn forge(session: &BridgePreviewSession<PreviewActive>, execution: &BridgePreviewExecutionRecord,
+///          residue: BridgePreviewResidueReport, counters: BridgeSpeculationCounters) {
+///     let _ = BridgePreviewDiscardRecord::from_active_session(session, execution, residue, counters);
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgePreviewDiscardRecord {
     record_identity: BridgePreviewDiscardRecordIdentity,
@@ -124,7 +138,7 @@ pub struct BridgePreviewDiscardRecord {
 }
 
 impl BridgePreviewDiscardRecord {
-    pub fn from_active_session(
+    pub(crate) fn from_active_session(
         session: &BridgePreviewSession<PreviewActive>,
         execution_record: &BridgePreviewExecutionRecord,
         residue_report: BridgePreviewResidueReport,

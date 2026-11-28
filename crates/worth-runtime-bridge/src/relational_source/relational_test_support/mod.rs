@@ -159,6 +159,47 @@ fn commit_named_entity(
     transaction.commit(execution, runtime).unwrap()
 }
 
+pub(crate) fn record_actor(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    actor: EntityId,
+) -> (
+    CommitResult,
+    [worth_foundational::facade::AspectFieldLocator; 3],
+) {
+    let coordinates = ["partition", "slot", "generation"]
+        .map(|field| planned_single_field_locator(aspect_key("actor"), field_key(field)));
+    let values = [
+        actor.partition_value_u64(),
+        actor.local_slot_value(),
+        u64::from(actor.generation_value()),
+    ];
+    let fields = AspectFieldPatch::from(
+        coordinates
+            .iter()
+            .cloned()
+            .zip(values.map(AspectValue::UInt64))
+            .collect::<BTreeMap<_, _>>(),
+    );
+    let mut transaction = test_owner_begin_transaction_for_main(runtime);
+    transaction
+        .push_batch(
+            WorkerIntentBatch::new("record-actor").push(MutationIntent::Create(
+                CreateIntent::Entity(EntitySpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: ENTITY_KIND,
+                    client_key: ClientKey::raw("record-actor"),
+                    fields,
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    (transaction.commit(execution, runtime).unwrap(), coordinates)
+}
+
+pub(crate) use schema::recorded_actor_aspect;
+
 /// Fork `new_branch` from the current root of `from_branch`.
 pub(crate) fn fork_branch(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

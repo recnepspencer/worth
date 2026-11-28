@@ -1,4 +1,8 @@
 use worth_foundational::facade::CanonicalDigestId;
+use worth_relational::facade::authorization::{
+    RelationalAuthorizationObservationEvidence, RelationalAuthorizationObservationIdentity,
+    RelationalAuthorizationPathObservation, RelationalAuthorizationRecordedActorObservation,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BridgeAuthorizationBindingIdentity {
@@ -46,15 +50,65 @@ pub enum BridgeAuthorizationRuleEffect {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct BridgeAuthorizationClauseContract {
     identity: [u8; 32],
+    kind: ClauseContractKind,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum ClauseContractKind {
+    RelationalPath { allow_guard: bool },
+    RecordedActor(BridgeRecordedActorComparison),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum ClauseObservationKind {
+    RelationalPath { narrowed_by_guard: bool },
+    RecordedActor(BridgeRecordedActorComparison),
 }
 
 impl BridgeAuthorizationClauseContract {
     pub const fn new(identity: [u8; 32]) -> Self {
-        Self { identity }
+        Self {
+            identity,
+            kind: ClauseContractKind::RelationalPath { allow_guard: false },
+        }
+    }
+
+    pub const fn guarded(identity: [u8; 32]) -> Self {
+        Self {
+            identity,
+            kind: ClauseContractKind::RelationalPath { allow_guard: true },
+        }
+    }
+
+    pub const fn recorded_actor(
+        identity: [u8; 32],
+        comparison: BridgeRecordedActorComparison,
+    ) -> Self {
+        Self {
+            identity,
+            kind: ClauseContractKind::RecordedActor(comparison),
+        }
     }
 
     pub const fn identity(&self) -> &[u8; 32] {
         &self.identity
+    }
+
+    pub(super) fn admits(&self, observation: &BridgeAuthorizationClauseObservation) -> bool {
+        if self.identity() != observation.identity() {
+            return false;
+        }
+        match (self.kind, observation.kind) {
+            (
+                ClauseContractKind::RelationalPath { allow_guard },
+                ClauseObservationKind::RelationalPath { narrowed_by_guard },
+            ) => allow_guard || !narrowed_by_guard,
+            (
+                ClauseContractKind::RecordedActor(expected),
+                ClauseObservationKind::RecordedActor(observed),
+            ) => expected == observed,
+            _ => false,
+        }
     }
 }
 
@@ -140,16 +194,29 @@ pub struct BridgeAuthorizationDependencyCardinality {
     pub fields: usize,
 }
 
+/// Authorization input derived from a Relational observation.
+///
+/// ```compile_fail,E0624
+/// use worth_runtime_bridge::facade::{
+///     BridgeAuthorizationClauseObservation, BridgeAuthorizationDependencyCardinality,
+/// };
+/// let _ = BridgeAuthorizationClauseObservation::new(
+///     [1; 32], true, true,
+///     BridgeAuthorizationDependencyCardinality { entities: 0, relations: 0, adjacency_lists: 0, fields: 0 },
+/// );
+/// ```
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct BridgeAuthorizationClauseObservation {
     identity: [u8; 32],
+    source: Option<RelationalAuthorizationObservationIdentity>,
+    kind: ClauseObservationKind,
     matched: bool,
     exhaustive: bool,
     dependencies: BridgeAuthorizationDependencyCardinality,
 }
 
 impl BridgeAuthorizationClauseObservation {
-    pub const fn new(
+    pub(crate) const fn new(
         identity: [u8; 32],
         matched: bool,
         exhaustive: bool,
@@ -157,10 +224,76 @@ impl BridgeAuthorizationClauseObservation {
     ) -> Self {
         Self {
             identity,
+            source: None,
+            kind: ClauseObservationKind::RelationalPath {
+                narrowed_by_guard: false,
+            },
             matched,
             exhaustive,
             dependencies,
         }
+    }
+
+    pub fn from_relational_path(
+        identity: [u8; 32],
+        path: &RelationalAuthorizationPathObservation,
+    ) -> Self {
+        Self::from_guarded_relational_path(identity, path, true)
+    }
+
+    /// A guard may narrow the underlying match.
+    pub fn from_guarded_relational_path(
+        identity: [u8; 32],
+        path: &RelationalAuthorizationPathObservation,
+        guard_admitted: bool,
+    ) -> Self {
+        let mut observation = Self::new(
+            identity,
+            path.matched() && guard_admitted,
+            path.exhaustive(),
+            BridgeAuthorizationDependencyCardinality {
+                entities: path.entities().len(),
+                relations: path.relations().len(),
+                adjacency_lists: path.adjacency_lists().len(),
+                fields: path.fields().len(),
+            },
+        );
+        observation.source = path.observation_identity();
+        observation.kind = ClauseObservationKind::RelationalPath {
+            narrowed_by_guard: !guard_admitted,
+        };
+        observation
+    }
+
+    /// Evaluates a required recorded-actor clause using a live actor read
+    /// from the exact snapshot and principal of the policy observation.
+    pub fn from_recorded_actor(
+        identity: [u8; 32],
+        evidence: &RelationalAuthorizationObservationEvidence,
+        recorded: Option<&RelationalAuthorizationRecordedActorObservation>,
+        comparison: BridgeRecordedActorComparison,
+    ) -> Self {
+        let recorded = recorded.filter(|actor| actor.snapshot() == evidence.snapshot());
+        let matched = recorded
+            .and_then(|recorded| recorded.actor())
+            .is_some_and(|actor| match comparison {
+                BridgeRecordedActorComparison::SamePrincipal => actor == evidence.principal(),
+                BridgeRecordedActorComparison::DifferentPrincipal => actor != evidence.principal(),
+            });
+        let mut observation = Self::new(
+            identity,
+            matched,
+            true,
+            BridgeAuthorizationDependencyCardinality {
+                entities: usize::from(recorded.is_some()),
+                relations: 0,
+                adjacency_lists: 0,
+                fields: if recorded.is_some() { 3 } else { 0 },
+            },
+        );
+        observation.source = Some(evidence.observation_identity());
+        observation.kind = ClauseObservationKind::RecordedActor(comparison);
+        observation
     }
 
     pub(crate) const fn identity(&self) -> &[u8; 32] {
@@ -178,6 +311,12 @@ impl BridgeAuthorizationClauseObservation {
     pub(crate) const fn dependencies(&self) -> BridgeAuthorizationDependencyCardinality {
         self.dependencies
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BridgeRecordedActorComparison {
+    SamePrincipal,
+    DifferentPrincipal,
 }
 
 pub struct BridgeAuthorizationRequirementObservation {
@@ -213,18 +352,27 @@ pub struct BridgeAuthorizationObservation {
     pub(crate) correspondence: BridgeAuthorizationCorrespondenceIdentity,
     pub(crate) dependency_identity: [u8; 32],
     pub(crate) rules: Vec<BridgeAuthorizationRuleObservation>,
+    pub(crate) source_matches: bool,
 }
 
 impl BridgeAuthorizationObservation {
     pub fn new(
         correspondence: BridgeAuthorizationCorrespondenceIdentity,
-        dependency_identity: [u8; 32],
+        evidence: &RelationalAuthorizationObservationEvidence,
         rules: impl IntoIterator<Item = BridgeAuthorizationRuleObservation>,
     ) -> Self {
+        let identity = evidence.observation_identity();
+        let rules: Vec<_> = rules.into_iter().collect();
+        let source_matches = rules
+            .iter()
+            .flat_map(|rule| &rule.requirements)
+            .flat_map(|requirement| &requirement.clauses)
+            .all(|clause| clause.source == Some(identity));
         Self {
             correspondence,
-            dependency_identity,
-            rules: rules.into_iter().collect(),
+            dependency_identity: *identity.bytes(),
+            rules,
+            source_matches,
         }
     }
 }

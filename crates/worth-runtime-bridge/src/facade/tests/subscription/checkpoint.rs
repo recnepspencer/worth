@@ -147,3 +147,65 @@ fn descriptor_only_family_cannot_publish_canonical_checkpoint_frontier() {
         crate::facade::BridgeSubscriptionAcknowledgementFrontierRejectionKind::DescriptorOnlyFamilyCannotPublishCanonicalCheckpoint
     );
 }
+
+#[test]
+fn checkpoint_refusals_return_ready_custody_for_retry() {
+    use crate::facade::{
+        BridgeSubscriptionCheckpointRejectionKind as Rejection,
+        BridgeSubscriptionDuplicateReplayPolicyKind as ReplayPolicy,
+    };
+
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&host_request);
+    let (runtime, active) = active_detail_subscription_with_fanout(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        2,
+        execution,
+    );
+    let (_, other_active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::BoundedCoalescedWindow,
+        execution,
+    );
+    let family = BridgeSubscriptionDeliveryFamilyKind::CanonicalMember;
+    let sealed = sealed_window(&runtime, &active, family);
+    let frontier = runtime
+        .admit_subscription_acknowledgement_frontier(&sealed, 0, &sealed.members()[0])
+        .unwrap();
+    let ready = runtime.prepare_subscription_checkpoint(frontier);
+    let ready_identity = ready.checkpoint_ready_identity().clone();
+    let policy = ReplayPolicy::SuppressAcknowledgedMembers;
+
+    let (ready, denial) = runtime
+        .publish_subscription_checkpoint(ready, &other_active, policy)
+        .expect_err("another subscription cannot publish the ready checkpoint");
+    assert_eq!(
+        denial.rejection_kind(),
+        Rejection::ActiveSubscriptionMismatch
+    );
+
+    let plan = runtime
+        .plan_shared_subscription_fanout(&active, vec![canonical_consumer_contract(&runtime)])
+        .unwrap();
+    let wrong_layout = runtime.build_subscription_fanout_layout(
+        plan.clone(),
+        BridgeSubscriptionDeliveryFamilyKind::RouteFocusedDescriptor,
+    );
+    let (ready, denial) = runtime
+        .publish_subscription_fanout_checkpoint(ready, &active, &wrong_layout, policy)
+        .expect_err("another delivery family cannot publish the ready checkpoint");
+    assert_eq!(
+        denial.rejection_kind(),
+        Rejection::FanoutLayoutDeliveryFamilyMismatch
+    );
+
+    let layout = runtime.build_subscription_fanout_layout(plan, family);
+    let published = runtime
+        .publish_subscription_fanout_checkpoint(ready, &active, &layout, policy)
+        .expect("the original checkpoint-ready handle can publish with the correct layout");
+    assert_eq!(published.checkpoint_ready_identity(), &ready_identity);
+    assert_eq!(
+        published.fanout_layout_identity(),
+        Some(layout.fanout_layout_identity())
+    );
+}

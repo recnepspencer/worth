@@ -3,13 +3,15 @@
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityCardinalityDimension, ApplicationCapabilityFieldDimension,
-    ApplicationCapabilityValidityTimeline,
+    ApplicationCapabilityValidityTimeline, ApplicationRecordedActorComparison,
 };
 use worth_relational::facade::authorization::{
     RelationalAuthorizationPathPlan, RelationalAuthorizationTraversal,
 };
 use worth_relational::facade::identity::KindId;
-use worth_runtime_bridge::facade::BridgeAuthorizationRuleContract;
+use worth_runtime_bridge::facade::{
+    BridgeAuthorizationRuleContract, BridgeRecordedActorComparison,
+};
 
 #[derive(Clone)]
 pub struct WorthQueryCapabilityRuleBinding {
@@ -47,7 +49,10 @@ impl WorthQueryCapabilityRuleBinding {
             bridge: BridgeAuthorizationRuleContract::all(
                 BridgeAuthorizationRuleEffect::Required,
                 [BridgeAuthorizationRequirementContract::any([
-                    BridgeAuthorizationClauseContract::new(identity),
+                    BridgeAuthorizationClauseContract::recorded_actor(
+                        identity,
+                        bridge_recorded_actor_comparison(requirement.comparison()),
+                    ),
                 ])],
             ),
             path_requirements: Vec::new(),
@@ -60,6 +65,19 @@ impl WorthQueryCapabilityRuleBinding {
 
     pub fn path_requirements(&self) -> &[Vec<usize>] {
         &self.path_requirements
+    }
+}
+
+pub const fn bridge_recorded_actor_comparison(
+    comparison: ApplicationRecordedActorComparison,
+) -> BridgeRecordedActorComparison {
+    match comparison {
+        ApplicationRecordedActorComparison::SamePrincipal => {
+            BridgeRecordedActorComparison::SamePrincipal
+        }
+        ApplicationRecordedActorComparison::DifferentPrincipal => {
+            BridgeRecordedActorComparison::DifferentPrincipal
+        }
     }
 }
 

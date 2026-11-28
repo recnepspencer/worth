@@ -73,14 +73,14 @@ impl WorkflowActorDependencies {
         }
         Ok(true)
     }
-    pub fn recorded_actor(
+    pub fn readmit_recorded_actor(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         entity: EntityId,
         role: worth_query_declaration::facade::application_capability::ApplicationWorkflowRecordedRole,
-    ) -> Result<Option<EntityId>, Denial> {
+    ) -> Result<Option<worth_relational::facade::authorization::RelationalAuthorizationRecordedActorObservation>, Denial>{
         use worth_query_declaration::facade::application_capability::ApplicationWorkflowRecordedRole as Role;
         let (aspect, role) = match role {
             Role::Proposer => ("workflow-proposal", "proposer"),
@@ -118,33 +118,16 @@ impl WorkflowActorDependencies {
         let [Some(partition), Some(slot), Some(generation)] = locators else {
             return Err(invalid("recorded role lacks its native field footprint"));
         };
-        let fields = super::record::WorkflowActorFields {
-            partition,
-            slot,
-            generation,
-        };
-        let kind = runtime
-            .read_truth()
-            .read_exact_snapshot_live_entity_kind_status(execution, snapshot, entity)
+        runtime
+            .observe_authorization_recorded_actor(
+                execution,
+                snapshot,
+                entity,
+                [&partition, &slot, &generation],
+            )
             .map_err(|cause| {
-                Denial::relational_read_stopped(cause, "workflow actor native identity")
-            })?
-            .flatten()
-            .ok_or_else(|| {
-                Denial::new(
-                    Kind::StaleEntityIdentity,
-                    "recorded actor entity is unavailable",
-                )
-            })?;
-        super::record::observe_actor_fields(
-            &fields,
-            runtime,
-            execution,
-            snapshot,
-            entity,
-            kind,
-            &mut Vec::new(),
-        )
+                Denial::relational_read_stopped(cause, "workflow actor native coordinates")
+            })
     }
     pub fn restore(execution: &ExecutionRequest<'_, '_>, bytes: &[u8]) -> Result<Self, Denial> {
         let mut output = ExecutionByteBuffer::allocate(bytes.len(), execution.allocation_policy())

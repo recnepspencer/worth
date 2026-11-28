@@ -38,25 +38,19 @@ pub fn observe_upper_bound_policy(
         request,
         paths,
     )?;
-    let dependency_identity = recorded
-        .as_deref()
-        .map_or(*evidence.observation_identity().bytes(), |actor| {
-            actor.combined_identity(evidence.observation_identity().bytes())
-        });
     let observation = bridge_observation::lower_upper_bound_observation(
         installed,
         request,
         &evidence,
-        dependency_identity,
-        recorded.as_deref(),
+        recorded.as_ref(),
     )?;
     let bridge_evidence = evaluate(
         bridge,
         installed,
         upper_bound,
         observation,
-        dependency_identity,
-        recorded.as_deref(),
+        *evidence.observation_identity().bytes(),
+        recorded.as_ref().map(|actor| actor.native.as_ref()),
     )?;
     let observed_grant = extract_exact_grant(installed, &evidence)?;
     if observed_grant != exact_grant {
@@ -77,7 +71,7 @@ pub fn observe_upper_bound_policy(
             relational,
             evidence,
             bridge_evidence,
-            recorded,
+            recorded.map(|actor| actor.native),
         )?
         .with_preparatory_relational_work(expiry::observation_work()),
         observed_grant,

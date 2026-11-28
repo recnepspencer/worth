@@ -109,10 +109,7 @@ fn execute_one_churn_branch(
         execution_record,
     );
     let execution_record = preview.execution_record().clone();
-    let outcome = match preview.discard(vec![
-        crate::facade::BridgePreviewResidueClass::PreviewDiagnosticsRetained,
-        crate::facade::BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
-    ]) {
+    let outcome = match preview.discard() {
         Ok(outcome) => outcome,
         Err((preview, denial)) => return Err(BridgeHarnessError::preview_refused(preview, denial)),
     };

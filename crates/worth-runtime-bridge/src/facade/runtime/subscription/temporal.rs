@@ -1,7 +1,60 @@
 use super::*;
-use worth_signal::facade::TemporalPreviousValueReference;
+use crate::temporal::{
+    BridgeTemporalBasisDenial, BridgeTemporalSignalBasis, BridgeTemporalSignalBasisDenial,
+    BridgeTemporalTruthViewBasis, BridgeTemporalWakeEvidence,
+};
+use worth_proof::TransitionOutcome;
+use worth_signal::facade::{
+    branch::SignalConditionalTemporalPromotion, ClockDomain, TemporalPreviousValueReference,
+    TemporalWakeId,
+};
 
 impl RuntimeBridge {
+    /// Admits a temporal basis for a wake retained in a Signal promotion result.
+    ///
+    /// ```compile_fail,E0308
+    /// use worth_runtime_bridge::facade::{
+    ///     BridgeTemporalSignalBasis, BridgeTemporalTruthViewBasis, RuntimeBridge,
+    /// };
+    /// use worth_signal::facade::TemporalWakeId;
+    /// fn forge(runtime: &RuntimeBridge, truth: BridgeTemporalTruthViewBasis,
+    ///          signal: BridgeTemporalSignalBasis) {
+    ///     let _ = runtime.admit_promoted_temporal_basis(truth, signal, &"wake", TemporalWakeId::new(1));
+    /// }
+    /// ```
+    pub fn admit_promoted_temporal_basis(
+        &self,
+        truth_basis: BridgeTemporalTruthViewBasis,
+        signal_basis: BridgeTemporalSignalBasis,
+        promotion: &SignalConditionalTemporalPromotion,
+        wake_id: TemporalWakeId,
+    ) -> TransitionOutcome<AdmittedBridgeTemporalBasis, BridgeTemporalBasisDenial> {
+        let promotion = promotion.promotion();
+        let Some(wake) = promotion
+            .ready_wakes()
+            .iter()
+            .find(|wake| wake.id() == wake_id)
+        else {
+            return TransitionOutcome::denied(BridgeTemporalBasisDenial::MissingWakeEvidence);
+        };
+        if wake.clock_domain() != ClockDomain::MonotonicExecution {
+            return TransitionOutcome::denied(BridgeTemporalBasisDenial::SignalBasisDenied(
+                BridgeTemporalSignalBasisDenial::WrongClockDomain {
+                    domain: wake.clock_domain(),
+                },
+            ));
+        }
+        AdmittedBridgeTemporalBasis::admit(
+            truth_basis,
+            signal_basis,
+            Some(BridgeTemporalWakeEvidence::new(
+                wake.id(),
+                wake.ready_ordinal(),
+                wake.ready_tick(),
+            )),
+        )
+    }
+
     /// Admits one time-aware subscription family over an already-admitted
     /// bridge subscription and a sealed temporal bridge basis artifact.
     pub fn admit_temporal_subscription(

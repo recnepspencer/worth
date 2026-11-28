@@ -3,10 +3,10 @@ use std::sync::Arc;
 
 use worth_signal::facade::{
     InstalledSignalAuthorizationPolicy, SignalAuthorizationClauseContract,
-    SignalAuthorizationClauseObservation, SignalAuthorizationDependencyCardinality,
-    SignalAuthorizationObservation, SignalAuthorizationRequirementContract,
-    SignalAuthorizationRequirementObservation, SignalAuthorizationRuleContract,
-    SignalAuthorizationRuleEffect, SignalAuthorizationRuleObservation, SignalGraph,
+    SignalAuthorizationDependencyCardinality, SignalAuthorizationObservation,
+    SignalAuthorizationRequirementContract, SignalAuthorizationRequirementObservation,
+    SignalAuthorizationRuleContract, SignalAuthorizationRuleEffect,
+    SignalAuthorizationRuleObservation, SignalGraph,
 };
 
 use super::evidence::BridgeAuthorizationCorrespondenceAuthority;
@@ -105,13 +105,13 @@ impl BridgeAuthorizationRuntime {
                     "unknown installed authorization correspondence",
                 )
             })?;
-        if !same_shape(&installed.rules, &observation.rules) {
+        if !observation.source_matches || !same_shape(&installed.rules, &observation.rules) {
             return Err(denial(
                 BridgeAuthorizationDenialKind::ObservationShapeMismatch,
                 &installed.policy,
             ));
         }
-        let signal_observation = lower_signal_observation(&observation);
+        let signal_observation = lower_signal_observation(&installed.signal_policy, &observation);
         let signal = self
             .graph
             .evaluate_authorization(&installed.signal_policy, signal_observation)
@@ -133,6 +133,7 @@ impl BridgeAuthorizationRuntime {
 }
 
 fn lower_signal_observation(
+    policy: &InstalledSignalAuthorizationPolicy,
     observation: &BridgeAuthorizationObservation,
 ) -> SignalAuthorizationObservation {
     SignalAuthorizationObservation::new(
@@ -144,7 +145,7 @@ fn lower_signal_observation(
                     SignalAuthorizationRequirementObservation::any(requirement.clauses.iter().map(
                         |clause| {
                             let dependencies = clause.dependencies();
-                            SignalAuthorizationClauseObservation::new(
+                            policy.admit_clause_observation(
                                 clause.matched(),
                                 clause.exhaustive(),
                                 SignalAuthorizationDependencyCardinality {
@@ -205,9 +206,11 @@ fn same_shape(
                         .zip(&observed.requirements)
                         .all(|(required, actual)| {
                             required.clauses().len() == actual.clauses.len()
-                                && required.clauses().iter().zip(&actual.clauses).all(
-                                    |(expected, clause)| expected.identity() == clause.identity(),
-                                )
+                                && required
+                                    .clauses()
+                                    .iter()
+                                    .zip(&actual.clauses)
+                                    .all(|(expected, clause)| expected.admits(clause))
                         })
             })
 }

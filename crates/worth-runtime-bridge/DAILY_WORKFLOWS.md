@@ -158,10 +158,7 @@ Use this when the speculative run should disappear without authoritative
 residue.
 
 ```rust
-let discarded = session.discard(vec![
-    worth_runtime_bridge::facade::BridgePreviewResidueClass::PreviewExecutionRetained,
-    worth_runtime_bridge::facade::BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
-])?;
+let discarded = session.discard()?;
 ```
 
 This is the standard "try it, inspect it, walk away cleanly" path.

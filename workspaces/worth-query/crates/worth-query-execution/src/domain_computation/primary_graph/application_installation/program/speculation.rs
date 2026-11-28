@@ -5,12 +5,12 @@ use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort a
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_bridge::facade::{
-    BridgePreviewResidueClass, BridgePreviewRetainedArtifactSchema,
-    BridgePreviewSessionDeclaration, BridgePreviewSessionDeclarationIdentity,
-    BridgePreviewSessionIdentity, BridgeRequestKind, BridgeSignalBranchIdentity,
-    BridgeSourceCapability, BridgeSourceCapabilitySet, BridgeSpeculativeBranchBinding,
-    BridgeSpeculativeBranchBindingIdentity, BridgeSpeculativePromotionOutcome,
-    BridgeSpeculativeSessionHandle, BridgeSpeculativeSessionRequest, BridgeTruthViewSelector,
+    BridgePreviewRetainedArtifactSchema, BridgePreviewSessionDeclaration,
+    BridgePreviewSessionDeclarationIdentity, BridgePreviewSessionIdentity, BridgeRequestKind,
+    BridgeSignalBranchIdentity, BridgeSourceCapability, BridgeSourceCapabilitySet,
+    BridgeSpeculativeBranchBinding, BridgeSpeculativeBranchBindingIdentity,
+    BridgeSpeculativePromotionOutcome, BridgeSpeculativeSessionHandle,
+    BridgeSpeculativeSessionRequest, BridgeTruthViewSelector,
 };
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
@@ -144,17 +144,18 @@ impl WorthQueryApplicationPreviewSession {
     pub fn discard(
         mut self,
     ) -> Result<(), (Self, worth_runtime_bridge::facade::BridgeSpeculationError)> {
-        let residue = vec![BridgePreviewResidueClass::TemporaryDiagnosticsResidue];
-        // Armed only by a court through `reject_discard_for_test`.
-        let residue = if self
+        // The court fault refuses before transferring the live Bridge handle.
+        if self
             .discard_fault
             .load(std::sync::atomic::Ordering::Relaxed)
         {
-            vec![BridgePreviewResidueClass::AuthoritativeDiagnosticsResidue]
-        } else {
-            residue
-        };
-        match self.handle.discard(residue) {
+            let denial = worth_runtime_bridge::facade::BridgeSpeculationError::new(
+                worth_runtime_bridge::facade::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch,
+                "preview discard refused by the armed court fault",
+            );
+            return Err((self, denial));
+        }
+        match self.handle.discard() {
             Ok(_) => Ok(()),
             Err((handle, denial)) => {
                 self.handle = handle;

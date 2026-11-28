@@ -148,15 +148,19 @@ impl RuntimeBridge {
             BridgePreviewSession<PreviewActive>,
             BridgePreviewExecutionRecord,
         ),
-        BridgeSpeculationError,
+        (
+            BridgePreviewSession<PreviewAdmitted>,
+            BridgeSpeculationError,
+        ),
     > {
-        self.ensure_execution_record_matches_active_session(
-            source_session,
-            source_execution_record,
-        )?;
+        if let Err(denial) = self
+            .ensure_execution_record_matches_active_session(source_session, source_execution_record)
+        {
+            return Err((session, denial));
+        }
 
         if !reuse_equivalence.matches_sessions(source_session, &session) {
-            return Err(BridgeSpeculationError::new(
+            let denial = BridgeSpeculationError::new(
                 BridgeSpeculationErrorKind::PreviewReuseEquivalenceMismatch,
                 format!(
                     "Preview reuse proof `{}` did not match source session `{}` and target session `{}`.",
@@ -164,7 +168,8 @@ impl RuntimeBridge {
                     source_session.session_identity().as_str(),
                     session.session_identity().as_str(),
                 ),
-            ));
+            );
+            return Err((session, denial));
         }
 
         let counters = BridgeSpeculationCounters::for_preview_execution(

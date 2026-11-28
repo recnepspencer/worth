@@ -49,47 +49,59 @@ impl BridgeSubscriptionCheckpoint {
         active_subscription: &BridgeActiveSubscription,
         duplicate_replay_policy_kind: BridgeSubscriptionDuplicateReplayPolicyKind,
         fanout_layout: Option<&BridgeSubscriptionFanoutLayout>,
-    ) -> Result<Self, BridgeSubscriptionCheckpointRejection> {
+    ) -> Result<
+        Self,
+        (
+            BridgeSubscriptionCheckpointReady,
+            BridgeSubscriptionCheckpointRejection,
+        ),
+    > {
         let frontier = ready.frontier();
         if frontier.active_subscription_identity()
             != active_subscription.active_subscription_identity()
         {
-            return Err(BridgeSubscriptionCheckpointRejection::new(
+            let denial = BridgeSubscriptionCheckpointRejection::new(
                 BridgeSubscriptionCheckpointRejectionKind::ActiveSubscriptionMismatch,
-            ));
+            );
+            return Err((ready, denial));
         }
         let admitted = active_subscription.activation_ready().admitted();
         if frontier.admitted_subscription_identity() != admitted.admitted_subscription_identity() {
-            return Err(BridgeSubscriptionCheckpointRejection::new(
+            let denial = BridgeSubscriptionCheckpointRejection::new(
                 BridgeSubscriptionCheckpointRejectionKind::AdmittedSubscriptionMismatch,
-            ));
+            );
+            return Err((ready, denial));
         }
         if frontier.basis_identity() != admitted.basis_binding().basis_identity() {
-            return Err(BridgeSubscriptionCheckpointRejection::new(
+            let denial = BridgeSubscriptionCheckpointRejection::new(
                 BridgeSubscriptionCheckpointRejectionKind::BasisMismatch,
-            ));
+            );
+            return Err((ready, denial));
         }
         if let Some(layout) = fanout_layout {
             if layout.active_subscription_identity()
                 != active_subscription.active_subscription_identity()
             {
-                return Err(BridgeSubscriptionCheckpointRejection::new(
+                let denial = BridgeSubscriptionCheckpointRejection::new(
                     BridgeSubscriptionCheckpointRejectionKind::FanoutLayoutActiveSubscriptionMismatch,
-                ));
+                );
+                return Err((ready, denial));
             }
             if layout.cost_profile_identity()
                 != active_subscription.cost_profile().cost_profile_identity()
             {
-                return Err(BridgeSubscriptionCheckpointRejection::new(
+                let denial = BridgeSubscriptionCheckpointRejection::new(
                     BridgeSubscriptionCheckpointRejectionKind::FanoutLayoutCostProfileMismatch,
-                ));
+                );
+                return Err((ready, denial));
             }
             if layout.delivery_family().delivery_family_identity()
                 != frontier.delivery_family_identity()
             {
-                return Err(BridgeSubscriptionCheckpointRejection::new(
+                let denial = BridgeSubscriptionCheckpointRejection::new(
                     BridgeSubscriptionCheckpointRejectionKind::FanoutLayoutDeliveryFamilyMismatch,
-                ));
+                );
+                return Err((ready, denial));
             }
         }
         let duplicate_replay_policy =

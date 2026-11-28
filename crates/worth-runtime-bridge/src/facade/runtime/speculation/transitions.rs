@@ -1,12 +1,11 @@
 use super::*;
 
 impl RuntimeBridge {
-    /// Discards an active preview session with explicit residue classification.
+    /// Discards an active preview session and reports the Bridge-owned residue.
     pub fn discard_preview_session(
         &self,
         session: BridgePreviewSession<PreviewActive>,
         execution_record: &BridgePreviewExecutionRecord,
-        residue_classes: Vec<BridgePreviewResidueClass>,
     ) -> Result<
         (
             BridgePreviewSession<PreviewDiscarded>,
@@ -21,19 +20,11 @@ impl RuntimeBridge {
             return Err((session, denial));
         }
 
-        let residue_report = BridgePreviewResidueReport::new(residue_classes);
-        if residue_report.authoritative_residue_count() > 0 {
-            let denial = BridgeSpeculationError::new(
-                BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch,
-                format!(
-                    "Preview session `{}` cannot discard while residue report `{}` still contains authoritative residue.",
-                    session.session_identity().as_str(),
-                    residue_report.digest(),
-                ),
-            );
-            return Err((session, denial));
-        }
-
+        // Active sessions hold preview execution evidence. Authoritative
+        // artifacts are issued only by the consuming promotion transition.
+        let residue_report = BridgePreviewResidueReport::new(vec![
+            BridgePreviewResidueClass::PreviewExecutionRetained,
+        ]);
         let counters = BridgeSpeculationCounters::for_discard(
             residue_report.destroyable_residue_count(),
             residue_report.destroyable_residue_count(),

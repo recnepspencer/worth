@@ -4,7 +4,8 @@ use worth_runtime_bridge::facade::{
 };
 
 use crate::domain_computation::authorization::capability_registry::{
-    WorthQueryCapabilityPathTemplate, WorthQueryCapabilityRuleBinding,
+    WorthQueryCapabilityPathTemplate, WorthQueryCapabilityRequestGuard,
+    WorthQueryCapabilityRuleBinding,
 };
 
 pub struct WorthQueryCapabilityRuleSet {
@@ -179,11 +180,17 @@ fn bridge_rule(
     BridgeAuthorizationRuleContract::all(
         effect,
         requirements.iter().map(|indices| {
-            BridgeAuthorizationRequirementContract::any(
-                indices
-                    .iter()
-                    .map(|index| BridgeAuthorizationClauseContract::new(paths[*index].identity)),
-            )
+            BridgeAuthorizationRequirementContract::any(indices.iter().map(|index| {
+                let path = &paths[*index];
+                match &path.guard {
+                    WorthQueryCapabilityRequestGuard::Unconditional => {
+                        BridgeAuthorizationClauseContract::new(path.identity)
+                    }
+                    WorthQueryCapabilityRequestGuard::Accepted { .. } => {
+                        BridgeAuthorizationClauseContract::guarded(path.identity)
+                    }
+                }
+            }))
         }),
     )
 }
@@ -193,7 +200,6 @@ mod tests {
     use worth_relational::facade::authorization::RelationalAuthorizationPathPlan;
 
     use super::*;
-    use crate::domain_computation::authorization::capability_registry::WorthQueryCapabilityRequestGuard;
 
     #[test]
     fn accumulator_atomically_preserves_the_complete_ordered_rule_model() {
@@ -273,6 +279,29 @@ mod tests {
                 .collect::<Vec<_>>();
             assert_eq!(actual, rule.path_requirements());
         }
+    }
+
+    #[test]
+    fn lowering_preserves_mixed_guard_postures_within_one_requirement() {
+        use crate::domain_computation::authorization::capability_registry::WorthQueryCapabilityRequestValueAxis;
+        let mut guarded = path(2);
+        guarded.guard = WorthQueryCapabilityRequestGuard::Accepted {
+            axis: WorthQueryCapabilityRequestValueAxis::Action,
+            values: vec![worth_foundational::facade::AspectValue::Bool(true)],
+        };
+        let mut lowering = WorthQueryCapabilityRuleLoweringAccumulator::new();
+        lowering.add_rule(
+            BridgeAuthorizationRuleEffect::Prohibited,
+            vec![vec![path(1), guarded]],
+        );
+        let storage = lowering.finish().into_storage();
+        assert_eq!(
+            storage.rules()[0].bridge().requirements()[0].clauses(),
+            &[
+                BridgeAuthorizationClauseContract::new([1; 32]),
+                BridgeAuthorizationClauseContract::guarded([2; 32]),
+            ]
+        );
     }
 
     fn paths(model: &[&[u8]]) -> Vec<Vec<WorthQueryCapabilityPathTemplate>> {

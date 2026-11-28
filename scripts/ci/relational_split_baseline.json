@@ -63,6 +63,7 @@
     "facade::authorization::RelationalAuthorizationPlanAdmissionStop",
     "facade::authorization::RelationalAuthorizationPlanDenial",
     "facade::authorization::RelationalAuthorizationPredicate",
+    "facade::authorization::RelationalAuthorizationRecordedActorObservation",
     "facade::authorization::RelationalAuthorizationRelatedEntityConstraint",
     "facade::authorization::RelationalAuthorizationTraversal",
     "facade::authorization::RelationalAuthorizationTraversalDirection",

@@ -11,6 +11,7 @@ pub use contract::{
     BridgeAuthorizationObservation, BridgeAuthorizationRequirementContract,
     BridgeAuthorizationRequirementObservation, BridgeAuthorizationRuleContract,
     BridgeAuthorizationRuleEffect, BridgeAuthorizationRuleObservation,
+    BridgeRecordedActorComparison,
 };
 pub use denial::{BridgeAuthorizationDenial, BridgeAuthorizationDenialKind};
 pub use evidence::{BridgeAuthorizationDecisionEvidence, BridgeAuthorizationRuleDecisionEvidence};

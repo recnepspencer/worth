@@ -113,7 +113,7 @@ fn preview_discard_and_promotion_mismatch_localize_to_distinct_subcodes() {
             ),
         )
         .expect("discard residue envelope should capture");
-    let discard_rejection = discard_runtime
+    let (_discard_preview_active, discard_rejection) = discard_runtime
         .admit_preview_lifecycle_discard(discard_preview_active, discard_residue)
         .expect_err("nonzero residue should reject discard");
     let discard_localized = discard_runtime

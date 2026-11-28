@@ -28,7 +28,10 @@ impl RuntimeBridge {
         residue_envelope: BridgeSubscriptionPreviewLifecycleResidueEnvelope,
     ) -> Result<
         BridgeSubscriptionPreviewLifecycleDiscardProof,
-        BridgeSubscriptionPreviewLifecycleDiscardRejection,
+        (
+            BridgePreviewActiveSubscription,
+            BridgeSubscriptionPreviewLifecycleDiscardRejection,
+        ),
     > {
         let _ = self;
         BridgeSubscriptionPreviewLifecycleDiscardProof::prove(preview_active, residue_envelope)
@@ -63,7 +66,10 @@ impl RuntimeBridge {
         promoted_activation_ready: &BridgeSubscriptionActivationReady,
     ) -> Result<
         BridgeSubscriptionAuthoritativePreviewReadmission,
-        BridgeSubscriptionAuthoritativePreviewReadmissionRejection,
+        (
+            BridgeSubscriptionPreviewLifecyclePromotion,
+            BridgeSubscriptionAuthoritativePreviewReadmissionRejection,
+        ),
     > {
         let _ = self;
         BridgeSubscriptionAuthoritativePreviewReadmission::prepare(

@@ -28,6 +28,26 @@ pub struct WorkflowRecordedActorObservation {
     record: Option<EntityId>,
     dependencies: WorkflowActorDependencies,
 }
+pub(crate) enum ReadmittedWorkflowActor {
+    NotYet,
+    Observed(
+        worth_relational::facade::authorization::RelationalAuthorizationRecordedActorObservation,
+    ),
+}
+
+impl ReadmittedWorkflowActor {
+    pub(crate) fn observation(
+        &self,
+    ) -> Option<
+        &worth_relational::facade::authorization::RelationalAuthorizationRecordedActorObservation,
+    > {
+        match self {
+            Self::NotYet => None,
+            Self::Observed(observation) => Some(observation),
+        }
+    }
+}
+
 impl WorkflowRecordedActorObservation {
     /// Shared immutable request provenance; the wire already retains SDK funding.
     pub fn retained_use_bytes(&self) -> Option<u64> {
@@ -45,27 +65,46 @@ impl WorkflowRecordedActorObservation {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &SnapshotHandle,
     ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        Ok(self.readmit(execution, runtime, snapshot)?.is_some())
+    }
+
+    pub(crate) fn readmit(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        snapshot: &SnapshotHandle,
+    ) -> Result<
+        Option<ReadmittedWorkflowActor>,
+        worth_relational::facade::transactions::RelationalExecutionDenialCause,
+    > {
         match self
             .dependencies
             .remains_current(execution, runtime, snapshot)
         {
-            Ok(false) => Ok(false),
+            Ok(false) => Ok(None),
             Ok(true) => match self.record {
-                None => Ok(self.actor.is_none()),
-                Some(record) => match self.dependencies.recorded_actor(
+                None => Ok(self
+                    .actor
+                    .is_none()
+                    .then_some(ReadmittedWorkflowActor::NotYet)),
+                Some(record) => match self.dependencies.readmit_recorded_actor(
                     execution,
                     runtime,
                     snapshot,
                     record,
                     self.requirement.role(),
                 ) {
-                    Ok(actor) => Ok(actor == self.actor),
+                    Ok(Some(observation)) if observation.actor() == self.actor => {
+                        Ok(Some(ReadmittedWorkflowActor::Observed(observation)))
+                    }
+                    Ok(_) => Ok(None),
                     Err(cause) => currentness_denial(cause),
                 },
             },
             Err(cause) => currentness_denial(cause),
         }
     }
+
     pub fn requirement(&self) -> Requirement {
         self.requirement
     }
@@ -239,7 +278,10 @@ fn affinity(subject: &str) -> WorthQueryApplicationAttemptDenial {
 
 fn currentness_denial(
     cause: WorthQueryApplicationAttemptDenial,
-) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+) -> Result<
+    Option<ReadmittedWorkflowActor>,
+    worth_relational::facade::transactions::RelationalExecutionDenialCause,
+> {
     if let Some(native) = cause.relational_execution_cause() {
         return Err(native);
     }
@@ -253,6 +295,6 @@ fn currentness_denial(
     match cause.kind() {
         WorthQueryApplicationAttemptDenialKind::Cancelled => Err(Native::Cancelled),
         WorthQueryApplicationAttemptDenialKind::DeadlineExceeded => Err(Native::DeadlineElapsed),
-        _ => Ok(false),
+        _ => Ok(None),
     }
 }

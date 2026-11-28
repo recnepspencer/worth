@@ -35,12 +35,7 @@ pub(super) fn execute_discard_certification(
         execution_record,
     );
     let execution_record = preview.execution_record().clone();
-    let outcome = match preview.discard(vec![
-        crate::facade::BridgePreviewResidueClass::PreviewExecutionRetained,
-        crate::facade::BridgePreviewResidueClass::ReplayRetainedNonAuthoritative,
-        crate::facade::BridgePreviewResidueClass::TemporaryRoutingResidue,
-        crate::facade::BridgePreviewResidueClass::TemporaryDiagnosticsResidue,
-    ]) {
+    let outcome = match preview.discard() {
         Ok(outcome) => outcome,
         Err((preview, denial)) => return Err(BridgeHarnessError::preview_refused(preview, denial)),
     };

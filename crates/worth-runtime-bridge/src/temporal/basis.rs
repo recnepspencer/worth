@@ -51,7 +51,7 @@ pub struct AdmittedBridgeTemporalBasis {
 }
 
 impl AdmittedBridgeTemporalBasis {
-    pub fn admit(
+    pub(crate) fn admit(
         truth_basis: BridgeTemporalTruthViewBasis,
         signal_basis: BridgeTemporalSignalBasis,
         wake_evidence: Option<BridgeTemporalWakeEvidence>,
@@ -77,7 +77,6 @@ impl AdmittedBridgeTemporalBasis {
         let Some(wake_evidence) = wake_evidence else {
             return TransitionOutcome::denied(BridgeTemporalBasisDenial::MissingWakeEvidence);
         };
-        let wake_evidence = AdmittedBridgeTemporalWakeEvidence::admit(wake_evidence);
 
         if truth_basis.basis().branch_identity() != signal_basis.basis().branch_identity() {
             return TransitionOutcome::denied(BridgeTemporalBasisDenial::BranchMismatch {
@@ -86,13 +85,14 @@ impl AdmittedBridgeTemporalBasis {
             });
         }
 
-        if wake_evidence.evidence().wake_tick() < signal_basis.basis().current_tick() {
+        if wake_evidence.wake_tick() < signal_basis.basis().current_tick() {
             return TransitionOutcome::denied(BridgeTemporalBasisDenial::WakeTickRegressed {
                 signal_clock_tick: signal_basis.basis().current_tick().get(),
-                wake_tick: wake_evidence.evidence().wake_tick().get(),
+                wake_tick: wake_evidence.wake_tick().get(),
             });
         }
 
+        let wake_evidence = AdmittedBridgeTemporalWakeEvidence::admit(wake_evidence);
         let canonical_ready = transition_canonical_ready(
             canonical_version(TEMPORAL_BASIS_CANONICAL_VERSION),
             [

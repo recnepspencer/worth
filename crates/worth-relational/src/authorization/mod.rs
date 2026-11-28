@@ -18,6 +18,9 @@ pub use worth_relational_mutation::internal_port::authorization::{
     RelationalAuthorizationTraversal, RelationalAuthorizationTraversalDirection,
     MAXIMUM_AUTHORIZATION_DEPENDENCIES, MAXIMUM_AUTHORIZATION_DEPENDENCY_BYTES,
 };
+mod recorded_actor;
+pub use recorded_actor::RelationalAuthorizationRecordedActorObservation;
+
 mod runtime_dependencies;
 mod runtime_freshness;
 mod runtime_observation;

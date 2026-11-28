@@ -1,8 +1,6 @@
 use crate::facade::tests::runtime;
 use crate::facade::tests::speculation::preview_declaration;
-use crate::facade::{
-    BridgePreviewLifecycleStateKind, BridgePreviewResidueClass, BridgeRuntimePolicy,
-};
+use crate::facade::{BridgePreviewLifecycleStateKind, BridgeRuntimePolicy};
 use crate::speculation::BridgePreviewSessionIdentity;
 
 #[test]
@@ -97,14 +95,7 @@ fn runtime_rejects_stale_duplicate_and_post_discard_promotion() {
     );
 
     let (_discarded, _discard_record) = runtime
-        .discard_preview_session(
-            active_a,
-            &execution_record_a,
-            vec![
-                BridgePreviewResidueClass::PreviewExecutionRetained,
-                BridgePreviewResidueClass::TemporaryRoutingResidue,
-            ],
-        )
+        .discard_preview_session(active_a, &execution_record_a)
         .expect("discard should succeed");
     let reactivated_admission_error = runtime
         .admit_preview_session(

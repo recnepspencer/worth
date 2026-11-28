@@ -1,12 +1,13 @@
 use crate::data::graph::SignalGraph;
 
 use super::{
-    SignalAuthorizationClauseContract, SignalAuthorizationClauseObservation,
-    SignalAuthorizationDecision, SignalAuthorizationDependencyCardinality,
-    SignalAuthorizationObservation, SignalAuthorizationPolicyDefinition,
-    SignalAuthorizationPolicyIdentity, SignalAuthorizationRequirementContract,
-    SignalAuthorizationRequirementObservation, SignalAuthorizationRuleContract,
-    SignalAuthorizationRuleEffect, SignalAuthorizationRuleObservation,
+    InstalledSignalAuthorizationPolicy, SignalAuthorizationClauseContract,
+    SignalAuthorizationClauseObservation, SignalAuthorizationDecision,
+    SignalAuthorizationDependencyCardinality, SignalAuthorizationObservation,
+    SignalAuthorizationPolicyDefinition, SignalAuthorizationPolicyIdentity,
+    SignalAuthorizationRequirementContract, SignalAuthorizationRequirementObservation,
+    SignalAuthorizationRuleContract, SignalAuthorizationRuleEffect,
+    SignalAuthorizationRuleObservation,
 };
 
 #[test]
@@ -18,16 +19,28 @@ fn installed_nested_policy_preserves_or_and_prohibition_meaning() {
         .unwrap();
 
     let primary_role = graph
-        .evaluate_authorization(&policy, observation([1; 32], [true, false], true, false))
+        .evaluate_authorization(
+            &policy,
+            observation(&policy, [1; 32], [true, false], true, false),
+        )
         .unwrap();
     let alternative_role = graph
-        .evaluate_authorization(&policy, observation([2; 32], [false, true], true, false))
+        .evaluate_authorization(
+            &policy,
+            observation(&policy, [2; 32], [false, true], true, false),
+        )
         .unwrap();
     let missing_actor = graph
-        .evaluate_authorization(&policy, observation([3; 32], [true, false], false, false))
+        .evaluate_authorization(
+            &policy,
+            observation(&policy, [3; 32], [true, false], false, false),
+        )
         .unwrap();
     let prohibited = graph
-        .evaluate_authorization(&policy, observation([4; 32], [true, false], true, true))
+        .evaluate_authorization(
+            &policy,
+            observation(&policy, [4; 32], [true, false], true, true),
+        )
         .unwrap();
 
     assert_eq!(
@@ -85,17 +98,17 @@ fn nested_policy_rejects_shape_drift_and_non_exhaustive_clauses() {
         [5; 32],
         [rule_observation(
             SignalAuthorizationRuleEffect::Required,
-            [requirement_observation([clause(true, true)])],
+            [requirement_observation([clause(&policy, true, true)])],
         )],
     );
     assert!(graph.evaluate_authorization(&policy, wrong_shape).is_err());
 
     let non_exhaustive = observation_with_clause(
         [6; 32],
-        clause(true, false),
-        clause(false, true),
-        clause(true, true),
-        clause(false, true),
+        clause(&policy, true, false),
+        clause(&policy, false, true),
+        clause(&policy, true, true),
+        clause(&policy, false, true),
     );
     assert!(graph
         .evaluate_authorization(&policy, non_exhaustive)
@@ -129,6 +142,7 @@ fn policy_definition(identity: [u8; 32]) -> SignalAuthorizationPolicyDefinition 
 }
 
 fn observation(
+    policy: &InstalledSignalAuthorizationPolicy,
     identity: [u8; 32],
     roles: [bool; 2],
     actor: bool,
@@ -136,10 +150,10 @@ fn observation(
 ) -> SignalAuthorizationObservation {
     observation_with_clause(
         identity,
-        clause(roles[0], true),
-        clause(roles[1], true),
-        clause(actor, true),
-        clause(prohibited, true),
+        clause(policy, roles[0], true),
+        clause(policy, roles[1], true),
+        clause(policy, actor, true),
+        clause(policy, prohibited, true),
     )
 }
 
@@ -181,8 +195,12 @@ fn requirement_observation(
     SignalAuthorizationRequirementObservation::any(clauses)
 }
 
-fn clause(matched: bool, exhaustive: bool) -> SignalAuthorizationClauseObservation {
-    SignalAuthorizationClauseObservation::new(
+fn clause(
+    policy: &InstalledSignalAuthorizationPolicy,
+    matched: bool,
+    exhaustive: bool,
+) -> SignalAuthorizationClauseObservation {
+    policy.admit_clause_observation(
         matched,
         exhaustive,
         SignalAuthorizationDependencyCardinality {
@@ -192,4 +210,24 @@ fn clause(matched: bool, exhaustive: bool) -> SignalAuthorizationClauseObservati
             fields: 1,
         },
     )
+}
+
+#[test]
+fn observations_from_a_different_installation_cannot_supply_matching_clauses() {
+    let mut graph = SignalGraph::new();
+    let token = graph.installed_graph_capability();
+    let installed = graph
+        .install_authorization_policy(&token, policy_definition([3; 32]))
+        .unwrap();
+    let mut other = SignalGraph::new();
+    let token = other.installed_graph_capability();
+    let foreign = other
+        .install_authorization_policy(&token, policy_definition([3; 32]))
+        .unwrap();
+
+    let observation = observation(&foreign, [5; 32], [true, false], true, false);
+    assert!(matches!(
+        graph.evaluate_authorization(&installed, observation),
+        Err(super::SignalAuthorizationDenial::ObservationShapeMismatch)
+    ));
 }

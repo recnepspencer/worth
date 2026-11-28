@@ -54,7 +54,7 @@ fn preview_lifecycle_discard_rejects_nonzero_completion_residue() {
         )
         .expect("residue envelope should capture");
 
-    let rejection = runtime
+    let (preview_active, rejection) = runtime
         .admit_preview_lifecycle_discard(preview_active, residue_envelope)
         .expect_err("nonzero completion residue must reject discard");
 
@@ -66,6 +66,17 @@ fn preview_lifecycle_discard_rejects_nonzero_completion_residue() {
         rejection.rejection_context().nonzero_kinds()[0].kind(),
         crate::facade::BridgeSubscriptionPreviewLifecycleResidueKind::CompletionWriteback
     );
+
+    let cleared = runtime
+        .capture_preview_lifecycle_residue_envelope(
+            &preview_active,
+            &work_trace,
+            zero_preview_lifecycle_residue_inputs(&work_trace),
+        )
+        .expect("the original work trace should still bind the returned preview");
+    runtime
+        .admit_preview_lifecycle_discard(preview_active, cleared)
+        .expect("the same preview can discard after clearing residue");
 }
 
 #[test]
@@ -100,6 +111,16 @@ fn preview_lifecycle_promotion_re_admits_authoritative_boundary() {
         )
         .expect("promotion should admit");
 
+    let (_, foreign_ready) = activation_ready_collection_subscription(resource_request);
+    let promotion_identity = promotion.promotion_identity().clone();
+    let (promotion, denial) = runtime
+        .prepare_authoritative_preview_readmission(promotion, &foreign_ready)
+        .expect_err("a different admitted subscription must refuse readmission");
+    assert_eq!(promotion.promotion_identity(), &promotion_identity);
+    assert_eq!(
+        denial.rejection_kind(),
+        crate::facade::BridgeSubscriptionAuthoritativePreviewReadmissionRejectionKind::PromotedSubscriptionMismatch
+    );
     let readmission = runtime
         .prepare_authoritative_preview_readmission(promotion, &promoted_ready)
         .expect("authoritative readmission should admit");
