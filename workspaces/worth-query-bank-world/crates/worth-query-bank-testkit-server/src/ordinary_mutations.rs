@@ -40,8 +40,6 @@ pub mod money_families;
 pub mod owning_deposit;
 #[path = "ordinary_mutations/program_families.rs"]
 pub mod program_families;
-#[path = "ordinary_mutations/recorded_correction.rs"]
-pub mod recorded_correction;
 #[path = "ordinary_mutations/retained_publication.rs"]
 pub mod retained_publication;
 #[path = "ordinary_mutations/transfer_posting_oracle.rs"]

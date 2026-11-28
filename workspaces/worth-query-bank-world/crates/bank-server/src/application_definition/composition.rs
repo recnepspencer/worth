@@ -132,7 +132,6 @@ pub(super) fn bank_estate_feature_spec(
     };
     estate
             .action::<FreezeEstateAccountMutationBinding, super::estate_actions::EstateAccountFreezeDelivery>().finish_action()
-            .action::<RestoreFrozenEstateAccountBinding, super::estate_actions::RestoreFrozenAccountDelivery>().finish_action()
             .action::<OpenEstateCaseMutationBinding, super::estate_actions::EstateCaseOpeningDelivery>().finish_action()
             .action::<RecognizeEstateExecutorMutationBinding, super::estate_actions::ExecutorRecognitionDelivery>().finish_action()
             .action::<ReleaseEstateMutationBinding, super::estate_actions::EstateReleaseDelivery>().finish_action()

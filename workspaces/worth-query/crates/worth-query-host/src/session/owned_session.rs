@@ -122,7 +122,7 @@ where
     Program: ApplicationProgramDefinition<Schema> + 'static,
 {
     /// [`WorthQueryHostSession::current_principal`]: the proof the next call
-    /// acts under, renewed first when due, for Home calls such as `home.undo`.
+    /// acts under, renewed first when due.
     pub fn current_principal(&self) -> WorthQueryAuthenticatedExternalPrincipal<Schema> {
         match &self.settings.renewal {
             Some(renewal) => renewal.current(),

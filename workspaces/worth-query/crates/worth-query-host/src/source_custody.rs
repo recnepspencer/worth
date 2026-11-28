@@ -25,9 +25,7 @@ use worth_query_publication::facade::application_entry::{
 type Result<S, I> =
     <<I as ApplicationMutationIntent<S>>::Binding as ApplicationMutationBinding<S>>::Result;
 
-mod correction;
 mod erasure;
-pub use correction::{WorthQueryAnyCorrectionCustodyOutcome, WorthQueryCorrectionCustodyOutcome};
 pub use erasure::{
     WorthQueryAnySourceCompletion, WorthQueryAnySourceCustody, WorthQueryAnySourceCustodyStep,
     WorthQueryAnyTerminalSourceEvidence,

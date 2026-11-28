@@ -7,7 +7,7 @@ pub use worth_query_host::facade::{
 
 #[path = "correctable_retention/correction.rs"]
 pub mod correction;
-pub use correction::RestoreReviewedRetention;
+pub use correction::RegisterReviewedRetention;
 
 worth_query_operation!(pub CorrectableRetention for DocumentRetentionSchema, input SetRetentionInputBinding; access {
  read_fields: [DocumentIdentityField::at("DocumentIdentityField"), DocumentRetentionField::at("DocumentRetentionField")];

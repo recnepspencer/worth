@@ -5,10 +5,7 @@ use crate::application_program::{
 };
 use crate::{ConsumerDiscoveredProgramRoot, ConsumerProgram, ConsumerProgramRoot, ConsumerSchema};
 use worth_query_host::facade::application_entry::*;
-use worth_query_topology_entry::{
-    PlanarSourceAdjustment,
-    PlanarSourceAdjustmentBinding,
-};
+use worth_query_topology_entry::PlanarSourceAdjustment;
 
 type Fixed = WorthQueryFixedOperation<
     ConsumerSchema,
@@ -29,15 +26,6 @@ fn application_carriers_stay_within_declared_inline_ceilings() {
     let rows = [
         row::<Fixed>(),
         row::<Discovered>(),
-        row::<
-            WorthQueryRequiredCorrectionPreparation<
-                'static,
-                ConsumerSchema,
-                PlanarSourceAdjustmentBinding<ConsumerSchema>,
-                ConsumerProgram,
-                ConsumerProgramRoot,
-            >,
-        >(),
     ];
     for (name, size) in &rows {
         println!("APPLICATION_TYPE_SIZE|{name}|{size}|{}", 128 * 1024);

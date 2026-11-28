@@ -1931,36 +1931,17 @@ Real calls:
 
 ### 14.1 Declared aftermath
 
-Each operation declares its aftermath posture: **reversible**,
-**compensatable**, **reconcilable**, or **irreversible**. A typed correction
-binding connects that meaning to an installed operation and a disclosure query.
-Recorded inverses restore captured prior truth; compensations create an offsetting
-change; reconciliations bring local records into agreement with an outside party.
-External effects use their declared compensation or reconciliation policy.
+Declare the external-effect posture and its installed reconciliation or
+compensation procedure. Query retains performed external effects in its outbox.
 
-### 14.2 Undo, redo, reconciliation
+### 14.2 Resolve a performed external effect
 
-Start at `request(&principal, &scope).on_branch(branch).corrections()`.
-Select the retained occurrence to correct. Inspection runs the binding's
-disclosure query under current authority; preparation derives its declared
-inverse from the retained input and captured pre-image, then admits the new
-operation on the selected branch. A successful correction appends a child of
-the current branch head and preserves intervening unrelated edits.
+A fresh request obtains a recovery handle under current authority. Inspect the handle for
+available recovery actions. Use its owning resolution to safely retry,
+compensate, or reconcile when the installed effect and current evidence permit.
 
-`alternatives()` pages the retained correction lineage. Finish its continuation
-before selecting an alternative; `reapply()` then executes the retained original
-input under current authority and current handler rules. This supports choosing
-an older alternative after further edits and correction cycles. Each command
-uses its own idempotency key, so retrying a performed command returns its
-existing result.
-
-The returned ordinary operation owns publication, required-output delivery and
-close. Observe source publication separately from derived-output completion.
-If retained material has expired or current admission refuses the operation,
-handle the typed outcome and let the user choose a currently supported action.
-
-See [Recorded source correction](../workspaces/worth-query/docs/execution/recorded-source-correction.md)
-for binding declarations, complete caller examples, alternatives, retry and recovery.
+See [external effects and recovery](../workspaces/worth-query/docs/execution/application-aftermath-and-recovery.md)
+for outbox states, authority, and recovery examples.
 
 ### 14.3 Unresolved durability
 

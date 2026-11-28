@@ -2,114 +2,23 @@
 use super::*;
 use worth_query_decl::facade::{application_aftermath::*, application_query::*};
 
-pub struct RecordedEntryCorrection<Schema>(PhantomData<fn() -> Schema>);
+pub struct RegisterEntryEdit<Schema>(PhantomData<fn() -> Schema>);
 
-impl<Schema: TopologySchemaBinding> ApplicationCorrectionBinding<Schema>
-    for RecordedEntryCorrection<Schema>
-{
-    const IDENTITY: &'static str = "worth.query.certification.recorded-entry-correction.v1";
-    type Source = EntryCorrectionBinding<Schema>;
-    type InverseIntent = EntryCorrection;
-    type Disclosure = PlanarReadBinding<Schema>;
-
-    fn recover_source_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+impl<Schema: TopologySchemaBinding> worth_query_decl::facade::application_schema::fragment::Registration<Schema> for RegisterEntryEdit<Schema> {
+    fn register(
+        schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
-    >{
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
-            bytes, expected, bounds,
-        )
-    }
-
-    fn recover_inverse_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
-    ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
-                Schema,
-                Self,
-            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
-                Schema,
-            >>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<Schema>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
-            bytes, expected, bounds,
-        )
-    }
-
-    fn disclosure_parameters(
-        _: &EntryCorrection,
-    ) -> Result<ApplicationQueryParameterSet<PlanarQuery>, ApplicationCorrectionDerivationDenial>
-    {
-        Ok(ApplicationQueryParameterSet::new())
-    }
-    fn source_definition() -> ApplicationOperationDefinitionBuilder<
-        Schema,
-        CorrectEntryValue,
-        EntryCorrection,
-        true,
-        false,
-    > {
-        CorrectEntryValue::reference()
+        Ok(schema
+            .declared_operation(
+                CorrectEntryValue::reference()
             .definition()
             .no_external_effect()
-    }
-    fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
-            [DeclaredPreImageLocus::from_field(EntryValueBits::at(
-                "EntryValueBits",
-            ))],
-            U64ApplicationValueBinding::encode(&u64::MAX)
-                .unwrap()
-                .semantic_byte_width(),
-        ))
-    }
-    fn derive_correction(
-        original: &EntryCorrection,
-        material: ApplicationCorrectionSourceMaterial<'_, Schema>,
-    ) -> Result<EntryCorrection, ApplicationCorrectionDerivationDenial> {
-        use ApplicationCorrectionDerivationDenial::*;
-        let ApplicationCorrectionSourceMaterial::RecordedInverse(preimage) = material else {
-            return Err(UnsupportedSourceMeaning);
-        };
-        let prior = U64ApplicationValueBinding::decode(
-            preimage
-                .field(&DeclaredPreImageLocus::from_field(EntryValueBits::at(
-                    "EntryValueBits",
-                )))
-                .ok_or(MissingPreImage)?,
-        )
-        .map_err(|_| InvalidPreImage)?;
-        if original.expected.is_some_and(|expected| expected != prior) {
-            return Err(InvalidOriginalInput);
-        }
-        let expected = prior ^ original.mask;
-        Ok(EntryCorrection {
-            scope_key: original.scope_key.clone(),
-            entry: original.entry,
-            mask: expected ^ prior,
-            expected: Some(expected),
-        })
-    }
-    fn inverse_key(key: &str) -> Result<u64, ApplicationValueEncodeDenial> {
-        key.parse().map_err(|_| ApplicationValueEncodeDenial::CodecRejected {
-            binding_identity: worth_query_decl::facade::portable_identity::WorthQueryPortableTypeIdentity::declared(Self::IDENTITY),
-            reason: "entry correction keys are unsigned decimal integers",
-        })
-    }
-    fn visit<Visitor: ApplicationCorrectionVisitor<Schema>>(
-        dispatch: ApplicationCorrectionDispatch<Schema, Self, Visitor>,
-    ) -> Visitor::Output {
-        dispatch.capability::<capability::CorrectEntryCapability<Schema>>()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .application_mutation_binding::<EntryCorrectionBinding<Schema>>())
     }
 }

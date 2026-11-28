@@ -2,5 +2,4 @@
 mod admission;
 mod advance;
 mod promotion;
-mod recorded_correction;
 mod retention;

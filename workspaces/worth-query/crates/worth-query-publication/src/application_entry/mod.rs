@@ -27,23 +27,6 @@ pub use capability_command::{
     WorthQueryCompletedCapabilityCommand, WorthQueryTerminalCapabilityCommand,
 };
 mod capability_revocation;
-mod correction;
-pub use correction::{
-    WorthQueryApplicationCorrection, WorthQueryApplicationCorrectionAlternatives,
-    WorthQueryApplicationCorrectionDenial, WorthQueryApplicationCorrectionHistoryDenial,
-    WorthQueryApplicationCorrectionOutcome, WorthQueryApplicationCorrectionPreparation,
-    WorthQueryApplicationCorrectionRequest, WorthQueryApplicationCorrections,
-    WorthQueryApplicationReapplication, WorthQueryApplicationReapplicationRequest,
-    WorthQueryCorrectionAlternativeRef, WorthQueryCorrectionAlternativesContinuation,
-    WorthQueryCorrectionAlternativesPage, WorthQueryCorrectionApplicability,
-    WorthQueryCorrectionHistoryDenial, WorthQueryCorrectionHistoryLimits,
-    WorthQueryCorrectionHistoryRecord, WorthQueryCorrectionHistoryState, WorthQueryCorrectionValue,
-    WorthQueryKeyedApplicationCorrection, WorthQueryKeyedApplicationReapplication,
-    WorthQueryOperationCorrectionPreparation, WorthQueryPreparedApplicationCorrection,
-    WorthQueryPreparedOperationCorrection, WorthQueryPreparedRequiredCorrection,
-    WorthQueryRequiredCorrectionPreparation, WorthQuerySelectedCorrectionAlternative,
-    WorthQuerySelectedCorrectionSource,
-};
 mod demand;
 pub use worth_query_execution::facade::primary_graph::WorthQueryCompletedOriginalReadOutputs;
 pub use worth_query_execution::facade::primary_graph::WorthQueryCompletedReadOutputs;

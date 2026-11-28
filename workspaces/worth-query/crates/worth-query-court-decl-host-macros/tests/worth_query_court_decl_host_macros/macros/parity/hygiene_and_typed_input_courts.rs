@@ -4,24 +4,17 @@
 //! - authoritative `InputBinding` verification in `ApplicationInputField::for_binding`
 //!   and `TypedApplicationOperationBodyBuilder` (rejecting fieldless/mismatched/cross-binding
 //!   selectors with `InvalidInputMember`)
-//! - item-level correction hygiene against `type __WorthCorrectionVisitor = Schema`
-//!   and `const __worth_correction_key: &str = "sentinel"`
 use super::super::actions::{
-    complete_body, Complete, CompleteBinding, Rename, RenameInput, RenameTask, Reschedule,
-    RescheduleInput,
+    Rename, RenameInput, RenameTask, Reschedule, RescheduleInput,
 };
-use super::super::completion_correction::{DetailsBinding, DetailsQuery, RestoreCompletion};
 use super::super::schema::*;
-use worth_foundational::facade::{AspectValue, ScalarAspectType};
-use worth_query_decl::facade::application_aftermath::*;
+use worth_foundational::facade::ScalarAspectType;
 use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
 use worth_query_decl::facade::application_operation::ApplicationEncodedInput;
-use worth_query_decl::facade::application_query::*;
 use worth_query_decl::facade::application_schema::*;
-use worth_query_decl::facade::portable_identity::WorthQueryPortableTypeIdentity;
 use worth_query_decl::facade::{
     worth_query_identity_namespace, worth_query_operation, worth_query_structured_value_binding,
-    WorthQueryAction, WorthQueryCorrection,
+    WorthQueryAction,
 };
 
 const LOWER_NS: ApplicationIdentityNamespace =
@@ -263,133 +256,3 @@ fn private_member_compiles_without_e0446_and_unverified_selectors_are_refused() 
 }
 
 // --- Fix 3: Item-level correction hygiene traps ---
-mod correction_item_hygiene {
-    use super::*;
-
-    type __WorthCorrectionVisitor = Schema;
-    #[allow(non_camel_case_types)]
-    type __WorthCorrectionSchema = Schema;
-    #[allow(non_upper_case_globals)]
-    const __worth_correction_call_demand: usize = 8;
-    #[allow(non_upper_case_globals, dead_code)]
-    const __worth_correction_key: &str = "sentinel";
-    #[allow(non_upper_case_globals, dead_code)]
-    const __worth_correction_original: u8 = 0;
-    #[allow(non_upper_case_globals, dead_code)]
-    const __worth_correction_preimage: u8 = 0;
-    #[allow(non_upper_case_globals, dead_code)]
-    const __worth_correction_dispatch: u8 = 0;
-
-    fn trap_disclosure(
-        _: &Complete,
-    ) -> Result<ApplicationQueryParameterSet<DetailsQuery>, ApplicationCorrectionDerivationDenial>
-    {
-        Ok(ApplicationQueryParameterSet::new())
-    }
-
-    fn trap_derive(
-        orig: &Complete,
-        mat: &dyn ApplicationCorrectionPreImage<Schema>,
-    ) -> Result<RestoreCompletion, ApplicationCorrectionDerivationDenial> {
-        let was_done = decode_preimage_field(mat, TaskFacts::done())?;
-        Ok(RestoreCompletion {
-            task: orig.task,
-            expected: orig.done,
-            done: was_done,
-        })
-    }
-
-    fn trap_key(raw: &str) -> Result<u64, ApplicationValueEncodeDenial> {
-        raw.parse()
-            .map_err(|_| ApplicationValueEncodeDenial::CodecRejected {
-                binding_identity: WorthQueryPortableTypeIdentity::declared(
-                    "macros.parity.item-hygiene-correction.v1",
-                ),
-                reason: "invalid key",
-            })
-    }
-
-    #[derive(WorthQueryCorrection)]
-    #[worth_query(
-        schema = __WorthCorrectionVisitor,
-        identity = "macros.parity.item-hygiene-correction.v1",
-        source = CompleteBinding,
-        inverse = RestoreCompletion,
-        disclosure = DetailsBinding,
-        disclosure_parameters = trap_disclosure,
-        source_body = complete_body,
-        preimage_fields(TaskFacts::done()),
-        preimage_bytes = 8,
-        derive = trap_derive,
-        inverse_key = trap_key,
-    )]
-    pub struct VisitorAliasAndConstKeyTrapCorrection;
-
-    #[derive(WorthQueryCorrection)]
-    #[worth_query(
-        schema = r#__WorthCorrectionSchema,
-        identity = "macros.parity.item-hygiene-default-key.v1",
-        source = CompleteBinding,
-        inverse = RestoreCompletion,
-        disclosure = DetailsBinding,
-        source_body = complete_body,
-        preimage_fields(TaskFacts::done()),
-        preimage_bytes = __worth_correction_call_demand,
-        derive = trap_derive,
-    )]
-    pub struct ConstKeyDefaultParserTrapCorrection;
-
-    mod namespace_key_trap {
-        use super::*;
-        #[allow(non_upper_case_globals)]
-        const __worth_correction_key: ApplicationIdentityNamespace =
-            worth_query_identity_namespace!("macros.parity.namespace-key-trap.v1");
-        #[derive(WorthQueryCorrection)]
-        #[worth_query(
-            schema = Schema, namespace = __worth_correction_key, source = CompleteBinding,
-            inverse = RestoreCompletion, disclosure = DetailsBinding, source_body = complete_body,
-            preimage_fields(TaskFacts::done()), preimage_bytes = 8, derive = trap_derive,
-        )]
-        pub struct NamespaceKeyTrapCorrection;
-    }
-
-    struct BoolPreImage(AspectValue);
-    impl ApplicationCorrectionPreImage<Schema> for BoolPreImage {
-        fn field(&self, _locus: &DeclaredPreImageLocus<Schema>) -> Option<&AspectValue> {
-            Some(&self.0)
-        }
-    }
-
-    #[test]
-    fn correction_survives_visitor_type_alias_and_const_key_item_collisions() {
-        use namespace_key_trap::NamespaceKeyTrapCorrection as NsTrap;
-        let orig = Complete {
-            task: 12,
-            done: true,
-        };
-        let pre = BoolPreImage(AspectValue::Bool(false));
-        assert_eq!(
-            <VisitorAliasAndConstKeyTrapCorrection as ApplicationCorrectionBinding<Schema>>::inverse_key("42"),
-            Ok(42)
-        );
-        assert_eq!(
-            <ConstKeyDefaultParserTrapCorrection as ApplicationCorrectionBinding<Schema>>::inverse_key("99"),
-            Ok(99)
-        );
-        assert_eq!(
-            <NsTrap as ApplicationCorrectionBinding<Schema>>::IDENTITY,
-            "macros.parity.namespace-key-trap.v1.binding"
-        );
-        assert_eq!(
-            <NsTrap as ApplicationCorrectionBinding<Schema>>::inverse_key("7"),
-            Ok(7)
-        );
-        assert_eq!(
-            <VisitorAliasAndConstKeyTrapCorrection as ApplicationCorrectionBinding<Schema>>::derive_correction(
-                &orig,
-                ApplicationCorrectionSourceMaterial::RecordedInverse(&pre),
-            ),
-            Ok(RestoreCompletion { task: 12, expected: true, done: false })
-        );
-    }
-}

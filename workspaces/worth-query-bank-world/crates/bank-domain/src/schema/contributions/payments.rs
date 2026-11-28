@@ -8,6 +8,7 @@ use crate::authorization::{
 };
 
 use super::super::{
+    approved_payment_aftermath::approved_payment_definition,
     decision_read_manifest::install_payment_decision_reads,
     governance::{AccountActivityEffect, DistinctApproverPolicy},
     install_approved_business_payment_authority, install_approved_payment_assessment,
@@ -31,8 +32,6 @@ impl ApplicationSchemaContribution<BankSchema> for BankPayments {
     type Members = (
         crate::schema::PaymentRecords,
         Contracts,
-        super::super::ReverseSentMoney,
-        super::super::ReverseApprovedPayment,
     );
 }
 impl BankPayments {
@@ -64,6 +63,16 @@ impl Registration<BankSchema> for Contracts {
                     WithdrawOperation::reference(),
                 ))
                 .application_mutation_binding::<WithdrawMutationBinding>()
+                .declared_operation(
+                    SendMoneyOperation::reference()
+                        .definition()
+                        .no_external_effect()
+                        .no_aftermath()
+                        .finish(),
+                )
+                .application_mutation_binding::<SendMoneyMutationBinding>()
+                .declared_operation(approved_payment_definition())
+                .application_mutation_binding::<ApprovePaymentMutationBinding>()
                 .operation(without_external_effect_or_aftermath(
                     InitiateBusinessPaymentOperation::reference(),
                 ))

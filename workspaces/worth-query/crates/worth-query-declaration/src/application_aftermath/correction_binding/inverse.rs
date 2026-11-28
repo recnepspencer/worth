@@ -199,23 +199,6 @@ impl DeclaredCorrectionBinding {
         )
     }
 
-    pub(crate) fn compose<
-        Schema: ApplicationSchema,
-        Correction: ApplicationCorrectionBinding<Schema>,
-    >(
-        reconciliation: Option<super::super::DeclaredReconciliationProcedure>,
-    ) -> Result<super::ComposedCorrectionBinding, ApplicationSchemaDeclarationDenial> {
-        let expression = Correction::authored_identity();
-        let mut fields: Vec<_> = expression
-            .as_ref()
-            .map(|identity| identity.binding_recipes().cloned().collect())
-            .unwrap_or_default();
-        let outputs = Correction::source_output_fields();
-        fields.extend(outputs.iter().map(|field| field.binding_recipe().clone()));
-        Self::from_expression::<Schema, Correction>(expression, outputs, reconciliation)
-            .map(|binding| super::ComposedCorrectionBinding { binding, fields })
-    }
-
     fn from_expression<
         Schema: ApplicationSchema,
         Correction: ApplicationCorrectionBinding<Schema>,

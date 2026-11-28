@@ -93,7 +93,6 @@ fn estate_capabilities_and_installed_programs_are_declared() {
             "RecognizeEstateExecutorOperation",
             "ReleaseEstateOperation",
             "RequestEstateEmergencyAccessOperation",
-            "RestoreFrozenEstateAccountOperation",
             "RetransmitDeathNoticeEstateOperation",
             "RevokeEstateEmergencyAccessOperation",
         ]

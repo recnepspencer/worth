@@ -15,7 +15,6 @@ use worth_query_execution::facade::application_inspection::{
 
 use crate::audit::{WorthQueryReferencedByDenial, WorthQuerySourceProvenanceDenial};
 
-use super::correction::OTHER_VERSION;
 use super::inspection_owner::{owner, EVIDENCE_WITHHELD, SOURCE_UNAVAILABLE};
 use super::request::{BUSY, CANCELLED, CAPACITY, INTERNAL, TIMED_OUT};
 use super::stops::{kernel, native, work};
@@ -27,6 +26,11 @@ use super::summary::{
 pub(super) const FIELD_DETAIL_UNSUPPORTED: Summary = Summary::with_message(
     Category::Unsupported,
     "Field-by-field detail isn't available for this kind of change.",
+);
+
+const OTHER_VERSION: Summary = Summary::with_message(
+    Category::NotFound,
+    "This change isn't part of the version you're looking at.",
 );
 
 impl WorthQueryUserFacingRefusal for WorthQuerySourceProvenanceDenial {

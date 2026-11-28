@@ -1,14 +1,13 @@
-//! The workflow Home carries the plain Home's preview, correction-history and
-//! impact surfaces, and a referenced-by read refuses a non-reverse query.
+//! Workflow Home preview and audit forwarding.
 use super::*;
 use document::schema::Document;
 use worth_query_host::facade::{
     audit::{WorthQueryImpactDependency, WorthQueryImpactRole, WorthQueryReferencedByDenial},
-    WorthQueryCorrectionHistoryLimit, WorthQueryPreviewDiscardDenial,
+    WorthQueryPreviewDiscardDenial,
 };
 
 #[test]
-fn workflow_home_forwards_what_if_previews_and_correction_history() {
+fn workflow_home_forwards_what_if_previews() {
     let trusted = trusted_now();
     let location = Location::Directory(super::super::super::super::fixture::location());
     let (home, authentication) = open(&location, &trusted);
@@ -47,9 +46,6 @@ fn workflow_home_forwards_what_if_previews_and_correction_history() {
         Err(WorthQueryPreviewDiscardDenial::ActiveBranchProtected)
     ));
 
-    let limit = WorthQueryCorrectionHistoryLimit::new(8).unwrap();
-    let history = home.correction_history(&operator, limit).unwrap();
-    assert!(history.next_redo().is_none(), "{history:?}");
     drop(authentication);
     home.close_clean().unwrap();
 }

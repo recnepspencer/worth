@@ -127,8 +127,8 @@ pub use worth_query_declaration::{
 /// `::worth_query_host`, so a crate deriving it depends on both.
 pub use worth_query_macros::{
     WorthBinaryValue, WorthManagedIndex, WorthQuery, WorthQueryAbilities, WorthQueryAction,
-    WorthQueryCorrection, WorthQueryProjection, WorthQueryRecord, WorthQueryRelation,
-    WorthQueryRow, WorthQuerySchema, WorthQueryVocabulary,
+    WorthQueryProjection, WorthQueryRecord, WorthQueryRelation, WorthQueryRow, WorthQuerySchema,
+    WorthQueryVocabulary,
 };
 
 /// Canonical proof-carrying query artifact for declaration consumers.

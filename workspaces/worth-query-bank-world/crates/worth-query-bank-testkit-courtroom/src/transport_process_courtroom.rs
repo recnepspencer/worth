@@ -16,8 +16,6 @@ pub mod payment;
 pub mod process;
 #[path = "transport_process_courtroom/rail_completion.rs"]
 pub mod rail_completion;
-#[path = "transport_process_courtroom/recorded_correction.rs"]
-pub mod recorded_correction;
 #[path = "transport_process_courtroom/recovery.rs"]
 pub mod recovery;
 pub use crate::facade::support;

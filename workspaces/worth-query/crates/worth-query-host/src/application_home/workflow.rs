@@ -12,9 +12,7 @@ use worth_query_execution::facade::application_installation::{
     WorthQueryWorkflowRuntimeConfiguration, WorthQueryWorkflowVocabulary,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
-mod authored_corrections;
 mod close;
-mod corrections;
 mod desktop;
 mod preview;
 mod temporal;

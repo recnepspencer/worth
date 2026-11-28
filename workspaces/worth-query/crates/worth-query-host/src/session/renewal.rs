@@ -108,9 +108,7 @@ impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Sch
     }
 
     /// The proof this session's next operation acts under, renewed first when
-    /// it is due. Pass it to Home calls that take a principal, such as
-    /// `home.undo(..)`, `home.redo(..)` or `home.correction_history(..)`, so a
-    /// renewing session needs no separate adapter past one proof lifetime.
+    /// it is due. Pass it to Home calls that take a principal.
     pub fn current_principal(&self) -> WorthQueryAuthenticatedExternalPrincipal<Schema> {
         self.call_principal().into_owned()
     }

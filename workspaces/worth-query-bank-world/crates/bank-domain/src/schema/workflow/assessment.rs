@@ -179,7 +179,7 @@ impl WorthQueryWorkflowAssessmentOutputFamily<BankSchema>
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ApprovedPaymentAssessmentDemand {
-    #[serde(deserialize_with = "crate::schema::correction_input::payment_identity")]
+    #[serde(deserialize_with = "crate::schema::payment_input_identity::payment_identity")]
     payment: PaymentId,
 }
 

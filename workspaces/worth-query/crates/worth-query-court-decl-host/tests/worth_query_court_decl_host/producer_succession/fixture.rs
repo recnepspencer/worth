@@ -79,7 +79,7 @@ macro_rules! producer_succession_fixture {
         impl ApplicationSchemaContribution<Schema> for Contribution {
             const IDENTITY: ApplicationSchemaContributionIdentity =
                 ApplicationSchemaContributionIdentity::new("succession.contribution");
-            type Members = (schema::DispatchModel, Contracts, correction::Resize);
+            type Members = (schema::DispatchModel, Contracts, correction::RegisterResize);
         }
         pub struct Contracts;
         impl worth_query_decl::facade::application_schema::fragment::Registration<Schema>

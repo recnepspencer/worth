@@ -1,4 +1,4 @@
-//! Authored fields and the installed correction association.
+//! Authored fields and installed operations for the numeric application.
 #[path = "schema/records.rs"]
 pub(super) mod storage_model;
 pub use super::domain_binding::{Counter, InlineCounterBinding};
@@ -6,7 +6,7 @@ pub use super::write_admission::{
     BinaryCounter, BrokenBinaryBinding, CanonicalBinding, CanonicalCounter, DelegatedBinding,
     DelegatedCounter,
 };
-use super::{correction::RecordedEdit, other_edit, principal_status, query};
+use super::{correction::RegisterEdit, other_edit, principal_status, query};
 pub use storage_model::{
     Calculated, Ceiling, ExternalIdentity, ExternalIdentityField, ExternalMapping, Key,
     MappingStatusField, MappingTarget, Number, NumberFacts, NumericModel, NumericModelBindings,
@@ -67,14 +67,14 @@ impl ApplicationSchemaContribution<NumericSchema> for NumericContribution {
         NumericModel,
         Contracts,
         (
-            RecordedEdit,
-            super::compensation_movement::NeutralizeCredit,
-            super::source_output_correction::RecordIssued,
-            super::composite_definition_model::CorrectDefinition,
-            super::authored_identity_correction::UndoCreate,
-            super::authored_identity_correction::UndoRetire,
-            super::adjacency_link::ReverseLink,
-            super::observed_clone::UndoClone,
+            RegisterEdit,
+            super::compensation_movement::RegisterCredit,
+            super::source_output_correction::RegisterIssue,
+            super::composite_definition_model::RegisterDefinitionEdit,
+            super::authored_identity_correction::RegisterCreate,
+            super::authored_identity_correction::RegisterRetire,
+            super::adjacency_link::RegisterLink,
+            super::observed_clone::RegisterClone,
         ),
     );
 }
@@ -107,6 +107,7 @@ impl Registration<NumericSchema> for Contracts {
             ))
             .principal_binding(ActorBinding::reference())
             .application_query(query::definition())
+            .application_query_binding::<query::ReadBinding>()
             .application_query(query::full::definition())
             .application_query_binding::<query::full::Binding>()
             .application_query_inspection(

@@ -1,6 +1,5 @@
 //! One Directory journey in two genuine main-thread processes.
 mod assessment;
-mod correction;
 mod deferred;
 mod external;
 mod installation;
@@ -82,10 +81,6 @@ fn run_workload(
     if args.step_completed(6, "ambiguous-external-dispatch") {
         return None;
     }
-    let reversals = correction::reverse_on_both(home, &principal);
-    if args.step_completed(7, "reverse-both") {
-        return None;
-    }
     let workflow = original_workflow.to_recorded_bytes().unwrap();
     use worth_query_host::facade::application_entry::{
         RequiredWorkflowAssessment, WorthQueryWorkflowInstanceDiscoveryIntent,
@@ -117,7 +112,7 @@ fn run_workload(
         &assessment_bytes[..assessment_bytes.len() - 1]
     )
     .is_err());
-    if args.step_completed(8, "descriptor-codecs") {
+    if args.step_completed(7, "descriptor-codecs") {
         return None;
     }
     Some(protocol::Handoff {
@@ -130,7 +125,6 @@ fn run_workload(
         rejection_home: rejection.identity().home(),
         rejection_position: rejection.identity().acquire_position(),
         pending,
-        reversals,
     })
 }
 
@@ -250,10 +244,6 @@ fn reopen(args: &protocol::Arguments) {
         if args.step_completed(6, "reopen-external-replay") {
             return;
         }
-        correction::reapply_recovered_child(&home, &principal, handoff.reversals);
-        if args.step_completed(7, "reopen-correction") {
-            return;
-        }
         assessment::recover_and_advance(
             &home,
             &principal,
@@ -263,7 +253,7 @@ fn reopen(args: &protocol::Arguments) {
             &required,
             &assessment,
         );
-        if args.step_completed(8, "reopen-assessment") {}
+        if args.step_completed(7, "reopen-assessment") {}
     })();
     installation::close(home);
 }

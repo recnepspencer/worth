@@ -1,10 +1,7 @@
 pub(crate) use worth_query_bank_testkit_server::facade::estate_operations::freeze_account::*;
 
-pub(crate) mod correction;
 
-pub(crate) mod correction_owner;
 
-pub(crate) mod reapplication_owner;
 
 #[test]
 fn public_query_progression_freezes_the_exact_estate_account() {
@@ -95,10 +92,8 @@ fn public_query_progression_freezes_the_exact_estate_account() {
     };
     let recovered = retry;
     worth_query_bank_testkit_server::facade::estate_operations::external_effect_dispatch::publication_assertions::assert_recovered_commit_axes(&outcome_closed, &recovered);
-    // D9's original data has no live retention-work counter. The original
-    // performed source above still proves its declared inverse and paid work.
-    assert!(receipt.retained_preimage());
-    assert!(receipt.performed_preimage_retention_work());
+    assert!(!receipt.retained_preimage());
+    assert!(!receipt.performed_preimage_retention_work());
     assert_freeze_canonical_work(receipt.canonical_work());
     assert_eq!(estate_account_status(&fixture), AccountStatus::Frozen);
 

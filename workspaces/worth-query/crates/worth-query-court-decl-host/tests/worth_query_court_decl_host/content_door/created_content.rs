@@ -123,149 +123,15 @@ impl OperationHandler<Schema, Binding> for Handler {
         }
     }
 }
-pub struct Capture<const DAMAGE: u8 = 0>;
-fn output() -> ApplicationCorrectionOutputField<Schema> {
-    ApplicationCorrectionOutput::<Binding, Actual>::content_field(samples())
-}
-impl<const DAMAGE: u8> ApplicationCorrectionBinding<Schema> for Capture<DAMAGE> {
-    const IDENTITY: &'static str = "created-content.capture.v1";
-    type Source = Binding;
-    type InverseIntent = revision::Revise;
-    type Disclosure = source::query::StateBinding;
 
-    fn recover_source_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
-    ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
-    >{
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
-            bytes, expected, bounds,
-            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::Input>::new(bounds),
-        )
-    }
+pub struct RegisterCreation;
 
-    fn recover_inverse_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
-    ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
-                Schema,
-                Self,
-            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
-                Schema,
-            >>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
-    > {
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
-            bytes, expected, bounds,
-            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<Schema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::Input>::new(bounds),
-        )
+impl worth_query_decl::facade::application_schema::fragment::Registration<Schema> for RegisterCreation {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial> {
+        Ok(schema
+            .declared_operation(Create::reference().definition().no_external_effect().no_aftermath().finish())
+            .application_mutation_binding::<Binding>())
     }
-    fn source_definition(
-    ) -> ApplicationOperationDefinitionBuilder<Schema, Create, Issue, true, false> {
-        Create::reference().definition().no_external_effect()
-    }
-    fn disclosure_parameters(
-        _: &Issue,
-    ) -> Result<
-        ApplicationQueryParameterSet<source::query::StateQuery>,
-        ApplicationCorrectionDerivationDenial,
-    > {
-        Ok(ApplicationQueryParameterSet::new())
-    }
-    fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::compensation_binding::<Self>(
-            DeclaredAftermathPostcondition::BusinessPostcondition {
-                identity: "original-content-restored-through-declared-output".into(),
-            },
-        )
-    }
-    fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<Schema>> {
-        if DAMAGE == 1 {
-            vec![
-                ApplicationCorrectionOutput::<Binding, Actual>::content_field(content_field(
-                    Values::at("MissingValues"),
-                    codec::GridFormat,
-                )),
-            ]
-        } else if DAMAGE == 2 {
-            vec![
-                ApplicationCorrectionOutput::<Binding, Actual>::content_field(content_field(
-                    Values::at("Values"),
-                    codec::Impostor,
-                )),
-            ]
-        } else {
-            vec![output()]
-        }
-    }
-    fn derive_correction(
-        _: &Issue,
-        material: ApplicationCorrectionSourceMaterial<'_, Schema>,
-    ) -> Result<revision::Revise, ApplicationCorrectionDerivationDenial> {
-        use ApplicationCorrectionDerivationDenial::*;
-        let ApplicationCorrectionSourceMaterial::Compensation(fields) = material else {
-            return Err(UnsupportedSourceMeaning);
-        };
-        let value = fields
-            .field(&output())
-            .map_err(|_| UnsupportedSourceMeaning)?;
-        let id = ContentRefApplicationValueBinding::decode(value).map_err(|_| InvalidPreImage)?;
-        Ok(revision::Revise {
-            key: "record".into(),
-            samples: vec![],
-            reference: id.0.to_vec(),
-        })
-    }
-    fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
-        Ok(format!("capture:{key}"))
-    }
-    fn visit<V: ApplicationCorrectionVisitor<Schema>>(
-        dispatch: ApplicationCorrectionDispatch<Schema, Self, V>,
-    ) -> V::Output {
-        dispatch.conventional()
-    }
-}
-
-fn refused_content_selection<const DAMAGE: u8>(path: &'static str) {
-    let expression = Capture::<DAMAGE>::source_output_fields();
-    let field = expression[0].binding_recipe().locus().clone();
-    assert_eq!(field.field(), path);
-    let denial = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(ContentModel)
-        .unwrap()
-        .correction::<Capture<DAMAGE>>()
-        .build()
-        .unwrap_err();
-    assert_eq!(
-        denial,
-        ApplicationSchemaDeclarationDenial::InvalidCorrectionField {
-            correction: "created-content.capture.v1".into(),
-            field: field.clone(),
-        }
-    );
-    let message = denial.to_string();
-    for part in [
-        "created-content.capture.v1",
-        field.entity(),
-        field.aspect(),
-        field.field(),
-    ] {
-        assert!(message.contains(part), "{message}");
-    }
-}
-#[test]
-fn a_misspelled_content_output_is_refused_at_composition() {
-    refused_content_selection::<1>("MissingValues");
-}
-#[test]
-fn a_content_output_codec_mismatch_is_refused_at_composition() {
-    refused_content_selection::<2>("Values");
 }

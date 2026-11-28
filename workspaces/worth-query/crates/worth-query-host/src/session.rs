@@ -33,7 +33,7 @@ use worth_query_publication::facade::application_entry::{
     WorthQueryApplicationRequestMutationDenial,
 };
 
-use crate::application_home::{WorthQueryApplicationHome, WorthQueryCorrectionEntry};
+use crate::application_home::WorthQueryApplicationHome;
 
 mod authority_inventory;
 pub(crate) mod auto_key;
@@ -110,12 +110,6 @@ impl<ResultValue> WorthQuerySessionCommit<ResultValue> {
 
     pub fn into_parts(self) -> (WorthQueryApplicationCommitReceipt, ResultValue) {
         (self.receipt, self.result)
-    }
-
-    /// Captures a `'static` [`WorthQueryCorrectionEntry`] suitable for
-    /// `home.undo(...)` or `home.undo_authored(...)` even after reopen.
-    pub fn correction_entry(&self) -> WorthQueryCorrectionEntry {
-        WorthQueryCorrectionEntry::from_receipt(&self.receipt)
     }
 }
 

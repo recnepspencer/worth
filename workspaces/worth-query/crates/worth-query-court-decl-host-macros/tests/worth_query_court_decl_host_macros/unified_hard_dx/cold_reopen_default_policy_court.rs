@@ -14,7 +14,7 @@ use super::courts::{build_id, temp_home_path};
 use super::program::{owner, seed, DaymarkHome, DaymarkRuntime};
 use super::queries::FindTasksByTitle;
 use super::schema::DaymarkSchema;
-use super::title_correction::RenameTask;
+use super::rename_task::RenameTask;
 
 fn next_build_id() -> ApplicationBuildIdentity {
     ApplicationBuildIdentity::parse("5a5a5a5a-5a5a-4a5a-8a5a-5a5a5a5a5a5b").unwrap()

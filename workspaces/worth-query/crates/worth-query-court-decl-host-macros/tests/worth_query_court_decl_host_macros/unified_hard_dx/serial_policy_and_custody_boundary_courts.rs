@@ -1,6 +1,5 @@
 //! Courts covering installed serial World policy ceilings (including
-//! single-metered occupied-key probes and automatic undo/redo), watch refresh
-//! and delivery handoff under cancellation.
+//! single-metered occupied-key probes), watch refresh and delivery handoff under cancellation.
 use std::num::NonZeroUsize;
 
 use worth_foundational::facade::{
@@ -19,14 +18,14 @@ use worth_query_host::facade::{
     },
     application_installation::ApplicationBuildIdentity,
     WorthQueryApplicationHome, WorthQueryHomeConfig,
-    WorthQueryHomeUndoDenial, WorthQuerySessionRunDenial, WorthQueryTypedManagedIndexRefreshDenial,
+    WorthQuerySessionRunDenial, WorthQueryTypedManagedIndexRefreshDenial,
 };
 
 use super::actions::{
-    CorrectTaskState, ProbeOccupiedTaskState, RenameProject, SequencedAutoKey, SetTaskState,
+    ProbeOccupiedTaskState, SequencedAutoKey, SetTaskState,
 };
 use super::program::{owner, seed, DaymarkHome, DaymarkRuntime};
-use super::queries::{FindTasksByTitle, ReadTaskDetails, ReadyTasks};
+use super::queries::{FindTasksByTitle, ReadyTasks};
 
 pub(super) fn open_memory_home_with_policy(
     clock: &WorthQueryAdmissionClock,
@@ -250,70 +249,4 @@ fn watch_refresh_preserves_delivery_and_handles_cancellation() {
     assert_eq!(delivered[0].state, "REVIEW");
     assert!(watch.is_current());
     watch.close().unwrap();
-}
-
-
-#[test]
-fn automatic_undo_and_redo_honor_installed_serial_ceiling() {
-    let clock = WorthQueryAdmissionClock::system();
-    let installed_policy = ExecutionRequestPolicy::new(
-        ExecutionPosture::Serial,
-        DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, None, Some(2_000_000)),
-    );
-    let home = open_memory_home_with_policy(&clock, Some(installed_policy));
-    let me = owner(&home, &clock);
-    let session = home.session(&me);
-
-    // 1. Conventional `home.undo` and `home.redo` seed selection both honor
-    //    the installed 2_000_000 serial ceiling and advance past seed selection
-    //    into history selection (never refusing with `WorkLimit`).
-    let rename = session
-        .run(RenameProject {
-            project: 1,
-            label: "Core Serial".to_owned(),
-        })
-        .expect("RenameProject commits within 2_000_000 serial ceiling");
-    let rename_entry = rename.correction_entry();
-    let non_correctable = home
-        .undo(&rename_entry, &me)
-        .expect_err("RenameProject has no recorded_inverse correction");
-    assert!(
-        matches!(non_correctable, WorthQueryHomeUndoDenial::Correction(_))
-            && format!("{non_correctable:?}").contains("SourceNotCorrectable"),
-        "expected home.undo to pass installed serial seed selection and reach SourceNotCorrectable, got {non_correctable:?}"
-    );
-    let redo_err = home
-        .redo(&rename_entry, &me)
-        .expect_err("RenameProject has no recorded_inverse correction for redo");
-    assert!(
-        matches!(redo_err, WorthQueryHomeUndoDenial::Correction(_))
-            && format!("{redo_err:?}").contains("SourceNotCorrectable"),
-        "expected home.redo to pass installed serial seed selection and reach SourceNotCorrectable, got {redo_err:?}"
-    );
-
-    // 2. Authored-body automatic undo + redo on a 2_000_000 serial Home.
-    let state_edit = session
-        .run(SetTaskState {
-            task: 1,
-            state: "REVIEW".to_owned(),
-        })
-        .expect("SetTaskState commits within 2_000_000 serial ceiling");
-    let state_entry = state_edit.correction_entry();
-    let authored_undone = home
-        .undo_authored::<CorrectTaskState>(&state_entry, &me)
-        .expect("home.undo_authored honors installed 2_000_000 serial ceiling");
-    assert!(authored_undone.live_receipt().is_some());
-    assert_eq!(
-        session.query(ReadTaskDetails { task: 1 }).unwrap()[0].state,
-        "OPEN"
-    );
-    let authored_redone = home
-        .redo_authored::<CorrectTaskState>(&state_entry, &me)
-        .expect("home.redo_authored honors installed 2_000_000 serial ceiling");
-    assert!(authored_redone.live_receipt().is_some());
-    assert_eq!(
-        session.query(ReadTaskDetails { task: 1 }).unwrap()[0].state,
-        "REVIEW"
-    );
 }

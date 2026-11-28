@@ -6,7 +6,7 @@ mod outcomes;
 mod requested;
 mod reviewed;
 
-pub use approved::{BankApprovedEstateElevation, BankEstateElevationRetentionWork};
+pub use approved::{BankApprovedEstateElevation};
 pub use mandatory_review::{BankEstateElevationClosureKind, BankEstateMandatoryReview};
 pub use outcomes::{
     BankEstateElevationApprovalOutcome, BankEstateElevationCloseOutcome,

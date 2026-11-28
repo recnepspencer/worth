@@ -1,7 +1,6 @@
 //! One feature, contribution and program collapsed through
 //! `worth_query_application_program!`; an in-memory Host under bounded
 //! serial limits; and the local-process principal that uses it.
-use super::completion_correction::{self, CorrectCompletion, RestoreDoneBinding, RestoredDone};
 use super::{actions::*, reads, relations, schema::*};
 use std::time::Duration;
 use worth_query_decl::facade::{application_program::*, application_schema::*, authentication::*};
@@ -20,16 +19,10 @@ worth_query_application_program! {
         identity: "macros.program.v1",
         contribution: Contribution {
             identity: "macros.board-contribution.v1",
-            members: [Board, PrincipalBinding, CorrectCompletion],
+            members: [Board, PrincipalBinding],
         },
         feature: BoardFeature => BoardDefinition / BoardRuntime {
             identity: "macros.board.feature.v1",
-            schema: |schema| {
-                schema.declared_operation(completion_correction::restore_done())
-            };
-            query(completion_correction::DetailsBinding) {
-                definition: completion_correction::task_details();
-            };
             query(reads::SearchBinding) { definition: reads::search(); };
             query(reads::DueBinding) { definition: reads::due(); };
             query(reads::TitleSearchBinding) { definition: reads::title_search(); };
@@ -37,8 +30,7 @@ worth_query_application_program! {
             body_action(RenameBinding, Renamed) as RenameAction { operation: rename_definition(); };
             body_action(RescheduleBinding, Rescheduled) as RescheduleAction { operation: reschedule_definition(); };
             body_action(RetitleFirstBinding, RetitledFirst) as RetitleFirstAction { operation: retitle_first_definition(); };
-            body_action_ref(CompleteBinding, Completed) as CompleteAction {};
-            body_action_ref(RestoreDoneBinding, RestoredDone) as RestoreAction {};
+            body_action(CompleteBinding, Completed) as CompleteAction { operation: complete_definition(); };
         }
     }
 }

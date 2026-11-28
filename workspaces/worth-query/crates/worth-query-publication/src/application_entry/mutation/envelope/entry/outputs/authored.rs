@@ -53,7 +53,6 @@ where
         owner: &WorthQuerySelectedProgramOwner<'_, S>,
         program: CandidateProgram<S, B>,
         identities: &ApplicationMutationIdentities<'_, S, B>,
-        source: Option<Arc<WorthQueryPreparedCorrectionSource>>,
         binding: WorthQueryApplicationIdempotencyBinding,
         unseen: &UnseenAuthoredEnvelope<'_>,
         allocation: ExecutionAllocationPolicy<'_, '_>,
@@ -64,60 +63,10 @@ where
             owner,
             program,
             identities,
-            source,
+            None,
             binding,
             unseen,
             allocation,
-        )
-    }
-    fn inverse<C>(
-        target: &WorthQuerySelectedProductOperation<'_, S>,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
-        scope: &WorthQueryRequestScope,
-        source: &WorthQuerySelectedCorrectionSource<'_, S>,
-        key: &WorthQueryCorrectionCommandKey,
-        maximum_history: Option<NonZeroUsize>,
-        maximum_results: NonZeroUsize,
-    ) -> SelectedSource<S, B>
-    where
-        C: ApplicationCorrectionBinding<S>,
-        C::InverseIntent: ApplicationMutationIntent<S, Binding = B>,
-    {
-        target.derive_correction_inverse::<C>(
-            &worth_query_execution::publication_boundary::program_publication_access(),
-            phase,
-            principal,
-            scope,
-            source,
-            key,
-            maximum_history,
-            maximum_results,
-        )
-    }
-    fn reapplication<C>(
-        target: &WorthQuerySelectedProductOperation<'_, S>,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
-        scope: &WorthQueryRequestScope,
-        source: &WorthQuerySelectedCorrectionAlternative<'_, S>,
-        key: &WorthQueryCorrectionCommandKey,
-        maximum_history: Option<NonZeroUsize>,
-        maximum_results: NonZeroUsize,
-    ) -> SelectedSource<S, B>
-    where
-        C: ApplicationCorrectionBinding<S, Source = B>,
-        B::Input: ApplicationMutationInputScope<S, B>,
-    {
-        target.derive_correction_reapplication::<C>(
-            &worth_query_execution::publication_boundary::program_publication_access(),
-            phase,
-            principal,
-            scope,
-            source,
-            key,
-            maximum_history,
-            maximum_results,
         )
     }
 }

@@ -1,6 +1,5 @@
 //! A body owns its output; the authored stage is a linked input, never its member.
 use super::*;
-mod co_anchors;
 mod courts;
 pub(super) mod multi;
 pub(super) mod producer;
@@ -42,9 +41,7 @@ impl<S: Scenario> WorthQueryApplicationRequiredOutputSource<S, program::Start>
 
 mod component_reads;
 
-mod fresh_subject;
 
-mod append;
 pub(super) mod creation_inverse;
 
 impl<S: Scenario> WorthQueryApplicationRequiredOutputSource<S, program::Start>
@@ -59,7 +56,6 @@ impl<S: Scenario> WorthQueryApplicationRequiredOutputSource<S, program::Start>
 
 mod cross_route;
 
-mod foreign_participant;
 
 mod private_membership;
 

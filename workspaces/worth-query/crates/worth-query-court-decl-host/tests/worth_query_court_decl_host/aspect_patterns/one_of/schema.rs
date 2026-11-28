@@ -45,10 +45,10 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
     type Members = (
         PatternModel,
         Contracts,
-        correction::Restore,
-        sparse::Correction,
-        retired_fields::correction::UndoRetirement,
-        retired_fields::correction::UndoRestoration,
+        correction::RegisterEdit,
+        sparse::RegisterSparseEdit,
+        retired_fields::correction::RegisterRetirement,
+        retired_fields::correction::RegisterRestoration,
     );
 }
 

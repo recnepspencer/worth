@@ -1,4 +1,4 @@
-use super::{BankHttpContinuationRegistry, ContinuationRecord};
+use super::{BankHttpContinuationRegistry};
 use std::time::Instant;
 
 use crate::http::server::authenticated_owner::BankHttpAuthenticatedOwner;
@@ -52,12 +52,9 @@ impl BankHttpContinuationRegistry {
             request_id: request_id.to_owned(),
         };
         let token = self.initial_requests.get(&key)?;
-        self.records.get(token).and_then(|record| match record {
-            ContinuationRecord::Activity(record) => {
-                Some((token.clone(), record.initial_outcome.clone()))
-            }
-            _ => None,
-        })
+        let record = self.records.get(token)?;
+        Some((token.clone(), record.initial_outcome.clone()))
+
     }
 
     pub(in crate::http::server) fn register_initial(
@@ -80,7 +77,7 @@ impl BankHttpContinuationRegistry {
         let state = continuation.map_or(ContinuationState::Terminal, ContinuationState::Ready);
         self.records.insert(
             token.clone(),
-            ContinuationRecord::Activity(ActivityRecord {
+            ActivityRecord {
                 owner: owner.clone(),
                 account,
                 expires_at: Instant::now() + self.lifetime,
@@ -89,7 +86,7 @@ impl BankHttpContinuationRegistry {
                 initial_outcome: outcome.clone(),
                 last_request_id: request_id.clone(),
                 last_outcome: outcome.clone(),
-            }),
+            },
         );
         self.initial_requests.insert(
             InitialRequestIdentity {
@@ -110,7 +107,7 @@ impl BankHttpContinuationRegistry {
         token: &str,
     ) -> ResumeAdmission {
         self.purge_expired();
-        let Some(ContinuationRecord::Activity(record)) = self.records.get_mut(token) else {
+        let Some(record) = self.records.get_mut(token) else {
             return ResumeAdmission::Unavailable;
         };
         if &record.owner != owner || record.account != account {
@@ -145,7 +142,7 @@ impl BankHttpContinuationRegistry {
     ) -> Result<BankHttpAccountActivityPageOutcome, Option<Box<BankAccountActivityContinuation>>>
     {
         self.purge_expired();
-        let Some(ContinuationRecord::Activity(record)) = self.records.get_mut(token) else {
+        let Some(record) = self.records.get_mut(token) else {
             return Err(continuation.map(Box::new));
         };
         if !matches!(&record.state, ContinuationState::InFlight(pending) if pending == &request_id)
@@ -154,7 +151,7 @@ impl BankHttpContinuationRegistry {
         }
         let exposed = continuation.as_ref().map(|_| token.to_owned());
         let outcome = delivered(request_id.clone(), activity, exposed, publication);
-        if let Some(ContinuationRecord::Activity(record)) = self.records.get_mut(token) {
+        if let Some(record) = self.records.get_mut(token) {
             record.state =
                 continuation.map_or(ContinuationState::Terminal, ContinuationState::Ready);
             record.last_request_id = request_id;
@@ -171,7 +168,7 @@ impl BankHttpContinuationRegistry {
         outcome: BankHttpAccountActivityPageOutcome,
         scrub_initial: bool,
     ) {
-        if let Some(ContinuationRecord::Activity(record)) = self.records.get_mut(token) {
+        if let Some(record) = self.records.get_mut(token) {
             if let ContinuationState::Ready(custody) =
                 std::mem::replace(&mut record.state, ContinuationState::Terminal)
             {
@@ -193,7 +190,7 @@ impl BankHttpContinuationRegistry {
         token: &str,
         denial: BankHttpDenial,
     ) {
-        if let Some(ContinuationRecord::Activity(record)) = self.records.get_mut(token) {
+        if let Some(record) = self.records.get_mut(token) {
             if let ContinuationState::Ready(custody) =
                 std::mem::replace(&mut record.state, ContinuationState::Terminal)
             {

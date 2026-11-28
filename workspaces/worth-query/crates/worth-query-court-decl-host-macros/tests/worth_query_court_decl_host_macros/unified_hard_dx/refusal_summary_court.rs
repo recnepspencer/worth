@@ -1,30 +1,26 @@
 //! End-user refusal summaries: category, retry hint and a sentence free of
 //! Rust `Debug` structure, across the facade's primary refusal families.
 use worth_query_host::facade::{
-    admission::authenticated_principal::WorthQueryAdmissionClock,
     application_contribution::{
         WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
     },
     application_entry::{
-        WorthQueryApplicationCorrectionHistoryDenial, WorthQueryApplicationRequestQueryDenial,
+        WorthQueryApplicationRequestQueryDenial,
         WorthQueryTerminalSourceEvidence,
     },
-    application_installation::ApplicationBuildIdentity,
     primary_graph::{
         WorthQueryApplicationIdempotencyResolution as Resolution,
-        WorthQueryApplicationQueryAdmissionDenial, WorthQueryCorrectionDerivationDenial,
+        WorthQueryApplicationQueryAdmissionDenial,
         WorthQueryOperationBodyDenial,
     },
     shared_access::{AuthorizationRefusalReason, SharedAccessDenial},
-    WorthQueryApplicationHome, WorthQueryCorrectionHistoryDenial, WorthQueryCorrectionHistoryLimit,
-    WorthQueryHomeConfig, WorthQueryHomeProgramTransitionDenial, WorthQueryHomeRetirementStop,
-    WorthQueryHomeUndoDenial, WorthQueryPreviewDiscardDenial,
+    WorthQueryHomeProgramTransitionDenial, WorthQueryHomeRetirementStop,
+    WorthQueryPreviewDiscardDenial,
     WorthQueryRefusalCategory as Category, WorthQuerySessionRunDenial,
     WorthQueryTypedLiveRefreshDenial, WorthQueryUserFacingRefusal,
 };
 
 use super::actions::SetTaskState;
-use super::program::{owner, seed, DaymarkHome, DaymarkRuntime};
 use super::schema::DaymarkSchema;
 
 /// Rejects internal Rust structure a `Debug` dump would put in a UI banner.
@@ -82,17 +78,7 @@ fn every_primary_refusal_family_explains_itself_without_debug_structure() {
         identity: "daymark.unified.task.open-only".to_owned(),
     };
     let handler_stop = WorthQuerySessionRunDenial::DomainDenied(rule);
-    let cases: [(&dyn WorthQueryUserFacingRefusal, Category, bool); 14] = [
-        (
-            &WorthQueryHomeUndoDenial::Conflict,
-            Category::Conflict,
-            false,
-        ),
-        (
-            &WorthQueryCorrectionDerivationDenial::SourceDiverged,
-            Category::Conflict,
-            false,
-        ),
+    let cases: [(&dyn WorthQueryUserFacingRefusal, Category, bool); 10] = [
         (&handler_stop, Category::Validation, false),
         (
             &SharedAccessDenial::AuthorizationRefused(AuthorizationRefusalReason::CapabilityDenied),
@@ -105,11 +91,6 @@ fn every_primary_refusal_family_explains_itself_without_debug_structure() {
             false,
         ),
         (
-            &WorthQueryHomeUndoDenial::NoAlternativeAvailable,
-            Category::NotFound,
-            false,
-        ),
-        (
             &WorthQueryTypedLiveRefreshDenial::StaleScope,
             Category::NotFound,
             false,
@@ -118,11 +99,6 @@ fn every_primary_refusal_family_explains_itself_without_debug_structure() {
             &WorthQueryHomeProgramTransitionDenial::DirectoryRequired,
             Category::Unsupported,
             false,
-        ),
-        (
-            &WorthQueryCorrectionHistoryDenial::LineageTooLong,
-            Category::Capacity,
-            true,
         ),
         (
             &WorthQueryTypedLiveRefreshDenial::ResultLimitExceeded,
@@ -200,38 +176,5 @@ fn every_primary_refusal_family_explains_itself_without_debug_structure() {
     for (refusal, category, retryable) in &classified {
         assert_summary(refusal.as_ref(), *category, *retryable);
     }
-    // Distinct causes in one category keep distinct guidance.
-    assert_ne!(
-        WorthQueryHomeUndoDenial::Conflict.user_message(),
-        WorthQueryHomeUndoDenial::AutoIdempotencyKeysExhausted.user_message()
-    );
-}
 
-#[test]
-fn a_memory_home_refuses_durable_history_with_a_readable_unsupported_summary() {
-    let clock = WorthQueryAdmissionClock::system();
-    let build = ApplicationBuildIdentity::parse("5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a").unwrap();
-    let home: DaymarkHome = WorthQueryApplicationHome::open_memory(
-        WorthQueryHomeConfig::new(build, (DaymarkRuntime::new(),))
-            .with_clock(clock.clone())
-            .with_initial_state(|_, graph, installed| seed(graph, installed)),
-    )
-    .expect("open_memory succeeds");
-    let denial = home
-        .correction_history(
-            owner(&home, &clock),
-            WorthQueryCorrectionHistoryLimit::new(8).unwrap(),
-        )
-        .expect_err("memory Homes retain no durable correction history");
-    assert!(
-        matches!(
-            denial,
-            WorthQueryApplicationCorrectionHistoryDenial::History(
-                WorthQueryCorrectionHistoryDenial::DurableHomeRequired
-            )
-        ),
-        "{denial:?}"
-    );
-    assert_summary(&denial, Category::Unsupported, false);
-    drop(home);
 }

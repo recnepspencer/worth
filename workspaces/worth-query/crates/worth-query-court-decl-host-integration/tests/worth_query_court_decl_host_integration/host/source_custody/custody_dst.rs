@@ -5,7 +5,6 @@
 //! `committedValue`) directly from real custody, head-ordinal, row, and handler-contact
 //! observations. Set `WORTH_DST_TRACE_DIR` to emit NDJSON verified by
 //! `python3 tools/tla/run_tlc.py trace specs/tla/host_custody/HostCustodyTrace.tla`.
-mod correction;
 mod directory_withdrawal;
 mod ordinary;
 mod ordinary_close;
@@ -215,89 +214,50 @@ fn host_custody_dst_64_seeds() {
     let mem_home = open_memory_program_home(execution);
     let mem_branch = mem_home.primary_graph().current_world();
     let mut expected_primary = read_rows(mem_home.runtime(), mem_branch)[0].primary;
-    let mut last_committed: Option<(String, u64, WorthQueryApplicationCommitReceipt)> = None;
-
+    let mut last_committed: Option<String> = None;
     for seed in 0_u64..60 {
         let mut rng = Rng::new(seed);
         if seed > 0 {
             log.reset();
         }
-        let do_correction = last_committed.is_some() && rng.pick(4) == 0;
-        if do_correction {
-            let (_, prior, receipt) = last_committed.take().unwrap();
-            correction::run_correction_seed(
-                seed,
-                &mut rng,
-                &mem_home,
-                mem_branch,
-                &execution,
-                &clock,
-                &mut log,
-                &mut expected_primary,
-                prior,
-                &receipt,
-            );
-        } else {
-            let prior = expected_primary;
-            let drift_key = last_committed.as_ref().map(|(k, _, _)| k.as_str());
-            if let Some((key, receipt)) = ordinary::run_ordinary_seed(
-                seed,
-                &mut rng,
-                &mem_home,
-                mem_branch,
-                &execution,
-                &clock,
-                &mut log,
-                &mut expected_primary,
-                drift_key,
-            ) {
-                last_committed = Some((key, prior, receipt));
-            }
+        if let Some((key, _)) = ordinary::run_ordinary_seed(
+            seed,
+            &mut rng,
+            &mem_home,
+            mem_branch,
+            &execution,
+            &clock,
+            &mut log,
+            &mut expected_primary,
+            last_committed.as_deref(),
+        ) {
+            last_committed = Some(key);
         }
     }
-    drop((last_committed, mem_home));
+    drop(mem_home);
 
     // Seeds 60..62: real Directory Home retained withdrawal + same-key reuse with live handler
     // contact counter and live `QueryObligationHistory` durable original ledger probes.
     directory_withdrawal::run_directory_withdrawal_seeds(&clock, &execution, &mut log);
 
-    // Seeds 62..64: real Directory Home commit + correction PendingCloseCommitted (durableMode = true).
+    // Seeds 62..64: retained ordinary edits in Directory Home.
     let dir_home = open_program_home(fixture::location(), execution, true);
     let dir_branch = dir_home.primary_graph().current_world();
     let mut dir_expected = read_rows(dir_home.runtime(), dir_branch)[0].primary;
-    let mut dir_committed: Option<(String, u64, WorthQueryApplicationCommitReceipt)> = None;
     for seed in 62_u64..64 {
         let mut rng = Rng::new(seed);
         log.reset();
-        if let Some((_, prior, receipt)) = dir_committed.take() {
-            correction::run_correction_seed(
-                seed,
-                &mut rng,
-                &dir_home,
-                dir_branch,
-                &execution,
-                &clock,
-                &mut log,
-                &mut dir_expected,
-                prior,
-                &receipt,
-            );
-        } else {
-            let prior = dir_expected;
-            if let Some((key, receipt)) = ordinary::run_ordinary_seed(
-                seed,
-                &mut rng,
-                &dir_home,
-                dir_branch,
-                &execution,
-                &clock,
-                &mut log,
-                &mut dir_expected,
-                None,
-            ) {
-                dir_committed = Some((key, prior, receipt));
-            }
-        }
+        ordinary::run_ordinary_seed(
+            seed,
+            &mut rng,
+            &dir_home,
+            dir_branch,
+            &execution,
+            &clock,
+            &mut log,
+            &mut dir_expected,
+            None,
+        );
     }
 
     if let Ok(dir) = std::env::var("WORTH_DST_TRACE_DIR") {
@@ -308,7 +268,6 @@ fn host_custody_dst_64_seeds() {
             .expect("write host_custody.ndjson");
     }
 
-    drop(dir_committed);
     dir_home
         .close(&execution)
         .unwrap_or_else(|refused| panic!("DST Directory Home closes cleanly: {refused:?}"))

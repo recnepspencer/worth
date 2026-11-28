@@ -13,8 +13,6 @@
 //!   `where_optional` for `Option<T>` parameters), `where_no_related` /
 //!   `where_related_exists`, `root_path`, `order_by`, `managed_index`, and
 //!   `live = whole_result`
-//! - `#[derive(WorthQueryCorrection)]` supporting `mode = recorded_inverse`
-//!   and `mode = authored_body`
 //! - `#[derive(WorthManagedIndex)]` and `#[derive(WorthBinaryValue)]`
 //! - `CanonicalDate::parse_iso`, `add_days`, `start_of_day_utc`, `Display`/`FromStr`
 //!

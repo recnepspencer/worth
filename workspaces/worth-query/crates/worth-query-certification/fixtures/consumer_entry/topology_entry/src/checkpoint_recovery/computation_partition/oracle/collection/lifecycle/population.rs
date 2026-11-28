@@ -1,7 +1,5 @@
-//! Unrelated scopes hold genuine source/reversal history before the measured source.
-use super::super::super::source_delivery::correction as commands;
+//! Seed unrelated entry scopes and their capability grants.
 use super::*;
-use crate::checkpoint_recovery::computation_partition::entry_correction::EntryCorrection;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationEntitySeed as Seed, WorthQueryApplicationRelationSeed as Relation,
 };
@@ -55,22 +53,5 @@ pub(super) fn seed(graph: &mut Graph, count: usize) {
             &format!("{scope}:grant"),
             1,
         );
-    }
-}
-pub(super) fn history(app: &correction::App, request: &Request<'_, '_, '_>, count: usize) {
-    for index in 0..count {
-        let key = 0x9190_0000 + 2 * index as u64;
-        let source = commands::source(
-            app,
-            request,
-            EntryCorrection {
-                scope_key: scope(index),
-                entry: ENTRY_BASE + index as u64,
-                mask: 2.0_f64.to_bits() ^ 3.0_f64.to_bits(),
-                expected: None,
-            },
-            key,
-        );
-        commands::reverse(app, request, &source, &(key + 1).to_string());
     }
 }

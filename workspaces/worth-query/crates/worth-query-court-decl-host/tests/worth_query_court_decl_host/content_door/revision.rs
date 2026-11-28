@@ -88,99 +88,20 @@ impl OperationHandler<Schema, Binding> for Handler {
         }
     }
 }
-pub struct Restore;
-impl ApplicationCorrectionBinding<Schema> for Restore {
-    const IDENTITY: &'static str = "content-revision.restore.v1";
-    type Source = Binding;
-    type InverseIntent = Revise;
-    type Disclosure = source::query::StateBinding;
-
-    fn recover_source_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+pub struct RegisterRevision;
+impl worth_query_decl::facade::application_schema::fragment::Registration<Schema> for RegisterRevision {
+    fn register(
+        schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
-    >{
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
-            bytes, expected, bounds,
-            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::Input>::new(bounds),
-        )
-    }
-
-    fn recover_inverse_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
-    ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
-                Schema,
-                Self,
-            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
-                Schema,
-            >>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<Schema>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
-            bytes, expected, bounds,
-            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<Schema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::Input>::new(bounds),
-        )
-    }
-    fn source_definition(
-    ) -> ApplicationOperationDefinitionBuilder<Schema, ReviseSamples, Revise, true, false> {
-        ReviseSamples::reference().definition().no_external_effect()
-    }
-    fn disclosure_parameters(
-        _: &Revise,
-    ) -> Result<
-        ApplicationQueryParameterSet<source::query::StateQuery>,
-        ApplicationCorrectionDerivationDenial,
-    > {
-        Ok(ApplicationQueryParameterSet::new())
-    }
-    fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
-            [DeclaredPreImageLocus::from_field(Values::at("Values"))],
-            4096,
-        ))
-    }
-    fn derive_correction(
-        original: &Revise,
-        material: ApplicationCorrectionSourceMaterial<'_, Schema>,
-    ) -> Result<Revise, ApplicationCorrectionDerivationDenial> {
-        let ApplicationCorrectionSourceMaterial::RecordedInverse(prior) = material else {
-            return Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning);
-        };
-        let value = prior
-            .field(&DeclaredPreImageLocus::from_field(Values::at("Values")))
-            .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?;
-        let id = ContentRefApplicationValueBinding::decode(value)
-            .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;
-        Ok(Revise {
-            key: original.key.clone(),
-            samples: vec![],
-            reference: id.0.to_vec(),
-        })
-    }
-    fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
-        Ok(format!("restore:{key}"))
-    }
-    fn visit<V: ApplicationCorrectionVisitor<Schema>>(
-        dispatch: ApplicationCorrectionDispatch<Schema, Self, V>,
-    ) -> V::Output {
-        dispatch.conventional()
-    }
-    fn visit_reapplication<V: ApplicationReapplicationVisitor<Schema>>(
-        dispatch: ApplicationReapplicationDispatch<Schema, Self, V>,
-    ) -> V::Output {
-        dispatch.conventional()
-    }
-    fn reapplication_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
-        Ok(format!("reapply:{key}"))
+        Ok(schema
+            .declared_operation(
+                ReviseSamples::reference().definition().no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .application_mutation_binding::<Binding>())
     }
 }

@@ -17,15 +17,6 @@ mod authenticated_principal;
 mod authentication_boundary;
 mod bank_projection;
 mod committed_dispatch_outbox;
-mod correction;
-pub use correction::{
-    BankApprovedPaymentCorrectionPreparation, BankSendMoneyCorrectionPreparation,
-    BankSendMoneyReapplicationPreparation,
-};
-mod estate_correction;
-pub use estate_correction::{
-    BankEstateFreezeCorrectionPreparation, BankEstateFreezeReapplicationPreparation,
-};
 mod error;
 #[cfg(test)]
 mod estate_capability_admission;
@@ -105,7 +96,7 @@ pub use estate_progression::{
     BankDelegationPreparation, BankEstateCaseOpeningProjectionDenial,
     BankEstateDisbursementProjectionDenial, BankEstateElevationApprovalOutcome,
     BankEstateElevationCloseOutcome, BankEstateElevationClosureKind,
-    BankEstateElevationRequestOutcome, BankEstateElevationRetentionWork,
+    BankEstateElevationRequestOutcome,
     BankEstateFreezeProjectionDenial, BankEstateIdempotencyResolutionDenial,
     BankEstateLifecycleProjectionDenial, BankEstateMandatoryReview,
     BankEstateMandatoryReviewOutcome, BankEstateOperationProjectionDenial,
@@ -180,7 +171,7 @@ pub use application_definition::{
     EstateCaseOpeningAction, EstateCaseOpeningDelivery, EstateDisbursementAction,
     EstateDisbursementDelivery, EstateReleaseAction, EstateReleaseDelivery,
     ExecutorRecognitionAction, ExecutorRecognitionDelivery, ProgramDeploymentRevocationAction,
-    ProgramDeploymentRevocationDelivery, RestoreFrozenAccountAction, RestoreFrozenAccountDelivery,
+    ProgramDeploymentRevocationDelivery,
 };
 
 pub use operation_commit::{BankManagedCleanup, BankReleasedManagedCleanup};

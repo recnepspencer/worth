@@ -25,12 +25,12 @@ fn emergency_view_installs_exact_resource_lifecycle_and_effect_meaning() {
     );
     assert_eq!(
         (
-            elevation.validity().not_before().field(),
-            elevation.validity().not_after().field(),
+            elevation.validity().not_before().map(|field| field.field()),
+            elevation.validity().not_after().map(|field| field.field()),
         ),
         (
-            "EmergencyAccessIssuedAtField",
-            "EmergencyAccessExpiresAtField",
+            Some("EmergencyAccessIssuedAtField"),
+            Some("EmergencyAccessExpiresAtField"),
         )
     );
     assert_eq!(

@@ -29,21 +29,8 @@ where
         let demand = <B as WorthQueryApplicationRequiredOutputSource<S, Connection<S, Self>>>::demand_from_source(input.input()).map_err(Failure::Connection)?;
         Ok(program.with_synchronous_required_outputs::<Connection<S, Self>, <Self as ApplicationOutputGraphShape<S>>::Dependents>(&worth_query_execution::publication_boundary::program_publication_access(), execution, demand, <Self as ApplicationOutputGraphShape<S>>::RootConnection::declaration(), owner.connection_order()))
     }
-    fn commit<P: ApplicationProgramDefinition<S>>(application: &WorthQueryProgramApplicationRuntime<S, P>, phase: &WorthQueryAdvancementPhase<'_>, owner: &WorthQuerySelectedProgramOwner<'_, S>, program: CandidateProgram<S, B>, identities: &ApplicationMutationIdentities<'_, S, B>, source: Option<Arc<WorthQueryPreparedCorrectionSource>>, binding: WorthQueryApplicationIdempotencyBinding, unseen: &UnseenAuthoredEnvelope<'_>, allocation: ExecutionAllocationPolicy<'_, '_>) -> WorthQueryApplicationCommitOutcome {
+    fn commit<P: ApplicationProgramDefinition<S>>(application: &WorthQueryProgramApplicationRuntime<S, P>, phase: &WorthQueryAdvancementPhase<'_>, owner: &WorthQuerySelectedProgramOwner<'_, S>, program: CandidateProgram<S, B>, _identities: &ApplicationMutationIdentities<'_, S, B>, binding: WorthQueryApplicationIdempotencyBinding, unseen: &UnseenAuthoredEnvelope<'_>, allocation: ExecutionAllocationPolicy<'_, '_>) -> WorthQueryApplicationCommitOutcome {
         let access = worth_query_execution::publication_boundary::program_publication_access();
-        match source {
-            Some(source) => application.compare_and_commit_selected_corrective_envelope::<Self, B>(phase, &access, owner, program, identities, source, binding, unseen, allocation),
-            None => application.compare_and_commit_selected_edit_envelope::<Self, B>(phase, &access, owner, program, binding, unseen, allocation),
-        }
-    }
-    fn inverse<K>(target: &WorthQuerySelectedProductOperation<'_, S>, phase: &WorthQueryAdvancementPhase<'_>, principal: &WorthQueryAuthenticatedExternalPrincipal<S>, scope: &WorthQueryRequestScope, source: &WorthQuerySelectedCorrectionSource<'_, S>, key: &WorthQueryCorrectionCommandKey, maximum_history: Option<NonZeroUsize>, maximum_results: NonZeroUsize) -> SelectedSource<S, B>
-    where K: ApplicationCorrectionBinding<S>, K::InverseIntent: ApplicationMutationIntent<S, Binding = B>,
-    {
-        target.derive_required_output_correction::<K, Self>(&worth_query_execution::publication_boundary::program_publication_access(), phase, principal, scope, source, key, maximum_history, maximum_results)
-    }
-    fn reapplication<K>(target: &WorthQuerySelectedProductOperation<'_, S>, phase: &WorthQueryAdvancementPhase<'_>, principal: &WorthQueryAuthenticatedExternalPrincipal<S>, scope: &WorthQueryRequestScope, source: &WorthQuerySelectedCorrectionAlternative<'_, S>, key: &WorthQueryCorrectionCommandKey, maximum_history: Option<NonZeroUsize>, maximum_results: NonZeroUsize) -> SelectedSource<S, B>
-    where K: ApplicationCorrectionBinding<S, Source = B>, B::Input: ApplicationMutationInputScope<S, B>,
-    {
-        target.derive_required_output_reapplication::<K, Self>(&worth_query_execution::publication_boundary::program_publication_access(), phase, principal, scope, source, key, maximum_history, maximum_results)
+        application.compare_and_commit_selected_edit_envelope::<Self, B>(phase, &access, owner, program, binding, unseen, allocation)
     }
 }

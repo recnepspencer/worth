@@ -21,7 +21,7 @@ use worth_query_host::facade::{
 use super::actions::{RescheduleTask, SetTaskState};
 use super::program::{owner, seed, DaymarkHome, DaymarkRuntime};
 use super::queries::{FindTasksByTitle, LiveReadyTasks, ReadyTasks};
-use super::title_correction::RenameTask;
+use super::rename_task::RenameTask;
 
 fn open_memory_home(clock: &WorthQueryAdmissionClock) -> DaymarkHome {
     let build = ApplicationBuildIdentity::parse("5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a").unwrap();

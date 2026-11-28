@@ -10,8 +10,6 @@ use super::super::{
     output_program::OutputProgram,
     schema::*,
 };
-#[path = "courts/source_affinity.rs"]
-mod source_affinity;
 use worth_query_host::facade::application_entry::WorthQueryApplicationReadObservation;
 use worth_query_host::facade::{application_entry::*, causal_inspection::*, primary_graph::*};
 
@@ -39,7 +37,6 @@ pub fn whole_aspect_removal_and_recreation_keep_the_particular_source() {
         ),
         (3, Action::Remove, 11),
     ] {
-        let paired_before = (ordinal == 3).then(|| source_affinity::observe(&application));
         let (source, producer, read) = perform(
             &application,
             aspect,
@@ -77,15 +74,7 @@ pub fn whole_aspect_removal_and_recreation_keep_the_particular_source() {
                 Some(WorthQueryProducerConnectionDenial::SourceInputUnconnected)
             );
         }
-        if let Some((before, row)) = paired_before {
-            assert_eq!(
-                (row.bias, row.sibling, row.calculated),
-                (Some(7), Some(70), 18)
-            );
-            source_affinity::refuse_foreign_host(&application, &after);
-            source_affinity::refuse_sibling_source(&application, &before);
-            before.close();
-        }
+
         after.close();
     }
 }

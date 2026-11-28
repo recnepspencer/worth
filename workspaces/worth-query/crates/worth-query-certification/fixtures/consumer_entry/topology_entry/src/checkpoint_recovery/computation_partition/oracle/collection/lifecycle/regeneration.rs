@@ -8,15 +8,15 @@ use worth_query_host::facade::{application_entry::*, primary_graph::*};
 mod serial {
     use super::*;
     #[test]
-    fn evicted_extra_is_reconstructed_from_fresh_corrected_authored_source() {
+    fn evicted_extra_is_reconstructed_from_freshly_edited_authored_source() {
         let _guard = checkpoint_recovery_test_guard();
         let mut app = correction::install(0);
         let (scope, principal) = authenticate(&app);
         let request = app.request(&principal, &scope);
         let original = correction::settled(&app, &request, true);
-        let source = correction::source(&app, &request);
+        correction::source(&app, &request);
         correction::settled(&app, &request, false);
-        let inverse = correction::reverse(&app, &request, &source);
+        correction::reedit(&app, &request);
         let corrected = correction::settled(&app, &request, false);
         correction::assert_restored(&original, &corrected);
         let observation = request.retain_current_read().unwrap();
@@ -133,7 +133,7 @@ mod serial {
             });
         let after = correction::settled(&app, &request, false);
         assert_eq!(after, corrected, "ordinary owning demand explicitly delivers restored extra with exact native correspondence");
-        drop((rows, observation, inverse, source, principal, scope));
+        drop((rows, observation, principal, scope));
         app.close_conditional_runtime().unwrap();
     }
 }

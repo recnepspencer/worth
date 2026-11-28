@@ -3,12 +3,11 @@ use super::*;
 use worth_query_decl::facade::application_aftermath::*;
 pub(super) mod annotation;
 mod correction;
-mod courts;
 mod handler;
 mod zero_change_refusals;
 use annotation::*;
 pub(super) mod link_query;
-pub use correction::Correction;
+pub use correction::RegisterSparseEdit;
 pub use handler::Handler;
 
 #[derive(Clone, Debug, WorthValue)]

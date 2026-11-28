@@ -3,7 +3,6 @@
 pub(in crate::host) mod contribution;
 use self::contribution::DirectoryNumericContribution;
 use super::*;
-use std::num::NonZeroUsize;
 use worth_query_decl::facade::{application_program::*, authentication::*};
 use worth_query_host::facade::{
     application_entry::*,
@@ -60,10 +59,6 @@ impl ApplicationProgramDefinition<NumericSchema> for DirectoryOutputProgram {
 pub(in crate::host) type NumericHome = WorthQueryApplicationHome<NumericSchema, DirectoryProgram>;
 pub(super) type OutputNumericHome =
     WorthQueryApplicationHome<NumericSchema, DirectoryOutputProgram>;
-
-pub(in crate::host) fn limits() -> WorthQueryCorrectionHistoryLimits {
-    WorthQueryCorrectionHistoryLimits::new(None, NonZeroUsize::new(8).unwrap())
-}
 
 pub(in crate::host) fn app_limits() -> WorthQueryApplicationLimits {
     WorthQueryApplicationLimits::new(

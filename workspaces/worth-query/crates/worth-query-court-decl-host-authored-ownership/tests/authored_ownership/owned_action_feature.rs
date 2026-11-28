@@ -49,8 +49,7 @@ worth_query_host::facade::worth_query_application_contribution! {
     feature Duplicate<S: Scenario> for program::Entry => DuplicateRuntime {
         schema: |schema| { schema };
         action create(CreateBinding<S>, Delivery, Handler) {
-            operation: correction::UndoCreate::<S>::source_definition()
-                .aftermath(DeclaredApplicationAftermathContract::correction_binding::<correction::UndoCreate<S>>()).finish();
+            operation: CreateOp::reference::<S>().definition().no_external_effect().no_aftermath().finish();
         };
     }
 }
@@ -144,7 +143,7 @@ fn an_action_reference_with_a_duplicate_ordinary_owner_is_still_refused() {
     );
 }
 #[test]
-fn an_action_reference_preserves_one_correction_owned_operation() {
+fn an_action_reference_preserves_one_declared_operation() {
     let schema = Definition::<Model<0>>::declare_members(builder())
         .build()
         .unwrap();
@@ -152,7 +151,7 @@ fn an_action_reference_preserves_one_correction_owned_operation() {
     assert_eq!(schema.erased().members().iter().filter(|member| matches!(member, ApplicationSchemaMember::Operation { operation: name, .. } if name == operation)).count(), 1);
 }
 #[test]
-fn redeclaring_a_correction_owned_action_remains_a_duplicate_member() {
+fn redeclaring_a_declared_action_remains_a_duplicate_member() {
     assert_eq!(
         Duplicate::<Model<0>>::declare_members(builder())
             .build()
@@ -178,7 +177,7 @@ impl ApplicationProgramDefinition<Model<0>> for Program {
     }
 }
 #[test]
-fn a_feature_runs_its_referenced_correction_owned_action_once() {
+fn a_feature_runs_its_referenced_declared_action_once() {
     let calls = Arc::new(AtomicUsize::new(0));
     OBSERVER.with(|value| {
         value.replace(Some(Arc::clone(&calls)));

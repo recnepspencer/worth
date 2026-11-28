@@ -33,8 +33,8 @@ pub use super::world::{
 
 #[path = "rail_completion/contact_barrier.rs"]
 pub mod contact_barrier;
-#[path = "rail_completion/correction.rs"]
-pub mod correction;
+#[path = "rail_completion/replay.rs"]
+pub mod replay;
 #[path = "rail_completion/duplicate.rs"]
 pub mod duplicate;
 #[path = "rail_completion/initiating_client.rs"]

@@ -10,9 +10,6 @@ pub fn install_fixture_handlers(
     schema: &WorthQueryInstalledApplicationSchema<IdentityExecutionSchema>,
     bootstrap: &mut WorthQueryPrimaryGraphBootstrap<IdentityExecutionSchema>,
 ) {
-    crate::domain_computation::primary_graph::tests::fixture::correction_source::install_handler(
-        schema, bootstrap,
-    );
     let program_required = schema
         .installed_mutation_binding::<ProgramRequiredMutationBinding>()
         .unwrap();

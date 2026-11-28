@@ -1,6 +1,25 @@
 //! The declaration derives expand into the public traits and macros a
 //! hand-written declaration uses, so the same compile-time fences hold.
 //!
+//! Hand-authored inverse undo is unavailable through the declaration facade.
+//! The retired derive cannot declare an inverse action:
+//!
+//! ```compile_fail,E0433
+//! struct Restore;
+//!
+//! #[derive(worth_query_decl::facade::WorthQueryCorrection)]
+//! #[worth_query(inverse = Restore)]
+//! struct Correction;
+//! ```
+//!
+//! The same derive cannot opt an action into reapplication:
+//!
+//! ```compile_fail,E0433
+//! #[derive(worth_query_decl::facade::WorthQueryCorrection)]
+//! #[worth_query(reapply = true)]
+//! struct Correction;
+//! ```
+//!
 //! One board declared through `WorthQuerySchema`, `WorthQueryRecord` and
 //! `WorthQueryAction`:
 //!

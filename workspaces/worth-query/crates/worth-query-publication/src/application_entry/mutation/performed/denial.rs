@@ -1,7 +1,6 @@
 /// Why a mutation with required program outputs was refused before its commit.
 #[derive(Debug)]
 pub enum WorthQueryPerformedMutationExecutionDenial {
-    Correction(Box<crate::application_entry::WorthQueryApplicationCorrectionDenial>),
     Action(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     ForeignProgram,
     UndeclaredOutputRoot,

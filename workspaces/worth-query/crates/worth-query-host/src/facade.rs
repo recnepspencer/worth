@@ -9,10 +9,7 @@
 //!   typed queries (`session.query(..)`), live subscriptions ([`WorthQueryTypedLiveSubscription`]),
 //!   managed-index watches and readiness (`session.watch(..)`, `session.ensure_index_ready(..)`).
 //! - Fork and adopt "what-if" branches ([`WorthQueryApplicationHome::fork_preview`],
-//!   [`WorthQueryApplicationHome::adopt_preview`]), undo/redo restart-safely
-//!   ([`WorthQueryApplicationHome::undo`], [`WorthQueryApplicationHome::redo`] and their
-//!   `_authored` forms), and list what to undo after a restart with
-//!   [`WorthQueryApplicationHome::correction_history`]. Audit reads are in [`audit`].
+//!   [`WorthQueryApplicationHome::adopt_preview`]). Audit reads are in [`audit`].
 //! - Show any refusal to an end user with [`WorthQueryUserFacingRefusal`]
 //!   (`denial.user_message()`), keeping `{denial:?}` for developer logs.
 //!
@@ -281,21 +278,17 @@ pub use crate::application_home::{
     WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeOpenRefused,
     WorthQueryApplicationHomeOpenRefusedPhase, WorthQueryApplicationHomeOpeningCloseRefused,
     WorthQueryApplicationHomeOpeningClosed, WorthQueryApplicationHomeRequest,
-    WorthQueryApplicationHomeTransitionRequired, WorthQueryCorrectionEntry,
-    WorthQueryCorrectionHistory, WorthQueryCorrectionHistoryEntry,
-    WorthQueryCorrectionHistoryLimit, WorthQueryDirectoryOpenDenial,
-    WorthQueryDirectoryOpenRetired, WorthQueryHomeAuthoredCorrectionOutcome,
-    WorthQueryHomeClosePolicyRefused, WorthQueryHomeConfig, WorthQueryHomeCorrectionOutcome,
+    WorthQueryApplicationHomeTransitionRequired, WorthQueryDirectoryOpenDenial,
+    WorthQueryDirectoryOpenRetired, WorthQueryHomeClosePolicyRefused, WorthQueryHomeConfig,
     WorthQueryHomeOpenDisposition,
     WorthQueryHomeProgramTransition, WorthQueryHomeProgramTransitionDenial,
     WorthQueryHomeProgramTransitionOpenPhase, WorthQueryHomeProgramTransitionOpenRefused,
     WorthQueryHomeProgramTransitionPlan, WorthQueryHomeProgramTransitionStep,
-    WorthQueryHomeRetirement, WorthQueryHomeRetirementStop, WorthQueryHomeUndoDenial,
-    WorthQueryPreviewAdoptDenial, WorthQueryPreviewAdoptFailure, WorthQueryPreviewDiscardDenial,
-    WorthQueryPreviewDiscardFailure, WorthQueryPreviewFork, WorthQueryPreviewForkDenial,
-    WorthQueryWorkflowApplicationHome, WorthQueryWorkflowHomeBindingRefused,
-    WorthQueryWorkflowHomeCloseRefused, WorthQueryWorkflowHomeClosed,
-    DEFAULT_CORRECTION_HISTORY_LIMITS, DEFAULT_HOST_EXECUTION_POLICY,
+    WorthQueryHomeRetirement, WorthQueryHomeRetirementStop, WorthQueryPreviewAdoptDenial,
+    WorthQueryPreviewAdoptFailure, WorthQueryPreviewDiscardDenial, WorthQueryPreviewDiscardFailure,
+    WorthQueryPreviewFork, WorthQueryPreviewForkDenial, WorthQueryWorkflowApplicationHome,
+    WorthQueryWorkflowHomeBindingRefused, WorthQueryWorkflowHomeCloseRefused,
+    WorthQueryWorkflowHomeClosed, DEFAULT_HOST_EXECUTION_POLICY,
     DEFAULT_HOST_EXECUTION_WORK_CEILING,
 };
 /// Non-blocking owned-session calls and push commit notification for a Home.
@@ -342,11 +335,6 @@ pub use worth_query_installation::worth_query_conditional_node;
 pub use worth_query_macros::*;
 pub use worth_query_publication::facade as publication;
 pub use worth_query_publication::facade::application_entry;
-/// Reversal state and whole-listing refusal for [`WorthQueryApplicationHome::correction_history`].
-pub use worth_query_publication::facade::application_entry::{
-    WorthQueryApplicationCorrectionHistoryDenial, WorthQueryCorrectionHistoryDenial,
-    WorthQueryCorrectionHistoryState,
-};
 /// Relational data for a Home transition author, without owner authority.
 pub mod home_program_transition;
 /// Declarative Directory Home program transitions (`worth_query_program_transition!`),
@@ -369,9 +357,9 @@ pub use crate::refusal_summary::{
 };
 /// Interactive custody of one source-only command or correction across frames.
 pub use crate::source_custody::{
-    WorthQueryAnyCorrectionCustodyOutcome, WorthQueryAnySourceCompletion,
+    WorthQueryAnySourceCompletion,
     WorthQueryAnySourceCustody, WorthQueryAnySourceCustodyStep,
-    WorthQueryAnyTerminalSourceEvidence, WorthQueryCorrectionCustodyOutcome,
+    WorthQueryAnyTerminalSourceEvidence,
     WorthQuerySourceCustody, WorthQuerySourceCustodyPending, WorthQuerySourceCustodyPhase,
     WorthQuerySourceCustodyStep, WorthQuerySourceCustodyWithdrawal,
 };

@@ -114,7 +114,6 @@ impl BankHttpMutationContinuation {
         capacity: NonZeroUsize,
         maximum_deadline: Duration,
         recovery: Arc<Mutex<super::recovery_registry::BankHttpRecoveryRegistry>>,
-        continuations: super::continuation_registry::SharedContinuationRegistry,
     ) -> std::io::Result<Self> {
         let permits = Arc::new(Semaphore::new(capacity.get()));
         let quiesced = Arc::new(AtomicBool::new(false));
@@ -126,7 +125,6 @@ impl BankHttpMutationContinuation {
             let worker_permits = Arc::clone(&permits);
             let worker_quiesced = Arc::clone(&quiesced);
             let worker_recovery = Arc::clone(&recovery);
-            let worker_continuations = Arc::clone(&continuations);
             let worker_runtime = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()?;
@@ -142,7 +140,6 @@ impl BankHttpMutationContinuation {
                                 worker_permits,
                                 worker_quiesced,
                                 worker_recovery,
-                                worker_continuations,
                             ),
                         );
                         Ok(())

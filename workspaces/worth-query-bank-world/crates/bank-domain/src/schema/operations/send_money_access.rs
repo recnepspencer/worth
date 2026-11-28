@@ -1,4 +1,4 @@
-//! Installed access of the correctable SendMoney source.
+//! Installed access for the SendMoney operation.
 use crate::schema::money_movement_program::MoneyMovementProgram;
 use crate::schema::{
     AccountIdentity, AccountingRevision, BankSchema, JournalEntry, PersonalOwner, Posting,

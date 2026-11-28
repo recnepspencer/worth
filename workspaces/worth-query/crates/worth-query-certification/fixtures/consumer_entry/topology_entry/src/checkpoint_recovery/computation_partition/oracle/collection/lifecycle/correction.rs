@@ -83,13 +83,20 @@ pub(super) fn source(
         0x9184_0001,
     )
 }
-pub(super) fn reverse(
-    app: &App,
-    request: &Request<'_, '_, '_>,
-    source: &primary_graph::WorthQueryApplicationCommitReceipt,
-) -> primary_graph::WorthQueryApplicationCommitReceipt {
-    commands::reverse(app, request, source, "2441347074")
+pub(super) fn reedit(app: &App, request: &Request<'_, '_, '_>) {
+    commands::source(
+        app,
+        request,
+        EntryCorrection {
+            scope_key: SCOPE.to_owned(),
+            entry: 2,
+            mask: 7.0_f64.to_bits() ^ 8.0_f64.to_bits(),
+            expected: Some(7.0_f64.to_bits()),
+        },
+        0x9184_0002,
+    );
 }
+
 pub(super) fn settled(app: &App, request: &Request<'_, '_, '_>, initial: bool) -> Snapshot {
     let tree = custody::settle(app, request);
     let snapshot = snapshot(&tree, request, initial);
@@ -225,15 +232,7 @@ mod serial {
             ),
             0x9184_0003,
         );
-        let inverse = reverse(&app, &request, &source);
-        assert_eq!(
-            inverse
-                .aftermath_causality()
-                .unwrap()
-                .recorded_source()
-                .relational(),
-            source.commit_reference()
-        );
+        reedit(&app, &request);
         let restored = settled(&app, &request, false);
         assert_restored(&before, &restored);
         let authored = request
@@ -247,7 +246,7 @@ mod serial {
             40,
             "unrelated authored edit survives"
         );
-        drop((authored, inverse, source, principal, scope));
+        drop((authored, source, principal, scope));
         app.close_conditional_runtime().unwrap();
     }
 

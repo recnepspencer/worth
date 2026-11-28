@@ -38,7 +38,6 @@ async fn lost_closed_source_handoff_restores_the_actual_owner_and_its_capacity()
         BankMutationControls::new(scope.clone(), key),
         &request,
         history,
-        None,
     )
     .unwrap();
     assert!(refusal.is_none());

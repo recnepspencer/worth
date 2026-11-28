@@ -117,91 +117,23 @@ movement!(
     "numeric-compensation.debit.handler.v1"
 );
 
-pub struct NeutralizeCredit;
-impl ApplicationCorrectionBinding<NumericSchema> for NeutralizeCredit {
-    const IDENTITY: &'static str = "numeric-compensation.neutralize-credit.v1";
-    type Source = CreditBinding;
-    type InverseIntent = Debit;
-    type Disclosure = query::ReadBinding;
-
-    fn recover_source_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+pub struct RegisterCredit;
+impl worth_query_decl::facade::application_schema::fragment::Registration<NumericSchema> for RegisterCredit {
+    fn register(
+        schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<NumericSchema>,
     ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
-    >{
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
-            bytes, expected, bounds,
-            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
-        )
-    }
-
-    fn recover_inverse_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
-    ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
-                NumericSchema,
-                Self,
-            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
-                NumericSchema,
-            >>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<NumericSchema>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
-            bytes, expected, bounds,
-            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<NumericSchema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
-        )
-    }
-    fn disclosure_parameters(
-        _: &Credit,
-    ) -> Result<ApplicationQueryParameterSet<query::ReadQuery>, ApplicationCorrectionDerivationDenial>
-    {
-        Ok(query::parameters())
-    }
-    fn source_definition(
-    ) -> ApplicationOperationDefinitionBuilder<NumericSchema, CreditOperation, Credit, true, false>
-    {
-        CreditOperation::reference()
+        Ok(schema
+            .declared_operation(
+                CreditOperation::reference()
             .definition()
             .no_external_effect()
-    }
-    fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
-        DeclaredCorrectionMechanism::compensation_binding::<Self>(
-            DeclaredAftermathPostcondition::BusinessPostcondition {
-                identity: "original-credit-neutralized".to_owned(),
-            },
-        )
-    }
-    fn derive_correction(
-        original: &Credit,
-        material: ApplicationCorrectionSourceMaterial<'_, NumericSchema>,
-    ) -> Result<Debit, ApplicationCorrectionDerivationDenial> {
-        if !matches!(
-            material,
-            ApplicationCorrectionSourceMaterial::Compensation(_)
-        ) {
-            return Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning);
-        }
-        Ok(Debit {
-            key: original.key.clone(),
-            amount: original.amount,
-        })
-    }
-    fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
-        Ok(format!("compensating-debit:{key}"))
-    }
-    fn visit<V: ApplicationCorrectionVisitor<NumericSchema>>(
-        dispatch: ApplicationCorrectionDispatch<NumericSchema, Self, V>,
-    ) -> V::Output {
-        dispatch.conventional()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .application_mutation_binding::<CreditBinding>())
     }
 }
 

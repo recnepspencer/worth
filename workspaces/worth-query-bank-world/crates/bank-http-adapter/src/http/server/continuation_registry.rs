@@ -1,4 +1,4 @@
-//! Finite shared transport inventory; concrete purposes retain their native owners.
+//! Bounded transport inventory for native account-activity continuations.
 use rand::{
     distributions::{Alphanumeric, DistString},
     rngs::OsRng,
@@ -11,9 +11,7 @@ use std::{
 use tokio::sync::Mutex;
 mod activity;
 pub(super) use activity::ResumeAdmission;
-pub(super) mod correction_history;
 use activity::{ActivityRecord, InitialRequestIdentity};
-use correction_history::CorrectionHistoryRecord;
 
 const TOKEN_PREFIX: &str = "bank-continuation-v1_";
 #[cfg(test)]
@@ -21,52 +19,29 @@ mod tests;
 pub(super) type SharedContinuationRegistry = Arc<Mutex<BankHttpContinuationRegistry>>;
 
 pub(super) struct BankHttpContinuationRegistry {
-    records: HashMap<String, ContinuationRecord>,
+    records: HashMap<String, ActivityRecord>,
     initial_requests: HashMap<InitialRequestIdentity, String>,
-    history_requests: HashMap<
-        (
-            super::authenticated_owner::BankHttpAuthenticatedOwner,
-            String,
-        ),
-        String,
-    >,
     capacity: usize,
     lifetime: Duration,
-    retired: Vec<ContinuationRecord>,
+    retired: Vec<ActivityRecord>,
     retired_activity: Vec<bank_server::BankAccountActivityContinuation>,
-    retired_pages:
-        Vec<Arc<worth_query_host::facade::primary_graph::WorthQueryCorrectionAlternativesPage>>,
-}
-enum ContinuationRecord {
-    Activity(ActivityRecord),
-    Correction(CorrectionHistoryRecord),
-}
-impl ContinuationRecord {
-    fn expires_at(&self) -> Instant {
-        match self {
-            Self::Activity(record) => record.expires_at(),
-            Self::Correction(record) => record.expires_at,
-        }
-    }
 }
 /// Native custody removed under the inventory lock is dropped only after unlocking.
 pub(super) async fn access<R>(
     shared: &SharedContinuationRegistry,
     operation: impl FnOnce(&mut BankHttpContinuationRegistry) -> R,
 ) -> R {
-    let (result, retired, activity, pages) = {
+    let (result, retired, activity) = {
         let mut registry = shared.lock().await;
         let result = operation(&mut registry);
         (
             result,
             std::mem::take(&mut registry.retired),
             std::mem::take(&mut registry.retired_activity),
-            std::mem::take(&mut registry.retired_pages),
         )
     };
     drop(retired);
     drop(activity);
-    drop(pages);
     result
 }
 impl BankHttpContinuationRegistry {
@@ -79,12 +54,10 @@ impl BankHttpContinuationRegistry {
         Self {
             records: HashMap::with_capacity(capacity),
             initial_requests: HashMap::with_capacity(capacity),
-            history_requests: HashMap::with_capacity(capacity),
             capacity,
             lifetime,
             retired: Vec::new(),
             retired_activity: Vec::new(),
-            retired_pages: Vec::new(),
         }
     }
     fn new_token(&self) -> String {
@@ -112,8 +85,6 @@ impl BankHttpContinuationRegistry {
             }
         }
         self.initial_requests
-            .retain(|_, token| self.records.contains_key(token));
-        self.history_requests
             .retain(|_, token| self.records.contains_key(token));
     }
 }

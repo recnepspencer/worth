@@ -22,8 +22,6 @@
 //! - `WorthQueryAction`: the input binding, typed input-field accessors,
 //!   operation, mutation binding and optional source-completion delivery, from
 //!   one input struct.
-//! - `WorthQueryCorrection`: a standard recorded-inverse
-//!   `ApplicationCorrectionBinding` from one unit marker struct.
 //! - `WorthQueryNameRole`: a persistent-name scheme's roles, their
 //!   dependencies and their canonical order, from one enum.
 //! - `ApplicationNameDiscriminator`: a persistent-name discriminator's
@@ -46,7 +44,6 @@ mod abilities_tests;
 mod action;
 mod binary_value;
 mod case;
-mod correction;
 mod facade_paths;
 mod grammar;
 mod identity_member;
@@ -122,13 +119,6 @@ pub fn derive_worth_query(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(WorthQueryAction, attributes(worth_query))]
 pub fn derive_worth_query_action(input: TokenStream) -> TokenStream {
     expand(input, action::expand)
-}
-
-/// Declares a standard recorded-inverse `ApplicationCorrectionBinding` from
-/// one unit marker struct.
-#[proc_macro_derive(WorthQueryCorrection, attributes(worth_query))]
-pub fn derive_worth_query_correction(input: TokenStream) -> TokenStream {
-    expand(input, correction::expand)
 }
 
 /// Declares a persistent-name scheme's roles from an enum and orders it by

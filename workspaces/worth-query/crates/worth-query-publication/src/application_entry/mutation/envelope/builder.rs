@@ -25,8 +25,6 @@ impl<'a, S: ApplicationSchema> WorthQueryApplicationRequest<'a, 'a, 'a, S> {
                 scope: self.scope,
                 branch: self.branch,
                 order: ApplicationEditEnvelopeOrder::DeclaredDependencies,
-                correction: None,
-
             },
             stages: NoEditStages,
             brand: Arc::new(()),
@@ -109,29 +107,14 @@ where
         Stages: entry::CaptureEditStages<S, Program, Key>,
         Key: serde::Serialize + Send + Sync + 'static,
     {
-        self.advance_with_front(
-            program,
-            allocation,
-            AuthoredEnvelopeResolutionPurpose::Execute,
-            |_, _, _, _, _| Ok(None),
-        )
+        self.advance(program, allocation, AuthoredEnvelopeResolutionPurpose::Execute)
     }
 
-    pub(in crate::application_entry) fn advance_with_front<Program>(
+    pub(super) fn advance<Program>(
         self,
         program: &WorthQueryProgramApplicationRuntime<S, Program>,
         allocation: ExecutionAllocationPolicy<'_, '_>,
         purpose: AuthoredEnvelopeResolutionPurpose,
-        front: impl FnOnce(
-            &mut EnvelopeContext<'_, S>,
-            &WorthQueryProgramApplicationRuntime<S, Program>,
-            &WorthQueryAdvancementPhase<'_>,
-            &Arc<ApplicationEditEnvelopeKey<Key>>,
-            &mut Vec<Box<dyn entry::EditEntry<S, Program, Key>>>,
-        ) -> Result<
-            Option<WorthQueryEditEnvelopeOutcome>,
-            WorthQueryEditEnvelopeExecutionDenial,
-        >,
     ) -> Result<WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeExecutionDenial>
     where
         Program: ApplicationProgramDefinition<S>,
@@ -141,7 +124,7 @@ where
         let envelope_failure = |cause| {
             WorthQueryEditEnvelopeExecutionDenial::envelope(Program::IDENTITY.as_str(), cause)
         };
-        let mut context = self.envelope.context;
+        let context = self.envelope.context;
         let application = context.application;
         let scope = context.scope;
         let advance = |phase: WorthQueryAdvancementPhase<'_>| {
@@ -155,9 +138,6 @@ where
                         .map_err(envelope_failure)?,
                 );
             let mut entries = Vec::new();
-            if let Some(outcome) = front(&mut context, program, &phase, &key, &mut entries)? {
-                return Ok(outcome);
-            }
             self.envelope.stages.capture(&mut entries)?;
             if entries.is_empty() {
                 return Ok(WorthQueryEditEnvelopeOutcome::Empty);

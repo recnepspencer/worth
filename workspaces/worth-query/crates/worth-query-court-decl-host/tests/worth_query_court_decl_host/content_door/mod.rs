@@ -16,7 +16,6 @@ mod courts;
 mod created_content;
 mod operation;
 mod revision;
-mod revision_courts;
 mod schema;
 mod shared_reads;
 mod source;

@@ -247,8 +247,6 @@ pub mod capability_status_mutation;
 pub mod capability_touch_binding;
 #[path = "capability_world_installation/mod.rs"]
 pub mod capability_world_installation;
-#[path = "correction_source/mod.rs"]
-pub mod correction_source;
 #[path = "current_output_source/mod.rs"]
 pub mod current_output_source;
 #[path = "diagnostic_comparison/mod.rs"]
@@ -316,3 +314,5 @@ pub mod world_authentication;
 pub mod world_installation;
 
 pub mod recorded_receipt;
+
+pub mod label_edit;

@@ -20,15 +20,17 @@
 //! use worth_query_host::facade::provisional_aftermath;
 //! ```
 //!
-//! Recorded correction enters through the ordinary request.
-//! ```
-//! use worth_query_host::facade::{
-//!     application_entry::{WorthQueryApplicationRequest, WorthQueryApplicationCorrections},
-//!     domain::ApplicationSchema,
-//! };
-//! fn corrections<'a, 'p, 's, S: ApplicationSchema>(
-//!     request: &WorthQueryApplicationRequest<'a, 'p, 's, S>,
-//! ) -> WorthQueryApplicationCorrections<'a, 'p, 's, S> {
-//!     request.corrections()
+//! Application Home has no flat inverse undo entry point.
+//! ```compile_fail,E0599
+//! use worth_query_decl::facade::application_program::ApplicationProgramDefinition;
+//! use worth_query_decl::facade::application_schema::ApplicationSchema;
+//! use worth_query_host::facade::WorthQueryApplicationHome;
+//!
+//! fn invoke<Schema, Program>()
+//! where
+//!     Schema: ApplicationSchema + 'static,
+//!     Program: ApplicationProgramDefinition<Schema> + 'static,
+//! {
+//!     let _ = WorthQueryApplicationHome::<Schema, Program>::undo;
 //! }
 //! ```

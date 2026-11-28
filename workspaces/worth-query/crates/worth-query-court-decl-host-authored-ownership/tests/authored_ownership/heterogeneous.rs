@@ -1,7 +1,6 @@
 //! Two genuinely different authored kinds share one Native co-anchor inverse.
 use super::{lifecycle::*, *};
 mod courts;
-mod optional;
 pub mod query;
 pub struct BodyCreated<S>(PhantomData<fn() -> S>);
 pub struct BodyRetired<S>(PhantomData<fn() -> S>);
@@ -20,14 +19,6 @@ impl<S: Scenario> WorthQueryApplicationOutputRole for BodyRetired<S> {
     type Action = WorthQueryRetireOutput;
     type Cardinality = <S::Heterogeneous as Profile>::Births;
     const NAME: &'static str = "authored-body-retired";
-}
-pub struct BodyFamily;
-impl<S: Scenario> ApplicationAuthoredCorrectionFamily<S> for BodyFamily {
-    const IDENTITY: &'static str = "ownership.authored.body-family.v1";
-    type Entity = Body;
-    fn logical_key() -> ApplicationAuthoredLogicalKey<S, Body> {
-        ApplicationAuthoredLogicalKey::from_field(BodyKey::at("BodyKey"))
-    }
 }
 impl OperationCreates<CreateOp> for Body {}
 impl OperationCreates<RestoreOp> for Body {}
@@ -66,16 +57,6 @@ pub trait Profile: Sized + 'static {
     const RETIRES_BODY: bool = Self::PRESENT;
     /// How many bodies one creation bears.
     type Births: WorthQueryApplicationOutputCardinality;
-    fn created_identity<S: Scenario>(
-        identity: ApplicationAuthoredCorrection<S>,
-    ) -> ApplicationAuthoredCorrection<S> {
-        identity
-    }
-    fn retired_identity<S: Scenario>(
-        identity: ApplicationAuthoredCorrection<S>,
-    ) -> ApplicationAuthoredCorrection<S> {
-        identity
-    }
     fn create<S: Scenario>(
         _: &Create,
         _: &WorthQueryApplicationEffectEntity<S, Node<S>>,
@@ -96,11 +77,6 @@ pub trait Profile: Sized + 'static {
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         Ok(())
     }
-    fn retained_key<S: Scenario>(
-        _: &dyn ApplicationCorrectionPreImage<S>,
-    ) -> Result<Option<u64>, ApplicationCorrectionDerivationDenial> {
-        Ok(None)
-    }
 }
 impl Profile for Absent {
     type Births = WorthQueryExactlyOneOutput;
@@ -109,16 +85,6 @@ impl Profile for Optional {
     const PRESENT: bool = true;
     const RETIRES_BODY: bool = false;
     type Births = WorthQueryAtMostOneOutput;
-    fn created_identity<S: Scenario>(
-        identity: ApplicationAuthoredCorrection<S>,
-    ) -> ApplicationAuthoredCorrection<S> {
-        identity.co_retire_created::<correction::UndoCreate<S>, BodyFamily, BodyCreated<S>, BodyRetired<S>>()
-    }
-    fn retired_identity<S: Scenario>(
-        identity: ApplicationAuthoredCorrection<S>,
-    ) -> ApplicationAuthoredCorrection<S> {
-        identity.co_restore_retired::<correction::UndoRetire<S>, BodyFamily, BodyRetired<S>, BodyCreated<S>>()
-    }
     fn create<S: Scenario>(
         input: &Create,
         scope: &WorthQueryApplicationEffectEntity<S, Node<S>>,
@@ -133,38 +99,6 @@ impl Profile for Optional {
 impl<const DECLARED: bool> Profile for Present<DECLARED> {
     const PRESENT: bool = true;
     type Births = WorthQueryExactlyOneOutput;
-    fn created_identity<S: Scenario>(
-        identity: ApplicationAuthoredCorrection<S>,
-    ) -> ApplicationAuthoredCorrection<S> {
-        if DECLARED {
-            identity.co_retire_created::<correction::UndoCreate<S>, BodyFamily, BodyCreated<S>, BodyRetired<S>>()
-        } else {
-            identity
-        }
-    }
-    fn retired_identity<S: Scenario>(
-        identity: ApplicationAuthoredCorrection<S>,
-    ) -> ApplicationAuthoredCorrection<S> {
-        if DECLARED && S::MODE != 46 {
-            identity.co_restore_retired::<correction::UndoRetire<S>, BodyFamily, BodyRetired<S>, BodyCreated<S>>()
-        } else {
-            identity
-        }
-    }
-    fn retained_key<S: Scenario>(
-        fields: &dyn ApplicationCorrectionPreImage<S>,
-    ) -> Result<Option<u64>, ApplicationCorrectionDerivationDenial> {
-        use ApplicationCorrectionDerivationDenial::{InvalidPreImage, MissingPreImage};
-        let key = fields
-            .field_for_output(
-                &<BodyRetired<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
-                &DeclaredPreImageLocus::from_field(BodyKey::at("BodyKey")),
-            )
-            .ok_or(MissingPreImage)?;
-        U64ApplicationValueBinding::decode(key)
-            .map(Some)
-            .map_err(|_| InvalidPreImage)
-    }
     fn create<S: Scenario>(
         input: &Create,
         scope: &WorthQueryApplicationEffectEntity<S, Node<S>>,

@@ -77,7 +77,6 @@ where
     pub(in crate::application_entry) installed_action:
         worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
     pub(super) workflow: Option<WorkflowAdmission>,
-    pub(super) recorded_correction: Option<worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent>,
     marker: std::marker::PhantomData<fn() -> (A, Mode)>,
     // Retention outlives captured intent and native workflow custody on abandonment.
     pub(in crate::application_entry) runtime: WorthQueryProgramApplicationRuntime<S, P>,
@@ -93,20 +92,6 @@ where
     pub(super) fn construct(
         description: WorthQueryOperationDescription<S, I>,
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,
-    ) -> Result<
-        Self,
-        (
-            WorthQueryOperationDescription<S, I>,
-            WorthQueryOperationConstructionDenial,
-        ),
-    > {
-        Self::construct_with_correction(description, runtime, None)
-    }
-
-    pub(super) fn construct_with_correction(
-        description: WorthQueryOperationDescription<S, I>,
-        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
-        correction: Option<worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent>,
     ) -> Result<
         Self,
         (
@@ -152,16 +137,13 @@ where
             Err(_) => return Err((description, WorthQueryOperationConstructionDenial::DurableStateAdmission(
                 worth_query_execution::facade::product::WorthQueryDurableStateAdmissionDenial::UnsupportedCorrectionCompensation))),
         };
-        if correction.is_none()
-            && let Err(cause) = description.admit_original_retention(runtime)
+        if let Err(cause) = description.admit_original_retention(runtime)
         {
             return Err((description, cause));
         }
         let product = runtime.runtime().product_runtime();
         let admission = if description.original.is_some() || !Mode::RETAIN_COMMIT {
             Ok(())
-        } else if correction.is_some() {
-            product.admit_native_correction_inverse(binding.operation().contracts())
         } else {
             product.admit_native_correction_source_owner(
                 binding.operation().contracts(),
@@ -179,7 +161,6 @@ where
             description,
             installed_action: installed_action.clone(),
             workflow: None,
-            recorded_correction: correction,
             marker: std::marker::PhantomData,
         })
     }
@@ -245,11 +226,6 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
-        // Recorded corrections enter with their actual prepared publication outcome.
-        // Ordinary execution cannot replace that exact-target candidate on retry.
-        if self.recorded_correction.is_some() {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
-        }
         let (selected, owner) = self.select(phase, request)?;
         let mut native = self
             .description
