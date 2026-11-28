@@ -16,6 +16,7 @@ use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
 use crate::lineage::groups::{BranchGroupState, GroupStateDenial};
 use crate::lineage::naming_pages::builder::seal_pages;
+use crate::lineage::naming_pages::store::ColdNamingStore;
 use crate::lineage::naming_pages::tables::{branch_key_digest, row_key, GROUP_LOG};
 use crate::lineage::naming_pages::{
     BranchNamingRoot, CheckpointNamingState, GroupStateHeader, NameIndexHeader, NamingStateHeader,
@@ -28,10 +29,19 @@ use super::name_indexes::BranchNameIndex;
 use super::naming_rebuild::BranchNaming;
 use super::LineageSubsystem;
 
-struct FrozenBranch {
-    naming: Option<BranchNaming>,
-    index: Option<BranchNameIndex>,
-    groups: Option<Result<BranchGroupState, GroupStateDenial>>,
+#[path = "naming_capture_carry.rs"]
+mod carry;
+#[path = "naming_capture_delta.rs"]
+mod delta;
+#[path = "naming_capture_diff.rs"]
+mod diff;
+#[path = "naming_capture_forest.rs"]
+mod forest;
+
+pub(super) struct FrozenBranch {
+    pub(super) naming: Option<BranchNaming>,
+    pub(super) index: Option<BranchNameIndex>,
+    pub(super) groups: Option<Result<BranchGroupState, GroupStateDenial>>,
 }
 
 impl FrozenBranch {
@@ -56,6 +66,146 @@ impl FrozenBranch {
             None
         }
     }
+
+    fn headers(&self, branch: BranchId) -> BranchNamingRoot {
+        let naming = self.naming.as_ref().map(|slot| NamingStateHeader {
+            earliest_event_commit: slot
+                .as_ref()
+                .ok()
+                .and_then(|n| n.earliest_event_commit())
+                .map(|c| c.0),
+            latest_event_commit: slot
+                .as_ref()
+                .ok()
+                .and_then(|n| n.latest_event_commit())
+                .map(|c| c.0),
+            unavailable: slot.is_err(),
+        });
+        let index = self.index.as_ref().map(|slot| match slot {
+            BranchNameIndex::Current(index) => NameIndexHeader {
+                earliest_commit: index.earliest_commit().map(|c| c.0),
+                head: index.head().map(|c| c.0),
+                retention_floor: index.retention_floor().map(|c| c.0),
+                unavailable: false,
+            },
+            BranchNameIndex::Unavailable(_) => NameIndexHeader {
+                earliest_commit: None,
+                head: None,
+                retention_floor: None,
+                unavailable: true,
+            },
+        });
+        let groups = self.groups.as_ref().map(|slot| match slot {
+            Ok(groups) => GroupStateHeader {
+                earliest_commit: groups.earliest_commit().map(|c| c.0),
+                latest_commit: groups.latest_commit().map(|c| c.0),
+                schemes: groups
+                    .scheme_headers()
+                    .map(|(id, rule)| SchemeHeader {
+                        id: id.to_owned(),
+                        rule: rule.canonical_tag(),
+                    })
+                    .collect(),
+                unavailable: false,
+            },
+            Err(_) => GroupStateHeader {
+                earliest_commit: None,
+                latest_commit: None,
+                schemes: Vec::new(),
+                unavailable: true,
+            },
+        });
+        BranchNamingRoot {
+            branch,
+            naming,
+            index,
+            groups,
+            pages: Vec::new(),
+            delta_base: None,
+        }
+    }
+
+    pub(super) fn latest_commit(&self) -> u64 {
+        let n = self
+            .naming
+            .as_ref()
+            .and_then(|s| s.as_ref().ok())
+            .and_then(|n| n.latest_event_commit())
+            .map_or(0, |c| c.0);
+        let i = match &self.index {
+            Some(BranchNameIndex::Current(idx)) => idx.head().map_or(0, |c| c.0),
+            _ => 0,
+        };
+        let g = self
+            .groups
+            .as_ref()
+            .and_then(|s| s.as_ref().ok())
+            .and_then(|g| g.latest_commit())
+            .map_or(0, |c| c.0);
+        n.max(i).max(g)
+    }
+
+    pub(super) fn has_active_index(&self) -> bool {
+        matches!(self.index, Some(BranchNameIndex::Current(_)))
+    }
+
+    pub(super) fn index_retention_floor(&self) -> Option<CommitId> {
+        match &self.index {
+            Some(BranchNameIndex::Current(idx)) => idx.retention_floor(),
+            _ => None,
+        }
+    }
+
+    fn delta_len(&self) -> usize {
+        self.naming
+            .as_ref()
+            .and_then(|s| s.as_ref().ok())
+            .map_or(0, |n| n.delta_len())
+            + match &self.index {
+                Some(BranchNameIndex::Current(i)) => i.delta_len(),
+                _ => 0,
+            }
+            + self
+                .groups
+                .as_ref()
+                .and_then(|s| s.as_ref().ok())
+                .map_or(0, |g| g.delta_len())
+    }
+
+    fn encoded_changes(&self) -> Vec<(Vec<u8>, Option<Vec<u8>>)> {
+        let mut out = Vec::new();
+        if let Some(Ok(n)) = &self.naming {
+            out.extend(n.encoded_changes());
+        }
+        if let Some(BranchNameIndex::Current(i)) = &self.index {
+            out.extend(i.encoded_changes());
+        }
+        if let Some(Ok(g)) = &self.groups {
+            for s in g.schemes_raw() {
+                out.extend(s.encoded_changes());
+            }
+        }
+        out
+    }
+
+    fn collect_encoded_in(
+        &self,
+        store: Option<&ColdNamingStore>,
+    ) -> Result<Vec<(Vec<u8>, Option<Vec<u8>>)>, Cause> {
+        let mut out = Vec::new();
+        if let Some(Ok(n)) = &self.naming {
+            out.extend(n.collect_encoded_in(store)?);
+        }
+        if let Some(BranchNameIndex::Current(i)) = &self.index {
+            out.extend(i.collect_encoded_in(store)?);
+        }
+        if let Some(Ok(g)) = &self.groups {
+            for s in g.schemes_raw() {
+                out.extend(s.collect_encoded_in(store)?);
+            }
+        }
+        Ok(out)
+    }
 }
 
 /// The runtime's naming state frozen for one capture.
@@ -65,6 +215,7 @@ impl FrozenBranch {
 /// from underneath this capture before sealing finishes.
 pub struct FrozenLineageNaming {
     branches: BTreeMap<BranchId, FrozenBranch>,
+    branch_forks: BTreeMap<BranchId, (BranchId, CommitId)>,
     branch_generations: BTreeMap<BranchId, u64>,
     group_log: Vec<PublishedGroupLineage>,
     cold: Option<PinnedNamingStore>,
@@ -132,6 +283,7 @@ impl LineageSubsystem {
         let cold = state.cold_naming.as_ref().and_then(|source| source.store());
         FrozenLineageNaming {
             branches,
+            branch_forks: state.branch_forks.clone(),
             branch_generations,
             group_log: state.published_group_lineage.clone(),
             cold,
@@ -150,138 +302,39 @@ impl FrozenLineageNaming {
         &self.branch_generations
     }
 
-    /// Pages every branch (including any `required_branches` that hold a
-    /// committed basis even before their first named lineage event) and the
-    /// group log into `sink`.
+    /// Pages every committed branch in `committed_branches` (never deleted
+    /// branches absent from the committed branch roster) and the group log
+    /// into `sink`.
     ///
-    /// Complexity: O(branches + changes + rows of touched pages).
+    /// Complexity: O(names + fork deltas + rows of touched pages).
     pub fn seal(
         &self,
-        required_branches: &[BranchId],
+        committed_branches: &[BranchId],
         sink: &mut dyn ChunkMemberSink,
     ) -> Result<CheckpointNamingState, Cause> {
-        let mut all_branches: BTreeSet<BranchId> = self.branches.keys().cloned().collect();
-        all_branches.extend(required_branches.iter().cloned());
-        let mut roots = Vec::with_capacity(all_branches.len());
-        let pinned_store = self.cold.as_ref().map(|pinned| pinned.store().as_ref());
-        for branch in all_branches {
-            let Some(frozen) = self.branches.get(&branch) else {
-                roots.push(BranchNamingRoot {
-                    branch,
-                    naming: None,
-                    index: None,
-                    groups: None,
-                    pages: Vec::new(),
-                });
-                continue;
-            };
-            let mut root = BranchNamingRoot {
-                branch,
-                naming: None,
-                index: None,
-                groups: None,
-                pages: Vec::new(),
-            };
-            let unified = frozen.unified_base();
-            let mut changes = Vec::new();
-            if let Some(naming) = &frozen.naming {
-                root.naming = Some(NamingStateHeader {
-                    earliest_event_commit: naming
-                        .as_ref()
-                        .ok()
-                        .and_then(|naming| naming.earliest_event_commit())
-                        .map(|commit| commit.0),
-                    latest_event_commit: naming
-                        .as_ref()
-                        .ok()
-                        .and_then(|naming| naming.latest_event_commit())
-                        .map(|commit| commit.0),
-                    unavailable: naming.is_err(),
-                });
-                if let Ok(naming) = naming {
-                    if unified.is_some() {
-                        changes.extend(naming.encoded_changes());
-                    } else {
-                        changes.extend(naming.collect_encoded_in(pinned_store)?);
-                    }
-                }
-            }
-            if let Some(index) = &frozen.index {
-                root.index = Some(match index {
-                    BranchNameIndex::Current(index) => {
-                        if unified.is_some() {
-                            changes.extend(index.encoded_changes());
-                        } else {
-                            changes.extend(index.collect_encoded_in(pinned_store)?);
-                        }
-                        NameIndexHeader {
-                            earliest_commit: index.earliest_commit().map(|commit| commit.0),
-                            head: index.head().map(|commit| commit.0),
-                            retention_floor: index.retention_floor().map(|commit| commit.0),
-                            unavailable: false,
-                        }
-                    }
-                    BranchNameIndex::Unavailable(_) => NameIndexHeader {
-                        earliest_commit: None,
-                        head: None,
-                        retention_floor: None,
-                        unavailable: true,
-                    },
-                });
-            }
-            if let Some(groups) = &frozen.groups {
-                root.groups = Some(match groups {
-                    Ok(groups) => {
-                        for scheme in groups.schemes_raw() {
-                            if unified.is_some() {
-                                changes.extend(scheme.encoded_changes());
-                            } else {
-                                changes.extend(scheme.collect_encoded_in(pinned_store)?);
-                            }
-                        }
-                        GroupStateHeader {
-                            earliest_commit: groups.earliest_commit().map(|commit| commit.0),
-                            latest_commit: groups.latest_commit().map(|commit| commit.0),
-                            schemes: groups
-                                .scheme_headers()
-                                .map(|(id, rule)| SchemeHeader {
-                                    id: id.to_owned(),
-                                    rule: rule.canonical_tag(),
-                                })
-                                .collect(),
-                            unavailable: false,
-                        }
-                    }
-                    Err(_) => GroupStateHeader {
-                        earliest_commit: None,
-                        latest_commit: None,
-                        schemes: Vec::new(),
-                        unavailable: true,
-                    },
-                });
-            }
-            changes.sort_unstable_by(|left, right| left.0.cmp(&right.0));
-            let prior = match unified {
-                Some(Some(link)) => {
-                    let store = self.cold.as_ref().ok_or(Cause::SourceUnavailable)?;
-                    link.root_in(store)
-                        .map(|prior_root| (store.store(), prior_root.pages.as_slice()))
-                }
-                Some(None) | None => None,
-            };
-            root.pages = seal_pages(
-                prior.map(|(store, pages)| (store.as_ref(), pages)),
-                changes,
-                sink,
-            )?;
-            roots.push(root);
-        }
+        self.seal_with_diff_visits(committed_branches, sink)
+            .map(|(state, _)| state)
+    }
+
+    /// Like [`Self::seal`], also returning total `CowMap` diff nodes visited
+    /// across candidate counting probes.
+    pub fn seal_with_diff_visits(
+        &self,
+        committed_branches: &[BranchId],
+        sink: &mut dyn ChunkMemberSink,
+    ) -> Result<(CheckpointNamingState, usize), Cause> {
+        let all_branches: BTreeSet<BranchId> = committed_branches.iter().cloned().collect();
+        let (roots, retired_forks, visited) = delta::seal_all_branches(self, &all_branches, sink)?;
         let (group_log, group_log_through) = self.seal_group_log(sink)?;
-        Ok(CheckpointNamingState {
-            branches: roots,
-            group_log,
-            group_log_through,
-        })
+        Ok((
+            CheckpointNamingState {
+                branches: roots,
+                group_log,
+                group_log_through,
+                retired_forks,
+            },
+            visited,
+        ))
     }
 
     fn seal_group_log(

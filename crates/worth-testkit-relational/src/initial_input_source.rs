@@ -27,8 +27,18 @@ pub fn additions() -> RelationalSchemaRegistry {
 pub fn initialized(
     request: &ExecutionRequest<'_, '_>,
 ) -> (RelationalRuntime, Arc<TestDurableMedium>) {
+    initialized_with_schema(durable_publication::schema(), request)
+}
+pub fn initialized_with_schema(
+    schema: RelationalSchemaRegistry,
+    request: &ExecutionRequest<'_, '_>,
+) -> (RelationalRuntime, Arc<TestDurableMedium>) {
     let medium = TestDurableMedium::new();
-    let mut runtime = durable_publication::durable_runtime(&medium);
+    let mut runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+        .profile(worth_relational::facade::config::RelationalRuntimeProfile::CertificationCore)
+        .schema_registry(schema)
+        .build_durable(medium.attachment())
+        .unwrap();
     let permission = runtime.begin_fresh_home_initialization(request).unwrap();
     runtime
         .prepare_fresh_home_schema_installation(request, permission)
@@ -144,7 +154,7 @@ pub fn home_image_checkpoint(
     Ok(source)
 }
 
-fn home_checkpoint_input(
+pub fn home_checkpoint_input(
     medium: &Arc<TestDurableMedium>,
     checkpoint: RelationalDurableCheckpointSource,
     request: &ExecutionRequest<'_, '_>,

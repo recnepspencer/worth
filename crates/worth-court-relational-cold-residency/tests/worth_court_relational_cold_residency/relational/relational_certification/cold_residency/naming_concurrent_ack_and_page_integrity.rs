@@ -5,6 +5,7 @@
 //! - Retired unnamed entities are never resurrected in a cold historical fork.
 //! - Tampered `CHK24` stripping naming, index, or group pages refuses `CorruptCheckpoint`.
 
+use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Barrier};
 use std::thread;
@@ -12,9 +13,8 @@ use std::thread;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::aggregate_identity::AggregateMemberRole;
 use worth_relational::facade::durability::{
-    RecoveryFailureClass, RecoveryVerificationMode, RelationalCheckpointMember,
-    RelationalDurableCheckpointSource, RelationalDurableRecoverySource, RelationalNativeCheckpoint,
-    RelationalRecoveryStop,
+    RecoveryVerificationMode, RelationalCheckpointMember, RelationalDurableMemberLocator,
+    RelationalNativeCheckpoint,
 };
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
@@ -290,35 +290,60 @@ fn retired_unnamed_entity_not_resurrected_in_cold_historical_fork() {
     drop(producer);
 
     let mut reopened = durable_mixed_runtime(&medium);
+    let mode = RecoveryVerificationMode::NormalRecoveryVerification;
     let plan = reopened
         .durability()
-        .recovery_plan_from_source(
-            request,
-            medium.recovery_source(),
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
+        .recovery_plan_from_source(request, medium.recovery_source(), mode)
         .unwrap();
     reopened
         .durability_recovery()
         .recover(request, plan)
         .unwrap();
+    let members: BTreeMap<_, _> = ck1
+        .members()
+        .iter()
+        .chain(ck2.members())
+        .filter_map(|m| match m {
+            RelationalCheckpointMember::New { locator, bytes } => Some((*locator, bytes.bytes())),
+            RelationalCheckpointMember::Carried { .. } => None,
+        })
+        .collect();
     let body = ck2.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap();
     let branch_rows = rows(field(field(field(body, "manifest"), "naming"), "branches"));
     let naming_page_summary = |target: &BranchId| -> (u8, u8, u32) {
-        let row = branch_rows
-            .iter()
-            .find(|r| &rmp_serde::from_slice::<BranchId>(field(r, "branch")).unwrap() == target)
-            .expect("child root present");
-        let page = rows(field(row, "pages"))
-            .into_iter()
-            .find(|p| {
-                (1..=5).contains(&rmp_serde::from_slice::<Vec<u8>>(field(p, "first")).unwrap()[0])
-            })
-            .expect("child naming page present");
-        let first: Vec<u8> = rmp_serde::from_slice(field(page, "first")).unwrap();
-        let last: Vec<u8> = rmp_serde::from_slice(field(page, "last")).unwrap();
-        let entries: u32 = rmp_serde::from_slice(field(page, "entries")).unwrap();
-        (first[0], last[0], entries)
+        let mut chain = Vec::new();
+        let mut cur = Some(target.clone());
+        while let Some(branch) = cur {
+            let row = branch_rows
+                .iter()
+                .find(|r| rmp_serde::from_slice::<BranchId>(field(r, "branch")).unwrap() == branch)
+                .expect("child root present");
+            chain.push(*row);
+            cur = rmp_serde::from_slice(field(row, "delta_base")).unwrap();
+        }
+        let mut live: BTreeMap<Vec<u8>, Vec<u8>> = BTreeMap::new();
+        for row in chain.into_iter().rev() {
+            for p in rows(field(row, "pages")) {
+                let first: Vec<u8> = rmp_serde::from_slice(field(p, "first")).unwrap();
+                if !(1..=5).contains(&first[0]) {
+                    continue;
+                }
+                let loc: RelationalDurableMemberLocator =
+                    rmp_serde::from_slice(field(p, "member")).unwrap();
+                let (entries,): (Vec<(Vec<u8>, Vec<u8>)>,) =
+                    rmp_serde::from_slice(&members[&loc][18..]).unwrap();
+                for (k, v) in entries {
+                    if v.first() == Some(&2) {
+                        live.remove(&k);
+                    } else {
+                        live.insert(k, v);
+                    }
+                }
+            }
+        }
+        let lo = live.keys().map(|k| k[0]).min().unwrap_or(u8::MAX);
+        let hi = live.keys().map(|k| k[0]).max().unwrap_or(0);
+        (lo, hi, live.len() as u32)
     };
     assert_eq!(naming_page_summary(&child_c1), (1, 4, 2));
     assert_eq!(naming_page_summary(&child_c2), (1, 1, 1));
@@ -338,22 +363,21 @@ fn tampered_chk24_stripping_naming_index_or_group_pages_refuses_corrupt_checkpoi
         &main,
         &["p1-4-a".into(), "p1-4-b".into()],
     );
-    publish_group_partition(
-        request,
-        &producer,
-        &main,
-        e1[0],
-        "p1-4-g1",
-        vec![vec![
-            (n1[0], AggregateMemberRole::Anchor),
-            (n1[1], AggregateMemberRole::Ordinary),
-        ]],
-    );
+    let g1 = vec![vec![
+        (n1[0], AggregateMemberRole::Anchor),
+        (n1[1], AggregateMemberRole::Ordinary),
+    ]];
+    publish_group_partition(request, &producer, &main, e1[0], "p1-4-g1", g1);
     let basis_c1 = observe_branch(&producer, &main);
-    let _ = create_named_entities(request, &producer, &main, &["p1-4-c".into()]);
+    let (_, e2, n2) = create_named_entities(request, &producer, &main, &["p1-4-c".into()]);
+    let g2 = vec![vec![
+        (n1[0], AggregateMemberRole::Anchor),
+        (n2[0], AggregateMemberRole::Ordinary),
+    ]];
+    publish_group_partition(request, &producer, &main, e2[0], "p1-4-g2", g2);
     let child = BranchId("p1-4-hist-child".into());
     fork_retained_at(request, &producer, &basis_c1, &child).unwrap();
-    let (ck, source) = capture_external_checkpoint(request, &producer);
+    let (ck, _source) = capture_external_checkpoint(request, &producer);
 
     // Strip each component's pages independently while leaving ALL headers intact!
     for (label, tags) in [
@@ -361,36 +385,12 @@ fn tampered_chk24_stripping_naming_index_or_group_pages_refuses_corrupt_checkpoi
         ("index-domain-2", &[6u8, 7, 8, 9, 10][..]),
         ("group-domain-3", &[0u8, 11, 12, 13][..]),
     ] {
-        let tampered = strip_domain_pages(&ck, &child, tags);
-        let mut target = durable_named_runtime(&medium, u64::MAX / 4);
-        let input = RelationalDurableRecoverySource::new(
-            Some(RelationalDurableCheckpointSource::new(
-                ck.covered_position().unwrap(),
-                ck.covered_branch_transitions().unwrap(),
-                tampered,
-            )),
-            Vec::new(),
-            Vec::new(),
-            source.clone(),
-        );
-        let err = match target.durability().recovery_plan_from_source(
+        super::naming_fork_delta_provenance::assert_corrupt_read_free(
             request,
-            input,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        ) {
-            Err(err) => err,
-            Ok(plan) => target
-                .durability_recovery()
-                .recover(request, plan)
-                .expect_err("stripping component page run while keeping headers must refuse"),
-        };
-        assert!(
-            matches!(
-                err,
-                RelationalRecoveryStop::Durability(ref d)
-                    if d.class == RecoveryFailureClass::CorruptCheckpoint
-            ),
-            "{label}: expected CorruptCheckpoint, got {err:?}"
+            &medium,
+            &ck,
+            strip_domain_pages(&ck, &main, tags),
+            label,
         );
     }
 }

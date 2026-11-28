@@ -11,3 +11,4 @@ import PersistentNaming.TimeM
 import PersistentNaming.ForkChildren
 import PersistentNaming.ForkChildrenCost
 import PersistentNaming.CowMapForkCost
+import PersistentNaming.CowMapDeltaSeal

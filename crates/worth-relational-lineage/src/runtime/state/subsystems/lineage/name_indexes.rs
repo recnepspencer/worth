@@ -236,23 +236,13 @@ impl LineageState {
                 None,
                 None,
             )),
-            (_, Some(full)) => {
-                let mut rebuilt = self.rebuild_branch_name_index(full, target, CommitId(u64::MAX));
-                if let (Some(BranchNameIndex::Current(src)), BranchNameIndex::Current(child)) =
-                    (self.name_indexes.by_branch.get(source), &mut rebuilt)
-                    && let Some(floor) = src.retention_floor()
-                    && let Err(denial) = child.advance_retention_floor(floor)
-                {
-                    rebuilt = BranchNameIndex::Unavailable(denial);
-                }
-                rebuilt
-            }
-            (Some(BranchNameIndex::Current(index)), None) => {
+            (Some(BranchNameIndex::Current(index)), _) => {
                 match index.truncate_at(target.clone(), fork_commit) {
                     Ok(truncated) => BranchNameIndex::Current(truncated),
                     Err(denial) => BranchNameIndex::Unavailable(denial),
                 }
             }
+            (None, Some(full)) => self.rebuild_branch_name_index(full, target, CommitId(u64::MAX)),
         };
         self.name_indexes
             .by_branch

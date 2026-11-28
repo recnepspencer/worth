@@ -6,14 +6,18 @@
 //! individual branch's naming root with an empty root fails closed with
 //! `CorruptCheckpoint` even when other named branches remain intact.
 
+mod ancestry;
+#[cfg(test)]
+mod ancestry_tests;
 mod chunks;
+mod delta;
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use worth_foundational::FoundationalBranchTarget;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_lineage::internal_port::lineage::naming_pages::codec::NamingCodec;
-use worth_relational_lineage::internal_port::lineage::naming_pages::tables;
+use worth_relational_lineage::internal_port::lineage::naming_pages::{tables, BranchNamingRoot};
 
 use super::super::manifest_capture::corrupt;
 use crate::durability::data::RelationalCheckpointManifest;
@@ -43,20 +47,14 @@ pub(super) fn validate(
         .iter()
         .flat_map(|page| page.routes.iter().map(|route| &route.branch_id))
         .collect();
-    let mut branch_forks: BTreeMap<&BranchId, (&BranchId, u64)> = BTreeMap::new();
-    for cell in &manifest.branch_cells {
-        if let (Some(source), Some(prov)) = (&cell.fork_source_branch_id, &cell.fork_provenance)
-            && let FoundationalBranchTarget::Basis(target) = prov.target()
-        {
-            branch_forks.insert(&cell.branch_id, (source, target.selected_commit_id()));
-        }
-    }
-
     let (group_log_branch_min, group_log_branch_max) = validate_group_log_bounds(manifest)?;
+    let ancestry = ancestry::AncestryIndex::build(manifest, tail_commit, &group_log_branch_min)?;
+
     chunks::validate_continuation_chunks(&manifest.naming.group_log, true)?;
     for root in &manifest.naming.branches {
         chunks::validate_continuation_chunks(&root.pages, false)?;
     }
+    delta::validate_all_roots_and_delta_provenance(manifest, &ancestry, has_naming_schemes)?;
 
     let mut any_naming_branch = false;
     let mut any_index_branch = false;
@@ -83,41 +81,11 @@ pub(super) fn validate(
         // inherited fork lineage/groups may be silently replaced by an empty root,
         // even after the parent advances past the fork cutoff.
         let has_own_events = branches_with_own_events.contains(&cell.branch_id);
-        let (mut must_have_naming, mut must_have_index, mut must_have_groups) =
-            (has_own_events, has_own_events && has_naming_schemes, false);
-        let mut cursor = &cell.branch_id;
-        let mut eff_cutoff = head;
-        let mut visited = BTreeSet::from([cursor]);
-        while let Some(&(parent, fork_commit)) = branch_forks.get(cursor) {
-            eff_cutoff = eff_cutoff.min(fork_commit);
-            if !visited.insert(parent) {
-                break;
-            }
-            if let Some(parent_root) = manifest.naming.root(parent) {
-                if parent_root.naming.is_some_and(|h| {
-                    h.unavailable || h.earliest_event_commit.is_some_and(|at| at <= eff_cutoff)
-                }) {
-                    must_have_naming = true;
-                }
-                if parent_root.index.is_some_and(|h| {
-                    h.unavailable || h.earliest_commit.is_some_and(|at| at <= eff_cutoff)
-                }) {
-                    must_have_index = true;
-                }
-                if parent_root.groups.as_ref().is_some_and(|h| {
-                    h.unavailable || h.earliest_commit.is_some_and(|at| at <= eff_cutoff)
-                }) {
-                    must_have_groups = true;
-                }
-            }
-            if group_log_branch_min
-                .get(&tables::branch_key_digest(parent))
-                .is_some_and(|&at| at <= eff_cutoff)
-            {
-                must_have_groups = true;
-            }
-            cursor = parent;
-        }
+        let (inh_naming, inh_index, inh_groups) =
+            ancestry.inherited_requirements(&cell.branch_id, head);
+        let must_have_naming = has_own_events || inh_naming;
+        let must_have_index = (has_own_events && has_naming_schemes) || inh_index;
+        let must_have_groups = inh_groups;
         if must_have_naming
             && !root
                 .naming
@@ -250,34 +218,58 @@ fn validate_group_log_bounds(
     Ok((group_log_branch_min, group_log_branch_max))
 }
 
+pub(super) fn chain_has_domain(
+    manifest: &RelationalCheckpointManifest,
+    root: &BranchNamingRoot,
+    domain: u8,
+) -> bool {
+    let mut current = root;
+    loop {
+        if current
+            .pages
+            .iter()
+            .any(|p| tables::table_domain(p.first[0]) == Some(domain))
+        {
+            return true;
+        }
+        let Some(base) = current.delta_base.as_ref() else {
+            return false;
+        };
+        if !current.has_active_domain(domain) {
+            return false;
+        }
+        let Some(next) = manifest.naming.root(base) else {
+            return false;
+        };
+        if !next.has_active_domain(domain) {
+            return false;
+        }
+        current = next;
+    }
+}
+
 fn validate_branch_root_headers(
     manifest: &RelationalCheckpointManifest,
-    root: &worth_relational_lineage::internal_port::lineage::naming_pages::BranchNamingRoot,
+    root: &BranchNamingRoot,
     head: u64,
     any_naming_branch: &mut bool,
     any_index_branch: &mut bool,
 ) -> Result<(), DurabilityError> {
-    if root.naming.is_none()
-        && root.index.is_none()
-        && root.groups.is_none()
-        && !root.pages.is_empty()
-    {
-        return Err(corrupt(
-            "branch naming root carries pages without any naming, index, or group header",
-        ));
-    }
-    let has_domain = |domain: u8| {
+    let has_own_domain = |domain: u8| {
         root.pages
             .iter()
             .any(|p| tables::table_domain(p.first[0]) == Some(domain))
     };
-    let has_naming_pages = has_domain(1);
-    let has_index_pages = has_domain(2);
+    let has_naming_pages = has_own_domain(1);
+    let has_index_pages = has_own_domain(2);
+    let has_group_pages = has_own_domain(tables::GROUP_STATE_DOMAIN);
+    let has_member_pages = has_own_domain(tables::GROUP_MEMBER_DOMAIN);
+    let eff_naming_pages = chain_has_domain(manifest, root, 1);
+    let eff_index_pages = chain_has_domain(manifest, root, 2);
     // Every group transition leaves a header or a retired name, so group
     // state with commits always has state pages; member rows never stand alone.
-    let has_group_pages = has_domain(tables::GROUP_STATE_DOMAIN);
-    let has_member_pages = has_domain(tables::GROUP_MEMBER_DOMAIN);
-    if has_member_pages && !has_group_pages {
+    let eff_group_pages = chain_has_domain(manifest, root, tables::GROUP_STATE_DOMAIN);
+    if has_member_pages && !eff_group_pages {
         return Err(corrupt(
             "branch group member pages lack any group state pages",
         ));
@@ -293,7 +285,7 @@ fn validate_branch_root_headers(
             {
                 return Err(corrupt("branch naming basis exceeds branch head commit"));
             }
-            if header.latest_event_commit.is_some() && !has_naming_pages {
+            if header.latest_event_commit.is_some() && !eff_naming_pages {
                 return Err(corrupt(
                     "branch naming basis claims events without any naming pages",
                 ));
@@ -317,7 +309,7 @@ fn validate_branch_root_headers(
             {
                 return Err(corrupt("branch name index exceeds branch head commit"));
             }
-            if header.head.is_some() && !has_index_pages {
+            if header.head.is_some() && !eff_index_pages {
                 return Err(corrupt(
                     "branch name index claims commits without any index pages",
                 ));
@@ -340,14 +332,14 @@ fn validate_branch_root_headers(
             {
                 return Err(corrupt("branch group state exceeds branch head commit"));
             }
-            if header.latest_commit.is_some() && !has_group_pages {
+            if header.latest_commit.is_some() && !eff_group_pages {
                 return Err(corrupt(
                     "branch group state claims commits without any group pages",
                 ));
             }
             if !header.schemes.is_empty()
                 && (header.latest_commit.is_none()
-                    || !has_group_pages
+                    || !eff_group_pages
                     || manifest.naming.group_log.is_empty()
                     || manifest.naming.group_log_through < header.latest_commit)
             {
@@ -356,7 +348,7 @@ fn validate_branch_root_headers(
                 ));
             }
         }
-    } else if has_group_pages {
+    } else if has_group_pages || has_member_pages {
         return Err(corrupt("branch omitted group header despite group pages"));
     }
     Ok(())

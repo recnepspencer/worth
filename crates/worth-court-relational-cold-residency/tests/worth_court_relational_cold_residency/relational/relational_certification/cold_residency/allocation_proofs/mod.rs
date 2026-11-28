@@ -9,7 +9,10 @@ mod cold_compaction;
 mod composed_cold_reopen_scaling;
 mod fixture;
 mod fork_and_layer_scaling;
+mod fork_delta_checkpoint_scaling;
+mod fork_delta_interleaving_scaling;
 mod naming_release_ceiling;
+mod post_reopen_fork_delta_scaling;
 
 use std::cell::Cell;
 use std::sync::Once;

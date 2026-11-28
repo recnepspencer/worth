@@ -2,6 +2,7 @@
 //! tamper/integrity refusals, and retention-floor compaction kernels.
 mod continuation_bounds_and_retention_floor;
 mod cow_map_sharing_and_inline_bounds;
+mod deep_retired_chain_linearity;
 mod hardening;
 mod table_domains;
 pub(crate) mod unnamed_retirement_and_group_log_carry;
@@ -38,13 +39,13 @@ use crate::lineage::naming_pages::{
 };
 
 #[derive(Debug, Default)]
-struct MemSource {
+pub(crate) struct MemSource {
     members: Mutex<BTreeMap<RelationalDurableMemberLocator, Vec<u8>>>,
     reads: AtomicUsize,
 }
 
 impl MemSource {
-    fn from_sink(sink: CollectedMembers) -> Arc<Self> {
+    pub(crate) fn from_sink(sink: CollectedMembers) -> Arc<Self> {
         Arc::new(Self {
             members: Mutex::new(sink.members.into_iter().collect()),
             reads: AtomicUsize::new(0),
@@ -111,9 +112,11 @@ fn read_free_open_touched_faults_carry_and_eviction() {
             index: None,
             groups: None,
             pages: pages.clone(),
+            delta_base: None,
         }],
         group_log: Vec::new(),
         group_log_through: None,
+        retired_forks: Vec::new(),
     });
     assert!(state.validate().is_ok());
 
@@ -190,9 +193,11 @@ fn descriptor_validation_and_tampered_page_fail_closed() {
             index: None,
             groups: None,
             pages: pages.clone(),
+            delta_base: None,
         }],
         group_log: Vec::new(),
         group_log_through: None,
+        retired_forks: Vec::new(),
     });
     let store = ColdNamingStore::open(state, source);
     assert_eq!(
@@ -218,9 +223,11 @@ fn descriptor_validation_and_tampered_page_fail_closed() {
                 unavailable: false,
             }),
             pages: vec![bad_entries],
+            delta_base: None,
         }],
         group_log: Vec::new(),
         group_log_through: None,
+        retired_forks: Vec::new(),
     };
     assert!(bad_state.validate().is_err());
 

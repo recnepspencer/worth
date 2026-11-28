@@ -67,6 +67,8 @@ pub const fn table_domain(tag: u8) -> Option<u8> {
 pub const VALUE_INLINE_TAG: u8 = 0;
 /// Envelope tag for a chunked value whose body spans `VALUE_CHUNK` rows.
 pub const VALUE_CHUNKED_TAG: u8 = 1;
+/// Envelope tag for a delta-root tombstone shadowing a row in `delta_base`.
+pub const VALUE_TOMBSTONE_TAG: u8 = 2;
 /// Header length for a chunked value: `[tag: 1, chunks: 4, total_len: 4]`.
 pub const CHUNKED_HEADER_BYTES: usize = 9;
 /// Maximum payload stored inline (or in one continuation chunk), keeping every
@@ -78,14 +80,20 @@ pub const MAX_REASSEMBLED_VALUE_BYTES: usize = 64 * 1024 * 1024;
 pub const MAX_CHUNK_COUNT: u32 =
     MAX_REASSEMBLED_VALUE_BYTES.div_ceil(MAX_INLINE_VALUE_BYTES) as u32;
 
+/// Parsed non-chunk row value envelope.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ValueEnvelope {
+    Inline,
+    Chunked { count: u32, total: usize },
+    Tombstone,
+}
+
 /// Validates and decodes an envelope header shared identically by reader and
-/// writer. Returns `Ok(None)` for an inline value, `Ok(Some((count, total)))`
-/// for a valid chunked header, and `Err(Cause::Damaged)` on any malformed
-/// tag, length, count, or arithmetic inconsistency.
+/// writer, refusing any malformed tag, length, count, or arithmetic inconsistency.
 pub(crate) fn parse_value_envelope(
     raw: &[u8],
 ) -> Result<
-    Option<(u32, usize)>,
+    ValueEnvelope,
     worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
 >{
     use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
@@ -94,7 +102,7 @@ pub(crate) fn parse_value_envelope(
             if raw.len() - 1 > MAX_INLINE_VALUE_BYTES {
                 return Err(Cause::Damaged);
             }
-            Ok(None)
+            Ok(ValueEnvelope::Inline)
         }
         Some(VALUE_CHUNKED_TAG) if raw.len() == CHUNKED_HEADER_BYTES => {
             let count = u32::from_be_bytes([raw[1], raw[2], raw[3], raw[4]]);
@@ -108,8 +116,9 @@ pub(crate) fn parse_value_envelope(
             {
                 return Err(Cause::Damaged);
             }
-            Ok(Some((count, total)))
+            Ok(ValueEnvelope::Chunked { count, total })
         }
+        Some(VALUE_TOMBSTONE_TAG) if raw.len() == 1 => Ok(ValueEnvelope::Tombstone),
         _ => Err(Cause::Damaged),
     }
 }
@@ -265,7 +274,7 @@ pub fn page_continuation_summary(
     let mut pairs: Vec<(&[u8], u32)> = Vec::new();
     for (key, value) in rows {
         if key[0] != VALUE_CHUNK
-            && let Some((count, _)) = parse_value_envelope(value)?
+            && let ValueEnvelope::Chunked { count, .. } = parse_value_envelope(value)?
         {
             total = total.checked_add(count).ok_or(Cause::Damaged)?;
             pairs.push((key.as_slice(), count));

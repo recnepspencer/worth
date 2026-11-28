@@ -16,6 +16,7 @@ pub(super) struct Axes {
     pub(super) commit: Option<std::sync::Arc<RelationalCommitIndexEntry>>,
     pub(super) schema: [u8; 32],
     pub(super) removed: bool,
+    pub(super) fork_origin: Option<(BranchId, u64)>,
 }
 impl Axes {
     pub(super) fn empty(original: &super::super::recorded::RecordedEmptySchemaObservation) -> Self {
@@ -26,6 +27,7 @@ impl Axes {
             commit: None,
             schema: original.schema_carrier,
             removed: false,
+            fork_origin: None,
         }
     }
     pub(super) fn matches_empty(
@@ -78,6 +80,7 @@ impl Axes {
                 == other.commit.as_deref().map(|row| row.commit.commit_id)
             && self.schema == other.schema
             && self.removed == other.removed
+            && self.fork_origin == other.fork_origin
     }
     pub(super) fn requires_transition(&self, entry: &TransitionOriginalRecord) -> bool {
         if self.removed || self.schema != entry.schema {

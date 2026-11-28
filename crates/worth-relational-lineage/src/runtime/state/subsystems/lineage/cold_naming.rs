@@ -184,6 +184,7 @@ impl LineageSubsystem {
         let mut state = self.state.write();
         state.full_history = None;
         state.naming_rebuilt_event_frontier = Some(u64::MAX);
+        state.event_commits_by_branch.clear();
         state.published_group_lineage.clear();
         state.branch_naming_states.clear();
         state.name_indexes.clear();
@@ -234,6 +235,12 @@ impl LineageSubsystem {
                 };
                 state.group_states.by_branch.insert(branch, groups);
             }
+        }
+        for edge in &naming.retired_forks {
+            state
+                .branch_forks
+                .entry(edge.branch.clone())
+                .or_insert((edge.parent.clone(), CommitId(edge.fork_commit)));
         }
         state.cold_naming = Some(source);
     }

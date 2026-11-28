@@ -59,7 +59,25 @@ layer = 3
 # +200 for the fork_children and CowMap fork conformance traces, which call
 # the private `forks_inheriting` and read private `CowMap` nodes.
 # +300 for projected group keys, ordered page encoding, and incident group history.
-cap = 24800
+# +1400 for public #480 O(names + fork deltas) CHK24 sealing: CowMap
+# structural-sharing diff (`cow_map_diff.rs`), delta-base tombstone chain
+# resolution (`store_delta.rs`), fork-forest delta sealer (`naming_capture_delta.rs`),
+# and the `cow_diff` Rust -> Lean conformance trace.
+# +1100 for public #480 hardening: prefix-scoped multi-scheme group capture,
+# zero-encode diff cardinality counting, skip-ancestor deep-chain resets,
+# incremental cold-preserving historical fork truncation (`truncate.rs`,
+# `group_diff.rs`, `naming_capture_diff.rs`), and direct cold-chain conformance.
+# +500 for public #480 fork-forest O(1) Euler-tour anchor tracking, deleted-branch
+# roster filtering, retention-floor alias guard, zero-alloc CowMap diff stats,
+# and Arc NodeId Lean conformance trace split (`naming_capture_forest.rs`,
+# `cow_map_cold_chain_conformance_trace.rs`).
+# +300 for public #480 retired-intermediate fork ancestry (`retired_forks`),
+# separate retired sibling grouping, alias-header compatibility guard, and
+# warm historical fork lineage event header bounds.
+# +300 for public #480 post-reopen composed delta carry (`naming_capture_carry.rs`),
+# linear O(V+E) fork-forest / retired-chain validation, and per-branch event commit bounds.
+# +150 for public #480 representative-leaf peer carry over shared retired C1 intermediates.
+cap = 28200
 floor = 7100
 depends = ["contracts", "storage", "branch"]
 

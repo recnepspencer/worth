@@ -119,4 +119,94 @@ impl PersistentNameBranchIndex {
             }
         }
     }
+
+    pub(crate) fn delta_len(&self) -> usize {
+        self.names.delta_len()
+            + self.lineage_names.delta_len()
+            + self.lineage_holders.delta_len()
+            + self.holder_lineages.delta_len()
+            + self.member_groups.delta_len()
+    }
+
+    pub(crate) fn count_diff_against_bounded(
+        &self,
+        base: &Self,
+        has_cold_base: bool,
+        budget: usize,
+        visited: &mut usize,
+    ) -> Option<usize> {
+        let mut total = 0usize;
+        macro_rules! step {
+            ($field:ident) => {
+                let rem = budget.saturating_sub(total);
+                total += self.$field.count_diff_against_bounded(
+                    &base.$field,
+                    has_cold_base,
+                    rem,
+                    visited,
+                )?;
+                if total > budget {
+                    return None;
+                }
+            };
+        }
+        step!(names);
+        step!(lineage_names);
+        step!(lineage_holders);
+        step!(holder_lineages);
+        step!(member_groups);
+        Some(total)
+    }
+
+    pub(crate) fn diff_encoded_against_bounded(
+        &self,
+        base: &Self,
+        cold_base: Option<(
+            &crate::lineage::naming_pages::store::ColdNamingStore,
+            &crate::lineage::naming_pages::BranchNamingRoot,
+        )>,
+        budget: usize,
+    ) -> Result<
+        Option<Vec<(Vec<u8>, crate::lineage::naming_pages::builder::PageChange)>>,
+        crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+    > {
+        let mut out = Vec::new();
+        macro_rules! step {
+            ($field:ident) => {
+                let rem = budget.saturating_sub(out.len());
+                let Some(part) =
+                    self.$field
+                        .diff_encoded_against_bounded(&base.$field, cold_base, rem)?
+                else {
+                    return Ok(None);
+                };
+                out.extend(part);
+            };
+        }
+        step!(names);
+        step!(lineage_names);
+        step!(lineage_holders);
+        step!(holder_lineages);
+        step!(member_groups);
+        Ok(Some(out))
+    }
+
+    pub(crate) fn encoded_puts_bounded(
+        &self,
+        budget: usize,
+    ) -> Option<Vec<(Vec<u8>, crate::lineage::naming_pages::builder::PageChange)>> {
+        let mut out = Vec::new();
+        macro_rules! step {
+            ($field:ident) => {
+                let rem = budget.saturating_sub(out.len());
+                out.extend(self.$field.encoded_puts_bounded(rem)?);
+            };
+        }
+        step!(names);
+        step!(lineage_names);
+        step!(lineage_holders);
+        step!(holder_lineages);
+        step!(member_groups);
+        Some(out)
+    }
 }

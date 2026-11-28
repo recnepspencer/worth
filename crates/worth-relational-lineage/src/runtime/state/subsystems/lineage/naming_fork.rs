@@ -11,7 +11,9 @@ use crate::lineage::index::{PersistentNameBranchIndex, PersistentNameIndexDenial
 
 use super::name_indexes::BranchNameIndex;
 use super::naming_basis::{AuthoritativeBranchNamingState, NamingBasisUnavailable};
-use super::naming_rebuild::{rebuild_branch_naming_state_for_branch, BranchNaming};
+use super::naming_rebuild::{
+    branch_lineage_event_commit_bounds, rebuild_branch_naming_state_for_branch, BranchNaming,
+};
 use super::LineageState;
 
 /// Historical lineage state staged before durable fork publication.
@@ -67,31 +69,15 @@ impl LineageState {
             name_index: None,
             naming_state: None,
         };
+        let mut index_diff = None;
         if let Some(BranchNameIndex::Current(index)) =
             self.name_indexes.by_branch.get(&prepared.source)
             && index.head().is_some_and(|head| head > fork_commit_id)
         {
-            let truncated = match self.full_history.as_ref() {
-                Some(full) => {
-                    match self.rebuild_branch_name_index(full, &prepared.source, fork_commit_id) {
-                        BranchNameIndex::Current(rebuilt) => {
-                            let mut child = rebuilt.rebranched(prepared.target.clone());
-                            if let Some(floor) = index.retention_floor() {
-                                child
-                                    .advance_retention_floor(floor)
-                                    .map_err(map_index_denial)?;
-                            }
-                            child
-                        }
-                        BranchNameIndex::Unavailable(denial) => {
-                            return Err(map_index_denial(denial));
-                        }
-                    }
-                }
-                None => index
-                    .truncate_at(prepared.target.clone(), fork_commit_id)
-                    .map_err(map_index_denial)?,
-            };
+            let (truncated, diff) = index
+                .truncate_at_with_diff(prepared.target.clone(), fork_commit_id)
+                .map_err(map_index_denial)?;
+            index_diff = Some(diff);
             prepared.name_index = Some(truncated);
         }
         if let Some(Ok(state)) = self.branch_naming_states.get(&prepared.source)
@@ -99,9 +85,33 @@ impl LineageState {
                 .latest_event_commit()
                 .is_some_and(|latest| latest > fork_commit_id)
         {
-            let basis = match self.full_history.as_ref() {
-                Some(full) => rebuild_branch_naming_state_for_branch(
-                    full,
+            let basis = match (
+                prepared.name_index.as_ref(),
+                index_diff.as_ref(),
+                self.name_indexes.by_branch.get(&prepared.source),
+            ) {
+                (Some(truncated), Some(diff), Some(BranchNameIndex::Current(source_index))) => {
+                    let event_bounds = self.full_history.as_ref().map(|full| {
+                        branch_lineage_event_commit_bounds(
+                            full,
+                            &prepared.source,
+                            fork_commit_id,
+                            &self.event_commits_by_branch,
+                            &self.branch_forks,
+                        )
+                    });
+                    AuthoritativeBranchNamingState::truncate_from_source(
+                        state,
+                        source_index,
+                        truncated,
+                        diff,
+                        &prepared.target,
+                        fork_commit_id,
+                        event_bounds,
+                    )?
+                }
+                _ if self.full_history.is_some() => rebuild_branch_naming_state_for_branch(
+                    self.full_history.as_ref().unwrap(),
                     &prepared.source,
                     fork_commit_id,
                     &self.published_events,
@@ -109,24 +119,16 @@ impl LineageState {
                     &self.relation_lineage_holders,
                     &self.branch_forks,
                 )?,
-                None => match prepared.name_index.as_ref() {
-                    Some(truncated) => AuthoritativeBranchNamingState::from_truncated_index(
-                        truncated,
-                        fork_commit_id,
-                    )?,
-                    None => match self.name_indexes.by_branch.get(&prepared.source) {
-                        Some(BranchNameIndex::Current(index)) => {
-                            AuthoritativeBranchNamingState::from_truncated_index(
-                                index,
-                                fork_commit_id,
-                            )?
-                        }
-                        Some(BranchNameIndex::Unavailable(denial)) => {
-                            return Err(map_index_denial(denial.clone()));
-                        }
-                        None => return Err(NamingBasisUnavailable::Unrecoverable),
-                    },
-                },
+                (Some(truncated), _, _) => {
+                    AuthoritativeBranchNamingState::from_truncated_index(truncated, fork_commit_id)?
+                }
+                (None, _, Some(BranchNameIndex::Current(index))) => {
+                    AuthoritativeBranchNamingState::from_truncated_index(index, fork_commit_id)?
+                }
+                (None, _, Some(BranchNameIndex::Unavailable(denial))) => {
+                    return Err(map_index_denial(denial.clone()));
+                }
+                (None, _, None) => return Err(NamingBasisUnavailable::Unrecoverable),
             };
             prepared.naming_state = Some(basis);
         }
@@ -139,6 +141,12 @@ impl LineageState {
                 }
                 None => self.rebuild_historical_group_state(&prepared.source, fork_commit_id),
             }
+            .and_then(|rebuilt| {
+                let link = groups.base().map(|b| b.forked(prepared.target.clone()));
+                rebuilt
+                    .rebase_over(groups, link)
+                    .map_err(GroupStateDenial::StorageUnavailable)
+            })
             .map_err(map_group_denial)?;
             prepared.group_state = Some(rebuilt);
         }
@@ -359,12 +367,15 @@ mod tests {
             (idx.head(), idx.retention_floor()),
             (Some(CommitId(2)), Some(CommitId(2)))
         );
-        use crate::contracts::lineage::data::name_resolution::{
-            PersistentNameKey, PersistentNameSelection,
-        };
-        let g1_key = PersistentNameKey::Group(AggregateIdentity::from_bytes([1; 32]));
+        let g1_key = crate::contracts::lineage::data::name_resolution::PersistentNameKey::Group(
+            AggregateIdentity::from_bytes([1; 32]),
+        );
         assert!(idx
-            .resolve(g1_key, CommitId(1), &PersistentNameSelection::Exact)
+            .resolve(
+                g1_key,
+                CommitId(1),
+                &crate::contracts::lineage::data::name_resolution::PersistentNameSelection::Exact,
+            )
             .result
             .is_err());
         assert!(matches!(

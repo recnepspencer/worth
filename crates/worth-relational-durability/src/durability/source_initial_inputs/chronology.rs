@@ -154,6 +154,21 @@ pub(super) fn validate(
         {
             return Err(Refusal::Malformed);
         }
+        let cell_fork_origin = match (&cell.fork_source_branch_id, &cell.fork_provenance) {
+            (None, None) => None,
+            (Some(source), Some(prov)) => match prov.target() {
+                worth_foundational::FoundationalBranchTarget::Basis(target) => {
+                    Some((source.clone(), target.selected_commit_id()))
+                }
+                worth_foundational::FoundationalBranchTarget::Empty => {
+                    return Err(Refusal::Malformed);
+                }
+            },
+            _ => return Err(Refusal::Malformed),
+        };
+        if state.fork_origin != cell_fork_origin {
+            return Err(Refusal::Malformed);
+        }
     }
     if manifest.retired_branch_names.len()
         != fold
@@ -167,6 +182,38 @@ pub(super) fn validate(
                 .is_none_or(|state| state.lifecycle != Lifecycle::Deleting)
         })
     {
+        return Err(Refusal::Malformed);
+    }
+    let mut required_retired: std::collections::BTreeMap<BranchId, (BranchId, u64)> =
+        std::collections::BTreeMap::new();
+    let mut visited: std::collections::BTreeSet<BranchId> = std::collections::BTreeSet::new();
+    for cell in &manifest.branch_cells {
+        if !matches!(
+            cell.observation.target(),
+            worth_foundational::FoundationalBranchTarget::Basis(_)
+        ) {
+            continue;
+        }
+        let mut cur = cell.branch_id.clone();
+        while visited.insert(cur.clone()) {
+            let Some(state) = fold.current.get(&cur) else {
+                break;
+            };
+            let Some((parent, fork_commit)) = &state.fork_origin else {
+                break;
+            };
+            if state.removed {
+                required_retired.insert(cur, (parent.clone(), *fork_commit));
+            }
+            cur = parent.clone();
+        }
+    }
+    for edge in &manifest.naming.retired_forks {
+        if required_retired.remove(&edge.branch) != Some((edge.parent.clone(), edge.fork_commit)) {
+            return Err(Refusal::Malformed);
+        }
+    }
+    if !required_retired.is_empty() {
         return Err(Refusal::Malformed);
     }
     for root in &manifest.roots {

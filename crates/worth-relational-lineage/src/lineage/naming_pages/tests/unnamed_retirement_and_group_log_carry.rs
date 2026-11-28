@@ -130,6 +130,7 @@ fn seal_pages_appending_different_branch_group_log_carries_prior_page_without_re
         branches: Vec::new(),
         group_log: pages1.clone(),
         group_log_through: Some(1),
+        retired_forks: Vec::new(),
     };
     let store = ColdNamingStore::open(Arc::new(state), source.clone());
     let mut sink2 = CollectedMembers::default();

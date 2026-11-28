@@ -165,10 +165,22 @@ impl SchemeGroups {
         &self,
         store: Option<&crate::lineage::naming_pages::store::ColdNamingStore>,
     ) -> Result<Vec<(Vec<u8>, Option<Vec<u8>>)>, Cause> {
-        let mut rows = self.live.collect_encoded_in(store)?;
-        rows.extend(self.members.collect_encoded_in(store)?);
-        rows.extend(self.retired.collect_encoded_in(store)?);
-        rows.extend(self.member_owner.collect_encoded_in(store)?);
+        let mut rows = self.live.collect_encoded_prefix_in(
+            &tables::scoped_prefix(tables::GROUP_LIVE, &self.id),
+            store,
+        )?;
+        rows.extend(self.members.collect_encoded_prefix_in(
+            &tables::scoped_prefix(tables::GROUP_MEMBERS, &self.id),
+            store,
+        )?);
+        rows.extend(self.retired.collect_encoded_prefix_in(
+            &tables::scoped_prefix(tables::GROUP_RETIRED, &self.id),
+            store,
+        )?);
+        rows.extend(self.member_owner.collect_encoded_prefix_in(
+            &tables::scoped_prefix(tables::GROUP_MEMBER_OWNER, &self.id),
+            store,
+        )?);
         Ok(rows)
     }
 }
@@ -218,17 +230,27 @@ impl BranchGroupState {
     ///
     /// Complexity: O(schemes).
     pub(crate) fn fork(&self, base: Option<NamingBaseLink>) -> Self {
+        self.fork_subset(self.schemes.keys().map(String::as_str), base)
+    }
+
+    /// Like [`Self::fork`], retaining only the schemes named by `keep` while
+    /// preserving per-scheme `CowMap` sharing and cold-base posture.
+    pub(crate) fn fork_subset<'a>(
+        &self,
+        keep: impl IntoIterator<Item = &'a str>,
+        base: Option<NamingBaseLink>,
+    ) -> Self {
         Self {
-            schemes: self
-                .schemes
-                .iter()
-                .map(|(id, groups)| {
+            schemes: keep
+                .into_iter()
+                .filter_map(|id| {
+                    let groups = self.schemes.get(id)?;
                     let scheme_base = if groups.base().is_some() {
                         base.clone()
                     } else {
                         None
                     };
-                    (id.clone(), groups.fork(scheme_base))
+                    Some((id.to_owned(), groups.fork(scheme_base)))
                 })
                 .collect(),
             earliest_commit: self.earliest_commit,
