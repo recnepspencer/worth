@@ -1127,10 +1127,8 @@ The workflow Home carries the ordinary Home's desktop surface with the same
 signatures: `session`, `local_session`, `on_commit`, `committed_basis_version`,
 `primary_graph`, `active_branch`, `open_disposition`, `home_identity`,
 `home_incarnation`, `close_with_policy`, `close_clean` and
-`close_clean_with_policy`. It also forwards `correction_history`, `undo`,
-`redo` (with `_with_key` and `_authored`), `fork_preview`, `adopt_preview`,
-`continue_preview_recovery`, `close_branch`,
- `catch_up_temporal` and `pump_temporal` (with
+`close_clean_with_policy`. It also forwards `fork_preview`, `adopt_preview`,
+`continue_preview_recovery`, `close_branch`, `catch_up_temporal` and `pump_temporal` (with
 `_observing`) unchanged; `discard_preview(preview)` stands in for
 `preview.discard(&home)`. A session's `request(&scope)` and a snapshot's
 `with_request(..)` accept `vocabulary()` for every workflow lifecycle call and

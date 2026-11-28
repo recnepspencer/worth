@@ -35,9 +35,7 @@ mod shape;
 use super::super::super::authentication;
 use std::sync::Arc;
 use worth_query_decl::facade::{application_query::*, application_schema::*};
-use worth_query_host::facade::{
-    application_entry::*, primary_graph::*, runtime::ExecutionAllocationPolicy,
-};
+use worth_query_host::facade::{application_entry::*, runtime::ExecutionAllocationPolicy};
 const SCHEMA_OWNER: &str = "worth.query.consumer.ordered-event-variants";
 const SOURCE_COLD_POLICY: ApplicationManagedIndexColdSource =
     ApplicationManagedIndexColdSource::AdmitRebuild;

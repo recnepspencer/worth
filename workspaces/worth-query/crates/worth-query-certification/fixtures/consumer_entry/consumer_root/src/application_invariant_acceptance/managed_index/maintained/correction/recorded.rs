@@ -1,16 +1,8 @@
-//! Actual recorded inverse declarations for the Catalog contribution.
+//! Register the Catalog contribution's note and movement operations.
 use super::*;
-use worth_query_decl::facade::application_query::*;
 pub struct RegisterNote;
 pub struct RegisterMover;
 pub struct RegisterMotion;
-const PREIMAGE_BYTES: usize = 4096; // An explicit fixture retention ceiling; oversized values refuse.
-fn key(value: &str, identity: &'static str) -> Result<u64, ApplicationValueEncodeDenial> {
-    value.parse().map_err(|_| ApplicationValueEncodeDenial::CodecRejected {
-        binding_identity: worth_query_decl::facade::portable_identity::WorthQueryPortableTypeIdentity::declared(identity),
-        reason: "recorded catalog correction keys are unsigned decimal integers",
-    })
-}
 impl worth_query_decl::facade::application_schema::fragment::Registration<Catalog> for RegisterNote {
     fn register(
         schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<Catalog>,
@@ -21,8 +13,8 @@ impl worth_query_decl::facade::application_schema::fragment::Registration<Catalo
         Ok(schema
             .declared_operation(
                 note::WriteNote::reference()
-            .definition()
-            .no_external_effect()
+                    .definition()
+                    .no_external_effect()
                     .no_aftermath()
                     .finish(),
             )
@@ -39,8 +31,8 @@ impl worth_query_decl::facade::application_schema::fragment::Registration<Catalo
         Ok(schema
             .declared_operation(
                 mover::MoveName::reference()
-            .definition()
-            .no_external_effect()
+                    .definition()
+                    .no_external_effect()
                     .no_aftermath()
                     .finish(),
             )
@@ -58,8 +50,8 @@ impl worth_query_decl::facade::application_schema::fragment::Registration<Catalo
         Ok(schema
             .declared_operation(
                 motion::MoveVertex::reference()
-            .definition()
-            .no_external_effect()
+                    .definition()
+                    .no_external_effect()
                     .no_aftermath()
                     .finish(),
             )
