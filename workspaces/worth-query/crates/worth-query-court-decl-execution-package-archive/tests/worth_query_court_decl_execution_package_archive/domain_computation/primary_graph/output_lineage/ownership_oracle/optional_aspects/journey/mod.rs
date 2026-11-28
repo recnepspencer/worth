@@ -81,7 +81,7 @@ pub fn demand_expected<Schema: BirthSchema>(
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
-                .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
+                .checked_execution_request_for((*runtime.runtime_for_test()).product_runtime_for_test())
                 .unwrap();
             let branch = runtime.current_world();
             let principal_binding = runtime
@@ -212,7 +212,7 @@ pub fn materialize_source_in_phase<Schema: BirthSchema>(
     use worth_relational::facade::transactions::*;
     let scope = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     let execution = phase
-        .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
+        .checked_execution_request_for((*runtime.runtime_for_test()).product_runtime_for_test())
         .unwrap();
     let source = runtime
         .on_branch(runtime.current_world())

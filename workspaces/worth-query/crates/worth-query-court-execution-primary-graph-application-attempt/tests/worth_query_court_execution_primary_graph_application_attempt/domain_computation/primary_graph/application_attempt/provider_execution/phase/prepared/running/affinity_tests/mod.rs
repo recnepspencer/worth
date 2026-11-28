@@ -79,7 +79,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 lease.snapshot_for_test(),
                 lease.product(),
                 phase
-                    .execution_request_for_for_test(
+                    .checked_execution_request_for(
                         (*world.application.runtime_for_test()).product_runtime_for_test()
                     )
                     .expect("fixture issuer")
@@ -89,7 +89,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
 
             let substitute_lease = WorthQueryApplicationSnapshotLease::acquire_for_test(
                 &phase
-                    .execution_request_for_for_test(
+                    .checked_execution_request_for(
                         (*world.application.runtime_for_test()).product_runtime_for_test(),
                     )
                     .expect("fixture issuer"),
@@ -108,7 +108,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 substitute_lease.snapshot_for_test(),
                 substitute_lease.product(),
                 phase
-                    .execution_request_for_for_test(
+                    .checked_execution_request_for(
                         (*world.application.runtime_for_test()).product_runtime_for_test(),
                     )
                     .expect("fixture issuer")
@@ -122,7 +122,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
 
             let foreign_branch_snapshot = lease.handle_for_test().with_runtime_for_test(
                 &phase
-                    .execution_request_for_for_test(
+                    .checked_execution_request_for(
                         (*world.application.runtime_for_test()).product_runtime_for_test(),
                     )
                     .expect("fixture issuer"),
@@ -136,7 +136,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                     runtime
                         .fork_branch(
                             &phase
-                                .execution_request_for_for_test(
+                                .checked_execution_request_for(
                                     (*world.application.runtime_for_test())
                                         .product_runtime_for_test(),
                                 )
@@ -159,7 +159,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 &foreign_branch_snapshot,
                 lease.product(),
                 phase
-                    .execution_request_for_for_test(
+                    .checked_execution_request_for(
                         (*world.application.runtime_for_test()).product_runtime_for_test()
                     )
                     .expect("fixture issuer")
@@ -168,7 +168,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             .is_err());
             assert!(lease.handle_for_test().with_runtime_for_test(
                 &phase
-                    .execution_request_for_for_test(
+                    .checked_execution_request_for(
                         (*world.application.runtime_for_test()).product_runtime_for_test()
                     )
                     .expect("fixture issuer"),

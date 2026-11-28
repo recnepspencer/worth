@@ -1,38 +1,23 @@
-//! Handle-owned mechanism and authority-axis evidence.
+//! Installed correction mechanism and authority refusals.
 
-use worth_query_installation::facade::WorthQueryInstalledAftermathContract;
-
-use worth_query_execution::facade::domain_computation::compensate_recovery_handle;
-use worth_query_execution::facade::domain_computation::reconcile_recovery_handle;
-use worth_query_execution::facade::domain_computation::WorthQueryRecoveryEffectAuthority;
-use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandle;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::application_aftermath::recovery_handle::binding::WorthQueryRecoveryHandleBindingAxisProbe;
-use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind;
-
-pub fn probe_handle(aftermath: WorthQueryInstalledAftermathContract) -> WorthQueryRecoveryHandle {
-    let binding = WorthQueryRecoveryHandleBindingAxisProbe::real()
-        .installed_aftermath(aftermath)
-        .expires_at_unix_ms(Some(u64::MAX))
-        .finish();
-    WorthQueryRecoveryHandle::axis_probe_for_test(binding)
-}
-
-pub fn authority(handle: &WorthQueryRecoveryHandle) -> WorthQueryRecoveryEffectAuthority {
-    WorthQueryRecoveryEffectAuthority::mint_for_test(
-        handle.runtime_authority_for_test(),
-        handle.authority_identity_for_test(),
-        handle,
-    )
-}
+use super::fixture::{outboxless_handle, world};
+use worth_query_execution::facade::domain_computation::{
+    compensate_recovery_handle, reconcile_recovery_handle, WorthQueryRecoveryHandleDenialKind,
+};
 
 #[test]
 fn recorded_inverse_handle_denies_compensation_from_its_own_mechanism() {
-    let handle = probe_handle(worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::application_aftermath::aftermath_schema_fixture::freeze_account());
-    let authority = authority(&handle);
-    let denied = super::local_transition::in_phase(|phase| {
-        compensate_recovery_handle(&phase, handle, &authority)
-    })
-    .expect_err("recorded inverse is not compensation");
+    let world = world();
+    let (handle, admission) = outboxless_handle(&world);
+    let authority = world
+        .application
+        .admit_recovery_effect_authority(&handle, &admission)
+        .unwrap();
+    let denied = world
+        .application
+        .with_host_advancement(|phase| compensate_recovery_handle(&phase, handle, &authority))
+        .unwrap()
+        .expect_err("recorded inverse cannot be used for compensation");
     assert_eq!(
         denied.kind(),
         WorthQueryRecoveryHandleDenialKind::CompensationNotAdmitted
@@ -41,12 +26,17 @@ fn recorded_inverse_handle_denies_compensation_from_its_own_mechanism() {
 
 #[test]
 fn runtime_alone_handle_denies_reconciliation_from_its_own_authority() {
-    let handle = probe_handle(worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::application_aftermath::aftermath_schema_fixture::freeze_account());
-    let authority = authority(&handle);
-    let denied = super::local_transition::in_phase(|phase| {
-        reconcile_recovery_handle(&phase, handle, &authority)
-    })
-    .expect_err("runtime-alone authority is not reconciliation");
+    let world = world();
+    let (handle, admission) = outboxless_handle(&world);
+    let authority = world
+        .application
+        .admit_recovery_effect_authority(&handle, &admission)
+        .unwrap();
+    let denied = world
+        .application
+        .with_host_advancement(|phase| reconcile_recovery_handle(&phase, handle, &authority))
+        .unwrap()
+        .expect_err("runtime-alone authority cannot be used for reconciliation");
     assert_eq!(
         denied.kind(),
         WorthQueryRecoveryHandleDenialKind::ReconciliationNotAdmitted

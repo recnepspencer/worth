@@ -48,7 +48,7 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
         .expect("the fixture read owns its installed host call");
     let commit_authorization = admission
         .take_authorization_dependencies_for_test(
-            (*(*world.application.runtime_for_test()).authorization_for_test()).bridge_for_test(),
+            (*(*world.application.runtime_for_test()).authorization_for_test()).bridge(),
         )
         .unwrap();
 

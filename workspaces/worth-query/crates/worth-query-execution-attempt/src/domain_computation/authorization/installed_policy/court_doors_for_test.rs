@@ -1,12 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl WorthQueryInstalledAuthorizationRegistry {
-    #[doc(hidden)]
-    pub fn bridge_for_test(&self) -> &BridgeAuthorizationRuntime {
-        Self::bridge(self)
-    }
-}
 
 impl WorthQueryInstalledAuthorizationRegistry {
     #[doc(hidden)]

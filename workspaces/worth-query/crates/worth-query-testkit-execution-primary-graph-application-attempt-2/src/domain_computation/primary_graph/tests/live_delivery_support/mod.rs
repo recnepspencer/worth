@@ -69,7 +69,7 @@ pub fn commit_live_activity_on_product(
         .with_host_advancement(|phase| {
             let phase_custody = phase.test_host_request_for_test();
             let request_execution = phase
-                .execution_request_for_for_test(world.application.product_runtime())
+                .checked_execution_request_for(world.application.product_runtime())
                 .expect("the fixture lends its installed phase");
             let execution = &request_execution;
             let account = world

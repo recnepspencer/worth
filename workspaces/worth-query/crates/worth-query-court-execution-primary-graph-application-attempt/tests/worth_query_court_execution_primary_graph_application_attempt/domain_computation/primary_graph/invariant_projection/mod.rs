@@ -4,10 +4,6 @@ pub mod admission_denial;
 pub mod aggregate;
 #[path = "component/mod.rs"]
 pub mod component;
-#[path = "entity_resident/mod.rs"]
-pub mod entity_resident;
-#[path = "identity_encoding/mod.rs"]
-pub mod identity_encoding;
 #[path = "locked_reader/mod.rs"]
 pub mod locked_reader;
 #[path = "operation_reader/mod.rs"]
@@ -16,3 +12,6 @@ pub mod operation_reader;
 pub mod traversal;
 #[path = "walk/mod.rs"]
 pub mod walk;
+
+#[path = "entity_resident/mod.rs"]
+mod entity_resident;

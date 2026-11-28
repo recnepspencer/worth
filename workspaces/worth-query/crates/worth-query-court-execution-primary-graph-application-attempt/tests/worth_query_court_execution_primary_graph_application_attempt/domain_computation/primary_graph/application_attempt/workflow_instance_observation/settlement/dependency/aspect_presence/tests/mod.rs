@@ -23,7 +23,7 @@ fn optional_aspect_initialization_reconstructed_presence_detects_present_empty()
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     world.application.with_host_advancement(|phase| {
         let host = phase.test_host_request_for_test();
-        let execution = host.execution_request_for_for_test(world.application.product_runtime()).unwrap();
+        let execution = host.execution_request_for(world.application.product_runtime()).unwrap();
         let account = resolved_account(&host, &world, "unrelated", &request);
         let entity = account.entity_id_for_test();
         let kind = account.entity_kind_for_test();

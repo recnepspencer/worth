@@ -201,7 +201,7 @@ impl DecisionReadWorld {
         host: &TestHostRequest<'_>,
     ) -> WorthQuerySelectedProductOperation<'_, DecisionReadSchema> {
         let execution = host
-            .execution_request_for_for_test(self.application.product_runtime())
+            .execution_request_for(self.application.product_runtime())
             .expect("the fixture lends its installed phase");
         self.application
             .select_product_branch_for_test(

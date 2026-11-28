@@ -21,7 +21,7 @@ pub fn authenticated_principal(
 > {
     let external = world.authenticate("alice", Duration::from_secs(60), request);
     let execution = phase
-        .execution_request_for_for_test(world.application.product_runtime())
+        .execution_request_for(world.application.product_runtime())
         .expect("fixture lends its installed phase");
     world
         .application
@@ -52,7 +52,7 @@ pub fn resolved_account(
     crate::domain_computation::primary_graph::tests::fixture::Account,
 > {
     let execution = phase
-        .execution_request_for_for_test(world.application.product_runtime())
+        .execution_request_for(world.application.product_runtime())
         .expect("fixture lends its installed phase");
     world
         .application

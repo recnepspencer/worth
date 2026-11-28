@@ -8,6 +8,7 @@ license.workspace = true
 publish = false
 
 [dev-dependencies]
+worth-query-execution-query.workspace = true
 serde = { version = "1", features = ["derive"] }
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }

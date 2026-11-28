@@ -54,7 +54,7 @@ pub fn observe_roles<Schema: BirthSchema>(
         id
     };
     let execution = phase
-        .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
+        .checked_execution_request_for((*runtime.runtime_for_test()).product_runtime_for_test())
         .unwrap();
     let selected = runtime
         .on_branch(runtime.current_world())

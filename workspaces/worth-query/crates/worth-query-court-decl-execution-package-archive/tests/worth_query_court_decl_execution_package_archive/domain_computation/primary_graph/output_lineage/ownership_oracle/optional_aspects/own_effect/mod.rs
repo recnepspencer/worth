@@ -259,7 +259,7 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     clearing
         .with_application_advancement(&request, |phase| {
-            let execution = phase.execution_request_for_for_test((*clearing.runtime_for_test()).product_runtime_for_test()).unwrap();
+            let execution = phase.checked_execution_request_for((*clearing.runtime_for_test()).product_runtime_for_test()).unwrap();
             let selected = clearing.on_branch(clearing.current_world()).select(&phase).unwrap();
             let field = (*(*(*(*clearing.runtime_for_test()).primary_provider_for_test()).graph_for_test()).layout_for_test())
                 .field_locator_for_test("Body", SourceContent::at("SourceContent").aspect(), "SourceSelection").unwrap()

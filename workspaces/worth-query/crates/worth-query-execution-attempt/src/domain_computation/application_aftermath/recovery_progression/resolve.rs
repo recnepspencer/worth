@@ -99,5 +99,3 @@ pub fn resolve_recovery_handle(
     let _ = handle.consume(phase, RecoveryClaimDisposition::Consumed)?;
     Ok(admitted_read.into_resolution())
 }
-
-pub mod court_doors_for_test;

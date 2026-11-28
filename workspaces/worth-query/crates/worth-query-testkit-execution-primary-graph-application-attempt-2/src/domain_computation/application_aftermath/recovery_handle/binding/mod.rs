@@ -1,7 +1,6 @@
 use worth_relational::facade::history::BranchId;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding;
 use worth_query_installation::facade::WorthQueryInstalledAftermathContract;
-use worth_query_execution::facade::domain_computation::WorthQueryOperationScopeBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleBinding;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::commit_authority_binding::WorthQueryRetainedGovernedInput;
 pub struct WorthQueryRecoveryHandleBindingAxisProbe {
@@ -55,11 +54,6 @@ impl WorthQueryRecoveryHandleBindingAxisProbe {
     pub fn retained_governed_input_identity(mut self, value: Option<[u8; 32]>) -> Self {
         (*self.binding.retained_governed_input_mut_for_test()) =
             value.map(WorthQueryRetainedGovernedInput::axis_probe_for_test);
-        self
-    }
-
-    pub fn principal_scope(mut self, value: WorthQueryOperationScopeBinding) -> Self {
-        (*self.binding.principal_scope_mut_for_test()) = value;
         self
     }
 

@@ -85,7 +85,7 @@ pub fn durable_approval_basis_with_dependency_snapshot(
     let worth_foundational::facade::AspectValue::UInt64(expiry) = authority.expiry else {
         panic!("the fixture uses an unsigned capability expiry");
     };
-    WorthQueryWorkflowApprovalAuthorityBasis::from_retained_approval_for_test(
+    WorthQueryWorkflowApprovalAuthorityBasis::from_retained_approval(
         request,
         principal,
         authority.grant,

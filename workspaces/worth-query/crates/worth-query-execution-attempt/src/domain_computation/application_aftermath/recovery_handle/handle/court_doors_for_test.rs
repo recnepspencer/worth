@@ -11,22 +11,6 @@ impl WorthQueryRecoveryHandle {
     }
 }
 
-impl WorthQueryRecoveryHandle {
-    #[doc(hidden)]
-    pub fn axis_probe_for_test(binding: WorthQueryRecoveryHandleBinding) -> Self {
-        Self::axis_probe(binding)
-    }
-}
-
-impl WorthQueryRecoveryHandle {
-    #[doc(hidden)]
-    pub fn axis_probe_in_registry_for_test(
-        binding: WorthQueryRecoveryHandleBinding,
-        registry: Arc<WorthQueryRecoveryHandleRegistry>,
-    ) -> Self {
-        Self::axis_probe_in_registry(binding, registry)
-    }
-}
 
 impl WorthQueryRecoveryHandle {
     #[doc(hidden)]

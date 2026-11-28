@@ -35,7 +35,7 @@ pub fn observe_case(
     world.application.with_host_advancement(|phase| {
     let host_request = phase.test_host_request_for_test();
     let phase_custody = &host_request;
-    let request_execution = phase.execution_request_for_for_test(world.application.product_runtime()).expect("the pair fixture lends its installed phase");
+    let request_execution = phase.checked_execution_request_for(world.application.product_runtime()).expect("the pair fixture lends its installed phase");
     let execution = &request_execution;
 
     if count == 3 {

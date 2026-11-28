@@ -192,7 +192,7 @@ fn read_stops_survive_a_failed_live_lease_termination() {
                 let host = phase.test_host_request_for_test();
                 let installed_phase = lease.fixture_phase_for_test(&host);
                 let execution = installed_phase
-                    .execution_request_for_for_test(context.world.application.product_runtime())
+                    .checked_execution_request_for(context.world.application.product_runtime())
                     .unwrap();
                 execution
                     .run(

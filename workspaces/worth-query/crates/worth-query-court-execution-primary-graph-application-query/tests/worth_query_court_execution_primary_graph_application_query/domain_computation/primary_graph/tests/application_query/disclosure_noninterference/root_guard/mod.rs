@@ -148,7 +148,7 @@ pub fn root_guard_context(label: &str) -> RootGuardContext {
             let host_request = phase.test_host_request_for_test();
             let phase_custody = &host_request;
             let borrowed_execution = phase
-                .execution_request_for_for_test(world.application.product_runtime())
+                .checked_execution_request_for(world.application.product_runtime())
                 .expect("the fixture lends its installed phase");
             let execution = &borrowed_execution;
             let principal = world
