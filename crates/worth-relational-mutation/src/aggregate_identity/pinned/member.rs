@@ -13,14 +13,26 @@ pub(super) fn validate(
     work: &mut funding::AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<()> {
     validate_coordinate(registry, contract, member, work)?;
-    let Some(actual) = view.entity_metadata(member.carrier()) else {
+    if !validate_resident_kind(view, contract, member, work)? {
         return work.invalid(PlanDenial::MemberUnavailable);
+    }
+    Ok(())
+}
+
+pub(super) fn validate_resident_kind(
+    view: &InvariantStateView<'_>,
+    contract: &AggregateIdentityContractDeclaration,
+    member: &NativeMemberKey,
+    work: &mut funding::AggregateWork<'_, '_, '_, '_>,
+) -> BuildResult<bool> {
+    let Some(actual) = view.entity_metadata(member.carrier()) else {
+        return Ok(false);
     };
     work.acquired(Acquisition::Entity)?;
     if actual.kind_id != contract.member_kind {
         return work.invalid(PlanDenial::WrongMemberKind);
     }
-    Ok(())
+    Ok(true)
 }
 
 pub(super) fn validate_coordinate(

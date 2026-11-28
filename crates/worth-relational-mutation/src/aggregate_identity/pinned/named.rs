@@ -15,14 +15,28 @@ pub struct NamedAggregateRead {
     pub history: AggregateGroupHistory,
 }
 
+pub enum NamedAggregateLookupDenial {
+    MemberUnavailable,
+    IdentityUnavailable,
+    PublicationRequired,
+    Read(Cause),
+}
+
+impl From<Cause> for NamedAggregateLookupDenial {
+    fn from(cause: Cause) -> Self {
+        Self::Read(cause)
+    }
+}
+
 pub(super) fn read(
     definition: AggregateDefinitionIdentity,
-    selected: Result<Option<NamedAggregateRead>, Cause>,
+    selected: Result<NamedAggregateRead, NamedAggregateLookupDenial>,
     work: &mut funding::AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<result::Value> {
     let selected = require(selected, work)?;
     let mut members = BTreeSet::new();
     for (_, member) in selected.members.iter() {
+        work.checkpoint(1)?;
         work.retain(extent::tree_entry::<NativeMemberKey, ()>())?;
         members.insert(member.carrier.clone());
     }
@@ -37,7 +51,7 @@ pub(super) fn read(
 pub(super) fn lineage(
     definition: AggregateDefinitionIdentity,
     identity: AggregateIdentity,
-    read: impl Fn(AggregateIdentity) -> Result<Option<AggregateGroupHistory>, Cause>,
+    read: impl Fn(AggregateIdentity) -> Result<AggregateGroupHistory, NamedAggregateLookupDenial>,
     work: &mut funding::AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<lineage::Value> {
     let initial = require(read(identity), work)?;
@@ -80,13 +94,17 @@ pub(super) fn lineage(
 }
 
 fn require<T>(
-    value: Result<Option<T>, Cause>,
+    value: Result<T, NamedAggregateLookupDenial>,
     work: &funding::AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<T> {
     match value {
-        Ok(Some(value)) => Ok(value),
-        Ok(None) => work.invalid(PlanDenial::IdentityUnavailable),
-        Err(cause) => work.invalid(PlanDenial::Execution(cause)),
+        Ok(value) => Ok(value),
+        Err(denial) => work.invalid(match denial {
+            NamedAggregateLookupDenial::MemberUnavailable => PlanDenial::MemberUnavailable,
+            NamedAggregateLookupDenial::IdentityUnavailable => PlanDenial::IdentityUnavailable,
+            NamedAggregateLookupDenial::PublicationRequired => PlanDenial::PublicationRequired,
+            NamedAggregateLookupDenial::Read(cause) => PlanDenial::Execution(cause),
+        }),
     }
 }
 

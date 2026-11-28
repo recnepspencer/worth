@@ -5,7 +5,9 @@ use mutation::aggregate_identity::pinned::lineage::read_aggregate_lineage;
 use mutation::aggregate_identity::pinned::lineage::PinnedAggregateLineageRead;
 use mutation::aggregate_identity::pinned::lineage::PinnedAggregateLineageScope;
 use mutation::aggregate_identity::pinned::read_aggregate_scope;
-use mutation::aggregate_identity::pinned::named::NamedAggregateRead;
+use mutation::aggregate_identity::pinned::named::{
+    NamedAggregateLookupDenial as LookupDenial, NamedAggregateRead,
+};
 use contracts::aggregate_identity::transition::group::model::{
     AggregateGroupScheme, CanonicalGroupMemberIdentity,
 };
@@ -71,7 +73,9 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
     ) -> Result<PinnedAggregateLineageRead, PinnedAggregateReadDenial> {
         read_aggregate_lineage(self.pinned_basis(), execution, scope, |scheme, identity| {
             self.with_named_group_basis(|_, names, _| {
-                Ok(names.aggregate_group_history(scheme.id().as_str(), identity))
+                names
+                    .aggregate_group_history(scheme.id().as_str(), identity)
+                    .ok_or(LookupDenial::IdentityUnavailable)
             })
         })
     }
@@ -82,7 +86,7 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
         &self,
         scheme: &AggregateGroupScheme,
         member: &NativeMemberKey,
-    ) -> Result<Option<NamedAggregateRead>, Cause> {
+    ) -> Result<NamedAggregateRead, LookupDenial> {
         self.with_named_group_basis(|basis, names, commit| {
             let record = LineageRecordTarget::Entity(member.carrier());
             let PersistentNameOfRecord::Live {
@@ -90,7 +94,7 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
                 ..
             } = names.name_of_record(record)
             else {
-                return Ok(None);
+                return Err(LookupDenial::MemberUnavailable);
             };
             let key = CanonicalGroupMemberIdentity::for_member(carrier, member);
             let state = basis
@@ -99,24 +103,31 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
                     GroupStateDenial::StorageUnavailable(cause) => storage(cause),
                     _ => storage(StorageCause::Damaged),
                 })?;
-            let Some((identity, members)) = state
+            let groups = state
                 .read(basis.scope())
                 .scheme(scheme.id().as_str())
-                .and_then(|groups| {
-                    let identity = groups.owner_of(&key)?;
-                    let group = groups.group(&identity)?;
-                    let actual = group.members.get(&key)?;
-                    (actual.carrier == *member).then_some((identity, group.members))
-                })
-            else {
-                return Ok(None);
-            };
-            let history = names.aggregate_group_history(scheme.id().as_str(), identity);
-            Ok(history.map(|history| NamedAggregateRead {
+                .ok_or(LookupDenial::MemberUnavailable)?;
+            let identity = groups
+                .owner_of(&key)
+                .ok_or(LookupDenial::MemberUnavailable)?;
+            let group = groups
+                .group(&identity)
+                .ok_or(LookupDenial::IdentityUnavailable)?;
+            if !group
+                .members
+                .get(&key)
+                .is_some_and(|actual| actual.carrier == *member)
+            {
+                return Err(LookupDenial::MemberUnavailable);
+            }
+            let history = names
+                .aggregate_group_history(scheme.id().as_str(), identity)
+                .ok_or(LookupDenial::IdentityUnavailable)?;
+            Ok(NamedAggregateRead {
                 identity,
-                members,
+                members: group.members,
                 history,
-            }))
+            })
         })
     }
 
@@ -126,12 +137,15 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
             &BranchNamingBasisGuard<'_>,
             PersistentNameObservationView<'_>,
             CommitId,
-        ) -> Result<Option<T>, Cause>,
-    ) -> Result<Option<T>, Cause> {
+        ) -> Result<T, LookupDenial>,
+    ) -> Result<T, LookupDenial> {
         use worth_relational_lineage::internal_port::lineage::index::PersistentNameIndexDenial;
 
+        if self.applied_changes.is_some() {
+            return Err(LookupDenial::PublicationRequired);
+        }
         let Some(commit) = self.pinned_basis().commit_id() else {
-            return Ok(None);
+            return Err(LookupDenial::IdentityUnavailable);
         };
         let binding = self
             .aggregate_naming
@@ -149,7 +163,7 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
         );
         basis.scope().settle().map_err(storage)?;
         if basis.scope().pruned().is_some() {
-            return Err(Cause::HistoricalVisibility(contracts::visibility::snapshot_states::historical_denial::HistoricalVisibilityDenial::RetentionUnavailable));
+            return Err(Cause::HistoricalVisibility(contracts::visibility::snapshot_states::historical_denial::HistoricalVisibilityDenial::RetentionUnavailable).into());
         }
         result
     }

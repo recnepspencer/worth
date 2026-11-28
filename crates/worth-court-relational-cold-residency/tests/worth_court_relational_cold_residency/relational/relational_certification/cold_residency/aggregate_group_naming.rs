@@ -1,5 +1,7 @@
 //! Automatic graph partition naming through publication and external recovery.
 mod fixture;
+mod read_denials;
+mod rule_reads;
 mod schema;
 
 use self::fixture::{commit, connect, create, created, read, relation, scope, start};
@@ -150,9 +152,13 @@ fn physical_orbit_mints_from_its_entity_name_on_the_birth_commit() {
 }
 
 fn disconnect(relation_id: RelationId) -> WorkerIntentBatch {
-    WorkerIntentBatch::new("split").push(MutationIntent::Relation(RelationMutationIntent::Delete(
-        DeleteRelationIntent { relation_id },
-    )))
+    WorkerIntentBatch::new("split").push(delete_relation(relation_id))
+}
+
+fn delete_relation(relation_id: RelationId) -> MutationIntent {
+    MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
+        relation_id,
+    }))
 }
 
 #[test]

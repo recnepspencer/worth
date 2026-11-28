@@ -109,6 +109,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             Native::NotAggregateRelation => Kind::NotOrbitRelation,
             Native::DefinitionUnavailable => Kind::AggregateDefinitionUnavailable,
             Native::IdentityUnavailable => Kind::AggregateIdentityUnavailable,
+            Native::PublicationRequired => Kind::AggregatePublicationRequired,
             Native::WorkLimitExceeded => {
                 self.work_budget.mark_exceeded();
                 Kind::WorkBudgetExceeded

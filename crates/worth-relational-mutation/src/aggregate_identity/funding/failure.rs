@@ -25,6 +25,7 @@ pub(in crate::internal_port::aggregate_identity) enum PlanDenial {
     AmbiguousAggregateRelation,
     DefinitionUnavailable,
     IdentityUnavailable,
+    PublicationRequired,
     AmbiguousIdentity,
     LineageCycle,
     MemberUnavailable,

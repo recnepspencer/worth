@@ -105,7 +105,7 @@ pub fn read_aggregate_scope<Projection>(
     named_read: impl FnOnce(
         &super::AggregateGroupScheme,
         &NativeMemberKey,
-    ) -> Result<Option<named::NamedAggregateRead>, Cause>,
+    ) -> Result<named::NamedAggregateRead, named::NamedAggregateLookupDenial>,
 ) -> Result<PinnedAggregateRead<Projection>, PinnedAggregateReadDenial> {
     coordination::read(
         basis,
@@ -117,6 +117,7 @@ pub fn read_aggregate_scope<Projection>(
             let registry = root.schema_authority().registry();
             if let Some(scheme) = contract.group_scheme(registry) {
                 member::validate_coordinate(registry, contract, &scope.member, funded)?;
+                member::validate_resident_kind(view, contract, &scope.member, funded)?;
                 return named::read(
                     contract.definition,
                     named_read(&scheme, &scope.member),

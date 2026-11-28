@@ -130,8 +130,8 @@ pub fn read_aggregate_lineage(
         &super::super::AggregateGroupScheme,
         AggregateIdentity,
     ) -> Result<
-        Option<crate::contracts::aggregate_identity::group_lineage::AggregateGroupHistory>,
-        Cause,
+        crate::contracts::aggregate_identity::group_lineage::AggregateGroupHistory,
+        named::NamedAggregateLookupDenial,
     >,
 ) -> Result<PinnedAggregateLineageRead, PinnedAggregateReadDenial> {
     coordination::read(
