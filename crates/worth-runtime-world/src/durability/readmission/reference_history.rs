@@ -22,7 +22,7 @@ impl WorldCheckpointImage {
         Ok(())
     }
 
-    pub(in crate::durability) fn recorded_reference(
+    pub(crate) fn recorded_reference(
         &self,
         expected: &DurableWorldHead,
     ) -> Option<&WorldImageHead> {

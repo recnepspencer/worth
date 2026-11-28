@@ -177,6 +177,7 @@ fn mixed_fork_siblings_reopen_both_actual_owner_originals() {
 
 mod close_custody;
 mod original_continuation;
+mod original_publication;
 mod unresolved_creation;
 
 #[test]

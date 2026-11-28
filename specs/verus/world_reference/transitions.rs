@@ -1,8 +1,8 @@
-//! proof-mirror: crates/worth-runtime-world/src/identity/branch.rs:70-78 sha256:f02158d153d3616c474c9dde6bc5491318ca335f72ced1a2c041037b831b95b2
-//! proof-mirror: crates/worth-runtime-world/src/durability/artifact/creation.rs:85-86 sha256:6d3e6f1906d6d42cb768c074b30d293a2216348c8f183eb1a91f668bada8473e
-//! proof-mirror: crates/worth-runtime-world/src/branch/reference_cell/successor_validation.rs:51-57 sha256:03e8b6a881ca1e02cfb0c8edeabf861d6ba425259da4908d5344696c429e1949
-//! proof-mirror: crates/worth-runtime-world/src/durability/readmission/open.rs:16-38 sha256:b776adbb2aa1aa8ab01f8c66dfdd0951561627c75f16848909aea840725a54ff
-//! proof-mirror: crates/worth-runtime-world/src/durability/readmission/journal.rs:251-255 sha256:a8b8cff27e902f2b09f1605090a7d3830d881465db528b16662b98680a1fdaac
+//! proof-mirror: crates/worth-runtime-world/src/identity/branch.rs:70-78 sha256:632d8e80e114d70f91f36fef75f4c9c4aa74f8a08dcb18fa74d0df804bea7f5a
+//! proof-mirror: crates/worth-runtime-world/src/durability/artifact/creation.rs:85-86 sha256:a77e232bc649201fecf5cd1d8058e6c9a6f9a18e1507c8378351d95819b49bd8
+//! proof-mirror: crates/worth-runtime-world/src/branch/reference_cell/successor_validation.rs:51-57 sha256:5913bbfeff344e060e50dc8c20b10d4a435410c9e722515e3af315abf78e245e
+//! proof-mirror: crates/worth-runtime-world/src/durability/readmission/open.rs:16-38 sha256:9be38afccd560df148266a3b110f35f245436489c5d0845be15f9df299c1a003
+//! proof-mirror: crates/worth-runtime-world/src/durability/readmission/journal.rs:251-255 sha256:5c9f487a94a4ae2535e5430c529f792b0b153e58740edbebb7cc5011ba0dcdff
 //!
 //! World reference and recovery transitions after the owners supply the exact
 //! selected commit, its direct parent, and the admitted journal disposition.
