@@ -1,36 +1,16 @@
 //! The durable Branch recipe owns its exact Native input independently of history.
 use crate::durability::WorldDurableMediumBinding;
-use crate::inspection::RuntimeWorldRetentionKey;
 use crate::retention::HistoryRetentionObligation;
 mod occurrences;
 use occurrences::CheckpointOccurrences;
 pub(crate) use occurrences::PreparedCheckpointOccurrence;
 
-/// This holder's obligation was released; other holders may still retain the basis.
+/// Completed retirement carrying the funded origin and occurrence allocations
+/// until the owning Home releases them.
 #[derive(Debug)]
 pub struct WorldCheckpointOriginRetirement {
-    retired: RetiredOriginInner,
-}
-#[derive(Debug)]
-enum RetiredOriginInner {
-    #[cfg(test)]
-    Single(WorldCheckpointOrigin),
-    RootAndCollection(WorldCheckpointOrigin, CheckpointOccurrences),
-    Collection(CheckpointOccurrences),
-}
-impl WorldCheckpointOriginRetirement {
-    /// Exact registry entries now eligible for the owning close's reclamation.
-    /// Other live obligations may still retain either entry.
-    pub fn retention_keys(&self) -> Box<dyn Iterator<Item = &RuntimeWorldRetentionKey> + '_> {
-        match &self.retired {
-            #[cfg(test)]
-            RetiredOriginInner::Single(origin) => Box::new(origin.keys.iter()),
-            RetiredOriginInner::RootAndCollection(root, occurrences) => {
-                Box::new(root.keys.iter().chain(occurrences.retired_keys()))
-            }
-            RetiredOriginInner::Collection(occurrences) => Box::new(occurrences.retired_keys()),
-        }
-    }
+    _root: Option<WorldCheckpointOrigin>,
+    _occurrences: CheckpointOccurrences,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -57,7 +37,6 @@ pub(crate) struct WorldCheckpointOrigin {
     pub(super) commit_ordinal: u64,
     basis: crate::basis::NativeBasisRetirement,
     retired_components: Option<crate::retention::component_obligation::RetiringHistoryComponents>,
-    pub(super) keys: [RuntimeWorldRetentionKey; 2],
     pub(super) complete: bool,
     pins: HistoryRetentionObligation,
 }
@@ -82,22 +61,10 @@ impl WorldCheckpointOrigin {
             commit_ordinal,
             basis: crate::basis::NativeBasisRetirement::new(basis.relational_basis().clone()),
             retired_components: None,
-            keys: pins.retention_keys(),
             complete: false,
             pins,
         }
     }
-    #[cfg(test)]
-    pub(crate) fn into_retired(self) -> Result<WorldCheckpointOriginRetirement, Self> {
-        if self.complete {
-            Ok(WorldCheckpointOriginRetirement {
-                retired: RetiredOriginInner::Single(self),
-            })
-        } else {
-            Err(self)
-        }
-    }
-
     pub(crate) fn advance_retirement(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -191,21 +158,18 @@ impl WorldDurableMediumBinding {
 
     /// Release checkpoint origin holdings for durably disposed commits.
     /// Drops all released basis/pin obligations outside the origin lock.
-    pub(crate) fn dispose_checkpoint_commits(
-        &self,
-        ordinals: &std::collections::BTreeSet<u64>,
-    ) -> Vec<RuntimeWorldRetentionKey> {
+    pub(crate) fn dispose_checkpoint_commits(&self, ordinals: &std::collections::BTreeSet<u64>) {
         if ordinals.is_empty() {
-            return Vec::new();
+            return;
         }
-        let (removed_root, removed, keys) = {
+        let (removed_root, removed) = {
             let mut origin = self
                 .checkpoint_origin
                 .lock()
                 .unwrap_or_else(|e| e.into_inner());
             match &mut *origin {
                 WorldCheckpointOriginState::Held(root, occurrences) => {
-                    let (removed, mut keys) = occurrences.dispose_commits(ordinals);
+                    let removed = occurrences.dispose_commits(ordinals);
                     if ordinals.contains(&root.commit_ordinal) {
                         let WorldCheckpointOriginState::Held(root, occurrences) = std::mem::replace(
                             &mut *origin,
@@ -214,23 +178,21 @@ impl WorldDurableMediumBinding {
                             unreachable!("same held state")
                         };
                         *origin = WorldCheckpointOriginState::HeldTail(occurrences);
-                        keys.extend(root.keys.iter().cloned());
-                        (Some(root), removed, keys)
+                        (Some(root), removed)
                     } else {
-                        (None, removed, keys)
+                        (None, removed)
                     }
                 }
                 WorldCheckpointOriginState::HeldTail(occurrences) => {
-                    let (removed, keys) = occurrences.dispose_commits(ordinals);
-                    (None, removed, keys)
+                    let removed = occurrences.dispose_commits(ordinals);
+                    (None, removed)
                 }
                 WorldCheckpointOriginState::Uninstalled | WorldCheckpointOriginState::Retired => {
-                    (None, Vec::new(), Vec::new())
+                    (None, Vec::new())
                 }
             }
         };
         drop((removed_root, removed));
-        keys
     }
 
     pub(crate) fn retire_checkpoint_origin(
@@ -263,15 +225,15 @@ impl WorldDurableMediumBinding {
             WorldCheckpointOriginState::Uninstalled => return Err(Denial::NotInstalled),
             WorldCheckpointOriginState::Retired => return Err(Denial::AlreadyRetired),
         }
-        let retired = match std::mem::replace(&mut *state, WorldCheckpointOriginState::Retired) {
-            WorldCheckpointOriginState::Held(root, occurrences) => {
-                RetiredOriginInner::RootAndCollection(root, occurrences)
-            }
-            WorldCheckpointOriginState::HeldTail(occurrences) => {
-                RetiredOriginInner::Collection(occurrences)
-            }
-            _ => unreachable!("same completed origin"),
-        };
-        Ok(WorldCheckpointOriginRetirement { retired })
+        let (_root, _occurrences) =
+            match std::mem::replace(&mut *state, WorldCheckpointOriginState::Retired) {
+                WorldCheckpointOriginState::Held(root, occurrences) => (Some(root), occurrences),
+                WorldCheckpointOriginState::HeldTail(occurrences) => (None, occurrences),
+                _ => unreachable!("same completed origin"),
+            };
+        Ok(WorldCheckpointOriginRetirement {
+            _root,
+            _occurrences,
+        })
     }
 }

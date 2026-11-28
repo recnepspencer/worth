@@ -8,12 +8,18 @@ pub(crate) use worth_runtime_world::facade::*;
 pub(crate) struct ProbeWork {
     pub(crate) history_lookups: u64,
     pub(crate) pin_contacts: u64,
-    pub(crate) pin_hits: u64,
-    pub(crate) dependency_acquires: u64,
 }
-pub(crate) fn observe_probe(population: &Population) -> (u128, ProbeWork) {
+pub(crate) fn observe_probe(population: &mut Population) -> (u128, ProbeWork) {
     let inspection = population.court.world.inspection_port();
-    let before = inspection.retention_costs().unwrap();
+    let signal = population
+        .court
+        .signal
+        .owner_component_services()
+        .unwrap()
+        .basis_port();
+    let relational = &population.court.records.runtime;
+    let before_relational = relational.branch_basis_cost_counters();
+    let before_signal = signal.owner_service_cost_snapshot().unwrap();
     let history = inspection.history_snapshot().unwrap().costs();
     let start = std::time::Instant::now();
     let observed = population.court.observe(&population.root);
@@ -23,40 +29,35 @@ pub(crate) fn observe_probe(population: &Population) -> (u128, ProbeWork) {
         population.root.selected_commit()
     );
     drop(observed);
-    let after = inspection.retention_costs().unwrap();
+    let after_relational = relational.branch_basis_cost_counters();
+    let after_signal = signal.owner_service_cost_snapshot().unwrap();
     let next_history = inspection.history_snapshot().unwrap().costs();
     let work = ProbeWork {
         history_lookups: next_history.entry_lookups() - history.entry_lookups(),
-        pin_contacts: after.owner_acquisition_contacts() - before.owner_acquisition_contacts(),
-        pin_hits: after.unique_pin_hits() - before.unique_pin_hits(),
-        dependency_acquires: after.dependency_acquires() - before.dependency_acquires(),
+        pin_contacts: (after_relational.external_retention_acquires
+            - before_relational.external_retention_acquires)
+            + (after_signal.retention_registry_contacts()
+                - before_signal.retention_registry_contacts()),
     };
     assert_eq!(
         work.pin_contacts, 0,
         "admitted observation reuses existing exact pins"
     );
-    let report = population
-        .court
-        .world
-        .lifecycle_port()
-        .reclaim_retention(
-            &[RuntimeWorldRetentionKey::signal(population.root.basis())],
-            1,
-        )
-        .unwrap();
-    assert!(report.examined() <= 1);
-    assert_eq!(report.reclaimed(), 0, "reachable root cannot be pruned");
     (elapsed, work)
 }
 pub(crate) fn publication_probe(
     population: &mut Population,
 ) -> (u128, CompositePublicationCostCounters) {
-    let before = population
+    let signal = population
         .court
-        .world
-        .inspection_port()
-        .retention_costs()
-        .unwrap();
+        .signal
+        .owner_component_services()
+        .unwrap()
+        .basis_port();
+    let before = signal
+        .owner_service_cost_snapshot()
+        .unwrap()
+        .retention_registry_contacts();
     let history_before = population
         .court
         .world
@@ -84,15 +85,12 @@ pub(crate) fn publication_probe(
         1,
         "publication writes one carried history slot at every population size"
     );
-    let after = population
-        .court
-        .world
-        .inspection_port()
-        .retention_costs()
-        .unwrap();
     assert_eq!(
-        after.signal_contacts(),
-        before.signal_contacts(),
+        signal
+            .owner_service_cost_snapshot()
+            .unwrap()
+            .retention_registry_contacts(),
+        before,
         "publication reuses the exact Signal pin"
     );
     drop(done);

@@ -8,11 +8,12 @@ use super::super::super::component_obligation::{
     ComponentBasisReleaseOutcome, ComponentBasisReleaseReceipt, RetentionReleaseDenial,
     RetentionReleaseFailure,
 };
-use super::super::super::dependency_counts::ComponentBasisDependencyCounts;
 use super::super::super::obligation_transfer::RetentionTransferDenial;
 use super::super::super::unique_component_pin::ComponentBasisPinClaim;
-use super::super::super::ComponentBasisDependencyClass;
-use super::{FlightCompletion, PinEntry, PinFlight, RuntimeWorldRetentionOwner};
+use super::super::super::ComponentClaimKind;
+#[cfg(test)]
+use super::PinEntry;
+use super::{FlightCompletion, PinFlight, RuntimeWorldRetentionOwner};
 
 impl<D, I, T> RetentionControlSurface for RuntimeWorldRetentionOwner<D, I, T>
 where
@@ -22,7 +23,7 @@ where
 {
     fn try_retire_shared_pair(
         &self,
-        dependency: ComponentBasisDependencyClass,
+        dependency: ComponentClaimKind,
         relational: &ComponentBasisPinClaim,
         signal: &ComponentBasisPinClaim,
     ) -> Result<(), ()> {
@@ -35,7 +36,6 @@ where
             if claim.owner != state.owner_identity
                 || claim.dependency != dependency
                 || entry.lease_identity != claim.lease_identity
-                || entry.owner_lease.is_none()
                 || entry.counts.get(claim.dependency) == 0
                 || entry.counts.total() <= 1
             {
@@ -52,7 +52,10 @@ where
                 .expect("validated dependency");
         }
         state.active_obligations -= 2;
-        state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(2);
+        #[cfg(test)]
+        {
+            state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(2);
+        }
         Ok(())
     }
 
@@ -76,7 +79,7 @@ where
     fn transfer_claim(
         &self,
         mut claim: ComponentBasisPinClaim,
-        target: ComponentBasisDependencyClass,
+        target: ComponentClaimKind,
     ) -> Result<ComponentBasisPinClaim, (ComponentBasisPinClaim, RetentionTransferDenial)> {
         let expected = self.lock().owner_identity;
         if claim.owner != expected {
@@ -89,10 +92,7 @@ where
         let Some(entry) = state.entries.get_mut(&claim.key) else {
             return Err((claim, RetentionTransferDenial::UnknownPin));
         };
-        if entry.lease_identity != claim.lease_identity
-            || entry.owner_lease.is_none()
-            || entry.counts.get(claim.dependency) == 0
-        {
+        if entry.lease_identity != claim.lease_identity || entry.counts.get(claim.dependency) == 0 {
             return Err((claim, RetentionTransferDenial::UnknownPin));
         }
         if entry.counts.get(target) == usize::MAX {
@@ -114,7 +114,7 @@ where
         &self,
         relational: &mut ComponentBasisPinClaim,
         signal: &mut ComponentBasisPinClaim,
-        target: ComponentBasisDependencyClass,
+        target: ComponentClaimKind,
     ) -> Result<(), RetentionTransferDenial> {
         if relational.key == signal.key {
             return Err(RetentionTransferDenial::BasisMismatch);
@@ -125,13 +125,10 @@ where
         }
         let relational_valid = state.entries.get(&relational.key).is_some_and(|entry| {
             entry.lease_identity == relational.lease_identity
-                && entry.owner_lease.is_some()
                 && entry.counts.get(relational.dependency) > 0
         });
         let signal_valid = state.entries.get(&signal.key).is_some_and(|entry| {
-            entry.lease_identity == signal.lease_identity
-                && entry.owner_lease.is_some()
-                && entry.counts.get(signal.dependency) > 0
+            entry.lease_identity == signal.lease_identity && entry.counts.get(signal.dependency) > 0
         });
         if !relational_valid || !signal_valid {
             return Err(RetentionTransferDenial::UnknownPin);
@@ -192,10 +189,7 @@ where
                 denial: RetentionReleaseDenial::UnknownPin,
             });
         };
-        if entry.lease_identity != claim.lease_identity
-            || entry.owner_lease.is_none()
-            || entry.counts.get(claim.dependency) == 0
-        {
+        if entry.lease_identity != claim.lease_identity || entry.counts.get(claim.dependency) == 0 {
             return Err(RetentionReleaseFailure {
                 claim,
                 denial: RetentionReleaseDenial::UnknownPin,
@@ -208,21 +202,28 @@ where
                 .decrement(claim.dependency)
                 .expect("validated source count");
             state.active_obligations -= 1;
-            state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(1);
+            #[cfg(test)]
+            {
+                state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(1);
+            }
             return Ok(ComponentBasisReleaseReceipt::owner_issued(
                 key,
                 claim.lease_identity,
                 ComponentBasisReleaseOutcome::SharedOwnerLease,
             ));
         }
-        let mut entry = state.entries.remove(&key).expect("validated final entry");
-        let lease = entry
-            .owner_lease
-            .take()
-            .expect("validated live owner lease");
-        let flight = Arc::new(PinFlight::new());
+        let PinEntry {
+            owner_lease: lease,
+            counts,
+            lease_identity,
+        } = state.entries.remove(&key).expect("validated final entry");
+        let flight = Arc::new(PinFlight::new(true));
         state.flights.insert(key.clone(), Arc::clone(&flight));
-        state.costs.owner_release_contacts = state.costs.owner_release_contacts.saturating_add(1);
+        #[cfg(test)]
+        {
+            state.costs.owner_release_contacts =
+                state.costs.owner_release_contacts.saturating_add(1);
+        }
         drop(state);
 
         let result = catch_unwind(AssertUnwindSafe(|| self.release_component(lease)));
@@ -230,17 +231,12 @@ where
         state.flights.remove(&key);
         match result {
             Ok(Ok(())) => {
-                state.entries.insert(
-                    key.clone(),
-                    PinEntry {
-                        owner_lease: None,
-                        counts: ComponentBasisDependencyCounts::zero(),
-                        lease_identity: entry.lease_identity,
-                        basis_order: entry.basis_order,
-                    },
-                );
                 state.active_obligations -= 1;
-                state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(1);
+                #[cfg(test)]
+                {
+                    state.costs.dependency_releases =
+                        state.costs.dependency_releases.saturating_add(1);
+                }
                 flight.finish(FlightCompletion::Released);
                 Ok(ComponentBasisReleaseReceipt::owner_issued(
                     key,
@@ -249,8 +245,14 @@ where
                 ))
             }
             Ok(Err(failure)) => {
-                entry.owner_lease = Some(failure.lease);
-                state.entries.insert(key, entry);
+                state.entries.insert(
+                    key,
+                    PinEntry {
+                        owner_lease: failure.lease,
+                        counts,
+                        lease_identity,
+                    },
+                );
                 flight.finish(FlightCompletion::Released);
                 Err(RetentionReleaseFailure {
                     claim,
@@ -258,17 +260,12 @@ where
                 })
             }
             Err(_) => {
-                state.entries.insert(
-                    key.clone(),
-                    PinEntry {
-                        owner_lease: None,
-                        counts: ComponentBasisDependencyCounts::zero(),
-                        lease_identity: entry.lease_identity,
-                        basis_order: entry.basis_order,
-                    },
-                );
                 state.active_obligations -= 1;
-                state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(1);
+                #[cfg(test)]
+                {
+                    state.costs.dependency_releases =
+                        state.costs.dependency_releases.saturating_add(1);
+                }
                 flight.finish(FlightCompletion::Released);
                 Ok(ComponentBasisReleaseReceipt::owner_issued(
                     key,
@@ -281,7 +278,7 @@ where
 
     fn abandon_claim(&self, claim: ComponentBasisPinClaim) {
         let key = claim.key.clone();
-        let (lease, flight, lease_identity, basis_order) = {
+        let (lease, flight) = {
             let mut state = self.lock();
             if claim.owner != state.owner_identity {
                 return;
@@ -290,7 +287,6 @@ where
                 return;
             };
             if entry.lease_identity != claim.lease_identity
-                || entry.owner_lease.is_none()
                 || entry.counts.get(claim.dependency) == 0
             {
                 return;
@@ -302,33 +298,34 @@ where
                     .decrement(claim.dependency)
                     .expect("validated source count");
                 state.active_obligations -= 1;
-                state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(1);
+                #[cfg(test)]
+                {
+                    state.costs.dependency_releases =
+                        state.costs.dependency_releases.saturating_add(1);
+                }
                 return;
             }
-            let mut entry = state.entries.remove(&key).expect("validated final entry");
-            let lease = entry
-                .owner_lease
-                .take()
-                .expect("validated live owner lease");
-            let flight = Arc::new(PinFlight::new());
+            let lease = state
+                .entries
+                .remove(&key)
+                .expect("validated final entry")
+                .owner_lease;
+            let flight = Arc::new(PinFlight::new(true));
             state.flights.insert(key.clone(), Arc::clone(&flight));
             state.active_obligations -= 1;
-            state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(1);
-            state.costs.owner_drop_releases = state.costs.owner_drop_releases.saturating_add(1);
-            (lease, flight, entry.lease_identity, entry.basis_order)
+            #[cfg(test)]
+            {
+                state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(1);
+            }
+            #[cfg(test)]
+            {
+                state.costs.owner_drop_releases = state.costs.owner_drop_releases.saturating_add(1);
+            }
+            (lease, flight)
         };
         drop(lease);
         let mut state = self.lock();
         state.flights.remove(&key);
-        state.entries.insert(
-            key,
-            PinEntry {
-                owner_lease: None,
-                counts: ComponentBasisDependencyCounts::zero(),
-                lease_identity,
-                basis_order,
-            },
-        );
         flight.finish(FlightCompletion::Released);
     }
 }

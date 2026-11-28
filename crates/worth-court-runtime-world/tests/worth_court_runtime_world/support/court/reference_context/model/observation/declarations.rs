@@ -96,25 +96,12 @@ impl ProductObserver {
         for (relational, keys) in [(true, &self.relational_keys), (false, &self.signal_keys)] {
             for (basis, key) in keys {
                 let retained = inspection.inspect_retention(key).unwrap();
-                let expected = model.dependencies(relational, *basis);
-                for (index, class) in [
-                    ComponentBasisDependencyClass::ProductBranchHead,
-                    ComponentBasisDependencyClass::RetainedCompositeHistory,
-                    ComponentBasisDependencyClass::AdmittedObservation,
-                    ComponentBasisDependencyClass::ActivePublicationAttempt,
-                    ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects,
-                ]
-                .into_iter()
-                .enumerate()
-                {
-                    let actual = retained
-                        .as_ref()
-                        .map_or(0, |entry| entry.dependencies().get(class));
-                    assert_eq!(
-                        actual, expected[index],
-                        "semantic dependency {basis}/{relational}/{class:?}"
-                    );
-                }
+                let claims: usize = model.dependencies(relational, *basis).into_iter().sum();
+                assert_eq!(
+                    retained.map(|entry| entry.live_claims()),
+                    (claims != 0).then_some(claims),
+                    "live claims for component basis {basis} (relational: {relational})"
+                );
             }
         }
     }

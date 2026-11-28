@@ -46,7 +46,7 @@ pub(crate) fn profile(
                     "profile={name} requested={axis:?}/{size} actual_B_H_U_A_P_O={:?}",
                     population.axes()
                 );
-                let (elapsed, work) = observe_probe(&population);
+                let (elapsed, work) = observe_probe(&mut population);
                 cold.push(elapsed);
                 assert_eq!(
                     *baseline.get_or_insert(work),
@@ -54,7 +54,7 @@ pub(crate) fn profile(
                     "zero structural slope across population"
                 );
                 for _ in 0..warm {
-                    let (elapsed, repeated) = observe_probe(&population);
+                    let (elapsed, repeated) = observe_probe(&mut population);
                     assert_eq!(work, repeated);
                     warmed.push(elapsed);
                 }

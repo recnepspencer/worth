@@ -2,7 +2,7 @@ use crate::identity::{CompositeBasisKey, RuntimeWorldOwnerIdentity};
 
 use super::component_obligation::ProductHeadRetentionObligation;
 use super::unique_component_pin::ExactComponentBasisKey;
-use super::ComponentBasisDependencyClass;
+use super::ComponentClaimKind;
 
 /// Runtime World destinations used when one exact pin dependency changes
 /// meaning. `Release` is explicit so a transfer cannot be mistaken for a
@@ -15,27 +15,21 @@ pub(crate) enum ComponentBasisObligationTransferDestination {
     AdmittedObservation,
     ActivePublicationAttempt,
     ProductUnpublishedOwnerEffects,
-    HistoricalInspection,
     Release,
 }
 
 #[cfg(test)]
 impl ComponentBasisObligationTransferDestination {
     #[cfg(test)]
-    pub(crate) const fn dependency_class(self) -> Option<ComponentBasisDependencyClass> {
+    pub(crate) const fn dependency_class(self) -> Option<ComponentClaimKind> {
         match self {
-            Self::ProductBranchHead => Some(ComponentBasisDependencyClass::ProductBranchHead),
-            Self::RetainedCompositeHistory => {
-                Some(ComponentBasisDependencyClass::RetainedCompositeHistory)
-            }
-            Self::AdmittedObservation => Some(ComponentBasisDependencyClass::AdmittedObservation),
-            Self::ActivePublicationAttempt => {
-                Some(ComponentBasisDependencyClass::ActivePublicationAttempt)
-            }
+            Self::ProductBranchHead => Some(ComponentClaimKind::ProductBranchHead),
+            Self::RetainedCompositeHistory => Some(ComponentClaimKind::RetainedCompositeHistory),
+            Self::AdmittedObservation => Some(ComponentClaimKind::AdmittedObservation),
+            Self::ActivePublicationAttempt => Some(ComponentClaimKind::ActivePublicationAttempt),
             Self::ProductUnpublishedOwnerEffects => {
-                Some(ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects)
+                Some(ComponentClaimKind::ProductUnpublishedOwnerEffects)
             }
-            Self::HistoricalInspection => Some(ComponentBasisDependencyClass::HistoricalInspection),
             Self::Release => None,
         }
     }
@@ -60,8 +54,8 @@ pub(crate) struct RetentionTransferReceipt {
     basis: CompositeBasisKey,
     relational: ExactComponentBasisKey,
     signal: ExactComponentBasisKey,
-    source: ComponentBasisDependencyClass,
-    destination: ComponentBasisDependencyClass,
+    source: ComponentClaimKind,
+    destination: ComponentClaimKind,
 }
 
 impl RetentionTransferReceipt {
@@ -76,8 +70,8 @@ impl RetentionTransferReceipt {
             basis,
             relational,
             signal,
-            source: ComponentBasisDependencyClass::ActivePublicationAttempt,
-            destination: ComponentBasisDependencyClass::ProductBranchHead,
+            source: ComponentClaimKind::ActivePublicationAttempt,
+            destination: ComponentClaimKind::ProductBranchHead,
         }
     }
 
@@ -97,11 +91,11 @@ impl RetentionTransferReceipt {
         &self.signal
     }
 
-    pub(crate) const fn source(&self) -> ComponentBasisDependencyClass {
+    pub(crate) const fn source(&self) -> ComponentClaimKind {
         self.source
     }
 
-    pub(crate) const fn destination(&self) -> ComponentBasisDependencyClass {
+    pub(crate) const fn destination(&self) -> ComponentClaimKind {
         self.destination
     }
 }

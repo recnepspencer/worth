@@ -131,16 +131,4 @@ impl RuntimeWorldLifecyclePort {
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, RuntimeWorldOwnerUnavailable> {
         Ok(self.service()?.retained_commits(candidates))
     }
-    pub fn reclaim_retention(
-        &self,
-        keys: &[crate::inspection::RuntimeWorldRetentionKey],
-        maximum: usize,
-    ) -> Result<
-        crate::retention::RetentionReclamationReport,
-        RuntimeWorldServiceDenial<crate::inspection::RuntimeWorldRetentionInspectionDenial>,
-    > {
-        self.service()?
-            .reclaim_retention(keys, maximum)
-            .map_err(RuntimeWorldServiceDenial::Denied)
-    }
 }

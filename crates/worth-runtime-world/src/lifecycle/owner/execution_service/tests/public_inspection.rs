@@ -1,7 +1,7 @@
 use super::*;
 use crate::facade::{
-    ComponentBasisDependencyClass, PerformedPublicationRecoveryDenial,
-    RuntimeWorldPublicationOutcome, RuntimeWorldRetentionKey, RuntimeWorldServiceDenial,
+    PerformedPublicationRecoveryDenial, RuntimeWorldPublicationOutcome, RuntimeWorldRetentionKey,
+    RuntimeWorldServiceDenial,
 };
 #[test]
 fn public_performed_recovery_is_exclusive_and_history_has_real_pin_counts() {
@@ -18,21 +18,7 @@ fn public_performed_recovery_is_exclusive_and_history_has_real_pin_counts() {
     let inspection = owner.inspection_port();
     let key = RuntimeWorldRetentionKey::relational(expected.basis());
     let entry = inspection.inspect_retention(&key).unwrap().unwrap();
-    assert_eq!(
-        entry
-            .dependencies()
-            .get(ComponentBasisDependencyClass::RetainedCompositeHistory),
-        1
-    );
-    assert!(entry.owner_lease_present());
-    assert_eq!(
-        owner
-            .lifecycle_port()
-            .reclaim_retention(&[key], 1)
-            .unwrap()
-            .reclaimed(),
-        0
-    );
+    assert_eq!(entry.live_claims(), 3);
     let cancellation = RuntimeWorldCancellationSource::new();
     let prepared = owner
         .publication_port()
@@ -99,7 +85,7 @@ fn public_performed_recovery_is_exclusive_and_history_has_real_pin_counts() {
         upgraded.close(&execution),
         Err(crate::lifecycle::RuntimeWorldCloseDenial::OwnerUnavailable)
     ));
-    use crate::lifecycle::{RuntimeWorldLifecycleService, RuntimeWorldRecoveryService};
+    use crate::lifecycle::RuntimeWorldRecoveryService;
     assert!(matches!(
         upgraded.recover_performed(&commit),
         Err(PerformedPublicationRecoveryDenial::OwnerUnavailable(_))
@@ -109,10 +95,6 @@ fn public_performed_recovery_is_exclusive_and_history_has_real_pin_counts() {
         Err(crate::history::HistoryReclamationDenial::OwnerUnavailable(
             _
         ))
-    ));
-    assert!(matches!(
-        upgraded.reclaim_retention(&[], 1),
-        Err(crate::inspection::RuntimeWorldRetentionInspectionDenial::OwnerUnavailable(_))
     ));
 }
 #[test]

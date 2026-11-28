@@ -53,11 +53,6 @@ impl RuntimeWorldInspectionPort {
         Ok(self.service()?.history_snapshot())
     }
     /// Cumulative registry work; concurrent attempts may contribute.
-    pub fn retention_costs(
-        &self,
-    ) -> Result<crate::retention::RetentionCostSnapshot, RuntimeWorldOwnerUnavailable> {
-        Ok(self.service()?.retention_costs())
-    }
     pub fn trace_ancestry(
         &self,
         start: CompositeCommitIdentity,

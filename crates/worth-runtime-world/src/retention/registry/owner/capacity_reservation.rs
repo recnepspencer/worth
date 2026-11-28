@@ -3,7 +3,7 @@ use crate::history::CompositeRuntimeWorldCommit;
 use crate::retention::component_obligation::{
     ObservationRetentionObligation, PublicationRetentionObligation,
 };
-use crate::retention::ComponentBasisDependencyClass;
+use crate::retention::ComponentClaimKind;
 use crate::retention::ReservedObservationCapacity;
 
 use super::super::RetentionObligationDenial;
@@ -108,7 +108,7 @@ where
     ) -> Result<ReservedComponentPinPairCapacity, RetentionObligationDenial> {
         let mut state = self.lock();
         let unique_after = state
-            .unique_slots
+            .unique_slots()
             .checked_add(state.reserved_unique_slots)
             .and_then(|value| value.checked_add(2))
             .ok_or(RetentionObligationDenial::DependencyCountExhausted)?;
@@ -153,24 +153,6 @@ where
             .checked_sub(2)
             .expect("a live pair reservation owns two in-flight capacity units");
     }
-
-    pub(super) fn restore_consumed_pair_capacity(&self) {
-        let mut state = self.lock();
-        state.reserved_unique_slots = state
-            .reserved_unique_slots
-            .checked_add(2)
-            .expect("fixed pair capacity restoration cannot overflow");
-        state.reserved_in_flight_reservations = state
-            .reserved_in_flight_reservations
-            .checked_add(2)
-            .expect("fixed pair capacity restoration cannot overflow");
-        assert!(state
-            .maximum_unique_pins
-            .is_none_or(|maximum| state.reserved_unique_slots <= maximum));
-        assert!(state
-            .maximum_in_flight_reservations
-            .is_none_or(|maximum| state.reserved_in_flight_reservations <= maximum));
-    }
 }
 
 impl<D, I, T> ComponentPinPairCapacityControl for RuntimeWorldRetentionOwner<D, I, T>
@@ -183,10 +165,8 @@ where
         &self,
         basis: &AdmittedCompositeRuntimeWorldBasis,
     ) -> Result<PublicationRetentionObligation, RetentionObligationDenial> {
-        let pair = self.issue_pair_with_reserved_capacity(
-            basis,
-            ComponentBasisDependencyClass::ActivePublicationAttempt,
-        );
+        let pair = self
+            .issue_pair_with_reserved_capacity(basis, ComponentClaimKind::ActivePublicationAttempt);
         match pair {
             Ok(pair) => Ok(PublicationRetentionObligation::owner_issued(pair)),
             Err(denial) => Err(denial),
@@ -200,7 +180,7 @@ where
     ) -> Result<ObservationRetentionObligation, RetentionObligationDenial> {
         let pair = self.issue_pair_with_reserved_capacity(
             commit.basis(),
-            ComponentBasisDependencyClass::AdmittedObservation,
+            ComponentClaimKind::AdmittedObservation,
         );
         match pair {
             Ok(pair) => Ok(ObservationRetentionObligation::owner_issued(

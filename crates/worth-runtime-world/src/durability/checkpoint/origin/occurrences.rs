@@ -2,7 +2,6 @@
 use super::WorldCheckpointOrigin;
 use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::durability::WorldDurableMediumDenial as Denial;
-use crate::inspection::RuntimeWorldRetentionKey;
 use crate::retention::HistoryRetentionObligation;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
@@ -97,9 +96,8 @@ impl CheckpointOccurrences {
     pub(super) fn dispose_commits(
         &mut self,
         ordinals: &std::collections::BTreeSet<u64>,
-    ) -> (Vec<PreparedCheckpointOccurrence>, Vec<RuntimeWorldRetentionKey>) {
+    ) -> Vec<PreparedCheckpointOccurrence> {
         let mut removed = Vec::new();
-        let mut keys = Vec::new();
         let mut kept = None;
         let mut cursor = self.first.take();
         while let Some(mut prepared) = cursor {
@@ -109,9 +107,6 @@ impl CheckpointOccurrences {
                 OccurrenceEvidence::Prepared => false,
             };
             if matches {
-                if let OccurrenceEvidence::Held(origin) = &prepared.values[0].evidence {
-                    keys.extend(origin.keys.iter().cloned());
-                }
                 removed.push(prepared);
             } else {
                 prepared.values[0].next = kept;
@@ -119,7 +114,7 @@ impl CheckpointOccurrences {
             }
         }
         self.first = kept;
-        (removed, keys)
+        removed
     }
     pub(super) fn advance_retirement(
         &mut self,
@@ -147,21 +142,6 @@ impl CheckpointOccurrences {
             self.retired = Some(completed);
         }
         Ok(true)
-    }
-    pub(super) fn retired_keys(&self) -> impl Iterator<Item = &RuntimeWorldRetentionKey> {
-        let mut next = self.retired.as_ref();
-        std::iter::from_fn(move || {
-            let prepared = next?;
-            let node = &prepared.values[0];
-            next = node.next.as_ref();
-            match &node.evidence {
-                OccurrenceEvidence::Held(origin) if origin.complete => Some(origin.keys.iter()),
-                OccurrenceEvidence::Prepared | OccurrenceEvidence::Held(_) => {
-                    unreachable!("retirement exposes released keys only")
-                }
-            }
-        })
-        .flatten()
     }
 }
 impl Drop for CheckpointOccurrences {

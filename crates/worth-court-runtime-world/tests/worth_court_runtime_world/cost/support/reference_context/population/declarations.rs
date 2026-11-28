@@ -150,25 +150,6 @@ impl Population {
                     .push(population.court.observe(&population.root)),
             }
         }
-        if matches!(
-            axis,
-            crate::cost::support::reference_context::population::Axis::B
-                | crate::cost::support::reference_context::population::Axis::H
-                | crate::cost::support::reference_context::population::Axis::U
-                | crate::cost::support::reference_context::population::Axis::O
-        ) {
-            assert_eq!(
-                population
-                    .court
-                    .world
-                    .inspection_port()
-                    .retention_costs()
-                    .unwrap()
-                    .signal_contacts(),
-                1,
-                "only bootstrap acquires the reused Signal owner lease"
-            );
-        }
         let (b, h, u, a, p, o) = population.axes();
         match axis {
             crate::cost::support::reference_context::population::Axis::B => assert_eq!(b, size),

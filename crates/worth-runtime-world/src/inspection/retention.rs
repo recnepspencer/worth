@@ -1,9 +1,6 @@
 use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::identity::RuntimeWorldOwnerIdentity;
-use crate::retention::{
-    ComponentBasisDependencyClass, ComponentBasisDependencyCounts, ExactComponentBasisKey,
-    ExactComponentPinRequest,
-};
+use crate::retention::ExactComponentBasisKey;
 /// A descriptive exact key derived from an admitted basis. It issues no lease.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuntimeWorldRetentionKey {
@@ -14,44 +11,30 @@ impl RuntimeWorldRetentionKey {
     pub fn relational(basis: &AdmittedCompositeRuntimeWorldBasis) -> Self {
         Self {
             owner: basis.owner_identity(),
-            key: ExactComponentPinRequest::relational(
-                basis,
-                ComponentBasisDependencyClass::HistoricalInspection,
-            )
-            .key(),
+            key: ExactComponentBasisKey::Relational(
+                basis.relational_basis().admission_identity().clone(),
+            ),
         }
     }
     pub fn signal(basis: &AdmittedCompositeRuntimeWorldBasis) -> Self {
         Self {
             owner: basis.owner_identity(),
-            key: ExactComponentPinRequest::signal(
-                basis,
-                ComponentBasisDependencyClass::HistoricalInspection,
-            )
-            .key(),
+            key: ExactComponentBasisKey::Signal(basis.signal_basis().admission_identity().clone()),
         }
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldRetentionInspectionDenial {
-    OwnerUnavailable(crate::lifecycle::RuntimeWorldOwnerUnavailable),
     ForeignOwner,
 }
+/// Live claims sharing one exact component owner's lease.
 #[derive(Debug, Clone, Copy)]
 pub struct RuntimeWorldRetentionEntry {
-    pub(crate) dependencies: ComponentBasisDependencyCounts,
-    pub(crate) owner_lease_present: bool,
-    pub(crate) flight_present: bool,
+    pub(crate) live_claims: usize,
 }
 impl RuntimeWorldRetentionEntry {
-    pub fn dependencies(&self) -> ComponentBasisDependencyCounts {
-        self.dependencies
-    }
-    pub fn owner_lease_present(&self) -> bool {
-        self.owner_lease_present
-    }
-    pub fn flight_present(&self) -> bool {
-        self.flight_present
+    pub fn live_claims(&self) -> usize {
+        self.live_claims
     }
 }
 

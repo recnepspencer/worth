@@ -210,14 +210,10 @@ impl ProductBranchHeadProtection {
             {
                 return Err(ProductBranchHeadProtectionDenial::ReceiptComponentMismatch);
             }
-            if receipt.source()
-                != crate::retention::ComponentBasisDependencyClass::ActivePublicationAttempt
-            {
+            if receipt.source() != crate::retention::ComponentClaimKind::ActivePublicationAttempt {
                 return Err(ProductBranchHeadProtectionDenial::ReceiptSourceMismatch);
             }
-            if receipt.destination()
-                != crate::retention::ComponentBasisDependencyClass::ProductBranchHead
-            {
+            if receipt.destination() != crate::retention::ComponentClaimKind::ProductBranchHead {
                 return Err(ProductBranchHeadProtectionDenial::ReceiptDestinationMismatch);
             }
         }

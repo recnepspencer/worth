@@ -10,6 +10,7 @@ use crate::budget::RuntimeWorldBudgetLimit;
 use crate::history::CompositeRuntimeWorldCommit;
 use crate::identity::RuntimeWorldOwnerIdentity;
 
+use super::super::claim_counts::ComponentClaimCounts;
 use super::super::component_obligation::{
     ObservationRetentionObligation, ProductHeadRetentionObligation,
 };
@@ -17,24 +18,21 @@ use super::super::component_obligation::{
 use super::super::component_obligation::{
     PublicationRetentionObligation, RetainedPartialRetentionObligation, RetentionReleaseDenial,
 };
-use super::super::dependency_counts::ComponentBasisDependencyCounts;
 use super::super::unique_component_pin::{ComponentBasisLeaseIdentity, ExactComponentBasisKey};
-use super::super::ComponentBasisDependencyClass;
-use super::{RetentionCostSnapshot, RetentionObligationDenial};
+use super::super::ComponentClaimKind;
+use super::RetentionObligationDenial;
+#[cfg(test)]
+mod test_counters;
+#[cfg(test)]
+use test_counters::RetentionTestCounters;
 
 mod acquisition;
 mod batch_acquisition;
-#[cfg(test)]
-mod canonical_reclamation;
 mod capacity_reservation;
 mod checkpoint_retirement;
 mod claim_lifecycle;
-mod component_basis_order;
 mod history_claims;
 mod inspection;
-mod retained_pins;
-use component_basis_order::ComponentBasisOrder;
-use retained_pins::RetainedComponentPins;
 
 pub(crate) use capacity_reservation::ReservedComponentPinPairCapacity;
 
@@ -48,9 +46,8 @@ enum ComponentOwnerLease {
 
 #[derive(Debug)]
 struct PinEntry {
-    basis_order: ComponentBasisOrder,
-    owner_lease: Option<ComponentOwnerLease>,
-    counts: ComponentBasisDependencyCounts,
+    owner_lease: ComponentOwnerLease,
+    counts: ComponentClaimCounts,
     lease_identity: ComponentBasisLeaseIdentity,
 }
 
@@ -64,16 +61,31 @@ enum FlightCompletion {
 
 #[derive(Debug)]
 struct PinFlight {
+    releasing: bool,
     completion: Mutex<FlightCompletion>,
     wake: Condvar,
 }
 
 impl PinFlight {
-    fn new() -> Self {
+    fn new(releasing: bool) -> Self {
         Self {
+            releasing,
             completion: Mutex::new(FlightCompletion::Pending),
             wake: Condvar::new(),
         }
+    }
+
+    fn wait(&self) -> FlightCompletion {
+        let completion = self
+            .completion
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        self.wake
+            .wait_while(completion, |value| {
+                matches!(value, FlightCompletion::Pending)
+            })
+            .unwrap_or_else(|error| error.into_inner())
+            .clone()
     }
 
     fn finish(&self, completion: FlightCompletion) {
@@ -97,15 +109,28 @@ where
     signal_port: SignalBranchBasisPort<D, I, T>,
     maximum_unique_pins: Option<usize>,
     maximum_in_flight_reservations: Option<usize>,
-    unique_slots: usize,
     active_reservations: usize,
     reserved_unique_slots: usize,
     reserved_in_flight_reservations: usize,
     active_obligations: usize,
     next_lease_ordinal: u64,
-    entries: RetainedComponentPins,
+    entries: HashMap<ExactComponentBasisKey, PinEntry>,
     flights: HashMap<ExactComponentBasisKey, Arc<PinFlight>>,
-    costs: RetentionCostSnapshot,
+    #[cfg(test)]
+    costs: RetentionTestCounters,
+}
+
+impl<D, I, T> RegistryState<D, I, T>
+where
+    D: Copy + Ord + fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    fn unique_slots(&self) -> usize {
+        // Each key occupies either a live entry or a flight. A release retains
+        // its slot until the owner lease has settled and waiters are notified.
+        self.entries.len() + self.flights.len()
+    }
 }
 
 #[cfg(test)]
@@ -173,15 +198,15 @@ where
             signal_port,
             maximum_unique_pins: unique_pin_limit.get(),
             maximum_in_flight_reservations: reservation_limit.get(),
-            unique_slots: 0,
             active_reservations: 0,
             reserved_unique_slots: 0,
             reserved_in_flight_reservations: 0,
             active_obligations: 0,
             next_lease_ordinal: 0,
-            entries: RetainedComponentPins::default(),
+            entries: HashMap::new(),
             flights: HashMap::new(),
-            costs: RetentionCostSnapshot::default(),
+            #[cfg(test)]
+            costs: RetentionTestCounters::default(),
         };
         Self {
             state: Arc::new(Mutex::new(state)),
@@ -236,10 +261,7 @@ where
                 .owner_identity(),
             self.lock().owner_identity
         );
-        let pair = self.issue_pair(
-            commit.basis(),
-            ComponentBasisDependencyClass::AdmittedObservation,
-        )?;
+        let pair = self.issue_pair(commit.basis(), ComponentClaimKind::AdmittedObservation)?;
         Ok(ObservationRetentionObligation::owner_issued(
             commit,
             pair,
@@ -252,18 +274,15 @@ where
         &self,
         basis: &AdmittedCompositeRuntimeWorldBasis,
     ) -> Result<PublicationRetentionObligation, RetentionObligationDenial> {
-        self.issue_pair(
-            basis,
-            ComponentBasisDependencyClass::ActivePublicationAttempt,
-        )
-        .map(PublicationRetentionObligation::owner_issued)
+        self.issue_pair(basis, ComponentClaimKind::ActivePublicationAttempt)
+            .map(PublicationRetentionObligation::owner_issued)
     }
 
     pub(crate) fn issue_product_head(
         &self,
         basis: &AdmittedCompositeRuntimeWorldBasis,
     ) -> Result<ProductHeadRetentionObligation, RetentionObligationDenial> {
-        self.issue_pair(basis, ComponentBasisDependencyClass::ProductBranchHead)
+        self.issue_pair(basis, ComponentClaimKind::ProductBranchHead)
             .map(ProductHeadRetentionObligation::owner_issued)
     }
 
@@ -272,11 +291,8 @@ where
         &self,
         basis: &AdmittedCompositeRuntimeWorldBasis,
     ) -> Result<RetainedPartialRetentionObligation, RetentionObligationDenial> {
-        self.issue_pair(
-            basis,
-            ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects,
-        )
-        .map(RetainedPartialRetentionObligation::owner_issued)
+        self.issue_pair(basis, ComponentClaimKind::ProductUnpublishedOwnerEffects)
+            .map(RetainedPartialRetentionObligation::owner_issued)
     }
 
     #[cfg(test)]
@@ -286,7 +302,7 @@ where
 
     #[cfg(test)]
     pub(crate) fn unique_pin_count(&self) -> usize {
-        self.lock().unique_slots
+        self.lock().unique_slots()
     }
 
     #[cfg(test)]
@@ -304,7 +320,8 @@ where
         self.lock().reserved_in_flight_reservations
     }
 
-    pub(crate) fn cost_snapshot(&self) -> RetentionCostSnapshot {
+    #[cfg(test)]
+    pub(crate) fn cost_snapshot(&self) -> RetentionTestCounters {
         self.lock().costs
     }
 }

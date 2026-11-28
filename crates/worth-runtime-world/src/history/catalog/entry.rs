@@ -31,10 +31,6 @@ impl CompositeHistoryCatalogEntry {
         )
     }
 
-    pub(crate) fn retention_keys(&self) -> [crate::inspection::RuntimeWorldRetentionKey; 2] {
-        self.pins.retention_keys()
-    }
-
     pub(crate) fn live_relational_commit_result(
         &self,
     ) -> Option<Arc<worth_relational::facade::transactions::CommitResult>> {

@@ -7,33 +7,24 @@ fn history_and_observation_dependencies_hold_exact_pins_without_clone_amplificat
     let court = crate::court::ordinary_context::CompositeSupplyChainCourt::compile();
     let root = court.bootstrap();
     let inspection = court.world.inspection_port();
-    let key = RuntimeWorldRetentionKey::signal(root.basis());
-    let before = inspection
-        .inspect_retention(&key)
-        .unwrap()
-        .unwrap()
-        .dependencies();
-    assert_eq!(
-        before.get(ComponentBasisDependencyClass::ProductBranchHead),
-        1
-    );
-    assert_eq!(
-        before.get(ComponentBasisDependencyClass::RetainedCompositeHistory),
-        1
-    );
-    assert_eq!(
-        before.get(ComponentBasisDependencyClass::AdmittedObservation),
-        1
-    );
+    let keys = [
+        RuntimeWorldRetentionKey::relational(root.basis()),
+        RuntimeWorldRetentionKey::signal(root.basis()),
+    ];
+    let live_claims = || {
+        keys.each_ref().map(|key| {
+            inspection
+                .inspect_retention(key)
+                .unwrap()
+                .unwrap()
+                .live_claims()
+        })
+    };
+    let before = live_claims();
+    // Each component is held by the head, history, and this observation.
+    assert_eq!(before, [3, 3]);
     let clone = root.clone();
-    assert_eq!(
-        inspection
-            .inspect_retention(&key)
-            .unwrap()
-            .unwrap()
-            .dependencies(),
-        before
-    );
+    assert_eq!(live_claims(), before);
     let prepared = court.prepare_cargo(execution, &root, "5");
     assert_eq!(
         inspection.recovery_snapshot().unwrap().reserved(),
@@ -41,14 +32,7 @@ fn history_and_observation_dependencies_hold_exact_pins_without_clone_amplificat
         "prepared attempt reserves bounded recovery capacity"
     );
     drop(prepared);
-    assert_eq!(
-        inspection
-            .inspect_retention(&key)
-            .unwrap()
-            .unwrap()
-            .dependencies(),
-        before
-    );
+    assert_eq!(live_claims(), before);
     let receipt = court.publish_cargo(&root, "5");
     let head = court.observe(&root);
     let traversal = inspection
@@ -67,15 +51,8 @@ fn history_and_observation_dependencies_hold_exact_pins_without_clone_amplificat
         .unwrap();
     assert!(released.reclaimed_commits().is_empty());
     assert_eq!(released.held_commit(), None);
-    assert_eq!(
-        inspection
-            .inspect_retention(&key)
-            .unwrap()
-            .unwrap()
-            .dependencies()
-            .get(ComponentBasisDependencyClass::RetainedCompositeHistory),
-        2
-    );
+    // The successor has a new Relational basis and reuses the original Signal basis.
+    assert_eq!(live_claims(), [2, 5]);
     drop((root, clone, head, traversal, receipt));
     court.finish();
 }
@@ -155,15 +132,11 @@ fn a_retired_root_walk_releases_its_history_and_the_pins_only_it_held() {
         .unwrap();
     assert_eq!(result.reclaimed_commits(), &[identity]);
     assert_eq!(result.held_commit(), None);
-    // The walk reclaims the exact pins only that history held; nothing is
-    // left for a later retention pass.
-    let after = court
-        .world
-        .lifecycle_port()
-        .reclaim_retention(&keys, 2)
-        .unwrap();
-    assert_eq!(after.reclaimed(), 0);
-    assert_eq!(after.remaining_unique_pins(), 0);
+    let inspection = court.world.inspection_port();
+    for key in keys {
+        assert!(inspection.inspect_retention(&key).unwrap().is_none());
+    }
+    assert_eq!(inspection.retention_snapshot().unwrap().unique_pins(), 0);
     court.finish();
 }
 

@@ -174,25 +174,6 @@ impl ModelRun {
         self.steps.push("retire work".into());
         let head = self.heads.remove("work").unwrap();
         let chain = self.model.ancestry(self.model.branches["work"].head);
-        let trace = self
-            .court
-            .world
-            .inspection_port()
-            .trace_ancestry(
-                head.selected_commit().clone(),
-                std::num::NonZeroUsize::new(128).unwrap(),
-            )
-            .unwrap();
-        let keys: Vec<_> = trace
-            .commits()
-            .flat_map(|c| {
-                [
-                    RuntimeWorldRetentionKey::relational(c.basis()),
-                    RuntimeWorldRetentionKey::signal(c.basis()),
-                ]
-            })
-            .collect();
-        drop(trace);
         self.model.retire("work");
         drop(
             self.court
@@ -219,14 +200,5 @@ impl ModelRun {
             .unwrap();
         assert_eq!(released.reclaimed_commits(), expected.as_slice());
         self.check(request_execution);
-        for keys in keys.chunks(2) {
-            let report = self
-                .court
-                .world
-                .lifecycle_port()
-                .reclaim_retention(keys, 2)
-                .unwrap();
-            assert!(report.examined() <= 2);
-        }
     }
 }

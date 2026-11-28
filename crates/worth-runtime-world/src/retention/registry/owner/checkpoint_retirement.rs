@@ -2,7 +2,7 @@
 use super::{ComponentOwnerLease, RuntimeWorldRetentionOwner};
 use crate::retention::component_obligation::RetiringHistoryComponents;
 use crate::retention::unique_component_pin::ComponentBasisPinClaim;
-use crate::retention::ComponentBasisDependencyClass;
+use crate::retention::ComponentClaimKind;
 impl<D, I, T> RuntimeWorldRetentionOwner<D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -21,7 +21,7 @@ where
         for claim in [relational, signal] {
             let entry = state.entries.get(&claim.key).ok_or(())?;
             if claim.owner != state.owner_identity
-                || claim.dependency != ComponentBasisDependencyClass::RetainedCompositeHistory
+                || claim.dependency != ComponentClaimKind::RetainedCompositeHistory
                 || entry.lease_identity != claim.lease_identity
                 || entry.counts.get(claim.dependency) == 0
             {
@@ -32,13 +32,13 @@ where
             state
                 .entries
                 .get(&relational.key)
-                .and_then(|e| e.owner_lease.as_ref()),
+                .map(|entry| &entry.owner_lease),
             Some(ComponentOwnerLease::Relational(_))
         ) || !matches!(
             state
                 .entries
                 .get(&signal.key)
-                .and_then(|e| e.owner_lease.as_ref()),
+                .map(|entry| &entry.owner_lease),
             Some(ComponentOwnerLease::Signal(_))
         ) {
             return Err(());
@@ -55,15 +55,22 @@ where
                 .decrement(claim.dependency)
                 .expect("validated dependency");
             if entry.counts.is_zero() {
-                match entry.owner_lease.take().expect("validated actual lease") {
+                let entry = state
+                    .entries
+                    .remove(&claim.key)
+                    .expect("final checkpoint claim");
+                match entry.owner_lease {
                     ComponentOwnerLease::Relational(lease) => native = Some(lease),
                     ComponentOwnerLease::Signal(lease) => signal_lease = Some(lease),
                 }
             }
         }
         state.active_obligations -= 2;
-        state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(2);
-        // Keep the same registry entries and their allocations. No component
+        #[cfg(test)]
+        {
+            state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(2);
+        }
+        // Extraction moves final leases into the close phases. No component
         // operation, flight allocation, or active lease Drop runs under this lock.
         Ok(RetiringHistoryComponents::new(native, signal_lease))
     }
@@ -84,7 +91,6 @@ impl RuntimeWorldRetentionOwner<(), (), ()> {
         use crate::lifecycle::RuntimeWorldCloseDenial;
         let head = self.issue_product_head(basis).unwrap();
         let pins = head.fork_history(basis).unwrap();
-        let keys = pins.retention_keys();
         let mut origin = WorldCheckpointOrigin::new(basis, pins);
         drop(head);
         let before = self.cost_snapshot();
@@ -104,8 +110,7 @@ impl RuntimeWorldRetentionOwner<(), (), ()> {
         assert_eq!(self.active_component_obligation_count(), 2);
         assert_eq!(self.cost_snapshot(), before);
         while !origin.advance_retirement(request, native).unwrap() {}
-        let retired = origin.into_retired().unwrap();
-        assert_eq!(retired.retention_keys().cloned().collect::<Vec<_>>(), keys);
+        assert_eq!(self.unique_pin_count(), 0);
         assert_eq!(self.active_component_obligation_count(), 0);
         assert_eq!(
             self.cost_snapshot().owner_drop_releases(),
@@ -117,7 +122,7 @@ impl RuntimeWorldRetentionOwner<(), (), ()> {
                 .external_retention_drop_releases,
             native_before.external_retention_drop_releases
         );
-        drop(retired);
+        drop(origin);
         assert_eq!(self.active_component_obligation_count(), 0);
     }
 }

@@ -5,7 +5,7 @@ use crate::retention::component_obligation::RetentionControlSurface;
 use crate::retention::unique_component_pin::{
     ComponentBasisLeaseIdentity, ExactComponentBasisKey, ExactComponentPinRequest,
 };
-use crate::retention::ComponentBasisDependencyClass;
+use crate::retention::ComponentClaimKind;
 
 use super::super::super::RetentionObligationDenial;
 use super::super::{PinFlight, RegistryState, RuntimeWorldRetentionOwner};
@@ -15,7 +15,7 @@ use super::{OwnedReservation, PairReservation, PairReservationSet};
 enum ExistingComponent {
     Ready(ComponentBasisLeaseIdentity),
     Acquiring(Arc<PinFlight>),
-    Vacant { new_slot: bool },
+    Vacant,
 }
 
 impl<D, I, T> RuntimeWorldRetentionOwner<D, I, T>
@@ -27,7 +27,7 @@ where
     pub(super) fn reserve_pair<'a>(
         &self,
         basis: &'a AdmittedCompositeRuntimeWorldBasis,
-        dependency: ComponentBasisDependencyClass,
+        dependency: ComponentClaimKind,
     ) -> Result<PairReservationSet<'a>, RetentionObligationDenial> {
         self.reserve_pair_inner(basis, dependency, None)
     }
@@ -35,16 +35,16 @@ where
     pub(super) fn reserve_pair_with_capacity<'a>(
         &self,
         basis: &'a AdmittedCompositeRuntimeWorldBasis,
-        dependency: ComponentBasisDependencyClass,
+        dependency: ComponentClaimKind,
     ) -> Result<PairReservationSet<'a>, RetentionObligationDenial> {
-        self.reserve_pair_inner(basis, dependency, Some((2, 2)))
+        self.reserve_pair_inner(basis, dependency, Some(2))
     }
 
     fn reserve_pair_inner<'a>(
         &self,
         basis: &'a AdmittedCompositeRuntimeWorldBasis,
-        dependency: ComponentBasisDependencyClass,
-        capacity_credit: Option<(usize, usize)>,
+        dependency: ComponentClaimKind,
+        capacity_credit: Option<usize>,
     ) -> Result<PairReservationSet<'a>, RetentionObligationDenial> {
         let expected = self.lock().owner_identity;
         let actual = basis.owner_identity();
@@ -63,12 +63,32 @@ where
         }
 
         let control: Arc<dyn RetentionControlSurface> = Arc::new(self.clone());
-        let mut state = self.lock();
+        let mut state = loop {
+            let state = self.lock();
+            let unsettled = [relational.key(), signal.key()].iter().find_map(|key| {
+                state
+                    .flights
+                    .get(key)
+                    .filter(|flight| flight.releasing || capacity_credit.is_some())
+                    .cloned()
+            });
+            let Some(flight) = unsettled else {
+                break state;
+            };
+            // Reclassify the pair when a release settles. A reserved bind also
+            // waits for acquisitions before deciding how much credit to draw.
+            drop(state);
+            #[cfg(test)]
+            {
+                let mut state = self.lock();
+                state.costs.single_flight_joins = state.costs.single_flight_joins.saturating_add(1);
+            }
+            if let super::super::FlightCompletion::AcquisitionDenied(denial) = flight.wait() {
+                return Err(denial);
+            }
+        };
         let relational_slot = classify(&state, &relational.key());
         let signal_slot = classify(&state, &signal.key());
-        let additional_unique_entries = usize::from(is_new_slot(&relational_slot))
-            .checked_add(usize::from(is_new_slot(&signal_slot)))
-            .expect("fixed pair cardinality cannot overflow a usize");
         let additional_flights = usize::from(is_vacant(&relational_slot))
             .checked_add(usize::from(is_vacant(&signal_slot)))
             .expect("fixed pair cardinality cannot overflow a usize");
@@ -78,26 +98,19 @@ where
             .checked_add(additional_flights)
             .expect("fixed pair cardinality cannot overflow a usize");
 
-        let reserved_unique =
-            capacity_credit.map_or(Ok(state.reserved_unique_slots), |(unique, _)| {
-                state
-                    .reserved_unique_slots
-                    .checked_sub(unique)
-                    .ok_or(RetentionObligationDenial::InvalidComponentPair)
-            })?;
-        let reserved_in_flight = capacity_credit.map_or(
-            Ok(state.reserved_in_flight_reservations),
-            |(_, in_flight)| {
-                state
-                    .reserved_in_flight_reservations
-                    .checked_sub(in_flight)
-                    .ok_or(RetentionObligationDenial::DependencyCountExhausted)
-            },
-        )?;
+        let credit_draw = capacity_credit.map_or(0, |_| additional_flights);
+        let reserved_unique = state
+            .reserved_unique_slots
+            .checked_sub(credit_draw)
+            .ok_or(RetentionObligationDenial::InvalidComponentPair)?;
+        let reserved_in_flight = state
+            .reserved_in_flight_reservations
+            .checked_sub(credit_draw)
+            .ok_or(RetentionObligationDenial::DependencyCountExhausted)?;
         let unique_after = state
-            .unique_slots
+            .unique_slots()
             .checked_add(reserved_unique)
-            .and_then(|value| value.checked_add(additional_unique_entries))
+            .and_then(|value| value.checked_add(additional_flights))
             .ok_or(RetentionObligationDenial::DependencyCountExhausted)?;
         if state
             .maximum_unique_pins
@@ -149,15 +162,14 @@ where
         );
         let signal =
             install_reservation(&mut state, signal, signal_slot, dependency, control.clone());
-        if let Some((unique, in_flight)) = capacity_credit {
-            state.reserved_unique_slots -= unique;
-            state.reserved_in_flight_reservations -= in_flight;
-        }
+        state.reserved_unique_slots = reserved_unique;
+        state.reserved_in_flight_reservations = reserved_in_flight;
         drop(state);
         Ok(PairReservationSet {
             basis,
             dependency,
             control,
+            unused_credit: capacity_credit.map(|credit| credit - credit_draw),
             relational,
             signal,
         })
@@ -179,13 +191,9 @@ where
     state
         .entries
         .get(key)
-        .and_then(|entry| entry.owner_lease.as_ref().map(|_| entry.lease_identity))
-        .map_or(
-            ExistingComponent::Vacant {
-                new_slot: !state.entries.contains_key(key),
-            },
-            ExistingComponent::Ready,
-        )
+        .map_or(ExistingComponent::Vacant, |entry| {
+            ExistingComponent::Ready(entry.lease_identity)
+        })
 }
 
 fn is_ready(slot: &ExistingComponent) -> bool {
@@ -193,18 +201,14 @@ fn is_ready(slot: &ExistingComponent) -> bool {
 }
 
 fn is_vacant(slot: &ExistingComponent) -> bool {
-    matches!(slot, ExistingComponent::Vacant { .. })
-}
-
-fn is_new_slot(slot: &ExistingComponent) -> bool {
-    matches!(slot, ExistingComponent::Vacant { new_slot: true })
+    matches!(slot, ExistingComponent::Vacant)
 }
 
 fn check_ready_dependency_capacity<D, I, T>(
     state: &RegistryState<D, I, T>,
     slot: &ExistingComponent,
     key: &ExactComponentBasisKey,
-    dependency: ComponentBasisDependencyClass,
+    dependency: ComponentClaimKind,
 ) -> Result<(), RetentionObligationDenial>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -226,7 +230,7 @@ fn install_reservation<'a, D, I, T>(
     state: &mut RegistryState<D, I, T>,
     request: ExactComponentPinRequest<'a>,
     slot: ExistingComponent,
-    dependency: ComponentBasisDependencyClass,
+    dependency: ComponentClaimKind,
     control: Arc<dyn RetentionControlSurface>,
 ) -> PairReservation<'a>
 where
@@ -244,8 +248,6 @@ where
                 .increment(dependency)
                 .expect("ready dependency count was checked before mutation");
             state.active_obligations += 1;
-            state.costs.unique_pin_hits = state.costs.unique_pin_hits.saturating_add(1);
-            state.costs.dependency_acquires = state.costs.dependency_acquires.saturating_add(1);
             PairReservation::Ready(
                 crate::retention::unique_component_pin::ComponentBasisPinClaim::new(
                     state.owner_identity,
@@ -257,7 +259,10 @@ where
             )
         }
         ExistingComponent::Acquiring(flight) => {
-            state.costs.single_flight_joins = state.costs.single_flight_joins.saturating_add(1);
+            #[cfg(test)]
+            {
+                state.costs.single_flight_joins = state.costs.single_flight_joins.saturating_add(1);
+            }
             PairReservation::Joined {
                 key: request.key(),
                 request,
@@ -265,19 +270,15 @@ where
                 flight,
             }
         }
-        ExistingComponent::Vacant { new_slot } => {
+        ExistingComponent::Vacant => {
             let ordinal = state.next_lease_ordinal;
             state.next_lease_ordinal = ordinal
                 .checked_add(1)
                 .expect("batch lease ordinal was checked before mutation");
             let lease_identity = ComponentBasisLeaseIdentity::issued(state.owner_identity, ordinal);
-            let flight = Arc::new(PinFlight::new());
-            if new_slot {
-                state.unique_slots += 1;
-            }
+            let flight = Arc::new(PinFlight::new(false));
             state.active_reservations += 1;
             state.active_obligations += 1;
-            state.costs.flights_started = state.costs.flights_started.saturating_add(1);
             state.flights.insert(request.key(), Arc::clone(&flight));
             PairReservation::Owned(OwnedReservation {
                 request,
@@ -285,7 +286,6 @@ where
                 dependency,
                 lease_identity,
                 flight,
-                new_slot,
             })
         }
     }

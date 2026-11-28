@@ -278,11 +278,11 @@ fn foreign_owner_equal_descriptor_cannot_substitute_during_composite_admission()
 
     let relational_pin = crate::retention::ExactComponentPinRequest::relational(
         &admitted,
-        crate::retention::ComponentBasisDependencyClass::AdmittedObservation,
+        crate::retention::ComponentClaimKind::AdmittedObservation,
     );
     let signal_pin = crate::retention::ExactComponentPinRequest::signal(
         &admitted,
-        crate::retention::ComponentBasisDependencyClass::AdmittedObservation,
+        crate::retention::ComponentClaimKind::AdmittedObservation,
     );
     assert_eq!(relational_pin.owner(), owner);
     assert_eq!(signal_pin.owner(), owner);

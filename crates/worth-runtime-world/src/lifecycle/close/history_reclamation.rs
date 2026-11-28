@@ -180,16 +180,11 @@ where
     }
 
     /// Drops removed history entries, releases any durable checkpoint origins
-    /// for those commits, and reclaims the pins only they held.
+    /// for those commits, and releases the pins they held.
     pub(super) fn reclaim_retired_entries(
         &self,
         retired: crate::history::RetiredHistoryEntries,
     ) -> Vec<crate::identity::CompositeCommitIdentity> {
-        let mut keys: Vec<_> = retired
-            .iter()
-            .filter_map(|slot| slot.get())
-            .flat_map(|entry| entry.retention_keys())
-            .collect();
         let identities: Vec<_> = retired
             .iter()
             .filter_map(|slot| slot.get())
@@ -213,14 +208,8 @@ where
         }
         drop(commit_results);
         if let Some(binding) = &self.state.durable {
-            keys.extend(binding.dispose_checkpoint_commits(&ordinals));
+            binding.dispose_checkpoint_commits(&ordinals);
         }
-        let mut seen = std::collections::HashSet::with_capacity(keys.len());
-        keys.retain(|key| seen.insert(key.key.clone()));
-        self.state
-            .retention
-            .reclaim_keys(&keys, keys.len())
-            .expect("retired history pins belong to this owner");
         identities
     }
 }

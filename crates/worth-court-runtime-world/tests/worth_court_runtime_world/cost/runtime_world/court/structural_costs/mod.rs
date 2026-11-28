@@ -18,7 +18,7 @@ fn court_structural_costs_do_not_scan_unrelated_b_h_u_a_p_o_populations() {
                     axis,
                     size,
                 );
-            let (_, work) = observe_probe(&population);
+            let (_, work) = observe_probe(&mut population);
             assert_eq!(
                 *baseline.get_or_insert(work),
                 work,

@@ -4,7 +4,7 @@ error[E0624]: associated function `issue` is private
 6 |     let _ = RelationalBranchBasisAdmissionIdentity::issue();
   |                                                     ^^^^^ private associated function
   |
- ::: $WORKSPACE/crates/worth-relational/src/branch/basis_admission_identity.rs
+ ::: $WORKSPACE/crates/worth-relational-branch/src/branch/basis_admission_identity.rs
   |
   |     pub(crate) fn issue() -> Self {
   |     ----------------------------- private associated function defined here

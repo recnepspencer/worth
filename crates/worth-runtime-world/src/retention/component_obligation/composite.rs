@@ -6,7 +6,7 @@ use super::super::obligation_transfer::{
     ProductHeadRetentionTransfer, RetentionTransferDenial, RetentionTransferReceipt,
 };
 use super::super::unique_component_pin::ExactComponentPinRequest;
-use super::super::ComponentBasisDependencyClass;
+use super::super::ComponentClaimKind;
 use super::product_head::ProductHeadRetentionObligation;
 use super::ComponentBasisPinObligation;
 
@@ -18,7 +18,7 @@ use super::ComponentBasisPinObligation;
 pub(crate) struct IssuedComponentPinPair {
     owner: RuntimeWorldOwnerIdentity,
     basis: CompositeBasisKey,
-    dependency: ComponentBasisDependencyClass,
+    dependency: ComponentClaimKind,
     relational: ComponentBasisPinObligation,
     signal: ComponentBasisPinObligation,
 }
@@ -26,7 +26,7 @@ pub(crate) struct IssuedComponentPinPair {
 impl IssuedComponentPinPair {
     pub(crate) fn owner_issued(
         basis: &AdmittedCompositeRuntimeWorldBasis,
-        dependency: ComponentBasisDependencyClass,
+        dependency: ComponentClaimKind,
         relational: ComponentBasisPinObligation,
         signal: ComponentBasisPinObligation,
     ) -> Self {
@@ -58,7 +58,7 @@ impl IssuedComponentPinPair {
     ) -> (
         RuntimeWorldOwnerIdentity,
         CompositeBasisKey,
-        ComponentBasisDependencyClass,
+        ComponentClaimKind,
         ComponentBasisPinObligation,
         ComponentBasisPinObligation,
     ) {
@@ -91,7 +91,7 @@ impl ObservationRetentionObligation {
             return Ok(());
         };
         relational.control.try_retire_shared_pair(
-            ComponentBasisDependencyClass::AdmittedObservation,
+            ComponentClaimKind::AdmittedObservation,
             relational,
             signal,
         )?;
@@ -111,10 +111,7 @@ impl ObservationRetentionObligation {
         assert_eq!(commit.identity().owner_identity(), owner);
         assert_eq!(commit.basis().owner_identity(), owner);
         assert_eq!(basis, *commit.basis().identity());
-        assert_eq!(
-            dependency,
-            ComponentBasisDependencyClass::AdmittedObservation
-        );
+        assert_eq!(dependency, ComponentClaimKind::AdmittedObservation);
         Self {
             _relational: relational,
             _signal: signal,
@@ -158,7 +155,7 @@ impl PublicationRetentionObligation {
         let basis = self.basis.clone();
         self.relational.transfer_pair_to(
             &mut self.signal,
-            ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects,
+            ComponentClaimKind::ProductUnpublishedOwnerEffects,
         )?;
         Ok(
             super::retained_partial::RetainedPartialRetentionObligation::transferred(
@@ -172,10 +169,7 @@ impl PublicationRetentionObligation {
 
     pub(crate) fn owner_issued(pair: IssuedComponentPinPair) -> Self {
         let (owner, basis, dependency, relational, signal) = pair.into_parts();
-        assert_eq!(
-            dependency,
-            ComponentBasisDependencyClass::ActivePublicationAttempt
-        );
+        assert_eq!(dependency, ComponentClaimKind::ActivePublicationAttempt);
         Self {
             owner,
             basis,
@@ -198,18 +192,17 @@ impl PublicationRetentionObligation {
             && self.relational.key()
                 == &ExactComponentPinRequest::relational(
                     basis,
-                    ComponentBasisDependencyClass::ActivePublicationAttempt,
+                    ComponentClaimKind::ActivePublicationAttempt,
                 )
                 .key()
             && self.signal.key()
                 == &ExactComponentPinRequest::signal(
                     basis,
-                    ComponentBasisDependencyClass::ActivePublicationAttempt,
+                    ComponentClaimKind::ActivePublicationAttempt,
                 )
                 .key()
-            && self.relational.dependency()
-                == ComponentBasisDependencyClass::ActivePublicationAttempt
-            && self.signal.dependency() == ComponentBasisDependencyClass::ActivePublicationAttempt
+            && self.relational.dependency() == ComponentClaimKind::ActivePublicationAttempt
+            && self.signal.dependency() == ComponentClaimKind::ActivePublicationAttempt
     }
 
     /// Transfer publication custody into the sole product-head authority.
@@ -241,10 +234,8 @@ impl PublicationRetentionObligation {
             self.signal.key().clone(),
         );
         let successor_identity = self.basis.clone();
-        self.relational.transfer_pair_to(
-            &mut self.signal,
-            ComponentBasisDependencyClass::ProductBranchHead,
-        )?;
+        self.relational
+            .transfer_pair_to(&mut self.signal, ComponentClaimKind::ProductBranchHead)?;
         let obligation = ProductHeadRetentionObligation::transferred(
             self.owner,
             successor_identity,

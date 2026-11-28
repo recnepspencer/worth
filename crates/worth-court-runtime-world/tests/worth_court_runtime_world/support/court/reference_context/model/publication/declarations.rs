@@ -173,10 +173,6 @@ impl ModelRun {
             .court
             .partial_after_relational(request_execution, &self.heads["work"]);
         let handle = effects.recovery_handle();
-        let keys = [
-            RuntimeWorldRetentionKey::relational(effects.successor_basis().unwrap()),
-            RuntimeWorldRetentionKey::signal(effects.successor_basis().unwrap()),
-        ];
         assert_eq!(effects.owner_effect_count(), 1);
         assert_eq!(
             self.court
@@ -228,11 +224,6 @@ impl ModelRun {
             .unwrap();
         assert_eq!(released.reclaimed_commits(), &[identity]);
         assert_eq!(released.held_commit(), None);
-        self.court
-            .world
-            .lifecycle_port()
-            .reclaim_retention(&keys, 2)
-            .unwrap();
         self.check(request_execution);
     }
 }

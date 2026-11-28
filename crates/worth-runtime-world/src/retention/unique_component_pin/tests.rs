@@ -14,7 +14,7 @@ use crate::retention::component_obligation::{
 use crate::retention::obligation_transfer::ComponentBasisObligationTransferDestination;
 use crate::retention::registry::{RetentionObligationDenial, RuntimeWorldRetentionOwner};
 
-use super::{ComponentBasisDependencyClass, ExactComponentBasis, ExactComponentPinRequest};
+use super::{ComponentClaimKind, ExactComponentBasis, ExactComponentPinRequest};
 
 struct Fixture {
     owner: RuntimeWorldRetentionOwner<(), (), ()>,
@@ -99,7 +99,7 @@ fn fixture(unique: u64, reservations: u64) -> Fixture {
 fn signal_request<'a>(
     owner: RuntimeWorldOwnerIdentity,
     basis: &'a AdmittedSignalBranchBasis,
-    dependency: ComponentBasisDependencyClass,
+    dependency: ComponentClaimKind,
 ) -> ExactComponentPinRequest<'a> {
     ExactComponentPinRequest {
         owner,
@@ -111,7 +111,7 @@ fn signal_request<'a>(
 fn relational_request<'a>(
     owner: RuntimeWorldOwnerIdentity,
     basis: &'a AdmittedRelationalBranchBasis,
-    dependency: ComponentBasisDependencyClass,
+    dependency: ComponentClaimKind,
 ) -> ExactComponentPinRequest<'a> {
     ExactComponentPinRequest {
         owner,
@@ -121,14 +121,14 @@ fn relational_request<'a>(
 }
 
 #[test]
-fn repeated_exact_use_shares_one_real_signal_lease_and_reclaims_tombstone() {
+fn repeated_exact_use_shares_one_real_signal_lease_and_evicts_on_final_release() {
     let fixture = fixture(4, 4);
     let first = fixture
         .owner
         .issue_component(signal_request(
             fixture.owner_identity,
             &fixture.signal,
-            ComponentBasisDependencyClass::AdmittedObservation,
+            ComponentClaimKind::AdmittedObservation,
         ))
         .expect("first exact Signal claim");
     let identity = first.lease_identity();
@@ -137,7 +137,7 @@ fn repeated_exact_use_shares_one_real_signal_lease_and_reclaims_tombstone() {
         .issue_component(signal_request(
             fixture.owner_identity,
             &fixture.signal,
-            ComponentBasisDependencyClass::HistoricalInspection,
+            ComponentClaimKind::RetainedCompositeHistory,
         ))
         .expect("second dependency count on the same exact key");
     assert_eq!(first.key(), second.key());
@@ -165,23 +165,15 @@ fn repeated_exact_use_shares_one_real_signal_lease_and_reclaims_tombstone() {
     );
     assert_eq!(fixture.owner.cost_snapshot().owner_release_contacts(), 1);
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
-    assert_eq!(fixture.owner.unique_pin_count(), 1);
-    let zero = fixture.owner.reclaim(0);
-    assert_eq!(zero.examined(), 0);
-    assert_eq!(zero.reclaimed(), 0);
-    assert_eq!(zero.remaining_unique_pins(), 1);
-    let report = fixture.owner.reclaim(1);
-    assert_eq!(report.examined(), 1);
-    assert_eq!(report.reclaimed(), 1);
-    assert_eq!(report.remaining_unique_pins(), 0);
+    assert_eq!(fixture.owner.unique_pin_count(), 0);
     let reopened = fixture
         .owner
         .issue_component(signal_request(
             fixture.owner_identity,
             &fixture.signal,
-            ComponentBasisDependencyClass::AdmittedObservation,
+            ComponentClaimKind::AdmittedObservation,
         ))
-        .expect("the reclaimed exact key can be opened again");
+        .expect("the evicted exact key can be opened again");
     assert_ne!(reopened.lease_identity(), identity);
     assert_eq!(
         fixture.owner.cost_snapshot().owner_acquisition_contacts(),
@@ -204,7 +196,7 @@ fn all_transfers_change_counts_without_contacting_a_component_owner() {
         .issue_component(signal_request(
             fixture.owner_identity,
             &fixture.signal,
-            ComponentBasisDependencyClass::AdmittedObservation,
+            ComponentClaimKind::AdmittedObservation,
         ))
         .expect("transfer source claim");
     let before = fixture.owner.cost_snapshot();
@@ -214,7 +206,6 @@ fn all_transfers_change_counts_without_contacting_a_component_owner() {
         ComponentBasisObligationTransferDestination::AdmittedObservation,
         ComponentBasisObligationTransferDestination::ActivePublicationAttempt,
         ComponentBasisObligationTransferDestination::ProductUnpublishedOwnerEffects,
-        ComponentBasisObligationTransferDestination::HistoricalInspection,
     ];
     for destination in destinations {
         obligation = obligation
@@ -260,7 +251,7 @@ fn foreign_signal_basis_cannot_substitute_into_an_exact_pin() {
         .issue_component(signal_request(
             fixture.owner_identity,
             &foreign_basis,
-            ComponentBasisDependencyClass::AdmittedObservation,
+            ComponentClaimKind::AdmittedObservation,
         ))
         .expect_err("the local Signal owner rejects a foreign exact basis");
     assert_eq!(
@@ -294,7 +285,7 @@ fn concurrent_first_use_has_one_owner_contact_and_one_key_slot() {
                 .issue_component(signal_request(
                     owner_identity,
                     &basis,
-                    ComponentBasisDependencyClass::AdmittedObservation,
+                    ComponentClaimKind::AdmittedObservation,
                 ))
                 .expect("concurrent exact use")
         }));
@@ -322,7 +313,7 @@ fn foreign_owner_and_owner_loss_are_pre_effect_and_terminally_safe() {
         .issue_component(signal_request(
             foreign,
             &fixture.signal,
-            ComponentBasisDependencyClass::AdmittedObservation,
+            ComponentClaimKind::AdmittedObservation,
         ))
         .expect_err("foreign ownership is rejected before owner contact");
     assert!(matches!(
@@ -339,7 +330,7 @@ fn foreign_owner_and_owner_loss_are_pre_effect_and_terminally_safe() {
         .issue_component(signal_request(
             fixture.owner_identity,
             &fixture.signal,
-            ComponentBasisDependencyClass::AdmittedObservation,
+            ComponentClaimKind::AdmittedObservation,
         ))
         .expect("owner-loss claim");
     let denial = fixture
@@ -347,7 +338,7 @@ fn foreign_owner_and_owner_loss_are_pre_effect_and_terminally_safe() {
         .issue_component(relational_request(
             fixture.owner_identity,
             &fixture.relational,
-            ComponentBasisDependencyClass::AdmittedObservation,
+            ComponentClaimKind::AdmittedObservation,
         ))
         .expect_err("a second exact key is denied at the installed unique-pin bound");
     assert_eq!(
@@ -374,15 +365,15 @@ fn foreign_owner_and_owner_loss_are_pre_effect_and_terminally_safe() {
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
     assert_eq!(fixture.owner.cost_snapshot().owner_release_contacts(), 1);
     assert_eq!(fixture.owner.cost_snapshot().owner_drop_releases(), 1);
-    assert_eq!(fixture.owner.reclaim(1).reclaimed(), 1);
+    assert_eq!(fixture.owner.unique_pin_count(), 0);
     let relational = fixture
         .owner
         .issue_component(relational_request(
             fixture.owner_identity,
             &fixture.relational,
-            ComponentBasisDependencyClass::AdmittedObservation,
+            ComponentClaimKind::AdmittedObservation,
         ))
-        .expect("reclamation makes the bounded slot reusable");
+        .expect("final release makes the bounded slot reusable");
     assert_eq!(
         relational
             .try_release()

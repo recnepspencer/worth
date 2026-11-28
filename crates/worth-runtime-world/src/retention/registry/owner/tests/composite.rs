@@ -1,6 +1,6 @@
 use crate::retention::component_obligation::ObservationRetentionObligation;
 use crate::retention::unique_component_pin::ExactComponentPinRequest;
-use crate::retention::ComponentBasisDependencyClass;
+use crate::retention::ComponentClaimKind;
 
 use super::fixture::{ordinary_commit, real_fixture, root_commit};
 
@@ -36,32 +36,24 @@ fn all_composite_entry_points_consume_one_owner_issued_pair() {
     assert!(retained_partial.matches_basis(&fixture.basis));
     assert_eq!(
         observation.relational().dependency(),
-        ComponentBasisDependencyClass::AdmittedObservation
+        ComponentClaimKind::AdmittedObservation
     );
     assert_eq!(
         observation.signal().dependency(),
-        ComponentBasisDependencyClass::AdmittedObservation
+        ComponentClaimKind::AdmittedObservation
     );
     assert_eq!(
         publication.relational().dependency(),
-        ComponentBasisDependencyClass::ActivePublicationAttempt
+        ComponentClaimKind::ActivePublicationAttempt
     );
     assert_eq!(
         retained_partial.signal().dependency(),
-        ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects
+        ComponentClaimKind::ProductUnpublishedOwnerEffects
     );
     assert_eq!(fixture.owner.unique_pin_count(), 2);
     assert_eq!(fixture.owner.active_component_obligation_count(), 6);
     assert_eq!(fixture.owner.in_flight_acquisition_count(), 0);
 
-    let costs = fixture.owner.cost_snapshot();
-    assert_eq!(costs.batch_admitted(), 3);
-    assert_eq!(costs.flights_started(), 2);
-    assert_eq!(costs.single_flight_joins(), 0);
-    assert_eq!(costs.relational_contacts(), 1);
-    assert_eq!(costs.signal_contacts(), 1);
-    assert_eq!(costs.relational_successes(), 1);
-    assert_eq!(costs.signal_successes(), 1);
     assert_eq!(
         fixture
             .relational_runtime
@@ -88,7 +80,7 @@ fn all_composite_entry_points_consume_one_owner_issued_pair() {
         .owner_service_cost_snapshot()
         .expect("real Signal owner remains available");
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
-    assert_eq!(fixture.owner.unique_pin_count(), 2);
+
     assert_eq!(fixture.owner.cost_snapshot().owner_drop_releases(), 2);
     assert_eq!(
         after_relational.external_retention_releases,
@@ -103,7 +95,7 @@ fn all_composite_entry_points_consume_one_owner_issued_pair() {
         after_signal.retention_registry_contacts(),
         before_signal.retention_registry_contacts() + 1
     );
-    assert_eq!(fixture.owner.reclaim(2).reclaimed(), 2);
+    assert_eq!(fixture.owner.unique_pin_count(), 0);
 }
 
 #[test]
@@ -125,17 +117,14 @@ fn observation_is_affine_to_exact_commit_and_basis() {
         observation.relational().key(),
         &ExactComponentPinRequest::relational(
             &fixture.basis,
-            ComponentBasisDependencyClass::AdmittedObservation,
+            ComponentClaimKind::AdmittedObservation,
         )
         .key()
     );
     assert_eq!(
         observation.signal().key(),
-        &ExactComponentPinRequest::signal(
-            &fixture.basis,
-            ComponentBasisDependencyClass::AdmittedObservation,
-        )
-        .key()
+        &ExactComponentPinRequest::signal(&fixture.basis, ComponentClaimKind::AdmittedObservation,)
+            .key()
     );
     assert_eq!(
         observation.relational().owner_identity(),
@@ -156,8 +145,8 @@ fn observation_is_affine_to_exact_commit_and_basis() {
 
     consume_observation(observation);
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
-    assert_eq!(fixture.owner.unique_pin_count(), 2);
-    assert_eq!(fixture.owner.reclaim(2).reclaimed(), 2);
+
+    assert_eq!(fixture.owner.unique_pin_count(), 0);
 }
 
 #[test]
@@ -172,18 +161,18 @@ fn product_head_is_owner_issued_and_independent_of_observation() {
     assert_eq!(fixture.owner.unique_pin_count(), 2);
     assert_eq!(
         product_head.relational().dependency(),
-        ComponentBasisDependencyClass::ProductBranchHead
+        ComponentClaimKind::ProductBranchHead
     );
     assert_eq!(
         product_head.signal().dependency(),
-        ComponentBasisDependencyClass::ProductBranchHead
+        ComponentClaimKind::ProductBranchHead
     );
     assert!(product_head.matches_basis(&fixture.basis));
 
     drop(product_head);
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
-    assert_eq!(fixture.owner.unique_pin_count(), 2);
-    assert_eq!(fixture.owner.reclaim(2).reclaimed(), 2);
+
+    assert_eq!(fixture.owner.unique_pin_count(), 0);
 }
 
 #[test]
@@ -197,23 +186,20 @@ fn product_head_transfer_and_recovery_change_both_exact_classes_once() {
         .into_product_head_transfer(&fixture.basis)
         .expect("exact successor transfer");
     let (product_head, receipt) = transfer.into_parts();
-    assert_eq!(
-        receipt.destination(),
-        ComponentBasisDependencyClass::ProductBranchHead
-    );
+    assert_eq!(receipt.destination(), ComponentClaimKind::ProductBranchHead);
     assert_eq!(
         product_head.relational().dependency(),
-        ComponentBasisDependencyClass::ProductBranchHead
+        ComponentClaimKind::ProductBranchHead
     );
 
     let retained = product_head.transition_to_retained_partial();
     assert_eq!(
         retained.signal().dependency(),
-        ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects
+        ComponentClaimKind::ProductUnpublishedOwnerEffects
     );
     drop(retained);
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
-    assert_eq!(fixture.owner.reclaim(2).reclaimed(), 2);
+    assert_eq!(fixture.owner.unique_pin_count(), 0);
 }
 
 #[test]
@@ -229,11 +215,11 @@ fn borrowed_product_transfer_denial_preserves_the_original_pair_for_retry() {
     assert!(publication.matches_basis(&fixture.basis));
     assert_eq!(
         publication.relational().dependency(),
-        ComponentBasisDependencyClass::ActivePublicationAttempt
+        ComponentClaimKind::ActivePublicationAttempt
     );
     assert_eq!(
         publication.signal().dependency(),
-        ComponentBasisDependencyClass::ActivePublicationAttempt
+        ComponentClaimKind::ActivePublicationAttempt
     );
     assert_eq!(fixture.owner.active_component_obligation_count(), 2);
     let transfer = publication
@@ -261,5 +247,5 @@ fn borrowed_product_transfer_denial_preserves_the_original_pair_for_retry() {
     );
     drop(head);
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
-    assert_eq!(fixture.owner.reclaim(2).reclaimed(), 2);
+    assert_eq!(fixture.owner.unique_pin_count(), 0);
 }

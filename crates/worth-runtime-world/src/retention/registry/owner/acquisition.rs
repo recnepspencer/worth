@@ -4,16 +4,16 @@ use std::sync::Arc;
 #[cfg(test)]
 use worth_signal::facade::branch::SignalBranchRetentionReleaseOutcome;
 
+use super::super::super::claim_counts::ComponentClaimCounts;
 use super::super::super::component_obligation::RetentionControlSurface;
 #[cfg(test)]
 use super::super::super::component_obligation::{
     ComponentBasisPinObligation, RetentionReleaseDenial,
 };
-use super::super::super::dependency_counts::ComponentBasisDependencyCounts;
 use super::super::super::unique_component_pin::{
     ComponentBasisPinClaim, ExactComponentBasis, ExactComponentBasisKey, ExactComponentPinRequest,
 };
-use super::super::super::ComponentBasisDependencyClass;
+use super::super::super::ComponentClaimKind;
 use super::super::RetentionObligationDenial;
 #[cfg(test)]
 use super::OwnerReleaseFailure;
@@ -31,6 +31,8 @@ where
         &self,
         component: ExactComponentBasis<'_>,
     ) -> Result<ComponentOwnerLease, RetentionObligationDenial> {
+        #[cfg(test)]
+        self.lock().costs.record_component_contact(component);
         let (relational, signal) = {
             let state = self.lock();
             (state.relational_port.clone(), state.signal_port.clone())
@@ -99,34 +101,25 @@ where
         &self,
         request: ExactComponentPinRequest<'_>,
         key: ExactComponentBasisKey,
-        dependency: ComponentBasisDependencyClass,
+        dependency: ComponentClaimKind,
         control: Arc<dyn RetentionControlSurface>,
     ) -> Result<ComponentBasisPinClaim, RetentionObligationDenial> {
-        let (flight, identity, new_slot, retained_order) = loop {
+        let (flight, identity) = loop {
             let mut state = self.lock();
             if let Some(flight) = state.flights.get(&key).cloned() {
-                state.costs.single_flight_joins = state.costs.single_flight_joins.saturating_add(1);
+                #[cfg(test)]
+                {
+                    state.costs.single_flight_joins =
+                        state.costs.single_flight_joins.saturating_add(1);
+                }
                 drop(state);
-                let completion = flight
-                    .completion
-                    .lock()
-                    .unwrap_or_else(|error| error.into_inner());
-                let completion = flight
-                    .wake
-                    .wait_while(completion, |value| {
-                        matches!(*value, FlightCompletion::Pending)
-                    })
-                    .unwrap_or_else(|error| error.into_inner());
-                match &*completion {
-                    FlightCompletion::AcquisitionDenied(denial) => return Err(denial.clone()),
+                match flight.wait() {
+                    FlightCompletion::AcquisitionDenied(denial) => return Err(denial),
                     FlightCompletion::Acquired | FlightCompletion::Released => continue,
                     FlightCompletion::Pending => unreachable!(),
                 }
             }
-            let live_identity = state
-                .entries
-                .get(&key)
-                .and_then(|entry| entry.owner_lease.as_ref().map(|_| entry.lease_identity));
+            let live_identity = state.entries.get(&key).map(|entry| entry.lease_identity);
             if let Some(lease_identity) = live_identity {
                 if state.active_obligations == usize::MAX {
                     return Err(RetentionObligationDenial::DependencyCountExhausted);
@@ -139,8 +132,6 @@ where
                     .increment(dependency)
                     .ok_or(RetentionObligationDenial::DependencyCountExhausted)?;
                 state.active_obligations += 1;
-                state.costs.unique_pin_hits = state.costs.unique_pin_hits.saturating_add(1);
-                state.costs.dependency_acquires = state.costs.dependency_acquires.saturating_add(1);
                 return Ok(ComponentBasisPinClaim::new(
                     state.owner_identity,
                     key,
@@ -149,22 +140,24 @@ where
                     control,
                 ));
             }
-            if state
-                .maximum_in_flight_reservations
-                .is_some_and(|maximum| state.active_reservations >= maximum)
-            {
+            if state.maximum_in_flight_reservations.is_some_and(|maximum| {
+                state
+                    .active_reservations
+                    .saturating_add(state.reserved_in_flight_reservations)
+                    >= maximum
+            }) {
                 return Err(
                     RetentionObligationDenial::InFlightAcquisitionCapacityExhausted {
                         maximum_in_flight_reservations: state.maximum_in_flight_reservations,
                     },
                 );
             }
-            let new_slot = !state.entries.contains_key(&key);
-            if new_slot
-                && state
-                    .maximum_unique_pins
-                    .is_some_and(|maximum| state.unique_slots >= maximum)
-            {
+            if state.maximum_unique_pins.is_some_and(|maximum| {
+                state
+                    .unique_slots()
+                    .saturating_add(state.reserved_unique_slots)
+                    >= maximum
+            }) {
                 return Err(RetentionObligationDenial::UniquePinCapacityExhausted {
                     maximum_unique_component_pins: state.maximum_unique_pins,
                 });
@@ -176,12 +169,10 @@ where
                 .active_reservations
                 .checked_add(1)
                 .ok_or(RetentionObligationDenial::DependencyCountExhausted)?;
-            if new_slot {
-                state
-                    .unique_slots
-                    .checked_add(1)
-                    .ok_or(RetentionObligationDenial::DependencyCountExhausted)?;
-            }
+            state
+                .unique_slots()
+                .checked_add(1)
+                .ok_or(RetentionObligationDenial::DependencyCountExhausted)?;
             let ordinal = state.next_lease_ordinal;
             state.next_lease_ordinal = ordinal
                 .checked_add(1)
@@ -191,50 +182,29 @@ where
                     state.owner_identity,
                     ordinal,
                 );
-            let flight = Arc::new(PinFlight::new());
-            if new_slot {
-                state.unique_slots += 1;
-            }
+            let flight = Arc::new(PinFlight::new(false));
             state.active_reservations += 1;
             state.active_obligations += 1;
-            state.costs.flights_started = state.costs.flights_started.saturating_add(1);
             state.flights.insert(key.clone(), Arc::clone(&flight));
-            let retained_order = state
-                .entries
-                .get(&key)
-                .map(|entry| entry.basis_order.clone());
-            break (flight, identity, new_slot, retained_order);
+            break (flight, identity);
         };
-        {
-            let mut state = self.lock();
-            state.costs.owner_acquisition_contacts =
-                state.costs.owner_acquisition_contacts.saturating_add(1);
-            state.costs.record_component_contact(request.component());
-        }
         let result = catch_unwind(AssertUnwindSafe(|| {
-            let basis_order = retained_order
-                .unwrap_or_else(|| super::ComponentBasisOrder::from_admitted(request.component()));
             self.retain_component(request.component())
-                .map(|lease| (lease, basis_order))
         }))
         .unwrap_or(Err(RetentionObligationDenial::OwnerOperationPanicked));
         let mut state = self.lock();
         state.flights.remove(&key);
         state.active_reservations -= 1;
-        state
-            .costs
-            .record_component_outcome(request.component(), result.is_ok());
         match result {
-            Ok((lease, basis_order)) => {
-                let mut counts = ComponentBasisDependencyCounts::zero();
+            Ok(lease) => {
+                let mut counts = ComponentClaimCounts::zero();
                 counts
                     .increment(dependency)
                     .expect("a new count starts below its bound");
                 state.entries.insert(
                     key.clone(),
                     PinEntry {
-                        basis_order,
-                        owner_lease: Some(lease),
+                        owner_lease: lease,
                         counts,
                         lease_identity: identity,
                     },
@@ -250,9 +220,6 @@ where
             }
             Err(denial) => {
                 state.active_obligations -= 1;
-                if new_slot {
-                    state.unique_slots -= 1;
-                }
                 flight.finish(FlightCompletion::AcquisitionDenied(denial.clone()));
                 Err(denial)
             }

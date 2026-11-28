@@ -5,7 +5,6 @@ use super::{
 };
 use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::identity::{CompositeBasisKey, RuntimeWorldOwnerIdentity};
-use crate::inspection::RuntimeWorldRetentionKey;
 
 /// Exact history-owned dependencies. One pair lives in each installed history
 /// occurrence or durable origin recipe; it shares the already acquired leases.
@@ -45,15 +44,6 @@ impl HistoryRetentionObligation {
     }
     pub(crate) fn matches_basis(&self, basis: &AdmittedCompositeRuntimeWorldBasis) -> bool {
         self.owner == basis.owner_identity() && self.basis == *basis.identity()
-    }
-
-    /// Registry keys whose released entries become reclaimable once this
-    /// obligation and every other holder of the same exact pin are gone.
-    pub(crate) fn retention_keys(&self) -> [RuntimeWorldRetentionKey; 2] {
-        [&self.relational, &self.signal].map(|pin| RuntimeWorldRetentionKey {
-            owner: self.owner,
-            key: pin.key().clone(),
-        })
     }
 }
 impl PublicationRetentionObligation {
