@@ -28,7 +28,6 @@ pub(super) fn complete(
     working: &mut worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState,
     identities: &mut worth_relational_mutation::internal_port::authority::mutation::pending_identities::PendingMutationIdentities,
     canonical: &mut worth_relational_branch::internal_port::history::data::canonical_commit_envelope::draft::CanonicalCommitEnvelopeDraft,
-    artifacts: &mut crate::publication::authority::artifacts::PublicationArtifacts,
     changed: &mut Vec<contracts::transactions::data::primitives::RecordRef>,
     positions: &mut Option<worth_relational_branch::internal_port::history::data::required_output_positions::RequiredOutputPublicationPositions>,
 ) -> Result<
@@ -152,7 +151,6 @@ pub(super) fn complete(
             )?;
             crate::authority::commit::phases::publication::enforce_patch_budget(
                 inputs.max_patch_records,
-                inputs.diagnostics,
                 &canonical.patch,
             )
         })
@@ -186,7 +184,6 @@ pub(super) fn complete(
         .map_err(
             contracts::transactions::data::outcomes::transaction_commit_error::origin_denial,
         )?;
-    artifacts.patch = canonical.patch.clone();
     Ok((
         Some((completed.funding, roster_funding)),
         effect.publication.canonical_deltas,

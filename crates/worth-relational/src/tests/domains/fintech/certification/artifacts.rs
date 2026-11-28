@@ -144,8 +144,7 @@ fn diagnostics_summary(session: &CertifiedRelationalFintechSession) -> WorkflowA
 
 fn patch_summary(session: &CertifiedRelationalFintechSession) -> WorkflowArtifactProjection {
     let publication = session.world.runtime.publication();
-    let artifacts = publication.artifact_snapshot();
-    let observation = &artifacts.observation;
+    let observation = publication.observation_snapshot();
     workflow_artifact_object([
         optional_u64_field(
             "latest_commit",
@@ -175,24 +174,8 @@ fn patch_summary(session: &CertifiedRelationalFintechSession) -> WorkflowArtifac
                 .latest_replay_commit_id
                 .map(|commit_id| commit_id.0),
         ),
-        bool_field(
-            "snapshot_patch_matches_latest_patch",
-            artifacts
-                .latest_patch
-                .as_ref()
-                .zip(publication.latest_patch())
-                .map(|(snapshot_patch, patch)| snapshot_patch == &patch)
-                .unwrap_or(false),
-        ),
-        bool_field(
-            "snapshot_replay_matches_latest_replay",
-            artifacts
-                .latest_replay
-                .as_ref()
-                .zip(publication.latest_replay())
-                .map(|(snapshot_replay, replay)| snapshot_replay == &replay)
-                .unwrap_or(false),
-        ),
+        bool_field("patch_present", observation.latest_patch_present),
+        bool_field("replay_present", observation.latest_replay_present),
     ])
 }
 

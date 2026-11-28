@@ -54,7 +54,6 @@ pub struct CommitPublication {
     pub(crate) source_effects: Option<
         crate::mvcc::publication::application_publication::RelationalCoupledAuthoredSourceEffects,
     >,
-    pub diagnostics: Vec<RelationalDiagnosticArtifact>,
     pub envelope: SharedCanonicalCommitEnvelope,
     pub patch_position: contracts::publication::patch::data::patch_position::PatchStreamPosition,
     pub aspect_evaluation_traces: Vec<AspectEvaluationTrace>,
@@ -245,7 +244,12 @@ impl CommitResult {
     }
 
     pub fn diagnostics(&self) -> &[RelationalDiagnosticArtifact] {
-        &self.publication.diagnostics
+        let summary = &self.publication.envelope.diagnostics_summary;
+        if summary.entries.is_empty() {
+            &[]
+        } else {
+            std::slice::from_ref(summary)
+        }
     }
 
     pub fn aspect_evaluation_traces(&self) -> &[AspectEvaluationTrace] {

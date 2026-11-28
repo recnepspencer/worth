@@ -163,6 +163,24 @@ pub(super) fn view_at(log: &[PersistentNameCommittedBatch], basis: u64) -> Oracl
                 _ => {}
             }
         }
+        use crate::facade::aggregate_identity::AggregateGroupChange;
+        for published in batch.published_group_transitions_for_test() {
+            for assignment in &published.transition.assignments {
+                let key = PersistentNameKey::Group(assignment.identity);
+                let carriers = &mut view.live.get_mut(&key).expect("assigned group is live").1;
+                match &assignment.change {
+                    AggregateGroupChange::Born(members) | AggregateGroupChange::Revived(members) => {
+                        *carriers = members.iter().filter_map(|(name, _)| name.entity_name().copied()).collect();
+                    }
+                    AggregateGroupChange::Kept(delta) => {
+                        for name in delta.removed().filter_map(|name| name.entity_name()) {
+                            carriers.remove(name);
+                        }
+                        carriers.extend(delta.upserted().filter_map(|(name, _)| name.entity_name().copied()));
+                    }
+                }
+            }
+        }
         for (k, carriers) in batch.carriers_for_test() {
             view.live.get_mut(k).expect("carriers name a live name").1 = carriers.clone();
         }

@@ -1,5 +1,5 @@
 //! Query supplies producer execution; Native owns the applied image and writer roster.
-use worth_relational_publication::internal_port::mvcc::publication::application_publication::authored_restoration::RelationalAuthoredRestorationFieldsPort as _;
+use worth_relational_publication::internal_port::publication::ownership::authored_restoration::RelationalAuthoredRestorationFieldsPort as _;
 use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_owners::RelationalAuthoredCoupledOwnersOwnerPort as _;
 use worth_relational_publication::internal_port::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthorityFieldsPort as _;
 use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_owners::RelationalAuthoredCoupledOwnersFieldsPort as _;

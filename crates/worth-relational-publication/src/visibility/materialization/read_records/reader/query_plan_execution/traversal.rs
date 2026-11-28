@@ -7,26 +7,17 @@ impl RelationalPinnedRead {
         lease: Option<&ExecutionResourceLease<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> QueryReadResult {
-        let declared_bytes =
-            worth_relational_branch::internal_port::visibility::materialization::read_records::reader::query_preparation_extent::declared_bytes(&plan.packet, 0)?;
-        let (packets, preparation) =
-            prepare_query_packets(execution, lease, declared_bytes, |budget| {
-                prepare_traversal_packets(&plan.packet, budget)
-            })?;
-        let metrics = PacketizedQueryMetrics::from_packets(&packets);
-        record_query_packet_metrics(self.pinned_instrumentation(), &plan, &metrics);
+        self.run_query_packets(plan, lease, execution, 0,
+            |plan, budget| prepare_traversal_packets(&plan.packet, budget),
+            |plan, packets, remaining| {
         let basis = &self.basis;
         let state_access: &(dyn PartitionAccess + Sync) = basis;
         let registry = basis.projection_root().schema_authority().registry();
         let version_id = basis.version_id();
-        let remaining_lease = lease
-            .map(|lease| remaining_work_lease(lease, preparation))
-            .transpose()?;
-        self.count_query_backing(lease);
-        let (fragments, report) = execute_leased_query_packets(
+execute_leased_query_packets(
             packets,
             execution,
-            remaining_lease.as_ref(),
+            remaining,
             |packet, ordinal, ceiling, context| {
                 worth_relational_branch::internal_port::visibility::materialization::read_records::reader::query_execution::leased_traversal::execute_leased_traversal_fragment(
                     execution,
@@ -43,18 +34,7 @@ impl RelationalPinnedRead {
                 )
             },
         )
-        .map_err(|stop| combine_query_stop(stop, preparation))?;
-        let report = Some(combine_query_reports(preparation, report));
-        Ok(Some(query_execution_outcome_maybe_leased(
-            self.pinned_instrumentation(),
-            plan,
-            metrics.packet_count,
-            metrics.touched_partitions,
-            metrics.target_count,
-            fragments,
-            execution,
-            lease,
-            report,
-        )?))
+            },
+        )
     }
 }

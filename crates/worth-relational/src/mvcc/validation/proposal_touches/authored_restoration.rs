@@ -1,6 +1,6 @@
 //! Only the sealed, payload-checked Native inverse is outside application authoring.
 use worth_relational_publication::internal_port::mvcc::publication::application_publication::completion::RequiredOutputPublicationOwnerPort as _;
-use worth_relational_publication::internal_port::mvcc::publication::application_publication::authored_restoration::RelationalAuthoredRestorationFieldsPort as _;
+use worth_relational_publication::internal_port::publication::ownership::authored_restoration::RelationalAuthoredRestorationFieldsPort as _;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::*;
 use crate::mvcc::publication::application_publication::RelationalAuthoredRestoration;

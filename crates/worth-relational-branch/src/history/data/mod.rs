@@ -63,8 +63,8 @@ pub use canonical_commit_envelope::{
     CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, CanonicalOwnedGraphSelection,
     CanonicalRetainedEntitySelection, RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
     RelationalDescriptiveTouchPrecision, RelationalIntroducedSchemaObservation,
-    RelationalOriginalInputObservation, RelationalReplayRecord, RelationalTouchAdjacencyDirection,
-    ReplaySchemaVersion, SharedCanonicalCommitEnvelope,
+    RelationalOriginalInputObservation, RelationalTouchAdjacencyDirection,
+     SharedCanonicalCommitEnvelope,
 };
 pub use canonical_commit_envelope::{
     CanonicalCommitEnvelopeBody, CanonicalCommitEnvelopeDraft, CanonicalEnvelopeReadmissionMemory,

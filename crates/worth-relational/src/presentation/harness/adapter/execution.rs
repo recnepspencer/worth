@@ -59,7 +59,7 @@ pub(super) fn execute_request(
         .map(|read| read.outcome)
         .ok_or_else(|| RelationalHarnessError("query execution unavailable".to_string()))?
         .result;
-    let publication_artifacts = runtime.publication().artifacts().snapshot();
+    let publication_artifacts = runtime.publication().observation_snapshot();
     Ok(RunRecord {
         schema_version: worth_harness::facade::RecordSchemaVersion::V1,
         run_id: run_id_value,

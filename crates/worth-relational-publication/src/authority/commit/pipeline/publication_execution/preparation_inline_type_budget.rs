@@ -34,16 +34,14 @@ pub(crate) fn collect(census: &mut contracts::inline_type_sizes::census::Census)
             contracts::identity::data::record_ids::RelationId,
             contracts::identity::data::primitives::LineageId,
         )>>("relation_lineages");
-        owner.field::<crate::publication::authority::artifacts::PublicationArtifacts>("artifacts");
+        owner.field::<worth_relational_branch::internal_port::snapshots::data::SnapshotHandle>("reserved_snapshot");
         owner.field::<Vec<contracts::transactions::data::primitives::RecordRef>>("changed_records");
         owner.field::<VersionId>("version_id");
         owner.field::<Option<VersionId>>("previous_branch_head_version");
         owner.field::<CommitId>("commit_id");
         owner.field::<RelationalCommitReceipt>("commit_reference");
         owner.field::<BranchId>("branch_id");
-        owner.field::<Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>>(
-            "deferred_diagnostic_artifacts",
-        );
+
         owner.field::<crate::runtime::state::subsystems::history::canonical_publication_routes::PreparedCanonicalPublicationRoute>(
             "canonical_publication_route",
         );
@@ -60,16 +58,14 @@ pub(crate) fn collect(census: &mut contracts::inline_type_sizes::census::Census)
             contracts::identity::data::record_ids::RelationId,
             contracts::identity::data::primitives::LineageId,
         )>>("relation_lineages");
-        owner.field::<crate::publication::authority::artifacts::PublicationArtifacts>("artifacts");
+        owner.field::<worth_relational_branch::internal_port::snapshots::data::SnapshotHandle>("reserved_snapshot");
         owner.field::<Vec<contracts::transactions::data::primitives::RecordRef>>("changed_records");
         owner.field::<VersionId>("version_id");
         owner.field::<Option<VersionId>>("previous_branch_head_version");
         owner.field::<CommitId>("commit_id");
         owner.field::<RelationalCommitReceipt>("commit_reference");
         owner.field::<BranchId>("branch_id");
-        owner.field::<Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>>(
-            "deferred_diagnostic_artifacts",
-        );
+
     }
     {
         let mut owner = census.owner::<PreparePublicationPhaseInput<'static>>("crates/worth-relational/src/authority/commit/pipeline/publication_execution/preparation/input.rs", "PreparePublicationPhaseInput", 128 * 1024);

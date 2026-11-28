@@ -25,7 +25,6 @@ pub(crate) struct RelationalPreparationOwnerBinding {
     snapshot_ids: Arc<SnapshotIdentityAllocator>,
     lineage_identity: crate::runtime::LineageIdentityAllocator,
     lineage_naming_basis: crate::runtime::state::subsystems::LineageNamingBasisBinding,
-    diagnostics: crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore,
     index_definitions: super::indexing::RuntimeIndexDefinitionReadBinding,
     mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
     durability_admission:
@@ -50,7 +49,6 @@ pub(crate) struct RelationalPreparationRuntime {
     pub(crate) execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
     pub(crate) execution_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
     pub(crate) home_target: Option<Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
-    pub(crate) diagnostics: crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore,
     pub(crate) index_definitions: super::indexing::RuntimeIndexDefinitionReadBinding,
     pub(crate) mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
     pub(crate) durability_admission:
@@ -82,7 +80,6 @@ impl RelationalPreparationOwnerBinding {
             snapshot_ids: runtime.visibility.snapshot_identity_binding(),
             lineage_identity: runtime.lineage.identity_allocator(),
             lineage_naming_basis: runtime.lineage.naming_basis_binding(),
-            diagnostics: runtime.publication.diagnostics.clone(),
             index_definitions: runtime.indexes.definition_read_binding(),
             durability_admission:
                 crate::durability::published_medium::RelationalDurablePreparationAdmission::new(
@@ -121,7 +118,6 @@ impl RelationalPreparationOwnerBinding {
             execution_contracts: None,
             execution_registry: None,
             home_target: None,
-            diagnostics: self.diagnostics.clone(),
             index_definitions: self.index_definitions.clone(),
             mirror_residency: self.mirror_residency.clone(),
             durability_admission: self.durability_admission.clone(),
@@ -161,8 +157,6 @@ impl RelationalPreparationRuntime {
         runtime.record_identity = record_identity;
         runtime.services = services;
         runtime.lineage_identity = self.lineage_identity.detached();
-        runtime.diagnostics =
-            crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore::default();
         Ok((runtime, record_identity_memory))
     }
 
@@ -249,14 +243,7 @@ impl RelationalPreparationRuntime {
         SelectedRelationalBranchState::from_owner_basis(self.runtime_instance_id(), basis)
     }
 
-    pub(crate) fn push_bounded_preparation_diagnostic(
-        &self,
-        scope: crate::diagnostics::data::DiagnosticsScope,
-        kind: crate::diagnostics::data::DiagnosticsArtifactKind,
-        entries: Vec<crate::diagnostics::data::RelationalDiagnosticsEntry>,
-    ) -> crate::diagnostics::data::RelationalDiagnosticArtifact {
-        self.preparation_diagnostics().emit(scope, kind, entries)
-    }
+
 }
 
 impl crate::capabilities::RuntimeConfigSource for RelationalPreparationRuntime {
@@ -268,17 +255,6 @@ impl crate::capabilities::RuntimeConfigSource for RelationalPreparationRuntime {
 impl crate::capabilities::InstrumentationSource for RelationalPreparationRuntime {
     fn runtime_instrumentation(&self) -> &crate::runtime::RuntimeInstrumentation {
         &self.services.instrumentation
-    }
-}
-
-impl crate::capabilities::DiagnosticArtifactSink for RelationalPreparationRuntime {
-    fn push_diagnostic_entries(
-        &self,
-        scope: crate::diagnostics::data::DiagnosticsScope,
-        kind: crate::diagnostics::data::DiagnosticsArtifactKind,
-        entries: Vec<crate::diagnostics::data::RelationalDiagnosticsEntry>,
-    ) {
-        self.push_bounded_preparation_diagnostic(scope, kind, entries);
     }
 }
 

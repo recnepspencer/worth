@@ -81,9 +81,6 @@ fn two_v1_siblings_transition_independently_and_retained_v1_truth_stays_exact() 
             .unwrap()
             .unwrap()
             .clone();
-        let replay_record = world.runtime.publication().latest_replay().unwrap().clone();
-        assert_eq!(replay_record.commit_id, committed.commit.commit_id);
-        assert_eq!(replay_record.schema_authority, envelope.schema_authority);
         transitioned_commits.push((branch, committed.commit.commit_id, after));
         world
             .runtime

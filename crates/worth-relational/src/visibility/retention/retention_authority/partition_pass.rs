@@ -11,7 +11,6 @@ pub(super) struct RetentionCounts {
     pub(super) replay_pinned: usize,
     pub(super) snapshot_pinned: usize,
     pub(super) reclaimable: usize,
-    pub(super) branch_replay_overlap: usize,
 }
 
 pub(super) struct PartitionRetentionPass {
@@ -47,10 +46,6 @@ pub(super) fn inspect_partition_retention<K: RecordKind>(
         counts.branch_pinned += usize::from(arena.branch_pin_count(slot).unwrap_or(0) > 0);
         counts.replay_pinned += usize::from(arena.replay_pin_count(slot).unwrap_or(0) > 0);
         counts.snapshot_pinned += usize::from(arena.snapshot_pin_count(slot).unwrap_or(0) > 0);
-        counts.branch_replay_overlap += usize::from(
-            arena.branch_pin_count(slot).unwrap_or(0) > 0
-                && arena.replay_pin_count(slot).unwrap_or(0) > 0,
-        );
         counts.reclaimable += usize::from(
             arena
                 .get_slot(slot)

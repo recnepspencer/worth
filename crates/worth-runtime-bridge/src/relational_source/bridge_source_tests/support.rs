@@ -30,11 +30,8 @@ pub(super) fn bridge_envelopes_at_current_observation(
         CommittedPatchSource, RelationalCommittedPatchRequest, TruthCommitIdentity,
     };
 
-    let branch = runtime
-        .publication()
-        .latest_bundle()
+    let branch = runtime.history().historical_latest_commit()
         .expect("Bridge publication fixture requires a committed branch")
-        .commit
         .branch_id
         .clone();
     let identity = runtime

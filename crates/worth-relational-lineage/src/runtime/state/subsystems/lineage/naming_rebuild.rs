@@ -1,12 +1,8 @@
-//! Fork seeding and full-history rebuilds of the per-branch naming basis.
-//!
-//! A fork shares its source's tables copy-on-write. Only a fork taken while
-//! a later settlement was in flight needs a rebuild from canonical events,
-//! and a rebuild needs the [`FullLineageRecoveryToken`] only a state holding
-//! its complete event history carries; a cold-backed state records the fork
-//! unavailable instead of deriving it from a partial history.
+//! Lineage holder bindings and reconstruction inputs.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
+#[cfg(test)]
+use std::collections::BTreeSet;
 
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::identity::data::primitives::LineageId;
@@ -18,97 +14,11 @@ use crate::contracts::lineage::data::graph::LineageNode;
 use crate::contracts::lineage::data::naming::{PersistentNameHolder, PersistentNameIdentity};
 
 use super::naming_basis::{
-    AuthoritativeBranchNamingState, AuthoritativeLineageBasis, NamingBasisUnavailable,
+    AuthoritativeLineageBasis, NamingBasisUnavailable,
 };
+#[cfg(test)]
 use super::recovery_token::FullLineageRecoveryToken;
-use super::state::PublishedLineageEvent;
 use super::LineageState;
-
-pub(super) type BranchNaming = Result<AuthoritativeBranchNamingState, NamingBasisUnavailable>;
-
-/// `branch`'s naming basis replayed through `cutoff` from every published event
-/// along its fork ancestry.
-///
-/// Complexity: O(published events); full-history recovery only.
-pub(super) fn rebuild_branch_naming_state_for_branch(
-    _full: &FullLineageRecoveryToken,
-    branch_id: &BranchId,
-    cutoff: CommitId,
-    published_events: &[PublishedLineageEvent],
-    entity_nodes: &BTreeMap<LineageId, LineageNode>,
-    relation_holders: &BTreeMap<LineageId, RelationId>,
-    branch_forks: &BTreeMap<BranchId, (BranchId, CommitId)>,
-) -> BranchNaming {
-    let cutoffs = ancestor_commit_cutoffs(branch_id, cutoff, branch_forks);
-    let mut state = AuthoritativeBranchNamingState::over(None, None, None);
-    for published in published_events {
-        let Some(&max_commit) = cutoffs.get(published.event.branch_id()) else {
-            continue;
-        };
-        if published.publication_commit_id <= max_commit {
-            state
-                .apply_event(
-                    &published.event,
-                    published.publication_commit_id,
-                    entity_nodes,
-                    relation_holders,
-                )
-                .map_err(NamingBasisUnavailable::Storage)?;
-        }
-    }
-    Ok(state)
-}
-
-/// Every branch's naming basis replayed from canonical events.
-///
-/// Complexity: O(branches * published events); full-history recovery only.
-pub(super) fn rebuild_all_branch_naming_states(
-    full: &FullLineageRecoveryToken,
-    published_events: &[PublishedLineageEvent],
-    entity_nodes: &BTreeMap<LineageId, LineageNode>,
-    relation_holders: &BTreeMap<LineageId, RelationId>,
-    branch_forks: &BTreeMap<BranchId, (BranchId, CommitId)>,
-) -> BTreeMap<BranchId, BranchNaming> {
-    let mut branches = BTreeSet::new();
-    for published in published_events {
-        branches.insert(published.event.branch_id().clone());
-    }
-    branches.extend(branch_forks.keys().cloned());
-    branches
-        .into_iter()
-        .map(|branch_id| {
-            let state = rebuild_branch_naming_state_for_branch(
-                full,
-                &branch_id,
-                CommitId(u64::MAX),
-                published_events,
-                entity_nodes,
-                relation_holders,
-                branch_forks,
-            );
-            (branch_id, state)
-        })
-        .collect()
-}
-
-fn ancestor_commit_cutoffs(
-    branch_id: &BranchId,
-    cutoff: CommitId,
-    branch_forks: &BTreeMap<BranchId, (BranchId, CommitId)>,
-) -> BTreeMap<BranchId, CommitId> {
-    let mut cutoffs = BTreeMap::new();
-    let mut current = branch_id.clone();
-    let mut current_cutoff = cutoff;
-    while !cutoffs.contains_key(&current) {
-        cutoffs.insert(current.clone(), current_cutoff);
-        let Some((parent, fork_commit)) = branch_forks.get(&current) else {
-            break;
-        };
-        current_cutoff = current_cutoff.min(*fork_commit);
-        current = parent.clone();
-    }
-    cutoffs
-}
 
 impl LineageState {
     pub fn record_relation_lineage(&mut self, relation_id: RelationId, lineage_id: LineageId) {
@@ -121,27 +31,24 @@ impl LineageState {
         if let Some(&lineage) = self.relation_lineages.get(&relation_id) {
             return Some(lineage);
         }
-        let holder =
-            crate::contracts::lineage::data::naming::PersistentNameHolder::Relation(relation_id);
         let scope = crate::lineage::tiered::NamingReadScope::new();
-        for slot in self.branch_naming_states.values() {
-            if let Ok(state) = slot
-                && let Some(lineage) = state.live_lineage_in(&holder, &scope)
-            {
+        let holder = PersistentNameHolder::Relation(relation_id);
+        let mut historical = None;
+        for slot in self.name_indexes.by_branch.values() {
+            let super::name_indexes::BranchNameIndex::Current(index) = slot else {
+                continue;
+            };
+            if let Some(lineage) = index.live_lineage_in(&holder, &scope) {
                 return Some(lineage);
             }
-        }
-        for slot in self.name_indexes.by_branch.values() {
-            if let super::name_indexes::BranchNameIndex::Current(index) = slot
-                && let Some(lineage) = index.latest_holder_lineage_in(
+            if historical.is_none() {
+                historical = index.latest_holder_lineage_in(
                     crate::lineage::index::LineageHolder::Relation(relation_id),
                     &scope,
-                )
-            {
-                return Some(lineage);
+                );
             }
         }
-        None
+        historical
     }
 
     pub(crate) fn relation_lineages_snapshot(&self) -> Vec<(RelationId, LineageId)> {
@@ -180,23 +87,17 @@ impl LineageState {
             .insert(target);
     }
 
-    pub(super) fn branch_naming_state(&self, branch_id: &BranchId) -> Option<&BranchNaming> {
-        self.branch_naming_states.get(branch_id)
-    }
-
     pub(crate) fn holder_and_name_for_lineage(
         &self,
         branch_id: &BranchId,
         lineage_id: LineageId,
     ) -> Result<Option<(PersistentNameHolder, PersistentNameIdentity)>, NamingBasisUnavailable>
     {
-        match self.branch_naming_states.get(branch_id) {
-            None => Ok(None),
-            Some(Err(denial)) => Err(*denial),
-            Some(Ok(state)) => state
-                .holder_and_name_for_lineage(lineage_id)
-                .map_err(NamingBasisUnavailable::Storage),
-        }
+        let scope = crate::lineage::tiered::NamingReadScope::new();
+        let index = self.name_indexes.read(branch_id).map_err(NamingBasisUnavailable::from)?;
+        let answer = index.and_then(|index| index.holder_and_name_in(lineage_id, &scope));
+        scope.settle().map_err(NamingBasisUnavailable::Storage)?;
+        Ok(answer)
     }
 
     /// Complexity: O(N) full scan; audits and courts only.
@@ -204,13 +105,11 @@ impl LineageState {
         &self,
         branch_id: &BranchId,
     ) -> AuthoritativeLineageBasis {
-        match self.branch_naming_states.get(branch_id) {
-            None => AuthoritativeLineageBasis::default(),
-            Some(Ok(state)) => state
-                .snapshot()
-                .unwrap_or_else(|cause| panic!("audit of a damaged naming page: {cause:?}")),
-            Some(Err(denial)) => panic!("audit of an unavailable naming basis: {denial:?}"),
-        }
+        self.name_indexes.read(branch_id)
+            .unwrap_or_else(|denial| panic!("audit of an unavailable naming basis: {denial:?}"))
+            .map(|index| index.audit_commit_basis()
+                 .unwrap_or_else(|cause| panic!("audit of a damaged naming page: {cause:?}")))
+            .unwrap_or_default()
     }
 
     /// Complexity: O(live names) full scan; returns typed error on damaged cold
@@ -220,13 +119,8 @@ impl LineageState {
         branch_id: &BranchId,
     ) -> Result<BTreeMap<PersistentNameIdentity, PersistentNameHolder>, NamingBasisUnavailable>
     {
-        match self.branch_naming_states.get(branch_id) {
-            None => Ok(BTreeMap::new()),
-            Some(Ok(state)) => state
-                .live_holders()
-                .map_err(NamingBasisUnavailable::Storage),
-            Some(Err(denial)) => Err(*denial),
-        }
+        self.name_indexes.read(branch_id).map_err(NamingBasisUnavailable::from)?
+            .map_or_else(|| Ok(BTreeMap::new()), |index| index.live_holders().map_err(NamingBasisUnavailable::Storage))
     }
 }
 
@@ -269,14 +163,24 @@ pub(super) fn named_holders(
 ///
 /// Queries only ancestor branches in `event_commits_by_branch`, ignoring all
 /// unrelated branch history (`O(ancestors * log H_branch)`).
-pub(super) fn branch_lineage_event_commit_bounds(
+#[cfg(test)]
+fn branch_lineage_event_commit_bounds(
     _full: &FullLineageRecoveryToken,
     branch_id: &BranchId,
     cutoff: CommitId,
     event_commits_by_branch: &BTreeMap<BranchId, BTreeSet<CommitId>>,
     branch_forks: &BTreeMap<BranchId, (BranchId, CommitId)>,
 ) -> (Option<CommitId>, Option<CommitId>) {
-    let cutoffs = ancestor_commit_cutoffs(branch_id, cutoff, branch_forks);
+    let mut ancestry = BTreeMap::new();
+    let mut branch = branch_id;
+    let mut bound = cutoff;
+    while !ancestry.contains_key(branch) {
+        ancestry.insert(branch.clone(), bound);
+        let Some((parent, fork)) = branch_forks.get(branch) else { break };
+        branch = parent;
+        bound = bound.min(*fork);
+    }
+    let cutoffs = ancestry;
     let (mut earliest, mut latest): (Option<CommitId>, Option<CommitId>) = (None, None);
     for (ancestor, max_commit) in cutoffs {
         let Some(commits) = event_commits_by_branch.get(&ancestor) else {

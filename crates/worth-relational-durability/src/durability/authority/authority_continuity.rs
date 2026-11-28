@@ -7,12 +7,10 @@ pub mod schema_continuity;
 
 use crate::durability::data::RecoveryPlan;
 use contracts::config::data::runtime_config::RelationalRuntimeConfig;
-use contracts::diagnostics::data::artifacts::RelationalDiagnosticsEntry;
 use contracts::durability::data::recovery_errors::{
     DurabilityError, RecoveryAuthorityContinuityMismatch, RecoveryFailureClass,
 };
 
-use super::diagnostics::recovery_authority_continuity_evaluated;
 use registry_mismatch::schema_registry_mismatch;
 use schema_continuity::validate_schema_recovery_authority_continuity;
 
@@ -58,12 +56,6 @@ pub(super) fn validate_recovery_authority_continuity(
     }
     validate_schema_recovery_authority_continuity(config, plan)?;
     Ok(())
-}
-
-pub(super) fn recovery_authority_continuity_diagnostic(
-    plan: &RecoveryPlan,
-) -> RelationalDiagnosticsEntry {
-    recovery_authority_continuity_evaluated(plan)
 }
 
 pub fn validate_checkpoint_lineage_artifact(

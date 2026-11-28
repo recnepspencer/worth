@@ -36,7 +36,7 @@ mod tenure;
 mod test_support;
 
 use super::{
-    DurabilitySubsystem, LineageSubsystem, PublicationSubsystem, RecordIdentitySubsystem,
+    DurabilitySubsystem, LineageSubsystem, RecordIdentitySubsystem,
     RuntimeServices, StorageSubsystem, VisibilitySubsystem,
 };
 
@@ -77,7 +77,6 @@ pub struct RelationalRuntimeState {
     pub(crate) configuration: RelationalRuntimeConfiguration,
     pub(crate) partitions: StorageSubsystem,
     pub(crate) visibility: VisibilitySubsystem,
-    pub(crate) publication: PublicationSubsystem,
     pub(crate) history:
         super::subsystems::history::history_canonical_routes::RelationalPublicationHistory,
     pub(crate) indexes: indexing::RuntimeIndexingSubsystem,

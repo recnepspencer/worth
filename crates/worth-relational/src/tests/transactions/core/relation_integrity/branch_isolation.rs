@@ -37,12 +37,7 @@ fn relation_integrity_rejected_branch_local_commit_does_not_advance_truth_or_lea
         changed_relations(&accepted)[0],
         None,
     );
-    let latest_patch_before = runtime
-        .publication()
-        .artifacts()
-        .latest_patch()
-        .unwrap()
-        .position;
+    let latest_patch_before = runtime.history().latest_patch_stream_position().unwrap();
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
         &runtime,
@@ -102,21 +97,11 @@ fn relation_integrity_rejected_branch_local_commit_does_not_advance_truth_or_lea
         feature_digest_before
     );
     assert_eq!(
-        runtime
-            .publication()
-            .artifacts()
-            .latest_patch()
-            .unwrap()
-            .position,
+        runtime.history().latest_patch_stream_position().unwrap(),
         latest_patch_before
     );
     assert_eq!(
-        runtime
-            .publication()
-            .artifacts()
-            .latest_bundle()
-            .unwrap()
-            .commit,
+        runtime.history().historical_latest_commit().unwrap(),
         accepted.commit
     );
 }

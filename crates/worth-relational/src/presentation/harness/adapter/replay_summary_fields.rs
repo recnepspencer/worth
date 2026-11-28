@@ -1,4 +1,7 @@
-use crate::replay::data::RelationalReplayRecord;
+use crate::history::data::CanonicalCommitEnvelope;
+use crate::publication::patch::data::PatchStreamPosition;
+use crate::snapshots::data::SnapshotId;
+use super::terminal_harness_summary_projection::optional_terminal_harness_summary_projection_u64;
 
 use super::terminal_harness_summary_projection::{
     terminal_harness_summary_projection_object, terminal_harness_summary_projection_string,
@@ -6,15 +9,19 @@ use super::terminal_harness_summary_projection::{
     TerminalHarnessSummaryProjection,
 };
 
-pub(super) fn replay_summary(replay: RelationalReplayRecord) -> TerminalHarnessSummaryProjection {
-    ReplaySummary::from_replay_record(replay).into_terminal_harness_summary_projection()
+pub(super) fn replay_summary(
+    envelope: &CanonicalCommitEnvelope,
+    position: PatchStreamPosition,
+    snapshot_id: Option<SnapshotId>,
+) -> TerminalHarnessSummaryProjection {
+    ReplaySummary::from_envelope(envelope, position, snapshot_id).into_terminal_harness_summary_projection()
 }
 
 struct ReplaySummary {
     schema_version: u64,
     commit_id: u64,
     version_id: u64,
-    snapshot_id: u64,
+    snapshot_id: Option<u64>,
     patch_stream_position: u64,
     patch_record_count: usize,
     patch_ordering: String,
@@ -22,16 +29,16 @@ struct ReplaySummary {
 }
 
 impl ReplaySummary {
-    fn from_replay_record(replay: RelationalReplayRecord) -> Self {
+    fn from_envelope(envelope: &CanonicalCommitEnvelope, position: PatchStreamPosition, snapshot_id: Option<SnapshotId>) -> Self {
         Self {
-            schema_version: replay.schema_version.0 as u64,
-            commit_id: replay.commit_id.0,
-            version_id: replay.version_id.0,
-            snapshot_id: replay.snapshot_id.0,
-            patch_stream_position: replay.patch.position.0,
-            patch_record_count: replay.patch.authoritative_record_patches.len(),
-            patch_ordering: format!("{:?}", replay.patch.ordering),
-            patch_publication_mode: format!("{:?}", replay.patch.publication_mode),
+            schema_version: 1,
+            commit_id: envelope.commit.commit_id.0,
+            version_id: envelope.commit.version_id.0,
+            snapshot_id: snapshot_id.map(|id| id.0),
+            patch_stream_position: position.0,
+            patch_record_count: envelope.patch.authoritative_record_patches.len(),
+            patch_ordering: format!("{:?}", envelope.patch.ordering),
+            patch_publication_mode: format!("{:?}", envelope.patch.publication_mode),
         }
     }
 
@@ -51,7 +58,7 @@ impl ReplaySummary {
             ),
             (
                 "snapshot_id",
-                terminal_harness_summary_projection_u64(self.snapshot_id),
+                optional_terminal_harness_summary_projection_u64(self.snapshot_id),
             ),
             (
                 "patch_stream_position",

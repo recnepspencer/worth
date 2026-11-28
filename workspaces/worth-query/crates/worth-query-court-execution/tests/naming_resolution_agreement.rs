@@ -177,6 +177,12 @@ impl Groups {
             proposed,
         )
         .expect("valid group transition");
+        let committed = worth_testkit_relational::group_naming::committed_partition(
+            &self.scheme, &self.prior, &transition,
+        ).expect("published transition matches the prior partition");
+        for assignment in &transition.assignments {
+            self.retired.remove(&assignment.identity);
+        }
         self.retired.extend(transition.retired.iter().copied());
         self.prior = transition
             .assignments
@@ -190,7 +196,7 @@ impl Groups {
             .collect();
         let commit = CommitId(self.log.len() as u64 + 1);
         self.log
-            .push(PersistentNameCommittedBatch::new(commit).with_group_transition(&transition));
+            .push(PersistentNameCommittedBatch::new(commit).with_published_group_transitions(std::sync::Arc::new([committed])));
     }
 
     fn group_of(&self, member: PersistentNameIdentity) -> AggregateIdentity {

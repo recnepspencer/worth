@@ -4,8 +4,10 @@ pub use crate::aggregate_identity::{
     AggregateGroupClaimant, AggregateGroupLineageEvent, AggregateGroupMember,
     AggregateGroupMemberDelta, AggregateGroupMembers, AggregateGroupNaming,
     AggregateGroupNamingAuthority, AggregateGroupNamingDenial, AggregateGroupOrigin,
-    AggregateGroupScheme, AggregateGroupSchemeId, AggregateGroupTransition, AggregateMemberRole,
-    AggregatePriorGroup, CanonicalGroupMemberIdentity, GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG,
+    AggregateGroupPartitionTransition, AggregateGroupScheme, AggregateGroupSchemeId,
+    AggregateGroupTransition, AggregateMemberRole, AggregatePriorGroup,
+    CanonicalGroupMemberIdentity, GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG,
     GROUP_AGGREGATE_TRANSITION_DOMAIN_TAG,
 };
+pub use crate::lineage::groups::{CommittedGroupTransition, GroupTransitionKind};
 pub use worth_foundational::facade::AggregateIdentity;

@@ -18,7 +18,7 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
         .unwrap()
         .owner_lineage_id();
     let checkpoint = checkpoint_for_schema_version(
-        runtime.publication().latest_patch().unwrap().position,
+        runtime.history().latest_patch_stream_position().unwrap(),
         SchemaVersionId(1),
     );
 

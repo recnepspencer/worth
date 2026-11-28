@@ -252,3 +252,42 @@ pub(crate) fn snapshot_for_owner_branch(
         .expect("test branch identity is owner-issued");
     snapshot_for_owner_identity(runtime, &identity)
 }
+
+pub(crate) fn latest_committed_envelope(
+    runtime: &RelationalRuntime,
+) -> Option<std::sync::Arc<crate::history::data::CanonicalCommitEnvelope>> {
+    let (position, _) = runtime.history.latest_canonical_patch_route()?;
+    runtime.history.canonical_envelope_at_patch(position)
+}
+
+pub(crate) fn latest_committed_patch(
+    runtime: &RelationalRuntime,
+) -> Option<crate::facade::publication::PublishedAuthoritativePatchEnvelope> {
+    use worth_relational_contracts::internal_port::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativePatchEnvelopeOwnerPort as _;
+    use crate::facade::publication::PublishedAuthoritativePatchEnvelope;
+    let (position, _) = runtime.history.latest_canonical_patch_route()?;
+    let envelope = runtime.history.canonical_envelope_at_patch(position)?;
+    Some(PublishedAuthoritativePatchEnvelope::from_canonical(
+        position,
+        &envelope.patch,
+    ))
+}
+
+pub(crate) fn latest_published_snapshot(
+    runtime: &RelationalRuntime,
+) -> Option<crate::snapshots::data::SnapshotHandle> {
+    let commit = latest_committed_envelope(runtime)?;
+    let version = commit.commit.version_id;
+    let (snapshot, binding) = runtime
+        .visibility
+        .published_snapshot_binding_for_version(version)?;
+    Some(
+        worth_relational_branch::internal_port::snapshots::data::assemble_snapshot_handle(
+            runtime.runtime_instance_id(),
+            binding.branch_id,
+            snapshot,
+            version,
+            binding.read_policy,
+        ),
+    )
+}

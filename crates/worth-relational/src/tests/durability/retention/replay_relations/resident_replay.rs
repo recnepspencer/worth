@@ -36,29 +36,9 @@ pub(super) fn assert_retention_lifecycle(execution: &RetentionRequest<'_, '_>) {
         .unwrap());
 
     let pinned = runtime.retention().inspect_plan(execution).unwrap();
-    let diagnostics = runtime.publication().diagnostics();
-    let retention_artifacts = diagnostics.by_scope(DiagnosticsScope::Retention);
-    let latest_retention = retention_artifacts.last().unwrap();
-    let latest_entry = latest_retention.entries.last().unwrap();
-    assert!(retention_artifacts
-        .iter()
-        .flat_map(|artifact| artifact.entries.iter())
-        .any(|entry| entry.code == DiagnosticCode::ReplayRetentionPinned));
-    assert!(pinned.replay_pinned_relations >= 1);
+    assert_eq!(pinned.replay_pinned_relations, 1);
+    assert_eq!(pinned.branch_pinned_relations, 0);
     assert_eq!(pinned.reclaimable_relations, 0);
-    assert_eq!(latest_entry.code, DiagnosticCode::RetentionPlanInspected);
-    assert_eq!(
-        diagnostic_field(latest_entry, "replay_pinned_relations"),
-        &RelationalDiagnosticValue::Unsigned(pinned.replay_pinned_relations as u64)
-    );
-    assert_eq!(
-        diagnostic_field(latest_entry, "branch_pinned_relations"),
-        &RelationalDiagnosticValue::Unsigned(pinned.branch_pinned_relations as u64)
-    );
-    assert_eq!(
-        diagnostic_unsigned_field(latest_entry, "branch_replay_overlap_relations"),
-        0
-    );
 
     assert!(runtime
         .history_authority()

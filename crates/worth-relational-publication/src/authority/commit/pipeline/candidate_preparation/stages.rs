@@ -9,10 +9,6 @@ use worth_relational_contracts::internal_port::transactions::data::outcomes::tra
 use worth_execution::ExecutionRequest;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
-struct CandidateContext {
-    registration: CandidateRegistration,
-    diagnostic: crate::publication::diagnostic_store::RelationalDiagnosticOperationCapture,
-}
 struct PublicationInputs {
     publication: Option<
         crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
@@ -22,12 +18,12 @@ struct PublicationInputs {
     caller: Option<worth_relational_branch::internal_port::history::data::caller_association::RelationalCallerAssociation>,
 }
 pub struct ValidatedCandidate {
-    context: CandidateContext,
+    registration: CandidateRegistration,
     inputs: PublicationInputs,
     validated: CommitPhaseBacking<snapshot_validation::SnapshotValidatedCommitExecution>,
 }
 pub struct AssembledCandidate {
-    context: CandidateContext,
+    registration: CandidateRegistration,
     inputs: PublicationInputs,
     assembled: CommitPhaseBacking<artifact_execution::AssembledCommitExecution>,
 }
@@ -63,7 +59,6 @@ pub fn validate(
         required_output_publication,
         required_output_materialization,
         caller_association,
-        diagnostic_capture,
     } = history.into_inner();
     let pending = history_bound.value().candidate_symbols();
     let symbols = SelectedCandidateSymbols {
@@ -74,8 +69,7 @@ pub fn validate(
     let validated = CommitPhaseBacking::new(
         request,
         ValidatedCandidate {
-            context: CandidateContext {
-                registration: CandidateRegistration {
+            registration: CandidateRegistration {
                     runtime_instance_id,
                     publication_binding,
                     transaction_id,
@@ -87,8 +81,6 @@ pub fn validate(
                     expected_basis,
                     expected_root,
                     publication_cell,
-                },
-                diagnostic: diagnostic_capture,
             },
             inputs: PublicationInputs {
                 publication: required_output_publication,
@@ -107,14 +99,13 @@ pub fn assemble(
     checked: CommitPhaseBacking<ValidatedCandidate>,
 ) -> Result<CommitPhaseBacking<AssembledCandidate>, TransactionCommitError> {
     let ValidatedCandidate {
-        context,
+        registration,
         inputs,
         validated,
     } = checked.into_inner();
     let lineage_deferred = (inputs.publication.is_some()
         || validated.value().has_codec_publication())
-        && (*context
-            .registration
+        && (*registration
             .expected_root
             .schema_authority()
             .registry()
@@ -130,7 +121,7 @@ pub fn assemble(
     CommitPhaseBacking::new(
         request,
         AssembledCandidate {
-            context,
+            registration,
             inputs,
             assembled,
         },
@@ -147,11 +138,11 @@ pub fn publish<
     source: CommitPhaseBacking<AssembledCandidate>,
 ) -> Result<CommitPhaseBacking<PublishedCandidate>, TransactionCommitError> {
     let AssembledCandidate {
-        context,
+        registration,
         inputs,
         assembled,
     } = source.into_inner();
-    let mut prepared = publication_execution::prepare_commit_publication_execution(
+    let prepared = publication_execution::prepare_commit_publication_execution(
         request,
         owners,
         assembled,
@@ -159,13 +150,10 @@ pub fn publish<
         inputs.materialization,
         inputs.caller,
     )?;
-    prepared
-        .value_mut()
-        .append_diagnostics(context.diagnostic.finish());
     CommitPhaseBacking::new(
         request,
         PublishedCandidate {
-            registration: context.registration,
+            registration,
             prepared,
         },
     )

@@ -13,7 +13,6 @@ impl<V: DraftValidationInput> AdmittedCommitState<V> {
             commit_log,
             authority_input,
             prevalidated_invariants,
-            diagnostics,
             complexity_before,
             prior_complexity_delta,
         } = self;
@@ -25,7 +24,6 @@ impl<V: DraftValidationInput> AdmittedCommitState<V> {
             commit_log,
             authority_input,
             prevalidated_invariants,
-            diagnostics,
             complexity_before,
             prior_complexity_delta,
         }

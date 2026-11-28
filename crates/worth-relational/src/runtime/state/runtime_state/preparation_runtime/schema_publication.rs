@@ -4,7 +4,7 @@ use crate::authority::commit::phases::publication::CanonicalEnvelopeInputs;
 use crate::authority::commit::phases::schema_continuity::inputs::{
     SchemaContinuityInputs, SchemaContinuityRequest,
 };
-use crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationInputs;
+use worth_relational_publication::internal_port::publication::ownership::required_output_origin::history_request::OutputPreparationInputs;
 use crate::mvcc::RelationalTransactionValidationInput;
 use crate::publication::authority::diagnostic_emission::PreparationDiagnostics;
 
@@ -12,7 +12,6 @@ impl RelationalPreparationRuntime {
     pub(crate) fn preparation_diagnostics(&self) -> PreparationDiagnostics<'_> {
         PreparationDiagnostics {
             profile: &self.config.diagnostics.profile,
-            store: &self.diagnostics,
             instrumentation: &self.services.instrumentation,
         }
     }

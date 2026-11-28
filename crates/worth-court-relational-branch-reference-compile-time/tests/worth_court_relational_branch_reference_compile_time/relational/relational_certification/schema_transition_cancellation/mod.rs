@@ -29,7 +29,7 @@ fn cancelled_schema_transition_leaves_no_target_or_branch_residue() {
             worth_relational::facade::publication::PatchStreamRequest::default(),
         )
         .unwrap();
-    let replay_before = world.runtime.publication().latest_replay();
+    let replay_before = world.runtime.history().latest_patch_stream_position();
     let cost_scope = worth_relational::facade::inspection::RelationalMvccCostScope::capture(
         &world.runtime,
         vec![identity],
@@ -89,7 +89,7 @@ fn cancelled_schema_transition_leaves_no_target_or_branch_residue() {
             .unwrap(),
         stream_before
     );
-    assert_eq!(world.runtime.publication().latest_replay(), replay_before);
+    assert_eq!(world.runtime.history().latest_patch_stream_position(), replay_before);
     let cost = world.runtime.observe_mvcc_counters(&cost_scope).unwrap();
     assert_eq!(cost.retention_cost_delta().candidate_releases, 1);
 

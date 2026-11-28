@@ -36,7 +36,7 @@ pub(crate) mod associated_effects;
 #[cfg(test)]
 pub(crate) use worth_relational_durability::internal_port::durability::authority::checkpoint_image;
 pub(crate) use worth_relational_durability::internal_port::durability::authority::{
-    checkpoint_components, checkpoint_lineage_basis, checkpointing, diagnostics,
+    checkpoint_components, checkpoint_lineage_basis, checkpointing,
 };
 pub(crate) mod checkpoint_capture;
 pub(crate) mod checkpoint_complete;

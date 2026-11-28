@@ -91,26 +91,8 @@ pub(crate) fn assert_snapshot_release_contract(
 
 pub(crate) fn assert_observability_surfaces_agree(world: &FintechWorld) {
     let publication = world.runtime.publication();
-    let bundle = publication
-        .latest_bundle()
-        .expect("publication bundle should exist after hostile workflow");
-    let patch = publication
-        .latest_patch()
-        .expect("latest patch should exist after hostile workflow");
-    let replay = publication
-        .latest_replay()
-        .expect("latest replay should exist after hostile workflow");
+    let observation = publication.observation_snapshot();
     let history = world.runtime.history();
-    let commit = history
-        .latest_commit()
-        .expect("latest commit should exist after hostile workflow");
-    let diagnostics = world.runtime.publication().diagnostics();
-
-    assert_eq!(bundle.commit, commit);
-    assert_eq!(bundle.patch, patch);
-    assert_eq!(bundle.replay, replay);
-    assert!(diagnostics
-        .artifacts()
-        .iter()
-        .any(|artifact| artifact == &bundle.diagnostics_summary));
+    assert_eq!(observation.latest_patch_position, history.latest_patch_stream_position());
+    assert_eq!(observation.latest_commit_id, history.latest_commit().map(|commit| commit.commit_id));
 }

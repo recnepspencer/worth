@@ -23,7 +23,6 @@ use super::super::tables::{branch_key_digest, GROUP_LOG};
 use super::super::{validate_pages, CheckpointNamingState};
 use super::{CollectedMembers, MemSource};
 use crate::lineage::index::{PersistentNameBranchIndex, PersistentNameCommittedBatch};
-use crate::runtime::state::subsystems::lineage::naming_basis::AuthoritativeBranchNamingState;
 
 pub(crate) fn unnamed_event(
     event_id: u64,
@@ -90,10 +89,7 @@ fn retired_unnamed_lineage_not_resurrected_in_truncated_naming_basis() {
     let basis_at = |idx: &PersistentNameBranchIndex, name: &str, c: u64| {
         let child = idx.truncate_at(BranchId(name.into()), CommitId(c)).unwrap();
         assert_eq!(child.head(), Some(CommitId(c)));
-        AuthoritativeBranchNamingState::from_truncated_index(&child, CommitId(c))
-            .unwrap()
-            .snapshot()
-            .unwrap()
+        child.audit_commit_basis().unwrap()
     };
     let b1 = basis_at(&index, "c1", 1);
     assert_eq!(

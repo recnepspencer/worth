@@ -9,14 +9,19 @@ pub(crate) trait PublicationDiagnosticsSource {
 
 impl PublicationDiagnosticsSource for RelationalRuntime {
     fn publication_diagnostics(&self) -> Vec<RelationalDiagnosticArtifact> {
-        self.publication.diagnostics.snapshot()
+        self.history
+            .performed_canonical_envelopes()
+            .into_iter()
+            .map(|envelope| envelope.diagnostics_summary.clone())
+            .filter(|artifact| !artifact.entries.is_empty())
+            .collect()
     }
 
     fn publication_diagnostic_artifact_count(&self) -> usize {
-        self.publication.diagnostics.count()
+        self.publication_diagnostics().len()
     }
 
     fn publication_diagnostics_since(&self, start: usize) -> Vec<RelationalDiagnosticArtifact> {
-        self.publication.diagnostics.since(start)
+        self.publication_diagnostics().into_iter().skip(start).collect()
     }
 }

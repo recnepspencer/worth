@@ -212,26 +212,26 @@ fn isolated_member_groups_damage_refuses_before_append_and_live_names_is_fallibl
         })
         .unwrap();
 
-    // Reopen fresh with a damaged LIVE_HOLDER (tag 3) page so it is not cached:
+    // Reopen fresh with a damaged INDEX_NAME (tag 6) page so it is not cached:
     // `branch_live_persistent_names` must return Err(Storage(Damaged)) instead of panicking.
-    let live_holder_page = dir
+    let name_index_page = dir
         .naming
         .branches
         .iter()
         .flat_map(|b| &b.pages)
-        .find(|p| p.first.first() == Some(&3) || p.last.first() == Some(&3))
+        .find(|p| p.first.first() == Some(&6))
         .map(|p| p.member)
-        .expect("LIVE_HOLDER page");
+        .expect("INDEX_NAME page");
     let source2 = immutable_source(&c1, &medium);
     let reopened2 = reopen_named(request, c1, source2.clone(), &medium, u64::MAX / 4);
     source2
         .failures
         .lock()
         .unwrap()
-        .insert(ColdRead::Member(live_holder_page), Cause::Damaged);
+        .insert(ColdRead::Member(name_index_page), Cause::Damaged);
     let live_err = reopened2
         .branch_live_persistent_names(&main)
-        .expect_err("damaged LIVE_HOLDER page must return Err instead of panicking");
+        .expect_err("damaged INDEX_NAME page must return Err instead of panicking");
     assert_eq!(format!("{live_err:?}"), "Storage(Damaged)");
 }
 

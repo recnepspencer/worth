@@ -7,7 +7,7 @@ import PersistentNaming.TimeM
 -- proof-mirror: crates/worth-relational-lineage/src/lineage/tiered/mod.rs:204-211 sha256:e9d95e43dc68c32f5c55e61be4a3c4d156e0430f4aec9871edc75f14cd7dbf92
 -- proof-mirror: crates/worth-relational-lineage/src/lineage/tiered/mod.rs:255-269 sha256:3c1734572f2eda0c0bad13e8a4a67f2f3e045e369cb512c8ac3b056e4a94c074
 -- proof-mirror: crates/worth-relational-lineage/src/lineage/tiered/mod.rs:301-311 sha256:b3eb33cd63de0b3b81b0db0d0c005c7bacc70599e135a52e7148ef12386379c5
--- proof-mirror: crates/worth-relational-lineage/src/lineage/index/mod.rs:152-165 sha256:c390d89294e46c18684b839a077fd90e4a47fc5a82fa80db4664b9e1c9cf1341
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/mod.rs:153-166 sha256:c390d89294e46c18684b839a077fd90e4a47fc5a82fa80db4664b9e1c9cf1341
 -- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/branch_state.rs:109-118 sha256:23c9e34f8ce510777bfd43a604c5a5d8b2f7617c3baae2a4bd9380b3936a4836
 -- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/branch_state.rs:228-260 sha256:1d60b1af082df5639b3b1dcf54ae54bfc20a01a82e352dc2ed1baff6b4771d19
 

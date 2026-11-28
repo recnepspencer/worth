@@ -1,6 +1,5 @@
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::descriptive_touches::{RelationalDescriptiveTouch as Touch, RelationalDescriptiveTouchGraph as Graph, RelationalDescriptiveTouchGraphOwnerPort as _, RelationalTouchAdjacencyDirection as Direction};
-use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use std::mem::size_of;
 
 use worth_execution::MapKernelFailure;
@@ -26,34 +25,6 @@ pub(super) enum TouchPreparationMode {
     Unavailable,
 }
 
-enum TouchBudget<'a, 'b, 'c, 'd, 'e> {
-    Checked(&'a mut PacketPreparationBudget<'b, 'c, 'd, 'e>),
-    Legacy,
-}
-
-impl TouchBudget<'_, '_, '_, '_, '_> {
-    fn checkpoint(&mut self, units: u64) -> Result<(), Failure> {
-        match self {
-            Self::Checked(budget) => budget.checkpoint(units),
-            Self::Legacy => Ok(()),
-        }
-    }
-
-    fn claim(&mut self, bytes: u64) -> Result<(), Failure> {
-        match self {
-            Self::Checked(budget) => budget.claim(bytes),
-            Self::Legacy => Ok(()),
-        }
-    }
-
-    fn claimed_bytes(&self) -> u64 {
-        match self {
-            Self::Checked(budget) => budget.claimed_bytes(),
-            Self::Legacy => 0,
-        }
-    }
-}
-
 pub(super) fn prepare(
     work_budget: Option<&contracts::execution::request_work::RequestWorkBudget>,
     catalog: &worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::catalog_publication::CapturedIndexDefinitionCatalog,
@@ -69,72 +40,24 @@ pub(super) fn prepare(
     if matches!(mode, TouchPreparationMode::Unavailable) {
         return Ok(Graph::unavailable());
     }
-    match contracts::execution::request_custody::request_lease(execution) {
-        Some(lease) => {
-            let maximum = contracts::execution::packet_preparation::prepare_borrowed_artifact(
-                lease,
-                work_budget,
-                0,
-                |checked| {
-                    Ok((
-                        maximum_touch_count(
-                            catalog,
-                            deltas,
-                            adjacency,
-                            &mut TouchBudget::Checked(checked),
-                        )?,
-                        0,
-                    ))
-                },
-            )
-            .map_err(|stop| TransactionCommitError::execution(stop.into()))?;
-            let bound =
-                extent::memory_bound(catalog, selected, working, deltas, maximum)?;
-            let build = |checked: &mut PacketPreparationBudget<'_, '_, '_, '_>| {
-                build(
-                    catalog,
-                    selected,
-                    working,
-                    deltas,
-                    adjacency,
-                    maximum,
-                    &mut TouchBudget::Checked(checked),
-                )
-            };
-            contracts::execution::packet_preparation::prepare_borrowed_artifact(
-                lease, work_budget, bound, build,
-            )
-            .map_err(|stop| TransactionCommitError::execution(stop.into()))
-        }
-        None => build(
-            catalog,
-            selected,
-            working,
-            deltas,
-            adjacency,
-            maximum_touch_count(catalog, deltas, adjacency, &mut TouchBudget::Legacy).map_err(
-                |failure| {
-                    TransactionCommitError::execution(
-                        contracts::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
-                            kind: contracts::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
-                                contracts::execution::denial::kernel_failure(failure),
-                            ),
-                            partition_identity: None,
-                        },
-                    )
-                },
-            )?,
-            &mut TouchBudget::Legacy,
-        )
-        .map(|(graph, _)| graph)
-        .map_err(|failure| {
-            TransactionCommitError::execution(contracts::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
-                kind: contracts::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
-                    contracts::execution::denial::kernel_failure(failure),
-                ),
-                partition_identity: None,
-            })
-        }),
+    use contracts::execution::packet_preparation::{prepare_borrowed_artifact, prepare_serial_artifact};
+    let measure = |budget: &mut PacketPreparationBudget<'_, '_, '_, '_>| {
+        Ok((maximum_touch_count(catalog, deltas, adjacency, budget)?, 0))
+    };
+    let lease = contracts::execution::request_custody::request_lease(execution);
+    let maximum = match lease {
+        Some(lease) => prepare_borrowed_artifact(lease, work_budget, 0, measure)
+            .map_err(TransactionCommitError::from)?,
+        None => prepare_serial_artifact(execution, 0, measure)?,
+    };
+    let bound = extent::memory_bound(catalog, selected, working, deltas, maximum)?;
+    let assemble = |budget: &mut PacketPreparationBudget<'_, '_, '_, '_>| {
+        build(catalog, selected, working, deltas, adjacency, maximum, budget)
+    };
+    match lease {
+        Some(lease) => prepare_borrowed_artifact(lease, work_budget, bound, assemble)
+            .map_err(TransactionCommitError::from),
+        None => prepare_serial_artifact(execution, bound, assemble),
     }
 }
 
@@ -145,7 +68,7 @@ fn build(
     deltas: &[CanonicalRecordAspectDelta],
     adjacency: &[AdjacencyDelta],
     maximum: usize,
-    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
+    budget: &mut PacketPreparationBudget<'_, '_, '_, '_>,
 ) -> Result<(Graph, u64), Failure> {
     let slots = (maximum as u64)
         .checked_mul(size_of::<Touch>() as u64)
@@ -194,7 +117,7 @@ fn maximum_touch_count(
     catalog: &worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::catalog_publication::CapturedIndexDefinitionCatalog,
     deltas: &[CanonicalRecordAspectDelta],
     adjacency: &[AdjacencyDelta],
-    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
+    budget: &mut PacketPreparationBudget<'_, '_, '_, '_>,
 ) -> Result<usize, Failure> {
     let mut total = adjacency
         .len()
@@ -247,7 +170,7 @@ fn append_delta(
     working: &worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState,
     delta: &CanonicalRecordAspectDelta,
     touches: &mut Vec<Touch>,
-    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
+    budget: &mut PacketPreparationBudget<'_, '_, '_, '_>,
 ) -> Result<(), Failure> {
     if !matches!(
         delta.structural_change,

@@ -89,14 +89,13 @@ pub(super) fn finalize_publication_phase(
         validated_lineage_events,
         lineage_nodes,
         relation_lineages,
-        artifacts,
+        reserved_snapshot,
         changed_records,
         version_id,
         previous_branch_head_version,
         commit_id,
         commit_reference,
         branch_id,
-        deferred_diagnostic_artifacts,
     } = prepared;
     commit_log.record_publication_position(positioned_commit.position());
     record_canonical_log_phase(
@@ -127,19 +126,14 @@ pub(super) fn finalize_publication_phase(
             changed_records: &changed_records,
             version_id,
             previous_branch_head_version,
-            commit_id,
-            commit_reference: &commit_reference,
             branch_id: &branch_id,
-            artifacts,
+            reserved_snapshot,
             patch_position: positioned_commit.position(),
             phase_timing: &mut publication_phase_timing,
             published_snapshot_basis,
             published_snapshot_slot,
         },
     );
-    for artifact in deferred_diagnostic_artifacts {
-        inputs.publication.push_diagnostic_artifact(artifact);
-    }
     commit_log.record_commit_published(commit_id, &commit_reference.branch_id.0);
     commit_log.complete_phase(CommitPhase::Publication);
     phase_timing.publication_micros = elapsed_micros(phase_started);

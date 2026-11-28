@@ -67,3 +67,8 @@ pub(crate) use contracts::publication::ownership::read_request::checkpoint;
 pub(crate) use contracts::publication::ownership::read_request::request;
 
 pub mod route_selection;
+
+pub mod authored_restoration;
+pub mod native_transition_succession;
+pub mod required_output_origin;
+pub mod retirement_admission;

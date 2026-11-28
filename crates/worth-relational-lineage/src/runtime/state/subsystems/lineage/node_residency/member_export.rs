@@ -3,8 +3,6 @@ use super::*;
 use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageSubject;
 use worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableMemberLocator;
 use worth_relational_storage::internal_port::durability::medium::member_custody::RelationalDurableMemberCustody;
-use worth_relational_storage::internal_port::storage::data::member_frame;
-use worth_relational_storage::internal_port::storage::data::member_frame::MemberKind;
 #[derive(Debug)]
 struct NodeMemberExport {
     owner: Arc<RuntimeLineageNodeResidency>,
@@ -41,7 +39,7 @@ impl RelationalDurableColdSource for NodeMemberExport {
         &self,
         members: &[RelationalDurableMemberLocator],
     ) -> Result<RelationalDurableMemberCustody, Cause> {
-        self.owner.source()?.retain_members(members)
+        self.owner.custody.source()?.retain_members(members)
     }
     fn read_member(
         &self,
@@ -52,36 +50,13 @@ impl RelationalDurableColdSource for NodeMemberExport {
         if member != page.descriptor.member {
             return Err(Cause::SourceUnavailable);
         }
-        let mut state = page.state.lock().unwrap_or_else(|error| error.into_inner());
-        if let NodePageState::Damaged(failure) = &*state {
-            return Err(failure.cause);
-        }
-        let limit = limit.min(1 << 20);
-        let result = if member.length > limit {
-            Err(Cause::LimitExceeded {
-                length: member.length,
-                limit,
-            })
-        } else {
-            self.owner.source()?.read_member(member, limit)
-        }
-        .and_then(|bytes| {
-            member_frame::decode(&bytes, member, MemberKind::Lineage)?;
-            Ok(bytes)
-        });
-        if let Err(cause) = &result
-            && cause.is_proven_damage()
-        {
-            let failure = node_page::storage_failure(&page.descriptor, *cause);
-            *state = NodePageState::Damaged(failure);
-        }
-        result
+        page.export_member(|| self.owner.custody.source(), limit)
     }
     fn read_commit(
         &self,
         position: worth_relational_contracts::internal_port::publication::patch::data::patch_position::PatchStreamPosition,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
-        self.owner.source()?.read_commit(position, limit)
+        self.owner.custody.source()?.read_commit(position, limit)
     }
 }

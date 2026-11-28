@@ -23,12 +23,7 @@ pub(crate) fn run_seeded_scenario(
     let mut runtime = build_runtime(config.runtime_mode);
     let mut entities = seed_initial_entities(execution, &mut runtime, "seed");
     let baseline_checkpoint = checkpoint_for_schema_version(
-        runtime
-            .publication()
-            .artifacts()
-            .latest_patch()
-            .unwrap()
-            .position,
+        runtime.history().latest_patch_stream_position().unwrap(),
         SchemaVersionId(1),
     );
     let mut checkpoints = vec![baseline_checkpoint.clone()];
@@ -84,12 +79,7 @@ pub(crate) fn run_property_scenario(
     let mut runtime = build_property_runtime(runtime_mode);
     let mut entities = seed_initial_entities(execution, &mut runtime, "property");
     let baseline_checkpoint = checkpoint_for_schema_version(
-        runtime
-            .publication()
-            .artifacts()
-            .latest_patch()
-            .unwrap()
-            .position,
+        runtime.history().latest_patch_stream_position().unwrap(),
         SchemaVersionId(1),
     );
     let mut checkpoints = vec![baseline_checkpoint.clone()];
@@ -201,12 +191,7 @@ fn maybe_record_checkpoint(
     config: &SeededScenarioConfig,
     checkpoints: &mut Vec<crate::facade::publication::SubscriberCheckpoint>,
 ) {
-    let latest_position = runtime
-        .publication()
-        .artifacts()
-        .latest_patch()
-        .unwrap()
-        .position;
+    let latest_position = runtime.history().latest_patch_stream_position().unwrap();
     if latest_position.0 > checkpoints.last().unwrap().position().0
         && (latest_position.0 as usize).is_multiple_of(config.checkpoint_stride)
     {
@@ -221,12 +206,7 @@ fn record_any_new_checkpoint(
     runtime: &crate::facade::runtime::RelationalRuntime,
     checkpoints: &mut Vec<crate::facade::publication::SubscriberCheckpoint>,
 ) {
-    let latest_position = runtime
-        .publication()
-        .artifacts()
-        .latest_patch()
-        .unwrap()
-        .position;
+    let latest_position = runtime.history().latest_patch_stream_position().unwrap();
     if latest_position.0 > checkpoints.last().unwrap().position().0 {
         checkpoints.push(checkpoint_for_schema_version(
             latest_position,
@@ -239,12 +219,7 @@ fn record_final_checkpoint(
     runtime: &crate::facade::runtime::RelationalRuntime,
     checkpoints: &mut Vec<crate::facade::publication::SubscriberCheckpoint>,
 ) {
-    let latest_position = runtime
-        .publication()
-        .artifacts()
-        .latest_patch()
-        .unwrap()
-        .position;
+    let latest_position = runtime.history().latest_patch_stream_position().unwrap();
     if checkpoints
         .last()
         .map(|checkpoint| checkpoint.position() != latest_position)

@@ -75,7 +75,6 @@ pub(crate) fn assemble_commit_result(
         transaction_id,
         phase_timing,
         commit_log,
-        diagnostics,
         complexity_before,
         prior_complexity_delta,
         public_structural_summary,
@@ -131,7 +130,6 @@ pub(crate) fn assemble_commit_result(
         structural_summary,
         schema_summary,
         publication: CommitPublication {
-            diagnostics,
             source_effects,
             envelope: branch::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelope::from_arc(
                 canonical_commit_envelope,

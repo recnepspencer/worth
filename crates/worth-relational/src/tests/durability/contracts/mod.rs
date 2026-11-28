@@ -27,8 +27,6 @@ mod schema_transition_continuity;
 mod semantic_result;
 mod tail_checkpoint_validation;
 
-use crate::diagnostics::data::RelationalDiagnosticValue;
-use crate::facade::diagnostics::{DiagnosticCode, DiagnosticsScope};
 use crate::facade::durability::{
     RecoveryAuthorityContinuityCheck, RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity,
     RecoveryFailureClass, RecoveryPlan, RecoveryVerificationMode, RecoveryVerificationOutcome,
@@ -91,17 +89,4 @@ fn schema_transition_for_subscriber_impact(
             _ => crate::schema::data::SubscriberBoundaryVisibility::NotVisible,
         })],
     }
-}
-
-fn verified_at_digest_parity_value() -> RelationalDiagnosticValue {
-    RelationalDiagnosticValue::object([
-        (
-            "parity",
-            RelationalDiagnosticValue::string("VerifiedAtLayer"),
-        ),
-        (
-            "verification_layer",
-            RelationalDiagnosticValue::string("DigestParity"),
-        ),
-    ])
 }

@@ -26,6 +26,11 @@ use branch::query::data::query_outcome::QueryExecutionOutcome;
 use branch::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
 use worth_relational_storage::internal_port::storage::overlay::access::PartitionAccess;
 
+use branch::query::data::QueryWorkerFragment;
+use branch::visibility::materialization::read_records::reader::query_packetization::PacketizedQueryWork;
+use branch::visibility::materialization::read_records::reader::query_preparation::QueryPreparationBudget;
+use branch::visibility::materialization::read_records::reader::query_preparation_extent::declared_bytes;
+
 type QueryReadResult =
     Result<Option<(QueryExecutionOutcome, Option<ExecutionReport>)>, QueryReadExecutionStop>;
 
@@ -43,12 +48,48 @@ impl RelationalPinnedRead {
         read.map(|read| read.map(|(outcome, report)| QueryLeasedReadOutcome { outcome, report }))
     }
 
-    fn count_query_backing(&self, lease: Option<&ExecutionResourceLease<'_>>) {
+    fn run_query_packets(
+        &self,
+        plan: SnapshotPinnedQueryPlan,
+        lease: Option<&ExecutionResourceLease<'_>>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        candidate_regions: usize,
+        prepare: impl FnOnce(
+            &SnapshotPinnedQueryPlan,
+            &mut QueryPreparationBudget<'_, '_, '_>,
+        ) -> Result<Vec<PacketizedQueryWork>, worth_execution::MapKernelFailure<()>>,
+        execute: impl FnOnce(
+            &SnapshotPinnedQueryPlan,
+            Vec<PacketizedQueryWork>,
+            Option<&ExecutionResourceLease<'_>>,
+        ) -> Result<(Vec<QueryWorkerFragment>, ExecutionReport), QueryReadExecutionStop>,
+    ) -> QueryReadResult {
+        let declared_bytes = declared_bytes(&plan.packet, candidate_regions)?;
+        let (packets, preparation) =
+            prepare_query_packets(execution, lease, declared_bytes, |budget| prepare(&plan, budget))?;
+        let metrics = PacketizedQueryMetrics::from_packets(&packets);
+        record_query_packet_metrics(self.pinned_instrumentation(), &plan, &metrics);
+        let remaining = lease
+            .map(|lease| remaining_work_lease(lease, preparation))
+            .transpose()?;
         if lease.is_some() {
             self.instrumentation.count_query_staged_parallel_strategy();
         } else {
             self.instrumentation.count_query_serial_strategy();
         }
+        let (fragments, report) = execute(&plan, packets, remaining.as_ref())
+            .map_err(|stop| combine_query_stop(stop, preparation))?;
+        Ok(Some(query_execution_outcome_maybe_leased(
+            self.pinned_instrumentation(),
+            plan,
+            metrics.packet_count,
+            metrics.touched_partitions,
+            metrics.target_count,
+            fragments,
+            execution,
+            lease,
+            Some(combine_query_reports(preparation, report)),
+        )?))
     }
 
     pub(super) fn execute_query_plan_internal(

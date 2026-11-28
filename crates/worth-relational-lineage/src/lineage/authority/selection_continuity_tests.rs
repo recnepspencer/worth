@@ -43,8 +43,8 @@ impl Basis {
 }
 
 impl LineageBasisView for Basis {
-    fn live_holder(&self, id: &PersistentNameIdentity) -> Option<&PersistentNameHolder> {
-        self.live.get(id)
+    fn live_holder(&self, id: &PersistentNameIdentity) -> Option<PersistentNameHolder> {
+        self.live.get(id).cloned()
     }
     fn live_lineage(&self, holder: &PersistentNameHolder) -> Option<LineageId> {
         self.lineages.get(holder).copied()

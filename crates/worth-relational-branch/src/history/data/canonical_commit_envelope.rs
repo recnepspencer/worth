@@ -351,8 +351,6 @@ fn intent_record_ref(intent: &MutationIntent) -> Option<RecordRef> {
 pub mod committed_record_changes;
 pub use committed_record_changes::CommittedRecordChange;
 
-pub mod replay_record;
-pub use replay_record::{RelationalReplayRecord, ReplaySchemaVersion};
 
 #[path = "canonical_commit_envelope/tests.rs"]
 pub mod tests;

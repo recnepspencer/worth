@@ -25,9 +25,6 @@ fn v2_latest_replay_matches_the_canonical_envelope_and_reconstructs() {
         .unwrap()
         .unwrap()
         .clone();
-    let latest = world.runtime.publication().latest_replay().unwrap().clone();
-    assert_eq!(latest.commit_id, committed.commit.commit_id);
-    assert_eq!(latest.schema_authority, envelope.schema_authority);
     let replay = world
         .runtime
         .replay_authority()

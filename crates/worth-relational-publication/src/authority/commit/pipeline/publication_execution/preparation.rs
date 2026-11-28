@@ -74,13 +74,12 @@ pub(super) fn prepare_publication_phase<
         } = input;
         let (
             aggregate_partitions,
-            mut artifacts,
+            reserved_snapshot,
             mut changed_records,
             mut canonical_commit_envelope,
             adjacency_deltas,
             mut lineage_nodes,
             mut relation_lineages,
-            deferred_diagnostic_artifacts,
             target_schema_registry,
         ) = publication.into_inner().into_finalize().into_parts();
         let application_unchanged = application_effect::unchanged(
@@ -133,10 +132,10 @@ pub(super) fn prepare_publication_phase<
                             &branch_basis,
                         )?)
                     } else if let Some(admission) = required_output_publication {
-                        Some(crate::history::data::canonical_commit_envelope::required_output_origin::installation::complete::install_required_output_origin(
+                        Some(crate::publication::ownership::required_output_origin::installation::complete::install_required_output_origin(
                             &mut canonical_commit_envelope,
                             execution,
-                            crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationInputs {
+                            crate::publication::ownership::required_output_origin::history_request::OutputPreparationInputs {
                                 current_ownership: &current_ownership,
                                 history: history_owner,
                                 runtime_instance_id: runtime_identity,
@@ -180,7 +179,6 @@ pub(super) fn prepare_publication_phase<
                 &mut working_state,
                 &mut mutation_identities,
                 &mut canonical_commit_envelope,
-                &mut artifacts,
                 &mut changed_records,
                 &mut output_positions,
             )?;
@@ -200,7 +198,6 @@ pub(super) fn prepare_publication_phase<
         }
         crate::authority::commit::phases::publication::enforce_patch_budget(
             max_patch_records,
-            diagnostics,
             &canonical_commit_envelope.patch,
         )?;
         semantic_summary::complete(
@@ -364,14 +361,13 @@ pub(super) fn prepare_publication_phase<
             validated_lineage_events,
             lineage_nodes,
             relation_lineages,
-            artifacts,
+            reserved_snapshot,
             changed_records,
             version_id,
             previous_branch_head_version,
             commit_id,
             commit_reference,
             branch_id,
-            deferred_diagnostic_artifacts,
             canonical_publication_route,
         }
     };

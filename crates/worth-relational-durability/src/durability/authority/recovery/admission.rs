@@ -2,38 +2,22 @@
 
 use crate::durability::data::RecoveryPlan;
 use contracts::config::data::runtime_config::RelationalRuntimeConfig;
-use contracts::diagnostics::data::artifacts::{
-    DiagnosticsArtifactKind, RelationalDiagnosticsEntry,
-};
 use contracts::durability::data::recovery_errors::{
     DurabilityError, RecoveryAuthorityContinuityMismatch, RecoveryFailureClass,
 };
 use contracts::schema::data::RelationalSchemaRegistryFieldsPort as _;
 use worth_relational_contracts::internal_port as contracts;
 
-use super::super::authority_continuity::{
-    recovery_authority_continuity_diagnostic, validate_recovery_authority_continuity,
-};
-
-#[derive(Clone)]
-pub struct RecoveryAdmission {
-    artifact_kind: DiagnosticsArtifactKind,
-    entry: RelationalDiagnosticsEntry,
-}
+use super::super::authority_continuity::validate_recovery_authority_continuity;
 
 /// Recovery plan that passed the live runtime's complete admission boundary.
 pub struct AdmittedRecoveryPlan {
     plan: RecoveryPlan,
-    admission: RecoveryAdmission,
     prepared_home_schemas:
         Option<super::super::runtime_rebuild::original_schemas::OriginalSchemaGraph>,
 }
 
 impl AdmittedRecoveryPlan {
-    pub const fn admission(&self) -> &RecoveryAdmission {
-        &self.admission
-    }
-
     pub fn into_parts(
         self,
     ) -> (
@@ -52,22 +36,7 @@ impl AdmittedRecoveryPlan {
     }
 }
 
-impl RecoveryAdmission {
-    pub const fn artifact_kind(&self) -> DiagnosticsArtifactKind {
-        self.artifact_kind
-    }
-
-    pub fn entry(&self) -> &RelationalDiagnosticsEntry {
-        &self.entry
-    }
-
-    pub fn into_entry(self) -> RelationalDiagnosticsEntry {
-        self.entry
-    }
-}
-
 pub struct RecoveryRejection {
-    admission: RecoveryAdmission,
     error: DurabilityError,
     record_verification_counters: bool,
     authority_continuity: crate::durability::data::RecoveryAuthorityContinuityCheck,
@@ -76,10 +45,6 @@ pub struct RecoveryRejection {
 impl RecoveryRejection {
     pub const fn records_verification_counters(&self) -> bool {
         self.record_verification_counters
-    }
-
-    pub fn diagnostic(&self) -> &RecoveryAdmission {
-        &self.admission
     }
 
     pub fn into_error(self) -> DurabilityError {
@@ -101,25 +66,15 @@ pub fn admit_recovery(
         plan.authority_continuity.verification_outcome,
         crate::durability::data::RecoveryVerificationOutcome::Rejected { .. }
     );
-    let admission = RecoveryAdmission {
-        artifact_kind: if rejected {
-            DiagnosticsArtifactKind::Failure
-        } else {
-            DiagnosticsArtifactKind::MinimalSummary
-        },
-        entry: recovery_authority_continuity_diagnostic(&plan),
-    };
     let result = validate_recovery_authority_continuity(config, &plan)
         .and_then(|()| validate_reported_parity(config, &plan))
         .and_then(|()| validate_world_source(&plan));
     match result {
         Ok(()) => Ok(AdmittedRecoveryPlan {
             plan,
-            admission,
             prepared_home_schemas: None,
         }),
         Err(error) => Err(RecoveryRejection {
-            admission,
             error,
             record_verification_counters: rejected,
             authority_continuity: plan.authority_continuity.clone(),

@@ -9,7 +9,7 @@ pub(super) fn append_index(
     field: &worth_foundational::facade::FieldKey,
     definition: &contracts::indexes::data::definition::DerivedIndexDefinition,
     touches: &mut Vec<Touch>,
-    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
+    budget: &mut PacketPreparationBudget<'_, '_, '_, '_>,
 ) -> Result<(), Failure> {
     let locator = match (&delta.target, &definition.kind) {
         (RecordRef::Entity(_), DerivedIndexKind::EntityField { field_locator })
@@ -79,7 +79,7 @@ pub(super) fn append_index(
 fn push_index_touch(
     touches: &mut Vec<Touch>,
     touch: Touch,
-    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
+    budget: &mut PacketPreparationBudget<'_, '_, '_, '_>,
 ) -> Result<(), Failure> {
     if touches.len() == touches.capacity() {
         let new_capacity = touches.capacity().saturating_mul(2).max(4);

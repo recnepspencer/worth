@@ -199,21 +199,7 @@ fn declared_schema_transition_rejects_wrong_target_basis() {
         }
         other => panic!("expected target-basis conflict, got {other:?}"),
     }
-    let diagnostics = runtime.publication().diagnostics();
-    let failure_artifact = diagnostics
-        .by_scope(DiagnosticsScope::Schema)
-        .into_iter()
-        .find(|artifact| artifact.kind == DiagnosticsArtifactKind::Failure)
-        .expect("schema continuity failure artifact");
-    assert!(failure_artifact.entries.iter().any(|entry| {
-        entry.message.contains("rejected schema diff atom 0")
-            && diagnostic_object_field(diagnostic_field(entry, "detail"), "kind")
-                == &RelationalDiagnosticValue::string("AddedField")
-            && diagnostic_field(entry, "strata")
-                == &RelationalDiagnosticValue::Array(vec![RelationalDiagnosticValue::string(
-                    "StructuralShape",
-                )])
-    }));
+
 }
 
 #[test]

@@ -2,8 +2,8 @@ import PersistentNaming.TimeM
 
 -- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
 -- proof-mirror: crates/worth-relational-lineage/src/runtime/state/subsystems/lineage/name_indexes.rs:147-180 sha256:124b9d4e0fdf34ab4a009bbfcc74b464f2e6d92b2050b72a1e7f396355629a07
--- proof-mirror: crates/worth-relational-lineage/src/runtime/state/subsystems/lineage/naming_rebuild.rs:154-181 sha256:d9e62c0d572e07d41f4e24110a976d27149e76a7322429abef1f0c8283bf5a50
--- proof-mirror: crates/worth-relational-lineage/src/runtime/state/subsystems/lineage/state.rs:29-29 sha256:7d73c54afb0ba858c6ac38747a1ea187bc0d874c356850b0a2cc049567a2af16
+-- proof-mirror: crates/worth-relational-lineage/src/runtime/state/subsystems/lineage/naming_rebuild.rs:61-88 sha256:d9e62c0d572e07d41f4e24110a976d27149e76a7322429abef1f0c8283bf5a50
+-- proof-mirror: crates/worth-relational-lineage/src/runtime/state/subsystems/lineage/state.rs:27-27 sha256:7d73c54afb0ba858c6ac38747a1ea187bc0d874c356850b0a2cc049567a2af16
 
 /-!
 # Forks inheriting a commit: the walk (public #461)

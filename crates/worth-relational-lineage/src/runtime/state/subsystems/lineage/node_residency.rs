@@ -1,37 +1,38 @@
 //! A node page has one shared load, sticky storage damage and counted readers.
 use crate::contracts::storage::data::storage_unavailable::{
     RelationalStorageUnavailable, RelationalStorageUnavailableCause as Cause,
-    RelationalStorageUnavailableCauseOwnerPort as _,
 };
 pub mod member_export;
 use super::node_page::{self, ReadmittedLineageNodePage};
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::lineage::data::graph::LineageNode;
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc, Mutex,
-};
+use std::sync::Arc;
+use super::cold_page::{ColdPageCell, ColdPageDescriptor, ColdPageLease};
+use super::source_retirement::LineagePageSource;
+use worth_relational_storage::internal_port::storage::data::member_frame::MemberKind;
 use worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource;
 use worth_relational_storage::internal_port::storage::data::checkpoint_page::RelationalCheckpointPage;
 use worth_relational_storage::internal_port::storage::residency::demand_failure::RelationalResidencyDemandFailure as Failure;
 
-#[derive(Debug)]
-enum NodePageState {
-    Cold,
-    Resident(Arc<ReadmittedLineageNodePage>),
-    Damaged(RelationalStorageUnavailable),
-}
+type NodePageCell = ColdPageCell<RelationalCheckpointPage, ReadmittedLineageNodePage>;
+type NodePageLease = ColdPageLease<RelationalCheckpointPage, ReadmittedLineageNodePage>;
 
-#[derive(Debug)]
-struct NodePageCell {
-    descriptor: RelationalCheckpointPage,
-    state: Mutex<NodePageState>,
-    leases: AtomicUsize,
+impl ColdPageDescriptor for RelationalCheckpointPage {
+    const BYTE_LIMIT: u64 = 1 << 20;
+    const KIND: MemberKind = MemberKind::Lineage;
+
+    fn member(&self) -> worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableMemberLocator {
+        self.member
+    }
+
+    fn storage_failure(&self, cause: Cause) -> RelationalStorageUnavailable {
+        node_page::storage_failure(self, cause)
+    }
 }
 
 #[derive(Debug)]
 pub(super) struct RuntimeLineageNodeResidency {
-    pub(super) custody: Mutex<worth_relational_storage::internal_port::durability::medium::member_custody::native_source_slot::NativeSourceMemberState>,
+    pub(super) custody: LineagePageSource,
     pages: Vec<Arc<NodePageCell>>,
 }
 
@@ -44,9 +45,7 @@ impl RuntimeLineageNodeResidency {
             .iter()
             .map(|page| page.member)
             .collect::<Vec<_>>();
-        let placement =
-            source
-                .retain_members(&members)
+        let custody = LineagePageSource::retain(source, &members)
                 .map_err(|cause| RelationalStorageUnavailable {
                     subject: crate::contracts::storage::data::storage_unavailable::RelationalStorageSubject::Lineage {
                         first: LineageId(page_descriptors.first().map_or(0, |page| page.first)),
@@ -55,18 +54,11 @@ impl RuntimeLineageNodeResidency {
                     cause,
                 })?;
         Ok(Self {
-            custody: Mutex::new(worth_relational_storage::internal_port::durability::medium::member_custody::native_source_slot::NativeSourceMemberState::new(
-                source.clone(),
-                placement,
-            )),
+            custody,
             pages: page_descriptors
                 .iter()
                 .map(|descriptor| {
-                    Arc::new(NodePageCell {
-                        descriptor: *descriptor,
-                        state: Mutex::new(NodePageState::Cold),
-                        leases: AtomicUsize::new(0),
-                    })
+                    Arc::new(NodePageCell::new(*descriptor))
                 })
                 .collect(),
         })
@@ -96,102 +88,22 @@ impl RuntimeLineageNodeResidency {
             return Ok(None);
         };
         let source = self
-            .source()
+            .custody.source()
             .map_err(|cause| node_page::failure(&cell.descriptor, cause))?;
-        let page = cell.demand(execution, source.as_ref())?;
+        let page = cell.demand(execution, source.as_ref(), |bytes, descriptor| {
+            node_page::readmit(execution, bytes, descriptor)
+        })?;
         let Ok(slot) = page
-            .page
+            .page()
             .nodes
             .binary_search_by_key(&id, |node| node.lineage_id())
         else {
             return Ok(None);
         };
         Ok(Some(ResidentLineageNode {
-            node: page.page.nodes[slot].clone(),
+            node: page.page().nodes[slot].clone(),
             _page: Some(page),
         }))
-    }
-}
-
-impl NodePageCell {
-    fn demand(
-        self: &Arc<Self>,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &dyn RelationalDurableColdSource,
-    ) -> Result<NodePageLease, Failure> {
-        crate::contracts::execution::request_custody::check_request(execution)
-            .map_err(Failure::Request)?;
-        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        if matches!(*state, NodePageState::Cold) {
-            const PAGE_BYTE_LIMIT: u64 = 1 << 20;
-            let result = if self.descriptor.member.length > PAGE_BYTE_LIMIT {
-                Err(Cause::LimitExceeded {
-                    length: self.descriptor.member.length,
-                    limit: PAGE_BYTE_LIMIT,
-                })
-            } else {
-                source.read_member(self.descriptor.member, PAGE_BYTE_LIMIT)
-            }
-            .map_err(|cause| node_page::failure(&self.descriptor, cause))
-            .and_then(|bytes| node_page::readmit(execution, &bytes, &self.descriptor));
-            match result {
-                Ok(page) => *state = NodePageState::Resident(Arc::new(page)),
-                Err(Failure::StorageUnavailable(failure)) => {
-                    if failure.cause.is_proven_damage() {
-                        *state = NodePageState::Damaged(failure);
-                    }
-                    return Err(failure.into());
-                }
-                Err(stop) => return Err(stop),
-            }
-        }
-        match &*state {
-            NodePageState::Resident(page) => {
-                {
-                    let update_counter = &self.leases;
-                    let mut count = update_counter.load(Ordering::Acquire);
-                    loop {
-                        let Some(updated_value) = count.checked_add(1) else {
-                            break Err(count);
-                        };
-                        match update_counter.compare_exchange_weak(
-                            count,
-                            updated_value,
-                            Ordering::AcqRel,
-                            Ordering::Acquire,
-                        ) {
-                            Ok(previous) => break Ok(previous),
-                            Err(reloaded_value) => count = reloaded_value,
-                        }
-                    }
-                }
-                .map_err(|_| node_page::failure(&self.descriptor, Cause::MemoryExhausted))?;
-                Ok(NodePageLease {
-                    cell: self.clone(),
-                    page: page.clone(),
-                })
-            }
-            NodePageState::Damaged(failure) => Err((*failure).into()),
-            NodePageState::Cold => Err(node_page::failure(
-                &self.descriptor,
-                Cause::SourceUnavailable,
-            )),
-        }
-    }
-}
-
-#[derive(Debug)]
-struct NodePageLease {
-    cell: Arc<NodePageCell>,
-    page: Arc<ReadmittedLineageNodePage>,
-}
-impl Drop for NodePageLease {
-    fn drop(&mut self) {
-        let previous = self.cell.leases.fetch_sub(1, Ordering::AcqRel);
-        debug_assert!(
-            /* Proof: NodePageLease is non-Clone, is constructed only after incrementing this cell counter, and retains a strong Arc; Drop decrements its issued count once. */
-            previous > 0
-        );
     }
 }
 
@@ -210,13 +122,7 @@ impl ResidentLineageNode {
     }
     pub fn reject_binding(&self) -> Failure {
         if let Some(page) = &self._page {
-            let failure = node_page::storage_failure(&page.cell.descriptor, Cause::Damaged);
-            *page
-                .cell
-                .state
-                .lock()
-                .unwrap_or_else(|error| error.into_inner()) = NodePageState::Damaged(failure);
-            return failure.into();
+            return page.cell().reject_binding().into();
         }
         crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailable {
             subject: crate::contracts::storage::data::storage_unavailable::RelationalStorageSubject::Lineage {
@@ -231,7 +137,7 @@ impl ResidentLineageNode {
         self._page
             .as_ref()
             .map_or(std::slice::from_ref(&self.node), |page| {
-                page.page.nodes.elements()
+                page.page().nodes.elements()
             })
     }
 }

@@ -44,7 +44,7 @@ pub fn readmit_restored_producer_prior(
     meaning: &RequiredOutputPublicationMeaning,
 ) -> Result<Option<RelationalRestoredProducerPrior>, TransactionCommitError> {
     let Some(publication) =
-        super::native_transition_succession::readmit_native_output_transition_successor(
+        crate::publication::ownership::native_transition_succession::readmit_native_output_transition_successor(
             inputs, execution, installed, basis, meaning,
         )?
     else {

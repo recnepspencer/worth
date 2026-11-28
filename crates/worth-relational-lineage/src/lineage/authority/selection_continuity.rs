@@ -220,7 +220,7 @@ pub(super) fn plan(
             });
         }
         let posture = match basis.live_holder(&name) {
-            Some(live) if *live == holder => {
+            Some(live) if live == holder => {
                 return Err(mismatch(
                     LineagePostureKind::Restore,
                     target,
@@ -323,7 +323,7 @@ fn live_name(
 ) -> Option<PersistentNameIdentity> {
     basis
         .holder_name(holder)
-        .filter(|name| basis.live_holder(name) == Some(holder))
+        .filter(|name| basis.live_holder(name).as_ref() == Some(holder))
 }
 
 #[cfg(test)]

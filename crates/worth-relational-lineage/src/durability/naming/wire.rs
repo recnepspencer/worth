@@ -6,35 +6,34 @@
 
 use super::refusal::{PersistentNameDurabilityError as Refusal, PersistentNameWireSection};
 
-/// Appends canonical primitive encodings.
+use crate::naming_wire::{Reader, Writer};
+
 #[derive(Default)]
-pub(super) struct WireWriter {
-    bytes: Vec<u8>,
-}
+pub(super) struct WireWriter(Writer);
 
 impl WireWriter {
     pub(super) fn into_bytes(self) -> Vec<u8> {
-        self.bytes
+        self.0.into_bytes()
     }
 
-    pub(super) fn raw(&mut self, bytes: &[u8]) {
-        self.bytes.extend_from_slice(bytes);
+    pub(super) fn raw(&mut self, value: &[u8]) {
+        self.0.raw(value);
     }
 
     pub(super) fn u8(&mut self, value: u8) {
-        self.bytes.push(value);
+        self.0.u8(value);
     }
 
     pub(super) fn u32(&mut self, value: u32) {
-        self.bytes.extend_from_slice(&value.to_be_bytes());
+        self.0.u32(value);
     }
 
     pub(super) fn u64(&mut self, value: u64) {
-        self.bytes.extend_from_slice(&value.to_be_bytes());
+        self.0.u64(value);
     }
 
-    pub(super) fn digest(&mut self, digest: &[u8; 32]) {
-        self.bytes.extend_from_slice(digest);
+    pub(super) fn digest(&mut self, value: &[u8; 32]) {
+        self.0.digest(value);
     }
 
     /// Writes a 32-bit count, refusing counts the format cannot carry.
@@ -57,49 +56,41 @@ impl WireWriter {
 
 /// Reads canonical primitive encodings, refusing truncation typed.
 pub(super) struct WireReader<'bytes> {
-    bytes: &'bytes [u8],
+    reader: Reader<'bytes>,
     section: PersistentNameWireSection,
 }
 
 impl<'bytes> WireReader<'bytes> {
     pub(super) const fn new(bytes: &'bytes [u8], section: PersistentNameWireSection) -> Self {
-        Self { bytes, section }
+        Self { reader: Reader::new(bytes), section }
+    }
+
+    fn truncated(&self, error: crate::naming_wire::Truncated) -> Refusal {
+        Refusal::Truncated {
+            section: self.section,
+            needed: error.needed,
+            remaining: error.remaining,
+        }
     }
 
     pub(super) fn take(&mut self, needed: usize) -> Result<&'bytes [u8], Refusal> {
-        if self.bytes.len() < needed {
-            return Err(Refusal::Truncated {
-                section: self.section,
-                needed,
-                remaining: self.bytes.len(),
-            });
-        }
-        let (head, rest) = self.bytes.split_at(needed);
-        self.bytes = rest;
-        Ok(head)
+        self.reader.take(needed).map_err(|error| self.truncated(error))
     }
 
     pub(super) fn u8(&mut self) -> Result<u8, Refusal> {
-        Ok(self.take(1)?[0])
+        self.reader.u8().map_err(|error| self.truncated(error))
     }
 
     pub(super) fn u32(&mut self) -> Result<u32, Refusal> {
-        let bytes = self.take(4)?;
-        Ok(u32::from_be_bytes(
-            bytes.try_into().expect("take returned four bytes"),
-        ))
+        self.reader.u32().map_err(|error| self.truncated(error))
     }
 
     pub(super) fn u64(&mut self) -> Result<u64, Refusal> {
-        let bytes = self.take(8)?;
-        Ok(u64::from_be_bytes(
-            bytes.try_into().expect("take returned eight bytes"),
-        ))
+        self.reader.u64().map_err(|error| self.truncated(error))
     }
 
     pub(super) fn digest(&mut self) -> Result<[u8; 32], Refusal> {
-        let bytes = self.take(32)?;
-        Ok(bytes.try_into().expect("take returned thirty-two bytes"))
+        self.reader.digest().map_err(|error| self.truncated(error))
     }
 
     pub(super) fn count(&mut self) -> Result<usize, Refusal> {
@@ -117,11 +108,11 @@ impl<'bytes> WireReader<'bytes> {
 
     /// Requires the section to be fully consumed.
     pub(super) fn finish(self) -> Result<(), Refusal> {
-        if self.bytes.is_empty() {
+        if self.reader.remaining() == 0 {
             Ok(())
         } else {
             Err(Refusal::TrailingBytes {
-                remaining: self.bytes.len(),
+                remaining: self.reader.remaining(),
             })
         }
     }

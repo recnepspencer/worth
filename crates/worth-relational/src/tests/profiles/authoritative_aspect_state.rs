@@ -125,7 +125,7 @@ fn authoritative_field_patches_are_order_independent_in_patch_output() {
     right_txn.commit(execution, &right_runtime).unwrap();
 
     assert_eq!(
-        left_runtime.publication().artifacts().latest_patch(),
-        right_runtime.publication().artifacts().latest_patch()
+        crate::tests::support::latest_committed_patch(&left_runtime),
+        crate::tests::support::latest_committed_patch(&right_runtime)
     );
 }

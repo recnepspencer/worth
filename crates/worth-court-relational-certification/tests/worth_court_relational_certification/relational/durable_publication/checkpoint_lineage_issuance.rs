@@ -30,7 +30,7 @@ fn discard_after_anchor(
         .unwrap()
         .unwrap();
     let floor = published_floor(&envelope);
-    let position = runtime.publication().latest_patch().unwrap().position;
+    let position = runtime.history().latest_patch_stream_position().unwrap();
     release_test_commit_snapshot(runtime, &committed);
     let mut txn = transaction(runtime, &BranchId("main".into()));
     txn.push_batch(
@@ -48,7 +48,7 @@ fn discard_after_anchor(
         .discard_prepared_candidate(candidate)
         .unwrap();
     assert_eq!(
-        runtime.publication().latest_patch().unwrap().position,
+        runtime.history().latest_patch_stream_position().unwrap(),
         position
     );
     floor

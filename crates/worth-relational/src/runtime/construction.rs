@@ -1,5 +1,5 @@
 use crate::runtime::{
-    DurabilitySubsystem, HistorySubsystem, LineageSubsystem, PublicationSubsystem,
+    DurabilitySubsystem, HistorySubsystem, LineageSubsystem,
     RecordIdentitySubsystem, RuntimeServices, RuntimeSubsystem, SchemaContractRuntimeSubsystem,
     StorageSubsystem, VisibilitySubsystem,
 };
@@ -184,7 +184,6 @@ impl RelationalRuntime {
             publication_owner: RelationalRuntimePublicationOwner::standalone(),
             partitions,
             visibility,
-            publication: PublicationSubsystem::default(),
             configuration: RelationalRuntimeConfiguration::new(config, schema_contract_runtime),
         }))
     }
@@ -215,7 +214,6 @@ impl RelationalRuntime {
             configuration: RelationalRuntimeConfiguration::new(config, schema_contract_runtime),
             partitions: self.fork_partitions(),
             visibility: self.visibility.fork(),
-            publication: self.publication.fork(),
             history,
             indexes: self.indexes.fork(),
             lineage,

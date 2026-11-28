@@ -17,3 +17,10 @@ pub struct PublicationObservationSnapshot {
     pub latest_replay_present: bool,
     pub diagnostics_artifact_count: usize,
 }
+
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PublicationDiagnosticsSnapshot {
+    pub observation: PublicationObservationSnapshot,
+    pub diagnostics: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
+}

@@ -179,9 +179,9 @@ crates/worth-relational-contracts/ crates/worth-relational-branch/src/branch/roo
 crates/worth-relational-contracts/ crates/worth-relational-branch/src/branch/root_tests.rs
 crates/worth-relational-contracts/ crates/worth-relational-durability/src/durability/canonical_commit_artifact/frame_reference_encoding.rs
 crates/worth-relational-contracts/ crates/worth-relational-branch/src/history/data/publication_relations/creation/tests/committed_images.rs
-crates/worth-relational-contracts/ crates/worth-relational-lineage/src/lineage/authority/posture_fixture/records.rs
-crates/worth-relational-contracts/ crates/worth-relational-lineage/src/lineage/authority/posture_lineage_tests.rs
-crates/worth-relational-contracts/ crates/worth-relational-lineage/src/lineage/authority/untouched_keeper_merge.rs
+crates/worth-relational-contracts/ crates/worth-relational/src/tests/lineage/mod.rs
+crates/worth-relational-contracts/ crates/worth-relational/src/tests/lineage/posture_lineage_tests.rs
+crates/worth-relational-contracts/ crates/worth-relational/src/tests/lineage/untouched_keeper_merge.rs
 crates/worth-relational-contracts/ crates/worth-relational/src/indexes/access/execution.rs
 crates/worth-relational-contracts/ crates/worth-relational/src/lineage/access/divergence.rs
 crates/worth-relational-contracts/ crates/worth-relational-lineage/src/lineage/authority/name_minting_tests.rs
@@ -219,8 +219,8 @@ crates/worth-relational-contracts/ crates/worth-relational/src/tests/transaction
 crates/worth-relational-contracts/ crates/worth-relational/src/tests/transactions/core/pending_settlement_reservation.rs
 crates/worth-relational-contracts/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/cost/schema_projection.rs
 crates/worth-relational-storage/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/symbol_publication.rs
-crates/worth-relational-storage/ crates/worth-relational-lineage/src/lineage/authority/posture_fixture/records.rs
-crates/worth-relational-storage/ crates/worth-relational-lineage/src/lineage/authority/untouched_keeper_merge.rs
+crates/worth-relational-storage/ crates/worth-relational/src/tests/lineage/mod.rs
+crates/worth-relational-storage/ crates/worth-relational/src/tests/lineage/untouched_keeper_merge.rs
 crates/worth-relational-storage/ crates/worth-relational-mutation/src/aggregate_identity/derived_source/tests.rs
 crates/worth-relational-storage/ crates/worth-relational-publication/src/authority/commit/touched_scope.rs
 crates/worth-relational-storage/ crates/worth-relational-mutation/src/intent_admission/relation_validation/relation_identity_scan.rs
@@ -4350,3 +4350,8 @@ workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-quer
 workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/live_whole_result/mid_poll_revocation.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/live_whole_result/budget_refresh.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/live_whole_result/mid_poll_revocation.rs
+
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/posture_lineage_tests.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/commit_name_preview_continuity_tests.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/untouched_keeper_merge.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/commit_name_preview_tests.rs

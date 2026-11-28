@@ -28,9 +28,7 @@ fn live_footprint(
     LiveFootprint {
         main_head: runtime.history().branch_head(&BranchId("main".to_owned())),
         durable_log_len: runtime.durability().durable_commit_count(),
-        latest_patch: runtime
-            .publication()
-            .latest_patch()
+        latest_patch: crate::tests::support::latest_committed_patch(&runtime)
             .map(|patch| patch.position),
         live_entities: runtime
             .storage_access()

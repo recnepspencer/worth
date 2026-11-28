@@ -222,7 +222,7 @@ pub struct GroupPartitionClaim {
 /// Borrowed point-lookup view over authoritative branch naming state so commit
 /// finalization performs O(delta) lookups without cloning branch maps.
 pub trait LineageBasisView {
-    fn live_holder(&self, id: &PersistentNameIdentity) -> Option<&PersistentNameHolder>;
+    fn live_holder(&self, id: &PersistentNameIdentity) -> Option<PersistentNameHolder>;
     fn live_lineage(&self, holder: &PersistentNameHolder) -> Option<LineageId>;
     fn retired_lineage(&self, id: &PersistentNameIdentity) -> Option<(LineageSubject, LineageId)>;
     /// The persistent name `holder` last held on this branch, live or retired.

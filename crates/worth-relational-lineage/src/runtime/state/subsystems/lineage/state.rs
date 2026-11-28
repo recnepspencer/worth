@@ -9,8 +9,6 @@ use crate::contracts::lineage::data::graph::LineageNode;
 use crate::lineage::tiered::ColdNamingSource;
 
 use super::name_indexes::BranchNameIndexes;
-use super::naming_basis::{AuthoritativeBranchNamingState, NamingBasisUnavailable};
-use super::naming_rebuild::{rebuild_all_branch_naming_states, BranchNaming};
 use super::recovery_token::FullLineageRecoveryToken;
 use super::resolution_indexes::LineageResolutionIndexes;
 
@@ -27,7 +25,6 @@ pub struct LineageState {
     pub(super) relation_lineage_holders: BTreeMap<LineageId, RelationId>,
     pub(super) branch_forks: BTreeMap<BranchId, (BranchId, CommitId)>,
     pub(super) fork_children: BTreeMap<BranchId, BTreeMap<CommitId, BTreeSet<BranchId>>>,
-    pub(super) branch_naming_states: BTreeMap<BranchId, BranchNaming>,
     pub(super) name_indexes: BranchNameIndexes,
     pub(super) naming_rebuilt_event_frontier: Option<u64>,
     pub(super) published_events: Vec<PublishedLineageEvent>,
@@ -63,7 +60,6 @@ impl LineageState {
             relation_lineage_holders: BTreeMap::new(),
             branch_forks: BTreeMap::new(),
             fork_children: BTreeMap::new(),
-            branch_naming_states: BTreeMap::new(),
             name_indexes: BranchNameIndexes::default(),
             naming_rebuilt_event_frontier: None,
             published_events: Vec::new(),
@@ -87,14 +83,13 @@ impl LineageState {
     }
 
     fn record_event(&mut self, event: LineageEventRecord, publication_commit_id: CommitId) {
-        self.record_shared_event(Arc::new(event), publication_commit_id, true);
+        self.record_shared_event(Arc::new(event), publication_commit_id);
     }
 
     pub(super) fn record_shared_event(
         &mut self,
         event: Arc<LineageEventRecord>,
         publication_commit_id: CommitId,
-        apply_naming: bool,
     ) {
         let event_position = self.published_events.len();
         assert!(
@@ -110,24 +105,6 @@ impl LineageState {
             self.record_relation_lineage(relation_id, lineage_id);
         }
         self.resolution_indexes.append_event(event_position, &event);
-        if apply_naming {
-            let branch = event.branch_id().clone();
-            self.bump_branch_generation(&branch);
-            let slot = self
-                .branch_naming_states
-                .entry(branch)
-                .or_insert_with(|| Ok(AuthoritativeBranchNamingState::over(None, None, None)));
-            if let Ok(state) = slot
-                && let Err(cause) = state.apply_event(
-                    &event,
-                    publication_commit_id,
-                    &self.nodes,
-                    &self.relation_lineage_holders,
-                )
-            {
-                *slot = Err(NamingBasisUnavailable::Storage(cause));
-            }
-        }
         self.event_commits_by_branch
             .entry(event.branch_id().clone())
             .or_default()
@@ -316,13 +293,6 @@ impl LineageState {
         let events = self.published_events.iter().map(|p| p.event.as_ref());
         self.resolution_indexes.rebuild(lane, nodes, events);
         self.rebuild_group_states(full);
-        self.branch_naming_states = rebuild_all_branch_naming_states(
-            full,
-            &self.published_events,
-            &self.nodes,
-            &self.relation_lineage_holders,
-            &self.branch_forks,
-        );
         self.rebuild_name_indexes(full);
     }
 
@@ -353,7 +323,6 @@ impl LineageState {
     ) -> impl Iterator<Item = (LineageEventRecord, CommitId)> + use<> {
         self.published_event_positions.clear();
         self.event_commits_by_branch.clear();
-        self.branch_naming_states.clear();
         self.name_indexes.clear();
         std::mem::take(&mut self.published_events)
             .into_iter()

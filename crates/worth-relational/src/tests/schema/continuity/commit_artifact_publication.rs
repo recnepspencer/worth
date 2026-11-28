@@ -138,65 +138,17 @@ fn explicit_schema_transition_is_lowered_into_canonical_commit_artifacts() {
                 .allocation_inventory()
                 .authoritative_nested_bytes
     );
-    assert!(outcome.diagnostics().iter().any(|artifact| artifact.scope
-        == DiagnosticsScope::Schema
-        && artifact
-            .entries
-            .iter()
-            .any(|entry| { entry.code == DiagnosticCode::SchemaTransitionTraced })));
-    let detailed_trace = outcome
-        .diagnostics()
-        .iter()
-        .find(|artifact| {
-            artifact.scope == DiagnosticsScope::Schema
-                && artifact.kind == DiagnosticsArtifactKind::DetailedTrace
-        })
-        .expect("schema detailed trace artifact");
-    assert!(detailed_trace
-        .entries
-        .iter()
-        .any(|entry| { entry.code == DiagnosticCode::SchemaLineageTraced }));
-    assert!(detailed_trace
-        .entries
-        .iter()
-        .any(|entry| { entry.code == DiagnosticCode::SchemaBridgeDescriptorConstructed }));
-    assert!(detailed_trace
-        .entries
-        .iter()
-        .any(|entry| { entry.code == DiagnosticCode::SchemaReconciliationResolved }));
-    assert!(detailed_trace
-        .entries
-        .iter()
-        .any(|entry| { entry.code == DiagnosticCode::SchemaInterpretationSensitivityClassified }));
-    assert!(detailed_trace
-        .entries
-        .iter()
-        .any(|entry| { entry.code == DiagnosticCode::SchemaDescriptorVersionSelected }));
-    let diff_entry = detailed_trace
-        .entries
-        .iter()
-        .find(|entry| entry.message.contains("schema diff atom 0"))
-        .expect("per-diff schema trace entry");
-    assert_eq!(
-        diagnostic_field(diff_entry, "strata"),
-        &RelationalDiagnosticValue::Array(vec![
-            RelationalDiagnosticValue::string("StructuralShape"),
-            RelationalDiagnosticValue::string("PublicationContract"),
-        ])
-    );
-    let detail = diagnostic_field(diff_entry, "detail");
-    assert_eq!(
-        diagnostic_object_field(detail, "kind"),
-        &RelationalDiagnosticValue::string("AddedField")
-    );
-    assert_eq!(
-        diagnostic_object_field(detail, "field_path"),
-        &RelationalDiagnosticValue::FieldPath(CanonicalFieldPath::single(field_key("tag")))
-    );
+    let transition = outcome.envelope().schema_transition.as_ref().unwrap();
+    let [atom] = transition.diff_atoms.as_slice() else {
+        panic!("one declared schema diff atom");
+    };
+    assert!(atom.strata.contains(&SchemaStratum::StructuralShape));
+    assert!(atom.strata.contains(&SchemaStratum::PublicationContract));
+    assert!(matches!(&atom.detail, SchemaDiffDetail::AddedField { field, .. } if field == &field_key("tag")));
 }
 
 #[test]
-fn schema_certification_transition_is_explained_and_counted() {
+fn schema_certification_transition_is_materialized_and_counted() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -275,34 +227,8 @@ fn schema_certification_transition_is_explained_and_counted() {
     .expect("test staging stays within configured resource budgets");
     let outcome = txn.commit(execution, &runtime).unwrap();
 
-    let diagnostics = outcome.diagnostics();
-    let detailed_trace = diagnostics
-        .iter()
-        .find(|artifact| {
-            artifact.scope == DiagnosticsScope::Schema
-                && artifact.kind == DiagnosticsArtifactKind::DetailedTrace
-        })
-        .expect("schema detailed trace artifact");
-    assert!(detailed_trace
-        .entries
-        .iter()
-        .any(|entry| entry.code == DiagnosticCode::SchemaTransitionClassified));
-    assert!(detailed_trace
-        .entries
-        .iter()
-        .any(|entry| entry.code == DiagnosticCode::SchemaBridgeDescriptorConstructed));
-    assert!(detailed_trace
-        .entries
-        .iter()
-        .any(|entry| entry.code == DiagnosticCode::SchemaReconciliationResolved));
-    assert!(detailed_trace
-        .entries
-        .iter()
-        .any(|entry| { entry.code == DiagnosticCode::SchemaInterpretationSensitivityClassified }));
-    assert!(detailed_trace
-        .entries
-        .iter()
-        .any(|entry| entry.code == DiagnosticCode::SchemaDescriptorVersionSelected));
+    assert!(outcome.envelope().schema_continuation_descriptor.is_some());
+    assert!(outcome.envelope().schema_reconciliation_descriptor.is_some());
 
     let counters = runtime.performance_access().counters();
     assert_eq!(counters.schema_transition_atoms_inspected, 1);

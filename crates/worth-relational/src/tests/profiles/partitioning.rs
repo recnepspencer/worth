@@ -47,11 +47,7 @@ fn bulk_create_entities_match_equivalent_singular_creates() {
     let singular_read = singular_runtime
         .read_truth()
         .read_snapshot(
-            &singular_runtime
-                .publication()
-                .latest_bundle()
-                .unwrap()
-                .snapshot,
+            &crate::tests::support::latest_published_snapshot(&singular_runtime).unwrap(),
             execution,
         )
         .expect("read request remains live")

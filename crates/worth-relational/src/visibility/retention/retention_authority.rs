@@ -1,13 +1,9 @@
 // Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
-use crate::diagnostics::data::{
-    DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope, RelationalDiagnosticsEntry,
-};
 use crate::identity::data::VersionId;
 use crate::runtime::RelationalRuntime;
 use crate::storage::data::{RetentionPassOutcome, RetentionPlan};
 use crate::storage::substrate::{EntityRecordKind, RelationRecordKind};
 
-use super::diagnostic_fields::retention_plan_inspection_fields;
 
 mod maintenance;
 mod partition_pass;
@@ -58,8 +54,6 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
         let mut snapshot_pinned_relations = 0;
         let mut reclaimable_entities = 0;
         let mut reclaimable_relations = 0;
-        let mut branch_replay_overlap_entities = 0;
-        let mut branch_replay_overlap_relations = 0;
 
         writer.visit_partitions(|mut partition| {
             let entity_counts = inspect_partition_retention::<EntityRecordKind>(
@@ -71,7 +65,6 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
             replay_pinned_entities += entity_counts.replay_pinned;
             snapshot_pinned_entities += entity_counts.snapshot_pinned;
             reclaimable_entities += entity_counts.reclaimable;
-            branch_replay_overlap_entities += entity_counts.branch_replay_overlap;
 
             let relation_counts = inspect_partition_retention::<RelationRecordKind>(
                 self.runtime,
@@ -82,7 +75,6 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
             replay_pinned_relations += relation_counts.replay_pinned;
             snapshot_pinned_relations += relation_counts.snapshot_pinned;
             reclaimable_relations += relation_counts.reclaimable;
-            branch_replay_overlap_relations += relation_counts.branch_replay_overlap;
             Ok(())
         })?;
 
@@ -98,21 +90,6 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
             reclaimable_entities,
             reclaimable_relations,
         };
-        self.runtime
-            .publication_authority()
-            .push_bounded_diagnostic(
-                DiagnosticsScope::Retention,
-                DiagnosticsArtifactKind::MinimalSummary,
-                vec![RelationalDiagnosticsEntry::new(
-                    DiagnosticCode::RetentionPlanInspected,
-                    "retention plan inspected with raw pin surface counts",
-                    retention_plan_inspection_fields(
-                        &plan,
-                        branch_replay_overlap_entities,
-                        branch_replay_overlap_relations,
-                    ),
-                )],
-            );
         Ok(plan)
     }
 

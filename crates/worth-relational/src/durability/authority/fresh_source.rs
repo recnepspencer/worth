@@ -23,7 +23,7 @@ impl DurabilityRecoveryAuthority<'_> {
     ) -> Result<FreshRelationalSourceAdmission, RelationalFreshSourceAdmissionStop> {
         crate::execution::check_request(execution).map_err(Stop::Request)?;
         let admitted =
-            super::recovery::runtime_installation::admit_recovery_or_emit(self.runtime, plan)
+            super::recovery::runtime_installation::admit_recovery_with_counters(self.runtime, plan)
                 .map_err(Stop::from)?;
         // This owner admitted the plain plan above; an opaque prepared Home
         // recovery cannot enter fresh-source admission.

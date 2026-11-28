@@ -104,7 +104,6 @@ pub(super) fn assemble_commit_artifacts(
             mutation_identities,
             history,
             schema_continuity,
-            deferred_diagnostic_artifacts,
             source_interpretation,
         ) = validated.into_parts();
         let (_, validation_input, merged_plan, commit_log, phase_timing) =
@@ -130,7 +129,6 @@ pub(super) fn assemble_commit_artifacts(
                 naming_plan,
                 record_allocations: &mutation_identities.records,
                 schema_continuity: &schema_continuity,
-                deferred_diagnostic_artifacts,
             },
             execution,
         )?;

@@ -129,12 +129,7 @@ impl PreparedCommitPublicationExecution {
         self.admitted.value_mut().release_transaction_retention();
     }
 
-    pub(crate) fn append_diagnostics(
-        &mut self,
-        diagnostics: Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
-    ) {
-        self.admitted.value_mut().append_diagnostics(diagnostics);
-    }
+
 
     pub(crate) fn split(
         self,

@@ -9,7 +9,6 @@ impl RelationalPreparationRuntime {
         let observation = PreparationRoundObservations::new(&self.services.instrumentation);
         let mut round = self.clone();
         round.services.instrumentation = observation.instrumentation;
-        round.diagnostics = observation.diagnostics;
         round
     }
 
@@ -18,9 +17,7 @@ impl RelationalPreparationRuntime {
     pub(crate) fn settle_preparation_round(&self, round: &Self) {
         PreparationRoundObservations::settle(
             &self.services.instrumentation,
-            &self.diagnostics,
             &round.services.instrumentation,
-            &round.diagnostics,
         );
     }
 }
@@ -33,11 +30,9 @@ impl<'a> From<&'a RelationalPreparationRuntime>
             source: owner,
             symbols: &owner.services.symbols,
             instrumentation: &owner.services.instrumentation,
-            diagnostics: &owner.diagnostics,
             bind: |owner, observations| {
                 let mut round = owner.clone();
                 round.services.instrumentation = observations.instrumentation.clone();
-                round.diagnostics = observations.diagnostics.clone();
                 round
             },
         }

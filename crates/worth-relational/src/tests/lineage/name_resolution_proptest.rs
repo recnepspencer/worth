@@ -202,7 +202,7 @@ fn run(plans: &[CommitPlan]) {
             let proposed = partition(slots);
             let proposed: Vec<&[u8]> = proposed.iter().map(Vec::as_slice).collect();
             if let Ok(transition) = groups.step(&proposed) {
-                batch = batch.with_group_transition(&transition);
+                batch = batch.with_published_group_transitions(transition);
             }
         }
         index.apply(&batch).expect("committed batch ingests");

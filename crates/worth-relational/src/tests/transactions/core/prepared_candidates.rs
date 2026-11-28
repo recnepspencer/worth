@@ -17,7 +17,7 @@ fn preparation_is_truth_effect_free_and_discard_releases_reservations() {
     let envelopes_before = runtime.history().commit_envelopes_snapshot();
     let commit_count_before = runtime.history().immutable_commit_count();
     let patch_count_before = runtime.history.recorded_patch_position_count_for_test();
-    let bundle_before = runtime.publication().latest_bundle();
+    let position_before = runtime.history().latest_patch_stream_position();
     let diagnostics_before = runtime.publication().diagnostic_access().artifact_count();
     let durable_count_before = runtime.durability().durable_log().len();
     let candidate_cost_before = runtime
@@ -48,7 +48,7 @@ fn preparation_is_truth_effect_free_and_discard_releases_reservations() {
         runtime.history.recorded_patch_position_count_for_test(),
         patch_count_before
     );
-    assert_eq!(runtime.publication().latest_bundle(), bundle_before);
+    assert_eq!(runtime.history().latest_patch_stream_position(), position_before);
     assert_eq!(
         runtime.publication().diagnostic_access().artifact_count(),
         diagnostics_before
@@ -77,7 +77,7 @@ fn preparation_is_truth_effect_free_and_discard_releases_reservations() {
         runtime.history.recorded_patch_position_count_for_test(),
         patch_count_before
     );
-    assert_eq!(runtime.publication().latest_bundle(), bundle_before);
+    assert_eq!(runtime.history().latest_patch_stream_position(), position_before);
     assert_eq!(
         runtime.publication().diagnostic_access().artifact_count(),
         diagnostics_before

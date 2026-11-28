@@ -124,9 +124,7 @@ pub(super) fn fresh_diagnostics_metrics(
 }
 
 pub(super) fn dense_patch_record_count(runtime: &RelationalRuntime) -> usize {
-    runtime
-        .publication()
-        .latest_patch()
+    crate::tests::support::latest_committed_patch(&runtime)
         .map(|patch| {
             patch
                 .authoritative_record_patches

@@ -9,7 +9,6 @@ impl RelationalPreparationRuntime {
             runtime_identity: self.runtime_instance_id(),
             publication: &self.publication_owner,
             history: &self.history,
-            diagnostics: &self.diagnostics,
             prepare: HistoryPreparationInputs {
                 admission: self.into(),
                 continuity: self.into(),

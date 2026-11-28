@@ -2,7 +2,7 @@ use super::history_resolution_phase::resolve_authoritative_history_phase;
 use super::mutation_execution::MutatedCommitExecution;
 use super::phase_backing::CommitPhaseBacking;
 use crate::authority::commit::phases::schema_continuity::{
-    prepare_schema_continuity_diagnostics, resolve_schema_continuity,
+    resolve_schema_continuity,
 };
 use contracts::transactions::data::commit_log::CommitPhase;
 use worth_relational_contracts::internal_port as contracts;
@@ -12,8 +12,6 @@ pub(super) struct HistoryBoundCommitExecution {
     mutated: MutatedCommitExecution,
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
     schema_continuity: crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan,
-    deferred_diagnostic_artifacts:
-        Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
 }
 
 impl HistoryBoundCommitExecution {
@@ -33,13 +31,12 @@ impl HistoryBoundCommitExecution {
         MutatedCommitExecution,
         crate::authority::commit::phases::history::ResolvedCommitHistory,
         crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan,
-        Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
+
     ) {
         (
             self.mutated,
             self.history,
             self.schema_continuity,
-            self.deferred_diagnostic_artifacts,
         )
     }
 }
@@ -78,13 +75,10 @@ pub(super) fn bind_commit_history(
                         error,
                     )
                 })?;
-        let deferred_diagnostic_artifacts =
-            prepare_schema_continuity_diagnostics(&history.branch_id, &schema_continuity);
         HistoryBoundCommitExecution {
             mutated,
             history,
             schema_continuity,
-            deferred_diagnostic_artifacts,
         }
     };
     CommitPhaseBacking::new(execution, result)

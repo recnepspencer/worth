@@ -32,13 +32,11 @@ fn runtime_bridge_lineage_source_resolves_real_relational_history() {
         "replacement",
         BranchId("main".to_owned()),
     );
-    let latest_bundle = runtime
-        .publication()
-        .latest_bundle()
+    let latest_commit = runtime.history().historical_latest_commit()
         .expect("runtime publication bundle")
         .clone();
     let branch_identity = runtime
-        .branch_identity(&latest_bundle.commit.branch_id)
+        .branch_identity(&latest_commit.branch_id)
         .expect("lineage branch identity");
     let expected_successor_record_identities = vec![
         BridgeHistoricalResolvedRecordIdentity::from_relational_record(
@@ -61,7 +59,7 @@ fn runtime_bridge_lineage_source_resolves_real_relational_history() {
         .expect("retained lineage observation");
     let expected_snapshot_identity = lease.snapshot_identity().clone();
     let latest_commit_identity = RelationalCommittedPatchRequest::new(
-        TruthCommitIdentity::from_relational_commit_id(latest_bundle.commit.commit_id.0),
+        TruthCommitIdentity::from_relational_commit_id(latest_commit.commit_id.0),
     );
     let envelope = source
         .load_committed_patch(latest_commit_identity.clone(), execution)
@@ -190,13 +188,11 @@ fn retained_lineage_fixture(
         BranchId("main".to_owned()),
     );
     let successor = replacement_successor(&replaced, entity);
-    let bundle = runtime
-        .publication()
-        .latest_bundle()
+    let receipt = runtime.history().historical_latest_commit()
         .expect("replacement publication bundle")
         .clone();
     let branch_identity = runtime
-        .branch_identity(&bundle.commit.branch_id)
+        .branch_identity(&receipt.branch_id)
         .expect("retained lineage branch identity");
     let runtime = Arc::new(Mutex::new(runtime));
     let source =
@@ -209,7 +205,7 @@ fn retained_lineage_fixture(
         .retain_branch_basis_for_bridge(&basis)
         .expect("retained lineage observation");
     let snapshot = lease.snapshot_identity().clone();
-    let commit_identity = TruthCommitIdentity::from_relational_commit_id(bundle.commit.commit_id.0);
+    let commit_identity = TruthCommitIdentity::from_relational_commit_id(receipt.commit_id.0);
     let envelope = source
         .load_committed_patch(
             RelationalCommittedPatchRequest::new(commit_identity.clone()),

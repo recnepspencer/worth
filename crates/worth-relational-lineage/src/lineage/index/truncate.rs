@@ -1,42 +1,15 @@
 //! Historical fork truncation of [`PersistentNameBranchIndex`], preserving
 //! shared cold base provenance and untouched `CowMap` subtrees.
 
-use std::collections::BTreeSet;
-
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::identity::data::primitives::LineageId;
-use crate::contracts::lineage::data::name_resolution::PersistentNameKey;
-use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
 
 use super::member_groups::{MemberTenure, MemberTenures};
 use super::{
-    HolderEpochs, LineageHolder, NameEntry, PersistentNameBranchIndex, PersistentNameIndexDenial,
+    HolderEpochs, NameEntry, PersistentNameBranchIndex, PersistentNameIndexDenial,
 };
 
-/// Keys touched when truncating an index at a historical fork cutoff, so the
-/// companion naming basis can stay backed by the source's cold base / `CowMap`.
-#[derive(Debug, Default)]
-pub(crate) struct IndexTruncationDiff {
-    pub(crate) changed_names: BTreeSet<PersistentNameKey>,
-    pub(crate) changed_holders: BTreeSet<LineageHolder>,
-    pub(crate) dropped_lineages: BTreeSet<LineageId>,
-}
-
 impl PersistentNameBranchIndex {
-    pub(crate) fn holder_epochs_for_truncation(
-        &self,
-        holder: &LineageHolder,
-    ) -> Result<Option<HolderEpochs>, Cause> {
-        Ok(self.holder_lineages.get(holder)?.map(|r| r.into_owned()))
-    }
-
-    pub(crate) fn lineage_name_for_truncation(
-        &self,
-        lineage: &LineageId,
-    ) -> Result<Option<PersistentNameKey>, Cause> {
-        Ok(self.lineage_names.get(lineage)?.map(|r| *r))
-    }
-
     /// Snapshots this index truncated to `<= cutoff` for a retained historical
     /// fork when full resident event history is unavailable (cold reopen),
     /// preserving shared cold base provenance and untouched `CowMap` subtrees.
@@ -47,17 +20,6 @@ impl PersistentNameBranchIndex {
         target: BranchId,
         cutoff: CommitId,
     ) -> Result<Self, PersistentNameIndexDenial> {
-        self.truncate_at_with_diff(target, cutoff)
-            .map(|(index, _)| index)
-    }
-
-    /// Truncates this index to `<= cutoff` over a shared fork of `self` and
-    /// returns the exact set of post-cutoff changed keys.
-    pub(crate) fn truncate_at_with_diff(
-        &self,
-        target: BranchId,
-        cutoff: CommitId,
-    ) -> Result<(Self, IndexTruncationDiff), PersistentNameIndexDenial> {
         if let Some(retention_floor) = self.retention_floor
             && cutoff < retention_floor
         {
@@ -68,7 +30,6 @@ impl PersistentNameBranchIndex {
         }
         let link = self.base().map(|base| base.forked(target.clone()));
         let mut out = self.fork_to(target, link);
-        let mut diff = IndexTruncationDiff::default();
         let mut min_commit: Option<CommitId> = None;
         let mut max_commit: Option<CommitId> = None;
         let mut note = |c: CommitId| {
@@ -83,9 +44,7 @@ impl PersistentNameBranchIndex {
                 out.names.remove_blind(&key);
                 for &lineage in entry.lineage_commits.keys() {
                     out.lineage_names.remove_blind(&lineage);
-                    diff.dropped_lineages.insert(lineage);
                 }
-                diff.changed_names.insert(key);
                 continue;
             }
             let has_later = entry.timeline.get_max().is_some_and(|(c, _)| *c > cutoff)
@@ -111,7 +70,6 @@ impl PersistentNameBranchIndex {
             for (&lineage, &commit) in &entry.lineage_commits {
                 if commit > cutoff {
                     out.lineage_names.remove_blind(&lineage);
-                    diff.dropped_lineages.insert(lineage);
                 }
             }
             let timeline: im::OrdMap<_, _> = entry
@@ -119,7 +77,6 @@ impl PersistentNameBranchIndex {
                 .range(..=cutoff)
                 .map(|(commit, state)| (*commit, state.clone()))
                 .collect();
-            diff.changed_names.insert(key);
             if timeline.is_empty() {
                 out.names.remove_blind(&key);
                 continue;
@@ -183,7 +140,6 @@ impl PersistentNameBranchIndex {
                 if bound_at > cutoff {
                     out.lineage_holders.remove_blind(&lineage);
                     out.lineage_names.remove_blind(&lineage);
-                    diff.dropped_lineages.insert(lineage);
                 }
             }
             let kept: im::OrdMap<_, _> = epochs
@@ -193,7 +149,6 @@ impl PersistentNameBranchIndex {
                     ((bound_at, lineage), ended_at.filter(|&end| end <= cutoff))
                 })
                 .collect();
-            diff.changed_holders.insert(holder);
             if kept.is_empty() {
                 out.holder_lineages.remove_blind(&holder);
                 continue;
@@ -242,26 +197,6 @@ impl PersistentNameBranchIndex {
         }
         out.earliest_commit = min_commit;
         out.head = max_commit;
-        Ok((out, diff))
-    }
-
-    /// Exports every live/retired non-group name entry and holder binding epoch
-    /// for deriving a retained historical fork's naming basis from a truncated index.
-    pub(crate) fn export_entries_for_naming_basis(
-        &self,
-    ) -> Result<
-        (
-            Vec<(PersistentNameKey, NameEntry)>,
-            Vec<(LineageId, LineageHolder)>,
-            Vec<(LineageHolder, HolderEpochs)>,
-        ),
-        PersistentNameIndexDenial,
-    > {
-        Ok((
-            self.names
-                .collect_merged_with(NameEntry::duplicate_for_branch_fork)?,
-            self.lineage_holders.collect_merged()?,
-            self.holder_lineages.collect_merged()?,
-        ))
+        Ok(out)
     }
 }

@@ -84,17 +84,17 @@ impl<'basis, 'guard> CommitNameOutcome<'basis, 'guard> {
             return *bound;
         }
         let holder = self.basis.live_holder(name)?;
-        let PersistentNameHolder::Entity(entity) = holder else {
+        let PersistentNameHolder::Entity(entity) = &holder else {
             return None;
         };
-        let lineage = self.basis.live_lineage(holder)?;
+        let lineage = self.basis.live_lineage(&holder)?;
         (!self.ended.contains(&lineage)).then_some(*entity)
     }
 
     pub(super) fn name_before(&self, entity: EntityId) -> Option<PersistentNameIdentity> {
         let holder = PersistentNameHolder::Entity(entity);
         let name = self.basis.holder_name(&holder)?;
-        (self.basis.live_holder(&name) == Some(&holder)).then_some(name)
+        (self.basis.live_holder(&name) == Some(holder)).then_some(name)
     }
 
     pub(super) fn name_after(&self, entity: EntityId) -> Option<PersistentNameIdentity> {

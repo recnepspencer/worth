@@ -25,12 +25,8 @@ fn replay_contract_success_reproduces_canonical_surfaces() {
         replay.reconstructed_commit_closure,
         vec![outcome.commit.commit_id]
     );
-    assert!(runtime
-        .publication()
-        .diagnostics()
-        .by_scope(DiagnosticsScope::Replay)
-        .iter()
-        .any(|artifact| artifact.kind == DiagnosticsArtifactKind::Comparison));
+    assert!(replay.compared_surfaces.contains(&ReplayObservableSurface::Diagnostics));
+    assert!(replay.mismatches.is_empty());
 }
 
 #[test]

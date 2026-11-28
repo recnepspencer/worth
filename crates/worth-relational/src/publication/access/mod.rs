@@ -1,27 +1,22 @@
 mod artifact_snapshots;
-mod bundle_surface;
 mod diagnostics;
-mod failure_diagnostics;
 mod stream_reading;
 mod stream_reads;
 
 use crate::capabilities::PublicationDiagnosticsSource;
 use crate::diagnostics::data::RelationalDiagnosticArtifact;
 use crate::diagnostics::data::RelationalDiagnosticsFacade;
-use crate::publication::bundle::PublicationBundle;
 use crate::publication::cdc::data::{
     SubscriberResumeRequest, SubscriberStreamBatch, SubscriberStreamFailure,
 };
 use crate::publication::data::{
-    PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot, PublicationObservationSnapshot,
+    PublicationDiagnosticsSnapshot, PublicationObservationSnapshot,
 };
 use crate::publication::patch::data::{
-    PatchStreamBatch, PatchStreamReadError, PatchStreamRequest, PublishedAuthoritativePatchEnvelope,
+    PatchStreamBatch, PatchStreamReadError, PatchStreamRequest,
 };
-use crate::runtime::RelationalReplayRecord;
 use crate::runtime::RelationalRuntime;
 
-pub(crate) use failure_diagnostics::invariant_failure_diagnostic;
 
 pub struct PublicationSurface<'runtime> {
     runtime: &'runtime RelationalRuntime,
@@ -70,26 +65,8 @@ impl<'runtime> PublicationSurface<'runtime> {
         PublicationSubscriberStreamAccess::new(self.runtime)
     }
 
-    pub fn latest_bundle(
-        &self,
-    ) -> Option<std::sync::Arc<PublicationBundle<RelationalReplayRecord>>> {
-        self.runtime.publication.latest_bundle()
-    }
-
-    pub fn latest_patch(&self) -> Option<PublishedAuthoritativePatchEnvelope> {
-        self.latest_bundle().map(|bundle| bundle.patch.clone())
-    }
-
-    pub fn latest_replay(&self) -> Option<RelationalReplayRecord> {
-        self.latest_bundle().map(|bundle| bundle.replay.clone())
-    }
-
     pub fn observation_snapshot(&self) -> PublicationObservationSnapshot {
         self.artifacts().observation()
-    }
-
-    pub fn artifact_snapshot(&self) -> PublicationArtifactSnapshot {
-        self.artifacts().snapshot()
     }
 
     pub fn diagnostics(&self) -> RelationalDiagnosticsFacade {

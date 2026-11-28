@@ -17,7 +17,6 @@ pub(super) struct SnapshotValidatedCommitExecution {
         worth_relational_mutation::internal_port::authority::mutation::pending_identities::PendingMutationIdentities,
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
     schema_continuity: crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan,
-    deferred_diagnostic_artifacts: Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
     source_interpretation:
         std::sync::Arc<worth_relational_mutation::internal_port::validation::candidate_source::interpretation::NativeManagedSourceInterpretation>,
 }
@@ -46,7 +45,7 @@ impl SnapshotValidatedCommitExecution {
         worth_relational_mutation::internal_port::authority::mutation::pending_identities::PendingMutationIdentities,
         crate::authority::commit::phases::history::ResolvedCommitHistory,
         crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan,
-        Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
+
         std::sync::Arc<worth_relational_mutation::internal_port::validation::candidate_source::interpretation::NativeManagedSourceInterpretation>,
     ){
         (
@@ -63,7 +62,6 @@ impl SnapshotValidatedCommitExecution {
             self.mutation_identities,
             self.history,
             self.schema_continuity,
-            self.deferred_diagnostic_artifacts,
             self.source_interpretation,
         )
     }
@@ -98,7 +96,7 @@ pub(super) fn validate_snapshot_publication(
 fn into_snapshot_validated_execution(
     history_bound: HistoryBoundCommitExecution,
 ) -> SnapshotValidatedCommitExecution {
-    let (mutated, history, continuity, deferred) = history_bound.into_parts();
+    let (mutated, history, continuity) = history_bound.into_parts();
     let version_id = mutated.version_id();
     let selected_branch_state = mutated.prepared.selected_branch_state().clone();
     let super::mutation_execution::MutatedCommitExecution {
@@ -136,7 +134,6 @@ fn into_snapshot_validated_execution(
         mutation_identities,
         history,
         schema_continuity: continuity,
-        deferred_diagnostic_artifacts: deferred,
         source_interpretation,
     }
 }

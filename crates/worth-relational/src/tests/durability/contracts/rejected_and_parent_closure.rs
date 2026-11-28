@@ -42,7 +42,7 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
     let accepted = create_relation_outcome(execution, &runtime, source, target_a, "accepted");
     let relation = changed_relations(&accepted)[0];
     let latest_commit_before = runtime.history().latest_commit();
-    let latest_patch_before = runtime.publication().latest_patch().unwrap().position;
+    let latest_patch_before = runtime.history().latest_patch_stream_position().unwrap();
     let main_digest_before = relation_aspect_history_digest_on_branch(
         execution,
         &runtime,
@@ -95,7 +95,7 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
 
     assert_eq!(runtime.history().latest_commit(), latest_commit_before);
     assert_eq!(
-        runtime.publication().latest_patch().unwrap().position,
+        runtime.history().latest_patch_stream_position().unwrap(),
         latest_patch_before
     );
     assert_eq!(

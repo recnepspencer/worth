@@ -210,7 +210,7 @@ impl super::LineageState {
                 if in_order {
                     in_order_positions.push(self.published_events.len());
                 }
-                self.record_shared_event(event, publication_commit_id, in_order);
+                self.record_shared_event(event, publication_commit_id);
             }
         }
         self.ingest_readmitted_name_events(&in_order_positions);

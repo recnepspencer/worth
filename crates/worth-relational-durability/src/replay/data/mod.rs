@@ -5,7 +5,6 @@ pub mod parity;
 pub mod verification;
 
 pub use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelope;
-pub use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::replay_record::RelationalReplayRecord;
 pub use contracts::history::data::replay_version::ReplaySchemaVersion;
 pub(crate) use digest::digest_derived_index_summary;
 pub(crate) use digest::digest_derived_index_surface;

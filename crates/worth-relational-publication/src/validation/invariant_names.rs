@@ -120,7 +120,7 @@ impl<'a> ProposalNameSource<'a> {
     fn pending(&self) -> Result<&PendingCommitNames, Denial> {
         let preview = self.pending.get_or_init(|| {
             let basis = self.naming.read_guard(self.proposal.branch.clone());
-            if let Some(latest) = basis.latest_event_commit()
+            if let Some(latest) = basis.latest_basis_commit()
                 && !naming_basis_current(Some(latest), self.proposal.basis)
             {
                 let basis = self.proposal.basis;

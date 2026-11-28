@@ -41,9 +41,7 @@ fn perf_artifact_recoverability_matrix() {
                 "recover-geometry-middle-updated",
             )
         });
-        let hot_bundle = runtime
-            .publication()
-            .latest_bundle()
+        let hot_envelope = crate::tests::support::latest_committed_envelope(&runtime)
             .expect("geometry hot publication bundle")
             .clone();
         let hot_artifacts = runtime.publication().diagnostics_since(diagnostics_start);
@@ -80,16 +78,16 @@ fn perf_artifact_recoverability_matrix() {
             .unwrap()
             .expect("recovered canonical geometry envelope");
         let authoritative_hot_summary = crate::diagnostics::data::RelationalDiagnosticArtifact {
-            scope: hot_bundle.diagnostics_summary.scope,
-            kind: hot_bundle.diagnostics_summary.kind,
-            determinism: hot_bundle.diagnostics_summary.determinism,
+            scope: hot_envelope.diagnostics_summary.scope,
+            kind: hot_envelope.diagnostics_summary.kind,
+            determinism: hot_envelope.diagnostics_summary.determinism,
             entries: Vec::new(),
         };
 
         CountedPerfSample {
             charged_work: hot_commit_work + checkpoint_work + recover_work + replay_commit_work,
             metrics: perf_metrics!({
-                "hot_summary_entry_count": hot_bundle.diagnostics_summary.entries.len(),
+                "hot_summary_entry_count": hot_envelope.diagnostics_summary.entries.len(),
                 "hot_total_artifacts": hot_artifacts.len(),
                 "hot_total_entries": diagnostic_entry_count(&hot_artifacts),
                 "hot_detailed_trace_artifact_count": diagnostic_artifact_kind_count(

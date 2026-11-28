@@ -4,7 +4,6 @@ pub(crate) use worth_relational_indexes::internal_port::runtime::state::subsyste
 pub(crate) use worth_relational_lineage::internal_port::runtime::state::subsystems::{
     lineage, lineage_identity,
 };
-pub(crate) use worth_relational_publication::internal_port::runtime::state::subsystems::publication;
 pub(crate) use worth_relational_storage::internal_port::runtime::state::subsystems::{
     record_identity, storage,
 };
@@ -48,7 +47,6 @@ pub(crate) use lineage::{LineageNamingBasisBinding, LineageSubsystem, ResidentLi
 #[cfg(test)]
 pub(crate) use lineage::{LineageState, ValidatedLineageEventBatch};
 pub(crate) use lineage_identity::LineageIdentityAllocator;
-pub(crate) use publication::PublicationSubsystem;
 pub(crate) use record_identity::{ReclaimedRecordSlot, RecordIdentitySubsystem};
 pub use schema_contract_runtime::HomeReadmissionMetadataKinds;
 pub(crate) use schema_contract_runtime::SchemaContractRuntimeSubsystem;

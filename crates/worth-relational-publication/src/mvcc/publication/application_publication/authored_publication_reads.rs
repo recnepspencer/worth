@@ -7,7 +7,7 @@ use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
 pub struct AuthoredPublicationReads<'a> {
-    pub(super) history: RetirementHistoryInputs<'a>,
+    pub(crate) history: RetirementHistoryInputs<'a>,
 }
 
 impl<'a> AuthoredPublicationReads<'a> {
@@ -15,18 +15,18 @@ impl<'a> AuthoredPublicationReads<'a> {
         Self { history }
     }
 
-    pub(super) const fn runtime_instance_id(&self) -> u64 {
+    pub(crate) const fn runtime_instance_id(&self) -> u64 {
         self.history.projection.runtime_identity
     }
 
-    pub(super) fn readmit_canonical_publication(
+    pub(crate) fn readmit_canonical_publication(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
         basis: &AdmittedRelationalBranchBasis,
         origin: &Arc<CanonicalRequiredOutputOrigin>,
     ) -> Result<RelationalRequiredOutputPublication, TransactionCommitError> {
-        super::native_transition_succession::readmit_canonical_publication(
+        crate::publication::ownership::native_transition_succession::readmit_canonical_publication(
             self.history,
             execution,
             installed,

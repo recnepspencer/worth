@@ -7,43 +7,31 @@ impl RelationalPinnedRead {
         lease: Option<&ExecutionResourceLease<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> QueryReadResult {
-        let QueryScope::ExplicitTargets { targets } = &plan.packet.scope else {
+        if !matches!(plan.packet.scope, QueryScope::ExplicitTargets { .. }) {
             return Ok(None);
-        };
-        let declared_bytes =
-            worth_relational_branch::internal_port::visibility::materialization::read_records::reader::query_preparation_extent::declared_bytes(&plan.packet, 0)?;
-        let (packets, preparation) =
-            prepare_query_packets(execution, lease, declared_bytes, |budget| {
-                prepare_explicit_packets(targets, budget)
-            })?;
-        let metrics = PacketizedQueryMetrics::from_packets(&packets);
-        record_query_packet_metrics(self.pinned_instrumentation(), &plan, &metrics);
-        let basis = &self.basis;
-        let remaining_lease = lease
-            .map(|lease| remaining_work_lease(lease, preparation))
-            .transpose()?;
-        self.count_query_backing(lease);
-        let (fragments, report) = execute_explicit_query_fragments_from_exact_basis(
-            self,
-            self.pinned_current_version(),
-            &plan,
-            packets,
-            basis,
-            execution,
-            remaining_lease.as_ref(),
-        )
-        .map_err(|stop| combine_query_stop(stop, preparation))?;
-        let report = Some(combine_query_reports(preparation, report));
-        Ok(Some(query_execution_outcome_maybe_leased(
-            self.pinned_instrumentation(),
+        }
+        self.run_query_packets(
             plan,
-            metrics.packet_count,
-            metrics.touched_partitions,
-            metrics.target_count,
-            fragments,
-            execution,
             lease,
-            report,
-        )?))
+            execution,
+            0,
+            |plan, budget| {
+                let QueryScope::ExplicitTargets { targets } = &plan.packet.scope else {
+                    unreachable!("explicit query scope checked before packet preparation");
+                };
+                prepare_explicit_packets(targets, budget)
+            },
+            |plan, packets, remaining| {
+                execute_explicit_query_fragments_from_exact_basis(
+                    self,
+                    self.pinned_current_version(),
+                    plan,
+                    packets,
+                    &self.basis,
+                    execution,
+                    remaining,
+                )
+            },
+        )
     }
 }

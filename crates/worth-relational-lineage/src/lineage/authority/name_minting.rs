@@ -54,8 +54,8 @@ impl PersistentNameMintingAuthority {
     ) -> Result<Vec<PersistentNameBirthRecord>, LineageNameDenial> {
         struct MapBasis<'a>(&'a BTreeMap<PersistentNameIdentity, PersistentNameHolder>);
         impl LineageBasisView for MapBasis<'_> {
-            fn live_holder(&self, id: &PersistentNameIdentity) -> Option<&PersistentNameHolder> {
-                self.0.get(id)
+            fn live_holder(&self, id: &PersistentNameIdentity) -> Option<PersistentNameHolder> {
+                self.0.get(id).cloned()
             }
             fn live_lineage(
                 &self,

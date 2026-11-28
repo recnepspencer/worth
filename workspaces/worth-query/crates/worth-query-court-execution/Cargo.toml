@@ -8,6 +8,7 @@ license.workspace = true
 publish = false
 
 [dev-dependencies]
+worth-testkit-relational = { path = "../../../../crates/worth-testkit-relational" }
 stats_alloc = "0.1"
 worth-testkit-compiler = { path = "../../../../crates/worth-testkit-compiler" }
 im = "=15.1.0"

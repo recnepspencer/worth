@@ -56,7 +56,6 @@ pub(super) fn validate(
     }
     delta::validate_all_roots_and_delta_provenance(manifest, &ancestry, has_naming_schemes)?;
 
-    let mut any_naming_branch = false;
     let mut any_index_branch = false;
     for cell in &manifest.branch_cells {
         let FoundationalBranchTarget::Basis(target) = cell.observation.target() else {
@@ -73,7 +72,6 @@ pub(super) fn validate(
             manifest,
             root,
             head,
-            &mut any_naming_branch,
             &mut any_index_branch,
         )?;
 
@@ -83,19 +81,8 @@ pub(super) fn validate(
         let has_own_events = branches_with_own_events.contains(&cell.branch_id);
         let (inh_naming, inh_index, inh_groups) =
             ancestry.inherited_requirements(&cell.branch_id, head);
-        let must_have_naming = has_own_events || inh_naming;
-        let must_have_index = (has_own_events && has_naming_schemes) || inh_index;
+        let must_have_index = has_own_events || inh_naming || inh_index;
         let must_have_groups = inh_groups;
-        if must_have_naming
-            && !root
-                .naming
-                .is_some_and(|h| h.unavailable || h.latest_event_commit.is_some())
-        {
-            return Err(corrupt(format!(
-                "committed branch {} has lineage events but empty naming basis root",
-                cell.branch_id.0
-            )));
-        }
         if must_have_index
             && !root
                 .index
@@ -131,17 +118,8 @@ pub(super) fn validate(
             }
         }
     }
-    if !manifest.lineage_events.is_empty() {
-        if !any_naming_branch {
-            return Err(corrupt(
-                "checkpoint lineage events lack corresponding branch naming state",
-            ));
-        }
-        if has_naming_schemes && !any_index_branch {
-            return Err(corrupt(
-                "checkpoint with persistent name schemes omitted branch name index",
-            ));
-        }
+    if !manifest.lineage_events.is_empty() && !any_index_branch {
+        return Err(corrupt("checkpoint lineage events lack a corresponding branch name index"));
     }
     Ok(())
 }
@@ -252,7 +230,6 @@ fn validate_branch_root_headers(
     manifest: &RelationalCheckpointManifest,
     root: &BranchNamingRoot,
     head: u64,
-    any_naming_branch: &mut bool,
     any_index_branch: &mut bool,
 ) -> Result<(), DurabilityError> {
     let has_own_domain = |domain: u8| {
@@ -290,9 +267,7 @@ fn validate_branch_root_headers(
                     "branch naming basis claims events without any naming pages",
                 ));
             }
-            *any_naming_branch |= header.latest_event_commit.is_some();
-        } else {
-            *any_naming_branch = true;
+
         }
     } else if has_naming_pages {
         return Err(corrupt("branch omitted naming header despite naming pages"));

@@ -61,7 +61,7 @@ impl DurabilityRecoveryAuthority<'_> {
         // Ordinary recovery admission remains authoritative. This is schema
         // DATA reuse, never an "already verified" bypass.
         let admitted =
-            super::super::runtime_installation::admit_recovery_or_emit(self.runtime, plan)
+            super::super::runtime_installation::admit_recovery_with_counters(self.runtime, plan)
                 .map_err(|cause| Refusal::Recovery(cause.into()))?
                 .with_prepared_home_schemas(graph);
         match transition {

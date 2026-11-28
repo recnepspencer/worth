@@ -10,10 +10,8 @@ pub(super) struct FinalizationInput<'a> {
     pub(super) changed_records: &'a [contracts::transactions::data::primitives::RecordRef],
     pub(super) version_id: contracts::identity::data::primitives::VersionId,
     pub(super) previous_branch_head_version: Option<contracts::identity::data::primitives::VersionId>,
-    pub(super) commit_id: contracts::history::data::coordinates::CommitId,
-    pub(super) commit_reference: &'a contracts::history::data::commit_receipt::RelationalCommitReceipt,
     pub(super) branch_id: &'a contracts::history::data::coordinates::BranchId,
-    pub(super) artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
+    pub(super) reserved_snapshot: worth_relational_branch::internal_port::snapshots::data::SnapshotHandle,
     pub(super) patch_position: contracts::publication::patch::data::patch_position::PatchStreamPosition,
     pub(super) phase_timing:
         &'a mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
@@ -32,10 +30,8 @@ pub(super) fn finalize_published_commit(
         changed_records,
         version_id,
         previous_branch_head_version,
-        commit_id,
-        commit_reference,
         branch_id,
-        artifacts,
+        reserved_snapshot,
         patch_position,
         phase_timing,
         published_snapshot_basis,
@@ -66,21 +62,14 @@ pub(super) fn finalize_published_commit(
         reconcile_published_retention(inputs, changed_records, version_id, phase_timing);
     }
     compact_durability(&inputs.log, inputs.log_policy, phase_timing);
-    let snapshot_id = publish_artifacts(
+    install_published_snapshot(
         &inputs.publication,
-        version_id,
-        artifacts,
-        patch_position,
+        reserved_snapshot,
         published_snapshot_basis,
         published_snapshot_slot,
         phase_timing,
     );
-    inputs.publication.record_publication_diagnostics(
-        commit_id,
-        snapshot_id,
-        branch_id,
-        &commit_reference.parents,
-    );
+
 }
 
 fn publish_storage(
@@ -141,18 +130,14 @@ fn compact_durability(
     timing.compaction_micros = elapsed_since(started).as_micros() as u64;
 }
 
-fn publish_artifacts(
+fn install_published_snapshot(
     publication: &crate::publication::authority::PublicationAuthority<'_>,
-    version_id: contracts::identity::data::primitives::VersionId,
-    artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
-    patch_position: contracts::publication::patch::data::patch_position::PatchStreamPosition,
+    reserved_snapshot: worth_relational_branch::internal_port::snapshots::data::SnapshotHandle,
     basis: branch::history::retention::selected_snapshot::VisibilitySnapshotBasis,
     slot: branch::runtime::state::subsystems::visibility::snapshot_handles::published_capacity::PublishedSnapshotSlotReservation,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
-) -> contracts::snapshots::data::coordinates::SnapshotId {
+) {
     let started = monotonic_now();
-    let snapshot_id =
-        publication.publish_artifacts(version_id, artifacts, patch_position, basis, slot);
+    publication.install_published_snapshot(reserved_snapshot, basis, slot);
     timing.bundle_publish_micros = elapsed_since(started).as_micros() as u64;
-    snapshot_id
 }

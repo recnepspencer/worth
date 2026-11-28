@@ -121,12 +121,7 @@ impl FintechWorld {
     }
 
     pub(super) fn latest_snapshot(&self) -> SnapshotHandle {
-        self.runtime
-            .publication()
-            .latest_bundle()
-            .unwrap()
-            .snapshot
-            .clone()
+        crate::tests::support::latest_published_snapshot(&self.runtime).unwrap()
     }
 
     pub(super) fn read_latest(

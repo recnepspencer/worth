@@ -1,7 +1,6 @@
 //! Admit runtime-bound recovery, rebuild it once, and install the original receiver.
 use super::admission;
 use super::declared_schema;
-use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
 use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::durability::data::RelationalRecoveryStop;
@@ -12,7 +11,6 @@ use crate::{
 use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 
-use super::super::diagnostics::{recovery_checkpoint_selected, recovery_range_replayed};
 use super::super::runtime_rebuild::rebuild_runtime_from_plan;
 
 impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
@@ -106,7 +104,7 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
     ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), RelationalRecoveryStop>
     {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        let admitted = admit_recovery_or_emit(self.runtime, plan)?;
+        let admitted = admit_recovery_with_counters(self.runtime, plan)?;
         self.recover_admitted_with_authority(execution, admitted)
     }
 
@@ -117,7 +115,7 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
     ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), RelationalRecoveryStop>
     {
         let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
-        let mut material = rebuild_admitted_recovery_or_emit(execution, self.runtime, admitted)?;
+        let mut material = rebuild_admitted_recovery(execution, admitted)?;
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         // Source replay reconstructs durable data, not the installed executors.
         // Preserve this owner's actual sealed inventory before runtime cutover.
@@ -166,13 +164,12 @@ pub(super) fn recovered_authority(
 pub(super) struct RecoveredRuntimeMaterial {
     pub(super) restored: RelationalRuntime,
     pub(super) plan: RecoveryPlan,
-    pub(super) admission: admission::RecoveryAdmission,
     pub(super) checkpoint_restore_work: Option<crate::durability::data::CheckpointRestoreWork>,
     pub(super) recovered_roots:
         super::super::runtime_rebuild::root_inventory::RecoveredRootInventory,
 }
 
-pub(in crate::durability::authority) fn admit_recovery_or_emit(
+pub(in crate::durability::authority) fn admit_recovery_with_counters(
     runtime: &RelationalRuntime,
     plan: RecoveryPlan,
 ) -> Result<admission::AdmittedRecoveryPlan, DurabilityError> {
@@ -180,40 +177,22 @@ pub(in crate::durability::authority) fn admit_recovery_or_emit(
         if rejection.records_verification_counters() {
             record_recovery_verification_counters(runtime, rejection.authority_continuity());
         }
-        emit_recovery_diagnostic(runtime, rejection.diagnostic());
         rejection.into_error()
     })
 }
 
-pub(super) fn rebuild_admitted_recovery_or_emit(
+pub(super) fn rebuild_admitted_recovery(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
     admitted: admission::AdmittedRecoveryPlan,
 ) -> Result<RecoveredRuntimeMaterial, RelationalRecoveryStop> {
-    let admission = admitted.admission().clone();
-    match rebuild_runtime_from_plan(execution, admitted) {
-        Ok((restored, plan, checkpoint_restore_work, recovered_roots)) => {
-            Ok(RecoveredRuntimeMaterial {
-                restored,
-                plan,
-                admission,
-                checkpoint_restore_work,
-                recovered_roots,
-            })
-        }
-        Err(RelationalRecoveryStop::Durability(error)) => {
-            emit_recovery_diagnostic(runtime, &admission);
-            Err(RelationalRecoveryStop::Durability(error))
-        }
-        Err(RelationalRecoveryStop::Content(cause)) => Err(RelationalRecoveryStop::Content(cause)),
-        Err(RelationalRecoveryStop::Request(cause)) => Err(RelationalRecoveryStop::Request(cause)),
-        Err(RelationalRecoveryStop::AdmissionImage(cause)) => {
-            Err(RelationalRecoveryStop::AdmissionImage(cause))
-        }
-        Err(RelationalRecoveryStop::Allocation(cause)) => {
-            Err(RelationalRecoveryStop::Allocation(cause))
-        }
-    }
+    let (restored, plan, checkpoint_restore_work, recovered_roots) =
+        rebuild_runtime_from_plan(execution, admitted)?;
+    Ok(RecoveredRuntimeMaterial {
+        restored,
+        plan,
+        checkpoint_restore_work,
+        recovered_roots,
+    })
 }
 
 /// Move the recovering runtime's medium into the rebuilt runtime only after
@@ -254,7 +233,6 @@ pub(super) fn publish_recovered_runtime(
     let RecoveredRuntimeMaterial {
         restored,
         plan,
-        admission,
         checkpoint_restore_work,
         recovered_roots,
     } = material;
@@ -273,19 +251,6 @@ pub(super) fn publish_recovered_runtime(
         .unwrap_or(0);
     let checkpoint_covered_position = plan.checkpoint_covered_position();
     record_recovery_verification_counters(&restored, &plan.authority_continuity);
-    restored.publication_authority().push_bounded_diagnostic(
-        DiagnosticsScope::History,
-        admission.artifact_kind(),
-        vec![admission.into_entry()],
-    );
-    restored.publication_authority().push_bounded_diagnostic(
-        DiagnosticsScope::History,
-        DiagnosticsArtifactKind::MinimalSummary,
-        vec![
-            recovery_checkpoint_selected(checkpoint_covered_position),
-            recovery_range_replayed(tail_commits),
-        ],
-    );
     let outcome = RuntimeRecoveryOutcome {
         recovered_commits: restored.history.catalog_len(),
         latest_commit: restored.history().latest_commit(),
@@ -313,17 +278,6 @@ impl RelationalRuntime {
             admit_selected_home_recovery(self, plan).map_err(|rejection| rejection.into_error())?;
         rebuild_runtime_from_plan(execution, admitted).map(|(restored, _, _, _)| restored)
     }
-}
-
-fn emit_recovery_diagnostic(
-    runtime: &RelationalRuntime,
-    diagnostic: &admission::RecoveryAdmission,
-) {
-    runtime.publication_authority().push_bounded_diagnostic(
-        DiagnosticsScope::History,
-        diagnostic.artifact_kind(),
-        vec![diagnostic.entry().clone()],
-    );
 }
 
 fn admit_selected_home_recovery(

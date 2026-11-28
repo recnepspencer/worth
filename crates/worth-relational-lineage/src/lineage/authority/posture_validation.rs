@@ -318,7 +318,7 @@ pub(super) fn require_live_holder_and_lineage(
     target: LineageRecordTarget,
     name: PersistentNameIdentity,
 ) -> Result<LineageId, LineageNameDenial> {
-    if basis.live_holder(&name) != Some(&target.to_holder()) {
+    if basis.live_holder(&name) != Some(target.to_holder()) {
         return Err(mismatch(
             posture,
             target,
