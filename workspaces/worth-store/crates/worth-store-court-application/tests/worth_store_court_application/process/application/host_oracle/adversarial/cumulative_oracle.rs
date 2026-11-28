@@ -6,7 +6,10 @@
 //! Governed Workflow + Branch Program Adoption, and External Dispatch Custody),
 //! injecting real OS kills across alternating build identities and D14
 //! derived-state discards, verified in fresh OS processes against `MemoryOnly`
-//! under run-wide durable identity correspondence.
+//! under run-wide durable identity correspondence (with External Dispatch
+//! Custody verifying `<= 1` / exact-1 dispatch and recovered-to-post-D14
+//! `ReceiptId` parity; its `MemoryOnly` parity is covered by the standalone
+//! dispatch sweep).
 mod c6_durability_dst;
 mod families_child;
 mod families_lane;
