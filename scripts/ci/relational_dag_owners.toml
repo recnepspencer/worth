@@ -68,6 +68,14 @@ cap = 98000
 floor = 51000
 depends = ["contracts", "storage", "branch"]
 
+[owners.commit_admission]
+physical = true
+crate = "worth-relational-commit-admission"
+layer = 3
+cap = 3500
+floor = 2500
+depends = ["contracts", "storage", "branch"]
+
 [owners.merge]
 physical = true
 crate = "worth-relational-merge"
@@ -90,7 +98,7 @@ crate = "worth-relational-durability"
 layer = 4
 cap = 84000
 floor = 45400
-depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes"]
+depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admission", "merge", "indexes"]
 
 [owners.publication]
 physical = true
@@ -98,7 +106,7 @@ crate = "worth-relational-publication"
 layer = 5
 cap = 60000
 floor = 26600
-depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability"]
+depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admission", "merge", "indexes", "durability"]
 
 [owners.runtime]
 crate = "worth-relational"
@@ -110,7 +118,7 @@ layer = 6
 # +200 for Store M4.3f Round 3 fork-vs-retention-floor coordination and detached fork cold-source rebind.
 cap = 80000
 floor = 32000
-depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
+depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admission", "merge", "indexes", "durability", "publication"]
 
 [paths]
 "authority/commit/mod.rs" = "runtime"

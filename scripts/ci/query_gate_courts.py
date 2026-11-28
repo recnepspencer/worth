@@ -24,6 +24,7 @@ RELATIONAL = (
     "worth-relational-branch",
     "worth-relational-indexes",
     "worth-relational-lineage",
+    "worth-relational-commit-admission",
     "worth-relational-merge",
     "worth-relational-mutation",
 )

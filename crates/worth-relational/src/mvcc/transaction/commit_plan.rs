@@ -1,5 +1,5 @@
 use super::staged_plan::{MergedPlanPreparationTiming, StagedPlanValidation};
-use crate::authority::intent_merge::validate_branch_locality;
+use crate::authority::intent_admission::validate_branch_locality;
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{CommitConflict, ConflictClass};
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;

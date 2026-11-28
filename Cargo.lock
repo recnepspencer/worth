@@ -1175,6 +1175,7 @@ dependencies = [
  "worth-harness",
  "worth-proof",
  "worth-relational-branch",
+ "worth-relational-commit-admission",
  "worth-relational-contracts",
  "worth-relational-durability",
  "worth-relational-indexes",
@@ -1203,6 +1204,19 @@ dependencies = [
  "worth-foundational",
  "worth-harness",
  "worth-proof",
+ "worth-relational-contracts",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-commit-admission"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "sha2 0.10.9",
+ "worth-execution",
+ "worth-foundational",
+ "worth-relational-branch",
  "worth-relational-contracts",
  "worth-relational-storage",
 ]
@@ -1238,6 +1252,7 @@ dependencies = [
  "worth-harness",
  "worth-proof",
  "worth-relational-branch",
+ "worth-relational-commit-admission",
  "worth-relational-contracts",
  "worth-relational-indexes",
  "worth-relational-lineage",
@@ -1328,6 +1343,7 @@ dependencies = [
  "worth-harness",
  "worth-proof",
  "worth-relational-branch",
+ "worth-relational-commit-admission",
  "worth-relational-contracts",
  "worth-relational-durability",
  "worth-relational-indexes",

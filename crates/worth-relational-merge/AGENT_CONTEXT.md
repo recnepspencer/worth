@@ -11,7 +11,7 @@ Canonical machine constitution: `tools/boundary-check/config/road1.toml`
 
 - Public surface: Consumer code uses worth-relational::facade. The internal_port serves Relational owners.
 - Declared facade exports (glob routes remain explicit): `none`
-- Owned internal modules: `authority, commit_strategies, inspection, internal_port, merge`
+- Owned internal modules: `authority, inspection, internal_port, merge`
 - Allowed in-tree dependency bands: `worth-relational-contracts, worth-relational-storage, worth-relational-branch`
 
 Boundary guidance (the compiler and retained checks own enforcement):

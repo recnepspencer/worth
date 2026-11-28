@@ -3,16 +3,15 @@ use contracts::config::data::policies::CrossContextPolicy;
 use contracts::schema::data::RelationalSchemaRegistry;
 use contracts::transactions::data::canonical_intent_key::canonical_intent_key;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
-use merge::authority::intent_merge::conflict_detection::detect_conflicting_updates;
-use merge::authority::intent_merge::intent_validation::collect_created_entity_refs;
-use merge::authority::intent_merge::intent_validation::collect_deleted_relation_ids;
-use merge::authority::intent_merge::intent_validation::validate_intent;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use worth_execution::ExecutionRequest;
 use worth_relational_branch::internal_port::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
+use worth_relational_commit_admission::internal_port::intent_admission::{
+    collect_created_entity_refs, collect_deleted_relation_ids, detect_conflicting_updates,
+    validate_intent,
+};
 use worth_relational_contracts::internal_port as contracts;
-use worth_relational_merge::internal_port as merge;
 use worth_relational_mutation::internal_port::mvcc::transaction::normalized_plan::OwnedNormalizedPlan;
 use worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess;
 

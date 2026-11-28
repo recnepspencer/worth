@@ -89,7 +89,7 @@ pub(super) fn merge_conflict_digest_basis(plan: &LoweredMergePlan) -> MergeConfl
 
 fn source_strategy_descriptors_for_digest(
     classification: &MergeConflictClassification,
-) -> Arc<[crate::commit_strategies::data::StrategyMergeDescriptor]> {
+) -> Arc<[crate::contracts::commit_strategies::data::StrategyMergeDescriptor]> {
     Arc::from(
         classification
             .strategy_evidence
@@ -101,7 +101,7 @@ fn source_strategy_descriptors_for_digest(
 
 fn target_strategy_descriptors_for_digest(
     classification: &MergeConflictClassification,
-) -> Arc<[crate::commit_strategies::data::StrategyMergeDescriptor]> {
+) -> Arc<[crate::contracts::commit_strategies::data::StrategyMergeDescriptor]> {
     Arc::from(
         classification
             .strategy_evidence

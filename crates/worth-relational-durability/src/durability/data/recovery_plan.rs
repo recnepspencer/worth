@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use worth_relational_branch::internal_port as branch;
+use worth_relational_commit_admission::internal_port::commit_strategies::execution::registry::FrozenCommitStrategyExecutorRegistry;
 use worth_relational_contracts::internal_port as contracts;
-use worth_relational_merge::internal_port as merge;
 use worth_relational_storage::internal_port as storage;
 
 use super::DurableCheckpoint;
@@ -104,8 +104,7 @@ pub struct RecoveryPlan {
     pub descriptor_semantics_version: DescriptorSemanticsVersion,
     pub restore_authoritative_envelope_commit_ids: Vec<CommitId>,
     checkpoint_covered_position: Option<PatchStreamPosition>,
-    pub(crate) commit_strategy_executors:
-        merge::commit_strategies::execution::registry::FrozenCommitStrategyExecutorRegistry,
+    pub(crate) commit_strategy_executors: FrozenCommitStrategyExecutorRegistry,
 }
 
 impl RecoveryVerificationPlan {
@@ -203,8 +202,7 @@ impl RecoveryPlan {
             descriptor_semantics_version,
             restore_authoritative_envelope_commit_ids,
             checkpoint_covered_position,
-            commit_strategy_executors:
-                merge::commit_strategies::execution::registry::FrozenCommitStrategyExecutorRegistry::default(),
+            commit_strategy_executors: FrozenCommitStrategyExecutorRegistry::default(),
         }
     }
 
@@ -214,7 +212,7 @@ impl RecoveryPlan {
 
     pub(crate) fn with_commit_strategy_executors(
         mut self,
-        executors: merge::commit_strategies::execution::registry::FrozenCommitStrategyExecutorRegistry,
+        executors: FrozenCommitStrategyExecutorRegistry,
     ) -> Self {
         self.commit_strategy_executors = executors;
         self

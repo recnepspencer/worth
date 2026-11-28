@@ -1,10 +1,10 @@
-pub mod branch_locality;
-pub mod conflict_detection;
-pub mod entity_validation;
-pub mod intent_validation;
-pub mod record_lookup;
-pub mod relation_validation;
-pub mod schema_conflicts;
+mod branch_locality;
+mod conflict_detection;
+mod entity_validation;
+mod intent_validation;
+mod record_lookup;
+mod relation_validation;
+mod schema_conflicts;
 
 pub use branch_locality::validate_branch_locality;
 pub use conflict_detection::detect_conflicting_updates;

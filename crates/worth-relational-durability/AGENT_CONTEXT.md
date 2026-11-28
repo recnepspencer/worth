@@ -12,7 +12,7 @@ Canonical machine constitution: `tools/boundary-check/config/road1.toml`
 - Public surface: Consumer code uses worth-relational::facade. The internal_port serves Relational owners.
 - Declared facade exports (glob routes remain explicit): `none`
 - Owned internal modules: `branch, durability, history, indexes, internal_port, replay, runtime, storage`
-- Allowed in-tree dependency bands: `worth-relational-contracts, worth-relational-storage, worth-relational-branch, worth-relational-lineage, worth-relational-mutation, worth-relational-merge, worth-relational-indexes`
+- Allowed in-tree dependency bands: `worth-relational-contracts, worth-relational-storage, worth-relational-branch, worth-relational-lineage, worth-relational-mutation, worth-relational-commit-admission, worth-relational-merge, worth-relational-indexes`
 
 Boundary guidance (the compiler and retained checks own enforcement):
 - Relational dependencies must follow the Relational owner map.

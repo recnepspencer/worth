@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ratchet source dependencies across the ten Relational packages."""
+"""Ratchet source dependencies across the Relational packages."""
 import argparse
 from collections import Counter, defaultdict
 import json
@@ -21,7 +21,7 @@ PROJECTIONS = ('production_explicit', 'production_resolved', 'inherent_impl', 'c
 TESTKIT = 'testkit'
 TEST_PATHS = {('tests',), ('presentation', 'harness'), ('test_execution_policy',)}
 EXTRACTED = {
-    'contracts', 'storage', 'branch', 'lineage', 'mutation', 'merge',
+    'contracts', 'storage', 'branch', 'lineage', 'mutation', 'commit_admission', 'merge',
     'indexes', 'durability', 'publication',
 }
 
@@ -325,7 +325,7 @@ def check_partition(audit, baseline):
     if set(audit.map.physical.values()) != EXTRACTED:
         raise ValueError('expected all nine extracted Relational owners')
     if set(audit.map.owners) != EXTRACTED | {'runtime'}:
-        raise ValueError('expected exactly ten Relational owners')
+        raise ValueError('Relational owner registry does not match the audited packages')
     if set(audit.map.boundaries) != {'branch', 'mutation', 'durability'}:
         raise ValueError('expected the Branch, Mutation, and Durability internal boundaries')
     mutation_probe = audit.root / baseline['probe_3_live_mutation_source']

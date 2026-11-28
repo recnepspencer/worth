@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
+use worth_relational_commit_admission::internal_port::intent_admission;
 use worth_relational_contracts::internal_port as contracts;
-use worth_relational_merge::internal_port as merge;
 
 use contracts::transactions::data::intents::mutation_intent::MutationIntent;
 use contracts::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
@@ -20,10 +20,10 @@ pub(crate) fn branch_local_delete_allowance_for_plan(
             MutationIntent::Entity(contracts::transactions::data::intents::mutation_intent::EntityMutationIntent::Delete(
                 spec,
             )) => {
-                if !merge::authority::intent_merge::record_lookup::entity_exists_in_state(
+                if !intent_admission::entity_exists_in_state(
                     working_state,
                     spec.entity_id,
-                ) && merge::authority::intent_merge::record_lookup::entity_exists_in_state(
+                ) && intent_admission::entity_exists_in_state(
                     selected_state,
                     spec.entity_id,
                 ) {
@@ -34,10 +34,10 @@ pub(crate) fn branch_local_delete_allowance_for_plan(
                 contracts::transactions::data::intents::mutation_intent::RelationMutationIntent::UpdateEndpoints(spec),
             ) => {
                 let relation_id = spec.relation_id;
-                if !merge::authority::intent_merge::record_lookup::relation_exists_in_state(
+                if !intent_admission::relation_exists_in_state(
                     working_state,
                     relation_id,
-                ) && merge::authority::intent_merge::record_lookup::relation_exists_in_state(
+                ) && intent_admission::relation_exists_in_state(
                     selected_state,
                     relation_id,
                 ) {
@@ -51,10 +51,10 @@ pub(crate) fn branch_local_delete_allowance_for_plan(
                 contracts::transactions::data::intents::mutation_intent::RelationMutationIntent::Delete(spec),
             ) => {
                 let relation_id = spec.relation_id;
-                if !merge::authority::intent_merge::record_lookup::relation_exists_in_state(
+                if !intent_admission::relation_exists_in_state(
                     working_state,
                     relation_id,
-                ) && merge::authority::intent_merge::record_lookup::relation_exists_in_state(
+                ) && intent_admission::relation_exists_in_state(
                     selected_state,
                     relation_id,
                 ) {

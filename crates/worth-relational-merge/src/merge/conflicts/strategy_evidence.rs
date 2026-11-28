@@ -80,12 +80,12 @@ pub(super) fn strategy_conflict_evidence(
 
 fn strategy_descriptors_for_delta(
     delta: Option<&crate::merge::data::BranchTouchedRecordDelta>,
-) -> Vec<crate::commit_strategies::data::StrategyMergeDescriptor> {
+) -> Vec<crate::contracts::commit_strategies::data::StrategyMergeDescriptor> {
     let Some(delta) = delta else {
         return Vec::new();
     };
     let mut latest_by_strategy =
-        BTreeMap::<[u8; 32], crate::commit_strategies::data::StrategyMergeDescriptor>::new();
+        BTreeMap::<[u8; 32], crate::contracts::commit_strategies::data::StrategyMergeDescriptor>::new();
     for envelope in delta.envelopes.iter().rev() {
         let Some(strategy_artifacts) = envelope.strategy_artifacts.as_ref() else {
             continue;
@@ -99,8 +99,8 @@ fn strategy_descriptors_for_delta(
 }
 
 fn strategy_scope_overlaps(
-    source: &crate::commit_strategies::data::StrategyMergeDescriptor,
-    target: &crate::commit_strategies::data::StrategyMergeDescriptor,
+    source: &crate::contracts::commit_strategies::data::StrategyMergeDescriptor,
+    target: &crate::contracts::commit_strategies::data::StrategyMergeDescriptor,
 ) -> bool {
     if source.intent_scope_digest() == target.intent_scope_digest() {
         return true;

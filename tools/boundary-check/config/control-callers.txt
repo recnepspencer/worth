@@ -224,7 +224,7 @@ crates/worth-relational-storage/ crates/worth-relational-lineage/src/lineage/aut
 crates/worth-relational-storage/ crates/worth-relational-lineage/src/lineage/authority/untouched_keeper_merge.rs
 crates/worth-relational-storage/ crates/worth-relational-mutation/src/aggregate_identity/derived_source/tests.rs
 crates/worth-relational-storage/ crates/worth-relational-publication/src/authority/commit/touched_scope.rs
-crates/worth-relational-storage/ crates/worth-relational-merge/src/authority/intent_merge/relation_validation/relation_identity_scan.rs
+crates/worth-relational-storage/ crates/worth-relational-commit-admission/src/intent_admission/relation_validation/relation_identity_scan.rs
 crates/worth-relational-storage/ crates/worth-relational-mutation/src/authority/mutation/aspect_versions.rs
 crates/worth-relational-storage/ crates/worth-relational-mutation/src/authority/mutation/canonical_deltas/engine_tests/support.rs
 crates/worth-relational-storage/ crates/worth-relational-branch/src/branch/pinned_walk_request_tests.rs
