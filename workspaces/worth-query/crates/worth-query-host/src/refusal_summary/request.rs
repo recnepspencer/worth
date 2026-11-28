@@ -109,7 +109,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationRequestMutationDenial 
             Self::Handler(cause) => cause.user_summary(),
             Self::SourceExpectation(_) | Self::WorkflowTransitionCurrentness(_) => STALE,
             Self::Idempotency(_) | Self::PreparationSpent => ALREADY_DONE,
-            Self::ProductSelection(_) | Self::DocumentHistory(_) => BUSY,
+            Self::ProductSelection(_) => BUSY,
             Self::ApplicationProgramRequired
             | Self::ApplicationProgramMismatch
             | Self::ProgramSelection(_)
@@ -154,7 +154,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationRequestQueryDenial {
                 Category::Capacity,
                 "There are too many results to show. Narrow the search and try again.",
             ),
-            Self::ProductSelection(_) | Self::HistoryOutput(_) | Self::OutputSettlement(_) => BUSY,
+            Self::ProductSelection(_) | Self::OutputSettlement(_) => BUSY,
             Self::ManagedIndex(cause) => cause.user_summary(),
             Self::Execution(cause) => cause.user_summary(),
             Self::ContinuationExecution(cause) => cause.user_summary(),

@@ -27,7 +27,6 @@ struct CandidateEvidence {
     consumed_outputs: Arc<[ConsumedOutputEvidence]>,
     verification_requirement: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason>,
     native_output_witness: Option<Arc<std::sync::OnceLock<crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness>>>,
-    transported: Option<crate::domain_computation::primary_graph::output_lineage::TransportedView>,
 }
 impl ObservedOutputCandidate {
     pub fn issue(
@@ -44,7 +43,6 @@ impl ObservedOutputCandidate {
             consumed_outputs: candidate.consumed_outputs,
             verification_requirement: candidate.verification_requirement,
             native_output_witness: candidate.native_output_witness,
-            transported: candidate.transported,
         };
         let expected = Self::assess(execution, &candidate, owner, runtime, snapshot, selected)?;
 
@@ -116,18 +114,13 @@ impl ObservedOutputCandidate {
             execution,
             &candidate.settlement_identity,
             &facts,
-            &crate::domain_computation::primary_graph::output_lineage::TransportedView::consumed_outputs_at(
-                candidate.transported.as_ref(),
-                &candidate.consumed_outputs,
-                selected,
-            ),
+            &std::sync::Arc::clone(&candidate.consumed_outputs),
             candidate.verification_requirement,
             witness,
             owner,
             runtime,
             snapshot,
             selected,
-            crate::domain_computation::primary_graph::output_lineage::TransportedView::coordinate(candidate.transported.as_ref()),
         )? {
             ResultMeaning::Current => Ok(ObservedOutputPosture::Current),
             ResultMeaning::ChangedDirectFact(_)

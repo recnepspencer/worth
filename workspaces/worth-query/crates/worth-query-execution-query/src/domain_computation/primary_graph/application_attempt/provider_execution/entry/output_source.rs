@@ -139,7 +139,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
             &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
         )>,
-        history: Option<HistoryProducerInvocation<'_>>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Operation: 'static,
@@ -156,7 +155,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             execution,
             idempotency,
             selected_program,
-            history,
         )
     }
 

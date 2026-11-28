@@ -72,9 +72,6 @@ impl Entity for Principal {
     const NAME: &'static str = "Principal";
     type Aspects = (PrincipalFacts,);
     type Relations = (
-        navigation::grant::Owner,
-        navigation::grant::Grantor,
-        navigation::grant::Grantee,
     );
 }
 impl Principal {

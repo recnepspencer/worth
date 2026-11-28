@@ -17,7 +17,6 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
         crate::checkpoint_recovery::output_availability::members::AvailabilityRecords,
         crate::CheckpointRecords,
         crate::PrincipalRecords,
-        crate::document_history::HistoryGrantRecords,
         ContributionContracts,
     );
 }

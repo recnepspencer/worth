@@ -2,8 +2,6 @@ use crate::domain_computation::primary_graph::InstalledProducerEditionExt;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 pub mod contact_observation;
-mod current_control;
-pub use current_control::{select_history_control, select_invocation_control};
 use std::sync::Arc;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
@@ -14,7 +12,6 @@ use worth_query_declaration::facade::application_operation::WorthQueryApplicatio
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
-use super::ProducerInvocationAuthority;
 use super::ProducerSourceBinding as SourceBinding;
 use super::ProducerSourceQuery as SourceQuery;
 use super::ProducerSourceValue as SourceValue;
@@ -107,10 +104,6 @@ pub trait InstalledProducerExecutor<Schema>:
         &self,
         application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) -> Result<super::super::authored_edit::ProducerDependencyScopes, WorthQueryOutputDemandDenial>;
-    /// Why document history cannot record this producer's work, naming it.
-    fn history_refusal(
-        &self,
-    ) -> Option<crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial>;
 
     fn recover_publication(
         &self,
@@ -118,7 +111,7 @@ pub trait InstalledProducerExecutor<Schema>:
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
-        invocation: &ProducerInvocationAuthority<'_>,
+        invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         edition: super::InstalledProducerEdition,
         owner: &mut unpublished::PendingProducerPublication,
     ) -> Result<Option<unpublished::RecoveredProducerPublication>, WorthQueryOutputDemandDenial>;
@@ -133,7 +126,7 @@ pub trait InstalledProducerExecutor<Schema>:
         required_output: RequiredOutputExecution,
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
-        commit_authority: ProducerInvocationAuthority<'_>,
+        commit_authority: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         edition: super::InstalledProducerEdition,
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop>;
@@ -183,28 +176,6 @@ where
         });
         Ok(super::super::authored_edit::ProducerDependencyScopes { identity: Binding::IDENTITY.into(), family: <Binding::OutputFamily as worth_query_declaration::facade::application_program::WorthQueryProducerOutputFamily<Schema>>::IDENTITY, family_type: crate::equality_type_id::EqualityTypeId::of::<Binding::OutputFamily>().into_external(), contract: self.mutation.operation().contracts().read_touch_overlap().clone(), queries })
     }
-    fn history_refusal(
-        &self,
-    ) -> Option<crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial> {
-        use crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial as Denial;
-        use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
-        if Operation::<Schema, Binding>::WORKFLOW_CONTROL
-            || Operation::<Schema, Binding>::REQUIRES_WORKFLOW_AUTHORITY
-            || Operation::<Schema, Binding>::workflow_execution_requirements().is_applicable()
-        {
-            return Some(Denial::WorkflowProducer {
-                producer: Binding::IDENTITY.into(),
-            });
-        }
-        self.mutation
-            .operation()
-            .contracts()
-            .external_effect()
-            .is_declared()
-            .then(|| Denial::ExternalEffectProducer {
-                producer: Binding::IDENTITY.into(),
-            })
-    }
 
     fn recover_publication(
         &self,
@@ -212,7 +183,7 @@ where
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
-        invocation: &ProducerInvocationAuthority<'_>,
+        invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         edition: super::InstalledProducerEdition,
         owner: &mut unpublished::PendingProducerPublication,
     ) -> Result<Option<unpublished::RecoveredProducerPublication>, WorthQueryOutputDemandDenial>
@@ -254,7 +225,7 @@ where
         required_output: RequiredOutputExecution,
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
-        commit_authority: ProducerInvocationAuthority<'_>,
+        commit_authority: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         edition: super::InstalledProducerEdition,
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop> {
@@ -301,7 +272,7 @@ where
             ),
             ValidatedOutputDisclosure::RetainedProgram(proof) => {
                 if matches!(
-                    commit_authority.mode(),
+                    &commit_authority,
                     WorthQueryProducerCommitAuthority::Ordinary
                 ) || !proof.admits(principal, request_scope)
                 {

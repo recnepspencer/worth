@@ -34,8 +34,6 @@ pub struct WorthQueryRetainedOutputCandidate {
     pub idempotency_key_identity: [u8; 32],
     /// Only a row a graph selection transported; its own coordinate, never an alias's.
     pub consumed_outputs: Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
-    pub historical_selection:
-        Option<Arc<super::super::HistoricalSelectionCoordinate>>,
 }
 
 impl WorthQueryRetainedOutputCandidate {
@@ -130,7 +128,6 @@ impl WorthQueryApplicationOutputLineage {
                         settlement_identity: Arc::clone(&recorded.settlement_identity),
 
                         idempotency_key_identity: recorded.idempotency_key_identity,
-                        historical_selection: recorded.historical_selection.clone(),
                         consumed_outputs: Arc::clone(&recorded.consumed_outputs),
                     });
                     break;

@@ -1,9 +1,7 @@
 pub mod verification_denial;
 pub use verification_denial::verification_denial;
-pub mod restored_facts;
 pub mod selection;
 pub mod verification_extent;
-pub use restored_facts::{evidence_answer, evidence_unavailable, restored_facts_hold};
 pub use verification_extent::RetainedFactVerification;
 
 pub use selection::{

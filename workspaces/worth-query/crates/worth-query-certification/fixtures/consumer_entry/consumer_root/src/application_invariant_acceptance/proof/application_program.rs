@@ -25,8 +25,6 @@ mod discovered_contracts;
 #[cfg(test)]
 mod discovered_owning;
 #[cfg(test)]
-mod document_history;
-#[cfg(test)]
 mod fixed_action_instances;
 #[cfg(test)]
 mod fixed_batch;

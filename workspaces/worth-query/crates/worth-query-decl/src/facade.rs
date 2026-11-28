@@ -89,7 +89,7 @@
 
 pub use crate::program_transition;
 pub use worth_query_declaration::facade::{
-    application_aftermath, application_capability, application_history, application_identity,
+    application_aftermath, application_capability,  application_identity,
     application_operation, application_program, application_query, application_resource,
     application_schema, authentication, authoring, binding, branch, canonicalization, collection,
     diagnostics, identity, identity_authority, portable_identity, schema_view, typed, validation,

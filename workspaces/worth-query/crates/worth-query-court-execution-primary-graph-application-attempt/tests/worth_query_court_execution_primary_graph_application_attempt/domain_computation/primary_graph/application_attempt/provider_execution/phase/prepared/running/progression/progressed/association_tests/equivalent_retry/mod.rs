@@ -31,7 +31,6 @@ fn interleaved_retry_reads_original_after_discarding_derived_evidence() {
                     phase,
                     &world.application,
                     left,
-                    None,
                     ExecutionAllocationPolicy::SystemAllocation,
                     None,
                 );
@@ -48,7 +47,6 @@ fn interleaved_retry_reads_original_after_discarding_derived_evidence() {
                     phase,
                     &world.application,
                     right,
-                    None,
                     ExecutionAllocationPolicy::SystemAllocation,
                     None,
                 );
@@ -148,7 +146,6 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                     phase,
                     &world.application,
                     left,
-                    None,
                     ExecutionAllocationPolicy::SystemAllocation,
                     None,
                 );
@@ -163,7 +160,6 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                     phase,
                     &world.application,
                     right,
-                    None,
                     ExecutionAllocationPolicy::SystemAllocation,
                     None,
                 );

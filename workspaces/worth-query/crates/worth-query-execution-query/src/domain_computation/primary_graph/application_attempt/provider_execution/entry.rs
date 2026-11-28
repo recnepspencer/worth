@@ -10,7 +10,6 @@ use super::program_occurrence_gate::{
     require_occurrence_acts_through, require_selected_program_matches_occurrence,
     resolve_occurrence_program,
 };
-use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 

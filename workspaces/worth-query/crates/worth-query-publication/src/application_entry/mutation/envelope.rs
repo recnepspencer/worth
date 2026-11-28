@@ -73,10 +73,6 @@ pub struct EnvelopeContext<'a, S> {
     pub(in crate::application_entry) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     pub(in crate::application_entry) order: ApplicationEditEnvelopeOrder,
     pub(in crate::application_entry) correction: Option<worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent>,
-    /// Present only while a history document records this envelope as one step.
-    pub(in crate::application_entry) history: Option<Arc<worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryEnvelopeConstraint>>,
-    /// The reserved attempt a history correction binds its command under.
-    pub(in crate::application_entry) correction_attempt: Option<String>,
 }
 pub(super) type StageValue = Arc<Mutex<Option<Box<dyn Any + Send>>>>;
 pub(in crate::application_entry) type Connection<S, R> = <<R as ApplicationOutputGraphShape<S>>::RootConnection as ApplicationConnectionShape<S>>::Binding;

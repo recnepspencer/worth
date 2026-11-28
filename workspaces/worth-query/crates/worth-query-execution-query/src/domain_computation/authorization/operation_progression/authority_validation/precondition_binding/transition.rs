@@ -3,8 +3,8 @@ use crate::domain_computation::authorization::operation_admission::capability_ad
 
 pub use crate::domain_computation::authorization::operation_admission as admitted_operation;
 pub use admitted_operation::{
-    authorize_applied_control_mutation_on_selected, authorize_current_control_mutation_on_selected,
-    authorize_historical_control_mutation_on_selected, authorize_public_mutation_on_selected,
+    authorize_applied_control_mutation_on_selected,
+    authorize_public_mutation_on_selected,
     SelectedConventionalAdmissionStop,
 };
 

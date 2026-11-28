@@ -7,13 +7,9 @@ use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 mod applied_source;
-mod historical_source;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-/// The principal and request are issued at C. Ordinary source identities are
-/// also issued there; historical/applied postures retain their exact D and
-/// validate its source only after C authorization. D supplies no grants.
-/// The continuation keeps the actual issuers and read operands alive.
+/// Keep the issued principal, request, and selected read basis alive.
 pub struct SelectedIssuedAccessRoot<
     'a,
     Schema,
@@ -37,15 +33,7 @@ pub struct SelectedIssuedAccessRoot<
     pub product: &'a worth_runtime_world::facade::ProductBranchObservation,
     pub request:
         &'a worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    truth: Option<SelectedIssuedTruthRoot<'a>>,
     applied_source: Option<applied_source::AppliedSourceTruth<'a>>,
-    historical_source: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'a>>,
-}
-
-struct SelectedIssuedTruthRoot<'a> {
-    product: &'a worth_runtime_world::facade::ProductBranchObservation,
-    root: &'a worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    snapshot: &'a worth_relational::facade::snapshots::SnapshotHandle,
 }
 
 impl<'a, Schema, Principal, PrincipalIdentity, Scope>
@@ -97,23 +85,10 @@ impl<'a, Schema, Principal, PrincipalIdentity, Scope>
             snapshot: principal.issued_snapshot(),
             product: selected.product().observation(),
             request: principal.request(),
-            truth: None,
             applied_source: None,
-            historical_source: None,
         })
     }
 
-    pub fn with_truth_from_selected(
-        mut self,
-        selected: &'a WorthQuerySelectedProductOperation<'_, Schema>,
-    ) -> Self {
-        self.truth = Some(SelectedIssuedTruthRoot {
-            product: selected.product().observation(),
-            root: selected.product().relational_basis(),
-            snapshot: selected.application_basis().snapshot_handle(),
-        });
-        self
-    }
 
     pub fn matches(
         &self,
@@ -128,7 +103,6 @@ impl<'a, Schema, Principal, PrincipalIdentity, Scope>
         >,
         product: &crate::basis::WorthQueryProductObservationLease,
         security: &worth_relational::facade::snapshots::SnapshotHandle,
-        truth_product: &crate::basis::WorthQueryProductObservationLease,
         basis: &worth_relational::facade::snapshots::SnapshotHandle,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<bool, CompanionPreflightStop> {
@@ -138,14 +112,6 @@ impl<'a, Schema, Principal, PrincipalIdentity, Scope>
             && self.product == product.observation()
             && self.root.admission_identity() == product.relational_basis().admission_identity()
             && self.snapshot == security
-            && match &self.truth {
-                None => self.snapshot == basis,
-                Some(truth) => {
-                    truth.product == truth_product.observation()
-                        && truth.root.admission_identity()
-                            == truth_product.relational_basis().admission_identity()
-                        && truth.snapshot == basis
-                }
-            })
+            && self.snapshot == basis)
     }
 }

@@ -48,7 +48,6 @@ pub(super) fn validate_member_closure(
     super::correction_coverage::validate(members)?;
     validate_application_query_members(members)?;
     super::resource_member_closure::validate(members)?;
-    super::history_member_closure::validate(members)?;
     super::relation_aspect::validate_closure(members)?;
     super::projected_member_domain::validate_closure(members, &index.entities)?;
     super::derived_relation::validate_closure(

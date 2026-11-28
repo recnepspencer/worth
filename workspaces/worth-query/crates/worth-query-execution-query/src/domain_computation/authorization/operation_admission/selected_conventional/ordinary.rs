@@ -30,11 +30,7 @@ where
     authorize_mutation_products(
         execution,
         runtime,
-        SelectedMutationProducts {
-            mutation: shared,
-            control: None,
-            history: None,
-        },
+        shared,
         current,
         prepared,
         principal,

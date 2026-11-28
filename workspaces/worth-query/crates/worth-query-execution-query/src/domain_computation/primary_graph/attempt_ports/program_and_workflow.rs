@@ -1,28 +1,7 @@
-//! `HistoryProducerCutoverPort` and `CommitAuthorizationRuntimePort` impls.
+//! `CommitAuthorizationRuntimePort` impls.
 
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
-use worth_query_execution_attempt::facade::ports::HistoryProducerCutoverPort;
-use worth_runtime_world::facade::{PreparedWorldRelationalCutover, ProductBranchObservation};
 
-use crate::domain_computation::primary_graph::product_operation::document_history::navigation::output_authority::producer_invocation::HistoryProducerCutover as LocalHistoryProducerCutover;
-
-impl HistoryProducerCutoverPort for LocalHistoryProducerCutover<'_> {
-    fn uses_owned_model_graph(&self) -> bool {
-        self.uses_owned_model_graph()
-    }
-
-    fn current(&self) -> &ProductBranchObservation {
-        self.current()
-    }
-
-    fn perform(
-        &self,
-        cutover: PreparedWorldRelationalCutover<'_, '_, '_, '_>,
-        expected_target: &ProductBranchObservation,
-    ) -> Result<(), ()> {
-        (*self).perform(cutover, expected_target).map_err(|_| ())
-    }
-}
 
 impl<Schema> worth_query_execution_attempt::facade::ports::CommitAuthorizationRuntimePort<Schema>
     for crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>

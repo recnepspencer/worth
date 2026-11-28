@@ -139,36 +139,6 @@ mod domain_computation_primary_graph_application_contribution_producer_demand_pr
                 disclosure,
             )
         }
-        #[allow(clippy::too_many_arguments)]
-        pub(crate) fn advance_history_output_demand<Family>(
-            &self,
-            execution: &worth_execution::ExecutionRequest<'_, '_>,
-            phase: &WorthQueryAdvancementPhase<'_>,
-            demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-            principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-            request_scope: &WorthQueryRequestScope,
-            delivery_branch: crate::basis::WorthQueryProductBranch,
-            history: crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'_>,
-        ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
-        where
-            Family: WorthQueryProducerOutputFamily<Schema>,
-            FamilySourceValue<Schema, Family>:
-                crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
-                        Schema,
-                        FamilySourceQuery<Schema, Family>,
-                    > + 'static,
-            FamilySourceQuery<Schema, Family>: 'static,
-        {
-            self.inner.advance_history_output_demand::<Family>(
-                execution,
-                phase,
-                demand,
-                principal,
-                request_scope,
-                delivery_branch,
-                history,
-            )
-        }
     }
 }
 

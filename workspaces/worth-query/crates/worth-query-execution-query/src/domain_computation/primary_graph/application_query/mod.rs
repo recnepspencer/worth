@@ -27,12 +27,9 @@ pub mod continuation;
 mod control_validation;
 pub mod controls;
 pub mod derived_view;
-pub mod document_history;
-pub use document_history::HistoryRetainedPermissionStop;
 pub mod disclosure;
 mod execution_shape;
 pub mod execution_validation;
-pub mod request_recipe;
 
 mod graph_read_plan_binding;
 pub mod history;

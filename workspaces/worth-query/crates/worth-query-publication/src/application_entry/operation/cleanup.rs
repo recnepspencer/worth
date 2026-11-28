@@ -186,16 +186,6 @@ impl WorthQueryOperationCleanup {
             self.failures.push(failure);
         }
     }
-    pub(in crate::application_entry) fn retain_original_recovery(
-        &mut self,
-        recovery: worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecovery,
-    ) -> Result<(), WorthQueryOperationCloseDenial> {
-        self.pending
-            .try_reserve(1)
-            .map_err(|_| WorthQueryOperationCloseDenial::CleanupCapacity)?;
-        self.pending.push(recovery);
-        Ok(())
-    }
     /// One original partial transfers its vector exactly once, at promotion or terminality.
     /// Keep an already absorbed managed failure and its runtime keepalive intact.
     pub(in crate::application_entry) fn retain_original_failures(
@@ -237,23 +227,6 @@ impl WorthQueryOperationCleanup {
         phase: &WorthQueryAdvancementPhase<'_>,
         runtime: &worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
     ) -> Result<WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial> {
-        self.close_with_recovery(phase, runtime, OriginalRecoveryDisposal::Release)
-    }
-
-    pub(in crate::application_entry) fn close_original_in_advancement<S: ApplicationSchema>(
-        &mut self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
-    ) -> Result<WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial> {
-        self.close_with_recovery(phase, runtime, OriginalRecoveryDisposal::SettleAndClose)
-    }
-
-    fn close_with_recovery<S: ApplicationSchema>(
-        &mut self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
-        original: OriginalRecoveryDisposal,
-    ) -> Result<WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial> {
         self.failures
             .try_reserve(1)
             .map_err(|_| WorthQueryOperationCloseDenial::CleanupCapacity)?;
@@ -280,7 +253,7 @@ impl WorthQueryOperationCleanup {
             }
         }
         while let Some(record) = self.pending.pop() {
-            match original.close(runtime, phase, record) {
+            match runtime.release_product_publication_recovery_in_advancement(phase, record, 0) {
                 Ok(receipt) => self.retired_component_count += receipt.retired_component_count(),
                 Err(failure) => {
                     let denial = cleanup_denial(&failure);
@@ -297,7 +270,7 @@ impl WorthQueryOperationCleanup {
         {
             let outcome = match failure {
                 Failure::Recovery(failure) => {
-                    original.close(runtime, phase, failure.into_recovery())
+                    runtime.release_product_publication_recovery_in_advancement(phase, failure.into_recovery(), 0)
                 }
                 Failure::OwnerCleanup(failure) => failure
                     .into_cleanup()
@@ -318,33 +291,6 @@ impl WorthQueryOperationCleanup {
             managed: std::mem::take(&mut self.managed_receipts),
             retired_component_count: self.retired_component_count,
         })
-    }
-}
-#[derive(Clone, Copy)]
-enum OriginalRecoveryDisposal {
-    Release,
-    SettleAndClose,
-}
-impl OriginalRecoveryDisposal {
-    fn close<S: ApplicationSchema>(
-        self,
-        runtime:&worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        recovery:worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecovery,
-    ) -> Result<
-        worth_query_execution::facade::product::WorthQueryProductBranchOwnerCleanupReceipt,
-        Failure,
-    > {
-        match self {
-            Self::Release => {
-                runtime.release_product_publication_recovery_in_advancement(phase, recovery, 0)
-            }
-            Self::SettleAndClose => runtime.close_owned_product_publication_recovery(
-                phase,
-                &worth_query_execution::publication_boundary::program_publication_access(),
-                recovery,
-            ),
-        }
     }
 }
 fn cleanup_denial(failure: &Failure) -> WorthQueryOperationCloseDenial {

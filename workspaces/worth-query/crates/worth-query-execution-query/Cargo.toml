@@ -4,7 +4,7 @@ edition.workspace = true
 rust-version.workspace = true
 version.workspace = true
 license.workspace = true
-description = "Installed Query execution primary-graph query evaluation, managed indexes, derived views, handlers, invariants, resources, bootstrap, installation, conditional operations, causal inspection, correction sources, document history, and producer computation."
+description = "Installed Query execution primary-graph query evaluation, managed indexes, derived views, handlers, invariants, resources, bootstrap, installation, conditional operations, causal inspection, correction sources, and producer computation."
 publish = false
 
 [dependencies]

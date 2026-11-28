@@ -41,7 +41,7 @@ where
         checkpoint: Checkpoint,
         principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-        invocation: &super::super::ProducerInvocationAuthority<'_>,
+        invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         returned: &mut Option<Checkpoint>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         match checkpoint {

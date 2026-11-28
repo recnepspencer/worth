@@ -1,6 +1,5 @@
 use super::*;
 use crate::domain_computation::application_aftermath::ApplicationCommitCausality;
-use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };
@@ -19,7 +18,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
 
         idempotency: WorthQueryApplicationIdempotencyBinding,
         retain_output_observation: bool,
-        history: Option<HistoryProducerInvocation<'_>>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
@@ -30,7 +28,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             idempotency,
             retain_output_observation,
             ApplicationCommitCausality::Ordinary,
-            history,
             allocation_policy,
         )
     }
@@ -40,7 +37,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         idempotency: WorthQueryApplicationIdempotencyBinding,
         retain_output_observation: bool,
         causality: ApplicationCommitCausality,
-        history: Option<HistoryProducerInvocation<'_>>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
@@ -51,7 +47,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             idempotency,
             retain_output_observation,
             causality,
-            history,
             allocation_policy,
             None,
             None,
@@ -64,7 +59,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         idempotency: WorthQueryApplicationIdempotencyBinding,
         retain_output_observation: bool,
         causality: ApplicationCommitCausality,
-        history: Option<HistoryProducerInvocation<'_>>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         coordination: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
         outer_application: Option<&(dyn std::any::Any + Send + Sync)>,
@@ -106,7 +100,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             idempotency,
             None,
             pending,
-            history,
             allocation_policy,
             coordination,
             outer_application,
@@ -144,7 +137,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             execution,
             idempotency,
             elevation_currentness,
-            None,
             None,
             allocation_policy,
         )

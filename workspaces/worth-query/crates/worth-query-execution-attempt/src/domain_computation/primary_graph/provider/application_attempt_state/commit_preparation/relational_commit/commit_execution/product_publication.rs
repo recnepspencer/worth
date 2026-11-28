@@ -34,7 +34,6 @@ pub fn publish(
         crate::domain_computation::primary_graph::PreparedPrerequisiteClaims,
     >,
     members: &mut [crate::domain_computation::primary_graph::provider::CoupledApplicationMember],
-    history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
 ) -> Result<
     WorthQueryApplicationProductPublicationOutcome,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -57,11 +56,10 @@ pub fn publish(
         retain_live_observation || retain_output_demand_observation || retain_client_observation;
     let Some(change) = attempt.take_conditional_definition() else {
         let prepared = product
-            .prepare_relational_candidate_with_current_read(
+            .prepare_relational_candidate(
                 candidate,
                 &request,
                 successor_observation_requested,
-                history.as_ref().map(|history| history.current()),
             )
             .map_err(|denial| match denial {
                 PublicationDenial::ClockMismatch => publication_clock_mismatch(),
@@ -92,16 +90,7 @@ pub fn publish(
                 recovery.clone(),
             )
             .map_err(|()| capacity_exhausted())?;
-        let outcome = match history {
-            Some(history) => {
-                prepared
-                    .execute_with_memory_cutover(execution, |cutover| {
-                        history.perform(cutover, product.observation())
-                    })
-                    .1
-            }
-            None => prepared.execute(execution),
-        };
+        let outcome = prepared.execute(execution);
         return match outcome {
             Ok(PublicationOutcome::Performed(publication)) => {
                 reservation.release();
@@ -157,7 +146,7 @@ pub fn publish(
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let memory = bridge.memory().map_err(|_| denied("authored conditional publication requires its durable owner preparation"))?;
         let prepared = product
-            .prepare_combined_candidate(candidate, &request, successor_observation_requested, history.as_ref().map(|history| history.current()))
+            .prepare_combined_candidate(candidate, &request, successor_observation_requested)
             .map_err(|denial| match denial {PublicationDenial::ClockMismatch => publication_clock_mismatch(),
 PublicationDenial::Stopped(stop)=>publication_request_stop(stop), PublicationDenial::Refused(no_effect)=>world_no_effect(no_effect)})?;
         let predecessor = memory
@@ -187,11 +176,7 @@ PublicationDenial::Stopped(stop)=>publication_request_stop(stop), PublicationDen
                 recovery.clone(),
             )
             .map_err(|()| capacity_exhausted())?;
-        let outcome = match history {
-            Some(history) => prepared.execute_with_memory_cutover(execution, bridge_prepared, memory, |cutover|
-                history.perform(cutover, product.observation())).1,
-            None => prepared.execute(execution, bridge_prepared, memory),
-        };
+        let outcome = prepared.execute(execution, bridge_prepared, memory);
         match outcome {
             Ok(PublicationOutcome::Performed((publication, lowering))) => {
                 reservation.release();

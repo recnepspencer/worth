@@ -72,7 +72,6 @@ where
                 identity: entry.declaration.identity.clone(),
                 applicability: key.applicability(),
                 exact_retained_output: false,
-                retained_read_posture: super::super::RetainedOutputReadPosture::Ordinary,
 
                 retained_idempotency_key: None,
                 retained_output_binding: None,

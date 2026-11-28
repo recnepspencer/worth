@@ -17,7 +17,6 @@ pub fn verify<Schema, Family>(
         WorthQueryRetainedOutputCandidate,
         worth_relational::facade::identity::EntityId,
     )],
-    historical_declined: bool,
 ) -> Result<Vec<(bool, bool)>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -35,18 +34,6 @@ where
     let mut current = Vec::with_capacity(live_candidates.len());
     for (candidate, entity) in live_candidates {
         let live = retained_liveness::read(execution, &view, *entity)?;
-        if candidate.historical_selection.is_some() {
-            // A declined readmission leaves its live row stale, never exact.
-            // Readmission checks currentness again at its own selection
-            // (`historical_restoration.rs`) before it re-roots the row.
-            let exact = live
-                && !historical_declined
-                && application.restored_output_is_current::<Family>(
-                    execution, runtime, selected, candidate,
-                )?;
-            current.push((live, exact));
-            continue;
-        }
         let identity_current = source_identity_matches(
             candidate,
             source.idempotency_identity(),

@@ -87,8 +87,6 @@ impl RetainedOutputCurrentnessRead {
     ) -> Self {
         Self {
             identity,
-            historical_selection: None,
-            transported: None,
             required_publication: None,
             facts,
             consumed_outputs,

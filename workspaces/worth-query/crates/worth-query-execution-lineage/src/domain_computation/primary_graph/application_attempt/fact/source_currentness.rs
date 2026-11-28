@@ -1,6 +1,5 @@
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 pub mod comparison;
-pub mod historical_selection;
 use super::{FactMovement, WorthQueryApplicationObservedFact};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQuerySourceCurrentnessFailure {

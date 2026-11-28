@@ -394,7 +394,6 @@ pub use native_refusals::*;
 pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::{SynchronousCaptureRetentionCountsForTest, SynchronousCaptureRetentionForTest, SynchronousOutputEdges};
 pub use crate::domain_computation::primary_graph::application_contribution::synchronous_outputs::SynchronousDiscoveredOutputRoot;
 pub use crate::domain_computation::application_aftermath::dispatch_journal::{QueryDispatchCustody, QueryDispatchRecordedObservation, QueryDispatchUnresolvedCause};
-pub use crate::domain_computation::primary_graph::product_operation::document_history::WorthQueryHistorySourceEvidence;
 mod inbound_completion;
 pub use crate::domain_computation::primary_graph::WorthQueryOutputDiscoveryRecipe;
 pub use inbound_completion::*;

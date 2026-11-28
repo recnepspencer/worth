@@ -59,7 +59,6 @@ mod domain_computation_primary_graph_application_attempt_provider_execution_entr
     use worth_query_execution_query::facade::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcome;
     use worth_query_execution_query::facade::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEffectProgram;
     use worth_query_execution_query::facade::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
-    use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
     use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
@@ -107,13 +106,12 @@ mod domain_computation_primary_graph_application_attempt_provider_execution_entr
                 &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
                 &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
             )>,
-            history: Option<HistoryProducerInvocation<'_>>,
         ) -> WorthQueryApplicationCommitOutcome
         where
             Operation: 'static,
             Input: Clone + Send + Sync + 'static,
         {
-            self.inner.compare_and_commit_application_for_program_output_producer::<Operation, Input, Scope>(execution, phase, program, idempotency, selected_program, history)
+            self.inner.compare_and_commit_application_for_program_output_producer::<Operation, Input, Scope>(execution, phase, program, idempotency, selected_program)
         }
         #[allow(clippy::too_many_arguments)]
         pub fn compare_and_commit_application_for_program_action<Operation, Input, Scope>(

@@ -250,7 +250,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                         selected,
                         source,
                         &live_candidates,
-                        matches!(purpose, SelectionPurpose::DeclinedReadmission),
                     )
                 },
             )?;
@@ -290,7 +289,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     // Restored rows use their own authenticated readmission;
                     // other runtime rows still need the input cutoff.
                     if current_verification::exact_source_contract(&candidate, entry)
-                        || candidate.historical_selection.is_some()
                     {
                         selected.retain_verified_output(&candidate);
                         // A producer may declare several lifecycles. Lifecycle

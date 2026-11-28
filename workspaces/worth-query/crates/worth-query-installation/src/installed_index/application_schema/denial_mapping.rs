@@ -23,10 +23,6 @@ pub(super) fn map_compilation_denial(
         _ => None,
     };
     let (kind, subject) = match denial {
-        ApplicationSchemaCompilationDenial::History(denial) => (
-            WorthQueryInstalledApplicationSchemaDenialKind::HistoryInstallationDenied,
-            denial.subject().to_owned(),
-        ),
         ApplicationSchemaCompilationDenial::DerivedSourceUnavailable(subject) => (
             WorthQueryInstalledApplicationSchemaDenialKind::DerivedSourceUnavailable,
             subject,

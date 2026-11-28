@@ -25,25 +25,6 @@ pub fn compile_history_disclosure_contract<
     compile_metadata(&parts.history_type, contract, &parts.name)
 }
 
-pub fn compile_document_history_disclosure_contract<S, H>(
-    history: &worth_query_installation::facade::WorthQueryInstalledDocumentHistory<S, H>,
-) -> Result<
-    WorthQueryAdmittedApplicationDisclosureContract,
-    WorthQueryApplicationDisclosureContractDenial,
->
-where
-    S: ApplicationSchema,
-    H: worth_query_declaration::facade::application_history::ApplicationHistoryBinding<S>,
-{
-    let definition = history.definition();
-    let parts = definition.parts();
-    definition.validate().map_err(|_| denial(&parts.identity))?;
-    compile_metadata(
-        &parts.history_type,
-        &parts.metadata_disclosure,
-        &parts.identity,
-    )
-}
 
 fn compile_metadata(
     history_type: &worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity,

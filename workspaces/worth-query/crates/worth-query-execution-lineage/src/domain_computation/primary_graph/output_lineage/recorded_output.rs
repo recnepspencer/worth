@@ -26,9 +26,6 @@ pub struct RecordedOutput {
     /// Stable settlements pin the original performed record, never another
     /// alias. This preserves completion proof and its original lifetime cost.
     pub performed_origin: Option<Arc<OnceLock<RecordedOutput>>>,
-    /// Set only on a row a graph selection commit transported: the selected
-    /// and restored bases whose read evidence alone may admit its facts.
-    pub historical_selection: Option<Arc<super::HistoricalSelectionCoordinate>>,
     pub consumed_outputs: Arc<[ConsumedOutputEvidence]>,
     pub completed_handler_facts: Option<CompletedHandlerFactBoundary>,
     pub completed_decision_reuse: Option<super::CompletedDecisionReuseProof>,
@@ -54,9 +51,6 @@ pub struct RecordedOutputMutable {
     /// What the partitioned computation of the attempt that published this
     /// record retained for the producer's next run.
     pub computation: super::retained_computation::RecordedComputation,
-    /// A transported row's consumed evidence re-identified per branch by
-    /// readmission (public #358); empty for every other row.
-    rerooted: std::sync::Arc<[rerooted::RerootedConsumed]>,
 }
 
 impl RecordedOutputMutable {
@@ -76,7 +70,6 @@ impl RecordedOutputMutable {
             observed_source_facts: facts.map(|facts| facts.postconditions().clone()),
             stable_fact_spans: None,
             computation,
-            rerooted: Self::no_rerooted(),
         }
     }
     pub fn new_prior(
@@ -89,7 +82,6 @@ impl RecordedOutputMutable {
             observed_source_facts: facts.map(|facts| facts.postconditions().clone()),
             stable_fact_spans: None,
             computation,
-            rerooted: Self::no_rerooted(),
         }
     }
     pub fn replace_retained_facts(&mut self, facts: super::RetainedSourceFacts) {
@@ -256,5 +248,9 @@ mod span_tests;
 
 pub mod adoption_basis_for_test;
 mod court_doors_for_test;
-pub mod rerooted;
-pub use rerooted::{RerootedConsumed, TransportedView};
+
+impl RecordedOutput {
+    pub fn has_consumed_outputs(&self) -> bool {
+        !self.consumed_outputs.is_empty()
+    }
+}

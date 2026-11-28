@@ -14,7 +14,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             FamilySourceValue<Schema, Family>,
         >,
         entry: &InstalledProducerProvider<Schema>,
-        commit_authority: ProducerInvocationAuthority<'owner>,
+        commit_authority: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         schedule_progression: ScheduleProgression<'owner, '_, '_, Schema>,
 
         performed: &'owner std::cell::RefCell<PerformedMembers>,

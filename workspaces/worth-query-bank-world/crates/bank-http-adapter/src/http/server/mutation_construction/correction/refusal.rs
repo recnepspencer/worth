@@ -29,8 +29,7 @@ pub(in crate::http::server) fn correction_denial(
             )
         }
         D::SourceOperation(_) => unavailable(),
-        D::CandidateMeaningChanged
-        | D::SourceBindingUnavailable
+        D::SourceBindingUnavailable
         | D::RecordedOutcomeUnavailable
         | D::ProgramOwner(_)
         | D::RequiredOutputs(_) => unavailable(),

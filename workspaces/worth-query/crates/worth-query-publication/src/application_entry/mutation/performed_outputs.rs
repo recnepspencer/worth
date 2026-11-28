@@ -1,6 +1,6 @@
+use worth_query_execution::facade::application_installation::WorthQuerySettledProgramOutput;
 mod advancement;
 mod fulfillment;
-mod history;
 mod read_close;
 mod source;
 mod source_binding;
@@ -30,7 +30,6 @@ use crate::application_entry::demand::{
 
 use super::program_output_continuation::{
     ProgramOutputContinuation, ProgramOutputContinuationFactory, ProgramOutputContinuationProgress,
-    ProgramOutputParentAuthority,
 };
 use super::program_output_settlement::{
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
@@ -57,7 +56,6 @@ where
         + worth_query_declaration::facade::application_program::ApplicationFixedOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
 {
-    recording_recipes: Option<(std::sync::Arc<worth_query_execution::publication_boundary::document_history::WorthQueryHistoryRecordingOutputOrigin>, usize)>,
     source_binding:
         Option<source_binding::RequiredSourceBinding<Schema, Program, RootDemand<Schema, Root>>>,
     source_preparation: Option<
@@ -75,15 +73,12 @@ where
         >,
     >,
     pending_root_authority:
-        Option<ProgramOutputParentAuthority<Schema, Program, RootDemand<Schema, Root>>>,
+        Option<std::sync::Arc<WorthQuerySettledProgramOutput<Schema, Program, RootDemand<Schema, Root>>>>,
     pending_root_fulfillment:
         Option<worth_query_execution::facade::primary_graph::WorthQueryFulfilledRequiredRoot>,
     continuation: Option<Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>>,
     controls: crate::application_entry::WorthQueryOutputDemandControls,
     complete: bool,
-    pending_history_delivery: Option<
-        WorthQueryApplicationProgramOutputSettlement<Query<Schema, RootDemand<Schema, Root>>>,
-    >,
 }
 
 impl<Schema, Program, Root> WorthQueryApplicationProgramOutputHandle<Schema, Program, Root>
@@ -96,14 +91,6 @@ where
     RootDemand<Schema, Root>: Clone,
     Root::Dependents: ProgramOutputContinuationFactory<Schema, Program, RootDemand<Schema, Root>>,
 {
-    pub(in crate::application_entry) fn record_history_discovery(
-        mut self,
-        origin: std::sync::Arc<worth_query_execution::publication_boundary::document_history::WorthQueryHistoryRecordingOutputOrigin>,
-        index: usize,
-    ) -> Self {
-        self.recording_recipes = Some((origin, index));
-        self
-    }
     pub(in crate::application_entry) fn new(
         source_receipt: impl Into<
             worth_query_execution::facade::primary_graph::WorthQueryOutputSourceEvidence,
@@ -118,7 +105,6 @@ where
         Root: worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     {
         Self {
-            recording_recipes: None,
             source_binding: Some(source_binding::RequiredSourceBinding::of::<Root>()),
             source_preparation: Some(preparation),
             source_receipt: Some(source_receipt.into()),
@@ -131,7 +117,6 @@ where
             continuation: None,
             controls,
             complete: false,
-            pending_history_delivery: None,
         }
     }
 
@@ -142,7 +127,6 @@ where
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Self {
         Self {
-            recording_recipes: None,
             source_binding: None,
             source_preparation: None,
             source_receipt: None,
@@ -155,7 +139,6 @@ where
             continuation: None,
             controls,
             complete: false,
-            pending_history_delivery: None,
         }
     }
 }

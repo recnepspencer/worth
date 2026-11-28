@@ -49,10 +49,6 @@ impl SourceQueryObservationStop {
                 Admission::Authorization(_)
                     | Admission::StalePrincipal
                     | Admission::StaleScope
-                    | Admission::HistoricalSourceNotLive { .. }
-                    | Admission::HistoricalSourceKindMismatch { .. }
-                    | Admission::HistoricalSourceOutsideDomain { .. }
-                    | Admission::HistoricalSourceOwnershipUnavailable { .. }
                     | Admission::ForeignPrincipal
                     | Admission::ForeignScope
                     | Admission::StaleBasis

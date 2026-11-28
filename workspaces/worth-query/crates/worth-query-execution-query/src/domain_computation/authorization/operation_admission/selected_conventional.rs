@@ -44,31 +44,11 @@ use crate::domain_computation::provider_session::WorthQueryGraphWorkAccessContex
 
 #[path = "selected_conventional/applied_source.rs"]
 mod applied_source;
-#[path = "selected_conventional/current_control.rs"]
-mod current_control;
-#[path = "selected_conventional/historical_source.rs"]
-mod historical_source;
 pub use applied_source::authorize_applied_control_mutation_on_selected;
 use applied_source::SelectedMutationScope;
 #[path = "selected_conventional/ordinary.rs"]
 mod ordinary;
-pub use current_control::{
-    authorize_current_control_mutation_on_selected,
-    authorize_historical_control_mutation_on_selected,
-};
 pub use ordinary::authorize_public_mutation_on_selected;
-
-struct SelectedMutationProducts<'selected, 'runtime, Schema: ApplicationSchema> {
-    mutation: &'selected SharedSelectedProductOperation<'runtime, Schema>,
-    control: Option<&'selected SharedSelectedProductOperation<'runtime, Schema>>,
-    history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'selected>>,
-}
-
-impl<Schema: ApplicationSchema> SelectedMutationProducts<'_, '_, Schema> {
-    fn security(&self) -> &SharedSelectedProductOperation<'_, Schema> {
-        self.control.unwrap_or(self.mutation)
-    }
-}
 
 pub enum SelectedConventionalAdmissionStop {
     ForeignIssuedSource,
@@ -88,7 +68,7 @@ pub enum SelectedConventionalAdmissionStop {
 fn authorize_mutation_products<Schema, Binding, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    products: SelectedMutationProducts<'_, '_, Schema>,
+    shared: &SharedSelectedProductOperation<'_, Schema>,
     current: &WorthQueryCurrentRetainedMutationBinding<'_, Schema, Binding>,
     prepared: &WorthQueryPreparedApplicationOperationGraphWork,
     principal: &WorthQueryIssuedSelectedPrincipal<
@@ -112,13 +92,9 @@ where
 {
     use SelectedConventionalAdmissionStop as Stop;
 
-    if !std::ptr::eq(principal.selected(), products.security().selected())
+    if !std::ptr::eq(principal.selected(), shared.selected())
         || !scope.admits_selection(
-            if products.history.is_some() {
-                products.mutation.selected()
-            } else {
-                products.security().selected()
-            },
+            shared.selected(),
             request,
         )
         || !principal.request().same_request(request)
@@ -171,14 +147,8 @@ where
 
     let mut graph_work = start_selected_operation_graph_work_admitted(
         runtime,
-        products.mutation,
-        products.control.map(|control| {
-            control
-                .selected()
-                .product()
-                .read_lease_ref()
-                .retained_clone()
-        }),
+        shared,
+        None,
         current,
         prepared,
         &resource_binding_identity,
@@ -214,16 +184,6 @@ where
     // decision-fact count; neither operation is an authorization shortcut.
 
     scope.require_applied_presence(execution, runtime, operation.operation())?;
-    if let Some(history) = products.history {
-        historical_source::require_source(
-            execution,
-            runtime,
-            history,
-            scope.scope(),
-            products.mutation.selected().product().relational_basis(),
-            operation.operation(),
-        )?;
-    }
     graph_work.record_decision_facts(authorization.exact_fact_count());
 
     // Fund the exact owned subject strings, two authority Arc<str> backings,

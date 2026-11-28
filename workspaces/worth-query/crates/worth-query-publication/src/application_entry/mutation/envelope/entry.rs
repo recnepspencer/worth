@@ -2,7 +2,6 @@
 use super::*;
 pub(in crate::application_entry) mod corrective;
 pub mod outputs;
-mod history_stage;
 mod stage_capture;
 pub(in crate::application_entry) mod typed;
 use outputs::EditStageOutputs;

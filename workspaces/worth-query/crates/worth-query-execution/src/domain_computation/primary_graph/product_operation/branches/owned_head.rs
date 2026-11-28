@@ -2,7 +2,6 @@
 use super::super::WorthQueryApplicationProductBranchCloseDenial;
 use super::{
     WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionFailure,
-    WorthQueryRuntimeCustody,
 };
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchCloseReceipt;
@@ -10,55 +9,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationProductBranchCleanupFailure,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
-use std::sync::Arc;
-use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
-use worth_query_execution_runtime::facade::execution_runtime::product_world::WorthQueryProductRootIdentity;
-use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
-
-/// Move-only, runtime-bound head custody detached from `&'runtime Runtime<Schema>`.
-///
-/// Constructible only by consuming a genuine `WorthQueryOwnedProductHead` (or an
-/// owned detached expected candidate) and rebindable only to the exact runtime
-/// allocation that originally issued it.
-#[must_use = "rebind the detached head custody to its original runtime or close it"]
-pub(in crate::domain_computation::primary_graph) struct DetachedOwnedProductHead {
-    root_identity: Arc<WorthQueryProductRootIdentity>,
-    branch: WorthQueryProductBranch,
-}
-
-impl DetachedOwnedProductHead {
-    pub(super) fn from_detached_branch(
-        root_identity: Arc<WorthQueryProductRootIdentity>,
-        branch: WorthQueryProductBranch,
-    ) -> Self {
-        Self {
-            root_identity,
-            branch,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn branch(
-        &self,
-    ) -> WorthQueryProductBranch {
-        self.branch
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn rebind<
-        'runtime,
-        Schema: ApplicationSchema,
-    >(
-        self,
-        custody: WorthQueryRuntimeCustody<'runtime, Schema>,
-    ) -> WorthQueryOwnedProductHead<'runtime, Schema> {
-        let target = custody.inner.runtime.product_runtime_ref().root_identity();
-        assert!(
-            Arc::ptr_eq(&self.root_identity, &target),
-            "detached head custody may only rebind to its exact original runtime allocation"
-        );
-        WorthQueryOwnedProductHead::from_created_branch(custody, self.branch)
-    }
-}
 
 /// A head issued by consuming a newly created expected-source branch.
 ///
@@ -88,44 +39,14 @@ impl DetachedOwnedProductHead {
 /// ```
 #[must_use = "transfer the head to its application owner or close it explicitly"]
 pub struct WorthQueryOwnedProductHead<'runtime, Schema> {
-    application: WorthQueryRuntimeCustody<'runtime, Schema>,
+    application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     branch: WorthQueryProductBranch,
 }
 
 impl<'runtime, Schema> WorthQueryOwnedProductHead<'runtime, Schema> {
-    pub(in crate::domain_computation::primary_graph) fn application(
-        &self,
-    ) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        &self.application
-    }
-
-    /// A separate hold on the runtime, for an owner built from this head.
-    pub(in crate::domain_computation::primary_graph) fn custody(
-        &self,
-    ) -> WorthQueryRuntimeCustody<'runtime, Schema> {
-        self.application.clone()
-    }
-
-    /// Exchange how this head reaches its runtime, returning the previous
-    /// custody so a refusal can restore the head exactly. The caller has
-    /// established that `custody` names this head's runtime.
-    pub(in crate::domain_computation::primary_graph) fn exchange_custody<'other>(
-        self,
-        custody: WorthQueryRuntimeCustody<'other, Schema>,
-    ) -> (
-        WorthQueryOwnedProductHead<'other, Schema>,
-        WorthQueryRuntimeCustody<'runtime, Schema>,
-    ) {
-        assert!(custody.same_runtime(&self.application));
-        let head = WorthQueryOwnedProductHead {
-            application: custody,
-            branch: self.branch,
-        };
-        (head, self.application)
-    }
 
     pub(super) fn from_created_branch(
-        application: WorthQueryRuntimeCustody<'runtime, Schema>,
+        application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         branch: WorthQueryProductBranch,
     ) -> Self {
         Self {
@@ -141,25 +62,11 @@ impl<'runtime, Schema> WorthQueryOwnedProductHead<'runtime, Schema> {
 
     /// Whether exactly that runtime issued this head. Descriptive only.
     pub fn belongs_to(&self, runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>) -> bool {
-        self.application.same_runtime(runtime)
+        std::ptr::eq(self.application, runtime)
     }
 }
 
 impl<'runtime, Schema: ApplicationSchema> WorthQueryOwnedProductHead<'runtime, Schema> {
-    pub(in crate::domain_computation::primary_graph) fn into_detached(
-        self,
-    ) -> DetachedOwnedProductHead {
-        let root_identity = self
-            .application
-            .inner
-            .runtime
-            .product_runtime_ref()
-            .root_identity();
-        DetachedOwnedProductHead {
-            root_identity,
-            branch: self.branch,
-        }
-    }
 
     /// Replace this actual slot through the original Native/World guarded adoption.
     /// A refusal preserves this head and returns the candidate in its original owner.
@@ -170,23 +77,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryOwnedProductHead<'runtime, S
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<Self, WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>> {
         let previous = candidate.adopt(&mut self.branch, phase)?;
-        Ok(Self::from_created_branch(self.custody(), previous))
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn adopt_at_deferred(
-        &mut self,
-        candidate: WorthQueryExpectedProductBranch<'runtime, Schema>,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        expected: &crate::basis::WorthQueryProductObservationLease,
-    ) -> Result<
-        (
-            Self,
-            super::expected_source::ProductBranchAdoptionRelease<'runtime, Schema>,
-        ),
-        WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
-    > {
-        let (previous, release) = candidate.adopt_at_deferred(&mut self.branch, phase, expected)?;
-        Ok((Self::from_created_branch(self.custody(), previous), release))
+        Ok(Self::from_created_branch(self.application, previous))
     }
 
     /// Close the current head through its existing application lifecycle.

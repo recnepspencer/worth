@@ -1,12 +1,10 @@
 use super::*;
 use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
-use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 
 /// The exact prepared Query permission after its issued World head was
 /// checked. Actor currentness still runs outside the World guard.
 pub struct SealedCurrentReadyQueryPermission<'basis> {
     security: crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedPermissionSecurityBasis<'basis>,
-    truth: Option<crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedPermissionSecurityBasis<'basis>>,
     authentication_valid_until: std::time::Instant,
     query_name: &'basis str,
     _query_identity: &'basis worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity,
@@ -29,10 +27,7 @@ impl SealedCurrentReadyQueryPermission<'_> {
     }
 
     pub fn snapshot_handle(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
-        self.truth
-            .as_ref()
-            .unwrap_or(&self.security)
-            .snapshot_handle()
+        self.security.snapshot_handle()
     }
 }
 
@@ -74,12 +69,9 @@ where
         )
     }
 
-    /// Each exact C/D input keeps its own genuine Query basis. The security
-    /// snapshot cannot stand in for the output's current truth snapshot.
-    pub fn seal_current_ready_with_control<'basis>(
+    pub fn seal_current_ready<'basis>(
         &'basis self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        control: Option<&'basis WorthQueryApplicationQueryBasisCustody>,
     ) -> Result<
         Option<SealedCurrentReadyQueryPermission<'basis>>,
         WorthQueryApplicationQueryAdmissionDenial,
@@ -90,7 +82,7 @@ where
             .admit_matching_head_query_permission_basis(
                 execution,
                 &self.security_product,
-                control.unwrap_or(&self.basis),
+                &self.basis,
             )
             .map_err(|SelectedPermissionSecurityStop| {
                 denial(
@@ -102,34 +94,12 @@ where
         let Some(security) = security else {
             return Ok(None);
         };
-        let truth = if control.is_some() {
-            let truth = self
-                .issuer
-                .admit_matching_head_query_permission_basis(
-                    execution,
-                    self.basis.selected_product(),
-                    &self.basis,
-                )
-                .map_err(|SelectedPermissionSecurityStop| {
-                    denial(
-                        WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis,
-                        self.query.name(),
-                    )
-                })?;
-            let Some(truth) = truth else {
-                return Ok(None);
-            };
-            Some(truth)
-        } else {
-            None
-        };
         super::super::super::admission_preparation::validate_admission_request(
             self.controls.request_scope(),
             self.query.name(),
         )?;
         let sealed = SealedCurrentReadyQueryPermission {
             security,
-            truth,
             authentication_valid_until: self.access.principal().valid_until(),
             query_name: self.query.name(),
             _query_identity: self.query.identity(),
@@ -142,18 +112,6 @@ where
         Ok(Some(sealed))
     }
 
-    pub fn require_original_scope(
-        &self,
-        observed: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
-    ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
-        if self.access.scope().entity_id() != observed.retained_scope_selector().subject() {
-            return Err(denial(
-                WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
-                self.query.name(),
-            ));
-        }
-        Ok(())
-    }
 
     pub fn require_current_principal(
         &self,

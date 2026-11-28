@@ -181,33 +181,3 @@ mod domain_computation_primary_graph_application_query_continuation_readmission 
         }
     }
 }
-
-#[allow(unused_imports, dead_code)]
-mod domain_computation_primary_graph_application_query_document_history_retained_permission {
-    use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
-    use crate::domain_computation::primary_graph::WorthQueryObservedSource;
-    use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-    use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
-    use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
-    use worth_query_installation::facade::ApplicationSchema;
-    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::document_history::retained_permission::HistoryRetainedPermissionStop;
-    use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
-    use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
-    impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-        pub(crate) fn authorize_retained_history_query<B>(
-            &self,
-            execution: &worth_execution::ExecutionRequest<'_, '_>,
-            history: HistoryProducerInvocation<'_>,
-            observed: &WorthQueryObservedSource<B::Query>,
-            external: &WorthQueryAuthenticatedExternalPrincipal<S>,
-            request: &WorthQueryRequestScope,
-        ) -> Result<(), HistoryRetainedPermissionStop>
-        where
-            B: ApplicationQueryBinding<S>,
-        {
-            self.inner.authorize_retained_history_query::<B>(
-                execution, history, observed, external, request,
-            )
-        }
-    }
-}

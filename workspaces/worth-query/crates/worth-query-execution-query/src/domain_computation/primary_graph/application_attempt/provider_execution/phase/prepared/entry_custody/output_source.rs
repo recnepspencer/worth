@@ -2,7 +2,6 @@
 use super::super::super::super::program_occurrence_gate::resolve_occurrence_program;
 use super::*;
 use crate::domain_computation::application_aftermath::ApplicationCommitCausality;
-use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
@@ -62,7 +61,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             idempotency,
             retain_output_observation,
             causality,
-            None,
             allocation_policy,
             coordination,
             outer_application,
@@ -77,7 +75,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
             &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
         )>,
-        history: Option<HistoryProducerInvocation<'_>>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Operation: 'static,
@@ -114,7 +111,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             execution,
             idempotency,
             true,
-            history,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
@@ -179,7 +175,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             idempotency,
             false,
             causality,
-            None,
             allocation_policy,
         )
     }

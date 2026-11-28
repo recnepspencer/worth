@@ -1,9 +1,7 @@
-//! Directory Home acceptance court for preview forks, `'static` owned history,
-//! and restart-safe authored-body undo/redo + typed conflict refusal.
+//! Directory Home acceptance court for preview forks and restart-safe undo and redo.
 use worth_foundational::facade::CanonicalDate;
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryAdmissionClock,
-    application_entry::WorthQueryOwnedApplicationHistoryDocument,
     WorthQueryHomeAuthoredCorrectionOutcome, WorthQueryHomeUndoDenial, WorthQueryRefusalCategory,
     WorthQueryUserFacingRefusal,
 };
@@ -11,11 +9,10 @@ use worth_query_host::facade::{
 use super::actions::{CorrectTaskState, RescheduleTask, SetTaskState};
 use super::courts::{open_daymark, temp_home_path};
 use super::program::owner;
-use super::queries::{DaymarkHistory, ReadProjectTasks, ReadTaskDetails};
-use super::schema::DaymarkSchema;
+use super::queries::ReadTaskDetails;
 
 #[test]
-fn target_dx_3_4_preview_forks_static_owned_history_and_reopen_authored_undo_redo_conflict() {
+fn target_dx_3_4_preview_forks_and_reopen_authored_undo_redo_conflict() {
     let path = temp_home_path("preview-and-undo");
     let clock = WorthQueryAdmissionClock::system();
     let home = open_daymark(&path, &clock);
@@ -107,18 +104,6 @@ fn target_dx_3_4_preview_forks_static_owned_history_and_reopen_authored_undo_red
             main_after[0].due_date,
             Some(CanonicalDate::parse_iso("2026-12-01").unwrap())
         );
-
-        // 3. 'static owned history document held in an unborrowed UI state struct.
-        struct UiHistorySlot {
-            doc: WorthQueryOwnedApplicationHistoryDocument<DaymarkSchema, DaymarkHistory>,
-        }
-        fn require_static<T: 'static>() {}
-        require_static::<UiHistorySlot>();
-        let doc = home
-            .owned_history::<DaymarkHistory>(&me, ReadProjectTasks { project: 1 })
-            .unwrap();
-        let slot = UiHistorySlot { doc };
-        drop(slot.doc);
 
         entry
     };

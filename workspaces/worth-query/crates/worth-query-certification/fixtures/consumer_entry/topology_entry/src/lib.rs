@@ -15,15 +15,9 @@ mod alternate_output;
 mod application_program;
 pub mod candidate_source_changes;
 mod contribution;
-mod document_history;
 mod final_output;
 mod handler;
 mod initial_adjustment;
-pub use document_history::{
-    bind_navigation_grant, bind_retention_grants, PlanarDocumentHistory, PlanarHistoryBookmark,
-    PlanarHistoryNavigation, PlanarHistoryWindow, PlanarSourceDocumentHistory,
-    SetPlanarHistoryStatus, SetPlanarHistoryStatusBinding, SetPlanarHistoryStatusHandler,
-};
 pub mod optional_aspects;
 pub use alternate_output::*;
 pub use application_program::*;
@@ -38,8 +32,6 @@ mod compiled_example_drift;
 mod discovery_connection;
 mod discovery_read;
 pub use discovery_connection::*;
-mod owner_discovery;
-pub use owner_discovery::*;
 mod membership;
 pub use membership::*;
 mod escaping_output;
@@ -97,7 +89,6 @@ use worth_query_decl::facade::application_schema::{fragment::*, *};
 pub(crate) type TopologyCoreMembers<S, R = TopologyRecords> = (
     R,
     <S as TopologySchemaBinding>::PrincipalFragment,
-    document_history::HistoryGrantRecords,
     TopologyContracts,
 );
 #[cfg(test)]
@@ -143,8 +134,6 @@ impl<Schema: TopologySchemaBinding> Registration<Schema> for TopologyContracts {
             let schema = prior_cycle_adjustment::declare_prior_cycle_adjustment(schema);
             let schema = <PlanarSourceFeatureDefinition<Schema> as worth_query_decl::facade::application_program::ApplicationFeatureDefinition<Schema>>::declare_members(schema);
             let schema = initial_adjustment::declare_initial_adjustment(schema);
-            let schema = document_history::declare(schema);
-            let schema = owner_discovery::declare(schema);
             let schema = <PlanarFinalFeatureDefinition<Schema> as worth_query_decl::facade::application_program::ApplicationFeatureDefinition<Schema>>::declare_members(schema);
             let schema = match Schema::PLANAR_EDIT_PROJECTION_WORK {
                 Some(work) => {

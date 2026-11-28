@@ -35,12 +35,6 @@ use worth_query_execution::publication_boundary::discovery_currentness::WorthQue
 mod branch;
 mod edge;
 mod leaf;
-mod parent_authority;
-use parent_authority::ParentAuthorityKind;
-mod history_frame;
-pub use history_frame::ProgramOutputHistoryFrame;
-use history_frame::{history_mismatch, history_read_denial};
-pub use parent_authority::ProgramOutputParentAuthority;
 
 mod sealed {
     pub trait Continuation {}
@@ -94,23 +88,7 @@ where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
-    /// Data-only recording transport; ordinary parent authority stays ordinary.
-    fn record_history_discovery(
-        &mut self,
-        origin: std::sync::Arc<worth_query_execution::publication_boundary::document_history::WorthQueryHistoryRecordingOutputOrigin>,
-        index: usize,
-    );
 
-    /// Check every retained query subject, including closed sibling prefixes.
-    fn authorize_history(
-        &self,
-        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
-            '_,
-        >,
-        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-        history: ProgramOutputHistoryFrame<'_, '_, '_>,
-    ) -> Result<(), WorthQueryRequiredOutputPreparationDenial>;
     fn close_read_request(
         &mut self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
@@ -126,7 +104,6 @@ where
         >,
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-        history: Option<ProgramOutputHistoryFrame<'_, '_, '_>>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial>;
 }
 
@@ -139,10 +116,6 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     ParentDemand: WorthQueryApplicationOutputDemand<Schema> + Clone,
 {
-    /// Inspect the declared descendants without running authored discovery.
-    fn validate_history_group_outputs(
-        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-    ) -> Result<(), worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial>;
 
     /// Nonleaf shapes carry no negative-completion capability.
     fn unavailable_completion<Root>() -> Option<ProgramOutputUnavailableCompletion<Schema, Program, Root>>
@@ -158,28 +131,7 @@ where
         None
     }
 
-    fn capture_history_root_recipes<
-        H: worth_query_declaration::facade::application_history::ApplicationHistoryBinding<Schema>,
-    >(
-        document: &worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistory<'_, Schema, H>,
-        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
-            '_,
-        >,
-        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-        profile: &worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputProfile,
-        parent_demand: &ParentDemand,
-    ) -> Result<(), crate::application_entry::WorthQueryHistoryOutputDenial>;
 
-    fn start_verified(
-        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
-        parent_demand: &ParentDemand,
-        parent: &worth_query_execution::publication_boundary::document_history::WorthQueryVerifiedHistoryParent<Schema, Program, ParentDemand>,
-        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-        controls: WorthQueryOutputDemandControls,
-    ) -> Result<
-        Box<dyn ProgramOutputContinuation<Schema, Program>>,
-        WorthQueryRequiredOutputPreparationDenial,
-    >;
 
     fn start(
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
@@ -187,7 +139,7 @@ where
         _parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
             SourceQuery<Schema, ParentDemand>,
         >,
-        parent_authority: &ProgramOutputParentAuthority<Schema, Program, ParentDemand>,
+        parent_authority: &std::sync::Arc<WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>>,
         minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,

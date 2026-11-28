@@ -1,4 +1,3 @@
-pub mod native_route;
 pub mod observation_reader;
 
 pub mod retained_candidates;
@@ -26,13 +25,9 @@ pub struct RetainedOutputCurrentnessRead {
     pub facts: Option<super::ComparableSourceFacts>,
     pub consumed_outputs: Arc<[ConsumedOutputEvidence]>,
     pub native_output_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
-    pub historical_selection: Option<Arc<super::HistoricalSelectionCoordinate>>,
     /// The facts and the witness are everything this output depends on.
     pub consumed_nothing: bool,
     pub verification_requirement: Option<super::invalidation::FullVerificationReason>,
-    /// Readers at a head serve `consumed_outputs_at`; the field stays
-    /// provenance for historical reads (public #358).
-    pub transported: Option<super::TransportedView>,
 }
 
 impl WorthQueryApplicationOutputLineage {
@@ -202,8 +197,7 @@ impl WorthQueryApplicationOutputLineage {
                 execution,
                 |recorded| {
                     (match &restored.origin {
-                        crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin::Checkpoint(_) => recorded.source_identity == Some(RecordedSourceIdentity::Checkpoint(restored.source_identity)),
-                        crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin::HistoricalSelection(origin) => Arc::ptr_eq(&recorded.settlement_identity, origin.settlement()),
+                        crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin::Checkpoint(_) => recorded.source_identity == Some(RecordedSourceIdentity::Checkpoint(restored.source_identity))
                     })
                         && std::ptr::eq(
                             recorded.correspondence.as_ref(),
@@ -323,11 +317,9 @@ fn retained_currentness_read(
         .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
     Ok(Some(RetainedOutputCurrentnessRead {
         identity: Arc::clone(&recorded.settlement_identity),
-        historical_selection: recorded.historical_selection.clone(),
         required_publication: recorded.required_publication.clone(),
         facts,
         consumed_outputs: Arc::clone(&recorded.consumed_outputs),
-        transported: recorded.transported_view(),
         native_output_witness: completed.native_output_witness_cell().map(Arc::clone),
         consumed_nothing: recorded.consumed_outputs.is_empty()
             && recorded.performed_origin.is_none(),

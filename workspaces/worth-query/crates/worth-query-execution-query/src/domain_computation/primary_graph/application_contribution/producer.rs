@@ -29,10 +29,8 @@ pub use denial_value::{
 };
 pub mod execution;
 pub use execution::unpublished::PendingProducerPublication;
-pub mod invocation;
 pub use execution::prepared_plan::OwnerPlan;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
-pub use invocation::ProducerInvocationAuthority;
 pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::output_equivalence_contract;
 pub mod output_evaluation;
 pub use output_equivalence_contract::WorthQueryProducerOutputEquivalence;

@@ -95,21 +95,11 @@ impl WorthQueryRequiredOutputPreparationDenial {
     {
         use crate::application_entry::{
             WorthQueryApplicationOutputDemandDenial as Demand,
-            WorthQueryApplicationRequestQueryDenial as Query,
-        };
-        use worth_query_execution::publication_boundary::document_history::{
-            WorthQueryHistoryOutputAdvanceDenial as Advance,
-            WorthQueryHistoryOutputReadDenial as Read,
         };
         match self {
             Self::DemandExecution(cause)
             | Self::Demand(Demand::Demand(cause))
-            | Self::Demand(Demand::History(Advance::Demand(cause)))
-            | Self::Demand(Demand::HistoryRead(Read::Demand(cause)))
-            | Self::SourceQuery(Query::HistoryOutput(Read::Demand(cause)))
-            | Self::Demand(Demand::Source(Query::HistoryOutput(Read::Demand(cause)))) => {
-                Some(cause)
-            }
+                => Some(cause),
             _ => None,
         }
     }

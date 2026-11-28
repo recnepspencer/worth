@@ -32,9 +32,7 @@ pub mod inspection;
 pub use diagnostic::compile_diagnostic_disclosure_contract;
 pub use diagnostic::diagnostic_shape_supported;
 pub mod resource;
-pub use history::{
-    compile_document_history_disclosure_contract, compile_history_disclosure_contract,
-};
+pub use history::compile_history_disclosure_contract;
 pub use inspection::compile_inspection_disclosure_contract;
 pub use resource::compile_resource_disclosure_contract;
 

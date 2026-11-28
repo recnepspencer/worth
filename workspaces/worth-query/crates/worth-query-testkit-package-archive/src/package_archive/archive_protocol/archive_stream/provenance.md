@@ -38,6 +38,6 @@ the low byte of the manifest version. The frame layout did not change.
 
 ## Frames without a frozen version
 
-The content-schema and document-history courts freeze a hand-written family,
+The content-schema court freezes a hand-written family,
 index, length and payload, and prepend the current record version. They test
 payload meaning, and the vectors above already pin the version bytes.

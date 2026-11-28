@@ -64,9 +64,8 @@ impl CoupledOutputCompletion {
         crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence::settled(
             record.computation_source, Arc::clone(&record.settlement_identity),
             record.observed_source_facts().and_then(|facts| facts.for_comparison()),
-            record.consumed_outputs_at(&selected), record.verification_requirement(),
+            std::sync::Arc::clone(&record.consumed_outputs), record.verification_requirement(),
             record.native_output_witness_cell().map(Arc::clone), selected,
-            record.historical_selection.clone(),
         )
     }
 

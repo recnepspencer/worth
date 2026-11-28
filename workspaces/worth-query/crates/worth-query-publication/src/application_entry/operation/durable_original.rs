@@ -147,10 +147,6 @@ impl<S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>>
             )?;
             return Ok(());
         }
-        // Durable document history and branch retirement are assigned to C2.
-        if self.history.is_some() {
-            return Err(D::OwnershipMaterialUnavailable);
-        }
         let action = runtime
             .installed_program()
             .resolve_action::<I::Binding, A>()

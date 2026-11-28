@@ -44,23 +44,6 @@ pub type ConsumerInitialFixedProgramRoot = ApplicationOutputGraph<
 pub type ConsumerInitialLeafProgramRoot =
     ApplicationOutputGraph<InitialConnection, ApplicationOutputLeaf>;
 
-#[cfg(test)]
-pub type ConsumerOwnerDiscoveryRoot = ApplicationOutputGraph<
-    InitialConnection,
-    ApplicationOutputEdge<
-        ApplicationConnectionInstanceRef<
-            ConsumerSchema,
-            InitialDiscoveredPlanarRoot,
-            PlanarOutputFeature,
-            PlanarDerivedBodyOutput,
-            InitialDiscoveredPlanarRoot,
-            PlanarFinalOutputFeature,
-            PlanarDerivedBodyInput,
-            worth_query_topology_entry::PlanarOutputToOwnerFinalConnection,
-        >,
-        ApplicationOutputLeaf,
-    >,
->;
 
 #[cfg(test)]
 pub type ConsumerInitialBranchedProgramRoot = ApplicationOutputGraph<

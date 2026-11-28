@@ -15,7 +15,6 @@ pub struct ObservedRetainedOutput {
     pub consumed_outputs: Arc<[ConsumedOutputEvidence]>,
     pub verification_requirement: Option<super::super::invalidation::FullVerificationReason>,
     pub native_output_witness: Option<Arc<OnceLock<super::super::SealedNativeOutputWitness>>>,
-    pub transported: Option<super::super::TransportedView>,
 }
 
 impl WorthQueryApplicationOutputLineage {
@@ -83,7 +82,6 @@ impl WorthQueryApplicationOutputLineage {
                             .and_then(|facts| facts.for_comparison())
                             .filter(|facts| !facts.is_empty()),
                         consumed_outputs: Arc::clone(&recorded.consumed_outputs),
-                        transported: recorded.transported_view(),
                         verification_requirement: recorded.verification_requirement(),
                         native_output_witness: completed
                             .native_output_witness_cell()

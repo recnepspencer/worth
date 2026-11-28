@@ -46,7 +46,7 @@ impl<Schema: ApplicationSchema + 'static> AwaitedDelivery<'_, Schema> {
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
-        invocation: &ProducerInvocationAuthority<'_>,
+        invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         contacts: Option<&mut usize>,
 
         performed: &std::cell::RefCell<PerformedMembers>,

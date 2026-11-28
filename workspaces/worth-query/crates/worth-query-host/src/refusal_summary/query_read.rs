@@ -98,11 +98,7 @@ pub(super) fn admission(kind: &Admit) -> Summary {
         Admit::StalePrincipal
         | Admit::DisclosureAuthorizationMismatch
         | Admit::InternalComputationDenied => PERMISSION,
-        Admit::StaleScope
-        | Admit::HistoricalSourceNotLive { .. }
-        | Admit::HistoricalSourceKindMismatch { .. }
-        | Admit::HistoricalSourceOutsideDomain { .. }
-        | Admit::HistoricalSourceOwnershipUnavailable { .. } => MISSING_ITEM,
+        Admit::StaleScope => MISSING_ITEM,
         Admit::Cancelled => CANCELLED,
         Admit::DeadlineExceeded => TIMED_OUT,
         Admit::StaleBasis | Admit::StaleContinuation => STALE,

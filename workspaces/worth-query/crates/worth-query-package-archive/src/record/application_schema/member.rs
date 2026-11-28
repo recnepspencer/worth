@@ -16,7 +16,6 @@ mod coupled_outputs;
 mod decision_read_scope;
 mod derived_component_set;
 mod derived_relation;
-mod document_history;
 mod history;
 mod inspection;
 mod invariant;
@@ -35,7 +34,6 @@ mod source_disclosure;
 mod vocabulary;
 
 fn require_supported_field_codec(member: &ApplicationSchemaMember) -> Result<(), Denial> {
-    document_history::require_shape(member)?;
     managed_index::require_shape(member)?;
     projected_member_domain::require_shape(member)?;
     inspection::require_shape(member)?;
@@ -68,7 +66,6 @@ pub(super) fn require_encoding_contract(
         member,
         ApplicationSchemaMember::DecisionReadScope { .. }
             | ApplicationSchemaMember::ManagedIndex { .. }
-            | ApplicationSchemaMember::ApplicationHistory { .. }
             | ApplicationSchemaMember::InvariantManagedIndexSource { .. }
             | ApplicationSchemaMember::ApplicationInvariant { .. }
             | ApplicationSchemaMember::ProjectedMemberDomain { .. }
@@ -110,9 +107,6 @@ pub(super) fn write(
         ApplicationSchemaMember::DecisionReadScope { .. }
         | ApplicationSchemaMember::OperationDecisionReadScope { .. } => {
             decision_read_scope::write(output, member)
-        }
-        ApplicationSchemaMember::ApplicationHistory { definition } => {
-            document_history::write(output, definition)
         }
         ApplicationSchemaMember::InvariantManagedIndexSource { .. } => {
             invariant_source::write(output, member)
@@ -211,7 +205,6 @@ pub(super) fn decode(
         58 => application_naming::decode_group(input, budget),
         57 => application_naming::decode(input, budget),
         tag @ 55..=56 => decision_read_scope::decode(tag, input, budget),
-        51 => document_history::decode(input, budget),
         49 => invariant_source::decode(input, budget),
         50 => Ok(ApplicationSchemaMember::ScalarAspectField {
             entity: input.text()?.to_owned(),
@@ -259,7 +252,6 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::ContentFormat { .. } => 52,
         ApplicationSchemaMember::Field { content_format: Some(_), frame: Some(_), .. } => 54,
         ApplicationSchemaMember::Field { content_format: Some(_), .. } => 53,
-        ApplicationSchemaMember::ApplicationHistory { .. } => 51,
         ApplicationSchemaMember::InvariantManagedIndexSource { .. } => 49,
         ApplicationSchemaMember::ScalarAspectField { .. } => 50,
         ApplicationSchemaMember::ManagedIndex { .. } => 48,

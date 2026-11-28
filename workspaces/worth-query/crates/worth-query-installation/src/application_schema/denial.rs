@@ -19,7 +19,6 @@ pub enum WorthQueryInstalledApplicationSchemaDenialKind {
     ManagedIndexParentUnsupported,
     ManagedIndexUnavailable,
     ResourceInstallationDenied,
-    HistoryInstallationDenied,
 
     OperationInstallationDenied,
     PreImageDemandNotCoveredByAuthoredAnchors,

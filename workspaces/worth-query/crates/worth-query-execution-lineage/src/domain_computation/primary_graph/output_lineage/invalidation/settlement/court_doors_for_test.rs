@@ -47,7 +47,6 @@ impl SettlementRegistration {
             stale_at_read_basis,
             requirement,
             upstream,
-            historical: None,
         }
     }
 }

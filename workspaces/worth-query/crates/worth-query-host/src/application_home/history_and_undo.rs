@@ -1,4 +1,4 @@
-//! Restart-safe Home undo/redo and owned `'static` document history facade.
+//! Restart-safe Home undo and redo.
 use std::borrow::Borrow;
 use std::num::NonZeroUsize;
 
@@ -31,14 +31,9 @@ use super::WorthQueryApplicationHome;
 mod authored;
 mod authored_outcome;
 mod durable_history;
-mod owned_history;
 pub use authored_outcome::WorthQueryHomeAuthoredCorrectionOutcome;
 pub use durable_history::{
     WorthQueryCorrectionHistory, WorthQueryCorrectionHistoryEntry, WorthQueryCorrectionHistoryLimit,
-};
-pub use owned_history::WorthQueryHomeOwnedHistoryDenial;
-pub(in crate::application_home) use owned_history::{
-    HistoryAccessBinding, HistoryPrincipal, HistoryQuery, HistoryRows, HistoryScope,
 };
 
 /// Default bounded history traversal limits for Home undo and redo helpers.

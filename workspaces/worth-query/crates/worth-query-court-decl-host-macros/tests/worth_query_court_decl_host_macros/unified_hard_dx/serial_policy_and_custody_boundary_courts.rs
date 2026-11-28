@@ -1,6 +1,6 @@
 //! Courts covering installed serial World policy ceilings (including
 //! single-metered occupied-key probes and automatic undo/redo), watch refresh
-//! delivery handoff under cancellation, and owned-history custody retention.
+//! and delivery handoff under cancellation.
 use std::num::NonZeroUsize;
 
 use worth_foundational::facade::{
@@ -8,7 +8,7 @@ use worth_foundational::facade::{
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::{
-        WorthQueryAdmissionClock, WorthQueryCancellationSource, WorthQueryRequestScope,
+        WorthQueryAdmissionClock, WorthQueryCancellationSource,
     },
     application_contribution::{
         WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
@@ -18,7 +18,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationRequestMutationDenial, WorthQueryApplicationRequestQueryDenial,
     },
     application_installation::ApplicationBuildIdentity,
-    WorthQueryApplicationHome, WorthQueryHomeConfig, WorthQueryHomeOwnedHistoryDenial,
+    WorthQueryApplicationHome, WorthQueryHomeConfig,
     WorthQueryHomeUndoDenial, WorthQuerySessionRunDenial, WorthQueryTypedManagedIndexRefreshDenial,
 };
 
@@ -26,9 +26,7 @@ use super::actions::{
     CorrectTaskState, ProbeOccupiedTaskState, RenameProject, SequencedAutoKey, SetTaskState,
 };
 use super::program::{owner, seed, DaymarkHome, DaymarkRuntime};
-use super::queries::{
-    DaymarkHistory, FindTasksByTitle, ReadProjectTasks, ReadTaskDetails, ReadyTasks,
-};
+use super::queries::{FindTasksByTitle, ReadTaskDetails, ReadyTasks};
 
 pub(super) fn open_memory_home_with_policy(
     clock: &WorthQueryAdmissionClock,
@@ -254,63 +252,6 @@ fn watch_refresh_preserves_delivery_and_handles_cancellation() {
     watch.close().unwrap();
 }
 
-#[test]
-fn owned_history_completion_boundary_preserves_head_custody() {
-    let clock = WorthQueryAdmissionClock::system();
-    let home = open_memory_home_with_policy(&clock, None);
-    let me = owner(&home, &clock);
-
-    let cancel = WorthQueryCancellationSource::new();
-    cancel.cancel();
-    let cancelled_scope = WorthQueryRequestScope::new(None, cancel.token(), clock.clone());
-    let fork_err = home
-        .owned_history_with_scope::<DaymarkHistory>(
-            &me,
-            ReadProjectTasks { project: 1 },
-            &cancelled_scope,
-        )
-        .expect_err("already-cancelled scope must refuse before allocating head");
-    assert!(matches!(
-        fork_err,
-        WorthQueryHomeOwnedHistoryDenial::Fork(_)
-    ));
-
-    let attach_err = home
-        .owned_history::<DaymarkHistory>(&me, ReadProjectTasks { project: 999 })
-        .expect_err("missing project scope must refuse attachment");
-    assert!(matches!(
-        attach_err,
-        WorthQueryHomeOwnedHistoryDenial::Attachment { .. }
-    ));
-    let head = attach_err
-        .into_owned_head()
-        .expect("Attachment failure retains owned head");
-
-    let pre_entry_err = home
-        .attach_owned_history_head::<DaymarkHistory>(
-            head,
-            &me,
-            ReadProjectTasks { project: 1 },
-            &cancelled_scope,
-        )
-        .expect_err("cancelled scope refuses pre-entry");
-    let head_again = pre_entry_err
-        .into_owned_head()
-        .expect("pre-entry refusal retains owned head");
-    let healthy = home.session(&me).fresh_scope();
-    let doc = home
-        .attach_owned_history_head::<DaymarkHistory>(
-            head_again,
-            &me,
-            ReadProjectTasks { project: 1 },
-            &healthy,
-        )
-        .expect("retrying retained head under healthy scope succeeds");
-    home.primary_graph()
-        .with_application_advancement(&healthy, |phase| doc.close(&phase))
-        .unwrap()
-        .unwrap();
-}
 
 #[test]
 fn automatic_undo_and_redo_honor_installed_serial_ceiling() {

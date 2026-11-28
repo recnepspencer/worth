@@ -60,7 +60,7 @@ pub fn register_completed(
         .map_err(|_| registration_reason(SettlementRegistrationStop::SourceUnavailable))?;
     let output_witness = output_witness.ok_or(FullVerificationReason::NativeRevisionUnavailable)?;
     let output_facts = owner
-        .prepare_performed_output_facts(output_witness, None)
+        .prepare_performed_output_facts(output_witness)
         .map_err(stopped)?
         .ok_or(FullVerificationReason::NativeRevisionUnavailable)?;
     let upstream = collect_consumed_output_upstream(consumed_outputs).map_err(stopped)?;
@@ -81,7 +81,6 @@ pub fn register_completed(
                 stale_at_read_basis,
                 requirement: None,
                 upstream,
-                historical: None,
             },
             application
                 .commit_evidence()
@@ -125,7 +124,7 @@ pub fn register_republished(
         }
     };
     let output_facts = owner
-        .prepare_performed_output_facts(output_witness, None)
+        .prepare_performed_output_facts(output_witness)
         .map_err(stopped)?
         .ok_or(Reason::NativeRevisionUnavailable)?;
     let upstream = collect_consumed_output_upstream(consumed_outputs).map_err(stopped)?;
@@ -140,7 +139,6 @@ pub fn register_republished(
             stale_at_read_basis: im::OrdSet::new(),
             requirement: Some(requirement),
             upstream,
-            historical: None,
         })
         .map_err(registration_reason)
 }

@@ -1,9 +1,7 @@
 //! The coupled producer's outputs: named exactly as a direct operation names
 //! them, kept by its Preserve, refused whole when it leaves one unnamed or
 //! mints the name its own edit minted, and followed by history navigation.
-use super::super::super::history::{navigate, probe, probe_unrecorded, record_edit, Navigate};
 use super::*;
-use probe::Observation;
 use worth_query_host::facade::application_naming::LineageRecordTarget;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
@@ -166,75 +164,4 @@ fn an_edit_and_its_producer_minting_one_name_refuse_duplicate_birth() {
         assert!(!world.live(&key), "{key}: zero effects");
     }
     assert_eq!(world.model_value("a"), 1);
-}
-
-#[test]
-fn producer_named_outputs_follow_checkout_and_redo() {
-    let token = "producer-history";
-    let host = world::install();
-    let document = world::attach(&host);
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.request(&principal, &scope);
-    let before = document.current_step(&request).unwrap();
-    let intent = shape::Intent {
-        key: "a".into(),
-        value: 5,
-        collide: false,
-    };
-    let document = record_edit!(
-        &host,
-        document,
-        &request,
-        intent,
-        ShapeAction,
-        "producer-history-1"
-    );
-    let shaped = document.current_step(&request).unwrap();
-    let (primary, secondary) = (primary_key("a"), secondary_key("a"));
-    let keys = [primary.as_str(), secondary.as_str()];
-    let (document, observed) = probe(&host, document, &request, token, &keys, 0);
-    let (p, s) = (named(&observed, &primary), named(&observed, &secondary));
-    probe::hold(token, "p", p);
-    probe::hold(token, "s", s);
-
-    // Before the edit neither output exists: their held names are retired.
-    navigate(
-        &document,
-        &request,
-        Navigate::Checkout(before.id()),
-        0x3b21_0001,
-    );
-    let (document, observed) = probe_unrecorded(&host, document, &request, token, &[], 1);
-    assert_eq!(
-        outputs::resolution(&observed, "p"),
-        &Observation::Retired { label: "p".into() }
-    );
-    assert_eq!(
-        outputs::resolution(&observed, "s"),
-        &Observation::Retired { label: "s".into() }
-    );
-
-    // Back on the edit, both outputs carry their exact names again.
-    navigate(
-        &document,
-        &request,
-        Navigate::Redo(shaped.id()),
-        0x3b21_0002,
-    );
-    let (document, observed) = probe(&host, document, &request, token, &keys, 2);
-    assert_eq!(
-        (named(&observed, &primary), named(&observed, &secondary)),
-        (p, s)
-    );
-    assert_eq!(
-        outputs::resolution(&observed, "p"),
-        &outputs::resolved_to("p", &primary)
-    );
-    assert_eq!(
-        outputs::resolution(&observed, "s"),
-        &outputs::resolved_to("s", &secondary)
-    );
-    host.with_host_advancement(|phase| document.close(&phase).unwrap())
-        .unwrap();
 }

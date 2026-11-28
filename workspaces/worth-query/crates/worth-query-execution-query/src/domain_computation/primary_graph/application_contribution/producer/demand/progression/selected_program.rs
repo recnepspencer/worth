@@ -104,7 +104,6 @@ where
                     principal,
                     request_scope,
                     delivery_branch,
-                    None,
                 )
                 .map(Some)
             },

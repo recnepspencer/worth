@@ -31,11 +31,7 @@ impl PostingDependencies {
                 .and_then(|w| w.get()),
             owner,
         )?;
-        let consumed = crate::domain_computation::primary_graph::output_lineage::TransportedView::consumed_outputs_at(
-            candidate.transported.as_ref(),
-            &candidate.consumed_outputs,
-            selected,
-        );
+        let consumed = std::sync::Arc::clone(&candidate.consumed_outputs);
         let mut pending = Vec::new();
         let mut visited = OrdSet::new();
         push_pending(&consumed, &mut pending)?;
@@ -64,7 +60,7 @@ impl PostingDependencies {
         super::super::consumed_output::reserve_pending(&mut self.sources, 1)?;
         super::super::consumed_output::reserve_pending(&mut self.outputs, 1)?;
         let output = owner
-            .prepare_performed_output_facts(witness.ok_or(Stop::Unavailable)?, None)
+            .prepare_performed_output_facts(witness.ok_or(Stop::Unavailable)?)
             .map_err(super::super::consumed_output::map_admission_stop)?
             .ok_or(Stop::Unavailable)?;
         self.sources.push(source);

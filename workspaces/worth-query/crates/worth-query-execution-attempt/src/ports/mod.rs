@@ -319,16 +319,6 @@ pub trait PreparedCorrectionSourcePort: std::fmt::Debug + Send + Sync + Any {
     fn content(&self) -> &worth_relational::facade::content::RelationalContentAttachments;
 }
 
-/// Borrowed upper-layer history cutover handle behind `HistoryProducerCutover<'call>`.
-pub trait HistoryProducerCutoverPort {
-    fn uses_owned_model_graph(&self) -> bool;
-    fn current(&self) -> &ProductBranchObservation;
-    fn perform(
-        &self,
-        cutover: worth_runtime_world::facade::PreparedWorldRelationalCutover<'_, '_, '_, '_>,
-        expected_target: &ProductBranchObservation,
-    ) -> Result<(), ()>;
-}
 
 mod opaque_synchronous_outputs;
 pub use opaque_synchronous_outputs::OpaqueSynchronousOutputs;

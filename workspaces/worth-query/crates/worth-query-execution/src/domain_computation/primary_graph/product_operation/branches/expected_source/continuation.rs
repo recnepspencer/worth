@@ -37,7 +37,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
             Original::NoEffect(refusal) => Outcome::NoEffect(refusal),
             Original::ReleasedOriginal(release) => Outcome::ReleasedOriginal(release),
             Original::Performed(branch) => Outcome::Performed(WorthQueryExpectedProductBranch {
-                application: WorthQueryRuntimeCustody::Borrowed(application),
+                application: application,
                 branch,
                 source,
             }),

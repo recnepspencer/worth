@@ -23,8 +23,6 @@ where
         installed,
         runtime,
         current,
-        None,
-        None,
         external,
         request,
         input,

@@ -30,14 +30,6 @@ fn bank_workflow_carriers_stay_within_declared_inline_ceilings() {
         row::<Terminal>(),
         row::<WorthQueryWorkflowOperationAdvance<Operation, Completed, Terminal>>(),
         row::<WorthQueryWorkflowAcceptance<Completed>>(),
-        row::<
-            WorthQueryHistoryEditOutcome<
-                BankSchema,
-                ApprovedBusinessPaymentApplyIntent,
-                BankApplication,
-                ApprovedPaymentEffectAction,
-            >,
-        >(),
     ];
     for (name, size) in &rows {
         println!("APPLICATION_TYPE_SIZE|{name}|{size}|{}", 128 * 1024);

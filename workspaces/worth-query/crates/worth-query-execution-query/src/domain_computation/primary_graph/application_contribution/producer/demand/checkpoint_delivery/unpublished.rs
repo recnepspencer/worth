@@ -2,7 +2,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::{
     execution::unpublished::{PendingProducerPublication, RecoveredProducerPublication},
-    ProducerInvocationAuthority,
 };
 use crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource;
 use worth_query_admission::facade::authenticated_principal::{
@@ -133,7 +132,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         producer: &str,
         principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &WorthQueryRequestScope,
-        invocation: &ProducerInvocationAuthority<'_>,
+        invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         owner: Box<
             dyn worth_query_execution_lineage::facade::ports::PendingProducerPublicationPort,
         >,

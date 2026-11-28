@@ -7,7 +7,6 @@ use super::super::WorthQueryProducerOutputFamily;
 use super::drive::drive_required_wave;
 use super::queued::QueuedRequiredRoots;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 use crate::domain_computation::primary_graph::provider::FactlessCurrentness;
@@ -28,7 +27,7 @@ pub fn advance_required_before_caller<Schema, Family>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
-    commit_authority: &ProducerInvocationAuthority<'_>,
+    commit_authority: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     performed: &std::cell::RefCell<performed::PerformedMembers>,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -45,7 +44,7 @@ where
     // A restored output takes its mode here, before any wave can select it.
     wave.anchor_ready
         .completion()
-        .advanced_in(commit_authority.mode());
+        .advanced_in(&commit_authority);
     // An Idle Ready is not itself a dirty required target. Genesis and full
     // verification cases retain the established output verifier once the
     // outputs they consumed are current. An authentic

@@ -129,7 +129,6 @@ fn absent_aspect_read_stales_when_other_field_materializes_before_commit() {
                     runtime.installed_program().identity(),
                     runtime.installed_program().revision(),
                 )),
-                None,
             );
             let WorthQueryApplicationCommitOutcome::Stale(stale) = outcome else {
                 panic!("changed absence must stale before effects: {outcome:?}")

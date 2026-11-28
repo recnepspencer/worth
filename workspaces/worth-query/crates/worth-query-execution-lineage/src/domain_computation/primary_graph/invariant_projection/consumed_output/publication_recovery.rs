@@ -121,7 +121,6 @@ impl ConsumedOutputEvidence {
                     )?,
                     witness,
                     upstream,
-                    evidence.recorded().historical.as_ref(),
                 )
                 .map_err(PublicationRecoveryStop::Registration)?;
         }

@@ -1,7 +1,7 @@
 //! Persistent names through an installed Query world: scheme installation,
-//! named seeds, tracked operation reads and `HistoryDocument` continuity.
+//! named seeds and tracked operation reads.
 use worth_query_decl::facade::{
-    application_history::*, application_operation::*, application_program::*, application_query::*,
+ application_operation::*, application_program::*, application_query::*,
     application_schema::*, authentication::*, *,
 };
 use worth_query_host::facade::{
@@ -11,8 +11,6 @@ use worth_query_host::facade::{
 use worth_query_testkit_document_retention::facade::document_retention_model::{
     host::host_limits, operator_identity::*,
 };
-#[macro_use]
-mod navigation_grant;
 mod schema;
 use schema::*;
 pub(crate) use schema::{GroupRole, Loop, Member, MemberRole, MEMBER_SCHEME};
@@ -25,12 +23,9 @@ mod durable;
 mod edit;
 mod ergonomics;
 pub(crate) mod groups;
-mod history;
-mod interleaving;
 pub(crate) mod invariant_names;
 mod lineage;
 mod named_read;
-mod navigation;
 pub(crate) mod outputs;
 pub(crate) mod probe;
 mod query;
@@ -42,12 +37,6 @@ mod stored;
 mod unowned;
 pub(crate) mod world;
 
-pub struct History;
-worth_query_portable_type!(History => "worth.persistent-naming.history.v1");
-impl ApplicationHistoryBinding<Schema> for History {
-    type Access = query::model::Read;
-    const IDENTITY: &'static str = "OwnedModelHistory";
-}
 pub struct Entry;
 impl ApplicationFeature<Schema> for Entry {
     type Inputs = ApplicationFeatureInputLeaf;

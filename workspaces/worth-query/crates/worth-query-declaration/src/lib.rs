@@ -37,7 +37,6 @@ mod portable_identity;
 mod portable_identity_macro;
 mod application_aftermath;
 mod application_capability;
-mod application_history;
 mod application_identity;
 #[macro_use]
 mod application_identity_macro;

@@ -108,18 +108,14 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-        allow_adoption: bool,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
         if self.take_skipped_invariant_owner_execution() {
             return Err(owner_failure());
         }
         self.validate_owned_member_rosters(execution, session)?;
-        // This controls receipt omission, not write authority. History and
-        // coupled candidates retain the receipt because their commit owner
-        // does not have the ordinary executed-adoption posture.
         let material = self.invariant_candidate_material(
             session,
-            allow_adoption.then_some((execution, allocation_policy)),
+            Some((execution, allocation_policy)),
         )?;
         self.validate_and_retain_candidate(execution, session, material, None, allocation_policy)
     }

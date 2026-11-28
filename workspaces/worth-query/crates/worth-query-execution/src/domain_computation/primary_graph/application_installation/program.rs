@@ -7,7 +7,6 @@ pub(in crate::domain_computation::primary_graph) mod assembly;
 mod conditional;
 mod construction;
 pub(crate) mod demand;
-pub(in crate::domain_computation::primary_graph) use demand::HistoryAdmittedChildSource;
 pub(in crate::domain_computation::primary_graph) use demand::OriginalProgramRootCompletion;
 mod derived_artifact;
 mod original_outputs;

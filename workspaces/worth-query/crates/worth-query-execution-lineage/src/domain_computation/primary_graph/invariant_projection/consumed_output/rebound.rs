@@ -20,7 +20,6 @@ impl ConsumedOutputEvidence {
             None,
             Arc::clone(witness),
             Arc::new(selected.clone()),
-            bound.consumed_historical(),
         ))
     }
 

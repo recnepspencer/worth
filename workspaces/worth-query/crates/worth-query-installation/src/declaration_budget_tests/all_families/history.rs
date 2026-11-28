@@ -2,7 +2,7 @@
 use super::*;
 use std::num::NonZeroU64;
 use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
-use worth_query_declaration::facade::{application_history::*, application_query::*};
+use worth_query_declaration::facade::application_query::*;
 
 pub(super) fn extend(members: &mut Vec<ApplicationSchemaMember>) {
     let access = members
@@ -49,27 +49,6 @@ pub(super) fn extend(members: &mut Vec<ApplicationSchemaMember>) {
             _ => None,
         })
         .unwrap();
-    let (binding, mutation_scope) = members
-        .iter()
-        .find_map(|m| match m {
-            ApplicationSchemaMember::ApplicationMutation { description } => Some((
-                description.binding_identity().as_str().to_owned(),
-                description.scope().entity.clone(),
-            )),
-            _ => None,
-        })
-        .unwrap();
-    let ownership = ApplicationHistoryOwnershipRelation {
-        relation: "BudgetHistoryMembers".into(),
-        from: access.parts().scope_entity.clone(),
-        to: mutation_scope,
-    };
-    members.push(ApplicationSchemaMember::Relation {
-        relation: ownership.relation.clone(),
-        from: ownership.from.clone(),
-        to: ownership.to.clone(),
-        integrity: ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into(),
-    });
     let mut audience = members
         .iter()
         .filter_map(|m| match m {
@@ -85,26 +64,6 @@ pub(super) fn extend(members: &mut Vec<ApplicationSchemaMember>) {
     audience.sort();
     audience.dedup();
     members.extend([
-        ApplicationSchemaMember::ApplicationHistory {
-            definition: ErasedApplicationHistoryDefinition::from_untrusted_parts(
-                ARCHIVE_DECODE,
-                WorthQueryPortableApplicationHistoryParts {
-                    identity: "BudgetModelHistory".into(),
-                    history_type: portable("worth.budget.model-history"),
-                    access: access.clone(),
-                    metadata_disclosure: ApplicationQueryDisclosureContract::public(),
-                    model_domain: ApplicationHistoryModelDomain::OwnedModelGraph,
-                    ownership: vec![ownership],
-                    navigation: None,
-                    window: None,
-                    bookmarks: None,
-                    operations: vec![ApplicationHistoryOperation {
-                        binding,
-                        label: "Inspect budget body".into(),
-                    }],
-                },
-            ),
-        },
         ApplicationSchemaMember::ApplicationHistoryQuery {
             definition: ErasedApplicationHistoryQueryDefinition::from_untrusted_parts(
                 ARCHIVE_DECODE,

@@ -63,8 +63,6 @@ impl Entity for Principal {
         super::super::workflow::WorkflowDocumentOwner,
         super::super::workflow::WorkflowGrantGrantor,
         super::super::workflow::WorkflowGrantGrantee,
-        super::super::document_history::control_roles::ControlGrantGrantor,
-        super::super::document_history::control_roles::ControlGrantGrantee,
     );
 }
 impl Principal {

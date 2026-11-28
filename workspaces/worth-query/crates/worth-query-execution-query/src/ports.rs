@@ -92,25 +92,9 @@ pub trait ExecutionRuntimePrimaryGraphPort {
     ) -> Option<crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle>;
 }
 
-/// Crate-boundary port for constructing `WorthQueryHistoryStep` strictly from
-/// `worth-query-execution`'s document history journal. Never exported on
-/// `worth-query-execution::facade`, Publication, or Host.
-pub trait HistoryStepConstructionPort: Sized {
-    fn new_history_step(
-        id: crate::domain_computation::primary_graph::product_operation::document_history::WorthQueryHistoryNodeId,
-        parent: Option<
-            crate::domain_computation::primary_graph::product_operation::document_history::WorthQueryHistoryNodeId,
-        >,
-        label: Option<std::sync::Arc<str>>,
-        metadata: crate::domain_computation::primary_graph::product_operation::document_history::WorthQueryHistoryStepMetadata,
-        endpoint: crate::basis::WorthQueryProductBranchReadIdentity,
-    ) -> Self;
-
-    fn label_arc(&self) -> Option<std::sync::Arc<str>>;
-}
 
 /// Crate-boundary port exposing owner-private `WorthQueryAdmittedApplicationQueryPlan`
-/// fields strictly to `worth-query-execution`'s document history lanes. Never exported
+/// fields strictly to `worth-query-execution`. Never exported
 /// on `worth-query-execution::facade`, Publication, or Host.
 pub trait AdmittedQueryPlanInternalPort<
     'a,

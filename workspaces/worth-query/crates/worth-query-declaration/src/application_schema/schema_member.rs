@@ -93,9 +93,6 @@ pub enum ApplicationSchemaMember {
     ContentFormat {
         declaration: super::ApplicationContentFormatDeclaration,
     },
-    ApplicationHistory {
-        definition: crate::application_history::ErasedApplicationHistoryDefinition,
-    },
     InvariantManagedIndexSource {
         invariant: String,
         execution_point: super::ApplicationInvariantExecutionPoint,

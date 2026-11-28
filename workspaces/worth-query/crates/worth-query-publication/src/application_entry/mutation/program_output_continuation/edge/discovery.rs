@@ -1,18 +1,6 @@
-//! Discovery retains its exact Native kind and original C-query description.
+//! Read discovery at the program basis and retain its dependencies.
 use super::*;
 
-pub(super) enum EdgeDiscoveryCustody<Q, R> {
-    Ordinary(worth_query_execution::facade::primary_graph::WorthQueryApplicationOutputDemandSource<Q, R>),
-    History(worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputDiscovery<Q, R>),
-}
-impl<Q, R> EdgeDiscoveryCustody<Q, R> {
-    pub(super) fn rows(&self) -> &[R] {
-        match self {
-            Self::Ordinary(source) => source.rows(),
-            Self::History(source) => source.rows(),
-        }
-    }
-}
 impl<Schema, Program, ParentDemand, Connection, Children>
     EdgeContinuation<Schema, Program, ParentDemand, Connection, Children>
 where
@@ -57,73 +45,22 @@ where
     pub(super) fn read_discovery(
         &self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
-        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-        history: Option<ProgramOutputHistoryFrame<'_, '_, '_>>,
-    ) -> Result<EdgeDiscoveryCustody<<DiscoveryBinding<Schema, Connection> as ApplicationQueryBinding<Schema>>::Query, DiscoveryValue<Schema, Connection>>, WorthQueryRequiredOutputPreparationDenial> {
-        let intent = if history.is_some_and(|history| history.authority.uses_owned_model_graph() && !history.authority.records_discovery_recipes()) {
-            None
-        } else {
-            Some(Binding::<Schema, Connection>::discovery_from_root(&self.parent_demand)
-                .map_err(WorthQueryRequiredOutputPreparationDenial::Connection)?)
-        };
-        match (self.parent_authority.kind(), history) {
-            (ParentAuthorityKind::Ordinary(parent), None) if self.recording_recipes.is_some() => {
-                let (origin, index) = self.recording_recipes.as_ref().expect("recording posture");
-                application.execute_recording_discovery::<ParentDemand, Connection>(phase,
-                    &worth_query_execution::publication_boundary::program_publication_access(), origin, *index, parent,
-                    &self.basis.retained, &self.minimum_observation.retained, request.principal, request.scope, intent.ok_or_else(history_mismatch)?,
-                ).map(EdgeDiscoveryCustody::Ordinary).map_err(history_query_denial)
-            }
-            (ParentAuthorityKind::Ordinary(_), None) => request.at(&self.basis).query(intent.ok_or_else(history_mismatch)?)
-                .execute_in_advancement(phase).map(|result| EdgeDiscoveryCustody::Ordinary(result.into_output_demand_source()))
-                .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery),
-            (ParentAuthorityKind::History(parent), Some(history)) if history.authority.uses_owned_model_graph() => application
-                .execute_owned_history_discovery::<ParentDemand, Connection>(
-                    phase, &worth_query_execution::publication_boundary::program_publication_access(),
-                    parent, history.authority, &self.basis.retained, &self.minimum_observation.retained,
-                    request.principal, request.scope, intent,
-                ).map(EdgeDiscoveryCustody::History).map_err(history_query_denial),
-            (ParentAuthorityKind::History(parent), Some(history)) => request.query(intent.ok_or_else(history_mismatch)?)
-                .with_admitted_query(phase, |_, binding, external, control| {
-                    let read = application.execute_history_dependent_output_query::<ParentDemand, Connection, DiscoveryBinding<Schema, Connection>>(
-                        phase, &worth_query_execution::publication_boundary::program_publication_access(),
-                        parent, history.authority, &self.basis.retained, &self.minimum_observation.retained, binding, external, control,
-                    ).map_err(crate::application_entry::WorthQueryApplicationRequestQueryDenial::HistoryOutput)?;
-                    read.into_discovery().map(EdgeDiscoveryCustody::History)
-                        .map_err(crate::application_entry::WorthQueryApplicationRequestQueryDenial::HistoryOutput)
-                }).map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery),
-            (ParentAuthorityKind::Verified(parent), Some(history)) => application
-                .execute_verified_history_discovery::<ParentDemand, Connection>(
-                    phase, &worth_query_execution::publication_boundary::program_publication_access(),
-                    parent, history.authority, request.principal, request.scope, intent,
-                ).map(EdgeDiscoveryCustody::History).map_err(history_query_denial),
-            _ => Err(history_mismatch()),
-        }
+    ) -> Result<worth_query_execution::facade::primary_graph::WorthQueryApplicationOutputDemandSource<<DiscoveryBinding<Schema, Connection> as ApplicationQueryBinding<Schema>>::Query, DiscoveryValue<Schema, Connection>>, WorthQueryRequiredOutputPreparationDenial> {
+        let intent = Binding::<Schema, Connection>::discovery_from_root(&self.parent_demand)
+            .map_err(WorthQueryRequiredOutputPreparationDenial::Connection)?;
+        request.at(&self.basis).query(intent)
+            .execute_in_advancement(phase)
+            .map(|result| result.into_output_demand_source())
+            .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)
     }
 
     pub(super) fn retain_discovery(
         &self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
-        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-        history: Option<ProgramOutputHistoryFrame<'_, '_, '_>>,
     ) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredOutputPreparationDenial> {
         let source = self.discovery_source.as_ref().expect("original discovery remains owned");
-        match (source, self.parent_authority.kind(), history) {
-            (EdgeDiscoveryCustody::Ordinary(source), ParentAuthorityKind::Ordinary(_), None) =>
-                request.at(&self.basis).retain_query_dependencies(phase, source),
-            (EdgeDiscoveryCustody::History(source), ParentAuthorityKind::History(parent), Some(history)) =>
-                application.retain_history_discovery_dependencies::<ParentDemand, Connection>(
-                    phase, &worth_query_execution::publication_boundary::program_publication_access(),
-                    parent, history.authority, source, request.principal, request.scope,
-                ).map_err(history_read_denial),
-            (EdgeDiscoveryCustody::History(source), ParentAuthorityKind::Verified(parent), Some(history)) =>
-                application.retain_verified_history_discovery_dependencies::<ParentDemand, Connection>(
-                    phase, &worth_query_execution::publication_boundary::program_publication_access(),
-                    parent, history.authority, source, request.principal, request.scope,
-                ).map_err(history_read_denial),
-            _ => Err(history_mismatch()),
-        }
+        request.at(&self.basis).retain_query_dependencies(phase, source)
     }
 }

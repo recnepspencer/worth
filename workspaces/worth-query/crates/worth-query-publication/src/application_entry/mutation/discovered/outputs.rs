@@ -1,3 +1,4 @@
+use worth_query_execution::facade::application_installation::WorthQuerySettledProgramOutput;
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
@@ -23,7 +24,6 @@ use crate::application_entry::demand::{
 };
 use crate::application_entry::mutation::program_output_continuation::{
     ProgramOutputContinuation, ProgramOutputContinuationFactory, ProgramOutputContinuationProgress,
-    ProgramOutputParentAuthority,
 };
 use crate::application_entry::mutation::program_output_settlement::ProgramOutputRecord;
 use crate::application_entry::mutation::program_output_work::ProgramOutputTraversalWork;
@@ -63,7 +63,7 @@ where
     handle: Option<WorthQueryApplicationProgramDemandHandle<Schema, Program, Demand<Schema, Root>>>,
     settlement: Option<WorthQueryApplicationOutputDemandSettlement<Query<Schema, Root>>>,
     pending_authority: Option<
-        ProgramOutputParentAuthority<Schema, Program, Demand<Schema, Root>>,
+        std::sync::Arc<WorthQuerySettledProgramOutput<Schema, Program, Demand<Schema, Root>>>,
     >,
     continuation: Option<Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>>,
     outputs: Vec<ProgramOutputRecord>,
@@ -345,7 +345,7 @@ where
                 .continuation
                 .as_mut()
                 .expect("a settled root installs its typed continuation");
-            match continuation.advance(phase, application, request, None)? {
+            match continuation.advance(phase, application, request)? {
                 ProgramOutputContinuationProgress::Progressed => {
                     return Ok(WorthQueryDiscoveredProgramOutputProgress::Progressed);
                 }

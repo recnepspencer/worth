@@ -85,7 +85,6 @@ impl ApplicationSchemaContribution<DocumentRetentionSchema> for DocumentRetentio
     type Members = (
         RetentionModel,
         super::workflow::declaration::WorkflowGrants,
-        super::document_history::control_roles::ControlGrants,
         Contracts,
         super::correctable_retention::RestoreReviewedRetention,
     );
@@ -104,7 +103,6 @@ impl Registration<DocumentRetentionSchema> for Contracts {
         ApplicationSchemaDeclarationDenial,
     > {
         Ok({
-            let schema = super::document_history::declare(schema);
             let schema = super::model_lifecycle::declare(schema);
             let schema = schema
                 .principal_binding(DocumentPrincipalBinding::reference())

@@ -50,7 +50,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
         let result = self.with_applied_plan_in_control::<B, R, E>(
             execution, intent, before, candidate, own, native, consume,
         );
-        self.confirm_control(execution, native, result)
+        self.confirm_current_control(execution, native, result)
             .map_err(|cause| E::from(self.record_control_refusal(cause)))?
     }
     #[allow(clippy::too_many_arguments)]
@@ -75,11 +75,10 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
         E: From<SourceQueryObservationStop>,
     {
         use SourceQueryObservationStop as Stop;
-        self.confirm_control(execution, native, ())
+        self.confirm_current_control(execution, native, ())
             .map_err(|cause| self.record_control_refusal(cause))?;
         let selected = self.shared.selected();
-        if self.history.is_some()
-            || !std::ptr::eq(self.application, selected.application())
+        if !std::ptr::eq(self.application, selected.application())
             || candidate
                 .candidate_identity()
                 .proposal()
@@ -140,10 +139,9 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
                 return self.with_resolved_plan::<B, R, E>(
                     execution,
                     &installed,
-                    permission::SourceQueryParameters::Live(parameters),
+                    parameters,
                     &principal,
                     &issued,
-                    SourceScopePosture::Current,
                     native,
                     consume,
                 )

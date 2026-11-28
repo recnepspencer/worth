@@ -94,7 +94,6 @@ pub(super) fn commit(
     provider: &WorthQueryPrimaryGraphProvider,
     prepared: WorthQueryPreparedApplicationCommit,
     mint: super::WorthQueryCommitProgressionMint,
-    history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     ApplicationCommitExecution,
@@ -102,10 +101,7 @@ pub(super) fn commit(
 > {
     // The actual weak owner validates the expected owner before selecting the
     // ordinary algorithm. Unavailability never selects memory publication.
-    let owned_history = history
-        .as_ref()
-        .is_some_and(|cutover| cutover.uses_owned_model_graph());
-    let query = native_work::prepare_before_native(&execution, provider, prepared, owned_history)?;
+    let query = native_work::prepare_before_native(&execution, provider, prepared)?;
     if provider.take_fault(crate::domain_computation::primary_graph::provider::fault_port::WorthQueryPrimaryGraphFault::DuplicateQueryPreparationSlot) {
         return preparation_reservation_control::refuse_duplicate_before_world_for_test(execution, provider, query, allocation_policy);
     }
@@ -114,16 +110,8 @@ pub(super) fn commit(
         .publication()
         .query_publication_home_binding(product.observation())
     {
-        Ok(None) => memory::commit(execution, provider, query, mint, history, allocation_policy),
-        Ok(Some(_)) => match history {
-            None => durable::commit(execution, provider, query, allocation_policy),
-            Some(_) => Err(crate::domain_computation::WorthQueryProviderSessionCommitStop::ProductPreparationRefused(
-                worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
-                    crate::domain_computation::WorthQueryProductPreparationRefused::new(
-                        crate::domain_computation::WorthQueryProductPreparationRefusal::CurrentReadDependency(
-                            worth_runtime_world::facade::CurrentProductReadDependencyDenial::DurabilityUnsupported), Box::new(query)),
-                    false))),
-        },
+        Ok(None) => memory::commit(execution, provider, query, mint, allocation_policy),
+        Ok(Some(_)) => durable::commit(execution, provider, query, allocation_policy),
         Err(cause) => Err(durable::refused_before_open(query, cause)),
     }
 }

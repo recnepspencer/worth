@@ -18,7 +18,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             FamilySourceValue<Schema, Family>,
         >,
         entry: &InstalledProducerProvider<Schema>,
-        commit_authority: ProducerInvocationAuthority<'owner>,
+        commit_authority: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         schedule_progression: &ScheduleProgression<'owner, '_, '_, Schema>,
 
         performed: &'owner std::cell::RefCell<PerformedMembers>,
@@ -48,7 +48,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         if let SourceGuard::Replaced = self.prepare_progression_entry(
             demand,
             disclosed_source,
-            commit_authority.mode(),
+            &commit_authority,
             entry,
             schedule_progression,
         )? {
@@ -252,7 +252,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         if demand.selected.reuses_live_output_only {
             required_output.reuse_live_output_only();
         }
-        let required_execution = required_output.prepare_execution(published_mode.mode().clone());
+        let required_execution = required_output.prepare_execution(published_mode.clone());
         Ok(OutputPreparation::Running(RunningOutputPreparation {
             selected_execution_finish,
             ordinary_readiness,
@@ -277,5 +277,5 @@ pub struct RunningOutputPreparation<'owner, Query, Value> {
     pub required_execution: crate::domain_computation::primary_graph::application_output_demand::RequiredOutputExecution,
     pub disclosure: ValidatedOutputDisclosure<Query, Value>,
     pub successor_of: Option<[u8; 32]>,
-    pub commit_authority: ProducerInvocationAuthority<'owner>,
+    pub commit_authority: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
 }

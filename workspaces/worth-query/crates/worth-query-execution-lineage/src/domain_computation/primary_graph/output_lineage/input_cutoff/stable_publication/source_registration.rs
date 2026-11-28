@@ -40,7 +40,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
         // Executed support owns its live output: a row whose predecessor has
         // no mark keeps these facts in place of an equality link (public #358).
         let output_facts = match (adoption, self.recorded.native_output_witness()) {
-            (Some(_), Some(witness)) => owner.prepare_performed_output_facts(witness, None)?,
+            (Some(_), Some(witness)) => owner.prepare_performed_output_facts(witness)?,
             _ => None,
         };
         // The selected candidate may itself be an alias. This sealed relation
@@ -67,7 +67,6 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
                 stale_at_read_basis: im::OrdSet::new(),
                 requirement: None,
                 upstream,
-                historical: None,
             };
         match adoption {
             Some(adoption) => owner.prepare_current_executed_settlement(

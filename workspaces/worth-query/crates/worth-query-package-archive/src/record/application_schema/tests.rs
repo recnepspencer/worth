@@ -5,7 +5,6 @@ mod component_set;
 mod correction_binding;
 mod decision_read_scope;
 mod derived_relation;
-mod document_history;
 mod extended_capability;
 mod fixture;
 mod history;

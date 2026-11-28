@@ -63,7 +63,6 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
                     phase,
                     &world.application,
                     victim,
-                    None,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     None,
                 ),

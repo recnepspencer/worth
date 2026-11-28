@@ -123,7 +123,7 @@ impl<'a, S: ApplicationSchema + 'static> WorthQueryApplicationCorrectionRequest<
                 .candidate::<C, <Inverse<S, C> as ApplicationMutationAdmissionBinding<S>>::Admission>(|target, access, key| {
                     target.derive_correction_inverse::<C>(access, &phase, principal, scope, source, key,
                         limits.maximum_ancestors, limits.maximum_disclosure_results,
-            None,).map_err(Denial::Derivation)
+).map_err(Denial::Derivation)
                 })?;
             retain_operation::<S, Inverse<S, C>, P, A>(prepared, application, branch)
         }).map_err(Denial::ExecutionRequest)?

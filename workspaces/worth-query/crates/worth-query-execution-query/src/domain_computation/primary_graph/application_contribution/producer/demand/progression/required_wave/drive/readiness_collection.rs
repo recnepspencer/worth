@@ -33,7 +33,7 @@ pub fn collect<'owner, 'custody, 'collection, Schema, Family>(
     caller_installed: &InstalledProducerProvider<Schema>,
     caller_contacts: usize,
     caller_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind,
-    authority: &ProducerInvocationAuthority<'owner>,
+    authority: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     performed: &'owner std::cell::RefCell<super::super::performed::PerformedMembers>,
 ) -> Result<CollectedRequiredWave<'owner, 'collection, Schema>, WorthQueryOutputDemandDenial>
 where
@@ -149,7 +149,7 @@ where
                     .ready
                     .selected()
                     .completion()
-                    .advanced_in(authority.mode());
+                    .advanced_in(&authority);
             }
             let contacts = if index == 0 && wave.target == RequiredWaveTarget::Caller {
                 caller_contacts

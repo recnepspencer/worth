@@ -41,7 +41,7 @@ where
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
         matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
-        invocation: ProducerInvocationAuthority<'owner>,
+        invocation: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
         performed: &'owner std::cell::RefCell<PerformedMembers>,
     ) -> Result<crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan<'owner, RequiredFreshProgress<Schema>, WorthQueryOutputDemandDenial>, WorthQueryOutputDemandDenial>
     where
@@ -114,7 +114,7 @@ where
                         delivery_branch,
                         ValidatedOutputDisclosure::Fresh(fresh),
                         successor_entry.as_ref(),
-                        invocation.for_mode(mode),
+                        mode,
                         super::validated::schedule_progression::ScheduleProgression::Selected {
                             shared,
                             matched_predecessors,

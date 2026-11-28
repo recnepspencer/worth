@@ -54,8 +54,6 @@ pub struct SettlementRegistration {
     pub stale_at_read_basis: OrdSet<usize>,
     pub requirement: Option<FullVerificationReason>,
     pub upstream: OrdSet<Arc<RecordedSettlementIdentity>>,
-    /// The coordinate of a transported row's source `facts` (public #358).
-    pub historical: Option<super::super::SelectionCoordinate>,
 }
 
 /// Install exact consumed facts into the selected live reverse index. The
@@ -77,7 +75,6 @@ pub fn insert(
         stale_at_read_basis,
         requirement,
         upstream,
-        historical,
     } = registration;
     let identity = &identity;
     let mut verification_requirement = requirement;
@@ -122,7 +119,6 @@ pub fn insert(
         posting_projection: projection,
         consumed_upstream: upstream,
         facts,
-        historical,
         output_facts,
         output_coverage,
         read_basis: Arc::new(read_basis),

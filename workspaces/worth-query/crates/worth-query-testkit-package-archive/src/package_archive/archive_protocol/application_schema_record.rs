@@ -3,7 +3,6 @@ pub use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaDeclarationBuilder,
 };
 pub use worth_query_declaration::facade::{
-    application_history::ApplicationHistoryModelDomain,
     application_query::ApplicationQueryDisclosurePosture,
     application_schema::ApplicationSchemaMember,
 };

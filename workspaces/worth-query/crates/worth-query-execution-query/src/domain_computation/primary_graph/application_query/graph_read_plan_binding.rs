@@ -53,7 +53,6 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     pub(crate) basis: WorthQueryApplicationQueryBasisCustody,
     pub(crate) index_posture: WorthQueryQueryIndexPosture,
     pub(crate) security_product: crate::basis::WorthQueryProductObservationLease,
-    pub(crate) security_basis: Option<super::basis::WorthQueryApplicationQueryBasisCustody>,
     pub graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     pub(crate) authorization:
         crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,

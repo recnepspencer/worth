@@ -28,7 +28,7 @@ pub fn resume_owned_refresh<Schema: ApplicationSchema + 'static>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: crate::basis::WorthQueryProductBranch,
-    invocation: &ProducerInvocationAuthority<'_>,
+    invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     custody: held::ContinuationCustody<'_, Schema>,
     selected: &SelectedReadyReadmission,
 

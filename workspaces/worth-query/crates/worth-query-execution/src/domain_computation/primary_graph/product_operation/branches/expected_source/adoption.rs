@@ -1,5 +1,6 @@
 //! Replace an application head only while the candidate's exact source is current.
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenial;
 use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
@@ -10,7 +11,21 @@ use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleI
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::{ProductBranchCurrentnessFailure, ProductBranchObservation};
 
-pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::WorthQueryExpectedProductBranchAdoptionDenial;
+use worth_relational::facade::branch::RelationalBranchBasisDenial;
+use worth_runtime_world::facade::{RuntimeWorldBranchAdmissionDenial, RuntimeWorldServiceDenial};
+
+#[derive(Debug)]
+pub enum WorthQueryExpectedProductBranchAdoptionDenial {
+    ForeignPhase,
+    Stopped(WorthQueryAdvancementDenial),
+    /// The application's actual head slot no longer names the selected source.
+    HeadReplaced,
+    CandidateAdmission(crate::basis::WorthQueryProductBranchAdmissionDenial),
+    SourceBasis(RelationalBranchBasisDenial),
+    CandidateBasis(RelationalBranchBasisDenial),
+    HeadAdmission(RuntimeWorldServiceDenial<RuntimeWorldBranchAdmissionDenial>),
+    HeadMoved,
+}
 
 /// Adoption did not change the supplied head. Candidate effects still exist;
 /// the returned continuation retains their ordinary close/recovery custody.
@@ -52,24 +67,22 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         WorthQueryProductBranch,
         WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
     > {
-        self.adopt_with_endpoint(head, phase, None)
+        self.adopt_and_release(head, phase)
             .map(|(previous, release)| {
                 drop(release);
                 previous
             })
             .map_err(|mut failure| {
-                // Public adoption has no enclosing document guard. Preserve its
-                // original transient-pin lifetime before returning the owner.
+                // Release transient pins before returning the candidate owner.
                 drop(failure.deferred.take());
                 failure
             })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn adopt_at_deferred(
+    fn adopt_and_release(
         self,
         head: &mut WorthQueryProductBranch,
         phase: &WorthQueryAdvancementPhase<'_>,
-        expected: &crate::basis::WorthQueryProductObservationLease,
     ) -> Result<
         (
             WorthQueryProductBranch,
@@ -77,22 +90,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         ),
         WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
     > {
-        self.adopt_with_endpoint(head, phase, Some(expected))
-    }
-
-    fn adopt_with_endpoint(
-        self,
-        head: &mut WorthQueryProductBranch,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        expected: Option<&crate::basis::WorthQueryProductObservationLease>,
-    ) -> Result<
-        (
-            WorthQueryProductBranch,
-            ProductBranchAdoptionRelease<'runtime, Schema>,
-        ),
-        WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
-    > {
-        let application = self.application.clone();
+        let application = self.application;
         let execution = match phase
             .execution_request_for(application.inner.runtime.product_runtime_ref())
         {
@@ -137,12 +135,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
                 ))
             }
         };
-        if expected.is_some_and(|expected| expected.observation() != candidate.observation()) {
-            let mut failure =
-                self.adoption_failed(WorthQueryExpectedProductBranchAdoptionDenial::HeadMoved);
-            failure.deferred = Some((candidate, None));
-            return Err(failure);
-        }
         let expected_source = self.source.observation().clone();
         // Keep resource drops outside Native access and the outer head-slot guard.
         let result = application
@@ -190,7 +182,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         (WorthQueryProductBranch, Self),
         WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
     > {
-        let application = self.application.clone();
+        let application = self.application;
         let world = application
             .inner
             .runtime

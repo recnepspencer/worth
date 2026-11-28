@@ -353,9 +353,7 @@ fn install_topology_behavior<Schema: TopologySchemaBinding>(
     setup.handler::<worth_query_topology_entry::PlanarInitialAdjustmentBinding<Schema>, _>(
         worth_query_topology_entry::PlanarInitialAdjustmentHandler,
     )?;
-    setup.handler::<worth_query_topology_entry::SetPlanarHistoryStatusBinding<Schema>, _>(
-        worth_query_topology_entry::SetPlanarHistoryStatusHandler,
-    )?;
+
     setup.handler::<worth_query_topology_entry::PlanarIslandCouplingBinding<Schema>, _>(
         worth_query_topology_entry::PlanarIslandCouplingHandler,
     )?;

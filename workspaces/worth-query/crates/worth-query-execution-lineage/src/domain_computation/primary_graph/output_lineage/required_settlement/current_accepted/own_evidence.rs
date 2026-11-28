@@ -32,11 +32,10 @@ impl AcceptedCurrentCandidate {
         match ConsumedOutputEvidence::own_evidence_is_current(
             execution,
             &handler_facts,
-            &self.selected.recorded().consumed_outputs_at(selected),
+            &std::sync::Arc::clone(&self.selected.recorded().consumed_outputs),
             witness,
             runtime,
             snapshot,
-            self.selected.recorded().historical_selection.as_ref(),
         ) {
             Ok(false) => Ok(false),
             Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => Ok(true),

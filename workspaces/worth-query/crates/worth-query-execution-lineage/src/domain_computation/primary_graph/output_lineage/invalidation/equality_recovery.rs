@@ -31,15 +31,9 @@ pub struct EqualityRecoveryRow {
     output_projection: Option<RegisteredOutputFacts>,
     pub upstream: OrdSet<Arc<RecordedSettlementIdentity>>,
     pub read_basis: Arc<PositionedRelationalSnapshot>,
-    /// The mark row's coordinate for its source `facts` (public #358).
-    pub historical: Option<super::super::SelectionCoordinate>,
 }
 
 impl EqualityRecoveryRow {
-    /// The coordinate the output projection carries with its facts.
-    pub fn output_historical(&self) -> Option<&super::super::SelectionCoordinate> {
-        self.output_projection.as_ref()?.historical.as_ref()
-    }
 
     pub fn output_facts(&self) -> Option<&[WorthQueryApplicationObservedFact]> {
         self.output_projection
@@ -96,7 +90,6 @@ impl EqualityRecoveryImage {
                     facts: row.facts.clone(),
                     upstream: row.consumed_upstream.clone(),
                     read_basis: Arc::clone(&row.read_basis),
-                    historical: row.historical.clone(),
                 });
             };
 

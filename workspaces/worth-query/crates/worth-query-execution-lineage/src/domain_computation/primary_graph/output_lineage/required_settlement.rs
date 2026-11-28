@@ -196,15 +196,7 @@ impl WorthQueryApplicationOutputLineage {
                             RecordedSourceIdentity::Checkpoint(restored.source_identity),
                             checkpoint.producer_dependency,
                             None,
-                        ),
-                        RestoredOutputOrigin::HistoricalSelection(origin) => (
-                            origin.settlement().coordinate(),
-                            origin
-                                .source_identity()
-                                .ok_or(FullVerificationReason::NativeRevisionUnavailable)?,
-                            origin.dependency(),
-                            Some(origin.settlement()),
-                        ),
+                        )
                     };
                     (
                         restored.correspondence.as_ref(),

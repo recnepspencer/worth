@@ -1,7 +1,6 @@
 use super::super::super::finish_application_commit;
 use super::super::running::progression::progress_application_commit_with_outer;
 use super::*;
-use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
     CurrentCommitProgram<
         '_,
@@ -18,7 +17,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         idempotency: WorthQueryApplicationIdempotencyBinding,
         elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
         aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
-        history: Option<HistoryProducerInvocation<'_>>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
@@ -29,7 +27,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             idempotency,
             elevation_currentness,
             aftermath_causality,
-            history,
             allocation_policy,
             None,
             None,
@@ -43,7 +40,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         idempotency: WorthQueryApplicationIdempotencyBinding,
         elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
         aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
-        history: Option<HistoryProducerInvocation<'_>>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         coordination: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
         outer_application: Option<&(dyn std::any::Any + Send + Sync)>,
@@ -73,7 +69,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
                 application,
                 outer_application,
                 running.consume(),
-                history,
                 allocation_policy,
                 coordination,
             ),

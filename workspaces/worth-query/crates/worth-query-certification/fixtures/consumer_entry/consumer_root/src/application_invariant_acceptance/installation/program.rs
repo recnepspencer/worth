@@ -37,7 +37,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
     )
 }
 
-pub(in crate::application_invariant_acceptance) fn install_selected_program_with_limits<Program>(
+fn install_selected_program_with_limits<Program>(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
     roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
     deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
@@ -106,20 +106,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
                 .unwrap(),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
-            seed::seed_cycles_with(bootstrap_phase, graph, |graph| {
-                worth_query_topology_entry::bind_retention_grants(graph, "model-owner", "anchor-a")
-                    .unwrap();
-                worth_query_topology_entry::bind_navigation_grant(graph, "model-owner", "anchor-a")
-                    .unwrap();
-                worth_query_topology_entry::bind_navigation_grant(graph, "model-owner", "remote-a")
-                    .unwrap();
-                worth_query_topology_entry::bind_navigation_grant(
-                    graph,
-                    "sibling-owner",
-                    "anchor-a",
-                )
-                .unwrap();
-            });
+            seed::seed_cycles(bootstrap_phase, graph);
             if isolated_cycle {
                 seed::seed_isolated_cycle(bootstrap_phase, graph);
             }

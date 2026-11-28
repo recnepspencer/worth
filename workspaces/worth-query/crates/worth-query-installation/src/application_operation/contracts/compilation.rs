@@ -47,7 +47,6 @@ impl WorthQueryCompiledApplicationOperationContracts {
             graph_mutation_count,
             signing_lifecycle,
             invariant_invocations,
-            model_ownership,
         ) = compilation.into_parts();
         ability_requirements.sort();
         ability_requirements.dedup();
@@ -55,11 +54,8 @@ impl WorthQueryCompiledApplicationOperationContracts {
             .exact_fact_count(ability_requirements.len())
             .checked_add(additional_authorization_fact_count)
             .ok_or(())?;
-        let (effects, invariants, mut invariant_execution) =
+        let (effects, invariants, invariant_execution) =
             mutation_contracts(graph_mutation_count, &invariant_invocations)?;
-        if model_ownership {
-            invariant_execution.require_model_ownership();
-        }
         let overlap_index = WorthQueryOperationReadTouchOverlapIndex::new(
             graph_reads.roles().to_vec(),
             signing_lifecycle.publication_touches.scopes().to_vec(),

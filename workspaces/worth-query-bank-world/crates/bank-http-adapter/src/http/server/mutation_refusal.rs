@@ -37,7 +37,6 @@ pub(super) fn close_denial(cause: WorthQueryOperationCloseDenial) -> BankHttpDen
         | WorthQueryOperationCloseDenial::ManagedCleanup(_)
         | WorthQueryOperationCloseDenial::CleanupCapacity
         | WorthQueryOperationCloseDenial::NativeObligationRetained
-        | WorthQueryOperationCloseDenial::HistoryGroup(_)
         | WorthQueryOperationCloseDenial::OutputRead(_)
         | WorthQueryOperationCloseDenial::Outputs(_)
         | WorthQueryOperationCloseDenial::Recovery(_)

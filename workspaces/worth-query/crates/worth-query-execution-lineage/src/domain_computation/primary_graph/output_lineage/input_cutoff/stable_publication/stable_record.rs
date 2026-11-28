@@ -104,11 +104,10 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             native_prior_checkpoint: None,
             computation_source: selected_row.computation_source,
             performed_origin: Some(performed_origin),
-            historical_selection: None,
             consumed_outputs: verified
                 .verified_consumed
                 .take()
-                .unwrap_or_else(|| selected_row.consumed_outputs_at(self.selected)),
+                .unwrap_or_else(|| std::sync::Arc::clone(&selected_row.consumed_outputs)),
             completed_handler_facts: selected_row
                 .computation_source
                 .is_executed_adoption()

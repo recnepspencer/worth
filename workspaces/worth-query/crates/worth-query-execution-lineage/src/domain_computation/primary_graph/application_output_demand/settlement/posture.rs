@@ -6,5 +6,4 @@ pub enum WorthQueryOutputSettlementPosture {
     StableReused,
     RecoveredPerformed,
     RecoveredStableReused,
-    HistoricallySelected,
 }

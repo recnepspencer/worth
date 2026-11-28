@@ -27,7 +27,7 @@ impl AcceptedCurrentCandidate {
         }
         match ConsumedOutputEvidence::verify_many_with_admission(
             request_execution,
-            &self.selected.recorded().consumed_outputs_at(selected),
+            &std::sync::Arc::clone(&self.selected.recorded().consumed_outputs),
             owner,
             runtime,
             snapshot,

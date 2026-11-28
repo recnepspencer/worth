@@ -17,9 +17,6 @@ pub fn prepare_authorized<'owner, Schema, Binding>(
         '_,
         Schema,
     >,
-    control: Option<
-        &crate::domain_computation::primary_graph::SharedSelectedProductOperation<'_, Schema>,
-    >,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
@@ -48,7 +45,7 @@ pub fn prepare_authorized<'owner, Schema, Binding>(
     input: <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Input,
     matched_predecessors: Option<super::super::super::demand::MatchedRequiredPredecessors<'_>>,
     successor_of: Option<[u8; 32]>,
-    commit_authority: ProducerInvocationAuthority<'owner>,
+    commit_authority: worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     edition: super::super::super::InstalledProducerEdition,
     producer_contacts: &mut usize,
 ) -> Result<super::super::prepared_plan::ProducerExecutionPlan<'owner>, ProducerExecutionStop>
@@ -62,7 +59,7 @@ where
         >,
 {
     let selected = shared.selected();
-    require_selected_program(selected, commit_authority.mode())?;
+    require_selected_program(selected, &commit_authority)?;
 
     let application_identity = crate::domain_computation::execution_observation::is_installed().then(|| {
         crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementIdentityForTest::Producer {
@@ -89,7 +86,7 @@ where
             key,
             input,
             edition,
-            commit_authority.mode().clone(),
+            commit_authority.clone(),
         )?;
     let identities = owned_identities.borrow();
     if let Some(adoption) =
@@ -207,17 +204,8 @@ where
     let producer_request = admission.retain_admitted_request();
     let producer_principal = admission.operation_scope_binding().principal();
     let source_query =
-        crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::new(
-            runtime,
-            shared,
-            control,
-            commit_authority.history_control(),
-            external_principal,
-            request_scope,
-        )
-        .map_err(super::super::denial::request_admission_rejected)?;
-    let source_query = if commit_authority.history_control().is_none()
-        && (Binding::PREDECESSOR_READS.is_some() || Binding::ORIGINAL_READS.is_some())
+        crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::ordinary(runtime, shared, external_principal, request_scope);
+    let source_query = if Binding::PREDECESSOR_READS.is_some() || Binding::ORIGINAL_READS.is_some()
     {
         source_query.with_current_control(
             crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControl::new(
@@ -302,13 +290,12 @@ where
             Ok(completed.into_parts().0)
                 },
             )?;
-            let outcome = match commit_authority.mode() {
+            let outcome = match &commit_authority {
                 WorthQueryProducerCommitAuthority::Ordinary => runtime
-                    .compare_and_commit_application_in_advancement_with_history(
+                    .compare_and_commit_application_in_advancement(
                         phase,
                         program,
                         idempotency,
-                        commit_authority.history_control(),
                         crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                     ),
                 WorthQueryProducerCommitAuthority::ProgramOutput => runtime
@@ -318,7 +305,6 @@ where
                         program,
                         idempotency,
                         None,
-                        commit_authority.history_control(),
                     ),
                 WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision } => {
                     runtime.compare_and_commit_application_for_program_output_producer(
@@ -327,7 +313,6 @@ where
                         program,
                         idempotency,
                         Some((identity, revision)),
-                        commit_authority.history_control(),
                     )
                 }
             };

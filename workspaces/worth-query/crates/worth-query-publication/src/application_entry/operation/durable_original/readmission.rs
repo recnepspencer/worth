@@ -191,7 +191,7 @@ where
                     preconditions: recorded.preconditions,
                     source: None,
                     branch: request.branch,
-                    history: None,
+
                     producer_round_limits:
                         crate::application_entry::ApplicationProducerRoundLimits::new(
                             route, attempt,

@@ -17,7 +17,7 @@ where
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &WorthQueryRequestScope,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        invocation: &ProducerInvocationAuthority<'_>,
+        invocation: &worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let execution = phase
             .execution_request_for(&runtime.runtime.product_runtime)
@@ -27,9 +27,6 @@ where
                     "required-checkpoint-phase",
                 )
             })?;
-        self.authorize_source_in_current_invocation(
-            &execution, runtime, principal, request, invocation,
-        )?;
         let demand = self
             .demand
             .as_mut()

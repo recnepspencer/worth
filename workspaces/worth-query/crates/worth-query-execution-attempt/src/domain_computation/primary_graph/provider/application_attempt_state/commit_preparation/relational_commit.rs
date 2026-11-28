@@ -27,7 +27,6 @@ pub(super) fn commit_owner_validated(
     execution: worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     prepared: WorthQueryPreparedApplicationCommit,
-    history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     crate::domain_computation::WorthQueryProviderCommitCompletion,
@@ -39,7 +38,7 @@ pub(super) fn commit_owner_validated(
         provider,
         prepared,
         WorthQueryCommitProgressionMint::witness(),
-        history,
+
         allocation_policy,
     )
     .map_err(|stop| {

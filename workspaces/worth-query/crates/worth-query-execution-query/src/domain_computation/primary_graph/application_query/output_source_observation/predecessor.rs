@@ -15,7 +15,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
         if let Some(cause) = self.observation_refused.borrow().as_ref() {
             return Err(cause.clone());
         }
-        self.confirm_control(
+        self.confirm_current_control(
             execution,
             &mut ApplicationQueryNativeAccess::Borrowed(native),
             (),
@@ -112,11 +112,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
             .installed_packages()
             .validate_application_operation(&installed)
             .map_err(Denial::Installation)?;
-        let current = self
-            .history
-            .as_ref()
-            .map_or(self.shared, |control| control.current)
-            .selected();
+        let current = self.shared.selected();
         let authorization = self
             .read_authorization
             .as_ref()
@@ -156,11 +152,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
         Denial,
     > {
         self.observation_control(execution, native)?;
-        let current = self
-            .history
-            .as_ref()
-            .map_or(self.shared, |control| control.current)
-            .selected();
+        let current = self.shared.selected();
         let authorization = self
             .read_authorization
             .as_ref()
@@ -237,7 +229,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
 
 /// Each origin Native defines is decided here, with no wildcard: a new origin
 /// fails to compile until someone decides it (CP2b slice 4, review condition
-/// 7). HistoricalSelection is courted (`owned_outputs/predecessor/origin_kind.rs`).
+/// 7).
 /// AuthoredRestoration as a data posture is not courted in Query: no public
 /// fixture republishes a predecessor-reading producer's output by authored
 /// restoration (the fixture's predecessor family is Model-rooted; Model retire

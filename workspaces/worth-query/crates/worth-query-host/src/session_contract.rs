@@ -1,17 +1,14 @@
 //! Compile-time contract doctests for [`WorthQueryHostSession`],
 //! [`WorthQueryTypedLiveSubscription`], [`WorthQueryPreviewFork`],
-//! [`WorthQueryCorrectionEntry`], and `'static` owned history documents.
+//! [`WorthQueryCorrectionEntry`].
 //!
-//! Persisted correction entries, open dispositions, close denials, and owned
-//! history documents satisfy strict `'static` and thread-safety / unwind-safety
-//! contracts so desktop apps can hold them directly in UI state:
+//! Persisted correction entries, open dispositions, and close denials satisfy
+//! the thread-safety and unwind-safety contracts for desktop UI state.
 //!
 //! ```
 //! use std::panic::{RefUnwindSafe, UnwindSafe};
 //! use worth_query_host::facade::{
-//!     application_entry::WorthQueryOwnedApplicationHistoryDocument,
 //!     declaration::{
-//!         application_history::ApplicationHistoryBinding,
 //!         application_program::ApplicationProgramDefinition,
 //!     },
 //!     domain::ApplicationSchema,
@@ -27,15 +24,6 @@
 //! assert!(DEFAULT_HOST_EXECUTION_WORK_CEILING > 0);
 //! assert!(DEFAULT_HOST_EXECUTION_WORK_CEILING < u64::MAX);
 //! let _ = DEFAULT_HOST_EXECUTION_POLICY;
-//!
-//! fn assert_owned_history_is_static<S, H>()
-//! where
-//!     S: ApplicationSchema + 'static,
-//!     H: ApplicationHistoryBinding<S> + 'static,
-//! {
-//!     fn requires_static<T: 'static>() {}
-//!     requires_static::<WorthQueryOwnedApplicationHistoryDocument<S, H>>();
-//! }
 //!
 //! fn session_can_borrow_or_own_principal<'home, S, P>(
 //!     home: &'home WorthQueryApplicationHome<S, P>,

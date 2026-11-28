@@ -19,7 +19,6 @@ pub(super) fn query_posture(
 ) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryApplicationRequestQueryDenial as Denial;
     match denial {
-        Denial::HistoryOutput(cause) => super::history_read_posture(cause),
         Denial::ExecutionRequest(cause) => {
             if cause.is_transient() {
                 WorthQueryRequiredOutputRecoveryPosture::Retryable
@@ -211,10 +210,6 @@ fn admission_posture(kind: AdmissionKind) -> WorthQueryRequiredOutputRecoveryPos
         | AdmissionKind::ForeignScope
         | AdmissionKind::StalePrincipal
         | AdmissionKind::StaleScope
-        | AdmissionKind::HistoricalSourceNotLive { .. }
-        | AdmissionKind::HistoricalSourceKindMismatch { .. }
-        | AdmissionKind::HistoricalSourceOutsideDomain { .. }
-        | AdmissionKind::HistoricalSourceOwnershipUnavailable { .. }
         | AdmissionKind::ScopeTypeMismatch
         | AdmissionKind::BasisUnsupported
         | AdmissionKind::ForeignBasis

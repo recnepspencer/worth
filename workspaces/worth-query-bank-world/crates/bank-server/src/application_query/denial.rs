@@ -77,9 +77,6 @@ where
 
 #[derive(Debug)]
 pub enum BankApplicationQueryDenial {
-    HistoryOutput(
-        Box<worth_query_host::facade::application_entry::WorthQueryHistoryOutputReadDenial>,
-    ),
     ExecutionRequest(
         worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
@@ -169,9 +166,6 @@ impl BankApplicationQueryDenial {
     /// Projects an ordinary or correction-disclosure query through the same Bank causes.
     pub fn from_request_query(denial: WorthQueryApplicationRequestQueryDenial) -> Self {
         match denial {
-            WorthQueryApplicationRequestQueryDenial::HistoryOutput(cause) => {
-                Self::HistoryOutput(Box::new(cause))
-            }
             WorthQueryApplicationRequestQueryDenial::ExecutionRequest(cause) => {
                 Self::from_execution_request(cause)
             }

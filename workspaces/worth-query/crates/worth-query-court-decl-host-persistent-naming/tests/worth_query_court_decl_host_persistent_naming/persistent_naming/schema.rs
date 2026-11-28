@@ -40,7 +40,6 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
         ApplicationSchemaContributionIdentity::new("owned-model.contribution.v1");
     type Members = (
         Storage,
-        navigation::grant::GrantStorage,
         Actor,
         Registrations,
     );
@@ -155,27 +154,8 @@ fn declare(
     super::groups::source_currentness::declare(invariant_names::declare(
         coupled::producer::declare(retarget::declare(stored::declare(named_read::declare(
             outputs::sculpt::declare(refusals::declare(probe::declare(delete::declare(
-                query::member::declare(query::model::declare(edit::declare(navigation::declare(
-                    schema,
-                )))),
+                query::member::declare(query::model::declare(edit::declare(schema))),
             )))),
         )))),
     ))
-    .application_history(
-        ApplicationHistoryDefinition::<Schema, History>::for_binding(
-            ApplicationQueryDisclosureContract::public(),
-        )
-        .model_domain(ApplicationHistoryModelDomain::OwnedModelGraph)
-        .navigation::<navigation::Navigation>()
-        .owns(ModelMember::reference())
-        .owns(Child::reference())
-        .operation::<edit::model::Binding>("Edit model")
-        .operation::<delete::Binding>("Delete member")
-        .operation::<probe::Binding>("Probe names")
-        .operation::<outputs::sculpt::Binding>("Sculpt members")
-        .operation::<stored::Binding>("Hold name")
-        .operation::<retarget::Binding>("Retarget name")
-        .operation::<coupled::producer::shape::Binding>("Shape pieces")
-        .owned_operation::<edit::member::Binding>("Edit member"),
-    )
 }
