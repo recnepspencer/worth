@@ -142,7 +142,7 @@ pub fn context() -> (
         .with_host_advancement(|phase| {
             let phase_custody = phase.test_host_request_for_test();
             let borrowed_execution = phase
-                .execution_request_for_for_test(world.application.product_runtime())
+                .checked_execution_request_for(world.application.product_runtime())
                 .expect("the context lends its installed phase");
             let execution = &borrowed_execution;
             let principal = world

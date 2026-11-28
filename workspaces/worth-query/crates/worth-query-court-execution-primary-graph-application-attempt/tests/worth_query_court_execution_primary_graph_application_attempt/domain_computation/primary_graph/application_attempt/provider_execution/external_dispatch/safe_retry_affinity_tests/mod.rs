@@ -14,7 +14,6 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryExternalDis
 pub use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
 pub use worth_query_execution::facade::domain_computation::WorthQueryExternalTransportOutcome;
 pub use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandle;
-pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::application_aftermath::recovery_handle::binding::WorthQueryRecoveryHandleBindingAxisProbe;
 pub use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenial;
 pub use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind;
 pub use worth_query_execution::facade::domain_computation::safe_retry_recovery_handle;
@@ -222,36 +221,37 @@ fn redispatch_without_an_installed_transport_names_the_missing_transport() {
 }
 
 #[test]
-fn safe_retry_denies_when_the_handle_carries_no_co_committed_outbox() {
-    let (world, _receipt, source, admission) = real_handle(213, "notify-death-source");
+fn redispatch_denies_when_the_handle_carries_no_co_committed_outbox() {
+    use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::{
+        application_attempt::recovery_custody::recorded_inverse::outboxless_handle,
+        fixture::world_installation::installed_authorization_world,
+    };
+
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let transport = Arc::new(CompletingTransport(AtomicUsize::new(0)));
     world
         .application
-        .install_external_effect_transport(Arc::new(CompletingTransport(AtomicUsize::new(0))))
+        .install_external_effect_transport(transport.clone())
         .unwrap();
-    let source_authority = authority(&world, &source, &admission);
-    let redispatch = performed_redispatch(&world, &source, &source_authority, &admission);
-    drop(source);
-    let outboxless = WorthQueryRecoveryHandle::axis_probe_for_test(
-        WorthQueryRecoveryHandleBindingAxisProbe::real()
-            .without_dispatch_outbox()
-            .finish(),
-    );
-    let authority = WorthQueryRecoveryEffectAuthority::mint_for_test(
-        outboxless.runtime_authority_for_test(),
-        outboxless.authority_identity_for_test(),
-        &outboxless,
-    );
-    let denied = world
+    let (handle, admission) = outboxless_handle(&world);
+    let authority = world
+        .application
+        .admit_recovery_effect_authority(&handle, &admission)
+        .unwrap();
+    let denial = world
         .application
         .with_host_advancement(|phase| {
-            safe_retry_recovery_handle(&phase, outboxless, &authority, redispatch)
+            world.application.redispatch_admitted_external_effect(
+                &phase, &handle, &authority, &admission,
+            )
         })
         .unwrap()
-        .expect_err("no bound outbox means no proof can match");
-    assert_eq!(
-        denied.kind(),
-        WorthQueryRecoveryHandleDenialKind::CorrelationMismatch
-    );
+        .expect_err("a recovery handle without an outbox cannot obtain a redispatch proof");
+    assert_eq!(denial, WorthQueryExternalRedispatchDenial::BindingOutboxMissing);
+    assert_eq!(transport.0.load(Ordering::Acquire), 0);
 }
 /// Fresh effect authority, the admitted request, and the admission's owner are
 /// separate checks, and each refusal names its own cause.

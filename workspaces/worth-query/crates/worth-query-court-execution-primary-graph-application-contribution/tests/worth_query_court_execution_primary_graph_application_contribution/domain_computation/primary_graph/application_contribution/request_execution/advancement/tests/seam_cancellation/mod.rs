@@ -150,7 +150,7 @@ fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
             .application
             .with_application_advancement(&scope, |phase| {
                 let request = phase
-                    .execution_request_for_for_test(
+                    .checked_execution_request_for(
                         (*world.application.runtime_for_test()).product_runtime_for_test(),
                     )
                     .unwrap();
@@ -175,7 +175,7 @@ fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
                 .with_application_advancement(&scope, |phase| {
                     observation.read_planned_packet(
                         phase
-                            .execution_request_for_for_test(
+                            .checked_execution_request_for(
                                 (*world.application.runtime_for_test()).product_runtime_for_test(),
                             )
                             .unwrap(),
@@ -259,7 +259,7 @@ fn cancellation_during_signal_evaluation_remains_cancellation_in_the_advancement
                             Ok(AspectVersion::zero().with(Aspect::new(0), 9))
                         },
                         phase
-                            .execution_request_for_for_test(
+                            .checked_execution_request_for(
                                 (*world.application.runtime_for_test()).product_runtime_for_test(),
                             )
                             .unwrap(),

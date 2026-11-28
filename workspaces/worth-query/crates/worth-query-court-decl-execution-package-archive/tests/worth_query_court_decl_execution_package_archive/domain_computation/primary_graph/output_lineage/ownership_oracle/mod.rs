@@ -1,5 +1,6 @@
 //! Active native ownership court after the real MODE2 Query publication.
 
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::base_model::TopologyModelBinding;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::output_contract::PlanarAnchorOutput;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::output_contract::PlanarCreatedOutputs;
@@ -116,7 +117,7 @@ pub(in crate::domain_computation::primary_graph) fn with_genuine_native_observat
     let report = |request| {
         runtime
             .runtime_for_test()
-            .bridge_for_test()
+            .bridge_ref()
             .assemble_native_causal_report(request)
     };
     inspect(&report, observation)

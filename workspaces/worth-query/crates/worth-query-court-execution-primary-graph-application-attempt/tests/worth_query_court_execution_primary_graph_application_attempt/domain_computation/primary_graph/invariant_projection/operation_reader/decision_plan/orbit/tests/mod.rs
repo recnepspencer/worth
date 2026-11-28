@@ -29,7 +29,7 @@ fn failure_of_second_orbit_registration_vetoes_the_partial_pair() {
     let (earlier, _snapshot, _) = completed.into_parts();
     world.application.with_host_advancement(|phase| {
         let host = phase.test_host_request_for_test();
-        let execution = host.execution_request_for_for_test(world.application.product_runtime()).unwrap();
+        let execution = host.execution_request_for(world.application.product_runtime()).unwrap();
         let (admission,_) = authorize(&world, &phase, &execution, &request, 0, ReplaceNext::reference());
         let (_, projection, _) = world.invariant.project_admitted_operation(&phase, &admission, |reader, root| {
             assert!(!earlier.walk().issued_at_for_test(&(*(*reader.reader_for_test()).native_for_test()).origin_for_test((*reader.reader_for_test()).snapshot_for_test()), *(*reader.reader_for_test()).authority_identity_for_test()));

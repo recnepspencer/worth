@@ -169,5 +169,3 @@ pub fn ensure_same_runtime(
     }
     Ok(())
 }
-
-mod court_doors_for_test;

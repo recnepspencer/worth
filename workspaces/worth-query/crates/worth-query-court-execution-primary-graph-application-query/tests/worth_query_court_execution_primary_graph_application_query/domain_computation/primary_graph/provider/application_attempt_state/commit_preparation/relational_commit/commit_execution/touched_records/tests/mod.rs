@@ -265,7 +265,7 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
             .with_application_advancement(&live_scope(), |phase| {
                 publication.execute_for_test(
                     phase
-                        .execution_request_for_for_test(world.application.product_runtime())
+                        .checked_execution_request_for(world.application.product_runtime())
                         .unwrap(),
                 )
             })

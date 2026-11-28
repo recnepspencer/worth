@@ -85,7 +85,7 @@ impl InboundWorld {
             .with_application_advancement(request, |phase| {
                 let phase_custody = &phase;
                 let execution = &phase
-                    .execution_request_for_for_test(self.application.product_runtime())
+                    .checked_execution_request_for(self.application.product_runtime())
                     .expect("fixture phase belongs to its application");
                 let branch = self.application.current_world();
                 let identity = self
@@ -236,7 +236,7 @@ impl InboundWorld {
             .with_application_advancement(request, |phase| {
                 let phase_custody = &phase;
                 let execution = &phase
-                    .execution_request_for_for_test(self.application.product_runtime())
+                    .checked_execution_request_for(self.application.product_runtime())
                     .expect("fixture phase belongs to its application");
                 let identity = self
                     .application

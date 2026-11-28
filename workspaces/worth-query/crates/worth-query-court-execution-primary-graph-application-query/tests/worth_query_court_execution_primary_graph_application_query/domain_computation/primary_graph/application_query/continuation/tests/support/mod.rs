@@ -68,7 +68,7 @@ impl ContinuationTestContext {
             .with_host_advancement(|phase| {
                 let phase_custody = &phase;
                 let borrowed_execution = phase
-                    .execution_request_for_for_test(world.application.product_runtime())
+                    .checked_execution_request_for(world.application.product_runtime())
                     .expect("the installed fixture lends its own phase");
                 let execution = &borrowed_execution;
                 let principal = world

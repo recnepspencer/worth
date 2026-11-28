@@ -50,14 +50,6 @@ impl WorthQueryApplicationRuntimeCore {
     }
 }
 
-impl WorthQueryApplicationRuntimeCore {
-    #[doc(hidden)]
-    pub fn bridge_for_test(
-        &self,
-    ) -> &super::super::super::managed_bridge::WorthQueryInstalledApplicationBridge {
-        &self.bridge
-    }
-}
 
 impl WorthQueryApplicationRuntimeCore {
     #[doc(hidden)]

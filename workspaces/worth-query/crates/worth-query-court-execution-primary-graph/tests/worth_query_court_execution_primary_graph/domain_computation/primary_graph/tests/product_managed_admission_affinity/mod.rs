@@ -1,3 +1,4 @@
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use std::collections::BTreeMap;
 
 use worth_query_admission::facade::resource_admission::WorthQueryAdmittedWorkflowResourcePlan;
@@ -38,7 +39,7 @@ fn direct_admission_rejects_a_same_relational_different_signal_product() {
         .execution_for_test()
         .start_direct_resource_attempt(&operation, plan)
         .expect("the exact operation should reserve its resource attempt");
-    let bridge = (*(*world.application.runtime_for_test()).bridge_for_test())
+    let bridge = (*(*world.application.runtime_for_test()).bridge_ref())
         .ordinary_for_test()
         .fork_managed_request_lane();
 
@@ -101,7 +102,7 @@ fn workflow_admission_rejects_a_same_relational_different_signal_product() {
         .execution_for_test()
         .start_workflow_resource_attempt(&operation, resources)
         .expect("the exact workflow should reserve its resource attempts");
-    let bridge = (*(*world.application.runtime_for_test()).bridge_for_test())
+    let bridge = (*(*world.application.runtime_for_test()).bridge_ref())
         .ordinary_for_test()
         .fork_managed_request_lane();
 

@@ -1,4 +1,5 @@
 //! A real World authority mismatch stops delivery without freezing its peers.
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint as Checkpoint;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery as Delivery;
 use worth_query_execution::facade::product::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind as DeliveryDenialKind;
@@ -71,7 +72,7 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
     // Bridge owner. The foreign Product root must refuse before either the
     // lowering's admission or its compute can obscure the ownership mismatch.
     let mut builder = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
-        (*(*world.application.runtime_for_test()).bridge_for_test())
+        (*(*world.application.runtime_for_test()).bridge_ref())
             .ordinary_for_test()
             .clone(),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),

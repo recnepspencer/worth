@@ -229,36 +229,6 @@ impl WorthQueryRecoveryHandle {
         debug_assert_eq!(receipt.terminal(), &terminal);
         Ok(self.binding.clone())
     }
-
-    /// Named fixture handle for resolve binding proofs. Not production.
-    pub(crate) fn axis_probe(binding: WorthQueryRecoveryHandleBinding) -> Self {
-        let registry = Arc::new(WorthQueryRecoveryHandleRegistry::new());
-        Self::axis_probe_in_registry(binding, registry)
-    }
-
-    pub(crate) fn axis_probe_in_registry(
-        binding: WorthQueryRecoveryHandleBinding,
-        registry: Arc<WorthQueryRecoveryHandleRegistry>,
-    ) -> Self {
-        use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
-
-        use super::identity::WorthQueryRecoveryHandleIdentity;
-
-        let slot = registry.register_axis_probe();
-        Self::new(
-            WorthQueryRecoveryHandleIdentity::mint(),
-            slot,
-            registry,
-            binding,
-            WorthQueryCanonicalWorkPhases::new(
-                WorthQueryCanonicalWorkEvidence::zero(),
-                WorthQueryCanonicalWorkEvidence::zero(),
-                WorthQueryCanonicalWorkEvidence::zero(),
-                WorthQueryCanonicalWorkEvidence::zero(),
-                WorthQueryCanonicalWorkEvidence::zero(),
-            ),
-        )
-    }
 }
 
 /// Denial gives the handle back to the commit (Q8.21-L11).

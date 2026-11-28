@@ -107,7 +107,7 @@ pub fn observe<Schema: BirthSchema>(
         .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap();
     let execution = phase
-        .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
+        .checked_execution_request_for((*runtime.runtime_for_test()).product_runtime_for_test())
         .unwrap();
     assert_eq!(locator.aspect().authority(), LocatorAuthority::Planned);
     let (effect, native_locator) = run_retained_stage(&execution, &mut None, |context, _| {

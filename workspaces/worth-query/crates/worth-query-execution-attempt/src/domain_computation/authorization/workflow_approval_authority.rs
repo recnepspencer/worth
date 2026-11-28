@@ -300,5 +300,3 @@ impl WorthQueryWorkflowApprovalAuthorityBasis {
         self.data.expiry
     }
 }
-
-pub mod court_doors_for_test;

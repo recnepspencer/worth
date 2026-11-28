@@ -17,7 +17,7 @@ pub fn owner_path_fixture() -> (
             let phase_custody = &phase.test_host_request_for_test();
 
             let borrowed_execution = phase
-                .execution_request_for_for_test(
+                .checked_execution_request_for(
                     (*world.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .expect("fixture borrows its runtime request");
@@ -90,7 +90,7 @@ pub fn owner_path_fixture() -> (
         .application
         .with_host_advancement(|phase| {
             let borrowed_execution = phase
-                .execution_request_for_for_test(
+                .checked_execution_request_for(
                     (*world.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .expect("fixture borrows its runtime request");

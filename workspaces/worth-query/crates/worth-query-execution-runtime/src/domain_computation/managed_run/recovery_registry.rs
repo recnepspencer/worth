@@ -133,16 +133,6 @@ impl WorthQueryRecoveryHandleRegistry {
         }
     }
 
-    /// Test fixture registry with a freshly minted runtime authority identity.
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
-        Self::for_runtime(
-            WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
-            Arc::new(WorthQueryRuntimeClock::system()),
-            std::sync::Weak::<VacantRecoveryDispatchJournal>::new(),
-        )
-    }
-
     /// Runtime authority identity this registry belongs to (Q8.20).
     pub fn runtime_authority(&self) -> WorthQueryRuntimeAuthorityIdentity {
         self.runtime_authority
@@ -222,15 +212,6 @@ impl WorthQueryRecoveryHandleRegistry {
                 });
         }
         true
-    }
-
-    /// Register an unclaimed slot for owner-level lifecycle fixtures.
-    pub(crate) fn register_axis_probe(&self) -> WorthQueryRecoveryRegistrySlot {
-        let mut state = self.state.lock().expect("recovery registry lock");
-        let slot = WorthQueryRecoveryRegistrySlot(state.next_slot);
-        state.next_slot = state.next_slot.saturating_add(1);
-        state.live.insert(slot, ());
-        slot
     }
 
     /// Liveness of a slot the asker already holds.
@@ -324,34 +305,6 @@ mod recorded_observation;
 mod durable;
 pub use durable::DeferredRecoveryDisposition;
 
-struct VacantRecoveryDispatchJournal;
-
-impl crate::ports::RecoveryDispatchJournalPort for VacantRecoveryDispatchJournal {
-    fn dispose_recovery_claim(
-        &self,
-        _original: &worth_foundational::facade::DurableCompositeCommitIdentity,
-        _identity: worth_foundational::facade::DurableRecoveryClaimIdentity,
-        _terminal: worth_foundational::facade::RecoveryClaimDisposition,
-        _request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), worth_query_execution_contracts::facade::QueryDispatchJournalDenial> {
-        unreachable!("vacant weak recovery dispatch journal is never upgraded")
-    }
-
-    fn recorded_recovery_claim(
-        &self,
-        _original: &worth_foundational::facade::DurableCompositeCommitIdentity,
-    ) -> Result<
-        Option<worth_query_execution_contracts::facade::QueryRecordedRecoveryClaim>,
-        worth_query_execution_contracts::facade::QueryDispatchJournalDenial,
-    > {
-        unreachable!("vacant weak recovery dispatch journal is never upgraded")
-    }
-
-    fn as_any(&self) -> &(dyn std::any::Any + Send + Sync) {
-        self
-    }
-}
-
 /// Crate-boundary port for owner-checked recovery terminal recording.
 /// Never exported on `worth-query-execution::facade` or Host.
 pub trait RecoveryHandleRegistryInternalPort {
@@ -360,8 +313,6 @@ pub trait RecoveryHandleRegistryInternalPort {
         slot: WorthQueryRecoveryRegistrySlot,
         terminal: RecoveryClaimDisposition,
     ) -> bool;
-
-    fn register_axis_probe(&self) -> WorthQueryRecoveryRegistrySlot;
 }
 
 impl RecoveryHandleRegistryInternalPort for WorthQueryRecoveryHandleRegistry {
@@ -371,9 +322,5 @@ impl RecoveryHandleRegistryInternalPort for WorthQueryRecoveryHandleRegistry {
         terminal: RecoveryClaimDisposition,
     ) -> bool {
         Self::mark_terminal(self, slot, terminal)
-    }
-
-    fn register_axis_probe(&self) -> WorthQueryRecoveryRegistrySlot {
-        Self::register_axis_probe(self)
     }
 }

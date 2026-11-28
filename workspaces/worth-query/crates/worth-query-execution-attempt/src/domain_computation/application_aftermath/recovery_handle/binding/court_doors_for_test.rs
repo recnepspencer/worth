@@ -135,12 +135,6 @@ impl WorthQueryRecoveryHandleBinding {
     }
 }
 
-impl WorthQueryRecoveryHandleBinding {
-    #[doc(hidden)]
-    pub fn principal_scope_mut_for_test(&mut self) -> &mut WorthQueryOperationScopeBinding {
-        &mut self.principal_scope
-    }
-}
 
 impl WorthQueryRecoveryHandleBinding {
     #[doc(hidden)]

@@ -22,7 +22,7 @@ pub fn run(
         .with_host_advancement(|phase| {
             let host = phase.test_host_request_for_test();
             let execution = host
-                .execution_request_for_for_test(world.application.product_runtime())
+                .execution_request_for(world.application.product_runtime())
                 .unwrap();
             authorize(
                 world,

@@ -6,7 +6,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::application
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleBinding;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::application_aftermath::recovery_handle::binding::WorthQueryRecoveryHandleBindingAxisProbe;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind;
-use worth_query_execution::facade::domain_computation::WorthQueryOperationScopeBinding;
 
 pub fn assert_axis_drift(
     kind: WorthQueryRecoveryHandleDenialKind,
@@ -96,23 +95,71 @@ fn governed_input_mismatch_drift_denies_distinctly() {
 
 #[test]
 fn foreign_principal_drift_denies_distinctly() {
-    assert_axis_drift(
-        WorthQueryRecoveryHandleDenialKind::ForeignPrincipal,
-        |probe, baseline| {
-            let current = baseline.principal_scope();
-            let principal_scope = WorthQueryOperationScopeBinding::axis_probe_scope_for_test(
-                current.runtime_authority(),
-                current.binding_identity().clone(),
-                current.operation_authority_identity(),
-                9,
-                99,
-                2,
-                current.scope().partition_id(),
-                current.scope().local_slot(),
-                current.scope().generation(),
-            );
-            probe.principal_scope(principal_scope)
+    use super::super::fixture::committed_handle;
+    use std::time::Duration;
+    use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
+    use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::{
+        application_attempt::resolved_account,
+        fixture::{
+            ExactStatusRetentionOperation,
+            authorization_world_installation::{
+                AuthorizationWorldSpec, CapabilityGrantPopulation, install_authorization_world,
+            },
+            capability_world_installation::capability_spec,
+            schema_types::live_scope,
         },
+    };
+    let world = install_authorization_world(AuthorizationWorldSpec {
+        owner_bindings: &[("principal-0", "account-1"), ("principal-1", "account-1")],
+        ..capability_spec(2, "primary", CapabilityGrantPopulation::Current)
+    });
+    let (handle, original, _) = committed_handle(&world);
+    world
+        .application
+        .admit_recovery_effect_authority(&handle, &original)
+        .unwrap();
+    let request = live_scope();
+    let external = world.authenticate("bob", Duration::from_secs(60), &request);
+    let operation = world
+        .application
+        .installed_schema()
+        .installed_operation(ExactStatusRetentionOperation::reference())
+        .unwrap();
+    let foreign = world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request_for_test();
+            let selected = world.selected_product(&host);
+            let principal = selected
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            let account = resolved_account(&host, &world, "closed", &request);
+            selected
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .unwrap();
+
+    let denial = world
+        .application
+        .admit_recovery_effect_authority(&handle, &foreign)
+        .unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        WorthQueryRecoveryHandleDenialKind::ForeignPrincipal
     );
 }
 

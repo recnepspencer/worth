@@ -27,6 +27,19 @@ pub fn committed_handle(
     RecoveryAdmission,
     WorthQueryCancellationSource,
 ) {
+    committed_status_handle(world, 181, "open", "closed")
+}
+
+pub fn committed_status_handle(
+    world: &AuthorizationWorld,
+    key: u8,
+    original_status: &str,
+    replacement: &str,
+) -> (
+    WorthQueryRecoveryHandle,
+    RecoveryAdmission,
+    WorthQueryCancellationSource,
+) {
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
         None,
@@ -38,7 +51,12 @@ pub fn committed_handle(
         .with_host_advancement(|phase| {
             (
                 authenticated_principal(&phase.test_host_request_for_test(), world, &request),
-                resolved_account(&phase.test_host_request_for_test(), world, "open", &request),
+                resolved_account(
+                    &phase.test_host_request_for_test(),
+                    world,
+                    original_status,
+                    &request,
+                ),
             )
         })
         .unwrap();
@@ -56,7 +74,7 @@ pub fn committed_handle(
                 &principal,
                 &account,
                 &request,
-                "closed",
+                replacement,
                 crate::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::RetentionMutationBreadth::Narrow,
             );
             let admission = world
@@ -75,7 +93,7 @@ pub fn committed_handle(
         .unwrap();
     let outcome = world.application.compare_and_commit_application(
         program,
-        idempotency(181, 182),
+        idempotency(key, key.wrapping_add(1)),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     );
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
@@ -89,3 +107,5 @@ pub fn committed_handle(
         .unwrap();
     (handle, admission, cancellation)
 }
+
+pub mod recorded_inverse;

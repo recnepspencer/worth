@@ -22,7 +22,7 @@ fn admitted_component_of_and_complete_census_seal_original_native_bodies() {
     let world = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::identity::install();
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     world.application.with_host_advancement(|phase| {
-        let host=phase.test_host_request_for_test();let execution=host.execution_request_for_for_test(world.application.product_runtime()).unwrap();
+        let host=phase.test_host_request_for_test();let execution=host.execution_request_for(world.application.product_runtime()).unwrap();
         let (admission,_)=worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::program::authorize(&world,&phase,&execution,&request,0,CheckComponents::reference());
         let (_,snapshot,_)=world.invariant.project_admitted_operation(&phase,&admission,|reader,root| {
             let component=reader.component_of(Shells::reference(),root).unwrap();
@@ -58,7 +58,7 @@ fn partial_or_foreign_cohorts_refuse_and_swallowed_failures_cannot_seal() {
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     for foreign in [false, true] {
         world.application.with_host_advancement(|phase| {
-            let host=phase.test_host_request_for_test();let execution=host.execution_request_for_for_test(world.application.product_runtime()).unwrap();
+            let host=phase.test_host_request_for_test();let execution=host.execution_request_for(world.application.product_runtime()).unwrap();
             let (admission,_)=worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::program::authorize(&world,&phase,&execution,&request,0,CheckComponents::reference());
             let (_,snapshot,_)=world.invariant.project_admitted_operation(&phase,&admission,|reader,root| {
                 let error=if foreign {let other=reader.resolve_entity(NodeKey::at("NodeKey"),3_u64).unwrap();reader.component_of(Shells::reference(),&other).unwrap_err()} else {reader.component_of(Focused::reference(),root).unwrap_err()};
@@ -114,7 +114,7 @@ fn empty_census_tracks_negative_guard_facts_and_unrelated_edits_remain_current()
         .with_host_advancement(|phase| {
             let host = phase.test_host_request_for_test();
             let execution = host
-                .execution_request_for_for_test(world.application.product_runtime())
+                .execution_request_for(world.application.product_runtime())
                 .unwrap();
             let selected = world
                 .application

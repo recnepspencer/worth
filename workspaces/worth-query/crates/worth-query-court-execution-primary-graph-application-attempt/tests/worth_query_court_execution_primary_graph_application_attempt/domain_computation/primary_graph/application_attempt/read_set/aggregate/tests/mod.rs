@@ -13,7 +13,7 @@ fn aggregate_sealing_keeps_original_bodies_without_granting_relation_write_facts
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     world.application.with_host_advancement(|phase| {
         let host=phase.test_host_request_for_test();
-        let execution=host.execution_request_for_for_test(world.application.product_runtime()).unwrap();
+        let execution=host.execution_request_for(world.application.product_runtime()).unwrap();
         let (admission,root)=authorize(&world,&phase,&execution,&request,0,ReplaceNext::reference());
         let (_,projection,_)=world.invariant.project_admitted_operation(&phase,&admission,|reader,root| {
             reader.decision_orbit(Next::reference(),root).unwrap();
@@ -60,7 +60,7 @@ fn aggregate_descriptors_without_issued_values_cannot_complete() {
         .with_host_advancement(|phase| {
             let host = phase.test_host_request_for_test();
             let execution = host
-                .execution_request_for_for_test(world.application.product_runtime())
+                .execution_request_for(world.application.product_runtime())
                 .unwrap();
             let (admission, _) = authorize(
                 &world,
@@ -192,7 +192,7 @@ fn failed_aggregate_calls_veto_sealing_before_a_key_exists_and_after_success() {
         .with_host_advancement(|phase| {
             let host = phase.test_host_request_for_test();
             let execution = host
-                .execution_request_for_for_test(world.application.product_runtime())
+                .execution_request_for(world.application.product_runtime())
                 .unwrap();
             for succeeded_first in [false, true] {
                 let (admission, _) = authorize(

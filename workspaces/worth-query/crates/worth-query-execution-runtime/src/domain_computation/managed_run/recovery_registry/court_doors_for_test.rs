@@ -33,12 +33,6 @@ impl WorthQueryRecoveryHandleRegistry {
     }
 }
 
-impl WorthQueryRecoveryHandleRegistry {
-    #[doc(hidden)]
-    pub fn new_for_test() -> Self {
-        Self::new()
-    }
-}
 
 impl WorthQueryRecoveryMintClaim {
     #[doc(hidden)]
@@ -47,13 +41,6 @@ impl WorthQueryRecoveryMintClaim {
         product_commit: CompositeCommitIdentity,
     ) -> Self {
         Self::new(provider_runtime_instance_id, product_commit)
-    }
-}
-
-impl WorthQueryRecoveryHandleRegistry {
-    #[doc(hidden)]
-    pub fn register_axis_probe_for_test(&self) -> WorthQueryRecoveryRegistrySlot {
-        Self::register_axis_probe(self)
     }
 }
 

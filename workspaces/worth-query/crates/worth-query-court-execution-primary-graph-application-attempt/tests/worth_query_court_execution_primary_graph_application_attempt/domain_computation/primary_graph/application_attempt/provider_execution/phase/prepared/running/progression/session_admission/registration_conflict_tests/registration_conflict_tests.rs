@@ -103,7 +103,7 @@ pub fn reject_occupied_registration(
         lease.snapshot_for_test(),
         lease.product(),
         phase
-            .execution_request_for_for_test(
+            .checked_execution_request_for(
                 (*world.application.runtime_for_test()).product_runtime_for_test(),
             )
             .expect("fixture issuer")

@@ -23,3 +23,17 @@ fn foreign_schema_member_reports_the_schema_requirement() {
         worth_testkit_compiler::compiled(consumer.join(source)).unwrap();
     }
 }
+
+#[test]
+fn recovery_authority_minting_doors_are_absent() {
+    use worth_query_execution::facade::domain_computation::WorthQueryRecoveryEffectAuthority;
+    use worth_query_execution_runtime::facade::managed_run::WorthQueryRecoveryHandleRegistry;
+
+    // The production types and operations resolve from an external crate.
+    let _ = WorthQueryRecoveryEffectAuthority::ensure_for;
+    let _ = WorthQueryRecoveryHandleRegistry::runtime_authority;
+
+    let tests = trybuild::TestCases::new();
+    tests.compile_fail("tests/ui/recovery_authority/effect_authority_mint.rs");
+    tests.compile_fail("tests/ui/recovery_authority/registry_constructor.rs");
+}

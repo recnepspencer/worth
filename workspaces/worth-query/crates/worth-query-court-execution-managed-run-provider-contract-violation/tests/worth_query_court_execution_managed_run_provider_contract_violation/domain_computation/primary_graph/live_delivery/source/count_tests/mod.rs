@@ -19,7 +19,7 @@ fn subscription_count_exhaustion_refuses_without_panicking() {
     world
         .application
         .with_host_advancement(|phase| {
-            let execution = phase.execution_request_for_for_test(runtime).unwrap();
+            let execution = phase.checked_execution_request_for(runtime).unwrap();
             let pinned = source
                 .open_predicate_for_test(&execution, product.observation_for_test())
                 .unwrap();
