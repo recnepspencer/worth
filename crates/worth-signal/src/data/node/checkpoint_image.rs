@@ -142,66 +142,10 @@ impl CheckpointNodeImage {
         }
     }
 
-    pub(crate) fn runtime_artifact_state(&self) -> Option<&RuntimeArtifactState> {
-        self.runtime_artifact_state.as_ref()
-    }
-
     pub(crate) fn max_checked_result_heap_bytes(&self) -> Option<u64> {
         self.eval_config
             .contract
             .execution
             .max_checked_result_heap_bytes
-    }
-
-    pub(crate) fn runtime_artifact_state_mut(&mut self) -> Option<&mut RuntimeArtifactState> {
-        self.runtime_artifact_state.as_mut()
-    }
-
-    pub(crate) fn retained_artifact(&self) -> Option<&RetainedDiagnosticArtifact> {
-        self.retained_artifact.as_ref()
-    }
-
-    pub(crate) fn causality(&self) -> Option<&CausalityMetadata> {
-        self.causality.as_ref()
-    }
-
-    pub(crate) fn set_dependencies_id(&mut self, dependencies_id: DependencySetId) {
-        self.dependencies_id = dependencies_id;
-    }
-
-    pub(crate) fn set_subscribers_id(&mut self, subscribers_id: SubscriberSetId) {
-        self.subscribers_id = subscribers_id;
-    }
-
-    pub(crate) fn set_dep_snapshot_id(&mut self, dep_snapshot_id: DependencySnapshotId) {
-        self.dep_snapshot_id = dep_snapshot_id;
-    }
-
-    pub(crate) fn clear_dependency_handles_for_adoption(&mut self) {
-        self.dependencies_id = DependencySetId::EMPTY;
-        self.subscribers_id = SubscriberSetId::EMPTY;
-        self.dep_snapshot_id = DependencySnapshotId::EMPTY;
-    }
-
-    pub(crate) fn set_eval_config(&mut self, eval_config: NodeEvaluationConfig) {
-        self.eval_config = eval_config;
-    }
-
-    pub(crate) fn set_runtime_artifact_state(
-        &mut self,
-        runtime_artifact_state: Option<RuntimeArtifactState>,
-    ) {
-        self.runtime_artifact_state = runtime_artifact_state;
-    }
-
-    pub(crate) fn set_retained_artifact(
-        &mut self,
-        retained_artifact: Option<RetainedDiagnosticArtifact>,
-    ) {
-        self.retained_artifact = retained_artifact;
-    }
-
-    pub(crate) fn set_causality(&mut self, causality: Option<CausalityMetadata>) {
-        self.causality = causality;
     }
 }

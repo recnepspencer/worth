@@ -1,6 +1,5 @@
 //! Select the installed read operands before handing off to the read implementation.
-use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::creation::VisibilityProjectionViewOwnerPort as _;
-use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::registered_snapshot_projection::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 use super::*;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 

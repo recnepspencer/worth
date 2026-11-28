@@ -214,56 +214,37 @@ pub(super) fn build_fork_forest(
     }
 
     // Single iterative DFS (`O(V + E)`): Euler tour + nearest live/present/topmost-retired.
-    let mut euler: BTreeMap<BranchId, (u32, u32)> = BTreeMap::new();
     let mut live_anc: BTreeMap<BranchId, (BranchId, CommitId)> = BTreeMap::new();
     let mut present_anc: BTreeMap<BranchId, BranchId> = BTreeMap::new();
     let mut top_retired_anc: BTreeMap<BranchId, BranchId> = BTreeMap::new();
     let mut retired_root: BTreeMap<BranchId, BranchId> = BTreeMap::new();
-    let mut timer = 0u32;
-    let mut stack: Vec<(BranchId, Option<(BranchId, CommitId)>, bool)> = combined_roots
-        .iter()
-        .rev()
-        .map(|r| (r.clone(), None, false))
-        .collect();
-    while let Some((node, parent_edge, exiting)) = stack.pop() {
-        if exiting {
-            if let Some(slot) = euler.get_mut(&node) {
-                slot.1 = timer;
-            }
-            continue;
-        }
-        if euler.contains_key(&node) {
-            continue;
-        }
-        timer += 1;
-        euler.insert(node.clone(), (timer, timer));
-        if let Some((parent, fc)) = parent_edge {
-            if all_branches.contains(&parent) && frozen.branches.contains_key(&parent) {
-                live_anc.insert(node.clone(), (parent.clone(), fc));
-            } else if let Some((anc, min_fc)) = live_anc.get(&parent) {
-                live_anc.insert(node.clone(), (anc.clone(), (*min_fc).min(fc)));
-            }
-            if all_branches.contains(&parent) {
-                present_anc.insert(node.clone(), parent.clone());
-            } else if let Some(anc) = present_anc.get(&parent) {
-                present_anc.insert(node.clone(), anc.clone());
-            }
-            if let Some(ret_root) = retired_root.get(&parent).cloned() {
-                top_retired_anc.insert(node.clone(), ret_root.clone());
-                if !all_branches.contains(&node) {
-                    retired_root.insert(node.clone(), ret_root);
+    let euler =
+        worth_relational_branch::internal_port::history::access::ancestry_walk::ancestry_intervals(
+            &combined_roots,
+            &combined_kids,
+            |node, parent_edge| {
+                if let Some((parent, fc)) = parent_edge {
+                    if all_branches.contains(parent) && frozen.branches.contains_key(parent) {
+                        live_anc.insert(node.clone(), (parent.clone(), fc));
+                    } else if let Some((anc, min_fc)) = live_anc.get(parent) {
+                        live_anc.insert(node.clone(), (anc.clone(), (*min_fc).min(fc)));
+                    }
+                    if all_branches.contains(parent) {
+                        present_anc.insert(node.clone(), parent.clone());
+                    } else if let Some(anc) = present_anc.get(parent) {
+                        present_anc.insert(node.clone(), anc.clone());
+                    }
+                    if let Some(ret_root) = retired_root.get(parent).cloned() {
+                        top_retired_anc.insert(node.clone(), ret_root.clone());
+                        if !all_branches.contains(node) {
+                            retired_root.insert(node.clone(), ret_root);
+                        }
+                    }
+                } else if !all_branches.contains(node) {
+                    retired_root.insert(node.clone(), node.clone());
                 }
-            }
-        } else if !all_branches.contains(&node) {
-            retired_root.insert(node.clone(), node.clone());
-        }
-        stack.push((node.clone(), None, true));
-        if let Some(kids) = combined_kids.get(&node) {
-            for (kid, fc) in kids.iter().rev() {
-                stack.push((kid.clone(), Some((node.clone(), *fc)), false));
-            }
-        }
-    }
+            },
+        );
 
     let mut parent_of = BTreeMap::new();
     let mut fork_cutoff = BTreeMap::new();

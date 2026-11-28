@@ -32,15 +32,15 @@ pub use runtime::{
     ReplayParityProofReport, ReplaySuffixRebuildProof, RequiredDerivedRebuildSet,
     RuntimeExecutionRequest, RuntimeHistory, RuntimeMaterializer, RuntimeObserver,
     RuntimeProofReport, SignalBranchBasis, SignalBranchBasisArtifact, SignalBranchBasisAuthority,
-    SignalBranchBasisCompactExplanation, SignalBranchBasisDenial, SignalBranchBasisIdentity,
-    SignalBranchBasisReady, SignalBranchBasisValidationOutcome, SignalBranchForkDenial,
+    SignalBranchBasisDenial, SignalBranchBasisIdentity,
+    SignalBranchBasisReady, SignalBranchForkDenial,
     SignalBranchForkReceipt, SignalBranchForkRequest, SignalBranchForkRequestBasis,
     SignalBranchHeadPosture, SignalBranchRestorePosture, SignalBranchRetirementBatchDenial,
     SignalBranchRetirementBatchReceipt, SignalBranchRetirementDenial, SignalBranchRetirementReason,
     SignalBranchRetirementReceipt, SignalBranchTransactionHead, SignalObservationAdmissionDenial,
     SignalObservationCompletion, SignalObservationRequest, SignalObservationSession,
     SignalObservationSurface, SignalRuntime, SignalRuntimeBuilder, SignalRuntimeConfig,
-    SignalTransaction, StaleSignalBranchBasisArtifact, TemporalCertificationBuilder,
+    SignalTransaction, TemporalCertificationBuilder,
     TemporalCertificationBundle, TemporalCertificationBundleMismatchClass,
     TemporalCertificationBundleParityReport, TemporalCertificationFailure,
     TemporalCertificationFamily, TemporalCertificationRecord, TemporalCertificationSummary,
@@ -68,3 +68,6 @@ pub use runtime::{
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+pub use runtime::{SignalBranchBasisCompactExplanation, SignalBranchBasisValidationOutcome, StaleSignalBranchBasisArtifact};

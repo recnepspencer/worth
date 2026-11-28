@@ -1,6 +1,5 @@
 //! View input admission pins before lending the prepared field lookup.
 use worth_relational_indexes::internal_port::indexes::access::prepared_entity_field_lookup::PreparedEntityFieldLookupOwnerPort as _;
-use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionViewOwnerPort as _;
 use super::super::prepared_entity_field_lookup::denied;
 use super::{IndexAccess, PreparedEntityFieldLookup};
 use crate::identity::data::KindId;
@@ -11,6 +10,7 @@ use crate::indexes::data::{
 };
 use crate::runtime::VisibilityProjectionView;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 impl IndexAccess<'_> {
     pub fn prepare_entity_field_lookup(
         &self,

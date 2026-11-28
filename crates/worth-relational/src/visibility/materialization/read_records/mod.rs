@@ -1,4 +1,4 @@
-pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::{native_scan_stop, read_footprint, read_prices, read_request, read_work};
+pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::{read_footprint, read_prices, read_request, read_work};
 #[cfg(test)]
 pub(crate) use projection::{
     entity_query_locus_comparison_key, entity_query_locus_value,

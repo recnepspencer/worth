@@ -7,9 +7,8 @@ pub mod residency;
 pub mod retention;
 pub mod snapshot_admission;
 pub mod snapshot_observation;
-pub mod snapshot_release;
+pub use worth_relational_contracts::internal_port::visibility::snapshot_release;
 pub mod snapshot_states;
-pub mod store_correlation_reference;
 
 pub use snapshot_admission::RelationalSnapshotAdmissionDenial;
 pub use snapshot_release::{RelationalSnapshotReleaseDenial, RelationalSnapshotReleaseReceipt};

@@ -1,6 +1,6 @@
 //! Exact current cells and external obligations, retained by the actual capture.
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
-use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis_descriptor_owner::RelationalBranchBasisDescriptorOwnerPort as _;
 pub mod complete;
 use crate::durability::data::DurableBranchRootSchemaImage;
 use crate::durability::data::RelationalCheckpointEmptyComponent;

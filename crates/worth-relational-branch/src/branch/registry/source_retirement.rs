@@ -12,19 +12,11 @@ impl RelationalBranchReferenceRegistry {
         &self,
         index: usize,
     ) -> Result<RelationalSourceRootSlot, RetentionBusy> {
-        let registry = match self.state.try_read() {
-            Ok(state) => state,
-            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(RetentionBusy),
-        };
+        let registry = worth_execution::try_retirement_guard(self.state.try_read(), RetentionBusy)?;
         let Some((_, cell)) = registry.cells.get_index(index) else {
             return Ok(RelationalSourceRootSlot::Complete);
         };
-        let state = match cell.state.try_lock() {
-            Ok(state) => state,
-            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(RetentionBusy),
-        };
+        let state = worth_execution::try_retirement_guard(cell.state.try_lock(), RetentionBusy)?;
         Ok(match &state.root {
             Some(root) => RelationalSourceRootSlot::Root(root.clone()),
             None => RelationalSourceRootSlot::Empty,

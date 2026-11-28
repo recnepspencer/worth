@@ -43,13 +43,13 @@ pub use branching::{
     BranchTargetedTransactionRequest, ExecutedBranchTargetedTransactionReceipt,
     LoweredBranchTargetedTransactionPlan, PlannedSignalBranchRetirement,
     PlannedSignalBranchRetirementBatch, SignalBranchBasis, SignalBranchBasisArtifact,
-    SignalBranchBasisAuthority, SignalBranchBasisCompactExplanation, SignalBranchBasisDenial,
-    SignalBranchBasisIdentity, SignalBranchBasisReady, SignalBranchBasisValidationOutcome,
+    SignalBranchBasisAuthority, SignalBranchBasisDenial,
+    SignalBranchBasisIdentity, SignalBranchBasisReady,
     SignalBranchForkDenial, SignalBranchForkReceipt, SignalBranchForkRequest,
     SignalBranchForkRequestBasis, SignalBranchHeadPosture, SignalBranchRestorePosture,
     SignalBranchRetirementBatchDenial, SignalBranchRetirementBatchReceipt,
     SignalBranchRetirementDenial, SignalBranchRetirementReason, SignalBranchRetirementReceipt,
-    SignalBranchTransactionHead, StaleSignalBranchBasisArtifact,
+    SignalBranchTransactionHead,
     ValidatedBranchTargetedTransactionRequest, SIGNAL_BRANCH_BASIS_SCHEMA_VERSION,
 };
 pub use builder::SignalRuntimeBuilder;
@@ -94,3 +94,6 @@ pub use branching::{
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+pub use branching::{SignalBranchBasisCompactExplanation, SignalBranchBasisValidationOutcome, StaleSignalBranchBasisArtifact};

@@ -9,11 +9,7 @@ use crate::durability::medium::{
 
 impl RelationalRegionResidency {
     fn try_source_state(&self) -> Result<std::sync::MutexGuard<'_, RegionState>, Denial> {
-        match self.state.try_lock() {
-            Ok(state) => Ok(state),
-            Err(std::sync::TryLockError::Poisoned(error)) => Ok(error.into_inner()),
-            Err(std::sync::TryLockError::WouldBlock) => Err(Denial::Busy),
-        }
+        worth_execution::try_retirement_guard(self.state.try_lock(), Denial::Busy)
     }
     pub(in crate::internal_port::storage::residency) fn source_retirement_symbols(
         &self,
@@ -84,11 +80,7 @@ impl RelationalRegionResidency {
                 } else {
                     &self.raw_full
                 };
-                let cached = match cache.try_lock() {
-                    Ok(cached) => cached,
-                    Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-                    Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
-                };
+                let cached = worth_execution::try_retirement_guard(cache.try_lock(), Denial::Busy)?;
                 Ok(match &*cached {
                     Some(Ok(region)) => Some(region.to_arc()),
                     Some(Err(_)) | None => None,

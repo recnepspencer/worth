@@ -1,4 +1,4 @@
-use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::record_projections::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 use crate::runtime::RelationalRuntime;
 use crate::visibility::exact_commit_snapshot::{
     open_retained_commit_snapshot, projection_binding_denial,

@@ -1,6 +1,6 @@
 use super::checkpoint_wire::CheckpointWire;
 use super::manifest_capture::corrupt;
-use super::{CheckpointFormat, DecodedNativeCheckpoint};
+use super::DecodedNativeCheckpoint;
 use contracts::durability::data::recovery_stop::RelationalRecoveryStop;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
@@ -34,7 +34,7 @@ pub(crate) fn decode_manifest_directory(
     ),
     RelationalRecoveryStop,
 > {
-    let (manifest, facts, _) = decode_manifest(execution, bytes)?;
+    let (manifest, facts) = decode_manifest(execution, bytes)?;
     Ok((manifest, facts.history_members))
 }
 
@@ -45,14 +45,13 @@ fn decode_manifest(
     (
         crate::durability::data::RelationalCheckpointManifest,
         super::manifest_validation::ManifestDirectoryFacts,
-        CheckpointFormat,
     ),
     RelationalRecoveryStop,
 > {
     execution
         .check_live()
         .map_err(|stop| RelationalRecoveryStop::Request(stop.into()))?;
-    let (payload, format) = super::checkpoint_payload_with_format(bytes)?;
+    let payload = super::checkpoint_payload(bytes)?;
     let memory =
         crate::durability::checkpoint_history::inventory::prepare_decode(payload, execution)?;
     let mut wire: CheckpointWire<'_, crate::durability::data::RelationalCheckpointManifestDraft> =
@@ -69,7 +68,7 @@ fn decode_manifest(
         contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane::enter_reconstruction(|lane| {
             super::manifest_validation::validate(lane, &manifest)
         })?;
-    Ok((manifest, facts, format))
+    Ok((manifest, facts))
 }
 
 /// Expand an external-members checkpoint into its full image for hostile codec fixtures.
@@ -78,7 +77,7 @@ pub fn decode_expanded_checkpoint(
     bytes: &[u8],
     external: Arc<dyn RelationalDurableColdSource>,
 ) -> Result<DecodedNativeCheckpoint, RelationalRecoveryStop> {
-    let (manifest, facts, _) = decode_manifest(execution, bytes)?;
+    let (manifest, facts) = decode_manifest(execution, bytes)?;
     let checkpoint =
         super::expanded_checkpoint::expand(execution, manifest, external, facts.history_members)?;
     Ok(DecodedNativeCheckpoint { checkpoint })
@@ -90,8 +89,7 @@ fn decode(
     external: Arc<dyn RelationalDurableColdSource>,
     image: Option<crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact>,
 ) -> Result<DecodedNativeCheckpoint, RelationalRecoveryStop> {
-    let (manifest, facts, format) = decode_manifest(execution, bytes)?;
-    let checkpoint =
-        super::cold_checkpoint::readmit(execution, manifest, external, facts, image, format)?;
+    let (manifest, facts) = decode_manifest(execution, bytes)?;
+    let checkpoint = super::cold_checkpoint::readmit(execution, manifest, external, facts, image)?;
     Ok(DecodedNativeCheckpoint { checkpoint })
 }

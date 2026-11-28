@@ -1,6 +1,6 @@
 //! Reconstructed original DATA enters the same stream and commit catalog owners.
 use worth_relational_contracts::internal_port as contracts;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::original_inputs::CanonicalCommitEnvelopeOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
 use super::original_schemas::OriginalSchemaGraph;
 use worth_relational_branch::internal_port::branch::transition::original_inputs::{OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RetainedBranchTransition};
 use contracts::branch::transition::sequence::RelationalBranchTransitionSequence;

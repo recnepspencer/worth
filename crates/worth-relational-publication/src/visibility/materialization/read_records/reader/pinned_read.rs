@@ -1,7 +1,7 @@
 //! Immutable native custody independent of the installed runtime's borrow.
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 use branch::history::retention::selected_snapshot::VisibilitySnapshotBasis;
 use branch::snapshots::data::SnapshotHandle;
-use branch::visibility::materialization::read_records::projection::pinned::VisibilityProjectionViewOwnerPort as _;
 use branch::visibility::snapshot_states::resident_basis::ResidentVisibilitySnapshotBasis;
 use contracts::indexes::data::definition::DerivedIndexDefinition;
 use contracts::indexes::data::definition::DerivedIndexGenerationId;

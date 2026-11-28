@@ -1488,10 +1488,7 @@
     "facade::transactions::UpdateRelationEndpointsIntent",
     "facade::transactions::WorkerIntentBatch",
     "facade::transactions::planned_aspect_field_locator",
-    "facade::transactions::planned_single_field_locator",
-    "facade::visibility",
-    "facade::visibility::RelationalStoreCorrelationReference",
-    "facade::visibility::RelationalStoreCorrelationReferenceKind"
+    "facade::transactions::planned_single_field_locator"
   ],
   "ceilings": {
     "production_explicit": {

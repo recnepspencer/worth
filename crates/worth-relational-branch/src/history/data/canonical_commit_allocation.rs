@@ -128,14 +128,3 @@ fn canonical_nested_bytes<T: serde::Serialize>(value: &T) -> u64 {
 fn vector_capacity_bytes<T>(values: &Vec<T>) -> u64 {
     (values.capacity() as u64).saturating_mul(std::mem::size_of::<T>() as u64)
 }
-
-#[doc(hidden)]
-pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
-    fn allocation_inventory(&self) -> CanonicalCommitEnvelopeAllocationInventory;
-}
-
-impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
-    fn allocation_inventory(&self) -> CanonicalCommitEnvelopeAllocationInventory {
-        self.allocation_inventory()
-    }
-}

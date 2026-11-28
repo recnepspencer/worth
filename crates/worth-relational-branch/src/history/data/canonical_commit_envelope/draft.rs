@@ -120,7 +120,6 @@ impl CanonicalCommitEnvelopeDraft {
         crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultRefusal,
     >{
         let envelope = CanonicalCommitEnvelope {
-            artifact_format: worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat::Ordinary,
             original_inputs: Default::default(),
             live_managed_source_history: Default::default(),
             decoded_bytes: None,

@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::execution::request_or::RequestOr;
 
 use crate::identity::data::{EntityId, KindId};
 use crate::storage::overlay::PartitionAccess;
@@ -101,7 +102,6 @@ impl VisibilityProjectionView {
                 include_audit,
             },
         )?;
-        use super::super::native_scan_stop::NativeScanStop;
         use super::super::read_prices::{EXAMINE_SLOT, RESERVE_RECORD};
         use super::super::read_work::record_memory;
 
@@ -111,10 +111,10 @@ impl VisibilityProjectionView {
                 let Some(root) = self.basis.root() else {
                     let mut lists = 0;
                     for _ in entity_ids {
-                        charge(maximum_work_units, lists, 0, 0).map_err(NativeScanStop::Limit)?;
+                        charge(maximum_work_units, lists, 0, 0).map_err(RequestOr::Inner)?;
                         context
                             .checkpoint(EXAMINE_SLOT)
-                            .map_err(NativeScanStop::request)?;
+                            .map_err(RequestOr::from_kernel_stop)?;
                         lists += 1;
                     }
                     return Ok(BoundedFrontierAdjacencyTruthRead {
@@ -134,10 +134,10 @@ impl VisibilityProjectionView {
                     let mut examined = 0_usize;
                     for entity_id in entity_ids {
                         charge(maximum_work_units, lists, examined, records.len())
-                            .map_err(NativeScanStop::Limit)?;
+                            .map_err(RequestOr::Inner)?;
                         context
                             .checkpoint(EXAMINE_SLOT)
-                            .map_err(NativeScanStop::request)?;
+                            .map_err(RequestOr::from_kernel_stop)?;
                         lists += 1;
                         let relation_ids = if self.is_exact_basis() {
                             let set = if let Some(head) =
@@ -146,12 +146,12 @@ impl VisibilityProjectionView {
                                 let table = head.adjacency(direction);
                                 context
                                     .checkpoint(table.navigation_work_bound() as u64)
-                                    .map_err(NativeScanStop::request)?;
+                                    .map_err(RequestOr::from_kernel_stop)?;
                                 let set = table.get(entity_id.slot_index());
                                 if let Some(set) = set {
                                     context
                                         .checkpoint(set.navigation_work_bound() as u64)
-                                        .map_err(NativeScanStop::request)?;
+                                        .map_err(RequestOr::from_kernel_stop)?;
                                 }
                                 set
                             } else {
@@ -165,7 +165,7 @@ impl VisibilityProjectionView {
                                 let table = direction.table(partition);
                                 context
                                     .checkpoint(table.navigation_work_bound() as u64)
-                                    .map_err(NativeScanStop::request)?;
+                                    .map_err(RequestOr::from_kernel_stop)?;
                                 let set = table.get(entity_id.slot_index());
                                 if let Some(set) = set {
                                     context
@@ -173,7 +173,7 @@ impl VisibilityProjectionView {
                                             set.selected_kind_navigation_work_bound(adjacency_basis)
                                                 as u64,
                                         )
-                                        .map_err(NativeScanStop::request)?;
+                                        .map_err(RequestOr::from_kernel_stop)?;
                                 }
                                 set
                             } else {
@@ -201,10 +201,10 @@ impl VisibilityProjectionView {
                             )
                         })? {
                             charge(maximum_work_units, lists, examined, records.len())
-                                .map_err(NativeScanStop::Limit)?;
+                                .map_err(RequestOr::Inner)?;
                             context
                                 .checkpoint(EXAMINE_SLOT)
-                                .map_err(NativeScanStop::request)?;
+                                .map_err(RequestOr::from_kernel_stop)?;
                             examined += 1;
                             if !self.relation_matches_frontier(
                                 &root,
@@ -217,39 +217,39 @@ impl VisibilityProjectionView {
                                 continue;
                             }
                             charge(maximum_work_units, lists, examined, records.len())
-                                .map_err(NativeScanStop::Limit)?;
+                                .map_err(RequestOr::Inner)?;
                             context
                                 .checkpoint(RESERVE_RECORD)
-                                .map_err(NativeScanStop::request)?;
+                                .map_err(RequestOr::from_kernel_stop)?;
                             let clone_bytes =
                                 super::ProjectionRecordSource::candidate_relation_heap_for_id(
                                     self,
                                     relation_id,
                                 )
-                                .map_err(NativeScanStop::Request)?;
+                                .map_err(RequestOr::Request)?;
                             record_memory::prepare_push(memory, &mut records, clone_bytes)
-                                .map_err(NativeScanStop::Request)?;
+                                .map_err(RequestOr::Request)?;
                             let Some(record) = self.project_relation_record(relation_id) else {
                                 record_memory::release(memory, clone_bytes)
-                                    .map_err(NativeScanStop::Request)?;
+                                    .map_err(RequestOr::Request)?;
                                 continue;
                             };
                             let actual = super::super::read_footprint::relation(&record);
                             record_memory::settle_clone(memory, clone_bytes, actual)
-                                .map_err(NativeScanStop::Request)?;
+                                .map_err(RequestOr::Request)?;
                             records.push(record);
                         }
                         record_memory::release(memory, iterator_bytes)
-                            .map_err(NativeScanStop::Request)?;
+                            .map_err(RequestOr::Request)?;
                     }
                     let sort_work = sort_work_units(records.len())
-                        .ok_or(NativeScanStop::Request(
+                        .ok_or(RequestOr::Request(
                             crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
                         ))?;
                     if sort_work > 0 {
                         context
                             .checkpoint(sort_work)
-                            .map_err(NativeScanStop::request)?;
+                            .map_err(RequestOr::from_kernel_stop)?;
                     }
                     records.sort_unstable_by_key(relation_identity_order_key);
                     Ok(BoundedFrontierAdjacencyTruthRead {
@@ -310,22 +310,15 @@ fn charge_iter_step(
     iterator_bytes: &mut u64,
     navigation: u64,
     bytes: u64,
-) -> Result<
-    (),
-    super::super::native_scan_stop::NativeScanStop<FrontierAdjacencyTruthReadLimitExceeded>,
-> {
-    use super::super::native_scan_stop::NativeScanStop;
+) -> Result<(), RequestOr<FrontierAdjacencyTruthReadLimitExceeded>> {
     if navigation > 0 {
         context
             .checkpoint(navigation)
-            .map_err(NativeScanStop::request)?;
+            .map_err(RequestOr::from_kernel_stop)?;
     }
     if bytes > 0 {
-        super::super::read_work::record_memory::claim(memory, bytes)
-            .map_err(NativeScanStop::Request)?;
-        *iterator_bytes = iterator_bytes
-            .checked_add(bytes)
-            .ok_or(NativeScanStop::Request(
+        super::super::read_work::record_memory::claim(memory, bytes).map_err(RequestOr::Request)?;
+        *iterator_bytes = iterator_bytes.checked_add(bytes).ok_or(RequestOr::Request(
             crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
         ))?;
     }
@@ -354,45 +347,5 @@ fn charge(
         ))
     } else {
         Ok(())
-    }
-}
-
-#[doc(hidden)]
-pub trait VisibilityProjectionViewOwnerPort: Sized {
-    fn bounded_relations_for_frontier(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        entity_ids: &BTreeSet<EntityId>,
-        kind_id: KindId,
-        direction: AdjacencyDirection,
-        maximum_work_units: Option<usize>,
-        include_audit: bool,
-    ) -> Result<
-        Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
-        crate::execution::denial_cause::RelationalExecutionDenialCause,
-    >;
-}
-
-impl VisibilityProjectionViewOwnerPort for VisibilityProjectionView {
-    fn bounded_relations_for_frontier(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        entity_ids: &BTreeSet<EntityId>,
-        kind_id: KindId,
-        direction: AdjacencyDirection,
-        maximum_work_units: Option<usize>,
-        include_audit: bool,
-    ) -> Result<
-        Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
-        crate::execution::denial_cause::RelationalExecutionDenialCause,
-    > {
-        self.bounded_relations_for_frontier(
-            execution,
-            entity_ids,
-            kind_id,
-            direction,
-            maximum_work_units,
-            include_audit,
-        )
     }
 }

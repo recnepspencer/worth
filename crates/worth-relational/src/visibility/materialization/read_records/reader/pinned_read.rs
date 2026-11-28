@@ -1,4 +1,4 @@
-use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::pinned::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 use crate::history::retention::VisibilitySnapshotBasis;
 use crate::indexes::access::selected_index::PinnedIndex;
 #[cfg(test)]

@@ -1,4 +1,5 @@
 //! Preserve original whole canonical frames and their exact paired wire inventory.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::source::OriginalCanonicalCommit;
 use crate::durability::checkpoint_history::inventory::CanonicalCheckpointMember;
 use crate::durability::checkpoint_history::inventory::CanonicalCheckpointMembers;
@@ -6,7 +7,6 @@ use crate::durability::checkpoint_history::publication::CanonicalCheckpointPubli
 use crate::durability::data::*;
 use branch::history::commit::envelope_residency::RelationalCommitEnvelopeResidency;
 use branch::history::commit::index_entry::RelationalCommitIndexEntry as Entry;
-use branch::history::data::association_discovery::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use contracts::publication::patch::data::patch_position::PatchStreamPosition;
 use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};

@@ -1,11 +1,11 @@
 //! Source material follows the real pinned Native root, including pending World custody.
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 use crate::mvcc::ManagedIndexSourceRebuild;
 use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial as Denial;
 use crate::validation::candidate_source::program::ManagedIndexSourceProgram;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use crate::{identity::data::EntityId, snapshots::data::SnapshotHandle};
 use worth_relational_branch::internal_port::branch::projection_view::managed_source::ManagedIndexSourceObservationOwnerPort as _;
-use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionViewOwnerPort as _;
 use worth_relational_publication::internal_port::mvcc::publication::companion::cell::managed_source::{
     cold_source,
     rebuild::{ManagedIndexSourceRebuildFieldsPort as _, ManagedIndexSourceRebuildOwnerPort as _},

@@ -171,17 +171,6 @@ impl RelationalTransactionValidationInput {
         self.coupled_proposal.as_ref()
     }
 
-    pub(crate) fn with_recovered_content(
-        mut self,
-        content: crate::content::RelationalContentAttachments,
-    ) -> Self {
-        self.content = content;
-        self
-    }
-    pub(crate) fn content(&self) -> &crate::content::RelationalContentAttachments {
-        &self.content
-    }
-
     pub(crate) fn basis(&self) -> &AdmittedRelationalBranchBasis {
         &self.basis
     }
@@ -282,10 +271,6 @@ impl RelationalTransactionValidationInput {
 
     pub(crate) fn schema_authority(&self) -> &RelationalBranchRootSchemaAuthority {
         &self.schema_authority
-    }
-
-    pub(crate) fn footprint(&self) -> &crate::mvcc::RelationalTransactionFootprint {
-        &self.footprint
     }
 
     pub(crate) fn apply_owner_inputs_to(

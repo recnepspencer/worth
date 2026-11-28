@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::durability::artifact_payload_emission::digest::Sha256Sink;
 
 use serde::{Deserialize, Serialize};
 use worth_foundational::facade::PortableAspectContract;
@@ -53,28 +54,15 @@ pub fn branch_root_partition_image_digest(
     _lane: &worth_relational_contracts::internal_port::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
     partition_images: &[PartitionCheckpointImage],
 ) -> Result<[u8; 32], rmp_serde::encode::Error> {
-    use sha2::{Digest, Sha256};
+    use sha2::Digest;
 
-    let mut digest = Sha256::new();
-    digest.update(b"worth.relational.branch-root-images.v1\0");
-    digest.update((partition_images.len() as u64).to_be_bytes());
-    rmp_serde::encode::write(&mut Sha256Writer(&mut digest), partition_images)?;
-    Ok(digest.finalize().into())
-}
-
-struct Sha256Writer<'a>(&'a mut sha2::Sha256);
-
-impl std::io::Write for Sha256Writer<'_> {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        use sha2::Digest;
-
-        self.0.update(bytes);
-        Ok(bytes.len())
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
+    let mut digest = Sha256Sink::default();
+    digest.0.update(b"worth.relational.branch-root-images.v1\0");
+    digest
+        .0
+        .update((partition_images.len() as u64).to_be_bytes());
+    rmp_serde::encode::write(&mut digest, partition_images)?;
+    Ok(digest.0.finalize().into())
 }
 
 pub fn branch_root_image_digest(

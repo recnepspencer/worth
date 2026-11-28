@@ -311,7 +311,6 @@ impl RelationalCheckpointManifestPublication {
         let Some(cold) = cold else {
             return Ok(());
         };
-        let target = Arc::as_ptr(directory) as *const ();
         for artifact in cold.live_artifacts() {
             execution.check_live().map_err(Ack::Stopped)?;
             if context.has_accounting() {
@@ -322,7 +321,7 @@ impl RelationalCheckpointManifestPublication {
             let cell = artifact.envelope_residency();
             if cell
                 .selected_directory()
-                .is_some_and(|dir| Arc::as_ptr(&dir) as *const () == target)
+                .is_some_and(|dir| std::ptr::addr_eq(dir.as_ref(), directory.as_ref()))
             {
                 continue;
             }

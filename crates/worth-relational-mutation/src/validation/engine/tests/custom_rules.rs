@@ -2,12 +2,19 @@ use super::validation_engine_fixtures::*;
 use std::sync::Arc;
 
 pub(super) struct AlwaysViolatesCustomRule;
+#[cfg(test)]
 pub(super) struct RejectsPlannedRelationRule;
+#[cfg(test)]
 pub(super) struct TinyBudgetUnrelatedRule;
+#[cfg(test)]
 pub(super) struct BoundedBudgetUnrelatedRule;
+#[cfg(test)]
 pub(super) struct GraphCompositionViolatesCustomRule;
+#[cfg(test)]
 pub(super) struct StructuralSurfaceRule;
+#[cfg(test)]
 pub(super) struct PanicDuringPrepareRule;
+#[cfg(test)]
 pub(super) struct PanicDuringEvaluateRule;
 
 impl CustomInvariantRule for AlwaysViolatesCustomRule {
@@ -57,6 +64,7 @@ impl CustomInvariantRule for AlwaysViolatesCustomRule {
     }
 }
 
+#[cfg(test)]
 impl CustomInvariantRule for RejectsPlannedRelationRule {
     type Scope = ();
 
@@ -88,6 +96,7 @@ impl CustomInvariantRule for RejectsPlannedRelationRule {
     }
 }
 
+#[cfg(test)]
 impl CustomInvariantRule for TinyBudgetUnrelatedRule {
     type Scope = ();
 
@@ -115,6 +124,7 @@ impl CustomInvariantRule for TinyBudgetUnrelatedRule {
     }
 }
 
+#[cfg(test)]
 impl CustomInvariantRule for BoundedBudgetUnrelatedRule {
     type Scope = ();
 
@@ -141,6 +151,7 @@ impl CustomInvariantRule for BoundedBudgetUnrelatedRule {
     }
 }
 
+#[cfg(test)]
 impl CustomInvariantRule for GraphCompositionViolatesCustomRule {
     type Scope = ();
 
@@ -189,12 +200,14 @@ impl CustomInvariantRule for GraphCompositionViolatesCustomRule {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(test)]
 pub(super) struct StructuralScope {
     visible_entities: usize,
     planned_relations: usize,
     touched_partitions: usize,
 }
 
+#[cfg(test)]
 impl CustomInvariantRule for StructuralSurfaceRule {
     type Scope = StructuralScope;
 
@@ -257,6 +270,7 @@ impl CustomInvariantRule for StructuralSurfaceRule {
     }
 }
 
+#[cfg(test)]
 impl CustomInvariantRule for PanicDuringPrepareRule {
     type Scope = ();
 
@@ -302,6 +316,7 @@ impl CustomInvariantRule for PanicDuringPrepareRule {
     }
 }
 
+#[cfg(test)]
 impl CustomInvariantRule for PanicDuringEvaluateRule {
     type Scope = ();
 

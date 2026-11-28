@@ -54,7 +54,3 @@ where
         self.runtime.graph().observe().lineage_records()
     }
 }
-
-#[cfg(test)]
-#[cfg(test)]
-use crate::data::aspect::Aspect;

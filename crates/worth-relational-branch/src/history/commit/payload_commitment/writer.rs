@@ -1,9 +1,10 @@
 //! Incremental canonical commitment serialization under the invoking request.
 use crate::durability::data::recovery_errors::{DurabilityError, RecoveryFailureClass};
 use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
-use sha2::{Digest, Sha256};
-use std::io::{self, Write};
+use sha2::Sha256;
+use std::io::Write;
 use worth_execution::{ExecutionRequest, MapKernelContext, MapKernelStop, WorkCeilingDenial};
+use worth_relational_contracts::internal_port::durability::artifact_payload_emission::digest::MeteredSha256Sink;
 
 pub fn in_context<T>(
     request: &ExecutionRequest<'_, '_>,
@@ -26,54 +27,43 @@ pub fn in_context<T>(
     }
 }
 
-pub struct CommitmentWriter<'context, 'scope, 'authority> {
-    pub hash: Sha256,
-    context: &'context mut MapKernelContext<'scope, 'authority>,
-    stop: Option<MapKernelStop>,
+pub fn write_commitment(
+    hash: Sha256,
+    context: &mut MapKernelContext<'_, '_>,
+    encode: impl FnOnce(&mut CommitmentWriter<'_>) -> Result<(), Stop>,
+) -> Result<Sha256, Stop> {
+    let mut charge = |bytes| {
+        if context.has_accounting() {
+            context.checkpoint(bytes as u64)
+        } else {
+            context.poll()
+        }
+    };
+    let mut writer = CommitmentWriter(MeteredSha256Sink::new(hash, &mut charge));
+    encode(&mut writer)?;
+    Ok(writer.0.into_parts().0)
 }
-impl<'c, 's, 'a> CommitmentWriter<'c, 's, 'a> {
-    pub fn new(hash: Sha256, context: &'c mut MapKernelContext<'s, 'a>) -> Self {
-        Self {
-            hash,
-            context,
-            stop: None,
-        }
-    }
+
+pub struct CommitmentWriter<'a>(MeteredSha256Sink<'a, MapKernelStop>);
+
+impl CommitmentWriter<'_> {
     pub fn value(&mut self, value: &impl serde::Serialize) -> Result<(), Stop> {
-        let result = rmp_serde::encode::write_named(&mut *self, value);
-        if let Some(cause) = self.stop.take() {
-            return Err(Stop::Request(cause.into()));
-        }
-        result.map_err(|_| corrupt())
+        let encoded = rmp_serde::encode::write_named(&mut self.0, value);
+        self.settle(encoded)
     }
     pub fn bytes(&mut self, bytes: &[u8]) -> Result<(), Stop> {
-        let result = self.write_all(bytes);
-        if let Some(cause) = self.stop.take() {
-            return Err(Stop::Request(cause.into()));
+        let encoded = self.0.write_all(bytes);
+        self.settle(encoded)
+    }
+
+    fn settle(&self, encoded: Result<(), impl Sized>) -> Result<(), Stop> {
+        match self.0.failure() {
+            Some(cause) => Err(Stop::Request((*cause).into())),
+            None => encoded.map_err(|_| corrupt()),
         }
-        result.map_err(|_| corrupt())
     }
 }
-impl Write for CommitmentWriter<'_, '_, '_> {
-    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        for chunk in bytes.chunks(64 * 1024) {
-            let result = if self.context.has_accounting() {
-                self.context.checkpoint(chunk.len() as u64)
-            } else {
-                self.context.poll()
-            };
-            if let Err(cause) = result {
-                self.stop = Some(cause);
-                return Err(io::ErrorKind::Other.into());
-            }
-            self.hash.update(chunk);
-        }
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
+
 fn corrupt() -> Stop {
     DurabilityError::new(
         RecoveryFailureClass::CorruptCanonicalArtifact,

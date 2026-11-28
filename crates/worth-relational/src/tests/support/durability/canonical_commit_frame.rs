@@ -3,7 +3,7 @@ use sha2::{Digest, Sha256};
 
 pub(crate) fn reseal_canonical_commit_frame(bytes: &mut [u8]) {
     assert_eq!(&bytes[..8], b"WRTHRCCA");
-    assert_eq!(u16::from_le_bytes(bytes[8..10].try_into().unwrap()), 10);
+    assert_eq!(u16::from_le_bytes(bytes[8..10].try_into().unwrap()), 11);
     let mut leaves = [[0; 32]; 3];
     let mut seen = 0u8;
     crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload(&bytes[66..])

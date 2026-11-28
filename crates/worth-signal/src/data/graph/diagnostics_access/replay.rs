@@ -37,23 +37,4 @@ impl SignalGraph {
             .cloned()
             .collect()
     }
-
-    pub(crate) fn branch_handle(
-        &self,
-        branch_id: crate::state::SignalBranchId,
-    ) -> Option<SignalBranchHandle> {
-        self.observation
-            .diagnostics
-            .branch_catalog()
-            .get(&branch_id)
-            .cloned()
-    }
-
-    pub(crate) fn branch_head_snapshot_id(
-        &self,
-        branch_id: crate::state::SignalBranchId,
-    ) -> Option<crate::state::SignalSnapshotId> {
-        self.branch_handle(branch_id)
-            .and_then(|branch| branch.head_snapshot_id)
-    }
 }

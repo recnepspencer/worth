@@ -1,7 +1,6 @@
 //! Admit the actual predecessor publications before assembling their inverse.
 use worth_relational_publication::internal_port::publication::ownership::authored_restoration::RelationalAuthoredRestorationOwnerPort as _;
 use worth_relational_publication::internal_port::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthorityFieldsPort as _;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::failure;
 use super::inverse::{InverseRestoration, RestorationSelection};
 use crate::branch::basis::AdmittedRelationalBranchBasis;
@@ -18,6 +17,7 @@ use crate::runtime::RelationalRuntime;
 use crate::transactions::data::{CreatedEntityRef, TransactionCommitError};
 use worth_execution::ExecutionRequest;
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 impl RelationalRuntime {
     pub fn prepare_authored_source_restoration(

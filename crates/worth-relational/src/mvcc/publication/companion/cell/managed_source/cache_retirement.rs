@@ -11,7 +11,7 @@ use std::sync::{
 };
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 use worth_relational_branch::internal_port::branch::projection_view::companion_slot::CompanionBranchCellCoreFixturePort as _;
-use worth_relational_branch::internal_port::validation::candidate_source::image::publication::ManagedIndexBranchImageOwnerPort as _;
+use worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImageOwnerPort as _;
 use worth_relational_publication::internal_port::mvcc::publication::companion::cell::CompanionBranchCellFixturePort as _;
 mod retained_affinity;
 struct Probe {

@@ -98,22 +98,3 @@ impl RecordedRelationalComponentReference {
         })
     }
 }
-
-#[doc(hidden)]
-pub trait RecordedRelationalComponentReferenceOwnerPort: Sized {
-    fn copy_original(
-        execution: &ExecutionRequest<'_, '_>,
-        descriptor: &RelationalBranchBasisDescriptor,
-        target: Option<CanonicalDescription<'_>>,
-    ) -> Result<Self, RelationalRecordedComponentRefusal>;
-}
-
-impl RecordedRelationalComponentReferenceOwnerPort for RecordedRelationalComponentReference {
-    fn copy_original(
-        execution: &ExecutionRequest<'_, '_>,
-        descriptor: &RelationalBranchBasisDescriptor,
-        target: Option<CanonicalDescription<'_>>,
-    ) -> Result<Self, RelationalRecordedComponentRefusal> {
-        RecordedRelationalComponentReference::copy_original(execution, descriptor, target)
-    }
-}

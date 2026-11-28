@@ -219,20 +219,3 @@ impl RestorationIndex {
         }
     }
 }
-
-#[doc(hidden)]
-pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
-    fn validate_restoration_header(
-        &self,
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<(), Stop>;
-}
-
-impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
-    fn validate_restoration_header(
-        &self,
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<(), Stop> {
-        self.validate_restoration_header(context)
-    }
-}

@@ -263,10 +263,6 @@ pub mod snapshots {
     };
 }
 
-pub mod visibility {
-    pub use crate::visibility::store_correlation_reference::*;
-}
-
 pub mod storage {
     /// SDK-internal incremental maintenance contracts.
     pub use crate::branch::maintenance;

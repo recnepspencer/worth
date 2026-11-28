@@ -1,4 +1,9 @@
 //! Owner access to a canonical envelope body.
+use super::committed_record_changes::CommittedRecordChange;
+use super::required_output_origin::{
+    group_selection::ValidatedOutputOrigins,
+    historical_selection::absence::CanonicalHistoricalOutputAbsence,
+};
 use super::{
     CanonicalAuthoredIndexWrites, CanonicalAuthoredRestoration, CanonicalAuthoredRetirement,
     CanonicalCommitEnvelopeBody, CanonicalCoupledAuthoredPublication,
@@ -8,6 +13,9 @@ use super::{
 };
 use crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint;
 use crate::content::publication::ContentPublication;
+use crate::history::data::association_discovery::RelationalAssociationDiscovery;
+use crate::history::data::canonical_commit_allocation::CanonicalCommitEnvelopeAllocationInventory;
+use crate::history::data::CodecRetirementClosureStop as Stop;
 use crate::history::data::{
     CancelledRecordAllocation, CanonicalRecordAllocation, RelationalCallerAssociation,
 };
@@ -16,47 +24,7 @@ use crate::symbols::data::{Symbol, SymbolTableSnapshot};
 use crate::transactions::data::primitives::RecordRef;
 use std::collections::BTreeSet;
 use std::sync::Arc;
-
-#[doc(hidden)]
-pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
-    fn install_record_allocations(&mut self, allocations: Vec<CanonicalRecordAllocation>);
-    fn record_allocations(&self) -> &[CanonicalRecordAllocation];
-    fn install_cancelled_record_allocations(&mut self, cancelled: Vec<CancelledRecordAllocation>);
-    fn cancelled_record_allocations(&self) -> &[CancelledRecordAllocation];
-    fn published_lineage(&self) -> &PublishedLineageArtifact;
-    fn touched_record_refs(&self) -> BTreeSet<RecordRef>;
-    fn authored_intent_targets(&self) -> impl Iterator<Item = Option<RecordRef>> + '_;
-}
-
-impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
-    fn install_record_allocations(&mut self, allocations: Vec<CanonicalRecordAllocation>) {
-        self.install_record_allocations(allocations)
-    }
-
-    fn record_allocations(&self) -> &[CanonicalRecordAllocation] {
-        self.record_allocations()
-    }
-
-    fn install_cancelled_record_allocations(&mut self, cancelled: Vec<CancelledRecordAllocation>) {
-        self.install_cancelled_record_allocations(cancelled)
-    }
-
-    fn cancelled_record_allocations(&self) -> &[CancelledRecordAllocation] {
-        self.cancelled_record_allocations()
-    }
-
-    fn published_lineage(&self) -> &PublishedLineageArtifact {
-        self.published_lineage()
-    }
-
-    fn touched_record_refs(&self) -> BTreeSet<RecordRef> {
-        self.touched_record_refs()
-    }
-
-    fn authored_intent_targets(&self) -> impl Iterator<Item = Option<RecordRef>> + '_ {
-        self.authored_intent_targets()
-    }
-}
+use worth_execution::MapKernelContext;
 
 #[doc(hidden)]
 pub trait CanonicalCommitEnvelopeBodyFieldsPort {
@@ -209,5 +177,135 @@ impl CanonicalCommitEnvelopeBodyFieldsPort for CanonicalCommitEnvelopeBody {
     }
     fn owner_symbol_texts(&self) -> &SymbolTableSnapshot {
         &self.symbol_texts
+    }
+}
+
+#[doc(hidden)]
+pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
+    fn allocation_inventory(&self) -> CanonicalCommitEnvelopeAllocationInventory;
+    fn association_discovery(&self) -> RelationalAssociationDiscovery;
+    fn committed_record_changes(&self) -> impl Iterator<Item = CommittedRecordChange<'_>>;
+    fn committed_record_changes_for_target<'a>(
+        &'a self,
+        target: &'a RecordRef,
+    ) -> impl Iterator<Item = CommittedRecordChange<'a>> + 'a;
+    fn install_record_allocations(&mut self, allocations: Vec<CanonicalRecordAllocation>);
+    fn record_allocations(&self) -> &[CanonicalRecordAllocation];
+    fn install_cancelled_record_allocations(&mut self, cancelled: Vec<CancelledRecordAllocation>);
+    fn cancelled_record_allocations(&self) -> &[CancelledRecordAllocation];
+    fn published_lineage(&self) -> &PublishedLineageArtifact;
+    fn touched_record_refs(&self) -> BTreeSet<RecordRef>;
+    fn authored_intent_targets(&self) -> impl Iterator<Item = Option<RecordRef>> + '_;
+    fn codec_retirement_headers_valid(&self) -> bool;
+    fn output_origins(&self) -> impl Iterator<Item = &Arc<CanonicalRequiredOutputOrigin>>;
+    fn validate_output_origins(
+        &self,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<ValidatedOutputOrigins<'_>, Stop>;
+    fn authored_source_retirement(&self) -> Option<&Arc<CanonicalAuthoredRetirement>>;
+    fn authored_source_restoration(&self) -> Option<&Arc<CanonicalAuthoredRestoration>>;
+    fn validate_restoration_header(
+        &self,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<(), Stop>;
+    fn is_unmerged_output_publication_step(&self) -> bool;
+    fn validate_historical_selection_header(
+        &self,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<(), Stop>;
+    fn historical_absent_routes(&self) -> impl Iterator<Item = &CanonicalHistoricalOutputAbsence>;
+}
+
+impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
+    fn allocation_inventory(&self) -> CanonicalCommitEnvelopeAllocationInventory {
+        self.allocation_inventory()
+    }
+
+    fn association_discovery(&self) -> RelationalAssociationDiscovery {
+        self.association_discovery()
+    }
+
+    fn committed_record_changes(&self) -> impl Iterator<Item = CommittedRecordChange<'_>> {
+        self.committed_record_changes()
+    }
+
+    fn committed_record_changes_for_target<'a>(
+        &'a self,
+        target: &'a RecordRef,
+    ) -> impl Iterator<Item = CommittedRecordChange<'a>> + 'a {
+        self.committed_record_changes_for_target(target)
+    }
+
+    fn install_record_allocations(&mut self, allocations: Vec<CanonicalRecordAllocation>) {
+        self.install_record_allocations(allocations)
+    }
+
+    fn record_allocations(&self) -> &[CanonicalRecordAllocation] {
+        self.record_allocations()
+    }
+
+    fn install_cancelled_record_allocations(&mut self, cancelled: Vec<CancelledRecordAllocation>) {
+        self.install_cancelled_record_allocations(cancelled)
+    }
+
+    fn cancelled_record_allocations(&self) -> &[CancelledRecordAllocation] {
+        self.cancelled_record_allocations()
+    }
+
+    fn published_lineage(&self) -> &PublishedLineageArtifact {
+        self.published_lineage()
+    }
+
+    fn touched_record_refs(&self) -> BTreeSet<RecordRef> {
+        self.touched_record_refs()
+    }
+
+    fn authored_intent_targets(&self) -> impl Iterator<Item = Option<RecordRef>> + '_ {
+        self.authored_intent_targets()
+    }
+
+    fn codec_retirement_headers_valid(&self) -> bool {
+        self.codec_retirement_headers_valid()
+    }
+
+    fn output_origins(&self) -> impl Iterator<Item = &Arc<CanonicalRequiredOutputOrigin>> {
+        self.output_origins()
+    }
+
+    fn validate_output_origins(
+        &self,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<ValidatedOutputOrigins<'_>, Stop> {
+        self.validate_output_origins(context)
+    }
+
+    fn authored_source_retirement(&self) -> Option<&Arc<CanonicalAuthoredRetirement>> {
+        self.authored_source_retirement()
+    }
+
+    fn authored_source_restoration(&self) -> Option<&Arc<CanonicalAuthoredRestoration>> {
+        self.authored_source_restoration()
+    }
+
+    fn validate_restoration_header(
+        &self,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<(), Stop> {
+        self.validate_restoration_header(context)
+    }
+
+    fn is_unmerged_output_publication_step(&self) -> bool {
+        self.is_unmerged_output_publication_step()
+    }
+
+    fn validate_historical_selection_header(
+        &self,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<(), Stop> {
+        self.validate_historical_selection_header(context)
+    }
+
+    fn historical_absent_routes(&self) -> impl Iterator<Item = &CanonicalHistoricalOutputAbsence> {
+        self.historical_absent_routes()
     }
 }

@@ -115,3 +115,13 @@ pub fn try_lock_retirement<T>(
         TryLockError::Poisoned(_) => CooperativeRetirementLockDenial::Poisoned,
     })
 }
+
+/// Acquire an owner's retirement cursor without waiting. These owners retain
+/// the original cursor after poisoning, so its guard still permits preflight.
+pub fn try_retirement_guard<G, E>(attempt: std::sync::TryLockResult<G>, busy: E) -> Result<G, E> {
+    match attempt {
+        Ok(guard) => Ok(guard),
+        Err(TryLockError::Poisoned(error)) => Ok(error.into_inner()),
+        Err(TryLockError::WouldBlock) => Err(busy),
+    }
+}

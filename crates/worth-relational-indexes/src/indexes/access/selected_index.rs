@@ -1,9 +1,9 @@
 //! Immutable index handles and the resident basis used to verify their rows.
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 use crate::branch::history::retention::selected_snapshot::VisibilitySnapshotBasis;
 use crate::branch::indexes::data::SharedDerivedIndexGeneration;
 use crate::branch::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::branch::snapshots::data::SnapshotHandle;
-use crate::branch::visibility::materialization::read_records::projection::pinned::VisibilityProjectionViewOwnerPort as _;
 use crate::branch::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use crate::branch::visibility::snapshot_states::resident_basis::ResidentVisibilitySnapshotBasis;
 use std::collections::BTreeMap;

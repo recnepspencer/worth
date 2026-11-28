@@ -301,9 +301,6 @@ pub(super) fn canonical_readmission_stop(
             capture_stop(contracts::symbols::data::field_text::field_text_recovery_stop(cause))
         }
         Refusal::Content(cause) => cause.into(),
-        Refusal::LegacyMergeArtifactRetired => Denial::Durability(
-            contracts::durability::data::recovery_errors::DurabilityError::legacy_merge_artifact_retired(),
-        ),
         cause @ (Refusal::Frame(_)
         | Refusal::PayloadDecode { .. }
         | Refusal::PositionDisagreement { .. }

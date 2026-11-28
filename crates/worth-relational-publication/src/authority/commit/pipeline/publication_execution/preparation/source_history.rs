@@ -1,5 +1,5 @@
 //! Bind completed Mutation material and the original publication's live inputs.
-use branch::history::data::canonical_commit_envelope::live_managed_source_history::CanonicalCommitEnvelopeOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use contracts::validation::candidate_source::denial::ManagedIndexSourcePreparationDenialOwnerPort as _;
 use std::sync::Arc;

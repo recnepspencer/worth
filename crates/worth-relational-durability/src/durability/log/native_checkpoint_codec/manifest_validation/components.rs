@@ -1,6 +1,6 @@
 //! Check exact owner-recorded component headers without reading artifact bodies.
 use super::*;
-use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis_descriptor_owner::RelationalBranchBasisDescriptorOwnerPort as _;
 use worth_relational_contracts::internal_port as contracts;
 
 use worth_relational_branch::internal_port::branch::basis_descriptor::{

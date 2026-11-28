@@ -104,15 +104,15 @@ fn run<'p>(
             checkpoint,
         };
         let mut work = ValidatedMutationTouchProjectionWork::default();
-        if commands.is_none() {
-            if let Some(selection) = inputs.plan.selection() {
-                (sink.checkpoint)(1)?;
-                sink.insert(ValidatedMutationTouch::UnrepresentableEntityMutation {
-                    kind: selection.kind(),
-                });
-                if let Some(failure) = sink.failure.take() {
-                    return Err(failure);
-                }
+        if commands.is_none()
+            && let Some(selection) = inputs.plan.selection()
+        {
+            (sink.checkpoint)(1)?;
+            sink.insert(ValidatedMutationTouch::UnrepresentableEntityMutation {
+                kind: selection.kind(),
+            });
+            if let Some(failure) = sink.failure.take() {
+                return Err(failure);
             }
         }
         let commands = commands.unwrap_or_else(|| &inputs.plan.commands().merged_intents);

@@ -32,8 +32,8 @@ pub(in crate::internal_port::indexes) fn build_relation_aspect_field_index(
                 }
                 Ok(())
             }).map_err(|stop| match stop {
-                worth_relational_branch::internal_port::visibility::materialization::read_records::read_stop::ReadStop::Request(cause)
-                | worth_relational_branch::internal_port::visibility::materialization::read_records::read_stop::ReadStop::Admission(cause) => cause,
+                worth_relational_contracts::internal_port::execution::request_or::RequestOr::Request(cause)
+                | worth_relational_contracts::internal_port::execution::request_or::RequestOr::Inner(cause) => cause,
             })?;
     }
     Ok(entries)

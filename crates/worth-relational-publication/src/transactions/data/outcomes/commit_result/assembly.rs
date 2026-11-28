@@ -1,3 +1,4 @@
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
 use worth_relational_branch::internal_port as branch;
 use worth_relational_contracts::internal_port as contracts;
 use crate::authority::commit::pipeline::PublishedCommitExecution;
@@ -12,7 +13,6 @@ use crate::transactions::data::outcomes::commit_result::CommitResult;
 use contracts::transactions::data::outcomes::commit_summaries::CommitSchemaSummary;
 use worth_relational_mutation::internal_port::transactions::data::outcomes::live_commit_validation::CommitValidation;
 use branch::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
-use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
 
 pub(crate) struct CommitResultSeal {
     snapshot_release: std::sync::Arc<PublishedSnapshotReleaseObservation>,

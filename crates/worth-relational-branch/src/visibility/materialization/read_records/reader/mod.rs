@@ -26,3 +26,7 @@ pub mod truth_frontier_field_equality;
 pub mod truth_kind_scan;
 pub mod truth_record_access;
 pub mod truth_relation_kind_scan;
+
+mod bounded_kind_scan;
+
+pub(super) mod record_class;

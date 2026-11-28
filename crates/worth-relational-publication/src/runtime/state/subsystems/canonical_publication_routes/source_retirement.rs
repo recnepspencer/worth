@@ -15,11 +15,8 @@ impl RelationalCanonicalPublicationRoutes {
         )>,
         (),
     >{
-        let catalog = match self.checkpoint_catalog.try_read() {
-            Ok(catalog) => catalog,
-            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
-        };
+        let catalog =
+            worth_execution::try_retirement_guard(self.checkpoint_catalog.try_read(), ())?;
         Ok(catalog
             .next_retirement(after)
             .map(|(key, artifact)| (key, artifact.envelope_residency())))

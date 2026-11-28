@@ -50,12 +50,11 @@ impl<'runtime> ReplayAuthority<'runtime> {
         failure: ReplayFailureClass,
         mismatch: Option<ReplayMismatch>,
     ) -> RelationalReplayOutcome {
-        let outcome = match mismatch {
+        match mismatch {
             Some(mismatch) => RelationalReplayOutcome::fail(request, envelope, chain, failure)
                 .with_mismatch(mismatch),
             None => RelationalReplayOutcome::fail(request, envelope, chain, failure),
-        };
-        outcome
+        }
     }
 
     pub fn replay_commit(

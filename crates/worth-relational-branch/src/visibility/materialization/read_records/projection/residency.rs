@@ -80,20 +80,3 @@ impl VisibilityProjectionView {
         Ok(())
     }
 }
-
-#[doc(hidden)]
-pub trait VisibilityProjectionViewOwnerPort: Sized {
-    fn demand_all_full(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), RelationalExecutionDenialCause>;
-}
-
-impl VisibilityProjectionViewOwnerPort for VisibilityProjectionView {
-    fn demand_all_full(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), RelationalExecutionDenialCause> {
-        self.demand_all_full(execution)
-    }
-}

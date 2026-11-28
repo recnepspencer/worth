@@ -30,11 +30,7 @@ impl std::ops::DerefMut for SymbolPageState {
 
 impl RuntimeSymbolResidency {
     fn try_source_state(&self) -> Result<std::sync::MutexGuard<'_, SymbolPageState>, Denial> {
-        match self.pages.try_lock() {
-            Ok(state) => Ok(state),
-            Err(std::sync::TryLockError::Poisoned(error)) => Ok(error.into_inner()),
-            Err(std::sync::TryLockError::WouldBlock) => Err(Denial::Busy),
-        }
+        worth_execution::try_retirement_guard(self.pages.try_lock(), Denial::Busy)
     }
 
     pub fn preflight_source_retirement(

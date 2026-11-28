@@ -60,8 +60,7 @@ pub(crate) use storage::{
     PartitionEditionWriter, ResidentPartitionEdition, ResidentPartitionEntry, StorageSubsystem,
 };
 pub(crate) use visibility::{
-    PublishedSnapshotCapacityOwner, PublishedSnapshotReservationDenial,
-    PublishedSnapshotSlotReservation, SnapshotHandleBinding, VisibilitySubsystem,
+    PublishedSnapshotCapacityOwner, SnapshotHandleBinding, VisibilitySubsystem,
 };
 
 pub use record_identity::{

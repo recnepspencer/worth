@@ -28,14 +28,3 @@ impl CanonicalCommitEnvelopeBody {
         }
     }
 }
-
-#[doc(hidden)]
-pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
-    fn association_discovery(&self) -> RelationalAssociationDiscovery;
-}
-
-impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
-    fn association_discovery(&self) -> RelationalAssociationDiscovery {
-        self.association_discovery()
-    }
-}

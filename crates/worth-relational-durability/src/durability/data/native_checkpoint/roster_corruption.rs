@@ -96,7 +96,7 @@ impl RelationalNativeCheckpoint {
         })?;
         let mut answer = None;
         let handoff = execution.run_native_with_checkpoint(|stage| {
-            let mut control = codec::CheckpointEncodingControl::Original {
+            let mut control = codec::CheckpointEncodingControl {
                 execution: *execution,
                 stage,
             };

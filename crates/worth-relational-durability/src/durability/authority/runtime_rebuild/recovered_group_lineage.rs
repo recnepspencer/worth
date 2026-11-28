@@ -8,9 +8,8 @@
 //! ancestry, refusing any that its recorded posture contradicts.
 
 use worth_foundational::facade::AggregateIdentity;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::{
-    CanonicalCommitEnvelope, CanonicalCommitEnvelopeBodyOwnerPort as _,
-};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelope;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_lineage::internal_port::durability::naming::decode_group_lineage_frame;
 use worth_relational_lineage::internal_port::lineage::groups::{

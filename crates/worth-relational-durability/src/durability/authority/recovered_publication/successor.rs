@@ -3,10 +3,8 @@ use contracts::history::data::coordinates::BranchId;
 use worth_relational_branch::internal_port::branch::basis_descriptor::{
     RelationalBranchBasisDescriptor, RelationalBranchBasisPosture,
 };
-use worth_relational_branch::internal_port::branch::recorded_basis::{
-    RecordedRelationalComponentReference as Recorded,
-    RecordedRelationalComponentReferenceOwnerPort as _,
-};
+use worth_relational_branch::internal_port::branch::recorded_basis::RecordedRelationalComponentReference as Recorded;
+use worth_relational_branch::internal_port::branch::recorded_basis::RecordedRelationalComponentReferenceOwnerPort as _;
 use worth_relational_branch::internal_port::history::commit::index_entry::RelationalCommitIndexEntry;
 use worth_relational_contracts::internal_port as contracts;
 

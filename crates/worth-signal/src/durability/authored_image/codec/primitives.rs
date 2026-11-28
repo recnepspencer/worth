@@ -49,13 +49,6 @@ impl<'a> Write<'a> {
         self.count(value.len())?;
         (self.emit)(value.as_bytes())
     }
-    pub(super) fn optional_text(&mut self, value: Option<&str>) -> Result<(), Denial> {
-        self.boolean(value.is_some())?;
-        if let Some(value) = value {
-            self.text(value)?;
-        }
-        Ok(())
-    }
     pub(crate) fn node(&mut self, node: DurableSignalNodeIdentity) -> Result<(), Denial> {
         durable(node);
         if node.branch() != self.branch {
@@ -179,13 +172,6 @@ impl<'a> Read<'a> {
         } else {
             String::new()
         })
-    }
-    pub(super) fn optional_text(&mut self) -> Result<Option<String>, Denial> {
-        if self.boolean()? {
-            Ok(Some(self.text()?))
-        } else {
-            Ok(None)
-        }
     }
     pub(super) fn node_id(&mut self) -> Result<NodeId, Denial> {
         let node = DurableSignalNodeIdentity::from_recorded(

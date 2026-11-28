@@ -1,4 +1,5 @@
 //! A genuine fork's target association is prepared before its durable transition.
+use worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImageOwnerPort as _;
 use super::cell::publication_admission::PreparedManagedSourceCell;
 use super::CompanionBranchCell;
 use super::CompanionBranchCellSlot;
@@ -9,7 +10,6 @@ use worth_relational_branch::internal_port::branch::projection_view::companion_s
 };
 use worth_relational_branch::internal_port::branch::root::identity::RelationalBranchRootIdentityIssuer;
 use worth_relational_branch::internal_port::branch::root::RelationalBranchRoot;
-use worth_relational_branch::internal_port::validation::candidate_source::image::publication::ManagedIndexBranchImageOwnerPort as _;
 use worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImage;
 use worth_relational_contracts::internal_port::history::data::coordinates::BranchId;
 use worth_relational_contracts::internal_port::mvcc::publication::companion::preflight_stop::CompanionPreflightStop as Stop;

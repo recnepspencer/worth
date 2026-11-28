@@ -5,12 +5,14 @@ use crate::runtime::RelationalRuntime;
 
 use super::CommitEnvelopeSource;
 
+#[cfg(test)]
 pub(crate) use crate::publication::patch::data::stream_commit_ref::PatchStreamCommitRef;
 
 pub(crate) trait PatchStreamSource: CommitEnvelopeSource {
     fn latest_patch_stream_position(&self) -> Option<PatchStreamPosition>;
     fn commit_id_at_patch_stream_position(&self, position: PatchStreamPosition)
         -> Option<CommitId>;
+    #[cfg(test)]
     fn patch_stream_commits_after(
         &self,
         after_position: Option<PatchStreamPosition>,
@@ -53,6 +55,7 @@ impl PatchStreamSource for RelationalRuntime {
             })
     }
 
+    #[cfg(test)]
     fn patch_stream_commits_after(
         &self,
         after_position: Option<PatchStreamPosition>,

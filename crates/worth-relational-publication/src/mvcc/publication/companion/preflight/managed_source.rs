@@ -1,8 +1,8 @@
 //! Native installs associations only from its selected reservation and judged set.
+use worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImageOwnerPort as _;
 use super::PublicationCompanionPreflight;
 use super::ReservedCompanionBranchCell;
 use std::sync::Arc;
-use worth_relational_branch::internal_port::validation::candidate_source::image::publication::ManagedIndexBranchImageOwnerPort as _;
 use worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImage;
 use worth_relational_contracts::internal_port::mvcc::publication::companion::preflight_stop::CompanionPreflightStop as Stop;
 use worth_relational_mutation::internal_port::validation::candidate_source::publication::ManagedIndexSourcePublicationRootOwnerPort as _;

@@ -5,8 +5,7 @@ pub mod checkpoint_roots;
 pub(crate) use checkpoint_roots::{
     CheckpointRoots, PreparedCheckpointRoot, PreparedCheckpointRoots, RelationalCheckpointRoot,
 };
-pub mod complete_native_checkpoint;
-pub use complete_native_checkpoint::CompleteRelationalNativeCheckpoint;
+pub use crate::durability::authority::CompleteRelationalNativeCheckpoint;
 pub(in crate::internal_port::durability) use native_checkpoint::OriginalCheckpointRead;
 pub mod branch_root_schema_images;
 pub mod checkpoint_coverage;

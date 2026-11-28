@@ -3,9 +3,8 @@ use crate::publication::authority::diagnostic_emission::PreparationDiagnostics;
 use contracts::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::{
-    CanonicalCommitEnvelopeBodyFieldsPort as _, CanonicalCommitEnvelopeBodyOwnerPort as _,
-};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_branch::internal_port::publication::ownership::read::roster::CurrentPublicationRoster;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;

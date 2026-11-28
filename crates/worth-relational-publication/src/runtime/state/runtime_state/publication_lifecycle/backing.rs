@@ -38,7 +38,7 @@ impl SharedPublicationLifecycle {
     }
 
     pub(super) fn ptr_eq(&self, other: &Self) -> bool {
-        std::ptr::addr_eq(Arc::as_ptr(&self.0), Arc::as_ptr(&other.0))
+        std::ptr::addr_eq(self.0.as_ref(), other.0.as_ref())
     }
 
     pub(super) fn strong_count(&self) -> usize {

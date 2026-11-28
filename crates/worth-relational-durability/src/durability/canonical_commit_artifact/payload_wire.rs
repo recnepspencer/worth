@@ -2,7 +2,7 @@
 //! authoritative envelope projection. Emission borrows the live envelope;
 //! decoding borrows the payload bytes and grants nothing until readmission.
 
-use branch::history::data::canonical_commit_envelope::original_inputs::CanonicalCommitEnvelopeOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
 use serde::Serialize;
 use worth_relational_branch::internal_port as branch;
 pub mod seed;

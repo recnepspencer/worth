@@ -338,7 +338,7 @@ impl ResidentTargetEditor for ResidentEditionEditor<'_, '_> {
         self.leases
             .get(&id)
             .map(|lease| lease.full_view().partition())
-            .ok_or_else(|| {
+            .ok_or({
                 crate::execution::denial_cause::RelationalExecutionDenialCause::StorageUnavailable(
                     crate::storage::data::RelationalStorageUnavailable {
                         subject: crate::storage::data::RelationalStorageSubject::Region(id),

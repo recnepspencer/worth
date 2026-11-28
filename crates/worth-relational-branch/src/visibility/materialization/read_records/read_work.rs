@@ -53,7 +53,10 @@ pub fn scan_with_memory<T, Limit>(
     mut read: impl FnMut(
         &mut MapKernelContext<'_, '_>,
         &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<T, super::native_scan_stop::NativeScanStop<Limit>>,
+    ) -> Result<
+        T,
+        worth_relational_contracts::internal_port::execution::request_or::RequestOr<Limit>,
+    >,
     owned_bytes: impl Fn(&T) -> u64,
 ) -> Result<Result<T, Limit>, Cause> {
     match metered_with_memory(
@@ -62,8 +65,16 @@ pub fn scan_with_memory<T, Limit>(
         |answer| answer.as_ref().map_or(0, &owned_bytes),
     )? {
         Ok(value) => Ok(Ok(value)),
-        Err(super::native_scan_stop::NativeScanStop::Request(cause)) => Err(cause),
-        Err(super::native_scan_stop::NativeScanStop::Limit(limit)) => Ok(Err(limit)),
+        Err(
+            worth_relational_contracts::internal_port::execution::request_or::RequestOr::Request(
+                cause,
+            ),
+        ) => Err(cause),
+        Err(
+            worth_relational_contracts::internal_port::execution::request_or::RequestOr::Inner(
+                limit,
+            ),
+        ) => Ok(Err(limit)),
     }
 }
 
@@ -85,7 +96,10 @@ pub fn scan_with_retained_memory<T, Limit>(
     mut read: impl FnMut(
         &mut MapKernelContext<'_, '_>,
         &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<T, super::native_scan_stop::NativeScanStop<Limit>>,
+    ) -> Result<
+        T,
+        worth_relational_contracts::internal_port::execution::request_or::RequestOr<Limit>,
+    >,
     owned_bytes: impl Fn(&T) -> u64,
 ) -> Result<Result<(T, worth_execution::ExecutionMemoryReservation), Limit>, Cause> {
     crate::execution::request_custody::check_request(execution)?;
@@ -133,8 +147,16 @@ pub fn scan_with_retained_memory<T, Limit>(
         .map_err(Cause::from)??;
     match settled.0 {
         Ok(value) => Ok(Ok((value, settled.1))),
-        Err(super::native_scan_stop::NativeScanStop::Request(cause)) => Err(cause),
-        Err(super::native_scan_stop::NativeScanStop::Limit(limit)) => Ok(Err(limit)),
+        Err(
+            worth_relational_contracts::internal_port::execution::request_or::RequestOr::Request(
+                cause,
+            ),
+        ) => Err(cause),
+        Err(
+            worth_relational_contracts::internal_port::execution::request_or::RequestOr::Inner(
+                limit,
+            ),
+        ) => Ok(Err(limit)),
     }
 }
 

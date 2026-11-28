@@ -16,7 +16,7 @@ pub mod history;
 pub mod indexes;
 pub mod inspection;
 pub mod mvcc;
-pub mod projected_member_domain;
+pub use worth_relational_contracts::internal_port::projected_member_domain;
 pub mod publication;
 pub mod query;
 pub mod runtime;

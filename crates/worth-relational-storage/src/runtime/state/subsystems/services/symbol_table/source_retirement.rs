@@ -12,11 +12,8 @@ impl RuntimeSymbolTable {
         source: &dyn RelationalDurableColdSource,
     ) -> Result<(), Denial> {
         let target = {
-            let mut slot = match self.cold.try_write() {
-                Ok(slot) => slot,
-                Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-                Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
-            };
+            let mut slot =
+                worth_execution::try_retirement_guard(self.cold.try_write(), Denial::Busy)?;
             match slot.as_mut() {
                 None => None,
                 Some(original) => {
@@ -37,11 +34,7 @@ impl RuntimeSymbolTable {
         &self,
         handoff: &mut Option<NativeMemberRetirementHandoff>,
     ) -> Result<bool, Denial> {
-        let slot = match self.cold.try_read() {
-            Ok(slot) => slot,
-            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
-        };
+        let slot = worth_execution::try_retirement_guard(self.cold.try_read(), Denial::Busy)?;
         match slot.as_ref() {
             Some(original) => original.loan_source_retirement(handoff),
             None => Ok(true),
@@ -52,11 +45,7 @@ impl RuntimeSymbolTable {
         handoff: &mut Option<NativeMemberRetirementHandoff>,
         source: &dyn RelationalDurableColdSource,
     ) -> Result<Observation, Denial> {
-        let slot = match self.cold.try_read() {
-            Ok(slot) => slot,
-            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
-        };
+        let slot = worth_execution::try_retirement_guard(self.cold.try_read(), Denial::Busy)?;
         slot.as_ref()
             .ok_or(Denial::Refused(Refusal::ForeignCustody))?
             .return_source_retirement(handoff, source)

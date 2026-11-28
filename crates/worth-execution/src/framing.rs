@@ -97,11 +97,11 @@ pub fn decode_framed_envelope<'a>(
 
 /// Share validation with callers whose inspected bytes have already been
 /// charged at an enclosing boundary. The callback runs before every hash chunk.
-pub fn inspect_framed_envelope<'a, E: From<FramedEnvelopeError>>(
+pub fn inspect_framed_envelope<E: From<FramedEnvelopeError>>(
     spec: FramedEnvelopeSpec,
-    bytes: &'a [u8],
+    bytes: &[u8],
     mut charge: impl FnMut(usize) -> Result<(), E>,
-) -> Result<(u32, &'a [u8]), E> {
+) -> Result<(u32, &[u8]), E> {
     let (version, digest, payload) = split_frame(spec, bytes)?;
     verify_digest(digest, payload, &mut charge)?;
     Ok((version, payload))
@@ -118,8 +118,7 @@ fn split_frame(
         return Err(Error::MagicMismatch {
             expected: spec.magic,
             found,
-        }
-        .into());
+        });
     }
     let version = u32::from_le_bytes(prefix[8..12].try_into().unwrap());
     spec.validate_version(version)?;
@@ -130,7 +129,7 @@ fn split_frame(
     let actual = payload.len() as u64;
     spec.validate_size(actual)?;
     if declared != actual {
-        return Err(Error::PayloadLengthMismatch { declared, actual }.into());
+        return Err(Error::PayloadLengthMismatch { declared, actual });
     }
     Ok((version, &header[20..], payload))
 }

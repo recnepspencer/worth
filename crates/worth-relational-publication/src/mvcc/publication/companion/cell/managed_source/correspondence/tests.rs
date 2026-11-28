@@ -1,7 +1,7 @@
 //! Receiver protocol only. The public court proves actual correspondence issuance.
+use worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImageOwnerPort as _;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::{PositionedRelationalSnapshotFieldsPort as _, PositionedRelationalSnapshotFixturePort as _, PositionedRelationalSnapshotParts, assemble_positioned_relational_snapshot};
-use worth_relational_branch::internal_port::validation::candidate_source::image::publication::ManagedIndexBranchImageOwnerPort as _;
 use super::*;
 use worth_relational_branch::internal_port::branch::projection_view::companion_slot::transfer::PreparedCompanionSlotSwap;
 use contracts::identity::data::primitives::PartitionId;

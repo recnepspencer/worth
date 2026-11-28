@@ -1,4 +1,5 @@
 //! Phase-bound Home readmission metadata projection over a recovered branch.
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 use crate::durability::HomeReadmissionMetadataAuthority;
 use crate::identity::data::KindId;
 use crate::visibility::materialization::read_records::reader::{
@@ -9,7 +10,6 @@ use crate::visibility::materialization::read_records::reader::{
 use super::VisibilityProjectionView;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
-use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::creation::VisibilityProjectionViewOwnerPort as _;
 
 /// Typed denial for scans through [`HomeReadmissionMetadataView`].
 #[derive(Debug, Clone, PartialEq, Eq)]

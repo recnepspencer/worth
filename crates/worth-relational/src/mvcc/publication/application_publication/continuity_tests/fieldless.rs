@@ -1,12 +1,12 @@
 //! Schema-classified empty entities keep actual native incidence and custody.
 #[cfg(not(test))]
-use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::*;
 use crate::mvcc::publication::application_publication::meaning_fixture::{
     native_meaning_for_test, native_roles_for_test,
 };
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 #[test]
 fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission() {

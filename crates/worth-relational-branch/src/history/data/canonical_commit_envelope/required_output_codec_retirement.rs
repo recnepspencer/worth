@@ -68,14 +68,3 @@ impl CanonicalCommitEnvelopeBody {
             })
     }
 }
-
-#[doc(hidden)]
-pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
-    fn codec_retirement_headers_valid(&self) -> bool;
-}
-
-impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
-    fn codec_retirement_headers_valid(&self) -> bool {
-        self.codec_retirement_headers_valid()
-    }
-}

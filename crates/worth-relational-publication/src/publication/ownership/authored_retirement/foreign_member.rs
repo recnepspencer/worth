@@ -1,6 +1,6 @@
 //! Extra roster entries cannot expand closure; classify their actual provenance.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::*;
-use branch::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_branch::internal_port as branch;
 
 pub(super) fn classify(

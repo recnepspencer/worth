@@ -1,6 +1,7 @@
 //! Durable cutover retains the genuine request through count, emit and hash.
 use super::payload_wire::ArtifactPayloadRef;
 use super::verified_frame::VerifiedCanonicalCommitFrame;
+use contracts::durability::artifact_payload_emission::request::named_to;
 use contracts::durability::canonical_commit_artifact::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial as Denial;
 use contracts::durability::canonical_commit_artifact::frame::{
     CanonicalCommitArtifactHeader, DIGEST_OFFSET, HEADER_LEN,
@@ -11,7 +12,6 @@ use contracts::durability::canonical_commit_artifact::payload_digest::{
     RelationalCanonicalCommitArtifactDigestOwnerPort as _,
 };
 use contracts::execution::request_stage::{checkpoint, optional_stage};
-use std::io::{self, Write};
 use worth_execution::{
     ExecutionRequest, ExecutionRequestArrayBuilder, ExecutionRequestArrayDenial, MapKernelContext,
 };
@@ -56,7 +56,6 @@ fn encode(
         });
     }
     let header = CanonicalCommitArtifactHeader {
-        format: commit.envelope().artifact_format(),
         position: commit.position(),
         commit_id: commit.commit.commit_id,
         digest: Digest::unsealed(),
@@ -96,72 +95,38 @@ fn encode(
 fn emit(
     payload: &ArtifactPayloadRef<'_>,
     context: &mut MapKernelContext<'_, '_>,
-    output: Option<&mut ExecutionRequestArrayBuilder<'_, '_, u8>>,
+    mut output: Option<&mut ExecutionRequestArrayBuilder<'_, '_, u8>>,
 ) -> Result<usize, Denial> {
-    let mut writer = OriginalPayloadWriter {
-        context,
-        output,
-        count: 0,
-        failure: None,
-    };
-    let result = rmp_serde::encode::write_named(&mut writer, payload);
-    if let Some(cause) = writer.failure {
-        return Err(cause);
-    }
-    result.map_err(|error| Denial::PayloadEncoding {
-        detail: error.to_string(),
-    })?;
-    Ok(writer.count)
-}
-
-struct OriginalPayloadWriter<'a, 'scope, 'lease, 'output, 'request, 'authority> {
-    context: &'a mut MapKernelContext<'scope, 'lease>,
-    output: Option<&'output mut ExecutionRequestArrayBuilder<'request, 'authority, u8>>,
-    count: usize,
-    failure: Option<Denial>,
-}
-impl OriginalPayloadWriter<'_, '_, '_, '_, '_, '_> {
-    fn append(&mut self, input: &[u8]) -> Result<(), Denial> {
-        self.count = self
-            .count
-            .checked_add(input.len())
-            .ok_or(Denial::FrameSizeOverflow)?;
-        let total = self
-            .count
-            .checked_add(HEADER_LEN)
-            .ok_or(Denial::FrameSizeOverflow)?;
-        if total > MAXIMUM_ARTIFACT_BYTES {
-            return Err(Denial::SizeLimit {
-                observed: total,
-                maximum: MAXIMUM_ARTIFACT_BYTES,
-            });
-        }
-        for chunk in input.chunks(4096) {
-            checkpoint(self.context, chunk.len() as u64)
-                .map_err(|cause| Denial::Request(cause.into()))?;
-            if let Some(output) = &mut self.output {
-                output.extend_from_slice(chunk).map_err(allocation)?;
+    let mut count = 0_usize;
+    named_to(
+        payload,
+        |input| {
+            count = count
+                .checked_add(input.len())
+                .ok_or(Denial::FrameSizeOverflow)?;
+            let total = count
+                .checked_add(HEADER_LEN)
+                .ok_or(Denial::FrameSizeOverflow)?;
+            if total > MAXIMUM_ARTIFACT_BYTES {
+                return Err(Denial::SizeLimit {
+                    observed: total,
+                    maximum: MAXIMUM_ARTIFACT_BYTES,
+                });
             }
-        }
-        Ok(())
-    }
-}
-impl Write for OriginalPayloadWriter<'_, '_, '_, '_, '_, '_> {
-    fn write(&mut self, input: &[u8]) -> io::Result<usize> {
-        if self.failure.is_some() {
-            return Err(io::Error::other("original artifact request stopped"));
-        }
-        match self.append(input) {
-            Ok(()) => Ok(input.len()),
-            Err(cause) => {
-                self.failure = Some(cause);
-                Err(io::Error::other("original artifact request stopped"))
+            for chunk in input.chunks(4096) {
+                checkpoint(context, chunk.len() as u64)
+                    .map_err(|cause| Denial::Request(cause.into()))?;
+                if let Some(output) = &mut output {
+                    output.extend_from_slice(chunk).map_err(allocation)?;
+                }
             }
-        }
-    }
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
+            Ok(())
+        },
+        |error| Denial::PayloadEncoding {
+            detail: error.to_string(),
+        },
+    )?;
+    Ok(count)
 }
 
 fn allocation(cause: ExecutionRequestArrayDenial) -> Denial {
@@ -175,7 +140,7 @@ fn encode_digest(
     cause: contracts::durability::canonical_commit_artifact::payload_digest::RequestDigestDenial,
 ) -> Denial {
     match cause {
-        contracts::durability::canonical_commit_artifact::payload_digest::RequestDigestDenial::Frame(cause) => Denial::PayloadEncoding {
+        contracts::durability::canonical_commit_artifact::payload_digest::RequestDigestDenial::Inner(cause) => Denial::PayloadEncoding {
             detail: cause.to_string(),
         },
         contracts::durability::canonical_commit_artifact::payload_digest::RequestDigestDenial::Request(cause) => Denial::Request(cause),

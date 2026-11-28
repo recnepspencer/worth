@@ -194,19 +194,24 @@ pub(super) fn validate(
         ) {
             continue;
         }
-        let mut cur = cell.branch_id.clone();
-        while visited.insert(cur.clone()) {
-            let Some(state) = fold.current.get(&cur) else {
-                break;
-            };
-            let Some((parent, fork_commit)) = &state.fork_origin else {
-                break;
-            };
-            if state.removed {
-                required_retired.insert(cur, (parent.clone(), *fork_commit));
-            }
-            cur = parent.clone();
-        }
+        use std::ops::ControlFlow::{Break, Continue};
+        let Ok(_) = worth_relational_branch::internal_port::history::access::ancestry_walk::walk_acyclic_chain(
+            cell.branch_id.clone(),
+            &mut visited,
+            || Ok::<_, std::convert::Infallible>(()),
+            |cur| {
+                let Some(state) = fold.current.get(&cur) else {
+                    return Ok(Break(()));
+                };
+                let Some((parent, fork_commit)) = &state.fork_origin else {
+                    return Ok(Break(()));
+                };
+                if state.removed {
+                    required_retired.insert(cur, (parent.clone(), *fork_commit));
+                }
+                Ok(Continue(parent.clone()))
+            },
+        );
     }
     for edge in &manifest.naming.retired_forks {
         if required_retired.remove(&edge.branch) != Some((edge.parent.clone(), edge.fork_commit)) {

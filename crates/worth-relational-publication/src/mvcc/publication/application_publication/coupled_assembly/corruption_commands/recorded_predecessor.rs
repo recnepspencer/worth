@@ -4,7 +4,7 @@ use super::{reject, RelationalCoupledProducerPosture, RequiredOutputPublication}
 use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_branch::internal_port::history::data::codec_retirement_closure::CodecRetirementClosureStop;
 use worth_relational_contracts::internal_port::{
     publication::data::authored_retirement_refusal::AuthoredRetirementRefusal,

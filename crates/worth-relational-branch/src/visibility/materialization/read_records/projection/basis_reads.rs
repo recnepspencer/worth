@@ -282,4 +282,4 @@ impl VisibilityProjectionView {
 }
 
 mod port;
-pub use port::{VisibilityProjectionViewFixturePort, VisibilityProjectionViewOwnerPort};
+pub use port::VisibilityProjectionViewFixturePort;

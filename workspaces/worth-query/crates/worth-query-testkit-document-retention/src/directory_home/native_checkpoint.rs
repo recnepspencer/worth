@@ -5,7 +5,7 @@ use worth_execution::ExecutionRequest;
 
 /// Locate the exact `WSANREC2` anchored record for `home.checkpoint` at
 /// `expected_generation`, decode its `WAPHCKP1` Relational section, and
-/// extract the Native `WORTH-REL-CHK24` frame without falling back to older
+/// extract the Native `WORTH-REL-CHK25` frame without falling back to older
 /// checkpoint generations.
 pub(super) fn read_native_checkpoint_frame_for_generation(
     root: &Path,

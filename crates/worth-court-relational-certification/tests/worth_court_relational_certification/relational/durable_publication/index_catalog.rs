@@ -324,7 +324,7 @@ fn required_catalog_delta_survives_all_projections_and_rejects_missing_or_older_
         );
         assert!(
             matches!(refused, Err(worth_relational::facade::durability::RelationalRecoveryStop::Durability(error))
-            if error.class == worth_relational::facade::durability::RecoveryFailureClass::UnsupportedCheckpointVersion { found: version, supported: 24 })
+            if error.class == worth_relational::facade::durability::RecoveryFailureClass::UnsupportedCheckpointVersion { found: version, supported: 25 })
         );
     }
     release_test_commit_snapshot(&runtime, &result);

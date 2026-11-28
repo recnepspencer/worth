@@ -7,7 +7,7 @@ pub(super) fn entity<E>(
     kind_id: Option<KindId>,
     mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
     mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
-) -> Result<(), ReadStop<E>> {
+) -> Result<(), RequestOr<E>> {
     if source.is_exact_basis()
         && let Some(kind) = kind_id
     {
@@ -22,8 +22,8 @@ pub(super) fn entity<E>(
     }
     source
         .demand_regions_full(execution, [partition_id])
-        .map_err(ReadStop::Request)?;
-    crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+        .map_err(RequestOr::Request)?;
+    crate::execution::request_custody::check_request(execution).map_err(RequestOr::Request)?;
     let Some(partition) = source
         .selected_storage()
         .and_then(|storage| storage.get_partition(partition_id))
@@ -33,7 +33,7 @@ pub(super) fn entity<E>(
     let mut iterator_bytes = 0;
     let (live, historical) = {
         let mut prepare = |_navigation, bytes| {
-            before_candidate(0, bytes).map_err(ReadStop::Admission)?;
+            before_candidate(0, bytes).map_err(RequestOr::Inner)?;
             iterator_bytes = bytes;
             Ok(())
         };
@@ -67,14 +67,14 @@ pub(super) fn entity<E>(
                     .and_then(|row| row.checked_add(iterator_bytes))
                     .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
             })
-            .map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Request)?;
         before_candidate(
             super::super::super::read_prices::EXAMINE_SLOT
                 + super::super::super::read_prices::KEYED_RECORD,
             bytes,
         )
-        .map_err(ReadStop::Admission)?;
-        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+        .map_err(RequestOr::Inner)?;
+        crate::execution::request_custody::check_request(execution).map_err(RequestOr::Request)?;
         let record = preclaimed_records::entity(source, id);
         let actual = record
             .as_ref()
@@ -82,21 +82,21 @@ pub(super) fn entity<E>(
             .checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
             .and_then(|row| row.checked_add(iterator_bytes))
             .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
-            .map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Request)?;
         if actual > bytes {
-            return Err(ReadStop::Request(
+            return Err(RequestOr::Request(
                 crate::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded,
             ));
         }
-        before_candidate(0, actual).map_err(ReadStop::Admission)?;
+        before_candidate(0, actual).map_err(RequestOr::Inner)?;
         if let Some(record) = record
             && kind_id.is_none_or(|kind| record.kind.kind_id == kind)
         {
-            visit(&record).map_err(ReadStop::Admission)?;
+            visit(&record).map_err(RequestOr::Inner)?;
         }
     }
     // The iterator has dropped before the caller removes its temporary claim.
-    before_candidate(0, 0).map_err(ReadStop::Admission)?;
+    before_candidate(0, 0).map_err(RequestOr::Inner)?;
     Ok(())
 }
 
@@ -107,7 +107,7 @@ pub(super) fn relation<E>(
     kind_id: Option<KindId>,
     mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
     mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
-) -> Result<(), ReadStop<E>> {
+) -> Result<(), RequestOr<E>> {
     if source.is_exact_basis()
         && let Some(kind) = kind_id
     {
@@ -122,8 +122,8 @@ pub(super) fn relation<E>(
     }
     source
         .demand_regions_full(execution, [partition_id])
-        .map_err(ReadStop::Request)?;
-    crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+        .map_err(RequestOr::Request)?;
+    crate::execution::request_custody::check_request(execution).map_err(RequestOr::Request)?;
     let Some(partition) = source
         .selected_storage()
         .and_then(|storage| storage.get_partition(partition_id))
@@ -133,7 +133,7 @@ pub(super) fn relation<E>(
     let mut iterator_bytes = 0;
     let (live, historical) = {
         let mut prepare = |_navigation, bytes| {
-            before_candidate(0, bytes).map_err(ReadStop::Admission)?;
+            before_candidate(0, bytes).map_err(RequestOr::Inner)?;
             iterator_bytes = bytes;
             Ok(())
         };
@@ -167,14 +167,14 @@ pub(super) fn relation<E>(
                     .and_then(|row| row.checked_add(iterator_bytes))
                     .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
             })
-            .map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Request)?;
         before_candidate(
             super::super::super::read_prices::EXAMINE_SLOT
                 + super::super::super::read_prices::KEYED_RECORD,
             bytes,
         )
-        .map_err(ReadStop::Admission)?;
-        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+        .map_err(RequestOr::Inner)?;
+        crate::execution::request_custody::check_request(execution).map_err(RequestOr::Request)?;
         let record = preclaimed_records::relation(source, id);
         let actual = record
             .as_ref()
@@ -182,20 +182,20 @@ pub(super) fn relation<E>(
             .checked_add(std::mem::size_of::<RelationReadRecord>() as u64)
             .and_then(|row| row.checked_add(iterator_bytes))
             .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
-            .map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Request)?;
         if actual > bytes {
-            return Err(ReadStop::Request(
+            return Err(RequestOr::Request(
                 crate::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded,
             ));
         }
-        before_candidate(0, actual).map_err(ReadStop::Admission)?;
+        before_candidate(0, actual).map_err(RequestOr::Inner)?;
         if let Some(record) = record
             && kind_id.is_none_or(|kind| record.kind.kind_id == kind)
         {
-            visit(&record).map_err(ReadStop::Admission)?;
+            visit(&record).map_err(RequestOr::Inner)?;
         }
     }
     // The iterator has dropped before the caller removes its temporary claim.
-    before_candidate(0, 0).map_err(ReadStop::Admission)?;
+    before_candidate(0, 0).map_err(RequestOr::Inner)?;
     Ok(())
 }

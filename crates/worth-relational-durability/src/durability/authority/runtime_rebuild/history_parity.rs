@@ -1,8 +1,8 @@
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use contracts::durability::data::recovery_errors::{DurabilityError, RecoveryFailureClass};
 use contracts::history::data::history_policy::HistoryDriftClass;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::{
     CanonicalCommitEnvelope, CanonicalCommitEnvelopeBodyFieldsPort as _,
-    CanonicalCommitEnvelopeBodyOwnerPort as _,
 };
 use worth_relational_branch::internal_port::runtime::state::subsystems::history::HistorySubsystem;
 use worth_relational_contracts::internal_port as contracts;

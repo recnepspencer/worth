@@ -8,28 +8,11 @@ use worth_relational_contracts::internal_port::durability::data::recovery_errors
 
 pub const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK25\n";
 pub const CHECKPOINT_VERSION: u16 = 25;
-const LEGACY_CHECKPOINT_VERSION: u16 = 24;
-const LEGACY_CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK24\n";
-
-#[derive(Clone, Copy)]
-enum CheckpointFormat {
-    Ordinary,
-    LegacyMergeCapable,
-}
 const CHECKPOINT_FAMILY: &[u8] = b"WORTH-REL-CHK";
 
 pub(crate) fn checkpoint_payload(bytes: &[u8]) -> Result<&[u8], DurabilityError> {
-    checkpoint_payload_with_format(bytes).map(|(payload, _)| payload)
-}
-
-fn checkpoint_payload_with_format(
-    bytes: &[u8],
-) -> Result<(&[u8], CheckpointFormat), DurabilityError> {
     if let Some(payload) = bytes.strip_prefix(CHECKPOINT_MAGIC) {
-        return Ok((payload, CheckpointFormat::Ordinary));
-    }
-    if let Some(payload) = bytes.strip_prefix(LEGACY_CHECKPOINT_MAGIC) {
-        return Ok((payload, CheckpointFormat::LegacyMergeCapable));
+        return Ok(payload);
     }
     Err(match framed_checkpoint_version(bytes) {
         Some(found) => DurabilityError::new(
@@ -70,7 +53,7 @@ fn framed_checkpoint_version(bytes: &[u8]) -> Option<u16> {
         return None;
     }
     let found: u16 = std::str::from_utf8(major).ok()?.parse().ok()?;
-    (found != CHECKPOINT_VERSION && found != LEGACY_CHECKPOINT_VERSION).then_some(found)
+    (found != CHECKPOINT_VERSION).then_some(found)
 }
 
 pub mod checkpoint_decoding;
@@ -117,10 +100,15 @@ mod tests {
 
     #[test]
     fn checkpoint_payload_refuses_other_versions_and_malformed_headers_distinctly() {
-        assert!(checkpoint_payload(b"WORTH-REL-CHK24\npayload").is_ok());
+        assert_eq!(
+            checkpoint_payload(b"WORTH-REL-CHK25\npayload").unwrap(),
+            b"payload"
+        );
         for (frame, expected) in [
             (b"WORTH-REL-CHK23\n".as_slice(), 23),
             (b"WORTH-REL-CHK23.1\n".as_slice(), 23),
+            (b"WORTH-REL-CHK24\n".as_slice(), 24),
+            (b"WORTH-REL-CHK24.1\n".as_slice(), 24),
             (b"WORTH-REL-CHK26\n".as_slice(), 26),
         ] {
             let err = checkpoint_payload(frame).unwrap_err();
@@ -133,7 +121,6 @@ mod tests {
             );
         }
         for malformed in [
-            b"WORTH-REL-CHK24.1\n".as_slice(),
             b"WORTH-REL-CHK25.1\n".as_slice(),
             b"WORTH-REL-CHK024\n".as_slice(),
             b"WORTH-REL-CHK0\n".as_slice(),

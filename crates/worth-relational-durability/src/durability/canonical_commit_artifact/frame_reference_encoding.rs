@@ -35,7 +35,6 @@ pub(super) fn encode(
     let declared_len = u64::try_from(payload_len)
         .map_err(|_| RelationalCanonicalCommitArtifactEncodeDenial::FrameSizeOverflow)?;
     let unsealed = CanonicalCommitArtifactHeader {
-        format: commit.envelope().artifact_format(),
         position: commit.position(),
         commit_id: commit.envelope().commit.commit_id,
         digest: Digest::unsealed(),

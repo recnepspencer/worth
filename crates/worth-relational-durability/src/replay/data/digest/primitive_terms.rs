@@ -76,26 +76,12 @@ impl ReplayDigestBuilder {
         self
     }
 
-    pub(super) fn optional_digest(self, value: Option<&[u8; 32]>) -> Self {
-        match value {
-            Some(value) => self.tag(1).digest_bytes(value),
-            None => self.tag(0),
-        }
-    }
-
     pub(super) fn branch_id(self, value: &BranchId) -> Self {
         self.string(&value.0)
     }
 
     pub(super) fn commit_id(self, value: CommitId) -> Self {
         self.u64(value.0)
-    }
-
-    pub(super) fn optional_commit_id(self, value: Option<CommitId>) -> Self {
-        match value {
-            Some(value) => self.tag(1).commit_id(value),
-            None => self.tag(0),
-        }
     }
 
     pub(super) fn version_id(self, value: VersionId) -> Self {

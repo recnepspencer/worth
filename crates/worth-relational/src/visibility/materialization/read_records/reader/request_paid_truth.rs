@@ -1,5 +1,5 @@
 //! Each truth seam must refuse without returning a partial row set.
-use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewFixturePort as _;
 use super::super::read_prices::{
     ASPECT_BINDING, ASPECT_COMPARISON, EXAMINE_SLOT, KEYED_RECORD, RESERVE_RECORD,

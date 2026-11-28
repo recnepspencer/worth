@@ -1,9 +1,8 @@
 //! Evidence retained from the exact memory-owned canonical commit.
-use crate::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
+use crate::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::assemble_recovered_relational_semantic_result;
 use super::created_row_read::{read_created_entity, ReadmittedRelationalCreatedEntity};
 use super::refusal::RelationalAssociatedEffectRefusal as Refusal;
-use crate::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
 use crate::history::data::{
     PositionedCanonicalCommit, RelationalCommitReceipt, SharedCanonicalCommitEnvelope,
 };

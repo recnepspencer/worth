@@ -54,23 +54,5 @@ impl ResidentVisibilitySnapshotBasis {
     }
 }
 
-#[doc(hidden)]
-pub trait VisibilityProjectionViewOwnerPort: Sized {
-    fn selected_root(&self) -> Option<&RelationalBranchRoot>;
-    fn selected_partitions(&self) -> Option<&dyn crate::storage::overlay::PartitionAccess>;
-    fn retain_selected_root(&self) -> Option<Arc<RelationalBranchRoot>>;
-}
-
-impl VisibilityProjectionViewOwnerPort for VisibilityProjectionView {
-    fn selected_root(&self) -> Option<&RelationalBranchRoot> {
-        self.selected_root()
-    }
-
-    fn selected_partitions(&self) -> Option<&dyn crate::storage::overlay::PartitionAccess> {
-        self.selected_partitions()
-    }
-
-    fn retain_selected_root(&self) -> Option<Arc<RelationalBranchRoot>> {
-        self.retain_selected_root()
-    }
-}
+mod projection_owner;
+pub use projection_owner::VisibilityProjectionViewOwnerPort;

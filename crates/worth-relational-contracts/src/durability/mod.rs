@@ -6,3 +6,4 @@ pub mod canonical_commit_artifact;
 pub mod checkpoint_admission;
 pub mod data;
 pub mod medium;
+pub mod positioned_frame;

@@ -23,12 +23,12 @@ pub use state::{
     PlannedSignalBranchRetirement, PlannedSignalBranchRetirementBatch, ReplayArtifactProofInput,
     ReplayArtifactProofReport, ReplayMismatchClass, ReplayParityProofReport, RuntimeProofReport,
     SignalBranchBasis, SignalBranchBasisArtifact, SignalBranchBasisAuthority,
-    SignalBranchBasisCompactExplanation, SignalBranchBasisDenial, SignalBranchBasisIdentity,
-    SignalBranchBasisReady, SignalBranchBasisValidationOutcome, SignalBranchForkDenial,
+    SignalBranchBasisDenial, SignalBranchBasisIdentity,
+    SignalBranchBasisReady, SignalBranchForkDenial,
     SignalBranchForkReceipt, SignalBranchForkRequest, SignalBranchForkRequestBasis,
     SignalBranchHeadPosture, SignalBranchRestorePosture, SignalBranchRetirementBatchDenial,
     SignalBranchRetirementBatchReceipt, SignalBranchRetirementDenial, SignalBranchRetirementReason,
-    SignalBranchRetirementReceipt, SignalBranchTransactionHead, StaleSignalBranchBasisArtifact,
+    SignalBranchRetirementReceipt, SignalBranchTransactionHead,
     ValidatedBranchTargetedTransactionRequest, BRANCH_STATE_PROOF_BASIS_VERSION,
     BRANCH_STATE_PROOF_SCHEMA_VERSION, SIGNAL_BRANCH_BASIS_SCHEMA_VERSION,
 };
@@ -75,3 +75,6 @@ pub use state::{
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+pub use state::{SignalBranchBasisCompactExplanation, SignalBranchBasisValidationOutcome, StaleSignalBranchBasisArtifact};

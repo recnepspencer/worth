@@ -21,6 +21,7 @@ impl<'runtime> HistoryAuthority<'runtime> {
         Self { runtime }
     }
 
+    #[cfg(test)]
     pub(crate) fn runtime(&self) -> &RelationalRuntime {
         self.runtime
     }

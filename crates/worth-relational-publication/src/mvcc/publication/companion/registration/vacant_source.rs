@@ -1,6 +1,7 @@
 //! Attach a paid, empty Source image to the genuine live Native head that
 //! carries none for the active registration: a recovered head, or one its
 //! publishing registration left vacant.
+use worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImageOwnerPort as _;
 use super::super::{
     cell::publication_admission::PreparedManagedSourceCell, CompanionBranchCell,
     CompanionPreflightStop as Stop, ManagedIndexSourceCellPlacement,
@@ -14,7 +15,7 @@ use worth_relational_branch::internal_port::branch::projection_view::{
 };
 use worth_relational_branch::internal_port::branch::root::RelationalBranchRoot;
 use worth_relational_branch::internal_port::validation::candidate_source::image::{
-    publication::ManagedIndexBranchImageOwnerPort as _, ManagedIndexBranchImage,
+    ManagedIndexBranchImage
 };
 use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshot;
 use worth_relational_contracts::internal_port::history::data::coordinates::BranchId;

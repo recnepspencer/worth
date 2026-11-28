@@ -37,7 +37,9 @@ pub struct Hooks {
 enum Preparation {
     #[default]
     Pass,
+    #[cfg(test)]
     Refuse,
+    #[cfg(test)]
     Cancel(worth_execution::CancellationSource),
 }
 
@@ -92,9 +94,11 @@ impl CustomInvariantRule for ScopeProbe {
         }
         match &*self.0.preparation.lock().unwrap() {
             Preparation::Pass => Ok(()),
+            #[cfg(test)]
             Preparation::Refuse => Err(CustomInvariantPreparationError::new(
                 "probe preparation refusal",
             )),
+            #[cfg(test)]
             Preparation::Cancel(source) => {
                 source.cancel();
                 planner

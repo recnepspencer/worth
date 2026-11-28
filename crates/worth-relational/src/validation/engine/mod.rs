@@ -23,7 +23,6 @@ pub(crate) use profile::InvariantRequestProfile;
 pub(crate) use request::{InvariantExecutionRequest, InvariantPreparationControl};
 pub use result::{
     InvariantExecutionDisposition, InvariantExecutionMetadata, InvariantExecutionResult,
-    InvariantFailure,
 };
 #[cfg(test)]
 pub(crate) use result::{
@@ -35,3 +34,6 @@ pub(crate) use worth_relational_mutation::internal_port::validation::engine::{
 };
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+pub(crate) use worth_relational_mutation::internal_port::validation::engine::InvariantFailure;

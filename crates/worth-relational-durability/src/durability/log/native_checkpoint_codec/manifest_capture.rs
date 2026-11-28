@@ -1,5 +1,5 @@
 use contracts::lineage::data::graph::LineageNodeFieldsPort as _;
-use worth_relational_branch::internal_port::history::data::association_discovery::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_contracts::internal_port as contracts;
 pub mod commit_rows;
 pub mod seal;
@@ -167,21 +167,6 @@ impl CapturedManifest {
             prior_source: prior.map(|prior| prior.source.clone()),
             prior_commits,
         })
-    }
-    #[cfg(test)]
-    pub(super) fn capture(
-        lane: &contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        checkpoint: &DurableCheckpoint,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
-        Self::capture_expanded(
-            lane,
-            execution,
-            checkpoint,
-            policy,
-            &mut super::checkpoint_encoding::CheckpointEncodingControl::Policy(policy),
-        )
     }
     pub(crate) fn capture_expanded(
         lane: &contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,

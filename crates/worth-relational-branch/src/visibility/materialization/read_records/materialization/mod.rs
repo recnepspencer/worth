@@ -1,3 +1,4 @@
+mod record_history;
 pub mod entity_records;
 pub mod relation_records;
 

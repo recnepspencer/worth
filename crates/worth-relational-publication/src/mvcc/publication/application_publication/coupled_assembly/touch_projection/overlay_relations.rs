@@ -15,7 +15,7 @@ use contracts::storage::data::read_records::{RecordLifecycleState, RelationReadR
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use contracts::transactions::data::primitives::RecordRef;
 use worth_execution::ExecutionRequest;
-use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 use worth_relational_contracts::internal_port as contracts;
 
 /// One live side of an overlay relation: its kind and endpoints.

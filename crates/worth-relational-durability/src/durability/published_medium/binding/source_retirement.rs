@@ -29,11 +29,7 @@ impl RelationalDurableMediumBinding {
         // Native work. The stopped-business preflight fences accepted work;
         // the original physical owner must classify its unresolved effects.
         // Keep this binding and its outcome through that inspection posture.
-        let state = match self.state.try_lock() {
-            Ok(state) => state,
-            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
-        };
+        let state = worth_execution::try_retirement_guard(self.state.try_lock(), Denial::Busy)?;
         // This hook is a non-consuming, non-reentrant provider qualification.
         // The durability ownership gate was released before entering here.
         state

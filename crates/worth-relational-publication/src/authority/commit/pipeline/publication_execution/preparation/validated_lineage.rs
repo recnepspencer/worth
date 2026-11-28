@@ -1,8 +1,7 @@
 //! The validated lineage batch a publication installs: its reserved events
 //! and its decoded canonical group lineage frame.
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::{
-    CanonicalCommitEnvelopeBody, CanonicalCommitEnvelopeBodyOwnerPort as _,
-};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBody;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::state::ValidatedLineageEventBatch;
 

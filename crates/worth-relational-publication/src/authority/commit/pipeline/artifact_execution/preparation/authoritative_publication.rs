@@ -1,11 +1,11 @@
 //! Assemble canonical authority for the checked complete semantic plan.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::CommitPhaseBacking;
 use super::SchemaContinuityPlan;
 use crate::authority::commit::phases::publication::{
     canonical_commit_envelope, CanonicalEnvelopeInputs,
 };
 use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
-use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use contracts::history::data::commit_receipt::RelationalCommitReceipt;
 use contracts::publication::patch::data::authoritative_patch_envelope::CanonicalAuthoritativePatch;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;

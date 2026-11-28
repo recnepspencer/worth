@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::data::graph::{BranchMutationRecord, BranchStructuralDelta};
+use crate::data::graph::BranchMutationRecord;
 use crate::data::handle::NodeId;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]

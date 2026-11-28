@@ -1,6 +1,6 @@
 use crate::data::graph::signal_graph::SignalGraph;
 use crate::data::handle::NodeId;
-use crate::data::node::{CheckpointNodeImage, NodeEntry, NodeEvaluationConfig};
+use crate::data::node::{NodeEntry, NodeEvaluationConfig};
 
 use crate::data::graph::node_builder::NodeBuilder;
 
@@ -9,13 +9,6 @@ impl SignalGraph {
     pub fn create_node(&mut self) -> NodeId {
         let entry = NodeEntry::new();
         self.allocate_node(entry)
-    }
-
-    pub(crate) fn create_node_from_checkpoint_image(
-        &mut self,
-        image: CheckpointNodeImage,
-    ) -> NodeId {
-        self.allocate_node(NodeEntry::from_checkpoint_image(image))
     }
 
     pub fn node(&mut self) -> NodeBuilder<'_> {

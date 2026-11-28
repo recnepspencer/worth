@@ -67,20 +67,3 @@ impl CanonicalCommitEnvelopeBody {
         Ok(())
     }
 }
-
-#[doc(hidden)]
-pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
-    fn validate_historical_selection_header(
-        &self,
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<(), Stop>;
-}
-
-impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
-    fn validate_historical_selection_header(
-        &self,
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<(), Stop> {
-        self.validate_historical_selection_header(context)
-    }
-}

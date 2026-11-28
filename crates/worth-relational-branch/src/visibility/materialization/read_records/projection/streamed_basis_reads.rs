@@ -2,7 +2,7 @@ pub mod kind_reads;
 pub mod partition_stream;
 pub mod preclaimed_records;
 pub mod record_clone_quotes;
-use super::super::read_stop::ReadStop;
+use worth_relational_contracts::internal_port::execution::request_or::RequestOr;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::storage::overlay::PartitionAccess;
@@ -65,37 +65,37 @@ pub trait ProjectionRecordSource {
         id: EntityId,
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         inspect: impl FnOnce(&EntityReadRecord) -> T,
-    ) -> Result<Option<T>, ReadStop<E>> {
+    ) -> Result<Option<T>, RequestOr<E>> {
         self.demand_regions_full(execution, [id.partition_id])
-            .map_err(ReadStop::Request)?;
-        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(RequestOr::Request)?;
         let bytes = self
             .candidate_entity_heap_for_id(id)
             .and_then(|heap| {
                 heap.checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
                     .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
             })
-            .map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Request)?;
         before_candidate(super::super::read_prices::KEYED_RECORD, bytes)
-            .map_err(ReadStop::Admission)?;
-        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Inner)?;
+        crate::execution::request_custody::check_request(execution).map_err(RequestOr::Request)?;
         let record = preclaimed_records::entity(self, id);
         let actual = record
             .as_ref()
             .map_or(0, super::super::read_footprint::entity)
             .checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
             .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
-            .map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Request)?;
         if actual > bytes {
-            return Err(ReadStop::Request(
+            return Err(RequestOr::Request(
                 crate::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded,
             ));
         }
-        before_candidate(0, actual).map_err(ReadStop::Admission)?;
+        before_candidate(0, actual).map_err(RequestOr::Inner)?;
         let result = record.as_ref().map(inspect);
         drop(record);
         // The original caller may now restore its enclosing temporary claim.
-        before_candidate(0, 0).map_err(ReadStop::Admission)?;
+        before_candidate(0, 0).map_err(RequestOr::Inner)?;
         Ok(result)
     }
 
@@ -106,7 +106,7 @@ pub trait ProjectionRecordSource {
         kind_id: Option<KindId>,
         before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
-    ) -> Result<(), ReadStop<E>> {
+    ) -> Result<(), RequestOr<E>> {
         partition_stream::entity(
             self,
             execution,
@@ -124,7 +124,7 @@ pub trait ProjectionRecordSource {
         kind_id: Option<KindId>,
         before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
-    ) -> Result<(), ReadStop<E>> {
+    ) -> Result<(), RequestOr<E>> {
         partition_stream::relation(
             self,
             execution,
@@ -141,14 +141,15 @@ pub trait ProjectionRecordSource {
         kind_id: Option<KindId>,
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
-    ) -> Result<(), ReadStop<E>> {
+    ) -> Result<(), RequestOr<E>> {
         if self.is_exact_basis()
             && let Some(kind) = kind_id
         {
             return kind_reads::entity(self, execution, kind, None, before_candidate, visit);
         }
-        self.demand_all_full(execution).map_err(ReadStop::Request)?;
-        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+        self.demand_all_full(execution)
+            .map_err(RequestOr::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(RequestOr::Request)?;
         self.try_for_each_selected_partition(|partition_id| {
             self.try_for_each_entity_record_in(
                 execution,
@@ -166,14 +167,15 @@ pub trait ProjectionRecordSource {
         kind_id: Option<KindId>,
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
-    ) -> Result<(), ReadStop<E>> {
+    ) -> Result<(), RequestOr<E>> {
         if self.is_exact_basis()
             && let Some(kind) = kind_id
         {
             return kind_reads::relation(self, execution, kind, None, before_candidate, visit);
         }
-        self.demand_all_full(execution).map_err(ReadStop::Request)?;
-        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+        self.demand_all_full(execution)
+            .map_err(RequestOr::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(RequestOr::Request)?;
         self.try_for_each_selected_partition(|partition_id| {
             self.try_for_each_relation_record_in(
                 execution,

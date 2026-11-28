@@ -238,7 +238,7 @@ fn caller_association_survives_embedded_checkpoint_and_refuses_old_semantics() {
         assert!(matches!(
             expect_durability_failure(stop).class,
             crate::durability::data::RecoveryFailureClass::UnsupportedCheckpointVersion {
-                supported: 24,
+                supported: 25,
                 ..
             }
         ));

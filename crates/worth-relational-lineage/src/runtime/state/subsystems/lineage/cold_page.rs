@@ -102,11 +102,21 @@ impl<D: ColdPageDescriptor, P> ColdPageCell<D, P> {
         self: &Arc<Self>,
         page: &Arc<P>,
     ) -> Result<ColdPageLease<D, P>, RelationalStorageUnavailable> {
-        self.leases
-            .try_update(Ordering::AcqRel, Ordering::Acquire, |count| {
-                count.checked_add(1)
-            })
-            .map_err(|_| self.descriptor.storage_failure(Cause::MemoryExhausted))?;
+        let mut count = self.leases.load(Ordering::Acquire);
+        loop {
+            let next = count
+                .checked_add(1)
+                .ok_or_else(|| self.descriptor.storage_failure(Cause::MemoryExhausted))?;
+            match self.leases.compare_exchange_weak(
+                count,
+                next,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => break,
+                Err(actual) => count = actual,
+            }
+        }
         Ok(ColdPageLease {
             cell: self.clone(),
             page: page.clone(),

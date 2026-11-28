@@ -1,6 +1,6 @@
 mod conditions;
 
-use crate::data::aspect::{Aspect, AspectMask};
+use crate::data::aspect::AspectMask;
 use crate::data::comparator::VersionComparatorPolicy;
 use crate::data::graph::SignalGraph;
 use crate::data::handle::NodeId;

@@ -27,7 +27,7 @@ pub fn encode_native_capture(
     let mut answer = None;
     let handoff = execution.run_single_stage(|stage| {
         let mut control =
-            crate::durability::log::native_checkpoint_codec::CheckpointEncodingControl::Original {
+            crate::durability::log::native_checkpoint_codec::CheckpointEncodingControl {
                 execution: *execution,
                 stage,
             };

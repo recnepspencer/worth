@@ -126,19 +126,3 @@ impl PartialEq for CanonicalCoupledAuthoredPublication {
     }
 }
 impl Eq for CanonicalCoupledAuthoredPublication {}
-
-#[doc(hidden)]
-pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
-    fn authored_source_retirement(&self) -> Option<&Arc<CanonicalAuthoredRetirement>>;
-    fn authored_source_restoration(&self) -> Option<&Arc<CanonicalAuthoredRestoration>>;
-}
-
-impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
-    fn authored_source_retirement(&self) -> Option<&Arc<CanonicalAuthoredRetirement>> {
-        self.authored_source_retirement()
-    }
-
-    fn authored_source_restoration(&self) -> Option<&Arc<CanonicalAuthoredRestoration>> {
-        self.authored_source_restoration()
-    }
-}

@@ -206,7 +206,6 @@ fn embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining
         "required_output_materialization",
         "branch_cell_checkpoint",
         "strategy_artifacts",
-        "merge_execution_authority",
         "schema_continuation_descriptor",
         "schema_reconciliation_descriptor",
     ] {
@@ -229,43 +228,47 @@ fn embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining
     }
 }
 
-// Original V10 journal position 2 from the pre-retirement Store Directory writer.
-const V10_ORDINARY_FRAME: &[u8] = include_bytes!("shared_readmission_tests/v10-ordinary.frame");
-
-#[test]
-fn legacy_v10_ordinary_frame_readmits_and_reencodes_byte_for_byte() {
-    let host = worth_harness::facade::execution_fixture::serial_request();
-    let request = ExecutionRequest::serial(&host);
-    let frame = Frame::copy_frame_original(V10_ORDINARY_FRAME, &request)
-        .unwrap_or_else(|_| panic!("captured V10 frame must verify"));
-    let admitted = frame.readmitted_body(&request).unwrap();
-    assert_eq!(admitted.position(), PatchStreamPosition(2));
-    assert_eq!(
-        admitted.envelope().artifact_format(),
-        contracts::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat::LegacyMergeCapable,
-    );
-    let reencoded = encode_canonical_frame_for_request(&admitted, &request).unwrap();
-    assert_eq!(reencoded.as_bytes(), V10_ORDINARY_FRAME);
-}
-
 #[test]
 fn ordinary_v11_frame_refuses_even_empty_legacy_merge_slots() {
     use contracts::durability::canonical_commit_artifact::{
-        frame::{CanonicalCommitArtifactFormat, CanonicalCommitArtifactHeader},
+        borrowed_payload::BorrowedPayload, frame::CanonicalCommitArtifactHeader,
+        payload_digest::RelationalCanonicalCommitArtifactDigestOwnerPort as _,
         readmission_refusal::RelationalCanonicalCommitArtifactRefusal as Refusal,
     };
 
-    let (mut header, payload) = CanonicalCommitArtifactHeader::verify(V10_ORDINARY_FRAME).unwrap();
-    // The header version is outside the payload commitment. The mutation keeps
-    // valid framing, coordinates and digest, including the three empty slots.
-    header.format = CanonicalCommitArtifactFormat::Ordinary;
-    let mut frame = header.emit(payload.len() as u64).to_vec();
-    frame.extend_from_slice(payload);
-
     let host = worth_harness::facade::execution_fixture::serial_request();
     let request = ExecutionRequest::serial(&host);
+    let source = source_artifact();
+    let (mut header, payload) = CanonicalCommitArtifactHeader::verify(source.as_bytes()).unwrap();
+    let body = BorrowedPayload(payload)
+        .field("canonical", &request)
+        .unwrap()
+        .0;
+    let start = payload
+        .windows(body.len())
+        .position(|field| field == body)
+        .unwrap();
+    assert_eq!(body[0], 0xde, "the current producer emits map16");
+    let fields = u16::from_be_bytes([body[1], body[2]]);
+    let mut payload = payload.to_vec();
+    payload[start + 1..start + 3].copy_from_slice(&(fields + 1).to_be_bytes());
+    let mut retired_slot = rmp_serde::to_vec("merge_execution_authority").unwrap();
+    retired_slot.push(0xc0);
+    payload.splice(start + 3..start + 3, retired_slot);
+    use sha2::{Digest as _, Sha256};
+    let leaf =
+        |name| Sha256::digest(BorrowedPayload(&payload).field(name, &request).unwrap().0).into();
+    header.digest = super::RelationalCanonicalCommitArtifactDigest::from_leaves(
+        header.position.0,
+        header.commit_id.0,
+        leaf("position"),
+        leaf("canonical"),
+        leaf("original_inputs"),
+    );
+    let mut frame = header.emit(payload.len() as u64).to_vec();
+    frame.extend_from_slice(&payload);
     let frame = Frame::copy_frame_original(&frame, &request)
-        .unwrap_or_else(|_| panic!("a version-only mutation must preserve frame verification"));
+        .unwrap_or_else(|_| panic!("the malformed body must pass framing and digest verification"));
     assert!(matches!(
         frame.readmitted_body(&request),
         Err(Refusal::NonCanonicalPayload)

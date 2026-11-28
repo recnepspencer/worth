@@ -7,7 +7,6 @@ use crate::data::output::PartitionSubscription;
 use crate::data::output_equivalence::OutputEquivalencePolicy;
 use crate::data::reuse::{ArtifactSemanticBoundary, ReuseStrategy};
 use crate::data::temporal::*;
-use crate::logic::transaction::*;
 use crate::schema::data::*;
 
 #[test]

@@ -8,7 +8,6 @@ use serde::ser::SerializeStruct;
 pub enum EnvelopeProjection {
     Full,
     Authoritative,
-    LegacyAuthoritative,
     Checkpoint,
 }
 pub(super) fn serialize<S: serde::Serializer>(
@@ -57,9 +56,7 @@ pub(super) fn serialize<S: serde::Serializer>(
         entries: Vec::new(),
     };
     let omitted_indexes = DerivedIndexArtifacts::default();
-    let legacy = matches!(projection, EnvelopeProjection::LegacyAuthoritative);
     let field_count = 29
-        + 3 * usize::from(legacy)
         + usize::from(!authored_index_writes.is_unavailable())
         + usize::from(producer_cascade_retirement.is_some())
         + usize::from(coupled_authored_publication.is_some())
@@ -99,11 +96,6 @@ pub(super) fn serialize<S: serde::Serializer>(
     fields.serialize_field("authority_kind", authority_kind)?;
     // Existing envelope formats reserve this slot. Ordinary artifacts keep their canonical bytes.
     fields.serialize_field("strategy_artifacts", &Option::<()>::None)?;
-    if legacy {
-        fields.serialize_field("merge_execution_authority", &Option::<()>::None)?;
-        fields.serialize_field("merge_parent_branches", &[(); 0])?;
-        fields.serialize_field("merge_base_commits", &[(); 0])?;
-    }
     fields.serialize_field("schema_version", schema_version)?;
     fields.serialize_field("schema_authority", schema_authority)?;
     fields.serialize_field("merged_plan", merged_plan)?;
@@ -117,10 +109,7 @@ pub(super) fn serialize<S: serde::Serializer>(
     fields.serialize_field("descriptive_touches", descriptive_touches)?;
     fields.serialize_field(
         "diagnostics_summary",
-        if matches!(
-            projection,
-            EnvelopeProjection::Authoritative | EnvelopeProjection::LegacyAuthoritative
-        ) {
+        if matches!(projection, EnvelopeProjection::Authoritative) {
             &omitted_diagnostics
         } else {
             diagnostics_summary

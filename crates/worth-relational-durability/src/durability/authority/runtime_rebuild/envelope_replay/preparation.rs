@@ -34,7 +34,7 @@ pub fn prepare_replay_context(
     let had_checkpoint_artifact = inputs
         .history
         .try_has_commit(envelope.commit.commit_id)
-        .map_err(|cause| commit_index_unavailable(cause))?;
+        .map_err(commit_index_unavailable)?;
     validate_parent_closure(
         inputs.history,
         envelope,
