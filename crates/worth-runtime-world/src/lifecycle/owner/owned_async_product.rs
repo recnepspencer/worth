@@ -185,10 +185,10 @@ where
             .map_err(request_product_denial)?;
         let relational = observation.basis().relational_basis().observation();
         let truth = worth_runtime_bridge::facade::BridgeAsyncRequestTruthViewBasis::branch_head(
-            worth_runtime_bridge::facade::TruthBranchIdentity::from_relational_branch_id(
-                relational.identity().branch_id().0.clone(),
+            worth_runtime_bridge::facade::TruthBranchIdentity::relational(
+                relational.identity().branch_id().clone(),
             ),
-            relational_source.snapshot_identity().clone(),
+            *relational_source.snapshot_identity(),
         );
         bridge
             .admit_unqueued_owned_async_request_identity(
@@ -214,13 +214,11 @@ where
             .ok_or(RuntimeWorldOwnedAsyncProductValidationDenial::NoCommittedSource)?;
         Ok(
             worth_runtime_bridge::facade::BridgeAsyncRequestTruthViewBasis::authoritative(
-                worth_runtime_bridge::facade::TruthBranchIdentity::from_relational_branch_id(
-                    relational.identity().branch_id().0.clone(),
+                worth_runtime_bridge::facade::TruthBranchIdentity::relational(
+                    relational.identity().branch_id().clone(),
                 ),
-                worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(
-                    commit.0,
-                ),
-                relational_source.snapshot_identity().clone(),
+                worth_runtime_bridge::facade::TruthCommitIdentity::relational(commit),
+                *relational_source.snapshot_identity(),
             ),
         )
     }

@@ -43,10 +43,10 @@ impl BridgeWritebackNativeCausalityInputs {
         let basis = BridgeWritebackCausalityBasis::from_evidence(
             causality_identity.clone(),
             BridgeWritebackCausalityEvidence::from_native_bases(
-                truth_trigger_identity.as_str(),
+                truth_trigger_identity.canonical_label(),
                 route_identity.as_str(),
-                evaluation_snapshot_identity.as_str(),
-                truth_view_snapshot_identity.as_str(),
+                evaluation_snapshot_identity.canonical_label(),
+                truth_view_snapshot_identity.canonical_label(),
             ),
         );
         Self {

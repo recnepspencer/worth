@@ -11,6 +11,20 @@ use crate::snapshot::{
 };
 
 #[test]
+fn native_record_read_cannot_be_correlated_by_its_reporting_label() {
+    let record = crate::facade::RelationalBridgeRecordIdentityParts::entity(3, 7, 2);
+    let contract = SnapshotReadContract::scalar(aspect_key("profile"), ScalarAspectType::String);
+    let native = SnapshotReadRequest::for_relational_record(record, contract.clone());
+    let external =
+        SnapshotReadRequest::for_coarse(record.terminal_projection_for_reporting(), contract);
+
+    assert_eq!(native.entity_identity(), external.entity_identity());
+    assert_ne!(native.correlation_id(), external.correlation_id());
+    assert_eq!(native.relational_record_identity_parts(), Some(record));
+    assert_eq!(external.relational_record_identity_parts(), None);
+}
+
+#[test]
 fn packet_preserves_declared_read_order() {
     let packet = SnapshotReadPacket::new(vec![
         SnapshotReadRequest::for_coarse(
@@ -194,8 +208,8 @@ fn packet_result_retains_snapshot_identity() {
     );
 
     assert_eq!(
-        result.snapshot_identity().as_str(),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a").as_str()
+        result.snapshot_identity().canonical_label(),
+        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a").canonical_label()
     );
     assert_eq!(result.records()[0].correlation_id(), read.correlation_id());
 }

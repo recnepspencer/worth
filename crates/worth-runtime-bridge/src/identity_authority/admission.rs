@@ -19,13 +19,13 @@ pub(crate) fn admit_bridge_truth_authority_identity(
     admit_foundational_authority_identity(value.into(), bridge_truth_authority())
 }
 
-pub(crate) fn admit_bridge_truth_authority_identity_for_kind<Kind>(
-    value: impl Into<Arc<str>>,
-) -> BridgeTruthAuthorityIdentity<Arc<str>, Kind>
+pub(crate) fn admit_bridge_truth_authority_identity_for_kind<Value, Kind>(
+    value: Value,
+) -> BridgeTruthAuthorityIdentity<Value, Kind>
 where
     Kind: FoundationalIdentityKind,
 {
-    admit_foundational_authority_identity(value.into(), bridge_truth_authority())
+    admit_foundational_authority_identity(value, bridge_truth_authority())
 }
 
 pub fn bridge_truth_external_identity_token(

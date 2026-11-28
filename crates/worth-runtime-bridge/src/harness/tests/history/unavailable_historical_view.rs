@@ -47,11 +47,16 @@ fn bridge_harness_rejects_unavailable_historical_view_explicitly() {
         BridgeHistoricalEvaluationFailureClass::TruthViewUnavailable
     );
     assert_eq!(
-        failure.commit_identity().map(|commit| commit.as_str()),
-        Some(crate::truth_identity_fixtures::truth_commit_fixture("missing-commit").as_str())
+        failure
+            .commit_identity()
+            .map(|commit| commit.canonical_label()),
+        Some(
+            crate::truth_identity_fixtures::truth_commit_fixture("missing-commit")
+                .canonical_label()
+        )
     );
     assert_eq!(
-        failure.branch_identity().as_str(),
-        crate::facade::TruthBranchIdentity::from_relational_branch_id("main").as_str()
+        failure.branch_identity().canonical_label(),
+        crate::facade::TruthBranchIdentity::from_relational_branch_id("main").canonical_label()
     );
 }

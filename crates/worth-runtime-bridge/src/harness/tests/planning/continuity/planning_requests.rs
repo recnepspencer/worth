@@ -87,7 +87,7 @@ fn bridge_historical_lineage_packet_uses_planned_continuity_requests() {
         packet.entries()[0]
             .lineage_authority()
             .canonical_resolved_lineage_identities()[0]
-            .as_str(),
+            .canonical_label(),
         "lineage:test-successor"
     );
     assert_eq!(

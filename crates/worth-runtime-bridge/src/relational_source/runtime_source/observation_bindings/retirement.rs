@@ -24,8 +24,7 @@ pub(in crate::relational_source) use tests::{
 pub struct RelationalBridgeObservationRetirement {
     lease: RelationalBridgeObservationLease,
     issuer: Option<Arc<RelationalBridgeObservationBindings>>,
-    removed: Option<(SnapshotId, RelationalBridgeObservationBinding)>,
-    _removed_subject: Option<(SnapshotId, VersionId, Option<CommitId>)>,
+    removed: Option<(SnapshotId, RelationalRetainedObservation)>,
     _removed_commit: Option<(CommitId, BTreeSet<SnapshotId>)>,
     _removed_member: Option<SnapshotId>,
     native: Option<RelationalRetainedObservationRetirement>,
@@ -47,7 +46,6 @@ impl RelationalBridgeObservationLease {
             lease: self,
             issuer: None,
             removed: None,
-            _removed_subject: None,
             _removed_commit: None,
             _removed_member: None,
             native: None,
@@ -84,9 +82,8 @@ impl RelationalBridgeObservationRetirement {
         if self.lease.bindings.is_some() {
             return self.detach(request);
         }
-        if let Some((snapshot, binding)) = self.removed.take() {
-            self._removed_subject = Some((snapshot, binding.version_id, binding.commit_id));
-            self.native = Some(binding.retained.into_retirement());
+        if let Some((_, retained)) = self.removed.take() {
+            self.native = Some(retained.into_retirement());
             return Progress::Advanced;
         }
         let Some(native) = self.native.as_mut() else {
@@ -146,15 +143,14 @@ impl RelationalBridgeObservationRetirement {
         let Some(binding) = index.by_snapshot.get(&snapshot) else {
             return Progress::Refused(Denial::RegistrationMismatch);
         };
-        if parts.snapshot_id() != snapshot.0
-            || parts.version_id() != binding.version_id.0
-            || binding.retained.snapshot_id() != snapshot
-            || binding.retained.observation().version_id() != binding.version_id
-            || binding.retained.observation().commit_id() != binding.commit_id
+        if parts.runtime != Some(issuer.runtime_id)
+            || parts.snapshot != snapshot
+            || binding.snapshot_id() != snapshot
+            || binding.observation().version_id() != parts.version
         {
             return Progress::Refused(Denial::RegistrationMismatch);
         }
-        let commit = binding.commit_id;
+        let commit = binding.observation().commit_id();
         if let Some(commit) = commit
             && !index
                 .by_commit

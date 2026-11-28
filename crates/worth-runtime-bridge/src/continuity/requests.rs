@@ -95,8 +95,8 @@ impl BridgePlannedContinuityRequestSet {
                 BridgeContinuityErrorKind::LineageAuthorityMismatch,
                 format!(
                     "Bridge continuity lineage context was bound to snapshot `{}` but route record source snapshot was `{}`.",
-                    authority_basis.snapshot_identity().as_str(),
-                    route_record.source_snapshot().as_str(),
+                    authority_basis.snapshot_identity().canonical_label(),
+                    route_record.source_snapshot().canonical_label(),
                 ),
             ));
         }
@@ -105,8 +105,8 @@ impl BridgePlannedContinuityRequestSet {
                 BridgeContinuityErrorKind::LineageAuthorityMismatch,
                 format!(
                     "Bridge continuity lineage context was bound to branch `{}` but route record source branch was `{}`.",
-                    authority_basis.branch_identity().as_str(),
-                    route_record.source_branch().as_str(),
+                    authority_basis.branch_identity().canonical_label(),
+                    route_record.source_branch().canonical_label(),
                 ),
             ));
         }

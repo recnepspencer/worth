@@ -54,45 +54,6 @@ pub(super) fn contracts() -> Vec<Contract<'static>> {
         Contract {
             fixture: "source_async_request_admission_requires_lowered_declaration.rs",
             errors: &[
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
                 Diagnostic::TypeMismatch {
                     pairs: &[
                         Pair {
@@ -156,45 +117,6 @@ pub(super) fn contracts() -> Vec<Contract<'static>> {
         Contract {
             fixture: "source_async_writeback_requires_admitted_completion.rs",
             errors: &[
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
                 Diagnostic::TypeMismatch {
                     pairs: &[
                         Pair {

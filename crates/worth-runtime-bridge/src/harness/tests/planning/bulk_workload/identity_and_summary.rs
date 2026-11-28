@@ -167,8 +167,12 @@ fn bridge_bulk_planning_separates_canonical_plan_identity_from_admission_profile
         exhaustive.admission_profile_identity()
     );
     assert_eq!(
-        standard.planned_routes()[0].source_commit().as_str(),
-        exhaustive.planned_routes()[0].source_commit().as_str()
+        standard.planned_routes()[0]
+            .source_commit()
+            .canonical_label(),
+        exhaustive.planned_routes()[0]
+            .source_commit()
+            .canonical_label()
     );
     assert_eq!(
         BridgeDiagnosticsTier::Standard,

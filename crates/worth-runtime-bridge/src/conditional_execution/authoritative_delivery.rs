@@ -180,16 +180,13 @@ fn owned_envelope_identity(
     source: crate::facade::BridgeAuthoritativeSourceProvenance,
     publication: u64,
 ) -> crate::facade::BridgeCommittedPatchEnvelopeIdentity {
-    let label = format!(
-        "owned-semantic:{}:{publication}",
-        correspondence.basis().signal_graph_instance_id
-    );
+    let graph = correspondence.basis().signal_graph_instance_id;
     crate::facade::BridgeCommittedPatchEnvelopeIdentity::new_with_metadata(
         crate::facade::BridgeProducerMetadata::registered_authoritative_source()
             .with_authoritative_source(source),
-        crate::facade::TruthCommitIdentity::admit_bridge_owned(format!("commit:{label}")),
-        crate::facade::TruthPatchIdentity::admit_bridge_owned(format!("patch:{label}")),
-        crate::facade::TruthSnapshotIdentity::admit_bridge_owned(format!("snapshot:{label}")),
-        crate::facade::TruthBranchIdentity::admit_bridge_owned("branch:worth-ui-presentation"),
+        crate::facade::TruthCommitIdentity::owned_signal(graph, publication),
+        crate::facade::TruthPatchIdentity::owned_signal(graph, publication),
+        crate::facade::TruthSnapshotIdentity::owned_signal(graph, publication),
+        crate::facade::TruthBranchIdentity::owned_signal(),
     )
 }

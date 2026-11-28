@@ -80,7 +80,7 @@ impl SourceMaterializationRecord {
                 .join(","),
             snapshot_identities
                 .iter()
-                .map(TruthSnapshotIdentity::as_str)
+                .map(TruthSnapshotIdentity::canonical_label)
                 .collect::<Vec<_>>()
                 .join(","),
             materialization_paths
@@ -174,7 +174,7 @@ impl SourceMaterializationRecord {
                 .join(","),
             snapshot_identities
                 .iter()
-                .map(TruthSnapshotIdentity::as_str)
+                .map(TruthSnapshotIdentity::canonical_label)
                 .collect::<Vec<_>>()
                 .join(","),
             materialization_paths

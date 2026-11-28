@@ -5,7 +5,7 @@ use sha2::{Digest, Sha256};
 pub(super) fn conditional_source_projection(
     identity: &crate::snapshot::TruthSnapshotIdentity,
 ) -> Arc<str> {
-    let digest = Sha256::digest(identity.as_str().as_bytes());
+    let digest = Sha256::digest(identity.canonical_label().as_bytes());
     Arc::from(format!("bridge-conditional-source:sha256:{digest:x}"))
 }
 

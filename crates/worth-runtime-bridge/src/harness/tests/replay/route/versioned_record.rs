@@ -39,7 +39,10 @@ fn bridge_replay_accepts_versioned_canonical_route_record() {
         .replay_canonical_record(&canonical_record, execution)
         .expect("bridge should replay a supported canonical route record");
 
-    assert_eq!(replay.source_commit().as_str(), commit_a.clone().as_str());
+    assert_eq!(
+        replay.source_commit().canonical_label(),
+        commit_a.clone().canonical_label()
+    );
     assert_eq!(
         canonical_record.schema_version(),
         crate::facade::BRIDGE_CANONICAL_ROUTE_RECORD_SCHEMA_V3

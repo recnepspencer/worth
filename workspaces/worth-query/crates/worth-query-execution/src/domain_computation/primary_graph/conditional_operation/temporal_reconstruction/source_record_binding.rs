@@ -132,11 +132,7 @@ where
                 })?;
             let entity = record.entity_id();
             let source_record =
-                worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(
-                    entity.partition_id.0,
-                    entity.local_slot.0,
-                    entity.generation.0,
-                );
+                worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::from_entity(entity);
             let scheduled_due_coordinate = candidate.due().nanoseconds();
             Ok((
                 identity,

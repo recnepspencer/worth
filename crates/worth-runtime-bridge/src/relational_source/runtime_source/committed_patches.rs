@@ -12,7 +12,7 @@ use super::{
 use crate::relational_source::change_publication::{
     lower_change_receipt_outcome, ChangeLoweringContext,
 };
-use crate::relational_source::identities::parse_bridge_commit_identity;
+use crate::relational_source::identities::require_relational_commit;
 use crate::relational_source::{
     RelationalBridgePublicationOutcome, RelationalBridgePublicationRebindRequired,
     RelationalBridgePublicationStale, RelationalOpaqueAspectWideningAdmission,
@@ -217,7 +217,7 @@ impl CommittedPatchSource for RuntimeBridgeRelationalSource {
             .consult()
             .map_err(|denial| RelationalBridgeSourceError::execution_denied(denial.into()))?;
 
-        let commit_id = parse_bridge_commit_identity(request.commit_identity())?;
+        let commit_id = require_relational_commit(request.commit_identity())?;
         let publication = match request.snapshot_identity() {
             Some(snapshot) => {
                 let selected_commit = self.select_commit_at_snapshot(commit_id, snapshot)?;

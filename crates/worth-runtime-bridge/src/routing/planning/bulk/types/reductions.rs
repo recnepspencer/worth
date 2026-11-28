@@ -22,8 +22,8 @@ impl ReducedContinuityRemap {
             "reduced-continuity-remap|identity={}|continuity-member={}|branch={}|snapshot={}|reduced-route-count={}|prior-slice-count={}",
             continuity_identity.as_str(),
             continuity_member_identity.as_str(),
-            branch_identity.as_str(),
-            snapshot_identity.as_str(),
+            branch_identity.canonical_label(),
+            snapshot_identity.canonical_label(),
             reduced_route_count,
             prior_slice_count,
         );
@@ -44,11 +44,11 @@ impl ReducedContinuityRemap {
     pub fn continuity_member_identity(&self) -> &BulkContinuityMemberIdentity {
         &self.continuity_member_identity
     }
-    pub fn branch_identity(&self) -> &str {
-        self.branch_identity.as_str()
+    pub fn branch_identity(&self) -> String {
+        self.branch_identity.canonical_label()
     }
-    pub fn snapshot_identity(&self) -> &str {
-        self.snapshot_identity.as_str()
+    pub fn snapshot_identity(&self) -> String {
+        self.snapshot_identity.canonical_label()
     }
     pub fn reduced_route_count(&self) -> usize {
         self.reduced_route_count
@@ -87,9 +87,9 @@ impl ReducedTruthViewMaterialization {
             "reduced-truth-view-materialization|identity={}|truth-view-member={}|branch={}|commit={}|snapshot={}|planned-route-count={}|snapshot-read-count={}",
             truth_view_identity.as_str(),
             truth_view_member_identity.as_str(),
-            source_branch.as_str(),
-            source_commit.as_str(),
-            source_snapshot.as_str(),
+            source_branch.canonical_label(),
+            source_commit.canonical_label(),
+            source_snapshot.canonical_label(),
             planned_route_count,
             snapshot_read_count,
         );
@@ -111,14 +111,14 @@ impl ReducedTruthViewMaterialization {
     pub fn truth_view_member_identity(&self) -> &BulkTruthViewMemberIdentity {
         &self.truth_view_member_identity
     }
-    pub fn source_branch(&self) -> &str {
-        self.source_branch.as_str()
+    pub fn source_branch(&self) -> String {
+        self.source_branch.canonical_label()
     }
-    pub fn source_commit(&self) -> &str {
-        self.source_commit.as_str()
+    pub fn source_commit(&self) -> String {
+        self.source_commit.canonical_label()
     }
-    pub fn source_snapshot(&self) -> &str {
-        self.source_snapshot.as_str()
+    pub fn source_snapshot(&self) -> String {
+        self.source_snapshot.canonical_label()
     }
     pub fn planned_route_count(&self) -> usize {
         self.planned_route_count

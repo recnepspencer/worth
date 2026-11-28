@@ -5,7 +5,9 @@ use super::BridgeHarnessTargetId;
 impl BridgeHarnessTargetId {
     pub(crate) fn as_external_target(&self) -> String {
         match self {
-            Self::CommittedRoute { commit_identity } => commit_identity.as_str().to_owned(),
+            Self::CommittedRoute { commit_identity } => {
+                commit_identity.canonical_label().to_owned()
+            }
             Self::SourceMaterialize {
                 declaration_identity,
             } => format!("source-materialize:{}", declaration_identity.as_str()),
@@ -41,11 +43,11 @@ impl BridgeHarnessTargetId {
                 commit_identity,
             } => format!(
                 "history-commit:{}:{}",
-                branch_identity.as_str(),
-                commit_identity.as_str()
+                branch_identity.canonical_label(),
+                commit_identity.canonical_label()
             ),
             Self::BranchHead { branch_identity } => {
-                format!("branch-head:{}", branch_identity.as_str())
+                format!("branch-head:{}", branch_identity.canonical_label())
             }
         }
     }

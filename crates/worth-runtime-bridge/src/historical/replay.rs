@@ -109,8 +109,8 @@ impl RuntimeBridge {
                 BridgeReplayErrorKind::HistoricalEvaluationAuthorityMismatch,
                 format!(
                     "Bridge historical evaluation replay reconstructed snapshot `{}` but original snapshot was `{}`.",
-                    observation.snapshot_identity().as_str(),
-                    record.decision_log().snapshot_identity().as_str()
+                    observation.snapshot_identity().canonical_label(),
+                    record.decision_log().snapshot_identity().canonical_label()
                 ),
             )
             .with_context(BridgeErrorContext::default());

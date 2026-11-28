@@ -32,18 +32,13 @@ impl WorthQueryPerformedRelationalProductChange {
             .relational_basis()
             .descriptor()
             .branch_id()
-            .0
             .clone();
         Self {
             root_identity,
             publication,
             patch: RelationalCommittedPatchRequest::on_branch(
-                worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(
-                    commit.0,
-                ),
-                worth_runtime_bridge::facade::TruthBranchIdentity::from_relational_branch_id(
-                    branch,
-                ),
+                worth_runtime_bridge::facade::TruthCommitIdentity::relational(commit),
+                worth_runtime_bridge::facade::TruthBranchIdentity::relational(branch),
             ),
         }
     }

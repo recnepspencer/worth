@@ -42,14 +42,17 @@ fn bridge_diagnostics_respect_route_record_retention_budget() {
     let route_records = runtime.diagnostics().route_records();
     assert_eq!(runtime.diagnostics().route_record_limit(), 2);
     assert_eq!(route_records.len(), 2);
-    assert_eq!(route_records[0].source_commit().as_str(), second.as_str());
+    assert_eq!(
+        route_records[0].source_commit().canonical_label(),
+        second.canonical_label()
+    );
     assert_eq!(
         route_records
             .last()
             .expect("retained route record")
             .source_commit()
-            .as_str(),
-        third.as_str()
+            .canonical_label(),
+        third.canonical_label()
     );
 }
 #[test]
@@ -94,14 +97,17 @@ fn bridge_diagnostics_respect_failure_record_retention_budget() {
     let failure_records = runtime.diagnostics().failure_records();
     assert_eq!(runtime.diagnostics().failure_record_limit(), 2);
     assert_eq!(failure_records.len(), 2);
-    assert_eq!(failure_records[0].source_commit().as_str(), second.as_str());
+    assert_eq!(
+        failure_records[0].source_commit().canonical_label(),
+        second.canonical_label()
+    );
     assert_eq!(
         failure_records
             .last()
             .expect("retained failure record")
             .source_commit()
-            .as_str(),
-        third.as_str()
+            .canonical_label(),
+        third.canonical_label()
     );
 }
 #[test]

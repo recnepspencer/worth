@@ -140,22 +140,22 @@ impl BridgeTemporalTruthViewBasis {
         }
     }
 
-    pub fn native_truth_locator(&self) -> &str {
+    pub fn native_truth_locator(&self) -> String {
         match self {
             Self::Authoritative {
                 commit_identity, ..
-            } => commit_identity.as_str(),
+            } => commit_identity.canonical_label(),
             Self::BranchHead {
                 head_commit_identity,
                 ..
-            } => head_commit_identity.as_str(),
+            } => head_commit_identity.canonical_label(),
             Self::Historical {
                 pinned_commit_identity,
                 ..
-            } => pinned_commit_identity.as_str(),
+            } => pinned_commit_identity.canonical_label(),
             Self::CdcCursor {
                 cursor_identity, ..
-            } => cursor_identity.as_str(),
+            } => cursor_identity.as_str().to_owned(),
         }
     }
 }
@@ -164,29 +164,33 @@ impl AdmittedBridgeTemporalTruthViewBasis {
     pub fn admit(
         basis: BridgeTemporalTruthViewBasis,
     ) -> TransitionOutcome<Self, BridgeTemporalTruthBasisDenial> {
-        match validate_nonempty("truth_branch", basis.branch_identity().as_str()) {
+        let branch = basis.branch_identity();
+        let branch_label = branch.canonical_label();
+        let branch_name = branch.relational_branch_id().unwrap_or(&branch_label);
+        match validate_nonempty("truth_branch", branch_name) {
             TransitionOutcome::Success(()) => {}
             TransitionOutcome::Denied(denial) => return TransitionOutcome::Denied(denial),
             _ => unreachable!("truth identity validation uses only denied"),
         }
-        match validate_nonempty("truth_snapshot", basis.snapshot_identity().as_str()) {
-            TransitionOutcome::Success(()) => {}
-            TransitionOutcome::Denied(denial) => return TransitionOutcome::Denied(denial),
-            _ => unreachable!("truth identity validation uses only denied"),
-        }
-        match validate_nonempty("truth_locator", basis.native_truth_locator()) {
-            TransitionOutcome::Success(()) => {}
-            TransitionOutcome::Denied(denial) => return TransitionOutcome::Denied(denial),
-            _ => unreachable!("truth identity validation uses only denied"),
+        let locator = basis.native_truth_locator();
+        if matches!(basis, BridgeTemporalTruthViewBasis::CdcCursor { .. }) {
+            match validate_nonempty("truth_locator", &locator) {
+                TransitionOutcome::Success(()) => {}
+                TransitionOutcome::Denied(denial) => return TransitionOutcome::Denied(denial),
+                _ => unreachable!("truth identity validation uses only denied"),
+            }
         }
 
         let canonical_ready = transition_canonical_ready(
             canonical_version(TRUTH_BASIS_CANONICAL_VERSION),
             [
                 text_entry("truth_kind", basis.kind().canonical_label()),
-                text_entry("truth_branch", basis.branch_identity().as_str()),
-                text_entry("truth_snapshot", basis.snapshot_identity().as_str()),
-                text_entry("truth_locator", basis.native_truth_locator()),
+                text_entry("truth_branch", &branch_label),
+                text_entry(
+                    "truth_snapshot",
+                    &basis.snapshot_identity().canonical_label(),
+                ),
+                text_entry("truth_locator", &locator),
             ],
             "temporal truth basis canonicalization denied",
         );

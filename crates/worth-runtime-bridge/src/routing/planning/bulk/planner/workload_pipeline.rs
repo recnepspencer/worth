@@ -204,7 +204,7 @@ fn bulk_workload_segment_identity(
         "bulk-workload-segment",
         &format!(
             "bulk-workload-segment|commit={}|mapping-context={}",
-            segment.request().commit_identity().as_str(),
+            segment.request().commit_identity().canonical_label(),
             segment.mapping_context().digest()
         ),
     ))

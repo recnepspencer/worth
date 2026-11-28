@@ -80,9 +80,7 @@ pub(super) fn project_named_authority(
     let mut lineage_identities: Vec<_> = live
         .iter()
         .filter_map(PersistentNameTarget::lineage)
-        .map(|lineage| {
-            BridgeHistoricalResolvedLineageIdentity::from_relational_lineage_id(lineage.0)
-        })
+        .map(BridgeHistoricalResolvedLineageIdentity::relational)
         .collect();
     lineage_identities.sort_unstable();
     lineage_identities.dedup();

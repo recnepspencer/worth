@@ -108,15 +108,15 @@ impl BridgeTruthViewSelector {
     ) -> Self {
         let canonical_basis = Arc::<str>::from(format!(
             "truth-view-selector|kind:{view_kind:?}|branch:{}|commit:{}|snapshot:{}",
-            branch_identity.as_str(),
+            branch_identity.canonical_label(),
             commit_identity
                 .as_ref()
-                .map(TruthCommitIdentity::as_str)
-                .unwrap_or("-"),
+                .map(TruthCommitIdentity::canonical_label)
+                .unwrap_or_else(|| "-".to_owned()),
             snapshot_identity
                 .as_ref()
-                .map(TruthSnapshotIdentity::as_str)
-                .unwrap_or("-"),
+                .map(TruthSnapshotIdentity::canonical_label)
+                .unwrap_or_else(|| "-".to_owned()),
         ));
         let digest = Sha256::digest(canonical_basis.as_bytes());
         let selector_identity = BridgeTruthViewSelectorIdentity::admit_bridge_owned(format!(
@@ -299,7 +299,7 @@ mod tests {
         assert_eq!(left.view_kind(), BridgeTruthViewKind::BranchSnapshot);
         assert_eq!(
             left.canonical_basis(),
-            "truth-view-selector|kind:BranchSnapshot|branch:analysis|commit:-|snapshot:snapshot-a"
+            "truth-view-selector|kind:BranchSnapshot|branch:relational-branch:analysis|commit:-|snapshot:relational-snapshot:1:version:1"
         );
     }
 

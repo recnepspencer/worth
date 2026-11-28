@@ -22,7 +22,7 @@ impl<'a> NativeEvidence<'a> {
         let attempt = observation.attempt().to_string();
         let source = observation
             .bridge_snapshot_identity()
-            .map(|source| source.as_str());
+            .map(|source| source.canonical_label());
         let native = compose(
             Artifact::NativeObservation,
             &[
@@ -34,7 +34,7 @@ impl<'a> NativeEvidence<'a> {
                 } else {
                     "no_source"
                 }),
-                value_part(source.unwrap_or("")),
+                value_part(source.as_deref().unwrap_or("")),
             ],
         )?;
         let evaluation = compose(

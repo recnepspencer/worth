@@ -79,13 +79,13 @@ fn pricing_shock_showcase_artifact_explains_retained_commit_without_hidden_memor
         artifact["timeline"][2]["commit"]
             .as_str()
             .expect("timeline commit should be exported as string"),
-        truth.shock_commit.as_str()
+        truth.shock_commit.canonical_label()
     );
     assert_eq!(
         shock_commit["snapshot"]
             .as_str()
             .expect("shock commit snapshot should be exported as string"),
-        bundle.provenance.shock_snapshot.as_str()
+        bundle.provenance.shock_snapshot.canonical_label()
     );
     assert_eq!(
         shock_commit["representative_retail_price_cents"]
@@ -94,7 +94,7 @@ fn pricing_shock_showcase_artifact_explains_retained_commit_without_hidden_memor
         bundle.provenance.representative_retail_price_cents
     );
     assert!(markdown.contains("# Pricing Shock Showcase Report"));
-    assert!(markdown.contains(truth.shock_commit.as_str()));
+    assert!(markdown.contains(&truth.shock_commit.canonical_label()));
     assert!(markdown.contains("scooter-001"));
     assert!(markdown.contains("Suite 27"));
     assert!(markdown.contains("Trust Attacks"));
@@ -143,34 +143,34 @@ fn pricing_shock_showcase_timeline_is_lineage_coherent() {
         main_basis["commit"]
             .as_str()
             .expect("timeline commit should export as a string"),
-        bundle.matrix.reference.source_commit.as_str()
+        bundle.matrix.reference.source_commit.canonical_label()
     );
     assert_eq!(
         main_basis["snapshot"]
             .as_str()
             .expect("timeline snapshot should export as a string"),
-        bundle.matrix.reference.main_snapshot.as_str()
+        bundle.matrix.reference.main_snapshot.canonical_label()
     );
     assert_eq!(
         speculative_shock["commit"]
             .as_str()
             .expect("timeline commit should export as a string"),
-        bundle.provenance.shock_commit.as_str()
+        bundle.provenance.shock_commit.canonical_label()
     );
     assert_eq!(
         speculative_shock["snapshot"]
             .as_str()
             .expect("timeline snapshot should export as a string"),
-        bundle.provenance.shock_snapshot.as_str()
+        bundle.provenance.shock_snapshot.canonical_label()
     );
 
     assert!(has_edge(
-        bundle.matrix.reference.source_commit.as_str(),
-        bundle.matrix.reference.main_snapshot.as_str()
+        &bundle.matrix.reference.source_commit.canonical_label(),
+        &bundle.matrix.reference.main_snapshot.canonical_label()
     ));
     assert!(has_edge(
-        bundle.provenance.shock_commit.as_str(),
-        bundle.provenance.shock_snapshot.as_str()
+        &bundle.provenance.shock_commit.canonical_label(),
+        &bundle.provenance.shock_snapshot.canonical_label()
     ));
 }
 

@@ -5,7 +5,7 @@ use crate::adapter::RelationalBridgeSourceErrorTag;
 use crate::facade::{
     RelationalBridgeSourceError, TruthBranchIdentity, TruthCommitIdentity, TruthSnapshotIdentity,
 };
-use crate::relational_source::identities::parse_bridge_commit_identity;
+use crate::relational_source::identities::require_relational_commit;
 use crate::relational_source::snapshot_reading::RuntimePublicationSnapshotReader;
 
 use super::RuntimeBridgeRelationalSource;
@@ -23,7 +23,7 @@ impl RuntimeBridgeRelationalSource {
     ) -> Result<RuntimePublicationSnapshotReader, RelationalBridgeSourceError> {
         crate::execution_contact::admit(execution)
             .map_err(RelationalBridgeSourceError::execution_denied)?;
-        let requested = parse_bridge_commit_identity(commit)?;
+        let requested = require_relational_commit(commit)?;
         let (_, head) = self.branch_head_bindings.resolve(branch)?;
         let observation = self.observation_bindings.resolve(&head)?;
         let pinned = self
@@ -43,11 +43,7 @@ impl RuntimeBridgeRelationalSource {
                     format!("could not pin historical commit: {denial:?}"),
                 )
             })?;
-        let snapshot = TruthSnapshotIdentity::admit_bridge_owned(format!(
-            "relational-pinned-commit:{}:{}",
-            requested.0,
-            pinned.root_identity(),
-        ));
+        let snapshot = TruthSnapshotIdentity::pinned_commit(requested, pinned.root_identity());
         Ok(RuntimePublicationSnapshotReader::for_pinned_commit(
             self.runtime.clone(),
             snapshot,

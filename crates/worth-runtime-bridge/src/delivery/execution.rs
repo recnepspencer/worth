@@ -136,7 +136,7 @@ fn deliver_prepared_route_in_scope(
                 error.delivery_kind(),
                 format!(
                     "Bridge failed to open snapshot `{}`: {error}",
-                    lowering_plan.source_snapshot().as_str()
+                    lowering_plan.source_snapshot().canonical_label()
                 ),
             )
             .with_context(delivery_context(
@@ -157,8 +157,8 @@ fn deliver_prepared_route_in_scope(
                 BridgeDeliveryErrorKind::SnapshotIdentityMismatch,
                 format!(
                     "Snapshot reader bound `{}` but planned route required `{}`.",
-                    bound_snapshot_identity.as_str(),
-                    lowering_plan.source_snapshot().as_str()
+                    bound_snapshot_identity.canonical_label(),
+                    lowering_plan.source_snapshot().canonical_label()
                 ),
             )
             .with_context(delivery_context(
@@ -180,7 +180,7 @@ fn deliver_prepared_route_in_scope(
                 kind,
                 format!(
                     "Bridge failed to execute packetized snapshot reads for `{}`: {error}",
-                    lowering_plan.source_snapshot().as_str()
+                    lowering_plan.source_snapshot().canonical_label()
                 ),
             )
             .with_context(delivery_context(
@@ -194,8 +194,8 @@ fn deliver_prepared_route_in_scope(
             BridgeDeliveryErrorKind::SnapshotIdentityMismatch,
             format!(
                 "Snapshot read returned `{}` but planned route required `{}`.",
-                read_result.snapshot_identity().as_str(),
-                lowering_plan.source_snapshot().as_str()
+                read_result.snapshot_identity().canonical_label(),
+                lowering_plan.source_snapshot().canonical_label()
             ),
         )
         .with_context(delivery_context(
@@ -216,7 +216,7 @@ fn deliver_prepared_route_in_scope(
                 error.delivery_kind(crate::error::BridgeSnapshotDeliveryStage::ContractValidation),
                 format!(
                     "Bridge snapshot read contract failed for `{}`: {error}",
-                    lowering_plan.source_snapshot().as_str()
+                    lowering_plan.source_snapshot().canonical_label()
                 ),
             )
             .with_context(

@@ -82,7 +82,7 @@ pub(crate) fn classify_truth_delta_surface(
     aspect_registry: &FrozenAspectMappingRegistry,
 ) -> FineGrainedSurfaceMatch {
     let Some(registration) = aspect_registry.lookup(
-        surface.entity_identity(),
+        surface.entity_identity().as_ref(),
         surface.aspect_key(),
         surface.field_locator().map(|locator| locator.field_path()),
         surface.surface_kind(),

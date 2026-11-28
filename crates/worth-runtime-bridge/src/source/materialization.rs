@@ -34,9 +34,12 @@ impl MaterializedTruthViewPacketSet {
                 format!(
                     "{}|{}|{:?}|{}",
                     observation.planned().digest(),
-                    observation.snapshot_identity().as_str(),
+                    observation.snapshot_identity().canonical_label(),
                     observation.materialization_path(),
-                    observation.snapshot_token().snapshot_identity().as_str(),
+                    observation
+                        .snapshot_token()
+                        .snapshot_identity()
+                        .canonical_label(),
                 )
             })
             .collect::<Vec<_>>()

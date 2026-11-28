@@ -116,7 +116,7 @@ impl BridgeSourceAdapter for RejectingSourceAdapter {
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         Err(RelationalBridgeSourceError::new(
             crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
-            format!("refused snapshot `{}`", identity.as_str()),
+            format!("refused snapshot `{}`", identity.canonical_label()),
         ))
     }
 }
@@ -205,6 +205,6 @@ fn is_primary_snapshot(identity: &TruthSnapshotIdentity) -> bool {
 fn unknown_snapshot_error(identity: &TruthSnapshotIdentity) -> RelationalBridgeSourceError {
     RelationalBridgeSourceError::new(
         crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
-        format!("unknown snapshot `{}`", identity.as_str()),
+        format!("unknown snapshot `{}`", identity.canonical_label()),
     )
 }

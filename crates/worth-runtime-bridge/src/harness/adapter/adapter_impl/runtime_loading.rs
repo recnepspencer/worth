@@ -261,7 +261,7 @@ impl<S: crate::adapter::SnapshotReadSource> crate::adapter::BridgeSourceAdapter
                     crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
                     format!(
                         "session source adapter refused snapshot `{}`",
-                        identity.as_str()
+                        identity.canonical_label()
                     ),
                 ))
             }

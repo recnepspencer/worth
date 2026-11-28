@@ -1,9 +1,9 @@
+use worth_foundational::facade::{AspectKey, AspectValue};
 use worth_runtime_bridge::facade::{
     BridgeAsyncCompletionAdmissionReport, BridgeAsyncRequestTruthViewBasis,
     BridgeAsyncWritebackAdmissionRequest, BridgeWritebackEffectClass, BridgeWritebackEffectIntent,
     TruthBranchIdentity, TruthCommitIdentity, TruthSnapshotIdentity,
 };
-use worth_foundational::facade::{AspectKey, AspectValue};
 
 fn cannot_build_async_writeback_request_from_completion_report(
     report: &BridgeAsyncCompletionAdmissionReport,
@@ -15,9 +15,9 @@ fn cannot_build_async_writeback_request_from_completion_report(
     )
     .expect("effect intent should validate");
     let current_truth_view_basis = BridgeAsyncRequestTruthViewBasis::authoritative(
-        TruthBranchIdentity::new("truth-main"),
-        TruthCommitIdentity::new("commit"),
-        TruthSnapshotIdentity::new("snapshot"),
+        TruthBranchIdentity::from_bridge_harness_label("truth-main"),
+        TruthCommitIdentity::from_bridge_harness_label("commit"),
+        TruthSnapshotIdentity::from_bridge_harness_label("snapshot"),
     );
     let _ = BridgeAsyncWritebackAdmissionRequest::authoritative_commit(
         report,

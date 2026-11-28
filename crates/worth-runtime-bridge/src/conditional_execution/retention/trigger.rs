@@ -1,8 +1,7 @@
-use super::identity::identity;
 use super::semantic_payload::{self as payload, visit};
 use super::{
-    arc_slice_charge, array_charge, sum, BridgeRetentionDenial as D, BridgeRetentionLedger,
-    BridgeRetentionReservation,
+    arc_charge, arc_slice_charge, array_charge, sum, BridgeRetentionDenial as D,
+    BridgeRetentionLedger, BridgeRetentionReservation,
 };
 use crate::correspondence::{
     BridgeCorrespondenceBasis, BridgeDeliveredCorrespondenceChange,
@@ -53,13 +52,7 @@ fn charge(
         source_identities(change_set.basis(), change_set.dependency(), work)?,
         basis(change_set.basis(), work)?,
         dependency(change_set.dependency(), work)?,
-        // Other delivered identities may share backing, but their construction
-        // does not promise it. Reserve their independent-allocation upper bound;
-        // no payload-wide alias registry or quadratic identity scan is retained.
-        identity(change_set.commit_identity())?,
-        identity(change_set.patch_identity())?,
-        identity(change_set.snapshot_identity())?,
-        identity(change_set.branch_identity())?,
+        branch_identity_charge(change_set.branch_identity())?,
         array_charge::<BridgeDeliveredCorrespondenceChange>(change_set.changes().len())?,
     ])?;
     for change in change_set.changes() {
@@ -163,3 +156,13 @@ fn dependency(
 #[cfg(test)]
 #[path = "trigger_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+fn branch_identity_charge(branch: &crate::facade::TruthBranchIdentity) -> Result<u64, D> {
+    let Some(branch) = branch.branch_id() else {
+        return Ok(0);
+    };
+    sum(&[
+        arc_charge::<worth_relational::facade::history::BranchId>()?,
+        payload::bytes(branch.0.capacity())?,
+    ])
+}

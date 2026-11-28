@@ -29,11 +29,11 @@ pub(super) fn canonical_planning_digest_basis(
         basis.push_str("|lowering=");
         basis.push_str(route.lowering_provenance().digest());
         basis.push_str("|truth-view=");
-        basis.push_str(route.source_branch().as_str());
+        basis.push_str(&route.source_branch().canonical_label());
         basis.push(':');
-        basis.push_str(route.source_snapshot().as_str());
+        basis.push_str(&route.source_snapshot().canonical_label());
         basis.push(':');
-        basis.push_str(route.source_commit().as_str());
+        basis.push_str(&route.source_commit().canonical_label());
         if let Some(lineage_context) = route.mapping_context().lineage_context() {
             basis.push_str("|continuity=");
             basis.push_str(lineage_context.authority_basis().digest());

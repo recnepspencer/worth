@@ -36,12 +36,12 @@ fn pricing_shock_conflicting_historical_basis_is_detectable_against_independent_
     let provenance_texts = read_pricing_provenance_aspect_text_packet(&historical_provenance);
 
     assert_eq!(
-        historical_cost.snapshot_identity().as_str(),
-        truth.main_snapshot().as_str()
+        historical_cost.snapshot_identity().canonical_label(),
+        truth.main_snapshot().canonical_label()
     );
     assert_eq!(
-        historical_provenance.snapshot_identity().as_str(),
-        truth.main_snapshot().as_str()
+        historical_provenance.snapshot_identity().canonical_label(),
+        truth.main_snapshot().canonical_label()
     );
     assert_eq!(
         read_cost(&historical_cost, execution)

@@ -3,17 +3,16 @@ use crate::facade::{
     BridgeTruthViewEvaluationRequest, RuntimeBridge, SnapshotReadPacket, TruthBranchIdentity,
     TruthSnapshotIdentity,
 };
-use crate::identity::{
-    BridgeIdentity, PreviewSessionIdentityTag, SpeculativeSignalBranchIdentityTag,
-};
+use crate::identity::{BridgeIdentity, PreviewSessionIdentityTag};
 use worth_execution::ExecutionRequest;
 
 mod liveness;
+mod signal_branch;
 use liveness::BridgePreviewSessionLivenessOwner;
 pub use liveness::{BridgePreviewSessionLivenessGuard, BridgePreviewSessionLivenessObserver};
 
 pub type BridgePreviewSessionIdentity = BridgeIdentity<PreviewSessionIdentityTag>;
-pub type BridgeSignalBranchIdentity = BridgeIdentity<SpeculativeSignalBranchIdentityTag>;
+pub use signal_branch::BridgeSignalBranchIdentity;
 
 /// The Relational and Signal branches participating in a preview. The owner
 /// of each runtime supplies its branch. Binding them does not fork either.
@@ -152,12 +151,6 @@ impl BridgePreviewSessionHandle {
 }
 
 impl BridgePreviewSessionIdentity {
-    pub fn from_stable_name(value: impl Into<std::sync::Arc<str>>) -> Self {
-        Self::admit_bridge_owned(value)
-    }
-}
-
-impl BridgeSignalBranchIdentity {
     pub fn from_stable_name(value: impl Into<std::sync::Arc<str>>) -> Self {
         Self::admit_bridge_owned(value)
     }

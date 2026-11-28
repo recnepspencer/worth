@@ -61,7 +61,7 @@ impl BridgeTruthViewPolicyRejection {
             declaration.declaration_identity().as_str(),
             declaration.validated_selector_set().digest(),
             declaration.selector().selector_identity().as_str(),
-            declaration.selector().branch_identity().as_str(),
+            declaration.selector().branch_identity().canonical_label(),
             declaration.replay_mode(),
             declaration.delivery_intent(),
             detail.as_ref(),
@@ -143,7 +143,7 @@ impl ResolvedTruthViewPolicy {
             declaration.declaration_identity().as_str(),
             declaration.validated_selector_set().digest(),
             declaration.selector().selector_identity().as_str(),
-            declaration.selector().branch_identity().as_str(),
+            declaration.selector().branch_identity().canonical_label(),
             declaration.replay_mode(),
             declaration.delivery_intent(),
         ));

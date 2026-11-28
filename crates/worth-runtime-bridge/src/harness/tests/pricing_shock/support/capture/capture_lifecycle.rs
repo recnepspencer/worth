@@ -53,11 +53,11 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_discard_bundle(
             .result()
             .receipt()
             .snapshot_identity()
-            .clone(),
+            .canonical_label(),
         speculative_rubber_cost_cents: read_cost(&speculative_eval, execution)
             .parse()
             .expect("native pricing cost"),
-        post_discard_main_snapshot: post_discard_main_eval.snapshot_identity().clone(),
+        post_discard_main_snapshot: post_discard_main_eval.snapshot_identity().canonical_label(),
         post_discard_main_steel_cost_cents: read_cost(&post_discard_main_eval, execution)
             .parse()
             .expect("native pricing cost"),
@@ -95,8 +95,8 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_promotion_bundle
     assert_eq!(speculative_eval.snapshot_identity(), truth.shock_snapshot());
 
     PricingPromotionBundle {
-        main_snapshot: main_eval.snapshot_identity().clone(),
-        speculative_snapshot: speculative_eval.snapshot_identity().clone(),
+        main_snapshot: main_eval.snapshot_identity().canonical_label(),
+        speculative_snapshot: speculative_eval.snapshot_identity().canonical_label(),
         main_rubber_cost_cents: read_cost(&main_eval, execution)
             .parse()
             .expect("native pricing cost"),
@@ -165,8 +165,8 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_fanout_bundle(
         first_delivery_target_count: first_route.result().receipt().delivered_target_count(),
         second_delivery_target_count: second_route.result().receipt().delivered_target_count(),
         second_source_commit: last_record.source_commit().clone(),
-        second_snapshot: second_eval.snapshot().snapshot_identity().clone(),
-        branch_snapshot: branch_eval.snapshot_identity().clone(),
+        second_snapshot: second_eval.snapshot().snapshot_identity().canonical_label(),
+        branch_snapshot: branch_eval.snapshot_identity().canonical_label(),
         branch_steel_cost_cents: read_cost(&branch_eval, execution)
             .parse()
             .expect("native pricing cost"),

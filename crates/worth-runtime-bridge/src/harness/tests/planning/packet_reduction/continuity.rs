@@ -71,7 +71,7 @@ fn bridge_bulk_packet_set_tracks_continuity_remap_packets() {
             .iter()
             .map(|packet| packet.snapshot_identity())
             .collect::<Vec<_>>(),
-        vec![snapshot.as_str(), snapshot.as_str()]
+        vec![snapshot.canonical_label(), snapshot.canonical_label()]
     );
     assert_eq!(
         planned
@@ -142,7 +142,7 @@ fn bridge_bulk_reduction_artifact_carries_continuity_remaps() {
             .reduced_artifact()
             .reduced_continuity_remaps()[0]
             .snapshot_identity(),
-        truth.observation.snapshot_identity().as_str()
+        truth.observation.snapshot_identity().canonical_label()
     );
     assert_eq!(
         left.execution_plan()

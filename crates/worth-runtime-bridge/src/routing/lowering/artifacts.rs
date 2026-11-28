@@ -170,17 +170,17 @@ pub(crate) fn lower_validated_route(
 ) -> BridgeInvalidationArtifact {
     let invalidation_basis = invalidation_digest_basis(
         validated.plan().route_identity(),
-        validated.plan().source_commit().as_str(),
-        validated.plan().source_patch().as_str(),
-        validated.plan().source_snapshot().as_str(),
+        &validated.plan().source_commit().canonical_label(),
+        &validated.plan().source_patch().canonical_label(),
+        &validated.plan().source_snapshot().canonical_label(),
         validated.plan().invalidation_targets().targets(),
     );
     let snapshot_basis = format!(
         "snapshot-token|route={}|commit={}|patch={}|snapshot={}",
         validated.plan().route_identity().as_str(),
-        validated.plan().source_commit().as_str(),
-        validated.plan().source_patch().as_str(),
-        validated.plan().source_snapshot().as_str()
+        validated.plan().source_commit().canonical_label(),
+        validated.plan().source_patch().canonical_label(),
+        validated.plan().source_snapshot().canonical_label()
     );
     let counters = counters
         .with_digest_computations(2)

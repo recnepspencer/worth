@@ -50,8 +50,8 @@ pub(super) fn localize_temporal_basis_denial(
             BridgeTemporalAsyncFailureSubcode::TemporalBasisCrossBranch,
             format!(
                 "truth branch `{}` mismatched signal branch `{}`",
-                truth_branch_identity.as_str(),
-                signal_branch_identity.as_str()
+                truth_branch_identity.canonical_label(),
+                signal_branch_identity.canonical_label()
             ),
         ),
         BridgeTemporalBasisDenial::TruthBasisDenied(denial) => (

@@ -196,15 +196,15 @@ fn classify_continuity(
         ),
         BridgeHistoricalLineageTopology::SingleSuccessor => (
             BridgeContinuityOutcomeClass::ContinuesAsSingleSuccessor,
-            vec![successor_slice_from_record_key(
-                successor_record_identities[0].as_str(),
+            vec![successor_slice(
+                &successor_record_identities[0],
                 prior_slice,
             )],
         ),
         BridgeHistoricalLineageTopology::MergeLikeSuccessor => (
             BridgeContinuityOutcomeClass::ContinuesViaTruthLoweredCanonicalMergeSuccessor,
-            vec![successor_slice_from_record_key(
-                successor_record_identities[0].as_str(),
+            vec![successor_slice(
+                &successor_record_identities[0],
                 prior_slice,
             )],
         ),
@@ -212,9 +212,7 @@ fn classify_continuity(
             BridgeContinuityOutcomeClass::ContinuesAsSplitSuccessors,
             successor_record_identities
                 .iter()
-                .map(|record_identity| {
-                    successor_slice_from_record_key(record_identity.as_str(), prior_slice)
-                })
+                .map(|record_identity| successor_slice(record_identity, prior_slice))
                 .collect(),
         ),
         BridgeHistoricalLineageTopology::AmbiguousSuccessor => (
@@ -224,12 +222,12 @@ fn classify_continuity(
     }
 }
 
-fn successor_slice_from_record_key(
-    record_key: &str,
+fn successor_slice(
+    record: &BridgeHistoricalResolvedRecordIdentity,
     prior_slice: &PriorSubscriptionSlice,
 ) -> BridgeSubscriptionSlice {
     BridgeSubscriptionSlice::from_continuity_parts(
-        record_key,
+        record.record().clone(),
         prior_slice.aspect_locator().clone(),
         prior_slice.field_locator().cloned(),
         prior_slice.projection_mask().clone(),
@@ -346,7 +344,7 @@ mod tests {
         );
         let projection_mask = AspectMask::new([field_locator.field_path().clone()]);
         let native_slice = BridgeSubscriptionSlice::from_continuity_parts(
-            entity_identity,
+            entity_identity.into(),
             aspect_locator,
             Some(field_locator),
             projection_mask,

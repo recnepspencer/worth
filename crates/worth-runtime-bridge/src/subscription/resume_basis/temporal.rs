@@ -49,7 +49,7 @@ impl BridgeRetainedTemporalResumeBasis {
         let canonical_basis = Arc::<str>::from(format!(
             "bridge-retained-temporal-resume-basis|temporal-basis={}|branch={}|wake-posture={}|previous-value={}|retention-complete={retention_complete}",
             admitted_temporal_basis.identity().as_str(),
-            admitted_temporal_basis.truth_basis().basis().branch_identity().as_str(),
+            admitted_temporal_basis.truth_basis().basis().branch_identity().canonical_label(),
             wake_posture.as_str(),
             previous_value_evidence_digest.as_deref().unwrap_or("-"),
         ));

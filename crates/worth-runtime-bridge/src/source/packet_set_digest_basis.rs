@@ -28,9 +28,12 @@ pub(crate) fn materialized_packet_set_digest_from_observation(
         "materialized-truth-view-packet-set|planned={}|observations={}|{}|{:?}|{}",
         planned_packet_set_digest,
         observation.planned().digest(),
-        observation.snapshot_identity().as_str(),
+        observation.snapshot_identity().canonical_label(),
         observation.materialization_path(),
-        observation.snapshot_token().snapshot_identity().as_str(),
+        observation
+            .snapshot_token()
+            .snapshot_identity()
+            .canonical_label(),
     );
     let digest = Sha256::digest(canonical_basis.as_bytes());
     Arc::from(format!(

@@ -1,8 +1,7 @@
 use worth_foundational::facade::{AspectBinding, AuthoritativeAspectChangeKind as Change};
+use worth_relational::facade::publication::RecordStructuralChange;
 
-use crate::input::envelope::{
-    BridgeAspectChangePrecision, BridgeCommittedPatchEnvelope, BridgeCommittedRecordChangeKind,
-};
+use crate::input::envelope::{BridgeAspectChangePrecision, BridgeCommittedPatchEnvelope};
 
 use super::{
     BridgeCorrespondenceDeliveryDenial, BridgeCorrespondenceDenialKind,
@@ -192,52 +191,52 @@ fn structural_change_matches(
 
 pub(crate) fn structural_change_kind(
     binding: &AspectBinding,
-    kind: BridgeCommittedRecordChangeKind,
+    kind: RecordStructuralChange,
 ) -> Option<Change> {
     match (binding, kind) {
         (
             AspectBinding::StructuralRegion
             | AspectBinding::StructuralPartition
             | AspectBinding::StructuralFacet,
-            BridgeCommittedRecordChangeKind::Created,
+            RecordStructuralChange::Created,
         ) => Some(Change::StructuralCreate),
         (
             AspectBinding::StructuralRegion
             | AspectBinding::StructuralPartition
             | AspectBinding::StructuralFacet,
-            BridgeCommittedRecordChangeKind::Updated,
+            RecordStructuralChange::Updated,
         ) => Some(Change::StructuralUpdate),
         (
             AspectBinding::StructuralRegion
             | AspectBinding::StructuralPartition
             | AspectBinding::StructuralFacet,
-            BridgeCommittedRecordChangeKind::Deleted,
+            RecordStructuralChange::Deleted,
         ) => Some(Change::StructuralDelete),
         (
             AspectBinding::StructuralRegion
             | AspectBinding::StructuralPartition
             | AspectBinding::StructuralFacet,
-            BridgeCommittedRecordChangeKind::RetainedForAudit,
+            RecordStructuralChange::RetainedForAudit,
         ) => Some(Change::StructuralRetainForAudit),
         (
             AspectBinding::StructuralRegion
             | AspectBinding::StructuralPartition
             | AspectBinding::StructuralFacet,
-            BridgeCommittedRecordChangeKind::MaterializationSuspended,
+            RecordStructuralChange::MaterializationSuspended,
         ) => Some(Change::StructuralMaterializationSuspended),
         (
             AspectBinding::StructuralRegion
             | AspectBinding::StructuralPartition
             | AspectBinding::StructuralFacet,
-            BridgeCommittedRecordChangeKind::Rematerialized,
+            RecordStructuralChange::Rematerialized,
         ) => Some(Change::StructuralRematerialized),
-        (AspectBinding::LifecycleTransition, BridgeCommittedRecordChangeKind::Created) => {
+        (AspectBinding::LifecycleTransition, RecordStructuralChange::Created) => {
             Some(Change::LifecycleCreate)
         }
-        (AspectBinding::LifecycleTransition, BridgeCommittedRecordChangeKind::Deleted) => {
+        (AspectBinding::LifecycleTransition, RecordStructuralChange::Deleted) => {
             Some(Change::LifecycleDelete)
         }
-        (AspectBinding::LifecycleTransition, BridgeCommittedRecordChangeKind::RetainedForAudit) => {
+        (AspectBinding::LifecycleTransition, RecordStructuralChange::RetainedForAudit) => {
             Some(Change::LifecycleRetainForAudit)
         }
         _ => None,
@@ -253,21 +252,21 @@ mod structural_kind_tests {
         assert_eq!(
             structural_change_kind(
                 &AspectBinding::StructuralRegion,
-                BridgeCommittedRecordChangeKind::Created,
+                RecordStructuralChange::Created,
             ),
             Some(Change::StructuralCreate)
         );
         assert_eq!(
             structural_change_kind(
                 &AspectBinding::LifecycleTransition,
-                BridgeCommittedRecordChangeKind::Deleted,
+                RecordStructuralChange::Deleted,
             ),
             Some(Change::LifecycleDelete)
         );
         assert_eq!(
             structural_change_kind(
                 &AspectBinding::LifecycleTransition,
-                BridgeCommittedRecordChangeKind::Updated,
+                RecordStructuralChange::Updated,
             ),
             None
         );

@@ -206,9 +206,9 @@ fn validate_non_empty(label: &str, value: &str) -> Result<(), BridgeBuildError> 
 }
 
 impl crate::mapping::registration::TruthPatchScope {
-    pub(crate) fn matches_key(&self, key: BridgeMappingLookupKey<'_>) -> bool {
+    pub(crate) fn matches_key(&self, key: &BridgeMappingLookupKey<'_>) -> bool {
         self.entity_selector().matches(key.entity_identity())
             && self.aspect_selector().matches(key.aspect_key())
-            && self.target_selector().matches(&key)
+            && self.target_selector().matches(key)
     }
 }

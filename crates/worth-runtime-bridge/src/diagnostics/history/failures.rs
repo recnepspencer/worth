@@ -54,15 +54,15 @@ impl BridgeHistoricalEvaluationFailureRecord {
             "historical-evaluation-failure|declaration={}|selector={}|branch={}|commit={}|snapshot={}|class:{failure_class:?}|detail={}",
             declaration_identity.as_str(),
             selector_identity.as_str(),
-            branch_identity.as_str(),
+            branch_identity.canonical_label(),
             commit_identity
                 .as_ref()
-                .map(TruthCommitIdentity::as_str)
-                .unwrap_or("-"),
+                .map(TruthCommitIdentity::canonical_label)
+                .unwrap_or_else(|| "-".to_owned()),
             snapshot_identity
                 .as_ref()
-                .map(TruthSnapshotIdentity::as_str)
-                .unwrap_or("-"),
+                .map(TruthSnapshotIdentity::canonical_label)
+                .unwrap_or_else(|| "-".to_owned()),
             detail.as_ref(),
         );
         let digest = Sha256::digest(canonical_basis.as_bytes());

@@ -52,8 +52,8 @@ impl BridgeRetainedInflightAsyncResumeBasis {
             truth_view_basis.digest(),
             truth_view_basis
                 .truth_branch_identity()
-                .map(TruthBranchIdentity::as_str)
-                .unwrap_or("-"),
+                .map(TruthBranchIdentity::canonical_label)
+                .unwrap_or_else(|| "-".to_owned()),
             request_generation
                 .map(|generation| generation.to_string())
                 .unwrap_or_else(|| "-".to_owned()),

@@ -41,8 +41,8 @@ impl BridgeHistoricalTruthBasisAdmissionRejection {
             "bridge-historical-truth-basis-admission-rejection|rejection-kind={}|truth-kind={}|truth-branch={}|truth-snapshot={}|truth-locator={}",
             rejection_kind.as_str(),
             truth_basis.basis().kind().canonical_label(),
-            truth_basis.basis().branch_identity().as_str(),
-            truth_basis.basis().snapshot_identity().as_str(),
+            truth_basis.basis().branch_identity().canonical_label(),
+            truth_basis.basis().snapshot_identity().canonical_label(),
             truth_basis.basis().native_truth_locator(),
         ));
         let digest = Sha256::digest(canonical_basis.as_bytes());
@@ -169,8 +169,8 @@ impl RetainedHistoricalPreviousValueEvidence {
             .join("|");
         let canonical_basis = Arc::<str>::from(format!(
             "bridge-historical-previous-value-evidence|branch={}|snapshot={}|count={}|rows={evidence_rows}",
-            truth_branch_identity.as_str(),
-            truth_snapshot_identity.as_str(),
+            truth_branch_identity.canonical_label(),
+            truth_snapshot_identity.canonical_label(),
             references.len(),
         ));
         let digest = Sha256::digest(canonical_basis.as_bytes());

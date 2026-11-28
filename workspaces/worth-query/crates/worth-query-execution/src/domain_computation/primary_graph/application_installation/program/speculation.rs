@@ -201,7 +201,7 @@ where
             })?;
         let source = selected.product().bridge_source();
         let relational = selected.product().relational_basis().identity().branch_id();
-        let signal = selected.product().signal_basis().branch_id();
+        let signal = selected.product().signal_basis();
         let handle = self
             .runtime()
             .inner
@@ -211,10 +211,10 @@ where
             .begin_preview(
                 BridgePreviewSessionIdentity::from_stable_name(request.identity),
                 BridgePreviewBranchBinding::new(
-                    TruthBranchIdentity::from_relational_branch_id(relational.0.clone()),
-                    BridgeSignalBranchIdentity::from_stable_name(signal.0.to_string()),
+                    TruthBranchIdentity::relational(relational.clone()),
+                    BridgeSignalBranchIdentity::from_basis(signal),
                 ),
-                source.snapshot_identity().clone(),
+                *source.snapshot_identity(),
             );
         Ok(WorthQueryApplicationPreviewSession {
             handle,

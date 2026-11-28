@@ -14,8 +14,8 @@ pub(crate) fn canonical_route_entry_order(
     right: &EligibleRouteEntry,
 ) -> std::cmp::Ordering {
     left.normalized_surface()
-        .entity_identity()
-        .cmp(right.normalized_surface().entity_identity())
+        .record()
+        .cmp(right.normalized_surface().record())
         .then_with(|| {
             left.normalized_surface()
                 .aspect_key()
@@ -37,8 +37,8 @@ pub(crate) fn canonical_snapshot_request_order(
     left: &SnapshotReadRequest,
     right: &SnapshotReadRequest,
 ) -> std::cmp::Ordering {
-    left.entity_identity()
-        .cmp(right.entity_identity())
+    left.record()
+        .cmp(right.record())
         .then_with(|| left.aspect_key().cmp(right.aspect_key()))
         .then_with(|| left.slice_kind().cmp(&right.slice_kind()))
         .then_with(|| {
@@ -56,10 +56,10 @@ pub(crate) fn route_digest_basis(
 ) -> String {
     let mut basis = format!(
         "route|commit={}|patch={}|snapshot={}|branch={}|mapping-context={}|entry-count={}",
-        envelope.commit_identity().as_str(),
-        envelope.patch_identity().as_str(),
-        envelope.snapshot_identity().as_str(),
-        envelope.branch_identity().as_str(),
+        envelope.commit_identity().canonical_label(),
+        envelope.patch_identity().canonical_label(),
+        envelope.snapshot_identity().canonical_label(),
+        envelope.branch_identity().canonical_label(),
         mapping_context.digest(),
         entries.len()
     );
@@ -120,10 +120,10 @@ pub(crate) fn planning_provenance_digest_basis(
     let mut basis = format!(
         "planning-provenance|route={}|commit={}|patch={}|snapshot={}|branch={}|patch-digest={}|mapping-context={}|entry-count={}|read-count={}",
         route_identity.as_str(),
-        envelope.commit_identity().as_str(),
-        envelope.patch_identity().as_str(),
-        envelope.snapshot_identity().as_str(),
-        envelope.branch_identity().as_str(),
+        envelope.commit_identity().canonical_label(),
+        envelope.patch_identity().canonical_label(),
+        envelope.snapshot_identity().canonical_label(),
+        envelope.branch_identity().canonical_label(),
         envelope.digest().as_str(),
         mapping_context.digest(),
         entries.len(),

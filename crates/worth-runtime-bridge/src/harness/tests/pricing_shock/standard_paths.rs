@@ -31,16 +31,20 @@ fn pricing_shock_standard_path_routes_and_evaluates_main() {
         "shared steel cost should fan out to multiple product price invalidations"
     );
     assert_eq!(
-        steel_route.result().receipt().snapshot_identity().as_str(),
-        truth.steel_snapshot().as_str()
+        steel_route
+            .result()
+            .receipt()
+            .snapshot_identity()
+            .canonical_label(),
+        truth.steel_snapshot().canonical_label()
     );
     assert_eq!(
-        steel_eval.snapshot().snapshot_identity().as_str(),
-        truth.steel_snapshot().as_str()
+        steel_eval.snapshot().snapshot_identity().canonical_label(),
+        truth.steel_snapshot().canonical_label()
     );
     assert_eq!(
-        branch_eval.snapshot_identity().as_str(),
-        truth.main_snapshot().as_str()
+        branch_eval.snapshot_identity().canonical_label(),
+        truth.main_snapshot().canonical_label()
     );
     let diagnostics = runtime.diagnostics();
     let delivered_targets = diagnostics
@@ -100,12 +104,12 @@ fn pricing_shock_split_screen_keeps_main_and_speculative_truth_isolated() {
     );
     assert_eq!(session.branches().signal().as_str(), "signal:pricing-shock");
     assert_eq!(
-        main_eval.snapshot_identity().as_str(),
-        truth.main_snapshot().as_str()
+        main_eval.snapshot_identity().canonical_label(),
+        truth.main_snapshot().canonical_label()
     );
     assert_eq!(
-        speculative_eval.snapshot_identity().as_str(),
-        truth.shock_snapshot().as_str()
+        speculative_eval.snapshot_identity().canonical_label(),
+        truth.shock_snapshot().canonical_label()
     );
     let mismatched = runtime.begin_preview(
         BridgePreviewSessionIdentity::from_stable_name("pricing:preview-mismatch"),
@@ -134,8 +138,8 @@ fn pricing_shock_split_screen_keeps_main_and_speculative_truth_isolated() {
             .result()
             .receipt()
             .snapshot_identity()
-            .as_str(),
-        truth.steel_snapshot().as_str()
+            .canonical_label(),
+        truth.steel_snapshot().canonical_label()
     );
     assert_eq!(
         live_main_route.result().receipt().delivered_target_count(),

@@ -105,9 +105,8 @@ impl BridgeConditionalSemanticObservationRead {
                 )
             })?;
         Ok(
-            crate::snapshot::SnapshotReadRequest::from_native_subscription_slice_relational_record(
-                record.bridge_entity_identity(),
-                record,
+            crate::snapshot::SnapshotReadRequest::from_native_subscription_slice(
+                crate::identity::record::BridgeRecordIdentity::Relational(record),
                 crate::snapshot::SnapshotReadContract::new(self.contract.clone()),
                 worth_foundational::facade::AspectLocator::new(
                     worth_foundational::facade::LocatorAuthority::Authoritative,

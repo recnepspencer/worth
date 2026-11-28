@@ -1,8 +1,10 @@
+use std::borrow::Cow;
 use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectLocator};
 
+use crate::identity::record::BridgeRecordIdentity;
 use crate::identity::{BridgeIdentity, TruthDeltaSurfaceIdentityTag};
 use crate::input::envelope::{
     BridgeCommittedPatchEnvelope, BridgeCommittedPatchItem, BridgeCommittedPatchTarget,
@@ -19,8 +21,7 @@ type TruthDeltaSurfaceTargetMaskIdentity = BridgeIdentity<TruthDeltaSurfaceTarge
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TruthDeltaSurface {
     surface_identity: TruthDeltaSurfaceIdentity,
-    entity_identity: Arc<str>,
-    relational_record_identity: Option<RelationalBridgeRecordIdentityParts>,
+    record: BridgeRecordIdentity,
     target: BridgeCommittedPatchTarget,
     native_target_basis: Arc<str>,
 }
@@ -39,36 +40,37 @@ impl Ord for TruthDeltaSurface {
 
 impl TruthDeltaSurface {
     fn from_native_target_parts(
-        entity_identity: impl Into<Arc<str>>,
-        relational_record_identity: Option<RelationalBridgeRecordIdentityParts>,
+        record: BridgeRecordIdentity,
         target: BridgeCommittedPatchTarget,
         native_target_basis: Arc<str>,
     ) -> Self {
-        let entity_identity = entity_identity.into();
         let target_mask_identity = truth_delta_surface_target_mask_identity(&target);
         let surface_identity = truth_delta_surface_identity(
-            entity_identity.as_ref(),
+            record.reporting_label().as_ref(),
             target.surface_kind(),
             &target_mask_identity,
         );
 
         Self {
             surface_identity,
-            entity_identity,
-            relational_record_identity,
+            record,
             target,
             native_target_basis,
         }
     }
 
-    pub(crate) fn entity_identity(&self) -> &str {
-        self.entity_identity.as_ref()
+    pub(crate) fn entity_identity(&self) -> Cow<'_, str> {
+        self.record.reporting_label()
+    }
+
+    pub(crate) fn record(&self) -> &BridgeRecordIdentity {
+        &self.record
     }
 
     pub(crate) fn relational_record_identity_parts(
         &self,
     ) -> Option<RelationalBridgeRecordIdentityParts> {
-        self.relational_record_identity
+        self.record.relational()
     }
 
     pub(crate) fn aspect_key(&self) -> &AspectKey {
@@ -186,8 +188,7 @@ pub(crate) fn truth_delta_surface_count(envelope: &BridgeCommittedPatchEnvelope)
 
 fn derive_surface(item: &BridgeCommittedPatchItem) -> TruthDeltaSurface {
     TruthDeltaSurface::from_native_target_parts(
-        item.entity_identity(),
-        item.relational_record_identity_parts(),
+        item.record().clone(),
         item.target().clone(),
         Arc::from(item.target_canonical_basis()),
     )

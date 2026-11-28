@@ -9,6 +9,7 @@ use crate::routing::{
     BridgePreparationMode, BridgeWorkloadIdentity,
 };
 
+use super::super::digest_basis::retained_truth_label_part;
 use super::super::digest_basis::{
     compose_retained_causal_mapping_evidence_identity,
     compose_retained_causal_mapping_evidence_identity_for_basis,
@@ -83,11 +84,11 @@ pub(crate) fn historical_evaluation_failure_digest(
 {
     let commit_identity = record
         .commit_identity()
-        .map(retained_mapping_bridge_identity_part)
+        .map(|identity| retained_truth_label_part(identity.canonical_label()))
         .unwrap_or_else(|| retained_mapping_shape_part("none"));
     let snapshot_identity = record
         .snapshot_identity()
-        .map(retained_mapping_bridge_identity_part)
+        .map(|identity| retained_truth_label_part(identity.canonical_label()))
         .unwrap_or_else(|| retained_mapping_shape_part("none"));
     let counters_digest = historical_evaluation_counters_digest(record.counters())?;
     compose_retained_causal_mapping_evidence_identity(
@@ -96,7 +97,7 @@ pub(crate) fn historical_evaluation_failure_digest(
             retained_mapping_bridge_identity_part(record.failure_identity()),
             retained_mapping_bridge_identity_part(record.declaration_identity()),
             retained_mapping_bridge_identity_part(record.selector_identity()),
-            retained_mapping_bridge_identity_part(record.branch_identity()),
+            retained_truth_label_part(record.branch_identity().canonical_label()),
             commit_identity,
             snapshot_identity,
             retained_mapping_shape_part(historical_failure_class_label(record.failure_class())),

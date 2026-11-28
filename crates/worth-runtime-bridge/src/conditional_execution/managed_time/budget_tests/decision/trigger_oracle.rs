@@ -64,10 +64,10 @@ pub(super) fn expected(set: &BridgeDeliveredCorrespondenceChangeSet) -> u64 {
     bytes += binding(&dependency.binding);
     bytes += size_of::<worth_foundational::facade::AuthoritativeAspectChangeKind>() as u64
         * dependency.relevant_changes.len() as u64;
-    bytes += identity(set.commit_identity())
-        + identity(set.patch_identity())
-        + identity(set.snapshot_identity())
-        + identity(set.branch_identity());
+    if let Some(branch) = set.branch_identity().branch_id() {
+        bytes += layout::arc::<worth_relational::facade::history::BranchId>();
+        bytes += branch.0.capacity() as u64;
+    }
     bytes += size_of::<BridgeDeliveredCorrespondenceChange>() as u64 * set.changes().len() as u64;
     assert!(
         !set.changes().is_empty(),
@@ -104,14 +104,4 @@ fn binding(binding: &worth_foundational::facade::AspectBinding) -> u64 {
         }
         _ => 0,
     }
-}
-
-fn identity<Tag>(identity: &crate::identity::BridgeIdentity<Tag>) -> u64 {
-    layout::text(identity.as_str().len())
-        + match identity.payload() {
-            crate::identity::BridgeIdentityPayload::RelationalBranch { branch_id } => {
-                layout::text(branch_id.len())
-            }
-            _ => 0,
-        }
 }

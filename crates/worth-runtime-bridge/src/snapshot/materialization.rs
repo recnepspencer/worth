@@ -81,8 +81,8 @@ impl MaterializedTruthViewObservation {
             .read_packet(self.planned.read_packet(), execution)?;
         if read_result.snapshot_identity() != self.snapshot_reader.snapshot_identity() {
             return Err(BridgeSnapshotReadError::snapshot_identity_mismatch(
-                read_result.snapshot_identity().as_str(),
-                self.snapshot_reader.snapshot_identity().as_str(),
+                &read_result.snapshot_identity().canonical_label(),
+                &self.snapshot_reader.snapshot_identity().canonical_label(),
             ));
         }
 

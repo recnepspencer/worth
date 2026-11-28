@@ -1,9 +1,11 @@
+use std::borrow::Cow;
 use std::sync::Arc;
 
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, AspectLocator, AspectMask, ProjectionMask,
 };
 
+use crate::identity::record::BridgeRecordIdentity;
 use crate::mapping::SubscriptionSliceKind;
 use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 use crate::routing::{
@@ -14,8 +16,7 @@ use crate::snapshot::SnapshotReadContract;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PriorSubscriptionSlice {
     prior_subscription_slice_identity: BridgeSubscriptionSliceIdentity,
-    entity_identity: Arc<str>,
-    relational_record_identity: Option<RelationalBridgeRecordIdentityParts>,
+    record: BridgeRecordIdentity,
     aspect_locator: AspectLocator,
     field_locator: Option<AspectFieldLocator>,
     projection_mask: AspectMask<ProjectionMask>,
@@ -34,8 +35,7 @@ impl PriorSubscriptionSlice {
     ) -> Self {
         Self {
             prior_subscription_slice_identity,
-            entity_identity: Arc::from(slice.entity_identity()),
-            relational_record_identity: slice.relational_record_identity_parts(),
+            record: slice.record().clone(),
             aspect_locator: slice.aspect_locator().clone(),
             field_locator: slice.field_locator().cloned(),
             projection_mask: slice.projection_mask().clone(),
@@ -52,12 +52,12 @@ impl PriorSubscriptionSlice {
         &self.prior_subscription_slice_identity
     }
 
-    pub fn entity_identity(&self) -> &str {
-        self.entity_identity.as_ref()
+    pub fn entity_identity(&self) -> Cow<'_, str> {
+        self.record.reporting_label()
     }
 
     pub fn relational_record_identity_parts(&self) -> Option<RelationalBridgeRecordIdentityParts> {
-        self.relational_record_identity
+        self.record.relational()
     }
 
     pub fn aspect_key(&self) -> &AspectKey {
@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn prior_slice_bases_consume_slice_proof_not_native_target_basis() {
         let slice = BridgeSubscriptionSlice::from_continuity_parts(
-            "entity-1",
+            "entity-1".into(),
             aspect_locator("profile"),
             Some(field_locator("profile", "name")),
             AspectMask::new([CanonicalFieldPath::single(field_key("name"))]),

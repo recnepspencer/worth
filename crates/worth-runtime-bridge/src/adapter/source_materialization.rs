@@ -41,7 +41,7 @@ pub trait BridgeSourceAdapter: std::any::Any + Send + Sync + 'static {
                         error.delivery_kind(),
                         format!(
                             "Bridge source adapter failed to open snapshot `{}`: {error}",
-                            snapshot_identity.as_str()
+                            snapshot_identity.canonical_label()
                         ),
                     )
                     .with_context(BridgeErrorContext::snapshot(snapshot_identity.clone()))
@@ -53,8 +53,8 @@ pub trait BridgeSourceAdapter: std::any::Any + Send + Sync + 'static {
                     BridgeDeliveryErrorKind::SnapshotIdentityMismatch,
                     format!(
                         "Source adapter bound snapshot `{}` but planned source packet required `{}`.",
-                        bound_snapshot_identity.as_str(),
-                        snapshot_identity.as_str()
+                        bound_snapshot_identity.canonical_label(),
+                        snapshot_identity.canonical_label()
                     ),
                 )
                 .with_context(BridgeErrorContext::snapshot(snapshot_identity.clone()))
@@ -65,7 +65,7 @@ pub trait BridgeSourceAdapter: std::any::Any + Send + Sync + 'static {
             format!(
                 "source-truth-view-observation|planned={}|snapshot={}",
                 planned.digest(),
-                snapshot_identity.as_str()
+                snapshot_identity.canonical_label()
             ),
         );
 

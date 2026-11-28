@@ -81,9 +81,8 @@ impl RuntimeBridgeRelationalSource {
             .observation()
             .commit_id()
             .ok_or(RelationalBranchBasisDenial::UnavailableRetainedTarget)?;
-        let branch_identity = crate::facade::TruthBranchIdentity::from_relational_branch_id(
-            basis.identity().branch_id().0.clone(),
-        );
+        let branch_identity =
+            crate::facade::TruthBranchIdentity::relational(basis.identity().branch_id().clone());
         let observation = self.retain_branch_basis_for_bridge(basis)?;
         Ok(self
             .branch_head_bindings
@@ -100,9 +99,8 @@ impl RuntimeBridgeRelationalSource {
             .observation()
             .commit_id()
             .ok_or(RelationalBranchBasisDenial::UnavailableRetainedTarget)?;
-        let branch_identity = crate::facade::TruthBranchIdentity::from_relational_branch_id(
-            basis.identity().branch_id().0.clone(),
-        );
+        let branch_identity =
+            crate::facade::TruthBranchIdentity::relational(basis.identity().branch_id().clone());
         let observation = self.retain_branch_basis_for_bridge_in_runtime(runtime, basis)?;
         Ok(self
             .branch_head_bindings

@@ -88,9 +88,13 @@ impl RuntimeBridgeRelationalSource {
     ) -> Result<Self, RelationalBridgeSourceConfigurationError> {
         let graph_role = graph_role.into();
         validate_graph_role(&graph_role)?;
+        let runtime = RelationalRuntimeHandle::immutable(runtime);
+        let observation_bindings = observation_bindings::RelationalBridgeObservationBindings::new(
+            runtime.runtime_instance_id(),
+        );
         Ok(Self {
-            runtime: RelationalRuntimeHandle::immutable(runtime),
-            observation_bindings: observation_bindings::RelationalBridgeObservationBindings::new(),
+            runtime,
+            observation_bindings,
             branch_head_bindings: branch_head_bindings::RelationalBridgeBranchHeadBindings::new(),
             graph_role,
             partition: None,
@@ -104,9 +108,13 @@ impl RuntimeBridgeRelationalSource {
     ) -> Result<Self, RelationalBridgeSourceConfigurationError> {
         let graph_role = graph_role.into();
         validate_graph_role(&graph_role)?;
+        let runtime = RelationalRuntimeHandle::shared(runtime);
+        let observation_bindings = observation_bindings::RelationalBridgeObservationBindings::new(
+            runtime.runtime_instance_id(),
+        );
         Ok(Self {
-            runtime: RelationalRuntimeHandle::shared(runtime),
-            observation_bindings: observation_bindings::RelationalBridgeObservationBindings::new(),
+            runtime,
+            observation_bindings,
             branch_head_bindings: branch_head_bindings::RelationalBridgeBranchHeadBindings::new(),
             graph_role,
             partition: None,

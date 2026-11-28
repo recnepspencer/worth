@@ -46,25 +46,10 @@ pub(super) fn contracts() -> Vec<Contract<'static>> {
         },
         Contract {
             fixture: "private_snapshot_token_constructor.rs",
-            errors: &[
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["issued"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-            ],
+            errors: &[Diagnostic::Code {
+                code: "E0624",
+                symbols: &["issued"],
+            }],
         },
         Contract {
             fixture: "snapshot_read_coordinate_constructor_private.rs",

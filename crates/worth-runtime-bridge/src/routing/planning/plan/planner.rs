@@ -106,9 +106,9 @@ pub(crate) fn plan_ingested_patch(
                 &lowering_provenance_digest_basis(
                     &route_identity,
                     planning_provenance.digest(),
-                    envelope.commit_identity().as_str(),
-                    envelope.patch_identity().as_str(),
-                    envelope.snapshot_identity().as_str(),
+                    &envelope.commit_identity().canonical_label(),
+                    &envelope.patch_identity().canonical_label(),
+                    &envelope.snapshot_identity().canonical_label(),
                 ),
             ),
         ),
@@ -133,9 +133,9 @@ pub(crate) fn plan_ingested_patch(
                 + lowering_provenance_digest_basis(
                     &route_identity,
                     planning_provenance.digest(),
-                    envelope.commit_identity().as_str(),
-                    envelope.patch_identity().as_str(),
-                    envelope.snapshot_identity().as_str(),
+                    &envelope.commit_identity().canonical_label(),
+                    &envelope.patch_identity().canonical_label(),
+                    &envelope.snapshot_identity().canonical_label(),
                 )
                 .len()
                 + lowering_plan.digest_input_bytes(),

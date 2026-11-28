@@ -15,19 +15,6 @@ pub(super) fn contracts() -> Vec<Contract<'static>> {
         Contract {
             fixture: "subscription_basis_binding_literal_private.rs",
             errors: &[
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
                 Diagnostic::Uncoded {
                     cause: "cannot construct",
                     symbols: &["ValidatedSubscriptionBasisBinding", "private fields"],

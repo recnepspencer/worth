@@ -125,7 +125,7 @@ impl RuntimeBridge {
                         error.historical_delivery_kind(),
                         format!(
                             "could not pin historical commit `{}`: {error}",
-                            commit.as_str()
+                            commit.canonical_label()
                         ),
                     )
                 })?;
@@ -177,7 +177,7 @@ impl RuntimeBridge {
                             format!(
                                 "Truth-view selector `{}` could not resolve committed envelope for `{}`: {error}",
                                 selector.selector_identity().as_str(),
-                                commit_identity.as_str()
+                                commit_identity.canonical_label()
                             ),
                         )
                     })?;
@@ -201,7 +201,7 @@ impl RuntimeBridge {
                             format!(
                                 "Truth-view selector `{}` could not resolve branch head for `{}`: {error}",
                                 selector.selector_identity().as_str(),
-                                selector.branch_identity().as_str()
+                                selector.branch_identity().canonical_label()
                             ),
                         )
                     })?;
@@ -221,8 +221,8 @@ impl RuntimeBridge {
                 format!(
                     "Truth-view selector `{}` targeted branch `{}` but resolved authority was on branch `{}`.",
                     selector.selector_identity().as_str(),
-                    selector.branch_identity().as_str(),
-                    envelope.branch_identity().as_str()
+                    selector.branch_identity().canonical_label(),
+                    envelope.branch_identity().canonical_label()
                 ),
             ));
         }
@@ -235,8 +235,8 @@ impl RuntimeBridge {
                     format!(
                         "Truth-view selector `{}` targeted commit `{}` but resolved authority bound commit `{}`.",
                         selector.selector_identity().as_str(),
-                        selector_commit_identity.as_str(),
-                        envelope.commit_identity().as_str()
+                        selector_commit_identity.canonical_label(),
+                        envelope.commit_identity().canonical_label()
                     ),
                 ));
         }
@@ -249,8 +249,8 @@ impl RuntimeBridge {
                     format!(
                         "Truth-view selector `{}` targeted snapshot `{}` but resolved authority bound snapshot `{}`.",
                         selector.selector_identity().as_str(),
-                        selector_snapshot_identity.as_str(),
-                        envelope.snapshot_identity().as_str()
+                        selector_snapshot_identity.canonical_label(),
+                        envelope.snapshot_identity().canonical_label()
                     ),
                 ));
         }

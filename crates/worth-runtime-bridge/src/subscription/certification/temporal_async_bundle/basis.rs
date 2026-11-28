@@ -31,9 +31,10 @@ impl BridgeTemporalAsyncCertificationBasisSection {
         let signal_basis = temporal_basis.signal_basis().basis();
         let wake = temporal_basis.wake_evidence().evidence();
         let truth_basis_kind = Arc::from(format!("{:?}", truth_basis.kind()).to_lowercase());
-        let truth_branch_identity = Arc::from(truth_basis.branch_identity().as_str().to_owned());
+        let truth_branch_identity =
+            Arc::from(truth_basis.branch_identity().canonical_label().to_owned());
         let truth_snapshot_identity =
-            Arc::from(truth_basis.snapshot_identity().as_str().to_owned());
+            Arc::from(truth_basis.snapshot_identity().canonical_label().to_owned());
         let truth_locator_identity = Arc::from(truth_basis.native_truth_locator().to_owned());
         let signal_clock_domain = Arc::from(format!("{:?}", signal_basis.clock_domain()));
         let signal_clock_checkpoint = Arc::from(

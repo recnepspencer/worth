@@ -106,15 +106,15 @@ impl CanonicalBridgeWorkloadRequest {
         }
         for member in &commit_members {
             basis.push_str("|commit=");
-            basis.push_str(member.as_str());
+            basis.push_str(&member.canonical_label());
         }
         for member in &snapshot_members {
             basis.push_str("|snapshot=");
-            basis.push_str(member.as_str());
+            basis.push_str(&member.canonical_label());
         }
         for member in &branch_members {
             basis.push_str("|branch=");
-            basis.push_str(member.as_str());
+            basis.push_str(&member.canonical_label());
         }
         for segment in &workload_segment_identities {
             basis.push_str("|segment=");

@@ -206,13 +206,7 @@ where
                 <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME,
             )
             .map_err(|error| failed(Binding::IDENTITY, error))?;
-        Ok(
-            worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(
-                entity.partition_id.0,
-                entity.local_slot.0,
-                entity.generation.0,
-            ),
-        )
+        Ok(worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::from_entity(entity))
     }
 
     fn execute(

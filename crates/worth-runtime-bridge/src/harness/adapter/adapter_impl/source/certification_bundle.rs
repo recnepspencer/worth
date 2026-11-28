@@ -227,7 +227,7 @@ pub(super) fn materialization_diagnostics_digest(record: &SourceMaterializationR
             record
                 .snapshot_identities()
                 .iter()
-                .map(crate::snapshot::TruthSnapshotIdentity::as_str)
+                .map(crate::snapshot::TruthSnapshotIdentity::canonical_label)
                 .collect::<Vec<_>>()
                 .join(","),
             record

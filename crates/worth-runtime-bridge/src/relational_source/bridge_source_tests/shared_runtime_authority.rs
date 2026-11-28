@@ -126,7 +126,7 @@ fn shared_source_retains_the_live_runtime_authority_and_observes_later_commits()
 }
 
 #[test]
-fn exact_reader_rejects_a_foreign_lease_despite_equal_snapshot_descriptors() {
+fn snapshot_selection_rejects_a_foreign_runtime_with_equal_local_coordinates() {
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
@@ -158,8 +158,14 @@ fn exact_reader_rejects_a_foreign_lease_despite_equal_snapshot_descriptors() {
     let (first, first_lease) = retained_source(&resource_request);
     let (second, second_lease) = retained_source(&resource_request);
     let snapshot = first_lease.snapshot_identity().clone();
-    assert_eq!(snapshot, *second_lease.snapshot_identity());
-    assert!(second.open_snapshot(&snapshot, resource_request).is_ok());
+    let second_snapshot = *second_lease.snapshot_identity();
+    let local = |id: crate::facade::TruthSnapshotIdentity| {
+        let parts = id.relational_snapshot_parts().unwrap();
+        (parts.snapshot_id(), parts.version_id())
+    };
+    assert_eq!(local(snapshot), local(second_snapshot));
+    assert_ne!(snapshot, second_snapshot);
+    assert!(second.open_snapshot(&snapshot, resource_request).is_err());
 
     let denial = second.open_retained_snapshot(first_lease).unwrap_err();
     assert!(denial
@@ -168,8 +174,12 @@ fn exact_reader_rejects_a_foreign_lease_despite_equal_snapshot_descriptors() {
     assert!(first.open_snapshot(&snapshot, resource_request).is_err());
 
     let valid = second.open_retained_snapshot(second_lease).unwrap();
-    assert_eq!(valid.snapshot_identity(), snapshot);
-    assert!(second.open_snapshot(&snapshot, resource_request).is_ok());
+    assert_eq!(valid.snapshot_identity(), second_snapshot);
+    assert!(second
+        .open_snapshot(&second_snapshot, resource_request)
+        .is_ok());
     drop(valid);
-    assert!(second.open_snapshot(&snapshot, resource_request).is_err());
+    assert!(second
+        .open_snapshot(&second_snapshot, resource_request)
+        .is_err());
 }

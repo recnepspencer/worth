@@ -130,14 +130,7 @@ impl super::execution_view::BridgeConditionalExecutionView<'_> {
         };
         self.validate_evaluation_session(session, &request)
             .map_err(|denial| denial.with_bridge_execution_counters(counters))?;
-        let decision_reservation = super::retention::reserve_decision(
-            self.retention,
-            &request,
-            session
-                .source_snapshot
-                .as_ref()
-                .map(|source| source.snapshot_identity()),
-        )?;
+        let decision_reservation = super::retention::reserve_decision(self.retention, &request)?;
         let context_reservation = super::retention::reserve_context(self.retention, &request)?;
         let execution = execution_request
             .in_scope(|_| {

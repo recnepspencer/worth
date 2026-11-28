@@ -256,7 +256,7 @@ fn deliver_commit_dependencies(
 > {
     let mut granular_invalidations = Vec::new();
     let lowering = signal_basis.installed_lowering_ref();
-    let commit_identity = TruthCommitIdentity::from_relational_commit_id(commit.0);
+    let commit_identity = TruthCommitIdentity::relational(commit);
     for dependency_ordinal in 0..lowering.contract().dependency_count() {
         if preperformed_deliveries.iter().any(|delivery| {
             let change = delivery.correspondence_receipt().change_set();

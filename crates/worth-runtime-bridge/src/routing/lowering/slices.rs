@@ -1,9 +1,11 @@
+use std::borrow::Cow;
 use std::sync::Arc;
 
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, AspectLocator, AspectMask, ProjectionMask,
 };
 
+use crate::identity::record::BridgeRecordIdentity;
 use crate::mapping::SubscriptionSliceKind;
 use crate::mapping::TruthDeltaSurfaceKind;
 use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
@@ -21,8 +23,7 @@ use super::slice_support::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgeSubscriptionSlice {
-    entity_identity: Arc<str>,
-    relational_record_identity: Option<RelationalBridgeRecordIdentityParts>,
+    record: BridgeRecordIdentity,
     aspect_locator: AspectLocator,
     field_locator: Option<AspectFieldLocator>,
     projection_mask: AspectMask<ProjectionMask>,
@@ -44,7 +45,7 @@ impl BridgeSubscriptionSlice {
     ) -> Self {
         let projection_mask = surface.projection_mask().clone();
         let slice_target_identity = subscription_slice_target_identity(
-            surface.entity_identity(),
+            surface.entity_identity().as_ref(),
             surface.target(),
             &slice_kind,
         );
@@ -54,8 +55,7 @@ impl BridgeSubscriptionSlice {
             match_status,
         );
         Self {
-            entity_identity: Arc::from(surface.entity_identity()),
-            relational_record_identity: surface.relational_record_identity_parts(),
+            record: surface.record().clone(),
             aspect_locator: surface.aspect_locator().clone(),
             field_locator: surface.field_locator().cloned(),
             projection_mask,
@@ -70,7 +70,7 @@ impl BridgeSubscriptionSlice {
     }
 
     pub(crate) fn from_continuity_parts(
-        entity_identity: impl Into<Arc<str>>,
+        record: BridgeRecordIdentity,
         aspect_locator: AspectLocator,
         field_locator: Option<AspectFieldLocator>,
         projection_mask: AspectMask<ProjectionMask>,
@@ -79,7 +79,6 @@ impl BridgeSubscriptionSlice {
         slice_kind: SubscriptionSliceKind,
         match_status: FineGrainedMatchStatus,
     ) -> Self {
-        let entity_identity = entity_identity.into();
         assert_subscription_slice_target_shape(
             field_locator.as_ref(),
             &projection_mask,
@@ -93,7 +92,7 @@ impl BridgeSubscriptionSlice {
         );
         let native_target_basis = committed_patch_target.canonical_basis();
         let slice_target_identity = subscription_slice_target_identity(
-            entity_identity.as_ref(),
+            record.reporting_label().as_ref(),
             &committed_patch_target,
             &slice_kind,
         );
@@ -103,8 +102,7 @@ impl BridgeSubscriptionSlice {
             match_status,
         );
         Self {
-            entity_identity,
-            relational_record_identity: None,
+            record,
             aspect_locator,
             field_locator,
             projection_mask,
@@ -118,12 +116,16 @@ impl BridgeSubscriptionSlice {
         }
     }
 
-    pub fn entity_identity(&self) -> &str {
-        self.entity_identity.as_ref()
+    pub fn entity_identity(&self) -> Cow<'_, str> {
+        self.record.reporting_label()
+    }
+
+    pub(crate) fn record(&self) -> &BridgeRecordIdentity {
+        &self.record
     }
 
     pub fn relational_record_identity_parts(&self) -> Option<RelationalBridgeRecordIdentityParts> {
-        self.relational_record_identity
+        self.record.relational()
     }
 
     pub fn aspect_key(&self) -> &AspectKey {
@@ -236,7 +238,7 @@ mod tests {
         )
         .expect("field intent should validate");
         let field_slice = BridgeSubscriptionSlice::from_continuity_parts(
-            "user",
+            "user".into(),
             aspect_locator("profile"),
             Some(field_locator("profile", "name")),
             AspectMask::<ProjectionMask>::new([CanonicalFieldPath::single(field_key("name"))]),
@@ -312,7 +314,7 @@ mod tests {
             ),
         ] {
             let whole_slice = BridgeSubscriptionSlice::from_continuity_parts(
-                "user",
+                "user".into(),
                 aspect_locator("profile"),
                 None,
                 AspectMask::whole_aspect(),

@@ -16,7 +16,6 @@ use worth_relational::facade::change_source::{
     RelationalRetainedObservation, RelationalSelectedCommit,
 };
 use worth_relational::facade::history::{BranchId, CommitId};
-use worth_relational::facade::identity::VersionId;
 use worth_relational::facade::mvcc::RelationalBranchObservation;
 use worth_relational::facade::snapshots::SnapshotId;
 
@@ -43,27 +42,24 @@ impl RelationalBridgeSelectedObservation {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(super) struct RelationalBridgeObservationBindings {
+    runtime_id: u64,
     entries: Mutex<RelationalBridgeObservationBindingIndex>,
 }
 
 #[derive(Debug, Default)]
 struct RelationalBridgeObservationBindingIndex {
-    by_snapshot: HashMap<SnapshotId, RelationalBridgeObservationBinding>,
+    by_snapshot: HashMap<SnapshotId, RelationalRetainedObservation>,
     by_commit: HashMap<CommitId, BTreeSet<SnapshotId>>,
 }
 
-#[derive(Debug)]
-struct RelationalBridgeObservationBinding {
-    version_id: VersionId,
-    commit_id: Option<CommitId>,
-    retained: RelationalRetainedObservation,
-}
-
 impl RelationalBridgeObservationBindings {
-    pub(super) fn new() -> Arc<Self> {
-        Arc::new(Self::default())
+    pub(super) fn new(runtime_id: u64) -> Arc<Self> {
+        Arc::new(Self {
+            runtime_id,
+            entries: Mutex::default(),
+        })
     }
 
     pub(super) fn insert(
@@ -74,14 +70,7 @@ impl RelationalBridgeObservationBindings {
         let version_id = retained.observation().version_id();
         let commit_id = retained.observation().commit_id();
         let mut entries = self.lock_entries();
-        entries.by_snapshot.insert(
-            snapshot_id,
-            RelationalBridgeObservationBinding {
-                version_id,
-                commit_id,
-                retained,
-            },
-        );
+        entries.by_snapshot.insert(snapshot_id, retained);
         if let Some(commit_id) = commit_id {
             entries
                 .by_commit
@@ -91,10 +80,7 @@ impl RelationalBridgeObservationBindings {
         }
         drop(entries);
         let snapshot_identity =
-            crate::relational_source::identities::bridge_snapshot_identity_for_binding(
-                snapshot_id,
-                version_id,
-            );
+            TruthSnapshotIdentity::retained_by(self.runtime_id, snapshot_id, version_id);
         RelationalBridgeObservationLease {
             snapshot_identity,
             snapshot_id,
@@ -106,8 +92,24 @@ impl RelationalBridgeObservationBindings {
         &self,
         identity: &TruthSnapshotIdentity,
     ) -> Result<RelationalBridgeSelectedObservation, RelationalBridgeSourceError> {
-        let (snapshot_id, expected_version_id) =
-            crate::relational_source::identities::parse_bridge_snapshot_identity(identity)?;
+        use crate::adapter::{
+            BridgeSourceBindingDenial as Denial, RelationalBridgeSourceErrorTag::Binding,
+        };
+
+        let parts = identity.relational_snapshot_parts().ok_or_else(|| {
+            RelationalBridgeSourceError::new(
+                Binding(Denial::UnsupportedSnapshotIdentity),
+                "snapshot identity does not name a retained relational observation",
+            )
+        })?;
+        if parts.runtime != Some(self.runtime_id) {
+            return Err(RelationalBridgeSourceError::new(
+                Binding(Denial::ForeignRegistrationOwner),
+                "snapshot identity belongs to another runtime or has no retained owner",
+            ));
+        }
+        let snapshot_id = parts.snapshot;
+        let expected_version_id = parts.version;
         let entries = self.lock_entries();
         let binding = entries.by_snapshot.get(&snapshot_id).ok_or_else(|| {
             RelationalBridgeSourceError::new(
@@ -120,15 +122,15 @@ impl RelationalBridgeObservationBindings {
                 ),
             )
         })?;
-        if binding.version_id != expected_version_id {
+        if binding.observation().version_id() != expected_version_id {
             return Err(RelationalBridgeSourceError::new(crate::adapter::RelationalBridgeSourceErrorTag::Binding(crate::adapter::BridgeSourceBindingDenial::SnapshotVersionMismatch), format!(
                 "relational bridge observation `{}` expected version `{}` but retained basis selects version `{}`",
-                snapshot_id.0, expected_version_id.0, binding.version_id.0
+                snapshot_id.0, expected_version_id.0, binding.observation().version_id().0
             )));
         }
         Ok(RelationalBridgeSelectedObservation {
             snapshot_identity: identity.clone(),
-            observation: binding.retained.observation().clone(),
+            observation: binding.observation().clone(),
         })
     }
 
@@ -162,18 +164,17 @@ impl RelationalBridgeObservationBindings {
             .by_snapshot
             .get(&snapshot_id)
             .expect("commit index references a live observation binding");
-        Ok(
-            crate::relational_source::identities::bridge_snapshot_identity_for_binding(
-                snapshot_id,
-                binding.version_id,
-            ),
-        )
+        Ok(TruthSnapshotIdentity::retained_by(
+            self.runtime_id,
+            snapshot_id,
+            binding.observation().version_id(),
+        ))
     }
 
-    fn remove(&self, snapshot_id: SnapshotId) -> Option<RelationalBridgeObservationBinding> {
+    fn remove(&self, snapshot_id: SnapshotId) -> Option<RelationalRetainedObservation> {
         let mut entries = self.lock_entries();
         let binding = entries.by_snapshot.remove(&snapshot_id)?;
-        if let Some(commit_id) = binding.commit_id {
+        if let Some(commit_id) = binding.observation().commit_id() {
             let remove_commit = entries
                 .by_commit
                 .get_mut(&commit_id)
@@ -241,7 +242,7 @@ impl RelationalBridgeObservationLease {
             .bindings
             .take()
             .and_then(|bindings| bindings.remove(self.snapshot_id))
-            .map(|binding| binding.retained.release());
+            .map(|binding| binding.release());
         RelationalBridgeObservationReleaseReceipt {
             snapshot_identity: self.snapshot_identity.clone(),
             component_release,

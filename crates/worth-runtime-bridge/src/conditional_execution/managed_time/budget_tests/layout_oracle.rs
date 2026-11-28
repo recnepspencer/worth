@@ -69,11 +69,6 @@ pub(super) fn core(snapshot: &str, execution: &str) -> u64 {
         + arc::<super::super::super::causal_observation::BridgeRetainedConditionalObservation>()
         + text(snapshot.len())
         + text(execution.len())
-        + text(
-            crate::truth_identity_fixtures::truth_snapshot(1, 1)
-                .as_str()
-                .len(),
-        )
 }
 
 pub(super) fn evidence(binding: &str) -> u64 {
