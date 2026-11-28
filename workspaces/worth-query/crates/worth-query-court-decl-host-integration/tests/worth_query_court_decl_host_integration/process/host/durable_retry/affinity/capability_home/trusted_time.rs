@@ -52,12 +52,12 @@ fn directory_reopen_uses_the_new_trusted_clock_without_sampling_during_open() {
         )
     })
     .unwrap();
-    assert_eq!(calls.load(Ordering::SeqCst), 0);
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
     assert_eq!(
         admission(home.runtime()),
         Some(Denial::Refused(Refusal::TrustedTimeUnavailable))
     );
-    assert!(calls.load(Ordering::SeqCst) > 0);
+    assert!(calls.load(Ordering::SeqCst) > 1);
     drop(home);
     let calls = Arc::new(AtomicUsize::new(0));
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
@@ -88,12 +88,12 @@ fn memory_home_uses_its_supplied_trusted_authorization_clock() {
         )
     })
     .unwrap();
-    assert_eq!(calls.load(Ordering::SeqCst), 0);
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
     assert_eq!(
         admission(home.runtime()),
         Some(Denial::Refused(Refusal::TrustedTimeUnavailable))
     );
-    assert!(calls.load(Ordering::SeqCst) > 0);
+    assert!(calls.load(Ordering::SeqCst) > 1);
 }
 
 fn admission(

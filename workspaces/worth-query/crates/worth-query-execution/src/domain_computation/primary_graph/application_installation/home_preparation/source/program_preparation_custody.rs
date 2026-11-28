@@ -134,7 +134,9 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
             Some(source) => source,
             None => crate::domain_computation::authorization::WorthQueryRuntimeClock::system(),
         };
-        bootstrap.stamp_seed_admission(clock.admission_timestamp().ok());
+        if bootstrap.program_activation_seed.is_some() {
+            bootstrap.stamp_seed_admission(clock.admission_timestamp().ok());
+        }
         Box::new(Self {
             core: ProgramCore {
                 program,

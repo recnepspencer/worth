@@ -102,9 +102,10 @@ no generations. MemoryOnly remains available without a restart guarantee.
 `WorthQueryApplicationHomeRequest::with_authorization_time_source(source)`
 installs an Execution time sampler for capability admission and revalidation in
 either location, including reopen. Pass `Arc<ControlledTime>` for deterministic
-time or use `WorthQueryRuntimeClock::new(sampler)` to supply an existing sampler. Opening does not sample the
-clock. When an authorization decision needs time, an unavailable source returns
-`TrustedTimeUnavailable`.
+time or use `WorthQueryRuntimeClock::new(sampler)` to supply an existing sampler.
+A fresh Home samples once to stamp its seed. Directory reopen installs the
+sampler for future decisions. An authorization decision that needs an
+unavailable sample returns `TrustedTimeUnavailable`.
 
 ### Writer contention and incarnation
 
