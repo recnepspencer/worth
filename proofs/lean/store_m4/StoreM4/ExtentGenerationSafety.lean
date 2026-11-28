@@ -1,3 +1,12 @@
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: workspaces/worth-store/crates/worth-store-physical-format/src/arena_frame/range.rs:52-56 sha256:7f3b7fb5f9e7c1bf57fe72868887494054aaa3c3eef85508086ffb435b42343f
+-- proof-mirror: workspaces/worth-store/crates/worth-store-physical-format/src/arena_frame/allocation_generation.rs:11-49 sha256:0302471ceb8716aaa223bc3414b8834cf99c9418d360493661e01b5d51d7b3e1
+-- proof-mirror: workspaces/worth-store/crates/worth-store-buffer-pool/src/allocation_generation_guard/mod.rs:20-50 sha256:0effd1cdee4ea30faadbb8588f82f92cb79b5aac9550b92a88f15c6d035b7fde
+-- proof-mirror: workspaces/worth-store/crates/worth-store-buffer-pool/src/allocation_generation_guard/mod.rs:87-245 sha256:121eb23dc927a19d9735efcb945dc376d6f7a9519e7fc3e7916e5579557adafb
+-- proof-mirror: workspaces/worth-store/crates/worth-store-buffer-pool/src/physical_residency/pool/arena_generation_ledger.rs:39-148 sha256:fa02f89c2f7e3e227bb6c9f2a4ed4d746225eecc42264cb450ed14d78a521680
+-- proof-mirror: workspaces/worth-store/crates/worth-store-buffer-pool/src/physical_residency/pool/writeback_fence_drain.rs:24-120 sha256:7382c880b3a0a6a0fea758824aa6af5347d95a1b9ebc96e5ba90b96d4770bf0c
+-- proof-mirror: workspaces/worth-store/crates/worth-store-buffer-pool/src/physical_residency/pool/writeback_fence_drain.rs:207-265 sha256:b7ff11a7b7444b1904b31e81ceea5d34de8f2b45b403be6aca7075f90da5eb8f
+
 /-!
 # `AddressReuseGenerationAndWriteFenceSound` (Store Milestone 4, Phase M4.5)
 

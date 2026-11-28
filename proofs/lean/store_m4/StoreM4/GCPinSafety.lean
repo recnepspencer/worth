@@ -1,3 +1,11 @@
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/pin_table_kernel/transitions.rs:7-108 sha256:4805119d6cf9854b07661e6eb47eaba225184fb7d7ab7ae29b80e95dda67f786
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/pin_table_kernel/transitions.rs:110-162 sha256:a236be84da0339827a016a34ccc1358effa70b98a418482d0c11ca823eacf446
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/pin_table_kernel/transitions.rs:164-222 sha256:bfc5144a73023b130ab9a69436db88070b506b262c3a9052c2158e96611c98d6
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/pin_table_kernel/transitions.rs:224-340 sha256:655032bffbe18ed09432badd6854747fdf99a79a07e7a689cec360e0a96951ac
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/pin_table/core.rs:120-162 sha256:aa878e944bd5ebb57d83d9f428c5f39421dd95fed5e031cc01bad23e77ad1cf1
+-- proof-mirror: workspaces/worth-store/crates/worth-store/src/physical_runtime/stability/retention/registrations/reclaim_guard.rs:9-39 sha256:dfd39db11714d79ce9571ece1dc27589a9ad21ad924f0cf396930d07fbb7aad2
+
 import StoreM4.PinSafety
 
 /-!

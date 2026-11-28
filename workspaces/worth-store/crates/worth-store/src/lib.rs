@@ -83,3 +83,5 @@ pub use worth_store_physical_format::{
 pub(crate) mod inline_type_budget;
 #[cfg(test)]
 mod inline_type_sizes;
+#[cfg(test)]
+mod store_m4_lean_conformance_trace;

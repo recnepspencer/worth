@@ -1,3 +1,18 @@
+-- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/slot_range.rs:68-105 sha256:608831fc5fd879fbce951c9d02f3692bde1db4f0e4500b90ab0ffbd99ff254d8
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/chunk_directory.rs:60-112 sha256:6fee9d545774df54381d5f786185a3934b1851d0f59bf7ed513c554f06ab668d
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/chunk_images.rs:101-132 sha256:8d6a629694c48555220f517c9fb0b5690167f7b4b1effbaa2ccc7321abc25f14
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/consolidation.rs:40-76 sha256:aa02b48623833df9d93802df5e28855de15b787382a96d28d4eeb23904b2c4d4
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/consolidation.rs:118-132 sha256:2f408c0caf8a8aa5dcb7c450caf696c827cfde88ec54f57b936529316d4d1043
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/semantic_entry.rs:67-92 sha256:28cfd9d236e0bf3f04b469082ba0cfab78af0c5326e353739b5def673aea0711
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/semantic_entry.rs:188-243 sha256:399ae5b0b861e06a27ea76e3dd02d9b053bd84c7ffd89dcab53b0d9f33a62074
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/sealing.rs:95-172 sha256:5fea5cebf2a809fc0240c01857e5852ad6eeda595d7d02bb320e8fcb4e89d647
+-- proof-mirror: crates/worth-relational-storage/src/storage/residency/chunked/summary_scan.rs:47-94 sha256:30365e90e8b27c45ecb16677d734b8894f442d36a99c6d20a4e5867c9076a161
+-- proof-mirror: workspaces/worth-store/crates/worth-store-blob-chunks/src/chunk_integrity/sequence.rs:44-133 sha256:20cb4d5bd0120b8fb31b47ecd68dc74adefeb363d03410e84139354a370d779b
+-- proof-mirror: workspaces/worth-store/crates/worth-store-blob-chunks/src/chunk_identity/bytes.rs:30-75 sha256:9fe312aecd0b18608f081a73ef5e42bc86cd5f479f349e8bb92ef3be2e0a2645
+-- proof-mirror: workspaces/worth-store/crates/worth-store-blob-chunks/src/chunk_integrity/rule.rs:8-38 sha256:6039179c19e4e4fc7dcd5e7c1f88e9894ef499851506bb3478abd2c23e3a08e4
+-- proof-mirror: workspaces/worth-store/crates/worth-store-blob-chunks/src/chunk_integrity/integrity.rs:24-36 sha256:6ffa0efde7eb245bbe8aaae0ff82566b0029e4b6c3641d14e2b469f6e715b14f
+
 /-!
 # `ChunkedCoverageAndSummarySound` (Store Milestone 4, Phase M4.3)
 
