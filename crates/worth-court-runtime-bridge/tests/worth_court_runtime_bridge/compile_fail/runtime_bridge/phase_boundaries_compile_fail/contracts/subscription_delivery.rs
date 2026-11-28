@@ -6,6 +6,13 @@ use worth_testkit_compiler::{
 pub(super) fn contracts() -> Vec<Contract<'static>> {
     vec![
         Contract {
+            fixture: "subscription_checkpoint_constructor_private.rs",
+            errors: &[Diagnostic::Code {
+                code: "E0624",
+                symbols: &["publish", "private"],
+            }],
+        },
+        Contract {
             fixture: "subscription_basis_binding_literal_private.rs",
             errors: &[
                 Diagnostic::Code {

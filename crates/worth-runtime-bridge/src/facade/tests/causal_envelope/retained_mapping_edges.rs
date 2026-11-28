@@ -79,7 +79,7 @@ fn causal_envelope_maps_source_failure_by_exact_failure_identity() {
         .assemble_causal_explanation_envelope(request)
         .expect("source failure should bind by exact identity");
     let expected_failure_digest =
-        crate::diagnostics::causal_envelope::retained_mapping::retained_artifact_digest::source_structural_stream::source_failure_digest(&failure);
+        crate::diagnostics::causal_envelope::retained_mapping::retained_artifact_digest::source::source_failure_digest(&failure);
 
     assert_eq!(envelope.counters().bridge_retained_lookup_count(), 2);
     assert_eq!(envelope.counters().retained_bridge_binding_count(), 2);
@@ -135,8 +135,8 @@ fn causal_envelope_denies_missing_retained_expansion_record_without_unindexed_sc
             ),
             bridge_route_reference(routed.result().result_summary()),
             missing_bridge_reference(
-                BridgeCausalEvidenceFamily::BridgeStructuralBranchComparison,
-                "missing-branch-comparison-record",
+                BridgeCausalEvidenceFamily::BridgeSourceMaterialization,
+                "missing-source-materialization-record",
             ),
         ],
     )
@@ -156,7 +156,7 @@ fn causal_envelope_denies_missing_retained_expansion_record_without_unindexed_sc
     );
     assert_eq!(
         denial.family(),
-        BridgeCausalEvidenceFamily::BridgeStructuralBranchComparison
+        BridgeCausalEvidenceFamily::BridgeSourceMaterialization
     );
     assert_eq!(denial.counters().bridge_retained_lookup_count(), 2);
     assert_eq!(denial.counters().retained_bridge_binding_count(), 1);

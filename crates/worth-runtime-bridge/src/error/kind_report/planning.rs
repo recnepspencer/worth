@@ -50,21 +50,6 @@ impl BridgeErrorKind for BridgeBuildErrorKind {
             Self::AmbiguousSourceDeclaration => {
                 (Conflict, Final, "bridge.build.ambiguous_source_declaration")
             }
-            Self::DuplicateStructuralDeclaration => (
-                Conflict,
-                Final,
-                "bridge.build.duplicate_structural_declaration",
-            ),
-            Self::AmbiguousStructuralDeclaration => (
-                Conflict,
-                Final,
-                "bridge.build.ambiguous_structural_declaration",
-            ),
-            Self::StructuralComparisonModeMismatch => (
-                InvalidInput,
-                CorrectInput,
-                "bridge.build.structural_comparison_mode_mismatch",
-            ),
             Self::SourceCapabilityMismatch => (
                 InvalidInput,
                 CorrectInput,

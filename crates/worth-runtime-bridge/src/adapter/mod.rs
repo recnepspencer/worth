@@ -43,7 +43,6 @@ pub use truth_sources::{
     CommittedPatchSource, RelationalBridgeSource, RelationalCommittedPatchRequest,
     SnapshotReadSource, SnapshotReaderPool, TruthBranchHeadSource,
 };
-pub(crate) use truth_writeback::TruthWritebackRequestEvidence;
 pub use truth_writeback::{
     TruthWritebackAuthority, TruthWritebackAuthorityError, TruthWritebackReceipt,
     TruthWritebackRequest,

@@ -5,6 +5,13 @@ use worth_testkit_compiler::{
 pub(super) fn contracts() -> Vec<Contract<'static>> {
     vec![
         Contract {
+            fixture: "subscription_preview_authoritative_readmission_constructor_private.rs",
+            errors: &[Diagnostic::Code {
+                code: "E0624",
+                symbols: &["prepare", "private"],
+            }],
+        },
+        Contract {
             fixture: "subscription_preview_active_literal_private.rs",
             errors: &[Diagnostic::Uncoded {
                 cause: "cannot construct",

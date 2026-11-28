@@ -109,8 +109,8 @@ pub use crate::error::{
     BridgeDeliveryError, BridgeDeliveryErrorKind, BridgeErrorContext, BridgeLineageSourceError,
     BridgeLineageSourceErrorKind, BridgePatchTargetCoordinate, BridgeReplayError,
     BridgeReplayErrorKind, BridgeRouteError, BridgeRouteErrorKind, BridgeSnapshotReadCoordinate,
-    BridgeSpeculationError, BridgeSpeculationErrorKind, BridgeStreamError, BridgeStreamErrorKind,
-    BridgeWritebackError, BridgeWritebackErrorKind,
+    BridgeSpeculationError, BridgeSpeculationErrorKind, BridgeWritebackError,
+    BridgeWritebackErrorKind,
 };
 pub use crate::execution_basis::{
     BridgeBoundExecutionBasis, BridgeExecutionBasisCounters, BridgeExecutionBasisDenial,
@@ -286,33 +286,6 @@ pub use crate::speculation::{
     BridgeSpeculativeBranchBindingIdentity, PreviewActive, PreviewAdmitted, PreviewDeclared,
     PreviewDiscarded, PreviewExecutionRecordIdentity, PreviewPromoted, RelationalForkAxis,
     SignalForkAxis, ValidatedBridgePreviewSessionDeclaration,
-};
-pub use crate::stream::{
-    AdmittedConsumerContract, BackpressureDecisionRecord, CanonicalStreamMember,
-    CanonicalStreamPosition, CanonicalStreamReplayRecord, ChangeStreamDeclaration,
-    ChangeStreamDeclarationIdentity, CheckpointTokenIdentity, ConsumerCheckpointToken,
-    ConsumerContractIdentity, LoweredConsumedChangeSet, PlannedChangeStreamWindow,
-    StreamCheckpointFrontierKind, StreamCheckpointPublicationMode, StreamCoalescingFamily,
-    StreamCoalescingIntent, StreamConsumerShape, StreamDeliveryIntent,
-    StreamDiagnosticsPolicyClass, StreamProtocolCounters, StreamProtocolIdentity,
-    StreamReplayAuditResult, StreamReplayAuditSummary, StreamReplayMode,
-    StreamReplayRecordIdentity, StreamResumeMode, StreamWindowDeliveryResult,
-    StreamWindowDeliverySummary, StreamWindowIdentity, ValidatedStreamProtocol,
-};
-pub use crate::structural::{
-    AdmittedStructuralComparisonContract, AdmittedStructuralRegistry,
-    PlannedStructuralMatchPacketSet, PublishedBranchComparisonArtifact,
-    PublishedStructuralRemapArtifact, ReducedStructuralMatchSet, StructuralCandidateIdentity,
-    StructuralCandidateSearchScope, StructuralComparisonMode, StructuralFingerprint,
-    StructuralFingerprintEquivalenceContract, StructuralFingerprintEquivalenceMemberEvidence,
-    StructuralFingerprintEquivalenceMemberSet, StructuralFingerprintFamily,
-    StructuralFingerprintIdentity, StructuralFingerprintNormalizationRule,
-    StructuralFingerprintOmissionPolicy, StructuralFingerprintOrderingRule,
-    StructuralFingerprintRecordValueEvidence, StructuralFingerprintRecordValueEvidenceSet,
-    StructuralIdentityDeclaration, StructuralIdentityDeclarationIdentity, StructuralMatchCandidate,
-    StructuralMatchCandidateKind, StructuralMatchOutcomeClass, StructuralMismatchClass,
-    StructuralSchemaIdentity, StructuralTruthViewBasis, StructuralTruthViewBasisIdentity,
-    StructuralTruthViewBasisKind, ValidatedStructuralIdentityDeclaration,
 };
 pub use crate::temporal::{
     AdmittedBridgeTemporalBasis, AdmittedBridgeTemporalSignalBasis,

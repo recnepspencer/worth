@@ -75,16 +75,6 @@ impl BridgeErrorKind for BridgeDeliveryErrorKind {
                 Escalate,
                 "bridge.delivery.snapshot_identity_mismatch",
             ),
-            Self::StructuralContractMismatch => (
-                Invariant,
-                Escalate,
-                "bridge.delivery.structural_contract_mismatch",
-            ),
-            Self::StructuralPlanRejected => (
-                Invariant,
-                Escalate,
-                "bridge.delivery.structural_plan_rejected",
-            ),
             Self::SignalSinkRejection(_) => (
                 ExternalEffect,
                 Escalate,

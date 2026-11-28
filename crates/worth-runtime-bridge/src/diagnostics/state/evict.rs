@@ -95,55 +95,6 @@ impl BridgeDiagnosticsState {
             evicted,
         );
     }
-
-    pub(crate) fn evict_structural_remap_indexes(
-        &mut self,
-        evicted: &Arc<BridgeCanonicalStructuralRemapRecord>,
-    ) {
-        evict_index_entry(
-            &mut self.latest_structural_remap_by_record_identity,
-            evicted.record_identity().as_str(),
-            evicted,
-        );
-    }
-
-    pub(crate) fn evict_structural_branch_comparison_indexes(
-        &mut self,
-        evicted: &Arc<BridgeCanonicalStructuralBranchComparisonRecord>,
-    ) {
-        evict_index_entry(
-            &mut self.latest_structural_branch_comparison_by_record_identity,
-            evicted.record_identity().as_str(),
-            evicted,
-        );
-    }
-
-    pub(crate) fn evict_stream_checkpoint_indexes(
-        &mut self,
-        evicted: &Arc<ConsumerCheckpointToken>,
-    ) {
-        evict_index_entry(
-            &mut self.latest_stream_checkpoint_by_identity,
-            evicted.checkpoint_token_identity_for_reporting(),
-            evicted,
-        );
-    }
-
-    pub(crate) fn evict_stream_replay_indexes(
-        &mut self,
-        evicted: &Arc<CanonicalStreamReplayRecord>,
-    ) {
-        evict_index_entry(
-            &mut self.latest_stream_replay_by_identity,
-            evicted.replay_record_identity().as_str(),
-            evicted,
-        );
-        evict_index_entry(
-            &mut self.latest_stream_replay_by_checkpoint_identity,
-            evicted.checkpoint_token_identity().as_str(),
-            evicted,
-        );
-    }
 }
 
 fn evict_index_entry<K, Q, T>(index: &mut BTreeMap<K, Arc<T>>, key: &Q, evicted: &Arc<T>)

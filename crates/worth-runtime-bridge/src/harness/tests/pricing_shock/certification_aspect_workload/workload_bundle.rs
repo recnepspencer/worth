@@ -1,5 +1,6 @@
+use super::super::support::RelationalPricing;
 use super::super::support::{
-    capture_pricing_workload_certification_bundle, generated_pricing_scenario,
+    capture_pricing_workload_certification_bundle_at_truth, generated_pricing_scenario,
     BridgeAspectRegistrationId, BridgeDeliveryErrorKind, BridgeFailureClass,
     BridgePreviewLifecycleStateKind, BridgePreviewSessionIdentity, BridgeReplayErrorKind,
     BridgeRuntimePolicy,
@@ -12,13 +13,17 @@ fn pricing_shock_workload_certification_bundle_is_profile_invariant_for_semantic
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let baseline = capture_pricing_workload_certification_bundle(
+    let scenario = generated_pricing_scenario();
+    let truth = RelationalPricing::reference(resource_request, &scenario, None);
+    let baseline = capture_pricing_workload_certification_bundle_at_truth(
         BridgeRuntimePolicy::development(),
+        &truth,
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-workload-baseline"),
         resource_request,
     );
-    let forensic = capture_pricing_workload_certification_bundle(
+    let forensic = capture_pricing_workload_certification_bundle_at_truth(
         BridgeRuntimePolicy::forensic(),
+        &truth,
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-workload-forensic"),
         resource_request,
     );
@@ -62,8 +67,10 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let scenario = generated_pricing_scenario();
-    let bundle = capture_pricing_workload_certification_bundle(
+    let truth = RelationalPricing::reference(resource_request, &scenario, None);
+    let bundle = capture_pricing_workload_certification_bundle_at_truth(
         BridgeRuntimePolicy::development(),
+        &truth,
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-workload-edges"),
         resource_request,
     );
@@ -76,7 +83,7 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
 
     assert_eq!(
         bundle.matrix.reference.route_snapshot,
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main")
+        truth.steel_snapshot().clone()
     );
     assert_eq!(
         bundle.matrix.reference.main_rubber_cost_cents,
@@ -98,17 +105,14 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
         bundle.matrix.reference.speculative_truth_branch,
         bundle.matrix.reference.source_branch
     );
-    assert_eq!(
-        bundle.aspect.source_commit,
-        crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-aspect")
-    );
+    assert_eq!(bundle.aspect.source_commit, truth.steel_commit.clone());
     assert_eq!(
         bundle.aspect.aspect_registration_id,
         BridgeAspectRegistrationId::admit_bridge_owned("pricing-steel-usd-field")
     );
     assert_eq!(
         bundle.matrix.replay.source_snapshot,
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main")
+        truth.steel_snapshot().clone()
     );
     assert_eq!(
         bundle.discard.replay_outcome,
@@ -125,14 +129,8 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
     assert!(!bundle.discard.has_promotion_record);
     assert!(bundle.promotion.has_promotion_explanation);
     assert_eq!(bundle.fanout.second_delivery_target_count, 100);
-    assert_eq!(
-        bundle.fanout.second_source_commit,
-        crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-fanout-b")
-    );
-    assert_eq!(
-        bundle.restart_replay.source_commit,
-        crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main")
-    );
+    assert_ne!(bundle.fanout.second_source_commit, truth.steel_commit);
+    assert_eq!(bundle.restart_replay.source_commit, truth.steel_commit);
     assert_eq!(
         bundle.restart_failure.error_kind,
         BridgeReplayErrorKind::RouteMismatch
@@ -146,17 +144,11 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
         crate::facade::BridgeWritebackOutcomeClass::CanonicalNoop
     );
     assert_eq!(bundle.writeback.authority_commit_count, 1);
-    assert_eq!(
-        bundle.provenance.main_commit,
-        crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-main")
-    );
-    assert_eq!(
-        bundle.provenance.shock_commit,
-        crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock")
-    );
+    assert_eq!(bundle.provenance.main_commit, truth.rubber_commit);
+    assert_eq!(bundle.provenance.shock_commit, truth.shock_commit);
     assert_eq!(
         bundle.provenance.shock_snapshot,
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-shock")
+        truth.shock_snapshot().clone()
     );
     assert_eq!(
         bundle.provenance.shock_delta_microunits,

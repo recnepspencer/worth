@@ -1,7 +1,6 @@
 use super::super::history_assertions::last_historical_record;
-use super::super::support::{committed_patch_on_branch, registration, snapshot};
 use crate::harness::adapter::{BridgeHarnessAdapter, BridgeHarnessTargetId};
-use crate::harness::fixtures::BridgeHarnessFixture;
+use crate::harness::fixtures::{BridgeHarnessFixture, NamedTruth, ScenarioRelationalTruth};
 use worth_harness::facade::{ExecutionProfile, ExecutionRequest, ScenarioPlan};
 use worth_harness::runtime::HarnessAdapter;
 
@@ -11,46 +10,34 @@ fn bridge_harness_branch_divergence_changes_selected_truth_view_explicitly() {
     let profile = ExecutionProfile::development("development");
     let request = ExecutionRequest::target(
         "branch-head-feature",
-        BridgeHarnessTargetId::branch_head(crate::truth_identity_fixtures::truth_branch_fixture(
-            "feature",
-        )),
+        BridgeHarnessTargetId::branch_head(
+            crate::facade::TruthBranchIdentity::from_relational_branch_id("feature"),
+        ),
     );
 
-    let main_fixture = ScenarioPlan::new(
-        "bridge-historical-main-head",
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_committed_patch(committed_patch_on_branch(
-                crate::truth_identity_fixtures::truth_branch_fixture("main"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
+    let serial = crate::snapshot::test_serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&serial);
+    let truth = NamedTruth::new();
+    let (main_commit, main_observation) = truth.commit_name(execution, "alice");
+    let main_head = truth.bind_main_head();
+    let main_snapshot = main_head.snapshot_identity().clone();
+    truth.fork_main(execution, "feature");
+    let (_feature_commit, feature_observation) =
+        truth.commit_name_on_branch(execution, "feature", "frank");
+    let feature_head = truth.bind_head("feature");
+    let feature_snapshot = feature_head.snapshot_identity().clone();
+    let fixture = ScenarioPlan::new(
+        "bridge-historical-branch-heads",
+        BridgeHarnessFixture::new(vec![NamedTruth::mapping()]).with_relational_truth(
+            ScenarioRelationalTruth::new_with_heads(
+                truth.native(),
+                main_commit,
+                vec![main_observation, feature_observation],
+                vec![main_head, feature_head],
+            ),
+        ),
     )
     .declare_input("branch-head:main")
-    .declare_observation("historical")
-    .compile();
-    let feature_fixture = ScenarioPlan::new(
-        "bridge-historical-feature-head",
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_committed_patch(committed_patch_on_branch(
-                crate::truth_identity_fixtures::truth_branch_fixture("feature"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-f"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-f"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-f"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-f"),
-                "frank",
-            )),
-    )
     .declare_input("branch-head:feature")
     .declare_observation("historical")
     .compile();
@@ -62,16 +49,16 @@ fn bridge_harness_branch_divergence_changes_selected_truth_view_explicitly() {
         .prepare_runtime(&mut main_session, &profile)
         .expect("main bridge harness prepare");
     adapter
-        .load_fixture(&mut main_session, &main_fixture)
+        .load_fixture(&mut main_session, &fixture)
         .expect("main bridge harness load fixture");
     let _main_run = adapter
         .execute(
             &mut main_session,
-            &main_fixture,
+            &fixture,
             &ExecutionRequest::target(
                 "branch-head-main",
                 BridgeHarnessTargetId::branch_head(
-                    crate::truth_identity_fixtures::truth_branch_fixture("main"),
+                    crate::facade::TruthBranchIdentity::from_relational_branch_id("main"),
                 ),
             ),
             &profile,
@@ -85,14 +72,22 @@ fn bridge_harness_branch_divergence_changes_selected_truth_view_explicitly() {
         .prepare_runtime(&mut feature_session, &profile)
         .expect("feature bridge harness prepare");
     adapter
-        .load_fixture(&mut feature_session, &feature_fixture)
+        .load_fixture(&mut feature_session, &fixture)
         .expect("feature bridge harness load fixture");
     let _feature_run = adapter
-        .execute(&mut feature_session, &feature_fixture, &request, &profile)
+        .execute(&mut feature_session, &fixture, &request, &profile)
         .expect("feature branch-head execution should succeed");
 
     let main_record = last_historical_record(&main_session);
     let feature_record = last_historical_record(&feature_session);
+    assert_eq!(
+        main_record.decision_log().snapshot_identity(),
+        &main_snapshot
+    );
+    assert_eq!(
+        feature_record.decision_log().snapshot_identity(),
+        &feature_snapshot
+    );
     assert_ne!(
         main_record.record_identity(),
         feature_record.record_identity()

@@ -30,17 +30,7 @@ pub enum BridgeCausalEvidenceFamily {
     BridgePreviewPromotion,
     BridgeSourceMaterialization,
     BridgeSourceFailure,
-    BridgeStructuralRemap,
-    BridgeStructuralBranchComparison,
-    BridgeStreamReplay,
-    BridgeStreamCheckpoint,
     BridgeContinuity,
-    BridgeWritebackAdmission,
-    BridgeWritebackMapperEnvelope,
-    BridgeWritebackMappedFamilyInput,
-    BridgeWritebackMapper,
-    BridgeWritebackExecution,
-    BridgeWritebackReplay,
     RelationalAuthority,
     SignalInvalidation,
     SignalEvaluation,
@@ -64,17 +54,7 @@ impl BridgeCausalEvidenceFamily {
             Self::BridgePreviewPromotion => "bridge_preview_promotion",
             Self::BridgeSourceMaterialization => "bridge_source_materialization",
             Self::BridgeSourceFailure => "bridge_source_failure",
-            Self::BridgeStructuralRemap => "bridge_structural_remap",
-            Self::BridgeStructuralBranchComparison => "bridge_structural_branch_comparison",
-            Self::BridgeStreamReplay => "bridge_stream_replay",
-            Self::BridgeStreamCheckpoint => "bridge_stream_checkpoint",
             Self::BridgeContinuity => "bridge_continuity",
-            Self::BridgeWritebackAdmission => "bridge_writeback_admission",
-            Self::BridgeWritebackMapperEnvelope => "bridge_writeback_mapper_envelope",
-            Self::BridgeWritebackMappedFamilyInput => "bridge_writeback_mapped_family_input",
-            Self::BridgeWritebackMapper => "bridge_writeback_mapper",
-            Self::BridgeWritebackExecution => "bridge_writeback_execution",
-            Self::BridgeWritebackReplay => "bridge_writeback_replay",
             Self::RelationalAuthority => "relational_authority",
             Self::SignalInvalidation => "signal_invalidation",
             Self::SignalEvaluation => "signal_evaluation",
@@ -98,17 +78,7 @@ impl BridgeCausalEvidenceFamily {
             | Self::BridgePreviewPromotion
             | Self::BridgeSourceMaterialization
             | Self::BridgeSourceFailure
-            | Self::BridgeStructuralRemap
-            | Self::BridgeStructuralBranchComparison
-            | Self::BridgeStreamReplay
-            | Self::BridgeStreamCheckpoint
-            | Self::BridgeContinuity
-            | Self::BridgeWritebackAdmission
-            | Self::BridgeWritebackMapperEnvelope
-            | Self::BridgeWritebackMappedFamilyInput
-            | Self::BridgeWritebackMapper
-            | Self::BridgeWritebackExecution
-            | Self::BridgeWritebackReplay => BridgeCausalEvidenceOwner::RuntimeBridge,
+            | Self::BridgeContinuity => BridgeCausalEvidenceOwner::RuntimeBridge,
             Self::RelationalAuthority => BridgeCausalEvidenceOwner::Relational,
             Self::SignalInvalidation
             | Self::SignalEvaluation

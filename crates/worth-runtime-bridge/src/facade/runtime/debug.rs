@@ -9,14 +9,6 @@ impl RuntimeBridge {
         &self.source_registry
     }
 
-    /// Returns the admitted structural registry bound into this runtime.
-    ///
-    /// This is a debug or certification-facing surface, not part of the
-    /// intended public memory path for ordinary bridge work.
-    pub fn structural_registry(&self) -> &AdmittedStructuralRegistry {
-        &self.structural_registry
-    }
-
     /// Returns the configured source adapter, if one is bound.
     ///
     /// This exists for host-adapter and specialist inspection workflows.

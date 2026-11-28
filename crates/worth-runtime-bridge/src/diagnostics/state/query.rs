@@ -57,36 +57,6 @@ impl BridgeDiagnosticsState {
             .collect()
     }
 
-    pub(crate) fn structural_remap_records(&self) -> Vec<BridgeCanonicalStructuralRemapRecord> {
-        self.structural_remap_records
-            .iter()
-            .map(|record| (**record).clone())
-            .collect()
-    }
-
-    pub(crate) fn structural_branch_comparison_records(
-        &self,
-    ) -> Vec<BridgeCanonicalStructuralBranchComparisonRecord> {
-        self.structural_branch_comparison_records
-            .iter()
-            .map(|record| (**record).clone())
-            .collect()
-    }
-
-    pub(crate) fn stream_checkpoints(&self) -> Vec<ConsumerCheckpointToken> {
-        self.stream_checkpoints
-            .iter()
-            .map(|record| (**record).clone())
-            .collect()
-    }
-
-    pub(crate) fn stream_replay_records(&self) -> Vec<CanonicalStreamReplayRecord> {
-        self.stream_replay_records
-            .iter()
-            .map(|record| (**record).clone())
-            .collect()
-    }
-
     pub(crate) fn last_route_record(&self) -> Option<BridgeRouteRecord> {
         self.route_records.back().map(|record| (**record).clone())
     }
@@ -129,34 +99,6 @@ impl BridgeDiagnosticsState {
 
     pub(crate) fn last_source_failure_record(&self) -> Option<SourceFailureRecord> {
         self.source_failure_records
-            .back()
-            .map(|record| (**record).clone())
-    }
-
-    pub(crate) fn last_structural_remap_record(
-        &self,
-    ) -> Option<BridgeCanonicalStructuralRemapRecord> {
-        self.structural_remap_records
-            .back()
-            .map(|record| (**record).clone())
-    }
-
-    pub(crate) fn last_structural_branch_comparison_record(
-        &self,
-    ) -> Option<BridgeCanonicalStructuralBranchComparisonRecord> {
-        self.structural_branch_comparison_records
-            .back()
-            .map(|record| (**record).clone())
-    }
-
-    pub(crate) fn last_stream_checkpoint(&self) -> Option<ConsumerCheckpointToken> {
-        self.stream_checkpoints
-            .back()
-            .map(|record| (**record).clone())
-    }
-
-    pub(crate) fn last_stream_replay_record(&self) -> Option<CanonicalStreamReplayRecord> {
-        self.stream_replay_records
             .back()
             .map(|record| (**record).clone())
     }
@@ -277,56 +219,6 @@ impl BridgeDiagnosticsState {
     ) -> Option<SourceFailureRecord> {
         self.latest_source_failure_by_failure_identity
             .get(failure_identity.as_str())
-            .cloned()
-            .map(|record| (*record).clone())
-    }
-
-    pub(crate) fn structural_remap_record_for_identity(
-        &self,
-        record_identity: &BridgeStructuralRemapRecordIdentity,
-    ) -> Option<BridgeCanonicalStructuralRemapRecord> {
-        self.latest_structural_remap_by_record_identity
-            .get(record_identity.as_str())
-            .cloned()
-            .map(|record| (*record).clone())
-    }
-
-    pub(crate) fn structural_branch_comparison_record_for_identity(
-        &self,
-        record_identity: &BridgeStructuralBranchComparisonRecordIdentity,
-    ) -> Option<BridgeCanonicalStructuralBranchComparisonRecord> {
-        self.latest_structural_branch_comparison_by_record_identity
-            .get(record_identity.as_str())
-            .cloned()
-            .map(|record| (*record).clone())
-    }
-
-    pub(crate) fn stream_checkpoint_for_identity(
-        &self,
-        checkpoint_identity: &crate::stream::CheckpointTokenIdentity,
-    ) -> Option<ConsumerCheckpointToken> {
-        self.latest_stream_checkpoint_by_identity
-            .get(checkpoint_identity.as_str())
-            .cloned()
-            .map(|record| (*record).clone())
-    }
-
-    pub(crate) fn stream_replay_record_for_identity(
-        &self,
-        replay_record_identity: &crate::stream::StreamReplayRecordIdentity,
-    ) -> Option<CanonicalStreamReplayRecord> {
-        self.latest_stream_replay_by_identity
-            .get(replay_record_identity.as_str())
-            .cloned()
-            .map(|record| (*record).clone())
-    }
-
-    pub(crate) fn stream_replay_record_for_checkpoint_identity(
-        &self,
-        checkpoint_identity: &crate::stream::CheckpointTokenIdentity,
-    ) -> Option<CanonicalStreamReplayRecord> {
-        self.latest_stream_replay_by_checkpoint_identity
-            .get(checkpoint_identity.as_str())
             .cloned()
             .map(|record| (*record).clone())
     }

@@ -29,12 +29,7 @@ pub enum CausalEvidenceFamily {
     BridgeSourceMaterialization,
     BridgeSourceFailure,
     BridgeContinuity,
-    BridgeStructural,
-    BridgeStream,
     BridgePreview,
-    BridgeWriteback,
-    BridgeMapper,
-    BridgeReplay,
     SignalInvalidation,
     SignalEvaluation,
     SignalForensicAvailability,
@@ -48,7 +43,7 @@ pub enum CausalEvidenceFamily {
 }
 
 impl CausalEvidenceFamily {
-    pub const ALL: [Self; 26] = [
+    pub const ALL: [Self; 21] = [
         Self::QueryInspection,
         Self::QueryMutationCausality,
         Self::QueryMutationProvenance,
@@ -59,12 +54,7 @@ impl CausalEvidenceFamily {
         Self::BridgeSourceMaterialization,
         Self::BridgeSourceFailure,
         Self::BridgeContinuity,
-        Self::BridgeStructural,
-        Self::BridgeStream,
         Self::BridgePreview,
-        Self::BridgeWriteback,
-        Self::BridgeMapper,
-        Self::BridgeReplay,
         Self::SignalInvalidation,
         Self::SignalEvaluation,
         Self::SignalForensicAvailability,
@@ -89,12 +79,7 @@ impl CausalEvidenceFamily {
             Self::BridgeSourceMaterialization => "bridge_source_materialization",
             Self::BridgeSourceFailure => "bridge_source_failure",
             Self::BridgeContinuity => "bridge_continuity",
-            Self::BridgeStructural => "bridge_structural",
-            Self::BridgeStream => "bridge_stream",
             Self::BridgePreview => "bridge_preview",
-            Self::BridgeWriteback => "bridge_writeback",
-            Self::BridgeMapper => "bridge_mapper",
-            Self::BridgeReplay => "bridge_replay",
             Self::SignalInvalidation => "signal_invalidation",
             Self::SignalEvaluation => "signal_evaluation",
             Self::SignalForensicAvailability => "signal_forensic_availability",
@@ -216,39 +201,9 @@ pub fn causal_evidence_inventory_rows() -> Vec<CausalEvidenceInventoryRow> {
         ),
         CausalEvidenceInventoryRow::new(
             Owner::RuntimeBridge,
-            Family::BridgeStructural,
-            "BridgeDiagnosticsFacade::structural_records",
-            "structural_digest",
-        ),
-        CausalEvidenceInventoryRow::new(
-            Owner::RuntimeBridge,
-            Family::BridgeStream,
-            "BridgeDiagnosticsFacade::stream_records",
-            "stream_digest",
-        ),
-        CausalEvidenceInventoryRow::new(
-            Owner::RuntimeBridge,
             Family::BridgePreview,
             "BridgeDiagnosticsFacade::preview_records",
             "preview_digest",
-        ),
-        CausalEvidenceInventoryRow::new(
-            Owner::RuntimeBridge,
-            Family::BridgeWriteback,
-            "BridgeDiagnosticsFacade::writeback_execution_records",
-            "writeback_execution_digest",
-        ),
-        CausalEvidenceInventoryRow::new(
-            Owner::RuntimeBridge,
-            Family::BridgeMapper,
-            "BridgeDiagnosticsFacade::mapper_records",
-            "mapper_digest",
-        ),
-        CausalEvidenceInventoryRow::new(
-            Owner::RuntimeBridge,
-            Family::BridgeReplay,
-            "BridgeDiagnosticsFacade::replay_records",
-            "bridge_replay_digest",
         ),
         CausalEvidenceInventoryRow::new(
             Owner::Signal,

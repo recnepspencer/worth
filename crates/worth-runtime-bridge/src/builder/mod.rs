@@ -15,7 +15,6 @@ use crate::mapping::{
 };
 use crate::policy::BridgeRuntimePolicy;
 use crate::source::{AdmittedSourceRegistry, SourceDeclaration};
-use crate::structural::{AdmittedStructuralRegistry, StructuralIdentityDeclaration};
 
 mod build;
 mod policy;

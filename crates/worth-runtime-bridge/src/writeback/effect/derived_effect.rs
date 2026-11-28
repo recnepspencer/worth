@@ -4,8 +4,8 @@ use sha2::{Digest, Sha256};
 
 use crate::identity::{BridgeIdentity, BridgeIdentityEvidence, WritebackEffectIdentityTag};
 use crate::writeback::{
-    BridgeMappedWritebackFamilyInput, BridgeWritebackEffectClass, BridgeWritebackEffectIntent,
-    BridgeWritebackStrategyDescriptorBasis,
+    AdmittedBridgeWritebackContract, BridgeWritebackEffectClass, BridgeWritebackEffectIntent,
+    BridgeWritebackNativeCausalityInputs, BridgeWritebackStrategyDescriptorBasis,
 };
 
 pub type BridgeWritebackEffectIdentity = BridgeIdentity<WritebackEffectIdentityTag>;
@@ -22,15 +22,12 @@ impl BridgeWritebackEffectIdentity {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgeDerivedWritebackEffect {
     effect_identity: BridgeWritebackEffectIdentity,
-    mapper_envelope_digest: Arc<str>,
-    mapped_input_digest: Arc<str>,
     contract_digest: Arc<str>,
     family_kind: crate::writeback::BridgeWritebackFamilyKind,
     effect_class: BridgeWritebackEffectClass,
     strategy_class: crate::writeback::BridgeWritebackStrategyClass,
     strategy_descriptor_basis: BridgeWritebackStrategyDescriptorBasis,
     causality_digest: Arc<str>,
-    mutation_subject_effect_intent_match: bool,
     effect_intent: BridgeWritebackEffectIntent,
     effect_intent_digest: Arc<str>,
     canonical_basis: Arc<str>,
@@ -38,45 +35,42 @@ pub struct BridgeDerivedWritebackEffect {
 }
 
 impl BridgeDerivedWritebackEffect {
-    pub fn new(
+    pub(crate) fn new(
         effect_identity: BridgeWritebackEffectIdentity,
-        mapped_input: &BridgeMappedWritebackFamilyInput,
+        contract: &AdmittedBridgeWritebackContract,
+        causality: &BridgeWritebackNativeCausalityInputs,
+        effect_intent: BridgeWritebackEffectIntent,
     ) -> Self {
-        let contract_digest = Arc::<str>::from(mapped_input.contract_digest().to_owned());
-        let strategy_descriptor_basis = mapped_input.strategy_descriptor_basis().clone();
-        let causality_digest = Arc::<str>::from(mapped_input.causality_digest().to_owned());
-        let mutation_subject_effect_intent_match =
-            mapped_input.mutation_subject_effect_intent_match();
-        let effect_intent = mapped_input.effect_intent().clone();
-        let effect_intent_digest = Arc::<str>::from(effect_intent.digest().to_owned());
+        let declaration = contract.validated_declaration().declaration();
+        let family_kind = declaration
+            .family_kind()
+            .expect("writeback contract admits a family");
+        let strategy_class = declaration
+            .strategy_class()
+            .expect("writeback contract admits a strategy");
+        let strategy_descriptor_basis = declaration
+            .strategy_descriptor_basis()
+            .expect("writeback contract admits a descriptor")
+            .clone();
+        let effect_class = effect_intent.effect_class();
         let canonical_basis = Arc::<str>::from(format!(
-            "bridge-derived-writeback-effect|id={}|mapped-input={}|contract={}|family:{:?}|effect:{:?}|strategy-class:{:?}|strategy={}|causality={}|subject-effect-match={mutation_subject_effect_intent_match}|effect-intent={}|effect-intent-basis={}",
+            "bridge-derived-writeback-effect|id={}|contract={}|causality={}|intent={}",
             effect_identity.as_str(),
-            mapped_input.digest(),
-            contract_digest.as_ref(),
-            mapped_input.family_kind(),
-            mapped_input.effect_class(),
-            mapped_input.strategy_class(),
-            strategy_descriptor_basis.digest(),
-            causality_digest.as_ref(),
-            effect_intent_digest.as_ref(),
-            effect_intent.patch_canonical_basis(),
+            contract.digest(),
+            causality.digest(),
+            effect_intent.digest(),
         ));
         let digest = Sha256::digest(canonical_basis.as_bytes());
-
         Self {
             effect_identity,
-            mapper_envelope_digest: Arc::from(mapped_input.mapper_envelope_digest().to_owned()),
-            mapped_input_digest: Arc::from(mapped_input.digest().to_owned()),
-            contract_digest,
-            family_kind: mapped_input.family_kind(),
-            effect_class: mapped_input.effect_class(),
-            strategy_class: mapped_input.strategy_class(),
+            contract_digest: Arc::from(contract.digest()),
+            family_kind,
+            effect_class,
+            strategy_class,
             strategy_descriptor_basis,
-            causality_digest,
-            mutation_subject_effect_intent_match,
+            causality_digest: Arc::from(causality.digest()),
+            effect_intent_digest: Arc::from(effect_intent.digest()),
             effect_intent,
-            effect_intent_digest,
             canonical_basis,
             digest: Arc::from(format!("bridge-derived-writeback-effect:sha256:{digest:x}")),
         }
@@ -96,14 +90,6 @@ impl BridgeDerivedWritebackEffect {
 
     pub fn contract_digest(&self) -> &str {
         self.contract_digest.as_ref()
-    }
-
-    pub fn mapper_envelope_digest(&self) -> &str {
-        self.mapper_envelope_digest.as_ref()
-    }
-
-    pub fn mapped_input_digest(&self) -> &str {
-        self.mapped_input_digest.as_ref()
     }
 
     pub fn effect_class(&self) -> BridgeWritebackEffectClass {
@@ -128,10 +114,6 @@ impl BridgeDerivedWritebackEffect {
 
     pub fn causality_digest(&self) -> &str {
         self.causality_digest.as_ref()
-    }
-
-    pub(crate) fn mutation_subject_effect_intent_match(&self) -> bool {
-        self.mutation_subject_effect_intent_match
     }
 
     pub fn canonical_basis(&self) -> &str {

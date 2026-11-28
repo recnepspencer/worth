@@ -159,11 +159,6 @@ impl BridgeConditionalRuntimeBuilder {
                 projection: finish(prepared, branch_identity, execution)?, _memory: None,
             });
         }
-        installation
-            .program
-            .bridge
-            .diagnostics
-            .readmit_writeback_diagnostics(&signal);
         Ok(Box::new(BridgeReadmittedAuthoredAssembly {
             home_retirement: std::sync::Mutex::new(None),
             program: Arc::clone(&installation.program),

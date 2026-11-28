@@ -73,10 +73,6 @@ pub(crate) fn historical_failure_class_for_delivery_error(
         BridgeDeliveryErrorKind::SourceContractMismatch => {
             BridgeHistoricalEvaluationFailureClass::UnresolvedTruthViewPolicyConflict
         }
-        BridgeDeliveryErrorKind::StructuralContractMismatch
-        | BridgeDeliveryErrorKind::StructuralPlanRejected => {
-            BridgeHistoricalEvaluationFailureClass::RejectedHistoricalResolutionFailure
-        }
         BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable(_)
         | BridgeDeliveryErrorKind::MissingBranchHeadSource
         | BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(_) => {
@@ -126,8 +122,6 @@ pub(crate) fn historical_failure_counters_for_delivery_error(
     );
     match error.kind() {
         BridgeDeliveryErrorKind::SourceContractMismatch => counters,
-        BridgeDeliveryErrorKind::StructuralContractMismatch
-        | BridgeDeliveryErrorKind::StructuralPlanRejected => counters,
         BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable(_)
         | BridgeDeliveryErrorKind::MissingBranchHeadSource
         | BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(_) => {

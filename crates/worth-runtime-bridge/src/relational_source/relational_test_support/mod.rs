@@ -8,6 +8,7 @@ use std::collections::BTreeMap;
 
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, InternedString};
 
+use worth_relational::facade::config::CascadeDeletePolicy;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, RelationId};
 use worth_relational::facade::mvcc::{
@@ -28,8 +29,14 @@ pub(crate) use schema::{
     entity_summary_struct_aspect, runtime_with_declared_aspect_schema, AspectSchemaFixture,
 };
 
-const ENTITY_KIND: KindId = KindId(1);
+pub(crate) const ENTITY_KIND: KindId = KindId(1);
 const RELATION_KIND: KindId = KindId(2);
+
+pub(crate) fn bridge_entity_identity(
+    entity: EntityId,
+) -> crate::facade::RelationalBridgeRecordIdentityParts {
+    super::identities::record_ref_identity(&RecordRef::Entity(entity))
+}
 
 pub(crate) fn aspect_key(name: &str) -> AspectKey {
     AspectKey::new(name).unwrap()
@@ -318,4 +325,28 @@ pub(crate) fn release_test_commit_snapshot(runtime: &RelationalRuntime, outcome:
         .snapshots()
         .release_snapshot(&outcome.snapshot)
         .expect("test helper releases the published snapshot it does not return");
+}
+
+pub(crate) use super::bridge_source_tests::support::empty_bridge_relational_source;
+
+pub(crate) fn runtime_with_test_schema() -> worth_relational::facade::runtime::RelationalRuntime {
+    crate::relational_source::relational_test_support::runtime_with_declared_aspect_schema(
+        CascadeDeletePolicy::CascadeDeleteRelations,
+    )
+}
+
+/// The ancestry work of one full walk from `head` down a linear history of
+/// `N` commits: `N` node visits, `N` catalog probes, and `N - 1` parent edges.
+///
+/// Counted from the head's ancestor closure, not from Relational's own
+/// selection, so an adapter that walks twice or walks less is caught.
+pub(crate) fn linear_ancestry_work(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    head: worth_relational::facade::history::CommitId,
+) -> usize {
+    let commits = runtime
+        .history()
+        .ancestor_closure_by_commit_id_order(head)
+        .len();
+    3 * commits - 1
 }

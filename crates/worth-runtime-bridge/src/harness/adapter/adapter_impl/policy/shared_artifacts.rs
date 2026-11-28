@@ -176,16 +176,13 @@ pub(super) fn first_commit_routing_digest(
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<Option<String>, BridgeHarnessError> {
     fixture
-        .committed_patches()
-        .first()
-        .map(|patch| {
+        .first_commit_identity()
+        .map(|commit| {
             runtime_bridge
                 .deliver_invalidation(
                     runtime_bridge
                         .plan_committed_patch_with_route_policy(
-                            crate::facade::BridgeRouteRequest::for_commit(
-                                patch.commit_identity().clone(),
-                            ),
+                            crate::facade::BridgeRouteRequest::for_commit(commit.clone()),
                             route_policy,
                             execution,
                         )
@@ -216,8 +213,7 @@ pub(super) fn first_snapshot_identity(
     fixture: &BridgeHarnessFixture,
 ) -> crate::facade::TruthSnapshotIdentity {
     fixture
-        .snapshots()
-        .first()
-        .map(|snapshot| snapshot.identity().clone())
+        .relational_truth()
+        .map(|truth| truth.snapshot().clone())
         .unwrap_or_else(|| crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"))
 }

@@ -17,29 +17,13 @@ fn bridge_phase_boundaries_are_compile_time_private() {
     ),
         &[Contract {
             fixture: "raw_external_authority_evidence_cannot_construct_writeback_identity.rs",
-            errors: &[
-                Diagnostic::Code {
-                    code: "E0599",
-                    symbols: &[
-                        "from_external_authority_evidence",
-                        "WritebackEffectIdentityTag",
-                    ],
-                },
-                Diagnostic::Code {
-                    code: "E0599",
-                    symbols: &[
-                        "from_external_authority_evidence",
-                        "BridgeNamingAttachmentIdentity",
-                    ],
-                },
-                Diagnostic::Code {
-                    code: "E0599",
-                    symbols: &[
-                        "from_external_authority_evidence",
-                        "BridgeExistingTruthBindingAuthoritativeIdentity",
-                    ],
-                },
-            ],
+            errors: &[Diagnostic::Code {
+                code: "E0599",
+                symbols: &[
+                    "from_external_authority_evidence",
+                    "WritebackEffectIdentityTag",
+                ],
+            }],
         }],
     )
     .expect("production compiler denial");

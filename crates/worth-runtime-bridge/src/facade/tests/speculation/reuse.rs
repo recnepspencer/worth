@@ -1,11 +1,6 @@
 use crate::facade::tests::runtime;
-use crate::facade::tests::speculation::{
-    preview_declaration, structural_basis, StructuralBasisInput, StructuralSemanticsVersion,
-};
-use crate::facade::{
-    BridgePreviewLifecycleStateKind, BridgeRuntimePolicy, StructuralIdentityDeclarationIdentity,
-    StructuralSchemaIdentity,
-};
+use crate::facade::tests::speculation::{preview_declaration, structural_basis};
+use crate::facade::{BridgePreviewLifecycleStateKind, BridgeRuntimePolicy};
 use crate::speculation::BridgePreviewSessionIdentity;
 
 #[test]
@@ -99,7 +94,7 @@ fn runtime_rejects_preview_reuse_when_target_basis_drifts() {
     let source_admitted = runtime
         .admit_preview_session(
             BridgePreviewSessionIdentity::admit_bridge_owned("preview-session:reuse-source-drift"),
-            preview_declaration(),
+            preview_declaration().with_structural_basis(structural_basis(1)),
         )
         .expect("source preview declaration should admit");
     let (source_active, source_execution_record) =
@@ -108,19 +103,7 @@ fn runtime_rejects_preview_reuse_when_target_basis_drifts() {
     let drifted_target = runtime
         .admit_preview_session(
             BridgePreviewSessionIdentity::admit_bridge_owned("preview-session:reuse-target-drift"),
-            preview_declaration().with_structural_basis(structural_basis(StructuralBasisInput {
-                schema_identity: StructuralSchemaIdentity::admit_bridge_owned("schema:drift"),
-                declaration_identity: StructuralIdentityDeclarationIdentity::admit_bridge_owned(
-                    "structural:drift",
-                ),
-                truth_branch_identity: crate::truth_identity_fixtures::truth_branch_fixture(
-                    "truth:drift",
-                ),
-                snapshot_identity: crate::truth_identity_fixtures::truth_snapshot_fixture(
-                    "snapshot:drift",
-                ),
-                semantics_version: StructuralSemanticsVersion::Drift,
-            })),
+            preview_declaration().with_structural_basis(structural_basis(2)),
         )
         .expect("drifted preview declaration should still admit");
     let error = runtime

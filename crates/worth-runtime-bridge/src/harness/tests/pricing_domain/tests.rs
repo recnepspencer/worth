@@ -26,30 +26,24 @@ fn pricing_domain_reference_catalog_is_large_shared_and_fuel_coupled() {
 }
 
 #[test]
-fn pricing_domain_hidden_streams_advance_material_prices_and_export_snapshot_fixture() {
+fn pricing_domain_hidden_streams_advance_all_material_prices() {
     let mut world = PricingDomainWorld::new(202);
     let first_wave = world.advance_material_streams();
     let second_wave = world.advance_material_streams();
-    let snapshot = world.snapshot_fixture(crate::truth_identity_fixtures::truth_snapshot_fixture(
-        "snapshot:pricing-domain",
-    ));
-
     assert_eq!(first_wave.sequence, 1);
     assert_eq!(second_wave.sequence, 2);
     assert_eq!(first_wave.changed_materials.len(), 9);
     assert_eq!(second_wave.changed_materials.len(), 9);
-    assert_eq!(
-        snapshot.identity().as_str(),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-domain").as_str()
-    );
-    assert_eq!(snapshot.records().len(), 9);
-    assert!(snapshot
-        .records()
+    let materials = second_wave
+        .changed_materials
         .iter()
-        .any(|record| record.correlation_id()
-            == PricingMaterial::Fuel
-                .snapshot_read_request()
-                .correlation_id()));
+        .map(|tick| tick.material)
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(materials.len(), 9);
+    assert!(materials.contains(&PricingMaterial::Fuel));
+    assert!(materials
+        .into_iter()
+        .all(|material| world.current_material_price_microunits(material) > 0));
     assert!(first_wave
         .changed_materials
         .iter()

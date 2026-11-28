@@ -6,6 +6,13 @@ use worth_testkit_compiler::{
 pub(super) fn contracts() -> Vec<Contract<'static>> {
     vec![
         Contract {
+            fixture: "preview_structural_basis_literal_private.rs",
+            errors: &[Diagnostic::Code {
+                code: "E0451",
+                symbols: &["BridgePreviewStructuralBasis", "truth_view_basis_digest", "private"],
+            }],
+        },
+        Contract {
             fixture: "preview_replay_requires_session_identity.rs",
             errors: &[
                 Diagnostic::TypeMismatch {

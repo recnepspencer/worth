@@ -20,12 +20,6 @@ pub(in crate::harness::tests::pricing_shock) fn writeback_effect_intent(
 
 #[derive(Clone)]
 pub(in crate::harness::tests::pricing_shock) struct GeneratedPricingScenario {
-    pub(in crate::harness::tests::pricing_shock) main_snapshot: SnapshotFixture,
-    pub(in crate::harness::tests::pricing_shock) speculative_snapshot: SnapshotFixture,
-    pub(in crate::harness::tests::pricing_shock) live_main_snapshot: SnapshotFixture,
-    pub(in crate::harness::tests::pricing_shock) interleaved_main_snapshot: SnapshotFixture,
-    pub(in crate::harness::tests::pricing_shock) fanout_first_snapshot: SnapshotFixture,
-    pub(in crate::harness::tests::pricing_shock) fanout_second_snapshot: SnapshotFixture,
     pub(in crate::harness::tests::pricing_shock) main_steel_cost: i64,
     pub(in crate::harness::tests::pricing_shock) main_rubber_cost: i64,
     pub(in crate::harness::tests::pricing_shock) speculative_rubber_cost: i64,
@@ -124,16 +118,6 @@ pub(in crate::harness::tests::pricing_shock) fn generated_pricing_scenario(
     let crisis_portfolio = world
         .price_matrix_with_scenario(crisis_overrides.clone(), crisis_family_tariff_bps.clone());
 
-    let main_snapshot_base = world.snapshot_fixture(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main"),
-    );
-    let speculative_snapshot_base = world.snapshot_fixture_with_overrides(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-shock"),
-        [(PricingMaterial::Rubber, speculative_rubber_cost)],
-    );
-    let fanout_first_snapshot_base = world.snapshot_fixture(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-fanout-a"),
-    );
     let mut commit_attributions = BTreeMap::new();
     commit_attributions.insert(
         "commit:steel-main".to_owned(),
@@ -182,15 +166,6 @@ pub(in crate::harness::tests::pricing_shock) fn generated_pricing_scenario(
     let live_main_steel_cost = world.current_material_price_microunits(PricingMaterial::Steel);
     let interleaved_main_rubber_cost =
         world.current_material_price_microunits(PricingMaterial::Rubber);
-    let live_main_snapshot_base = world.snapshot_fixture(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main-live"),
-    );
-    let interleaved_main_snapshot_base = world.snapshot_fixture(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main-interleaved"),
-    );
-    let fanout_second_snapshot_base = world.snapshot_fixture(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-fanout-b"),
-    );
     let fanout_second_steel_cost = live_main_steel_cost;
     commit_attributions.insert(
         "commit:steel-main-live".to_owned(),
@@ -236,55 +211,8 @@ pub(in crate::harness::tests::pricing_shock) fn generated_pricing_scenario(
             "bicycle-000",
         ),
     );
-    let main_snapshot = snapshot_with_provenance(
-        &main_snapshot_base,
-        &[
-            commit_attributions
-                .get("commit:steel-main")
-                .expect("steel main attribution should exist"),
-            commit_attributions
-                .get("commit:rubber-main")
-                .expect("rubber main attribution should exist"),
-        ],
-    );
-    let speculative_snapshot = snapshot_with_provenance(
-        &speculative_snapshot_base,
-        &[commit_attributions
-            .get("commit:rubber-shock")
-            .expect("rubber shock attribution should exist")],
-    );
-    let fanout_first_snapshot = snapshot_with_provenance(
-        &fanout_first_snapshot_base,
-        &[commit_attributions
-            .get("commit:steel-main")
-            .expect("steel main attribution should exist")],
-    );
-    let live_main_snapshot = snapshot_with_provenance(
-        &live_main_snapshot_base,
-        &[commit_attributions
-            .get("commit:steel-main-live")
-            .expect("steel live attribution should exist")],
-    );
-    let interleaved_main_snapshot = snapshot_with_provenance(
-        &interleaved_main_snapshot_base,
-        &[commit_attributions
-            .get("commit:rubber-main-interleaved")
-            .expect("rubber interleaved attribution should exist")],
-    );
-    let fanout_second_snapshot = snapshot_with_provenance(
-        &fanout_second_snapshot_base,
-        &[commit_attributions
-            .get("commit:steel-fanout-b")
-            .expect("steel fanout attribution should exist")],
-    );
 
     GeneratedPricingScenario {
-        main_snapshot,
-        speculative_snapshot,
-        live_main_snapshot,
-        interleaved_main_snapshot,
-        fanout_first_snapshot,
-        fanout_second_snapshot,
         main_steel_cost,
         main_rubber_cost,
         speculative_rubber_cost,

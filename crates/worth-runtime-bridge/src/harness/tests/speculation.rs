@@ -6,7 +6,7 @@ use crate::facade::{
 use crate::speculation::BridgePreviewSessionIdentity;
 
 use super::support::{build_runtime, registration};
-use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBridgeSink};
+use crate::harness::fixtures::RecordingSignalBridgeSink;
 
 fn preview_declaration() -> BridgePreviewSessionDeclaration {
     BridgePreviewSessionDeclaration::new(
@@ -33,7 +33,8 @@ fn preview_declaration() -> BridgePreviewSessionDeclaration {
 
 #[test]
 fn bridge_harness_speculation_records_are_queryable_across_execution_promotion_and_replay() {
-    let source = InMemoryRelationalBridgeSource::default();
+    let source =
+        crate::relational_source::relational_test_support::empty_bridge_relational_source();
     let runtime = build_runtime(
         source,
         RecordingSignalBridgeSink::default(),
@@ -87,7 +88,8 @@ fn bridge_harness_speculation_records_are_queryable_across_execution_promotion_a
 
 #[test]
 fn bridge_harness_speculation_discard_replay_remains_queryable() {
-    let source = InMemoryRelationalBridgeSource::default();
+    let source =
+        crate::relational_source::relational_test_support::empty_bridge_relational_source();
     let runtime = build_runtime(
         source,
         RecordingSignalBridgeSink::default(),

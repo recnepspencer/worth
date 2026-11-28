@@ -1,7 +1,4 @@
-use super::support::{
-    build_runtime, build_runtime_with_aspects, committed_patch, field_aspect_registration,
-    field_slice_snapshot, registration, snapshot, surface_widening_registration,
-};
+use super::support::{build_runtime, build_runtime_with_aspects};
 use crate::facade::{
     BridgeBulkWorkloadRequest, BridgeBulkWorkloadSegment, BridgeContinuityAuthorityBasis,
     BridgeHistoricalLineageAuthority, BridgeHistoricalLineageRequest,
@@ -11,7 +8,7 @@ use crate::facade::{
     ContinuityLineageSource, FineGrainedMatchStatus, SliceWideningPolicy, SubscriptionSliceKind,
     TruthDeltaSurfaceKind,
 };
-use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBridgeSink};
+use crate::harness::fixtures::RecordingSignalBridgeSink;
 #[derive(Debug, Clone, Default)]
 struct ExplanationContinuityLineageSource;
 
@@ -40,30 +37,17 @@ fn bridge_route_explanation_reconstructs_patch_to_invalidation_mapping() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    let avatar_field = worth_foundational::facade::FieldKey::new("avatar".to_owned())
-        .expect("valid harness field key");
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        avatar_field.clone(),
-    ));
-    source.insert_snapshot(snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
+    let truth = ProfileTruth::new(execution);
+    let field = ProfileTruth::field();
     let runtime = build_runtime(
-        source,
+        truth.native.source.clone(),
         RecordingSignalBridgeSink::default(),
-        vec![surface_widening_registration()],
+        vec![ProfileTruth::widening_mapping()],
     );
 
     let route = runtime
         .plan_committed_patch(
-            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-a",
-            )),
+            BridgeRouteRequest::for_commit(truth.commit.clone()),
             execution,
         )
         .expect("bridge should plan route for explanation reconstruction");
@@ -80,17 +64,17 @@ fn bridge_route_explanation_reconstructs_patch_to_invalidation_mapping() {
     assert_eq!(explanation.invalidation_targets().len(), 1);
     assert_eq!(
         explanation.snapshot_identity().as_str(),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a").as_str()
+        truth.observation.snapshot_identity().as_str()
     );
     let entry = &explanation.route_entries()[0];
     assert!(matches!(
         entry.entity_identity(),
-        RouteEntityIdentity::TruthSurface(_)
+        RouteEntityIdentity::RelationalRecord(_)
     ));
     assert_eq!(entry.aspect_key().as_str(), "profile");
     assert_eq!(
         entry.target_canonical_basis(),
-        expected_field_target_basis(&avatar_field),
+        expected_field_target_basis(&field),
     );
     assert_eq!(
         entry
@@ -100,7 +84,7 @@ fn bridge_route_explanation_reconstructs_patch_to_invalidation_mapping() {
             .field_path()
             .fields()[0]
             .as_str(),
-        "avatar"
+        "title"
     );
     assert!(!entry.target().projection_mask().is_whole_aspect());
     assert_eq!(
@@ -120,31 +104,18 @@ fn bridge_route_explanation_exposes_fine_grained_match_status() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    let name_field = worth_foundational::facade::FieldKey::new("name".to_owned())
-        .expect("valid harness field key");
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        name_field.clone(),
-    ));
-    source.insert_snapshot(field_slice_snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
+    let truth = ProfileTruth::new(execution);
+    let name_field = ProfileTruth::field();
     let runtime = build_runtime_with_aspects(
-        source,
+        truth.native.source.clone(),
         RecordingSignalBridgeSink::default(),
-        vec![registration()],
-        vec![field_aspect_registration()],
+        vec![ProfileTruth::mapping()],
+        vec![ProfileTruth::aspect_mapping()],
     );
 
     let route = runtime
         .plan_committed_patch(
-            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-a",
-            )),
+            BridgeRouteRequest::for_commit(truth.commit.clone()),
             execution,
         )
         .expect("bridge should plan route with fine-grained aspect registration");
@@ -168,7 +139,7 @@ fn bridge_route_explanation_exposes_fine_grained_match_status() {
     );
     assert_eq!(
         entry.aspect_registration_id().map(|id| id.as_str()),
-        Some("profile-name-field")
+        Some("profile-title-field")
     );
     assert_eq!(
         entry.subscription_slice_kind(),
@@ -201,36 +172,24 @@ fn bridge_continuity_explanation_reconstructs_canonical_continuity_truth() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(field_slice_snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
+    let truth = ProfileTruth::new(execution);
+    let source = truth.native.source.clone();
     let runtime = crate::facade::RuntimeBridgeBuilder::new()
         .with_relational_source(source)
         .with_signal_sink(RecordingSignalBridgeSink::default())
         .with_continuity_lineage_source(ExplanationContinuityLineageSource)
-        .register_mapping(registration())
-        .register_aspect_mapping(field_aspect_registration())
+        .register_mapping(ProfileTruth::mapping())
+        .register_aspect_mapping(ProfileTruth::aspect_mapping())
         .build()
         .expect("runtime should build");
 
     let route = runtime
         .plan_committed_patch_with_mapping_context(
-            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-a",
-            )),
+            BridgeRouteRequest::for_commit(truth.commit.clone()),
             crate::facade::BridgeMappingContext::default().with_lineage_context(
                 BridgeLineageContext::new(BridgeContinuityAuthorityBasis::new(
                     crate::truth_identity_fixtures::truth_branch_fixture("main"),
-                    crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
+                    truth.observation.snapshot_identity().clone(),
                 )),
             ),
             execution,
@@ -260,7 +219,7 @@ fn bridge_continuity_explanation_reconstructs_canonical_continuity_truth() {
     assert_eq!(explanation.route_identity(), route_record.route_identity());
     assert_eq!(
         explanation.source_snapshot().as_str(),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a").as_str()
+        truth.observation.snapshot_identity().as_str()
     );
     assert_eq!(
         explanation.source_branch().as_str(),
@@ -279,3 +238,5 @@ fn bridge_continuity_explanation_reconstructs_canonical_continuity_truth() {
 }
 
 mod bulk;
+
+use crate::harness::fixtures::ProfileTruth;

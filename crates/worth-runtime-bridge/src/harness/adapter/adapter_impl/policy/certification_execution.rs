@@ -132,7 +132,7 @@ pub(super) fn execute_rejection_certification(
     let optimized_authoritative =
         rejected_policy_bundle(runtime_bridge, optimized_authoritative_declaration.clone())?;
     let replay_forbidden_source =
-        crate::harness::fixtures::InMemoryRelationalBridgeSource::default();
+        crate::relational_source::relational_test_support::empty_bridge_relational_source();
     let replay_forbidden_runtime = crate::facade::RuntimeBridge::builder()
         .with_relational_source(replay_forbidden_source.clone())
         .with_truth_branch_head_source(replay_forbidden_source)

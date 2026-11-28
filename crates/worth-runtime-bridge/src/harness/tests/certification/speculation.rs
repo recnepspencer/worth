@@ -9,7 +9,8 @@ use crate::speculation::BridgePreviewSessionIdentity;
 
 #[test]
 fn bridge_speculation_promotion_truth_is_invariant_across_diagnostics_tiers() {
-    let source = crate::harness::fixtures::InMemoryRelationalBridgeSource::default();
+    let source =
+        crate::relational_source::relational_test_support::empty_bridge_relational_source();
     let baseline_runtime = crate::facade::RuntimeBridge::builder()
         .with_relational_source(source.clone())
         .with_truth_branch_head_source(source.clone())

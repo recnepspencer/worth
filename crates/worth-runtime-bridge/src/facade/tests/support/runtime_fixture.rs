@@ -1,6 +1,5 @@
 use super::{
-    registered_source, registered_structural, StaticSink, StaticSource, StaticSourceAdapter,
-    StaticWritebackAuthority,
+    registered_source, StaticSink, StaticSource, StaticSourceAdapter, StaticWritebackAuthority,
 };
 use crate::adapter::{BridgeSourceAdapter, TruthWritebackAuthority};
 use crate::builder::RuntimeBridgeBuilder;
@@ -12,7 +11,6 @@ use crate::mapping::{
 use crate::policy::BridgeRuntimePolicy;
 use crate::snapshot::{BridgeTruthViewSelector, SnapshotReadContract};
 use crate::source::BridgeSourceCapability;
-use crate::structural::{StructuralFingerprintFamily, StructuralTruthViewBasis};
 use worth_foundational::facade::{AspectKey, FieldKey, ScalarAspectType};
 
 pub(in crate::facade::tests) fn runtime(policy: BridgeRuntimePolicy) -> RuntimeBridge {
@@ -41,7 +39,6 @@ where
         .with_writeback_authority(writeback_authority)
         .register_source(analysis_snapshot_source())
         .register_source(analysis_history_source())
-        .register_structural(analysis_structural_registration())
         .register_mapping(native_profile_mapping_registration())
         .build()
         .expect("runtime should build for writeback tests")
@@ -62,7 +59,6 @@ where
         .with_signal_sink(StaticSink)
         .register_source(analysis_snapshot_source())
         .register_source(analysis_history_source())
-        .register_structural(analysis_structural_registration())
         .register_mapping(native_profile_mapping_registration())
         .build()
         .expect("runtime should build for policy-resolution tests")
@@ -95,17 +91,6 @@ fn analysis_history_source() -> crate::source::SourceDeclaration {
             BridgeSourceCapability::BranchRead,
             BridgeSourceCapability::ReplayContinuityRead,
         ],
-    )
-}
-
-fn analysis_structural_registration() -> crate::structural::StructuralIdentityDeclaration {
-    registered_structural(
-        "structural:analysis-snapshot",
-        StructuralFingerprintFamily::TopologyFingerprint,
-        StructuralTruthViewBasis::explicit_snapshot(BridgeTruthViewSelector::branch_snapshot(
-            crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
-            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        )),
     )
 }
 

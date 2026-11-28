@@ -96,7 +96,7 @@ impl PricingWorkloadCertificationBundle {
             },
             PricingLineageProvenanceEdge {
                 from: format!("{:?}", self.writeback.family_kind),
-                to: self.writeback.commit_replay_semantic_digest.clone(),
+                to: self.writeback.committed_effect_intent_digest.clone(),
                 kind: "writeback_family_to_commit_replay_digest",
                 surface: "writeback",
             },

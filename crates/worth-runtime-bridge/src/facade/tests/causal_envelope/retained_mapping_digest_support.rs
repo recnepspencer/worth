@@ -14,9 +14,6 @@ pub(super) enum ExpectedRetainedCausalDigestArtifact {
     PreviewPromotionRecord,
     RouteRecord,
     SourceMaterializationRecord,
-    StreamReplayRecord,
-    StructuralBranchComparisonRecord,
-    StructuralRemapRecord,
 }
 
 impl From<ExpectedRetainedCausalDigestArtifact> for RetainedCausalMappingDigestArtifact {
@@ -38,13 +35,6 @@ impl From<ExpectedRetainedCausalDigestArtifact> for RetainedCausalMappingDigestA
             ExpectedRetainedCausalDigestArtifact::RouteRecord => Self::RouteRecord,
             ExpectedRetainedCausalDigestArtifact::SourceMaterializationRecord => {
                 Self::SourceMaterializationRecord
-            }
-            ExpectedRetainedCausalDigestArtifact::StreamReplayRecord => Self::StreamReplayRecord,
-            ExpectedRetainedCausalDigestArtifact::StructuralBranchComparisonRecord => {
-                Self::StructuralBranchComparisonRecord
-            }
-            ExpectedRetainedCausalDigestArtifact::StructuralRemapRecord => {
-                Self::StructuralRemapRecord
             }
         }
     }
@@ -101,18 +91,12 @@ fn expected_bridge_identity_index(
         ExpectedRetainedCausalDigestArtifact::PreviewPromotionRecord => matches!(index, 0 | 1),
         ExpectedRetainedCausalDigestArtifact::RouteRecord => matches!(index, 0..=2),
         ExpectedRetainedCausalDigestArtifact::SourceMaterializationRecord => index == 0,
-        ExpectedRetainedCausalDigestArtifact::StreamReplayRecord => matches!(index, 0..=2),
-        ExpectedRetainedCausalDigestArtifact::StructuralBranchComparisonRecord
-        | ExpectedRetainedCausalDigestArtifact::StructuralRemapRecord => matches!(index, 0 | 2),
     }
 }
 
 fn expected_shape_index(artifact: ExpectedRetainedCausalDigestArtifact, index: usize) -> bool {
     match artifact {
-        ExpectedRetainedCausalDigestArtifact::ContinuityRecord
-        | ExpectedRetainedCausalDigestArtifact::StructuralBranchComparisonRecord
-        | ExpectedRetainedCausalDigestArtifact::StructuralRemapRecord => index == 1,
-        ExpectedRetainedCausalDigestArtifact::StreamReplayRecord => index == 3,
+        ExpectedRetainedCausalDigestArtifact::ContinuityRecord => index == 1,
         ExpectedRetainedCausalDigestArtifact::HistoricalEvaluationRecord
         | ExpectedRetainedCausalDigestArtifact::PreviewDiscardRecord
         | ExpectedRetainedCausalDigestArtifact::PreviewExecutionRecord

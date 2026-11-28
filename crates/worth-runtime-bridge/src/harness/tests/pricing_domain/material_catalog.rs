@@ -1,5 +1,3 @@
-use crate::facade::SnapshotReadRequest;
-
 use super::world_state::PricingDomainWorld;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -28,17 +26,6 @@ impl PricingMaterial {
             Self::Labor => "labor",
             Self::Fuel => "fuel",
         }
-    }
-
-    pub(in crate::harness::tests) fn snapshot_read_request(self) -> SnapshotReadRequest {
-        SnapshotReadRequest::for_coarse(
-            format!("component:{}", self.key()),
-            crate::snapshot::SnapshotReadContract::scalar(
-                worth_foundational::facade::AspectKey::new("cost")
-                    .expect("valid pricing material aspect key"),
-                worth_foundational::facade::ScalarAspectType::String,
-            ),
-        )
     }
 }
 

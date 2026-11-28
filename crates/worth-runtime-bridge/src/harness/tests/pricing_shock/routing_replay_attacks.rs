@@ -6,13 +6,17 @@ fn pricing_shock_reference_matrix_preserves_semantic_truth_across_diagnostics_pr
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
+    let scenario = generated_pricing_scenario();
+    let truth = RelationalPricing::reference(resource_request, &scenario, None);
     let baseline = capture_pricing_certification_matrix(
         BridgeRuntimePolicy::development(),
+        &truth,
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-baseline"),
         resource_request,
     );
     let forensic = capture_pricing_certification_matrix(
         BridgeRuntimePolicy::forensic(),
+        &truth,
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-forensic"),
         resource_request,
     );
@@ -27,21 +31,18 @@ fn pricing_shock_route_replay_preserves_canonical_main_branch_truth() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
+    let scenario = generated_pricing_scenario();
+    let truth = RelationalPricing::reference(resource_request, &scenario, None);
     let replay = capture_pricing_certification_matrix(
         BridgeRuntimePolicy::development(),
+        &truth,
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-replay-control"),
         resource_request,
     )
     .replay;
 
-    assert_eq!(
-        replay.source_commit,
-        crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main")
-    );
-    assert_eq!(
-        replay.source_snapshot,
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main")
-    );
+    assert_eq!(replay.source_commit, truth.steel_commit.clone());
+    assert_eq!(replay.source_snapshot, truth.steel_snapshot().clone());
     assert!(!replay.route_identity.as_str().is_empty());
     assert!(!replay.invalidation_identity.as_str().is_empty());
 }
@@ -52,25 +53,24 @@ fn pricing_shock_duplicate_commit_identity_with_conflicting_route_meaning_is_det
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let runtime = build_pricing_runtime(
-        pricing_reference_source_with_conflicting_commit_identity_for_route(),
-        RecordingSignalBridgeSink::default(),
+    let truth = RelationalPricing::new(execution, 100, 40, 56);
+    let runtime = truth.fault_runtime(
+        PricingFault::PatchItems(
+            truth.steel_commit.clone(),
+            vec![truth.cost_item(PricingMaterial::Rubber)],
+        ),
+        BridgeRuntimePolicy::development(),
     );
-
     let route = runtime
-        .route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
-            execution,
-        )
+        .route(truth.steel_commit.clone(), execution)
         .expect("conflicting duplicate commit identity should still route as retained truth");
-
     assert_eq!(
-        route.result().result_summary().source_commit().as_str(),
-        "commit:steel-main"
+        route.result().result_summary().source_commit(),
+        &truth.steel_commit
     );
     assert_eq!(
-        route.result().receipt().snapshot_identity().as_str(),
-        "snapshot:pricing-main"
+        route.result().receipt().snapshot_identity(),
+        truth.steel_snapshot()
     );
     assert_eq!(route.result().receipt().delivered_target_count(), 1);
     assert_eq!(
@@ -85,112 +85,44 @@ fn pricing_shock_duplicate_conflicting_commit_identity_permutation_sweep_is_dete
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    for (label, source, commit, expected_snapshot, expected_targets) in [
+    let truth = RelationalPricing::new(execution, 100, 40, 56);
+    for (label, commit, snapshot, materials, expected_targets) in [
         (
-            "steel-commit-rewritten-to-rubber",
-            pricing_reference_source_with_conflicting_route_commit_items(
-                "commit:steel-main",
-                "patch:steel-main-conflicting-rubber",
-                vec![BridgeCommittedPatchItem::with_target(
-                    "component:rubber",
-                    crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                        worth_foundational::facade::AspectLocator::new(
-                            worth_foundational::facade::LocatorAuthority::Authoritative,
-                            worth_foundational::facade::AspectKey::new("cost")
-                                .expect("valid bridge patch aspect key"),
-                        ),
-                        worth_foundational::facade::CanonicalFieldPath::single(
-                            worth_foundational::facade::FieldKey::new("usd".to_owned())
-                                .expect("valid foundational field key"),
-                        ),
-                    ),
-                )],
-            ),
-            "commit:steel-main",
-            "snapshot:pricing-main",
+            "steel changed to rubber",
+            &truth.steel_commit,
+            truth.steel_snapshot(),
+            vec![PricingMaterial::Rubber],
             vec!["price:scooter"],
         ),
         (
-            "rubber-commit-rewritten-to-steel",
-            pricing_reference_source_with_conflicting_route_commit_items(
-                "commit:rubber-main",
-                "patch:rubber-main-conflicting-steel",
-                vec![BridgeCommittedPatchItem::with_target(
-                    "component:steel",
-                    crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                        worth_foundational::facade::AspectLocator::new(
-                            worth_foundational::facade::LocatorAuthority::Authoritative,
-                            worth_foundational::facade::AspectKey::new("cost")
-                                .expect("valid bridge patch aspect key"),
-                        ),
-                        worth_foundational::facade::CanonicalFieldPath::single(
-                            worth_foundational::facade::FieldKey::new("usd".to_owned())
-                                .expect("valid foundational field key"),
-                        ),
-                    ),
-                )],
-            ),
-            "commit:rubber-main",
-            "snapshot:pricing-main",
+            "rubber changed to steel",
+            &truth.rubber_commit,
+            truth.main_snapshot(),
+            vec![PricingMaterial::Steel],
             vec!["price:bicycle", "price:wheelbarrow"],
         ),
         (
-            "steel-commit-rewritten-to-combined-meaning",
-            pricing_reference_source_with_conflicting_route_commit_items(
-                "commit:steel-main",
-                "patch:steel-main-conflicting-combined",
-                vec![
-                    BridgeCommittedPatchItem::with_target(
-                        "component:steel",
-                        crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                            worth_foundational::facade::AspectLocator::new(
-                                worth_foundational::facade::LocatorAuthority::Authoritative,
-                                worth_foundational::facade::AspectKey::new("cost")
-                                    .expect("valid bridge patch aspect key"),
-                            ),
-                            worth_foundational::facade::CanonicalFieldPath::single(
-                                worth_foundational::facade::FieldKey::new("usd".to_owned())
-                                    .expect("valid foundational field key"),
-                            ),
-                        ),
-                    ),
-                    BridgeCommittedPatchItem::with_target(
-                        "component:rubber",
-                        crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                            worth_foundational::facade::AspectLocator::new(
-                                worth_foundational::facade::LocatorAuthority::Authoritative,
-                                worth_foundational::facade::AspectKey::new("cost")
-                                    .expect("valid bridge patch aspect key"),
-                            ),
-                            worth_foundational::facade::CanonicalFieldPath::single(
-                                worth_foundational::facade::FieldKey::new("usd".to_owned())
-                                    .expect("valid foundational field key"),
-                            ),
-                        ),
-                    ),
-                ],
-            ),
-            "commit:steel-main",
-            "snapshot:pricing-main",
+            "steel changed to both",
+            &truth.steel_commit,
+            truth.steel_snapshot(),
+            vec![PricingMaterial::Steel, PricingMaterial::Rubber],
             vec!["price:bicycle", "price:scooter", "price:wheelbarrow"],
         ),
     ] {
-        let runtime = build_pricing_runtime(source, RecordingSignalBridgeSink::default());
+        let items = materials
+            .into_iter()
+            .map(|material| truth.cost_item(material))
+            .collect();
+        let runtime = truth.fault_runtime(
+            PricingFault::PatchItems(commit.clone(), items),
+            BridgeRuntimePolicy::development(),
+        );
         let route = runtime
-            .route(
-                crate::truth_identity_fixtures::truth_commit_fixture(commit),
-                execution,
-            )
+            .route(commit.clone(), execution)
             .unwrap_or_else(|_| panic!("{label} should still route as retained truth"));
+        assert_eq!(route.result().result_summary().source_commit(), commit);
+        assert_eq!(route.result().receipt().snapshot_identity(), snapshot);
 
-        assert_eq!(
-            route.result().result_summary().source_commit().as_str(),
-            commit
-        );
-        assert_eq!(
-            route.result().receipt().snapshot_identity().as_str(),
-            expected_snapshot
-        );
         assert_eq!(
             route.result().receipt().delivered_target_count(),
             expected_targets.len(),
@@ -226,24 +158,22 @@ fn pricing_shock_non_commuting_route_history_attack_fails_closed_on_replay() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let original_runtime = build_pricing_runtime(
-        pricing_reference_source(),
-        RecordingSignalBridgeSink::default(),
-    );
+    let truth = RelationalPricing::new(execution, 100, 40, 56);
+    let original_runtime = truth.runtime(RecordingSignalBridgeSink::default());
     original_runtime
-        .route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
-            execution,
-        )
+        .route(truth.steel_commit.clone(), execution)
         .expect("original steel route should succeed before replay attack");
     let canonical_record = original_runtime
         .diagnostics()
         .last_canonical_route_record()
         .expect("original runtime should expose canonical route record");
 
-    let restarted_runtime = build_pricing_runtime(
-        pricing_reference_source_with_conflicting_commit_identity_for_route(),
-        RecordingSignalBridgeSink::default(),
+    let restarted_runtime = truth.fault_runtime(
+        PricingFault::PatchItems(
+            truth.steel_commit.clone(),
+            vec![truth.cost_item(PricingMaterial::Rubber)],
+        ),
+        BridgeRuntimePolicy::development(),
     );
     let error = restarted_runtime
         .replay_canonical_record(&canonical_record, execution)
@@ -263,107 +193,41 @@ fn pricing_shock_non_commuting_route_history_permutation_sweep_fails_closed() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    for (label, clean_commit, mutated_source) in [
+    let truth = RelationalPricing::new(execution, 100, 40, 56);
+    for (label, commit, materials) in [
         (
-            "steel-route-replayed-against-rubber-meaning",
-            "commit:steel-main",
-            pricing_reference_source_with_conflicting_route_commit_items(
-                "commit:steel-main",
-                "patch:steel-main-conflicting-rubber",
-                vec![BridgeCommittedPatchItem::with_target(
-                    "component:rubber",
-                    crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                        worth_foundational::facade::AspectLocator::new(
-                            worth_foundational::facade::LocatorAuthority::Authoritative,
-                            worth_foundational::facade::AspectKey::new("cost")
-                                .expect("valid bridge patch aspect key"),
-                        ),
-                        worth_foundational::facade::CanonicalFieldPath::single(
-                            worth_foundational::facade::FieldKey::new("usd".to_owned())
-                                .expect("valid foundational field key"),
-                        ),
-                    ),
-                )],
-            ),
+            "steel changed to rubber",
+            &truth.steel_commit,
+            vec![PricingMaterial::Rubber],
         ),
         (
-            "rubber-route-replayed-against-steel-meaning",
-            "commit:rubber-main",
-            pricing_reference_source_with_conflicting_route_commit_items(
-                "commit:rubber-main",
-                "patch:rubber-main-conflicting-steel",
-                vec![BridgeCommittedPatchItem::with_target(
-                    "component:steel",
-                    crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                        worth_foundational::facade::AspectLocator::new(
-                            worth_foundational::facade::LocatorAuthority::Authoritative,
-                            worth_foundational::facade::AspectKey::new("cost")
-                                .expect("valid bridge patch aspect key"),
-                        ),
-                        worth_foundational::facade::CanonicalFieldPath::single(
-                            worth_foundational::facade::FieldKey::new("usd".to_owned())
-                                .expect("valid foundational field key"),
-                        ),
-                    ),
-                )],
-            ),
+            "rubber changed to steel",
+            &truth.rubber_commit,
+            vec![PricingMaterial::Steel],
         ),
         (
-            "steel-route-replayed-against-combined-meaning",
-            "commit:steel-main",
-            pricing_reference_source_with_conflicting_route_commit_items(
-                "commit:steel-main",
-                "patch:steel-main-conflicting-combined",
-                vec![
-                    BridgeCommittedPatchItem::with_target(
-                        "component:steel",
-                        crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                            worth_foundational::facade::AspectLocator::new(
-                                worth_foundational::facade::LocatorAuthority::Authoritative,
-                                worth_foundational::facade::AspectKey::new("cost")
-                                    .expect("valid bridge patch aspect key"),
-                            ),
-                            worth_foundational::facade::CanonicalFieldPath::single(
-                                worth_foundational::facade::FieldKey::new("usd".to_owned())
-                                    .expect("valid foundational field key"),
-                            ),
-                        ),
-                    ),
-                    BridgeCommittedPatchItem::with_target(
-                        "component:rubber",
-                        crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                            worth_foundational::facade::AspectLocator::new(
-                                worth_foundational::facade::LocatorAuthority::Authoritative,
-                                worth_foundational::facade::AspectKey::new("cost")
-                                    .expect("valid bridge patch aspect key"),
-                            ),
-                            worth_foundational::facade::CanonicalFieldPath::single(
-                                worth_foundational::facade::FieldKey::new("usd".to_owned())
-                                    .expect("valid foundational field key"),
-                            ),
-                        ),
-                    ),
-                ],
-            ),
+            "steel changed to both",
+            &truth.steel_commit,
+            vec![PricingMaterial::Steel, PricingMaterial::Rubber],
         ),
     ] {
-        let original_runtime = build_pricing_runtime(
-            pricing_reference_source(),
-            RecordingSignalBridgeSink::default(),
-        );
+        let original_runtime = truth.runtime(RecordingSignalBridgeSink::default());
         original_runtime
-            .route(
-                crate::truth_identity_fixtures::truth_commit_fixture(clean_commit),
-                execution,
-            )
+            .route(commit.clone(), execution)
             .unwrap_or_else(|_| panic!("{label} should route canonically before replay attack"));
         let canonical_record = original_runtime
             .diagnostics()
             .last_canonical_route_record()
             .unwrap_or_else(|| panic!("{label} should retain a canonical route record"));
 
-        let restarted_runtime =
-            build_pricing_runtime(mutated_source, RecordingSignalBridgeSink::default());
+        let items = materials
+            .into_iter()
+            .map(|material| truth.cost_item(material))
+            .collect();
+        let restarted_runtime = truth.fault_runtime(
+            PricingFault::PatchItems(commit.clone(), items),
+            BridgeRuntimePolicy::development(),
+        );
         let error = restarted_runtime
             .replay_canonical_record(&canonical_record, execution)
             .err()

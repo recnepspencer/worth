@@ -183,7 +183,7 @@ impl PricingWorkloadCertificationBundle {
             source: !self.hostile_failure.source_commit.as_str().is_empty()
                 && !self.hostile_failure.source_snapshot.as_str().is_empty(),
             preview: self.discard.has_discard_record && self.promotion.has_promotion_explanation,
-            writeback: !self.writeback.commit_replay_semantic_digest.is_empty(),
+            writeback: !self.writeback.committed_effect_intent_digest.is_empty(),
             residue: self.discard.has_discard_record,
             historical_provenance: !self.provenance.shock_commit.as_str().is_empty()
                 && !self.provenance.shock_snapshot.as_str().is_empty(),
@@ -237,7 +237,8 @@ impl PricingWorkloadCertificationBundle {
                 self.restart_failure.error_kind
             ),
             historical_provenance_commit_matches_shock: self.provenance.shock_commit
-                == crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
+                == self.matrix.reference.speculative_commit
+                && self.provenance.shock_snapshot == self.matrix.reference.speculative_snapshot,
             portfolio_reports_positive_blast_radius: self.portfolio.positive_retail_delta_count > 0,
             crisis_affects_portfolio_breadth: self.crisis.affected_product_count > 0,
             strategy_recommends_non_hold_response: self.strategy.recommended_strategy != "hold",

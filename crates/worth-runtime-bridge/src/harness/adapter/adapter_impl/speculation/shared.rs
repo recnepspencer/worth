@@ -67,9 +67,8 @@ pub(super) fn first_commit_routing_digest(
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<Option<String>, super::BridgeHarnessError> {
     fixture
-        .committed_patches()
-        .first()
-        .map(|patch| patch.commit_identity().clone())
+        .first_commit_identity()
+        .cloned()
         .map(|commit_identity| {
             authoritative_routing_digest(runtime_bridge, commit_identity, resource_request)
         })

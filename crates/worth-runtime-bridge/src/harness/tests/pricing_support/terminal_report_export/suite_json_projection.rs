@@ -41,7 +41,7 @@ impl PricingWorkloadCertificationBundle {
                 "main_snapshot": self.matrix.reference.main_snapshot.as_str(),
                 "speculative_snapshot": self.matrix.reference.speculative_snapshot.as_str(),
                 "promotion_session_identity": self.promotion.promotion_session_identity.as_str(),
-                "writeback_commit_replay_semantic_digest": self.writeback.commit_replay_semantic_digest,
+                "writeback_committed_effect_intent_digest": self.writeback.committed_effect_intent_digest,
             },
             "routing": {
                 "route_entry_count": self.matrix.reference.route_entry_count,

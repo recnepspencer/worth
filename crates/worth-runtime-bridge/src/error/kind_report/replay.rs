@@ -15,11 +15,6 @@ impl BridgeErrorKind for BridgeReplayErrorKind {
                 Escalate,
                 "bridge.replay.canonical_artifact_coherence_failure",
             ),
-            Self::StructuralReplayBasisTruncated => (
-                Unavailable,
-                Escalate,
-                "bridge.replay.structural_replay_basis_truncated",
-            ),
             Self::BulkPlanReplayMismatch => (
                 Invariant,
                 Escalate,

@@ -1,47 +1,26 @@
+use crate::harness::fixtures::NamedTruth;
 #[test]
 fn bridge_bulk_canonical_workload_request_carries_canonical_member_sets() {
     let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-b"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-b"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
-    source.insert_snapshot(snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-b"),
-        "bob",
-    ));
+    let truth = NamedTruth::new();
+    let (commit_a, observation_a) = truth.commit_name(execution, "alice");
+    let (commit_b, observation_b) = truth.commit_name(execution, "bob");
+    let source = truth.source.clone();
+
     let runtime = build_runtime(
         source,
         RecordingSignalBridgeSink::default(),
-        vec![registration()],
+        vec![NamedTruth::mapping()],
     );
 
     let planned = runtime
         .plan_bulk_workload(
             BridgeBulkWorkloadRequest::new(vec![
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                )),
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-                )),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a.clone())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b.clone())),
             ]),
             execution,
         )
@@ -93,16 +72,13 @@ fn bridge_bulk_canonical_workload_request_carries_canonical_member_sets() {
             && !member.as_str().contains("main")));
     assert_eq!(
         planned.canonical_request().commit_members(),
-        &[
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-        ]
+        &[commit_a.clone(), commit_b.clone(),]
     );
     assert_eq!(
         planned.canonical_request().snapshot_members(),
         &[
-            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-b"),
+            observation_a.snapshot_identity().clone(),
+            observation_b.snapshot_identity().clone(),
         ]
     );
     assert_eq!(
@@ -138,44 +114,22 @@ fn bridge_bulk_normalized_summary_derives_shared_workload_facts_once() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-b"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-b"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
-    source.insert_snapshot(snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-b"),
-        "bob",
-    ));
+    let truth = NamedTruth::new();
+    let (commit_a, _observation_a) = truth.commit_name(execution, "alice");
+    let (commit_b, _observation_b) = truth.commit_name(execution, "bob");
+    let source = truth.source.clone();
+
     let runtime = build_runtime(
         source,
         RecordingSignalBridgeSink::default(),
-        vec![registration()],
+        vec![NamedTruth::mapping()],
     );
 
     let planned = runtime
         .plan_bulk_workload(
             BridgeBulkWorkloadRequest::new(vec![
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                )),
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-                )),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a.clone())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b.clone())),
             ]),
             execution,
         )
@@ -200,30 +154,20 @@ fn bridge_bulk_execution_plan_selects_serial_for_single_route_workload() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
+    let truth = NamedTruth::new();
+    let (commit_a, _observation_a) = truth.commit_name(execution, "alice");
+    let source = truth.source.clone();
+
     let runtime = build_runtime(
         source,
         RecordingSignalBridgeSink::default(),
-        vec![registration()],
+        vec![NamedTruth::mapping()],
     );
 
     let planned = runtime
         .plan_bulk_workload(
             BridgeBulkWorkloadRequest::new(vec![BridgeBulkWorkloadSegment::new(
-                BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                ),
+                BridgeRouteRequest::for_commit(commit_a.clone()),
             )]),
             execution,
         )
@@ -271,14 +215,14 @@ fn bridge_bulk_execution_plan_selects_serial_for_single_route_workload() {
             .execution_plan()
             .reduced_artifact()
             .reduction_input_count(),
-        2
+        3
     );
     assert_eq!(
         planned
             .execution_plan()
             .reduced_artifact()
             .reduction_output_count(),
-        2
+        3
     );
     assert!(planned
         .execution_plan()

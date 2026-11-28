@@ -1,16 +1,14 @@
+use super::super::{
+    policy::terminal_report_export as policy_terminal_report_export,
+    source::terminal_report_export as source_terminal_report_export,
+    speculation::terminal_report_export as speculation_terminal_report_export,
+};
+
 use std::collections::BTreeMap;
 
 use serde_json::json;
 
 use super::super::execution::HarnessExecution;
-use super::super::{
-    policy::terminal_report_export as policy_terminal_report_export,
-    source::terminal_report_export as source_terminal_report_export,
-    speculation::terminal_report_export as speculation_terminal_report_export,
-    stream::terminal_report_export as stream_terminal_report_export,
-    structural::terminal_report_export as structural_terminal_report_export,
-    writeback::terminal_report_export as writeback_terminal_report_export,
-};
 use crate::harness::adapter::terminal_report_export::route_record_json;
 
 pub(in crate::harness::adapter::adapter_impl) fn execution_summary_json(
@@ -51,9 +49,6 @@ pub(in crate::harness::adapter::adapter_impl) fn execution_summary_json(
             "selector_width": record.counters().selector_width(),
             "branch_width": record.counters().branch_width(),
         }),
-        HarnessExecution::Stream(execution) => {
-            stream_terminal_report_export::summary_json(execution)
-        }
         HarnessExecution::Source(execution) => {
             source_terminal_report_export::summary_json(execution)
         }
@@ -62,12 +57,6 @@ pub(in crate::harness::adapter::adapter_impl) fn execution_summary_json(
         }
         HarnessExecution::Speculation(execution) => {
             speculation_terminal_report_export::summary_json(execution)
-        }
-        HarnessExecution::Structural(execution) => {
-            structural_terminal_report_export::summary_json(execution)
-        }
-        HarnessExecution::Writeback(execution) => {
-            writeback_terminal_report_export::summary_json(execution)
         }
     }
 }
@@ -120,9 +109,6 @@ pub(in crate::harness::adapter::adapter_impl) fn execution_extensions_json(
                 },
             }),
         )]),
-        HarnessExecution::Stream(execution) => {
-            stream_terminal_report_export::extensions_json(execution, runtime_bridge)
-        }
         HarnessExecution::Source(execution) => {
             source_terminal_report_export::extensions_json(execution, runtime_bridge)
         }
@@ -131,12 +117,6 @@ pub(in crate::harness::adapter::adapter_impl) fn execution_extensions_json(
         }
         HarnessExecution::Speculation(execution) => {
             speculation_terminal_report_export::extensions_json(execution, runtime_bridge)
-        }
-        HarnessExecution::Structural(execution) => {
-            structural_terminal_report_export::extensions_json(execution, runtime_bridge)
-        }
-        HarnessExecution::Writeback(execution) => {
-            writeback_terminal_report_export::extensions_json(execution)
         }
     }
 }

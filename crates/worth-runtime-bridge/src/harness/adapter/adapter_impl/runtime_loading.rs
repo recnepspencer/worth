@@ -1,14 +1,14 @@
 use super::*;
 
 #[derive(Clone)]
-struct FixtureSourceAdapter {
+struct FixtureSourceAdapter<S> {
     capabilities: BridgeSourceCapabilitySet,
-    source: super::super::super::fixtures::InMemoryRelationalBridgeSource,
+    source: S,
 }
 
 #[derive(Clone)]
-struct WrappedFixtureSourceAdapter {
-    inner: SessionSourceAdapter,
+struct WrappedFixtureSourceAdapter<S> {
+    inner: SessionSourceAdapter<S>,
 }
 
 struct DriftFixtureSnapshotReader {
@@ -16,9 +16,9 @@ struct DriftFixtureSnapshotReader {
 }
 
 #[derive(Clone)]
-struct SessionSourceAdapter {
-    runtime: BridgeHarnessSession,
-    inner: FixtureSourceAdapter,
+struct SessionSourceAdapter<S> {
+    behavior: SourceAdapterBehavior,
+    inner: FixtureSourceAdapter<S>,
 }
 
 pub(super) fn prepare_runtime_profile(
@@ -71,18 +71,25 @@ pub(super) fn load_bridge_fixture(
     runtime: &mut BridgeHarnessSession,
     fixture: &ScenarioFixture<BridgeHarnessFixture>,
 ) -> Result<(), BridgeHarnessError> {
-    load_fixture_truth(runtime, fixture);
-
+    let source = fixture.fixture.relational_truth().map_or_else(
+        crate::relational_source::relational_test_support::empty_bridge_relational_source,
+        |truth| truth.native.source.clone(),
+    );
     let builder = apply_policy_builder_load_order(
         RuntimeBridgeBuilder::new()
-            .with_relational_source(runtime.source.clone())
-            .with_truth_branch_head_source(runtime.source.clone())
+            .with_relational_source(source.clone())
+            .with_truth_branch_head_source(source.clone())
             .with_signal_sink(runtime.sink.clone())
             .with_writeback_authority(runtime.writeback_authority.clone())
-            .with_continuity_lineage_source(runtime.source.clone()),
+            .with_continuity_lineage_source(source.clone()),
         runtime,
         fixture.fixture.policy(),
     );
+    let builder = if fixture.fixture.ambiguous_lineage() {
+        builder.with_continuity_lineage_source(AmbiguousLineage(source.clone()))
+    } else {
+        builder
+    };
     let (first_mapping, remaining_mappings) =
         fixture.fixture.mappings().split_first().ok_or_else(|| {
             BridgeHarnessError::new("bridge harness fixture requires at least one mapping")
@@ -94,13 +101,10 @@ pub(super) fn load_bridge_fixture(
     for aspect_mapping in fixture.fixture.aspect_mappings() {
         builder = builder.register_aspect_mapping(aspect_mapping.clone());
     }
-    for structural_declaration in fixture.fixture.structural_declarations() {
-        builder = builder.register_structural(structural_declaration.clone());
-    }
     if !fixture.fixture.source_declarations().is_empty() {
         let source_adapter = FixtureSourceAdapter {
             capabilities: fixture_source_adapter_capabilities(fixture),
-            source: runtime.source.clone(),
+            source,
         };
         builder = match runtime.source_builder_load_order {
             SourceBuilderLoadOrder::AdapterBeforeSources => {
@@ -125,40 +129,6 @@ pub(super) fn load_bridge_fixture(
     Ok(())
 }
 
-pub(super) fn apply_bridge_mutation_batch(
-    runtime: &mut BridgeHarnessSession,
-    batch: &MutationBatch<BridgeHarnessMutation>,
-) -> Result<(), BridgeHarnessError> {
-    for operation in &batch.operations {
-        match operation {
-            BridgeHarnessMutation::PublishCommittedPatch(patch) => {
-                runtime.source.insert_committed_patch(patch.clone());
-            }
-            BridgeHarnessMutation::PublishSnapshot(snapshot) => {
-                runtime.source.insert_snapshot(snapshot.clone());
-            }
-        }
-    }
-    Ok(())
-}
-
-fn load_fixture_truth(
-    runtime: &mut BridgeHarnessSession,
-    fixture: &ScenarioFixture<BridgeHarnessFixture>,
-) {
-    for patch in fixture.fixture.committed_patches() {
-        runtime.source.insert_committed_patch(patch.clone());
-    }
-    for snapshot in fixture.fixture.snapshots() {
-        runtime.source.insert_snapshot(snapshot.clone());
-    }
-    for (entity_identity, authority) in fixture.fixture.continuity_authorities() {
-        runtime
-            .source
-            .insert_continuity_authority(entity_identity.clone(), authority.clone());
-    }
-}
-
 fn fixture_source_adapter_capabilities(
     fixture: &ScenarioFixture<BridgeHarnessFixture>,
 ) -> BridgeSourceCapabilitySet {
@@ -176,6 +146,7 @@ fn fixture_source_adapter_capabilities(
 }
 
 fn with_session_source_adapter<
+    S: crate::adapter::SnapshotReadSource,
     PatchState,
     SnapshotState,
     SignalState,
@@ -190,10 +161,10 @@ fn with_session_source_adapter<
         MappingState,
     >,
     runtime: &BridgeHarnessSession,
-    adapter: FixtureSourceAdapter,
+    adapter: FixtureSourceAdapter<S>,
 ) -> RuntimeBridgeBuilder<PatchState, SnapshotState, SignalState, BranchHeadState, MappingState> {
     let adapter = SessionSourceAdapter {
-        runtime: runtime.clone(),
+        behavior: runtime.source_adapter_behavior,
         inner: adapter,
     };
     match runtime.source_adapter_shape {
@@ -234,7 +205,9 @@ fn apply_policy_builder_load_order<
     }
 }
 
-impl crate::adapter::BridgeSourceAdapter for FixtureSourceAdapter {
+impl<S: crate::adapter::SnapshotReadSource> crate::adapter::BridgeSourceAdapter
+    for FixtureSourceAdapter<S>
+{
     fn declared_capabilities(&self) -> BridgeSourceCapabilitySet {
         self.capabilities.clone()
     }
@@ -266,7 +239,9 @@ impl crate::facade::TruthSnapshotReader for DriftFixtureSnapshotReader {
     }
 }
 
-impl crate::adapter::BridgeSourceAdapter for SessionSourceAdapter {
+impl<S: crate::adapter::SnapshotReadSource> crate::adapter::BridgeSourceAdapter
+    for SessionSourceAdapter<S>
+{
     fn declared_capabilities(&self) -> BridgeSourceCapabilitySet {
         self.inner.declared_capabilities()
     }
@@ -279,7 +254,7 @@ impl crate::adapter::BridgeSourceAdapter for SessionSourceAdapter {
         Box<dyn crate::facade::TruthSnapshotReader>,
         crate::adapter::RelationalBridgeSourceError,
     > {
-        match self.runtime.source_adapter_behavior {
+        match self.behavior {
             SourceAdapterBehavior::Honest => self.inner.open_snapshot(identity, execution),
             SourceAdapterBehavior::RejectOpenSnapshot => {
                 Err(crate::adapter::RelationalBridgeSourceError::new(
@@ -298,7 +273,9 @@ impl crate::adapter::BridgeSourceAdapter for SessionSourceAdapter {
     }
 }
 
-impl crate::adapter::BridgeSourceAdapter for WrappedFixtureSourceAdapter {
+impl<S: crate::adapter::SnapshotReadSource> crate::adapter::BridgeSourceAdapter
+    for WrappedFixtureSourceAdapter<S>
+{
     fn declared_capabilities(&self) -> BridgeSourceCapabilitySet {
         self.inner.declared_capabilities()
     }
@@ -312,5 +289,33 @@ impl crate::adapter::BridgeSourceAdapter for WrappedFixtureSourceAdapter {
         crate::adapter::RelationalBridgeSourceError,
     > {
         self.inner.open_snapshot(identity, execution)
+    }
+}
+
+use crate::facade::{
+    BridgeHistoricalLineageAuthority, BridgeHistoricalLineageRequest,
+    BridgeHistoricalResolvedRecordIdentity, BridgeLineageSourceError, ContinuityLineageSource,
+};
+
+struct AmbiguousLineage<S>(S);
+
+impl<S: ContinuityLineageSource> ContinuityLineageSource for AmbiguousLineage<S> {
+    fn historical_lineage(
+        &self,
+        request: BridgeHistoricalLineageRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError> {
+        let authority = self.0.historical_lineage(request, execution)?;
+        let mut candidates = authority.canonical_resolved_record_identities().to_vec();
+        assert_eq!(candidates.len(), 1);
+        candidates.push(BridgeHistoricalResolvedRecordIdentity::admit_bridge_owned(
+            "injected-ambiguous-record",
+        ));
+        BridgeHistoricalLineageAuthority::try_new(
+            authority.authority_basis().clone(),
+            authority.canonical_resolved_lineage_identities().to_vec(),
+            candidates,
+            authority.traversed_event_ids().to_vec(),
+        )
     }
 }

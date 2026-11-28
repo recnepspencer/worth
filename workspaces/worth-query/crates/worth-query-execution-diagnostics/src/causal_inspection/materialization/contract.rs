@@ -140,28 +140,17 @@ fn validate_requested_replay_posture(
     requested_families: &[CausalEvidenceFamily],
     envelope: &BridgeCausalExplanationEnvelope,
 ) -> Result<(), CausalInspectionConstructionStop> {
-    let bridge_replay_requested = requested_families.contains(&CausalEvidenceFamily::BridgeReplay);
     let signal_cursor_requested =
         requested_families.contains(&CausalEvidenceFamily::SignalReplayCursor);
-    if !bridge_replay_requested && !signal_cursor_requested {
+    if !signal_cursor_requested {
         return Ok(());
     }
 
-    let bridge_replay_bound = envelope.bindings().iter().any(|binding| {
-        binding.owner() == BridgeCausalEvidenceOwner::RuntimeBridge
-            && matches!(
-                binding.family(),
-                BridgeCausalEvidenceFamily::BridgeStreamReplay
-                    | BridgeCausalEvidenceFamily::BridgeWritebackReplay
-            )
-    });
     let signal_cursor_bound = envelope.bindings().iter().any(|binding| {
         binding.owner() == BridgeCausalEvidenceOwner::Signal
             && binding.family() == BridgeCausalEvidenceFamily::SignalReplayCursor
     });
-    let bridge_replay_satisfied = !bridge_replay_requested || bridge_replay_bound;
-    let signal_cursor_satisfied = !signal_cursor_requested || signal_cursor_bound;
-    if bridge_replay_satisfied && signal_cursor_satisfied {
+    if signal_cursor_bound {
         return Ok(());
     }
 
@@ -172,14 +161,6 @@ fn validate_requested_replay_posture(
                 .field_value(
                     WorthQueryEvidenceTag::new("envelope"),
                     envelope.envelope_for_reporting(),
-                )
-                .field_bool(
-                    WorthQueryEvidenceTag::new("bridge_replay_requested"),
-                    bridge_replay_requested,
-                )
-                .field_bool(
-                    WorthQueryEvidenceTag::new("bridge_replay_bound"),
-                    bridge_replay_bound,
                 )
                 .field_bool(
                     WorthQueryEvidenceTag::new("signal_cursor_requested"),

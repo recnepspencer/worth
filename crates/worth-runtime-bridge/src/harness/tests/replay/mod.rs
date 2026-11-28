@@ -6,11 +6,8 @@ use crate::facade::{
     BRIDGE_CANONICAL_BULK_PLAN_RECORD_SCHEMA_V1,
 };
 
-use super::support::{
-    build_runtime, committed_patch, committed_patch_items, field_aspect_registration,
-    field_slice_snapshot, registration, snapshot,
-};
-use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBridgeSink};
+use super::support::build_runtime;
+use crate::harness::fixtures::RecordingSignalBridgeSink;
 
 #[derive(Debug, Clone, Default)]
 struct ReplaySingleSuccessorLineageSource;

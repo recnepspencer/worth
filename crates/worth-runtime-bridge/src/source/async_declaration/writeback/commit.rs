@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::Arc;
 
 use crate::adapter::TruthWritebackReceipt;
 use crate::facade::{BridgeWritebackLoopDisposition, BridgeWritebackOutcomeClass, RuntimeBridge};
@@ -27,6 +26,8 @@ pub enum BridgeAsyncWritebackNoopClass {
 pub enum BridgeAsyncWritebackRejectedClass {
     LoopPreventionRejected,
     AuthorityRejected,
+    CompletionOwnerMismatch,
+    CompletionCommitUnavailable,
 }
 
 pub type BridgeAsyncCommittedWritebackIdentity = BridgeIdentity<AsyncWritebackCommittedIdentityTag>;
@@ -126,7 +127,7 @@ impl BridgeAsyncCommittedWriteback {
 impl BridgeAsyncNoopWriteback {
     fn duplicate(
         staged: &StagedBridgeAsyncWritebackEffect,
-        prior_receipt: &TruthWritebackReceipt,
+        authoritative_artifact_digest: &Arc<str>,
     ) -> Self {
         Self {
             noop_identity: BridgeAsyncNoopWritebackIdentity::admit_bridge_owned(format!(
@@ -143,9 +144,7 @@ impl BridgeAsyncNoopWriteback {
                 staged.admitted().completion().completion_identity(),
                 BridgeAsyncWritebackNoopClass::DuplicateCompletion,
             ),
-            authoritative_artifact_digest: Arc::from(
-                prior_receipt.authoritative_artifact_digest().to_owned(),
-            ),
+            authoritative_artifact_digest: Arc::clone(authoritative_artifact_digest),
             counters: BridgeAsyncWritebackCounters::duplicate_noop(),
         }
     }
@@ -253,15 +252,28 @@ impl BridgeAsyncWritebackRejectedWriteback {
 
 impl BridgeAsyncWritebackCommitReport {
     pub(crate) fn commit(
-        runtime_key: u64,
         runtime: &RuntimeBridge,
         staged: &StagedBridgeAsyncWritebackEffect,
     ) -> Self {
-        if let Some(prior_receipt) = prior_completion_receipt(
-            runtime_key,
-            staged.admitted().completion().completion_identity(),
-        ) {
-            return Self::Noop(BridgeAsyncNoopWriteback::duplicate(staged, &prior_receipt));
+        let completion = staged.admitted().completion();
+        if completion.request_identity().bridge_runtime_key() != runtime.signal_runtime_key {
+            return Self::Rejected(BridgeAsyncWritebackRejectedWriteback::new(
+                staged,
+                BridgeAsyncWritebackRejectedClass::CompletionOwnerMismatch,
+                "async completion belongs to a different Bridge runtime",
+                BridgeAsyncWritebackCounters::rejected(),
+            ));
+        }
+        let Some(mut retained_digest) = completion.writeback_receipt().try_reserve() else {
+            return Self::Rejected(BridgeAsyncWritebackRejectedWriteback::new(
+                staged,
+                BridgeAsyncWritebackRejectedClass::CompletionCommitUnavailable,
+                "async completion writeback could not reserve its receipt",
+                BridgeAsyncWritebackCounters::rejected(),
+            ));
+        };
+        if let Some(digest) = retained_digest.as_ref() {
+            return Self::Noop(BridgeAsyncNoopWriteback::duplicate(staged, digest));
         }
         match staged.loop_prevention().disposition() {
             BridgeWritebackLoopDisposition::CanonicalNoop => {
@@ -291,11 +303,7 @@ impl BridgeAsyncWritebackCommitReport {
         ) {
             Ok((outcome, receipt)) => match outcome.outcome_class() {
                 BridgeWritebackOutcomeClass::AuthoritativeCommit => {
-                    retain_completion_receipt(
-                        runtime_key,
-                        staged.admitted().completion().completion_identity(),
-                        &receipt,
-                    );
+                    *retained_digest = Some(receipt.share_authoritative_artifact_digest());
                     Self::Committed(BridgeAsyncCommittedWriteback::new(staged, receipt))
                 }
                 BridgeWritebackOutcomeClass::CanonicalNoop => {
@@ -337,35 +345,4 @@ impl BridgeAsyncWritebackCommitReport {
             _ => None,
         }
     }
-}
-
-static COMPLETION_RECEIPTS: OnceLock<Mutex<HashMap<u64, HashMap<String, TruthWritebackReceipt>>>> =
-    OnceLock::new();
-
-fn retain_completion_receipt(
-    runtime_key: u64,
-    completion_identity: &str,
-    receipt: &TruthWritebackReceipt,
-) {
-    let registry = COMPLETION_RECEIPTS.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut registry = registry
-        .lock()
-        .expect("async writeback completion registry should not poison");
-    registry
-        .entry(runtime_key)
-        .or_default()
-        .insert(completion_identity.to_owned(), receipt.clone());
-}
-
-fn prior_completion_receipt(
-    runtime_key: u64,
-    completion_identity: &str,
-) -> Option<TruthWritebackReceipt> {
-    let registry = COMPLETION_RECEIPTS.get_or_init(|| Mutex::new(HashMap::new()));
-    registry
-        .lock()
-        .expect("async writeback completion registry should not poison")
-        .get(&runtime_key)
-        .and_then(|entries| entries.get(completion_identity))
-        .cloned()
 }

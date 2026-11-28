@@ -140,8 +140,6 @@ impl super::execution_view::BridgeConditionalExecutionView<'_> {
                         | crate::error::BridgeDeliveryErrorKind::SnapshotReadFailure(_)
                         | crate::error::BridgeDeliveryErrorKind::SnapshotReadContractViolation(_)
                         | crate::error::BridgeDeliveryErrorKind::SnapshotIdentityMismatch
-                        | crate::error::BridgeDeliveryErrorKind::StructuralContractMismatch
-                        | crate::error::BridgeDeliveryErrorKind::StructuralPlanRejected
                         | crate::error::BridgeDeliveryErrorKind::SignalSinkRejection(_) => {
                             BridgeConditionalDenialKind::Delivery(error)
                         }

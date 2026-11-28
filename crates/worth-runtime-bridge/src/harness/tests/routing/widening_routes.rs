@@ -1,25 +1,22 @@
 use crate::facade::{
-    BridgeAspectRegistration, BridgeAspectRegistrationId, BridgeRouteRequest, MappingSelector,
-    SliceWideningPolicy, SubscriptionSliceKind, TruthDeltaSurfaceKind, TruthPatchScope,
+    BridgeAspectRegistration, BridgeAspectRegistrationId, MappingSelector, SliceWideningPolicy,
+    SubscriptionSliceKind, TruthDeltaSurfaceKind, TruthPatchScope,
 };
 
 use super::super::support::{
     build_runtime_with_aspects, committed_partition_patch, surface_widening_registration,
 };
-use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBridgeSink};
+use crate::harness::fixtures::RecordingSignalBridgeSink;
+use crate::relational_source::relational_test_support::empty_bridge_relational_source;
 
 #[test]
 fn registered_partition_widening_routes_deterministically() {
-    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
-    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
-
-    let left_source = InMemoryRelationalBridgeSource::default();
-    left_source.insert_committed_patch(committed_partition_patch(
+    let left_source = empty_bridge_relational_source();
+    let left_source_envelope = committed_partition_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
         crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-    ));
+    );
     let left_runtime = build_runtime_with_aspects(
         left_source,
         RecordingSignalBridgeSink::default(),
@@ -43,12 +40,12 @@ fn registered_partition_widening_routes_deterministically() {
         )],
     );
 
-    let right_source = InMemoryRelationalBridgeSource::default();
-    right_source.insert_committed_patch(committed_partition_patch(
+    let right_source = empty_bridge_relational_source();
+    let right_source_envelope = committed_partition_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
         crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-    ));
+    );
     let right_runtime = build_runtime_with_aspects(
         right_source,
         RecordingSignalBridgeSink::default(),
@@ -73,20 +70,10 @@ fn registered_partition_widening_routes_deterministically() {
     );
 
     let left_route = left_runtime
-        .plan_committed_patch(
-            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-a",
-            )),
-            execution,
-        )
+        .plan_envelope(left_source_envelope)
         .expect("partition widening route should plan");
     let right_route = right_runtime
-        .plan_committed_patch(
-            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-a",
-            )),
-            execution,
-        )
+        .plan_envelope(right_source_envelope)
         .expect("partition widening route should plan deterministically");
 
     assert_eq!(left_route.subscription_slices().len(), 1);

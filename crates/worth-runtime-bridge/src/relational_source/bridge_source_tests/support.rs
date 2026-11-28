@@ -6,8 +6,18 @@ use crate::facade::{
     SnapshotReadContract, SubscriptionSliceKind, TruthDeltaSurfaceKind, TruthPatchScope,
     TruthPatchTargetSelector,
 };
+use crate::facade::{
+    RelationalBridgeBranchHeadLease, RelationalBridgeObservationLease, TruthCommitIdentity,
+};
+use crate::relational_source::relational_test_support::{
+    aspect_key, create_entity_outcome_on_branch, fork_branch, AspectSchemaFixture,
+};
+use std::sync::Arc;
+use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{AspectKey, ScalarAspectType};
-use worth_relational::facade::config::CascadeDeletePolicy;
+use worth_relational::facade::{
+    config::CascadeDeletePolicy, history::BranchId, runtime::RelationalRuntime,
+};
 
 use super::super::RuntimeBridgeRelationalSource;
 
@@ -197,24 +207,172 @@ fn snapshot_read_contract(aspect_key: &AspectKey) -> SnapshotReadContract {
     SnapshotReadContract::scalar(aspect_key.clone(), ScalarAspectType::String)
 }
 
-pub(super) fn runtime_with_test_schema() -> worth_relational::facade::runtime::RelationalRuntime {
-    crate::relational_source::relational_test_support::runtime_with_declared_aspect_schema(
-        CascadeDeletePolicy::CascadeDeleteRelations,
-    )
+pub(super) use crate::relational_source::relational_test_support::{
+    linear_ancestry_work, runtime_with_test_schema,
+};
+
+#[derive(Clone)]
+pub struct RelationalFixture {
+    pub runtime: Arc<RelationalRuntime>,
+    pub source: RuntimeBridgeRelationalSource,
 }
 
-/// The ancestry work of one full walk from `head` down a linear history of
-/// `N` commits: `N` node visits, `N` catalog probes, and `N - 1` parent edges.
-///
-/// Counted from the head's ancestor closure, not from Relational's own
-/// selection, so an adapter that walks twice or walks less is caught.
-pub(super) fn linear_ancestry_work(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    head: worth_relational::facade::history::CommitId,
-) -> usize {
-    let commits = runtime
-        .history()
-        .ancestor_closure_by_commit_id_order(head)
-        .len();
-    3 * commits - 1
+impl RelationalFixture {
+    pub fn attach(runtime: RelationalRuntime, role: &str) -> Self {
+        let runtime = Arc::new(runtime);
+        let source = RuntimeBridgeRelationalSource::for_graph_role(runtime.clone(), role)
+            .expect("fixture graph role");
+        Self { runtime, source }
+    }
+}
+
+impl std::fmt::Debug for RelationalFixture {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(&self.source, formatter)
+    }
+}
+
+pub(crate) fn empty_bridge_relational_source() -> RuntimeBridgeRelationalSource {
+    RelationalFixture::attach(AspectSchemaFixture::default().build_runtime(), "model").source
+}
+
+pub struct NamedTruth {
+    truth: Arc<RelationalRuntime>,
+    pub source: RuntimeBridgeRelationalSource,
+}
+
+impl NamedTruth {
+    pub fn native(&self) -> RelationalFixture {
+        RelationalFixture {
+            runtime: self.truth.clone(),
+            source: self.source.clone(),
+        }
+    }
+
+    pub fn scenario_on_branch(
+        branch: &str,
+        name: &str,
+    ) -> (
+        crate::harness::fixtures::ScenarioRelationalTruth,
+        crate::facade::TruthCommitIdentity,
+    ) {
+        let truth = Self::new();
+        let serial = crate::snapshot::test_serial_request();
+        let execution = ExecutionRequest::serial(&serial);
+        let (_base, _observation) = truth.commit_name(execution, "base");
+        truth.fork_main(execution, branch);
+        let (commit, observation) = truth.commit_name_on_branch(execution, branch, name);
+        let head = truth.bind_head(branch);
+        (
+            crate::harness::fixtures::ScenarioRelationalTruth::new(
+                truth.native(),
+                commit.clone(),
+                vec![observation],
+                Some(head),
+            ),
+            commit,
+        )
+    }
+
+    pub fn new() -> Self {
+        let mut schema = AspectSchemaFixture::with_default_declared_aspects(
+            CascadeDeletePolicy::CascadeDeleteRelations,
+        );
+        schema
+            .entity_aspects
+            .retain(|binding| binding.aspect_key().as_str() == "name");
+        let native = RelationalFixture::attach(schema.build_runtime(), "model");
+        Self {
+            truth: native.runtime,
+            source: native.source,
+        }
+    }
+
+    pub(crate) fn commit_initial_name(
+        &self,
+        name: &str,
+    ) -> (TruthCommitIdentity, RelationalBridgeObservationLease) {
+        let serial = crate::snapshot::test_serial_request();
+        self.commit_name(ExecutionRequest::serial(&serial), name)
+    }
+
+    pub fn commit_name(
+        &self,
+        execution: ExecutionRequest<'_, '_>,
+        name: &str,
+    ) -> (TruthCommitIdentity, RelationalBridgeObservationLease) {
+        self.commit_name_on_branch(execution, "main", name)
+    }
+
+    pub fn fork_main(&self, execution: ExecutionRequest<'_, '_>, branch: &str) {
+        fork_branch(
+            &execution,
+            &self.truth,
+            BranchId(branch.to_owned()),
+            &BranchId("main".to_owned()),
+        );
+    }
+
+    pub fn commit_name_on_branch(
+        &self,
+        execution: ExecutionRequest<'_, '_>,
+        branch: &str,
+        name: &str,
+    ) -> (TruthCommitIdentity, RelationalBridgeObservationLease) {
+        let branch = BranchId(branch.to_owned());
+        let outcome =
+            create_entity_outcome_on_branch(&execution, &self.truth, name, branch.clone());
+        let branch = self.truth.branch_identity(&branch).unwrap();
+        let (_, basis) = self.source.observe_branch_basis(&branch).unwrap();
+        (
+            TruthCommitIdentity::from_relational_commit_id(outcome.commit.commit_id.0),
+            self.source.retain_branch_basis_for_bridge(&basis).unwrap(),
+        )
+    }
+
+    pub fn bind_main_head(&self) -> RelationalBridgeBranchHeadLease {
+        self.bind_head("main")
+    }
+
+    pub fn bind_head(&self, branch: &str) -> RelationalBridgeBranchHeadLease {
+        let branch = self
+            .truth
+            .branch_identity(&BranchId(branch.to_owned()))
+            .unwrap();
+        let (_, basis) = self.source.observe_branch_basis(&branch).unwrap();
+        self.source
+            .bind_branch_head_basis_for_bridge(&basis)
+            .unwrap()
+    }
+
+    pub fn mapping() -> BridgeMappingRegistration {
+        Self::mapping_for(SignalInvalidationScope::from_stable_name("signal.name"))
+    }
+
+    pub fn mapping_for(scope: SignalInvalidationScope) -> BridgeMappingRegistration {
+        let name = aspect_key("name");
+        BridgeMappingRegistration::new(
+            BridgeMappingId::from_stable_name("named-truth"),
+            TruthPatchScope::for_target(
+                MappingSelector::any(),
+                name.clone(),
+                TruthPatchTargetSelector::authoritative_aspect(),
+            ),
+            SnapshotReadContract::scalar(name, ScalarAspectType::String),
+            scope,
+            CoarseRoutingMode::Direct,
+        )
+    }
+
+    pub fn aspect_mapping() -> BridgeAspectRegistration {
+        let mapping = Self::mapping();
+        BridgeAspectRegistration::new(
+            BridgeAspectRegistrationId::from_stable_name("named-truth-aspect"),
+            mapping.truth_scope().clone(),
+            mapping.snapshot_read_contract().clone(),
+            TruthDeltaSurfaceKind::AuthoritativeAspect,
+            SubscriptionSliceKind::SignalAspect,
+            SliceWideningPolicy::Disallow,
+        )
+    }
 }

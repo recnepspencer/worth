@@ -32,17 +32,6 @@ pub(crate) enum RetainedCausalMappingDigestArtifact {
     RouteRecord,
     SourceFailureRecord,
     SourceMaterializationRecord,
-    StreamCheckpointRecord,
-    StreamProtocolCounters,
-    StreamReplayRecord,
-    StructuralBranchComparisonRecord,
-    StructuralRemapRecord,
-    WritebackAdmissionRecord,
-    WritebackExecutionRecord,
-    WritebackMappedFamilyInput,
-    WritebackMapperEnvelope,
-    WritebackMapperRecord,
-    WritebackReplayRecord,
 }
 
 impl RetainedCausalMappingDigestArtifact {
@@ -68,21 +57,6 @@ impl RetainedCausalMappingDigestArtifact {
             Self::SourceMaterializationRecord => {
                 "bridge-causal-retained-source-materialization-record"
             }
-            Self::StreamCheckpointRecord => "bridge-causal-retained-stream-checkpoint-record",
-            Self::StreamProtocolCounters => "bridge-stream-protocol-counters",
-            Self::StreamReplayRecord => "bridge-causal-retained-stream-replay-record",
-            Self::StructuralBranchComparisonRecord => {
-                "bridge-causal-retained-structural-branch-comparison-record"
-            }
-            Self::StructuralRemapRecord => "bridge-causal-retained-structural-remap-record",
-            Self::WritebackAdmissionRecord => "bridge-causal-retained-writeback-admission-record",
-            Self::WritebackExecutionRecord => "bridge-causal-retained-writeback-execution-record",
-            Self::WritebackMappedFamilyInput => {
-                "bridge-causal-retained-writeback-mapped-family-input"
-            }
-            Self::WritebackMapperEnvelope => "bridge-causal-retained-writeback-mapper-envelope",
-            Self::WritebackMapperRecord => "bridge-causal-retained-writeback-mapper-record",
-            Self::WritebackReplayRecord => "bridge-causal-retained-writeback-replay-record",
         }
     }
 }

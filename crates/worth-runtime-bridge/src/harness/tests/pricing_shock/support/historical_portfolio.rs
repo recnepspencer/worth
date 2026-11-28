@@ -4,12 +4,9 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_historical_prove
     policy: BridgeRuntimePolicy,
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingHistoricalProvenanceBundle {
-    let runtime = build_pricing_runtime_with_policy(
-        pricing_reference_source(),
-        RecordingSignalBridgeSink::default(),
-        policy,
-    );
     let scenario = generated_pricing_scenario();
+    let truth = RelationalPricing::reference(execution, &scenario, None);
+    let runtime = truth.runtime_with_policy(RecordingSignalBridgeSink::default(), policy);
     let shock = scenario
         .commit_attributions
         .get("commit:rubber-shock")
@@ -18,20 +15,20 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_historical_prove
     let main = runtime
         .evaluate(
             BridgeTruthViewEvaluationRequest::for_historical_commit(
-                crate::truth_identity_fixtures::truth_branch_fixture("main"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-main"),
+                TruthBranchIdentity::from_relational_branch_id("main"),
+                truth.rubber_commit.clone(),
             )
-            .with_read_packet(pricing_provenance_read_packet("rubber")),
+            .with_read_packet(truth.rubber_provenance_packet()),
             execution,
         )
         .expect("historical main provenance should materialize");
     let shock_eval = runtime
         .evaluate(
             BridgeTruthViewEvaluationRequest::for_historical_commit(
-                crate::truth_identity_fixtures::truth_branch_fixture("pricing-shock"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
+                TruthBranchIdentity::from_relational_branch_id("pricing-shock"),
+                truth.shock_commit.clone(),
             )
-            .with_read_packet(pricing_provenance_read_packet("rubber")),
+            .with_read_packet(truth.rubber_provenance_packet()),
             execution,
         )
         .expect("historical shock provenance should materialize");
@@ -39,14 +36,14 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_historical_prove
     let shock_provenance_texts = read_pricing_provenance_aspect_text_packet(&shock_eval);
 
     PricingHistoricalProvenanceBundle {
-        main_commit: crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-main"),
+        main_commit: truth.rubber_commit.clone(),
         main_snapshot: main.snapshot_identity().clone(),
         main_regime: main_provenance_texts.regime_text().to_owned(),
         main_external_factor_microunits: main_provenance_texts
             .external_factor_text()
             .parse()
             .expect("main external factor should parse"),
-        shock_commit: crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
+        shock_commit: truth.shock_commit.clone(),
         shock_snapshot: shock_eval.snapshot_identity().clone(),
         shock_regime: shock_provenance_texts.regime_text().to_owned(),
         shock_external_factor_microunits: shock_provenance_texts

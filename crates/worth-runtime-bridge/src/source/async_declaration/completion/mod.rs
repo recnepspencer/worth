@@ -11,6 +11,7 @@ mod supersession;
 mod supersession_evidence;
 mod supersession_receipt;
 mod supersession_rejection;
+mod writeback_receipt;
 
 pub(crate) use admission::map_owned_signal_report;
 

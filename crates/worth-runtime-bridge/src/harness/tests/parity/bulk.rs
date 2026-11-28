@@ -1,4 +1,5 @@
 use super::*;
+use crate::harness::fixtures::NamedTruth;
 
 #[test]
 fn bridge_bulk_planning_truth_is_invariant_across_diagnostics_tiers() {
@@ -6,54 +7,30 @@ fn bridge_bulk_planning_truth_is_invariant_across_diagnostics_tiers() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
+    let truth = NamedTruth::new();
+    let (commit_a, _observation_a) = truth.commit_name(execution, "alice");
+    let (commit_b, _observation_b) = truth.commit_name(execution, "bob");
     let request = BridgeBulkWorkloadRequest::new(vec![
-        BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-        BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
+        BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a)),
+        BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b)),
     ]);
+    let development_source = truth.source.clone();
 
-    let development_source = crate::harness::fixtures::InMemoryRelationalBridgeSource::default();
-    development_source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        name_field_key(),
-    ));
-    development_source.insert_committed_patch(committed_patch(
-        commit_b(),
-        patch_b(),
-        snapshot_b(),
-        name_field_key(),
-    ));
-    development_source.insert_snapshot(snapshot(snapshot_a(), "alice"));
-    development_source.insert_snapshot(snapshot(snapshot_b(), "bob"));
     let development = crate::facade::RuntimeBridge::builder()
         .with_relational_source(development_source)
         .with_signal_sink(crate::harness::fixtures::RecordingSignalBridgeSink::default())
         .with_policy(crate::facade::BridgeRuntimePolicy::development())
-        .register_mapping(registration())
+        .register_mapping(NamedTruth::mapping())
         .build()
         .expect("development runtime");
 
-    let operational_source = crate::harness::fixtures::InMemoryRelationalBridgeSource::default();
-    operational_source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        name_field_key(),
-    ));
-    operational_source.insert_committed_patch(committed_patch(
-        commit_b(),
-        patch_b(),
-        snapshot_b(),
-        name_field_key(),
-    ));
-    operational_source.insert_snapshot(snapshot(snapshot_a(), "alice"));
-    operational_source.insert_snapshot(snapshot(snapshot_b(), "bob"));
+    let operational_source = truth.source.clone();
+
     let operational = crate::facade::RuntimeBridge::builder()
         .with_relational_source(operational_source)
         .with_signal_sink(crate::harness::fixtures::RecordingSignalBridgeSink::default())
         .with_policy(crate::facade::BridgeRuntimePolicy::operational())
-        .register_mapping(registration())
+        .register_mapping(NamedTruth::mapping())
         .build()
         .expect("operational runtime");
 
@@ -110,78 +87,50 @@ fn parallel_preparation_admission_remains_parity_safe_with_serial_required_path(
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let admitted_source = crate::harness::fixtures::InMemoryRelationalBridgeSource::default();
-    admitted_source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        name_field_key(),
-    ));
-    admitted_source.insert_committed_patch(committed_patch(
-        commit_b(),
-        patch_b(),
-        snapshot_b(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    admitted_source.insert_snapshot(snapshot(snapshot_a(), "alice"));
-    admitted_source.insert_snapshot(snapshot(snapshot_b(), "bob"));
-    let admitted_sink = crate::harness::fixtures::RecordingSignalBridgeSink::default();
-    let admitted_runtime =
-        build_runtime(admitted_source, admitted_sink.clone(), vec![registration()]);
-
-    let admitted_result = admitted_runtime
-        .deliver_bulk_workload_plan(
-            admitted_runtime
+    let truth = NamedTruth::new();
+    let (commit_a, _observation_a) = truth.commit_name(execution, "alice");
+    let (commit_b, observation_b) = truth.commit_name(execution, "bob");
+    let snapshot = observation_b.snapshot_identity().clone();
+    let compare =
+        |request_a: BridgeRouteRequest, request_b: BridgeRouteRequest, expected_admission| {
+            let sink = crate::harness::fixtures::RecordingSignalBridgeSink::default();
+            let runtime = build_runtime(
+                truth.source.clone(),
+                sink.clone(),
+                vec![NamedTruth::mapping()],
+            );
+            let plan = runtime
                 .plan_bulk_workload(
                     BridgeBulkWorkloadRequest::new(vec![
-                        BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-                        BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
+                        BridgeBulkWorkloadSegment::new(request_a),
+                        BridgeBulkWorkloadSegment::new(request_b),
                     ]),
                     execution,
                 )
-                .expect("parallel-admitted bulk workload should plan"),
-            execution,
-        )
-        .expect("parallel-admitted bulk workload should deliver");
+                .expect("native workload should plan");
+            assert_eq!(
+                plan.execution_plan().parallel_admission().class(),
+                expected_admission
+            );
+            let result = runtime
+                .deliver_bulk_workload_plan(plan, execution)
+                .expect("native workload should deliver");
+            assert_eq!(result.summary().delivered_route_count(), 2);
+            assert_eq!(result.summary().delivered_target_count(), 2);
+            assert_eq!(sink.deliveries().len(), 2);
+        };
 
-    let serial_source = crate::harness::fixtures::InMemoryRelationalBridgeSource::default();
-    serial_source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    serial_source.insert_committed_patch(committed_patch(
-        commit_b(),
-        patch_b(),
-        snapshot_a(),
-        name_field_key(),
-    ));
-    serial_source.insert_snapshot(snapshot(snapshot_a(), "alice"));
-    let serial_sink = crate::harness::fixtures::RecordingSignalBridgeSink::default();
-    let serial_runtime = build_runtime(serial_source, serial_sink.clone(), vec![registration()]);
-
-    let serial_result = serial_runtime
-        .deliver_bulk_workload_plan(
-            serial_runtime
-                .plan_bulk_workload(
-                    BridgeBulkWorkloadRequest::new(vec![
-                        BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-                        BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
-                    ]),
-                    execution,
-                )
-                .expect("serial-required bulk workload should plan"),
-            execution,
-        )
-        .expect("serial-required bulk workload should deliver");
-
-    assert_eq!(admitted_result.summary().delivered_route_count(), 2);
-    assert_eq!(serial_result.summary().delivered_route_count(), 2);
-    assert_eq!(admitted_result.summary().delivered_target_count(), 2);
-    assert_eq!(serial_result.summary().delivered_target_count(), 2);
-    assert_eq!(admitted_sink.deliveries().len(), 2);
-    assert_eq!(serial_sink.deliveries().len(), 2);
+    compare(
+        BridgeRouteRequest::for_commit(commit_a.clone()),
+        BridgeRouteRequest::for_commit(commit_b.clone()),
+        crate::facade::BridgeParallelAdmissionClass::ParallelPreparationAdmitted,
+    );
+    let at_snapshot = |commit| {
+        crate::facade::RelationalCommittedPatchRequest::at_snapshot(commit, snapshot.clone()).into()
+    };
+    compare(
+        at_snapshot(commit_a),
+        at_snapshot(commit_b),
+        crate::facade::BridgeParallelAdmissionClass::SerialRequired,
+    );
 }

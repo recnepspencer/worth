@@ -22,8 +22,8 @@ impl PricingWorkloadCertificationBundle {
                 &self.promotion.promotion_session_identity,
             ),
             PricingCertificationBasisEntry::new(
-                "writeback_commit_replay_semantic_digest",
-                &self.writeback.commit_replay_semantic_digest,
+                "writeback_committed_effect_intent_digest",
+                &self.writeback.committed_effect_intent_digest,
             ),
         ]
     }
@@ -203,12 +203,12 @@ impl PricingWorkloadCertificationBundle {
                 self.writeback.noop_outcome_class,
             ),
             PricingCertificationBasisEntry::new(
-                "commit_replay_semantic_digest",
-                &self.writeback.commit_replay_semantic_digest,
+                "committed_effect_intent_digest",
+                &self.writeback.committed_effect_intent_digest,
             ),
             PricingCertificationBasisEntry::new(
-                "noop_replay_semantic_digest",
-                &self.writeback.noop_replay_semantic_digest,
+                "retried_effect_intent_digest",
+                &self.writeback.retried_effect_intent_digest,
             ),
         ]
     }

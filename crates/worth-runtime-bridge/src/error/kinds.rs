@@ -12,9 +12,6 @@ pub enum BridgeBuildErrorKind {
     AmbiguousAspectRegistration,
     DuplicateSourceDeclaration,
     AmbiguousSourceDeclaration,
-    DuplicateStructuralDeclaration,
-    AmbiguousStructuralDeclaration,
-    StructuralComparisonModeMismatch,
     SourceCapabilityMismatch,
     BuilderConfigurationConflict,
     InvalidFineGrainedWideningPolicy,
@@ -59,8 +56,6 @@ pub enum BridgeDeliveryErrorKind {
     SnapshotReadFailure(crate::snapshot::BridgeSnapshotReadError),
     SnapshotReadContractViolation(crate::snapshot::BridgeSnapshotReadError),
     SnapshotIdentityMismatch,
-    StructuralContractMismatch,
-    StructuralPlanRejected,
     SignalSinkRejection(crate::adapter::SignalBridgeSinkErrorKind),
 }
 
@@ -71,7 +66,6 @@ pub enum BridgeReplayErrorKind {
     ObservationRead(worth_relational::facade::change_source::RelationalObservationReadDenial),
     ReplayArtifactsDisabled,
     CanonicalArtifactCoherenceFailure,
-    StructuralReplayBasisTruncated,
     BulkPlanReplayMismatch,
     HistoricalEvaluationDeclarationMismatch,
     HistoricalEvaluationPolicyMismatch,
@@ -88,24 +82,6 @@ pub enum BridgeReplayErrorKind {
 }
 
 pub type BridgeReplayError = BridgeTypedError<BridgeReplayErrorKind>;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BridgeStreamErrorKind {
-    UnsupportedConsumerShape,
-    UnsupportedResumeMode,
-    ProtocolVersionMismatch,
-    CheckpointContractMismatch,
-    CheckpointStreamMismatch,
-    CheckpointTruncated,
-    IllegalCoalescingBoundary,
-    NonIdempotentDuplicateObservation,
-    BackpressurePolicyViolation,
-    StreamReplayMismatch,
-    StreamDeliveryRejected,
-    InvalidStreamMaterial,
-}
-
-pub type BridgeStreamError = BridgeTypedError<BridgeStreamErrorKind>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeContinuityErrorKind {
@@ -137,16 +113,13 @@ pub type BridgeSpeculationError = BridgeTypedError<BridgeSpeculationErrorKind>;
 pub enum BridgeWritebackErrorKind {
     WritebackNotRequested,
     PolicyRejected,
-    StrategyUnavailable,
     FamilyBindingMismatch,
     StrategyDescriptorMismatch,
     IdempotenceBasisMismatch,
-    CausalityEffectMismatch,
     StaleTruthBasis,
     InvariantRejected,
     StrategyFailed,
     StrategyPanicked,
-    ReplayMismatch,
     AuthorityDenied,
     PreviewWritebackRejected,
 }

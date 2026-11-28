@@ -1,319 +1,261 @@
+use super::relational_provenance::provenance_packet;
 use super::*;
+use crate::facade::{
+    RelationalBridgeBranchHeadLease, RelationalBridgeObservationLease, SnapshotReadContract,
+};
+use crate::harness::fixtures::RelationalFixture;
+use crate::relational_source::relational_test_support::{
+    aspect_key, bridge_entity_identity, field_key,
+};
+use worth_foundational::facade::{aspects, AspectBinding, AspectIdentity, ScalarAspectType};
+use worth_relational::facade::{identity::EntityId, schema::DeclaredAspectContractBinding};
 
-pub(in crate::harness::tests::pricing_shock) fn pricing_mapping(
-    component: &str,
-    signal_scope: SignalInvalidationScope,
-) -> BridgeMappingRegistration {
+use crate::adapter::RelationalBridgeSource;
+use crate::builder::{
+    PresentCommittedPatchSource, PresentMappingRegistrations, PresentSignalSink,
+    PresentSnapshotReadSource, PresentTruthBranchHeadSource,
+};
+
+use super::capture::PricingFaultSource;
+
+type PricingBuilder = RuntimeBridgeBuilder<
+    PresentCommittedPatchSource,
+    PresentSnapshotReadSource,
+    PresentSignalSink,
+    PresentTruthBranchHeadSource,
+    PresentMappingRegistrations,
+>;
+
+pub(in crate::harness::tests::pricing_shock) struct RelationalPricing {
+    pub(in crate::harness::tests::pricing_shock::support) native: RelationalFixture,
+    pub(in crate::harness::tests::pricing_shock::support) steel: EntityId,
+    pub(in crate::harness::tests::pricing_shock::support) rubber: EntityId,
+    pub steel_commit: TruthCommitIdentity,
+    pub rubber_commit: TruthCommitIdentity,
+    pub shock_commit: TruthCommitIdentity,
+    pub(in crate::harness::tests::pricing_shock::support) steel_observation:
+        RelationalBridgeObservationLease,
+    pub(in crate::harness::tests::pricing_shock::support) main_head:
+        RelationalBridgeBranchHeadLease,
+    pub(in crate::harness::tests::pricing_shock::support) shock_head:
+        RelationalBridgeBranchHeadLease,
+}
+
+impl RelationalPricing {
+    pub fn into_scenario(self) -> crate::harness::fixtures::ScenarioRelationalTruth {
+        crate::harness::fixtures::ScenarioRelationalTruth::new_with_heads(
+            self.native,
+            self.steel_commit,
+            vec![self.steel_observation],
+            vec![self.main_head, self.shock_head],
+        )
+    }
+
+    pub fn steel_snapshot(&self) -> &TruthSnapshotIdentity {
+        self.steel_observation.snapshot_identity()
+    }
+
+    pub fn main_snapshot(&self) -> &TruthSnapshotIdentity {
+        self.main_head.snapshot_identity()
+    }
+
+    pub fn shock_snapshot(&self) -> &TruthSnapshotIdentity {
+        self.shock_head.snapshot_identity()
+    }
+
+    pub fn rubber_read_packet(&self) -> SnapshotReadPacket {
+        self.cost_packet(PricingMaterial::Rubber)
+    }
+
+    pub fn cost_packet(&self, material: PricingMaterial) -> SnapshotReadPacket {
+        SnapshotReadPacket::new(vec![SnapshotReadRequest::for_relational_record(
+            bridge_entity_identity(self.component(material)),
+            SnapshotReadContract::new(pricing_aspect().contract),
+        )])
+    }
+
+    pub(in crate::harness::tests::pricing_shock::support) fn component(
+        &self,
+        material: PricingMaterial,
+    ) -> EntityId {
+        match material {
+            PricingMaterial::Steel => self.steel,
+            PricingMaterial::Rubber => self.rubber,
+            _ => panic!("the two-component pricing fixture does not author {material:?}"),
+        }
+    }
+
+    pub fn rubber_provenance_packet(&self) -> SnapshotReadPacket {
+        provenance_packet(bridge_entity_identity(self.rubber))
+    }
+
+    pub fn preview_declaration(&self) -> BridgePreviewSessionDeclaration {
+        let branch = TruthBranchIdentity::from_relational_branch_id("pricing-shock");
+        BridgePreviewSessionDeclaration::new(
+            BridgePreviewSessionDeclarationIdentity::admit_bridge_owned(
+                "pricing:preview-declaration",
+            ),
+            BridgeRequestKind::Preview,
+            BridgeSpeculativeBranchBinding::new(
+                BridgeSpeculativeBranchBindingIdentity::admit_bridge_owned("pricing:binding"),
+                branch.clone(),
+                BridgeSignalBranchIdentity::admit_bridge_owned("signal:pricing-shock"),
+            ),
+            crate::facade::BridgePreviewSessionBasis::new(
+                BridgeTruthViewSelector::branch_snapshot(branch, self.shock_snapshot().clone()),
+                BridgeSourceCapabilitySet::new(vec![
+                    BridgeSourceCapability::SnapshotRead,
+                    BridgeSourceCapability::BranchRead,
+                ]),
+                crate::facade::BridgePreviewRetainedArtifactSchema::PreviewLifecycleArtifactsV1,
+            ),
+        )
+    }
+}
+
+pub(super) fn pricing_aspect() -> DeclaredAspectContractBinding {
+    let shape = aspects()
+        .struct_fields()
+        .required("usd", ScalarAspectType::String)
+        .finish()
+        .unwrap();
+    DeclaredAspectContractBinding {
+        binding: AspectBinding::EntityField {
+            field: field_key("cost"),
+        },
+        contract: aspects()
+            .contract()
+            .for_key(aspect_key("cost"))
+            .identified_by(AspectIdentity(1))
+            .at_revision(aspects().vocabulary().revision(1))
+            .struct_aspect(shape),
+    }
+}
+
+fn cost_mapping(entity: EntityId, scope: &str) -> BridgeMappingRegistration {
     BridgeMappingRegistration::new(
-        BridgeMappingId::admit_bridge_owned(format!(
-            "pricing:{component}:{}",
-            signal_scope.as_str().replace(':', "-")
-        )),
+        BridgeMappingId::from_stable_name(scope),
         TruthPatchScope::for_entity_field(
-            MappingSelector::exact(format!("component:{component}")),
-            worth_foundational::facade::AspectKey::new("cost").expect("valid native aspect key"),
-            worth_foundational::facade::FieldKey::new("usd".to_owned())
-                .expect("valid native field key"),
+            MappingSelector::exact(bridge_entity_identity(entity).bridge_entity_identity()),
+            aspect_key("cost"),
+            field_key("usd"),
         ),
-        crate::snapshot::SnapshotReadContract::scalar(
-            worth_foundational::facade::AspectKey::new("cost").expect("valid native aspect key"),
-            worth_foundational::facade::ScalarAspectType::String,
-        ),
-        signal_scope,
+        SnapshotReadContract::new(pricing_aspect().contract),
+        SignalInvalidationScope::admit_bridge_owned(scope),
         CoarseRoutingMode::Direct,
     )
 }
 
-pub(in crate::harness::tests::pricing_shock) fn pricing_patch(
-    envelope_identity: crate::input::envelope::BridgeCommittedPatchEnvelopeIdentity,
-    component: &str,
-) -> BridgeCommittedPatchEnvelope {
-    BridgeCommittedPatchEnvelope::new(
-        envelope_identity,
-        vec![BridgeCommittedPatchItem::with_target(
-            format!("component:{component}"),
+impl RelationalPricing {
+    pub fn mappings(&self) -> Vec<BridgeMappingRegistration> {
+        vec![
+            cost_mapping(self.steel, "price:bicycle"),
+            cost_mapping(self.steel, "price:wheelbarrow"),
+            cost_mapping(self.rubber, "price:scooter"),
+        ]
+    }
+
+    fn builder<S: RelationalBridgeSource + Clone>(
+        &self,
+        source: S,
+        sink: RecordingSignalBridgeSink,
+        policy: BridgeRuntimePolicy,
+    ) -> PricingBuilder {
+        RuntimeBridgeBuilder::new()
+            .with_truth_source(source.clone())
+            .with_truth_branch_head_source(source)
+            .with_compute_sink(sink)
+            .with_policy(policy)
+            .register_mapping(cost_mapping(self.steel, "price:bicycle"))
+            .register_mapping(cost_mapping(self.steel, "price:wheelbarrow"))
+            .register_mapping(cost_mapping(self.rubber, "price:scooter"))
+    }
+
+    pub fn runtime(&self, sink: RecordingSignalBridgeSink) -> RuntimeBridge {
+        self.runtime_with_policy(sink, BridgeRuntimePolicy::development())
+    }
+
+    pub fn runtime_with_policy(
+        &self,
+        sink: RecordingSignalBridgeSink,
+        policy: BridgeRuntimePolicy,
+    ) -> RuntimeBridge {
+        self.builder(self.native.source.clone(), sink, policy)
+            .build()
+            .expect("native pricing runtime")
+    }
+
+    pub fn aspect_runtime(&self, policy: BridgeRuntimePolicy) -> RuntimeBridge {
+        let mapping = cost_mapping(self.steel, "price:bicycle");
+        let aspect = BridgeAspectRegistration::new(
+            BridgeAspectRegistrationId::admit_bridge_owned("pricing-steel-usd-field"),
+            mapping.truth_scope().clone(),
+            mapping.snapshot_read_contract().clone(),
+            TruthDeltaSurfaceKind::EntityField,
+            SubscriptionSliceKind::SignalField,
+            SliceWideningPolicy::Disallow,
+        );
+        RuntimeBridgeBuilder::new()
+            .with_truth_source(self.native.source.clone())
+            .with_truth_branch_head_source(self.native.source.clone())
+            .with_compute_sink(RecordingSignalBridgeSink::default())
+            .with_policy(policy)
+            .register_mapping(mapping)
+            .register_aspect_mapping(aspect)
+            .build()
+            .expect("native pricing aspect runtime")
+    }
+
+    pub fn writeback_runtime(
+        &self,
+        policy: BridgeRuntimePolicy,
+        authority: impl TruthWritebackAuthority,
+    ) -> RuntimeBridge {
+        self.builder(
+            self.native.source.clone(),
+            RecordingSignalBridgeSink::default(),
+            policy,
+        )
+        .with_writeback_authority(authority)
+        .build()
+        .expect("native pricing runtime with writeback authority")
+    }
+
+    pub fn fault_runtime(&self, fault: PricingFault, policy: BridgeRuntimePolicy) -> RuntimeBridge {
+        self.builder(
+            PricingFaultSource(self.native.source.clone(), fault),
+            RecordingSignalBridgeSink::default(),
+            policy,
+        )
+        .build()
+        .expect("native pricing runtime with a selected source fault")
+    }
+
+    pub fn cost_item(&self, material: PricingMaterial) -> BridgeCommittedPatchItem {
+        BridgeCommittedPatchItem::with_relational_record_target(
+            bridge_entity_identity(self.component(material)),
             crate::facade::BridgeCommittedPatchTarget::entity_field_path(
                 worth_foundational::facade::AspectLocator::new(
                     worth_foundational::facade::LocatorAuthority::Authoritative,
-                    worth_foundational::facade::AspectKey::new("cost")
-                        .expect("valid bridge patch aspect key"),
+                    aspect_key("cost"),
                 ),
-                worth_foundational::facade::CanonicalFieldPath::single(
-                    worth_foundational::facade::FieldKey::new("usd".to_owned())
-                        .expect("valid foundational field key"),
-                ),
+                worth_foundational::facade::CanonicalFieldPath::single(field_key("usd")),
             ),
-        )],
-    )
-    .expect("pricing committed patch envelope should construct")
-}
-
-pub(in crate::harness::tests::pricing_shock) fn pricing_patch_items(
-    envelope_identity: crate::input::envelope::BridgeCommittedPatchEnvelopeIdentity,
-    items: Vec<BridgeCommittedPatchItem>,
-) -> BridgeCommittedPatchEnvelope {
-    BridgeCommittedPatchEnvelope::new(envelope_identity, items)
-        .expect("pricing committed patch envelope should construct")
-}
-
-pub(in crate::harness::tests::pricing_shock) fn pricing_patch_envelope_identity(
-    branch_identity: TruthBranchIdentity,
-    commit_identity: TruthCommitIdentity,
-    patch_identity: TruthPatchIdentity,
-    snapshot_identity: TruthSnapshotIdentity,
-) -> crate::input::envelope::BridgeCommittedPatchEnvelopeIdentity {
-    crate::input::envelope::BridgeCommittedPatchEnvelopeIdentity::new(
-        commit_identity,
-        patch_identity,
-        snapshot_identity,
-        branch_identity,
-    )
-}
-
-pub(in crate::harness::tests::pricing_shock) fn build_pricing_runtime(
-    source: InMemoryRelationalBridgeSource,
-    sink: RecordingSignalBridgeSink,
-) -> RuntimeBridge {
-    build_pricing_runtime_with_policy(source, sink, BridgeRuntimePolicy::development())
-}
-
-pub(in crate::harness::tests::pricing_shock) fn build_pricing_runtime_with_policy(
-    source: InMemoryRelationalBridgeSource,
-    sink: RecordingSignalBridgeSink,
-    policy: BridgeRuntimePolicy,
-) -> RuntimeBridge {
-    RuntimeBridgeBuilder::new()
-        .with_truth_source(source.clone())
-        .with_truth_branch_head_source(source)
-        .with_compute_sink(sink)
-        .with_policy(policy)
-        .register_mapping(pricing_mapping(
-            "steel",
-            SignalInvalidationScope::admit_bridge_owned("price:bicycle"),
-        ))
-        .register_mapping(pricing_mapping(
-            "steel",
-            SignalInvalidationScope::admit_bridge_owned("price:wheelbarrow"),
-        ))
-        .register_mapping(pricing_mapping(
-            "rubber",
-            SignalInvalidationScope::admit_bridge_owned("price:scooter"),
-        ))
-        .build()
-        .expect("pricing runtime should build")
-}
-
-pub(in crate::harness::tests::pricing_shock) fn build_pricing_runtime_with_policy_and_writeback_authority<
-    A,
->(
-    source: InMemoryRelationalBridgeSource,
-    sink: RecordingSignalBridgeSink,
-    policy: BridgeRuntimePolicy,
-    authority: A,
-) -> RuntimeBridge
-where
-    A: TruthWritebackAuthority,
-{
-    RuntimeBridgeBuilder::new()
-        .with_truth_source(source.clone())
-        .with_truth_branch_head_source(source)
-        .with_compute_sink(sink)
-        .with_policy(policy)
-        .with_writeback_authority(authority)
-        .register_mapping(pricing_mapping(
-            "steel",
-            SignalInvalidationScope::admit_bridge_owned("price:bicycle"),
-        ))
-        .register_mapping(pricing_mapping(
-            "steel",
-            SignalInvalidationScope::admit_bridge_owned("price:wheelbarrow"),
-        ))
-        .register_mapping(pricing_mapping(
-            "rubber",
-            SignalInvalidationScope::admit_bridge_owned("price:scooter"),
-        ))
-        .build()
-        .expect("pricing runtime with writeback authority should build")
-}
-
-pub(in crate::harness::tests::pricing_shock) fn build_pricing_runtime_with_aspects(
-    source: InMemoryRelationalBridgeSource,
-    sink: RecordingSignalBridgeSink,
-    policy: BridgeRuntimePolicy,
-) -> RuntimeBridge {
-    RuntimeBridgeBuilder::new()
-        .with_truth_source(source.clone())
-        .with_truth_branch_head_source(source)
-        .with_compute_sink(sink)
-        .with_policy(policy)
-        .register_mapping(pricing_mapping(
-            "steel",
-            SignalInvalidationScope::admit_bridge_owned("price:bicycle"),
-        ))
-        .register_mapping(pricing_mapping(
-            "rubber",
-            SignalInvalidationScope::admit_bridge_owned("price:scooter"),
-        ))
-        .register_aspect_mapping(pricing_field_aspect_registration("steel"))
-        .register_aspect_mapping(pricing_field_aspect_registration("rubber"))
-        .build()
-        .expect("pricing runtime with aspects should build")
-}
-
-pub(in crate::harness::tests::pricing_shock) fn build_high_fanout_pricing_runtime(
-    source: InMemoryRelationalBridgeSource,
-    sink: RecordingSignalBridgeSink,
-    steel_product_count: usize,
-) -> RuntimeBridge {
-    build_high_fanout_pricing_runtime_with_policy(
-        source,
-        sink,
-        steel_product_count,
-        BridgeRuntimePolicy::development(),
-    )
-}
-
-pub(in crate::harness::tests::pricing_shock) fn build_high_fanout_pricing_runtime_with_policy(
-    source: InMemoryRelationalBridgeSource,
-    sink: RecordingSignalBridgeSink,
-    steel_product_count: usize,
-    policy: BridgeRuntimePolicy,
-) -> RuntimeBridge {
-    let mut builder = RuntimeBridgeBuilder::new()
-        .with_truth_source(source.clone())
-        .with_truth_branch_head_source(source)
-        .with_compute_sink(sink)
-        .with_policy(policy)
-        .register_mapping(pricing_mapping(
-            "steel",
-            SignalInvalidationScope::admit_bridge_owned("price:product-000"),
-        ));
-
-    for product_idx in 1..steel_product_count {
-        builder = builder.register_mapping(pricing_mapping(
-            "steel",
-            SignalInvalidationScope::admit_bridge_owned(format!("price:product-{product_idx:03}")),
-        ));
+        )
     }
 
-    builder
-        .register_mapping(pricing_mapping(
-            "rubber",
-            SignalInvalidationScope::admit_bridge_owned("price:scooter"),
-        ))
-        .build()
-        .expect("high-fanout pricing runtime should build")
-}
-
-pub(in crate::harness::tests::pricing_shock) fn pricing_preview_declaration(
-) -> BridgePreviewSessionDeclaration {
-    BridgePreviewSessionDeclaration::new(
-        BridgePreviewSessionDeclarationIdentity::admit_bridge_owned("pricing:preview-declaration"),
-        BridgeRequestKind::Preview,
-        BridgeSpeculativeBranchBinding::new(
-            BridgeSpeculativeBranchBindingIdentity::admit_bridge_owned("pricing:binding"),
-            crate::truth_identity_fixtures::truth_branch_fixture("pricing-shock"),
-            BridgeSignalBranchIdentity::admit_bridge_owned("signal:pricing-shock"),
-        ),
-        crate::facade::BridgePreviewSessionBasis::new(
-            BridgeTruthViewSelector::branch_snapshot(
-                crate::truth_identity_fixtures::truth_branch_fixture("pricing-shock"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-shock"),
-            ),
-            BridgeSourceCapabilitySet::new(vec![
-                BridgeSourceCapability::SnapshotRead,
-                BridgeSourceCapability::BranchRead,
-            ]),
-            crate::facade::BridgePreviewRetainedArtifactSchema::PreviewLifecycleArtifactsV1,
-        ),
-    )
-}
-
-pub(in crate::harness::tests::pricing_shock) fn pricing_component_read_packet(
-    component: &str,
-) -> SnapshotReadPacket {
-    SnapshotReadPacket::new(vec![SnapshotReadRequest::for_coarse(
-        format!("component:{component}"),
-        crate::snapshot::SnapshotReadContract::scalar(
-            worth_foundational::facade::AspectKey::new("cost").expect("valid snapshot aspect key"),
-            worth_foundational::facade::ScalarAspectType::String,
-        ),
-    )])
-}
-
-pub(in crate::harness::tests::pricing_shock) fn pricing_provenance_read_request(
-    component: &str,
-    field: &str,
-) -> SnapshotReadRequest {
-    SnapshotReadRequest::for_coarse(
-        format!("component:{component}"),
-        crate::snapshot::SnapshotReadContract::scalar(
-            worth_foundational::facade::AspectKey::new(format!("provenance:{field}"))
-                .expect("valid provenance aspect key"),
-            worth_foundational::facade::ScalarAspectType::String,
-        ),
-    )
-}
-
-pub(in crate::harness::tests::pricing_shock) fn pricing_provenance_read_packet(
-    component: &str,
-) -> SnapshotReadPacket {
-    SnapshotReadPacket::new(vec![
-        SnapshotReadRequest::for_coarse(
-            format!("component:{component}"),
-            crate::snapshot::SnapshotReadContract::scalar(
-                worth_foundational::facade::AspectKey::new("provenance:regime")
-                    .expect("valid snapshot aspect key"),
-                worth_foundational::facade::ScalarAspectType::String,
-            ),
-        ),
-        SnapshotReadRequest::for_coarse(
-            format!("component:{component}"),
-            crate::snapshot::SnapshotReadContract::scalar(
-                worth_foundational::facade::AspectKey::new("provenance:external-factor")
-                    .expect("valid snapshot aspect key"),
-                worth_foundational::facade::ScalarAspectType::String,
-            ),
-        ),
-        SnapshotReadRequest::for_coarse(
-            format!("component:{component}"),
-            crate::snapshot::SnapshotReadContract::scalar(
-                worth_foundational::facade::AspectKey::new("provenance:factor-delta")
-                    .expect("valid snapshot aspect key"),
-                worth_foundational::facade::ScalarAspectType::String,
-            ),
-        ),
-        SnapshotReadRequest::for_coarse(
-            format!("component:{component}"),
-            crate::snapshot::SnapshotReadContract::scalar(
-                worth_foundational::facade::AspectKey::new("provenance:trend-delta")
-                    .expect("valid snapshot aspect key"),
-                worth_foundational::facade::ScalarAspectType::String,
-            ),
-        ),
-        SnapshotReadRequest::for_coarse(
-            format!("component:{component}"),
-            crate::snapshot::SnapshotReadContract::scalar(
-                worth_foundational::facade::AspectKey::new("provenance:jump-delta")
-                    .expect("valid snapshot aspect key"),
-                worth_foundational::facade::ScalarAspectType::String,
-            ),
-        ),
-        SnapshotReadRequest::for_coarse(
-            format!("component:{component}"),
-            crate::snapshot::SnapshotReadContract::scalar(
-                worth_foundational::facade::AspectKey::new("provenance:shock-delta")
-                    .expect("valid snapshot aspect key"),
-                worth_foundational::facade::ScalarAspectType::String,
-            ),
-        ),
-        SnapshotReadRequest::for_coarse(
-            format!("component:{component}"),
-            crate::snapshot::SnapshotReadContract::scalar(
-                worth_foundational::facade::AspectKey::new("provenance:shock-multiplier")
-                    .expect("valid snapshot aspect key"),
-                worth_foundational::facade::ScalarAspectType::String,
-            ),
-        ),
-    ])
+    pub fn fanout_runtime(&self, sink: RecordingSignalBridgeSink) -> RuntimeBridge {
+        let mut builder = RuntimeBridgeBuilder::new()
+            .with_truth_source(self.native.source.clone())
+            .with_truth_branch_head_source(self.native.source.clone())
+            .with_compute_sink(sink)
+            .register_mapping(cost_mapping(self.steel, "price:product-000"));
+        for product in 1..100 {
+            builder = builder.register_mapping(cost_mapping(
+                self.steel,
+                &format!("price:product-{product:03}"),
+            ));
+        }
+        builder.build().expect("native fanout runtime")
+    }
 }

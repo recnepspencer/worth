@@ -246,12 +246,7 @@ pub(super) fn owner_for_family(family: CausalEvidenceFamily) -> CausalEvidenceOw
         | CausalEvidenceFamily::BridgeSourceMaterialization
         | CausalEvidenceFamily::BridgeSourceFailure
         | CausalEvidenceFamily::BridgeContinuity
-        | CausalEvidenceFamily::BridgeStructural
-        | CausalEvidenceFamily::BridgeStream
-        | CausalEvidenceFamily::BridgePreview
-        | CausalEvidenceFamily::BridgeWriteback
-        | CausalEvidenceFamily::BridgeMapper
-        | CausalEvidenceFamily::BridgeReplay => CausalEvidenceOwner::RuntimeBridge,
+        | CausalEvidenceFamily::BridgePreview => CausalEvidenceOwner::RuntimeBridge,
     }
 }
 

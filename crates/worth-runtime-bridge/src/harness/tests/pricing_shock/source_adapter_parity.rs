@@ -23,12 +23,11 @@ impl PricingSourceProbeEvidence {
 }
 
 fn execute_pricing_harness_source_probe(
-    policy: BridgeRuntimePolicy,
+    fixture: &worth_harness::facade::ScenarioFixture<BridgeHarnessFixture>,
     profile: ExecutionProfile,
     request_name: &str,
 ) -> PricingSourceProbeEvidence {
     let adapter = BridgeHarnessAdapter;
-    let fixture = pricing_harness_fixture("bridge-pricing-harness-parity", policy);
     let mut runtime = adapter
         .create_runtime()
         .expect("pricing harness runtime should construct");
@@ -36,12 +35,12 @@ fn execute_pricing_harness_source_probe(
         .prepare_runtime(&mut runtime, &profile)
         .expect("pricing harness prepare should succeed");
     adapter
-        .load_fixture(&mut runtime, &fixture)
+        .load_fixture(&mut runtime, fixture)
         .expect("pricing harness fixture should load");
     adapter
         .execute(
             &mut runtime,
-            &fixture,
+            fixture,
             &ExecutionRequest::target(
                 request_name,
                 BridgeHarnessTargetId::source_materialize(
@@ -65,7 +64,8 @@ fn execute_pricing_harness_source_probe(
 }
 
 fn capture_pricing_bundle_with_harness_profile(
-    policy: BridgeRuntimePolicy,
+    fixture: &worth_harness::facade::ScenarioFixture<BridgeHarnessFixture>,
+    truth: &RelationalPricing,
     preview_session_identity: BridgePreviewSessionIdentity,
     profile: ExecutionProfile,
     request_name: &str,
@@ -75,12 +75,13 @@ fn capture_pricing_bundle_with_harness_profile(
     PricingSourceProbeEvidence,
 ) {
     (
-        capture_pricing_workload_certification_bundle(
-            policy,
+        capture_pricing_workload_certification_bundle_at_truth(
+            fixture.fixture.policy(),
+            truth,
             preview_session_identity,
             resource_request,
         ),
-        execute_pricing_harness_source_probe(policy, profile, request_name),
+        execute_pricing_harness_source_probe(fixture, profile, request_name),
     )
 }
 
@@ -90,16 +91,24 @@ fn pricing_shock_suite_25_through_27_parity_holds_across_direct_and_wrapped_sour
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+    let scenario = generated_pricing_scenario();
+    let truth = RelationalPricing::reference(resource_request, &scenario, None);
+    let fixture = pricing_harness_fixture(
+        "bridge-pricing-harness-parity",
+        BridgeRuntimePolicy::development(),
+    );
 
     let (direct_bundle, direct_probe) = capture_pricing_bundle_with_harness_profile(
-        BridgeRuntimePolicy::development(),
+        &fixture,
+        &truth,
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:adapter-direct"),
         ExecutionProfile::development("pricing-direct"),
         "pricing-source-direct",
         resource_request,
     );
     let (wrapped_bundle, wrapped_probe) = capture_pricing_bundle_with_harness_profile(
-        BridgeRuntimePolicy::development(),
+        &fixture,
+        &truth,
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:adapter-direct"),
         ExecutionProfile::development("pricing-wrapped")
             .with_metadata("source_adapter_shape", "wrapped"),
@@ -145,10 +154,17 @@ fn pricing_shock_suite_25_through_27_parity_holds_across_source_and_policy_build
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+    let scenario = generated_pricing_scenario();
+    let truth = RelationalPricing::reference(resource_request, &scenario, None);
+    let fixture = pricing_harness_fixture(
+        "bridge-pricing-harness-parity",
+        BridgeRuntimePolicy::development(),
+    );
 
     let baseline_profile = ExecutionProfile::development("pricing-load-order-baseline");
     let (baseline_bundle, baseline_probe) = capture_pricing_bundle_with_harness_profile(
-        BridgeRuntimePolicy::development(),
+        &fixture,
+        &truth,
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:load-order"),
         baseline_profile,
         "pricing-load-order-baseline",
@@ -169,7 +185,8 @@ fn pricing_shock_suite_25_through_27_parity_holds_across_source_and_policy_build
 
     for (index, profile) in variant_profiles.into_iter().enumerate() {
         let (candidate_bundle, candidate_probe) = capture_pricing_bundle_with_harness_profile(
-            BridgeRuntimePolicy::development(),
+            &fixture,
+            &truth,
             BridgePreviewSessionIdentity::admit_bridge_owned("pricing:load-order"),
             profile,
             &format!("pricing-load-order-{index}"),

@@ -2,9 +2,8 @@ use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
 
-use crate::snapshot::BridgeTruthViewSelector;
+use crate::snapshot::{BridgeTruthViewSelector, SnapshotReadContract};
 use crate::source::BridgeSourceCapabilitySet;
-use crate::structural::AdmittedStructuralComparisonContract;
 
 use super::BridgeRequestKind;
 
@@ -116,26 +115,32 @@ impl BridgePreviewRequestShapeBasis {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgePreviewStructuralBasis {
     structural_contract_digest: Arc<str>,
-    validated_declaration_digest: Arc<str>,
+    truth_view_basis_digest: Arc<str>,
     canonical_basis: Arc<str>,
     digest: Arc<str>,
 }
 
 impl BridgePreviewStructuralBasis {
-    pub fn from_admitted_contract(contract: &AdmittedStructuralComparisonContract) -> Self {
-        let structural_contract_digest = Arc::<str>::from(contract.digest());
-        let validated_declaration_digest =
-            Arc::<str>::from(contract.validated_declaration().digest());
+    /// Declares the read shape and truth view on which structural reuse depends.
+    pub fn from_snapshot_contract(
+        contract: &SnapshotReadContract,
+        truth_view: &BridgeTruthViewSelector,
+    ) -> Self {
+        let structural_contract_digest: Arc<str> = Arc::from(format!(
+            "sha256:{:x}",
+            Sha256::digest(contract.canonical_basis())
+        ));
+        let truth_view_basis_digest = Arc::<str>::from(truth_view.digest());
         let canonical_basis = Arc::<str>::from(format!(
-            "preview-structural-basis|contract={}|validated-declaration={}",
+            "preview-structural-basis|contract={}|truth-view={}",
             structural_contract_digest.as_ref(),
-            validated_declaration_digest.as_ref(),
+            truth_view_basis_digest.as_ref(),
         ));
         let digest = Sha256::digest(canonical_basis.as_bytes());
 
         Self {
             structural_contract_digest,
-            validated_declaration_digest,
+            truth_view_basis_digest,
             canonical_basis,
             digest: Arc::from(format!("preview-structural-basis:sha256:{digest:x}")),
         }
@@ -145,8 +150,8 @@ impl BridgePreviewStructuralBasis {
         self.structural_contract_digest.as_ref()
     }
 
-    pub fn validated_declaration_digest(&self) -> &str {
-        self.validated_declaration_digest.as_ref()
+    pub fn truth_view_basis_digest(&self) -> &str {
+        self.truth_view_basis_digest.as_ref()
     }
 
     pub fn canonical_basis(&self) -> &str {

@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod bridge_snapshot_reader_tests;
 #[cfg(test)]
-mod bridge_source_tests;
+pub(crate) mod bridge_source_tests;
 mod change_publication;
 #[cfg(test)]
 mod consistency_lowering_tests;
@@ -16,7 +16,7 @@ mod patch_envelopes_tests;
 mod patch_lowering_denial;
 mod publication_outcome;
 #[cfg(test)]
-mod relational_test_support;
+pub(crate) mod relational_test_support;
 mod runtime_source;
 #[cfg(test)]
 mod snapshot_catalog_tests;

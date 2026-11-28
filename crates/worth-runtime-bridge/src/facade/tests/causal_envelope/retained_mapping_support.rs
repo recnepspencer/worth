@@ -1,12 +1,10 @@
 use super::*;
 use crate::facade::{
-    BridgeCanonicalBulkPlanRecord, BridgeCanonicalContinuityRecord,
-    BridgeCanonicalStructuralBranchComparisonRecord, BridgeCanonicalStructuralRemapRecord,
-    BridgeCausalEvidenceBinding, BridgeCausalEvidenceFamily, BridgeCausalEvidenceOwner,
-    BridgeCausalEvidenceReference, BridgeCausalEvidenceReferenceIdentity,
-    BridgeHistoricalEvaluationFailureRecord, BridgeHistoricalResolvedLineageIdentity,
-    BridgeHistoricalResolvedRecordIdentity, BridgeRouteResultSummary, CanonicalStreamReplayRecord,
-    ConsumerCheckpointToken, SourceFailureRecord, SourceMaterializationRecord,
+    BridgeCanonicalBulkPlanRecord, BridgeCanonicalContinuityRecord, BridgeCausalEvidenceBinding,
+    BridgeCausalEvidenceFamily, BridgeCausalEvidenceOwner, BridgeCausalEvidenceReference,
+    BridgeCausalEvidenceReferenceIdentity, BridgeHistoricalEvaluationFailureRecord,
+    BridgeHistoricalResolvedLineageIdentity, BridgeHistoricalResolvedRecordIdentity,
+    BridgeRouteResultSummary, SourceFailureRecord, SourceMaterializationRecord,
 };
 
 #[derive(Clone)]
@@ -102,42 +100,6 @@ pub(super) fn bridge_source_failure_reference(
     )
 }
 
-pub(super) fn bridge_structural_remap_reference(
-    record: &BridgeCanonicalStructuralRemapRecord,
-) -> BridgeCausalEvidenceReference {
-    missing_bridge_reference(
-        BridgeCausalEvidenceFamily::BridgeStructuralRemap,
-        record.record_identity().as_str(),
-    )
-}
-
-pub(super) fn bridge_structural_branch_comparison_reference(
-    record: &BridgeCanonicalStructuralBranchComparisonRecord,
-) -> BridgeCausalEvidenceReference {
-    missing_bridge_reference(
-        BridgeCausalEvidenceFamily::BridgeStructuralBranchComparison,
-        record.record_identity().as_str(),
-    )
-}
-
-pub(super) fn bridge_stream_replay_reference(
-    record: &CanonicalStreamReplayRecord,
-) -> BridgeCausalEvidenceReference {
-    missing_bridge_reference(
-        BridgeCausalEvidenceFamily::BridgeStreamReplay,
-        record.replay_record_identity().as_str(),
-    )
-}
-
-pub(super) fn bridge_stream_checkpoint_reference(
-    checkpoint: &ConsumerCheckpointToken,
-) -> BridgeCausalEvidenceReference {
-    missing_bridge_reference(
-        BridgeCausalEvidenceFamily::BridgeStreamCheckpoint,
-        checkpoint.checkpoint_token_identity_for_reporting(),
-    )
-}
-
 pub(super) fn bridge_continuity_reference(
     record: &BridgeCanonicalContinuityRecord,
 ) -> BridgeCausalEvidenceReference {
@@ -171,34 +133,7 @@ pub(super) fn binding_for<'a>(
         .expect("expected retained bridge binding should be present")
 }
 
-pub(super) fn branch_comparison_declaration(
-    declaration_identity: StructuralIdentityDeclarationIdentity,
-) -> StructuralIdentityDeclaration {
-    StructuralIdentityDeclaration::branch_comparison(
-        declaration_identity,
-        StructuralSchemaIdentity::admit_bridge_owned("schema:geometry"),
-        StructuralFingerprintEquivalenceContract::new(
-            StructuralSchemaIdentity::admit_bridge_owned("schema:geometry"),
-            StructuralFingerprintFamily::BranchComparisonFingerprint,
-            "geometry-branch-v1",
-            StructuralFingerprintNormalizationRule::SchemaDeclaredCanonicalForm,
-            StructuralFingerprintOrderingRule::SchemaDeclaredCanonicalOrder,
-            StructuralFingerprintOmissionPolicy::SchemaDeclaredOmissionPolicy,
-        ),
-        StructuralTruthViewBasis::explicit_branch_pair(
-            BridgeTruthViewSelector::branch_snapshot(
-                crate::truth_identity_fixtures::truth_branch_fixture("left"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-            ),
-            BridgeTruthViewSelector::branch_snapshot(
-                crate::truth_identity_fixtures::truth_branch_fixture("right"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-            ),
-        ),
-    )
-}
-
-pub(super) fn retained_runtime(branch_declaration: StructuralIdentityDeclaration) -> RuntimeBridge {
+pub(super) fn retained_runtime() -> RuntimeBridge {
     RuntimeBridgeBuilder::new()
         .with_policy(BridgeRuntimePolicy::default())
         .with_relational_source(StaticSource)
@@ -230,15 +165,6 @@ pub(super) fn retained_runtime(branch_declaration: StructuralIdentityDeclaration
                 BridgeSourceCapability::ReplayContinuityRead,
             ],
         ))
-        .register_structural(registered_structural(
-            "structural:analysis-snapshot",
-            StructuralFingerprintFamily::TopologyFingerprint,
-            StructuralTruthViewBasis::explicit_snapshot(BridgeTruthViewSelector::branch_snapshot(
-                crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-            )),
-        ))
-        .register_structural(branch_declaration)
         .register_mapping(BridgeMappingRegistration::new(
             BridgeMappingId::admit_bridge_owned("mapping"),
             TruthPatchScope::for_entity_field(

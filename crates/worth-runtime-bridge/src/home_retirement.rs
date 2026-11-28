@@ -8,7 +8,6 @@ use crate::{
     policy::BridgeRuntimePolicy,
     relational_source::{RetiredRuntimeBridgeRelationalSource, RuntimeBridgeRelationalSource},
     source::AdmittedSourceRegistry,
-    structural::AdmittedStructuralRegistry,
     subscription::FrozenSubscriptionFamilyRegistry,
 };
 pub use correspondence::RetiringWorldCorrespondence;
@@ -57,7 +56,6 @@ struct RetiredBridgeConfiguration {
     _profile: Option<crate::input::envelope::BridgeAuthoritativeSourceProfile>,
     _sink: Arc<dyn InvalidationSink>,
     _sources: AdmittedSourceRegistry,
-    _structural: AdmittedStructuralRegistry,
     _mappings: FrozenMappingRegistry,
     _aspects: FrozenAspectMappingRegistry,
     _subscriptions: FrozenSubscriptionFamilyRegistry,
@@ -118,7 +116,6 @@ impl RuntimeBridge {
             writeback_authority,
             source_registry,
             source_adapter,
-            structural_registry,
             mapping_registry,
             aspect_registry,
             subscription_family_registry,
@@ -153,7 +150,6 @@ impl RuntimeBridge {
                 _profile: authoritative_source_profile,
                 _sink: signal_sink,
                 _sources: source_registry,
-                _structural: structural_registry,
                 _mappings: mapping_registry,
                 _aspects: aspect_registry,
                 _subscriptions: subscription_family_registry,

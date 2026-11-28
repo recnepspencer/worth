@@ -3,29 +3,19 @@ use crate::facade::{BridgePolicyFieldKind, BridgePolicyRejectionKind, BridgeRout
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_restart_replay_bundle(
     policy: BridgeRuntimePolicy,
+    truth: &RelationalPricing,
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingRestartReplayBundle {
-    let original_runtime = build_pricing_runtime_with_policy(
-        pricing_reference_source(),
-        RecordingSignalBridgeSink::default(),
-        policy,
-    );
+    let original_runtime = truth.runtime_with_policy(RecordingSignalBridgeSink::default(), policy);
     original_runtime
-        .route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
-            execution,
-        )
+        .route(truth.steel_commit.clone(), execution)
         .expect("pricing restart control route should succeed");
     let canonical_record = original_runtime
         .diagnostics()
         .last_canonical_route_record()
         .expect("pricing restart replay should retain a canonical route record");
 
-    let restarted_runtime = build_pricing_runtime_with_policy(
-        pricing_reference_source(),
-        RecordingSignalBridgeSink::default(),
-        policy,
-    );
+    let restarted_runtime = truth.runtime_with_policy(RecordingSignalBridgeSink::default(), policy);
     let replay = restarted_runtime
         .replay_canonical_record(&canonical_record, execution)
         .expect("pricing restart replay should preserve canonical truth across rebuild");
@@ -41,76 +31,23 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_restart_replay_b
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_restart_failure_bundle(
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingRestartFailureBundle {
-    let original_runtime = build_pricing_runtime(
-        pricing_reference_source(),
-        RecordingSignalBridgeSink::default(),
-    );
+    let truth = RelationalPricing::new(execution, 100, 40, 56);
+    let original_runtime = truth.runtime(RecordingSignalBridgeSink::default());
     original_runtime
-        .route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
-            execution,
-        )
+        .route(truth.steel_commit.clone(), execution)
         .expect("pricing restart mismatch control route should succeed");
     let canonical_record = original_runtime
         .diagnostics()
         .last_canonical_route_record()
         .expect("pricing restart mismatch should retain a canonical route record");
 
-    let drifted_source = InMemoryRelationalBridgeSource::default();
-    drifted_source.insert_committed_patch(pricing_patch_items(
-        pricing_patch_envelope_identity(
-            crate::truth_identity_fixtures::truth_branch_fixture("main"),
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
-            crate::truth_identity_fixtures::truth_patch_fixture("patch:steel-main"),
-            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main"),
+    let restarted_runtime = truth.fault_runtime(
+        PricingFault::PatchItems(
+            truth.steel_commit.clone(),
+            vec![truth.cost_item(PricingMaterial::Rubber)],
         ),
-        vec![
-            BridgeCommittedPatchItem::with_target(
-                "component:steel",
-                crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                    worth_foundational::facade::AspectLocator::new(
-                        worth_foundational::facade::LocatorAuthority::Authoritative,
-                        worth_foundational::facade::AspectKey::new("cost")
-                            .expect("valid bridge patch aspect key"),
-                    ),
-                    worth_foundational::facade::CanonicalFieldPath::single(
-                        worth_foundational::facade::FieldKey::new("usd".to_owned())
-                            .expect("valid foundational field key"),
-                    ),
-                ),
-            ),
-            BridgeCommittedPatchItem::with_target(
-                "component:steel",
-                crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                    worth_foundational::facade::AspectLocator::new(
-                        worth_foundational::facade::LocatorAuthority::Authoritative,
-                        worth_foundational::facade::AspectKey::new("tariff")
-                            .expect("valid bridge patch aspect key"),
-                    ),
-                    worth_foundational::facade::CanonicalFieldPath::single(
-                        worth_foundational::facade::FieldKey::new("usd".to_owned())
-                            .expect("valid foundational field key"),
-                    ),
-                ),
-            ),
-        ],
-    ));
-    drifted_source.insert_committed_patch(pricing_patch(
-        pricing_patch_envelope_identity(
-            crate::truth_identity_fixtures::truth_branch_fixture("main"),
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-main"),
-            crate::truth_identity_fixtures::truth_patch_fixture("patch:rubber-main"),
-            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main"),
-        ),
-        "rubber",
-    ));
-    drifted_source.insert_snapshot(pricing_snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main"),
-        "100",
-        "40",
-    ));
-    let restarted_runtime =
-        build_pricing_runtime(drifted_source, RecordingSignalBridgeSink::default());
+        BridgeRuntimePolicy::development(),
+    );
 
     let error = restarted_runtime
         .replay_canonical_record(&canonical_record, execution)
@@ -127,9 +64,9 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_restart_failure_
 }
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_replay_policy_failure_bundle(
+    truth: &RelationalPricing,
 ) -> (BridgePolicyRejectionKind, BridgePolicyFieldKind) {
-    let runtime = build_pricing_runtime_with_policy(
-        pricing_reference_source(),
+    let runtime = truth.runtime_with_policy(
         RecordingSignalBridgeSink::default(),
         BridgeRuntimePolicy::operational().with_replay_artifacts(false),
     );
@@ -151,14 +88,13 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_replay_policy_fa
 }
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_route_policy_conflict_bundle(
+    truth: &RelationalPricing,
 ) -> BridgeRouteErrorKind {
-    let permissive = build_pricing_runtime_with_policy(
-        pricing_reference_source(),
+    let permissive = truth.runtime_with_policy(
         RecordingSignalBridgeSink::default(),
         BridgeRuntimePolicy::development(),
     );
-    let restrictive = build_pricing_runtime_with_policy(
-        pricing_reference_source(),
+    let restrictive = truth.runtime_with_policy(
         RecordingSignalBridgeSink::default(),
         BridgeRuntimePolicy::operational().with_replay_artifacts(false),
     );
@@ -182,14 +118,151 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_route_policy_con
 }
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_trust_attack_bundle(
+    truth: &RelationalPricing,
 ) -> PricingTrustAttackBundle {
     let (replay_policy_error_kind, replay_policy_failure_class) =
-        capture_pricing_replay_policy_failure_bundle();
-    let route_policy_error_kind = capture_pricing_route_policy_conflict_bundle();
+        capture_pricing_replay_policy_failure_bundle(truth);
+    let route_policy_error_kind = capture_pricing_route_policy_conflict_bundle(truth);
 
     PricingTrustAttackBundle {
         replay_policy_error_kind,
         replay_policy_failure_class,
         route_policy_error_kind,
+    }
+}
+
+use crate::adapter::{
+    CommittedPatchSource, RelationalBridgeSourceError, RelationalBridgeSourceErrorTag,
+    RelationalCommittedPatchRequest, SnapshotReadSource, TruthBranchHeadSource,
+};
+use crate::facade::{
+    BridgeCommittedPatchEnvelope, BridgeCommittedPatchItem, BridgeSnapshotReadError,
+    SnapshotReadPacket, SnapshotReadPacketResult, TruthBranchIdentity, TruthCommitIdentity,
+    TruthSnapshotIdentity, TruthSnapshotReader,
+};
+use crate::input::envelope::BridgeCommittedPatchEnvelopeIdentity;
+use worth_execution::ExecutionRequest;
+
+#[derive(Clone)]
+pub(in crate::harness::tests::pricing_shock) enum PricingFault {
+    PatchItems(TruthCommitIdentity, Vec<BridgeCommittedPatchItem>),
+    CommitSnapshot(TruthCommitIdentity, TruthSnapshotIdentity),
+    SwapHead(TruthBranchIdentity, TruthBranchIdentity),
+    MissingHead(TruthBranchIdentity, String),
+    UnavailableSnapshot(TruthSnapshotIdentity),
+    SwapSnapshotContents(TruthSnapshotIdentity, TruthSnapshotIdentity),
+}
+
+#[derive(Clone)]
+pub(in crate::harness::tests::pricing_shock::support) struct PricingFaultSource<S>(
+    pub S,
+    pub PricingFault,
+);
+
+impl<S: CommittedPatchSource> CommittedPatchSource for PricingFaultSource<S> {
+    fn load_committed_patch(
+        &self,
+        request: RelationalCommittedPatchRequest,
+        execution: ExecutionRequest<'_, '_>,
+    ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
+        let original = self.0.load_committed_patch(request, execution)?;
+        let (snapshot, items) = match &self.1 {
+            PricingFault::CommitSnapshot(commit, replacement)
+                if commit == original.commit_identity() =>
+            {
+                (
+                    replacement.clone(),
+                    original.patch_body().canonical_items().to_vec(),
+                )
+            }
+            PricingFault::PatchItems(commit, replacement)
+                if commit == original.commit_identity() =>
+            {
+                (original.snapshot_identity().clone(), replacement.clone())
+            }
+            _ => return Ok(original),
+        };
+
+        Ok(BridgeCommittedPatchEnvelope::new(
+            BridgeCommittedPatchEnvelopeIdentity::new_with_metadata(
+                original.producer_metadata().clone(),
+                original.commit_identity().clone(),
+                original.patch_identity().clone(),
+                snapshot,
+                original.branch_identity().clone(),
+            ),
+            items,
+        )
+        .expect("a fault only alters the selected committed envelope component"))
+    }
+}
+
+impl<S: TruthBranchHeadSource> TruthBranchHeadSource for PricingFaultSource<S> {
+    fn load_branch_head_patch(
+        &self,
+        request: &TruthBranchIdentity,
+        execution: ExecutionRequest<'_, '_>,
+    ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
+        let original = self.0.load_branch_head_patch(request, execution)?;
+        match &self.1 {
+            PricingFault::SwapHead(branch, other) if branch == request => {
+                self.0.load_branch_head_patch(other, execution)
+            }
+            PricingFault::MissingHead(branch, commit) if branch == request => {
+                Err(RelationalBridgeSourceError::new(
+                    RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    format!("no committed envelope for branch-head commit {commit}"),
+                ))
+            }
+            _ => Ok(original),
+        }
+    }
+}
+
+impl<S: SnapshotReadSource> SnapshotReadSource for PricingFaultSource<S> {
+    fn open_snapshot(
+        &self,
+        request: &TruthSnapshotIdentity,
+        execution: ExecutionRequest<'_, '_>,
+    ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
+        let original = self.0.open_snapshot(request, execution)?;
+        match &self.1 {
+            PricingFault::UnavailableSnapshot(snapshot) if snapshot == request => {
+                Err(RelationalBridgeSourceError::new(
+                    RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    "injected retained pricing snapshot unavailability",
+                ))
+            }
+            PricingFault::SwapSnapshotContents(snapshot, replacement) if snapshot == request => {
+                Ok(Box::new(MislabelledSnapshot {
+                    identity: snapshot.clone(),
+                    contents: self.0.open_snapshot(replacement, execution)?,
+                }))
+            }
+            _ => Ok(original),
+        }
+    }
+}
+
+struct MislabelledSnapshot {
+    identity: TruthSnapshotIdentity,
+    contents: Box<dyn TruthSnapshotReader>,
+}
+
+impl TruthSnapshotReader for MislabelledSnapshot {
+    fn snapshot_identity(&self) -> TruthSnapshotIdentity {
+        self.identity.clone()
+    }
+
+    fn read_packet(
+        &self,
+        packet: &SnapshotReadPacket,
+        execution: ExecutionRequest<'_, '_>,
+    ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
+        let result = self.contents.read_packet(packet, execution)?;
+        Ok(SnapshotReadPacketResult::new(
+            self.identity.clone(),
+            result.records().to_vec(),
+        ))
     }
 }

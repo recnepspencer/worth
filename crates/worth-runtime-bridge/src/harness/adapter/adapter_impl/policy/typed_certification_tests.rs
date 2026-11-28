@@ -1,118 +1,30 @@
 use super::matrices::PolicyCertificationRow;
 use super::{execute_policy_request, PolicyHarnessExecution, PolicyHarnessTarget};
 use crate::facade::{
-    BridgeCommittedPatchEnvelope, BridgeCommittedPatchItem, BridgeMappingId,
-    BridgeMappingRegistration, BridgePolicyRejectionKind, BridgePolicyRejectionStage,
-    BridgeProducerMetadata, BridgeRuntimePolicy, BridgeTruthViewPolicyResolution,
-    CoarseRoutingMode, MappingSelector, SignalInvalidationScope, SnapshotReadRecord,
-    SnapshotReadRequest, TruthCommitIdentity, TruthPatchIdentity, TruthPatchScope,
-    TruthSnapshotIdentity,
+    BridgePolicyRejectionKind, BridgePolicyRejectionStage, BridgeRuntimePolicy,
+    BridgeTruthViewPolicyResolution,
 };
 use crate::harness::fixtures::{
-    BridgeHarnessFixture, InMemoryRelationalBridgeSource, RecordingSignalBridgeSink,
-    SnapshotFixture,
+    BridgeHarnessFixture, NamedTruth, RecordingSignalBridgeSink, ScenarioRelationalTruth,
 };
 
-fn runtime_with_policy(policy: BridgeRuntimePolicy) -> crate::facade::RuntimeBridge {
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid policy fixture field key"),
-    ));
-    source.insert_snapshot(snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
-    crate::facade::RuntimeBridgeBuilder::new()
+fn runtime_and_fixture() -> (crate::facade::RuntimeBridge, BridgeHarnessFixture) {
+    let policy = BridgeRuntimePolicy::development();
+    let (truth, _commit) = ScenarioRelationalTruth::named("alice", false);
+    let source = truth.native.source.clone();
+    let runtime = crate::facade::RuntimeBridgeBuilder::new()
         .with_relational_source(source.clone())
         .with_truth_branch_head_source(source)
         .with_signal_sink(RecordingSignalBridgeSink::default())
         .with_policy(policy)
-        .register_mapping(registration())
+        .register_mapping(NamedTruth::mapping())
         .build()
-        .expect("policy certification runtime should build")
-}
-
-fn fixture_with_policy(policy: BridgeRuntimePolicy) -> BridgeHarnessFixture {
-    BridgeHarnessFixture::new(vec![registration()])
-        .with_policy(policy)
-        .with_committed_patch(committed_patch(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-            worth_foundational::facade::FieldKey::new("name".to_owned())
-                .expect("valid policy fixture field key"),
-        ))
-        .with_snapshot(snapshot(
-            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-            "alice",
-        ))
-}
-
-fn registration() -> BridgeMappingRegistration {
-    BridgeMappingRegistration::new(
-        BridgeMappingId::admit_bridge_owned("profile-name"),
-        TruthPatchScope::for_entity_field(
-            MappingSelector::exact("user"),
-            worth_foundational::facade::AspectKey::new("profile").expect("valid native aspect key"),
-            worth_foundational::facade::FieldKey::new("name".to_owned())
-                .expect("valid native field key"),
-        ),
-        crate::snapshot::SnapshotReadContract::scalar(
-            worth_foundational::facade::AspectKey::new("profile").expect("valid native aspect key"),
-            worth_foundational::facade::ScalarAspectType::String,
-        ),
-        SignalInvalidationScope::admit_bridge_owned("signal.profile"),
-        CoarseRoutingMode::Direct,
-    )
-}
-
-fn committed_patch(
-    commit_identity: TruthCommitIdentity,
-    patch_identity: TruthPatchIdentity,
-    snapshot_identity: TruthSnapshotIdentity,
-    field_key: worth_foundational::facade::FieldKey,
-) -> BridgeCommittedPatchEnvelope {
-    BridgeCommittedPatchEnvelope::new(
-        crate::input::envelope::BridgeCommittedPatchEnvelopeIdentity::new_with_metadata(
-            BridgeProducerMetadata::bridge_harness_fixture(),
-            commit_identity,
-            patch_identity,
-            snapshot_identity,
-            crate::truth_identity_fixtures::truth_branch_fixture("main"),
-        ),
-        vec![BridgeCommittedPatchItem::with_target(
-            "user",
-            crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                worth_foundational::facade::AspectLocator::new(
-                    worth_foundational::facade::LocatorAuthority::Authoritative,
-                    worth_foundational::facade::AspectKey::new("profile")
-                        .expect("valid bridge patch aspect key"),
-                ),
-                worth_foundational::facade::CanonicalFieldPath::single(field_key),
-            ),
-        )],
-    )
-    .expect("policy certification committed patch should construct")
-}
-
-fn snapshot(snapshot_identity: TruthSnapshotIdentity, value: &str) -> SnapshotFixture {
-    SnapshotFixture::new(
-        snapshot_identity,
-        vec![SnapshotReadRecord::for_request(
-            &SnapshotReadRequest::for_coarse(
-                "user",
-                crate::snapshot::SnapshotReadContract::scalar(
-                    worth_foundational::facade::AspectKey::new("profile")
-                        .expect("valid policy snapshot aspect key"),
-                    worth_foundational::facade::ScalarAspectType::String,
-                ),
-            ),
-            worth_foundational::facade::AspectValue::String(value.into()),
-        )],
+        .expect("policy certification runtime should build");
+    (
+        runtime,
+        BridgeHarnessFixture::new(vec![NamedTruth::mapping()])
+            .with_policy(policy)
+            .with_relational_truth(truth),
     )
 }
 
@@ -122,8 +34,7 @@ fn provenance_certification_retains_typed_policy_route_and_counter_evidence() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_policy(BridgeRuntimePolicy::development());
-    let fixture = fixture_with_policy(BridgeRuntimePolicy::development());
+    let (runtime, fixture) = runtime_and_fixture();
     let execution = execute_policy_request(
         &runtime,
         &fixture,
@@ -195,8 +106,7 @@ fn rejection_certification_retains_typed_rejection_rows_and_zero_authority_escap
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_policy(BridgeRuntimePolicy::development());
-    let fixture = fixture_with_policy(BridgeRuntimePolicy::development());
+    let (runtime, fixture) = runtime_and_fixture();
     let execution = execute_policy_request(
         &runtime,
         &fixture,
@@ -248,8 +158,7 @@ fn ambient_leak_certification_retains_typed_request_equivalence_evidence() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_policy(BridgeRuntimePolicy::development());
-    let fixture = fixture_with_policy(BridgeRuntimePolicy::development());
+    let (runtime, fixture) = runtime_and_fixture();
     let execution = execute_policy_request(
         &runtime,
         &fixture,

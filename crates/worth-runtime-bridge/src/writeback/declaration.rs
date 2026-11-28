@@ -5,10 +5,7 @@ use sha2::{Digest, Sha256};
 use crate::facade::BridgeRequestKind;
 use crate::identity::{BridgeIdentity, BridgeIdentityEvidence, WritebackDeclarationIdentityTag};
 
-use super::{
-    BridgeWritebackEffectClass, BridgeWritebackFamilyKind, BridgeWritebackIdempotenceClass,
-    BridgeWritebackRequestMode, BridgeWritebackStrategyClass,
-};
+use super::BridgeWritebackIdempotenceClass;
 
 pub type BridgeWritebackDeclarationIdentity = BridgeIdentity<WritebackDeclarationIdentityTag>;
 
@@ -230,4 +227,28 @@ impl BridgeWritebackDeclaration {
     pub fn digest(&self) -> &str {
         self.digest.as_ref()
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum BridgeWritebackFamilyKind {
+    ProjectedStateDiff,
+    AspectReconciliation,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum BridgeWritebackRequestMode {
+    ReadOnly,
+    WritebackCapable,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum BridgeWritebackEffectClass {
+    ProjectedStateDiff,
+    AspectReconciliation,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum BridgeWritebackStrategyClass {
+    ProjectedStateDiffReconciliation,
+    AspectReconciliationCommit,
 }

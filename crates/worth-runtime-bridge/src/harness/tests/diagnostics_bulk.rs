@@ -1,9 +1,6 @@
-use super::support::{committed_patch, registration, snapshot};
 use crate::facade::{BridgeBulkWorkloadRequest, BridgeBulkWorkloadSegment, BridgeRouteRequest};
-use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBridgeSink};
-use crate::truth_identity_fixtures::{
-    truth_commit_fixture, truth_patch_fixture, truth_snapshot_fixture,
-};
+use crate::harness::fixtures::NamedTruth;
+use crate::harness::fixtures::RecordingSignalBridgeSink;
 
 #[test]
 fn bridge_diagnostics_retain_queryable_bulk_records_by_workload_identity() {
@@ -11,23 +8,11 @@ fn bridge_diagnostics_retain_queryable_bulk_records_by_workload_identity() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        truth_commit_fixture("commit-a"),
-        truth_patch_fixture("patch-a"),
-        truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_committed_patch(committed_patch(
-        truth_commit_fixture("commit-b"),
-        truth_patch_fixture("patch-b"),
-        truth_snapshot_fixture("snapshot-b"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(truth_snapshot_fixture("snapshot-a"), "alice"));
-    source.insert_snapshot(snapshot(truth_snapshot_fixture("snapshot-b"), "bob"));
+    let truth = NamedTruth::new();
+    let (commit_a, _observation_a) = truth.commit_name(execution, "alice");
+    let (commit_b, _observation_b) = truth.commit_name(execution, "bob");
+    let source = truth.source.clone();
+
     let runtime = crate::facade::RuntimeBridge::builder()
         .with_relational_source(source)
         .with_signal_sink(RecordingSignalBridgeSink::default())
@@ -36,19 +21,15 @@ fn bridge_diagnostics_retain_queryable_bulk_records_by_workload_identity() {
                 .with_route_record_limit(2)
                 .with_failure_record_limit(2),
         )
-        .register_mapping(registration())
+        .register_mapping(NamedTruth::mapping())
         .build()
         .expect("bridge runtime with bounded diagnostics retention");
 
     let plan = runtime
         .plan_bulk_workload(
             BridgeBulkWorkloadRequest::new(vec![
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                    truth_commit_fixture("commit-a"),
-                )),
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                    truth_commit_fixture("commit-b"),
-                )),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a.clone())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b.clone())),
             ]),
             execution,
         )

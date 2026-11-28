@@ -3,13 +3,10 @@ use crate::diagnostics::history::{
     BridgeHistoricalEvaluationFailureIdentity, BridgeHistoricalEvaluationFailureRecord,
 };
 use crate::diagnostics::BridgeDiagnosticsFacade;
-use crate::identity::{BridgeIdentity, BridgeIdentityEvidence, CheckpointTokenIdentityTag};
+use crate::identity::BridgeIdentityEvidence;
 use crate::routing::{
     BridgeBulkPlanningCounters, BridgeBulkPlanningFailure, BridgeCanonicalBulkPlanRecord,
     BridgePreparationMode, BridgeWorkloadIdentity,
-};
-use crate::stream::{
-    ConsumerCheckpointToken, StreamCheckpointFrontierKind, StreamProtocolCounters,
 };
 
 use super::super::digest_basis::{
@@ -19,8 +16,6 @@ use super::super::digest_basis::{
     retained_mapping_evidence_part, retained_mapping_shape_part,
     RetainedCausalMappingDigestArtifact, RetainedCausalMappingDigestBasis,
 };
-
-type StreamCheckpointTokenIdentity = BridgeIdentity<CheckpointTokenIdentityTag>;
 
 pub(crate) fn bulk_planning_record_digest(
     facade: &BridgeDiagnosticsFacade,
@@ -51,21 +46,6 @@ pub(crate) fn historical_evaluation_failure_record_digest(
             ),
         )
         .map(|record| historical_evaluation_failure_digest(&record))
-        .transpose()
-}
-
-pub(crate) fn stream_checkpoint_record_digest(
-    facade: &BridgeDiagnosticsFacade,
-    reference_identity: &BridgeIdentityEvidence,
-) -> Result<
-    Option<BridgeIdentityEvidence>,
-    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
-> {
-    facade
-        .stream_checkpoint_for_identity(&StreamCheckpointTokenIdentity::from_reference_evidence(
-            reference_identity.revalidate_bridge_retained_reference(),
-        ))
-        .map(|record| stream_checkpoint_digest(&record))
         .transpose()
 }
 
@@ -151,28 +131,6 @@ fn historical_failure_class_label(value: BridgeHistoricalEvaluationFailureClass)
     }
 }
 
-pub(crate) fn stream_checkpoint_digest(
-    record: &ConsumerCheckpointToken,
-) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
-{
-    let counters_digest = stream_protocol_counters_digest(record.counters())?;
-    compose_retained_causal_mapping_evidence_identity(
-        RetainedCausalMappingDigestArtifact::StreamCheckpointRecord,
-        &[
-            retained_mapping_bridge_identity_part(record.checkpoint_token_identity()),
-            retained_mapping_bridge_identity_part(record.consumer_contract_identity()),
-            retained_mapping_bridge_identity_part(record.stream_protocol_identity()),
-            retained_mapping_shape_part(checkpoint_frontier_kind_label(
-                record.checkpoint_frontier_kind(),
-            )),
-            retained_mapping_shape_part(record.contiguous_acknowledged_through_position()),
-            retained_mapping_counter_part(record.checkpoint_member_count()),
-            retained_mapping_shape_part(record.protocol_semantics_version()),
-            retained_mapping_evidence_part(counters_digest),
-        ],
-    )
-}
-
 fn historical_evaluation_counters_digest(
     counters: &BridgeHistoricalEvaluationCounters,
 ) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
@@ -242,42 +200,4 @@ fn bulk_planning_failures_digest(
         RetainedCausalMappingDigestArtifact::BulkPlanningFailures,
         &failure_basis,
     )
-}
-
-fn stream_protocol_counters_digest(
-    counters: &StreamProtocolCounters,
-) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
-{
-    let counter_basis = RetainedCausalMappingDigestBasis::from_counter_usizes([
-        counters.stream_member_count(),
-        counters.stream_window_count(),
-        counters.stream_window_member_count(),
-        counters.stream_consumer_contract_count(),
-        counters.stream_checkpoint_count(),
-        counters.stream_checkpoint_member_count(),
-        counters.stream_resume_attempt_count(),
-        counters.stream_resume_rejection_count(),
-        counters.stream_replay_count(),
-        counters.stream_replay_mismatch_count(),
-        counters.stream_coalesced_member_count(),
-        counters.stream_coalesced_window_count(),
-        counters.stream_duplicate_member_observation_count(),
-        counters.stream_backpressure_signal_count(),
-        counters.stream_consumer_saturated_count(),
-        counters.stream_checkpoint_lag_count(),
-        counters.stream_protocol_mismatch_count(),
-    ]);
-    compose_retained_causal_mapping_evidence_identity_for_basis(
-        RetainedCausalMappingDigestArtifact::StreamProtocolCounters,
-        &counter_basis,
-    )
-}
-
-fn checkpoint_frontier_kind_label(value: StreamCheckpointFrontierKind) -> &'static str {
-    match value {
-        StreamCheckpointFrontierKind::ContiguousFrontier => "contiguous-frontier",
-        StreamCheckpointFrontierKind::ContiguousFrontierWithObservedDuplicates => {
-            "contiguous-frontier-with-observed-duplicates"
-        }
-    }
 }

@@ -1,9 +1,10 @@
-use crate::facade::BridgeRouteRequest;
-
-use super::support::{
-    build_runtime, committed_patch_items, registration, snapshot, surface_widening_registration,
+use crate::facade::{
+    BridgeCommittedPatchEnvelope, CommittedPatchSource, RelationalCommittedPatchRequest,
 };
-use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBridgeSink};
+use crate::harness::fixtures::{ProfileTruth, RecordingSignalBridgeSink};
+use crate::input::envelope::BridgeCommittedPatchEnvelopeIdentity;
+
+use super::support::build_runtime;
 
 #[test]
 fn bridge_artifact_identities_are_bounded_and_stable_for_identical_patchsets() {
@@ -11,135 +12,44 @@ fn bridge_artifact_identities_are_bounded_and_stable_for_identical_patchsets() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let left_source = InMemoryRelationalBridgeSource::default();
-    left_source.insert_committed_patch(committed_patch_items(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        vec![
-            crate::facade::BridgeCommittedPatchItem::with_target(
-                "user",
-                crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                    worth_foundational::facade::AspectLocator::new(
-                        worth_foundational::facade::LocatorAuthority::Authoritative,
-                        worth_foundational::facade::AspectKey::new("profile")
-                            .expect("valid bridge patch aspect key"),
-                    ),
-                    worth_foundational::facade::CanonicalFieldPath::single(
-                        worth_foundational::facade::FieldKey::new("name".to_owned())
-                            .expect("valid foundational field key"),
-                    ),
-                ),
-            ),
-            crate::facade::BridgeCommittedPatchItem::with_target(
-                "user",
-                crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                    worth_foundational::facade::AspectLocator::new(
-                        worth_foundational::facade::LocatorAuthority::Authoritative,
-                        worth_foundational::facade::AspectKey::new("profile")
-                            .expect("valid bridge patch aspect key"),
-                    ),
-                    worth_foundational::facade::CanonicalFieldPath::single(
-                        worth_foundational::facade::FieldKey::new("avatar".to_owned())
-                            .expect("valid foundational field key"),
-                    ),
-                ),
-            ),
-            crate::facade::BridgeCommittedPatchItem::with_target(
-                "user",
-                crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                    worth_foundational::facade::AspectLocator::new(
-                        worth_foundational::facade::LocatorAuthority::Authoritative,
-                        worth_foundational::facade::AspectKey::new("profile")
-                            .expect("valid bridge patch aspect key"),
-                    ),
-                    worth_foundational::facade::CanonicalFieldPath::single(
-                        worth_foundational::facade::FieldKey::new("name".to_owned())
-                            .expect("valid foundational field key"),
-                    ),
-                ),
-            ),
-        ],
-    ));
-    left_source.insert_snapshot(snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
-    let left_runtime = build_runtime(
-        left_source,
-        RecordingSignalBridgeSink::default(),
-        vec![registration(), surface_widening_registration()],
-    );
-
-    let right_source = InMemoryRelationalBridgeSource::default();
-    right_source.insert_committed_patch(committed_patch_items(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        vec![
-            crate::facade::BridgeCommittedPatchItem::with_target(
-                "user",
-                crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                    worth_foundational::facade::AspectLocator::new(
-                        worth_foundational::facade::LocatorAuthority::Authoritative,
-                        worth_foundational::facade::AspectKey::new("profile")
-                            .expect("valid bridge patch aspect key"),
-                    ),
-                    worth_foundational::facade::CanonicalFieldPath::single(
-                        worth_foundational::facade::FieldKey::new("avatar".to_owned())
-                            .expect("valid foundational field key"),
-                    ),
-                ),
-            ),
-            crate::facade::BridgeCommittedPatchItem::with_target(
-                "user",
-                crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                    worth_foundational::facade::AspectLocator::new(
-                        worth_foundational::facade::LocatorAuthority::Authoritative,
-                        worth_foundational::facade::AspectKey::new("profile")
-                            .expect("valid bridge patch aspect key"),
-                    ),
-                    worth_foundational::facade::CanonicalFieldPath::single(
-                        worth_foundational::facade::FieldKey::new("name".to_owned())
-                            .expect("valid foundational field key"),
-                    ),
-                ),
-            ),
-        ],
-    ));
-    right_source.insert_snapshot(snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
-    let right_runtime = build_runtime(
-        right_source,
-        RecordingSignalBridgeSink::default(),
-        vec![registration(), surface_widening_registration()],
-    );
-
-    let left_route = left_runtime
-        .plan_committed_patch(
-            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-a",
-            )),
+    let truth = ProfileTruth::new(execution);
+    let native = truth
+        .native
+        .source
+        .load_committed_patch(
+            RelationalCommittedPatchRequest::new(truth.commit.clone()),
             execution,
         )
-        .expect("bridge should plan canonical route identity");
-    let right_route = right_runtime
-        .plan_committed_patch(
-            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-a",
-            )),
-            execution,
+        .unwrap();
+    let item = native.patch_body().canonical_items()[0].clone();
+    let envelope = |items| {
+        BridgeCommittedPatchEnvelope::new(
+            BridgeCommittedPatchEnvelopeIdentity::new_with_metadata(
+                native.producer_metadata().clone(),
+                native.commit_identity().clone(),
+                native.patch_identity().clone(),
+                native.snapshot_identity().clone(),
+                native.branch_identity().clone(),
+            ),
+            items,
         )
-        .expect("bridge should plan canonical route identity");
-
-    let left_result = left_runtime
-        .deliver_invalidation(left_route, execution)
-        .expect("bridge should lower and deliver canonical invalidation artifact");
-    let right_result = right_runtime
-        .deliver_invalidation(right_route, execution)
-        .expect("bridge should lower and deliver canonical invalidation artifact");
+        .expect("canonical patch envelope")
+    };
+    let deliver = |envelope| {
+        let runtime = build_runtime(
+            truth.native.source.clone(),
+            RecordingSignalBridgeSink::default(),
+            vec![ProfileTruth::mapping()],
+        );
+        let route = runtime
+            .plan_envelope(envelope)
+            .expect("canonical route should plan");
+        runtime
+            .deliver_invalidation(route, execution)
+            .expect("canonical artifact should deliver")
+    };
+    let left_result = deliver(envelope(vec![item.clone(), item.clone()]));
+    let right_result = deliver(envelope(vec![item]));
 
     assert_eq!(
         left_result.routing_summary().route_identity(),

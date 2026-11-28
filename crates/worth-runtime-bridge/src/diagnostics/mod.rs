@@ -11,9 +11,6 @@ mod failure_source;
 mod failure_taxonomy;
 mod handle;
 mod handle_history;
-mod handle_writeback;
-mod writeback_retention;
-pub use writeback_retention::BridgeWritebackDiagnosticReference;
 mod history;
 mod policy;
 mod records;
@@ -21,9 +18,6 @@ mod replay;
 mod source;
 mod speculation;
 mod state;
-mod stream;
-mod structural;
-mod writeback;
 
 pub use bulk::BridgeBulkPlanExplanation;
 pub use causal_envelope::{
@@ -82,28 +76,5 @@ pub use speculation::{
     BridgePreviewDiscardExplanation, BridgePreviewExecutionExplanation,
     BridgePreviewPromotionExplanation, BridgePreviewReplayExplanation,
 };
-pub use stream::{
-    BridgeStreamCheckpointExplanation, BridgeStreamReplayExplanation, BridgeStreamResumeSummary,
-};
-pub use structural::{
-    BridgeCanonicalStructuralBranchComparisonRecord, BridgeCanonicalStructuralRemapRecord,
-    BridgeStructuralBranchComparisonExplanation, BridgeStructuralBranchComparisonRecord,
-    BridgeStructuralBranchComparisonReplaySummary, BridgeStructuralCounters,
-    BridgeStructuralRemapExplanation, BridgeStructuralRemapRecord,
-    BridgeStructuralRemapReplaySummary,
-    BRIDGE_CANONICAL_STRUCTURAL_BRANCH_COMPARISON_RECORD_SCHEMA_V1,
-    BRIDGE_CANONICAL_STRUCTURAL_REMAP_RECORD_SCHEMA_V1,
-};
-pub use writeback::{
-    BridgeMappedWritebackFamilyInputExplanation, BridgeWritebackAdmissionExplanation,
-    BridgeWritebackCandidateExplanation, BridgeWritebackExecutionExplanation,
-    BridgeWritebackLoopPreventionExplanation, BridgeWritebackMapperEnvelopeExplanation,
-    BridgeWritebackMapperExplanation, BridgeWritebackOutcomeExplanation,
-    BridgeWritebackReplayExplanation, BridgeWritebackReplayRecordExplanation,
-    BridgeWritebackStrategyCoherenceExplanation,
-};
 
 pub(crate) use failure_source::BridgeFailureSource;
-pub(crate) use structural::{
-    validate_structural_replay_contract, validate_structural_replay_outcome,
-};

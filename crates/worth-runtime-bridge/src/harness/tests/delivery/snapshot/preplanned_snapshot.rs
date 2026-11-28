@@ -1,256 +1,136 @@
-use super::super::{
-    build_runtime, commit_a, commit_b, committed_patch, patch_a, patch_b, registration, snapshot,
-    snapshot_a, snapshot_b,
-};
+use super::super::build_runtime;
 use crate::facade::BridgeRouteRequest;
-use crate::harness::adapter::{BridgeHarnessAdapter, BridgeHarnessMutation, BridgeHarnessTargetId};
-use crate::harness::fixtures::{
-    BridgeHarnessFixture, InMemoryRelationalBridgeSource, RecordingSignalBridgeSink,
-};
-use worth_harness::facade::{ExecutionProfile, ExecutionRequest, MutationBatch, ScenarioPlan};
-use worth_harness::runtime::HarnessAdapter;
+use crate::harness::fixtures::{NamedTruth, RecordingSignalBridgeSink};
+use worth_execution::ExecutionRequest;
 
 #[test]
 fn bridge_snapshot_delivery_remains_stable_after_newer_truth_arrives() {
-    let adapter = BridgeHarnessAdapter;
-    let fixture = ScenarioPlan::new(
-        "bridge-snapshot-stability",
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_committed_patch(committed_patch(
-                commit_a(),
-                patch_a(),
-                snapshot_a(),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(snapshot(snapshot_a(), "alice")),
-    )
-    .declare_input("commit-a")
-    .declare_observation("route")
-    .compile();
-    let mutation = MutationBatch::new("publish-newer-truth")
-        .push(BridgeHarnessMutation::PublishCommittedPatch(
-            committed_patch(
-                commit_b(),
-                patch_b(),
-                snapshot_b(),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ),
-        ))
-        .push(BridgeHarnessMutation::PublishSnapshot(snapshot(
-            snapshot_b(),
-            "bob",
-        )));
-    let request = ExecutionRequest::target(
-        "deliver-commit-a",
-        BridgeHarnessTargetId::committed_route(commit_a()),
+    let serial = crate::snapshot::test_serial_request();
+    let execution = ExecutionRequest::serial(&serial);
+    let truth = NamedTruth::new();
+    let (original_commit, original) = truth.commit_name(execution, "alice");
+    let (_, newer) = truth.commit_name(execution, "bob");
+    let runtime = build_runtime(
+        truth.source,
+        RecordingSignalBridgeSink::default(),
+        vec![NamedTruth::mapping()],
     );
-    let profile = ExecutionProfile::development("development");
 
-    let mut session = adapter.create_runtime().expect("bridge harness runtime");
-    adapter
-        .prepare_runtime(&mut session, &profile)
-        .expect("bridge harness prepare");
-    adapter
-        .load_fixture(&mut session, &fixture)
-        .expect("bridge harness load fixture");
-    adapter
-        .apply_mutation_batch(&mut session, &mutation)
-        .expect("bridge harness mutation should publish newer truth");
-    adapter
-        .execute(&mut session, &fixture, &request, &profile)
-        .expect("bridge snapshot-stability execution should succeed");
-    let route_record = session
-        .runtime
-        .as_ref()
-        .expect("bridge runtime")
-        .diagnostics()
-        .last_route_record()
-        .expect("bridge should retain typed route record");
+    let routed = runtime.route(original_commit, execution).unwrap();
 
+    assert_ne!(original.snapshot_identity(), newer.snapshot_identity());
     assert_eq!(
-        route_record.source_snapshot().relational_snapshot_parts(),
-        Some(crate::facade::RelationalBridgeSnapshotIdentityParts::new(
-            1, 1
-        ))
+        routed.result().receipt().snapshot_identity(),
+        original.snapshot_identity()
+    );
+    assert_eq!(
+        runtime
+            .diagnostics()
+            .last_route_record()
+            .unwrap()
+            .source_snapshot(),
+        original.snapshot_identity()
     );
 }
 
 #[test]
-fn bridge_delivery_keeps_preplanned_snapshot_after_newer_truth_arrives_during_delivery() {
-    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
-    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
-
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(snapshot_a(), "alice"));
+fn bridge_delivery_keeps_preplanned_snapshot_after_newer_truth_arrives() {
+    let serial = crate::snapshot::test_serial_request();
+    let execution = ExecutionRequest::serial(&serial);
+    let truth = NamedTruth::new();
+    let (original_commit, original) = truth.commit_name(execution, "alice");
     let sink = RecordingSignalBridgeSink::default();
-    let runtime = build_runtime(source.clone(), sink.clone(), vec![registration()]);
-
+    let runtime = build_runtime(
+        truth.source.clone(),
+        sink.clone(),
+        vec![NamedTruth::mapping()],
+    );
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
-        .expect("bridge should plan from the original committed artifact");
+        .plan_committed_patch(BridgeRouteRequest::for_commit(original_commit), execution)
+        .unwrap();
+    let (_, newer) = truth.commit_name(execution, "bob");
 
-    source.insert_committed_patch(committed_patch(
-        commit_b(),
-        patch_b(),
-        snapshot_b(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(snapshot_b(), "bob"));
+    let result = runtime.deliver_invalidation(route, execution).unwrap();
 
-    let result = runtime
-        .deliver_invalidation(route, execution)
-        .expect("bridge should deliver the preplanned route against its original snapshot");
-
+    assert_ne!(original.snapshot_identity(), newer.snapshot_identity());
     assert_eq!(
-        result
-            .result_summary()
-            .snapshot_identity()
-            .relational_snapshot_parts(),
-        Some(crate::facade::RelationalBridgeSnapshotIdentityParts::new(
-            1, 1
-        ))
+        result.result_summary().snapshot_identity(),
+        original.snapshot_identity()
     );
     assert_eq!(
-        result
-            .receipt()
-            .snapshot_identity()
-            .relational_snapshot_parts(),
-        Some(crate::facade::RelationalBridgeSnapshotIdentityParts::new(
-            1, 1
-        ))
+        result.receipt().snapshot_identity(),
+        original.snapshot_identity()
     );
-    let delivered = sink
-        .last_delivery()
-        .expect("bridge sink should record the delivered artifact");
+    let delivered = sink.last_delivery().unwrap();
     assert!(!delivered.leased);
     assert_eq!(
-        delivered
-            .delivery
-            .source_snapshot()
-            .relational_snapshot_parts(),
-        Some(crate::facade::RelationalBridgeSnapshotIdentityParts::new(
-            1, 1
-        ))
+        delivered.delivery.source_snapshot(),
+        original.snapshot_identity()
     );
 }
 
 #[test]
 fn leased_facade_delivery_carries_the_lease_to_the_signal_sink() {
-    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
-    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
-
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        worth_foundational::facade::FieldKey::new("name".to_owned()).unwrap(),
-    ));
-    source.insert_snapshot(snapshot(snapshot_a(), "alice"));
+    let serial = crate::snapshot::test_serial_request();
+    let execution = ExecutionRequest::serial(&serial);
+    let truth = NamedTruth::new();
+    let (commit, _observation) = truth.commit_name(execution, "alice");
     let sink = RecordingSignalBridgeSink::default();
-    let runtime = build_runtime(source, sink.clone(), vec![registration()]);
+    let runtime = build_runtime(truth.source, sink.clone(), vec![NamedTruth::mapping()]);
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit), execution)
         .unwrap();
     let lease = crate::snapshot::test_execution_lease(worth_execution::CancellationToken::new());
 
     runtime
-        .deliver_invalidation(route, worth_execution::ExecutionRequest::leased(&lease))
-        .expect("leased route should reach the Signal sink");
+        .deliver_invalidation(route, ExecutionRequest::leased(&lease))
+        .unwrap();
+
     assert!(sink.last_delivery().unwrap().leased);
 }
 
 #[test]
 fn bridge_prepares_signal_evaluation_with_snapshot_context_without_sink_delivery() {
-    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
-    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
-
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(snapshot_a(), "alice"));
+    let serial = crate::snapshot::test_serial_request();
+    let execution = ExecutionRequest::serial(&serial);
+    let truth = NamedTruth::new();
+    let (commit, observation) = truth.commit_name(execution, "alice");
     let sink = RecordingSignalBridgeSink::default();
-    let runtime = build_runtime(source, sink.clone(), vec![registration()]);
-
+    let runtime = build_runtime(truth.source, sink.clone(), vec![NamedTruth::mapping()]);
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
-        .expect("bridge should plan the route");
-    let evaluation = runtime
-        .prepare_signal_evaluation(route, execution)
-        .expect("bridge should prepare signal evaluation");
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit), execution)
+        .unwrap();
+
+    let evaluation = runtime.prepare_signal_evaluation(route, execution).unwrap();
 
     assert_eq!(
-        evaluation
-            .snapshot()
-            .snapshot_identity()
-            .relational_snapshot_parts(),
-        Some(crate::facade::RelationalBridgeSnapshotIdentityParts::new(
-            1, 1
-        ))
+        evaluation.snapshot().snapshot_identity(),
+        observation.snapshot_identity()
     );
     assert!(sink.last_delivery().is_none());
 }
 
 #[test]
 fn bridge_prepared_signal_evaluation_keeps_preplanned_snapshot_after_newer_truth_arrives() {
-    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
-    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
-
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(snapshot_a(), "alice"));
-    let sink = RecordingSignalBridgeSink::default();
-    let runtime = build_runtime(source.clone(), sink, vec![registration()]);
-
+    let serial = crate::snapshot::test_serial_request();
+    let execution = ExecutionRequest::serial(&serial);
+    let truth = NamedTruth::new();
+    let (original_commit, original) = truth.commit_name(execution, "alice");
+    let runtime = build_runtime(
+        truth.source.clone(),
+        RecordingSignalBridgeSink::default(),
+        vec![NamedTruth::mapping()],
+    );
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
-        .expect("bridge should plan the route");
+        .plan_committed_patch(BridgeRouteRequest::for_commit(original_commit), execution)
+        .unwrap();
+    let (_, newer) = truth.commit_name(execution, "bob");
 
-    source.insert_committed_patch(committed_patch(
-        commit_b(),
-        patch_b(),
-        snapshot_b(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(snapshot_b(), "bob"));
+    let evaluation = runtime.prepare_signal_evaluation(route, execution).unwrap();
 
-    let evaluation = runtime
-        .prepare_signal_evaluation(route, execution)
-        .expect("bridge should prepare signal evaluation");
-
+    assert_ne!(original.snapshot_identity(), newer.snapshot_identity());
     assert_eq!(
-        evaluation
-            .snapshot()
-            .snapshot_identity()
-            .relational_snapshot_parts(),
-        Some(crate::facade::RelationalBridgeSnapshotIdentityParts::new(
-            1, 1
-        ))
+        evaluation.snapshot().snapshot_identity(),
+        original.snapshot_identity()
     );
 }

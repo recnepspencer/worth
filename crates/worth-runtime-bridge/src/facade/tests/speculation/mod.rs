@@ -1,13 +1,9 @@
 use crate::facade::{
-    AdmittedStructuralRegistry, BridgePreviewRetainedArtifactSchema, BridgePreviewSessionBasis,
+    BridgePreviewRetainedArtifactSchema, BridgePreviewSessionBasis,
     BridgePreviewSessionDeclaration, BridgePreviewSessionDeclarationIdentity,
     BridgePreviewStructuralBasis, BridgeRequestKind, BridgeSignalBranchIdentity,
     BridgeSourceCapability, BridgeSourceCapabilitySet, BridgeSpeculativeBranchBinding,
-    BridgeSpeculativeBranchBindingIdentity, BridgeTruthViewSelector,
-    StructuralFingerprintEquivalenceContract, StructuralFingerprintFamily,
-    StructuralFingerprintNormalizationRule, StructuralFingerprintOmissionPolicy,
-    StructuralFingerprintOrderingRule, StructuralIdentityDeclaration,
-    StructuralIdentityDeclarationIdentity, StructuralSchemaIdentity, StructuralTruthViewBasis,
+    BridgeSpeculativeBranchBindingIdentity, BridgeTruthViewSelector, SnapshotReadContract,
     TruthBranchIdentity, TruthSnapshotIdentity,
 };
 
@@ -55,47 +51,19 @@ fn preview_session_basis(input: PreviewSessionBasisInput) -> BridgePreviewSessio
     )
 }
 
-struct StructuralBasisInput {
-    schema_identity: StructuralSchemaIdentity,
-    declaration_identity: StructuralIdentityDeclarationIdentity,
-    truth_branch_identity: TruthBranchIdentity,
-    snapshot_identity: TruthSnapshotIdentity,
-    semantics_version: StructuralSemanticsVersion,
-}
+fn structural_basis(revision: u64) -> BridgePreviewStructuralBasis {
+    use worth_foundational::facade::{
+        AspectContract, AspectContractRevision, AspectIdentity, AspectKey, ScalarAspectType,
+    };
 
-enum StructuralSemanticsVersion {
-    Drift,
-    HostileReentry,
-}
-
-impl StructuralSemanticsVersion {
-    fn as_str(&self) -> &'static str {
-        match self {
-            Self::Drift => "topology-drift",
-            Self::HostileReentry => "topology-hostile-reentry",
-        }
-    }
-}
-
-fn structural_basis(input: StructuralBasisInput) -> BridgePreviewStructuralBasis {
-    let schema = input.schema_identity;
-    let declaration = StructuralIdentityDeclaration::advisory_remap(
-        input.declaration_identity,
-        schema.clone(),
-        StructuralFingerprintEquivalenceContract::new(
-            schema,
-            StructuralFingerprintFamily::TopologyFingerprint,
-            input.semantics_version.as_str(),
-            StructuralFingerprintNormalizationRule::SchemaDeclaredCanonicalForm,
-            StructuralFingerprintOrderingRule::SchemaDeclaredCanonicalOrder,
-            StructuralFingerprintOmissionPolicy::SchemaDeclaredOmissionPolicy,
-        ),
-        StructuralTruthViewBasis::explicit_snapshot(BridgeTruthViewSelector::branch_snapshot(
-            input.truth_branch_identity,
-            input.snapshot_identity,
-        )),
-    );
-    let registry =
-        AdmittedStructuralRegistry::freeze(vec![declaration]).expect("structural basis admits");
-    BridgePreviewStructuralBasis::from_admitted_contract(&registry.contracts()[0])
+    let contract = SnapshotReadContract::new(AspectContract::scalar(
+        AspectKey::new("topology").unwrap(),
+        AspectIdentity(1),
+        AspectContractRevision(revision),
+        ScalarAspectType::String,
+    ));
+    BridgePreviewStructuralBasis::from_snapshot_contract(
+        &contract,
+        preview_declaration().session_basis().truth_view_selector(),
+    )
 }

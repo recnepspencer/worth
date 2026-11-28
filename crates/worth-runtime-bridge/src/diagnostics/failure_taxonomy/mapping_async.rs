@@ -209,7 +209,9 @@ pub(super) fn localize_async_writeback_commit_report(
                 BridgeAsyncWritebackRejectedClass::LoopPreventionRejected => {
                     BridgeTemporalAsyncFailureSubcode::WritebackBoundaryLoopPrevented
                 }
-                BridgeAsyncWritebackRejectedClass::AuthorityRejected => {
+                BridgeAsyncWritebackRejectedClass::AuthorityRejected
+                | BridgeAsyncWritebackRejectedClass::CompletionOwnerMismatch
+                | BridgeAsyncWritebackRejectedClass::CompletionCommitUnavailable => {
                     BridgeTemporalAsyncFailureSubcode::WritebackBoundaryAuthorityRejected
                 }
             };

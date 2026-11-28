@@ -1,7 +1,5 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use worth_harness::facade::{ExecutionProfile, ExecutionRequest, ScenarioPlan};
-use worth_harness::runtime::HarnessAdapter;
 
 use crate::facade::{
     BridgeBulkDecisionRecordKind, BridgeBulkPlanningFailureKind, BridgeBulkWorkloadRequest,
@@ -16,13 +14,10 @@ use crate::facade::{
 };
 
 use super::support::{
-    build_runtime, committed_patch, committed_patch_items, field_aspect_registration,
-    field_slice_snapshot, registration, snapshot, surface_widening_registration,
+    build_runtime, committed_patch, committed_patch_items, registration,
+    surface_widening_registration,
 };
-use crate::harness::adapter::{BridgeHarnessAdapter, BridgeHarnessTargetId};
-use crate::harness::fixtures::{
-    BridgeHarnessFixture, InMemoryRelationalBridgeSource, RecordingSignalBridgeSink,
-};
+use crate::harness::fixtures::RecordingSignalBridgeSink;
 
 #[derive(Debug, Clone, Default)]
 struct TestContinuityLineageSource;

@@ -7,6 +7,7 @@ fn pricing_shock_showcase_artifact_explains_retained_commit_without_hidden_memor
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let scenario = generated_pricing_scenario();
+    let truth = RelationalPricing::reference(resource_request, &scenario, None);
     let bundle = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-showcase-artifact"),
@@ -19,10 +20,7 @@ fn pricing_shock_showcase_artifact_explains_retained_commit_without_hidden_memor
     let markdown = bundle.showcase_markdown_report();
     let completeness = bundle.bundle_completeness_evidence();
 
-    assert_eq!(
-        bundle.provenance.shock_commit,
-        crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock")
-    );
+    assert_eq!(bundle.provenance.shock_commit, truth.shock_commit);
     assert_eq!(bundle.provenance.shock_multiplier_per_mille, 4000);
     assert_eq!(bundle.fanout.second_delivery_target_count, 100);
     assert_eq!(
@@ -81,13 +79,13 @@ fn pricing_shock_showcase_artifact_explains_retained_commit_without_hidden_memor
         artifact["timeline"][2]["commit"]
             .as_str()
             .expect("timeline commit should be exported as string"),
-        "commit:rubber-shock"
+        truth.shock_commit.as_str()
     );
     assert_eq!(
         shock_commit["snapshot"]
             .as_str()
             .expect("shock commit snapshot should be exported as string"),
-        "snapshot:pricing-shock"
+        truth.shock_snapshot().as_str()
     );
     assert_eq!(
         shock_commit["representative_retail_price_cents"]
@@ -96,7 +94,7 @@ fn pricing_shock_showcase_artifact_explains_retained_commit_without_hidden_memor
         bundle.provenance.representative_retail_price_cents
     );
     assert!(markdown.contains("# Pricing Shock Showcase Report"));
-    assert!(markdown.contains("commit:rubber-shock"));
+    assert!(markdown.contains(truth.shock_commit.as_str()));
     assert!(markdown.contains("scooter-001"));
     assert!(markdown.contains("Suite 27"));
     assert!(markdown.contains("Trust Attacks"));

@@ -20,8 +20,5 @@ mod routing;
 mod source;
 mod speculation;
 mod speculation_certification;
-mod stream;
-mod structural;
 mod subscription_certification;
 mod support;
-mod writeback_certification;

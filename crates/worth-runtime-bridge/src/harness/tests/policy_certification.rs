@@ -4,29 +4,18 @@ use worth_harness::facade::{
 
 use crate::facade::BridgeRuntimePolicy;
 use crate::harness::adapter::{BridgeHarnessAdapter, BridgeHarnessTargetId};
-use crate::harness::fixtures::BridgeHarnessFixture;
-
-use super::support::{committed_patch, registration, snapshot};
+use crate::harness::fixtures::{BridgeHarnessFixture, NamedTruth, ScenarioRelationalTruth};
 
 fn policy_fixture(
     name: &str,
     policy: BridgeRuntimePolicy,
 ) -> worth_harness::facade::ScenarioFixture<BridgeHarnessFixture> {
+    let (truth, _commit) = ScenarioRelationalTruth::named("alice", false);
     ScenarioPlan::new(
         name,
-        BridgeHarnessFixture::new(vec![registration()])
+        BridgeHarnessFixture::new(vec![NamedTruth::mapping()])
             .with_policy(policy)
-            .with_committed_patch(committed_patch(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
+            .with_relational_truth(truth),
     )
     .declare_input("policy")
     .declare_observation("policy")

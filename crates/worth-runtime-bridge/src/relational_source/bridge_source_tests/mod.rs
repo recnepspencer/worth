@@ -10,5 +10,5 @@ mod read_cutover;
 mod retained_entity_projection;
 mod semantic_surface_matrix;
 mod shared_runtime_authority;
-mod struct_field_patch;
-mod support;
+pub(crate) mod struct_field_patch;
+pub(crate) mod support;

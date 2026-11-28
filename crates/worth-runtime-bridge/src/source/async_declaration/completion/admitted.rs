@@ -11,10 +11,12 @@ use super::completion::{
 use super::counters::BridgeAsyncCompletionCounters;
 use super::envelope::ValidatedBridgeAsyncCompletionEnvelope;
 use super::receipt::BridgeAsyncCompletionReceipt;
+use super::writeback_receipt::AsyncCompletionWritebackReceipt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdmittedBridgeAsyncCompletion {
     completion_identity: BridgeAsyncCompletionIdentity,
+    writeback_receipt: AsyncCompletionWritebackReceipt,
     request_identity: AdmittedBridgeAsyncRequestIdentity,
     validated_envelope: ValidatedBridgeAsyncCompletionEnvelope,
     admitted_completion: AdmittedResourceCompletion,
@@ -95,6 +97,7 @@ impl AdmittedBridgeAsyncCompletion {
 
         Self {
             completion_identity,
+            writeback_receipt: Default::default(),
             request_identity,
             validated_envelope,
             admitted_completion,
@@ -104,6 +107,10 @@ impl AdmittedBridgeAsyncCompletion {
             canonical_basis,
             digest: Arc::from(format!("bridge-async-completion:sha256:{digest:x}")),
         }
+    }
+
+    pub(crate) fn writeback_receipt(&self) -> &AsyncCompletionWritebackReceipt {
+        &self.writeback_receipt
     }
 
     pub fn completion_identity(&self) -> &str {

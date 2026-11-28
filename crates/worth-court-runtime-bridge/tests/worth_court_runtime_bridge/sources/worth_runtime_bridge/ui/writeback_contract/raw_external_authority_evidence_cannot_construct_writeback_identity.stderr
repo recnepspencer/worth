@@ -1,35 +1,11 @@
 error[E0599]: no associated function or constant named `from_external_authority_evidence` found for struct `worth_runtime_bridge::identity::BridgeIdentity<Tag>` in the current scope
- --> tests/ui/writeback_contract/raw_external_authority_evidence_cannot_construct_writeback_identity.rs:7:44
-  |
-7 |     let _ = BridgeWritebackEffectIdentity::from_external_authority_evidence("effect");
-  |                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ associated function or constant not found in `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::WritebackEffectIdentityTag>`
-  |
+  --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_contract/raw_external_authority_evidence_cannot_construct_writeback_identity.rs:4:44
+   |
+ 4 |     let _ = BridgeWritebackEffectIdentity::from_external_authority_evidence("forged-effect");
+   |                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ associated function or constant not found in `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::WritebackEffectIdentityTag>`
+   |
 note: if you're trying to build a new `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::WritebackEffectIdentityTag>`, consider using `worth_runtime_bridge::writeback::effect::derived_effect::<impl worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::WritebackEffectIdentityTag>>::from_bridge_evidence` which returns `worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::WritebackEffectIdentityTag>`
- --> src/writeback/effect/derived_effect.rs
-  |
-  |     pub fn from_bridge_evidence(evidence_identity: &BridgeIdentityEvidence) -> Self {
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error[E0599]: no associated function or constant named `from_external_authority_evidence` found for struct `BridgeNamingAttachmentIdentity` in the current scope
- --> tests/ui/writeback_contract/raw_external_authority_evidence_cannot_construct_writeback_identity.rs:8:45
-  |
-8 |     let _ = BridgeNamingAttachmentIdentity::from_external_authority_evidence("attachment");
-  |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ associated function or constant not found in `BridgeNamingAttachmentIdentity`
-  |
-note: if you're trying to build a new `BridgeNamingAttachmentIdentity`, consider using `BridgeNamingAttachmentIdentity::from_bridge_evidence` which returns `BridgeNamingAttachmentIdentity`
- --> src/writeback/naming_mutation.rs
-  |
-  |     pub fn from_bridge_evidence(evidence_identity: &BridgeIdentityEvidence) -> Self {
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error[E0599]: no associated function or constant named `from_external_authority_evidence` found for struct `BridgeExistingTruthBindingAuthoritativeIdentity` in the current scope
- --> tests/ui/writeback_contract/raw_external_authority_evidence_cannot_construct_writeback_identity.rs:9:62
-  |
-9 |     let _ = BridgeExistingTruthBindingAuthoritativeIdentity::from_external_authority_evidence(
-  |                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ associated function or constant not found in `BridgeExistingTruthBindingAuthoritativeIdentity`
-  |
-note: if you're trying to build a new `BridgeExistingTruthBindingAuthoritativeIdentity`, consider using `BridgeExistingTruthBindingAuthoritativeIdentity::from_bridge_evidence` which returns `BridgeExistingTruthBindingAuthoritativeIdentity`
- --> src/writeback/mutation_evidence/existing_truth.rs
-  |
-  |     pub fn from_bridge_evidence(evidence_identity: &BridgeIdentityEvidence) -> Self {
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  --> /Users/spencer/.t3/worktrees/worth-public/sol-r0-a-bridge-dead-sh-1d27576485d81464/crates/worth-runtime-bridge/src/writeback/effect/derived_effect.rs:14:5
+   |
+14 |     pub fn from_bridge_evidence(evidence_identity: &BridgeIdentityEvidence) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -32,32 +32,4 @@ impl RuntimeBridge {
             incoming_feedback_context,
         )
     }
-
-    /// Classifies strategy coherence for a lowered writeback candidate.
-    pub fn classify_writeback_strategy_coherence(
-        &self,
-        contract: &AdmittedBridgeWritebackContract,
-        effect: &BridgeDerivedWritebackEffect,
-        idempotence: &BridgeWritebackIdempotenceBasis,
-    ) -> BridgeWritebackStrategyCoherenceReport {
-        BridgeWritebackStrategyCoherenceReport::classify(contract, effect, idempotence)
-    }
-
-    /// Validates a fully assembled writeback candidate before authority execution.
-    pub fn validate_writeback_candidate(
-        &self,
-        contract: &AdmittedBridgeWritebackContract,
-        effect: &BridgeDerivedWritebackEffect,
-        idempotence: &BridgeWritebackIdempotenceBasis,
-        loop_prevention: &BridgeWritebackLoopPreventionReport,
-        strategy_coherence: &BridgeWritebackStrategyCoherenceReport,
-    ) -> Result<BridgeValidatedWritebackCandidate, BridgeWritebackError> {
-        BridgeValidatedWritebackCandidate::new(
-            contract,
-            effect,
-            idempotence,
-            loop_prevention,
-            strategy_coherence,
-        )
-    }
 }
