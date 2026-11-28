@@ -1103,6 +1103,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-dst"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "worth-execution",
+ "worth-foundational",
+]
+
+[[package]]
 name = "worth-execution"
 version = "0.1.0"
 dependencies = [

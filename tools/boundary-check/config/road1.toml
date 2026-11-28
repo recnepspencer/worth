@@ -1,3 +1,6 @@
+# Deterministic simulation support belongs in court dev-dependencies.
+dev_only_dependencies = ["worth-dst"]
+
 [[dependency_denials]]
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
 sources = [
@@ -7,6 +10,12 @@ sources = [
 ]
 forbidden_targets = ["worth-store"]
 guidance = "C.11 mechanism crates depend downward; only Store composes Blob, Layout, and LSM owners"
+
+[[source_dependency_allowlists]]
+workspace_manifest = "Cargo.toml"
+sources = ["worth-dst"]
+allowed_targets = ["serde_json", "worth-execution", "worth-foundational"]
+guidance = "The deterministic simulation testkit stays below domain runtimes; only Execution time, portable values and the trace encoder are allowed"
 
 [[source_dependency_allowlists]]
 workspace_manifest = "Cargo.toml"

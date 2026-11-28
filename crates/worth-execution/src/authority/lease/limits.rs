@@ -153,11 +153,24 @@ impl<'a> ExecutionResourceLease<'a> {
                 && crate::backend::RunLimits::parent_accounted())
     }
 
-    pub fn resolved_posture(&self) -> ExecutionPosture {
+    /// Resolves the admitted partition placement for this lease. The parallel
+    /// width is a ceiling. Available slots and batch size can reduce it.
+    pub fn placement(&self) -> crate::workers::ExecutionPlacement {
+        use crate::workers::ExecutionPlacement;
+
         if self.serial_cause().is_some() {
-            ExecutionPosture::Serial
+            ExecutionPlacement::Serial
         } else {
-            ExecutionPosture::Automatic
+            ExecutionPlacement::Parallel {
+                max_workers: self.policy.max_workers(),
+            }
+        }
+    }
+
+    pub fn resolved_posture(&self) -> ExecutionPosture {
+        match self.placement() {
+            crate::workers::ExecutionPlacement::Serial => ExecutionPosture::Serial,
+            crate::workers::ExecutionPlacement::Parallel { .. } => ExecutionPosture::Automatic,
         }
     }
 

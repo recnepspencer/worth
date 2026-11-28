@@ -36,9 +36,9 @@ impl MonotonicClock {
 
     pub fn now(&self) -> Instant {
         match &self.controlled {
-            None => Instant::now(),
+            None => crate::time::SystemClockAdapter::read_os_monotonic(),
             Some(state) => match *state.state.lock().expect("admission clock poisoned") {
-                ClockState::Running => Instant::now(),
+                ClockState::Running => crate::time::SystemClockAdapter::read_os_monotonic(),
                 ClockState::Held(now) => now,
             },
         }
@@ -101,7 +101,7 @@ impl MonotonicTimeController {
         let mut state = self.state.state.lock().expect("admission clock poisoned");
         match *state {
             ClockState::Running => {
-                let now = Instant::now();
+                let now = crate::time::SystemClockAdapter::read_os_monotonic();
                 *state = ClockState::Held(now);
                 now
             }

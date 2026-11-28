@@ -1,0 +1,17 @@
+[package]
+name = "worth-dst"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Deterministic simulation support for WORTH courts."
+publish = false
+autotests = false
+
+[dependencies]
+worth-foundational.workspace = true
+worth-execution.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

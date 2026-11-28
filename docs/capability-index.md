@@ -1375,6 +1375,14 @@ Home obligation readmission still decide continuation. The combined Bank journey
 exercises this fresh-process handoff, including exact original-owner readmission
 and subsequent dependency-driven advancement.
 
+## Platform composition and court support
+
+| Task | Owning API |
+| --- | --- |
+| Observe wall evidence or measure elapsed time in a platform runtime | Execution's `time::TimeSampler` issues samples from an injected clock. Foundational's `time::MonotonicInstant` checks boot identity before comparison or elapsed arithmetic. [Execution time](../crates/worth-execution/README.md#time-sampling) |
+| Choose physical placement for admitted deterministic partitions | Use `workers::ExecutionPlacement` to build a worker policy for `ExecutionAuthority`; use the lease to inspect resolved placement. [Execution workers](../crates/worth-execution/README.md) |
+| Reproduce a seeded court schedule with clock faults | Use `worth-dst::DstRunner` with a `Spec` and a `Seed`. [Deterministic simulation](../crates/worth-dst/README.md) |
+
 ## Known gaps
 
 Record and aspect history records no actor, and workflow history records no
