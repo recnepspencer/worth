@@ -10,23 +10,33 @@ pub(super) fn snapshot() -> TruthSnapshotIdentity {
 pub(super) fn branch() -> TruthBranchIdentity {
     TruthBranchIdentity::from_relational_branch_id("lowering")
 }
-pub(super) fn runtime() -> RuntimeBridge {
+pub(in crate::runtime_bridge) fn runtime() -> RuntimeBridge {
+    runtime_with_mapping(mapping())
+}
+
+pub(in crate::runtime_bridge) fn mapping() -> BridgeMappingRegistration {
     let aspect = AspectKey::new("empty").unwrap();
+    BridgeMappingRegistration::new(
+        BridgeMappingId::from_stable_name("lowering-unused-mapping"),
+        TruthPatchScope::for_entity_field(
+            MappingSelector::exact("unused"),
+            aspect.clone(),
+            FieldKey::new("value").unwrap(),
+        ),
+        SnapshotReadContract::scalar(aspect, ScalarAspectType::String),
+        SignalInvalidationScope::from_stable_name("unused"),
+        CoarseRoutingMode::Direct,
+    )
+}
+
+pub(in crate::runtime_bridge) fn runtime_with_mapping(
+    mapping: BridgeMappingRegistration,
+) -> RuntimeBridge {
     RuntimeBridgeBuilder::new()
         .with_committed_patch_source(EmptySnapshot)
         .with_snapshot_read_source(EmptySnapshot)
         .with_signal_sink(EmptySnapshot)
-        .register_mapping(BridgeMappingRegistration::new(
-            BridgeMappingId::from_stable_name("lowering-unused-mapping"),
-            TruthPatchScope::for_entity_field(
-                MappingSelector::exact("unused"),
-                aspect.clone(),
-                FieldKey::new("value").unwrap(),
-            ),
-            SnapshotReadContract::scalar(aspect, ScalarAspectType::String),
-            SignalInvalidationScope::from_stable_name("unused"),
-            CoarseRoutingMode::Direct,
-        ))
+        .register_mapping(mapping)
         .build()
         .unwrap()
 }

@@ -143,7 +143,7 @@ impl BridgeArtifactPolicyBaseline {
     }
 
     pub const fn operational() -> Self {
-        Self::new(true, true)
+        Self::new(false, false)
     }
 
     pub const fn development() -> Self {

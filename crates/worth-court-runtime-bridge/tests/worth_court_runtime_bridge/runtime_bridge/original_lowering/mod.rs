@@ -1,7 +1,7 @@
 //! Original admission owns lowering storage until the last public template drops.
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 use worth_runtime_bridge::facade::*;
-mod source;
+pub(super) mod source;
 
 // Observe the retained owner footprint, not a newly hard-coded allocation peak.
 fn retained_template_bytes() -> u64 {

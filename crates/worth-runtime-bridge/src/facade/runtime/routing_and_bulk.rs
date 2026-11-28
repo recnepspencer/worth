@@ -35,6 +35,19 @@ impl RuntimeBridge {
         self.plan_envelope_with_mapping_context(envelope, BridgeMappingContext::default())
     }
 
+    /// Plans one already-ingested envelope under an admitted route policy.
+    pub fn plan_envelope_with_route_policy(
+        &self,
+        envelope: BridgeCommittedPatchEnvelope,
+        route_policy: &BridgeRoutePlanningPolicy,
+    ) -> Result<BridgePlannedRoute, BridgeRouteError> {
+        self.plan_envelope_with_mapping_context_and_route_policy(
+            envelope,
+            BridgeMappingContext::default(),
+            route_policy,
+        )
+    }
+
     /// Plans one already-ingested committed-patch envelope with explicit mapping context.
     pub fn plan_envelope_with_mapping_context(
         &self,
@@ -260,6 +273,17 @@ impl RuntimeBridge {
         execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeReplaySummary, BridgeReplayError> {
         let route_record = record.decode()?;
+        if !self.policy.allow_replay_artifacts()
+            || route_record
+                .contract_proof()
+                .route_planning_policy()
+                .is_some_and(|policy| !policy.replay_artifacts())
+        {
+            return Err(BridgeReplayError::new(
+                BridgeReplayErrorKind::ReplayArtifactsDisabled,
+                "Bridge replay artifacts are disabled by the runtime or route policy.",
+            ));
+        }
         crate::routing::replay_route_record(self, &route_record, execution)
     }
 
@@ -333,7 +357,7 @@ impl RuntimeBridge {
 }
 
 impl RuntimeBridge {
-    fn ensure_route_planning_policy_coherent(
+    pub(super) fn ensure_route_planning_policy_coherent(
         &self,
         route_policy: &BridgeRoutePlanningPolicy,
     ) -> Result<(), BridgeRouteError> {

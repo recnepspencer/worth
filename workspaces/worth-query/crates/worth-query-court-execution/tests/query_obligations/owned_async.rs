@@ -30,6 +30,7 @@ fn mandatory_owned_async_keeps_payload_generation_lineage_and_requires_fresh_own
     };
     let payload = b"original request contents".to_vec();
     let declaration = QueryOwnedAsyncDefinition {
+        policies: Some(Default::default()),
         identity: "mandatory-source".into(),
         retention: QueryOwnedAsyncRetention::Mandatory,
         payload_contract: 37,
@@ -163,6 +164,7 @@ fn opted_in_owned_async_release_requires_declared_queue_and_preserves_terminal()
     let mut row = QueryOwnedAsyncObligation {
         identity,
         declaration: QueryOwnedAsyncDefinition {
+            policies: None,
             identity: "opted-in-source".into(),
             retention: QueryOwnedAsyncRetention::ProcessLocal,
             payload_contract: 37,

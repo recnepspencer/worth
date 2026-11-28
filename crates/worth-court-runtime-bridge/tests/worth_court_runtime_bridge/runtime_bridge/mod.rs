@@ -6,4 +6,5 @@ pub(crate) mod subscription_replay_folklore_guard;
 
 mod original_lowering;
 
+mod signal_port;
 mod world_baseline;

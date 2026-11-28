@@ -290,12 +290,10 @@ fn deliver_prepared_route_in_scope(
         ),
         receipt.delivered_target_count(),
     );
-    let retain_route_record = lowered
+    if lowered
         .route_scope()
-        .route_planning_policy()
-        .map(|policy| policy.route_artifacts())
-        .unwrap_or_else(|| runtime.policy().record_route_artifacts());
-    if retain_route_record {
+        .retains_route_record(runtime.policy().record_route_artifacts())
+    {
         runtime.diagnostics.record_route(BridgeRouteRecord::new(
             lowered.artifact().route_identity().clone(),
             lowered.artifact().invalidation_identity().clone(),

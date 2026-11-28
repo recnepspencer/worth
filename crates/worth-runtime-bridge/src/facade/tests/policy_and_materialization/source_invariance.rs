@@ -153,7 +153,7 @@ fn source_diagnostics_richness_preserves_source_truth() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let minimal = runtime(BridgeRuntimePolicy::operational());
+    let minimal = runtime(BridgeRuntimePolicy::operational().with_replay_artifacts(true));
     let exhaustive = runtime(BridgeRuntimePolicy::forensic());
     let declaration = registered_source(
         "source:analysis-history",

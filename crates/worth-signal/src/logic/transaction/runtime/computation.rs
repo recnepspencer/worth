@@ -1,3 +1,5 @@
+mod commit_evaluation;
+
 use crate::data::aspect::AspectVersion;
 use crate::data::comparator::VersionComparatorPolicy;
 use crate::data::error::SignalError;

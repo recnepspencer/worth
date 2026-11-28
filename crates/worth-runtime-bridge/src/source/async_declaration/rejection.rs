@@ -4,8 +4,6 @@ use super::BridgeAsyncSourceDeclarationCounters;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeAsyncSourceDeclarationRejectionKind {
-    RequestResponseObservationPolicyMismatch,
-    SubscriptionBackedObservationPolicyMismatch,
     SignalDeclarationRejected,
 }
 

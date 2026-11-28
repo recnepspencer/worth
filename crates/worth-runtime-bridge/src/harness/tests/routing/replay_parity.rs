@@ -99,7 +99,7 @@ fn replayed_policy_scoped_route_preserves_route_policy_digest_in_route_record() 
         BridgeRequestKind::Preview,
         BridgeExecutionPolicyClass::Optimized,
         BridgeDiagnosticsTier::Standard,
-        false,
+        true,
         true,
     );
     let contract = runtime

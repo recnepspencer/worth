@@ -166,7 +166,9 @@ fn reschedule_committed_wake(
             binding: clock,
             identity: wake.due.intent_identity().clone(),
             revision,
-            due_coordinate: scheduled_due,
+            condition: worth_runtime_bridge::facade::BridgeTemporalCondition::at_or_after(
+                scheduled_due,
+            ),
             idempotency_identity: std::sync::Arc::from(idempotency_identity),
             source_record_identity: wake.due.source_record_identity(),
             lifecycle: BridgeManagedTemporalIntentLifecycle::Active,
@@ -202,7 +204,9 @@ fn retire_committed_wake(
             binding: clock,
             identity: wake.due.intent_identity().clone(),
             revision,
-            due_coordinate: wake.due.due_coordinate(),
+            condition: worth_runtime_bridge::facade::BridgeTemporalCondition::at_or_after(
+                wake.due.due_coordinate(),
+            ),
             idempotency_identity: std::sync::Arc::from(wake.due.idempotency_identity()),
             source_record_identity: wake.due.source_record_identity(),
             lifecycle: BridgeManagedTemporalIntentLifecycle::Completed,

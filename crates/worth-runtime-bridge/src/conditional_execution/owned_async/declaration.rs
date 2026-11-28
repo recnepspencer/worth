@@ -1,5 +1,19 @@
 use std::sync::Arc;
 
+use worth_signal::facade::{
+    NodeId, ResourceCancellationPolicyDeclaration, ResourceDiagnosticsPolicyDeclaration,
+    ResourceLifecyclePolicyDeclaration, ResourceNodeDeclaration, ResourceNodeId,
+    ResourceObservationPolicyDeclaration, ResourceOutputContinuityPolicyDeclaration,
+    ResourcePayloadContract, ResourcePayloadContractId, ResourceReplayPolicyDeclaration,
+    ResourceRetentionPolicyDeclaration, ResourceRetryPolicyDeclaration,
+    ResourceRevalidationPolicyDeclaration, ResourceStaleAfterPolicyDeclaration,
+    ResourceSupersessionPolicyDeclaration, ResourceTimeoutPolicyDeclaration, TemporalDuration,
+};
+
+use crate::facade::{
+    BridgeAsyncSourceDeclarationRejection, BridgeAsyncSourceDeclarationRejectionKind,
+};
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BridgeOwnedAsyncRequestResponseDeclaration {
     pub(super) identity: Arc<str>,
@@ -10,6 +24,7 @@ pub struct BridgeOwnedAsyncRequestResponseDeclaration {
     pub(super) timeout_ticks: u64,
     pub(super) managed_queue_capacity: Option<std::num::NonZeroU64>,
     pub(super) process_local_retention: bool,
+    policies: Option<Box<BridgeOwnedAsyncResourcePolicies>>,
 }
 
 /// Declaration meaning only; it recreates no installed Signal source or port.
@@ -28,51 +43,80 @@ pub struct BridgeOwnedAsyncDeclarationDescription {
     pub timeout_ticks: u64,
     pub managed_queue_capacity: Option<std::num::NonZeroU64>,
     pub retention: BridgeOwnedAsyncRetention,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub policies: Option<BridgeOwnedAsyncResourcePolicies>,
 }
+/// Explicit Signal resource policies for an owned request-response declaration.
+#[derive(Clone, Debug, Default, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct BridgeOwnedAsyncResourcePolicies {
+    pub lifecycle: ResourceLifecyclePolicyDeclaration,
+    pub retry: ResourceRetryPolicyDeclaration,
+    pub timeout: ResourceTimeoutPolicyDeclaration,
+    pub cancellation: ResourceCancellationPolicyDeclaration,
+    pub stale_after: ResourceStaleAfterPolicyDeclaration,
+    pub supersession: ResourceSupersessionPolicyDeclaration,
+    pub revalidation: ResourceRevalidationPolicyDeclaration,
+    pub observation: ResourceObservationPolicyDeclaration,
+    pub output_continuity: ResourceOutputContinuityPolicyDeclaration,
+    pub retention: ResourceRetentionPolicyDeclaration,
+    pub diagnostics: ResourceDiagnosticsPolicyDeclaration,
+    pub replay: ResourceReplayPolicyDeclaration,
+}
+
 impl BridgeOwnedAsyncRequestResponseDeclaration {
     pub(super) fn signal_declaration(
         &self,
-        node: worth_signal::facade::NodeId,
-    ) -> Result<
-        worth_signal::facade::ResourceNodeDeclaration,
-        crate::facade::BridgeAsyncSourceDeclarationRejection,
-    > {
-        let retry_delay =
-            worth_signal::facade::TemporalDuration::temporal_duration(self.retry_delay_ticks)
-                .map_err(|error| {
-                    crate::facade::BridgeAsyncSourceDeclarationRejection::new(
-                crate::facade::BridgeAsyncSourceDeclarationRejectionKind::SignalDeclarationRejected,
-                error.to_string(),
-            )
-                })?;
-        let timeout = worth_signal::facade::TemporalDuration::temporal_duration(self.timeout_ticks)
-            .map_err(|error| {
-                crate::facade::BridgeAsyncSourceDeclarationRejection::new(
-                crate::facade::BridgeAsyncSourceDeclarationRejectionKind::SignalDeclarationRejected,
-                error.to_string(),
-            )
-            })?;
-        let mut resource = worth_signal::facade::ResourceNodeDeclaration::new(
-            worth_signal::facade::ResourceNodeId::from_node(node),
-            worth_signal::facade::ResourcePayloadContract::new(
-                worth_signal::facade::ResourcePayloadContractId::new(self.payload_contract),
-            )
-            .with_max_payload_bytes(self.max_payload_bytes),
-        )
-        .with_observation_policy(
-            worth_signal::facade::ResourceObservationPolicyDeclaration::LifecycleOnly,
-        )
-        .with_retry_policy(
-            worth_signal::facade::ResourceRetryPolicyDeclaration::FixedDelay { delay: retry_delay },
-        )
-        .with_timeout_policy(
-            worth_signal::facade::ResourceTimeoutPolicyDeclaration::PerAttemptTimeout { timeout },
-        )
-        .with_retry_max_attempts(self.retry_max_attempts);
+        node: NodeId,
+    ) -> Result<ResourceNodeDeclaration, BridgeAsyncSourceDeclarationRejection> {
+        if self.process_local_retention
+            && self.policies.as_ref().is_some_and(|policies| {
+                policies.retention != ResourceRetentionPolicyDeclaration::TerminalSummariesOnly
+            })
+        {
+            return Err(BridgeAsyncSourceDeclarationRejection::new(
+                BridgeAsyncSourceDeclarationRejectionKind::SignalDeclarationRejected,
+                "process-local retention requires a terminal-only resource policy",
+            ));
+        }
+        let mut resource = ResourceNodeDeclaration::new(
+            ResourceNodeId::from_node(node),
+            ResourcePayloadContract::new(ResourcePayloadContractId::new(self.payload_contract))
+                .with_max_payload_bytes(self.max_payload_bytes),
+        );
+        if let Some(policies) = &self.policies {
+            resource = resource
+                .with_lifecycle_policy(policies.lifecycle)
+                .with_retry_policy(policies.retry.clone())
+                .with_timeout_policy(policies.timeout.clone())
+                .with_cancellation_policy(policies.cancellation.clone())
+                .with_stale_after_policy(policies.stale_after.clone())
+                .with_supersession_policy(policies.supersession.clone())
+                .with_revalidation_policy(policies.revalidation.clone())
+                .with_observation_policy(policies.observation.clone())
+                .with_output_continuity_policy(policies.output_continuity.clone())
+                .with_retention_policy(policies.retention.clone())
+                .with_diagnostics_policy(policies.diagnostics.clone())
+                .with_replay_policy(policies.replay.clone());
+        } else {
+            resource = resource
+                .with_observation_policy(ResourceObservationPolicyDeclaration::LifecycleOnly)
+                .with_retry_policy(ResourceRetryPolicyDeclaration::FixedDelay {
+                    delay: duration(self.retry_delay_ticks)?,
+                })
+                .with_timeout_policy(ResourceTimeoutPolicyDeclaration::PerAttemptTimeout {
+                    timeout: duration(self.timeout_ticks)?,
+                });
+        }
+        if !matches!(
+            resource.retry_policy(),
+            ResourceRetryPolicyDeclaration::Disabled
+        ) {
+            resource = resource.with_retry_max_attempts(self.retry_max_attempts);
+        }
         if self.process_local_retention {
-            resource = resource.with_retention_policy(
-                worth_signal::facade::ResourceRetentionPolicyDeclaration::TerminalSummariesOnly,
-            );
+            resource = resource
+                .with_retention_policy(ResourceRetentionPolicyDeclaration::TerminalSummariesOnly);
         }
         Ok(resource)
     }
@@ -81,6 +125,7 @@ impl BridgeOwnedAsyncRequestResponseDeclaration {
     pub fn from_description(description: BridgeOwnedAsyncDeclarationDescription) -> Self {
         Self {
             identity: Arc::from(description.identity),
+            policies: description.policies.map(Box::new),
             payload_contract: description.payload_contract,
             max_payload_bytes: description.max_payload_bytes,
             retry_max_attempts: description.retry_max_attempts,
@@ -94,6 +139,7 @@ impl BridgeOwnedAsyncRequestResponseDeclaration {
     pub fn description(&self) -> BridgeOwnedAsyncDeclarationDescription {
         BridgeOwnedAsyncDeclarationDescription {
             identity: self.identity.to_string(),
+            policies: self.policies.as_deref().cloned(),
             payload_contract: self.payload_contract,
             max_payload_bytes: self.max_payload_bytes,
             retry_max_attempts: self.retry_max_attempts,
@@ -124,7 +170,15 @@ impl BridgeOwnedAsyncRequestResponseDeclaration {
             timeout_ticks,
             managed_queue_capacity: None,
             process_local_retention: false,
+            policies: None,
         }
+    }
+
+    /// Selects all twelve Signal resource policy families. Process-local declarations
+    /// require terminal-only Signal retention.
+    pub fn with_resource_policies(mut self, policies: BridgeOwnedAsyncResourcePolicies) -> Self {
+        self.policies = Some(Box::new(policies));
+        self
     }
 
     pub fn with_managed_queue_capacity(mut self, capacity: std::num::NonZeroU64) -> Self {
@@ -139,6 +193,19 @@ impl BridgeOwnedAsyncRequestResponseDeclaration {
         self
     }
 }
+fn duration(ticks: u64) -> Result<TemporalDuration, BridgeAsyncSourceDeclarationRejection> {
+    TemporalDuration::temporal_duration(ticks).map_err(|error| {
+        BridgeAsyncSourceDeclarationRejection::new(
+            BridgeAsyncSourceDeclarationRejectionKind::SignalDeclarationRejected,
+            error.to_string(),
+        )
+    })
+}
+
 #[cfg(test)]
 #[path = "declaration_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+#[path = "declaration_tests.rs"]
+mod tests;

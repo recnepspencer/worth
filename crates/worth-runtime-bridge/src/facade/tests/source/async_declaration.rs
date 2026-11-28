@@ -1,8 +1,7 @@
 use super::*;
 use crate::source::{
     BridgeAsyncSignalLoweringFamilyKind, BridgeAsyncSourceDeclarationDraft,
-    BridgeAsyncSourceDeclarationIdentity, BridgeAsyncSourceDeclarationRejectionKind,
-    BridgeAsyncSourceLegacyDeclarationIdentity,
+    BridgeAsyncSourceDeclarationIdentity, BridgeAsyncSourceLegacyDeclarationIdentity,
 };
 use worth_signal::facade::{
     AsyncNodeCapabilityDeclaration, AsyncNodePayloadContract, AsyncNodePayloadContractId, NodeId,
@@ -155,50 +154,44 @@ fn equivalent_subscription_backed_declarations_validate_and_lower_identically() 
 }
 
 #[test]
-fn request_response_family_rejects_output_bearing_observation_policy() {
+fn source_family_and_observation_policy_are_independent() {
     let runtime = runtime(BridgeRuntimePolicy::default());
-    let rejection = runtime
+    let visible = ResourceObservationPolicyDeclaration::LifecycleAndOutput;
+    let lifecycle = ResourceObservationPolicyDeclaration::LifecycleOnly;
+    let request = runtime
         .validate_async_source_declaration(request_response_draft(
-            "bridge-async:bad-request-response",
-            "source:legacy-bad-request-response",
-            ResourceObservationPolicyDeclaration::LifecycleAndOutput,
+            "bridge-async:visible-response",
+            "source:visible-response",
+            visible.clone(),
             NodeId::new(13, 0),
         ))
-        .expect_err("output-bearing request-response declaration should reject");
-
-    assert_eq!(
-        rejection.kind(),
-        BridgeAsyncSourceDeclarationRejectionKind::RequestResponseObservationPolicyMismatch
-    );
-    assert_eq!(
-        rejection
-            .counters()
-            .async_source_declaration_rejection_count(),
-        1
-    );
-}
-
-#[test]
-fn subscription_backed_family_rejects_lifecycle_only_observation_policy() {
-    let runtime = runtime(BridgeRuntimePolicy::default());
-    let rejection = runtime
+        .unwrap();
+    let subscription = runtime
         .validate_async_source_declaration(subscription_backed_draft(
-            "bridge-async:bad-subscription-backed",
-            "source:legacy-bad-subscription-backed",
-            ResourceObservationPolicyDeclaration::LifecycleOnly,
+            "bridge-async:lifecycle-subscription",
+            "source:lifecycle-subscription",
+            lifecycle.clone(),
             NodeId::new(23, 0),
         ))
-        .expect_err("lifecycle-only subscription-backed declaration should reject");
+        .unwrap();
 
+    let response = runtime.lower_async_source_declaration(&request).unwrap();
+    let subscription = runtime
+        .lower_async_source_declaration(&subscription)
+        .unwrap();
     assert_eq!(
-        rejection.kind(),
-        BridgeAsyncSourceDeclarationRejectionKind::SubscriptionBackedObservationPolicyMismatch
+        response
+            .request_response_declaration()
+            .unwrap()
+            .observation_policy(),
+        &visible
     );
     assert_eq!(
-        rejection
-            .counters()
-            .async_source_declaration_rejection_count(),
-        1
+        subscription
+            .subscription_backed_declaration()
+            .unwrap()
+            .observation_policy(),
+        &lifecycle
     );
 }
 

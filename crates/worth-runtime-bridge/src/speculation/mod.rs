@@ -13,8 +13,8 @@ mod taxonomy;
 mod validation;
 
 pub use binding::{
-    BridgeSignalBranchIdentity, BridgeSpeculativeBranchBinding,
-    BridgeSpeculativeBranchBindingIdentity,
+    BranchForkPosture, BridgeSignalBranchIdentity, BridgeSpeculativeBranchBinding,
+    BridgeSpeculativeBranchBindingIdentity, RelationalForkAxis, SignalForkAxis,
 };
 pub use contracts::{BridgePreviewReuseEquivalence, BridgePromotionAdmissibilityProof};
 pub use counters::BridgeSpeculationCounters;

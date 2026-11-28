@@ -144,7 +144,7 @@ bridge_identity_tags! {
     SubscriptionPreviewParentBasisIdentityTag, SubscriptionPreviewLifecycleIdentityTag,
     SubscriptionPreviewResidueScopeIdentityTag, SubscriptionPreviewResidueScopeIndexIdentityTag,
     SubscriptionPreviewResidueArtifactIdentityTag, SubscriptionPreviewLifecycleResidueEnvelopeIdentityTag,
-    SubscriptionPreviewDiscardResidueProofIdentityTag, SubscriptionPreviewPromotionRecordIdentityTag,
+    SubscriptionPreviewDiscardResidueProofIdentityTag,
     SubscriptionPreviewLifecyclePromotionIdentityTag, SubscriptionPreviewAuthoritativeReadmissionIdentityTag,
     SubscriptionPreviewWorkTraceIdentityTag, SubscriptionPreviewWorkRecordIdentityTag,
     SubscriptionTemporalAdmissionIdentityTag, SubscriptionTemporalActivationReadyIdentityTag,

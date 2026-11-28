@@ -16,7 +16,49 @@ impl RuntimeBridge {
         request: impl Into<BridgeRouteRequest>,
         execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeRoute, BridgeStandardRouteError> {
-        let planned = self.plan_committed_patch(request.into(), execution)?;
+        self.route_with_scope(
+            request.into(),
+            crate::routing::scope::RouteScope::begin(),
+            execution,
+        )
+    }
+
+    /// Routes and delivers one authoritative change under the admitted route policy.
+    pub fn route_with_policy(
+        &self,
+        request: impl Into<BridgeRouteRequest>,
+        route_policy: &BridgeRoutePlanningPolicy,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<BridgeRoute, BridgeStandardRouteError> {
+        self.ensure_route_planning_policy_coherent(route_policy)?;
+        if route_policy.execution_class() != BridgeExecutionPolicyClass::DeterministicCanonical {
+            return Err(BridgeRouteError::new(
+                BridgeRouteErrorKind::RoutePolicyMismatch,
+                "The authoritative standard route requires deterministic canonical execution.",
+            )
+            .into());
+        }
+        self.route_with_scope(
+            request.into(),
+            crate::routing::scope::RouteScope::begin()
+                .with_route_planning_policy(route_policy.clone()),
+            execution,
+        )
+    }
+
+    fn route_with_scope(
+        &self,
+        request: BridgeRouteRequest,
+        scope: crate::routing::scope::RouteScope,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<BridgeRoute, BridgeStandardRouteError> {
+        let ingested = crate::input::source::ingest_committed_patch(self, request, execution)?;
+        let planned = crate::routing::planning::plan_ingested_patch(
+            self,
+            ingested.with_route_scope(
+                scope.for_standard_delivery(self.policy.record_route_artifacts()),
+            ),
+        )?;
         let result = self.deliver_invalidation(planned.clone(), execution)?;
         Ok(BridgeRoute::new(planned, result))
     }

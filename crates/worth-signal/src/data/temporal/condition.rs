@@ -311,6 +311,22 @@ impl TemporalCondition {
         Self::Interval(interval)
     }
 
+    /// Initial scheduling coordinate when the condition is admitted at `current`.
+    pub fn first_due_tick(&self, current: ClockTick) -> ClockTick {
+        let delay = match self {
+            Self::AtOrAfter(condition) => return condition.tick(),
+            Self::After(condition) => condition.delay_ms(),
+            Self::Debounce(condition) => condition.quiet_period_ms(),
+            Self::Throttle(condition) => condition.window_ms(),
+            Self::StaleAfter(condition) => condition.stale_after_ms(),
+            Self::Interval(interval) => match interval.anchor() {
+                IntervalAnchor::ExplicitTick(tick) if *tick > current => return *tick,
+                _ => interval.period_ms(),
+            },
+        };
+        ClockTick::new(current.get().saturating_add(delay))
+    }
+
     pub fn clock_domain(&self) -> ClockDomain {
         match self {
             Self::After(condition) => condition.clock_domain(),

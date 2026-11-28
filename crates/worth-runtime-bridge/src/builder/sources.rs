@@ -233,6 +233,14 @@ impl<PatchState, SnapshotState, SignalState, BranchHeadState, MappingState>
         self
     }
 
+    pub fn with_conditional_retention_budget(
+        mut self,
+        budget: crate::policy::BridgeConditionalRetentionBudget,
+    ) -> Self {
+        self.policy = self.policy.with_conditional_retention(budget);
+        self
+    }
+
     pub fn with_snapshot_reader_pool<P>(mut self, pool: P) -> Self
     where
         P: SnapshotReaderPool,

@@ -6,6 +6,7 @@ use crate::policy::BridgeRoutePlanningPolicy;
 pub(crate) struct RouteScope {
     route_planning_policy: Option<BridgeRoutePlanningPolicy>,
     route_planning_policy_digest: Option<Arc<str>>,
+    omit_record_entries: bool,
 }
 
 impl RouteScope {
@@ -13,6 +14,7 @@ impl RouteScope {
         Self {
             route_planning_policy: None,
             route_planning_policy_digest: None,
+            omit_record_entries: false,
         }
     }
 
@@ -33,6 +35,23 @@ impl RouteScope {
         self.route_planning_policy = None;
         self.route_planning_policy_digest = Some(route_planning_policy_digest.into());
         self
+    }
+
+    pub(crate) fn for_standard_delivery(mut self, default_retention: bool) -> Self {
+        self.omit_record_entries = !self.retains_route_record(default_retention);
+        self
+    }
+
+    pub(crate) fn omit_record_entries(&self) -> bool {
+        self.omit_record_entries
+    }
+
+    pub(crate) fn retains_route_record(&self, default_retention: bool) -> bool {
+        !self.omit_record_entries
+            && self.route_planning_policy().map_or(
+                default_retention,
+                BridgeRoutePlanningPolicy::route_artifacts,
+            )
     }
 
     pub(crate) fn route_planning_policy(&self) -> Option<&BridgeRoutePlanningPolicy> {

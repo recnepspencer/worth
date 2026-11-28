@@ -100,7 +100,11 @@ pub use preview_session_liveness::{
     BridgePreviewSessionLivenessGuard, BridgePreviewSessionLivenessObserver,
 };
 pub use request::BridgeRouteRequest;
-pub use runtime::RuntimeBridge;
+pub use runtime::{
+    BridgeAsyncWritebackOutcome, BridgeAsyncWritebackSubmission, BridgeSignalRecipe,
+    BridgeSignalRecipeAsyncAdmission, BridgeSignalRecipeBinding, BridgeSignalRecipeObservation,
+    BridgeSignalWake, RuntimeBridge,
+};
 pub use runtime::{
     BridgeHomeProgramMappingDenial, BridgeHomeRetirementDenial, BridgeHomeRetirementProgress,
     RetiredRuntimeBridge, RetiringRuntimeBridge, RetiringWorldCorrespondence,

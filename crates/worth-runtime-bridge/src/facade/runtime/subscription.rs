@@ -199,50 +199,6 @@ impl RuntimeBridge {
         BridgeSubscriptionPreviewWorkTrace::record(preview_active, inputs)
     }
 
-    /// Proves the older scope-indexed preview residue boundary from Milestone
-    /// 15. This is not the Phase 14 lifecycle discard boundary.
-    pub fn prove_preview_scope_discard_residue(
-        &self,
-        preview_active: BridgePreviewActiveSubscription,
-        residue_scope_index: BridgeSubscriptionPreviewResidueScopeIndex,
-    ) -> Result<
-        BridgeSubscriptionPreviewDiscardResidueProof,
-        BridgeSubscriptionPreviewDiscardResidueRejection,
-    > {
-        let _ = self;
-        BridgeSubscriptionPreviewDiscardResidueProof::prove(preview_active, residue_scope_index)
-    }
-
-    /// Records the older preview-to-authoritative boundary record from
-    /// Milestone 15. This is not the Phase 14 lifecycle promotion and
-    /// authoritative readmission chain.
-    pub fn record_preview_authoritative_boundary(
-        &self,
-        preview_active: BridgePreviewActiveSubscription,
-        preview_work_trace: &BridgeSubscriptionPreviewWorkTrace,
-        promotion_record: &BridgePreviewPromotionRecord,
-        promoted_activation_ready: &BridgeSubscriptionActivationReady,
-    ) -> Result<BridgeSubscriptionPreviewPromotionRecord, BridgeSubscriptionPreviewPromotionRejection>
-    {
-        let _ = self;
-        BridgeSubscriptionPreviewPromotionRecord::promote(
-            preview_active,
-            preview_work_trace,
-            promotion_record,
-            promoted_activation_ready,
-        )
-    }
-
-    /// Builds a compact explanation for a subscription preview-promotion
-    /// boundary without reconstructing rich delivery diagnostics.
-    pub fn inspect_subscription_preview_promotion_record(
-        &self,
-        record: &BridgeSubscriptionPreviewPromotionRecord,
-    ) -> BridgeSubscriptionPreviewPromotionExplanation {
-        let _ = self;
-        BridgeSubscriptionPreviewPromotionExplanation::from_promotion_record(record)
-    }
-
     /// Admits an acknowledged canonical frontier from a sealed delivery window.
     pub fn admit_subscription_acknowledgement_frontier(
         &self,

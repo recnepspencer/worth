@@ -7,15 +7,9 @@ use crate::identity::{
 };
 use worth_signal::facade::{AsyncNodeCapabilityDeclaration, ResourceNodeDeclaration};
 
-use super::digest_basis::{
-    observation_policy_is_request_response_compatible,
-    observation_policy_is_subscription_backed_compatible, request_response_basis,
-    subscription_backed_basis,
-};
+use super::digest_basis::{request_response_basis, subscription_backed_basis};
 use super::family::BridgeAsyncSourceDeclarationFamilyKind;
-use super::rejection::{
-    BridgeAsyncSourceDeclarationRejection, BridgeAsyncSourceDeclarationRejectionKind,
-};
+use super::rejection::BridgeAsyncSourceDeclarationRejection;
 use super::BridgeAsyncSourceDeclarationCounters;
 
 pub type BridgeAsyncSourceDeclarationIdentity = BridgeIdentity<AsyncSourceDeclarationIdentityTag>;
@@ -96,33 +90,9 @@ impl ValidatedBridgeAsyncSourceDeclaration {
         let family_kind = draft.family_kind();
         let canonical_basis = match &draft.body {
             BridgeAsyncSourceDeclarationBody::RequestResponse { declaration } => {
-                if !observation_policy_is_request_response_compatible(
-                    declaration.observation_policy(),
-                ) {
-                    return Err(BridgeAsyncSourceDeclarationRejection::new(
-                        BridgeAsyncSourceDeclarationRejectionKind::RequestResponseObservationPolicyMismatch,
-                        format!(
-                            "bridge async request-response source `{}` requires `LifecycleOnly` observation policy, but declaration used `{:?}`",
-                            draft.declaration_identity.as_str(),
-                            declaration.observation_policy()
-                        ),
-                    ));
-                }
                 request_response_basis(draft.declaration_identity.as_str(), declaration)
             }
             BridgeAsyncSourceDeclarationBody::SubscriptionBacked { declaration } => {
-                if !observation_policy_is_subscription_backed_compatible(
-                    declaration.observation_policy(),
-                ) {
-                    return Err(BridgeAsyncSourceDeclarationRejection::new(
-                        BridgeAsyncSourceDeclarationRejectionKind::SubscriptionBackedObservationPolicyMismatch,
-                        format!(
-                            "bridge async subscription-backed source `{}` requires output-bearing observation policy, but declaration used `{:?}`",
-                            draft.declaration_identity.as_str(),
-                            declaration.observation_policy()
-                        ),
-                    ));
-                }
                 subscription_backed_basis(draft.declaration_identity.as_str(), declaration)
             }
         };

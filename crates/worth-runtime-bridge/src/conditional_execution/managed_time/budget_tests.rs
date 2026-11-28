@@ -129,7 +129,7 @@ pub(super) fn active<'a>(
         binding,
         identity: BridgeManagedTemporalIntentIdentity::declare(Arc::from(identity)).unwrap(),
         revision,
-        due_coordinate: due,
+        condition: crate::facade::BridgeTemporalCondition::at_or_after(due),
         idempotency_identity: Arc::from("idempotency:one"),
         source_record_identity: crate::facade::RelationalBridgeRecordIdentityParts::entity(0, 1, 1),
         lifecycle: BridgeManagedTemporalIntentLifecycle::Active,

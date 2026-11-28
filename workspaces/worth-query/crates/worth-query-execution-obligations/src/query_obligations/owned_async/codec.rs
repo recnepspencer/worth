@@ -206,24 +206,51 @@ fn definition(out: &mut Vec<u8>, declaration: &QueryOwnedAsyncDefinition) {
             .managed_queue_capacity
             .map_or(0, NonZeroU64::get),
     );
-    out.push(match declaration.retention {
+    let retention = match declaration.retention {
         QueryOwnedAsyncRetention::Mandatory => 0,
         QueryOwnedAsyncRetention::ProcessLocal => 1,
-    });
+    };
+    // The low bit carries retention in both forms. The second bit announces
+    // the optional policy section, preserving the original policy-free frame.
+    out.push(retention | (u8::from(declaration.policies.is_some()) << 1));
+    if let Some(policies) = &declaration.policies {
+        blob(
+            out,
+            &serde_json::to_vec(policies)
+                .expect("Signal policy declarations contain serializable data"),
+        );
+    }
 }
 fn read_definition(reader: &mut Reader<'_>) -> Result<QueryOwnedAsyncDefinition, Denial> {
+    let identity = String::from_utf8(read_blob(reader)?).map_err(|_| Denial::MalformedFrame)?;
+    let payload_contract = read_number(reader)?;
+    let max_payload_bytes = read_number(reader)?;
+    let retry_max_attempts = u32::from_le_bytes(reader.take()?);
+    let retry_delay_ticks = read_number(reader)?;
+    let timeout_ticks = read_number(reader)?;
+    let managed_queue_capacity = NonZeroU64::new(read_number(reader)?);
+    let retention_tag = reader.take::<1>()?[0];
+    let (retention, has_policies) = match retention_tag {
+        0 => (QueryOwnedAsyncRetention::Mandatory, false),
+        1 => (QueryOwnedAsyncRetention::ProcessLocal, false),
+        2 => (QueryOwnedAsyncRetention::Mandatory, true),
+        3 => (QueryOwnedAsyncRetention::ProcessLocal, true),
+        _ => return Err(Denial::MalformedFrame),
+    };
+    let policies = if has_policies {
+        Some(serde_json::from_slice(&read_blob(reader)?).map_err(|_| Denial::MalformedFrame)?)
+    } else {
+        None
+    };
     Ok(QueryOwnedAsyncDefinition {
-        identity: String::from_utf8(read_blob(reader)?).map_err(|_| Denial::MalformedFrame)?,
-        payload_contract: read_number(reader)?,
-        max_payload_bytes: read_number(reader)?,
-        retry_max_attempts: u32::from_le_bytes(reader.take()?),
-        retry_delay_ticks: read_number(reader)?,
-        timeout_ticks: read_number(reader)?,
-        managed_queue_capacity: NonZeroU64::new(read_number(reader)?),
-        retention: match reader.take::<1>()?[0] {
-            0 => QueryOwnedAsyncRetention::Mandatory,
-            1 => QueryOwnedAsyncRetention::ProcessLocal,
-            _ => return Err(Denial::MalformedFrame),
-        },
+        identity,
+        payload_contract,
+        max_payload_bytes,
+        retry_max_attempts,
+        retry_delay_ticks,
+        timeout_ticks,
+        managed_queue_capacity,
+        retention,
+        policies,
     })
 }

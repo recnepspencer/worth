@@ -106,6 +106,7 @@ pub(super) fn resource_original(retention: QueryOwnedAsyncRetention) -> QueryRes
         parameters: vec![("p".to_owned(), AspectValue::UInt64(11))],
         input: AspectValue::UInt64(41),
         declaration: QueryOwnedAsyncDefinition {
+            policies: None,
             identity: "installed source".to_owned(),
             payload_contract: 5,
             max_payload_bytes: 1024,

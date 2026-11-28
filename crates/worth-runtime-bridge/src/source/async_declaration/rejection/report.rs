@@ -42,16 +42,6 @@ fn report(
     denial: &BridgeAsyncSourceDeclarationRejection,
 ) -> (DenialClass, Disposition, &'static str) {
     match denial.kind() {
-        BridgeAsyncSourceDeclarationRejectionKind::RequestResponseObservationPolicyMismatch => (
-            InvalidInput,
-            CorrectInput,
-            "bridge.async_source.request_response_observation_policy_mismatch",
-        ),
-        BridgeAsyncSourceDeclarationRejectionKind::SubscriptionBackedObservationPolicyMismatch => (
-            InvalidInput,
-            CorrectInput,
-            "bridge.async_source.subscription_backed_observation_policy_mismatch",
-        ),
         BridgeAsyncSourceDeclarationRejectionKind::SignalDeclarationRejected => (
             Invariant,
             Escalate,

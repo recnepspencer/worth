@@ -62,15 +62,16 @@ pub use crate::conditional_execution::{
     BridgeOwnedAsyncEffectsIndeterminateIssuer, BridgeOwnedAsyncManagedDenial,
     BridgeOwnedAsyncManagedRequestAdmission, BridgeOwnedAsyncManagedRevalidation,
     BridgeOwnedAsyncReleasedResource, BridgeOwnedAsyncRequestAdmission,
-    BridgeOwnedAsyncRequestResponseDeclaration, BridgeOwnedAsyncResourceReleaseRefusal,
-    BridgeOwnedAsyncRetention, BridgeOwnedAsyncRetryAdmission, BridgeOwnedAsyncRetrySchedule,
+    BridgeOwnedAsyncRequestResponseDeclaration, BridgeOwnedAsyncResourcePolicies,
+    BridgeOwnedAsyncResourceReleaseRefusal, BridgeOwnedAsyncRetention,
+    BridgeOwnedAsyncRetryAdmission, BridgeOwnedAsyncRetrySchedule,
     BridgeOwnedAsyncRevalidationAdmission, BridgeOwnedAsyncSupersessionAdmission,
     BridgeOwnedAsyncTimeoutAdmission, BridgeOwnedConditionalInstallationRequest,
     BridgeOwnedSignalRuntime, BridgePlannedDefinitionLeg,
     BridgePreparedAuthoredDefinitionPublication, BridgePreparedConditionalInstallationExtension,
     BridgePublishedInitialSource, BridgeReadmittedAuthoredAssembly,
     BridgeRetainedConditionalDecisionSeed, BridgeSealedRuntimeAssembly, BridgeSignalDenial,
-    RetiringBridgeAuthoredAssembly, BRIDGE_AUTHORED_SECTION_PROTOCOL,
+    BridgeTemporalCondition, RetiringBridgeAuthoredAssembly, BRIDGE_AUTHORED_SECTION_PROTOCOL,
     BRIDGE_AUTHORED_SECTION_VERSION, BRIDGE_PLANNED_DEFINITION_LEG_VERSION,
 };
 pub use crate::continuity::{
@@ -272,7 +273,7 @@ pub use crate::source::{
     ValidatedSourceDeclaration,
 };
 pub use crate::speculation::{
-    BridgePreviewDiscardCleanupOutcome, BridgePreviewDiscardRecord,
+    BranchForkPosture, BridgePreviewDiscardCleanupOutcome, BridgePreviewDiscardRecord,
     BridgePreviewDiscardRecordIdentity, BridgePreviewExecutionRecord,
     BridgePreviewLifecycleStateKind, BridgePreviewLifecycleTransitionKind,
     BridgePreviewPromotionRecord, BridgePreviewPromotionRecordIdentity, BridgePreviewReplayBundle,
@@ -283,8 +284,8 @@ pub use crate::speculation::{
     BridgeRequestKind, BridgeSignalBranchIdentity, BridgeSpeculationCounters,
     BridgeSpeculationFailureClass, BridgeSpeculativeBranchBinding,
     BridgeSpeculativeBranchBindingIdentity, PreviewActive, PreviewAdmitted, PreviewDeclared,
-    PreviewDiscarded, PreviewExecutionRecordIdentity, PreviewPromoted,
-    ValidatedBridgePreviewSessionDeclaration,
+    PreviewDiscarded, PreviewExecutionRecordIdentity, PreviewPromoted, RelationalForkAxis,
+    SignalForkAxis, ValidatedBridgePreviewSessionDeclaration,
 };
 pub use crate::stream::{
     AdmittedConsumerContract, BackpressureDecisionRecord, CanonicalStreamMember,

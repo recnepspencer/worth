@@ -39,6 +39,30 @@ impl BridgeSpeculativeSessionHandle {
         BridgeSpeculativeComparison::from_active_session(&self.session)
     }
 
+    /// Materializes main and preview with the same read packet and compares the results.
+    pub fn evaluate_against_main<R>(
+        &self,
+        main_branch_identity: TruthBranchIdentity,
+        read_packet: SnapshotReadPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        compare: impl FnOnce(&BridgeTruthViewEvaluation, &BridgeTruthViewEvaluation) -> R,
+    ) -> Result<R, BridgeDeliveryError> {
+        let comparison = self.compare_to_main();
+        let main = self.runtime.evaluate(
+            comparison
+                .main_evaluation_request(main_branch_identity)
+                .with_read_packet(read_packet.clone()),
+            execution,
+        )?;
+        let preview = self.runtime.evaluate(
+            comparison
+                .speculative_evaluation_request()
+                .with_read_packet(read_packet),
+            execution,
+        )?;
+        Ok(compare(&main, &preview))
+    }
+
     /// Returns the retained diagnostics artifact facade.
     pub fn diagnostics(&self) -> &BridgeDiagnosticsFacade {
         self.runtime.diagnostics().retained_artifacts()

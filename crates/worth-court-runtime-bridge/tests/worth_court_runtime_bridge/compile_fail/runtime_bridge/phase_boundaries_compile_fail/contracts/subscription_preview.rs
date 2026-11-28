@@ -19,12 +19,22 @@ pub(super) fn contracts() -> Vec<Contract<'static>> {
             }],
         },
         Contract {
-            fixture: "subscription_preview_discard_residue_proof_literal_private.rs",
-            errors: &[Diagnostic::Uncoded {
-                cause: "cannot construct",
+            fixture: "subscription_preview_discard_rejects_authoritative_active.rs",
+            errors: &[Diagnostic::Code {
+                code: "E0308",
                 symbols: &[
-                    "BridgeSubscriptionPreviewDiscardResidueProof",
-                    "private fields",
+                    "BridgePreviewActiveSubscription",
+                    "BridgeActiveSubscription",
+                ],
+            }],
+        },
+        Contract {
+            fixture: "subscription_preview_promotion_rejects_authoritative_active.rs",
+            errors: &[Diagnostic::Code {
+                code: "E0308",
+                symbols: &[
+                    "BridgePreviewActiveSubscription",
+                    "BridgeActiveSubscription",
                 ],
             }],
         },

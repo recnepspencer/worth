@@ -15,6 +15,11 @@ pub use home_program_mapping::BridgeHomeProgramMappingDenial;
 mod policy;
 mod routing_and_bulk;
 mod source;
+pub use source::{
+    BridgeAsyncWritebackOutcome, BridgeAsyncWritebackSubmission, BridgeSignalRecipe,
+    BridgeSignalRecipeAsyncAdmission, BridgeSignalRecipeBinding, BridgeSignalRecipeObservation,
+    BridgeSignalWake,
+};
 mod speculation;
 mod stream;
 mod structural;

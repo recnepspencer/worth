@@ -317,6 +317,7 @@ pub struct BridgeMappingRegistration {
     snapshot_read_contract: SnapshotReadContract,
     signal_scope: SignalInvalidationScope,
     routing_mode: CoarseRoutingMode,
+    version_comparator: Option<worth_signal::facade::VersionComparatorPolicy>,
 }
 
 impl BridgeMappingRegistration {
@@ -333,7 +334,20 @@ impl BridgeMappingRegistration {
             snapshot_read_contract,
             signal_scope,
             routing_mode,
+            version_comparator: None,
         }
+    }
+
+    pub fn with_version_comparator(
+        mut self,
+        policy: worth_signal::facade::VersionComparatorPolicy,
+    ) -> Self {
+        self.version_comparator = Some(policy);
+        self
+    }
+
+    pub fn version_comparator(&self) -> Option<&worth_signal::facade::VersionComparatorPolicy> {
+        self.version_comparator.as_ref()
     }
 
     pub fn mapping_id(&self) -> &BridgeMappingId {

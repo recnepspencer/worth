@@ -127,7 +127,7 @@ pub use managed_time::{
     BridgeManagedDueWakeBuffer, BridgeManagedDueWakeIntoIter, BridgeManagedTemporalDenial,
     BridgeManagedTemporalDenialKind, BridgeManagedTemporalIntentIdentity,
     BridgeManagedTemporalIntentLifecycle, BridgeManagedTemporalIntentReconciliation,
-    BridgeManagedTemporalIntentReconciliationParts,
+    BridgeManagedTemporalIntentReconciliationParts, BridgeTemporalCondition,
 };
 pub use managed_wake_execution::BridgeManagedConditionalExecutionRequest;
 pub use output_comparison::{
@@ -137,8 +137,8 @@ pub use owned_async::{
     BridgeOwnedAsyncCommittedCompletion, BridgeOwnedAsyncDeclarationDescription,
     BridgeOwnedAsyncManagedDenial, BridgeOwnedAsyncManagedRequestAdmission,
     BridgeOwnedAsyncManagedRevalidation, BridgeOwnedAsyncReleasedResource,
-    BridgeOwnedAsyncRequestResponseDeclaration, BridgeOwnedAsyncResourceReleaseRefusal,
-    BridgeOwnedAsyncRetention,
+    BridgeOwnedAsyncRequestResponseDeclaration, BridgeOwnedAsyncResourcePolicies,
+    BridgeOwnedAsyncResourceReleaseRefusal, BridgeOwnedAsyncRetention,
 };
 pub use owned_async_observation::{
     BridgeAsyncEffectsIndeterminateObservation, BridgeOwnedAsyncCompletionAdmission,
