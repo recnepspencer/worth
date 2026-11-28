@@ -135,12 +135,12 @@ where
             graph: std::mem::take(&mut self.graph),
             config: std::mem::take(&mut self.config),
         };
+        self.graph.telemetry_clock = authority.graph.telemetry_clock.clone();
         let checkpoint_policy = self.checkpoint.policy().clone();
+        let mut empty_checkpoint = CheckpointRuntime::new(checkpoint_policy);
+        empty_checkpoint.bind_telemetry_clock(&authority.graph.telemetry_clock);
         let derived = DerivedState {
-            checkpoint: std::mem::replace(
-                &mut self.checkpoint,
-                CheckpointRuntime::new(checkpoint_policy),
-            ),
+            checkpoint: std::mem::replace(&mut self.checkpoint, empty_checkpoint),
             resource: std::mem::take(&mut self.resource),
             temporal: std::mem::take(&mut self.temporal),
             telemetry: if captures_telemetry {

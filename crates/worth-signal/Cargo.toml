@@ -31,6 +31,7 @@ sha2 = "0.10"
 im = { version = "=15.1.0", features = ["serde"] }
 arc-swap = "1"
 [dev-dependencies]
+worth-dst = { path = "../worth-dst" }
 "worth-harness" = { "workspace" = true }
 "serde_json" = { "version" = "1", "features" = ["arbitrary_precision"] }
 "stats_alloc" = "0.1"

@@ -302,4 +302,5 @@ fn signal_declaration_rejected(
         BridgeAsyncSourceDeclarationRejectionKind::SignalDeclarationRejected,
         error.to_string(),
     )
+    .with_signal_cause(error)
 }

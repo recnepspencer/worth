@@ -144,6 +144,7 @@ impl BridgeDiagnosticsFacade {
         source: BridgeFailureSource,
         error: &BridgeDeliveryError,
     ) {
+        self.emit_operator_report(error);
         self.record_failure(BridgeFailureRecord::from_failure(
             source,
             BridgeFailureClass::Delivery(error.kind()),
@@ -157,6 +158,7 @@ impl BridgeDiagnosticsFacade {
         source: BridgeFailureSource,
         error: &BridgeReplayError,
     ) {
+        self.emit_operator_report(error);
         self.record_failure(BridgeFailureRecord::from_failure(
             source,
             BridgeFailureClass::Replay(error.kind()),

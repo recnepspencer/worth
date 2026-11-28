@@ -154,6 +154,19 @@ impl fmt::Display for SignalExecutionStop {
     }
 }
 
+impl std::error::Error for SignalExecutionStop {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match &self.reason {
+            SignalExecutionStopReason::Failure {
+                cause: SignalExecutionFailure::Domain(error),
+                ..
+            } => Some(error.as_ref()),
+            SignalExecutionStopReason::Admission(denial) => Some(denial),
+            _ => None,
+        }
+    }
+}
+
 impl ChargedBytes for SignalExecutionStop {
     fn additional_charged_bytes(&self) -> u64 {
         match &self.reason {

@@ -178,6 +178,7 @@ impl RuntimeBridge {
 
     pub(crate) fn new(
         policy: BridgeRuntimePolicy,
+        diagnostic_sink: Arc<dyn worth_execution::report::DiagnosticSink>,
         committed_patch_source: Arc<dyn CommittedPatchSource>,
         snapshot_read_source: Arc<dyn SnapshotReadSource>,
         signal_sink: Arc<dyn InvalidationSink>,
@@ -193,7 +194,7 @@ impl RuntimeBridge {
         subscription_family_registry: FrozenSubscriptionFamilyRegistry,
         semantic_dependency_registry: crate::correspondence::AdmittedSemanticDependencyRegistry,
     ) -> Self {
-        let diagnostics = BridgeDiagnosticsFacade::new(policy);
+        let diagnostics = BridgeDiagnosticsFacade::new(policy, diagnostic_sink);
         let authoritative_source_profile = committed_patch_source.authoritative_source_profile();
         let signal_runtime_key = fresh_signal_runtime_key();
         Self {

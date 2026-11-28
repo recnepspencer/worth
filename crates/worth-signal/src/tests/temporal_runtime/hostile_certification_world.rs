@@ -90,7 +90,16 @@ fn exercise_temporal_phase9_hostile_suffix_on_active_branch(
         .observe()
         .replay_for_branch(runtime.observe().current_branch().id);
 
+    let boot_before_restore = runtime.time_sampler().monotonic();
     runtime.restore_snapshot(&snapshot).unwrap();
+    assert!(
+        runtime
+            .time_sampler()
+            .monotonic()
+            .cmp_same_epoch(boot_before_restore)
+            .is_ok(),
+        "snapshot restore must keep the serving runtime clock"
+    );
     let head_snapshot_after_restore = runtime
         .observe()
         .branch_head_snapshot_id(runtime.observe().current_branch().id);
@@ -135,7 +144,11 @@ pub(super) fn temporal_phase9_mixed_workload() -> TemporalPhase9MixedWorkloadOut
     );
     let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
+    let mut rng = worth_dst::Seed::new(9).rng();
+    let time = std::sync::Arc::new(worth_execution::time::ControlledTime::at_unix_secs(1_000));
+    let sampler = std::sync::Arc::new(worth_execution::time::TimeSampler::new(time.clone()));
     let mut runtime = SignalRuntime::builder(SignalGraph::new())
+        .with_time_sampler(sampler.clone())
         .with_kernel_defaults()
         .build();
     let output_aspect = Aspect::new(3);
@@ -230,7 +243,10 @@ pub(super) fn temporal_phase9_mixed_workload() -> TemporalPhase9MixedWorkloadOut
     runtime.switch_branch(feature.clone()).unwrap();
     let feature = exercise_temporal_phase9_hostile_suffix_on_active_branch(&mut runtime);
 
+    time.step_wall_back(std::time::Duration::from_secs(1 + rng.below(30) as u64));
+    time.reboot_epoch();
     runtime.switch_branch(sibling.clone()).unwrap();
+    assert_eq!(runtime.time_sampler().monotonic(), sampler.monotonic());
     let sibling = exercise_temporal_phase9_hostile_suffix_on_active_branch(&mut runtime);
 
     runtime.switch_branch(main).unwrap();

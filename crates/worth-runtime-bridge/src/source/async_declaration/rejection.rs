@@ -11,6 +11,7 @@ pub enum BridgeAsyncSourceDeclarationRejectionKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgeAsyncSourceDeclarationRejection {
+    signal_cause: Option<Box<worth_signal::facade::SignalError>>,
     kind: BridgeAsyncSourceDeclarationRejectionKind,
     detail: Arc<str>,
     counters: BridgeAsyncSourceDeclarationCounters,
@@ -22,10 +23,16 @@ impl BridgeAsyncSourceDeclarationRejection {
         detail: impl Into<Arc<str>>,
     ) -> Self {
         Self {
+            signal_cause: None,
             kind,
             detail: detail.into(),
             counters: BridgeAsyncSourceDeclarationCounters::rejected(),
         }
+    }
+
+    pub(super) fn with_signal_cause(mut self, cause: worth_signal::facade::SignalError) -> Self {
+        self.signal_cause = Some(Box::new(cause));
+        self
     }
 
     pub fn kind(&self) -> BridgeAsyncSourceDeclarationRejectionKind {
@@ -40,3 +47,5 @@ impl BridgeAsyncSourceDeclarationRejection {
         &self.counters
     }
 }
+
+mod report;

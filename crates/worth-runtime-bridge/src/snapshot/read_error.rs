@@ -205,4 +205,11 @@ impl std::fmt::Display for BridgeSnapshotReadError {
     }
 }
 
-impl std::error::Error for BridgeSnapshotReadError {}
+impl std::error::Error for BridgeSnapshotReadError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match &self.kind {
+            BridgeSnapshotReadErrorKind::ExecutionDenied(denial) => Some(denial),
+            _ => None,
+        }
+    }
+}

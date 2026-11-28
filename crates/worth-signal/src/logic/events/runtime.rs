@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 
-use crate::clock::RuntimeInstant;
 use crate::data::checkpoint::CheckpointBarrier;
 use crate::data::event_subscriber::{EventSubscriber, SubscriberId};
 use crate::data::subscriber_context::SubscriberContext;
@@ -28,6 +27,7 @@ pub struct EventBus<E, D, C = ()>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
 {
+    clock: crate::clock::SignalTelemetryClock,
     pending: Vec<E>,
     subscribers: Vec<SubscriberEntry<E, D, C>>,
     order: Vec<usize>,
@@ -55,8 +55,13 @@ where
     D: Copy + Ord + std::fmt::Debug + 'static,
 {
     /// Create an empty bus.
+    pub(crate) fn bind_telemetry_clock(&mut self, clock: &crate::clock::SignalTelemetryClock) {
+        self.clock = clock.clone();
+    }
+
     pub fn new() -> Self {
         Self {
+            clock: Default::default(),
             pending: Vec::new(),
             subscribers: Vec::new(),
             order: Vec::new(),
@@ -202,7 +207,7 @@ where
         runtime: &mut C,
         capture_telemetry: bool,
     ) -> Result<Vec<CompletedSubscriber>, EventFlushError<D>> {
-        let flush_start = RuntimeInstant::now();
+        let flush_start = self.clock.0.monotonic();
         self.ensure_finalized().map_err(EventFlushError::Registry)?;
 
         let routed_batches = self.event_router.as_ref().map(|router| {
@@ -264,7 +269,8 @@ where
         self.context.finalize();
         if capture_telemetry {
             self.telemetry.checkpoint.event_flushes += 1;
-            self.telemetry.checkpoint.event_flush_nanos += flush_start.elapsed().as_nanos();
+            self.telemetry.checkpoint.event_flush_nanos +=
+                crate::clock::elapsed_nanos(&self.clock.0, flush_start);
         }
         Ok(completed_subscribers)
     }

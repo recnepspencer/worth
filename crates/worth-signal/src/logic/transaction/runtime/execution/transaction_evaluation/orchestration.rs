@@ -1,4 +1,3 @@
-use crate::clock::RuntimeInstant;
 use crate::data::comparator::{
     DefaultComparatorPolicyResolver, DefaultComparatorResolver, VersionComparatorPolicy,
 };
@@ -144,7 +143,7 @@ where
         self.admit_temporal_wakes_for_nodes(targets)?;
         self.promote_due_temporal_wakes_ready()?;
         let temporal = self.temporal_lowering_context_for_nodes(targets);
-        let started = RuntimeInstant::now();
+        let started = self.graph.time_sampler().monotonic();
         let report = execute_targets_with_prepared_runtime_config_in_scope(
             self.graph,
             self.config,
@@ -158,7 +157,7 @@ where
             preparation,
         )?;
         self.execution_state
-            .record_report(&report, started.elapsed().as_nanos());
+            .record_report(&report, self.graph.elapsed_nanos(started));
         self.scratch.temporal.absorb_report(&report);
         self.lower_observation_classifications_from_report(&report)?;
         self.retire_consumed_temporal_wakes_from_report(&report)?;
@@ -266,7 +265,7 @@ where
         self.admit_temporal_wakes_for_nodes(targets)?;
         self.promote_due_temporal_wakes_ready()?;
         let temporal_lowering = self.temporal_lowering_context_for_nodes(targets);
-        let execution_start = RuntimeInstant::now();
+        let execution_start = self.graph.time_sampler().monotonic();
         let report = match execute_targets_with_runtime_config_detailed(
             self.graph,
             self.config,
@@ -289,7 +288,7 @@ where
             }
         };
         self.execution_state
-            .record_report(&report, execution_start.elapsed().as_nanos());
+            .record_report(&report, self.graph.elapsed_nanos(execution_start));
         self.scratch.temporal.absorb_report(&report);
         self.lower_observation_classifications_from_report(&report)?;
         self.with_telemetry(|telemetry| absorb_execution_report_telemetry(telemetry, &report));

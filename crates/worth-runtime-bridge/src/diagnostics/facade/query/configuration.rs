@@ -1,9 +1,16 @@
 use super::*;
 
 impl BridgeDiagnosticsFacade {
-    pub(crate) fn new(policy: BridgeRuntimePolicy) -> Self {
+    pub(crate) fn new(
+        policy: BridgeRuntimePolicy,
+        diagnostic_sink: Arc<dyn worth_execution::report::DiagnosticSink>,
+    ) -> Self {
         let retention_budget = policy.retention_budget();
         Self {
+            operator_reports: super::operator_reports::BridgeOperatorReports::new(
+                policy.diagnostics_tier(),
+                diagnostic_sink,
+            ),
             config: Arc::new(BridgeDiagnosticsConfig {
                 tier: policy.diagnostics_tier(),
                 records_enabled: policy.record_route_artifacts(),

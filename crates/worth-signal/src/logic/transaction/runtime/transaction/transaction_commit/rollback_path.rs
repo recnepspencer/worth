@@ -1,7 +1,7 @@
-use crate::clock::RuntimeInstant;
 use crate::data::error::SignalError;
 use crate::diagnostics::replay::ReplayEventKind;
 use crate::diagnostics::{ExecutionFailureContext, ExecutionFailurePhase, RollbackDiagnostic};
+use worth_foundational::time::MonotonicInstant;
 
 use super::super::transaction_types::{
     CreatedNodeRollbackDelta, GraphPatchRollbackDelta, SignalTransaction,
@@ -33,7 +33,7 @@ where
     fn rollback_with_restoration_status(
         mut self,
     ) -> Result<(TransactionResult, Option<SignalError>), SignalError> {
-        let commit_start = RuntimeInstant::now();
+        let commit_start = self.graph.time_sampler().monotonic();
         if self.finished {
             return Err(SignalError::transaction_finished());
         }
@@ -92,7 +92,7 @@ where
                 true,
                 TransactionOutcome::Poisoned,
                 touched_nodes,
-                commit_start.elapsed().as_nanos(),
+                self.graph.elapsed_nanos(commit_start),
             ));
         }
         if self.graph.captures_observation_surface(
@@ -112,7 +112,7 @@ where
             true,
             TransactionOutcome::RolledBack,
             touched_nodes,
-            commit_start.elapsed().as_nanos(),
+            self.graph.elapsed_nanos(commit_start),
         ))
     }
 
@@ -158,7 +158,7 @@ where
         failure_phase: ExecutionFailurePhase,
         increment_poison_count: bool,
         outcome: Result<TransactionOutcome, SignalError>,
-        commit_start: RuntimeInstant,
+        commit_start: MonotonicInstant,
     ) -> Result<TransactionResult, SignalError> {
         let rollback_patch_count = self.rollback_patch_count();
         let touched_nodes = self.scratch.graph_patches.touched_nodes(self.graph).len() as u32;
@@ -238,14 +238,14 @@ where
                 true,
                 outcome,
                 touched_nodes,
-                commit_start.elapsed().as_nanos(),
+                self.graph.elapsed_nanos(commit_start),
             )),
             Err(err) => {
                 let _ = self.finalize_semantic_delta(
                     true,
                     TransactionOutcome::RolledBack,
                     touched_nodes,
-                    commit_start.elapsed().as_nanos(),
+                    self.graph.elapsed_nanos(commit_start),
                 );
                 Err(err)
             }

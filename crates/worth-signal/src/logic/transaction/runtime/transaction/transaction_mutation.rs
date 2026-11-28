@@ -1,4 +1,3 @@
-use crate::clock::RuntimeInstant;
 use crate::data::aspect::Aspect;
 use crate::data::checkpoint::CheckpointBarrier;
 use crate::data::dependency::DependencyEdge;
@@ -200,7 +199,7 @@ where
     where
         Ev: CheckpointEvaluator<Domain = D, Impact = I>,
     {
-        let flush_start = RuntimeInstant::now();
+        let flush_start = self.graph.time_sampler().monotonic();
         let domains: Vec<D> = self
             .scratch
             .staged_dirty
@@ -219,7 +218,7 @@ where
 
         if self.captures_optional_telemetry() {
             self.scratch.staged_checkpoint_flushes += 1;
-            self.scratch.staged_checkpoint_flush_nanos += flush_start.elapsed().as_nanos();
+            self.scratch.staged_checkpoint_flush_nanos += self.graph.elapsed_nanos(flush_start);
         }
         Ok(domains.len())
     }

@@ -26,6 +26,7 @@ impl BridgePreparedConditionalReconstitution {
                 self.runtime_key,
                 &self.retention,
                 parts,
+                None,
             )?;
         if self.managed_clocks.contains_key(declaration.identity()) {
             return Err(denied("duplicate reconstructed managed clock"));

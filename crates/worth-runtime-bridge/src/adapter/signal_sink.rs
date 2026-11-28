@@ -11,6 +11,21 @@ pub enum SignalBridgeSinkErrorKind {
     WorldPublicationRequired,
 }
 
+impl std::fmt::Display for SignalBridgeSinkErrorKind {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("Signal sink rejected the request.")
+    }
+}
+
+impl std::error::Error for SignalBridgeSinkErrorKind {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Execution(denial) => Some(denial),
+            _ => None,
+        }
+    }
+}
+
 /// A typed sink cause accompanied by diagnostic text.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SignalBridgeSinkError {
@@ -57,7 +72,11 @@ impl std::fmt::Display for SignalBridgeSinkError {
         f.write_str(&self.message)
     }
 }
-impl std::error::Error for SignalBridgeSinkError {}
+impl std::error::Error for SignalBridgeSinkError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.kind)
+    }
+}
 
 pub trait InvalidationSink: Send + Sync + 'static {
     fn deliver_invalidation(

@@ -1,5 +1,4 @@
 use super::super::signal_graph::SignalGraph;
-use crate::clock::RuntimeInstant;
 
 impl SignalGraph {
     pub fn tombstone_count(&self) -> u32 {
@@ -30,14 +29,14 @@ impl SignalGraph {
             .captures_observation_surface(
                 crate::logic::transaction::SignalObservationSurface::OptionalTelemetry,
             )
-            .then(RuntimeInstant::now);
+            .then(|| self.time_sampler().monotonic());
         for family in epoch_plan.families() {
             self.compact_storage_family(family);
         }
         self.arena
             .complete_compaction_epoch(epoch_plan.family_budget());
         if let Some(gc_start) = gc_start {
-            let elapsed_nanos = gc_start.elapsed().as_nanos();
+            let elapsed_nanos = self.elapsed_nanos(gc_start);
             if let Some(mut telemetry) = self.telemetry_mut() {
                 telemetry.storage.gc_epoch_count += 1;
                 telemetry.storage.gc_epoch_nanos += elapsed_nanos;

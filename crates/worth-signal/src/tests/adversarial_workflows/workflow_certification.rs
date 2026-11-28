@@ -1,3 +1,5 @@
+use worth_dst::Seed;
+
 use crate::facade::{compare_lineage_records, compare_replay_slices, SignalRuntimePolicy};
 
 use crate::facade::{NodeEvaluationResult, SignalTransaction};
@@ -8,7 +10,7 @@ use super::geometry_session::geometry_session;
 use super::geometry_world::{
     build_geometry_fixture, geometry_checked_evaluator, seed_geometry_baseline,
 };
-use super::workflow_truth::{AdversarialWorkflow, WorkflowDomain, WorkflowSeed};
+use super::workflow_truth::{AdversarialWorkflow, WorkflowDomain};
 use crate::tests::leased_execution::support::{authority, request};
 
 use super::workflow_truth::trace_adv;
@@ -20,11 +22,11 @@ type GeometryTransaction<'a> = SignalTransaction<'a, (), (), (), (), ()>;
 fn geometry_kernel_adversarial_seed_matrix_keeps_invariants() {
     for (seed, workflow) in [
         (
-            WorkflowSeed(7),
+            Seed::new(7),
             AdversarialWorkflow::FeatureEditRewireRestoreChurn,
         ),
         (
-            WorkflowSeed(19),
+            Seed::new(19),
             AdversarialWorkflow::PartitionScopeCliffSession,
         ),
     ] {
@@ -41,11 +43,11 @@ fn geometry_kernel_adversarial_seed_matrix_keeps_invariants() {
 fn fintech_adversarial_seed_matrix_keeps_invariants() {
     for (seed, workflow) in [
         (
-            WorkflowSeed(11),
+            Seed::new(11),
             AdversarialWorkflow::LateTickCorrectionWithBranchReplay,
         ),
         (
-            WorkflowSeed(23),
+            Seed::new(23),
             AdversarialWorkflow::RiskAlertFlapUnderMemoChurn,
         ),
     ] {
@@ -64,12 +66,12 @@ fn policy_overlap_for_generated_workflows_matches_guaranteed_truth() {
         (
             WorkflowDomain::GeometryKernel,
             AdversarialWorkflow::FeatureEditRewireRestoreChurn,
-            WorkflowSeed(31),
+            Seed::new(31),
         ),
         (
             WorkflowDomain::Fintech,
             AdversarialWorkflow::LateTickCorrectionWithBranchReplay,
-            WorkflowSeed(37),
+            Seed::new(37),
         ),
     ] {
         let runs = [
@@ -140,7 +142,7 @@ fn policy_overlap_for_generated_workflows_matches_guaranteed_truth() {
                     lineage_diff.mismatches.len(),
                 );
             }
-            let _ = h1;
+            assert_eq!(h1.schedule(), h2.schedule());
         }
     }
 }
@@ -149,7 +151,7 @@ fn policy_overlap_for_generated_workflows_matches_guaranteed_truth() {
 fn parallel_geometry_hostile_session_matches_serial_truth() {
     trace_adv("[parallel-test] geometry:start");
     let workflow = AdversarialWorkflow::FeatureEditRewireRestoreChurn;
-    let seed = WorkflowSeed(41);
+    let seed = Seed::new(41);
     let serial = geometry_session(
         seed,
         workflow,
@@ -183,7 +185,7 @@ fn parallel_geometry_hostile_session_matches_serial_truth() {
 fn parallel_fintech_hostile_session_matches_serial_truth() {
     trace_adv("[parallel-test] fintech:start");
     let workflow = AdversarialWorkflow::RiskAlertFlapUnderMemoChurn;
-    let seed = WorkflowSeed(53);
+    let seed = Seed::new(53);
     let serial = fintech_session(
         seed,
         workflow,
@@ -311,7 +313,7 @@ fn focused_parallel_branch_restore_and_evaluate_dirty_regression() {
 
 #[test]
 fn long_geometry_churn_seed_matrix_stays_hard_to_surprise() {
-    for seed in [WorkflowSeed(71), WorkflowSeed(89), WorkflowSeed(97)] {
+    for seed in [Seed::new(71), Seed::new(89), Seed::new(97)] {
         let _ = geometry_session(
             seed,
             AdversarialWorkflow::FeatureEditRewireRestoreChurn,
@@ -323,7 +325,7 @@ fn long_geometry_churn_seed_matrix_stays_hard_to_surprise() {
 
 #[test]
 fn long_fintech_parallel_churn_seed_matrix_stays_hard_to_surprise() {
-    for seed in [WorkflowSeed(101), WorkflowSeed(131), WorkflowSeed(149)] {
+    for seed in [Seed::new(101), Seed::new(131), Seed::new(149)] {
         let _ = fintech_session(
             seed,
             AdversarialWorkflow::RiskAlertFlapUnderMemoChurn,

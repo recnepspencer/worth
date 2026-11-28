@@ -45,6 +45,7 @@ use super::BridgeRouteExplanation;
 
 mod conditional_history;
 mod explain;
+mod operator_reports;
 mod policy;
 mod query;
 mod record;
@@ -55,5 +56,6 @@ mod writeback_readmission;
 #[derive(Debug, Clone)]
 pub struct BridgeDiagnosticsFacade {
     config: Arc<BridgeDiagnosticsConfig>,
+    operator_reports: operator_reports::BridgeOperatorReports,
     state: Arc<RwLock<BridgeDiagnosticsState>>,
 }

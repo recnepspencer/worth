@@ -24,8 +24,6 @@ pub(super) struct BridgeManagedTemporalIntentRecord {
 pub(in crate::conditional_execution) struct BridgeManagedClockLane {
     pub(in crate::conditional_execution) lifecycle_token: Arc<()>,
     lowering: Arc<super::super::BridgeInstalledConditionalLowering>,
-    pub(super) source_identity: Arc<str>,
-    pub(super) timeline_identity: Arc<str>,
     pub(super) lease: Arc<BridgeManagedClockLease>,
     pub(super) maximum_active_intents: usize,
     pub(super) maximum_due_wakes_per_observation: NonZeroUsize,
@@ -44,8 +42,6 @@ pub(in crate::conditional_execution) struct BridgeManagedClockLane {
 impl BridgeManagedClockLane {
     pub(super) fn new(
         lowering: Arc<super::super::BridgeInstalledConditionalLowering>,
-        source_identity: Arc<str>,
-        timeline_identity: Arc<str>,
         lease: Arc<BridgeManagedClockLease>,
         maximum_active_intents: usize,
         maximum_due_wakes_per_observation: NonZeroUsize,
@@ -58,8 +54,6 @@ impl BridgeManagedClockLane {
             retention,
             _reservation: reservation,
             lowering,
-            source_identity,
-            timeline_identity,
             lease,
             maximum_active_intents,
             maximum_due_wakes_per_observation,
@@ -279,8 +273,14 @@ impl BridgeManagedClockLane {
 pub(super) fn signal_denial(
     error: worth_signal::facade::branch::SignalConditionalTemporalPartitionDenial,
 ) -> BridgeManagedTemporalDenial {
-    BridgeManagedTemporalDenial::new(
+    let denial = BridgeManagedTemporalDenial::new(
         BridgeManagedTemporalDenialKind::SignalTemporalFailure,
         format!("Signal temporal authority denied managed time: {error:?}"),
-    )
+    );
+    match error {
+        worth_signal::facade::branch::SignalConditionalTemporalPartitionDenial::TemporalOperation(cause) => {
+            denial.with_signal_cause(cause)
+        }
+        _ => denial,
+    }
 }

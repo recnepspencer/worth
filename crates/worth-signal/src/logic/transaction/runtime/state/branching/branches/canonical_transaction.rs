@@ -1,4 +1,3 @@
-use crate::clock::RuntimeInstant;
 use crate::data::error::SignalError;
 use crate::logic::events::EventBus;
 use crate::logic::transaction::runtime::transaction::{
@@ -71,8 +70,10 @@ where
             .sync_graph_capacity(&self.authority.graph);
 
         let mut event_bus = EventBus::new();
+        event_bus.bind_telemetry_clock(&self.authority.graph.telemetry_clock);
         event_bus.set_telemetry_capture(captures_telemetry);
         let observations = RuntimeObservationRegistry::default();
+        let started_at = self.authority.graph.time_sampler().monotonic();
         let mut transaction = SignalTransaction {
             execution,
             runtime_ctx,
@@ -93,7 +94,7 @@ where
             poisoned: false,
             finished: false,
             execution_state: TransactionExecutionState::default(),
-            started_at: RuntimeInstant::now(),
+            started_at,
             commit_posture: TransactionCommitPosture::Visible,
         };
         match catch_unwind(AssertUnwindSafe(|| apply(&mut transaction))) {

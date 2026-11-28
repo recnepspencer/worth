@@ -14,6 +14,7 @@ mod quarantine;
 #[cfg(test)]
 pub(super) mod quarantine_tests;
 mod retention;
+mod sampled_clock;
 mod wake_delivery;
 
 pub(in crate::conditional_execution) use intent_reconciliation::reconcile_intent_in_lane;

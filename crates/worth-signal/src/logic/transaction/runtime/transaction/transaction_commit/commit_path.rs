@@ -1,4 +1,3 @@
-use crate::clock::RuntimeInstant;
 use crate::data::error::SignalError;
 use crate::diagnostics::epochs::{
     EventEpochOutcome, EventEpochSummary, EventSubscriberOutcome, EventSubscriberOutcomeKind,
@@ -21,7 +20,7 @@ where
     T: Copy + Ord,
 {
     pub fn commit(mut self) -> Result<TransactionResult, SignalError> {
-        let commit_start = RuntimeInstant::now();
+        let commit_start = self.graph.time_sampler().monotonic();
         if self.finished {
             return Err(SignalError::transaction_finished());
         }
@@ -106,7 +105,7 @@ where
                         self.event_bus.emit(event)
                     }
                     StagedEventOperation::Flush(barrier) => {
-                        let flush_start = RuntimeInstant::now();
+                        let flush_start = self.graph.time_sampler().monotonic();
                         let completed_subscribers = match self.event_bus.flush_with_capture(
                             barrier,
                             self.runtime_ctx,
@@ -115,7 +114,7 @@ where
                             Ok(completed_subscribers) => completed_subscribers,
                             Err(flush_err) => {
                                 self.scratch.staged_event_flush_nanos +=
-                                    flush_start.elapsed().as_nanos();
+                                    self.graph.elapsed_nanos(flush_start);
                                 self.scratch
                                     .semantic_delta
                                     .event_epochs
@@ -214,7 +213,8 @@ where
                                 );
                             }
                         };
-                        self.scratch.staged_event_flush_nanos += flush_start.elapsed().as_nanos();
+                        self.scratch.staged_event_flush_nanos +=
+                            self.graph.elapsed_nanos(flush_start);
                         self.scratch
                             .semantic_delta
                             .event_epochs
@@ -335,7 +335,7 @@ where
             false,
             TransactionOutcome::Committed,
             touched_node_count,
-            commit_start.elapsed().as_nanos(),
+            self.graph.elapsed_nanos(commit_start),
         ))
     }
 }

@@ -203,6 +203,10 @@ fn temporal_basis_accepts_cdc_cursor_as_first_class_truth_family() {
 
 #[test]
 fn temporal_basis_equality_ignores_host_wall_clock_noise() {
+    let time = std::sync::Arc::new(worth_execution::time::ControlledTime::at_unix_secs(10));
+    let sampler = worth_execution::time::TimeSampler::new(time.clone());
+    let wall_before = sampler.wall().unwrap();
+    let boot_before = sampler.monotonic();
     let admitted = admit(
         BridgeTemporalTruthViewBasis::authoritative(
             crate::truth_identity_fixtures::truth_branch_fixture("branch-a"),
@@ -222,7 +226,10 @@ fn temporal_basis_equality_ignores_host_wall_clock_noise() {
             ClockTick::new(21),
         )),
     );
-    let host_noise = std::time::SystemTime::now();
+    time.step_wall_back(std::time::Duration::from_secs(2));
+    time.reboot_epoch();
+    assert_ne!(sampler.wall().unwrap(), wall_before);
+    assert!(sampler.monotonic().cmp_same_epoch(boot_before).is_err());
     let same = admit(
         BridgeTemporalTruthViewBasis::authoritative(
             crate::truth_identity_fixtures::truth_branch_fixture("branch-a"),
@@ -243,7 +250,6 @@ fn temporal_basis_equality_ignores_host_wall_clock_noise() {
         )),
     );
 
-    let _ = host_noise;
     assert_eq!(admitted, same);
 }
 

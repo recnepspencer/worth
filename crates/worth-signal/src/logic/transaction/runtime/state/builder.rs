@@ -54,6 +54,15 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    /// Installs the clock used for runtime elapsed-time observations.
+    pub fn with_time_sampler(
+        mut self,
+        sampler: std::sync::Arc<worth_execution::time::TimeSampler>,
+    ) -> Self {
+        self.graph.telemetry_clock = crate::clock::SignalTelemetryClock(sampler);
+        self
+    }
+
     pub(super) fn new(graph: SignalGraph) -> Self {
         Self::new_boxed(Box::new(graph))
     }

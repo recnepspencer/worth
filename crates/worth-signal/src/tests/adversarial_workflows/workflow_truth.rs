@@ -5,8 +5,7 @@ use crate::facade::{
     SignalBranchId, SignalRuntime, SignalRuntimePolicy, SignalSnapshotId, SignalSnapshotV1,
 };
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
-pub(super) struct WorkflowSeed(pub(super) u64);
+use worth_dst::{Seed, Trace};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub(super) enum WorkflowDomain {
@@ -42,46 +41,13 @@ struct WorkflowStep {
 struct DifferentialFailureBundle {
     domain: WorkflowDomain,
     workflow: AdversarialWorkflow,
-    seed: WorkflowSeed,
+    seed: u64,
     policy: String,
     executor: String,
     steps: Vec<WorkflowStep>,
     note: String,
     replay_diff_count: usize,
     lineage_diff_count: usize,
-}
-
-#[derive(Clone)]
-pub(super) struct Lcg {
-    state: u64,
-}
-
-impl Lcg {
-    pub(super) fn new(seed: WorkflowSeed) -> Self {
-        Self {
-            state: seed.0.max(1),
-        }
-    }
-
-    fn next_u32(&mut self) -> u32 {
-        self.state = self
-            .state
-            .wrapping_mul(6364136223846793005)
-            .wrapping_add(1442695040888963407);
-        (self.state >> 32) as u32
-    }
-
-    pub(super) fn choose(&mut self, len: usize) -> usize {
-        (self.next_u32() as usize) % len
-    }
-
-    pub(super) fn coin(&mut self) -> bool {
-        self.next_u32() & 1 == 0
-    }
-
-    pub(super) fn small_delta(&mut self) -> u64 {
-        1 + (self.next_u32() % 3) as u64
-    }
 }
 
 #[derive(Clone)]
@@ -134,10 +100,11 @@ where
 }
 
 pub(super) struct SignalAdversarialHarness {
-    seed: WorkflowSeed,
+    seed: Seed,
     domain: WorkflowDomain,
     workflow: AdversarialWorkflow,
     steps: Vec<WorkflowStep>,
+    schedule: Trace,
 }
 
 pub(super) fn trace_adv(message: impl AsRef<str>) {
@@ -147,16 +114,13 @@ pub(super) fn trace_adv(message: impl AsRef<str>) {
 }
 
 impl SignalAdversarialHarness {
-    pub(super) fn new(
-        seed: WorkflowSeed,
-        domain: WorkflowDomain,
-        workflow: AdversarialWorkflow,
-    ) -> Self {
+    pub(super) fn new(seed: Seed, domain: WorkflowDomain, workflow: AdversarialWorkflow) -> Self {
         Self {
             seed,
             domain,
             workflow,
             steps: Vec::new(),
+            schedule: Trace::default(),
         }
     }
 
@@ -179,6 +143,14 @@ impl SignalAdversarialHarness {
         });
     }
 
+    pub(super) fn set_schedule(&mut self, trace: Trace) {
+        self.schedule = trace;
+    }
+
+    pub(super) fn schedule(&self) -> &[u8] {
+        self.schedule.as_bytes()
+    }
+
     pub(super) fn panic_invariant(
         &self,
         policy: &SignalRuntimePolicy,
@@ -188,7 +160,7 @@ impl SignalAdversarialHarness {
         let bundle = DifferentialFailureBundle {
             domain: self.domain,
             workflow: self.workflow,
-            seed: self.seed,
+            seed: self.seed.value(),
             policy: format!("{:?}", policy.tier),
             executor: executor.to_string(),
             steps: self.steps.clone(),
@@ -210,7 +182,7 @@ impl SignalAdversarialHarness {
         let bundle = DifferentialFailureBundle {
             domain: self.domain,
             workflow: self.workflow,
-            seed: self.seed,
+            seed: self.seed.value(),
             policy: format!("{:?}", policy.tier),
             executor: executor.to_string(),
             steps: self.steps.clone(),

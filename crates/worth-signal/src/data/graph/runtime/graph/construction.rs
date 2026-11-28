@@ -32,6 +32,7 @@ impl Clone for SignalGraph {
             ));
         Self {
             initial_empty_origin: false,
+            telemetry_clock: self.telemetry_clock.clone(),
             lifecycle_token: Default::default(),
             instance_id,
             recorded_node_issuance: Default::default(),
@@ -95,6 +96,7 @@ impl SignalGraph {
             ));
         Self {
             initial_empty_origin: true,
+            telemetry_clock: Default::default(),
             lifecycle_token: Default::default(),
             instance_id: super::next_signal_graph_instance_id(),
             recorded_node_issuance: Default::default(),

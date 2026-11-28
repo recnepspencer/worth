@@ -1,3 +1,5 @@
+use worth_dst::{DstRunner, Rng, Seed, Spec};
+
 use std::collections::BTreeMap;
 
 use crate::facade::{
@@ -12,8 +14,8 @@ use super::geometry_world::{
 };
 use super::invariant_oracle::assert_runtime_invariants;
 use super::workflow_truth::{
-    capture_active_branch_snapshot, trace_adv, AdversarialWorkflow, FailureInjectionPoint, Lcg,
-    ReferenceModel, SignalAdversarialHarness, WorkflowDomain, WorkflowSeed,
+    capture_active_branch_snapshot, trace_adv, AdversarialWorkflow, FailureInjectionPoint,
+    ReferenceModel, SignalAdversarialHarness, WorkflowDomain,
 };
 use crate::tests::leased_execution::support::{authority, request};
 
@@ -65,7 +67,7 @@ fn evaluate_geometry_demand(fixture: &mut GeometryFixture, workers: Option<usize
 }
 
 pub(super) fn geometry_session(
-    seed: WorkflowSeed,
+    seed: Seed,
     workflow: AdversarialWorkflow,
     policy: SignalRuntimePolicy,
     workers: Option<usize>,
@@ -85,7 +87,8 @@ pub(super) fn geometry_session(
     if workers.is_some() {
         trace_adv(format!(
             "[geometry {:?} seed={}] setup:start",
-            workflow, seed.0
+            workflow,
+            seed.value()
         ));
     }
     let mut harness = SignalAdversarialHarness::new(seed, WorkflowDomain::GeometryKernel, workflow);
@@ -97,7 +100,8 @@ pub(super) fn geometry_session(
     if workers.is_some() {
         trace_adv(format!(
             "[geometry {:?} seed={}] setup:seeded-main",
-            workflow, seed.0
+            workflow,
+            seed.value()
         ));
     }
     snapshots.insert(main_snapshot.meta.snapshot_id, main_snapshot.clone());
@@ -118,7 +122,8 @@ pub(super) fn geometry_session(
     if workers.is_some() {
         trace_adv(format!(
             "[geometry {:?} seed={}] setup:feature-ready",
-            workflow, seed.0
+            workflow,
+            seed.value()
         ));
     }
     snapshots.insert(feature_snapshot.meta.snapshot_id, feature_snapshot.clone());
@@ -146,7 +151,8 @@ pub(super) fn geometry_session(
     if workers.is_some() {
         trace_adv(format!(
             "[geometry {:?} seed={}] setup:analysis-ready",
-            workflow, seed.0
+            workflow,
+            seed.value()
         ));
     }
     snapshots.insert(
@@ -165,28 +171,28 @@ pub(super) fn geometry_session(
     model.branch_mut(analysis.id).head_snapshot = Some(analysis_snapshot.meta.snapshot_id);
     harness.record(&fixture.runtime, 2, "create-analysis-branch", None);
 
-    let mut rng = Lcg::new(seed);
     let mut ctx = ();
-    for step in 0..24 {
+    let schedule = DstRunner::run(&Spec::new(seed, 0, 24), |step, runner| {
+        let rng: &mut Rng = runner.rng();
         if workers.is_some() {
             trace_adv(format!(
                 "[geometry {:?} seed={}] step={} branch={}",
                 workflow,
-                seed.0,
+                seed.value(),
                 step,
                 fixture.runtime.observe().current_branch().name
             ));
         }
         let action = match workflow {
-            AdversarialWorkflow::FeatureEditRewireRestoreChurn => rng.choose(6),
-            AdversarialWorkflow::PartitionScopeCliffSession => rng.choose(5),
-            _ => rng.choose(6),
+            AdversarialWorkflow::FeatureEditRewireRestoreChurn => rng.below(6),
+            AdversarialWorkflow::PartitionScopeCliffSession => rng.below(5),
+            _ => rng.below(6),
         };
 
         match action {
             0 => {
                 let target =
-                    [main.clone(), feature.clone(), analysis.clone()][rng.choose(3)].clone();
+                    [main.clone(), feature.clone(), analysis.clone()][rng.below(3)].clone();
                 fixture.runtime.switch_branch(target.clone()).unwrap();
                 model.active = target.id;
                 model.branch_mut(target.id).head_snapshot =
@@ -194,7 +200,7 @@ pub(super) fn geometry_session(
                 harness.record(&fixture.runtime, step + 3, "switch-branch", None);
             }
             1 => {
-                let delta = rng.small_delta();
+                let delta = 1 + rng.below(3) as u64;
                 let current = model.branch(model.active).clone();
                 let next_a = current.a + delta;
                 let result = fixture.runtime.transaction(
@@ -218,7 +224,7 @@ pub(super) fn geometry_session(
                 result.unwrap();
                 model.branch_mut(model.active).a = next_a;
                 evaluate_geometry_dirty(&mut fixture, workers);
-                if rng.coin() {
+                if rng.below(2) == 0 {
                     capture_active_branch_snapshot(
                         &mut fixture.runtime,
                         &mut model,
@@ -229,7 +235,7 @@ pub(super) fn geometry_session(
                 harness.record(&fixture.runtime, step + 3, "update-source-a", None);
             }
             2 => {
-                let delta = rng.small_delta();
+                let delta = 1 + rng.below(3) as u64;
                 let current = model.branch(model.active).clone();
                 let next_b = current.b + delta;
                 let result = fixture.runtime.transaction(
@@ -253,7 +259,7 @@ pub(super) fn geometry_session(
                 result.unwrap();
                 model.branch_mut(model.active).b = next_b;
                 evaluate_geometry_dirty(&mut fixture, workers);
-                if rng.coin() {
+                if rng.below(2) == 0 {
                     capture_active_branch_snapshot(
                         &mut fixture.runtime,
                         &mut model,
@@ -264,7 +270,7 @@ pub(super) fn geometry_session(
                 harness.record(&fixture.runtime, step + 3, "update-source-b", None);
             }
             3 => {
-                let delta = rng.small_delta();
+                let delta = 1 + rng.below(3) as u64;
                 let current = model.branch(model.active).clone();
                 let bad_a = current.a + delta;
                 let err = fixture.runtime.transaction(
@@ -298,7 +304,7 @@ pub(super) fn geometry_session(
                 let candidates = branch_history
                     .get(&active.id)
                     .expect("branch restore should always have branch-local snapshot history");
-                let snapshot_id = candidates[rng.choose(candidates.len())];
+                let snapshot_id = candidates[rng.below(candidates.len())];
                 let restore_snapshot = snapshots
                     .get(&snapshot_id)
                     .expect("branch restore should use a stored branch-local snapshot")
@@ -351,7 +357,13 @@ pub(super) fn geometry_session(
                 format!("step {}: {}", report.step_index, report.errors.join(" | ")),
             );
         }
-    }
+        runner.trace().push_json(&format!(
+            r#"{{"step":{step},"action":{action},"branch":{}}}"#,
+            fixture.runtime.observe().current_branch().id.0,
+        ))
+    })
+    .unwrap();
+    harness.set_schedule(schedule);
 
     for branch in [main.clone(), feature.clone(), analysis.clone()] {
         fixture.runtime.switch_branch(branch.clone()).unwrap();

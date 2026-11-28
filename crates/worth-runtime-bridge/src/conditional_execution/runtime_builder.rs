@@ -72,6 +72,7 @@ impl BridgeConditionalRuntimeBuilder {
             self.runtime.bridge.signal_runtime_key,
             &self.runtime.retention,
             parts,
+            None,
         )?;
         if self.managed_clocks.contains_key(declaration.identity()) {
             return Err(super::BridgeManagedTemporalDenial::new(

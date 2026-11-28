@@ -26,7 +26,6 @@ pub enum ReplayEventKind {
     SnapshotRestored,
     BranchCreated,
     BranchSwitched,
-    BranchMerged,
     BranchRetired,
 }
 

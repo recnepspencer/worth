@@ -22,6 +22,11 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    /// Clock used by serving-runtime diagnostics and elapsed telemetry.
+    pub fn time_sampler(&self) -> &worth_execution::time::TimeSampler {
+        self.graph.time_sampler()
+    }
+
     pub fn config(&self) -> &SignalRuntimeConfig<T> {
         self.assert_construction_graph_access();
         &self.config

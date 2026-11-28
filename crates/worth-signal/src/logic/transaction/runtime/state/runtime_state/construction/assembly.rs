@@ -32,12 +32,14 @@ where
     pub(crate) fn new(
         graph: Box<SignalGraph>,
         mut schema_registry: SignalSchemaRegistry,
-        checkpoint: CheckpointRuntime<D, I>,
-        event_bus: EventBus<E, D, Ctx>,
+        mut checkpoint: CheckpointRuntime<D, I>,
+        mut event_bus: EventBus<E, D, Ctx>,
     ) -> Self {
         if schema_registry.is_empty() {
             schema_registry = graph.schema_registry().clone();
         }
+        checkpoint.bind_telemetry_clock(&graph.telemetry_clock);
+        event_bus.bind_telemetry_clock(&graph.telemetry_clock);
         let mut config = SignalRuntimeConfig::default();
         config.sync_graph_capacity(&graph);
         let branches = BranchManager::<D, I, T>::with_live_catalog(

@@ -70,7 +70,7 @@ pub(in crate::logic::planner) fn perform_stage_precompute<'tasks, 'request, 'aut
     request_work: Option<&mut MapKernelContext<'_, '_>>,
     preparation: Option<&mut SignalPreparationBudget>,
 ) -> Result<StagePrecomputeResult<'tasks, 'request, 'authority>, SignalError> {
-    let started = crate::clock::RuntimeInstant::now();
+    let started = graph.time_sampler().monotonic();
     let stage_index = stage.index();
     let prepared = super::read_preparation::prepare_epoch(
         graph,
@@ -85,7 +85,7 @@ pub(in crate::logic::planner) fn perform_stage_precompute<'tasks, 'request, 'aut
     .inspect_err(|error| {
         super::reporting::record_stage_precompute_failure(graph, summary, stage_index, error);
     })?;
-    let precompute_nanos = started.elapsed().as_nanos();
+    let precompute_nanos = graph.elapsed_nanos(started);
     let prepared = match prepared {
         PreparedEpoch::Checked {
             metadata,

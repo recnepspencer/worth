@@ -1328,6 +1328,9 @@ and subsequent dependency-driven advancement.
 | Task | Owning API |
 | --- | --- |
 | Observe wall evidence or measure elapsed time in a platform runtime | Execution's `time::TimeSampler` issues samples from an injected clock. Foundational's `time::MonotonicInstant` checks boot identity before comparison or elapsed arithmetic. [Execution time](../crates/worth-execution/README.md#time-sampling) |
+| Inject the elapsed clock for a Signal runtime | Set `SignalRuntimeBuilder::with_time_sampler` to share a sampler with Signal and its diagnostic consumers. The installed sampler supplies elapsed telemetry. |
+| Drive an installed Bridge managed clock from live monotonic time | Install it with `BridgeConditionalExecutionView::install_sampled_managed_clock` and submit sequence numbers through `observe_sampled_managed_clock`. Due coordinates are nanoseconds since installation. A reboot refuses observation until the binding is replaced. |
+| Receive Bridge operator reports | Inject a sink with `RuntimeBridgeBuilder::with_diagnostic_sink`. Delivery and replay failure recording publishes the policy-selected redacted, standard, or forensic report. [Boundary denial reports](coding-guidelines/diagnostic_reports.md) |
 | Choose physical placement for admitted deterministic partitions | Use `workers::ExecutionPlacement` to build a worker policy for `ExecutionAuthority`; use the lease to inspect resolved placement. [Execution workers](../crates/worth-execution/README.md) |
 | Reproduce a seeded court schedule with clock faults | Use `worth-dst::DstRunner` with a `Spec` and a `Seed`. [Deterministic simulation](../crates/worth-dst/README.md) |
 

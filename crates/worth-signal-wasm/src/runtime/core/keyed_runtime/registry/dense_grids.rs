@@ -7,7 +7,7 @@ use crate::expression::model::SignalValue;
 use super::super::super::aspects::{
     aspect_mask_from_list, checked_grid_cells, defaulted_produced_aspects, initial_aspect_version,
 };
-use super::super::super::debug::{perf_now_ms, wasm_debug};
+use super::super::super::debug::wasm_debug;
 use super::super::super::keyed_families::{object_number_field, parse_tile_key};
 use super::super::super::state::{CatalogEntry, DenseGridFamily, StoredSource};
 use super::super::super::{RuntimeCore, DEFAULT_ASPECT};
@@ -30,7 +30,7 @@ impl RuntimeCore {
             return Ok(existing.clone());
         }
 
-        let started_at = perf_now_ms();
+        let started_at = self.runtime.time_sampler().monotonic();
         wasm_debug(format!(
             "[worth-signals-wasm] dense-grid:init family={family_id} size={}x{} cells={}",
             width,
@@ -119,7 +119,7 @@ impl RuntimeCore {
             .insert(family_id.to_owned(), family.clone());
         wasm_debug(format!(
             "[worth-signals-wasm] dense-grid:ready family={family_id} elapsed_ms={:.1}",
-            perf_now_ms() - started_at
+            self.perf_elapsed_ms(started_at)
         ));
         Ok(family)
     }
@@ -144,7 +144,7 @@ impl RuntimeCore {
             )));
         }
 
-        let started_at = perf_now_ms();
+        let started_at = self.runtime.time_sampler().monotonic();
         let grid_cells = checked_grid_cells(width, height)?;
         let mut ids = Vec::with_capacity(grid_cells);
         let mut nodes = Vec::with_capacity(grid_cells);
@@ -213,7 +213,7 @@ impl RuntimeCore {
             "[worth-signals-wasm] dense-grid:coords family={family_id} size={}x{} elapsed_ms={:.1}",
             width,
             height,
-            perf_now_ms() - started_at
+            self.perf_elapsed_ms(started_at)
         ));
         Ok(())
     }

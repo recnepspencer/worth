@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use worth_foundational::time::{MonotonicElapsedError, MonotonicInstant};
 
 use crate::data::error::SignalError;
 
@@ -42,6 +43,17 @@ impl ClockTick {
 
     pub fn new(value: u64) -> Self {
         Self(value)
+    }
+
+    /// Converts live time to an explicit replay coordinate relative to the
+    /// installed origin. Samples from another boot cannot become a tick.
+    pub fn from_monotonic_elapsed(
+        origin: MonotonicInstant,
+        observed: MonotonicInstant,
+    ) -> Result<Self, MonotonicElapsedError> {
+        observed
+            .checked_duration_since(origin)
+            .map(|elapsed| Self(elapsed.as_nanos() as u64))
     }
 
     pub fn get(self) -> u64 {
@@ -108,6 +120,8 @@ impl ClockAdvanceRequest {
 }
 
 /// Canonical authoritative clock basis carried by the runtime and branches.
+/// A live clock origin is held by its ingress owner. The basis records only
+/// the admitted replay coordinates and remains comparable across recovery.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RuntimeClockBasis {
     domain: ClockDomain,

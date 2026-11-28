@@ -48,6 +48,7 @@ impl<PatchState, SnapshotState, SignalState, BranchHeadState>
     > {
         RuntimeBridgeBuilder {
             policy: self.policy,
+            diagnostic_sink: self.diagnostic_sink,
             committed_patch_source: self.committed_patch_source,
             snapshot_read_source: self.snapshot_read_source,
             signal_sink: self.signal_sink,

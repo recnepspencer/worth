@@ -4,7 +4,7 @@ use crate::boundary::errors::WorthSignalJsError;
 use crate::runtime::summaries::RunSummary;
 
 use super::super::aspects::{bump_aspects, normalize_aspects};
-use super::super::debug::{perf_now_ms, wasm_debug};
+use super::super::debug::wasm_debug;
 use super::super::{RuntimeCore, DEFAULT_ASPECT};
 use crate::recipe::model::WasmAspectId;
 
@@ -42,7 +42,7 @@ impl RuntimeCore {
         aspects: Vec<Aspect>,
     ) -> Result<RunSummary, WorthSignalJsError> {
         let node = self.node_for_id(id)?;
-        let started_at = perf_now_ms();
+        let started_at = self.runtime.time_sampler().monotonic();
         let previous = self.lock_store()?.clone();
         let store = self.store.clone();
         let evaluator = self.evaluator();
@@ -93,7 +93,7 @@ impl RuntimeCore {
                     "[worth-signals-wasm] tx:regions-done touched={} evaluated={} elapsed_ms={:.1}",
                     result.touched_nodes,
                     result.evaluation_summary.nodes_evaluated,
-                    perf_now_ms() - started_at
+                    self.perf_elapsed_ms(started_at)
                 ));
                 Ok(RunSummary {
                     touched_nodes: result.touched_nodes,
@@ -110,7 +110,7 @@ impl RuntimeCore {
             Err(err) => {
                 wasm_debug(format!(
                     "[worth-signals-wasm] tx:regions-error elapsed_ms={:.1} denial={:?}",
-                    perf_now_ms() - started_at,
+                    self.perf_elapsed_ms(started_at),
                     err
                 ));
                 self.restore_store(previous)?;

@@ -1,4 +1,3 @@
-use crate::clock::RuntimeInstant;
 use crate::data::error::SignalError;
 use crate::diagnostics::ExecutionFailurePhase;
 use crate::logic::context::EvaluationContext;
@@ -30,7 +29,7 @@ where
         self.admit_temporal_wakes_for_plan(plan)?;
         self.promote_due_temporal_wakes_ready()?;
         let temporal_lowering = self.temporal_lowering_context_for_plan(plan);
-        let execution_start = RuntimeInstant::now();
+        let execution_start = self.graph.time_sampler().monotonic();
         let report = match execute_plan_with_runtime_config(
             self.graph,
             self.config,
@@ -51,7 +50,7 @@ where
             }
         };
         self.execution_state
-            .record_report(&report, execution_start.elapsed().as_nanos());
+            .record_report(&report, self.graph.elapsed_nanos(execution_start));
         self.scratch.temporal.absorb_report(&report);
         self.lower_observation_classifications_from_report(&report)?;
         self.with_telemetry(|telemetry| absorb_execution_report_telemetry(telemetry, &report));

@@ -1,8 +1,8 @@
-use crate::clock::RuntimeInstant;
 use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::error::SignalError;
 use crate::data::request_preparation::SignalPreparationBudget;
 use crate::logic::planner::precompute::callback::SignalPrecompute;
+use worth_foundational::time::MonotonicInstant;
 
 use super::super::precompute_reporting::record_stage_precompute_report;
 use super::super::semantic::reserve_stage_identities;
@@ -35,7 +35,7 @@ where
     P: SignalPrecompute,
     R: ComparatorPolicyResolver,
 {
-    let stage_start = RuntimeInstant::now();
+    let stage_start = ctx.graph.time_sampler().monotonic();
     let prepared_pass = run_stage_precompute_pass(ctx, stage)?;
     progress.prepared_epoch();
     let applied_pass = run_stage_apply_pass(ctx, prepared_pass, stage_start)?;
@@ -78,13 +78,13 @@ where
 fn run_stage_apply_pass<P, R>(
     ctx: &mut ExecutionContext<'_, '_, '_, '_, P, R>,
     prepared_pass: StagePreparedPass<'_, '_, '_>,
-    stage_start: RuntimeInstant,
+    stage_start: MonotonicInstant,
 ) -> Result<StageAppliedPass, SignalError>
 where
     P: SignalPrecompute,
     R: ComparatorPolicyResolver,
 {
-    let apply_start = RuntimeInstant::now();
+    let apply_start = ctx.graph.time_sampler().monotonic();
     reserve_retained(&mut ctx.report.stages, 1, Some(&mut *ctx.preparation))?;
     let mut stage_record = begin_stage_record(
         prepared_pass.precomputed.prepared.metadata().index(),
@@ -143,8 +143,8 @@ where
     )?;
     Ok(StageAppliedPass {
         stage_record,
-        apply_elapsed_nanos: apply_start.elapsed().as_nanos(),
-        stage_elapsed_nanos: stage_start.elapsed().as_nanos(),
+        apply_elapsed_nanos: ctx.graph.elapsed_nanos(apply_start),
+        stage_elapsed_nanos: ctx.graph.elapsed_nanos(stage_start),
     })
 }
 

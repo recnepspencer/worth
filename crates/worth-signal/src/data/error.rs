@@ -272,7 +272,16 @@ impl fmt::Display for SignalError {
     }
 }
 
-impl std::error::Error for SignalError {}
+impl std::error::Error for SignalError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::ExecutionStopped(stop) => Some(stop.as_ref()),
+            Self::ExecutionAdmissionDenied(denial) => Some(denial),
+            Self::ExecutionCheckpointStopped(denial) => Some(denial),
+            _ => None,
+        }
+    }
+}
 
 impl ChargedBytes for SignalError {
     fn additional_charged_bytes(&self) -> u64 {
@@ -321,3 +330,5 @@ impl ChargedBytes for SignalError {
 #[cfg(test)]
 #[path = "error_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+mod report;

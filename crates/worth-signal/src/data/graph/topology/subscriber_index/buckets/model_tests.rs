@@ -111,11 +111,9 @@ fn forked_replace_sequences_match_independent_scope_model() {
     let mut fork = source.fork_persistent();
     let mut model = source_model.clone();
 
-    let mut random = 17_u64;
+    let mut rng = worth_dst::Seed::new(17).rng();
     for step in 0..512 {
-        random = random
-            .wrapping_mul(6_364_136_223_846_793_005)
-            .wrapping_add(1_442_695_040_888_963_407);
+        let random = rng.next_u64();
         let consumer = NodeId::new((random % 16 + 1) as u32, 0);
         let selected = match random.rotate_left(19) % 5 {
             0 => Vec::new(),

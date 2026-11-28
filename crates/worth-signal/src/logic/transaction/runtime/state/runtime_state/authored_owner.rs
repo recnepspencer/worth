@@ -236,6 +236,8 @@ where
         self.config = Default::default();
         self.checkpoint =
             crate::logic::checkpoint::CheckpointRuntime::new(self.checkpoint.policy().clone());
+        self.checkpoint
+            .bind_telemetry_clock(&self.graph.telemetry_clock);
         self.resource = Default::default();
         self.temporal = Default::default();
         self.telemetry = Default::default();

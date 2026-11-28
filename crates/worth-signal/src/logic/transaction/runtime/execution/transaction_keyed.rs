@@ -1,6 +1,5 @@
 use std::sync::Mutex;
 
-use crate::clock::RuntimeInstant;
 use crate::data::error::SignalError;
 use crate::data::handle::NodeId;
 use crate::data::output::ComputationKey;
@@ -175,7 +174,7 @@ where
                     (family_id, key_id, resolve_memo_key_id()?),
                     cached_result.clone(),
                 );
-                let execution_start = RuntimeInstant::now();
+                let execution_start = self.graph.time_sampler().monotonic();
                 let report = match execute_targets_with_prepared_runtime_config_detailed(
                     self.graph,
                     self.config,
@@ -210,7 +209,7 @@ where
                     }
                 };
                 self.execution_state
-                    .record_report(&report, execution_start.elapsed().as_nanos());
+                    .record_report(&report, self.graph.elapsed_nanos(execution_start));
                 self.scratch.temporal.absorb_report(&report);
                 self.lower_observation_classifications_from_report(&report)?;
                 self.with_telemetry(|telemetry| {
@@ -223,7 +222,7 @@ where
         }
 
         let last_result = Mutex::new(None);
-        let execution_start = RuntimeInstant::now();
+        let execution_start = self.graph.time_sampler().monotonic();
         let result = match execute_targets_with_prepared_runtime_config_detailed(
             self.graph,
             self.config,
@@ -264,7 +263,7 @@ where
         let result = match result {
             Ok(report) => {
                 self.execution_state
-                    .record_report(&report, execution_start.elapsed().as_nanos());
+                    .record_report(&report, self.graph.elapsed_nanos(execution_start));
                 self.scratch.temporal.absorb_report(&report);
                 self.lower_observation_classifications_from_report(&report)?;
                 self.with_telemetry(|telemetry| {

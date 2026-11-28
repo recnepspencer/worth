@@ -24,6 +24,7 @@ impl<SnapshotState, SignalState, BranchHeadState, MappingState>
     {
         RuntimeBridgeBuilder {
             policy: self.policy,
+            diagnostic_sink: self.diagnostic_sink,
             committed_patch_source: PresentCommittedPatchSource(Arc::new(source)),
             snapshot_read_source: self.snapshot_read_source,
             signal_sink: self.signal_sink,
@@ -65,6 +66,7 @@ impl<PatchState, SignalState, BranchHeadState, MappingState>
     {
         RuntimeBridgeBuilder {
             policy: self.policy,
+            diagnostic_sink: self.diagnostic_sink,
             committed_patch_source: self.committed_patch_source,
             snapshot_read_source: PresentSnapshotReadSource(Arc::new(source)),
             signal_sink: self.signal_sink,
@@ -107,6 +109,7 @@ impl<SignalState, MappingState>
         let source = Arc::new(source);
         RuntimeBridgeBuilder {
             policy: self.policy,
+            diagnostic_sink: self.diagnostic_sink,
             committed_patch_source: PresentCommittedPatchSource(source.clone()),
             snapshot_read_source: PresentSnapshotReadSource(source.clone()),
             signal_sink: self.signal_sink,
@@ -164,6 +167,7 @@ impl<PatchState, SnapshotState, BranchHeadState, MappingState>
     {
         RuntimeBridgeBuilder {
             policy: self.policy,
+            diagnostic_sink: self.diagnostic_sink,
             committed_patch_source: self.committed_patch_source,
             snapshot_read_source: self.snapshot_read_source,
             signal_sink: PresentSignalSink(Arc::new(sink)),
@@ -277,6 +281,7 @@ impl<PatchState, SnapshotState, SignalState, BranchHeadState, MappingState>
     {
         RuntimeBridgeBuilder {
             policy: self.policy,
+            diagnostic_sink: self.diagnostic_sink,
             committed_patch_source: self.committed_patch_source,
             snapshot_read_source: self.snapshot_read_source,
             signal_sink: self.signal_sink,
