@@ -1,7 +1,3 @@
-use super::checkpoint_truth_observation::diagnostic_field;
-use worth_relational::facade::diagnostics::DiagnosticCode;
-use worth_relational::facade::diagnostics::DiagnosticsScope;
-use worth_relational::facade::diagnostics::RelationalDiagnosticValue;
 use worth_relational::facade::durability::RecoveryAuthorityContinuityMismatch;
 use worth_relational::facade::durability::RecoveryFailureClass;
 use worth_relational::facade::durability::RecoveryVerificationMode as RecoveryMode;
@@ -100,106 +96,27 @@ fn durability_recovery_plan_preserves_explicit_verification_mode() {
 }
 
 #[test]
-fn durability_recovery_emits_authority_continuity_diagnostic_before_execution() {
+fn recovery_plan_records_typed_authority_parity_before_recovery() {
+    use worth_relational::facade::durability::{RecoveryAuthorityParity, RecoveryVerificationOutcome};
+    use worth_relational::facade::replay::ReplayVerificationLayer;
     let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let medium = TestDurableMedium::new();
     let runtime = durable_runtime(&medium);
-    create_entity_outcome(execution, &runtime, "main-a");
-    let plan = runtime
-        .durability()
-        .recovery_plan_from_source(
-            execution,
-            medium.recovery_source(),
-            RecoveryMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-
-    let mut recovered = durable_runtime(&medium);
-    let _ = recovered
-        .durability_recovery()
-        .recover(execution, plan)
-        .unwrap();
-
-    let diagnostics = recovered.publication().diagnostics();
-    let authority_continuity_entry = diagnostics
-        .by_scope(DiagnosticsScope::History)
-        .into_iter()
-        .flat_map(|artifact| artifact.entries.iter())
-        .find(|entry| entry.code == DiagnosticCode::DurableRecoveryAuthorityContinuityEvaluated)
-        .expect("recovery authority continuity diagnostic");
-    assert_eq!(
-        diagnostic_field(authority_continuity_entry, "verification_rejected"),
-        &RelationalDiagnosticValue::Bool(false)
-    );
-    assert_eq!(
-        diagnostic_field(authority_continuity_entry, "verification_layer"),
-        &RelationalDiagnosticValue::string("DigestParity")
-    );
-}
-
-#[test]
-fn recovery_explains_each_authority_continuity_comparison() {
-    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let medium = TestDurableMedium::new();
-    let runtime = durable_runtime(&medium);
-    create_entity_outcome(execution, &runtime, "main-a");
+    let committed = create_entity_outcome(execution, &runtime, "main-a");
 
     let plan = runtime
         .durability()
-        .recovery_plan_from_source(
-            execution,
-            medium.recovery_source(),
-            RecoveryMode::NormalRecoveryVerification,
-        )
+        .recovery_plan_from_source(execution, medium.recovery_source(), RecoveryMode::NormalRecoveryVerification)
         .unwrap();
+    let authority = &plan.authority_continuity;
+    let layer = ReplayVerificationLayer::DigestParity;
+    assert_eq!(authority.verification_outcome, RecoveryVerificationOutcome::VerifiedAtLayer(layer));
+    assert_eq!(authority.descriptor_version_parity, RecoveryAuthorityParity::VerifiedAtLayer(layer));
+    assert_eq!(authority.schema_transition_parity, RecoveryAuthorityParity::VerifiedAtLayer(layer));
+    assert_eq!(authority.first_mismatch, None);
 
     let mut recovered = durable_runtime(&medium);
-    let _ = recovered
-        .durability_recovery()
-        .recover(execution, plan)
-        .unwrap();
-
-    let diagnostics = recovered.publication().diagnostics();
-    let authority_continuity_entry = diagnostics
-        .by_scope(DiagnosticsScope::History)
-        .into_iter()
-        .flat_map(|artifact| artifact.entries.iter())
-        .find(|entry| entry.code == DiagnosticCode::DurableRecoveryAuthorityContinuityEvaluated)
-        .expect("recovery certification diagnostic");
-    assert_eq!(
-        diagnostic_field(authority_continuity_entry, "verification_mode"),
-        &RelationalDiagnosticValue::string("NormalRecoveryVerification")
-    );
-    assert_eq!(
-        diagnostic_field(authority_continuity_entry, "verification_rejected"),
-        &RelationalDiagnosticValue::Bool(false)
-    );
-    assert_eq!(
-        diagnostic_field(authority_continuity_entry, "verification_layer"),
-        &RelationalDiagnosticValue::string("DigestParity")
-    );
-    assert_eq!(
-        diagnostic_field(authority_continuity_entry, "descriptor_version_parity"),
-        &verified_at_digest_parity_value()
-    );
-    assert_eq!(
-        diagnostic_field(authority_continuity_entry, "schema_transition_parity"),
-        &verified_at_digest_parity_value()
-    );
-}
-fn verified_at_digest_parity_value() -> RelationalDiagnosticValue {
-    RelationalDiagnosticValue::object([
-        (
-            "parity",
-            RelationalDiagnosticValue::string("VerifiedAtLayer"),
-        ),
-        (
-            "verification_layer",
-            RelationalDiagnosticValue::string("DigestParity"),
-        ),
-    ])
+    recovered.durability_recovery().recover(execution, plan).unwrap();
+    assert_eq!(recovered.history().historical_latest_commit(), Some(committed.commit.clone()));
 }

@@ -9,18 +9,6 @@ impl LineageState {
     /// An independent state for a forked runtime (`O(resident)` COW fork).
     pub fn fork_detached(&self) -> Self {
         let state_id = next_state_id();
-        let branch_naming_states = self
-            .branch_naming_states
-            .iter()
-            .map(|(b, s)| {
-                (
-                    b.clone(),
-                    s.as_ref()
-                        .map(|s| s.fork(s.base().cloned()))
-                        .map_err(|e| *e),
-                )
-            })
-            .collect();
         Self {
             state_id,
             nodes: self.nodes.clone(),
@@ -28,7 +16,6 @@ impl LineageState {
             relation_lineage_holders: self.relation_lineage_holders.clone(),
             branch_forks: self.branch_forks.clone(),
             fork_children: self.fork_children.clone(),
-            branch_naming_states,
             name_indexes: self.name_indexes.fork_all(),
             naming_rebuilt_event_frontier: self.naming_rebuilt_event_frontier,
             published_events: self.published_events.clone(),

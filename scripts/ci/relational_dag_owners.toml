@@ -278,7 +278,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "indexes", "
 # Explicit ownership restored by Stage 2.4C r2 and Stage 2.5A.
 # Branch authenticates immutable row custody from the exact selected root.
 "replay/authority/commit_closure.rs" = "runtime"
-"replay/authority/diagnostics.rs" = "runtime"
 "replay/authority/recovery_plan.rs" = "runtime"
 "replay/authority/snapshot_surface.rs" = "runtime"
 "runtime/durability_access/branch_transition_artifact_export.rs" = "runtime"
@@ -857,7 +856,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "durability/authority/runtime_access.rs" = "runtime"
 "durability/medium_recovery_readmission.rs" = "durability"
 "replay/authority/commit_closure.rs" = "runtime"
-"replay/authority/diagnostics.rs" = "runtime"
 "replay/authority/recovery_plan.rs" = "runtime"
 "replay/authority/snapshot_surface.rs" = "runtime"
 "runtime/durability_access/branch_transition_artifact_export.rs" = "runtime"

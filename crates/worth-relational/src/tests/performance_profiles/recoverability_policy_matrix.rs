@@ -36,9 +36,7 @@ fn perf_recoverability_policy_matrix() {
         let (hot_commit, hot_commit_work) = measure_counted_work(execution, || {
             update_entity(execution, &runtime, middle_entity, "policy-middle-updated")
         });
-        let hot_bundle = runtime
-            .publication()
-            .latest_bundle()
+        let hot_envelope = crate::tests::support::latest_committed_envelope(&runtime)
             .expect("policy geometry latest bundle")
             .clone();
         let hot_artifacts = runtime.publication().diagnostics_since(diagnostics_start);
@@ -69,9 +67,9 @@ fn perf_recoverability_policy_matrix() {
             .unwrap()
             .expect("policy recovered geometry envelope");
         let authoritative_hot_summary = crate::diagnostics::data::RelationalDiagnosticArtifact {
-            scope: hot_bundle.diagnostics_summary.scope,
-            kind: hot_bundle.diagnostics_summary.kind,
-            determinism: hot_bundle.diagnostics_summary.determinism,
+            scope: hot_envelope.diagnostics_summary.scope,
+            kind: hot_envelope.diagnostics_summary.kind,
+            determinism: hot_envelope.diagnostics_summary.determinism,
             entries: Vec::new(),
         };
 
@@ -79,7 +77,7 @@ fn perf_recoverability_policy_matrix() {
             charged_work: hot_commit_work + replay_commit_work,
             metrics: perf_metrics!({
                 "must_be_hot_changed_records": hot_commit.changed_records.len(),
-                "reconstructable_summary_entries": hot_bundle.diagnostics_summary.entries.len(),
+                "reconstructable_summary_entries": hot_envelope.diagnostics_summary.entries.len(),
                 "deferred_trace_entries": hot_artifacts
                     .iter()
                     .filter(|artifact| artifact.kind == DiagnosticsArtifactKind::DetailedTrace)

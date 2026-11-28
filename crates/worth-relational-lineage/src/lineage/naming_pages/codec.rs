@@ -18,78 +18,69 @@ use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnava
 
 /// Appends canonical bytes.
 #[derive(Default)]
-pub struct Writer(Vec<u8>);
+pub struct Writer(crate::naming_wire::Writer);
 
 impl Writer {
     pub fn into_bytes(self) -> Vec<u8> {
-        self.0
+        self.0.into_bytes()
     }
     pub fn u8(&mut self, value: u8) {
-        self.0.push(value);
+        self.0.u8(value);
     }
     pub fn u32(&mut self, value: u32) {
-        self.0.extend_from_slice(&value.to_be_bytes());
+        self.0.u32(value);
     }
     pub fn u64(&mut self, value: u64) {
-        self.0.extend_from_slice(&value.to_be_bytes());
+        self.0.u64(value);
     }
     pub fn digest(&mut self, digest: &[u8; 32]) {
-        self.0.extend_from_slice(digest);
+        self.0.digest(digest);
     }
     pub fn bytes(&mut self, bytes: &[u8]) {
         self.u32(u32::try_from(bytes.len()).unwrap_or(u32::MAX));
-        self.0.extend_from_slice(bytes);
+        self.0.raw(bytes);
     }
 }
 
 /// Reads canonical bytes; every shortfall or overrun is damage.
-pub struct Reader<'a>(&'a [u8]);
+pub struct Reader<'a>(crate::naming_wire::Reader<'a>);
 
 impl<'a> Reader<'a> {
     pub const fn new(bytes: &'a [u8]) -> Self {
-        Self(bytes)
+        Self(crate::naming_wire::Reader::new(bytes))
     }
-    fn take(&mut self, count: usize) -> Result<&'a [u8], Cause> {
-        if self.0.len() < count {
-            return Err(Cause::Damaged);
-        }
-        let (head, tail) = self.0.split_at(count);
-        self.0 = tail;
-        Ok(head)
-    }
+
     pub fn u8(&mut self) -> Result<u8, Cause> {
-        Ok(self.take(1)?[0])
+        self.0.u8().map_err(|_| Cause::Damaged)
     }
+
     pub fn u32(&mut self) -> Result<u32, Cause> {
-        let bytes = self.take(4)?;
-        Ok(u32::from_be_bytes(
-            bytes.try_into().map_err(|_| Cause::Damaged)?,
-        ))
+        self.0.u32().map_err(|_| Cause::Damaged)
     }
+
     pub fn u64(&mut self) -> Result<u64, Cause> {
-        let bytes = self.take(8)?;
-        Ok(u64::from_be_bytes(
-            bytes.try_into().map_err(|_| Cause::Damaged)?,
-        ))
+        self.0.u64().map_err(|_| Cause::Damaged)
     }
+
     pub fn digest(&mut self) -> Result<[u8; 32], Cause> {
-        self.take(32)?.try_into().map_err(|_| Cause::Damaged)
+        self.0.digest().map_err(|_| Cause::Damaged)
     }
+
     pub fn bytes(&mut self) -> Result<&'a [u8], Cause> {
         let count = usize::try_from(self.u32()?).map_err(|_| Cause::Damaged)?;
-        self.take(count)
+        self.0.take(count).map_err(|_| Cause::Damaged)
     }
     /// A count no larger than the bytes left, so a forged count cannot
     /// reserve memory the page never carried.
     pub fn count(&mut self) -> Result<usize, Cause> {
         let count = usize::try_from(self.u32()?).map_err(|_| Cause::Damaged)?;
-        if count > self.0.len() {
+        if count > self.0.remaining() {
             return Err(Cause::Damaged);
         }
         Ok(count)
     }
     pub fn finish(self) -> Result<(), Cause> {
-        if self.0.is_empty() {
+        if self.0.remaining() == 0 {
             Ok(())
         } else {
             Err(Cause::Damaged)

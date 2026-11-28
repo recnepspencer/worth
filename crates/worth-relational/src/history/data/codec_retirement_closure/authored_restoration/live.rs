@@ -1,5 +1,5 @@
 //! Admit the actual predecessor publications before assembling their inverse.
-use worth_relational_publication::internal_port::mvcc::publication::application_publication::authored_restoration::RelationalAuthoredRestorationOwnerPort as _;
+use worth_relational_publication::internal_port::publication::ownership::authored_restoration::RelationalAuthoredRestorationOwnerPort as _;
 use worth_relational_publication::internal_port::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthorityFieldsPort as _;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::failure;

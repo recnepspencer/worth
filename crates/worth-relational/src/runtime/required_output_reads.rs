@@ -70,7 +70,7 @@ impl RelationalRuntime {
         basis: &AdmittedRelationalBranchBasis,
         carried: &RelationalRequiredOutputPublication,
     ) -> Result<RelationalRequiredOutputPublication, TransactionCommitError> {
-        crate::mvcc::publication::application_publication::native_transition_succession::readmit_carried_required_output_publication(self.into(), execution, installed, basis, carried)
+        crate::publication::ownership::native_transition_succession::readmit_carried_required_output_publication(self.into(), execution, installed, basis, carried)
     }
 
     /// Reissue succeeds the actual Native route transition, never a fresh Birth.
@@ -82,7 +82,7 @@ impl RelationalRuntime {
         basis: &AdmittedRelationalBranchBasis,
         meaning: &RequiredOutputPublicationMeaning,
     ) -> Result<Option<RelationalRequiredOutputPublication>, TransactionCommitError> {
-        crate::mvcc::publication::application_publication::native_transition_succession::readmit_native_output_transition_successor(self.into(), execution, installed, basis, meaning)
+        crate::publication::ownership::native_transition_succession::readmit_native_output_transition_successor(self.into(), execution, installed, basis, meaning)
     }
 
     pub(crate) fn readmit_canonical_publication(
@@ -92,7 +92,7 @@ impl RelationalRuntime {
         basis: &AdmittedRelationalBranchBasis,
         origin: &Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
     ) -> Result<RelationalRequiredOutputPublication, TransactionCommitError> {
-        crate::mvcc::publication::application_publication::native_transition_succession::readmit_canonical_publication(self.into(), execution, installed, basis, origin)
+        crate::publication::ownership::native_transition_succession::readmit_canonical_publication(self.into(), execution, installed, basis, origin)
     }
 
     /// Reissue an independent route's original publication custody at current C.
@@ -106,7 +106,7 @@ impl RelationalRuntime {
         running_producer: &str,
         meaning: &RequiredOutputPublicationMeaning,
     ) -> Result<Option<RelationalRequiredOutputPublication>, TransactionCommitError> {
-        crate::mvcc::publication::application_publication::native_transition_succession::independent::readmit_current_independent_output_successor(self.into(), execution, installed, basis, running_producer, meaning)
+        crate::publication::ownership::native_transition_succession::independent::readmit_current_independent_output_successor(self.into(), execution, installed, basis, running_producer, meaning)
     }
 
     pub fn readmit_restored_producer_prior(

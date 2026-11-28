@@ -36,11 +36,8 @@ fn real_entity_and_relation_transactions_preserve_semantic_binding_surfaces() {
     ))[0];
 
     create_relation_outcome(execution, &runtime, source, target, "edge");
-    let commit = runtime
-        .publication()
-        .latest_bundle()
+    let commit = runtime.history().historical_latest_commit()
         .unwrap()
-        .commit
         .commit_id;
     let envelope = bridge_envelopes_at_current_observation(runtime, [commit], resource_request)
         .pop()
@@ -116,11 +113,8 @@ fn real_entity_transaction_preserves_field_lifecycle_and_structural_surfaces() {
         .commit(execution, &runtime)
         .expect("real structural create");
     let entity = changed_entities(&created)[0];
-    let structural_commit = runtime
-        .publication()
-        .latest_bundle()
+    let structural_commit = runtime.history().historical_latest_commit()
         .unwrap()
-        .commit
         .commit_id;
     let mut transaction =
         crate::relational_source::relational_test_support::test_owner_begin_transaction_for_main(

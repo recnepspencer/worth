@@ -109,7 +109,6 @@ impl ReplayAuthority<'_> {
             mismatches,
             selected_lineage_authority.as_ref(),
         );
-        record_replay_diagnostic(self.runtime, &outcome.requested, &outcome);
         Ok(outcome)
     }
 }

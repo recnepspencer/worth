@@ -29,8 +29,8 @@ pub(in crate::internal_port::authority::commit::pipeline::publication_execution)
         contracts::identity::data::record_ids::RelationId,
         contracts::identity::data::primitives::LineageId,
     )>,
-    pub(in crate::internal_port::authority::commit::pipeline::publication_execution) artifacts:
-        crate::publication::authority::artifacts::PublicationArtifacts,
+    pub(in crate::internal_port::authority::commit::pipeline::publication_execution) reserved_snapshot:
+        worth_relational_branch::internal_port::snapshots::data::SnapshotHandle,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) changed_records:
         Vec<contracts::transactions::data::primitives::RecordRef>,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) version_id: VersionId,
@@ -40,8 +40,6 @@ pub(in crate::internal_port::authority::commit::pipeline::publication_execution)
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) commit_reference:
         RelationalCommitReceipt,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) branch_id: BranchId,
-    pub(in crate::internal_port::authority::commit::pipeline::publication_execution) deferred_diagnostic_artifacts:
-        Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) canonical_publication_route:
         crate::runtime::state::subsystems::history::canonical_publication_routes::PreparedCanonicalPublicationRoute,
 }
@@ -60,8 +58,8 @@ pub(in crate::internal_port::authority::commit::pipeline::publication_execution)
         contracts::identity::data::record_ids::RelationId,
         contracts::identity::data::primitives::LineageId,
     )>,
-    pub(in crate::internal_port::authority::commit::pipeline::publication_execution) artifacts:
-        crate::publication::authority::artifacts::PublicationArtifacts,
+    pub(in crate::internal_port::authority::commit::pipeline::publication_execution) reserved_snapshot:
+        worth_relational_branch::internal_port::snapshots::data::SnapshotHandle,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) changed_records:
         Vec<contracts::transactions::data::primitives::RecordRef>,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) version_id: VersionId,
@@ -71,8 +69,6 @@ pub(in crate::internal_port::authority::commit::pipeline::publication_execution)
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) commit_reference:
         RelationalCommitReceipt,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) branch_id: BranchId,
-    pub(in crate::internal_port::authority::commit::pipeline::publication_execution) deferred_diagnostic_artifacts:
-        Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
 }
 
 impl PreparedPublicationPhase {
@@ -137,14 +133,13 @@ impl PreparedPublicationPhase {
             validated_lineage_events: self.validated_lineage_events,
             lineage_nodes: self.lineage_nodes,
             relation_lineages: self.relation_lineages,
-            artifacts: self.artifacts,
+            reserved_snapshot: self.reserved_snapshot,
             changed_records: self.changed_records,
             version_id: self.version_id,
             previous_branch_head_version: self.previous_branch_head_version,
             commit_id: self.commit_id,
             commit_reference: self.commit_reference,
             branch_id: self.branch_id,
-            deferred_diagnostic_artifacts: self.deferred_diagnostic_artifacts,
         };
         (movement, completion)
     }

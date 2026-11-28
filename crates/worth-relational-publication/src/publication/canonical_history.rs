@@ -33,13 +33,19 @@ pub fn retained_canonical_envelope_at_position(
         .positioned_canonical_commit_at_patch(position)
         .map(|commit| commit.as_ref().clone())
         .or_else(|| {
-            let durable = preloaded_durable_envelopes
-                .map(|envelopes| envelopes.to_vec())
-                .unwrap_or_else(|| durable_canonical_envelopes(durability));
-            durable
-                .into_iter()
-                .find(|commit| commit.position() == position)
+            if let Some(durable) = preloaded_durable_envelopes {
+                return find_durable_envelope(durable, position);
+            }
+            find_durable_envelope(&durable_canonical_envelopes(durability), position)
         })
+}
+
+fn find_durable_envelope(
+    durable: &[PositionedCanonicalCommit],
+    position: PatchStreamPosition,
+) -> Option<PositionedCanonicalCommit> {
+    let index = durable.binary_search_by_key(&position, PositionedCanonicalCommit::position).ok()?;
+    Some(durable[index].clone())
 }
 
 pub fn durable_canonical_envelopes(
@@ -85,10 +91,7 @@ fn resolve_retained_commit_refs(
         }
         let durable =
             durable_envelopes.get_or_insert_with(|| durable_canonical_envelopes(durability));
-        if let Some(envelope) = durable
-            .iter()
-            .find(|commit| commit.position() == commit_ref.position)
-            .cloned()
+        if let Some(envelope) = find_durable_envelope(durable, commit_ref.position)
         {
             envelopes.push(envelope);
             continue;
@@ -111,20 +114,12 @@ pub fn try_patch_stream_commits_after(
     Vec<PatchStreamCommitRef>,
     contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
 > {
-    let start = after_position
-        .map(std::ops::Bound::Excluded)
-        .unwrap_or(std::ops::Bound::Unbounded);
-    let mut entries = history
-        .try_recorded_patch_positions_after(after_position, max_commits)?
-        .into_iter()
-        .collect::<std::collections::BTreeMap<_, _>>();
+    let mut entries = std::collections::BTreeMap::new();
+    entries.extend(history.try_recorded_patch_positions_after(after_position, max_commits)?);
     entries.extend(history.canonical_patch_routes_after(after_position, max_commits));
     Ok(entries
-        .range((start, std::ops::Bound::Unbounded))
-        .map(|(position, commit_id)| PatchStreamCommitRef {
-            position: *position,
-            commit_id: *commit_id,
-        })
+        .into_iter()
+        .map(|(position, commit_id)| PatchStreamCommitRef { position, commit_id })
         .take(max_commits)
         .collect())
 }

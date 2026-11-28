@@ -6,15 +6,14 @@ mod relation_integrity_replay;
 mod schema_continuity_drift;
 
 use crate::capabilities::SchemaSource;
-use crate::diagnostics::data::RelationalDiagnosticValue;
-use crate::facade::diagnostics::{DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope};
+use crate::facade::diagnostics::DiagnosticCode;
 use crate::facade::history::BranchId;
 use crate::facade::indexes::{
     DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind,
 };
 use crate::facade::replay::{
     RelationalReplayRequest, ReplayExecutionMode, ReplayFailureClass, ReplayMismatchClass,
-    ReplayObservableSurface, ReplayVerificationMode,
+    ReplayObservableSurface, ReplayVerificationLayer, ReplayVerificationMode,
 };
 use crate::facade::schema::{
     HistoricalInterpretationSensitivity, ProposedSchemaTransition, SchemaDiffAtom,
@@ -50,26 +49,6 @@ fn source_max_one_relation_integrity_runtime() -> RelationalRuntime {
         ..RelationIntegritySchemaFixture::default()
     }
     .build_runtime()
-}
-
-fn diagnostic_array_contains_string(
-    entry: &crate::facade::diagnostics::RelationalDiagnosticsEntry,
-    field: &str,
-    expected: &str,
-) -> bool {
-    match diagnostic_field(entry, field) {
-        RelationalDiagnosticValue::Array(values) => {
-            let contains_expected = values
-                .iter()
-                .any(|value| value == &RelationalDiagnosticValue::string(expected));
-            assert!(
-                contains_expected,
-                "diagnostic field '{field}' missing string '{expected}': {values:?}"
-            );
-            true
-        }
-        other => panic!("diagnostic field '{field}' is not an array: {other:?}"),
-    }
 }
 
 fn schema_transition_for_subscriber_impact(

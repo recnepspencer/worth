@@ -1,6 +1,5 @@
 mod commit_closure;
 mod continuity;
-mod diagnostics;
 mod execution;
 mod lineage_authority;
 mod recovery_plan;

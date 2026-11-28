@@ -133,7 +133,6 @@ fn residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class()
                 assert!(!targets.is_empty());
                 let frontier = fixture.runtime.history().latest_patch_stream_position();
                 let offered = fixture.medium.offered().len();
-                let diagnostics = fixture.runtime.publication().diagnostic_artifacts();
                 fixture
                     .source
                     .failures
@@ -170,10 +169,6 @@ fn residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class()
                     frontier
                 );
                 assert_eq!(fixture.medium.offered().len(), offered);
-                assert_eq!(
-                    fixture.runtime.publication().diagnostic_artifacts(),
-                    diagnostics
-                );
             }
         }
     }

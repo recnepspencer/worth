@@ -28,7 +28,6 @@ pub struct CandidateHistoryInputs<'a> {
     pub runtime_identity: u64,
     pub publication: &'a RelationalRuntimePublicationBinding,
     pub history: &'a RelationalPreparationHistory,
-    pub diagnostics: &'a crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore,
     pub prepare: HistoryPreparationInputs<'a>,
 }
 
@@ -53,7 +52,6 @@ pub struct HistoryPreparedCandidate<'scope, 'authority> {
     required_output_materialization:
         Option<std::sync::Arc<worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_materialization::CanonicalRequiredOutputMaterialization>>,
     caller_association: Option<worth_relational_branch::internal_port::history::data::caller_association::RelationalCallerAssociation>,
-    diagnostic_capture: crate::publication::diagnostic_store::RelationalDiagnosticOperationCapture,
 }
 
 // Later publication locals must not occupy the deep admission/draft call's frame.
@@ -112,7 +110,6 @@ pub fn prepare_history<'scope, 'authority, V: DraftValidationInput>(
             ))
         })?
         .publication_cell();
-    let diagnostic_capture = inputs.diagnostics.begin_operation_capture();
     let history_bound = prepare_bound_history(execution, inputs.prepare, context)?;
     CommitPhaseBacking::new(
         execution,
@@ -133,7 +130,6 @@ pub fn prepare_history<'scope, 'authority, V: DraftValidationInput>(
             required_output_publication,
             required_output_materialization,
             caller_association,
-            diagnostic_capture,
         },
     )
 }

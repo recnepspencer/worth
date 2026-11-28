@@ -11,6 +11,7 @@
 //! rows through a [`NamingReadScope`].
 
 pub mod batch;
+mod commit_basis;
 pub mod codec;
 pub mod denial;
 pub mod entry;

@@ -29,16 +29,14 @@ fn runtime_bridge_relational_source_exposes_latest_publication_bundle_authoritat
     let runtime = runtime_with_test_schema();
     create_entity_outcome(&execution, &runtime, "alice");
 
-    let bundle = runtime
-        .publication()
-        .latest_bundle()
+    let receipt = runtime.history().historical_latest_commit()
         .expect("runtime publication bundle")
         .clone();
     let branch_identity = runtime
-        .branch_identity(&bundle.commit.branch_id)
+        .branch_identity(&receipt.branch_id)
         .expect("committed branch identity");
     let expected_commit_identity = crate::facade::RelationalCommittedPatchRequest::new(
-        TruthCommitIdentity::from_relational_commit_id(bundle.commit.commit_id.0),
+        TruthCommitIdentity::from_relational_commit_id(receipt.commit_id.0),
     );
 
     let source = RuntimeBridgeRelationalSource::for_graph_role(Arc::new(runtime), "model")
@@ -186,14 +184,12 @@ fn runtime_bridge_relational_source_drives_public_bridge_delivery_with_canonical
     let runtime = runtime_with_test_schema();
     create_entity_outcome(&execution, &runtime, "alice");
 
-    let bundle = runtime
-        .publication()
-        .latest_bundle()
+    let receipt = runtime.history().historical_latest_commit()
         .expect("runtime publication bundle")
         .clone();
-    let commit_identity = TruthCommitIdentity::from_relational_commit_id(bundle.commit.commit_id.0);
+    let commit_identity = TruthCommitIdentity::from_relational_commit_id(receipt.commit_id.0);
     let branch_identity = runtime
-        .branch_identity(&bundle.commit.branch_id)
+        .branch_identity(&receipt.branch_id)
         .expect("committed branch identity");
 
     let source = RuntimeBridgeRelationalSource::for_graph_role(Arc::new(runtime), "model")

@@ -8,7 +8,6 @@ use generation_publication::{
 
 pub mod build_execution;
 
-pub mod diagnostics;
 
 pub mod maintenance;
 pub mod reconstruction_build;

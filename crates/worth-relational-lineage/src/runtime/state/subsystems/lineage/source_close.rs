@@ -27,7 +27,7 @@ impl LineageSubsystem {
             }
         };
         if let Some(target) = target {
-            target.preflight_source_retirement(source)?;
+            target.custody.preflight_source_retirement(source)?;
         }
         Ok(())
     }
@@ -37,7 +37,7 @@ impl LineageSubsystem {
     ) -> Result<bool, Denial> {
         let slot = self.node_residency.try_read().ok_or(Denial::Busy)?;
         match slot.as_ref() {
-            Some(original) => original.loan_source_retirement(handoff),
+            Some(original) => original.custody.loan_source_retirement(handoff),
             None => Ok(true),
         }
     }
@@ -49,7 +49,7 @@ impl LineageSubsystem {
         let slot = self.node_residency.try_read().ok_or(Denial::Busy)?;
         slot.as_ref()
             .ok_or(Denial::Refused(Refusal::ForeignCustody))?
-            .return_source_retirement(handoff, source)
+            .custody.return_source_retirement(handoff, source)
     }
 
     pub fn preflight_event_source_retirement(
@@ -69,7 +69,7 @@ impl LineageSubsystem {
             }
         };
         if let Some(target) = target {
-            target.preflight_source_retirement(source)?;
+            target.custody.preflight_source_retirement(source)?;
         }
         Ok(())
     }
@@ -79,7 +79,7 @@ impl LineageSubsystem {
     ) -> Result<bool, Denial> {
         let slot = self.event_residency.try_read().ok_or(Denial::Busy)?;
         match slot.as_ref() {
-            Some(original) => original.loan_source_retirement(handoff),
+            Some(original) => original.custody.loan_source_retirement(handoff),
             None => Ok(true),
         }
     }
@@ -91,6 +91,6 @@ impl LineageSubsystem {
         let slot = self.event_residency.try_read().ok_or(Denial::Busy)?;
         slot.as_ref()
             .ok_or(Denial::Refused(Refusal::ForeignCustody))?
-            .return_source_retirement(handoff, source)
+            .custody.return_source_retirement(handoff, source)
     }
 }

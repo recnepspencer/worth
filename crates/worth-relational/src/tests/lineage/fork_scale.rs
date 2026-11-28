@@ -107,9 +107,7 @@ fn retained_scale_fixture(
             &format!("flat-lineage-successor-{replacement}"),
             BranchId("main".to_owned()),
         );
-        let version = runtime
-            .publication()
-            .latest_bundle()
+        let version = crate::tests::support::latest_committed_envelope(&runtime)
             .expect("replacement publication")
             .commit
             .version_id;

@@ -1,3 +1,4 @@
+use contracts::schema::continuity::errors::SchemaContinuityBundleIssue;
 use contracts::schema::continuity::transition_lowering::lower_schema_transition;
 use contracts::schema::continuity::transition_validation::validate_schema_transition;
 use contracts::schema::data::continuity::descriptor_versions::DescriptorSemanticsVersion;
@@ -10,13 +11,6 @@ use contracts::transactions::data::outcomes::commit_conflict::CommitConflictOwne
 use contracts::transactions::data::outcomes::conflict_class::ConflictClass;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_relational_contracts::internal_port as contracts;
-#[path = "schema_continuity_diagnostics/mod.rs"]
-pub mod diagnostics;
-pub(crate) use diagnostics::prepare_schema_continuity_diagnostics;
-use diagnostics::{
-    emit_schema_continuity_failure_diagnostic, schema_continuity_conflict_from_issue,
-    FailureTransitionView,
-};
 pub mod inputs;
 pub mod prior;
 pub mod schema_transition_metrics;
@@ -96,10 +90,6 @@ fn materialize_declared_transition(
             .flatten();
         let Some((previous_schema_id, previous_schema_version_id)) = previous_schema_basis else {
             return Err(schema_continuity_conflict(
-                diagnostics,
-                branch_id,
-                Some(&proposed_transition),
-                Some(previous_envelope),
                 ConflictClass::MissingSchemaBasisForTransition {
                     role: "prior".to_string(),
                 },
@@ -109,10 +99,6 @@ fn materialize_declared_transition(
             || proposed_transition.source_schema_version_id != previous_schema_version_id
         {
             return Err(schema_continuity_conflict(
-                diagnostics,
-                branch_id,
-                Some(&proposed_transition),
-                Some(previous_envelope),
                 ConflictClass::InvalidSchemaTransitionSourceBasis {
                     declared_schema_id: proposed_transition.source_schema_id.clone(),
                     declared_schema_version: proposed_transition.source_schema_version_id,
@@ -125,10 +111,6 @@ fn materialize_declared_transition(
 
     let Some((current_schema_id, current_schema_version_id)) = current_schema_basis else {
         return Err(schema_continuity_conflict(
-            diagnostics,
-            branch_id,
-            Some(&proposed_transition),
-            previous_envelope,
             ConflictClass::MissingSchemaBasisForTransition {
                 role: "runtime".to_string(),
             },
@@ -139,10 +121,6 @@ fn materialize_declared_transition(
         || proposed_transition.target_schema_version_id != current_schema_version
     {
         return Err(schema_continuity_conflict(
-            diagnostics,
-            branch_id,
-            Some(&proposed_transition),
-            previous_envelope,
             ConflictClass::InvalidSchemaTransitionTargetBasis {
                 declared_schema_id: proposed_transition.target_schema_id.clone(),
                 declared_schema_version: proposed_transition.target_schema_version_id,
@@ -155,10 +133,6 @@ fn materialize_declared_transition(
     let validated =
         validate_schema_transition(proposed_transition.clone(), policy).map_err(|error| {
             schema_continuity_conflict(
-                diagnostics,
-                branch_id,
-                Some(&proposed_transition),
-                previous_envelope,
                 ConflictClass::InvalidSchemaTransitionShape {
                     detail: error.detail(),
                 },
@@ -167,10 +141,6 @@ fn materialize_declared_transition(
     match validated.reconciliation {
         contracts::schema::data::continuity::transition_classification::SchemaReconciliationClassification::TypeContinuityDenied => {
             return Err(schema_continuity_conflict(
-                diagnostics,
-                branch_id,
-                Some(&proposed_transition),
-                previous_envelope,
                 ConflictClass::TypeContinuityDeniedSchemaTransition {
                     detail: "declared schema transition contains a type-continuity-denied boundary that cannot continue honestly"
                         .to_string(),
@@ -179,10 +149,6 @@ fn materialize_declared_transition(
         }
         contracts::schema::data::continuity::transition_classification::SchemaReconciliationClassification::StructuralContinuityDenied => {
             return Err(schema_continuity_conflict(
-                diagnostics,
-                branch_id,
-                Some(&proposed_transition),
-                previous_envelope,
                 ConflictClass::StructuralContinuityDeniedSchemaTransition {
                     detail: "declared schema transition contains a structural/semantic continuity denial that cannot continue honestly"
                         .to_string(),
@@ -257,36 +223,19 @@ fn schema_continuity_plan_from_lowered(
     }
 }
 
-fn schema_continuity_conflict(
-    diagnostics: PreparationDiagnostics<'_>,
-    branch_id: &contracts::history::data::coordinates::BranchId,
-    proposed_transition: Option<
-        &contracts::schema::data::continuity::transition_plans::ProposedSchemaTransition,
-    >,
-    previous_envelope: Option<&SchemaContinuityPrior<'_>>,
-    class: ConflictClass,
-) -> TransactionCommitError {
-    let conflict = CommitConflict::new(class);
-    emit_schema_continuity_failure_diagnostic(
-        diagnostics,
-        branch_id,
-        proposed_transition.map(FailureTransitionView::Proposed),
-        previous_envelope,
-        &conflict,
-    );
-    TransactionCommitError::conflict(conflict)
+fn schema_continuity_conflict(class: ConflictClass) -> TransactionCommitError {
+    TransactionCommitError::conflict(CommitConflict::new(class))
 }
 
 pub fn validate_schema_continuity_publication(
     diagnostics: PreparationDiagnostics<'_>,
-    branch_id: &contracts::history::data::coordinates::BranchId,
+    _branch_id: &contracts::history::data::coordinates::BranchId,
     _plan: &SchemaContinuityPlan,
     envelope: &worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBody,
 ) -> Result<(), TransactionCommitError> {
     worth_relational_branch::internal_port::schema::continuity::bundle_admission::validate_schema_continuity_body(envelope).map_err(|issue| {
         schema_continuity_conflict_from_issue(
             diagnostics,
-            branch_id,
             envelope.schema_transition.as_ref(),
             issue,
             envelope,
@@ -294,4 +243,77 @@ pub fn validate_schema_continuity_publication(
     })?;
 
     Ok(())
+}
+
+fn schema_continuity_conflict_from_issue(
+    diagnostics: PreparationDiagnostics<'_>,
+    transition: Option<&SchemaTransitionArtifact>,
+    issue: SchemaContinuityBundleIssue,
+    envelope: &worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBody,
+) -> TransactionCommitError {
+    if descriptor_version_mismatch_issue(&issue) {
+        diagnostics
+            .instrumentation
+            .count_descriptor_version_mismatch();
+    }
+
+    let class = schema_continuity_conflict_class(issue, transition, envelope);
+    let conflict = CommitConflict::new(class);
+    TransactionCommitError::conflict(conflict)
+}
+
+fn descriptor_version_mismatch_issue(issue: &SchemaContinuityBundleIssue) -> bool {
+    matches!(
+        issue,
+        SchemaContinuityBundleIssue::DescriptorSemanticsVersionMismatch { .. }
+            | SchemaContinuityBundleIssue::DescriptorCanonicalBasisVersionMismatch { .. }
+    )
+}
+
+fn schema_continuity_conflict_class(
+    issue: SchemaContinuityBundleIssue,
+    transition: Option<&SchemaTransitionArtifact>,
+    envelope: &worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBody,
+) -> ConflictClass {
+    match issue {
+        SchemaContinuityBundleIssue::IncompleteBundle
+        | SchemaContinuityBundleIssue::ContinuationDescriptorDrift { .. }
+        | SchemaContinuityBundleIssue::ContinuationBoundaryFingerprintMismatch { .. }
+        | SchemaContinuityBundleIssue::DescriptorSemanticsVersionMismatch { .. }
+        | SchemaContinuityBundleIssue::DescriptorCanonicalBasisVersionMismatch { .. }
+        | SchemaContinuityBundleIssue::VisibleBridgeProofMismatch
+        | SchemaContinuityBundleIssue::ReconciliationDescriptorDrift => {
+            ConflictClass::UnsupportedBridgeDescriptor {
+                detail: issue.detail(),
+            }
+        }
+        SchemaContinuityBundleIssue::TargetSchemaVersionMismatch => {
+            ConflictClass::UnsupportedBridgeDescriptor {
+                detail: format!(
+                    "{}: target {:?} envelope {:?}",
+                    issue.detail(),
+                    transition.map(|candidate| candidate.target_schema_version_id),
+                    envelope.schema_version
+                ),
+            }
+        }
+        SchemaContinuityBundleIssue::LineageSchemaVersionMismatch => {
+            ConflictClass::DirectionalityMismatchUnderCanonicalReconciliation {
+                detail: format!(
+                    "{}: lineage {:?} envelope {:?}",
+                    issue.detail(),
+                    envelope
+                        .schema_reconciliation_descriptor
+                        .as_ref()
+                        .map(|descriptor| descriptor.resulting_lineage.resulting_schema_version_id),
+                    envelope.schema_version
+                ),
+            }
+        }
+        SchemaContinuityBundleIssue::HistoricalReinterpretationViolation => {
+            ConflictClass::HistoricalReinterpretationViolation {
+                detail: issue.detail(),
+            }
+        }
+    }
 }

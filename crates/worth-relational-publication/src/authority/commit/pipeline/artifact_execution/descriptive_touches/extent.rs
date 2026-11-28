@@ -1,4 +1,5 @@
 //! The touch artifact's allocation declaration comes from its immutable inputs.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use worth_relational_contracts::internal_port as contracts;
 

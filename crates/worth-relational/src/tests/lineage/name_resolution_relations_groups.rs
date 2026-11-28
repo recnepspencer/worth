@@ -80,7 +80,7 @@ fn group_split_retire_revive_merge_lifecycle_resolves_by_ending_transitions() {
     let mut commit = |world: &mut GroupWorld, groups: &[&[u8]]| {
         let transition = world.step(groups).expect("valid group transition");
         let next = CommitId(log.len() as u64 + 1);
-        log.push(PersistentNameCommittedBatch::new(next).with_group_transition(&transition));
+        log.push(PersistentNameCommittedBatch::new(next).with_published_group_transitions(transition));
         log.clone()
     };
     commit(&mut world, &[&[1, 2, 3, 4]]); // 1: G born

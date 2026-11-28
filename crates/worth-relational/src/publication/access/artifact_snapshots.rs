@@ -1,40 +1,29 @@
 use crate::capabilities::PublicationDiagnosticsSource;
 use crate::publication::data::{
-    PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot, PublicationObservationSnapshot,
+    PublicationDiagnosticsSnapshot, PublicationObservationSnapshot,
 };
-use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 
 use super::{PublicationArtifactsAccess, PublicationDiagnosticsAccess};
 
 impl<'runtime> PublicationArtifactsAccess<'runtime> {
     pub fn observation(&self) -> PublicationObservationSnapshot {
-        let latest_bundle = self.latest_bundle();
-        let latest_bundle = latest_bundle.as_deref();
-        let latest_patch = latest_bundle.map(|bundle| &bundle.patch);
-        let latest_replay = latest_bundle.map(|bundle| &bundle.replay);
-
+        let runtime = self.runtime;
+        let route = runtime.history.latest_canonical_patch_route();
+        let envelope = route.and_then(|(position, _)| runtime.history.canonical_envelope_at_patch(position));
+        let commit = envelope.as_ref().map(|envelope| &envelope.commit);
+        let snapshot_id = commit
+            .and_then(|commit| runtime.visibility.published_snapshot_binding_for_version(commit.version_id))
+            .map(|(snapshot_id, _)| snapshot_id);
         PublicationObservationSnapshot {
-            latest_commit_id: latest_bundle.map(|bundle| bundle.commit.commit_id),
-            publication_snapshot_id: latest_bundle
-                .map(|bundle| *bundle.snapshot.owner_snapshot_id()),
-            publication_status: latest_bundle.map(|bundle| bundle.status.clone()),
-            latest_patch_position: latest_patch.map(|patch| patch.position),
-            latest_patch_record_count: latest_patch
-                .map(|patch| patch.authoritative_record_patches.len()),
-            latest_replay_commit_id: latest_replay.map(|replay| replay.commit_id),
-            latest_patch_present: latest_patch.is_some(),
-            latest_replay_present: latest_replay.is_some(),
-            diagnostics_artifact_count: self.runtime.publication_diagnostic_artifact_count(),
-        }
-    }
-
-    pub fn snapshot(&self) -> PublicationArtifactSnapshot {
-        let latest_bundle = self.latest_bundle();
-
-        PublicationArtifactSnapshot {
-            observation: self.observation(),
-            latest_patch: latest_bundle.as_ref().map(|bundle| bundle.patch.clone()),
-            latest_replay: latest_bundle.as_ref().map(|bundle| bundle.replay.clone()),
+            latest_commit_id: commit.map(|commit| commit.commit_id),
+            publication_snapshot_id: snapshot_id,
+            publication_status: commit.map(|_| crate::publication::bundle::PublicationStatus::Published),
+            latest_patch_position: route.map(|(position, _)| position),
+            latest_patch_record_count: envelope.as_ref().map(|envelope| envelope.patch.authoritative_record_patches.len()),
+            latest_replay_commit_id: commit.map(|commit| commit.commit_id),
+            latest_patch_present: route.is_some(),
+            latest_replay_present: envelope.is_some(),
+            diagnostics_artifact_count: runtime.publication_diagnostic_artifact_count(),
         }
     }
 }

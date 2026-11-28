@@ -89,11 +89,7 @@ fn retained_fork_fixture(
         BranchId("main".to_owned()),
     );
     let successor = replacement_successor(&replaced, entity);
-    let inherited = runtime
-        .publication()
-        .latest_bundle()
-        .expect("inherited replacement publication")
-        .clone();
+    let inherited = &replaced;
     let feature = BranchId("feature".to_owned());
     fork_branch(
         &execution,

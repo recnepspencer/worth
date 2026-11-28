@@ -1,4 +1,3 @@
-mod diagnostics;
 mod durability;
 mod history;
 mod indexing;
@@ -7,7 +6,6 @@ mod runtime;
 mod schema;
 mod visibility;
 
-pub(crate) use diagnostics::*;
 pub(crate) use durability::*;
 pub(crate) use history::*;
 pub(crate) use indexing::*;

@@ -129,14 +129,14 @@ pub(super) fn mixed_history() -> (
     let cutter = world.create(Subject::Entity, "cutter");
     let batch = world.commit();
     let born = groups.step(&[&[1, 2, 3, 4]]).unwrap();
-    push(batch.with_group_transition(&born), &mut log);
+    push(batch.with_published_group_transitions(born), &mut log);
     let cutter_name = world.name_of(&cutter);
     let face_pieces = world.split(world.name_of(&face), &["left", "right"]);
     world.bind_carriers(&face_pieces[0], &[cutter_name]);
     let seam_pieces = world.split(world.name_of(&seam), &["top", "bottom"]);
     let batch = world.commit();
     let split = groups.step(&[&[2], &[3, 4]]).unwrap();
-    push(batch.with_group_transition(&split), &mut log);
+    push(batch.with_published_group_transitions(split), &mut log);
     world.retire(world.name_of(&face_pieces[1]));
     world.merge(
         &[
@@ -147,7 +147,7 @@ pub(super) fn mixed_history() -> (
     );
     let batch = world.commit();
     let revived = groups.step(&[&[1], &[2, 3, 4]]).unwrap();
-    push(batch.with_group_transition(&revived), &mut log);
+    push(batch.with_published_group_transitions(revived), &mut log);
     world.merge(
         &[world.name_of(&face_pieces[0]), cutter_name],
         Keep::MintNew,

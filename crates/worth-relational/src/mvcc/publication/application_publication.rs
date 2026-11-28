@@ -4,9 +4,9 @@ pub use publication_appendix::{
     RelationalPublicationBodySelection,
 };
 pub(crate) use authored_publication_reads::AuthoredPublicationReads;
-pub use authored_retirement::AuthoredOwnedMemberKind;
+pub use worth_relational_publication::internal_port::publication::ownership::retirement_admission::AuthoredOwnedMemberKind;
 pub use authored_cascade::RelationalAuthoredRetirement;
-pub use authored_restoration::RelationalAuthoredRestoration;
+pub use worth_relational_publication::internal_port::publication::ownership::authored_restoration::RelationalAuthoredRestoration;
 pub use restored_producer_prior::RelationalRestoredProducerPrior;
 pub(crate) use worth_relational_contracts::internal_port::mvcc::publication::application_publication::{output_meaning, producing_implementation};
 pub use coupled_assembly::assembly_failure::RelationalCoupledAssemblyFailure;
@@ -32,7 +32,7 @@ pub use output_meaning::{
 pub use producing_implementation::RequiredOutputProducingImplementation;
 pub use route_absence::RelationalRequiredOutputRouteAbsence;
 pub use worth_relational_publication::internal_port::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority;
-pub(crate) use worth_relational_publication::internal_port::mvcc::publication::application_publication::{RequiredOutputPublicationAdmission, authored_cascade, authored_publication_reads, authored_restoration, authored_retirement, completion, coupled_owners, custody, native_transition_succession, predecessor_basis, publication_appendix, restored_producer_prior, route_absence};
+pub(crate) use worth_relational_publication::internal_port::mvcc::publication::application_publication::{RequiredOutputPublicationAdmission, authored_cascade, authored_publication_reads, completion, coupled_owners, custody, predecessor_basis, publication_appendix, restored_producer_prior, route_absence};
 pub(crate) use crate::transactions::data::outcomes::transaction_commit_error::origin_denial;
 #[cfg(test)]
 pub(crate) use worth_relational_publication::internal_port::mvcc::publication::application_publication::native_birth_for_test as native_birth_fixture;

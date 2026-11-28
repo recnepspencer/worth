@@ -106,7 +106,7 @@ impl<'runtime> IndexAuthority<'runtime> {
         projection: &IndexProjectionSource<'_>,
         plan: IndexBuildPlan,
     ) -> DerivedIndexBuildOutcome {
-        let (outcome, published) = plan.reconstruct(
+        let (outcome, _) = plan.reconstruct(
             &self.runtime.indexes,
             execution,
             lane,
@@ -114,14 +114,6 @@ impl<'runtime> IndexAuthority<'runtime> {
             selected,
             projection,
         );
-        if published {
-            self.publish_build_diagnostic(
-                &request,
-                &request.branch_id,
-                &outcome.generations,
-                &outcome.failed_indexes,
-            );
-        }
         outcome
     }
 
@@ -136,26 +128,5 @@ impl<'runtime> IndexAuthority<'runtime> {
             .history()
             .immutable_commit_receipt(commit_id)
             .map(|commit| (commit.version_id, commit.branch_id))
-    }
-
-    pub(super) fn publish_build_diagnostic(
-        &self,
-        request: &DerivedIndexBuildRequest,
-        branch_id: &crate::history::data::BranchId,
-        generations: &[DerivedIndexGeneration],
-        failed_indexes: &[DerivedIndexId],
-    ) {
-        self.runtime
-            .publication_authority()
-            .push_bounded_diagnostic(
-                derived_index_build_scope(),
-                derived_index_build_artifact_kind(failed_indexes),
-                vec![derived_index_build_completed(
-                    request.source_commit_id,
-                    branch_id,
-                    generations,
-                    failed_indexes,
-                )],
-            );
     }
 }

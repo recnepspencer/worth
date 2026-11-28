@@ -11,7 +11,6 @@ impl PublishedCommitExecution {
         contracts::transactions::data::primitives::TransactionId,
         crate::transactions::data::outcomes::commit_result::CommitPhaseTiming,
         contracts::transactions::data::commit_log::CommitLog,
-        Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
         contracts::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
         contracts::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
         contracts::transactions::data::outcomes::commit_summaries::CommitStructuralSummary,
@@ -29,7 +28,6 @@ impl PublishedCommitExecution {
             transaction_id,
             phase_timing,
             commit_log,
-            diagnostics,
             complexity_before,
             prior_complexity_delta,
         ) = self.admitted.into_inner().into_result_parts();
@@ -37,7 +35,6 @@ impl PublishedCommitExecution {
             transaction_id,
             phase_timing,
             commit_log,
-            diagnostics,
             complexity_before,
             prior_complexity_delta,
             self.public_structural_summary,

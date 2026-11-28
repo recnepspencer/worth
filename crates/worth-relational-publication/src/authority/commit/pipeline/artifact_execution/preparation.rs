@@ -37,7 +37,7 @@ pub(in crate::internal_port::authority::commit::pipeline) struct PublicationPrep
 
 pub(in crate::internal_port::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
     aggregate_partitions: TouchedAggregatePartitions,
-    artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
+    reserved_snapshot: worth_relational_branch::internal_port::snapshots::data::SnapshotHandle,
     changed_records: Vec<RecordRef>,
     canonical_commit_envelope: worth_relational_branch::internal_port::history::data::canonical_commit_envelope::draft::CanonicalCommitEnvelopeDraft,
     adjacency_deltas: Vec<contracts::authority::mutation::adjacency_delta::AdjacencyDelta>,
@@ -46,7 +46,6 @@ pub(in crate::internal_port::authority::commit::pipeline) struct PublicationFina
         contracts::identity::data::record_ids::RelationId,
         contracts::identity::data::primitives::LineageId,
     )>,
-    deferred_diagnostic_artifacts: Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
     target_schema_registry:
         Option<worth_relational_branch::internal_port::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>,
 }
@@ -67,8 +66,6 @@ pub(super) struct PublicationPreparationInput<'a> {
     pub(super) record_allocations: &'a worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::pending_allocations::PendingRecordAllocations,
     pub(super) schema_continuity: &'a SchemaContinuityPlan,
     pub(super) effect: worth_relational_mutation::internal_port::authority::mutation::effect::MutationEffect,
-    pub(super) deferred_diagnostic_artifacts:
-        Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
 }
 
 pub struct PublicationArtifactOwners<'a> {
@@ -99,7 +96,6 @@ pub(super) fn prepare_publication_artifacts(
         record_allocations,
         schema_continuity,
         effect,
-        deferred_diagnostic_artifacts,
     } = input;
     let worth_relational_mutation::internal_port::authority::mutation::effect::MutationEffect {
         publication,
@@ -202,7 +198,6 @@ pub(super) fn prepare_publication_artifacts(
             adjacency_deltas: adjacency.deltas,
             traces,
             authority,
-            deferred_diagnostic_artifacts,
             target_schema_registry: schema_continuity.target_schema_registry.clone(),
         },
         execution,
@@ -218,7 +213,6 @@ struct PublicationCompletionInput<'a> {
     adjacency_deltas: Vec<contracts::authority::mutation::adjacency_delta::AdjacencyDelta>,
     traces: PublicationTraceCapture,
     authority: CommitPhaseBacking<PreparedPublicationAuthority>,
-    deferred_diagnostic_artifacts: Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
     target_schema_registry:
         Option<worth_relational_branch::internal_port::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>,
 }
@@ -237,7 +231,6 @@ fn finish_publication_preparation(
             adjacency_deltas,
             traces,
             authority,
-            deferred_diagnostic_artifacts,
             target_schema_registry,
         } = input;
         let authority = authority.into_inner();
@@ -250,10 +243,10 @@ fn finish_publication_preparation(
         let aspect_summary = summarize_commit_aspects(&canonical_deltas);
         let summary = CommitPublicationSummary {
             patch_record_count: patch.authoritative_record_patches.len(),
-            diagnostics_entry_count: authority.artifacts.diagnostics_summary.entries.len(),
+            diagnostics_entry_count: authority.canonical_commit_envelope.diagnostics_summary.entries.len(),
             lineage_event_count: authority.lineage_event_count,
             patch_position: None,
-            final_snapshot_id: Some(*authority.artifacts.snapshot.owner_snapshot_id()),
+            final_snapshot_id: Some(*authority.reserved_snapshot.owner_snapshot_id()),
             merge_parent_count: commit_reference.parents.len().saturating_sub(1),
         };
 
@@ -265,13 +258,12 @@ fn finish_publication_preparation(
             summary,
             finalize: PublicationFinalizeArtifacts {
                 aggregate_partitions,
-                artifacts: authority.artifacts,
+                reserved_snapshot: authority.reserved_snapshot,
                 changed_records,
                 canonical_commit_envelope: authority.canonical_commit_envelope,
                 adjacency_deltas,
                 lineage_nodes: authority.lineage_nodes,
                 relation_lineages: authority.relation_lineages,
-                deferred_diagnostic_artifacts,
                 target_schema_registry,
             },
         }
@@ -301,7 +293,7 @@ impl PublicationPreparation {
     pub(in crate::internal_port::authority::commit::pipeline) fn snapshot(
         &self,
     ) -> &worth_relational_branch::internal_port::snapshots::data::SnapshotHandle {
-        &self.finalize.artifacts.snapshot
+        &self.finalize.reserved_snapshot
     }
 
     pub(in crate::internal_port::authority::commit::pipeline) fn into_finalize(
@@ -316,7 +308,7 @@ impl PublicationFinalizeArtifacts {
         self,
     ) -> (
         TouchedAggregatePartitions,
-        crate::publication::authority::artifacts::PublicationArtifacts,
+        worth_relational_branch::internal_port::snapshots::data::SnapshotHandle,
         Vec<RecordRef>,
         worth_relational_branch::internal_port::history::data::canonical_commit_envelope::draft::CanonicalCommitEnvelopeDraft,
         Vec<contracts::authority::mutation::adjacency_delta::AdjacencyDelta>,
@@ -325,18 +317,17 @@ impl PublicationFinalizeArtifacts {
             contracts::identity::data::record_ids::RelationId,
             contracts::identity::data::primitives::LineageId,
         )>,
-        Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
+
         Option<worth_relational_branch::internal_port::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>,
     ){
         (
             self.aggregate_partitions,
-            self.artifacts,
+            self.reserved_snapshot,
             self.changed_records,
             self.canonical_commit_envelope,
             self.adjacency_deltas,
             self.lineage_nodes,
             self.relation_lineages,
-            self.deferred_diagnostic_artifacts,
             self.target_schema_registry,
         )
     }

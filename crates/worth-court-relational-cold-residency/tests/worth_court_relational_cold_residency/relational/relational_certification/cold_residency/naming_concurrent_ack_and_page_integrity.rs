@@ -278,7 +278,7 @@ fn retired_unnamed_entity_not_resurrected_in_cold_historical_fork() {
     fork_retained_at(request, &producer, &basis_c1, &child_c1).unwrap();
     fork_retained_at(request, &producer, &basis_c2, &child_c2).unwrap();
 
-    // Domain-1 rows are LINEAGE_HOLDER (tag 1) and LIVE_LINEAGE (tag 4).
+    // The single holder epoch must retain its retirement in the canonical index.
     let ck1_members: Vec<_> = ck1
         .members()
         .iter()
@@ -308,9 +308,8 @@ fn retired_unnamed_entity_not_resurrected_in_cold_historical_fork() {
             RelationalCheckpointMember::Carried { .. } => None,
         })
         .collect();
-    let body = ck2.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap();
-    let branch_rows = rows(field(field(field(body, "manifest"), "naming"), "branches"));
-    let naming_page_summary = |target: &BranchId| -> (u8, u8, u32) {
+    let branch_rows = rows(field(field(field(ck2.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap(), "manifest"), "naming"), "branches"));
+    let holder_end = |target: &BranchId| {
         let mut chain = Vec::new();
         let mut cur = Some(target.clone());
         while let Some(branch) = cur {
@@ -325,14 +324,13 @@ fn retired_unnamed_entity_not_resurrected_in_cold_historical_fork() {
         for row in chain.into_iter().rev() {
             for p in rows(field(row, "pages")) {
                 let first: Vec<u8> = rmp_serde::from_slice(field(p, "first")).unwrap();
-                if !(1..=5).contains(&first[0]) {
-                    continue;
-                }
+                let last: Vec<u8> = rmp_serde::from_slice(field(p, "last")).unwrap();
+                if !(first[0]..=last[0]).contains(&9) { continue; }
                 let loc: RelationalDurableMemberLocator =
                     rmp_serde::from_slice(field(p, "member")).unwrap();
                 let (entries,): (Vec<(Vec<u8>, Vec<u8>)>,) =
                     rmp_serde::from_slice(&members[&loc][18..]).unwrap();
-                for (k, v) in entries {
+                for (k, v) in entries.into_iter().filter(|(key, _)| key[0] == 9) {
                     if v.first() == Some(&2) {
                         live.remove(&k);
                     } else {
@@ -341,12 +339,20 @@ fn retired_unnamed_entity_not_resurrected_in_cold_historical_fork() {
                 }
             }
         }
-        let lo = live.keys().map(|k| k[0]).min().unwrap_or(u8::MAX);
-        let hi = live.keys().map(|k| k[0]).max().unwrap_or(0);
-        (lo, hi, live.len() as u32)
+        assert_eq!(live.len(), 1, "one retained holder row in {target:?}");
+        let value = live.into_values().next().unwrap();
+        // Inline row, one epoch, then (bound_at, lineage, optional ended_at).
+        assert_eq!(value[0], 0);
+        assert_eq!(u32::from_be_bytes(value[1..5].try_into().unwrap()), 1);
+        assert_eq!(u64::from_be_bytes(value[5..13].try_into().unwrap()), c1_res.commit.commit_id.0);
+        match &value[21..] {
+            [0] => None,
+            [1, end @ ..] => Some(u64::from_be_bytes(end.try_into().unwrap())),
+            other => panic!("invalid holder epoch end: {other:?}"),
+        }
     };
-    assert_eq!(naming_page_summary(&child_c1), (1, 4, 2));
-    assert_eq!(naming_page_summary(&child_c2), (1, 1, 1));
+    assert_eq!(holder_end(&child_c1), None);
+    assert_eq!(holder_end(&child_c2), basis_c2.observation().commit_id().map(|commit| commit.0));
 }
 
 #[test]
@@ -379,9 +385,7 @@ fn tampered_chk24_stripping_naming_index_or_group_pages_refuses_corrupt_checkpoi
     fork_retained_at(request, &producer, &basis_c1, &child).unwrap();
     let (ck, _source) = capture_external_checkpoint(request, &producer);
 
-    // Strip each component's pages independently while leaving ALL headers intact!
     for (label, tags) in [
-        ("naming-domain-1", &[1u8, 2, 3, 4, 5][..]),
         ("index-domain-2", &[6u8, 7, 8, 9, 10][..]),
         ("group-domain-3", &[0u8, 11, 12, 13][..]),
     ] {

@@ -8,13 +8,10 @@ pub use publication_appendix::{
 pub mod authored_cascade;
 pub mod authored_publication_reads;
 pub(crate) use authored_publication_reads::AuthoredPublicationReads;
-pub mod authored_restoration;
-pub mod authored_retirement;
-pub use authored_retirement::AuthoredOwnedMemberKind;
-pub mod native_transition_succession;
+pub use crate::publication::ownership::retirement_admission::AuthoredOwnedMemberKind;
 pub mod restored_producer_prior;
 pub use authored_cascade::RelationalAuthoredRetirement;
-pub use authored_restoration::RelationalAuthoredRestoration;
+pub use crate::publication::ownership::authored_restoration::RelationalAuthoredRestoration;
 pub use restored_producer_prior::RelationalRestoredProducerPrior;
 pub mod completion;
 pub mod coupled_assembly;

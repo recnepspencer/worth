@@ -19,14 +19,13 @@ use crate::lineage::naming_pages::builder::seal_pages;
 use crate::lineage::naming_pages::store::ColdNamingStore;
 use crate::lineage::naming_pages::tables::{branch_key_digest, row_key, GROUP_LOG};
 use crate::lineage::naming_pages::{
-    BranchNamingRoot, CheckpointNamingState, GroupStateHeader, NameIndexHeader, NamingStateHeader,
+    BranchNamingRoot, CheckpointNamingState, GroupStateHeader, NameIndexHeader,
     SchemeHeader,
 };
 use crate::lineage::tiered::{NamingBaseLink, PinnedNamingStore};
 
 use super::group_states::PublishedGroupLineage;
 use super::name_indexes::BranchNameIndex;
-use super::naming_rebuild::BranchNaming;
 use super::LineageSubsystem;
 
 #[path = "naming_capture_carry.rs"]
@@ -39,7 +38,6 @@ mod diff;
 mod forest;
 
 pub(super) struct FrozenBranch {
-    pub(super) naming: Option<BranchNaming>,
     pub(super) index: Option<BranchNameIndex>,
     pub(super) groups: Option<Result<BranchGroupState, GroupStateDenial>>,
 }
@@ -50,9 +48,6 @@ impl FrozenBranch {
     /// have mixed cold bases (e.g. truncated resident naming + shared cold groups).
     fn unified_base(&self) -> Option<Option<&NamingBaseLink>> {
         let mut bases: Vec<Option<&NamingBaseLink>> = Vec::with_capacity(3);
-        if let Some(Ok(naming)) = &self.naming {
-            bases.push(naming.base());
-        }
         if let Some(BranchNameIndex::Current(index)) = &self.index {
             bases.push(index.base());
         }
@@ -68,19 +63,6 @@ impl FrozenBranch {
     }
 
     fn headers(&self, branch: BranchId) -> BranchNamingRoot {
-        let naming = self.naming.as_ref().map(|slot| NamingStateHeader {
-            earliest_event_commit: slot
-                .as_ref()
-                .ok()
-                .and_then(|n| n.earliest_event_commit())
-                .map(|c| c.0),
-            latest_event_commit: slot
-                .as_ref()
-                .ok()
-                .and_then(|n| n.latest_event_commit())
-                .map(|c| c.0),
-            unavailable: slot.is_err(),
-        });
         let index = self.index.as_ref().map(|slot| match slot {
             BranchNameIndex::Current(index) => NameIndexHeader {
                 earliest_commit: index.earliest_commit().map(|c| c.0),
@@ -117,7 +99,7 @@ impl FrozenBranch {
         });
         BranchNamingRoot {
             branch,
-            naming,
+            naming: None,
             index,
             groups,
             pages: Vec::new(),
@@ -126,12 +108,6 @@ impl FrozenBranch {
     }
 
     pub(super) fn latest_commit(&self) -> u64 {
-        let n = self
-            .naming
-            .as_ref()
-            .and_then(|s| s.as_ref().ok())
-            .and_then(|n| n.latest_event_commit())
-            .map_or(0, |c| c.0);
         let i = match &self.index {
             Some(BranchNameIndex::Current(idx)) => idx.head().map_or(0, |c| c.0),
             _ => 0,
@@ -142,7 +118,7 @@ impl FrozenBranch {
             .and_then(|s| s.as_ref().ok())
             .and_then(|g| g.latest_commit())
             .map_or(0, |c| c.0);
-        n.max(i).max(g)
+        i.max(g)
     }
 
     pub(super) fn has_active_index(&self) -> bool {
@@ -157,14 +133,10 @@ impl FrozenBranch {
     }
 
     fn delta_len(&self) -> usize {
-        self.naming
-            .as_ref()
-            .and_then(|s| s.as_ref().ok())
-            .map_or(0, |n| n.delta_len())
-            + match &self.index {
+        (match &self.index {
                 Some(BranchNameIndex::Current(i)) => i.delta_len(),
                 _ => 0,
-            }
+            })
             + self
                 .groups
                 .as_ref()
@@ -174,9 +146,6 @@ impl FrozenBranch {
 
     fn encoded_changes(&self) -> Vec<(Vec<u8>, Option<Vec<u8>>)> {
         let mut out = Vec::new();
-        if let Some(Ok(n)) = &self.naming {
-            out.extend(n.encoded_changes());
-        }
         if let Some(BranchNameIndex::Current(i)) = &self.index {
             out.extend(i.encoded_changes());
         }
@@ -193,9 +162,6 @@ impl FrozenBranch {
         store: Option<&ColdNamingStore>,
     ) -> Result<Vec<(Vec<u8>, Option<Vec<u8>>)>, Cause> {
         let mut out = Vec::new();
-        if let Some(Ok(n)) = &self.naming {
-            out.extend(n.collect_encoded_in(store)?);
-        }
         if let Some(BranchNameIndex::Current(i)) = &self.index {
             out.extend(i.collect_encoded_in(store)?);
         }
@@ -238,19 +204,13 @@ impl LineageSubsystem {
     /// Complexity: O(branches + schemes + resident group records).
     pub fn freeze_naming(&self) -> FrozenLineageNaming {
         let state = self.state.read();
-        let mut ids: BTreeSet<BranchId> = state.branch_naming_states.keys().cloned().collect();
-        ids.extend(state.name_indexes.by_branch.keys().cloned());
+        let mut ids: BTreeSet<BranchId> = state.name_indexes.by_branch.keys().cloned().collect();
         ids.extend(state.group_states.by_branch.keys().cloned());
         let branches: BTreeMap<BranchId, FrozenBranch> =
             ids.into_iter()
                 .map(|branch| {
                     let frozen =
                         FrozenBranch {
-                            naming: state.branch_naming_states.get(&branch).map(|slot| {
-                                slot.as_ref()
-                                    .map(|naming| naming.fork(naming.base().cloned()))
-                                    .map_err(|denial| *denial)
-                            }),
                             index: state.name_indexes.by_branch.get(&branch).map(
                                 |index| match index {
                                     BranchNameIndex::Current(index) => BranchNameIndex::Current(

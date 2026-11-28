@@ -10,29 +10,24 @@ use contracts::transactions::data::outcomes::commit_preparation::CommitPreparati
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use contracts::transactions::data::outcomes::commit_preparation::CommitPreparationErrorOwnerPort as _;
 
-use crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore;
 use worth_relational_branch::internal_port::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 
 #[derive(Default)]
 pub struct PreparationRoundObservations {
     pub instrumentation: RuntimeInstrumentation,
-    pub diagnostics: RelationalDiagnosticArtifactStore,
 }
 
 impl PreparationRoundObservations {
     pub fn new(instrumentation: &RuntimeInstrumentation) -> Self {
         Self {
             instrumentation: instrumentation.preparation_round(),
-            diagnostics: Default::default(),
         }
     }
 
     pub fn settle(
         instrumentation: &RuntimeInstrumentation,
-        diagnostics: &RelationalDiagnosticArtifactStore,
         round_instrumentation: &RuntimeInstrumentation,
-        round_diagnostics: &RelationalDiagnosticArtifactStore,
     ) {
         let actual = round_instrumentation.complexity_snapshot();
         instrumentation.count(|counters| {
@@ -40,9 +35,6 @@ impl PreparationRoundObservations {
                 counters, actual,
             );
         });
-        for artifact in round_diagnostics.snapshot() {
-            diagnostics.push(artifact);
-        }
     }
 }
 
@@ -50,7 +42,6 @@ pub struct SymbolRoundInputs<'a, R> {
     pub source: &'a R,
     pub symbols: &'a RuntimeSymbolTable,
     pub instrumentation: &'a RuntimeInstrumentation,
-    pub diagnostics: &'a RelationalDiagnosticArtifactStore,
     pub bind: fn(&R, &PreparationRoundObservations) -> R,
 }
 
@@ -85,9 +76,7 @@ pub fn probe_symbol_rounds<'a, R: 'a, T>(
         ) {
             PreparationRoundObservations::settle(
                 inputs.instrumentation,
-                inputs.diagnostics,
                 &observations.instrumentation,
-                &observations.diagnostics,
             );
         }
         drop(scoped);

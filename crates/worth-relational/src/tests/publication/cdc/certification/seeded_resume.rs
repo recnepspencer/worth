@@ -132,7 +132,7 @@ fn cdc_certification_explicit_dependency_graph_resume_is_exact() {
         PartitionId(29),
     );
     let baseline_checkpoint = checkpoint_for_schema_version(
-        runtime.publication().latest_patch().unwrap().position,
+        runtime.history().latest_patch_stream_position().unwrap(),
         SchemaVersionId(1),
     );
 
@@ -185,7 +185,7 @@ fn cdc_certification_rewrite_storm_preserves_exact_suffix_under_tiny_windows() {
     let entity = create_entity_in_partition(execution, &runtime, "rewrite-storm-0", PartitionId(7));
     let profile = CertificationPressureProfile::RewriteStorm;
     let baseline_checkpoint = checkpoint_for_schema_version(
-        runtime.publication().latest_patch().unwrap().position,
+        runtime.history().latest_patch_stream_position().unwrap(),
         SchemaVersionId(1),
     );
 

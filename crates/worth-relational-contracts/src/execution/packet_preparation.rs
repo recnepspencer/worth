@@ -25,9 +25,7 @@ impl PacketPreparationBudget<'_, '_, '_, '_> {
         &mut self,
         units: u64,
     ) -> Result<(), MapKernelFailure<crate::execution::read_only_packets::PacketBudgetDenial>> {
-        self.context
-            .checkpoint(units)
-            .map_err(MapKernelFailure::Stop)
+        super::request_stage::checkpoint(self.context, units).map_err(MapKernelFailure::Stop)
     }
 
     pub fn claim(
@@ -130,6 +128,43 @@ pub fn prepare_borrowed_artifact<T>(
         ScanOutcome::Stopped {
             boundary, reason, ..
         } => Err(PacketExecutionStop::Execution { boundary, reason }),
+    }
+}
+
+/// Prepare a serial artifact using the original request's control and memory.
+pub fn prepare_serial_artifact<T>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ceiling: u64,
+    build: impl FnOnce(
+        &mut PacketPreparationBudget<'_, '_, '_, '_>,
+    ) -> Result<(T, u64), MapKernelFailure<crate::execution::read_only_packets::PacketBudgetDenial>>,
+) -> Result<T, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError> {
+    use crate::transactions::data::outcomes::transaction_commit_error::{
+        CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
+        TransactionCommitErrorOwnerPort as _,
+    };
+    let mut answer = None;
+    let handoff = execution.run_native_with_checkpoint(|context| {
+        answer = Some((|| {
+            let _backing = execution.reserve_retained_memory_in_stage(context, ceiling)
+                .map_err(|cause| TransactionCommitError::execution(cause.into()))?;
+            let mut budget = PacketPreparationBudget {
+                context, ceiling: Some(ceiling), claimed: 0, memory: None,
+            };
+            budget.checkpoint(0)
+                .and_then(|()| build(&mut budget))
+                .map(|(value, _)| value)
+                .map_err(|failure| TransactionCommitError::execution(CommitExecutionDenial {
+                    kind: CommitExecutionDenialKind::Cause(crate::execution::denial::kernel_failure(failure)),
+                    partition_identity: None,
+                }))
+        })());
+    });
+    match (handoff, answer) {
+        (Ok(_), Some(answer)) => answer,
+        (Err(_), Some(Err(cause))) => Err(cause),
+        (Err(cause), _) => Err(TransactionCommitError::execution(cause.into())),
+        (Ok(_), None) => unreachable!("completed serial artifact stage executed"),
     }
 }
 

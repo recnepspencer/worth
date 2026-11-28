@@ -1,0 +1,290 @@
+//! Native derives succession roots from actual deleted predecessor membership.
+use worth_relational_contracts::internal_port as contracts;
+use super::{route_completion::RouteCompletion, *};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasis;
+use worth_relational_branch::internal_port::history::data::codec_retirement_closure::source_scope_closure;
+use worth_relational_branch::internal_port::history::data::codec_retirement_closure::output_correspondence::SelectedOutputPublication;
+use contracts::identity::data::record_ids::EntityId;
+use contracts::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+use contracts::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
+use contracts::publication::data::authored_retirement_refusal::AuthoredRetirementRefusal as Cause;
+use contracts::publication::patch::data::record_structural_change::RecordStructuralChange as Change;
+use contracts::transactions::data::primitives::EntityReference;
+use contracts::transactions::data::primitives::RecordRef;
+use std::sync::Arc;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use contracts::publication::data::publication_error::PublicationErrorOwnerPort as _;
+#[path = "producer_cascade/roster.rs"]
+pub mod roster;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::installation::producer_cascade::CanonicalProducerRetirement;
+
+pub(super) struct ProducerRetirementClosure {
+    admission: worth_proof::AdmittedProducerOutputRetirement,
+    generator: worth_proof::RequiredOutputPublicationAuthority,
+    anchors: Vec<EntityId>,
+    selected: Vec<SelectedOutputPublication>,
+    root_roles: Vec<RequiredOutputRoleTarget>,
+}
+
+pub(super) fn reject(cause: Cause, id: EntityId) -> TransactionCommitError {
+    TransactionCommitError::publication(
+        contracts::publication::data::publication_error::PublicationError::authored_retirement(
+            cause,
+            RecordRef::Entity(id),
+        ),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn prepare(
+    candidate: &CanonicalCommitEnvelopeBody,
+    execution: &ExecutionRequest<'_, '_>,
+    basis: &AdmittedRelationalBranchBasis,
+    runtime: &crate::publication::ownership::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
+    installed: &crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
+    prior: &CanonicalRequiredOutputOrigin,
+    roles: &[RequiredOutputRoleTarget],
+    succession: &worth_proof::AdmittedRequiredOutputSuccession,
+    generator: &worth_proof::RequiredOutputPublicationAuthority,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<Option<ProducerRetirementClosure>, TransactionCommitError> {
+    let Some(removal) = scope_dependents::select_removed_owning_scopes(
+        candidate, runtime, installed, prior, roles, context,
+    )?
+    else {
+        return Ok(None);
+    };
+    let anchors = removal.anchors;
+    let closure = crate::publication::ownership::source_scope::current(
+        execution,
+        basis,
+        Some(&installed.source_scope_ownership),
+        &anchors
+            .iter()
+            .copied()
+            .map(RecordRef::Entity)
+            .collect::<Vec<_>>(),
+        context,
+    )?;
+    let mut latest = source_scope_closure::from_current(
+        Arc::clone(runtime.current_ownership.as_ref().ok_or_else(|| {
+            contracts::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "producer cascade requires current Native ownership",
+            )
+        })?),
+        Some(&installed.source_scope_ownership),
+        context,
+    )?;
+    for publication in closure {
+        context
+            .checkpoint(latest.len() as u64 + 1)
+            .map_err(origin_request)?;
+        if !latest
+            .iter()
+            .any(|p| p.origin.same_publication(&publication.origin))
+        {
+            latest.push(publication);
+        }
+    }
+    let selected =
+        source_scope_closure::select(&anchors, &latest, context).map_err(relation_stop)?;
+    if selected.is_empty() {
+        return Err(reject(
+            Cause::CorruptPublication,
+            removal.dependent.meaning.source_scope,
+        ));
+    }
+    // A legacy single-publication candidate supplying no dependent retirement
+    // retains its original ownership refusal and exact publication/owner subjects.
+    let mut supplies_dependent = false;
+    for publication in &selected {
+        context
+            .checkpoint(
+                roles
+                    .len()
+                    .saturating_mul(publication.origin.members.len() + 1) as u64,
+            )
+            .map_err(origin_request)?;
+        supplies_dependent |= roles.iter().any(|role| matches!(role.target, EntityReference::Existing(id) if publication.origin.outputs.binary_search(&id).is_ok()));
+    }
+    if !supplies_dependent {
+        super::super::source_scope_ownership::require_cascade(&removal.dependent, None)?;
+    }
+    for publication in &selected {
+        context.checkpoint(1).map_err(origin_request)?;
+        if publication
+            .origin
+            .issuer
+            .as_ref()
+            .is_some_and(|issuer| !issuer.same_publication_owner(&installed.authority))
+        {
+            return Err(reject(
+                Cause::DifferentSourcePublication,
+                publication.origin.meaning.source_scope,
+            ));
+        }
+    }
+    let root_roles = roster::require(candidate, prior, roles, &selected, &latest, context)?;
+    context
+        .checkpoint(selected.len().saturating_mul(selected.len() + 1) as u64)
+        .map_err(origin_request)?;
+    let authorities = selected
+        .iter()
+        .map(|selected| {
+            installed.authority.seal_required_output_publication_at(
+                selected.origin.commit.commit_id.0,
+                selected.ordinal,
+            )
+        })
+        .collect::<Vec<_>>();
+    let admission = installed
+        .authority
+        .admit_source_scope_retirements(succession, authorities)
+        .ok_or_else(|| reject(Cause::CorruptPublication, anchors[0]))?;
+    Ok(Some(ProducerRetirementClosure {
+        admission,
+        generator: generator.clone(),
+        anchors,
+        selected,
+        root_roles,
+    }))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn install(
+    envelope: &mut CanonicalCommitEnvelopeBody,
+    runtime: &crate::publication::ownership::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
+    basis: &AdmittedRelationalBranchBasis,
+    created: &CommitCreatedEntityBindings,
+    created_relations: &CommitCreatedRelationBindings,
+    state: &WorkingState,
+    installed: &crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
+    root: RouteCompletion<'_>,
+    closure: ProducerRetirementClosure,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    validated_history: &mut OutputOriginHistory,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<worth_relational_branch::internal_port::history::data::required_output_positions::RequiredOutputPublicationPositions, TransactionCommitError>{
+    let mut positions = super::route_completion::install_route(
+        envelope,
+        runtime,
+        basis,
+        created,
+        created_relations,
+        state,
+        installed,
+        RouteCompletion {
+            roles: &closure.root_roles,
+            ..root
+        },
+        lease,
+        validated_history,
+        context,
+    )?;
+    let root_origin = (*envelope.owner_required_output_origin_mut())
+        .take()
+        .expect("installed generator route");
+    let mut publications = Vec::with_capacity(closure.selected.len());
+    let admission_work = closure.selected.len().saturating_add(1);
+    for selected in closure.selected {
+        let origin = &selected.origin;
+        // Native constructs custody only for the exact canonical selection, never a caller roster.
+        let predecessor = crate::mvcc::publication::application_publication::RelationalRequiredOutputPublication {
+            runtime_instance_id: runtime.runtime_instance_id,
+            evidence: selected.evidence,
+            origin: Arc::clone(origin),
+            authority: installed
+                .authority
+                .seal_required_output_publication_at(origin.commit.commit_id.0, selected.ordinal),
+            readmitted_at: Some(basis.clone()),
+        };
+        context
+            .checkpoint(admission_work as u64)
+            .map_err(origin_request)?;
+        if !installed.authority.admits_producer_output_retirement(
+            &closure.admission,
+            &closure.generator,
+            predecessor.authority(),
+        ) {
+            return Err(reject(
+                Cause::CorruptPublication,
+                origin.meaning.source_scope,
+            ));
+        }
+        predecessor::validate(
+            envelope,
+            runtime,
+            basis,
+            &predecessor,
+            &origin.meaning,
+            lease,
+            validated_history,
+            context,
+        )
+        .map_err(|failure| typed_corruption(failure, origin.meaning.source_scope))?;
+        context
+            .checkpoint(root.roles.len().saturating_mul(origin.members.len() + 1) as u64)
+            .map_err(origin_request)?;
+        for role in root.roles {
+            context
+                .checkpoint((role.role.len() + role.entity_name.len()) as u64)
+                .map_err(origin_request)?;
+        }
+        let roles = root.roles.iter().filter(|role| matches!(role.target, EntityReference::Existing(id) if origin.outputs.binary_search(&id).is_ok())).cloned().collect::<Vec<_>>();
+        super::route_completion::install_route(
+            envelope,
+            runtime,
+            basis,
+            created,
+            created_relations,
+            state,
+            installed,
+            RouteCompletion {
+                inputs: Default::default(),
+                contribution_records: None,
+                source_input: None,
+                producer: &origin.producer,
+                dependency_identity: *origin.dependency_identity.bytes(),
+                meaning: &origin.meaning,
+                roles: &roles,
+                previous: Some(origin),
+                completion: CanonicalOutputPublication::ProducerRetirement {
+                    predecessor: origin.commit.commit_id,
+                },
+            },
+            lease,
+            validated_history,
+            context,
+        )
+        .map_err(|failure| typed_corruption(failure, origin.meaning.source_scope))?;
+        let retired = (*envelope.owner_required_output_origin_mut())
+            .take()
+            .expect("installed retired route");
+        positions.insert(
+            &retired.meaning,
+            worth_relational_branch::internal_port::history::data::required_output_positions::RequiredOutputRoutePosition::Published(envelope.commit.commit_id),
+            lease,
+            context,
+        )?;
+        publications.push(retired);
+    }
+    (*envelope.owner_required_output_origin_mut()) = Some(root_origin);
+    (*envelope.owner_producer_cascade_retirement_mut()) =
+        Some(Arc::new(CanonicalProducerRetirement {
+            _decoded_memory: None,
+            anchors: closure.anchors,
+            publications,
+        }));
+    Ok(positions)
+}
+
+fn typed_corruption(failure: TransactionCommitError, subject: EntityId) -> TransactionCommitError {
+    match failure {
+        TransactionCommitError::Publication { ref error, .. }
+            if error.authored_retirement_refusal().is_none() =>
+        {
+            reject(Cause::CorruptPublication, subject)
+        }
+        other => other,
+    }
+}

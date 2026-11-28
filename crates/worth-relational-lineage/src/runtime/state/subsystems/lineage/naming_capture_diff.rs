@@ -93,24 +93,6 @@ impl FrozenBranch {
         visited: &mut usize,
     ) -> Option<usize> {
         let mut total = 0usize;
-        if let Some(Ok(a)) = &self.naming {
-            let rem = budget.saturating_sub(total);
-            let part = if let Some(Ok(b)) = &base.naming {
-                a.count_diff_against_bounded(b, has_cold_base, rem, visited)?
-            } else if a.base().is_none() {
-                let len = a.delta_len();
-                if len > rem {
-                    return None;
-                }
-                len
-            } else {
-                return None;
-            };
-            total += part;
-            if total > budget {
-                return None;
-            }
-        }
         if let Some(BranchNameIndex::Current(a)) = &self.index {
             let rem = budget.saturating_sub(total);
             let part = match &base.index {
@@ -159,28 +141,6 @@ impl FrozenBranch {
         budget: usize,
     ) -> Result<Option<Vec<(Vec<u8>, PageChange)>>, Cause> {
         let mut out = Vec::new();
-        if let Some(Ok(a)) = &self.naming {
-            let rem = budget.saturating_sub(out.len());
-            if let Some(Ok(b)) = &base.naming {
-                let Some(part) = a.diff_encoded_against_bounded(b, cold_base, rem)? else {
-                    return Ok(None);
-                };
-                out.extend(part);
-            } else {
-                if a.base().is_some() {
-                    return Ok(None);
-                }
-                let changes = a.encoded_changes();
-                if changes.len() > rem {
-                    return Ok(None);
-                }
-                out.extend(
-                    changes
-                        .into_iter()
-                        .filter_map(|(k, v)| Some((k, PageChange::Put(v?)))),
-                );
-            }
-        }
         if let Some(BranchNameIndex::Current(a)) = &self.index {
             let rem = budget.saturating_sub(out.len());
             let part = match &base.index {

@@ -59,3 +59,46 @@ pub fn member_delta(
     }
     Ok(delta)
 }
+
+impl AggregateGroupPartitionTransition {
+    /// Project the full partition into the member deltas published by a commit.
+    /// The prior groups are the same basis used to name this partition.
+    pub fn published_transition(
+        &self,
+        prior: &[super::model::AggregatePriorGroup],
+    ) -> Result<AggregateGroupTransition, AggregateGroupNamingDenial> {
+        use super::model::AggregateGroupOrigin;
+        let prior: std::collections::BTreeMap<_, _> = prior
+            .iter()
+            .map(|group| (group.identity, &group.members))
+            .collect();
+        let mut assignments = Vec::with_capacity(self.assignments.len());
+        for item in &self.assignments {
+            let change = match item.origin {
+                AggregateGroupOrigin::Born => AggregateGroupChange::Born(item.members.clone()),
+                AggregateGroupOrigin::Revived => {
+                    AggregateGroupChange::Revived(item.members.clone())
+                }
+                AggregateGroupOrigin::Kept => {
+                    let members = prior.get(&item.identity).ok_or(
+                        AggregateGroupNamingDenial::UnknownGroup {
+                            identity: item.identity,
+                        },
+                    )?;
+                    AggregateGroupChange::Kept(member_delta(members, &item.members)?)
+                }
+            };
+            assignments.push(AggregateGroupAssignment {
+                identity: item.identity,
+                anchor: item.anchor.clone(),
+                sources: item.sources.clone(),
+                change,
+            });
+        }
+        Ok(AggregateGroupTransition {
+            assignments,
+            retired: self.retired.clone(),
+            lineage: self.lineage.clone(),
+        })
+    }
+}

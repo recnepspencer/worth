@@ -22,7 +22,6 @@ fn residency_failure_matrix_declared_current_doors_preserve_every_failure_class(
                 assert!(!members.is_empty());
                 let frontier = fixture.runtime.history().latest_patch_stream_position();
                 let offered = fixture.medium.offered().len();
-                let diagnostics = fixture.runtime.publication().diagnostic_artifacts();
                 fixture.source.failures.lock().unwrap().extend(
                     members
                         .iter()
@@ -53,10 +52,6 @@ fn residency_failure_matrix_declared_current_doors_preserve_every_failure_class(
                     frontier
                 );
                 assert_eq!(fixture.medium.offered().len(), offered);
-                assert_eq!(
-                    fixture.runtime.publication().diagnostic_artifacts(),
-                    diagnostics
-                );
                 fixture.source.failures.lock().unwrap().clear();
                 let reads = fixture.source.reads.load(Ordering::Relaxed);
                 if sticky {

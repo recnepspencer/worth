@@ -105,7 +105,7 @@ pub(crate) fn delete_and_prove_absence(
         "pre-delete truth",
     );
     let catalog = world.runtime.history().immutable_commit_count();
-    let replay = world.runtime.publication().latest_replay();
+    let replay = world.runtime.history().latest_patch_stream_position();
     let stream = world
         .runtime
         .publication()
@@ -143,7 +143,7 @@ pub(crate) fn delete_and_prove_absence(
             .branch_retention_cost_counters(&identity)
             .is_ok()
         || world.runtime.history().immutable_commit_count() != catalog
-        || world.runtime.publication().latest_replay() != replay
+        || world.runtime.history().latest_patch_stream_position() != replay
         || stream_after != stream
         || survivor_references(world, branches, &state.branch) != survivors
     {

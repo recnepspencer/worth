@@ -21,7 +21,7 @@ fn rolled_back_illegal_relation_work_leaves_zero_cdc_and_diagnostic_residue() {
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     let checkpoint = checkpoint_for_schema_version(
-        runtime.publication().latest_patch().unwrap().position,
+        runtime.history().latest_patch_stream_position().unwrap(),
         SchemaVersionId(1),
     );
 
@@ -90,7 +90,7 @@ fn rolled_back_endpoint_deletion_work_leaves_zero_cdc_and_diagnostic_residue() {
     let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "live");
     let relation = changed_relations(&relation_outcome)[0];
     let checkpoint = checkpoint_for_schema_version(
-        runtime.publication().latest_patch().unwrap().position,
+        runtime.history().latest_patch_stream_position().unwrap(),
         SchemaVersionId(1),
     );
 

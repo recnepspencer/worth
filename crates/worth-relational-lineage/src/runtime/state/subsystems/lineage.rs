@@ -11,13 +11,13 @@ use worth_relational_storage::internal_port::storage::substrate::owned_state::Ru
 
 pub mod cold_naming;
 pub mod event_page;
+mod cold_page;
 pub mod event_residency;
 pub mod group_history;
 pub mod group_states;
 pub mod name_indexes;
 pub mod naming_basis;
 pub mod naming_basis_binding;
-mod naming_basis_truncate;
 pub mod naming_capture;
 pub mod naming_fork;
 pub mod naming_rebuild;

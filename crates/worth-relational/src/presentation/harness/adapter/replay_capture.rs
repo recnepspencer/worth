@@ -12,10 +12,12 @@ pub(super) fn capture_replay(
     fixture: &worth_harness::facade::ScenarioFixture<RelationalFixture>,
     replay: &ReplayRequest<String>,
 ) -> Result<ReplayRecord<String>, RelationalHarnessError> {
-    let publication_artifacts = runtime.publication().artifacts().snapshot();
-    let latest_replay = publication_artifacts
-        .latest_replay
+    let (position, _) = runtime.history.latest_canonical_patch_route()
         .ok_or_else(|| RelationalHarnessError("no replay artifact available".to_string()))?;
+    let envelope = runtime.history.canonical_envelope_at_patch(position)
+        .ok_or_else(|| RelationalHarnessError("canonical replay envelope unavailable".to_string()))?;
+    let snapshot_id = runtime.visibility.published_snapshot_binding_for_version(envelope.commit.version_id)
+        .map(|(id, _)| id);
     Ok(ReplayRecord {
         schema_version: worth_harness::facade::RecordSchemaVersion::V1,
         replay_id: replay_id(&replay.source_run.run_id, &replay.name),
@@ -25,7 +27,7 @@ pub(super) fn capture_replay(
         scenario_name: fixture.name.clone(),
         replay_name: replay.name.clone(),
         requested_targets: replay.request.targets.clone(),
-        summary: replay_summary(latest_replay).into_record_summary_value(),
+        summary: replay_summary(&envelope, position, snapshot_id).into_record_summary_value(),
         attachments: Vec::new(),
     })
 }

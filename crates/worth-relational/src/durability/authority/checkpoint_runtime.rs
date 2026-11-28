@@ -1,7 +1,5 @@
 //! Select and publish checkpoints for one actual native runtime.
 use super::checkpointing::checkpoint_admission_error;
-use super::diagnostics::checkpoint_created;
-use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::durability::authority::runtime_access::DurabilityAuthority;
 use crate::durability::data::{
     DurabilityError, DurableCheckpoint, RelationalNativeCheckpointCaptureDenial as CaptureDenial,
@@ -87,13 +85,6 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DurableCheckpoint, crate::durability::data::RelationalRecoveryStop> {
         let checkpoint = captured.build_checkpoint_image(execution)?;
-        self.runtime
-            .publication_authority()
-            .push_bounded_diagnostic(
-                DiagnosticsScope::History,
-                DiagnosticsArtifactKind::MinimalSummary,
-                vec![checkpoint_created(&checkpoint)],
-            );
         self.runtime.durability.push_checkpoint(checkpoint.clone());
         // Memory-only history has no external copy, including forks needed
         // by replay chains older than any retained checkpoint.

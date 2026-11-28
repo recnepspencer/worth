@@ -237,12 +237,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
         runtime.history().commit_envelopes_snapshot(),
         catalog_before
     );
-    let current_snapshot = runtime
-        .publication()
-        .latest_bundle()
-        .expect("current publication exists")
-        .snapshot
-        .clone();
+    let current_snapshot = crate::tests::support::latest_published_snapshot(&runtime).expect("current publication exists");
     let current = runtime
         .read_truth()
         .read_snapshot(&current_snapshot, execution)

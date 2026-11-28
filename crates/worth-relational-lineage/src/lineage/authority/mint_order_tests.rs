@@ -20,7 +20,7 @@ const FACE: &str = "worth.z.face.v1";
 
 struct EmptyBasis;
 impl LineageBasisView for EmptyBasis {
-    fn live_holder(&self, _: &PersistentNameIdentity) -> Option<&PersistentNameHolder> {
+    fn live_holder(&self, _: &PersistentNameIdentity) -> Option<PersistentNameHolder> {
         None
     }
     fn live_lineage(&self, _: &PersistentNameHolder) -> Option<LineageId> {

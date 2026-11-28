@@ -7,6 +7,8 @@
 #[path = "internal_port.rs"]
 pub mod internal_port;
 
+mod naming_wire;
+
 use internal_port::*;
 
 use worth_relational_contracts::internal_port as contracts;

@@ -24,7 +24,7 @@ fn native_same_record_updates_conflict_before_truth_or_publication_changes() {
             .visibility_authority()
             .snapshot()
             .expect("current snapshot fixture is admitted");
-        let before_patch = runtime.publication().latest_bundle().unwrap().patch.clone();
+        let before_patch = crate::tests::support::latest_committed_patch(&runtime).unwrap();
         let first = entity_patch_intent(entity, whole_set(&contract, "first"));
         let second_patch = if clear_second {
             whole_clear(&contract)
@@ -66,7 +66,7 @@ fn native_same_record_updates_conflict_before_truth_or_publication_changes() {
             .visibility_authority()
             .snapshot()
             .expect("current snapshot fixture is admitted");
-        let after_patch = runtime.publication().latest_bundle().unwrap().patch.clone();
+        let after_patch = crate::tests::support::latest_committed_patch(&runtime).unwrap();
         assert_eq!(after_snapshot.version_id(), before_snapshot.version_id());
         assert_eq!(after_patch, before_patch);
 
@@ -232,14 +232,9 @@ fn compatibility_and_native_updates_on_one_target_have_one_conflict_law() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let entity = create_entity(execution, &runtime, "before");
+    let created = create_entity_outcome(execution, &runtime, "before");
+    let entity = changed_entities(&created)[0];
     let contract = entity_name_contract(&runtime);
-    let before_snapshot = runtime
-        .publication()
-        .latest_bundle()
-        .unwrap()
-        .snapshot
-        .clone();
     let compatibility = MutationIntent::Entity(EntityMutationIntent::UpdateFields(
         UpdateEntityFieldsIntent {
             entity_id: entity,
@@ -272,8 +267,8 @@ fn compatibility_and_native_updates_on_one_target_have_one_conflict_law() {
         })
     ));
     assert_eq!(
-        runtime.publication().latest_bundle().unwrap().snapshot,
-        before_snapshot
+        crate::tests::support::latest_published_snapshot(&runtime).unwrap(),
+        created.snapshot
     );
 }
 

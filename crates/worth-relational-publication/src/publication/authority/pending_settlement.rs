@@ -153,14 +153,12 @@ impl PublicationAuthority<'_> {
             late_interruption,
         } = performed;
         let commit_id = positioned.envelope().commit.commit_id;
-        let diagnostic_capture = self.publication.diagnostics.begin_operation_capture();
-        let mut published = publish(SettlementPublication {
+        let published = publish(SettlementPublication {
             completion,
             snapshot_basis: published_snapshot_basis,
             positioned: Arc::clone(&positioned),
             envelope_cell,
         });
-        published.append_diagnostics(diagnostic_capture.finish());
         let late_interruption = late_interruption.or_else(|| {
             let event = control.observe(worth_relational_contracts::internal_port::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::Settlement);
             if let Some(event) = event {

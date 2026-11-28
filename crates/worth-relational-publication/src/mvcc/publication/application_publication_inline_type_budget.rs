@@ -18,5 +18,5 @@ pub(crate) fn collect(
         );
         owner.field::<worth_proof::InstalledApplicationPublicationAuthority>("authority");
     }
-    super::authored_restoration::inline_type_budget::collect(census);
+    crate::publication::ownership::authored_restoration::inline_type_budget::collect(census);
 }

@@ -85,7 +85,7 @@ pub(super) fn selection_transitions(
         let in_current = |group: &AggregatePriorGroup| {
             group.members.iter().any(|(name, _)| {
                 matches!(basis.live_holder(&name.carrier_name()), Some(PersistentNameHolder::Entity(entity))
-                    if current_entities.contains(entity))
+                    if current_entities.contains(&entity))
             })
         };
         let in_selected = |group: &AggregatePriorGroup| {

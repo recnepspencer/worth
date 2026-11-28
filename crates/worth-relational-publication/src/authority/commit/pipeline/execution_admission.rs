@@ -42,7 +42,6 @@ pub struct AdmittedCommitState<V = CommitPublicationValidationInput> {
     commit_log: CommitLog,
     authority_input: crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan,
     prevalidated_invariants: Option<mutation::validation::engine::result::InvariantExecutionResult>,
-    diagnostics: Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
     complexity_before:
         contracts::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
     prior_complexity_delta:
@@ -131,7 +130,6 @@ impl<V> AdmittedCommitState<V> {
         TransactionId,
         CommitPhaseTiming,
         CommitLog,
-        Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
         contracts::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
         contracts::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
     ){
@@ -139,18 +137,12 @@ impl<V> AdmittedCommitState<V> {
             self.transaction_id,
             self.phase_timing,
             self.commit_log,
-            self.diagnostics,
             self.complexity_before,
             self.prior_complexity_delta,
         )
     }
 
-    pub(super) fn append_diagnostics(
-        &mut self,
-        diagnostics: Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
-    ) {
-        self.diagnostics.extend(diagnostics);
-    }
+
 }
 
 impl AdmittedCommitState {
@@ -205,7 +197,6 @@ pub(super) fn admit_commit_execution<V: DraftValidationInput>(
             commit_log: CommitLog::new(),
             authority_input: context.authority_input,
             prevalidated_invariants: context.prevalidated_invariants,
-            diagnostics: Vec::new(),
             complexity_before,
             prior_complexity_delta: context.prior_complexity_delta,
         },

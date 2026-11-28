@@ -44,7 +44,7 @@ pub(super) struct PublicationAuthorityInput<'a> {
 }
 
 pub(super) struct PreparedPublicationAuthority {
-    pub(super) artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
+    pub(super) reserved_snapshot: worth_relational_branch::internal_port::snapshots::data::SnapshotHandle,
     pub(super) canonical_commit_envelope:
         branch::history::data::canonical_commit_envelope::draft::CanonicalCommitEnvelopeDraft,
     pub(super) lineage_event_count: usize,
@@ -61,15 +61,9 @@ pub(super) fn prepare_authoritative_publication(
     input: PublicationAuthorityInput<'_>,
 ) -> Result<CommitPhaseBacking<PreparedPublicationAuthority>, TransactionCommitError> {
     let result = {
-        let artifacts = authority
+        let reserved_snapshot = authority
             .publication
-            .assemble_publication_bundle(
-                input.commit_reference.clone(),
-                input.version_id,
-                input.patch.clone(),
-                input.diagnostics_summary.clone(),
-                input.schema_continuity.target_schema_authority().clone(),
-            )
+            .reserve_publication_snapshot(input.commit_reference, input.version_id)
             .map_err(TransactionCommitError::publication_failed)?;
         let prepared_lineage = if input.defer_lineage {
             use contracts::lineage::data::{
@@ -126,7 +120,7 @@ pub(super) fn prepare_authoritative_publication(
         canonical_commit_envelope
             .install_cancelled_record_allocations(input.record_allocations.cancelled().to_vec());
         PreparedPublicationAuthority {
-            artifacts,
+            reserved_snapshot,
             canonical_commit_envelope,
             lineage_event_count,
             lineage_nodes,

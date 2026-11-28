@@ -19,8 +19,8 @@ pub struct LineageCommitPostureInput {
 }
 
 impl LineageBasisView for LineageCommitPostureInput {
-    fn live_holder(&self, id: &PersistentNameIdentity) -> Option<&PersistentNameHolder> {
-        self.live_holders.get(id)
+    fn live_holder(&self, id: &PersistentNameIdentity) -> Option<PersistentNameHolder> {
+        self.live_holders.get(id).cloned()
     }
 
     fn live_lineage(&self, holder: &PersistentNameHolder) -> Option<LineageId> {
@@ -37,6 +37,3 @@ impl LineageBasisView for LineageCommitPostureInput {
             .find_map(|(name, live)| (live == holder).then_some(*name))
     }
 }
-
-#[doc(hidden)]
-pub mod records;

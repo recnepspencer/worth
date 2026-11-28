@@ -1,7 +1,3 @@
-pub(super) use worth_harness::facade::{
-    DiagnosticsHarnessAdapter, HarnessAdapter, ReplayHarnessAdapter,
-};
-
 pub(super) use crate::config::data::PublicationConfig;
 pub(super) use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 pub(super) use crate::config::data::{DurableLogPolicy, DurableLogRetentionMode};
@@ -11,14 +7,13 @@ pub(super) use crate::facade::config::{
 pub(super) use crate::facade::diagnostics::{
     DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope,
 };
-pub(super) use crate::facade::harness::RelationalHarnessAdapter;
 pub(super) use crate::facade::history::{
     AspectHistoryCommitSpan, AspectHistoryEntry, AspectResolutionContext, BranchId,
     HistoryAspectQueryTarget,
 };
 pub(super) use crate::facade::identity::{KindId, LineageId, PartitionId, RelationId};
 pub(super) use crate::facade::publication::{
-    PatchStreamPosition, PatchStreamRequest, PublicationStage, PublicationStatus,
+    PatchStreamPosition, PatchStreamRequest, PublicationStage,
     SubscriberResumeRequest, SubscriberStreamFailureClass,
 };
 pub(super) use crate::facade::query::{
@@ -27,7 +22,7 @@ pub(super) use crate::facade::query::{
     QueryPlanEvidenceBasis, QueryScope, QuerySerialReason, ReductionDiscipline,
 };
 pub(super) use crate::facade::runtime::{
-    EntityReadRecord, InvariantCatalog, InvariantClass, InvariantRegistration, InvariantRule,
+    EntityReadRecord, InvariantCatalog, InvariantRegistration, InvariantRule,
     ProjectionAspectFilter, ProjectionAspectFilterMode, ProjectionAspectScope, RelationalRuntime,
     RelationalRuntimeApi,
 };
@@ -118,7 +113,6 @@ pub(crate) fn diagnostic_field_optional<'a>(
 pub(super) struct AspectTruthBundle {
     pub visible_truth: VisibleTruthSummary,
     pub latest_patch: Option<crate::facade::publication::PublishedAuthoritativePatchEnvelope>,
-    pub latest_replay: Option<crate::facade::runtime::RelationalReplayRecord>,
     pub diagnostics: crate::facade::diagnostics::RelationalDiagnosticsFacade,
     pub entity_history_digests: Vec<(
         crate::facade::identity::EntityId,
@@ -140,8 +134,7 @@ pub(super) fn capture_aspect_truth_bundle(
 ) -> AspectTruthBundle {
     AspectTruthBundle {
         visible_truth: VisibleTruthSummary::capture(execution, runtime),
-        latest_patch: runtime.publication().artifacts().latest_patch(),
-        latest_replay: runtime.publication().artifacts().latest_replay(),
+        latest_patch: latest_committed_patch(runtime),
         diagnostics: runtime.publication().diagnostics(),
         entity_history_digests: entity_ids
             .iter()

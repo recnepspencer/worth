@@ -1,10 +1,6 @@
 use crate::authority::commit::phases::schema_continuity::validate_schema_continuity_publication;
 use crate::publication::authority::diagnostic_emission::PreparationDiagnostics;
 use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
-use contracts::diagnostics::data::artifacts::DiagnosticCode;
-use contracts::diagnostics::data::artifacts::DiagnosticsScope;
-use contracts::diagnostics::data::fields::RelationalDiagnosticFields;
-use contracts::diagnostics::data::fields::RelationalDiagnosticValue;
 use contracts::history::data::commit_receipt::RelationalCommitReceipt;
 use contracts::history::data::coordinates::BranchId;
 use contracts::lineage::data::artifacts::finalization_artifact::LineageFinalizationArtifact;
@@ -23,22 +19,12 @@ use worth_relational_storage::internal_port::runtime::state::subsystems::service
 
 pub(crate) fn enforce_patch_budget(
     max_patch_records_per_commit: Option<usize>,
-    diagnostics: PreparationDiagnostics<'_>,
     patch: &CanonicalAuthoritativePatch,
 ) -> Result<(), TransactionCommitError> {
     let Some(max_patch_records_per_commit) = max_patch_records_per_commit else {
         return Ok(());
     };
     if patch.authoritative_record_patches.len() > max_patch_records_per_commit {
-        diagnostics.emit_failure_diagnostic(
-            DiagnosticsScope::PatchPublication,
-            DiagnosticCode::DiagnosticsPublicationFailure,
-            "patch record budget exceeded",
-            patch_record_budget_exceeded_fields(
-                patch.authoritative_record_patches.len(),
-                max_patch_records_per_commit,
-            ),
-        );
         return Err(TransactionCommitError::publication(PublicationError::new(
             PublicationStage::BundleAssembly,
             "patch record budget exceeded",
@@ -77,12 +63,6 @@ pub(crate) fn canonical_commit_envelope<'a>(
             published_lineage.lineage_decision_log().len();
     });
     if published_lineage.branch_id() != branch_id || lineage_artifact.branch_id() != branch_id {
-        inputs.diagnostics.emit_failure_diagnostic(
-            DiagnosticsScope::Lineage,
-            DiagnosticCode::DiagnosticsPublicationFailure,
-            "lineage artifact branch scope did not match publication branch",
-            lineage_branch_scope_mismatch_fields(branch_id, lineage_artifact.branch_id()),
-        );
         return Err(TransactionCommitError::publication(PublicationError::new(
             PublicationStage::BundleAssembly,
             "lineage artifact branch scope mismatch",
@@ -151,38 +131,4 @@ pub(crate) fn canonical_commit_envelope<'a>(
 pub(crate) fn canonicalize_changed_records(records: &mut Vec<RecordRef>) {
     records.sort_unstable();
     records.dedup();
-}
-
-fn patch_record_budget_exceeded_fields(
-    patch_records: usize,
-    max_patch_records_per_commit: usize,
-) -> RelationalDiagnosticFields {
-    RelationalDiagnosticValue::object([
-        (
-            "patch_records",
-            RelationalDiagnosticValue::unsigned(patch_records),
-        ),
-        (
-            "max_patch_records_per_commit",
-            RelationalDiagnosticValue::unsigned(max_patch_records_per_commit),
-        ),
-    ])
-    .into()
-}
-
-fn lineage_branch_scope_mismatch_fields(
-    publication_branch: &BranchId,
-    artifact_branch: &BranchId,
-) -> RelationalDiagnosticFields {
-    RelationalDiagnosticValue::object([
-        (
-            "publication_branch_id",
-            RelationalDiagnosticValue::string(publication_branch.0.clone()),
-        ),
-        (
-            "artifact_branch_id",
-            RelationalDiagnosticValue::string(artifact_branch.0.clone()),
-        ),
-    ])
-    .into()
 }

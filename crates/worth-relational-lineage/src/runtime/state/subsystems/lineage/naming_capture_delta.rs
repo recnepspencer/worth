@@ -222,7 +222,7 @@ impl<'a> SealContext<'a> {
                 Some(Some(link)) => {
                     let store = self.cold.ok_or(Cause::SourceUnavailable)?;
                     match link.root_in(store) {
-                        Some(r) if r.delta_base.is_none() => {
+                        Some(r) if r.delta_base.is_none() && r.naming.is_none() => {
                             (Some((store, r.pages.as_slice())), fb.encoded_changes())
                         }
                         _ => (None, fb.collect_encoded_in(self.cold)?),

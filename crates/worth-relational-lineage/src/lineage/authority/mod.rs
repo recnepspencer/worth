@@ -17,10 +17,6 @@ pub mod selection_continuity;
 pub mod staged_effects;
 
 #[cfg(test)]
-mod commit_name_preview_continuity_tests;
-#[cfg(test)]
-mod commit_name_preview_tests;
-#[cfg(test)]
 mod mint_order_tests;
 #[cfg(test)]
 pub mod name_minting_tests;
@@ -44,9 +40,3 @@ pub use name_readmission::PersistedBirthClaim;
 
 #[doc(hidden)]
 pub mod posture_fixture;
-
-#[cfg(test)]
-mod untouched_keeper_merge;
-
-#[cfg(test)]
-mod posture_lineage_tests;

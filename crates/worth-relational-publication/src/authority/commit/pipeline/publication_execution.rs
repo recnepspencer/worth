@@ -214,19 +214,6 @@ pub fn publish_commit_execution(
         .into_iter()
         .map(|trace| trace.publish(patch_position))
         .collect();
-    let diagnostics = inputs.publication.preparation_diagnostics();
-    for result in &invariant_executions {
-        crate::validation::invariant_authority::preparation_diagnostics::emit_preparation_diagnostics(
-            diagnostics,
-            result,
-        );
-    }
-    publish_prepared_trace_diagnostics(
-        &inputs.publication,
-        diagnostics.profile.detailed_traces_enabled,
-        &aspect_evaluation_traces,
-        &aspect_emission_traces,
-    );
     PublishedCommitExecution {
         admitted,
         public_structural_summary,
@@ -241,23 +228,6 @@ pub fn publish_commit_execution(
         source_effects,
         aspect_evaluation_traces,
         aspect_emission_traces,
-    }
-}
-
-fn publish_prepared_trace_diagnostics(
-    publication: &crate::publication::authority::PublicationAuthority<'_>,
-    detailed_traces_enabled: bool,
-    evaluation_traces: &[contracts::transactions::data::aspect_traces::AspectEvaluationTrace],
-    emission_traces: &[contracts::transactions::data::aspect_traces::AspectEmissionTrace],
-) {
-    if !detailed_traces_enabled {
-        return;
-    }
-    for trace in evaluation_traces {
-        publication.push_diagnostic_artifact(trace.diagnostic_artifact());
-    }
-    for trace in emission_traces {
-        publication.push_diagnostic_artifact(trace.diagnostic_artifact());
     }
 }
 
@@ -298,14 +268,6 @@ pub struct PreparedCommitPublicationCompletion {
     prepared_indexes: Option<worth_relational_indexes::internal_port::indexes::authority::maintenance::candidate_publication::PreparedCandidateIndexPublication>,
 }
 
-impl PublishedCommitExecution {
-    pub(crate) fn append_diagnostics(
-        &mut self,
-        diagnostics: Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
-    ) {
-        self.admitted.value_mut().append_diagnostics(diagnostics);
-    }
-}
 #[cfg(test)]
 #[path = "publication_execution_inline_type_budget.rs"]
 pub mod inline_type_budget;

@@ -1,10 +1,5 @@
-use super::checkpoint_truth_observation::diagnostic_field;
-use super::checkpoint_truth_observation::diagnostic_field_optional;
 use worth_relational::facade::config::CascadeDeletePolicy;
 use worth_relational::facade::config::RelationalRuntimeProfile;
-use worth_relational::facade::diagnostics::DiagnosticCode;
-use worth_relational::facade::diagnostics::DiagnosticsScope;
-use worth_relational::facade::diagnostics::RelationalDiagnosticValue;
 use worth_relational::facade::durability::RecoveryAuthorityContinuityMismatch;
 use worth_relational::facade::durability::RecoveryFailureClass;
 use worth_relational::facade::durability::RecoveryVerificationMode as RecoveryMode;
@@ -90,14 +85,6 @@ fn durable_recovery_and_schema_mismatch_test() {
         .canonical_commit_envelope(execution, transitioned.commit.commit_id)
         .unwrap()
         .expect("recovered transitioned envelope");
-    let recovered_diagnostics = recovered.publication().diagnostics();
-    let recovery_authority_continuity_diagnostic = recovered_diagnostics
-        .by_scope(DiagnosticsScope::History)
-        .into_iter()
-        .flat_map(|artifact| artifact.entries.iter())
-        .find(|entry| entry.code == DiagnosticCode::DurableRecoveryAuthorityContinuityEvaluated)
-        .expect("recovery authority continuity diagnostic");
-
     assert_eq!(
         live_schema_transition,
         recovered_envelope.schema_transition.clone()
@@ -111,18 +98,11 @@ fn durable_recovery_and_schema_mismatch_test() {
         recovered_envelope.schema_reconciliation_descriptor.clone()
     );
     assert_eq!(
-        live_recovery_authority_continuity,
-        plan.authority_continuity.clone()
+        live_recovery_authority_continuity.verification_outcome,
+        worth_relational::facade::durability::RecoveryVerificationOutcome::VerifiedAtLayer(
+            worth_relational::facade::replay::ReplayVerificationLayer::DigestParity,
+        )
     );
-    assert!(recovered_diagnostics
-        .by_scope(DiagnosticsScope::History)
-        .into_iter()
-        .flat_map(|artifact| artifact.entries.iter())
-        .any(|entry| {
-            entry.code == DiagnosticCode::DurableRecoveryAuthorityContinuityEvaluated
-                && diagnostic_field_optional(entry, "verification_layer")
-                    == Some(&RelationalDiagnosticValue::string("DigestParity"))
-        }));
 
     let mismatched_registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
@@ -155,12 +135,5 @@ fn durable_recovery_and_schema_mismatch_test() {
             ..
         })
     ));
-    assert_eq!(
-        diagnostic_field(
-            recovery_authority_continuity_diagnostic,
-            "verification_layer"
-        ),
-        &RelationalDiagnosticValue::string("DigestParity")
-    );
     assert!(!error.detail.is_empty());
 }

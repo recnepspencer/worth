@@ -281,37 +281,11 @@ fn replay_certification_audit_drift_is_explained_and_counted() {
         .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
-    let diagnostics = runtime.publication().diagnostics();
-    let authority_continuity_entry = diagnostics
-        .by_scope(DiagnosticsScope::Replay)
-        .into_iter()
-        .flat_map(|artifact| artifact.entries.iter())
-        .find(|entry| {
-            entry.code == DiagnosticCode::InvariantViolation
-                && diagnostic_field_optional(entry, "verification_mode")
-                    == Some(&RelationalDiagnosticValue::string(
-                        "AuditRecoveryVerification",
-                    ))
-                && diagnostic_field_optional(entry, "mismatch_count")
-                    == Some(&RelationalDiagnosticValue::Unsigned(
-                        replay.mismatches.len() as u64,
-                    ))
-        })
-        .expect("replay certification diagnostic");
-    assert_eq!(
-        diagnostic_field(authority_continuity_entry, "verification_mode"),
-        &RelationalDiagnosticValue::string("AuditRecoveryVerification")
-    );
-    assert!(diagnostic_array_contains_string(
-        authority_continuity_entry,
-        "mismatch_verification_layers",
-        "DeepArtifactParity",
-    ));
-    assert!(diagnostic_array_contains_string(
-        authority_continuity_entry,
-        "mismatch_classes",
-        "SchemaContinuationDescriptorDrift",
-    ));
+    assert_eq!(replay.requested.verification_mode, ReplayVerificationMode::AuditRecoveryVerification);
+    assert!(replay.mismatches.iter().any(|mismatch| {
+        mismatch.verification_layer == ReplayVerificationLayer::DeepArtifactParity
+            && mismatch.class == ReplayMismatchClass::SchemaContinuationDescriptorDrift
+    }));
     let counters = runtime.performance_access().counters();
     assert!(counters.replay_deep_artifact_parity_checks >= 1);
     assert_eq!(counters.replay_summary_parity_checks, 0);

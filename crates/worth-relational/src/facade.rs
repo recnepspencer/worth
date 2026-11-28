@@ -147,7 +147,7 @@ pub mod runtime {
         RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
         RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
         RelationalPinnedEntityMetadata, RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
-        RelationalProjectedFieldObservation, RelationalRelationMetadata, RelationalReplayRecord,
+        RelationalProjectedFieldObservation, RelationalRelationMetadata,
         RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalRuntime,
         RelationalRuntimeConfig, RelationalRuntimeConstructionDenial, RelationalRuntimeForkDenial,
         RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
@@ -197,7 +197,7 @@ pub mod harness {
 }
 
 pub mod publication {
-    pub use crate::publication::bundle::{PublicationBundle, PublicationStage, PublicationStatus};
+    pub use crate::publication::bundle::{PublicationStage, PublicationStatus};
     pub use crate::publication::cdc::facade::{
         SubscriberBoundaryAssessment, SubscriberCheckpoint, SubscriberContinuationAssessment,
         SubscriberRecoveryDecision, SubscriberRecoveryDisposition, SubscriberRecoverySource,
@@ -206,7 +206,7 @@ pub mod publication {
     };
     pub use crate::publication::data::{
         AuthoredRetirementRefusal, CoupledFreshWriter, CoupledProvenancePostponement,
-        PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot, PublicationError,
+        PublicationDiagnosticsSnapshot, PublicationError,
         PublicationObservationSnapshot, PublicationSettlementRepairError,
     };
     pub use crate::publication::patch::data::{

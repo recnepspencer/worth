@@ -57,7 +57,7 @@ pub use crate::performance::data::{
     ComplexityContract, ComplexityStatus, RelationalCandidateInputCounters,
     RuntimeComplexityCounters,
 };
-pub use crate::replay::data::{RelationalReplayRecord, ReplaySchemaVersion};
+pub use crate::replay::data::ReplaySchemaVersion;
 pub use crate::snapshots::guard::SnapshotGuard;
 #[cfg(test)]
 pub use crate::validation::engine::HarnessAuditMode;
@@ -113,7 +113,7 @@ pub(crate) use state::{
     AdmittedRelationalRuntimeOperation, BranchHeadVersionIndexAuthority,
     BranchTransitionPublication, CanonicalCheckpointAdmissionError, DurabilitySubsystem,
     HistorySubsystem, LineageIdentityAllocator, LineageSubsystem, MirrorResidencyDemandBinding,
-    PartitionEdition, PendingSymbolMeanings, PerformedCheckpointSelection, PublicationSubsystem,
+    PartitionEdition, PendingSymbolMeanings, PerformedCheckpointSelection,
     PublishedSnapshotCapacityOwner, PublishedSnapshotReservationDenial,
     PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
     RelationalCanonicalPublicationRoutes, RelationalCheckpointManifestSelection,

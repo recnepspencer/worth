@@ -35,8 +35,6 @@ pub(super) struct ArtifactAssemblyInput<'a> {
     pub(super) naming_plan: Option<&'a contracts::lineage::data::postures::CommitNamingPlan>,
     pub(super) record_allocations: &'a worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::pending_allocations::PendingRecordAllocations,
     pub(super) schema_continuity: &'a SchemaContinuityPlan,
-    pub(super) deferred_diagnostic_artifacts:
-        Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
 }
 
 pub(super) fn assemble_authoritative_publication_phase(
@@ -65,7 +63,6 @@ pub(super) fn assemble_authoritative_publication_phase(
     commit_log.record_patch_budget(&patch_budget_summary);
     enforce_patch_budget(
         max_patch_records,
-        owners.authority.envelope.diagnostics,
         &patch,
     )
     .map_err(|error| attach_rejection(commit_log, CommitPhase::ArtifactAssembly, error))?;
@@ -87,7 +84,6 @@ pub(super) fn assemble_authoritative_publication_phase(
             record_allocations: input.record_allocations,
             schema_continuity: input.schema_continuity,
             effect,
-            deferred_diagnostic_artifacts: input.deferred_diagnostic_artifacts,
         },
         execution,
     )

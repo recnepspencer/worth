@@ -47,11 +47,16 @@ fn validate_alias_header_authority(
         // mutating any index row; when lineage events also diverge under active
         // naming schemes, a zero-page index alias cannot disagree on `head`.
         let head_mismatch_with_event_diff = has_naming_schemes
-            && base.naming != root.naming
-            && base
-                .index
-                .zip(root.index)
-                .is_some_and(|(b, r)| b.head != r.head);
+            && base.index.zip(root.index).is_some_and(|(b, r)| {
+                if b.head == r.head {
+                    return false;
+                }
+                if base.naming.is_some() || root.naming.is_some() {
+                    return base.naming != root.naming;
+                }
+                let (later, head) = if b.head > r.head { (base, b.head) } else { (root, r.head) };
+                later.groups.as_ref().and_then(|groups| groups.latest_commit) != head
+            });
         if !base.has_active_domain(2) || !same_earliest || head_mismatch_with_event_diff {
             return Err(corrupt(
                 "branch index delta alias header disagrees with delta_base",

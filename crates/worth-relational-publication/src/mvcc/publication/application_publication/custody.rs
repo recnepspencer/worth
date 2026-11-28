@@ -256,7 +256,7 @@ pub fn readmit_required_output_publication(
     })
 }
 
-pub(super) fn cold_stop(
+pub(crate) fn cold_stop(
     stop: worth_relational_branch::internal_port::history::data::codec_retirement_closure::CodecRetirementClosureStop,
 ) -> contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
     match stop {

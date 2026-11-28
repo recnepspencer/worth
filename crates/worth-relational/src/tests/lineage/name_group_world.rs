@@ -3,18 +3,22 @@
 //! member names and records the committed transition.
 
 use std::collections::BTreeSet;
+use std::sync::Arc;
 use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 
 use worth_foundational::facade::AggregateIdentity;
 
 use crate::aggregate_identity::{
     AggregateContinuityRule, AggregateGroupMembers, AggregateGroupNamingAuthority,
-    AggregateGroupNamingDenial, AggregateGroupPartitionTransition, AggregateGroupScheme,
+    AggregateGroupNamingDenial, AggregateGroupScheme,
     AggregateGroupSchemeId, AggregateMemberRole, AggregatePriorGroup,
 };
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, PartitionId};
 use crate::lineage::data::PersistentNameIdentity;
+
+use crate::facade::aggregate_identity::CommittedGroupTransition;
+use worth_testkit_relational::group_naming::committed_partition;
 
 /// The synthetic persistent name of group member `n`.
 pub(super) fn member(n: u8) -> PersistentNameIdentity {
@@ -45,7 +49,7 @@ impl GroupWorld {
     pub(super) fn step(
         &mut self,
         groups: &[&[u8]],
-    ) -> Result<AggregateGroupPartitionTransition, AggregateGroupNamingDenial> {
+    ) -> Result<Arc<[CommittedGroupTransition]>, AggregateGroupNamingDenial> {
         let mut proposed = Vec::with_capacity(groups.len());
         for group in groups {
             let mut members = AggregateGroupMembers::new();
@@ -62,6 +66,7 @@ impl GroupWorld {
             &self.retired,
             proposed,
         )?;
+        let committed = committed_partition(&self.scheme, &self.prior, &transition)?;
         for assignment in &transition.assignments {
             self.retired.remove(&assignment.identity);
         }
@@ -76,7 +81,7 @@ impl GroupWorld {
                 members: assignment.members.clone(),
             })
             .collect();
-        Ok(transition)
+        Ok(Arc::new([committed]))
     }
 
     /// The live group whose members include `n`.

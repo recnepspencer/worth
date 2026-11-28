@@ -23,7 +23,6 @@ pub mod checkpoint_region_consistency;
 
 pub mod checkpoint_transition;
 pub mod checkpointing;
-pub mod diagnostics;
 pub mod home_readmission_phase;
 mod lineage_allocation;
 

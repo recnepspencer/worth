@@ -72,10 +72,6 @@ pub fn resolve_schema_continuity<'a>(
             .instrumentation
             .count_descriptor_version_mismatch();
         return Err(schema_continuity_conflict(
-            inputs.diagnostics,
-            branch_id,
-            options.transition,
-            Some(previous_envelope),
             ConflictClass::DescriptorSemanticsVersionUnsupported {
                 previous_descriptor_semantics_version: previous_envelope
                     .descriptor_semantics_version,
@@ -102,10 +98,6 @@ pub fn resolve_schema_continuity<'a>(
             &authority_input,
         ),
         None if drift_detected => Err(schema_continuity_conflict(
-            inputs.diagnostics,
-            branch_id,
-            None,
-            Some(previous_envelope),
             ConflictClass::UndeclaredSchemaTransition {
                 previous_schema_version: previous_envelope.schema_version,
                 current_schema_version,

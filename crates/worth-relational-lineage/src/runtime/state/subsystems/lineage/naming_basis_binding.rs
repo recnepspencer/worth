@@ -10,7 +10,7 @@ use crate::lineage::tiered::NamingReadScope;
 use worth_relational_storage::internal_port::storage::substrate::owned_state::RuntimeOwnedState;
 
 use super::naming_basis::{
-    AuthoritativeBranchNamingState, AuthoritativeLineageBasis, NamingBasisUnavailable,
+    AuthoritativeLineageBasis, NamingBasisUnavailable,
 };
 pub use super::naming_fork::PreparedForkLineage;
 use super::LineageState;
@@ -30,11 +30,11 @@ pub struct BranchNamingBasisGuard<'a> {
 }
 
 impl BranchNamingBasisGuard<'_> {
-    fn state(&self) -> Option<&AuthoritativeBranchNamingState> {
-        match self.guard.branch_naming_state(&self.branch_id)? {
-            Ok(state) => Some(state),
+    fn index(&self) -> Option<&crate::lineage::index::PersistentNameBranchIndex> {
+        match self.name_index() {
+            Ok(index) => index,
             Err(denial) => {
-                self.latch(*denial);
+                self.latch(denial.into());
                 None
             }
         }
@@ -62,20 +62,20 @@ impl BranchNamingBasisGuard<'_> {
 }
 
 impl LineageBasisView for BranchNamingBasisGuard<'_> {
-    fn live_holder(&self, id: &PersistentNameIdentity) -> Option<&PersistentNameHolder> {
-        self.state()?.live_holder_in(id, &self.scope)
+    fn live_holder(&self, id: &PersistentNameIdentity) -> Option<PersistentNameHolder> {
+        self.index()?.live_holder_in(*id, &self.scope)
     }
 
     fn live_lineage(&self, holder: &PersistentNameHolder) -> Option<LineageId> {
-        self.state()?.live_lineage_in(holder, &self.scope)
+        self.index()?.live_lineage_in(holder, &self.scope)
     }
 
     fn retired_lineage(&self, id: &PersistentNameIdentity) -> Option<(LineageSubject, LineageId)> {
-        self.state()?.retired_lineage_in(id, &self.scope)
+        self.index()?.retired_lineage_in(*id, &self.scope)
     }
 
     fn holder_name(&self, holder: &PersistentNameHolder) -> Option<PersistentNameIdentity> {
-        self.state()?.holder_name_in(holder, &self.scope)
+        self.index()?.holder_name_in(holder, &self.scope)
     }
 }
 
@@ -92,11 +92,10 @@ impl BranchNamingBasisGuard<'_> {
         self.guard.name_indexes.read(&self.branch_id)
     }
 
-    /// The latest commit whose lineage events this branch's naming basis
-    /// holds; `None` before its first. A basis read for a proposal is only
-    /// that proposal's basis while this is at or before the proposal's commit.
-    pub fn latest_event_commit(&self) -> Option<CommitId> {
-        self.state()?.latest_event_commit()
+    /// The latest commit represented by this branch's name index.
+    /// A proposal may use this basis only through its selected commit.
+    pub fn latest_basis_commit(&self) -> Option<CommitId> {
+        self.index()?.head()
     }
 
     /// The guarded branch's group state; `None` before its first group
@@ -142,24 +141,8 @@ impl BranchNamingBasisGuard<'_> {
         )],
         group_transitions: &[crate::lineage::groups::CommittedGroupTransition],
     ) {
-        if let Some(state) = self.state() {
-            state.preflight_events(events, &self.scope);
-        }
-        match self.guard.name_indexes.read(&self.branch_id) {
-            Ok(Some(index)) => index.preflight_commit(
-                events,
-                entity_bindings,
-                relation_bindings,
-                group_transitions,
-                &self.scope,
-            ),
-            Ok(None) => {}
-            Err(crate::lineage::index::PersistentNameIndexDenial::StorageUnavailable(cause)) => {
-                self.latch(NamingBasisUnavailable::Storage(*cause));
-            }
-            Err(_) => {
-                self.latch(NamingBasisUnavailable::Unrecoverable);
-            }
+        if let Some(index) = self.index() {
+            index.preflight_commit(events, entity_bindings, relation_bindings, group_transitions, &self.scope);
         }
     }
 

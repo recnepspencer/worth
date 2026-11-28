@@ -1,11 +1,5 @@
-pub mod diagnostic_fields;
-
 use serde::{Deserialize, Serialize};
 
-use crate::diagnostics::data::{
-    DeterminismExpectation, DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope,
-    RelationalDiagnosticArtifact, RelationalDiagnosticsEntry,
-};
 use crate::identity::data::{EntityId, KindId};
 use crate::publication::patch::data::{
     PatchStreamPosition, PublishedAuthoritativePatch, RecordStructuralChange,
@@ -13,7 +7,6 @@ use crate::publication::patch::data::{
 use crate::schema::data::AspectContractPlanRevision;
 
 use crate::transactions::data::primitives::RecordRef;
-use diagnostic_fields::{emission_trace_diagnostic_fields, evaluation_trace_diagnostic_fields};
 use worth_foundational::facade::{AspectKey, AspectValue, AspectValueLocator, StructAspectValue};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -88,38 +81,6 @@ pub struct AspectEmissionTrace {
     pub structural_change: RecordStructuralChange,
     pub changed_aspects: Vec<AspectKey>,
     pub contains_opaque_aspect: bool,
-}
-
-impl AspectEvaluationTrace {
-    pub fn diagnostic_artifact(&self) -> RelationalDiagnosticArtifact {
-        let fields = evaluation_trace_diagnostic_fields(self);
-        RelationalDiagnosticArtifact::new(
-            DiagnosticsScope::Transaction,
-            DiagnosticsArtifactKind::DetailedTrace,
-            DeterminismExpectation::Required,
-            vec![RelationalDiagnosticsEntry::new(
-                DiagnosticCode::AspectEvaluationTraced,
-                "aspect evaluation trace derived from canonical commit-time delta",
-                fields,
-            )],
-        )
-    }
-}
-
-impl AspectEmissionTrace {
-    pub fn diagnostic_artifact(&self) -> RelationalDiagnosticArtifact {
-        let fields = emission_trace_diagnostic_fields(self);
-        RelationalDiagnosticArtifact::new(
-            DiagnosticsScope::PatchPublication,
-            DiagnosticsArtifactKind::DetailedTrace,
-            DeterminismExpectation::Required,
-            vec![RelationalDiagnosticsEntry::new(
-                DiagnosticCode::AspectEmissionTraced,
-                "aspect emission trace derived from canonical patch publication",
-                fields,
-            )],
-        )
-    }
 }
 
 #[cfg(test)]

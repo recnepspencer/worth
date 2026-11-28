@@ -30,8 +30,8 @@ struct Branch {
 }
 
 impl LineageBasisView for Branch {
-    fn live_holder(&self, id: &PersistentNameIdentity) -> Option<&PersistentNameHolder> {
-        self.live.get(id)
+    fn live_holder(&self, id: &PersistentNameIdentity) -> Option<PersistentNameHolder> {
+        self.live.get(id).cloned()
     }
     fn live_lineage(&self, _: &PersistentNameHolder) -> Option<LineageId> {
         None

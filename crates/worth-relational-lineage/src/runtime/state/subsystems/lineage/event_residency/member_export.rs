@@ -1,16 +1,11 @@
 //! Export exact frame bytes through the same event cell and sticky failure state.
-use super::{
-    event_page, Cause, EventPageCell, EventPageState, RelationalDurableColdSource,
-    RelationalDurableMemberCustody, RelationalDurableMemberLocator, RuntimeLineageEventResidency,
-    LINEAGE_EVENT_PAGE_BYTES,
-};
-use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCauseOwnerPort as _;
+use super::*;
 impl RelationalDurableColdSource for RuntimeLineageEventResidency {
     fn retain_members(
         &self,
         members: &[RelationalDurableMemberLocator],
     ) -> Result<RelationalDurableMemberCustody, Cause> {
-        self.source()?.retain_members(members)
+        self.custody.source()?.retain_members(members)
     }
     fn read_member(
         &self,
@@ -18,49 +13,13 @@ impl RelationalDurableColdSource for RuntimeLineageEventResidency {
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
         let cell = self.pages.get(&locator).ok_or(Cause::SourceUnavailable)?;
-        cell.export_member(self.source()?.as_ref(), limit)
+        cell.export_member(|| self.custody.source(), limit)
     }
     fn read_commit(
         &self,
         position: worth_relational_contracts::internal_port::publication::patch::data::patch_position::PatchStreamPosition,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
-        self.source()?.read_commit(position, limit)
-    }
-}
-impl EventPageCell {
-    fn export_member(
-        &self,
-        source: &dyn RelationalDurableColdSource,
-        limit: u64,
-    ) -> Result<Vec<u8>, Cause> {
-        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        if let EventPageState::Damaged(failure) = &*state {
-            return Err(failure.cause);
-        }
-        let limit = limit.min(LINEAGE_EVENT_PAGE_BYTES);
-        let result = if self.descriptor.member.length > limit {
-            Err(Cause::LimitExceeded {
-                length: self.descriptor.member.length,
-                limit,
-            })
-        } else {
-            source.read_member(self.descriptor.member, limit)
-        }
-        .and_then(|bytes| {
-            worth_relational_storage::internal_port::storage::data::member_frame::decode(
-                &bytes,
-                self.descriptor.member,
-                worth_relational_storage::internal_port::storage::data::member_frame::MemberKind::LineageEvents,
-            )?;
-            Ok(bytes)
-        });
-        if let Err(cause) = &result
-            && cause.is_proven_damage()
-        {
-            let failure = event_page::storage_failure(&self.descriptor, *cause);
-            *state = EventPageState::Damaged(failure);
-        }
-        result
+        self.custody.source()?.read_commit(position, limit)
     }
 }

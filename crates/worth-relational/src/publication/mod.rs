@@ -1,7 +1,7 @@
 mod access;
 pub use worth_relational_publication::internal_port::publication::bundle;
 pub(crate) use worth_relational_publication::internal_port::publication::{
-    authority, canonical_history, diagnostic_store,
+    authority, canonical_history,
 };
 pub mod cdc;
 pub(crate) mod ownership {
@@ -12,7 +12,6 @@ pub(crate) mod ownership {
 pub(crate) use worth_relational_branch::internal_port::publication::{data, patch};
 pub(crate) use worth_relational_contracts::internal_port::publication::close_custody;
 
-pub(crate) use access::invariant_failure_diagnostic;
 pub use access::{
     PublicationArtifactsAccess, PublicationDiagnosticsAccess, PublicationPatchStreamAccess,
     PublicationSubscriberStreamAccess, PublicationSurface,

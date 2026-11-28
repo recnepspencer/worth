@@ -7,7 +7,6 @@ use worth_foundational::facade::AggregateIdentity;
 
 use crate::contracts::aggregate_identity::group_lineage::AggregateGroupLineageEvent;
 use crate::contracts::aggregate_identity::transition::group::delta::AggregateGroupAssignment;
-use crate::contracts::aggregate_identity::transition::group::transition_result::AggregateGroupPartitionTransition;
 use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
@@ -80,37 +79,6 @@ impl PersistentNameCommittedBatch {
         self
     }
 
-    /// Adds one full-partition group naming transition: its lineage events,
-    /// and each next-state group's complete member names declared as that
-    /// group's carriers.
-    pub fn with_group_transition(mut self, transition: &AggregateGroupPartitionTransition) -> Self {
-        self.group_events.extend(transition.lineage.iter().copied());
-        for assignment in &transition.assignments {
-            let members = assignment
-                .members
-                .iter()
-                .filter_map(|(name, _)| name.entity_name().copied())
-                .collect();
-            self.carriers
-                .insert(PersistentNameKey::Group(assignment.identity), members);
-        }
-        self
-    }
-
-    /// Adds one installed scheme's committed group transition: its lineage,
-    /// each next-state group's members as carriers, and each group's scheme.
-    pub fn with_scheme_group_transition(
-        mut self,
-        scheme_id: &str,
-        transition: &AggregateGroupPartitionTransition,
-    ) -> Self {
-        for assignment in &transition.assignments {
-            self.group_schemes
-                .insert(assignment.identity, scheme_id.to_owned());
-        }
-        self.with_group_transition(transition)
-    }
-
     /// Adds one commit's published group transitions, shared: their lineage
     /// events, each assigned group's scheme, and each next-state group's
     /// carrier change, read in place at ingestion.
@@ -170,6 +138,7 @@ pub trait PersistentNameCommittedBatchFixturePort: Sized {
     ) -> &mut BTreeMap<PersistentNameKey, BTreeSet<PersistentNameIdentity>>;
     fn entity_holders_for_test(&self) -> &BTreeMap<LineageId, EntityId>;
     fn entity_holders_mut_for_test(&mut self) -> &mut BTreeMap<LineageId, EntityId>;
+    fn published_group_transitions_for_test(&self) -> impl Iterator<Item = &CommittedGroupTransition>;
     fn group_events_for_test(&self) -> &BTreeSet<AggregateGroupLineageEvent>;
     fn lineage_events_for_test(&self) -> &Vec<LineageEventRecord>;
     fn lineage_events_mut_for_test(&mut self) -> &mut Vec<LineageEventRecord>;
@@ -207,6 +176,10 @@ impl PersistentNameCommittedBatchFixturePort for PersistentNameCommittedBatch {
 
     fn entity_holders_mut_for_test(&mut self) -> &mut BTreeMap<LineageId, EntityId> {
         &mut self.entity_holders
+    }
+
+    fn published_group_transitions_for_test(&self) -> impl Iterator<Item = &CommittedGroupTransition> {
+        self.group_transitions.iter().flat_map(|transitions| transitions.iter())
     }
 
     fn group_events_for_test(&self) -> &BTreeSet<AggregateGroupLineageEvent> {

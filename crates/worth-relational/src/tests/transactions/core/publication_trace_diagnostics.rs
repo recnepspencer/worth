@@ -1,6 +1,4 @@
-use crate::facade::diagnostics::{
-    DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope, RelationalDiagnosticsProfile,
-};
+use crate::facade::diagnostics::RelationalDiagnosticsProfile;
 use crate::facade::transactions::MutationIntent;
 use crate::tests::support::*;
 use worth_foundational::facade::AspectKey;
@@ -52,7 +50,7 @@ fn commit_publication_exposes_aspect_evaluation_and_emission_traces() {
 }
 
 #[test]
-fn detailed_trace_profile_emits_commit_side_aspect_trace_diagnostics() {
+fn detailed_trace_profile_carries_typed_aspect_traces() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -70,22 +68,9 @@ fn detailed_trace_profile_emits_commit_side_aspect_trace_diagnostics() {
         .expect("valid native runtime configuration");
     let result = create_entity_outcome(execution, &runtime, "diagnostic-traced");
 
-    assert!(result.diagnostics().iter().any(|artifact| {
-        artifact.scope == DiagnosticsScope::Transaction
-            && artifact.kind == DiagnosticsArtifactKind::DetailedTrace
-            && artifact
-                .entries
-                .iter()
-                .any(|entry| entry.code == DiagnosticCode::AspectEvaluationTraced)
-    }));
-    assert!(result.diagnostics().iter().any(|artifact| {
-        artifact.scope == DiagnosticsScope::PatchPublication
-            && artifact.kind == DiagnosticsArtifactKind::DetailedTrace
-            && artifact
-                .entries
-                .iter()
-                .any(|entry| entry.code == DiagnosticCode::AspectEmissionTraced)
-    }));
+    assert!(result.aspect_evaluation_traces().iter().any(|trace| !trace.binding_rows.is_empty()));
+    assert!(result.aspect_emission_traces().iter().all(|trace| trace.patch_position == result.patch_position()));
+    assert!(!result.aspect_emission_traces().is_empty());
 }
 
 #[test]

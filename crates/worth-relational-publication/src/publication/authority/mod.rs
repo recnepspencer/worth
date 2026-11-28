@@ -1,22 +1,16 @@
 use worth_relational_branch::internal_port as branch;
-pub mod artifacts;
 pub mod bundle_publication;
 pub mod diagnostic_emission;
 pub mod pending_settlement;
 pub mod performed_settlement;
-pub mod post_commit_diagnostics;
 pub mod settled_receipt;
 
-use crate::runtime::state::subsystems::publication::PublicationSubsystem;
 use branch::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use branch::runtime::state::subsystems::visibility::snapshot_handles::identity::SnapshotIdentityAllocator;
 use branch::runtime::state::subsystems::visibility::VisibilitySubsystem;
-use worth_relational_contracts::internal_port::diagnostics::data::profiles::RelationalDiagnosticsProfile;
 
 pub struct PublicationAuthority<'runtime> {
-    publication: &'runtime PublicationSubsystem,
     visibility: &'runtime VisibilitySubsystem,
-    diagnostics_profile: &'runtime RelationalDiagnosticsProfile,
     instrumentation: &'runtime RuntimeInstrumentation,
 }
 
@@ -39,15 +33,11 @@ impl<'runtime> PublicationPreparationAuthority<'runtime> {
 
 impl<'runtime> PublicationAuthority<'runtime> {
     pub fn new(
-        publication: &'runtime PublicationSubsystem,
         visibility: &'runtime VisibilitySubsystem,
-        diagnostics_profile: &'runtime RelationalDiagnosticsProfile,
         instrumentation: &'runtime RuntimeInstrumentation,
     ) -> Self {
         Self {
-            publication,
             visibility,
-            diagnostics_profile,
             instrumentation,
         }
     }

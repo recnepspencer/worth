@@ -40,7 +40,7 @@ pub(crate) use subsystems::{
     CanonicalCheckpointAdmissionError, DurabilitySubsystem, HistorySubsystem,
     IndexDefinitionReadBinding, LineageIdentityAllocator, LineageNamingBasisBinding,
     LineageSubsystem, MirrorResidencyDemandBinding, PartitionEdition, PendingSymbolMeanings,
-    PerformedCheckpointSelection, PublicationSubsystem, PublishedSnapshotCapacityOwner,
+    PerformedCheckpointSelection, PublishedSnapshotCapacityOwner,
     PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, ReclaimedRecordSlot,
     RecordIdentitySubsystem, RelationalCanonicalPublicationRoutes,
     RelationalCheckpointManifestSelection, RelationalForkMaterializationCost,

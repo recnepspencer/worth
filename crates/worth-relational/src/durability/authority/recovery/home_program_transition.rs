@@ -1,7 +1,7 @@
 //! Readmit an exact predecessor and its associated durable migration prefix.
 use super::runtime_installation::{
-    admit_recovery_or_emit, move_durable_medium, publish_recovered_runtime,
-    rebuild_admitted_recovery_or_emit, recovered_authority, require_recovered_main_schema,
+    admit_recovery_with_counters, move_durable_medium, publish_recovered_runtime,
+    rebuild_admitted_recovery, recovered_authority, require_recovered_main_schema,
 };
 use crate::branch::recorded_basis::RecordedRelationalComponentTarget;
 use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
@@ -55,7 +55,7 @@ impl DurabilityRecoveryAuthority<'_> {
     ) -> Result<worth_proof::RelationalReadmitted<RelationalHomeProgramTransitionSource>, Refusal>
     {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        let admitted = admit_recovery_or_emit(self.runtime, plan)?;
+        let admitted = admit_recovery_with_counters(self.runtime, plan)?;
         self.recover_admitted_home_program_transition_source(execution, admitted, admission)
     }
 
@@ -88,7 +88,7 @@ impl DurabilityRecoveryAuthority<'_> {
         let original = self.runtime.configuration_binding().snapshot();
         let declared = original.config.schema.registry.authority_snapshot();
         let initial = self.runtime.initial_schema_authority_snapshot();
-        let mut material = rebuild_admitted_recovery_or_emit(execution, self.runtime, admitted)?;
+        let mut material = rebuild_admitted_recovery(execution, admitted)?;
         material
             .restored
             .restore_initial_schema_authority_after_recovery(initial);

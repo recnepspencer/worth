@@ -25,9 +25,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<Option<Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>>(
             "home_target",
         );
-        owner.field::<crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore>(
-            "diagnostics",
-        );
+
         owner
             .field::<crate::runtime::state::RuntimeIndexDefinitionReadBinding>("index_definitions");
         owner.field::<crate::runtime::MirrorResidencyDemandBinding>("mirror_residency");

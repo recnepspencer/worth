@@ -4,7 +4,11 @@ use worth_relational_branch::internal_port as branch;
 
 pub mod pinned_read;
 
-pub mod query_execution;
+pub mod query_execution {
+    pub mod pinned_walk {
+        pub mod pinned;
+    }
+}
 pub mod query_plan_execution;
 
 pub use pinned_read::RelationalAppliedCandidateReadIdentity;

@@ -1,4 +1,4 @@
-use crate::publication::data::{PublicationArtifactSnapshot, PublicationObservationSnapshot};
+use crate::publication::data::{PublicationObservationSnapshot};
 use crate::snapshots::data::SnapshotHandle;
 
 use super::terminal_harness_summary_projection::{
@@ -19,7 +19,7 @@ pub(super) fn run_summary(
 }
 
 pub(super) fn publication_artifacts_extension(
-    publication_artifacts: PublicationArtifactSnapshot,
+    publication_artifacts: PublicationObservationSnapshot,
 ) -> TerminalHarnessSummaryProjection {
     PublicationArtifactsExtension::from_snapshot(publication_artifacts)
         .into_terminal_harness_summary_projection()
@@ -76,17 +76,15 @@ struct PublicationArtifactsExtension {
 }
 
 impl PublicationArtifactsExtension {
-    fn from_snapshot(publication_artifacts: PublicationArtifactSnapshot) -> Self {
+    fn from_snapshot(publication_artifacts: PublicationObservationSnapshot) -> Self {
         Self {
             observation: PublicationAuthorityObservationSummary::from_observation(
-                &publication_artifacts.observation,
+                &publication_artifacts,
             ),
             latest_patch_record_count: publication_artifacts
-                .latest_patch
-                .as_ref()
-                .map(|patch| patch.authoritative_record_patches.len())
+                .latest_patch_record_count
                 .unwrap_or_default(),
-            latest_replay_present: publication_artifacts.latest_replay.is_some(),
+            latest_replay_present: publication_artifacts.latest_replay_present,
         }
     }
 

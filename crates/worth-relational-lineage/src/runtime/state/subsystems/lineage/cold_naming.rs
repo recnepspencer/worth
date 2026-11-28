@@ -20,7 +20,6 @@ use crate::lineage::naming_pages::CheckpointNamingState;
 use crate::lineage::tiered::{ColdNamingSource, NamingBaseLink};
 
 use super::name_indexes::BranchNameIndex;
-use super::naming_basis::{AuthoritativeBranchNamingState, NamingBasisUnavailable};
 use super::{LineageState, LineageSubsystem};
 
 /// Weakly-referenced hook invoked when a checkpoint is acknowledged so the
@@ -79,9 +78,6 @@ fn consolidate_locked(
             continue;
         }
         let link = NamingBaseLink::new(source.clone(), root.branch.clone());
-        if let Some(Ok(basis)) = state.branch_naming_states.get_mut(&root.branch) {
-            basis.rebind_clean(link.clone());
-        }
         if let Some(BranchNameIndex::Current(index)) =
             state.name_indexes.by_branch.get_mut(&root.branch)
         {
@@ -96,9 +92,7 @@ fn consolidate_locked(
     // ancestor present in `naming` so `NamingBaseLink` stays O(1) and
     // never resolves against an ancestor that mutated after the fork.
     let remaining: Vec<BranchId> = state
-        .branch_naming_states
-        .keys()
-        .chain(state.name_indexes.by_branch.keys())
+        .name_indexes.by_branch.keys()
         .chain(state.group_states.by_branch.keys())
         .filter(|b| !cleaned.contains(*b))
         .cloned()
@@ -123,9 +117,6 @@ fn consolidate_locked(
         let Some(anc) = nearest else {
             continue;
         };
-        if let Some(Ok(basis)) = state.branch_naming_states.get_mut(&branch) {
-            basis.rebind_source(&source, Some(&anc));
-        }
         if let Some(BranchNameIndex::Current(index)) = state.name_indexes.by_branch.get_mut(&branch)
         {
             index.rebind_source(&source, Some(&anc));
@@ -186,24 +177,11 @@ impl LineageSubsystem {
         state.naming_rebuilt_event_frontier = Some(u64::MAX);
         state.event_commits_by_branch.clear();
         state.published_group_lineage.clear();
-        state.branch_naming_states.clear();
         state.name_indexes.clear();
         state.group_states.by_branch.clear();
         for root in &naming.branches {
             let branch: BranchId = root.branch.clone();
             let link = NamingBaseLink::new(source.clone(), branch.clone());
-            if let Some(header) = root.naming {
-                let slot = if header.unavailable {
-                    Err(NamingBasisUnavailable::Unrecoverable)
-                } else {
-                    Ok(AuthoritativeBranchNamingState::over(
-                        Some(link.clone()),
-                        header.earliest_event_commit.map(CommitId),
-                        header.latest_event_commit.map(CommitId),
-                    ))
-                };
-                state.branch_naming_states.insert(branch.clone(), slot);
-            }
             if let Some(header) = root.index {
                 let index = if header.unavailable {
                     BranchNameIndex::Unavailable(PersistentNameIndexDenial::CheckpointedUnavailable)
@@ -276,9 +254,7 @@ impl LineageSubsystem {
     }
 
     /// Raises `branch`'s naming retention floor: its name index atomically
-    /// compacts to what bases at or above `floor` read, while preserving
-    /// authoritative retired-name continuity in `branch_naming_states` so
-    /// future deterministic recreations/restores succeed cleanly.
+    /// compacts to retained bases and preserves retired-name continuity.
     ///
     /// Complexity: O(branch rows) once per raise.
     pub fn advance_naming_retention_floor(

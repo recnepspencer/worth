@@ -301,6 +301,11 @@ fn carry_prior_delta_root(
     sink: &mut dyn ChunkMemberSink,
 ) -> Result<Option<BranchNamingRoot>, Cause> {
     let prev_b = hop_chain[0];
+    if prev_b.naming.is_some() {
+        // A legacy page run may still interleave the displaced naming tables.
+        // Materialize the surviving tables before carrying this branch again.
+        return Ok(None);
+    }
     let composed = hop_chain.len() > 1;
     let mut root = fb.headers(branch.clone());
     for dom in [0u8, 1, 2, 3] {

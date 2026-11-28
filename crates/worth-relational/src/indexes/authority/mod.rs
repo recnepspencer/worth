@@ -1,15 +1,12 @@
-use self::diagnostics::{
-    derived_index_build_artifact_kind, derived_index_build_completed, derived_index_build_scope,
-};
 use super::projected_field_values::IndexProjectionSource;
 use crate::history::data::CommitId;
 use crate::indexes::data::{
-    DerivedIndexBuildOutcome, DerivedIndexBuildRequest, DerivedIndexGeneration, DerivedIndexId,
+    DerivedIndexBuildOutcome, DerivedIndexBuildRequest,
 };
 pub(crate) use checkpoint_admission::{verify_checkpoint_index_bases, CheckpointIndexProjections};
 pub(crate) use maintenance::PreparedForkIndexSelection;
 pub(crate) use worth_relational_indexes::internal_port::indexes::authority::{
-    checkpoint_admission, diagnostics, reconstruction_build,
+    checkpoint_admission, reconstruction_build,
 };
 mod basis_build;
 mod build_diagnostics;

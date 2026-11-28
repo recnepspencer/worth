@@ -22,7 +22,6 @@ use super::super::planning::{
 };
 use super::commit_closure::replay_commit_closure_by_commit_id_order;
 use super::continuity::validated_replay_continuity_envelope;
-use super::diagnostics::record_replay_diagnostic;
 use super::recovery_plan::replay_recovery_plan_for_chain;
 use super::snapshot_surface::snapshot_surface_is_authoritative;
 use super::ReplayAuthority;
@@ -56,7 +55,6 @@ impl<'runtime> ReplayAuthority<'runtime> {
                 .with_mismatch(mismatch),
             None => RelationalReplayOutcome::fail(request, envelope, chain, failure),
         };
-        record_replay_diagnostic(self.runtime, &outcome.requested, &outcome);
         outcome
     }
 
@@ -154,7 +152,6 @@ impl<'runtime> ReplayAuthority<'runtime> {
                 mismatches,
                 failure: Some(ReplayFailureClass::ObservableMismatch),
             };
-            record_replay_diagnostic(self.runtime, &outcome.requested, &outcome);
             return Err(outcome);
         }
         Ok(ReplayAdmission {

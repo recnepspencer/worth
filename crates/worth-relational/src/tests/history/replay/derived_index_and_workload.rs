@@ -137,18 +137,8 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
         runtime.replay().compare_outcome(&replay),
         "hostile replay mismatch: {replay:#?}"
     );
-    let replay_diagnostics = runtime.publication().diagnostics();
-    assert!(replay_diagnostics
-        .by_scope(DiagnosticsScope::Replay)
-        .into_iter()
-        .flat_map(|artifact| artifact.entries.iter())
-        .any(|entry| {
-            entry.code == DiagnosticCode::CommitPublished
-                && diagnostic_field_optional(entry, "verification_mode")
-                    == Some(&RelationalDiagnosticValue::string(
-                        "NormalRecoveryVerification",
-                    ))
-        }));
+    assert_eq!(replay.requested.verification_mode, ReplayVerificationMode::NormalRecoveryVerification);
+    assert!(replay.mismatches.is_empty());
     let replay_counters = runtime.performance_access().counters();
     assert!(replay_counters.replay_digest_parity_checks > 0);
 
@@ -198,8 +188,9 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
         recovered_replay_check.requested.commit_id,
         replace_outcome.commit.commit_id
     );
-    assert!(recovered_bundle.latest_patch.is_none());
-    assert!(recovered_bundle.latest_replay.is_none());
+    let recovered_patch = recovered_bundle.latest_patch.expect("recovered canonical patch");
+    assert_eq!(recovered_patch.authoritative_record_patches, replace_outcome.patch());
+    assert_eq!(Some(recovered_patch.position), runtime.history().latest_patch_stream_position());
 }
 
 #[test]
@@ -360,18 +351,8 @@ fn hostile_commit_replay_equivalence_test() {
             execution,
         )
         .unwrap();
-    let recovered_replay_diagnostics = recovered.publication().diagnostics();
-    assert!(recovered_replay_diagnostics
-        .by_scope(DiagnosticsScope::Replay)
-        .into_iter()
-        .flat_map(|artifact| artifact.entries.iter())
-        .any(|entry| {
-            entry.code == DiagnosticCode::CommitPublished
-                && diagnostic_field_optional(entry, "verification_mode")
-                    == Some(&RelationalDiagnosticValue::string(
-                        "NormalRecoveryVerification",
-                    ))
-        }));
+    assert_eq!(recovered_replay.requested.verification_mode, ReplayVerificationMode::NormalRecoveryVerification);
+    assert!(recovered_replay.mismatches.is_empty());
 
     assert_stable_aspect_truth_bundle_eq(&original_bundle, &recovered_bundle);
     assert_eq!(original_envelope, recovered_envelope);

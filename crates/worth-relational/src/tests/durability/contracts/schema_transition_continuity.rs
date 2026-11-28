@@ -55,7 +55,6 @@ fn durable_recovery_and_schema_mismatch_test() {
         .envelope()
         .schema_reconciliation_descriptor
         .clone();
-    let live_recovery_authority_continuity = plan.authority_continuity.clone();
 
     let mut recovered = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
@@ -79,14 +78,6 @@ fn durable_recovery_and_schema_mismatch_test() {
         .canonical_commit_envelope(execution, transitioned.commit.commit_id)
         .unwrap()
         .expect("recovered transitioned envelope");
-    let recovered_diagnostics = recovered.publication().diagnostics();
-    let recovery_authority_continuity_diagnostic = recovered_diagnostics
-        .by_scope(DiagnosticsScope::History)
-        .into_iter()
-        .flat_map(|artifact| artifact.entries.iter())
-        .find(|entry| entry.code == DiagnosticCode::DurableRecoveryAuthorityContinuityEvaluated)
-        .expect("recovery authority continuity diagnostic");
-
     assert_eq!(
         live_schema_transition,
         recovered_envelope.schema_transition.clone()
@@ -100,18 +91,9 @@ fn durable_recovery_and_schema_mismatch_test() {
         recovered_envelope.schema_reconciliation_descriptor.clone()
     );
     assert_eq!(
-        live_recovery_authority_continuity,
-        plan.authority_continuity.clone()
+        plan.authority_continuity.verification_outcome,
+        RecoveryVerificationOutcome::VerifiedAtLayer(ReplayVerificationLayer::DigestParity)
     );
-    assert!(recovered_diagnostics
-        .by_scope(DiagnosticsScope::History)
-        .into_iter()
-        .flat_map(|artifact| artifact.entries.iter())
-        .any(|entry| {
-            entry.code == DiagnosticCode::DurableRecoveryAuthorityContinuityEvaluated
-                && diagnostic_field_optional(entry, "verification_layer")
-                    == Some(&RelationalDiagnosticValue::string("DigestParity"))
-        }));
     let recovered_counters = recovered.performance_access().counters();
     assert!(recovered_counters.replay_digest_parity_checks >= 1);
 
@@ -146,12 +128,5 @@ fn durable_recovery_and_schema_mismatch_test() {
             ..
         })
     ));
-    assert_eq!(
-        diagnostic_field(
-            recovery_authority_continuity_diagnostic,
-            "verification_layer"
-        ),
-        &RelationalDiagnosticValue::string("DigestParity")
-    );
     assert!(!error.detail.is_empty());
 }
