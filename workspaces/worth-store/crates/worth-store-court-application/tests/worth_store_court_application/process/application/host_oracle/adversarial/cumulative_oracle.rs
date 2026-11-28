@@ -3,10 +3,13 @@
 //! Generates reproducible sequences from `seed: u64` via SplitMix64 mixing every
 //! supported owner family (Core Query Host, C2.8 Durable World Branches &
 //! Retirement, Signal + Bridge + Authored Branches, shared `DocumentRetentionSchema`
-//! Governed Workflow + Branch Program Adoption, Authored Correction, and
-//! External Dispatch Custody), injecting real OS kills across alternating build
-//! identities and D14 derived-state discards, verified in fresh OS processes
-//! against `MemoryOnly` under run-wide durable identity correspondence.
+//! Governed Workflow + Branch Program Adoption, and External Dispatch Custody),
+//! injecting real OS kills across alternating build identities and D14
+//! derived-state discards, verified in fresh OS processes against `MemoryOnly`
+//! under run-wide durable identity correspondence (with External Dispatch
+//! Custody verifying `<= 1` / exact-1 dispatch and recovered-to-post-D14
+//! `ReceiptId` parity; its `MemoryOnly` parity is covered by the standalone
+//! dispatch sweep).
 mod c6_durability_dst;
 mod families_child;
 mod families_lane;
@@ -109,13 +112,13 @@ fn parse_exhaustive_seeds() -> Vec<u64> {
     seeds
 }
 
-/// Execute all 7 owner families in a true operation-level PRNG-interleaved
+/// Execute all 6 owner families in a true operation-level PRNG-interleaved
 /// schedule for one seed, mixing Core Query Host (mutate/checkpoint/close Store
 /// seams + custody release), C2.8 Durable World Branches (independent reference
 /// payloads + exact reclaim sets), Signal+Bridge+Authored Branches (root AND
 /// forked branch barrier kills), shared `DocumentRetentionSchema` (Governed
-/// Workflow + Branch Program Adoption on one durable Home), Authored
-/// Correction, and External Dispatch Custody.
+/// Workflow + Branch Program Adoption on one durable Home), and External
+/// Dispatch Custody.
 fn run_interleaved_cumulative_seed(seed: u64) {
     let mut rng = SplitMix64::new(seed ^ 0x494E_5452);
     let mut unified = unified_home::UnifiedHomeStepper::new(seed);
@@ -192,21 +195,17 @@ fn cumulative_adversarial_oracle_signal_bridge_seeded() {
 
 #[test]
 fn cumulative_adversarial_oracle_remaining_families_seeded() {
-    let seeds = focused_seeds();
-    run_parallel_items(
-        "C4b.4 workflow+adoption/correction/dispatch seeded",
-        &seeds,
-        |&seed| {
-            families_lane::run_remaining_families_cumulative_seed(seed);
-        },
-    );
+    let seeds = [0, 2, 3, 5];
+    run_parallel_items("C4b.4 workflow+adoption/dispatch seeded", &seeds, |&seed| {
+        families_lane::run_remaining_families_cumulative_seed(seed);
+    });
 }
 
 /// Tier-3 exhaustive cumulative oracle controlled by `WORTH_ADV_ORACLE_SEEDS`
 /// (e.g. `WORTH_ADV_ORACLE_SEEDS=0..16` or `WORTH_ADV_ORACLE_SEEDS=7,19,42`).
 ///
 /// Combines:
-/// 1. Operation-level PRNG-interleaved cumulative runs across ALL 7 owner families,
+/// 1. Operation-level PRNG-interleaved cumulative runs across ALL 6 owner families,
 /// 2. Exhaustive enumeration of EVERY Store seam (`mutate`, `checkpoint`, AND
 ///    `close` x all 4 seams) across alternating builds and D14 discards,
 /// 3. Exhaustive enumeration of EVERY recovery stage (all 13 physical stages

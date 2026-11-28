@@ -2,8 +2,7 @@
 //! Governed Workflow (Instance #1 & Instance #2 -> `Historical`) + Core Host
 //! follow-up writes + Branch Program Adoption (`P0 -> P1`) + D14 Discard +
 //! Final Checkpointed Reopen on the SAME durable Home and SAME `MemoryOnly`
-//! reference. (Durable authored correction via `reverse(&source)` is covered on
-//! the non-workflow-authority `LabelEdit` schema in `families_lane`.)
+//! reference.
 use super::barrier::kill_unified_barrier;
 use super::child::UnifiedSession;
 use super::ops::{

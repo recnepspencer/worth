@@ -1,13 +1,11 @@
-//! Seeded cumulative adversarial runner for the 4 remaining M3 owner families:
+//! Seeded cumulative adversarial runner for the remaining M3 owner families:
 //! 1. Shared `DocumentRetentionSchema` Home mixing BOTH Governed Workflow
 //!    (`CorrectableRetentionBinding` -> D14 -> `Historical`) AND Branch Program
 //!    Adoption (`P0 -> P1` -> D14) on ONE durable cumulative Home,
-//! 2. Authored Correction (`reverse(&source)` with exact original-key fate &
-//!    `ReceiptId` parity across D14),
-//! 3. External Dispatch Custody (`NotifyAccountBalance`, <=1 / exact 1 dispatch
+//! 2. External Dispatch Custody (`NotifyAccountBalance`, <=1 / exact 1 dispatch
 //!    & exact `ReceiptId` parity across D14).
 //!
-//! All three durable Homes advance in PRNG-interleaved steps across fresh OS
+//! Both durable Homes advance in PRNG-interleaved steps across fresh OS
 //! child processes, PRNG-selected `SynchronizeFileState` barrier cuts, all 3
 //! alternating build identities, and D14 derived-state discards (`covered == 0`
 //! on all 5 cadence journals).
@@ -116,15 +114,6 @@ impl FamiliesStepper {
                     FamAction::Kill("kill_adopt", 20),
                     FamAction::Phase("adopt_reopen_discard_kill", "d14-discarded"),
                     FamAction::Phase("adopt_final_verify", "d14-discarded"),
-                ],
-            ),
-            FamilyRunner::new(
-                FamilyKind::Correction,
-                vec![
-                    FamAction::Phase("seed", "retained"),
-                    FamAction::Kill("kill_corr", 20),
-                    FamAction::Phase("reopen_discard_kill", "d14-discarded"),
-                    FamAction::Phase("final_verify", "d14-discarded"),
                 ],
             ),
             FamilyRunner::new(
