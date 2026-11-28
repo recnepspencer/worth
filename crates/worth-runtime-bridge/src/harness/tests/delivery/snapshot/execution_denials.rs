@@ -231,3 +231,47 @@ fn serial_delivery_preserves_elapsed_deadline_as_its_own_cause() {
         BridgeDeliveryErrorKind::ExecutionDenied(BridgeExecutionDenial::DeadlineElapsed)
     );
 }
+
+#[test]
+fn historical_ancestor_selection_stops_at_the_serial_work_ceiling() {
+    use crate::facade::{BridgeTruthViewEvaluationRequest, TruthBranchIdentity};
+
+    let host = crate::snapshot::test_serial_request();
+    let execution = ExecutionRequest::serial(&host);
+    let truth = NamedTruth::new();
+    let (ancestor, _ancestor) = truth.commit_name(execution, "earlier");
+    let (head, _observation) = truth.commit_name(execution, "later");
+    let _head = truth.bind_main_head();
+    let runtime = build_runtime(
+        truth.source.clone(),
+        crate::harness::fixtures::RecordingSignalBridgeSink::default(),
+        vec![NamedTruth::mapping()],
+    );
+    let policy = ExecutionRequestPolicy::new(
+        ExecutionPosture::Serial,
+        DeterminismContract::CanonicalBitwise,
+        ExecutionBudget::new(NonZeroUsize::MIN, None, Some(1)),
+    );
+    let serial =
+        worth_execution::SerialRequest::from_policy(&policy, CancellationToken::new(), None);
+    let limited = ExecutionRequest::serial(&serial);
+    let branch = TruthBranchIdentity::from_relational_branch_id("main");
+    runtime
+        .evaluate(
+            BridgeTruthViewEvaluationRequest::for_historical_commit(branch.clone(), head),
+            limited,
+        )
+        .expect("selecting the exact head needs no ancestry walk");
+
+    let error = runtime
+        .evaluate(
+            BridgeTruthViewEvaluationRequest::for_historical_commit(branch, ancestor),
+            limited,
+        )
+        .err()
+        .expect("the same ceiling must stop the ancestry walk");
+    assert_eq!(
+        error.kind(),
+        BridgeDeliveryErrorKind::ExecutionDenied(BridgeExecutionDenial::WorkCeiling)
+    );
+}

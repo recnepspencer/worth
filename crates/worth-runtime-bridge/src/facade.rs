@@ -66,12 +66,10 @@ pub use worth_execution::{ExecutionRequest, ExecutionResourceLease};
 
 use crate::mapping::{FrozenAspectMappingRegistry, FrozenMappingRegistry};
 use crate::subscription::FrozenSubscriptionFamilyRegistry;
-use preview_session_liveness::BridgePreviewSessionLivenessOwner;
 
 mod exports_core;
 mod exports_relational;
 mod exports_subscription;
-mod preview_session_liveness;
 mod request;
 mod runtime;
 pub mod runtime_world;
@@ -96,9 +94,6 @@ pub use crate::identity_authority::*;
 pub use exports_core::*;
 pub use exports_relational::*;
 pub use exports_subscription::*;
-pub use preview_session_liveness::{
-    BridgePreviewSessionLivenessGuard, BridgePreviewSessionLivenessObserver,
-};
 pub use request::BridgeRouteRequest;
 pub use runtime::{
     BridgeAsyncWritebackOutcome, BridgeAsyncWritebackSubmission, BridgeSignalRecipe,
@@ -114,11 +109,8 @@ pub use runtime_world::{
     RuntimeWorldCorrespondenceInspectionCounters, RuntimeWorldCorrespondencePort,
 };
 pub use standard_path::{
-    BridgeDiagnostics, BridgeEvaluationTarget, BridgeRoute, BridgeSpeculativeComparison,
-    BridgeSpeculativeDiscardOutcome, BridgeSpeculativePromotionOutcome,
-    BridgeSpeculativeSessionHandle, BridgeSpeculativeSessionRequest,
-    BridgeStandardDiagnosticsExplanation, BridgeStandardRouteError,
-    BridgeStandardSessionExplanation, BridgeTruthViewEvaluation, BridgeTruthViewEvaluationRequest,
+    BridgeDiagnostics, BridgeEvaluationTarget, BridgeRoute, BridgeStandardDiagnosticsExplanation,
+    BridgeStandardRouteError, BridgeTruthViewEvaluation, BridgeTruthViewEvaluationRequest,
 };
 
 #[cfg(test)]

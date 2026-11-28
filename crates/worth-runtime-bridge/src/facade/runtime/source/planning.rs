@@ -82,7 +82,7 @@ impl RuntimeBridge {
         let packets = read_packets
             .into_iter()
             .map(|read_packet| {
-                self.plan_truth_view_packet(declaration.clone(), read_packet, execution)
+                self.plan_source_truth_view_packet(declaration.clone(), read_packet, execution)
             })
             .collect::<Result<Vec<_>, _>>()?;
         Ok(PlannedSourceReadPacketSet::new(

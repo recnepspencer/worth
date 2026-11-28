@@ -19,7 +19,6 @@ pub use source::{
     BridgeSignalRecipeAsyncAdmission, BridgeSignalRecipeBinding, BridgeSignalRecipeObservation,
     BridgeSignalWake,
 };
-mod speculation;
 mod subscription;
 mod writeback;
 

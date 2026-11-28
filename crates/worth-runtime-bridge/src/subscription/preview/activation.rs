@@ -2,9 +2,7 @@ use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
 
-use crate::speculation::{
-    BridgePreviewLifecycleStateKind, BridgePreviewSessionIdentity, PreviewExecutionRecordIdentity,
-};
+use crate::preview::{BridgePreviewSessionIdentity, BridgePreviewSessionLivenessObserver};
 
 use super::super::{
     BridgeAdmittedSubscriptionIdentity, BridgePreviewActiveSubscriptionIdentity,
@@ -26,13 +24,9 @@ pub struct BridgePreviewActiveSubscription {
     preview_parent_basis_identity: BridgeSubscriptionPreviewParentBasisIdentity,
     preview_lifecycle_identity: BridgeSubscriptionPreviewLifecycleIdentity,
     preview_residue_scope_identity: BridgeSubscriptionPreviewResidueScopeIdentity,
-    preview_session_identity: BridgePreviewSessionIdentity,
-    preview_execution_record_identity: PreviewExecutionRecordIdentity,
+    pub(crate) session: BridgePreviewSessionLivenessObserver,
     preview_basis_digest: Arc<str>,
-    branch_binding_digest: Arc<str>,
     parent_truth_view_basis_digest: Arc<str>,
-    preview_lifecycle_state_kind: BridgePreviewLifecycleStateKind,
-    active_preview_session_digest: Arc<str>,
     admitted_subscription_identity: BridgeAdmittedSubscriptionIdentity,
     activation_lifecycle_identity: BridgeSubscriptionLifecycleIdentity,
     cost_profile_identity: BridgeSubscriptionDeliveryCostProfileIdentity,
@@ -52,7 +46,7 @@ impl BridgePreviewActiveSubscription {
     ) -> Self {
         let buffer_plan = BridgeSubscriptionDeliveryBufferPlan::from_cost_profile(&cost_profile);
         let canonical_basis = Arc::<str>::from(format!(
-            "bridge-preview-active-subscription|ready={}|preview-basis={}|preview-scope={}|preview-parent-basis={}|preview-lifecycle={}|preview-residue-scope={}|preview-session={}|preview-execution={}|preview-basis-digest={}|branch-binding={}|parent-truth-view={}|active-preview={}|admitted={}|lifecycle={}|cost-profile={}|consumer={}|buffer={}",
+            "bridge-preview-active-subscription|ready={}|preview-basis={}|preview-scope={}|preview-parent-basis={}|preview-lifecycle={}|preview-residue-scope={}|preview-session={}|preview-basis-digest={}|parent-truth-view={}|admitted={}|lifecycle={}|cost-profile={}|consumer={}|buffer={}",
             activation_ready.digest(),
             preview_basis.preview_basis_identity().as_str(),
             preview_basis.preview_scope_identity().as_str(),
@@ -60,11 +54,8 @@ impl BridgePreviewActiveSubscription {
             preview_basis.preview_lifecycle_identity().as_str(),
             preview_basis.preview_residue_scope_identity().as_str(),
             preview_basis.preview_session_identity().as_str(),
-            preview_basis.preview_execution_record_identity().as_str(),
             preview_basis.digest(),
-            preview_basis.branch_binding_digest(),
             preview_basis.parent_truth_view_basis_digest(),
-            preview_basis.active_preview_session_digest(),
             activation_ready.admitted().admitted_subscription_identity().as_str(),
             activation_ready.lifecycle_record().lifecycle_identity().as_str(),
             cost_profile.cost_profile_identity().as_str(),
@@ -82,13 +73,9 @@ impl BridgePreviewActiveSubscription {
             preview_parent_basis_identity: preview_basis.preview_parent_basis_identity,
             preview_lifecycle_identity: preview_basis.preview_lifecycle_identity,
             preview_residue_scope_identity: preview_basis.preview_residue_scope_identity,
-            preview_session_identity: preview_basis.preview_session_identity,
-            preview_execution_record_identity: preview_basis.preview_execution_record_identity,
+            session: preview_basis.session,
             preview_basis_digest: preview_basis.digest,
-            branch_binding_digest: preview_basis.branch_binding_digest,
             parent_truth_view_basis_digest: preview_basis.parent_truth_view_basis_digest,
-            preview_lifecycle_state_kind: preview_basis.preview_lifecycle_state_kind,
-            active_preview_session_digest: preview_basis.active_preview_session_digest,
             admitted_subscription_identity: activation_ready
                 .admitted()
                 .admitted_subscription_identity()
@@ -127,25 +114,13 @@ impl BridgePreviewActiveSubscription {
         &self.preview_residue_scope_identity
     }
     pub fn preview_session_identity(&self) -> &BridgePreviewSessionIdentity {
-        &self.preview_session_identity
-    }
-    pub fn preview_execution_record_identity(&self) -> &PreviewExecutionRecordIdentity {
-        &self.preview_execution_record_identity
+        self.session.session_identity()
     }
     pub fn preview_basis_digest(&self) -> &str {
         self.preview_basis_digest.as_ref()
     }
-    pub fn branch_binding_digest(&self) -> &str {
-        self.branch_binding_digest.as_ref()
-    }
     pub fn parent_truth_view_basis_digest(&self) -> &str {
         self.parent_truth_view_basis_digest.as_ref()
-    }
-    pub fn preview_lifecycle_state_kind(&self) -> BridgePreviewLifecycleStateKind {
-        self.preview_lifecycle_state_kind
-    }
-    pub fn active_preview_session_digest(&self) -> &str {
-        self.active_preview_session_digest.as_ref()
     }
     pub fn admitted_subscription_identity(&self) -> &BridgeAdmittedSubscriptionIdentity {
         &self.admitted_subscription_identity

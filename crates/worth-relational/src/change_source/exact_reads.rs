@@ -23,9 +23,18 @@ impl RelationalRuntime {
         entity_id: EntityId,
     ) -> Result<Option<EntityReadRecord>, RelationalObservationReadDenial> {
         self.admit_observation_read(observation)?;
+        self.entity_record_at_exact_root(execution, observation.selected_root(), entity_id)
+    }
+
+    pub(super) fn entity_record_at_exact_root(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: &crate::branch::root::RelationalBranchRoot,
+        entity_id: EntityId,
+    ) -> Result<Option<EntityReadRecord>, RelationalObservationReadDenial> {
         crate::execution::check_request(execution)
             .map_err(RelationalObservationReadDenial::Execution)?;
-        let root = observation.selected_root().read();
+        let root = root.read();
         root.demand_regions_full(execution, &self.services.symbols, [entity_id.partition_id])
             .map_err(|failure| RelationalObservationReadDenial::Execution(failure.into()))?;
         Ok(self
@@ -54,9 +63,18 @@ impl RelationalRuntime {
         relation_id: RelationId,
     ) -> Result<Option<RelationReadRecord>, RelationalObservationReadDenial> {
         self.admit_observation_read(observation)?;
+        self.relation_record_at_exact_root(execution, observation.selected_root(), relation_id)
+    }
+
+    pub(super) fn relation_record_at_exact_root(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: &crate::branch::root::RelationalBranchRoot,
+        relation_id: RelationId,
+    ) -> Result<Option<RelationReadRecord>, RelationalObservationReadDenial> {
         crate::execution::check_request(execution)
             .map_err(RelationalObservationReadDenial::Execution)?;
-        let root = observation.selected_root().read();
+        let root = root.read();
         root.demand_regions_full(
             execution,
             &self.services.symbols,

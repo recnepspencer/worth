@@ -7,7 +7,7 @@ use super::{
     BridgeSubscriptionPreviewLifecycleResidueEnvelope,
     BridgeSubscriptionPreviewLifecycleResidueKind,
 };
-use crate::speculation::BridgePreviewPromotionRecord;
+use crate::preview::FinishedBridgePreviewSession;
 use crate::subscription::{
     BridgeAdmittedSubscriptionIdentity, BridgePreviewActiveSubscription,
     BridgePreviewActiveSubscriptionIdentity, BridgeSubscriptionCounters,
@@ -20,7 +20,6 @@ use crate::subscription::{
 pub enum BridgeSubscriptionPreviewLifecyclePromotionRejectionKind {
     PreviewWorkTraceMismatch,
     PromotionSessionMismatch,
-    PromotionExecutionRecordMismatch,
     ResidueEnvelopeMismatch,
     MissingResidueKind,
     DuplicateResidueKind,
@@ -33,7 +32,6 @@ impl BridgeSubscriptionPreviewLifecyclePromotionRejectionKind {
         match self {
             Self::PreviewWorkTraceMismatch => "preview_work_trace_mismatch",
             Self::PromotionSessionMismatch => "promotion_session_mismatch",
-            Self::PromotionExecutionRecordMismatch => "promotion_execution_record_mismatch",
             Self::ResidueEnvelopeMismatch => "residue_envelope_mismatch",
             Self::MissingResidueKind => "missing_residue_kind",
             Self::DuplicateResidueKind => "duplicate_residue_kind",
@@ -106,7 +104,6 @@ pub struct BridgeSubscriptionPreviewLifecyclePromotion {
     preview_residue_scope_identity: BridgeSubscriptionPreviewResidueScopeIdentity,
     preview_work_trace_identity: BridgeSubscriptionPreviewWorkTraceIdentity,
     residue_envelope_digest: Arc<str>,
-    promotion_record_digest: Arc<str>,
     counters: BridgeSubscriptionCounters,
     digest: Arc<str>,
 }
@@ -116,7 +113,7 @@ impl BridgeSubscriptionPreviewLifecyclePromotion {
         preview_active: &BridgePreviewActiveSubscription,
         preview_work_trace: &BridgeSubscriptionPreviewWorkTrace,
         residue_envelope: &BridgeSubscriptionPreviewLifecycleResidueEnvelope,
-        promotion_record: &BridgePreviewPromotionRecord,
+        finished: &FinishedBridgePreviewSession,
     ) -> Result<Self, BridgeSubscriptionPreviewLifecyclePromotionRejection> {
         if preview_work_trace.preview_active_subscription_identity()
             != preview_active.preview_active_subscription_identity()
@@ -138,28 +135,10 @@ impl BridgeSubscriptionPreviewLifecyclePromotion {
                 ),
             ));
         }
-        if promotion_record.preview_session_identity()
-            != preview_active.preview_session_identity().as_str()
-        {
+        if !finished.belongs_to(&preview_active.session) {
             return Err(BridgeSubscriptionPreviewLifecyclePromotionRejection::new(
                 BridgeSubscriptionPreviewLifecyclePromotionRejectionKind::PromotionSessionMismatch,
-                format!(
-                    "preview-session={}|promotion-session={}",
-                    preview_active.preview_session_identity().as_str(),
-                    promotion_record.preview_session_identity(),
-                ),
-            ));
-        }
-        if promotion_record.preview_execution_record_identity()
-            != preview_active.preview_execution_record_identity()
-        {
-            return Err(BridgeSubscriptionPreviewLifecyclePromotionRejection::new(
-                BridgeSubscriptionPreviewLifecyclePromotionRejectionKind::PromotionExecutionRecordMismatch,
-                format!(
-                    "preview-execution={}|promotion-execution={}",
-                    preview_active.preview_execution_record_identity().as_str(),
-                    promotion_record.preview_execution_record_identity().as_str(),
-                ),
+                finished.session_identity().as_str(),
             ));
         }
         if residue_envelope.preview_active_subscription_identity()
@@ -235,14 +214,13 @@ impl BridgeSubscriptionPreviewLifecyclePromotion {
         }
 
         let canonical_basis = format!(
-            "bridge-subscription-preview-lifecycle-promotion|preview-active={}|preview-basis={}|preview-scope={}|residue-scope={}|preview-work-trace={}|residue-envelope={}|promotion-record={}",
+            "bridge-subscription-preview-lifecycle-promotion|preview-active={}|preview-basis={}|preview-scope={}|residue-scope={}|preview-work-trace={}|residue-envelope={}",
             preview_active.preview_active_subscription_identity().as_str(),
             preview_active.preview_basis_identity().as_str(),
             preview_active.preview_scope_identity().as_str(),
             preview_active.preview_residue_scope_identity().as_str(),
             preview_work_trace.preview_work_trace_identity().as_str(),
             residue_envelope.digest(),
-            promotion_record.digest(),
         );
         let digest = Sha256::digest(canonical_basis.as_bytes());
         Ok(Self {
@@ -259,7 +237,6 @@ impl BridgeSubscriptionPreviewLifecyclePromotion {
             preview_residue_scope_identity: preview_active.preview_residue_scope_identity().clone(),
             preview_work_trace_identity: preview_work_trace.preview_work_trace_identity().clone(),
             residue_envelope_digest: Arc::from(residue_envelope.digest()),
-            promotion_record_digest: Arc::from(promotion_record.digest()),
             counters: BridgeSubscriptionCounters::from_subscription_preview_promotion(),
             digest: Arc::from(format!(
                 "bridge-subscription-preview-lifecycle-promotion:sha256:{digest:x}"
@@ -297,10 +274,6 @@ impl BridgeSubscriptionPreviewLifecyclePromotion {
 
     pub fn residue_envelope_digest(&self) -> &str {
         self.residue_envelope_digest.as_ref()
-    }
-
-    pub fn promotion_record_digest(&self) -> &str {
-        self.promotion_record_digest.as_ref()
     }
 
     pub fn counters(&self) -> &BridgeSubscriptionCounters {

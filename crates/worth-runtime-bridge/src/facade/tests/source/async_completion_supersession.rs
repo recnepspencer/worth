@@ -189,13 +189,22 @@ fn preview_discard_classifies_preview_discarded() {
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let (denied, current_truth_basis, current_subscription_instance) =
-        denied_preview_subscription_backed_completion_after_discard(
-            &runtime,
-            NodeId::new(145, 0),
-            "preview-discard",
-            resource_request,
-        );
+    let (denied, _, _) = denied_preview_subscription_backed_completion_after_discard(
+        &runtime,
+        NodeId::new(145, 0),
+        "preview-discard",
+        resource_request,
+    );
+    let (_replacement, replacement_active) = preview_active_subscription_with_basis(
+        &runtime,
+        "replacement",
+        crate::truth_identity_fixtures::truth_branch_fixture("replacement"),
+        crate::truth_identity_fixtures::truth_snapshot_fixture("replacement"),
+        resource_request,
+    );
+    let current_truth_basis = BridgeAsyncRequestTruthViewBasis::preview(&replacement_active);
+    let current_subscription_instance =
+        BridgeAsyncRequestSubscriptionInstance::preview(&replacement_active);
 
     let classified = runtime
         .classify_async_completion_supersession(
@@ -203,8 +212,7 @@ fn preview_discard_classifies_preview_discarded() {
                 &denied,
                 current_truth_basis,
                 current_subscription_instance,
-            )
-            .mark_preview_discarded(),
+            ),
         )
         .expect("preview discard should classify");
 
@@ -226,14 +234,14 @@ fn preview_basis_evolution_classifies_preview_basis_drift() {
 
     let runtime = runtime(BridgeRuntimePolicy::development());
     let truth_branch = crate::truth_identity_fixtures::truth_branch_fixture("truth-preview");
-    let original_preview_active = preview_active_subscription_with_basis(
+    let (_original_session, original_preview_active) = preview_active_subscription_with_basis(
         &runtime,
         "preview-a",
         truth_branch.clone(),
         crate::truth_identity_fixtures::truth_snapshot_fixture("preview-snapshot-a"),
         resource_request,
     );
-    let current_preview_active = preview_active_subscription_with_basis(
+    let (_current_session, current_preview_active) = preview_active_subscription_with_basis(
         &runtime,
         "preview-b",
         truth_branch,

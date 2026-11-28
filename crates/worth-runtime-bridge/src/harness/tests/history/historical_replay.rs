@@ -17,7 +17,6 @@ fn bridge_harness_replays_historical_record() {
     let truth = NamedTruth::new();
     let (commit, observation) = truth.commit_name(resource_request, "alice");
     let head = truth.bind_main_head();
-    let snapshot = head.snapshot_identity().clone();
     let fixture = ScenarioPlan::new(
         "bridge-historical-replay",
         BridgeHarnessFixture::new(vec![NamedTruth::mapping()]).with_relational_truth(
@@ -66,7 +65,11 @@ fn bridge_harness_replays_historical_record() {
 
     let record = last_historical_record(&session);
     let replay_summary = replay_historical_record(&session, &record, resource_request);
-    assert_historical_replay_summary(&replay_summary, &record, &snapshot);
+    assert_historical_replay_summary(
+        &replay_summary,
+        &record,
+        record.decision_log().snapshot_identity(),
+    );
 }
 
 #[test]
@@ -134,5 +137,9 @@ fn bridge_harness_replays_historical_record_after_newer_publication_arrives() {
 
     let record = last_historical_record(&session);
     let replay_summary = replay_historical_record(&session, &record, resource_request);
-    assert_historical_replay_summary(&replay_summary, &record, &snapshot);
+    assert_historical_replay_summary(
+        &replay_summary,
+        &record,
+        record.decision_log().snapshot_identity(),
+    );
 }

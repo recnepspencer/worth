@@ -11,8 +11,6 @@ mod authority_boundary;
 mod external_authority;
 mod lookup_cost;
 mod mapping;
-mod mapping_scale;
-mod mapping_support;
 mod query_observation_reporting;
 mod receipt;
 mod request_anchor_validation;

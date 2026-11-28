@@ -382,7 +382,7 @@ pub(crate) fn denied_preview_subscription_backed_completion_after_discard(
     BridgeAsyncRequestTruthViewBasis,
     BridgeAsyncRequestSubscriptionInstance,
 ) {
-    let preview_active = preview_active_subscription(runtime, suffix, resource_request);
+    let (preview, preview_active) = preview_active_subscription(runtime, suffix, resource_request);
     let preview_truth_basis = BridgeAsyncRequestTruthViewBasis::preview(&preview_active);
     let preview_subscription_instance =
         BridgeAsyncRequestSubscriptionInstance::preview(&preview_active);
@@ -394,5 +394,6 @@ pub(crate) fn denied_preview_subscription_backed_completion_after_discard(
         preview_truth_basis.clone(),
         preview_subscription_instance.clone(),
     );
+    preview.discard();
     (denied, preview_truth_basis, preview_subscription_instance)
 }

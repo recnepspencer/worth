@@ -41,6 +41,7 @@ pub use read_result::{
     ValidatedSnapshotReadPacketResult, ValidatedSnapshotReadRecord,
 };
 pub use read_target::{SnapshotReadTarget, SnapshotReadTargetIdentity};
+pub(crate) use selection::PinnedCommitSnapshot;
 pub use selection::{BridgeTruthViewAuthorityBasis, PlannedTruthViewPacket};
 pub use token::{BridgeSnapshotToken, TruthSnapshotIdentity};
 

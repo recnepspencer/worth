@@ -62,18 +62,3 @@ pub(crate) fn mixed_policy_fixture(
     .declare_observation("policy")
     .compile()
 }
-
-pub(crate) fn mixed_speculation_fixture(
-    name: &str,
-) -> worth_harness::facade::ScenarioFixture<BridgeHarnessFixture> {
-    let (truth, _commit) = ScenarioRelationalTruth::named("alice", false);
-    ScenarioPlan::new(
-        name,
-        BridgeHarnessFixture::new(vec![NamedTruth::mapping()])
-            .with_policy(crate::facade::BridgeRuntimePolicy::development())
-            .with_relational_truth(truth),
-    )
-    .declare_input("speculation")
-    .declare_observation("speculation")
-    .compile()
-}

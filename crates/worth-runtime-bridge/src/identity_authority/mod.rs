@@ -23,11 +23,10 @@ pub use categories::{
 pub use kinds::{
     BridgeBranchIdentityKind, BridgeCanonicalDigestIdentityBasis, BridgeCausalEnvelopeIdentityKind,
     BridgeCausalReferenceIdentityKind, BridgeCommitIdentityKind,
-    BridgeEvidenceReferenceIdentityKind, BridgePatchIdentityKind,
-    BridgePreviewExecutionRecordIdentityKind, BridgePreviewSessionDeclarationIdentityKind,
-    BridgePreviewSessionIdentityKind, BridgeReceiptIdentityKind, BridgeRecordIdentityKind,
-    BridgeRetainedMappingDigestIdentityBasis, BridgeRetainedMappingIdentityKind,
-    BridgeSnapshotIdentityKind, BridgeWritebackDeclarationIdentityKind,
+    BridgeEvidenceReferenceIdentityKind, BridgePatchIdentityKind, BridgePreviewSessionIdentityKind,
+    BridgeReceiptIdentityKind, BridgeRecordIdentityKind, BridgeRetainedMappingDigestIdentityBasis,
+    BridgeRetainedMappingIdentityKind, BridgeSnapshotIdentityKind,
+    BridgeWritebackDeclarationIdentityKind,
 };
 pub use phase_one_compile_fail_targets::{
     bridge_truth_identity_phase_one_compile_fail_targets,

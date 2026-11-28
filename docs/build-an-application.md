@@ -6565,20 +6565,14 @@ the installed runtime while a preview retains it returns `RuntimeKeepaliveRetain
 Readmission never replaces its selected source or automatically discards it. A new request can retry the same owner when the
 cause permits; stale source does not become fresh by retrying.
 
-`readmitted.promote()` finalizes the original admitted native session and execution
-proof. Failure returns `(same_readmitted_owner, BridgeSpeculationError)`.
-Promotion is the preview evidence transition; it does not reselect current Query
-source, save source, settle required outputs, or certify current publication.
-An admitted source action may legitimately commit between readmission and preview
-promotion; that action's authentic source and output contracts still govern its
-publication. Successful promotion consumes the original native preview once.
+`readmitted.promote()` finishes the admitted preview and returns a
+`FinishedBridgePreviewSession`. Source writes, required outputs and current
+publication still follow their individual admission contracts.
 
-Both preview phases expose `discard() -> Result<(), (Self, BridgeSpeculationError)>`.
-Discard uses the original native owner and can release a stale preview without
-selecting a new source. On refusal, retain the returned owner and its original
-application context; retry lawful explicit discard on that owner. Dropping either
-phase is abandonment, and does not post a successful discard record. Preview
-liveness observation is not proof of cleanup or promotion.
+Both preview phases expose
+`discard() -> Result<(), (Self, WorthQueryApplicationPreviewDiscardDenial)>`.
+Discard consumes the original owner and can close a stale preview using its
+original source. Dropping either phase also ends session liveness.
 
 ### Optional request-memory policy
 

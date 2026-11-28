@@ -11,7 +11,6 @@ pub enum BridgeAsyncCompletionSupersessionRejectionKind {
     UnexpectedCurrentSubscriptionInstance,
     MissingDisplacingRequestIdentity,
     DisplacingRequestIdentityMismatch,
-    PreviewDiscardRequiresPreviewBasis,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

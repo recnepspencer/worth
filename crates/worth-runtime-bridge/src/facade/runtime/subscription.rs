@@ -141,20 +141,12 @@ impl RuntimeBridge {
         )
     }
 
-    /// Admits a preview-scoped subscription basis from an active preview
-    /// session and its matching retained preview execution record. Ordinary
-    /// branch-head or snapshot basis artifacts cannot satisfy this API.
+    /// Binds a preview-scoped subscription to the live preview session.
     pub fn admit_subscription_preview_basis(
         &self,
-        active_preview_session: &BridgePreviewSession<PreviewActive>,
-        preview_execution_record: &BridgePreviewExecutionRecord,
-    ) -> Result<BridgeSubscriptionPreviewBasisBinding, BridgeSubscriptionPreviewBasisRejection>
-    {
-        let _ = self;
-        BridgeSubscriptionPreviewBasisBinding::admit(
-            active_preview_session,
-            preview_execution_record,
-        )
+        preview: &BridgePreviewSessionHandle,
+    ) -> BridgeSubscriptionPreviewBasisBinding {
+        BridgeSubscriptionPreviewBasisBinding::admit(preview)
     }
 
     /// Activates a preview-scoped subscription delivery proof. The returned

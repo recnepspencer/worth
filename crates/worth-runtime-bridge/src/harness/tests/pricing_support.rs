@@ -2,16 +2,15 @@ use crate::diagnostics::BridgeHistoricalEvaluationRecordIdentity;
 use crate::error::BridgeDeliveryErrorKind;
 use crate::facade::{
     BridgeAspectRegistrationId, BridgeFailureClass, BridgePolicyFieldKind,
-    BridgePolicyRejectionKind, BridgePreviewLifecycleStateKind, BridgeReplayErrorKind,
-    BridgeRouteErrorKind, BridgeSignalBranchIdentity, BridgeWritebackFamilyKind,
-    BridgeWritebackOutcomeClass, BridgeWritebackStrategyClass, FineGrainedMatchStatus,
-    SubscriptionSliceKind, TruthBranchIdentity, TruthCommitIdentity, TruthDeltaSurfaceKind,
-    TruthSnapshotIdentity,
+    BridgePolicyRejectionKind, BridgeReplayErrorKind, BridgeRouteErrorKind,
+    BridgeSignalBranchIdentity, BridgeWritebackFamilyKind, BridgeWritebackOutcomeClass,
+    BridgeWritebackStrategyClass, FineGrainedMatchStatus, SubscriptionSliceKind,
+    TruthBranchIdentity, TruthCommitIdentity, TruthDeltaSurfaceKind, TruthSnapshotIdentity,
 };
 use crate::identity::BridgeIdentity;
+use crate::preview::BridgePreviewSessionIdentity;
 use crate::routing::{BridgeInvalidationIdentity, BridgeRouteIdentity};
 use crate::snapshot::BridgeTruthViewSelectorIdentity;
-use crate::speculation::BridgePreviewSessionIdentity;
 use sha2::{Digest, Sha256};
 use std::fmt;
 
@@ -86,12 +85,7 @@ pub(super) struct PricingDiscardBundle {
     pub(super) speculative_rubber_cost_cents: i64,
     pub(super) post_discard_main_snapshot: TruthSnapshotIdentity,
     pub(super) post_discard_main_steel_cost_cents: i64,
-    pub(super) lifecycle_state: BridgePreviewLifecycleStateKind,
-    pub(super) discard_record_count: usize,
-    pub(super) promotion_record_count: usize,
-    pub(super) replay_outcome: BridgePreviewLifecycleStateKind,
-    pub(super) has_discard_record: bool,
-    pub(super) has_promotion_record: bool,
+    pub(super) session_closed: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -100,12 +94,8 @@ pub(super) struct PricingPromotionBundle {
     pub(super) speculative_snapshot: TruthSnapshotIdentity,
     pub(super) main_rubber_cost_cents: i64,
     pub(super) speculative_rubber_cost_cents: i64,
-    pub(super) lifecycle_state: BridgePreviewLifecycleStateKind,
     pub(super) promotion_session_identity: BridgePreviewSessionIdentity,
-    pub(super) authoritative_commit_boundary_digest: String,
-    pub(super) authoritative_artifact_digest: String,
-    pub(super) replay_outcome: BridgePreviewLifecycleStateKind,
-    pub(super) has_promotion_explanation: bool,
+    pub(super) session_closed: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

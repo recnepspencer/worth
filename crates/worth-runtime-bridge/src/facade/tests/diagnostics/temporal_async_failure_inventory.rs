@@ -151,7 +151,7 @@ fn preview_subscription_instance_mismatch_localizes_as_async_identity_failure() 
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let preview_active =
+    let (_preview_active_session, preview_active) =
         preview_active_subscription(&runtime, "phase15-preview-mismatch", resource_request);
     let authoritative_ready = activation_ready_for_snapshot(
         &runtime,

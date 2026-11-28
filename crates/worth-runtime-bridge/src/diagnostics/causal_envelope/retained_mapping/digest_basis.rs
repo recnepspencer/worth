@@ -26,9 +26,6 @@ pub(crate) enum RetainedCausalMappingDigestArtifact {
     HistoricalEvaluationCounters,
     HistoricalEvaluationFailureRecord,
     HistoricalEvaluationRecord,
-    PreviewDiscardRecord,
-    PreviewExecutionRecord,
-    PreviewPromotionRecord,
     RouteRecord,
     SourceFailureRecord,
     SourceMaterializationRecord,
@@ -49,9 +46,6 @@ impl RetainedCausalMappingDigestArtifact {
                 "bridge-causal-retained-historical-evaluation-failure-record"
             }
             Self::HistoricalEvaluationRecord => "bridge-causal-retained-historical-record",
-            Self::PreviewDiscardRecord => "bridge-causal-retained-preview-discard-record",
-            Self::PreviewExecutionRecord => "bridge-causal-retained-preview-execution-record",
-            Self::PreviewPromotionRecord => "bridge-causal-retained-preview-promotion-record",
             Self::RouteRecord => "bridge-causal-retained-route-record",
             Self::SourceFailureRecord => "bridge-causal-retained-source-failure-record",
             Self::SourceMaterializationRecord => {

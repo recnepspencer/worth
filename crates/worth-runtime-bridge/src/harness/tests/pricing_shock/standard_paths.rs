@@ -1,7 +1,7 @@
 use super::support::*;
 
 #[test]
-fn pricing_shock_standard_path_routes_evaluates_and_keeps_speculation_local() {
+fn pricing_shock_standard_path_routes_and_evaluates_main() {
     let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
@@ -59,57 +59,6 @@ fn pricing_shock_standard_path_routes_evaluates_and_keeps_speculation_local() {
         ])
     );
     assert_eq!(sink.deliveries().len(), 1);
-
-    let discarded = runtime
-        .speculate(BridgeSpeculativeSessionRequest::new(
-            BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-discard"),
-            truth.preview_declaration(),
-            4,
-            2,
-            2,
-        ))
-        .expect("pricing shock preview should activate")
-        .discard()
-        .expect("pricing shock discard should succeed");
-
-    let promoted = runtime
-        .speculate(BridgeSpeculativeSessionRequest::new(
-            BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-promote"),
-            truth.preview_declaration(),
-            4,
-            2,
-            2,
-        ))
-        .expect("pricing shock promotion preview should activate")
-        .promote()
-        .expect("pricing shock promotion should succeed");
-
-    assert_eq!(
-        runtime.diagnostics().preview_discard_records().len(),
-        1,
-        "discard should stay isolated and queryable"
-    );
-    assert_eq!(
-        runtime.diagnostics().preview_promotion_records().len(),
-        1,
-        "promotion should stay isolated and queryable"
-    );
-    assert!(matches!(
-        runtime
-            .diagnostics()
-            .explain_session(&BridgePreviewSessionIdentity::admit_bridge_owned(
-                "pricing:preview-promote"
-            )),
-        Some(crate::facade::BridgeStandardSessionExplanation::PreviewPromotion(_))
-    ));
-    assert_eq!(
-        discarded.session().session_identity().as_str(),
-        "pricing:preview-discard"
-    );
-    assert_eq!(
-        promoted.session().session_identity().as_str(),
-        "pricing:preview-promote"
-    );
 }
 
 #[test]
@@ -127,34 +76,17 @@ fn pricing_shock_split_screen_keeps_main_and_speculative_truth_isolated() {
     );
     let sink = RecordingSignalBridgeSink::default();
     let runtime = truth.runtime(sink);
-    let comparison = runtime
-        .speculate(BridgeSpeculativeSessionRequest::new(
-            BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-compare"),
-            truth.preview_declaration(),
-            4,
-            2,
-            2,
-        ))
-        .expect("pricing shock comparison preview should activate")
-        .compare_to_main();
-
-    let rubber_read = truth.rubber_read_packet();
-    let main_eval = runtime
-        .evaluate(
-            comparison
-                .main_evaluation_request(TruthBranchIdentity::from_relational_branch_id("main"))
-                .with_read_packet(rubber_read.clone()),
+    let session = truth.begin_preview(
+        &runtime,
+        BridgePreviewSessionIdentity::from_stable_name("pricing:preview-compare"),
+    );
+    let (main_eval, speculative_eval) = session
+        .compare_to_main(
+            TruthBranchIdentity::from_relational_branch_id("main"),
+            truth.rubber_read_packet(),
             execution,
         )
-        .expect("main branch should evaluate against its retained snapshot");
-    let speculative_eval = runtime
-        .evaluate(
-            comparison
-                .speculative_evaluation_request()
-                .with_read_packet(rubber_read),
-            execution,
-        )
-        .expect("speculative branch should evaluate against its isolated snapshot");
+        .expect("both bound branches should evaluate");
     let live_main_route = runtime
         .route(truth.steel_commit.clone(), execution)
         .expect("main branch routing should remain live while speculation is open");
@@ -163,13 +95,10 @@ fn pricing_shock_split_screen_keeps_main_and_speculative_truth_isolated() {
     let speculative_rubber_cost = read_cost(&speculative_eval, execution);
 
     assert_eq!(
-        comparison.truth_branch_identity().relational_branch_id(),
+        session.branches().relational().relational_branch_id(),
         Some("pricing-shock")
     );
-    assert_eq!(
-        comparison.signal_branch_identity().as_str(),
-        "signal:pricing-shock"
-    );
+    assert_eq!(session.branches().signal().as_str(), "signal:pricing-shock");
     assert_eq!(
         main_eval.snapshot_identity().as_str(),
         truth.main_snapshot().as_str()
@@ -177,6 +106,23 @@ fn pricing_shock_split_screen_keeps_main_and_speculative_truth_isolated() {
     assert_eq!(
         speculative_eval.snapshot_identity().as_str(),
         truth.shock_snapshot().as_str()
+    );
+    let mismatched = runtime.begin_preview(
+        BridgePreviewSessionIdentity::from_stable_name("pricing:preview-mismatch"),
+        session.branches().clone(),
+        truth.main_snapshot().clone(),
+    );
+    let denial = mismatched
+        .compare_to_main(
+            TruthBranchIdentity::from_relational_branch_id("main"),
+            truth.rubber_read_packet(),
+            execution,
+        )
+        .err()
+        .expect("a main snapshot cannot stand in for the preview branch");
+    assert_eq!(
+        denial.kind(),
+        BridgeDeliveryErrorKind::HistoricalBranchMismatch
     );
     assert_eq!(main_rubber_cost, scenario.main_rubber_cost.to_string());
     assert_eq!(
@@ -237,5 +183,119 @@ fn pricing_shock_generated_commit_attribution_exposes_stream_and_product_criteri
             || shock.material_attribution.trend_delta_microunits != 0
             || shock.material_attribution.idiosyncratic_noise_microunits != 0
             || shock.material_attribution.jump_delta_microunits != 0
+    );
+}
+
+#[test]
+fn historical_commit_reads_earlier_price_after_main_advances_twice() {
+    let serial = crate::snapshot::test_serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&serial);
+    let mut truth = RelationalPricing::new(execution, 100, 40, 56);
+    let main = TruthBranchIdentity::from_relational_branch_id("main");
+    let historical = BridgeTruthViewEvaluationRequest::for_historical_commit(
+        main.clone(),
+        truth.rubber_commit.clone(),
+    )
+    .with_read_packet(truth.rubber_read_packet());
+    let source = SourceDeclaration::new(
+        SourceDeclarationIdentity::from_stable_name("historical-rubber"),
+        historical.selector().clone(),
+        BridgeSourceCapabilitySet::new(vec![
+            BridgeSourceCapability::HistoricalRead,
+            BridgeSourceCapability::SnapshotRead,
+        ]),
+    );
+    let runtime = truth.runtime_with_historical_source(source.clone());
+    truth.publish_main_cost(execution, PricingMaterial::Rubber, 52);
+    let planned = runtime
+        .plan_truth_view_packet(
+            historical.declaration(),
+            historical.read_packet(),
+            execution,
+        )
+        .unwrap();
+    truth.publish_main_cost(execution, PricingMaterial::Rubber, 63);
+
+    let observation = runtime
+        .materialize_truth_view_observation(planned, execution)
+        .expect("the plan retains the earlier committed root");
+    let record = runtime.canonicalize_historical_evaluation_record(&observation);
+    assert_eq!(
+        record.decision_log().materialization_path(),
+        crate::facade::BridgeHistoricalMaterializationPath::PinnedCommitObservation,
+    );
+    let earlier = crate::facade::BridgeTruthViewEvaluation::new(observation, record.clone());
+    let latest = runtime
+        .evaluate(
+            BridgeTruthViewEvaluationRequest::for_branch_head(main)
+                .with_read_packet(truth.rubber_read_packet()),
+            execution,
+        )
+        .unwrap();
+    assert_eq!(read_cost(&earlier, execution), "40");
+    assert_eq!(read_cost(&latest, execution), "63");
+    let contract = runtime
+        .admit_source(source)
+        .expect("Native supports historical reads");
+    let source_read = runtime
+        .materialize_source_packet(&contract, truth.rubber_read_packet(), execution)
+        .expect("source materialization must also open the earlier root");
+    let canonical_source = runtime.canonicalize_historical_evaluation_record(&source_read);
+    let source_eval = crate::facade::BridgeTruthViewEvaluation::new(source_read, canonical_source);
+    assert_eq!(read_cost(&source_eval, execution), "40");
+
+    assert_eq!(
+        runtime
+            .replay_canonical_historical_evaluation_record(&record, execution)
+            .unwrap()
+            .snapshot_identity(),
+        earlier.snapshot_identity(),
+    );
+}
+
+#[test]
+fn historical_commit_refuses_unknown_commit_and_cancelled_materialization() {
+    use crate::facade::{BridgeExecutionDenial, RelationalBridgeSourceErrorTag};
+    use worth_relational::facade::change_source::RelationalCommitSelectionDenial;
+    let serial = crate::snapshot::test_serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&serial);
+    let truth = RelationalPricing::new(execution, 100, 40, 56);
+    let runtime = truth.runtime(RecordingSignalBridgeSink::default());
+    let main = TruthBranchIdentity::from_relational_branch_id("main");
+    let unknown = runtime
+        .evaluate(
+            BridgeTruthViewEvaluationRequest::for_historical_commit(
+                main.clone(),
+                TruthCommitIdentity::from_relational_commit_id(u64::MAX),
+            ),
+            execution,
+        )
+        .err()
+        .expect("unknown commit must refuse");
+    assert!(matches!(
+        unknown.kind(),
+        BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable(source)
+            if matches!(source.kind(), RelationalBridgeSourceErrorTag::CommitSelection(
+                RelationalCommitSelectionDenial::RequestedCommitUnavailable { .. }
+            ))
+    ));
+
+    let request =
+        BridgeTruthViewEvaluationRequest::for_historical_commit(main, truth.rubber_commit.clone());
+    let planned = runtime
+        .plan_truth_view_packet(request.declaration(), request.read_packet(), execution)
+        .unwrap();
+    let cancel = worth_execution::CancellationSource::new();
+    let stopped = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(cancel.token(), None);
+    cancel.cancel();
+    let stopped = worth_execution::ExecutionRequest::serial(&stopped);
+    let error = runtime
+        .materialize_truth_view_observation(planned, stopped)
+        .err()
+        .expect("cancelled plan must not materialize");
+    assert_eq!(
+        error.kind(),
+        BridgeDeliveryErrorKind::ExecutionDenied(BridgeExecutionDenial::Cancelled)
     );
 }

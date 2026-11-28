@@ -44,7 +44,7 @@ impl RuntimeBridge {
         preview_active: &BridgePreviewActiveSubscription,
         preview_work_trace: &BridgeSubscriptionPreviewWorkTrace,
         residue_envelope: &BridgeSubscriptionPreviewLifecycleResidueEnvelope,
-        promotion_record: &BridgePreviewPromotionRecord,
+        finished: &FinishedBridgePreviewSession,
     ) -> Result<
         BridgeSubscriptionPreviewLifecyclePromotion,
         BridgeSubscriptionPreviewLifecyclePromotionRejection,
@@ -54,7 +54,7 @@ impl RuntimeBridge {
             preview_active,
             preview_work_trace,
             residue_envelope,
-            promotion_record,
+            finished,
         )
     }
 

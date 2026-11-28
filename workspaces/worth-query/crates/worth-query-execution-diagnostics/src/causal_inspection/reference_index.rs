@@ -245,8 +245,7 @@ pub(super) fn owner_for_family(family: CausalEvidenceFamily) -> CausalEvidenceOw
         | CausalEvidenceFamily::BridgeEvaluation
         | CausalEvidenceFamily::BridgeSourceMaterialization
         | CausalEvidenceFamily::BridgeSourceFailure
-        | CausalEvidenceFamily::BridgeContinuity
-        | CausalEvidenceFamily::BridgePreview => CausalEvidenceOwner::RuntimeBridge,
+        | CausalEvidenceFamily::BridgeContinuity => CausalEvidenceOwner::RuntimeBridge,
     }
 }
 

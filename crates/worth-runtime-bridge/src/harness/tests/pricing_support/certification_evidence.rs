@@ -49,7 +49,6 @@ pub(in crate::harness::tests) struct PricingDiagnosticsEntrypointEvidence {
     pub(in crate::harness::tests) source: bool,
     pub(in crate::harness::tests) preview: bool,
     pub(in crate::harness::tests) writeback: bool,
-    pub(in crate::harness::tests) residue: bool,
     pub(in crate::harness::tests) historical_provenance: bool,
     pub(in crate::harness::tests) portfolio: bool,
     pub(in crate::harness::tests) crisis: bool,
@@ -74,7 +73,7 @@ impl PricingDiagnosticsEntrypointEvidence {
         self.insufficiency_count() == 0
     }
 
-    fn entrypoint_availability(&self) -> [bool; 13] {
+    fn entrypoint_availability(&self) -> [bool; 12] {
         [
             self.routing,
             self.branch_isolation,
@@ -82,7 +81,6 @@ impl PricingDiagnosticsEntrypointEvidence {
             self.source,
             self.preview,
             self.writeback,
-            self.residue,
             self.historical_provenance,
             self.portfolio,
             self.crisis,
@@ -101,7 +99,6 @@ pub(in crate::harness::tests) struct PricingBundleCompletenessEvidence {
     pub(in crate::harness::tests) has_source_artifact: bool,
     pub(in crate::harness::tests) has_preview_artifact: bool,
     pub(in crate::harness::tests) has_writeback_artifact: bool,
-    pub(in crate::harness::tests) has_residue_artifact: bool,
     pub(in crate::harness::tests) has_historical_provenance_artifact: bool,
     pub(in crate::harness::tests) has_portfolio_artifact: bool,
     pub(in crate::harness::tests) has_crisis_artifact: bool,
@@ -116,7 +113,6 @@ pub(in crate::harness::tests) struct PricingBundleCompletenessEvidence {
 pub(in crate::harness::tests) struct PricingReferenceWorkloadComparisonEvidence {
     pub(in crate::harness::tests) main_vs_speculative_snapshot_distinct: bool,
     pub(in crate::harness::tests) main_vs_speculative_rubber_cost_distinct: bool,
-    pub(in crate::harness::tests) discard_vs_promotion_classification_distinct: bool,
     pub(in crate::harness::tests) hostile_failure_vs_restart_failure_distinct: bool,
     pub(in crate::harness::tests) historical_provenance_commit_matches_shock: bool,
     pub(in crate::harness::tests) portfolio_reports_positive_blast_radius: bool,
@@ -140,8 +136,6 @@ pub(in crate::harness::tests) struct PricingCertificationCounterEvidence {
     pub(in crate::harness::tests) trust_attack_classification_count: usize,
     pub(in crate::harness::tests) diagnostics_entrypoint_reconstruction_count: usize,
     pub(in crate::harness::tests) speculative_branch_bundle_count: usize,
-    pub(in crate::harness::tests) speculative_discard_residue_check_count: usize,
-    pub(in crate::harness::tests) speculative_discard_residue_nonzero_count: usize,
     pub(in crate::harness::tests) branch_comparison_bundle_count: usize,
     pub(in crate::harness::tests) offline_bundle_diagnosis_count: usize,
     pub(in crate::harness::tests) offline_bundle_insufficiency_count: usize,
@@ -182,9 +176,8 @@ impl PricingWorkloadCertificationBundle {
             policy: true,
             source: !self.hostile_failure.source_commit.as_str().is_empty()
                 && !self.hostile_failure.source_snapshot.as_str().is_empty(),
-            preview: self.discard.has_discard_record && self.promotion.has_promotion_explanation,
+            preview: self.discard.session_closed && self.promotion.session_closed,
             writeback: !self.writeback.committed_effect_intent_digest.is_empty(),
-            residue: self.discard.has_discard_record,
             historical_provenance: !self.provenance.shock_commit.as_str().is_empty()
                 && !self.provenance.shock_snapshot.as_str().is_empty(),
             portfolio: self.portfolio.product_count > 0,
@@ -207,7 +200,6 @@ impl PricingWorkloadCertificationBundle {
             has_source_artifact: entrypoints.source,
             has_preview_artifact: entrypoints.preview,
             has_writeback_artifact: entrypoints.writeback,
-            has_residue_artifact: entrypoints.residue,
             has_historical_provenance_artifact: entrypoints.historical_provenance,
             has_portfolio_artifact: entrypoints.portfolio,
             has_crisis_artifact: entrypoints.crisis,
@@ -227,8 +219,6 @@ impl PricingWorkloadCertificationBundle {
                 != self.matrix.reference.speculative_snapshot,
             main_vs_speculative_rubber_cost_distinct: self.matrix.reference.main_rubber_cost_cents
                 != self.matrix.reference.speculative_rubber_cost_cents,
-            discard_vs_promotion_classification_distinct: self.discard.lifecycle_state
-                != self.promotion.lifecycle_state,
             hostile_failure_vs_restart_failure_distinct: format!(
                 "{:?}",
                 self.hostile_failure.failure_class
@@ -237,8 +227,7 @@ impl PricingWorkloadCertificationBundle {
                 self.restart_failure.error_kind
             ),
             historical_provenance_commit_matches_shock: self.provenance.shock_commit
-                == self.matrix.reference.speculative_commit
-                && self.provenance.shock_snapshot == self.matrix.reference.speculative_snapshot,
+                == self.matrix.reference.speculative_commit,
             portfolio_reports_positive_blast_radius: self.portfolio.positive_retail_delta_count > 0,
             crisis_affects_portfolio_breadth: self.crisis.affected_product_count > 0,
             strategy_recommends_non_hold_response: self.strategy.recommended_strategy != "hold",
@@ -274,12 +263,6 @@ impl PricingWorkloadCertificationBundle {
             trust_attack_classification_count: self.trust_attack_classification_count(),
             diagnostics_entrypoint_reconstruction_count: 1,
             speculative_branch_bundle_count: 1,
-            speculative_discard_residue_check_count: 1,
-            speculative_discard_residue_nonzero_count: usize::from(
-                !self.discard.has_discard_record
-                    || self.discard.has_promotion_record
-                    || self.discard.promotion_record_count > 0,
-            ),
             branch_comparison_bundle_count: 1,
             offline_bundle_diagnosis_count: 1,
             offline_bundle_insufficiency_count: completeness.insufficiency_count,

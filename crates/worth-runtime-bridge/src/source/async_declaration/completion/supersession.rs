@@ -16,9 +16,14 @@ impl BridgeAsyncClassifiedDeniedCompletion {
         request: BridgeAsyncCompletionSupersessionClassificationRequest,
     ) -> Result<Self, BridgeAsyncCompletionSupersessionRejection> {
         validate_request(&request)?;
-        let supersession_class = classify_request(&request)?;
+        let preview_discarded = request.preview_discarded();
+        let supersession_class = classify_request(&request, preview_discarded)?;
         let counters = counters_for_class(supersession_class);
-        let evidence = BridgeAsyncCompletionSupersessionEvidence::new(&request, supersession_class);
+        let evidence = BridgeAsyncCompletionSupersessionEvidence::new(
+            &request,
+            supersession_class,
+            preview_discarded,
+        );
         Ok(Self::new(
             request.denied_completion().clone(),
             supersession_class,
@@ -60,18 +65,6 @@ fn validate_request(
         }
         _ => {}
     }
-    if request.preview_discarded()
-        && denied_completion
-            .request_identity()
-            .basis_binding()
-            .truth_view_basis_kind()
-            != BridgeAsyncRequestTruthViewBasisKind::Preview
-    {
-        return Err(BridgeAsyncCompletionSupersessionRejection::new(
-            BridgeAsyncCompletionSupersessionRejectionKind::PreviewDiscardRequiresPreviewBasis,
-            "preview discard supersession requires a denied completion bound to preview truth basis",
-        ));
-    }
     if let Some(displacing) = request.displacing_request_identity() {
         validate_displacing_identity(denied_completion, displacing)?;
     }
@@ -80,13 +73,14 @@ fn validate_request(
 
 fn classify_request(
     request: &BridgeAsyncCompletionSupersessionClassificationRequest,
+    preview_discarded: bool,
 ) -> Result<BridgeAsyncCompletionSupersessionClass, BridgeAsyncCompletionSupersessionRejection> {
     let denied_completion = request.denied_completion();
     let original_basis = denied_completion
         .request_identity()
         .basis_binding()
         .truth_view_basis();
-    if request.preview_discarded() {
+    if preview_discarded {
         return Ok(BridgeAsyncCompletionSupersessionClass::PreviewDiscarded);
     }
     if preview_basis_drifted(original_basis, request.current_truth_view_basis()) {
@@ -155,8 +149,9 @@ fn preview_basis_drifted(
     {
         return false;
     }
-    original.preview_active_subscription_identity()
-        != current.preview_active_subscription_identity()
+    original.preview_session() != current.preview_session()
+        || original.preview_active_subscription_identity()
+            != current.preview_active_subscription_identity()
         || original.preview_parent_truth_view_basis_digest()
             != current.preview_parent_truth_view_basis_digest()
 }

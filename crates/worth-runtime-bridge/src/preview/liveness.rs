@@ -1,16 +1,18 @@
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 
-use crate::speculation::BridgePreviewSessionIdentity;
+use super::BridgePreviewSessionIdentity;
 
 #[derive(Debug)]
 struct BridgePreviewSessionLivenessState {
+    incarnation: u64,
     active: RwLock<bool>,
+    session_identity: BridgePreviewSessionIdentity,
 }
 
 #[derive(Debug)]
 pub(crate) struct BridgePreviewSessionLivenessOwner {
     state: Arc<BridgePreviewSessionLivenessState>,
-    session_identity: BridgePreviewSessionIdentity,
 }
 
 /// Bridge-owned observation of one active preview-session lifecycle.
@@ -18,10 +20,9 @@ pub(crate) struct BridgePreviewSessionLivenessOwner {
 /// The observer does not keep the session alive and cannot perform preview
 /// work. An admitted guard holds the lifecycle read boundary while a consumer
 /// performs work already authorized by that session.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BridgePreviewSessionLivenessObserver {
     state: Arc<BridgePreviewSessionLivenessState>,
-    session_identity: BridgePreviewSessionIdentity,
 }
 
 pub struct BridgePreviewSessionLivenessGuard<'observer> {
@@ -30,18 +31,23 @@ pub struct BridgePreviewSessionLivenessGuard<'observer> {
 
 impl BridgePreviewSessionLivenessOwner {
     pub(crate) fn new(session_identity: BridgePreviewSessionIdentity) -> Self {
+        static NEXT_INCARNATION: AtomicU64 = AtomicU64::new(1);
         Self {
             state: Arc::new(BridgePreviewSessionLivenessState {
+                incarnation: NEXT_INCARNATION.fetch_add(1, Ordering::Relaxed),
                 active: RwLock::new(true),
+                session_identity,
             }),
-            session_identity,
         }
+    }
+
+    pub(super) fn session_identity(&self) -> &BridgePreviewSessionIdentity {
+        &self.state.session_identity
     }
 
     pub(crate) fn observer(&self) -> BridgePreviewSessionLivenessObserver {
         BridgePreviewSessionLivenessObserver {
             state: Arc::clone(&self.state),
-            session_identity: self.session_identity.clone(),
         }
     }
 }
@@ -56,8 +62,12 @@ impl Drop for BridgePreviewSessionLivenessOwner {
 }
 
 impl BridgePreviewSessionLivenessObserver {
+    pub(crate) fn incarnation(&self) -> u64 {
+        self.state.incarnation
+    }
+
     pub fn session_identity(&self) -> &BridgePreviewSessionIdentity {
-        &self.session_identity
+        &self.state.session_identity
     }
 
     pub fn admit_active_session(&self) -> Option<BridgePreviewSessionLivenessGuard<'_>> {
@@ -70,3 +80,11 @@ impl BridgePreviewSessionLivenessObserver {
         })
     }
 }
+
+impl PartialEq for BridgePreviewSessionLivenessObserver {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.state, &other.state)
+    }
+}
+
+impl Eq for BridgePreviewSessionLivenessObserver {}

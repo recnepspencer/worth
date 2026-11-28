@@ -24,13 +24,8 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
         .unwrap()
         .unwrap();
     let original_identity = (*preview.handle_for_test()).session_identity().clone();
-    let diagnostics = (*preview.handle_for_test()).diagnostics().clone();
     let original_source = std::sync::Arc::clone(preview._source_for_test());
     let observer = (*preview.handle_for_test()).liveness_observer();
-    let original_execution = (*preview.handle_for_test())
-        .execution_record()
-        .digest()
-        .to_owned();
     let (preview, denial) = other
         .with_host_advancement(|phase| preview.readmit(&phase, &runtime))
         .unwrap()
@@ -61,17 +56,15 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
         &original_source
     ));
     assert_eq!(
-        (*(*preview.session_for_test()).handle_for_test())
-            .execution_record()
-            .digest(),
-        original_execution
+        preview
+            .session_for_test()
+            .handle_for_test()
+            .liveness_observer(),
+        observer
     );
-    let outcome = preview.promote().unwrap();
-    assert_eq!(outcome.session().session_identity(), &original_identity);
+    let outcome = preview.promote();
+    assert_eq!(outcome.session_identity(), &original_identity);
     assert!(observer.admit_active_session().is_none());
-    assert_eq!(diagnostics.preview_execution_records().len(), 1);
-    assert_eq!(diagnostics.preview_promotion_records().len(), 1);
-    assert!(diagnostics.preview_discard_records().is_empty());
 }
 
 #[test]
@@ -96,7 +89,6 @@ fn readmitted_preview_discard_refusal_retains_source_and_liveness_until_real_clo
         })
         .unwrap()
         .unwrap();
-    let diagnostics = (*preview.handle_for_test()).diagnostics().clone();
     let source = std::sync::Arc::clone(preview._source_for_test());
     let observer = (*preview.handle_for_test()).liveness_observer();
     let fault = preview.reject_discard_for_test();
@@ -105,19 +97,15 @@ fn readmitted_preview_discard_refusal_retains_source_and_liveness_until_real_clo
         .unwrap()
         .unwrap();
     let (preview, denial) = preview.discard().unwrap_err();
-    assert_eq!(denial.kind(), worth_runtime_bridge::facade::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch);
+    assert_eq!(denial, worth_query_execution::facade::application_installation::WorthQueryApplicationPreviewDiscardDenial::CleanupRefused);
     assert!(std::sync::Arc::ptr_eq(
         (*preview.session_for_test())._source_for_test(),
         &source
     ));
     assert!(observer.admit_active_session().is_some());
-    assert!(diagnostics.preview_discard_records().is_empty());
     drop(fault);
     preview.discard().unwrap();
     assert!(observer.admit_active_session().is_none());
-    assert_eq!(diagnostics.preview_execution_records().len(), 1);
-    assert_eq!(diagnostics.preview_discard_records().len(), 1);
-    assert!(diagnostics.preview_promotion_records().is_empty());
 }
 
 #[test]

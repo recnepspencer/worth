@@ -27,8 +27,8 @@ fn pricing_shock_historical_commit_reads_bridge_visible_provenance_from_truth() 
         .expect("generated scenario should retain shock attribution");
 
     assert_eq!(
-        historical.snapshot_identity().as_str(),
-        truth.shock_snapshot().as_str()
+        historical.record().decision_log().commit_identity(),
+        Some(&truth.shock_commit),
     );
     assert_eq!(
         provenance_texts.regime_text(),
@@ -110,8 +110,8 @@ fn pricing_shock_historical_provenance_corruption_is_detectable_against_independ
         .expect("generated scenario should retain shock attribution");
 
     assert_eq!(
-        provenance_eval.snapshot_identity().as_str(),
-        truth.shock_snapshot().as_str()
+        provenance_eval.record().decision_log().commit_identity(),
+        Some(&truth.shock_commit),
     );
     assert_eq!(
         read_cost(&cost_eval, execution),
@@ -211,8 +211,8 @@ fn pricing_shock_provenance_mutation_sweep_is_detectable_against_independent_ora
         let provenance_texts = read_pricing_provenance_aspect_text_packet(&historical);
 
         assert_eq!(
-            historical.snapshot_identity().as_str(),
-            truth.shock_snapshot().as_str()
+            historical.record().decision_log().commit_identity(),
+            Some(&truth.shock_commit),
         );
         assert_eq!(
             provenance_texts.field_text(field),

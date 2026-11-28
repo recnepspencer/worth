@@ -1,7 +1,6 @@
 use super::super::{
     policy::terminal_report_export as policy_terminal_report_export,
     source::terminal_report_export as source_terminal_report_export,
-    speculation::terminal_report_export as speculation_terminal_report_export,
 };
 
 use std::collections::BTreeMap;
@@ -54,9 +53,6 @@ pub(in crate::harness::adapter::adapter_impl) fn execution_summary_json(
         }
         HarnessExecution::Policy(execution) => {
             policy_terminal_report_export::execution_summary_json(execution)
-        }
-        HarnessExecution::Speculation(execution) => {
-            speculation_terminal_report_export::summary_json(execution)
         }
     }
 }
@@ -114,9 +110,6 @@ pub(in crate::harness::adapter::adapter_impl) fn execution_extensions_json(
         }
         HarnessExecution::Policy(execution) => {
             policy_terminal_report_export::execution_extensions_json(execution, runtime_bridge)
-        }
-        HarnessExecution::Speculation(execution) => {
-            speculation_terminal_report_export::extensions_json(execution, runtime_bridge)
         }
     }
 }

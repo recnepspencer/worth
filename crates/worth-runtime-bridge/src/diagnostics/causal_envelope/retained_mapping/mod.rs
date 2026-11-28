@@ -10,9 +10,7 @@ use crate::identity::BridgeIdentityEvidence;
 use retained_artifact_digest::{
     bulk_planning_record_digest, continuity_record_digest,
     historical_evaluation_failure_record_digest, historical_evaluation_record_digest,
-    preview_discard_record_digest, preview_execution_record_digest,
-    preview_promotion_record_digest, route_record_digest, source_failure_record_digest,
-    source_materialization_record_digest,
+    route_record_digest, source_failure_record_digest, source_materialization_record_digest,
 };
 
 pub(crate) fn retained_record_evidence_identity(
@@ -47,15 +45,6 @@ pub(crate) fn retained_record_evidence_identity(
         BridgeCausalEvidenceFamily::BridgeHistoricalEvaluationFailure => Ok(
             historical_evaluation_failure_record_digest(facade, reference_identity)?,
         ),
-        BridgeCausalEvidenceFamily::BridgePreviewExecution => {
-            Ok(preview_execution_record_digest(facade, reference_identity)?)
-        }
-        BridgeCausalEvidenceFamily::BridgePreviewDiscard => {
-            Ok(preview_discard_record_digest(facade, reference_identity)?)
-        }
-        BridgeCausalEvidenceFamily::BridgePreviewPromotion => {
-            Ok(preview_promotion_record_digest(facade, reference_identity)?)
-        }
         BridgeCausalEvidenceFamily::BridgeSourceMaterialization => Ok(
             source_materialization_record_digest(facade, reference_identity)?,
         ),

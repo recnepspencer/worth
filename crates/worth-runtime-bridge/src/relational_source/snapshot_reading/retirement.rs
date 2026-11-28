@@ -6,7 +6,7 @@ use worth_relational::facade::change_source::{
 
 #[derive(Debug)]
 pub(in crate::relational_source) struct RuntimePublicationSnapshotReaderRetirement {
-    observation: Option<RelationalBranchObservation>,
+    observation: Option<SnapshotObservation>,
     runtime: Option<RelationalRuntimeHandle>,
     _snapshot_identity: TruthSnapshotIdentity,
     _partition: Option<PartitionId>,

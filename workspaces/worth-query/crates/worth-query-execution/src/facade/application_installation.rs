@@ -6,15 +6,16 @@ pub use crate::domain_computation::primary_graph::application_installation::{
     in_memory_rostered_program_with_authorization_time_source_in_advancement,
     WorthQueryAdmittedProgramOperation, WorthQueryAdmittedProgramOutput,
     WorthQueryApplicationLimits, WorthQueryApplicationPreparationDenial,
-    WorthQueryApplicationPreviewReadmissionDenial, WorthQueryApplicationPreviewRequest,
-    WorthQueryApplicationPreviewSession, WorthQueryApplicationProfile,
-    WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
-    WorthQueryBoundedApplicationLimits, WorthQueryHomeRetirementAdvance,
-    WorthQueryPreparedHomeQuery, WorthQueryProgramApplicationRuntime,
-    WorthQueryProgramOutputAdvance, WorthQueryProgramOwner, WorthQueryProgramRootDemand,
-    WorthQueryProgramSupportRetirementFailure, WorthQueryProgramSupportRetirementReceipt,
-    WorthQueryReadmittedApplicationPreview, WorthQueryRecoveredProgramOutputSource,
-    WorthQueryRetiredHomeQuery, WorthQueryRetiringHomeQuery, WorthQuerySelectedProgramOwner,
+    WorthQueryApplicationPreviewDiscardDenial, WorthQueryApplicationPreviewReadmissionDenial,
+    WorthQueryApplicationPreviewRequest, WorthQueryApplicationPreviewSession,
+    WorthQueryApplicationProfile, WorthQueryApplicationProgramRoots,
+    WorthQueryApplicationProgramRoster, WorthQueryBoundedApplicationLimits,
+    WorthQueryHomeRetirementAdvance, WorthQueryPreparedHomeQuery,
+    WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance, WorthQueryProgramOwner,
+    WorthQueryProgramRootDemand, WorthQueryProgramSupportRetirementFailure,
+    WorthQueryProgramSupportRetirementReceipt, WorthQueryReadmittedApplicationPreview,
+    WorthQueryRecoveredProgramOutputSource, WorthQueryRetiredHomeQuery,
+    WorthQueryRetiringHomeQuery, WorthQuerySelectedProgramOwner,
     WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
     WorthQuerySigningOwnerInstallationDenial, WorthQuerySupportedProgramHandle,
     WorthQueryUnpublishedProgramOutputSource, WorthQueryWorkflowApplicationRuntime,
@@ -24,6 +25,4 @@ pub use crate::domain_computation::primary_graph::application_installation::{
 pub use worth_foundational::facade::{ApplicationBuildIdentity, InvalidApplicationBuildIdentity};
 
 // Actual result vocabulary returned by the application preview lifecycle.
-pub use worth_runtime_bridge::facade::{
-    BridgeSpeculationError, BridgeSpeculationErrorKind, BridgeSpeculativePromotionOutcome,
-};
+pub use worth_runtime_bridge::facade::FinishedBridgePreviewSession;

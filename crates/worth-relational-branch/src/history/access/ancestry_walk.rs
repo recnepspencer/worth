@@ -39,8 +39,19 @@ impl CommitAncestryInspection {
 
 pub fn inspect_commit_ancestry(
     start: CommitId,
-    mut receipt: impl FnMut(CommitId) -> Option<RelationalCommitReceipt>,
+    receipt: impl FnMut(CommitId) -> Option<RelationalCommitReceipt>,
 ) -> CommitAncestryInspection {
+    let Ok(inspection) = inspect_commit_ancestry_with_checkpoint(start, receipt, |_| {
+        Ok::<_, std::convert::Infallible>(())
+    });
+    inspection
+}
+
+pub fn inspect_commit_ancestry_with_checkpoint<E>(
+    start: CommitId,
+    mut receipt: impl FnMut(CommitId) -> Option<RelationalCommitReceipt>,
+    mut checkpoint: impl FnMut(u64) -> Result<(), E>,
+) -> Result<CommitAncestryInspection, E> {
     let mut visited_commits = BTreeSet::new();
     let mut reachable_commits = BTreeSet::new();
     let mut authoring_branches = BTreeSet::new();
@@ -50,27 +61,30 @@ pub fn inspect_commit_ancestry(
     let mut catalog_probes = 0;
     let mut parent_edge_visits = 0;
     while let Some(commit_id) = stack.pop() {
+        checkpoint(1)?;
         node_visits += 1;
         if !visited_commits.insert(commit_id) {
             continue;
         }
+        checkpoint(1)?;
         catalog_probes += 1;
         if let Some(receipt) = receipt(commit_id) {
             reachable_commits.insert(commit_id);
             selected_commit_available |= commit_id == start;
             authoring_branches.insert(receipt.branch_id.clone());
+            checkpoint(receipt.parents.len() as u64)?;
             parent_edge_visits += receipt.parents.len();
             stack.extend(receipt.parents.iter().copied());
         }
     }
-    CommitAncestryInspection {
+    Ok(CommitAncestryInspection {
         reachable_commits,
         authoring_branches,
         selected_commit_available,
         node_visits,
         catalog_probes,
         parent_edge_visits,
-    }
+    })
 }
 
 pub fn common_ancestor(

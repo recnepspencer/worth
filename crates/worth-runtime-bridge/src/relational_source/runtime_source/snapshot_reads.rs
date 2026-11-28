@@ -5,6 +5,17 @@ use crate::facade::{
 use super::RuntimeBridgeRelationalSource;
 use crate::relational_source::snapshot_reading::RuntimePublicationSnapshotReader;
 
+impl RuntimeBridgeRelationalSource {
+    pub(crate) fn snapshot_matches_branch(
+        &self,
+        identity: &TruthSnapshotIdentity,
+        branch: &crate::facade::TruthBranchIdentity,
+    ) -> Result<bool, RelationalBridgeSourceError> {
+        let selected = self.observation_bindings.resolve(identity)?;
+        Ok(branch.relational_branch_id() == Some(selected.branch_id().0.as_str()))
+    }
+}
+
 impl SnapshotReadSource for RuntimeBridgeRelationalSource {
     fn open_snapshot(
         &self,

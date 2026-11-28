@@ -2,52 +2,6 @@ use super::{BridgeErrorKind, *};
 use worth_execution::report::RetryHint;
 use worth_execution::report::{DenialClass::*, Disposition::*};
 
-impl BridgeErrorKind for BridgeSpeculationErrorKind {
-    fn report(&self) -> (DenialClass, Disposition, &'static str) {
-        match self {
-            Self::PreviewRequestKindMismatch => (
-                InvalidInput,
-                CorrectInput,
-                "bridge.speculation.preview_request_kind_mismatch",
-            ),
-            Self::PreviewSessionIdentityConflict => (
-                Conflict,
-                Final,
-                "bridge.speculation.preview_session_identity_conflict",
-            ),
-            Self::PreviewBranchBindingMismatch => (
-                Authorization,
-                Reauthorize,
-                "bridge.speculation.preview_branch_binding_mismatch",
-            ),
-            Self::IllegalPreviewLifecycleTransition => (
-                Conflict,
-                Final,
-                "bridge.speculation.illegal_preview_lifecycle_transition",
-            ),
-            Self::PromotionAdmissibilityMismatch => (
-                Authorization,
-                Reauthorize,
-                "bridge.speculation.promotion_admissibility_mismatch",
-            ),
-            Self::PreviewReuseEquivalenceMismatch => (
-                Conflict,
-                Final,
-                "bridge.speculation.preview_reuse_equivalence_mismatch",
-            ),
-            Self::PreviewResidueClassificationMismatch => (
-                Invariant,
-                Escalate,
-                "bridge.speculation.preview_residue_classification_mismatch",
-            ),
-        }
-    }
-
-    fn summary(&self) -> &'static str {
-        "Bridge could not complete the preview operation."
-    }
-}
-
 impl BridgeErrorKind for BridgeWritebackErrorKind {
     fn report(&self) -> (DenialClass, Disposition, &'static str) {
         match self {

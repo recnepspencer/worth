@@ -1,7 +1,6 @@
 use super::*;
 use crate::diagnostics::BridgeHistoricalEvaluationRecordIdentity;
 use crate::routing::BridgeRouteIdentity;
-use crate::speculation::BridgePreviewSessionIdentity;
 
 #[derive(Debug, Clone)]
 pub struct BridgeDiagnostics<'a> {
@@ -20,20 +19,8 @@ impl<'a> BridgeDiagnostics<'a> {
     /// Returns the richest available explanation for the most recent
     /// standard-path bridge action.
     pub fn explain_last(&self) -> Option<BridgeStandardDiagnosticsExplanation> {
-        self.explain_last_promotion()
-            .map(BridgeStandardDiagnosticsExplanation::PreviewPromotion)
-            .or_else(|| {
-                self.explain_last_discard()
-                    .map(BridgeStandardDiagnosticsExplanation::PreviewDiscard)
-            })
-            .or_else(|| {
-                self.explain_last_session()
-                    .map(BridgeStandardDiagnosticsExplanation::PreviewExecution)
-            })
-            .or_else(|| {
-                self.explain_last_evaluation()
-                    .map(BridgeStandardDiagnosticsExplanation::Evaluation)
-            })
+        self.explain_last_evaluation()
+            .map(BridgeStandardDiagnosticsExplanation::Evaluation)
             .or_else(|| {
                 self.explain_last_route()
                     .map(BridgeStandardDiagnosticsExplanation::Route)
@@ -69,66 +56,6 @@ impl<'a> BridgeDiagnostics<'a> {
             .historical_record_for_record_identity(historical_record_identity)
             .map(|record| self.inner.explain_historical_evaluation_record(&record))
     }
-
-    /// Explains the most recent speculative session execution.
-    pub fn explain_last_session(&self) -> Option<BridgePreviewExecutionExplanation> {
-        self.inner.explain_last_preview_execution_record()
-    }
-
-    /// Explains a speculative session by preview session identity.
-    ///
-    /// If the session progressed to discard or promotion, this returns the
-    /// terminal explanation instead of only the original execution record.
-    pub fn explain_session(
-        &self,
-        preview_session_identity: &BridgePreviewSessionIdentity,
-    ) -> Option<BridgeStandardSessionExplanation> {
-        self.inner
-            .preview_promotion_record_for_session_identity(preview_session_identity)
-            .map(|record| {
-                BridgeStandardSessionExplanation::PreviewPromotion(
-                    self.inner.explain_preview_promotion_record(&record),
-                )
-            })
-            .or_else(|| {
-                self.inner
-                    .preview_discard_record_for_session_identity(preview_session_identity)
-                    .map(|record| {
-                        BridgeStandardSessionExplanation::PreviewDiscard(
-                            self.inner.explain_preview_discard_record(&record),
-                        )
-                    })
-            })
-            .or_else(|| {
-                self.inner
-                    .preview_execution_record_for_session_identity(preview_session_identity)
-                    .map(|record| {
-                        BridgeStandardSessionExplanation::PreviewExecution(
-                            self.inner.explain_preview_execution_record(&record),
-                        )
-                    })
-            })
-    }
-
-    /// Explains the most recent discard record.
-    pub fn explain_last_discard(&self) -> Option<BridgePreviewDiscardExplanation> {
-        self.inner.explain_last_preview_discard_record()
-    }
-
-    /// Explains the most recent promotion record.
-    pub fn explain_last_promotion(&self) -> Option<BridgePreviewPromotionExplanation> {
-        self.inner.explain_last_preview_promotion_record()
-    }
-
-    /// Explains a promotion by preview session identity.
-    pub fn explain_promotion(
-        &self,
-        preview_session_identity: &BridgePreviewSessionIdentity,
-    ) -> Option<BridgePreviewPromotionExplanation> {
-        self.inner
-            .preview_promotion_record_for_session_identity(preview_session_identity)
-            .map(|record| self.inner.explain_preview_promotion_record(&record))
-    }
 }
 
 impl<'a> std::ops::Deref for BridgeDiagnostics<'a> {
@@ -143,14 +70,4 @@ impl<'a> std::ops::Deref for BridgeDiagnostics<'a> {
 pub enum BridgeStandardDiagnosticsExplanation {
     Route(BridgeRouteExplanation),
     Evaluation(BridgeHistoricalEvaluationExplanation),
-    PreviewExecution(BridgePreviewExecutionExplanation),
-    PreviewDiscard(BridgePreviewDiscardExplanation),
-    PreviewPromotion(BridgePreviewPromotionExplanation),
-}
-
-#[derive(Debug, Clone)]
-pub enum BridgeStandardSessionExplanation {
-    PreviewExecution(BridgePreviewExecutionExplanation),
-    PreviewDiscard(BridgePreviewDiscardExplanation),
-    PreviewPromotion(BridgePreviewPromotionExplanation),
 }

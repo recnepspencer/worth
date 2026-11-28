@@ -15,6 +15,8 @@ mod names_at_observation;
 mod names_at_snapshot;
 mod observation_read;
 mod partition_projection;
+mod pinned_commit;
+pub use pinned_commit::{RelationalPinnedCommitDenial, RelationalPinnedCommitObservation};
 pub(crate) use worth_relational_branch::internal_port::change_source::receipt;
 pub(crate) use worth_relational_contracts::internal_port::change_source::read_custody;
 mod receipt_minting;

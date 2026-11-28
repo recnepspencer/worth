@@ -7,7 +7,6 @@ pub(in super::super) fn between(first: u8, last: u8) -> Vec<Contract<'static>> {
         super::conditional::contracts(),
         super::construction::contracts(),
         super::diagnostics::contracts(),
-        super::preview::contracts(),
         super::routing::contracts(),
         super::subscription_certification::contracts(),
         super::subscription_delivery::contracts(),

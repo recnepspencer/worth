@@ -3,21 +3,17 @@ use crate::facade::{
     BridgeAsyncRequestIdentityRejection, BridgeAsyncRequestSubscriptionInstance,
     BridgeAsyncRequestTruthViewBasis, BridgeAsyncSourceDeclarationDraft,
     BridgeAsyncSourceDeclarationIdentity, BridgeAsyncSourceLegacyDeclarationIdentity,
-    BridgePreviewActiveSubscription, BridgePreviewRetainedArtifactSchema,
-    BridgePreviewSessionBasis, BridgePreviewSessionDeclaration,
-    BridgePreviewSessionDeclarationIdentity, BridgeRequestKind, BridgeSignalBranchIdentity,
-    BridgeSourceCapability, BridgeSourceCapabilitySet, BridgeSpeculativeBranchBinding,
-    BridgeSpeculativeBranchBindingIdentity, BridgeSubscriptionActivationReady,
-    BridgeSubscriptionBasisRequest, BridgeSubscriptionConsumerBackpressurePosture,
-    BridgeSubscriptionConsumerContractFamily, BridgeSubscriptionConsumerDiagnosticsRetention,
-    BridgeSubscriptionConsumerPacingCapability, BridgeSubscriptionDeliveryDensityPosture,
-    BridgeSubscriptionDeliveryIntentClass, BridgeTruthViewSelector,
+    BridgePreviewActiveSubscription, BridgePreviewBranchBinding, BridgePreviewSessionHandle,
+    BridgeSignalBranchIdentity, BridgeSubscriptionActivationReady, BridgeSubscriptionBasisRequest,
+    BridgeSubscriptionConsumerBackpressurePosture, BridgeSubscriptionConsumerContractFamily,
+    BridgeSubscriptionConsumerDiagnosticsRetention, BridgeSubscriptionConsumerPacingCapability,
+    BridgeSubscriptionDeliveryDensityPosture, BridgeSubscriptionDeliveryIntentClass,
     LoweredBridgeAsyncSourceDeclaration, RuntimeBridge,
 };
 use crate::input::envelope::TruthBranchIdentity;
 use crate::mapping::SubscriptionSliceKind;
+use crate::preview::BridgePreviewSessionIdentity;
 use crate::snapshot::TruthSnapshotIdentity;
-use crate::speculation::BridgePreviewSessionIdentity;
 use crate::subscription::BridgeSubscriptionDeclarationFamilyKind;
 use crate::subscription::NormalizedSubscriptionSliceIntent;
 use worth_foundational::facade::{AspectKey, FieldKey};
@@ -101,7 +97,7 @@ pub(crate) fn preview_active_subscription(
     runtime: &RuntimeBridge,
     suffix: &str,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
-) -> BridgePreviewActiveSubscription {
+) -> (BridgePreviewSessionHandle, BridgePreviewActiveSubscription) {
     preview_active_subscription_with_basis(
         runtime,
         suffix,
@@ -117,48 +113,21 @@ pub(crate) fn preview_active_subscription_with_basis(
     truth_branch_identity: TruthBranchIdentity,
     truth_snapshot_identity: TruthSnapshotIdentity,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
-) -> BridgePreviewActiveSubscription {
+) -> (BridgePreviewSessionHandle, BridgePreviewActiveSubscription) {
     let ready = activation_ready_for_snapshot(
         runtime,
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
         resource_request,
     );
-    let admitted_preview = runtime
-        .admit_preview_session(
-            BridgePreviewSessionIdentity::admit_bridge_owned(format!("preview-session:{suffix}")),
-            BridgePreviewSessionDeclaration::new(
-                BridgePreviewSessionDeclarationIdentity::admit_bridge_owned(format!(
-                    "preview-declaration:{suffix}"
-                )),
-                BridgeRequestKind::Preview,
-                BridgeSpeculativeBranchBinding::new(
-                    BridgeSpeculativeBranchBindingIdentity::admit_bridge_owned(format!(
-                        "preview-binding:{suffix}"
-                    )),
-                    truth_branch_identity.clone(),
-                    BridgeSignalBranchIdentity::admit_bridge_owned(format!(
-                        "signal-branch:{suffix}"
-                    )),
-                ),
-                BridgePreviewSessionBasis::new(
-                    BridgeTruthViewSelector::branch_snapshot(
-                        truth_branch_identity,
-                        truth_snapshot_identity,
-                    ),
-                    BridgeSourceCapabilitySet::new(vec![
-                        BridgeSourceCapability::SnapshotRead,
-                        BridgeSourceCapability::BranchRead,
-                    ]),
-                    BridgePreviewRetainedArtifactSchema::PreviewLifecycleArtifactsV1,
-                ),
-            ),
-        )
-        .expect("preview session should admit");
-    let (active_preview, execution_record) =
-        runtime.activate_preview_session(admitted_preview, 3, 1, 2);
-    let preview_basis = runtime
-        .admit_subscription_preview_basis(&active_preview, &execution_record)
-        .expect("preview basis should admit");
+    let preview = runtime.begin_preview(
+        BridgePreviewSessionIdentity::from_stable_name(format!("preview-session:{suffix}")),
+        BridgePreviewBranchBinding::new(
+            truth_branch_identity,
+            BridgeSignalBranchIdentity::from_stable_name(suffix),
+        ),
+        truth_snapshot_identity,
+    );
+    let preview_basis = runtime.admit_subscription_preview_basis(&preview);
     let cost_profile = runtime
         .admit_subscription_delivery_cost_profile(
             BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
@@ -176,7 +145,15 @@ pub(crate) fn preview_active_subscription_with_basis(
             BridgeSubscriptionConsumerDiagnosticsRetention::MinimalReference,
         )
         .expect("consumer contract should admit");
-    runtime.activate_preview_subscription_delivery(ready, preview_basis, cost_profile, consumer)
+    (
+        preview,
+        runtime.activate_preview_subscription_delivery(
+            ready,
+            preview_basis,
+            cost_profile,
+            consumer,
+        ),
+    )
 }
 
 pub(crate) fn lowered_request_response(

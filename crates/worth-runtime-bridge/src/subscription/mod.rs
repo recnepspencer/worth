@@ -262,11 +262,7 @@ pub use mixed_cause::{
     BridgeMixedCauseOrderingLaneKind, BridgeMixedCauseOrderingRequest,
     BridgeMixedCauseSuppressedKind, BridgeOrderedMixedCause, BridgeSuppressedMixedCause,
 };
-pub use preview::{
-    BridgePreviewActiveSubscription, BridgeSubscriptionPreviewBasisBinding,
-    BridgeSubscriptionPreviewBasisRejection, BridgeSubscriptionPreviewBasisRejectionContext,
-    BridgeSubscriptionPreviewBasisRejectionKind,
-};
+pub use preview::{BridgePreviewActiveSubscription, BridgeSubscriptionPreviewBasisBinding};
 pub use preview_lifecycle::{
     BridgeSubscriptionAuthoritativePreviewReadmission,
     BridgeSubscriptionAuthoritativePreviewReadmissionClass,

@@ -1,14 +1,13 @@
 use worth_runtime_bridge::facade::{
-    BridgeActiveSubscription, BridgePreviewPromotionRecord,
-    BridgeSubscriptionPreviewLifecycleResidueEnvelope, BridgeSubscriptionPreviewWorkTrace,
-    RuntimeBridge,
+    BridgeActiveSubscription, BridgeSubscriptionPreviewLifecycleResidueEnvelope,
+    BridgeSubscriptionPreviewWorkTrace, FinishedBridgePreviewSession, RuntimeBridge,
 };
 
 fn promote_authoritative_active(
     runtime: &RuntimeBridge,
     active: BridgeActiveSubscription,
     work_trace: &BridgeSubscriptionPreviewWorkTrace,
-    promotion_record: &BridgePreviewPromotionRecord,
+    promotion_record: &FinishedBridgePreviewSession,
     residue: &BridgeSubscriptionPreviewLifecycleResidueEnvelope,
 ) {
     let _ =

@@ -36,6 +36,7 @@ impl BridgeHistoricalEvaluationCounters {
             BridgeHistoricalMaterializationPath::DirectSnapshotRead => {
                 counters.direct_snapshot_materialization_count = 1;
             }
+            BridgeHistoricalMaterializationPath::PinnedCommitObservation => {}
             BridgeHistoricalMaterializationPath::CommitEnvelopeSnapshot => {
                 counters.commit_envelope_materialization_count = 1;
             }
@@ -58,6 +59,7 @@ impl BridgeHistoricalEvaluationCounters {
             BridgeHistoricalMaterializationPath::DirectSnapshotRead => {
                 counters.direct_snapshot_materialization_count = 1;
             }
+            BridgeHistoricalMaterializationPath::PinnedCommitObservation => {}
             BridgeHistoricalMaterializationPath::CommitEnvelopeSnapshot => {
                 counters.commit_envelope_materialization_count = 1;
             }

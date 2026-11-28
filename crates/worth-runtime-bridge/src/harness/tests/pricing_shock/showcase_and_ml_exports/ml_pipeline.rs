@@ -147,11 +147,6 @@ fn pricing_shock_ml_pipeline_export_lineage_graph_is_well_formed() {
             .promotion_session_identity
             .as_str()
             .to_owned(),
-        bundle
-            .promotion
-            .authoritative_commit_boundary_digest
-            .clone(),
-        bundle.promotion.authoritative_artifact_digest.clone(),
         bundle.fanout.second_source_commit.as_str().to_owned(),
         bundle.fanout.second_snapshot.as_str().to_owned(),
         bundle.restart_replay.source_commit.as_str().to_owned(),

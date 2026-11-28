@@ -6,7 +6,6 @@ pub(super) enum HarnessTarget {
     },
     Source(super::source::SourceHarnessTarget),
     Policy(super::policy::PolicyHarnessTarget),
-    Speculation(super::speculation::SpeculationHarnessTarget),
     HistoricalCommit {
         branch_identity: TruthBranchIdentity,
         commit_identity: TruthCommitIdentity,
@@ -31,7 +30,6 @@ pub(super) enum HarnessExecution {
     },
     Source(super::source::SourceHarnessExecution),
     Policy(super::policy::PolicyHarnessExecution),
-    Speculation(super::speculation::SpeculationHarnessExecution),
 }
 
 pub(super) fn execute_historical_request(
@@ -121,15 +119,6 @@ pub(super) fn harness_target_from_id(
         )),
         BridgeHarnessTargetId::PolicyAmbientLeakCertification => Ok(HarnessTarget::Policy(
             super::policy::PolicyHarnessTarget::AmbientLeakCertification,
-        )),
-        BridgeHarnessTargetId::SpeculationDiscardCertification => Ok(HarnessTarget::Speculation(
-            super::speculation::SpeculationHarnessTarget::DiscardCertification,
-        )),
-        BridgeHarnessTargetId::SpeculationPromotionCertification => Ok(HarnessTarget::Speculation(
-            super::speculation::SpeculationHarnessTarget::PromotionCertification,
-        )),
-        BridgeHarnessTargetId::SpeculationChurnCertification => Ok(HarnessTarget::Speculation(
-            super::speculation::SpeculationHarnessTarget::ChurnCertification,
         )),
         BridgeHarnessTargetId::HistoricalCommit {
             branch_identity,

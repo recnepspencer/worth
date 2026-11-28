@@ -67,22 +67,6 @@ impl PricingWorkloadCertificationBundle {
                 surface: "aspect",
             },
             PricingLineageProvenanceEdge {
-                from: self
-                    .promotion
-                    .promotion_session_identity
-                    .as_str()
-                    .to_owned(),
-                to: self.promotion.authoritative_commit_boundary_digest.clone(),
-                kind: "promotion_session_to_authoritative_boundary",
-                surface: "speculation",
-            },
-            PricingLineageProvenanceEdge {
-                from: self.promotion.authoritative_commit_boundary_digest.clone(),
-                to: self.promotion.authoritative_artifact_digest.clone(),
-                kind: "authoritative_boundary_to_artifact",
-                surface: "promotion",
-            },
-            PricingLineageProvenanceEdge {
                 from: self.fanout.second_source_commit.as_str().to_owned(),
                 to: self.fanout.second_snapshot.as_str().to_owned(),
                 kind: "commit_to_snapshot",

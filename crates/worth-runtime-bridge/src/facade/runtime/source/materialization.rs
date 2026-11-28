@@ -24,8 +24,20 @@ impl RuntimeBridge {
             error
         })?;
 
-        adapter
-            .materialize_packets(planned_packet_set, execution)
+        let materialized = if planned_packet_set.first().pinned_commit().is_some() {
+            planned_packet_set
+                .packets()
+                .iter()
+                .cloned()
+                .map(|packet| self.materialize_planned_truth_view(packet, execution))
+                .collect::<Result<Vec<_>, _>>()
+                .map(|observations| {
+                    MaterializedTruthViewPacketSet::new(planned_packet_set.clone(), observations)
+                })
+        } else {
+            adapter.materialize_packets(planned_packet_set, execution)
+        };
+        materialized
             .and_then(|materialized| {
                 self.validate_materialized_source_packet_set(planned_packet_set, &materialized)?;
                 Ok(materialized)
@@ -77,8 +89,12 @@ impl RuntimeBridge {
             error
         })?;
         let planned = planned_packet_set.first().clone();
-        adapter
-            .materialize_packet(planned.clone(), execution)
+        let materialized = if planned.pinned_commit().is_some() {
+            self.materialize_planned_truth_view(planned.clone(), execution)
+        } else {
+            adapter.materialize_packet(planned.clone(), execution)
+        };
+        materialized
             .and_then(|materialized| {
                 self.validate_materialized_source_observation(&planned, materialized)
             })

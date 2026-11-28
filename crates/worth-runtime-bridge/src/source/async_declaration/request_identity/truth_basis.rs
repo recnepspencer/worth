@@ -28,6 +28,7 @@ pub struct BridgeAsyncRequestTruthViewBasis {
     preview_active_subscription_identity:
         Option<crate::subscription::BridgePreviewActiveSubscriptionIdentity>,
     preview_parent_truth_view_basis_digest: Option<Arc<str>>,
+    preview_session: Option<crate::facade::BridgePreviewSessionLivenessObserver>,
     canonical_basis: Arc<str>,
     digest: Arc<str>,
 }
@@ -78,7 +79,7 @@ impl BridgeAsyncRequestTruthViewBasis {
     }
 
     pub fn preview(preview_active: &BridgePreviewActiveSubscription) -> Self {
-        Self::new(
+        let mut basis = Self::new(
             BridgeAsyncRequestTruthViewBasisKind::Preview,
             None,
             None,
@@ -91,7 +92,9 @@ impl BridgeAsyncRequestTruthViewBasis {
             Some(Arc::from(
                 preview_active.parent_truth_view_basis_digest().to_owned(),
             )),
-        )
+        );
+        basis.preview_session = Some(preview_active.session.clone());
+        basis
     }
 
     fn new(
@@ -137,6 +140,7 @@ impl BridgeAsyncRequestTruthViewBasis {
             truth_snapshot_identity,
             preview_active_subscription_identity,
             preview_parent_truth_view_basis_digest,
+            preview_session: None,
             canonical_basis,
             digest: Arc::from(format!(
                 "bridge-async-request-truth-view-basis:sha256:{digest:x}"
@@ -172,6 +176,12 @@ impl BridgeAsyncRequestTruthViewBasis {
 
     pub fn preview_parent_truth_view_basis_digest(&self) -> Option<&str> {
         self.preview_parent_truth_view_basis_digest.as_deref()
+    }
+
+    pub(crate) fn preview_session(
+        &self,
+    ) -> Option<&crate::facade::BridgePreviewSessionLivenessObserver> {
+        self.preview_session.as_ref()
     }
 
     pub fn canonical_basis(&self) -> &str {

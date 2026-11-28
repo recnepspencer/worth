@@ -5,12 +5,8 @@ use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort a
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_bridge::facade::{
-    BridgePreviewRetainedArtifactSchema, BridgePreviewSessionDeclaration,
-    BridgePreviewSessionDeclarationIdentity, BridgePreviewSessionIdentity, BridgeRequestKind,
-    BridgeSignalBranchIdentity, BridgeSourceCapability, BridgeSourceCapabilitySet,
-    BridgeSpeculativeBranchBinding, BridgeSpeculativeBranchBindingIdentity,
-    BridgeSpeculativePromotionOutcome, BridgeSpeculativeSessionHandle,
-    BridgeSpeculativeSessionRequest, BridgeTruthViewSelector,
+    BridgePreviewBranchBinding, BridgePreviewSessionHandle, BridgePreviewSessionIdentity,
+    BridgeSignalBranchIdentity, FinishedBridgePreviewSession, TruthBranchIdentity,
 };
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
@@ -43,7 +39,6 @@ pub enum WorthQueryApplicationPreviewReadmissionDenial {
     ForeignPhase,
     SourceUnavailable,
     SourceSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
-    AdmissionRejected,
 }
 
 /// Owns the original native preview, source observation and installed runtime.
@@ -54,15 +49,15 @@ pub enum WorthQueryApplicationPreviewReadmissionDenial {
 /// use worth_query_execution::facade::application_installation::{
 ///     WorthQueryApplicationPreviewSession, WorthQueryReadmittedApplicationPreview,
 /// };
-/// use worth_runtime_bridge::facade::{BridgeSpeculativeSessionHandle, RelationalBridgeObservationLease};
+/// use worth_runtime_bridge::facade::{BridgePreviewSessionHandle, RelationalBridgeObservationLease};
 /// fn send_sync<T: Send + Sync>() {}
-/// send_sync::<BridgeSpeculativeSessionHandle>();
+/// send_sync::<BridgePreviewSessionHandle>();
 /// send_sync::<RelationalBridgeObservationLease>();
 /// send_sync::<WorthQueryApplicationPreviewSession>();
 /// send_sync::<WorthQueryReadmittedApplicationPreview>();
 /// ```
 pub struct WorthQueryApplicationPreviewSession {
-    handle: BridgeSpeculativeSessionHandle,
+    handle: BridgePreviewSessionHandle,
     _source: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
     // One actual installed runtime clone, held solely for destruction custody.
     // Native handle and source above are destroyed before this backing is released.
@@ -141,50 +136,34 @@ impl WorthQueryApplicationPreviewSession {
     }
 
     /// Refusal returns the same preview, including its source observation.
-    pub fn discard(
-        mut self,
-    ) -> Result<(), (Self, worth_runtime_bridge::facade::BridgeSpeculationError)> {
+    pub fn discard(self) -> Result<(), (Self, WorthQueryApplicationPreviewDiscardDenial)> {
         // The court fault refuses before transferring the live Bridge handle.
         if self
             .discard_fault
             .load(std::sync::atomic::Ordering::Relaxed)
         {
-            let denial = worth_runtime_bridge::facade::BridgeSpeculationError::new(
-                worth_runtime_bridge::facade::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch,
-                "preview discard refused by the armed court fault",
-            );
-            return Err((self, denial));
+            return Err((
+                self,
+                WorthQueryApplicationPreviewDiscardDenial::CleanupRefused,
+            ));
         }
-        match self.handle.discard() {
-            Ok(_) => Ok(()),
-            Err((handle, denial)) => {
-                self.handle = handle;
-                Err((self, denial))
-            }
-        }
+        self.handle.discard();
+        Ok(())
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WorthQueryApplicationPreviewDiscardDenial {
+    CleanupRefused,
+}
+
 impl WorthQueryReadmittedApplicationPreview {
-    /// Finalizes the original admitted preview evidence, not current Query output.
-    pub fn promote(
-        mut self,
-    ) -> Result<
-        BridgeSpeculativePromotionOutcome,
-        (Self, worth_runtime_bridge::facade::BridgeSpeculationError),
-    > {
-        match self.session.handle.promote() {
-            Ok(outcome) => Ok(outcome),
-            Err((handle, denial)) => {
-                self.session.handle = handle;
-                Err((self, denial))
-            }
-        }
+    /// Finishes the admitted preview evidence for the caller.
+    pub fn promote(self) -> FinishedBridgePreviewSession {
+        self.session.handle.finish()
     }
 
-    pub fn discard(
-        self,
-    ) -> Result<(), (Self, worth_runtime_bridge::facade::BridgeSpeculationError)> {
+    pub fn discard(self) -> Result<(), (Self, WorthQueryApplicationPreviewDiscardDenial)> {
         self.session
             .discard()
             .map_err(|(session, denial)| (Self { session }, denial))
@@ -221,46 +200,22 @@ where
                 }
             })?;
         let source = selected.product().bridge_source();
-        let snapshot = source.snapshot_identity().clone();
-        let identity = request.identity;
-        let declaration = BridgePreviewSessionDeclaration::new(
-            BridgePreviewSessionDeclarationIdentity::from_stable_name(format!(
-                "{identity}:declaration"
-            )),
-            BridgeRequestKind::Preview,
-            BridgeSpeculativeBranchBinding::new(
-                BridgeSpeculativeBranchBindingIdentity::from_stable_name(format!(
-                    "{identity}:binding"
-                )),
-                super::super::super::application_branch::primary_truth_branch_identity(),
-                BridgeSignalBranchIdentity::from_stable_name(format!("{identity}:signal")),
-            ),
-            worth_runtime_bridge::facade::BridgePreviewSessionBasis::new(
-                BridgeTruthViewSelector::branch_snapshot(
-                    super::super::super::application_branch::primary_truth_branch_identity(),
-                    snapshot,
-                ),
-                BridgeSourceCapabilitySet::new(vec![
-                    BridgeSourceCapability::SnapshotRead,
-                    BridgeSourceCapability::BranchRead,
-                ]),
-                BridgePreviewRetainedArtifactSchema::PreviewLifecycleArtifactsV1,
-            ),
-        );
+        let relational = selected.product().relational_basis().identity().branch_id();
+        let signal = selected.product().signal_basis().branch_id();
         let handle = self
             .runtime()
             .inner
             .runtime
             .bridge_ref()
             .ordinary()
-            .speculate(BridgeSpeculativeSessionRequest::new(
-                BridgePreviewSessionIdentity::from_stable_name(format!("{identity}:session")),
-                declaration,
-                1,
-                1,
-                0,
-            ))
-            .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::AdmissionRejected)?;
+            .begin_preview(
+                BridgePreviewSessionIdentity::from_stable_name(request.identity),
+                BridgePreviewBranchBinding::new(
+                    TruthBranchIdentity::from_relational_branch_id(relational.0.clone()),
+                    BridgeSignalBranchIdentity::from_stable_name(signal.0.to_string()),
+                ),
+                source.snapshot_identity().clone(),
+            );
         Ok(WorthQueryApplicationPreviewSession {
             handle,
             _source: source,

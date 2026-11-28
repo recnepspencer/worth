@@ -1,7 +1,7 @@
 use crate::facade::{
     BridgeDeliveryError, BridgeDeliveryErrorKind, BridgeTruthViewSelector,
     HistoricalEvaluationDeclaration, RelationalCommittedPatchRequest, RuntimeBridge,
-    SnapshotReadPacket,
+    RuntimeBridgeRelationalSource, SnapshotReadPacket,
 };
 use crate::historical::failures::{
     historical_failure_class_for_delivery_error, historical_failure_class_for_policy_rejection,
@@ -10,7 +10,7 @@ use crate::historical::failures::{
 };
 use crate::snapshot::{
     BridgeTruthViewAuthorityBasis, BridgeTruthViewKind, BridgeTruthViewPolicyResolution,
-    PlannedTruthViewPacket,
+    PinnedCommitSnapshot, PlannedTruthViewPacket, TruthSnapshotReader,
 };
 
 impl RuntimeBridge {
@@ -18,6 +18,49 @@ impl RuntimeBridge {
         &self,
         declaration: HistoricalEvaluationDeclaration,
         read_packet: SnapshotReadPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<PlannedTruthViewPacket, BridgeDeliveryError> {
+        self.plan_truth_view_packet_at_source(
+            declaration,
+            read_packet,
+            self.native_history_source(),
+            execution,
+        )
+    }
+
+    pub(crate) fn plan_source_truth_view_packet(
+        &self,
+        declaration: HistoricalEvaluationDeclaration,
+        read_packet: SnapshotReadPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<PlannedTruthViewPacket, BridgeDeliveryError> {
+        let native = self.native_history_source().filter(|source| {
+            self.source_adapter
+                .as_ref()
+                .and_then(|adapter| {
+                    (adapter.as_ref() as &dyn std::any::Any)
+                        .downcast_ref::<RuntimeBridgeRelationalSource>()
+                })
+                .is_some_and(|adapter| adapter.shares_observation_bindings(source))
+        });
+        self.plan_truth_view_packet_at_source(declaration, read_packet, native, execution)
+    }
+
+    fn native_history_source(&self) -> Option<&RuntimeBridgeRelationalSource> {
+        let snapshot = self.snapshot_read_source.as_ref() as &dyn std::any::Any;
+        let committed = self.committed_patch_source.as_ref() as &dyn std::any::Any;
+        let source = snapshot.downcast_ref::<RuntimeBridgeRelationalSource>()?;
+        let committed = committed.downcast_ref::<RuntimeBridgeRelationalSource>()?;
+        source
+            .shares_observation_bindings(committed)
+            .then_some(source)
+    }
+
+    fn plan_truth_view_packet_at_source(
+        &self,
+        declaration: HistoricalEvaluationDeclaration,
+        read_packet: SnapshotReadPacket,
+        native_history: Option<&RuntimeBridgeRelationalSource>,
         execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<PlannedTruthViewPacket, BridgeDeliveryError> {
         let resolved_policy = match self.resolve_truth_view_policy(&declaration) {
@@ -42,8 +85,9 @@ impl RuntimeBridge {
                 ));
             }
         };
-        let authority_basis =
-            match self.resolve_truth_view_authority_basis(declaration.selector(), execution) {
+        let (authority_basis, pinned) =
+            match self.plan_truth_view_authority(declaration.selector(), native_history, execution)
+            {
                 Ok(authority_basis) => authority_basis,
                 Err(error) => {
                     self.record_historical_evaluation_failure(
@@ -55,15 +99,54 @@ impl RuntimeBridge {
                     return Err(error);
                 }
             };
-        Ok(PlannedTruthViewPacket::new(
-            declaration,
-            resolved_policy,
-            authority_basis,
-            read_packet,
-        ))
+        Ok(
+            PlannedTruthViewPacket::new(declaration, resolved_policy, authority_basis, read_packet)
+                .with_pinned_commit(pinned),
+        )
     }
 
-    pub(super) fn resolve_truth_view_authority_basis(
+    fn plan_truth_view_authority(
+        &self,
+        selector: &BridgeTruthViewSelector,
+        native_history: Option<&RuntimeBridgeRelationalSource>,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(BridgeTruthViewAuthorityBasis, Option<PinnedCommitSnapshot>), BridgeDeliveryError>
+    {
+        if matches!(
+            selector.view_kind(),
+            BridgeTruthViewKind::HistoricalCommit | BridgeTruthViewKind::BranchCommit
+        ) && let Some(commit) = selector.commit_identity()
+            && let Some(source) = native_history
+        {
+            let reader = source
+                .pin_commit_snapshot(selector.branch_identity(), commit, execution)
+                .map_err(|error| {
+                    BridgeDeliveryError::new(
+                        error.historical_delivery_kind(),
+                        format!(
+                            "could not pin historical commit `{}`: {error}",
+                            commit.as_str()
+                        ),
+                    )
+                })?;
+            let basis = BridgeTruthViewAuthorityBasis::from_resolved_snapshot(
+                selector,
+                commit.clone(),
+                reader.snapshot_identity(),
+            );
+            return Ok((
+                basis,
+                Some(PinnedCommitSnapshot {
+                    source: self.snapshot_read_source.clone(),
+                    reader,
+                }),
+            ));
+        }
+        self.resolve_truth_view_authority_basis(selector, execution)
+            .map(|basis| (basis, None))
+    }
+
+    fn resolve_truth_view_authority_basis(
         &self,
         selector: &BridgeTruthViewSelector,
         execution: worth_execution::ExecutionRequest<'_, '_>,
@@ -172,7 +255,7 @@ impl RuntimeBridge {
                 ));
         }
 
-        Ok(BridgeTruthViewAuthorityBasis::from_resolved_envelope(
+        Ok(BridgeTruthViewAuthorityBasis::from_resolved_snapshot(
             selector,
             envelope.commit_identity().clone(),
             envelope.snapshot_identity().clone(),

@@ -97,19 +97,6 @@ pub enum BridgeContinuityErrorKind {
 pub type BridgeContinuityError = BridgeTypedError<BridgeContinuityErrorKind>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BridgeSpeculationErrorKind {
-    PreviewRequestKindMismatch,
-    PreviewSessionIdentityConflict,
-    PreviewBranchBindingMismatch,
-    IllegalPreviewLifecycleTransition,
-    PromotionAdmissibilityMismatch,
-    PreviewReuseEquivalenceMismatch,
-    PreviewResidueClassificationMismatch,
-}
-
-pub type BridgeSpeculationError = BridgeTypedError<BridgeSpeculationErrorKind>;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeWritebackErrorKind {
     WritebackNotRequested,
     PolicyRejected,

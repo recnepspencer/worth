@@ -1,5 +1,0 @@
-error[E0451]: fields `declaration_identity`, `request_kind`, `branch_binding`, `session_basis`, `request_shape_basis`, `structural_basis`, `truth_view_basis_digest`, `structural_basis_digest`, `source_capability_digest`, `request_shape_digest`, `retained_artifact_schema_digest`, `canonical_basis` and `digest` of struct `BridgePreviewSessionDeclaration` are private
- --> tests/ui/preview_session_declaration_literal_private.rs:4:41
-  |
-4 |     BridgePreviewSessionDeclaration { ..value }
-  |                                         ^^^^^ fields `declaration_identity`, `request_kind`, `branch_binding`, `session_basis`, `request_shape_basis`, `structural_basis`, `truth_view_basis_digest`, `structural_basis_digest`, `source_capability_digest`, `request_shape_digest`, `retained_artifact_schema_digest`, `canonical_basis` and `digest` are private

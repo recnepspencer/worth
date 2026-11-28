@@ -22,7 +22,6 @@ use super::types::{
 };
 use policy::execute_policy_request;
 use source::execute_source_request;
-use speculation::execute_speculation_request;
 
 impl HarnessAdapter for BridgeHarnessAdapter {
     type Runtime = BridgeHarnessSession;
@@ -175,14 +174,6 @@ impl HarnessAdapter for BridgeHarnessAdapter {
                             resource_request,
                         )?)
                     }
-                    HarnessTarget::Speculation(speculation_target) => {
-                        HarnessExecution::Speculation(execute_speculation_request(
-                            runtime_bridge,
-                            &fixture.fixture,
-                            speculation_target,
-                            resource_request,
-                        )?)
-                    }
                     HarnessTarget::HistoricalCommit {
                         branch_identity,
                         commit_identity,
@@ -268,7 +259,6 @@ mod policy;
 mod runtime_loading;
 mod snapshot_capture;
 mod source;
-mod speculation;
 mod terminal_report_export;
 use execution::{
     execute_historical_request, harness_target_from_id, HarnessExecution, HarnessTarget,

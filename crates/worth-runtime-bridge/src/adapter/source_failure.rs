@@ -10,6 +10,8 @@ pub enum RelationalBridgeSourceErrorTag {
     Binding(BridgeSourceBindingDenial),
     /// The native runtime refused commit selection.
     CommitSelection(worth_relational::facade::change_source::RelationalCommitSelectionDenial),
+    /// Native could not retain an exact committed observation.
+    PinnedCommit(worth_relational::facade::change_source::RelationalPinnedCommitDenial),
     /// The native runtime refused an observation read.
     ObservationRead(worth_relational::facade::change_source::RelationalObservationReadDenial),
     /// The carried request refused this source contact.
@@ -36,6 +38,14 @@ impl RelationalBridgeSourceError {
     }
 
     pub(crate) fn historical_delivery_kind(&self) -> crate::error::BridgeDeliveryErrorKind {
+        use worth_relational::facade::change_source::RelationalPinnedCommitDenial;
+        if let RelationalBridgeSourceErrorTag::PinnedCommit(
+            RelationalPinnedCommitDenial::Execution(cause),
+        ) = self.kind()
+            && let Some(denial) = cause.as_request_denial()
+        {
+            return crate::error::BridgeDeliveryErrorKind::ExecutionDenied(denial.into());
+        }
         match self.kind() {
             RelationalBridgeSourceErrorTag::ExecutionDenied(denial) => {
                 crate::error::BridgeDeliveryErrorKind::ExecutionDenied(denial)
@@ -43,6 +53,7 @@ impl RelationalBridgeSourceError {
             RelationalBridgeSourceErrorTag::ExternalSourceFailure
             | RelationalBridgeSourceErrorTag::Binding(_)
             | RelationalBridgeSourceErrorTag::CommitSelection(_)
+            | RelationalBridgeSourceErrorTag::PinnedCommit(_)
             | RelationalBridgeSourceErrorTag::ObservationRead(_)
             | RelationalBridgeSourceErrorTag::PublicationDenied(_)
             | RelationalBridgeSourceErrorTag::PublicationDeferred(_)
@@ -61,6 +72,7 @@ impl RelationalBridgeSourceError {
             RelationalBridgeSourceErrorTag::ExternalSourceFailure
             | RelationalBridgeSourceErrorTag::Binding(_)
             | RelationalBridgeSourceErrorTag::CommitSelection(_)
+            | RelationalBridgeSourceErrorTag::PinnedCommit(_)
             | RelationalBridgeSourceErrorTag::ObservationRead(_)
             | RelationalBridgeSourceErrorTag::PublicationDenied(_)
             | RelationalBridgeSourceErrorTag::PublicationDeferred(_)
