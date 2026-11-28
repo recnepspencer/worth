@@ -7,14 +7,15 @@ import CanonicalGroupDelta.Delta
 Reads the NDJSON trace the real Rust group state emits (one line per
 committed transition of one group: its prior membership, the recorded delta
 or initial members, the installed and the `GROUP_LOG`-replayed memberships,
-and the change's WPGL v2 wire bytes) and checks every step against the
+and the change's WPGL v3 wire bytes) and checks every step against the
 proved functions of `CanonicalGroupDelta.Delta`:
 
 * a kept step's installed membership is `applyDelta prior delta`, in
   `|removed| + |upserted| + 1` steps;
 * its recorded delta is exactly `diff prior post` (canonical and minimal);
 * its wire bytes are `encode`'s kept body minus the eight count bytes, with
-  32-byte names and 50-byte members;
+  37-byte framed entity keys and 67-byte projected keys, plus 17 bytes
+  for the native carrier and role on upserts;
 * born and revived steps install exactly their initial members from an
   absent group, retirement leaves none, and replay agrees with the warm state.
 
@@ -68,9 +69,15 @@ def support (s : Step) : List Nat :=
 def agree (f g : Members Val) (names : List Nat) : Bool :=
   names.all fun x => f x == g x
 
-/-- WPGL v2 kept-body bytes beyond its two counts. -/
+/-- The projected trace keys (200 and 201) use domain test/1/FaceSide
+and the eight-byte Negative and Positive case names. -/
+def keyWidth (key : Nat) : Nat :=
+  4 + 1 + 32 + if key ≥ 200 then (4 + 2) + 4 + (8 + 2) + (8 + 2) else 0
+
+/-- WPGL v3 kept-body bytes beyond its two counts. -/
 def wireBytes (d : Delta Val) : Nat :=
-  (encode (fun _ => List.replicate 32 0) (fun _ => List.replicate 50 0) d).length - 8
+  (encode (fun key => List.replicate (keyWidth key) 0)
+    (fun member => List.replicate (keyWidth member.1 + 17) 0) d).length - 8
 
 def check (s : Step) : Except String Unit := do
   let names := support s

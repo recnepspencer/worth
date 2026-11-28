@@ -20,6 +20,7 @@ pub mod denial;
 pub mod lineage;
 pub mod lookup;
 pub mod member;
+pub mod named;
 pub mod proposed;
 pub mod resolution;
 pub mod result;
@@ -101,6 +102,10 @@ pub fn read_aggregate_scope<Projection>(
     candidate: Option<&super::AggregateCandidateRead>,
     execution: &ExecutionRequest<'_, '_>,
     scope: PinnedAggregateReadScope<'_, Projection>,
+    named_read: impl FnOnce(
+        &super::AggregateGroupScheme,
+        &NativeMemberKey,
+    ) -> Result<named::NamedAggregateRead, named::NamedAggregateLookupDenial>,
 ) -> Result<PinnedAggregateRead<Projection>, PinnedAggregateReadDenial> {
     coordination::read(
         basis,
@@ -110,6 +115,15 @@ pub fn read_aggregate_scope<Projection>(
             funded.retain(result::controls())?;
             let contract = contract::resolve(root, scope.selection, funded)?;
             let registry = root.schema_authority().registry();
+            if let Some(scheme) = contract.group_scheme(registry) {
+                member::validate_coordinate(registry, contract, &scope.member, funded)?;
+                member::validate_resident_kind(view, contract, &scope.member, funded)?;
+                return named::read(
+                    contract.definition,
+                    named_read(&scheme, &scope.member),
+                    funded,
+                );
+            }
             member::validate(view, registry, contract, &scope.member, funded)?;
             if let Some(candidate) = candidate
                 && let Some(value) = proposed::read(candidate, contract, &scope.member, funded)?

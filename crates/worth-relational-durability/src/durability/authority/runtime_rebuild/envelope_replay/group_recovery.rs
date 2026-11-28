@@ -36,7 +36,11 @@ pub fn replay_group_transitions(
         .map_err(|refusal| replay_failure(envelope, format!("{refusal:?}")))?;
     Ok(transitions
         .into_iter()
-        .filter(|committed| committed.kind == GroupTransitionKind::Partition)
+        .filter(|committed| {
+            // Automatic partitions are rediscovered from the replayed graph mutations.
+            committed.kind == GroupTransitionKind::Partition
+                && !committed.scheme.id().is_automatic()
+        })
         .collect())
 }
 
@@ -91,7 +95,7 @@ pub fn replay_group_claims(
                     }
                     for (name, member) in delta.upserted() {
                         members.remove(name);
-                        let _ = members.insert(*name, member.carrier.clone(), member.role);
+                        let _ = members.insert(name.clone(), member.carrier.clone(), member.role);
                     }
                     members
                 }
@@ -99,7 +103,20 @@ pub fn replay_group_claims(
                     members.clone()
                 }
             };
-            declared.push(members.iter().map(|(name, m)| (*name, m.role)).collect());
+            let group = members
+                .iter()
+                .map(|(name, member)| {
+                    name.entity_name()
+                        .map(|name| (*name, member.role))
+                        .ok_or_else(|| {
+                            replay_failure(
+                                envelope,
+                                "authored group contains a projected member".to_owned(),
+                            )
+                        })
+                })
+                .collect::<Result<_, _>>()?;
+            declared.push(group);
         }
         dissolved.sort_unstable();
         claims.push(GroupPartitionClaim {

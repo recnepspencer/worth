@@ -210,6 +210,7 @@ impl<'a> AggregateProposalBorrow<'a> {
     ) -> Result<
         (
             Option<PreparedConsequences>,
+            super::preparation::TouchedAggregatePartitions,
             super::AggregateReadObservations,
         ),
         TransactionCommitError,
@@ -223,7 +224,11 @@ impl<'a> AggregateProposalBorrow<'a> {
             return Err(error);
         }
         if self.owner.changes.is_none() {
-            return Ok((None, super::AggregateReadObservations::default()));
+            return Ok((
+                None,
+                Default::default(),
+                super::AggregateReadObservations::default(),
+            ));
         }
         self.owner
             .projection(execution, budget, &self.selected, self.after, business)?;
@@ -237,8 +242,9 @@ impl<'a> AggregateProposalBorrow<'a> {
                 let projection = Arc::clone(&artifact.projection);
                 let consequences = artifact.consequences.take();
                 let reads = artifact.reads;
+                let facts = std::mem::take(&mut artifact.facts);
                 *state = ArtifactState::Consumed(projection);
-                Ok((consequences, reads))
+                Ok((consequences, facts, reads))
             }
             ArtifactState::Failed(error) => Err(error.clone()),
             _ => Err(binding_error("aggregate consequences already consumed")),

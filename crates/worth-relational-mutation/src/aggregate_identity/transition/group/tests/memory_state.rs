@@ -20,7 +20,7 @@ impl MemoryState {
                 let group = &self.groups[identity];
                 AggregatePriorGroup {
                     identity: group.identity,
-                    anchor: group.anchor,
+                    anchor: group.anchor.clone(),
                     sources: group.sources.clone(),
                     members: group.members.clone(),
                 }
@@ -46,11 +46,11 @@ impl MemoryState {
         for assignment in &transition.assignments {
             self.retired.remove(&assignment.identity);
             for (name, _) in assignment.members.iter() {
-                self.owner.insert(*name, assignment.identity);
+                self.owner.insert(name.clone(), assignment.identity);
             }
             let group = AggregatePriorGroup {
                 identity: assignment.identity,
-                anchor: assignment.anchor,
+                anchor: assignment.anchor.clone(),
                 sources: assignment.sources.clone(),
                 members: assignment.members.clone(),
             };
@@ -64,7 +64,7 @@ impl AggregateGroupStateView for MemoryState {
         let group = self.groups.get(identity)?;
         Some(AggregateGroupHeader {
             identity: group.identity,
-            anchor: group.anchor,
+            anchor: group.anchor.clone(),
             sources: group.sources.clone(),
             counts: AggregateGroupRoleCounts::of_members(&group.members),
         })
@@ -91,7 +91,7 @@ impl AggregateGroupStateView for MemoryState {
             .members
             .iter()
             .filter(|(name, member)| !skip.contains(*name) && role.is_none_or(|r| member.role == r))
-            .map(|(name, _)| *name)
+            .map(|(name, _)| name.clone())
             .next()
     }
 

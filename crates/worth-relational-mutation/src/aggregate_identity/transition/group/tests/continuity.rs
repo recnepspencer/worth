@@ -106,7 +106,10 @@ fn boundary_rule_split_follows_the_most_walls_even_away_from_the_anchor() {
         ],
     );
     let (kept, split) = (group_with(&next, 11), group_with(&next, 10));
-    assert_eq!((kept.identity, kept.anchor), (id(rule, 10), name(10)));
+    assert_eq!(
+        (kept.identity, kept.anchor.clone()),
+        (id(rule, 10), name(10))
+    );
     assert_eq!(kept.origin, Kept);
     let fragment = tid(rule, 10, &[id(rule, 10)]);
     assert_eq!((split.identity, split.origin), (fragment, Born));

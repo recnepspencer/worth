@@ -193,6 +193,9 @@ impl<'view, 'runtime> AggregateReadPort<'view, 'runtime> {
         contract: &AggregateIdentityContractDeclaration,
         registry: &RelationalSchemaRegistry,
     ) -> Result<Option<crate::derived_relation::DerivedRelationHandle>, AggregateReadDenial> {
+        if contract.group_scheme(registry).is_some() {
+            return Err(AggregateReadDenial::SourceUnavailable);
+        }
         if let Some(identity) = contract.source.derived_relation() {
             let names = identity
                 .schema

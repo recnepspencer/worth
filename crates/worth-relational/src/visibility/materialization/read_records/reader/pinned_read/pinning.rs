@@ -54,6 +54,7 @@ impl VisibilityReadContext<'_> {
         let context = self
             .query_plan_context(&snapshot)
             .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
+        let naming = self.settled_aggregate_naming(&basis);
         Ok(RelationalPinnedRead::capture_exact_pin(
             self.runtime.current_version_id(),
             self.runtime.services.instrumentation.clone(),
@@ -61,6 +62,7 @@ impl VisibilityReadContext<'_> {
             basis,
             context,
             indexes,
+            naming,
         ))
     }
 }
@@ -127,6 +129,7 @@ impl VisibilityReadContext<'_> {
             denied,
         )?;
         let (current_version, instrumentation, _) = view.retain_pinning_metadata();
+        let naming = self.settled_aggregate_naming(&basis);
         Ok(RelationalPinnedRead::capture_exact_pin(
             current_version,
             instrumentation,
@@ -134,7 +137,32 @@ impl VisibilityReadContext<'_> {
             basis,
             context,
             indexes,
+            naming,
         ))
+    }
+
+    fn settled_aggregate_naming(
+        &self,
+        basis: &ResidentVisibilitySnapshotBasis,
+    ) -> Option<worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::naming_basis_binding::LineageNamingBasisBinding>{
+        let selected = basis.basis();
+        if !selected
+            .projection_root()
+            .schema_authority()
+            .registry()
+            .has_kind_name_schemes()
+        {
+            return None;
+        }
+        let commit = selected.commit_id()?;
+        if self
+            .runtime
+            .publication_binding()
+            .has_unsettled_publication_through(commit)
+        {
+            return None;
+        }
+        Some(self.runtime.lineage.naming_basis_binding())
     }
 
     fn pin_indexes<E>(

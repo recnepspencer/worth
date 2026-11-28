@@ -16,10 +16,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use worth_foundational::facade::AggregateIdentity;
 
 use crate::contracts::aggregate_identity::transition::group::model::AggregateContinuityRule;
+use crate::contracts::aggregate_identity::transition::group::model::CanonicalGroupMemberIdentity;
 use crate::contracts::aggregate_identity::transition::group::state_view::AggregateGroupHeader;
 use crate::contracts::graph_member::NativeMemberKey;
 use crate::contracts::history::data::coordinates::CommitId;
-use crate::contracts::lineage::data::naming::PersistentNameIdentity;
 use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
 use crate::lineage::naming_pages::tables;
 use crate::lineage::tiered::{NamingBaseLink, TieredMap};
@@ -48,7 +48,7 @@ pub enum GroupStateDenial {
     /// One member would belong to two live groups of the scheme.
     MemberOverlap {
         scheme_id: String,
-        member: PersistentNameIdentity,
+        member: CanonicalGroupMemberIdentity,
     },
     /// The lineage events disagree with the transition's own outcome.
     EventMismatch {
@@ -87,7 +87,7 @@ pub struct SchemeGroups {
     pub(super) live: TieredMap<SchemeKey<AggregateIdentity>, AggregateGroupHeader>,
     pub(super) members: TieredMap<SchemeKey<GroupMemberKey>, NativeMemberKey>,
     pub(super) retired: TieredMap<SchemeKey<AggregateIdentity>, ()>,
-    pub(super) member_owner: TieredMap<SchemeKey<PersistentNameIdentity>, GroupOwnerRow>,
+    pub(super) member_owner: TieredMap<SchemeKey<CanonicalGroupMemberIdentity>, GroupOwnerRow>,
 }
 
 impl SchemeGroups {

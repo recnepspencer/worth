@@ -1,7 +1,7 @@
 -- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution-naming/src/tracked_resolution/dependencies.rs:53-55 sha256:fe14b7cc30246867f439b744ebdbe03ee9ee9979f88f2620a82c71856d4ebdc5
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution-naming/src/tracked_resolution/dependencies.rs:193-233 sha256:c2a85c05fe2782b4107fd83786723c3ad020824fb63da5b720c40f9e2651400f
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution-naming/src/tracked_resolution/dependencies/groups.rs:60-111 sha256:8b58679c20081078d061745fb37b184a5218f9944ae1c799efd5ad58ee5c6bd8
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution-naming/src/tracked_resolution/dependencies/groups.rs:60-114 sha256:b663ce56fc3d1a2e9acf9d1628d1c0adf3e5dc114b834d468601c6da2349d6d6
 
 /-!
 # Tracked-read currentness step bound (Phase 7B-2, RULES §4 layer 1)

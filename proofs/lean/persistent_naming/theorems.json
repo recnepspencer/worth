@@ -160,6 +160,14 @@
     {
       "name": "PersistentNaming.CowMapFork.fork_groups_steps_independent_of_members",
       "type": "∀ (large small : List PersistentNaming.CowMapFork.SchemeTables) (link link' : PersistentNaming.CowMapFork.Table Nat → Nat → Option Nat), large.length = small.length → (PersistentNaming.CowMapFork.forkGroups link large).steps = (PersistentNaming.CowMapFork.forkGroups link' small).steps"
+    },
+    {
+      "name": "PersistentNaming.GroupMember.entity_ne_projected",
+      "type": "∀ (name : Nat) (domain : String × Nat × String) (caseName : String), PersistentNaming.GroupMember.Key.entity name ≠ PersistentNaming.GroupMember.Key.projectedCase name domain caseName"
+    },
+    {
+      "name": "PersistentNaming.GroupMember.projected_case_injective",
+      "type": "∀ {carrier carrier' : Nat} {domain domain' : String × Nat × String} {caseName caseName' : String}, PersistentNaming.GroupMember.Key.projectedCase carrier domain caseName = PersistentNaming.GroupMember.Key.projectedCase carrier' domain' caseName' → carrier = carrier' ∧ domain = domain' ∧ caseName = caseName'"
     }
   ]
 }

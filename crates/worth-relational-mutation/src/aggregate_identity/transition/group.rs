@@ -16,7 +16,7 @@ use worth_foundational::facade::AggregateIdentity;
 
 use super::mint::{mint_group_identity, mint_group_name};
 use crate::contracts::aggregate_identity::group_lineage::AggregateGroupLineageEvent as Event;
-use crate::contracts::lineage::data::naming::PersistentNameIdentity as Name;
+use CanonicalGroupMemberIdentity as Name;
 pub mod delta;
 pub mod keeper;
 pub mod outcome;
@@ -34,7 +34,7 @@ pub use crate::contracts::aggregate_identity::transition::group::denial::Aggrega
 pub use crate::contracts::aggregate_identity::transition::group::model::{
     AggregateContinuityRule, AggregateGroupClaimant, AggregateGroupMember, AggregateGroupMembers,
     AggregateGroupOrigin, AggregateGroupPartitionAssignment, AggregateGroupScheme,
-    AggregateGroupSchemeId, AggregateMemberRole, AggregatePriorGroup,
+    AggregateGroupSchemeId, AggregateMemberRole, AggregatePriorGroup, CanonicalGroupMemberIdentity,
 };
 pub use crate::contracts::aggregate_identity::transition::group::state_view::{
     AggregateGroupHeader, AggregateGroupMembership, AggregateGroupRoleCounts,
@@ -48,7 +48,7 @@ pub trait AggregateGroupNaming {
     /// Mints the allocation-independent name of a group anchored at `anchor`.
     fn from_group_name(
         scheme: &AggregateGroupSchemeId,
-        anchor: Name,
+        anchor: impl Into<Name>,
         rule: AggregateContinuityRule,
     ) -> AggregateIdentity;
 
@@ -56,7 +56,7 @@ pub trait AggregateGroupNaming {
     /// are canonicalized (sorted, deduplicated) before hashing.
     fn from_group_transition(
         scheme: &AggregateGroupSchemeId,
-        anchor: Name,
+        anchor: impl Into<Name>,
         rule: AggregateContinuityRule,
         sources: &[AggregateIdentity],
     ) -> AggregateIdentity;
@@ -65,15 +65,15 @@ pub trait AggregateGroupNaming {
 impl AggregateGroupNaming for AggregateIdentity {
     fn from_group_name(
         scheme: &AggregateGroupSchemeId,
-        anchor: Name,
+        anchor: impl Into<Name>,
         rule: AggregateContinuityRule,
     ) -> AggregateIdentity {
-        mint_group_name(scheme, anchor, rule)
+        mint_group_name(scheme, &anchor.into(), rule)
     }
 
     fn from_group_transition(
         scheme: &AggregateGroupSchemeId,
-        anchor: Name,
+        anchor: impl Into<Name>,
         rule: AggregateContinuityRule,
         sources: &[AggregateIdentity],
     ) -> AggregateIdentity {
@@ -83,7 +83,7 @@ impl AggregateGroupNaming for AggregateIdentity {
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect();
-        super::mint::mint_group_transition(scheme, anchor, rule, &sources)
+        super::mint::mint_group_transition(scheme, &anchor.into(), rule, &sources)
     }
 }
 
@@ -137,7 +137,7 @@ impl AggregateGroupNamingAuthority {
             .iter()
             .map(|old| keeper::destination(rule, old, &new_owner))
             .collect();
-        let prior_anchors: Vec<Name> = prior.iter().map(|old| old.anchor).collect();
+        let prior_anchors: Vec<Name> = prior.iter().map(|old| old.anchor.clone()).collect();
         let kept_by = keeper::choose_keepers(rule, &prior_anchors, &destination, proposed.len());
         let names: Vec<GroupName> = proposed
             .iter()
@@ -145,7 +145,7 @@ impl AggregateGroupNamingAuthority {
             .map(|(group, members)| match kept_by[group] {
                 Some(old) => GroupName {
                     identity: prior[old].identity,
-                    anchor: prior[old].anchor,
+                    anchor: prior[old].anchor.clone(),
                     sources: prior[old].sources.clone(),
                 },
                 None => {
@@ -155,9 +155,9 @@ impl AggregateGroupNamingAuthority {
                         .map(|&old| prior[old].identity)
                         .collect();
                     let sources: Vec<_> = sources.into_iter().collect();
-                    let anchor = anchors[group];
+                    let anchor = anchors[group].clone();
                     GroupName {
-                        identity: mint_group_identity(scheme.id(), anchor, rule, &sources),
+                        identity: mint_group_identity(scheme.id(), &anchor, rule, &sources),
                         anchor,
                         sources,
                     }
@@ -193,7 +193,7 @@ fn index_prior(
         // Non-canonical sources refuse before any hashing sees them.
         if !canonical
             || identity
-                != mint_group_identity(scheme.id(), group.anchor, scheme.rule(), &group.sources)
+                != mint_group_identity(scheme.id(), &group.anchor, scheme.rule(), &group.sources)
         {
             return Err(Denial::PriorIdentityMismatch { identity });
         }
@@ -204,8 +204,8 @@ fn index_prior(
             return Err(Denial::EmptyGroup);
         }
         for (name, _) in group.members.iter() {
-            if owner.insert(*name, old).is_some() {
-                return Err(Denial::OverlappingMember { name: *name });
+            if owner.insert(name.clone(), old).is_some() {
+                return Err(Denial::OverlappingMember { name: name.clone() });
             }
         }
     }
@@ -224,11 +224,11 @@ fn index_proposed(
             return Err(Denial::EmptyGroup);
         }
         for (name, member) in members.iter() {
-            if names.insert(*name, (group, member.role)).is_some() {
-                return Err(Denial::OverlappingMember { name: *name });
+            if names.insert(name.clone(), (group, member.role)).is_some() {
+                return Err(Denial::OverlappingMember { name: name.clone() });
             }
             if !carriers.insert(&member.carrier) {
-                return Err(Denial::DuplicateCarrier { name: *name });
+                return Err(Denial::DuplicateCarrier { name: name.clone() });
             }
         }
     }

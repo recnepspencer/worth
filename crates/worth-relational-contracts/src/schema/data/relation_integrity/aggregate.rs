@@ -39,6 +39,25 @@ pub struct AggregateIdentityContractDeclaration {
     pub storage: AggregateIdentityStorage,
 }
 
+impl AggregateIdentityContractDeclaration {
+    /// The installed carrier naming binding enables canonical group naming.
+    pub fn group_scheme(
+        &self,
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+    ) -> Option<crate::aggregate_identity::transition::group::model::AggregateGroupScheme> {
+        use crate::aggregate_identity::transition::group::model::{
+            AggregateContinuityRule, AggregateGroupScheme, AggregateGroupSchemeId,
+        };
+        use crate::lineage::data::PersistentNameSubjectKind;
+
+        registry.scheme_id_for_kind(PersistentNameSubjectKind::Entity, self.member_kind)?;
+        Some(AggregateGroupScheme::new(
+            AggregateGroupSchemeId::automatic(self.definition),
+            AggregateContinuityRule::Anchor,
+        ))
+    }
+}
+
 /// Operations used by the Relational owners.
 pub trait AggregateIdentityContractDeclarationOwnerPort: Sized {
     /// These kinds remain Native custody across authored payload suspension.

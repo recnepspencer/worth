@@ -58,7 +58,7 @@ impl<V: AggregateGroupStateView> Plan<'_, V> {
             }
             result.assignments.push(AggregateGroupAssignment {
                 identity,
-                anchor: *anchor,
+                anchor: anchor.clone(),
                 sources: sources.clone(),
                 change,
             });
@@ -95,11 +95,11 @@ impl<V: AggregateGroupStateView> Plan<'_, V> {
             let prior = &proposal.priors[old];
             let mut delta = AggregateGroupMemberDelta::new();
             for name in &prior.leaving {
-                delta.remove(*name)?;
+                delta.remove(name.clone())?;
             }
             for (name, carrier) in &prior.recarried {
                 let role = prior.touched[name].role;
-                delta.upsert(*name, carrier.clone(), role)?;
+                delta.upsert(name.clone(), carrier.clone(), role)?;
             }
             return Ok(delta);
         }

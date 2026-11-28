@@ -2,13 +2,13 @@
 //! member and no retired name.
 use std::collections::BTreeSet;
 
+use contracts::aggregate_identity::transition::group::model::CanonicalGroupMemberIdentity;
 use contracts::aggregate_identity::transition::group::model::{
     AggregateGroupMembers, AggregateMemberRole,
 };
 use contracts::aggregate_identity::transition::group::state_view::{
     AggregateGroupHeader, AggregateGroupMembership, AggregateGroupStateView,
 };
-use contracts::lineage::data::naming::PersistentNameIdentity;
 use worth_foundational::facade::AggregateIdentity;
 use worth_relational_contracts::internal_port as contracts;
 
@@ -19,7 +19,7 @@ impl AggregateGroupStateView for EmptyGroupState {
         None
     }
 
-    fn membership(&self, _: &PersistentNameIdentity) -> Option<AggregateGroupMembership> {
+    fn membership(&self, _: &CanonicalGroupMemberIdentity) -> Option<AggregateGroupMembership> {
         None
     }
 
@@ -31,8 +31,8 @@ impl AggregateGroupStateView for EmptyGroupState {
         &self,
         _: &AggregateIdentity,
         _: Option<AggregateMemberRole>,
-        _: &BTreeSet<PersistentNameIdentity>,
-    ) -> Option<PersistentNameIdentity> {
+        _: &BTreeSet<CanonicalGroupMemberIdentity>,
+    ) -> Option<CanonicalGroupMemberIdentity> {
         None
     }
 

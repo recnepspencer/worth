@@ -8,11 +8,11 @@ use std::collections::BTreeSet;
 use worth_foundational::facade::AggregateIdentity;
 
 use super::denial::AggregateGroupNamingDenial;
+use super::model::CanonicalGroupMemberIdentity;
 use super::model::{
     AggregateGroupMember, AggregateGroupMembers, AggregateGroupOrigin, AggregateMemberRole,
 };
 use crate::graph_member::NativeMemberKey;
-use crate::lineage::data::PersistentNameIdentity;
 
 /// The membership change of one kept group: members that left it, and
 /// members that joined it or changed carrier or role in it.
@@ -22,8 +22,8 @@ use crate::lineage::data::PersistentNameIdentity;
 /// branch group state refuses any upsert that changes nothing.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
 pub struct AggregateGroupMemberDelta {
-    removed: BTreeSet<PersistentNameIdentity>,
-    upserted: BTreeMap<PersistentNameIdentity, AggregateGroupMember>,
+    removed: BTreeSet<CanonicalGroupMemberIdentity>,
+    upserted: BTreeMap<CanonicalGroupMemberIdentity, AggregateGroupMember>,
 }
 
 impl AggregateGroupMemberDelta {
@@ -34,27 +34,35 @@ impl AggregateGroupMemberDelta {
     /// Records that `name` left the group.
     pub fn remove(
         &mut self,
-        name: PersistentNameIdentity,
+        name: impl Into<CanonicalGroupMemberIdentity>,
     ) -> Result<(), AggregateGroupNamingDenial> {
-        if self.upserted.contains_key(&name) || !self.removed.insert(name) {
+        let name = name.into();
+        if self.upserted.contains_key(&name) || self.removed.contains(&name) {
             return Err(AggregateGroupNamingDenial::DuplicateMemberName { name });
         }
+        self.removed.insert(name);
         Ok(())
     }
 
     /// Records that `name` joined the group or now holds `carrier` and `role`.
     pub fn upsert(
         &mut self,
-        name: PersistentNameIdentity,
+        name: impl Into<CanonicalGroupMemberIdentity>,
         carrier: NativeMemberKey,
         role: AggregateMemberRole,
     ) -> Result<(), AggregateGroupNamingDenial> {
+        let name = name.into();
         if self.removed.contains(&name) {
             return Err(AggregateGroupNamingDenial::DuplicateMemberName { name });
         }
+        if !name.matches_member(&carrier) {
+            return Err(AggregateGroupNamingDenial::MemberCoordinateMismatch { name });
+        }
         match self.upserted.entry(name) {
-            btree_map::Entry::Occupied(_) => {
-                Err(AggregateGroupNamingDenial::DuplicateMemberName { name })
+            btree_map::Entry::Occupied(slot) => {
+                Err(AggregateGroupNamingDenial::DuplicateMemberName {
+                    name: slot.key().clone(),
+                })
             }
             btree_map::Entry::Vacant(slot) => {
                 slot.insert(AggregateGroupMember { carrier, role });
@@ -64,14 +72,14 @@ impl AggregateGroupMemberDelta {
     }
 
     /// Members that left, ascending.
-    pub fn removed(&self) -> impl Iterator<Item = &PersistentNameIdentity> {
+    pub fn removed(&self) -> impl Iterator<Item = &CanonicalGroupMemberIdentity> {
         self.removed.iter()
     }
 
     /// Members that joined or changed carrier or role, ascending.
     pub fn upserted(
         &self,
-    ) -> impl Iterator<Item = (&PersistentNameIdentity, &AggregateGroupMember)> {
+    ) -> impl Iterator<Item = (&CanonicalGroupMemberIdentity, &AggregateGroupMember)> {
         self.upserted.iter()
     }
 
@@ -104,7 +112,7 @@ pub enum AggregateGroupChange {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AggregateGroupAssignment {
     pub identity: AggregateIdentity,
-    pub anchor: PersistentNameIdentity,
+    pub anchor: CanonicalGroupMemberIdentity,
     /// The prior sources hashed into this name (empty for a pure group name).
     pub sources: Vec<AggregateIdentity>,
     pub change: AggregateGroupChange,
@@ -123,7 +131,7 @@ impl AggregateGroupAssignment {
     /// upserted members, or a born or revived group's initial members.
     ///
     /// Complexity: O(touched members).
-    pub fn touched_members(&self) -> Box<dyn Iterator<Item = &PersistentNameIdentity> + '_> {
+    pub fn touched_members(&self) -> Box<dyn Iterator<Item = &CanonicalGroupMemberIdentity> + '_> {
         match &self.change {
             AggregateGroupChange::Kept(delta) => Box::new(
                 delta

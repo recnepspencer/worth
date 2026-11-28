@@ -8,14 +8,14 @@ use std::collections::BTreeSet;
 
 use worth_foundational::facade::AggregateIdentity;
 
+use super::model::CanonicalGroupMemberIdentity;
 use super::model::{AggregateGroupMember, AggregateGroupMembers, AggregateMemberRole};
-use crate::lineage::data::PersistentNameIdentity;
 
 /// A live group's name parts and member counts, without its members.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AggregateGroupHeader {
     pub identity: AggregateIdentity,
-    pub anchor: PersistentNameIdentity,
+    pub anchor: CanonicalGroupMemberIdentity,
     /// Strictly ascending prior sources of a split/merge successor name.
     pub sources: Vec<AggregateIdentity>,
     /// Live members holding each role, indexed by [`AggregateGroupRoleCounts::slot`].
@@ -92,7 +92,7 @@ pub trait AggregateGroupStateView {
 
     /// The live group `name` belongs to and its carrier and role there.
     /// Complexity: O(log M).
-    fn membership(&self, name: &PersistentNameIdentity) -> Option<AggregateGroupMembership>;
+    fn membership(&self, name: &CanonicalGroupMemberIdentity) -> Option<AggregateGroupMembership>;
 
     /// Whether `identity` is a retired, unrevived group name. Complexity: O(log G).
     fn is_retired(&self, identity: &AggregateIdentity) -> bool;
@@ -106,8 +106,8 @@ pub trait AggregateGroupStateView {
         &self,
         group: &AggregateIdentity,
         role: Option<AggregateMemberRole>,
-        skip: &BTreeSet<PersistentNameIdentity>,
-    ) -> Option<PersistentNameIdentity>;
+        skip: &BTreeSet<CanonicalGroupMemberIdentity>,
+    ) -> Option<CanonicalGroupMemberIdentity>;
 
     /// Every member of `group`, ascending by name.
     ///

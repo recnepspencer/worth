@@ -281,6 +281,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             fields,
         )?;
         Ok(Self {
+            aggregate_naming: None,
             applied_changes: Some(applied_changes),
             current_version: identity.proposal.proposed_version_id(),
             instrumentation: instrumentation.clone(),

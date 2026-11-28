@@ -296,7 +296,7 @@ mod tests {
                 .unwrap();
             let assign = AggregateGroupAssignment {
                 identity: gid,
-                anchor: name,
+                anchor: name.into(),
                 sources: Vec::new(),
                 change: AggregateGroupChange::Born(members),
             };

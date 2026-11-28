@@ -71,7 +71,7 @@ impl GroupWorld {
             .iter()
             .map(|assignment| AggregatePriorGroup {
                 identity: assignment.identity,
-                anchor: assignment.anchor,
+                anchor: assignment.anchor.clone(),
                 sources: assignment.sources.clone(),
                 members: assignment.members.clone(),
             })
@@ -83,7 +83,7 @@ impl GroupWorld {
     pub(super) fn group_of(&self, n: u8) -> AggregateIdentity {
         self.prior
             .iter()
-            .find(|group| group.members.get(&member(n)).is_some())
+            .find(|group| group.members.get(&member(n).into()).is_some())
             .map(|group| group.identity)
             .expect("member belongs to a live group")
     }

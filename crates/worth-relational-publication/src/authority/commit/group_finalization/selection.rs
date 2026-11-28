@@ -84,15 +84,15 @@ pub(super) fn selection_transitions(
         }
         let in_current = |group: &AggregatePriorGroup| {
             group.members.iter().any(|(name, _)| {
-                matches!(basis.live_holder(name), Some(PersistentNameHolder::Entity(entity))
+                matches!(basis.live_holder(&name.carrier_name()), Some(PersistentNameHolder::Entity(entity))
                     if current_entities.contains(entity))
             })
         };
         let in_selected = |group: &AggregatePriorGroup| {
-            group.members.iter().any(|(_, member)| {
-                matches!(member.carrier, NativeMemberKey::Entity(entity)
-                    if selected_entities.contains(&entity))
-            })
+            group
+                .members
+                .iter()
+                .any(|(_, member)| selected_entities.contains(&member.carrier.carrier()))
         };
         let now_live: Vec<AggregatePriorGroup> = now.iter().flat_map(|now| now.live()).collect();
         let then_live: Vec<AggregatePriorGroup> =
@@ -138,10 +138,22 @@ fn restore(
     for group in arriving {
         let mut members = AggregateGroupMembers::new();
         for (name, member) in group.members.iter() {
+            let carrier_name = name.carrier_name();
             let entity = outcome
-                .member_after(name)
-                .ok_or(Denial::MemberNotLive { name: *name })?;
-            members.insert(*name, NativeMemberKey::Entity(entity), member.role)?;
+                .member_after(&carrier_name)
+                .ok_or(Denial::MemberNotLive { name: carrier_name })?;
+            let carrier = match &member.carrier {
+                NativeMemberKey::Entity(_) => NativeMemberKey::Entity(entity),
+                NativeMemberKey::Projected(projected) => {
+                    let coordinate = contracts::graph_member::key::ProjectedMemberCoordinate {
+                        domain: projected.domain.clone(),
+                        carrier: entity,
+                        case: projected.case.clone(),
+                    };
+                    NativeMemberKey::Projected(std::sync::Arc::new(coordinate).into())
+                }
+            };
+            members.insert(name.clone(), carrier, member.role)?;
         }
         let change = match live.get(&group.identity) {
             Some(live) if live.members == members => continue,
@@ -161,7 +173,7 @@ fn restore(
         };
         transition.assignments.push(AggregateGroupAssignment {
             identity: group.identity,
-            anchor: group.anchor,
+            anchor: group.anchor.clone(),
             sources: group.sources.clone(),
             change,
         });

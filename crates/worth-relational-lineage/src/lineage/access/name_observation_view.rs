@@ -71,6 +71,31 @@ impl<'index> PersistentNameObservationView<'index> {
             })
     }
 
+    /// One automatic group's incident events and retirement at this exact basis.
+    pub fn aggregate_group_history(
+        &self,
+        scheme_id: &str,
+        identity: worth_foundational::facade::AggregateIdentity,
+    ) -> Option<crate::contracts::aggregate_identity::group_lineage::AggregateGroupHistory> {
+        use crate::contracts::aggregate_identity::group_lineage::AggregateGroupHistory;
+        use crate::lineage::index::NameState;
+
+        let entry = self
+            .retained_index()?
+            .entry_in(&PersistentNameKey::Group(identity), self.scope)?;
+        if entry.scheme_id() != Some(scheme_id) {
+            return None;
+        }
+        let (at, state) = entry.state_at(self.basis)?;
+        let retired = matches!(state, NameState::Ended).then_some(at);
+        let events = entry
+            .group_events
+            .range(..=self.basis)
+            .flat_map(|(&commit, events)| events.iter().copied().map(move |event| (commit, event)))
+            .collect();
+        Some(AggregateGroupHistory { retired, events })
+    }
+
     /// Resolves `held` at the basis under `selection`.
     ///
     /// Complexity: see [`PersistentNameBranchIndex::resolve`]: O(lineage

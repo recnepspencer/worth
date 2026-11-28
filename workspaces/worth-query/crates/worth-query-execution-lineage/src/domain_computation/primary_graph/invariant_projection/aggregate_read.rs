@@ -125,6 +125,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 }
             }
             Native::DefinitionUnavailable => Kind::AggregateDefinitionUnavailable,
+            Native::PublicationRequired => Kind::AggregatePublicationRequired,
             Native::MemberUnavailable | Native::WrongMemberKind => Kind::EndpointUnavailable,
             Native::WorkLimitExceeded => {
                 self.work_budget.mark_exceeded();

@@ -9,6 +9,7 @@ pub use crate::contracts::authority::mutation::adjacency_delta::{
 
 #[derive(Debug, Clone, Default)]
 pub struct MutationPublicationEffect {
+    pub aggregate_partitions: crate::aggregate_identity::preparation::TouchedAggregatePartitions,
     pub has_entity_deletions: bool,
     pub changed_records: Vec<RecordRef>,
     pub canonical_deltas: Vec<CanonicalRecordAspectDelta>,
@@ -36,6 +37,7 @@ impl MutationEffect {
     pub(crate) fn with_capacity(change_count: usize, diagnostic_count: usize) -> Self {
         Self {
             publication: MutationPublicationEffect {
+                aggregate_partitions: Default::default(),
                 has_entity_deletions: false,
                 changed_records: Vec::with_capacity(change_count),
                 canonical_deltas: Vec::with_capacity(change_count),

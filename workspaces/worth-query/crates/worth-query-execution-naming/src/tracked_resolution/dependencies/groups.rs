@@ -101,7 +101,10 @@ impl NameReadDependencies {
             // a kept group lost was answered by that touched group above.
             let Some(lookups) = lookups else { continue };
             let assigned = transition.assignments.iter();
-            for name in assigned.flat_map(|assignment| assignment.touched_members()) {
+            for name in assigned
+                .flat_map(|assignment| assignment.touched_members())
+                .filter_map(|member| member.entity_name())
+            {
                 if let Some(answer) = lookups.get(name.as_bytes()) {
                     stale.insert(answer.unwrap_or(*name.as_bytes()));
                 }

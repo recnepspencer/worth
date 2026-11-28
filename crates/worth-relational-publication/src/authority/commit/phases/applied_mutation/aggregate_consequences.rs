@@ -36,7 +36,7 @@ impl AppliedMutationDraft {
         let current_ownership =
             (*authority.registry().owner_current_publication_storage()).is_some();
         if !admitted.materialization_only {
-            let (prepared, reads) = match aggregate_source {
+            let (prepared, facts, reads) = match aggregate_source {
                 Some(source) => source.take_for_commit(
                     execution,
                     inputs.work,
@@ -45,6 +45,7 @@ impl AppliedMutationDraft {
                 )?,
                 None => (
                     None,
+                    Default::default(),
                     worth_relational_mutation::internal_port::aggregate_identity::observations::AggregateReadObservations::default(),
                 ),
             };
@@ -105,6 +106,7 @@ impl AppliedMutationDraft {
                 self.outcome.effect.accumulate(applied.effect);
                 admission = Some(prepared.admission);
             }
+            self.outcome.effect.publication.aggregate_partitions = facts;
             // Metadata-dependent recipes see actual Native membership/lineage
             // writes. They cannot be checked early against a degree-zero birth,
             // and still require validation when no consequence was necessary.

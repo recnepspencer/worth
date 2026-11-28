@@ -24,6 +24,7 @@ pub struct ArtifactAuthority<'a> {
 pub(super) struct PublicationAuthorityInput<'a> {
     pub(super) index_definition_delta: branch::history::data::canonical_commit_envelope::index_catalog::CanonicalIndexDefinitionDelta,
     pub(super) defer_lineage: bool,
+    pub(super) aggregate_partitions: &'a worth_relational_mutation::internal_port::aggregate_identity::preparation::TouchedAggregatePartitions,
     pub(super) working_state: &'a mut worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState,
     pub(super) content: branch::content::publication::ContentPublication,
     pub(super) patch: &'a CanonicalAuthoritativePatch,
@@ -95,6 +96,7 @@ pub(super) fn prepare_authoritative_publication(
                 input.created_entities,
                 input.created_relations,
                 input.naming_plan,
+                input.aggregate_partitions,
                 None,
             )?
         };

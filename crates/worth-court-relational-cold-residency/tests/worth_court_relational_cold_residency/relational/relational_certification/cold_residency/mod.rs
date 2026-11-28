@@ -87,9 +87,9 @@ mod index_read_doors;
 mod index_read_failure_matrix;
 
 mod adjacency_member_scope;
+mod branch_publications;
 mod checkpoint_receiver;
 mod checkpoint_restart_reads;
-mod branch_publications;
 mod preparation_matrix;
 mod projection_adjacency_doors;
 mod projection_adjacency_matrix;
@@ -108,7 +108,6 @@ mod tail_recovery_matrix;
 mod tail_recovery_source;
 mod tail_recovery_subject;
 
-
 mod checkpoint_capture_abandonment;
 
 mod checkpoint_restore_work;
@@ -116,6 +115,7 @@ mod checkpoint_restore_work;
 mod checkpoint_wire_fixture;
 mod native_checkpoint_directory;
 
+mod aggregate_group_naming;
 mod allocation_proofs;
 mod bounded_commit_index;
 mod bounded_commit_index_closeout;

@@ -33,7 +33,7 @@ impl Plan<'_> {
 
     fn claimant(&self, group: usize) -> AggregateGroupClaimant {
         AggregateGroupClaimant {
-            anchor: self.names[group].anchor,
+            anchor: self.names[group].anchor.clone(),
             least_member: self.proposed[group].least_name().expect("nonempty group"),
             live_prior: self.kept_by[group].map(|old| self.prior[old].identity),
         }
@@ -42,7 +42,7 @@ impl Plan<'_> {
     fn retiring_claimant(&self, old: usize) -> AggregateGroupClaimant {
         let group = &self.prior[old];
         AggregateGroupClaimant {
-            anchor: group.anchor,
+            anchor: group.anchor.clone(),
             least_member: group.members.least_name().expect("nonempty prior"),
             live_prior: Some(group.identity),
         }
@@ -51,13 +51,19 @@ impl Plan<'_> {
     /// No two live groups may hold one name, and a minted name may never be
     /// the name of a prior group, live or retiring in this same commit.
     pub(super) fn guard_live_collisions(&self) -> Result<(), Denial> {
-        let collision = |identity, first: AggregateGroupClaimant, second| {
-            Err(Denial::LiveNameCollision {
-                identity,
-                first: first.min(second),
-                second: first.max(second),
-            })
-        };
+        let collision =
+            |identity, first: AggregateGroupClaimant, second: AggregateGroupClaimant| {
+                let (first, second) = if first <= second {
+                    (first, second)
+                } else {
+                    (second, first)
+                };
+                Err(Denial::LiveNameCollision {
+                    identity,
+                    first,
+                    second,
+                })
+            };
         let mut holders = BTreeMap::new();
         for (group, name) in self.names.iter().enumerate() {
             if let Some(first) = holders.insert(name.identity, group) {

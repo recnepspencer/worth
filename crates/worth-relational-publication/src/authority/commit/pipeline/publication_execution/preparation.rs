@@ -73,6 +73,7 @@ pub(super) fn prepare_publication_phase<
             branch_id,
         } = input;
         let (
+            aggregate_partitions,
             mut artifacts,
             mut changed_records,
             mut canonical_commit_envelope,
@@ -194,6 +195,7 @@ pub(super) fn prepare_publication_phase<
                 created_entities,
                 created_relations,
                 naming_plan,
+                &aggregate_partitions,
             )?;
         }
         crate::authority::commit::phases::publication::enforce_patch_budget(

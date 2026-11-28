@@ -17,7 +17,7 @@ pub(super) type Spec<'a> = &'a [(u8, Role)];
 pub(super) fn name(n: u8) -> Name {
     let mut bytes = [0x5a; 32];
     bytes[0] = n;
-    Name::from_minted_digest(bytes)
+    Name::Entity(crate::contracts::lineage::data::PersistentNameIdentity::from_minted_digest(bytes))
 }
 
 pub(super) fn scheme(rule: Rule) -> AggregateGroupScheme {
@@ -81,7 +81,7 @@ pub(super) fn prior_of(transition: &AggregateGroupPartitionTransition) -> Vec<Ag
         .iter()
         .map(|assignment| AggregatePriorGroup {
             identity: assignment.identity,
-            anchor: assignment.anchor,
+            anchor: assignment.anchor.clone(),
             sources: assignment.sources.clone(),
             members: assignment.members.clone(),
         })
@@ -109,9 +109,19 @@ pub(super) fn project(transition: &AggregateGroupPartitionTransition) -> Project
         .assignments
         .iter()
         .map(|group| {
-            let members = group.members.iter().map(|(n, m)| (*n, m.role)).collect();
+            let members = group
+                .members
+                .iter()
+                .map(|(n, m)| (n.clone(), m.role))
+                .collect();
             let sources = group.sources.clone();
-            (group.identity, group.anchor, sources, group.origin, members)
+            (
+                group.identity,
+                group.anchor.clone(),
+                sources,
+                group.origin,
+                members,
+            )
         })
         .collect();
     (
@@ -158,7 +168,7 @@ fn group_name_hashes_only_scheme_anchor_and_rule_under_v2_domain() {
     expected.update(b"worth.relational.group-aggregate-identity.v2\0");
     expected.update(8u64.to_be_bytes());
     expected.update(b"cad.loop");
-    expected.update(name(4).as_bytes());
+    expected.update(name(4).carrier_name().as_bytes());
     expected.update([1u8]);
     let expected: [u8; 32] = expected.finalize().into();
     assert_eq!(base.bytes(), &expected);
@@ -189,7 +199,7 @@ fn group_name_hashes_only_scheme_anchor_and_rule_under_v2_domain() {
     expected.update(b"worth.relational.group-aggregate-transition.v2\0");
     expected.update(8u64.to_be_bytes());
     expected.update(b"cad.loop");
-    expected.update(name(4).as_bytes());
+    expected.update(name(4).carrier_name().as_bytes());
     expected.update([1u8]);
     expected.update(2u64.to_be_bytes());
     expected.update(low.bytes());

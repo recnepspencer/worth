@@ -6,7 +6,7 @@
 //! ascending order, so equal transitions always encode to equal bytes and the
 //! decoder refuses any other ordering.
 //!
-//! Version 2 records a kept group by its member delta, so a `k`-member edit
+//! Version 3 keys members and anchors by canonical graph-member identity and records a kept group by its member delta, so a `k`-member edit
 //! of an `M`-member group encodes `O(k)` bytes; a born or revived group
 //! carries its initial members. Version 1 frames (complete kept membership)
 //! are refused typed.
@@ -16,29 +16,29 @@
 //! transition := kind:u8 scheme:text rule:u8
 //!               count:u32 assignment*  count:u32 retired:digest*
 //!               count:u32 event*
-//! assignment := identity:digest anchor:digest count:u32 source:digest*
+//! assignment := identity:digest anchor:member-key count:u32 source:digest*
 //!               origin:u8 body
-//! body       := kept:    count:u32 removed:digest* count:u32 member*
+//! body       := kept:    count:u32 removed:member-key* count:u32 member*
 //!             | born, revived: count:u32 member*
-//! member     := name:digest carrier-tag:u8 entity role:u8
+//! member     := member-key entity role:u8
 //! ```
 
 use crate::contracts::aggregate_identity::transition::group::delta::{
     AggregateGroupAssignment, AggregateGroupChange,
 };
+use crate::contracts::aggregate_identity::transition::group::model::CanonicalGroupMemberIdentity;
 use crate::contracts::aggregate_identity::transition::group::model::{
     AggregateGroupMember, AggregateGroupOrigin, AggregateMemberRole,
 };
-use crate::contracts::graph_member::NativeMemberKey;
-use crate::contracts::lineage::data::naming::PersistentNameIdentity;
 use crate::lineage::groups::CommittedGroupTransition;
+use crate::lineage::naming_pages::codec::NamingCodec;
 
 use super::format::group_event_parts;
 use super::refusal::PersistentNameDurabilityError as Refusal;
 use super::wire::WireWriter;
 
 pub(super) const GROUP_FRAME_MAGIC: &[u8; 4] = b"WPGL";
-pub(super) const GROUP_FRAME_VERSION: u8 = 2;
+pub(super) const GROUP_FRAME_VERSION: u8 = 3;
 
 pub(super) const fn origin_tag(origin: AggregateGroupOrigin) -> u8 {
     match origin {
@@ -127,7 +127,7 @@ fn encode_assignment(
     assignment: &AggregateGroupAssignment,
 ) -> Result<(), Refusal> {
     writer.digest(assignment.identity.bytes());
-    writer.digest(assignment.anchor.as_bytes());
+    encode_name(writer, &assignment.anchor)?;
     let canonical_sources = assignment.sources.windows(2).all(|pair| pair[0] < pair[1]);
     if !canonical_sources {
         return Err(Refusal::NonCanonical {
@@ -143,7 +143,7 @@ fn encode_assignment(
         AggregateGroupChange::Kept(delta) => {
             writer.count("removed group members", delta.removed_len())?;
             for name in delta.removed() {
-                writer.digest(name.as_bytes());
+                encode_name(writer, name)?;
             }
             writer.count("upserted group members", delta.upserted_len())?;
             for (name, member) in delta.upserted() {
@@ -162,19 +162,25 @@ fn encode_assignment(
 
 fn encode_member(
     writer: &mut WireWriter,
-    name: &PersistentNameIdentity,
+    name: &CanonicalGroupMemberIdentity,
     member: &AggregateGroupMember,
 ) -> Result<(), Refusal> {
-    writer.digest(name.as_bytes());
-    let NativeMemberKey::Entity(entity) = &member.carrier else {
+    encode_name(writer, name)?;
+    if !name.matches_member(&member.carrier) {
         return Err(Refusal::NonCanonical {
             field: "group member carrier",
         });
-    };
-    writer.u8(1);
-    encode_entity(writer, *entity);
+    }
+    encode_entity(writer, member.carrier.carrier());
     writer.u8(role_tag(member.role));
     Ok(())
+}
+
+fn encode_name(
+    writer: &mut WireWriter,
+    name: &CanonicalGroupMemberIdentity,
+) -> Result<(), Refusal> {
+    writer.bytes("group member identity", &name.to_bytes())
 }
 
 fn encode_entity(

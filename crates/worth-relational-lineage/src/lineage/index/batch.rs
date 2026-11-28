@@ -86,7 +86,11 @@ impl PersistentNameCommittedBatch {
     pub fn with_group_transition(mut self, transition: &AggregateGroupPartitionTransition) -> Self {
         self.group_events.extend(transition.lineage.iter().copied());
         for assignment in &transition.assignments {
-            let members = assignment.members.iter().map(|(name, _)| *name).collect();
+            let members = assignment
+                .members
+                .iter()
+                .filter_map(|(name, _)| name.entity_name().copied())
+                .collect();
             self.carriers
                 .insert(PersistentNameKey::Group(assignment.identity), members);
         }

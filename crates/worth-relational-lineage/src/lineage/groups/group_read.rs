@@ -5,6 +5,7 @@ use std::collections::BTreeSet;
 
 use worth_foundational::facade::AggregateIdentity;
 
+use crate::contracts::aggregate_identity::transition::group::model::CanonicalGroupMemberIdentity;
 use crate::contracts::aggregate_identity::transition::group::model::{
     AggregateContinuityRule, AggregateGroupMember, AggregateGroupMembers, AggregateMemberRole,
     AggregatePriorGroup,
@@ -12,7 +13,6 @@ use crate::contracts::aggregate_identity::transition::group::model::{
 use crate::contracts::aggregate_identity::transition::group::state_view::{
     AggregateGroupHeader, AggregateGroupMembership, AggregateGroupStateView,
 };
-use crate::contracts::lineage::data::naming::PersistentNameIdentity;
 use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
 use crate::lineage::naming_pages::tables::scoped_prefix;
 use crate::lineage::tiered::NamingReadScope;
@@ -87,14 +87,14 @@ impl<'s> SchemeGroupsRead<'s> {
     /// The live group `member` belongs to.
     ///
     /// Complexity: O(log M) and at most one page fault.
-    pub fn owner_of(&self, member: &PersistentNameIdentity) -> Option<AggregateIdentity> {
+    pub fn owner_of(&self, member: &CanonicalGroupMemberIdentity) -> Option<AggregateIdentity> {
         self.owner_row(member).map(|row| row.group)
     }
 
-    fn owner_row(&self, member: &PersistentNameIdentity) -> Option<&'s GroupOwnerRow> {
+    fn owner_row(&self, member: &CanonicalGroupMemberIdentity) -> Option<&'s GroupOwnerRow> {
         self.groups
             .member_owner
-            .get_in(&self.groups.key(*member), self.scope)
+            .get_in(&self.groups.key(member.clone()), self.scope)
     }
 
     /// Whether `identity` is a retired, unrevived group name.
@@ -112,7 +112,7 @@ impl<'s> SchemeGroupsRead<'s> {
         let header = self.header(identity)?;
         Some(AggregatePriorGroup {
             identity: header.identity,
-            anchor: header.anchor,
+            anchor: header.anchor.clone(),
             sources: header.sources.clone(),
             members: self.members(identity),
         })
@@ -153,12 +153,12 @@ impl AggregateGroupStateView for SchemeGroupsRead<'_> {
         self.header(identity).cloned()
     }
 
-    fn membership(&self, name: &PersistentNameIdentity) -> Option<AggregateGroupMembership> {
+    fn membership(&self, name: &CanonicalGroupMemberIdentity) -> Option<AggregateGroupMembership> {
         let owner = *self.owner_row(name)?;
         let key = GroupMemberKey {
             group: owner.group,
             role: owner.role,
-            name: *name,
+            name: name.clone(),
         };
         let carrier = self
             .groups
@@ -181,8 +181,8 @@ impl AggregateGroupStateView for SchemeGroupsRead<'_> {
         &self,
         group: &AggregateIdentity,
         role: Option<AggregateMemberRole>,
-        skip: &BTreeSet<PersistentNameIdentity>,
-    ) -> Option<PersistentNameIdentity> {
+        skip: &BTreeSet<CanonicalGroupMemberIdentity>,
+    ) -> Option<CanonicalGroupMemberIdentity> {
         let single;
         let roles: &[AggregateMemberRole] = match role {
             Some(role) => {
@@ -192,7 +192,7 @@ impl AggregateGroupStateView for SchemeGroupsRead<'_> {
             None => &ROLES,
         };
         let counts = self.header(group)?.counts;
-        let mut least: Option<PersistentNameIdentity> = None;
+        let mut least: Option<CanonicalGroupMemberIdentity> = None;
         for role in roles.iter().filter(|role| counts.of(**role) > 0) {
             let mut found = None;
             let scanned = self.groups.scan_members(*group, Some(*role), |key, _| {

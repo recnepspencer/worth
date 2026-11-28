@@ -28,6 +28,8 @@ pub enum WorthQueryInvariantProjectionTraversalDenialKind {
     AggregateDefinitionUnavailable,
     /// The selected snapshot does not contain this aggregate identity.
     AggregateIdentityUnavailable,
+    /// The named aggregate is available only after the candidate is published.
+    AggregatePublicationRequired,
     /// The stored identity or lineage is inconsistent, ambiguous or cyclic.
     InvalidAggregateLineage,
     /// The operation does not declare this target as a decision read.

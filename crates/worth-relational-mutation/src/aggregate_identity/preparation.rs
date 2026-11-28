@@ -24,6 +24,7 @@ use super::changes::AggregateChanges;
 pub(super) use super::funding::{AggregateWork, BuildResult, PlanDenial};
 use super::projection::{AggregateProjection, DefinitionProjection, ProjectionData};
 use super::{cohorts, consequence_plan};
+use cohorts::{Cohorts, TouchedAggregatePartitionFact};
 use std::sync::Arc;
 pub mod derived_laws;
 
@@ -62,12 +63,30 @@ pub struct PreparedConsequences {
     pub(crate) demands: consequence_plan::RecordDemands,
     pub admission: AggregateAdmission,
 }
+/// Retained mutation facts shared across publication preparation and settlement.
+#[derive(Clone, Debug, Default)]
+pub struct TouchedAggregatePartitions(Option<Arc<PartitionFacts>>);
+
+#[derive(Debug)]
+struct PartitionFacts {
+    facts: Vec<TouchedAggregatePartitionFact>,
+    _retention: Option<Arc<ExecutionMemoryReservation>>,
+}
+
+impl TouchedAggregatePartitions {
+    pub fn facts(&self) -> &[TouchedAggregatePartitionFact] {
+        self.0.as_ref().map_or(&[], |facts| facts.facts.as_slice())
+    }
+}
+
 pub(super) struct PreparedAggregateArtifact {
+    pub(super) facts: TouchedAggregatePartitions,
     pub(super) projection: Arc<AggregateProjection>,
     pub(super) consequences: Option<PreparedConsequences>,
     pub(super) reads: super::AggregateReadObservations,
 }
 struct PreparedValue {
+    facts: Vec<TouchedAggregatePartitionFact>,
     apply: AuthoritativeApplyPlan,
     demands: consequence_plan::RecordDemands,
     admission: MergedCommitPlan,
@@ -92,6 +111,8 @@ impl ChargedBytes for PreparedValue {
                     .saturating_add(backing)
                     .saturating_add(self.projection.owned_bytes())
                     .saturating_add(self.source_bytes)
+                    .saturating_add(self.facts.iter().map(TouchedAggregatePartitionFact::retained_bytes).sum::<u64>())
+                    .saturating_add(self.facts.capacity() as u64 * super::retention_extent::vector_entry::<TouchedAggregatePartitionFact>())
                     .saturating_add(self.controls),
                 |bytes, intent| bytes.saturating_add(intent.owned_allocation_capacity_bytes()),
             )
@@ -127,6 +148,7 @@ pub(super) fn prepare(
         )?;
         let mut plan = consequence_plan::ConsequencePlan::default();
         let mut projection = ProjectionData::default();
+        let mut facts = Vec::new();
         let source_bytes = effect.retained_bytes();
         let controls = super::retention_extent::arc_backing::<AggregateProjection>()
             + super::retention_extent::arc_backing::<ExecutionMemoryReservation>();
@@ -152,7 +174,7 @@ pub(super) fn prepare(
                 effect,
                 work,
             )? {
-                Some(cohorts) => Some(consequence_plan::append(
+                Some(Cohorts::Unnamed(cohorts)) => Some(consequence_plan::append(
                     &mut plan,
                     contract,
                     authority.registry(),
@@ -161,6 +183,17 @@ pub(super) fn prepare(
                     &after,
                     work,
                 )?),
+                Some(Cohorts::Named(fact)) => {
+                    if facts.is_empty() {
+                        work.retain(super::retention_extent::arc_backing::<PartitionFacts>())?;
+                    }
+                    work.retain(
+                        super::retention_extent::vector_entry::<TouchedAggregatePartitionFact>()
+                            + fact.scheme().id().as_str().len() as u64,
+                    )?;
+                    facts.push(fact);
+                    None
+                }
                 None => None,
             };
             projection.definitions.insert(
@@ -173,6 +206,7 @@ pub(super) fn prepare(
         }
         if plan.intents.is_empty() {
             return Ok(PreparedValue {
+                facts,
                 apply: AuthoritativeApplyPlan {
                     transaction_id: business.transaction_id(),
                     version_id: version,
@@ -219,6 +253,7 @@ pub(super) fn prepare(
             admission.merged_intents.push(intent.clone());
         }
         Ok(PreparedValue {
+            facts,
             apply: AuthoritativeApplyPlan {
                 transaction_id: business.transaction_id(),
                 version_id: version,
@@ -236,6 +271,12 @@ pub(super) fn prepare(
         data: value.projection,
         _retention: retention.clone(),
     });
+    let facts = TouchedAggregatePartitions((!value.facts.is_empty()).then(|| {
+        Arc::new(PartitionFacts {
+            facts: value.facts,
+            _retention: retention.clone(),
+        })
+    }));
     let consequences = (!value.apply.merged_intents.is_empty()).then(|| PreparedConsequences {
         apply: value.apply,
         demands: value.demands,
@@ -246,6 +287,7 @@ pub(super) fn prepare(
         },
     });
     Ok(PreparedAggregateArtifact {
+        facts,
         projection,
         consequences,
         reads,

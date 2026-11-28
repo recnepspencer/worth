@@ -9,7 +9,7 @@ use crate::contracts::aggregate_identity::group_lineage::AggregateGroupLineageEv
 use super::refusal::PersistentNameDurabilityError as Refusal;
 
 /// A group lineage event as its tag and the one or two groups it names.
-pub(super) const fn group_event_parts(
+pub(crate) const fn group_event_parts(
     event: AggregateGroupLineageEvent,
 ) -> (u8, AggregateIdentity, Option<AggregateIdentity>) {
     match event {
@@ -22,7 +22,7 @@ pub(super) const fn group_event_parts(
 }
 
 /// How many groups a group-event tag names, or a refusal for unknown tags.
-pub(super) fn group_event_arity(tag: u8) -> Result<usize, Refusal> {
+pub(crate) fn group_event_arity(tag: u8) -> Result<usize, Refusal> {
     match tag {
         1 | 2 | 5 => Ok(1),
         3 | 4 => Ok(2),
@@ -33,7 +33,7 @@ pub(super) fn group_event_arity(tag: u8) -> Result<usize, Refusal> {
     }
 }
 
-pub(super) fn group_event_from_parts(
+pub(crate) fn group_event_from_parts(
     tag: u8,
     first: AggregateIdentity,
     second: Option<AggregateIdentity>,

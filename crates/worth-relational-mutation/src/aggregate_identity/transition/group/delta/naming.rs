@@ -41,7 +41,11 @@ impl<'v, V: AggregateGroupStateView> Plan<'v, V> {
         let destination: Vec<_> = (0..proposal.priors.len())
             .map(|old| destination(rule, &proposal, old))
             .collect();
-        let prior_anchors: Vec<Name> = proposal.priors.iter().map(|p| p.header.anchor).collect();
+        let prior_anchors: Vec<Name> = proposal
+            .priors
+            .iter()
+            .map(|p| p.header.anchor.clone())
+            .collect();
         let kept_by = choose_keepers(rule, &prior_anchors, &destination, proposal.groups.len());
         let names = (0..proposal.groups.len())
             .map(|group| match kept_by[group] {
@@ -49,15 +53,15 @@ impl<'v, V: AggregateGroupStateView> Plan<'v, V> {
                     let header = &proposal.priors[old].header;
                     GroupName {
                         identity: header.identity,
-                        anchor: header.anchor,
+                        anchor: header.anchor.clone(),
                         sources: header.sources.clone(),
                     }
                 }
                 None => {
                     let sources: Vec<_> = sources_of(&proposal, group).into_iter().collect();
-                    let anchor = anchors[group];
+                    let anchor = anchors[group].clone();
                     GroupName {
-                        identity: mint_group_identity(scheme.id(), anchor, rule, &sources),
+                        identity: mint_group_identity(scheme.id(), &anchor, rule, &sources),
                         anchor,
                         sources,
                     }
@@ -84,8 +88,8 @@ impl<'v, V: AggregateGroupStateView> Plan<'v, V> {
 
     fn claimant(&self, group: usize) -> AggregateGroupClaimant {
         AggregateGroupClaimant {
-            anchor: self.names[group].anchor,
-            least_member: self.proposal.least[group],
+            anchor: self.names[group].anchor.clone(),
+            least_member: self.proposal.least[group].clone(),
             live_prior: self.kept_by[group].map(|old| self.proposal.priors[old].header.identity),
         }
     }
@@ -98,7 +102,7 @@ impl<'v, V: AggregateGroupStateView> Plan<'v, V> {
             .least_member(&header.identity, None, &BTreeSet::new())
             .ok_or(Denial::EmptyGroup)?;
         Ok(AggregateGroupClaimant {
-            anchor: header.anchor,
+            anchor: header.anchor.clone(),
             least_member,
             live_prior: Some(header.identity),
         })
@@ -109,13 +113,19 @@ impl<'v, V: AggregateGroupStateView> Plan<'v, V> {
     ///
     /// Complexity: O(P log P + S log M).
     pub(super) fn guard_live_collisions(&self) -> Result<(), Denial> {
-        let collision = |identity, first: AggregateGroupClaimant, second| {
-            Err(Denial::LiveNameCollision {
-                identity,
-                first: first.min(second),
-                second: first.max(second),
-            })
-        };
+        let collision =
+            |identity, first: AggregateGroupClaimant, second: AggregateGroupClaimant| {
+                let (first, second) = if first <= second {
+                    (first, second)
+                } else {
+                    (second, first)
+                };
+                Err(Denial::LiveNameCollision {
+                    identity,
+                    first,
+                    second,
+                })
+            };
         let mut holders = BTreeMap::new();
         for (group, name) in self.names.iter().enumerate() {
             if let Some(first) = holders.insert(name.identity, group) {
@@ -142,11 +152,11 @@ fn birth_anchor<V: AggregateGroupStateView>(
     proposal: &Proposal<'_, V>,
     group: usize,
 ) -> Result<Name, Denial> {
-    let least_member = proposal.least[group];
+    let least_member = proposal.least[group].clone();
     let anchor = match rule {
         Rule::Anchor => proposal
             .least_with(group, Role::Anchor)
-            .or(Some(least_member)),
+            .or(Some(least_member.clone())),
         Rule::ProducerRole => proposal.least_with(group, Role::Anchor),
         Rule::Boundary => proposal.least_with(group, Role::Boundary),
     };

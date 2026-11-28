@@ -8,6 +8,7 @@
 //! transitions are verified against the branch's group state before the frame
 //! exists, so a refused transition leaves the commit with zero effects.
 
+mod automatic;
 mod commit_names;
 mod empty_state;
 mod partition;
@@ -28,9 +29,10 @@ use contracts::transactions::data::outcomes::transaction_commit_error::{
 };
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelection;
 use worth_relational_contracts::internal_port as contracts;
+use worth_relational_mutation::internal_port::aggregate_identity::preparation::TouchedAggregatePartitions;
 use worth_relational_lineage::internal_port::durability::naming::encode_group_lineage_frame;
 use worth_relational_lineage::internal_port::lineage::groups::{
-    CommittedGroupTransition, GroupStateDenial,
+    BranchGroupState, CommittedGroupTransition, GroupStateDenial,
 };
 use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::naming_basis_binding::BranchNamingBasisGuard;
 
@@ -94,6 +96,7 @@ impl GroupRefusal {
 pub(crate) fn finalize_commit_groups(
     commit: &RelationalCommitReceipt,
     claims: &[GroupPartitionClaim],
+    facts: &TouchedAggregatePartitions,
     selection: Option<&CanonicalOwnedGraphSelection>,
     basis: &BranchNamingBasisGuard<'_>,
     prepared: &mut PreparedLineageFinalization,
@@ -103,12 +106,12 @@ pub(crate) fn finalize_commit_groups(
         Err(denial @ GroupStateDenial::StorageUnavailable(_)) => {
             return Err(GroupRefusal::unavailable(denial.clone()).into_commit_error(commit));
         }
-        Err(denial) if !claims.is_empty() || selection.is_some() => {
+        Err(denial) if !claims.is_empty() || !facts.facts().is_empty() || selection.is_some() => {
             return Err(GroupRefusal::unavailable(denial.clone()).into_commit_error(commit));
         }
         Err(_) => return Ok(Vec::new()),
     };
-    if state.is_none() && claims.is_empty() {
+    if state.is_none() && claims.is_empty() && facts.facts().is_empty() {
         return Ok(Vec::new());
     }
     let outcome = commit_names::CommitNameOutcome::of(prepared, basis);
@@ -121,7 +124,13 @@ pub(crate) fn finalize_commit_groups(
             ))
         }
         Some(selection) => selection::selection_transitions(selection, basis, state, &outcome),
-        None => partition::partition_transitions(claims, state, &outcome),
+        None => {
+            partition::partition_transitions(claims, state, &outcome).and_then(|mut transitions| {
+                transitions.extend(automatic::transitions(facts.facts(), state, &outcome)?);
+                transitions.sort_by(|a, b| a.scheme_id().cmp(b.scheme_id()));
+                Ok(transitions)
+            })
+        }
     };
     basis
         .settle()
@@ -130,11 +139,11 @@ pub(crate) fn finalize_commit_groups(
     if transitions.is_empty() {
         return Ok(Vec::new());
     }
-    if let Some(state) = state {
-        state
-            .verify(&transitions)
-            .map_err(|denial| GroupRefusal::unavailable(denial).into_commit_error(commit))?;
+    match state {
+        Some(state) => state.verify(&transitions),
+        None => BranchGroupState::default().verify(&transitions),
     }
+    .map_err(|denial| GroupRefusal::unavailable(denial).into_commit_error(commit))?;
     let frame = encode_group_lineage_frame(&transitions).map_err(|refusal| {
         TransactionCommitError::publication(PublicationError::new(
             PublicationStage::BundleAssembly,

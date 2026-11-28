@@ -8,11 +8,11 @@ use worth_foundational::facade::AggregateIdentity;
 
 use crate::contracts::aggregate_identity::transition::group::delta::AggregateGroupChange;
 use crate::contracts::aggregate_identity::transition::group::model::AggregateMemberRole as Role;
+use crate::contracts::aggregate_identity::transition::group::model::CanonicalGroupMemberIdentity as Name;
 use crate::contracts::aggregate_identity::transition::group::state_view::{
     AggregateGroupHeader, AggregateGroupRoleCounts,
 };
 use crate::contracts::graph_member::NativeMemberKey;
-use crate::contracts::lineage::data::naming::PersistentNameIdentity as Name;
 use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause as Cause;
 
 use super::branch_state::SchemeGroups;
@@ -48,7 +48,7 @@ impl SchemeGroups {
         let lower = self.key(GroupMemberKey::least(group, role.unwrap_or(ROLES[0])));
         let mut prefix = self.members.row_key(&lower);
         // Drop the name (and, for every role, the role byte) from the seek key.
-        prefix.truncate(prefix.len() - 32 - usize::from(role.is_none()));
+        prefix.truncate(prefix.len() - 33 - usize::from(role.is_none()));
         self.members
             .scan_prefix_from(&lower, &prefix, |(_, key), carrier| visit(key, &carrier))
     }
@@ -74,7 +74,7 @@ impl SchemeGroups {
                     .removed()
                     .chain(delta.upserted().map(|(name, _)| name));
                 for name in leaving {
-                    if let Some(role) = self.release(assignment.identity, *name)? {
+                    if let Some(role) = self.release(assignment.identity, name.clone())? {
                         header.counts.remove(role).ok_or(Cause::Damaged)?;
                     }
                 }
@@ -88,7 +88,7 @@ impl SchemeGroups {
                 AggregateGroupChange::Kept(delta) => {
                     let mut header = kept.next().ok_or(Cause::Damaged)?;
                     for (name, member) in delta.upserted() {
-                        self.join(identity, *name, &member.carrier, member.role);
+                        self.join(identity, name.clone(), &member.carrier, member.role);
                         header.counts.add(member.role);
                     }
                     self.live.insert(self.key(identity), header);
@@ -99,11 +99,11 @@ impl SchemeGroups {
                         self.retired.remove(&key)?;
                     }
                     for (name, member) in members.iter() {
-                        self.join(identity, *name, &member.carrier, member.role);
+                        self.join(identity, name.clone(), &member.carrier, member.role);
                     }
                     let header = AggregateGroupHeader {
                         identity,
-                        anchor: assignment.anchor,
+                        anchor: assignment.anchor.clone(),
                         sources: assignment.sources.clone(),
                         counts: AggregateGroupRoleCounts::of_members(members),
                     };
@@ -117,7 +117,7 @@ impl SchemeGroups {
     /// Removes `name`'s rows from `group`; returns its role there, or `None`
     /// when it was not `group`'s member.
     fn release(&mut self, group: AggregateIdentity, name: Name) -> Result<Option<Role>, Cause> {
-        let owner_key = self.key(name);
+        let owner_key = self.key(name.clone());
         let Some(owner) = self.member_owner.get(&owner_key)?.map(|row| *row) else {
             return Ok(None);
         };
@@ -141,7 +141,11 @@ impl SchemeGroups {
         carrier: &NativeMemberKey,
         role: Role,
     ) {
-        let member = GroupMemberKey { group, role, name };
+        let member = GroupMemberKey {
+            group,
+            role,
+            name: name.clone(),
+        };
         self.members.insert(self.key(member), carrier.clone());
         self.member_owner
             .insert(self.key(name), GroupOwnerRow { group, role });

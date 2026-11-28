@@ -128,7 +128,7 @@ fn oracle(
     let declared_names: BTreeSet<Name> = scope
         .declared
         .iter()
-        .flat_map(|members| members.iter().map(|(n, _)| *n))
+        .flat_map(|members| members.iter().map(|(n, _)| n.clone()))
         .collect();
     let touched = declared_names
         .iter()
@@ -148,7 +148,7 @@ fn oracle(
                 continue;
             }
             let carried = scope.carriers.get(n).unwrap_or(&member.carrier).clone();
-            residual.insert(*n, carried, member.role).unwrap();
+            residual.insert(n.clone(), carried, member.role).unwrap();
         }
         if !residual.is_empty() {
             proposed.push(residual);
@@ -183,7 +183,7 @@ fn canonical_of(
         };
         assignments.push(AggregateGroupAssignment {
             identity: assignment.identity,
-            anchor: assignment.anchor,
+            anchor: assignment.anchor.clone(),
             sources: assignment.sources.clone(),
             change,
         });

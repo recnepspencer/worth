@@ -7,10 +7,10 @@
 //! [`mint_group_transition`] additionally qualifies an unkept split or merge
 //! successor by the sorted identities of the live prior groups it received
 //! members from.
+use super::group::CanonicalGroupMemberIdentity;
 use super::group::{AggregateContinuityRule, AggregateGroupSchemeId};
 use crate::contracts::graph_member::key::NativeMemberKey as Member;
 use crate::contracts::history::data::coordinates::CommitId;
-use crate::contracts::lineage::data::naming::PersistentNameIdentity;
 use sha2::{Digest, Sha256};
 use worth_foundational::facade::{AggregateDefinitionIdentity, AggregateIdentity};
 
@@ -23,11 +23,16 @@ pub const GROUP_AGGREGATE_TRANSITION_DOMAIN_TAG: &[u8] =
 
 pub(in crate::internal_port::aggregate_identity) fn mint_group_name(
     scheme: &AggregateGroupSchemeId,
-    anchor: PersistentNameIdentity,
+    anchor: &CanonicalGroupMemberIdentity,
     rule: AggregateContinuityRule,
 ) -> AggregateIdentity {
     let mut hash = Sha256::new();
-    hash.update(GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG);
+    hash.update(match anchor {
+        CanonicalGroupMemberIdentity::Entity(_) => GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG,
+        CanonicalGroupMemberIdentity::ProjectedCase { .. } => {
+            b"worth.relational.projected-group-aggregate-identity.v2\0"
+        }
+    });
     group_terms(&mut hash, scheme, anchor, rule);
     AggregateIdentity::from_bytes(hash.finalize().into())
 }
@@ -36,13 +41,18 @@ pub(in crate::internal_port::aggregate_identity) fn mint_group_name(
 /// 32-byte identities so the hash input stays O(1) per source at any depth.
 pub(in crate::internal_port::aggregate_identity) fn mint_group_transition(
     scheme: &AggregateGroupSchemeId,
-    anchor: PersistentNameIdentity,
+    anchor: &CanonicalGroupMemberIdentity,
     rule: AggregateContinuityRule,
     sources: &[AggregateIdentity],
 ) -> AggregateIdentity {
     debug_assert!(sources.windows(2).all(|pair| pair[0] < pair[1]));
     let mut hash = Sha256::new();
-    hash.update(GROUP_AGGREGATE_TRANSITION_DOMAIN_TAG);
+    hash.update(match anchor {
+        CanonicalGroupMemberIdentity::Entity(_) => GROUP_AGGREGATE_TRANSITION_DOMAIN_TAG,
+        CanonicalGroupMemberIdentity::ProjectedCase { .. } => {
+            b"worth.relational.projected-group-aggregate-transition.v2\0"
+        }
+    });
     group_terms(&mut hash, scheme, anchor, rule);
     hash.update((sources.len() as u64).to_be_bytes());
     for source in sources {
@@ -54,7 +64,7 @@ pub(in crate::internal_port::aggregate_identity) fn mint_group_transition(
 /// A pure group name when no live prior group feeds it, else its successor.
 pub(in crate::internal_port::aggregate_identity) fn mint_group_identity(
     scheme: &AggregateGroupSchemeId,
-    anchor: PersistentNameIdentity,
+    anchor: &CanonicalGroupMemberIdentity,
     rule: AggregateContinuityRule,
     sources: &[AggregateIdentity],
 ) -> AggregateIdentity {
@@ -68,11 +78,24 @@ pub(in crate::internal_port::aggregate_identity) fn mint_group_identity(
 fn group_terms(
     hash: &mut Sha256,
     scheme: &AggregateGroupSchemeId,
-    anchor: PersistentNameIdentity,
+    anchor: &CanonicalGroupMemberIdentity,
     rule: AggregateContinuityRule,
 ) {
     text(hash, scheme.as_str());
-    hash.update(anchor.as_bytes());
+    match anchor {
+        CanonicalGroupMemberIdentity::Entity(name) => hash.update(name.as_bytes()),
+        CanonicalGroupMemberIdentity::ProjectedCase {
+            carrier,
+            domain,
+            case,
+        } => {
+            hash.update(carrier.as_bytes());
+            text(hash, &domain.schema.0);
+            hash.update(domain.version.0.to_be_bytes());
+            text(hash, &domain.name);
+            text(hash, case);
+        }
+    }
     hash.update([rule.canonical_tag()]);
 }
 

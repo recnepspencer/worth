@@ -180,8 +180,8 @@ impl PersistentNameBranchIndex {
             let key = PersistentNameKey::Group(assignment.identity);
             match &assignment.change {
                 AggregateGroupChange::Kept(delta) => {
-                    let removed = delta.removed();
-                    let upserted = delta.upserted().map(|(name, _)| name);
+                    let removed = delta.removed().filter_map(|name| name.entity_name());
+                    let upserted = delta.upserted().filter_map(|(name, _)| name.entity_name());
                     self.apply_carrier_delta(
                         key,
                         removed,
@@ -192,7 +192,7 @@ impl PersistentNameBranchIndex {
                     )?;
                 }
                 AggregateGroupChange::Born(members) | AggregateGroupChange::Revived(members) => {
-                    let members = members.iter().map(|(name, _)| name);
+                    let members = members.iter().filter_map(|(name, _)| name.entity_name());
                     self.declare_carriers(key, members, batch.commit, journal, &mut changed)?;
                 }
             }

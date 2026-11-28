@@ -77,7 +77,7 @@ impl<'v, V: AggregateGroupStateView> Proposal<'v, V> {
         let touched_owner = priors
             .iter()
             .enumerate()
-            .flat_map(|(old, prior)| prior.touched.keys().map(move |name| (*name, old)))
+            .flat_map(|(old, prior)| prior.touched.keys().map(move |name| (name.clone(), old)))
             .collect();
         let mut proposed: Vec<(Option<Name>, Shape)> = scope
             .declared
@@ -91,7 +91,7 @@ impl<'v, V: AggregateGroupStateView> Proposal<'v, V> {
             let least = state.least_member(&prior.header.identity, None, &prior.leaving);
             proposed.push((least, Shape::Residual(old)));
         }
-        proposed.sort_by_key(|(least, _)| *least);
+        proposed.sort_by(|(left, _), (right, _)| left.cmp(right));
         let mut proposal = Self {
             state,
             residual_of: vec![None; priors.len()],
@@ -118,13 +118,13 @@ impl<'v, V: AggregateGroupStateView> Proposal<'v, V> {
                     for (name, member) in members.iter() {
                         if self
                             .declared_owner
-                            .insert(*name, (group, member.role))
+                            .insert(name.clone(), (group, member.role))
                             .is_some()
                         {
-                            return Err(Denial::OverlappingMember { name: *name });
+                            return Err(Denial::OverlappingMember { name: name.clone() });
                         }
                         if !carriers_seen.insert(member.carrier.clone()) {
-                            return Err(Denial::DuplicateCarrier { name: *name });
+                            return Err(Denial::DuplicateCarrier { name: name.clone() });
                         }
                     }
                 }
@@ -201,7 +201,7 @@ impl<'v, V: AggregateGroupStateView> Proposal<'v, V> {
                         continue;
                     }
                     let carrier = prior.recarried.get(name).unwrap_or(&member.carrier);
-                    members.insert(*name, carrier.clone(), member.role)?;
+                    members.insert(name.clone(), carrier.clone(), member.role)?;
                 }
                 Ok(members)
             }
@@ -217,7 +217,7 @@ impl<'v, V: AggregateGroupStateView> Proposal<'v, V> {
         }
         let mut members = AggregateGroupMembers::new();
         for (name, member) in &prior.touched {
-            members.insert(*name, member.carrier.clone(), member.role)?;
+            members.insert(name.clone(), member.carrier.clone(), member.role)?;
         }
         Ok(members)
     }
@@ -235,7 +235,7 @@ fn scoped_priors(
     let declared: BTreeSet<Name> = scope
         .declared
         .iter()
-        .flat_map(|members| members.iter().map(|(name, _)| *name))
+        .flat_map(|members| members.iter().map(|(name, _)| name.clone()))
         .collect();
     let mut touched: BTreeMap<AggregateIdentity, BTreeMap<Name, AggregateGroupMember>> = scope
         .dissolved
@@ -249,7 +249,7 @@ fn scoped_priors(
     for name in names {
         if let Some(membership) = state.membership(name) {
             let group = touched.entry(membership.group).or_default();
-            group.insert(*name, membership.member);
+            group.insert(name.clone(), membership.member);
         }
     }
     let mut priors = Vec::with_capacity(touched.len());
@@ -261,14 +261,14 @@ fn scoped_priors(
         let leaving: BTreeSet<Name> = touched
             .keys()
             .filter(|name| declared.contains(*name) || scope.departed.contains(*name))
-            .copied()
+            .cloned()
             .collect();
         let recarried = touched
             .iter()
             .filter(|(name, _)| !leaving.contains(*name))
             .filter_map(|(name, prior)| {
                 let carrier = scope.carriers.get(name)?;
-                (*carrier != prior.carrier).then(|| (*name, carrier.clone()))
+                (*carrier != prior.carrier).then(|| (name.clone(), carrier.clone()))
             })
             .collect();
         priors.push(Prior {
@@ -292,7 +292,7 @@ fn validate_prior(
     let canonical = header.sources.windows(2).all(|pair| pair[0] < pair[1]);
     if !canonical
         || identity
-            != mint_group_identity(scheme.id(), header.anchor, scheme.rule(), &header.sources)
+            != mint_group_identity(scheme.id(), &header.anchor, scheme.rule(), &header.sources)
     {
         return Err(Denial::PriorIdentityMismatch { identity });
     }

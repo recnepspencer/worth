@@ -16,6 +16,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use contracts::aggregate_identity::transition::group::denial::AggregateGroupNamingDenial as Denial;
 use contracts::aggregate_identity::transition::group::model::{
     AggregateContinuityRule, AggregateGroupMembers, AggregateGroupScheme, AggregateGroupSchemeId,
+    CanonicalGroupMemberIdentity as MemberName,
 };
 use contracts::aggregate_identity::transition::group::state_view::AggregateGroupStateView;
 use contracts::graph_member::NativeMemberKey;
@@ -55,6 +56,9 @@ pub(super) fn partition_transitions(
     for claim in claims {
         let scheme_id = claim.scheme.id().as_str().to_owned();
         let refuse = |denial| GroupRefusal::new(&scheme_id, denial);
+        if claim.scheme.id().is_automatic() {
+            return Err(refuse(Denial::AutomaticGroupClaim));
+        }
         let scope = scopes
             .entry(scheme_id.clone())
             .or_insert_with(|| SchemeScope {
@@ -81,10 +85,12 @@ pub(super) fn partition_transitions(
     }
     let retired = outcome.retired_names();
     for (scheme_id, groups) in state.iter().flat_map(|state| state.schemes()) {
-        if scopes.contains_key(scheme_id) {
+        if AggregateGroupSchemeId::is_automatic_id(scheme_id) || scopes.contains_key(scheme_id) {
             continue;
         }
-        let retires = retired.iter().any(|name| groups.owner_of(name).is_some());
+        let retires = retired
+            .iter()
+            .any(|name| groups.owner_of(&MemberName::Entity(*name)).is_some());
         let rebinds = outcome
             .bound_names()
             .any(|(name, entity)| rebinding(groups, name, *entity).is_some());
@@ -119,7 +125,7 @@ fn rebinding(
     name: &PersistentNameIdentity,
     entity: Option<contracts::identity::data::record_ids::EntityId>,
 ) -> Option<Option<NativeMemberKey>> {
-    let membership = groups.membership(name)?;
+    let membership = groups.membership(&MemberName::Entity(*name))?;
     match entity.map(NativeMemberKey::Entity) {
         Some(carrier) if carrier == membership.member.carrier => None,
         carrier => Some(carrier),
@@ -157,9 +163,9 @@ fn name_scope(
             });
         }
     }
-    let declared_names: BTreeSet<PersistentNameIdentity> = declared
+    let declared_names: BTreeSet<MemberName> = declared
         .iter()
-        .flat_map(|members| members.iter().map(|(name, _)| *name))
+        .flat_map(|members| members.iter().map(|(name, _)| name.clone()))
         .collect();
     let mut scope = AggregateGroupScope {
         dissolved,
@@ -167,20 +173,24 @@ fn name_scope(
         ..AggregateGroupScope::default()
     };
     if let Some(groups) = groups {
-        let owned = |name: &PersistentNameIdentity| groups.owner_of(name).is_some();
-        scope
-            .departed
-            .extend(retired.iter().filter(|name| owned(name)).copied());
+        let owned =
+            |name: &PersistentNameIdentity| groups.owner_of(&MemberName::Entity(*name)).is_some();
+        scope.departed.extend(
+            retired
+                .iter()
+                .filter(|name| owned(name))
+                .map(|name| MemberName::Entity(*name)),
+        );
         for (name, entity) in outcome.bound_names() {
-            if declared_names.contains(name) {
+            if declared_names.contains(&MemberName::Entity(*name)) {
                 continue;
             }
             match rebinding(groups, name, *entity) {
                 Some(Some(carrier)) => {
-                    scope.carriers.insert(*name, carrier);
+                    scope.carriers.insert(MemberName::Entity(*name), carrier);
                 }
                 Some(None) => {
-                    scope.departed.insert(*name);
+                    scope.departed.insert(MemberName::Entity(*name));
                 }
                 None => {}
             }
