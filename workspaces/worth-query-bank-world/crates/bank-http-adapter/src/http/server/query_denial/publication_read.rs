@@ -62,7 +62,6 @@ fn conflict(cause: ConflictClass) -> BankHttpDenial {
         | D::EntityFieldUpdateStateInconsistency { .. }
         | D::RelationEndpointUpdateStateInconsistency { .. }
         | D::RelationEndpointUpdateKindMismatch { .. }
-        | D::BulkImportDomainMismatch { .. }
         | D::EntityAuthoritativeAspectStateDenied { .. }
         | D::RecordAspectPatchDenied { .. }
         | D::AspectDeltaFailure { .. }

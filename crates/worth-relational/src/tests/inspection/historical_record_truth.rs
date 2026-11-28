@@ -232,7 +232,6 @@ fn historical_record_inspection_keeps_subresults_separate_when_retained_only_blo
         InspectionAvailability::UnavailableByRetention
     );
     assert!(inspection.record_observation.value.is_none());
-    assert!(inspection.structural_identity_evidence.is_none());
     assert_eq!(
         inspection
             .retention_availability_observation
@@ -344,7 +343,6 @@ fn historical_inspection_matrix_keeps_entity_and_relation_subresults_honest_acro
             .map(|observation| observation.availability),
         Some(InspectionAvailability::Direct)
     );
-    assert!(entity_retained.structural_identity_evidence.is_none());
 
     assert_eq!(
         relation_retained.record_observation.availability,
@@ -358,21 +356,16 @@ fn historical_inspection_matrix_keeps_entity_and_relation_subresults_honest_acro
             .map(|observation| observation.availability),
         Some(InspectionAvailability::Direct)
     );
-    assert!(relation_retained.structural_identity_evidence.is_none());
 
     assert_eq!(
         entity_reconstructed.record_observation.availability,
         InspectionAvailability::Reconstructed
     );
     assert!(entity_reconstructed.lineage_resolution_context.is_some());
-    assert!(entity_reconstructed.structural_identity_evidence.is_some());
 
     assert_eq!(
         relation_reconstructed.record_observation.availability,
         InspectionAvailability::Reconstructed
     );
     assert!(relation_reconstructed.lineage_resolution_context.is_none());
-    assert!(relation_reconstructed
-        .structural_identity_evidence
-        .is_some());
 }

@@ -2,8 +2,8 @@ use super::overrides::RelationalConfigOverride;
 use super::policies::RuntimeProfileBoundaryPolicy;
 use super::provenance::ConfigProvenance;
 use super::sections::{
-    CommitStrategiesConfig, DiagnosticsConfig, DurabilityConfig, ExecutionConfig, HistoryConfig,
-    IdentityConfig, PublicationRuntimeConfig, SchemaConfig, StorageConfig, VisibilityConfig,
+    DiagnosticsConfig, DurabilityConfig, ExecutionConfig, HistoryConfig, IdentityConfig,
+    PublicationRuntimeConfig, SchemaConfig, StorageConfig, VisibilityConfig,
 };
 use super::RelationalRuntimeProfile;
 
@@ -14,7 +14,6 @@ pub struct RelationalRuntimeConfig {
     pub diagnostics: DiagnosticsConfig,
     pub history: HistoryConfig,
     pub schema: SchemaConfig,
-    pub commit_strategies: CommitStrategiesConfig,
     pub identity: IdentityConfig,
     pub storage: StorageConfig,
     pub visibility: VisibilityConfig,

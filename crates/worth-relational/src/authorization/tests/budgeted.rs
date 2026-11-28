@@ -62,13 +62,13 @@ fn budgeted_observer_matches_ordinary_authorization_and_held_old_root() {
     let ordinary = fixture
         .runtime
         .observe_authorization(
-            allow_plan(snapshot.clone(), fixture.principal, fixture.scope, []),
+            allow_plan(snapshot.clone(), fixture.principal, fixture.scope),
             execution,
         )
         .unwrap();
     let observe = |snapshot, budget: &mut Budget| {
         fixture.runtime.observe_authorization_budgeted(
-            allow_plan(snapshot, fixture.principal, fixture.scope, []),
+            allow_plan(snapshot, fixture.principal, fixture.scope),
             budget,
             execution,
         )
@@ -104,7 +104,7 @@ fn budgeted_currentness_preserves_legacy_result_and_carried_refusal() {
     let evidence = fixture
         .runtime
         .observe_authorization(
-            allow_plan(snapshot.clone(), fixture.principal, fixture.scope, []),
+            allow_plan(snapshot.clone(), fixture.principal, fixture.scope),
             execution,
         )
         .unwrap();
@@ -190,7 +190,7 @@ fn carried_stop_survives_initial_and_late_work_or_preparation_exhaustion() {
         .expect("current snapshot fixture is admitted");
     let observe = |budget: &mut Budget| {
         fixture.runtime.observe_authorization_budgeted(
-            allow_plan(snapshot.clone(), fixture.principal, fixture.scope, []),
+            allow_plan(snapshot.clone(), fixture.principal, fixture.scope),
             budget,
             execution,
         )

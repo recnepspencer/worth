@@ -15,7 +15,6 @@ impl InvariantRule {
             Self::LiveRecordRequiresSidecar(super::RecordKindTag::Entity),
             Self::LiveRecordRequiresSidecar(super::RecordKindTag::Relation),
             Self::MaxMergedIntents(1),
-            Self::MaxSnapshotEntities(1),
             Self::unique_entity_aspect_field(
                 AspectKey::new("__registration_probe__")
                     .expect("valid registration probe aspect key"),
@@ -110,7 +109,6 @@ impl InvariantRule {
                 InvariantRegistrationContract::DefaultAlwaysOnStructural
             }
             Self::MaxMergedIntents(_)
-            | Self::MaxSnapshotEntities(_)
             | Self::UniqueEntityAspectField { .. }
             | Self::EntityAspectExclusion
             | Self::EndpointKindContract(_)

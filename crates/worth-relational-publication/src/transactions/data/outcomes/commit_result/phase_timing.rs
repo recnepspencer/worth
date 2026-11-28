@@ -26,5 +26,4 @@ pub struct CommitPhaseTiming {
     pub publication_compaction_micros: u64,
     pub publication_bundle_publish_micros: u64,
     pub publication_retention_pass_micros: u64,
-    pub publication_post_commit_consumer_micros: u64,
 }

@@ -36,8 +36,8 @@ mod tenure;
 mod test_support;
 
 use super::{
-    CommitStrategiesSubsystem, DurabilitySubsystem, LineageSubsystem, PublicationSubsystem,
-    RecordIdentitySubsystem, RuntimeServices, StorageSubsystem, VisibilitySubsystem,
+    DurabilitySubsystem, LineageSubsystem, PublicationSubsystem, RecordIdentitySubsystem,
+    RuntimeServices, StorageSubsystem, VisibilitySubsystem,
 };
 
 pub(in crate::runtime) use close_authority::RelationalRuntimeCloseAuthority;
@@ -75,7 +75,6 @@ pub struct RelationalRuntimeState {
     /// The one authority for this runtime's configuration and the schema
     /// contract runtime derived from it.
     pub(crate) configuration: RelationalRuntimeConfiguration,
-    pub(crate) commit_strategies: CommitStrategiesSubsystem,
     pub(crate) partitions: StorageSubsystem,
     pub(crate) visibility: VisibilitySubsystem,
     pub(crate) publication: PublicationSubsystem,

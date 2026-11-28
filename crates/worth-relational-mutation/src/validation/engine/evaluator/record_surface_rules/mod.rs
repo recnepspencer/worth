@@ -1,6 +1,5 @@
 pub(super) mod aspect_exclusion;
 pub mod live_record_sidecars;
-pub mod snapshot_entity_limits;
 
 use crate::contracts::validation::data::execution::InvariantClass;
 use crate::contracts::validation::data::results::InvariantViolation;
@@ -20,12 +19,4 @@ pub(super) fn evaluate_record_surface_rule(
     single_violation(live_record_sidecars::evaluate_live_record_sidecar_rule(
         context, class, kind,
     ))
-}
-
-pub(super) fn evaluate_snapshot_entity_limit_rule(
-    context: &InvariantExecutionContext<'_, '_>,
-    class: InvariantClass,
-    limit: usize,
-) -> Option<InvariantViolation> {
-    snapshot_entity_limits::evaluate_max_snapshot_entities(context, class, limit)
 }

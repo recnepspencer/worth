@@ -113,7 +113,6 @@ pub(super) fn certify_hundred_k_nodes_zero_diagnostics_narrow_round_trip(
                         "publication_history_publish_micros": hot_phase_timing.publication_history_publish_micros,
                         "publication_visibility_pin_micros": hot_phase_timing.publication_visibility_pin_micros,
                         "publication_bundle_publish_micros": hot_phase_timing.publication_bundle_publish_micros,
-                        "publication_post_commit_consumer_micros": hot_phase_timing.publication_post_commit_consumer_micros,
                     },
                     "hot_changed_records": update.changed_records.len(),
                     "query_target_count": window_end - window_start,
@@ -169,10 +168,6 @@ pub(super) fn certify_hundred_k_nodes_zero_diagnostics_narrow_round_trip(
             (
                 "publication_bundle_publish_micros",
                 &["phase_timing", "publication_bundle_publish_micros"],
-            ),
-            (
-                "publication_post_commit_consumer_micros",
-                &["phase_timing", "publication_post_commit_consumer_micros"],
             ),
             ("hot_query_planning_micros", &["hot_query_planning_micros"]),
             (

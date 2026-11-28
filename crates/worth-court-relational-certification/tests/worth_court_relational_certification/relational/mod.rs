@@ -35,13 +35,10 @@ mod transaction_staging;
 
 mod request_owned_retention;
 mod required_output_continuity;
-mod runtime_builder;
 
 mod snapshot_retention;
 
 mod same_commit_relation_endpoints;
-
-mod commit_strategies;
 
 mod commit_result_publication;
 mod pinned_read_custody;
@@ -65,3 +62,4 @@ mod custom_invariant_receipts;
 mod invariant_narrowing_commit;
 
 mod aspect_exclusion;
+mod runtime_builder;

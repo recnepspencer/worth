@@ -1,3 +1,4 @@
+use super::super::binding_evidence::evaluate_authoritative_binding_delta;
 use crate::contracts::identity::data::record_ids::EntityId;
 use crate::contracts::publication::patch::data::record_structural_change::RecordStructuralChange;
 use crate::contracts::transactions::data::primitives::RecordRef;
@@ -6,7 +7,6 @@ use super::super::field_changes::field_changes_for_evidence;
 use crate::authority::mutation::canonical_deltas::data::{
     BindingEvaluationContext, CanonicalDeltaError, CanonicalRecordAspectDelta,
 };
-use crate::authority::mutation::canonical_deltas::materialized_state::evaluate_authoritative_binding_delta;
 use crate::authority::mutation::canonical_deltas::patch_authority::evaluate_authoritative_patch_delta;
 use crate::contracts::schema::aspect_plan_source::AspectPlanSource;
 use worth_foundational::facade::{AspectBinding, AspectShape};

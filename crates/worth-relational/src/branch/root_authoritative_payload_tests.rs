@@ -155,29 +155,6 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
 }
 
 #[test]
-fn strategy_artifacts_are_bound_into_the_committed_root() {
-    let host_request = worth_harness::facade::execution_fixture::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let mut runtime = crate::commit_strategies::facade::intent_strategy_runtime();
-    let entity = create_entity(execution, &runtime, "strategy-before");
-    let outcome = crate::commit_strategies::facade::execute_persisted_intent_strategy_commit(
-        execution,
-        &mut runtime,
-        entity,
-    );
-    let (root, mut envelope) =
-        committed_root_and_envelope(execution, &runtime, outcome.commit.commit_id);
-    assert!(envelope
-        .body_mut_for_test()
-        .strategy_artifacts
-        .take()
-        .is_some());
-
-    assert_axis_mutation_rejected(execution, &runtime, &root, envelope, "strategy artifacts");
-}
-
-#[test]
 fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
     let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

@@ -231,18 +231,6 @@ where
     Ok(prepared)
 }
 
-pub fn prepare_lowered_working_state_scope<'a, 't, Transaction>(
-    inputs: impl Into<working_state_inputs::WorkingStatePreparation<'a>>,
-    transaction: &'t Transaction,
-    selected: SelectedRelationalBranchRead<'_>,
-    merged_plan: mutation::mvcc::transaction::normalized_plan::OwnedNormalizedPlan,
-) -> PreparedWorkingStateScope
-where
-    &'t Transaction: Into<WorkingStateScope<'t>>,
-{
-    prepare_lowered_with_scope(inputs.into(), transaction.into(), selected, merged_plan)
-}
-
 fn prepare_lowered_with_scope(
     inputs: working_state_inputs::WorkingStatePreparation<'_>,
     transaction: WorkingStateScope<'_>,

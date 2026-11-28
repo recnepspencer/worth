@@ -14,7 +14,7 @@ fn unrelated_graph_scale_does_not_change_observation_work() {
     let baseline = fixture
         .runtime
         .observe_authorization(
-            allow_plan(baseline_snapshot, fixture.principal, fixture.scope, []),
+            allow_plan(baseline_snapshot, fixture.principal, fixture.scope),
             execution,
         )
         .expect("baseline observation");
@@ -45,7 +45,7 @@ fn unrelated_graph_scale_does_not_change_observation_work() {
     let scaled = fixture
         .runtime
         .observe_authorization(
-            allow_plan(scaled_snapshot, fixture.principal, fixture.scope, []),
+            allow_plan(scaled_snapshot, fixture.principal, fixture.scope),
             execution,
         )
         .expect("scaled observation");

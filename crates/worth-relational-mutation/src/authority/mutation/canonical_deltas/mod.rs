@@ -1,12 +1,11 @@
 pub mod borrowed_evidence;
 pub(crate) use borrowed_evidence::{BorrowedAspectDeltaEvidence, BorrowedPatchOperation};
 pub mod aspect_trace_projection;
-pub mod changed_authoritative_patch;
+pub mod binding_evidence;
 pub mod data;
 pub mod engine;
 pub mod field_changes;
 pub mod lifecycle_transition_evidence;
-pub mod materialized_state;
 pub mod patch_authority;
 pub mod patch_fragments;
 pub mod publication_fragment;

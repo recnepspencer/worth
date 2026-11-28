@@ -11,7 +11,7 @@ use worth_relational_branch::internal_port::history::retention::VisibilitySnapsh
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::CanonicalRequiredOutputOrigin;
 use contracts::config::data::{policies::MutationConfig, RelationalRuntimeConfig};
 use contracts::execution::{
-    request_custody::request_lease, request_work::RequestWorkBudget,
+    request_work::RequestWorkBudget,
 };
 use contracts::identity::data::primitives::VersionId;
 use contracts::transactions::data::outcomes::plan_artifacts::{
@@ -81,7 +81,6 @@ pub fn verify(
         &mut symbols,
         BranchLocalDeleteAllowance::default(),
         &mut identities.records,
-        request_lease(execution),
         work.cloned(),
         Some(&deferred_edges),
     )

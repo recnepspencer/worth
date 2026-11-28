@@ -15,9 +15,7 @@ pub use crate::inspection::data::{
     RecentCommitInspectionRequest, RecentCommitInspectionWindow, ReclaimEligibility,
     RecordRetentionInspection, RetentionExecutionInspection, RetentionInspectionRequest,
     RetentionInspectionSummary, RetentionStateObservation, SavepointInspectionSurface,
-    SnapshotPinInspection, StructuralIdentityComparison, StructuralIdentityComparisonVerdict,
-    StructuralIdentityEvidence, StructuralIdentityQueryRequest, TransactionInspectionSurface,
-    TransactionIntentCounts,
+    SnapshotPinInspection, TransactionInspectionSurface, TransactionIntentCounts,
 };
 pub use crate::inspection::mvcc::allocation_ledger::{
     RelationalCanonicalPayloadObservation, RelationalExcludedAllocationLane,

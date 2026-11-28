@@ -50,7 +50,6 @@ fn planned_locator_is_resolved_to_native_authoritative_revision() {
         ENTITY_KIND,
         ENTITY_KIND,
         [path],
-        [],
     )
     .expect("planned locator participates in the installed path");
     let evidence = fixture
@@ -136,7 +135,7 @@ fn pinned_stamp_does_not_depend_on_which_snapshot_is_latest() {
         fixture
             .runtime
             .observe_authorization(
-                allow_plan(pinned.clone(), fixture.principal, fixture.scope, []),
+                allow_plan(pinned.clone(), fixture.principal, fixture.scope),
                 execution,
             )
             .expect("the pinned policy can be observed")
@@ -183,7 +182,7 @@ fn predicate_field_change_back_cannot_revive_old_stamp() {
     let evidence = fixture
         .runtime
         .observe_authorization(
-            allow_plan(snapshot, fixture.principal, fixture.scope, []),
+            allow_plan(snapshot, fixture.principal, fixture.scope),
             execution,
         )
         .expect("original path is observable");
@@ -283,7 +282,7 @@ fn stamp_now(
     let evidence = fixture
         .runtime
         .observe_authorization(
-            allow_plan(snapshot, fixture.principal, fixture.scope, []),
+            allow_plan(snapshot, fixture.principal, fixture.scope),
             execution,
         )
         .expect("the current policy can be observed");
@@ -305,7 +304,7 @@ fn role_for(
     fixture
         .runtime
         .observe_authorization(
-            allow_plan(snapshot, fixture.principal, fixture.scope, []),
+            allow_plan(snapshot, fixture.principal, fixture.scope),
             execution,
         )
         .unwrap()

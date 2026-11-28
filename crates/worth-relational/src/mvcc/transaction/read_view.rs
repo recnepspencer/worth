@@ -106,15 +106,9 @@ impl super::BranchBoundRelationalTransaction {
                     .head_view()
                     .entity_record(root.schema_authority().registry(), entity_id)
             });
-        let staged = self
-            .overlay
-            .effective_records
-            .entity_history
-            .get(&entity_id)
-            .cloned()
-            .unwrap_or_default();
+        let staged = self.overlay.staged_entity_mutations(entity_id);
         let prior = self.overlay.effective_records.entities.get(&entity_id);
-        let applied = prior.map_or(0, |p| p.applied);
+        let applied = prior.map_or(0, |p| p.staged.len());
         let effective = project_entity(
             execution,
             self.schema_authority.as_ref(),
@@ -127,9 +121,10 @@ impl super::BranchBoundRelationalTransaction {
                 .any(|i| matches!(i, EntityMutationIntent::Delete(_)));
         self.overlay.effective_records.entities.insert(
             entity_id,
-            super::effective_records::EntityProjection {
+            super::effective_records::RecordProjection {
                 effective: effective.clone(),
-                applied: staged.len(),
+                staged: staged.clone(),
+                through_batches: self.overlay.batches.len(),
                 deleted,
             },
         );
@@ -174,15 +169,9 @@ impl super::BranchBoundRelationalTransaction {
                     .head_view()
                     .relation_record(root.schema_authority().registry(), relation_id)
             });
-        let staged = self
-            .overlay
-            .effective_records
-            .relation_history
-            .get(&relation_id)
-            .cloned()
-            .unwrap_or_default();
+        let staged = self.overlay.staged_relation_mutations(relation_id);
         let prior = self.overlay.effective_records.relations.get(&relation_id);
-        let applied = prior.map_or(0, |p| p.applied);
+        let applied = prior.map_or(0, |p| p.staged.len());
         let effective = project_relation(
             self.schema_authority.as_ref(),
             prior.map_or_else(
@@ -197,9 +186,10 @@ impl super::BranchBoundRelationalTransaction {
                 .any(|i| matches!(i, RelationMutationIntent::Delete(_)));
         self.overlay.effective_records.relations.insert(
             relation_id,
-            super::effective_records::RelationProjection {
+            super::effective_records::RecordProjection {
                 effective: effective.clone(),
-                applied: staged.len(),
+                staged: staged.clone(),
+                through_batches: self.overlay.batches.len(),
                 deleted,
             },
         );

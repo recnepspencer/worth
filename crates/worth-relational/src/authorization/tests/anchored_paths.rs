@@ -99,7 +99,6 @@ fn observe_anchored_path(
         ENTITY_KIND,
         ENTITY_KIND,
         [path],
-        [],
     )
     .unwrap();
     runtime.observe_authorization(plan, execution).unwrap()

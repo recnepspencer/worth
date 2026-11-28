@@ -19,7 +19,7 @@ pub(super) fn diff_fragment_slice_stream(
     let mut stream = Vec::new();
     for (offset, fragment) in fragments.iter().enumerate() {
         let retained_bytes = fragment.published_record_owned_allocation_capacity_bytes();
-        let operation_count = fragment.published_patch.full_grammar_operation_count() as u64;
+        let operation_count = fragment.authoritative_patch.full_grammar_operation_count() as u64;
         let semantic_count = fragment.semantic_changes.len() as u64;
         context.checkpoint(
             1_u64

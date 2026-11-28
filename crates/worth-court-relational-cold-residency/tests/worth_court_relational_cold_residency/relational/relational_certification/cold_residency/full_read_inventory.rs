@@ -16,7 +16,6 @@ pub(super) enum FullReadDoor {
     SnapshotPinInspection,
     ConnectivityInspection,
     NeighborInspection,
-    StructuralInspection,
     RetentionSummary,
     RecordRetention,
     RetentionInspection,
@@ -43,7 +42,7 @@ pub(super) enum FullReadDoor {
 }
 
 impl FullReadDoor {
-    pub(super) const ALL: [Self; 46] = [
+    pub(super) const ALL: [Self; 45] = [
         Self::ProjectionScan(
             super::full_projection_scans::ProjectionScanDoor::EntityKind,
             false,
@@ -90,7 +89,6 @@ impl FullReadDoor {
         Self::SnapshotPinInspection,
         Self::ConnectivityInspection,
         Self::NeighborInspection,
-        Self::StructuralInspection,
         Self::RetentionSummary,
         Self::RecordRetention,
         Self::RetentionInspection,

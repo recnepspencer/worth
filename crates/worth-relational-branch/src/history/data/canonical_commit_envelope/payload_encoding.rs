@@ -33,7 +33,6 @@ impl CanonicalCommitEnvelope {
             branch_context,
             branch_cell_checkpoint,
             authority_kind,
-            strategy_artifacts,
             schema_version,
             schema_authority,
             merged_plan,
@@ -56,8 +55,8 @@ impl CanonicalCommitEnvelope {
             branch_context,
             branch_cell_checkpoint,
             authority_kind,
-            strategy_artifacts,
             // Preserve the v4 commitment terms for old ordinary roots.
+            Option::<()>::None,
             Option::<()>::None,
             [(); 0],
             [(); 0],

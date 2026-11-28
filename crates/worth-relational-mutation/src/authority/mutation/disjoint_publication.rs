@@ -123,9 +123,9 @@ fn join(
         return Ok(Joined {
             target,
             patch: fragment.patch,
-            changes: fragment.semantic_changes,
-            detail: fragment.detail,
-            opaque: fragment.contains_opaque_aspect,
+            changes: fragment.published.semantic_changes,
+            detail: fragment.published.detail,
+            opaque: fragment.published.contains_opaque_aspect,
         });
     }
     // Balanced joins keep mask rebuilding logarithmic in the number of writers.
@@ -220,14 +220,16 @@ impl Joined {
             )
             .map_err(|_| conflict(self.target))?;
         Ok(Fragment {
-            target: RecordRef::Entity(self.target),
-            structural_change: RecordStructuralChange::Updated,
             patch: self.patch,
-            published_patch,
-            semantic_changes: self.changes,
-            contains_opaque_aspect: self.opaque,
-            detail: self.detail,
-            relation_birth: None,
+            published: crate::contracts::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativeRecordPatch {
+                target: RecordRef::Entity(self.target),
+                structural_change: RecordStructuralChange::Updated,
+                authoritative_patch: published_patch,
+                semantic_changes: self.changes,
+                contains_opaque_aspect: self.opaque,
+                detail: self.detail,
+                relation_birth: None,
+            },
         })
     }
 }

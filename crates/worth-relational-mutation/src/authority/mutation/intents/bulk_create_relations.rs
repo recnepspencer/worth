@@ -1,56 +1,29 @@
-use crate::contracts::transactions::data::aspect_field_patch::{
-    AspectFieldPatch, AspectFieldPatchOwnerPort as _,
-};
+use crate::contracts::transactions::data::aspect_field_patch::AspectFieldPatch;
 use crate::contracts::transactions::data::outcomes::commit_conflict::{
     CommitConflict, CommitConflictOwnerPort as _,
 };
 use crate::contracts::transactions::data::outcomes::transaction_commit_error::{
     TransactionCommitError, TransactionCommitErrorOwnerPort as _,
 };
-use worth_execution::ExecutionResourceLease;
-use worth_foundational::PartitionIdentity;
 
-use crate::authority::commit::preparation::packets::import::{
-    ImportFragmentIdentity, ImportFragmentKind, ImportStagedRow, ImportStagingHeader,
-    ImportStagingPacket,
-};
-use crate::authority::commit::preparation::reduction::keys::ImportReductionKey;
 use crate::authority::mutation::outcomes::{MutationOutcome, RecordMutation};
 use crate::authority::mutation::record_changes::allocate_relation;
 use crate::authority::mutation::MutationWorkspace;
-use crate::contracts::authority::commit::preparation::planning::strategy::{
-    coarse_preparation_packet_count, strategy_for_parallel_packets,
-    TARGET_PREPARATION_ITEMS_PER_PACKET,
-};
-use crate::contracts::authority::commit::preparation::proofs::kinds::PreparationProofKind;
-use crate::contracts::authority::commit::preparation::proofs::locality::{
-    PreparationLocalityProof, PreparationPartitionScope, PreparationReadSetApproximation,
-    PreparationRecordDomain, PreparationWriteExclusionClass,
-};
 use crate::contracts::transactions::data::intents::mutation_intent::BulkRelationCreateIntent;
 use crate::contracts::transactions::data::outcomes::conflict_class::record_aspect_patch_denial::RecordAspectPatchTarget;
-use crate::contracts::transactions::data::outcomes::conflict_class::{
-    BulkImportRowDomain, BulkImportStage, ConflictClass,
-};
+use crate::contracts::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::contracts::transactions::data::primitives::EntityReference;
-use crate::contracts::validation::data::groups::InvariantGroupSet;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
-use worth_relational_storage::internal_port::authority::commit::preparation::reduction::merge::{
-    canonical_merge_streams, OrderedReductionStream,
-};
 
 use super::field_authoring_candidate::{self, FieldAuthoringDomain};
 use super::{record_aspect_patch, relation_endpoint_candidate};
 
-pub mod leased;
 pub mod row;
-use leased::stage_leased_relation_rows;
 use row::apply_relation_row;
 
 pub(super) fn apply<'a>(
     intent: &'a BulkRelationCreateIntent,
     workspace: &mut MutationWorkspace<'a>,
-    lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<MutationOutcome, TransactionCommitError> {
     let version_id = workspace.version_id();
     let mut outcome =
@@ -63,116 +36,25 @@ pub(super) fn apply<'a>(
             count: 0,
         },
     )?;
-    for_each_staged_bulk_relation_row(intent, workspace, &mut outcome, version_id, lease)?;
+    workspace.run_owned_mutation(|workspace| {
+        let empty_fields = AspectFieldPatch::default();
+        for (row_index, (source, target)) in intent.endpoints.iter().enumerate() {
+            let fields = intent.field_patches.get(row_index).unwrap_or(&empty_fields);
+            apply_relation_row(
+                intent,
+                workspace,
+                &mut outcome,
+                version_id,
+                row_index,
+                source,
+                target,
+                fields,
+            )?;
+        }
+        Ok::<_, TransactionCommitError>(())
+    })?;
     outcome.set_last_event_count(intent.endpoints.len());
     Ok(outcome)
-}
-
-fn for_each_staged_bulk_relation_row<'a>(
-    intent: &'a BulkRelationCreateIntent,
-    workspace: &mut MutationWorkspace<'a>,
-    outcome: &mut MutationOutcome,
-    version_id: crate::contracts::identity::data::primitives::VersionId,
-    lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<(), TransactionCommitError> {
-    if let Some(lease) = lease {
-        let rows = stage_leased_relation_rows(intent, workspace, lease)?;
-        workspace.run_owned_mutation(|workspace| {
-            for (row_index, row) in rows.into_iter().enumerate() {
-                if let ImportStagedRow::Relation {
-                    client_key: _,
-                    source,
-                    target,
-                    fields,
-                } = row
-                {
-                    apply_relation_row(
-                        intent, workspace, outcome, version_id, row_index, &source, &target,
-                        &fields,
-                    )?;
-                }
-            }
-            Ok::<_, TransactionCommitError>(())
-        })?;
-        return Ok(());
-    }
-    let packet_count = coarse_preparation_packet_count(
-        intent.endpoints.len(),
-        TARGET_PREPARATION_ITEMS_PER_PACKET,
-    );
-    let mut packets = Vec::with_capacity(packet_count);
-    for (packet_index, endpoints) in intent
-        .endpoints
-        .chunks(TARGET_PREPARATION_ITEMS_PER_PACKET)
-        .enumerate()
-    {
-        let packet_index_floor = packet_index * TARGET_PREPARATION_ITEMS_PER_PACKET;
-        packets.push(ImportStagingPacket {
-            header: ImportStagingHeader {
-                packet_index_floor,
-                identity: ImportFragmentIdentity {
-                    partition_id: intent.partition_id,
-                    kind_id: intent.kind_id,
-                    fragment_kind: ImportFragmentKind::RelationCreate,
-                    packet_index: packet_index_floor,
-                },
-                proof_kind: PreparationProofKind::FragmentIdentityDisjoint,
-                locality: PreparationLocalityProof {
-                    observation_scope:
-                        crate::validation::engine::InvariantObservationKind::Speculative,
-                    record_domain: PreparationRecordDomain::Relation,
-                    partition_scope: PreparationPartitionScope::TouchedPartitions(
-                        vec![intent.partition_id].into(),
-                    ),
-                    invariant_group_scope: InvariantGroupSet::empty(),
-                    read_set_approximation: PreparationReadSetApproximation::TouchedOnly,
-                    write_exclusion: PreparationWriteExclusionClass::PublicationExcluded,
-                },
-            },
-            rows: endpoints
-                .iter()
-                .cloned()
-                .enumerate()
-                .map(|(offset, (source, target))| ImportStagedRow::Relation {
-                    client_key: intent.client_keys.get(packet_index_floor + offset).cloned(),
-                    source,
-                    target,
-                    fields: intent
-                        .field_patches
-                        .get(packet_index_floor + offset)
-                        .cloned()
-                        .unwrap_or_default(),
-                })
-                .collect(),
-        });
-    }
-
-    let rows = stage_import_packets(workspace, packets, lease)?;
-    workspace.run_owned_mutation(|workspace| {
-        for (row_index, row) in rows.into_iter().enumerate() {
-            match row {
-                ImportStagedRow::Relation {
-                    client_key: _,
-                    source,
-                    target,
-                    fields,
-                } => apply_relation_row(
-                    intent, workspace, outcome, version_id, row_index, &source, &target, &fields,
-                )?,
-                ImportStagedRow::Entity { .. } => {
-                    return Err(CommitConflict::new(
-                        crate::contracts::transactions::data::outcomes::conflict_class::ConflictClass::BulkImportDomainMismatch {
-                            expected: BulkImportRowDomain::Relation,
-                            actual: BulkImportRowDomain::Entity,
-                            stage: BulkImportStage::RelationCreate,
-                        },
-                    )
-                    .into())
-                }
-            }
-        }
-        Ok(())
-    })
 }
 
 fn resolve_entity_reference(
@@ -188,106 +70,4 @@ fn resolve_entity_reference(
                         .to_string(),
             })
         })
-}
-
-fn stage_import_packets(
-    workspace: &mut MutationWorkspace<'_>,
-    packets: Vec<ImportStagingPacket>,
-    lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<Vec<ImportStagedRow>, TransactionCommitError> {
-    if packets.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    let strategy = strategy_for_parallel_packets(lease, packets.len());
-    let packet_item_count = packets.iter().map(|packet| packet.rows.len()).sum();
-    let packet_max_width = packets
-        .iter()
-        .map(|packet| packet.rows.len())
-        .max()
-        .unwrap_or(0);
-    workspace.record_preparation_strategy(
-        packets.len(),
-        packet_item_count,
-        packet_max_width,
-        1,
-        strategy,
-    );
-    let Some(lease) = lease else {
-        return Ok(packets.into_iter().flat_map(|packet| packet.rows).collect());
-    };
-    let packet_ceiling = lease
-        .policy()
-        .charged_memory_bytes()
-        .map(|limit| limit / (packets.len() as u64).saturating_mul(8));
-    let inputs = packets
-        .into_iter()
-        .map(|packet| {
-            let packet_ceiling = packet_ceiling.map_or_else(
-                || crate::authority::commit::preparation::packets::import::import_result_capacity_bytes(
-                    packet.rows.iter().map(ImportStagedRow::owned_allocation_capacity_bytes),
-                ).ok_or(crate::contracts::execution::read_only_packets::PacketExecutionStop::Admission(
-                    crate::contracts::execution::read_only_packets::PacketAdmissionDenial::MemoryOverflow,
-                )),
-                Ok,
-            )?;
-            Ok(crate::contracts::execution::read_only_packets::ReadOnlyPacket {
-            identity: PartitionIdentity::new(packet.header.packet_index_floor as u64),
-            input_bytes: (packet.rows.capacity() as u64)
-                .saturating_mul(std::mem::size_of::<ImportStagedRow>() as u64)
-                .saturating_add(
-                    packet
-                        .rows
-                        .iter()
-                        .map(ImportStagedRow::owned_allocation_capacity_bytes)
-                        .sum::<u64>(),
-                ),
-            memory: crate::contracts::execution::packet_memory::PacketMemory::Declared { scratch: packet_ceiling, result: packet_ceiling },
-            value: packet,
-            })
-        })
-        .collect::<Result<Vec<_>, crate::contracts::execution::read_only_packets::PacketExecutionStop>>()?;
-    let streams = crate::contracts::execution::read_only_packets::execute_read_only_packets(
-        inputs,
-        lease,
-        import_packet_stream,
-        |stream| {
-            stream.owned_allocation_capacity_bytes(|_, row| row.owned_allocation_capacity_bytes())
-        },
-    )?;
-    Ok(canonical_merge_streams(streams)
-        .into_iter()
-        .map(|(_, row)| row)
-        .collect())
-}
-
-fn import_packet_stream(
-    packet: &ImportStagingPacket,
-    context: &mut crate::contracts::execution::packet_memory::PacketKernelContext<'_, '_, '_>,
-) -> Result<
-    OrderedReductionStream<ImportReductionKey, ImportStagedRow>,
-    worth_execution::MapKernelFailure<
-        crate::contracts::execution::read_only_packets::PacketBudgetDenial,
-    >,
-> {
-    let mut stream = Vec::new();
-    for (offset, row) in packet.rows.iter().enumerate() {
-        context.checkpoint(1)?;
-        context.claim_result(
-            (std::mem::size_of::<(ImportReductionKey, ImportStagedRow)>() as u64)
-                .saturating_add(row.owned_allocation_capacity_bytes()),
-        )?;
-        stream
-            .try_reserve_exact(1)
-            .map_err(|_| worth_execution::MapKernelFailure::ResultCapacityExceeded)?;
-        stream.push((
-            ImportReductionKey::new(
-                packet.header.identity.partition_id,
-                1,
-                packet.header.packet_index_floor + offset,
-            ),
-            row.clone(),
-        ));
-    }
-    Ok(OrderedReductionStream::new(stream))
 }

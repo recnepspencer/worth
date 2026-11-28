@@ -102,12 +102,6 @@ impl ReplayDigestBuilder {
         self.u64(value.as_u64())
     }
 
-    pub(super) fn optional_version_id(self, value: Option<VersionId>) -> Self {
-        match value {
-            Some(value) => self.tag(1).version_id(value),
-            None => self.tag(0),
-        }
-    }
 
     pub(super) fn schema_version_id(self, value: SchemaVersionId) -> Self {
         self.u32(value.0)

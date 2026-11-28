@@ -7,7 +7,7 @@ use worth_proof::TransitionOutcome;
 
 use crate::contracts::config::data::policies::CascadeDeletePolicy;
 use crate::contracts::diagnostics::data::fields::RelationalDiagnosticValue;
-use crate::contracts::identity::data::primitives::{KindId, PartitionId, VersionId};
+use crate::contracts::identity::data::primitives::{KindId, PartitionId};
 use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
 use crate::contracts::schema::data::relation_integrity::contract_id::ContractId;
 use crate::contracts::schema::data::relation_integrity::declarations::{
@@ -35,11 +35,6 @@ pub enum InvariantViolationDiagnosticProjection<'a> {
     None,
     MergedIntentLimit {
         merged_intent_count: usize,
-        limit: usize,
-    },
-    SnapshotEntityLimit {
-        version_id: VersionId,
-        visible_entities: usize,
         limit: usize,
     },
     UniqueEntityField {

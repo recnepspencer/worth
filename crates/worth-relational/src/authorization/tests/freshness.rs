@@ -63,7 +63,7 @@ fn exact_authorization_observation_stales_after_membership_revocation() {
     let admitted = fixture
         .runtime
         .observe_authorization(
-            allow_plan(admitted_snapshot, fixture.principal, fixture.scope, []),
+            allow_plan(admitted_snapshot, fixture.principal, fixture.scope),
             execution,
         )
         .unwrap();
@@ -109,7 +109,7 @@ fn unrelated_relation_kind_does_not_widen_authorization_causality() {
     let admitted = fixture
         .runtime
         .observe_authorization(
-            allow_plan(admitted_snapshot, fixture.principal, fixture.scope, []),
+            allow_plan(admitted_snapshot, fixture.principal, fixture.scope),
             execution,
         )
         .unwrap();

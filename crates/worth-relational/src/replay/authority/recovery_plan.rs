@@ -26,8 +26,7 @@ pub(in crate::replay) fn replay_recovery_plan_for_chain(
         .durability()
         .reconstruct_branch_transition_history(execution, covered)?;
     let branch_transitions = replay_fork_transitions(transitions, &tail_log);
-    let restore_authoritative_envelope_commit_ids =
-        authoritative_replay_envelopes(source.history.canonical_read(), chain);
+    let restore_authoritative_envelope_commit_ids = authoritative_replay_envelopes(chain);
     let checkpoint_envelopes = checkpoint
         .as_ref()
         .map(|checkpoint| checkpoint.envelopes())
@@ -48,8 +47,7 @@ pub(in crate::replay) fn replay_recovery_plan_for_chain(
         target_descriptor_semantics_version(source.history.canonical_read(), chain),
         restore_authoritative_envelope_commit_ids,
         source.durability.cold_source(),
-    )
-    .with_commit_strategy_executors(source.commit_strategy_executor_registry().clone()))
+    ))
 }
 
 fn replay_verification_mode_to_recovery_mode(

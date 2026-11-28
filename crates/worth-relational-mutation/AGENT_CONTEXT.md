@@ -11,7 +11,7 @@ Canonical machine constitution: `tools/boundary-check/config/road1.toml`
 
 - Public surface: Consumer code uses worth-relational::facade. The internal_port serves Relational owners.
 - Declared facade exports (glob routes remain explicit): `none`
-- Owned internal modules: `aggregate_identity, authority, authorization, derived_relation, history, internal_port, mvcc, projected_member_domain, runtime, transactions, validation`
+- Owned internal modules: `aggregate_identity, authority, authorization, derived_relation, history, intent_admission, internal_port, mvcc, projected_member_domain, runtime, transactions, validation`
 - Allowed in-tree dependency bands: `worth-relational-contracts, worth-relational-storage, worth-relational-branch`
 
 Boundary guidance (the compiler and retained checks own enforcement):

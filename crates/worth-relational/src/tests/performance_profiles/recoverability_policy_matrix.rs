@@ -152,23 +152,6 @@ fn perf_recoverability_policy_matrix() {
             .latest_commit()
             .expect("policy chip latest commit")
             .clone();
-        let (hot_artifact, hot_compile_work) = measure_counted_work(execution, || {
-            runtime
-                .compiled_artifacts_authority()
-                .compile_execution_artifact(
-                    execution,
-                    latest_commit.commit_id,
-                    vec![
-                        PartitionId(7),
-                        PartitionId(11),
-                        PartitionId(12),
-                        PartitionId(13),
-                        PartitionId(14),
-                        PartitionId(19),
-                    ],
-                )
-                .expect("policy hot chip compile")
-        });
 
         capture_and_file_checkpoint(execution, &runtime, &medium);
         assert!(medium.has_filed_checkpoint());
@@ -195,48 +178,17 @@ fn perf_recoverability_policy_matrix() {
             .latest_commit()
             .expect("policy recovered chip latest commit")
             .clone();
-        let (cold_artifact, cold_compile_work) = measure_counted_work(execution, || {
-            recovered
-                .compiled_artifacts_authority()
-                .compile_execution_artifact(
-                    execution,
-                    recovered_commit.commit_id,
-                    vec![
-                        PartitionId(7),
-                        PartitionId(11),
-                        PartitionId(12),
-                        PartitionId(13),
-                        PartitionId(14),
-                        PartitionId(19),
-                    ],
-                )
-                .expect("policy cold chip compile")
-        });
+        assert_eq!(latest_commit, recovered_commit);
 
         CountedPerfSample {
-            charged_work: hot_commit_work
-                + hot_compile_work
-                + replay_commit_work
-                + cold_compile_work,
+            charged_work: hot_commit_work + replay_commit_work,
             metrics: perf_metrics!({
                 "must_be_hot_changed_records": hot_commit.changed_records.len(),
-                "reconstructable_compiled_record_count": cold_artifact.compiled_record_count,
-                "hot_compiled_record_count": hot_artifact.compiled_record_count,
-                "hot_authority_status": format!(
-                    "{:?}",
-                    runtime.compiled_artifacts().compiled_artifact_authority_status(hot_artifact.artifact_id)
-                ),
-                "cold_authority_status": format!(
-                    "{:?}",
-                    recovered.compiled_artifacts().compiled_artifact_authority_status(cold_artifact.artifact_id)
-                ),
                 "replay_mismatch_count": replay.mismatches.len(),
                 "replay_failure": replay.failure.as_ref().map(|failure| format!("{failure:?}")),
                 "phase_work": {
                     "hot_commit_work": hot_commit_work,
-                    "hot_compile_work": hot_compile_work,
                     "replay_commit_work": replay_commit_work,
-                    "cold_compile_work": cold_compile_work,
                 },
             }),
         }
@@ -246,14 +198,9 @@ fn perf_recoverability_policy_matrix() {
         .all(|sample| sample.charged_work > 0));
     assert_counted_budget(
         &chip_policy_samples,
-        "chip policy budgets should keep commit truth hot while treating compiled execution artifacts as reconstructable cold-path products",
+        "chip policy budgets should keep commit truth hot and recover the retained snapshot",
         |metrics| {
             metrics["must_be_hot_changed_records"].as_u64() == Some(1)
-                && metrics["hot_compiled_record_count"] == metrics["reconstructable_compiled_record_count"]
-                && metrics["hot_authority_status"].as_str()
-                    == Some(&format!("{:?}", CompiledArtifactAuthorityStatus::Authoritative))
-                && metrics["cold_authority_status"].as_str()
-                    == Some(&format!("{:?}", CompiledArtifactAuthorityStatus::Authoritative))
                 && metrics["replay_failure"].is_null()
                 && metrics["replay_mismatch_count"].as_u64() == Some(0)
         },

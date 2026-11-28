@@ -6,8 +6,8 @@ pub(super) fn apply_relation_row<'a>(
     outcome: &mut MutationOutcome,
     version_id: crate::contracts::identity::data::primitives::VersionId,
     row_index: usize,
-    source: &EntityReference,
-    target: &EntityReference,
+    source: &'a EntityReference,
+    target: &'a EntityReference,
     fields: &AspectFieldPatch,
 ) -> Result<(), TransactionCommitError> {
     let source_id = resolve_entity_reference(workspace, source)?;
@@ -70,16 +70,12 @@ pub(super) fn apply_relation_row<'a>(
         Ok::<_, crate::contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(relation_id)
     })?;
     if let Some(client_key) = intent.client_keys.get(row_index) {
-        // Both staging adapters emit canonical ImportReductionKey row order.
-        // Binding keys borrow that SAME original row instead of cloned packets.
-        let (original_source,original_target)=intent.endpoints.get(row_index)
-            .expect(/* Proof: Only the leased and ordered staging adapters call this private row function, each with the ordinal of the intent endpoint row it staged. */ "row ordinal belongs to its original endpoints");
         workspace.register_created_relation(
             intent.partition_id,
             intent.kind_id,
             client_key,
-            original_source,
-            original_target,
+            source,
+            target,
             relation_id,
         )?;
     }

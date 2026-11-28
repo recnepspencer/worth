@@ -25,7 +25,6 @@ pub use surface_terms::{
     digest_canonical_patch_surface, digest_derived_index_summary, digest_derived_index_surface,
     digest_diagnostics_summary, digest_diagnostics_surface, digest_history_summary,
     digest_history_surface, digest_snapshot_summary, digest_snapshot_surface,
-    digest_strategy_replay_descriptor, digest_strategy_replay_summary,
 };
 
 #[cfg(test)]

@@ -1,14 +1,18 @@
 //! Exact mutation truth projected from one owner-validated mutation.
 
 pub mod member_restoration;
+mod patch_loci;
 pub mod relation_mutations;
 pub mod relation_projection;
+pub mod touches;
 
 pub use member_restoration::{RecordedMemberRestoration, RecordedMemberRestorationRefusal};
+use patch_loci::{AuthoredPatchLocus, authored_patch_loci};
+
 pub use relation_mutations::{ValidatedRelationMutation, ValidatedRelationMutationFootprint};
 
 use worth_foundational::facade::{
-    AspectFieldLocator, AspectKey, CanonicalFieldPath, PortableAspectPatchOperation,
+    AspectFieldLocator, AspectKey, CanonicalFieldPath,
 };
 
 use crate::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
@@ -233,32 +237,19 @@ fn patch_targets(
     record: RecordRef,
     patch: &worth_foundational::facade::PortableRecordAspectPatch,
 ) -> Vec<ValidatedFieldMutationTarget> {
-    patch
-        .operations()
-        .iter()
-        .flat_map(|operation| match operation {
-            PortableAspectPatchOperation::SetWhole { basis, .. }
-            | PortableAspectPatchOperation::ClearWhole { basis } => {
-                vec![ValidatedFieldMutationTarget::WholeAspect {
-                    record: record.clone(),
-                    aspect: basis.key().clone(),
-                }]
-            }
-            PortableAspectPatchOperation::PatchFields {
-                basis,
-                selected_fields,
-                ..
-            } => selected_fields
-                .iter()
-                .cloned()
-                .map(|field| ValidatedFieldMutationTarget::ExactField {
-                    record: record.clone(),
-                    locator: planned_aspect_field_locator(
-                        basis.key().clone(),
-                        CanonicalFieldPath::single(field),
-                    ),
-                })
-                .collect(),
+    authored_patch_loci(patch)
+        .map(|locus| match locus {
+            AuthoredPatchLocus::Whole(basis) => ValidatedFieldMutationTarget::WholeAspect {
+                record: record.clone(),
+                aspect: basis.key().clone(),
+            },
+            AuthoredPatchLocus::Field { basis, field } => ValidatedFieldMutationTarget::ExactField {
+                record: record.clone(),
+                locator: planned_aspect_field_locator(
+                    basis.key().clone(),
+                    CanonicalFieldPath::single(field.clone()),
+                ),
+            },
         })
         .collect()
 }

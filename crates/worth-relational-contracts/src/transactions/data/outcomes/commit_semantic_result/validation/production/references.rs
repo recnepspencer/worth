@@ -61,7 +61,6 @@ pub fn canonicalize(
         }
         Fields::None
         | Fields::MergedIntentLimit { .. }
-        | Fields::SnapshotEntityLimit { .. }
         | Fields::EntityAspectExclusion { .. }
         | Fields::SidecarConsistency { .. }
         | Fields::RelationEndpointKindCrossContext { .. }
@@ -105,7 +104,6 @@ pub(in super::super) fn is_canonical(verdict: &InvariantVerdict) -> bool {
         ),
         Fields::None
         | Fields::MergedIntentLimit { .. }
-        | Fields::SnapshotEntityLimit { .. }
         | Fields::EntityAspectExclusion { .. }
         | Fields::SidecarConsistency { .. }
         | Fields::RelationEndpointKindCrossContext { .. }

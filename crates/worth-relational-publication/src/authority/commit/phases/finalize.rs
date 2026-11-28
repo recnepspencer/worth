@@ -8,5 +8,4 @@ pub(crate) struct PublicationPhaseTiming {
     pub(crate) compaction_micros: u64,
     pub(crate) bundle_publish_micros: u64,
     pub(crate) retention_pass_micros: u64,
-    pub(crate) post_commit_consumer_micros: u64,
 }

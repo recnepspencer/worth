@@ -19,7 +19,7 @@ fn every_complexity_contract_proof_names_a_registered_test() {
             "{} has no proof",
             contract.id
         );
-        // The complexity CI lane checks relocated Storage proofs against that binary.
+        // The complexity CI lane checks extracted proofs against their owner binaries.
         for proof in contract
             .proof_tests
             .iter()

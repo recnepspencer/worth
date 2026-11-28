@@ -153,7 +153,7 @@ fn snapshot_audit_failure_blocks_publication() {
 
     let runtime = runtime_with_declared_aspect_schema_and_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::snapshot_publication_blocking(
-            InvariantRule::MaxSnapshotEntities(0),
+            connectivity_publication_rule(KindId(1)),
         )],
     });
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);

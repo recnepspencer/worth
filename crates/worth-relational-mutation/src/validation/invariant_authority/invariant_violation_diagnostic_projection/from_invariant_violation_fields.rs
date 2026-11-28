@@ -35,15 +35,6 @@ impl<'a> InvariantViolationDiagnosticProjection<'a> {
                 merged_intent_count: *merged_intent_count,
                 limit: *limit,
             },
-            InvariantViolationFields::SnapshotEntityLimit {
-                version_id,
-                visible_entities,
-                limit,
-            } => Self::SnapshotEntityLimit {
-                version_id: *version_id,
-                visible_entities: *visible_entities,
-                limit: *limit,
-            },
             InvariantViolationFields::UniqueEntityField {
                 field_locator,
                 value,

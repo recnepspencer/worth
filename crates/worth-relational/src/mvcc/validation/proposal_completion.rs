@@ -1,5 +1,4 @@
 //! Seal the validated successor only after candidate preparation has retired.
-use super::proposal_source::RelationalProposalSource;
 use super::proposal_validation::require_not_interrupted;
 use super::validated_proposal::{ValidatedProposalState, ValidatedRelationalProposal};
 use crate::runtime::RelationalPreparationRuntime;
@@ -9,13 +8,11 @@ use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBra
 use worth_relational_mutation::internal_port::mvcc::validation::invariant_evidence::{
     assemble_mutation_invariant_evidence, MutationInvariantEvidenceParts,
 };
-use worth_relational_publication::internal_port::authority::commit::structural_summary::CommitStructuralSummaryFieldsPort as _;
 #[inline(never)]
 pub(super) fn complete(
     owner: &RelationalPreparationRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     transaction: crate::mvcc::BranchBoundRelationalTransaction,
-    source: RelationalProposalSource,
     round: crate::authority::commit::pipeline::CommitPhaseBacking<
         super::proposal_round::PreparedProposalRound,
     >,
@@ -46,25 +43,6 @@ pub(super) fn complete(
             [&invariants],
             &owner.schema_contract_runtime.custom_invariant_registries,
         );
-    let strategy = source.into_strategy();
-    let strategy_commit_artifacts = strategy.as_ref().map(|strategy| {
-        let validation_cost =
-            crate::commit_strategies::data::StrategyPreviewValidationCostSummary::new(
-                proposed_version,
-                prepared.plan.view().commands().merged_intents.len(),
-                prepared.structural_summary.touched_partitions().len(),
-                prepared.structural_summary.bulk_entity_slots_reserved(),
-                prepared.structural_summary.bulk_relation_slots_reserved(),
-                1,
-            );
-        strategy.artifacts.clone().with_preview_validation(
-            summary,
-            validation_cost,
-            validated_against_commit,
-            validated_against_version,
-        )
-    });
-    let strategy_bulk_mutation_batch = strategy.and_then(|strategy| strategy.bulk_mutation_batch);
     let complexity_after = owner.performance_access().complexity_counters_snapshot();
     let validation_complexity_delta =
         crate::performance::operation_complexity_accounting::complexity_delta_without_commit_gauges(
@@ -114,8 +92,6 @@ pub(super) fn complete(
             execution_contracts: owner.execution_contracts.clone(),
             custom_invariant_generation: owner.schema_contract_runtime.custom_invariant_generation,
             batch_count,
-            strategy_commit_artifacts,
-            strategy_bulk_mutation_batch,
             validation_complexity_delta,
         },
     )

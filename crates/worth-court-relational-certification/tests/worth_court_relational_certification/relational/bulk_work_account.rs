@@ -1,5 +1,4 @@
 //! Commit entry points spend their caller’s original Work account.
-mod naming_admission;
 mod proposal_entries;
 use worth_execution::{CancellationToken, ExecutionRequest, ExecutionWorkCeiling, LeaseRequest};
 use worth_foundational::{

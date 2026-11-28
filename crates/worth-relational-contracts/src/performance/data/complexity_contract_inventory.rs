@@ -87,13 +87,13 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     },
     ComplexityContract {
         id: "runtime.relation_identity_validation",
-        function_path: "authority/intent_merge/relation_validation/relation_creation_admission.rs::validate_relation_creation_intent",
+        function_path: "intent_admission/relation_validation/relation_creation_admission.rs::validate_relation_creation_intent",
         declared_time_complexity: "O(target_count + min(out_degree(source), sum(in_degree(existing_targets))) + same_batch_relation_creates)",
         budget_summary: "Duplicate relation identity checks scan the smaller current endpoint neighborhood, skip newly created targets, and use deterministic same-batch keys.",
         status: ComplexityStatus::Verified,
         proof_tests: &[
             "tests::complexity::contracts::commit_budgets::relation_identity_validation::complexity_budget_relation_identity_validation_avoids_partition_scan",
-            "authority::intent_merge::relation_validation::relation_identity_scan::tests::relation_identity_admission_scans_the_smaller_endpoint_and_skips_new_targets",
+            "internal_port::intent_admission::relation_validation::relation_identity_scan::tests::relation_identity_admission_scans_the_smaller_endpoint_and_skips_new_targets",
         ],
     },
     ComplexityContract {
@@ -161,22 +161,6 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     index_access::RELATION_FIELD,
     index_access::GENERATION_SELECTION,
     index_access::PATCH_LOCAL_MAINTENANCE,
-    ComplexityContract {
-        id: "runtime.bulk_mutation.planning",
-        function_path: "transactions/logic/mod.rs::RelationalTransaction::plan_bulk_mutation_batch",
-        declared_time_complexity: "O(intents + distinct_client_keys * log(distinct_client_keys) + lineage_transition_width + worker_batch_evidence)",
-        budget_summary: "Bulk mutation planning must remain intent-shaped: normalize persistent names, compute locality, lower lineage transitions, and capture worker provenance without performing authoritative mutation or hidden whole-state work.",
-        status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::commit_budgets::bulk_mutation_admission::complexity_budget_bulk_mutation_planning_reports_identity_scope_and_batch_evidence"],
-    },
-    ComplexityContract {
-        id: "runtime.bulk_mutation.admission",
-        function_path: "transactions/logic/mod.rs::{admit_naming_stable_bulk_mutation_batch,admit_lineage_safe_bulk_mutation_batch,admit_provenance_complete_bulk_mutation_batch}",
-        declared_time_complexity: "O(planned_intents + naming_width + lineage_transition_width + worker_batch_evidence)",
-        budget_summary: "Bulk mutation admission must validate naming, lineage, and provenance proof boundaries without mutating authority or inflating planning counters during preflight inspection.",
-        status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::commit_budgets::bulk_mutation_admission::complexity_budget_bulk_mutation_admission_remains_side_effect_free_until_commit"],
-    },
     ComplexityContract {
         id: "runtime.lineage.finalization",
         function_path: "lineage/logic/authority/commit_finalization.rs",
@@ -250,14 +234,6 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         proof_tests: &["tests::complexity::contracts::inspection_budgets::complexity_budget_retention_summary_reports_bounded_slot_scans"],
     },
     ComplexityContract {
-        id: "runtime.inspection.structural_identity",
-        function_path: "inspection/logic/structural_identity.rs::InspectionAccess::{structural_identity,query_structural_identity}",
-        declared_time_complexity: "O(1) for direct record lookup, O(visible_entities_in_scope) for fingerprint-family queries",
-        budget_summary: "Structural identity inspection must keep direct evidence lookup sharp while broad fingerprint-family queries remain scoped and explicit.",
-        status: ComplexityStatus::Debt,
-        proof_tests: &["tests::inspection::structural_identity::structural_identity_comparison_only_uses_fingerprint_truth"],
-    },
-    ComplexityContract {
         id: "runtime.inspection.commit_reads",
         function_path: "inspection/logic/commit.rs::InspectionAccess::{inspect_commit,inspect_recent_commits,inspect_branch_head}",
         declared_time_complexity: "O(1) per commit envelope lookup plus O(limit) for recent-commit windows",
@@ -307,13 +283,12 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     ComplexityContract {
         id: "runtime.invariant.materialization",
         function_path: "validation/engine/engine.rs::execute",
-        declared_time_complexity: "Mixed: O(touched_entity_slots + touched_relation_slots) for structural mutation checks, O(merged_intents) for merged-plan limits, O(partitions) for current-version snapshot counts, O(entity_slots) for historical snapshot counts, O(selected_entity_slots + selected_unique_field_values) for unique-field checks",
+        declared_time_complexity: "Mixed: O(touched_entity_slots + touched_relation_slots) for structural mutation checks, O(merged_intents) for merged-plan limits, O(selected_entity_slots + selected_unique_field_values) for unique-field checks",
         budget_summary: "Current invariant rules expose measurable fast paths, but the subsystem remains debt until broader future rules cannot silently reintroduce full-state materialization without updating the contract.",
         status: ComplexityStatus::Debt,
         proof_tests: &[
             "tests::complexity::contracts::commit_budgets::partition_local_commit::complexity_budget_mutation_structural_invariants_are_touched_slot_bounded",
             "tests::complexity::contracts::commit_budgets::partition_local_commit::complexity_budget_relation_structural_invariants_are_touched_slot_bounded",
-            "tests::complexity::contracts::visibility_budgets::invariant_materialization::complexity_budget_snapshot_entity_limit_uses_live_bitsets_for_current_version",
             "tests::complexity::contracts::commit_budgets::unique_invariant_lookup::complexity_budget_unique_entity_invariant_scans_the_selected_state",
             "tests::complexity::contracts::commit_budgets::unique_invariant_lookup::complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan",
             "tests::complexity::contracts::visibility_budgets::invariant_materialization::complexity_contract_invariant_materialization_is_declared_and_measured",

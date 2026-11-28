@@ -28,7 +28,6 @@ pub(crate) use home_program_transition::{
     RelationalRootExecutionContracts,
 };
 pub(crate) mod checkpoint_split_doors_for_test;
-pub(crate) mod commit_strategy_validation;
 pub(crate) use worth_relational_contracts::internal_port::runtime::interruption_counters;
 mod invariant_view;
 mod lineage_commit;
@@ -59,11 +58,6 @@ pub use crate::performance::data::{
     RuntimeComplexityCounters,
 };
 pub use crate::replay::data::{RelationalReplayRecord, ReplaySchemaVersion};
-pub use crate::simulation::data::{
-    CompiledArtifactAuthorityStatus, CompiledArtifactError, CompiledExecutionArtifact,
-    TopologyFreezeMode,
-};
-pub use crate::simulation::{SimulationAccess, SimulationAuthority};
 pub use crate::snapshots::guard::SnapshotGuard;
 #[cfg(test)]
 pub use crate::validation::engine::HarnessAuditMode;
@@ -117,19 +111,19 @@ pub use state::RelationalRuntime;
 pub(crate) use state::RelationalRuntimeState;
 pub(crate) use state::{
     AdmittedRelationalRuntimeOperation, BranchHeadVersionIndexAuthority,
-    BranchTransitionPublication, CanonicalCheckpointAdmissionError, CommitStrategiesSubsystem,
-    DurabilitySubsystem, HistorySubsystem, LineageIdentityAllocator, LineageSubsystem,
-    MirrorResidencyDemandBinding, PartitionEdition, PendingSymbolMeanings,
-    PerformedCheckpointSelection, PublicationSubsystem, PublishedSnapshotCapacityOwner,
-    PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, ReclaimedRecordSlot,
-    RecordIdentitySubsystem, RelationalCanonicalPublicationRoutes,
-    RelationalCheckpointManifestSelection, RelationalForkMaterializationCost,
-    RelationalForkOwnerBinding, RelationalPreparationHistory, RelationalPreparationOwnerBinding,
-    RelationalPreparationRuntime, RelationalRuntimeConfigurationBinding,
-    RelationalRuntimeConfigurationSnapshot, RelationalRuntimeOwnerBinding,
-    RelationalRuntimePublicationBinding, ResidentLineageNode, ResidentPartitionEdition,
-    ResidentPartitionEntry, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
-    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, StorageSubsystem, VisibilitySubsystem,
+    BranchTransitionPublication, CanonicalCheckpointAdmissionError, DurabilitySubsystem,
+    HistorySubsystem, LineageIdentityAllocator, LineageSubsystem, MirrorResidencyDemandBinding,
+    PartitionEdition, PendingSymbolMeanings, PerformedCheckpointSelection, PublicationSubsystem,
+    PublishedSnapshotCapacityOwner, PublishedSnapshotReservationDenial,
+    PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
+    RelationalCanonicalPublicationRoutes, RelationalCheckpointManifestSelection,
+    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
+    RelationalPreparationOwnerBinding, RelationalPreparationRuntime,
+    RelationalRuntimeConfigurationBinding, RelationalRuntimeConfigurationSnapshot,
+    RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding, ResidentLineageNode,
+    ResidentPartitionEdition, ResidentPartitionEntry, RuntimeInstrumentation, RuntimeServices,
+    RuntimeSubsystem, RuntimeSymbolTable, SchemaContractRuntimeSubsystem, StorageSubsystem,
+    VisibilitySubsystem,
 };
 pub use state::{
     PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,

@@ -14,7 +14,7 @@ use super::super::lineage_authority::published_lineage_artifacts_match;
 use super::super::surface_comparison::{
     compare_descriptor_surface, compare_replay_surface, surface_basis_for_branch_head,
     surface_basis_for_history, surface_basis_for_patch, surface_basis_for_published_lineage,
-    surface_basis_for_snapshot, surface_basis_for_strategy,
+    surface_basis_for_snapshot,
 };
 use super::super::{SelectedPublishedLineageAuthority, ValidatedReplayContinuityEnvelope};
 
@@ -79,21 +79,6 @@ pub(super) fn compare_replay_surfaces(
             )
         },
     );
-    if compared_surfaces.contains(&ReplayObservableSurface::Strategy) {
-        compare_replay_surface(
-            runtime,
-            verification_plan,
-            mismatches,
-            ReplayObservableSurface::Strategy,
-            ReplayMismatchClass::StrategyArtifactDrift,
-            surface_basis_for_strategy(envelope.strategy_artifacts.as_ref()),
-            surface_basis_for_strategy(replayed_envelope.strategy_artifacts.as_ref()),
-            "strategy replay descriptor differed",
-            || envelope.strategy_artifacts == replayed_envelope.strategy_artifacts,
-            || format!("{:?}", envelope.strategy_artifacts),
-            || format!("{:?}", replayed_envelope.strategy_artifacts),
-        );
-    }
     if replayed_envelope.descriptor_semantics_version != envelope.descriptor_semantics_version {
         runtime
             .performance_access()

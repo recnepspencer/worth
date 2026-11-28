@@ -112,7 +112,7 @@ report!(ConflictClass, cause => {
         Cause::InvariantViolation { .. } | Cause::RecordAspectPatchDenied { .. } | Cause::HistoricalReinterpretationViolation { .. }
         | Cause::AspectDeltaFailure { .. } => (Invariant, CorrectInput, "relational.conflict.invariant"),
         Cause::InvalidRelationEndpoint { .. } => (RelationLaw, CorrectInput, "relational.conflict.relation_endpoint"),
-        Cause::KindSchemaMismatch { .. } | Cause::BulkImportDomainMismatch { .. } | Cause::InvalidSavepoint { .. }
+        Cause::KindSchemaMismatch { .. } | Cause::InvalidSavepoint { .. }
         | Cause::InvalidMergeParent { .. } | Cause::MissingMergeBase { .. } | Cause::MaterializationModeMismatch
         | Cause::UndeclaredSchemaTransition { .. } | Cause::DescriptorSemanticsVersionUnsupported { .. }
         | Cause::InvalidSchemaTransitionSourceBasis { .. } | Cause::InvalidSchemaTransitionTargetBasis { .. }

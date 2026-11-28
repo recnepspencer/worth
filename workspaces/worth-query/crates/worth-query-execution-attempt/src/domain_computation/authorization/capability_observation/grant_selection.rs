@@ -155,7 +155,6 @@ fn observe_candidate_paths(
         installed.principal_kind(),
         installed.scope_kind(),
         paths,
-        [],
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
     late_cancellation::cancel_at_observation();

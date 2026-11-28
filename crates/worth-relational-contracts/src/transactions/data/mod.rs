@@ -1,7 +1,6 @@
 pub mod aspect_field_patch;
 pub mod aspect_reports;
 pub mod aspect_traces;
-pub mod bulk_plan_digest;
 pub mod canonical_intent_key;
 pub mod commit_log;
 pub mod copy_denial;

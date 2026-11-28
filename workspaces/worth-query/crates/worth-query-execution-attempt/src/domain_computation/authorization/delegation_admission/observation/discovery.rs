@@ -46,7 +46,6 @@ pub(super) fn observe_parent(
         installed.grant_kind(),
         installed.grant_kind(),
         parent_path.into_iter().chain([grantee_path]),
-        [],
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
     let evidence = relational

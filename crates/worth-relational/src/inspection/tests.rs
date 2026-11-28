@@ -1,56 +1,10 @@
 use crate::facade::identity::KindId;
-use crate::facade::inspection::{InspectionOrigin, InspectionScope};
+use crate::facade::inspection::InspectionScope;
 use crate::facade::transactions::{
-    EntityReference, MutationIntent, RecordRef, RelationMutationIntent,
-    UpdateRelationEndpointsIntent, WorkerIntentBatch,
+    EntityReference, MutationIntent, RelationMutationIntent, UpdateRelationEndpointsIntent,
+    WorkerIntentBatch,
 };
 use crate::tests::support::*;
-
-#[test]
-fn structural_identity_origin_tracks_non_current_scope() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema();
-    let entity = create_entity(execution, &runtime, "scoped-identity");
-    let version_id = runtime.current_version_id();
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
-
-    let current = runtime
-        .inspect_what_happened()
-        .structural_identity(
-            execution,
-            InspectionScope::Current,
-            RecordRef::Entity(entity),
-        )
-        .expect("read request remains live")
-        .expect("current structural identity");
-    let version = runtime
-        .inspect_what_happened()
-        .structural_identity(
-            execution,
-            InspectionScope::Version(version_id),
-            RecordRef::Entity(entity),
-        )
-        .expect("read request remains live")
-        .expect("version structural identity");
-    let snapshot = runtime
-        .inspect_what_happened()
-        .structural_identity(
-            execution,
-            InspectionScope::Snapshot(snapshot),
-            RecordRef::Entity(entity),
-        )
-        .expect("read request remains live")
-        .expect("snapshot structural identity");
-
-    assert_eq!(current.origin, InspectionOrigin::CurrentTruth);
-    assert_eq!(version.origin, InspectionOrigin::VisibilitySnapshot);
-    assert_eq!(snapshot.origin, InspectionOrigin::VisibilitySnapshot);
-}
 
 #[test]
 fn historical_neighbors_follow_scoped_relation_endpoints_after_rewire() {

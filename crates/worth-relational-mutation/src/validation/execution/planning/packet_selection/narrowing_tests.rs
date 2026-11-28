@@ -212,12 +212,12 @@ fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
         }
         let evaluation_budget =
             CustomPreparationBudget::new(lease.status(), Some(1_000_000), Some(1_000_000));
-        let planned = super::super::execution_plan::plan_invariant_execution_checked(
+        let planned = super::super::execution_plan::plan_invariant_execution(
             &view,
             ExecutionRequest::leased(&lease),
             &candidate,
-            &lease,
-            &evaluation_budget,
+            Some(&lease),
+            Some(&evaluation_budget),
             super::super::InvariantStage::All,
         );
         for packet in planned.packets {

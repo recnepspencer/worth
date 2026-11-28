@@ -77,7 +77,6 @@ impl AppliedMutationDraft {
                     &mut self.identities.symbols,
                     BranchLocalDeleteAllowance::default(),
                     &mut self.identities.records,
-                    contracts::execution::request_custody::request_lease(execution),
                     inputs.work.cloned(),
                 )
                 .map_err(|denial| match denial {

@@ -1,4 +1,3 @@
-mod commit_strategies;
 pub(crate) mod durability;
 pub(crate) mod history;
 pub(crate) use worth_relational_indexes::internal_port::runtime::state::subsystems::indexing;
@@ -23,7 +22,6 @@ pub(crate) trait RuntimeSubsystem: Sized {
 }
 
 pub(crate) use crate::storage::substrate::owned_state::RuntimeOwnedState;
-pub(crate) use commit_strategies::CommitStrategiesSubsystem;
 pub(crate) use durability::{DurabilitySubsystem, RelationalCheckpointManifestSelection};
 pub(crate) use history::canonical_publication_routes::{
     BranchTransitionPublication, CanonicalCheckpointAdmissionError,

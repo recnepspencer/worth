@@ -22,38 +22,10 @@ use crate::validation::engine::InvariantExecutionRequest;
 use crate::validation::engine::InvariantRuntimeView;
 use worth_execution::ExecutionResourceLease;
 
-use super::packet_scope::{packet_partition_scope, packet_partition_scope_checked};
+use super::packet_scope::packet_partition_scope;
 use super::packet_selection::eligible_registrations;
 
 pub(crate) fn plan_invariant_execution<'state>(
-    runtime: &InvariantRuntimeView<'state>,
-    execution: worth_execution::ExecutionRequest<'state, 'state>,
-    request: &'state InvariantExecutionRequest<'state>,
-    lease: Option<&ExecutionResourceLease>,
-    stage: super::InvariantStage,
-) -> PreparedInvariantExecution<'state> {
-    plan_invariant_execution_inner(runtime, execution, request, lease, None, stage)
-}
-
-pub(crate) fn plan_invariant_execution_checked<'state>(
-    runtime: &InvariantRuntimeView<'state>,
-    execution: worth_execution::ExecutionRequest<'state, 'state>,
-    request: &'state InvariantExecutionRequest<'state>,
-    lease: &ExecutionResourceLease,
-    budget: &crate::validation::custom_rule::CustomPreparationBudget,
-    stage: super::InvariantStage,
-) -> PreparedInvariantExecution<'state> {
-    plan_invariant_execution_inner(
-        runtime,
-        execution,
-        request,
-        Some(lease),
-        Some(budget),
-        stage,
-    )
-}
-
-fn plan_invariant_execution_inner<'state>(
     runtime: &InvariantRuntimeView<'state>,
     execution: worth_execution::ExecutionRequest<'state, 'state>,
     request: &'state InvariantExecutionRequest<'state>,
@@ -70,11 +42,7 @@ fn plan_invariant_execution_inner<'state>(
             packets: Vec::new(),
         };
     }
-    let partition_scope = if let Some(budget) = budget {
-        packet_partition_scope_checked(request.semantic_plan(), budget)
-    } else {
-        packet_partition_scope(request.semantic_plan())
-    };
+    let partition_scope = packet_partition_scope(request.semantic_plan(), budget);
     let proof_kind = proof_kind_for_runtime(lease);
     let strategy = preparation_strategy_for_runtime(lease, registrations.len(), proof_kind);
     let packets = invariant_work_packets(

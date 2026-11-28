@@ -8,7 +8,7 @@ use crate::contracts::execution::read_only_packets::{PacketBudgetDenial, PacketE
 use crate::validation::custom_rule::{CustomPreparationBudget, CustomPreparationStop};
 use crate::validation::engine::{InvariantExecutionRequest, InvariantRuntimeView};
 
-use super::plan_invariant_execution_checked;
+use super::plan_invariant_execution;
 
 /// Planning charges the lease what it actually retains before each growth;
 /// the lease's own memory policy is the bound, not a declared scratch share.

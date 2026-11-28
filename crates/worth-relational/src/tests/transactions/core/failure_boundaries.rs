@@ -1,8 +1,9 @@
 use crate::facade::diagnostics::DiagnosticCode;
 use crate::facade::publication::PublicationStage;
 use crate::facade::storage::RecordLifecycleState;
+use crate::facade::symbols::ClientKey;
 use crate::facade::transactions::{
-    CommitPatchBudgetSummary, CommitPhase, MutationIntent, RelationSpec, TransactionCommitError,
+    CommitPatchBudgetSummary, CommitPhase, EntitySpec, MutationIntent, RelationSpec, TransactionCommitError,
 };
 use crate::tests::support::*;
 
@@ -260,19 +261,34 @@ fn snapshot_audit_failure_discards_only_touched_overlay() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_test_schema_and_invariants(InvariantCatalog {
-        registrations: vec![InvariantRegistration::snapshot_publication_blocking(
-            InvariantRule::MaxSnapshotEntities(1),
-        )],
-    });
-    let baseline = create_entity_outcome(execution, &runtime, "baseline");
+    let schema = worth_relational_mutation::internal_port::validation::engine::tests::validation_engine_fixtures::acyclicity_and_connectivity_registry();
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(schema)
+        .build()
+        .unwrap();
+    let create = |kind_id, key| {
+        WorkerIntentBatch::new(key).push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+            partition_id: PartitionId::main(),
+            kind_id,
+            client_key: ClientKey::raw(key),
+            fields: Default::default(),
+        })))
+    };
+    let mut baseline = test_owner_begin_transaction_for_main(&runtime);
+    baseline
+        .push_batch(
+            create(KindId(3), "baseline"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let baseline = baseline.commit(execution, &runtime).unwrap();
 
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+    let mut txn = test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
-        batch_create("blocked"),
+        create(KindId(1), "blocked"),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
-    .expect("test staging stays within configured resource budgets");
+    .unwrap();
     let error = txn.commit(execution, &runtime).unwrap_err();
     let committed_read = runtime
         .read_truth()
@@ -286,10 +302,7 @@ fn snapshot_audit_failure_discards_only_touched_overlay() {
             if publication.stage == PublicationStage::InvariantCheck
     ));
     assert_eq!(committed_read.entities().len(), 1);
-    assert!(committed_read
-        .entities()
-        .iter()
-        .any(|record| read_entity_name(record) == Some("baseline".into())));
+    assert_eq!(committed_read.entities()[0].kind.kind_id, KindId(3));
     assert_eq!(
         runtime.history().latest_commit().unwrap().commit_id,
         baseline.commit.commit_id

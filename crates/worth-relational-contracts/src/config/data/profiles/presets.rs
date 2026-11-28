@@ -1,4 +1,3 @@
-use crate::commit_strategies::data::registration::CommitStrategyRegistration;
 use crate::config::data::*;
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
 use crate::history::data::coordinates::{BranchId, HistoryRetentionClass, VersionGraphPolicy};
@@ -44,9 +43,6 @@ pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> Relat
             invariant_catalog: InvariantCatalog::default(),
             descriptor_semantics_policy: runtime_descriptor_semantics_policy(),
             descriptor_canonical_basis_policy: runtime_descriptor_canonical_basis_policy(),
-        },
-        commit_strategies: CommitStrategiesConfig {
-            registrations: Vec::<CommitStrategyRegistration>::new(),
         },
         identity: IdentityConfig {
             client_key_symbol_policy,

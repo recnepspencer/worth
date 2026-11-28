@@ -61,8 +61,7 @@ fn validate_selection(
     {
         return Err(Denial::SchemaAgreement);
     }
-    if envelope.strategy_artifacts.is_some()
-        || envelope.schema_transition.is_some()
+    if envelope.schema_transition.is_some()
         || envelope.schema_continuation_descriptor.is_some()
         || envelope.schema_reconciliation_descriptor.is_some()
         || envelope.required_output_origin.is_some()

@@ -22,9 +22,6 @@ pub struct DiffReductionKey {
     pub(crate) packet_index: usize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct ImportReductionKey(u64);
-
 impl DiffReductionKey {
     pub fn new(target: RecordRef, kind_order: u8, packet_index: usize) -> Self {
         Self {
@@ -32,17 +29,6 @@ impl DiffReductionKey {
             kind_order,
             packet_index,
         }
-    }
-}
-
-impl ImportReductionKey {
-    pub(crate) fn new(partition_id: PartitionId, kind_order: u8, packet_index: usize) -> Self {
-        debug_assert!(
-            /* Proof: PackedReductionKey is private: keys are emitted from admitted packet indices and u32 local ordinals; the low word is masked with u32::MAX before extraction. */
-            packet_index <= u32::MAX as usize,
-            "packet index must fit into the packed key contract"
-        );
-        Self(((partition_id.0 as u64) << 32) | ((kind_order as u64) << 24) | (packet_index as u64))
     }
 }
 

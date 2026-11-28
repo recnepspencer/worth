@@ -21,7 +21,7 @@ PROJECTIONS = ('production_explicit', 'production_resolved', 'inherent_impl', 'c
 TESTKIT = 'testkit'
 TEST_PATHS = {('tests',), ('presentation', 'harness'), ('test_execution_policy',)}
 EXTRACTED = {
-    'contracts', 'storage', 'branch', 'lineage', 'mutation', 'commit_admission',
+    'contracts', 'storage', 'branch', 'lineage', 'mutation',
     'indexes', 'durability', 'publication',
 }
 
@@ -323,7 +323,7 @@ def ordinary_storage_totals(projection, directions):
 def check_partition(audit, baseline):
     """Require the completed package cut and its three in-crate boundaries."""
     if set(audit.map.physical.values()) != EXTRACTED:
-        raise ValueError('expected all nine extracted Relational owners')
+        raise ValueError('expected all eight extracted Relational owners')
     if set(audit.map.owners) != EXTRACTED | {'runtime'}:
         raise ValueError('Relational owner registry does not match the audited packages')
     if set(audit.map.boundaries) != {'branch', 'mutation', 'durability'}:

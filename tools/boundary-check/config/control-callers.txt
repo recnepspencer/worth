@@ -223,7 +223,7 @@ crates/worth-relational-storage/ crates/worth-relational-lineage/src/lineage/aut
 crates/worth-relational-storage/ crates/worth-relational-lineage/src/lineage/authority/untouched_keeper_merge.rs
 crates/worth-relational-storage/ crates/worth-relational-mutation/src/aggregate_identity/derived_source/tests.rs
 crates/worth-relational-storage/ crates/worth-relational-publication/src/authority/commit/touched_scope.rs
-crates/worth-relational-storage/ crates/worth-relational-commit-admission/src/intent_admission/relation_validation/relation_identity_scan.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/intent_admission/relation_validation/relation_identity_scan.rs
 crates/worth-relational-storage/ crates/worth-relational-mutation/src/authority/mutation/aspect_versions.rs
 crates/worth-relational-storage/ crates/worth-relational-mutation/src/authority/mutation/canonical_deltas/engine_tests/support.rs
 crates/worth-relational-storage/ crates/worth-relational-branch/src/branch/pinned_walk_request_tests.rs
@@ -301,7 +301,6 @@ crates/worth-relational-branch/ crates/worth-court-relational-certification/test
 crates/worth-relational-branch/ crates/worth-relational/src/branch/root_authoritative_payload_tests.rs
 crates/worth-relational-branch/ crates/worth-relational/src/branch/root_tests/request.rs
 crates/worth-relational-branch/ crates/worth-relational/src/capabilities/history/tests.rs
-crates/worth-relational-branch/ crates/worth-relational/src/commit_strategies/lowering.rs
 crates/worth-relational-branch/ crates/worth-relational-durability/src/durability/authority/recovered_publication/retirement_gate_doors_for_test.rs
 crates/worth-relational-branch/ crates/worth-relational-durability/src/durability/authority/runtime_rebuild/merge_plan/tests.rs
 crates/worth-relational-branch/ crates/worth-relational-durability/src/durability/canonical_commit_artifact/checkpoint_body.rs
@@ -408,7 +407,6 @@ crates/worth-relational-branch/ crates/worth-relational/src/tests/durability/con
 crates/worth-relational-branch/ crates/worth-relational/src/tests/harness/scenario/runner/scenario_execution.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/lineage/fork_scale.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/performance_profiles/sustained_load_matrix/commit_query_churn.rs
-crates/worth-relational-branch/ crates/worth-relational/src/tests/profiles/compiled_artifacts.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/publication/contracts/overflow_admission.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/publication/observability/publication_handle_lifecycle.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/query/concurrency.rs
@@ -4263,7 +4261,6 @@ crates/worth-relational-durability/ crates/worth-relational/src/durability/autho
 crates/worth-relational-durability/ crates/worth-relational/src/durability/authority/runtime_rebuild/envelope_replay/interruption_tests.rs
 crates/worth-relational-durability/ crates/worth-relational/src/facade/durability.rs
 crates/worth-relational-durability/ crates/worth-relational/src/history/authority/test_mutation.rs
-crates/worth-relational-durability/ crates/worth-relational/src/history/commit/artifact_tests/strategy_readmission.rs
 crates/worth-relational-durability/ crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs
 crates/worth-relational-durability/ crates/worth-relational/src/mvcc/publication/application_publication/tests.rs
 crates/worth-relational-durability/ crates/worth-relational/src/publication/cdc/planning/continuity_assessment/tests.rs
@@ -4309,8 +4306,6 @@ crates/worth-relational-durability/ crates/worth-relational/src/visibility/mater
 # Existing Runtime calls into the sealed Publication owner.
 crates/worth-relational-publication/ crates/worth-relational/src/authority/commit/pipeline/mod.rs
 crates/worth-relational-publication/ crates/worth-relational/src/change_source/runtime_handle/memory_close/tests.rs
-crates/worth-relational-publication/ crates/worth-relational/src/commit_strategies/facade_tests/replay_executor_stops.rs
-crates/worth-relational-publication/ crates/worth-relational/src/commit_strategies/facade_tests/replay_request_stops.rs
 crates/worth-relational-publication/ crates/worth-relational/src/durability/authority/runtime_rebuild/envelope_replay/interruption_tests.rs
 crates/worth-relational-publication/ crates/worth-relational/src/facade/transactions.rs
 crates/worth-relational-publication/ crates/worth-relational/src/history/authority/test_mutation.rs

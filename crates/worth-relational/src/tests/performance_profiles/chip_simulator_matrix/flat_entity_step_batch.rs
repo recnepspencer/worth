@@ -1,6 +1,6 @@
 use super::*;
 
-pub(super) fn certify_flat_entity_step_batch_compile_window(
+pub(super) fn certify_flat_entity_step_batch(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let flat_step_batch_samples = capture_counted_samples(|| {
@@ -44,9 +44,6 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(
                 .collect::<Vec<_>>();
             partition_targets.insert(partition_id, targets);
         }
-        let compile_partitions = std::iter::once(PartitionId(7))
-            .chain(partition_targets.keys().copied())
-            .collect::<Vec<_>>();
 
         runtime.performance_access().reset_counters();
         let (update, update_work) = measure_counted_work(execution, || {
@@ -85,18 +82,6 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(
             .expect("test staging stays within configured resource budgets");
             txn.commit(execution, &runtime)
                 .expect("chip flat entity step batch commit")
-        });
-        let commit = runtime
-            .history()
-            .latest_commit()
-            .expect("chip flat batch latest commit")
-            .clone();
-
-        let (artifact, compile_work) = measure_counted_work(execution, || {
-            runtime
-                .compiled_artifacts_authority()
-                .compile_execution_artifact(execution, commit.commit_id, compile_partitions)
-                .expect("chip flat batch compiled artifact")
         });
 
         let sample_targets = partition_targets
@@ -138,23 +123,16 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(
             fresh_diagnostics_metrics(&runtime, diagnostics_start);
 
         CountedPerfSample {
-            charged_work: update_work + compile_work + explicit_query_work,
+            charged_work: update_work + explicit_query_work,
             metrics: perf_metrics!({
                 "batch_target_count": 32,
                 "batch_partition_count": partition_targets.len(),
                 "update_work": update_work,
-                "compile_work": compile_work,
                 "explicit_query_work": explicit_query_work,
                 "hot_changed_records": update.changed_records.len(),
                 "explicit_result_entities": explicit.result.entities.len(),
                 "diagnostic_artifact_count": diagnostic_artifact_count,
                 "detailed_trace_entries": detailed_trace_entries,
-                "compiled_artifact_authority_status": format!(
-                    "{:?}",
-                    runtime
-                        .compiled_artifacts()
-                        .compiled_artifact_authority_status(artifact.artifact_id)
-                ),
                 "counters": counters,
             }),
         }
@@ -164,14 +142,12 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(
         .all(|sample| sample.charged_work > 0));
     assert_counted_budget(
         &flat_step_batch_samples,
-        "chip flat entity step batches should stay on the widened sparse AoSoA path while remaining compile-ready",
+        "chip flat entity step batches should stay on the widened sparse AoSoA path",
         |metrics| {
             metrics["batch_target_count"].as_u64() == Some(32)
                 && metrics["batch_partition_count"].as_u64() == Some(8)
                 && metrics["hot_changed_records"].as_u64() == Some(32)
                 && metrics["explicit_result_entities"].as_u64() == Some(8)
-                && metrics["compiled_artifact_authority_status"].as_str()
-                    == Some(&format!("{:?}", CompiledArtifactAuthorityStatus::Authoritative))
                 && metrics["diagnostic_artifact_count"].as_u64().unwrap_or(0) >= 1
                 && metrics["detailed_trace_entries"].as_u64() == Some(0)
                 && counter_u64(metrics, "full_state_clones") == 0

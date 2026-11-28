@@ -4,10 +4,7 @@ use crate::contracts::identity::data::primitives::KindId;
 use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
 use worth_relational_branch::internal_port::snapshots::data::SnapshotHandle;
 
-use super::{
-    RelationalAuthorizationEffectTarget, RelationalAuthorizationObservationPlan,
-    RelationalAuthorizationTraversalDirection,
-};
+use super::{RelationalAuthorizationObservationPlan, RelationalAuthorizationTraversalDirection};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct RelationalAuthorizationObservationIdentity(pub(crate) [u8; 32]);
@@ -229,10 +226,6 @@ impl RelationalAuthorizationObservationEvidence {
 
     pub fn paths(&self) -> &[RelationalAuthorizationPathObservation] {
         &self.paths
-    }
-
-    pub fn proposed_effects(&self) -> &[RelationalAuthorizationEffectTarget] {
-        self.plan.proposed_effects()
     }
 
     pub const fn counters(&self) -> RelationalAuthorizationObservationCounters {

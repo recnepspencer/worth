@@ -22,7 +22,6 @@ struct PublishedBundles {
 pub struct PublicationSubsystem {
     pub diagnostics: crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore,
     bundles: RuntimeOwnedState<PublishedBundles>,
-    pub post_commit_consumer: Arc<dyn crate::publication::authority::PostCommitConsumer>,
 }
 
 impl Default for PublicationSubsystem {
@@ -30,7 +29,6 @@ impl Default for PublicationSubsystem {
         Self {
             diagnostics: Default::default(),
             bundles: RuntimeOwnedState::default(),
-            post_commit_consumer: crate::publication::authority::production_post_commit_consumer(),
         }
     }
 }
@@ -57,7 +55,6 @@ impl PublicationSubsystem {
                 latest: self.latest_bundle(),
                 retired: VecDeque::new(),
             }),
-            post_commit_consumer: Arc::clone(&self.post_commit_consumer),
         }
     }
 }

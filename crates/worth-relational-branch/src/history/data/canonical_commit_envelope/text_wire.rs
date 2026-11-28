@@ -55,7 +55,6 @@ pub struct CanonicalEnvelopeWire<Symbols> {
     branch_cell_checkpoint:
         Option<crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint>,
     authority_kind: CanonicalCommitAuthorityKind,
-    strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
     schema_version: SchemaVersionId,
     schema_authority: SchemaAuthoritySnapshot,
     merged_plan: MergedCommitPlan,
@@ -112,14 +111,6 @@ impl<Symbols> CanonicalEnvelopeWire<Symbols> {
         }
         if let Some(memory) = self.readmission_memory.schema.as_mut() {
             memory.attach(self.schema_transition.as_ref())?;
-        }
-        match (
-            self.readmission_memory.strategy.as_mut(),
-            self.strategy_artifacts.as_mut(),
-        ) {
-            (None, None) => {}
-            (Some(memory), Some(strategy)) => memory.attach(strategy)?,
-            _ => return Err("canonical strategy admission does not match its decoded subject"),
         }
         Ok(())
     }
@@ -242,7 +233,6 @@ impl<Symbols> CanonicalEnvelopeWire<Symbols> {
             branch_context: self.branch_context,
             branch_cell_checkpoint: self.branch_cell_checkpoint,
             authority_kind: self.authority_kind,
-            strategy_artifacts: self.strategy_artifacts,
             schema_version: self.schema_version,
             schema_authority: self.schema_authority,
             merged_plan: self.merged_plan,

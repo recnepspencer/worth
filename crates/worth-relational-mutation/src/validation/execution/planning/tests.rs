@@ -27,6 +27,7 @@ fn planner_packets_only_include_relation_integrity_registrations_authorized_by_p
         *execution,
         &request,
         None,
+        None,
         super::InvariantStage::All,
     );
     let packet_relation_kinds = prepared
@@ -60,6 +61,7 @@ fn planner_proof_boundary_reports_partition_scoped_relation_integrity_packets() 
         *execution,
         &request,
         None,
+        None,
         super::InvariantStage::All,
     );
     let summary = planned_proof_boundary_summary(&prepared);
@@ -86,6 +88,7 @@ fn planner_proof_boundary_reports_broader_scope_when_no_merged_plan_is_available
         &view,
         *execution,
         &request,
+        None,
         None,
         super::InvariantStage::All,
     );

@@ -19,9 +19,6 @@ pub use access::{
 };
 pub use authority::PublicationAuthority;
 pub(crate) use authority::PublicationPreparationAuthority;
-pub use authority::{
-    PostCommitConsumer, PostCommitConsumptionContext, PostCommitConsumptionFailure,
-};
 pub(crate) use canonical_history::{
     durable_canonical_envelopes, retained_canonical_envelope_at_position,
     retained_canonical_envelopes_after,

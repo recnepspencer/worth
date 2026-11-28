@@ -95,11 +95,9 @@ pub fn apply(
         MutationEvent::EntityUpdated { entity_id: entity },
     )?;
     let effect = assemble_effect(outcome, &mut workspace)?;
-    let preparation_telemetry = workspace.preparation_telemetry();
     let (created_entities, created_relations) = workspace.into_created_bindings();
     Ok(MutationApplyOutcome {
         effect,
-        preparation_telemetry,
         created_entities,
         created_relations,
     })

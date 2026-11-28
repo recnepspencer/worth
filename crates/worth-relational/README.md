@@ -19,7 +19,7 @@ The library is built around a few obvious jobs:
 - manage snapshots and branches when you need controlled views of truth
 - inspect what happened
 - go to history or replay when you need past truth
-- use merge, validation, compiled artifacts, retention, indexes, and recovery
+- use merge, validation, retention, indexes, and recovery
   when the workload gets deep
 
 Start here:
@@ -155,8 +155,7 @@ Catalog coverage incarnation/epochs are live observations and never enter wire.
 - an exact observation plus `snapshots()` is the repeatable-view door
 - `inspect_what_happened()` and `publication()` are the readback doors
 - `history()` and `replay()` are the past-truth doors
-- `validation()`, `compiled_artifacts()`, `retention()`, `durability()`,
-  `commit_strategies()`, and indexes are the deep-system doors
+- `validation()`, `retention()`, `durability()`, and indexes are the deep-system doors
 
 If you find yourself reaching into crate internals instead of
 [`facade`](./src/facade.rs), you are probably leaving the intended public

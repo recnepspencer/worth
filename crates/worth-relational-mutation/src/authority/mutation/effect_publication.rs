@@ -278,7 +278,7 @@ fn record_patch_fragment(
 ) -> Result<(), crate::contracts::transactions::data::outcomes::commit_conflict::CommitConflict> {
     let mut patch_fragment =
         canonical_publication_fragment(&canonical_delta, detail, authoritative_patch)?;
-    patch_fragment.relation_birth = relation_birth;
+    patch_fragment.published.relation_birth = relation_birth;
     effect.publication.canonical_deltas.push(canonical_delta);
     effect.publication.patch_fragments.push(patch_fragment);
     Ok(())

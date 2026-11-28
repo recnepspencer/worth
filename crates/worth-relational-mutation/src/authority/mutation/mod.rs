@@ -37,5 +37,4 @@ pub(crate) use outcomes::RecordMutation;
 pub use record_changes::apply_adjacency_deltas_for_request;
 pub use round_denial::MutationApplyDenial;
 pub use workspace::BranchLocalDeleteAllowance;
-pub use workspace::MutationPreparationTelemetry;
 pub(crate) use workspace::MutationWorkspace;

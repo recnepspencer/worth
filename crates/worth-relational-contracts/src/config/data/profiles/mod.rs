@@ -39,18 +39,6 @@ impl Default for RelationalRuntimeConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::commit_strategies::data::descriptor::descriptor_record::CommitStrategyDescriptor;
-    use crate::commit_strategies::data::descriptor::read_contract::{
-        CommitStrategyVersion, StrategyPacketContract, StrategyReadContract, StrategyReadCostClass,
-        StrategyReadLocalityClass, StrategyReadScopeClass, StrategyTraversalBasis,
-    };
-    use crate::commit_strategies::data::descriptor::semantic_names::StrategyInputSchemaVersion;
-    use crate::commit_strategies::data::registration::CommitStrategyRegistration;
-    use crate::commit_strategies::data::strategy_id::CommitStrategyId;
-    use crate::commit_strategies::data::{
-        CommitStrategyFamilyName, CommitStrategySemanticName, PersistentArtifactName,
-        StrategyInputSchemaName, StrategyIntentName, StrategyOutputSchemaName,
-    };
     use crate::diagnostics::data::RelationalDiagnosticsProfile;
 
     #[test]
@@ -112,57 +100,5 @@ mod tests {
             RelationalRuntimeConfig::resolved(RelationalRuntimeProfile::ChipSimulation, overrides);
 
         assert!(!config.profile_boundary_matches_defaults());
-    }
-
-    #[test]
-    fn commit_strategy_registration_provenance_digest_is_order_independent() {
-        let left = strategy_registration(1, "strategy.alpha", "alpha.intent");
-        let right = strategy_registration(2, "strategy.beta", "beta.intent");
-
-        let first_detail = resolved_registration_detail(vec![left.clone(), right.clone()]);
-        let reversed_detail = resolved_registration_detail(vec![right, left]);
-
-        assert_eq!(first_detail, reversed_detail);
-        assert!(first_detail.contains("count=2"));
-        assert!(first_detail.contains("descriptor_set_digest="));
-    }
-
-    fn resolved_registration_detail(registrations: Vec<CommitStrategyRegistration>) -> String {
-        let mut overrides = RelationalConfigOverride::default();
-        overrides.commit_strategies.registrations = Some(registrations);
-
-        RelationalRuntimeConfig::resolved(RelationalRuntimeProfile::CertificationCore, overrides)
-            .provenance
-            .entries
-            .get("commit_strategies.registrations")
-            .expect("registration provenance")
-            .detail
-            .clone()
-    }
-
-    fn strategy_registration(
-        id: u32,
-        semantic_name: &str,
-        intent_name: &str,
-    ) -> CommitStrategyRegistration {
-        CommitStrategyRegistration::new(CommitStrategyDescriptor::new(
-            CommitStrategyId(id),
-            CommitStrategySemanticName::new(semantic_name),
-            CommitStrategyFamilyName::new("strategy.config.test"),
-            CommitStrategyVersion::new(1, id as u16),
-            StrategyIntentName::new(intent_name),
-            StrategyInputSchemaName::new("config.input.v1"),
-            StrategyInputSchemaVersion(1),
-            StrategyOutputSchemaName::new("config.output.v1"),
-            StrategyReadContract {
-                scope_class: StrategyReadScopeClass::ExplicitTargetsOnly,
-                locality_class: StrategyReadLocalityClass::SinglePartition,
-                traversal_basis: StrategyTraversalBasis::NoTraversal,
-                packet_contract: StrategyPacketContract::ProjectionOnly,
-                cost_class: StrategyReadCostClass::ORequestedSurface,
-            },
-            PersistentArtifactName::new(format!("{semantic_name}.artifact")),
-        ))
-        .expect("valid registration")
     }
 }

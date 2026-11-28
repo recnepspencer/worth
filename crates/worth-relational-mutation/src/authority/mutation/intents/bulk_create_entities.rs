@@ -1,45 +1,15 @@
-use crate::contracts::transactions::data::aspect_field_patch::AspectFieldPatchOwnerPort as _;
-use crate::contracts::transactions::data::outcomes::commit_conflict::{
-    CommitConflict, CommitConflictOwnerPort as _,
-};
 use crate::contracts::transactions::data::outcomes::transaction_commit_error::{
     TransactionCommitError, TransactionCommitErrorOwnerPort as _,
 };
-pub mod leased;
 pub mod row;
-use leased::stage_leased_entity_rows;
 use row::apply_prepared_row;
 
-use worth_execution::ExecutionResourceLease;
-use worth_foundational::PartitionIdentity;
-
-use crate::authority::commit::preparation::packets::import::{
-    ImportFragmentIdentity, ImportFragmentKind, ImportStagedRow, ImportStagingHeader,
-    ImportStagingPacket,
-};
-use crate::authority::commit::preparation::reduction::keys::ImportReductionKey;
 use crate::authority::mutation::outcomes::{MutationOutcome, RecordMutation};
 use crate::authority::mutation::record_changes::allocate_entity_with_extra;
 use crate::authority::mutation::MutationWorkspace;
-use crate::contracts::authority::commit::preparation::planning::strategy::{
-    coarse_preparation_packet_count, strategy_for_parallel_packets,
-    TARGET_PREPARATION_ITEMS_PER_PACKET,
-};
-use crate::contracts::authority::commit::preparation::proofs::kinds::PreparationProofKind;
-use crate::contracts::authority::commit::preparation::proofs::locality::{
-    PreparationLocalityProof, PreparationPartitionScope, PreparationReadSetApproximation,
-    PreparationRecordDomain, PreparationWriteExclusionClass,
-};
 use crate::contracts::transactions::data::intents::mutation_intent::BulkEntityCreateIntent;
 use crate::contracts::transactions::data::outcomes::conflict_class::record_aspect_patch_denial::RecordAspectPatchTarget;
-use crate::contracts::transactions::data::outcomes::conflict_class::{
-    BulkImportRowDomain, BulkImportStage,
-};
-use crate::contracts::validation::data::groups::InvariantGroupSet;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
-use worth_relational_storage::internal_port::authority::commit::preparation::reduction::merge::{
-    canonical_merge_streams, OrderedReductionStream,
-};
 
 use super::field_authoring_candidate::FieldAuthoringDomain;
 use super::record_aspect_patch;
@@ -47,7 +17,6 @@ use super::record_aspect_patch;
 pub(super) fn apply<'a>(
     intent: &'a BulkEntityCreateIntent,
     workspace: &mut MutationWorkspace<'a>,
-    lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<MutationOutcome, TransactionCommitError> {
     let version_id = workspace.version_id();
     let mut outcome =
@@ -60,15 +29,9 @@ pub(super) fn apply<'a>(
             count: 0,
         },
     )?;
-    let staged_rows = stage_bulk_entity_rows(intent, workspace, lease)?;
     workspace.run_owned_mutation(|workspace| {
-        let entity_aspect_plans = stage_bulk_entity_aspect_plans(intent, workspace, &staged_rows)?;
-        for ((client_key, _fields), aspect_plan) in intent
-            .client_keys
-            .iter()
-            .zip(staged_rows)
-            .zip(entity_aspect_plans)
-        {
+        let entity_aspect_plans = stage_bulk_entity_aspect_plans(intent, workspace)?;
+        for (client_key, aspect_plan) in intent.client_keys.iter().zip(entity_aspect_plans) {
             apply_prepared_row(
                 intent,
                 workspace,
@@ -86,7 +49,6 @@ pub(super) fn apply<'a>(
 fn stage_bulk_entity_aspect_plans(
     intent: &BulkEntityCreateIntent,
     workspace: &MutationWorkspace<'_>,
-    field_patches: &[crate::contracts::transactions::data::aspect_field_patch::AspectFieldPatch],
 ) -> Result<
     Vec<(
         crate::authority::mutation::outcomes::MutationAspectPatch,
@@ -98,7 +60,8 @@ fn stage_bulk_entity_aspect_plans(
     let target = RecordAspectPatchTarget::EntityCreation {
         kind_id: intent.kind_id,
     };
-    field_patches
+    intent
+        .field_patches
         .iter()
         .map(|fields| {
             let patch = record_aspect_patch::readmit_field_authoring(
@@ -114,182 +77,4 @@ fn stage_bulk_entity_aspect_plans(
             Ok((patch, state))
         })
         .collect()
-}
-
-fn stage_bulk_entity_rows(
-    intent: &BulkEntityCreateIntent,
-    workspace: &mut MutationWorkspace<'_>,
-    lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<
-    Vec<crate::contracts::transactions::data::aspect_field_patch::AspectFieldPatch>,
-    TransactionCommitError,
-> {
-    if let Some(lease) = lease {
-        return stage_leased_entity_rows(intent, workspace, lease);
-    }
-    let packet_count = coarse_preparation_packet_count(
-        intent.field_patches.len(),
-        TARGET_PREPARATION_ITEMS_PER_PACKET,
-    );
-    let mut packets = Vec::with_capacity(packet_count);
-    for (packet_index, field_patches) in intent
-        .field_patches
-        .chunks(TARGET_PREPARATION_ITEMS_PER_PACKET)
-        .enumerate()
-    {
-        let packet_index_floor = packet_index * TARGET_PREPARATION_ITEMS_PER_PACKET;
-        packets.push(ImportStagingPacket {
-            header: ImportStagingHeader {
-                packet_index_floor,
-                identity: ImportFragmentIdentity {
-                    partition_id: intent.partition_id,
-                    kind_id: intent.kind_id,
-                    fragment_kind: ImportFragmentKind::EntityCreate,
-                    packet_index: packet_index_floor,
-                },
-                proof_kind: PreparationProofKind::FragmentIdentityDisjoint,
-                locality: PreparationLocalityProof {
-                    observation_scope:
-                        crate::validation::engine::InvariantObservationKind::Speculative,
-                    record_domain: PreparationRecordDomain::Entity,
-                    partition_scope: PreparationPartitionScope::TouchedPartitions(
-                        vec![intent.partition_id].into(),
-                    ),
-                    invariant_group_scope: InvariantGroupSet::empty(),
-                    read_set_approximation: PreparationReadSetApproximation::TouchedOnly,
-                    write_exclusion: PreparationWriteExclusionClass::PublicationExcluded,
-                },
-            },
-            rows: field_patches
-                .iter()
-                .cloned()
-                .map(|fields| ImportStagedRow::Entity { fields })
-                .collect(),
-        });
-    }
-
-    stage_import_packets(workspace, packets, lease)?
-        .into_iter()
-        .map(|row| match row {
-            ImportStagedRow::Entity { fields } => Ok(fields),
-            ImportStagedRow::Relation { .. } => {
-                Err(TransactionCommitError::conflict(CommitConflict::new(
-                    crate::contracts::transactions::data::outcomes::conflict_class::ConflictClass::BulkImportDomainMismatch {
-                        expected: BulkImportRowDomain::Entity,
-                        actual: BulkImportRowDomain::Relation,
-                        stage: BulkImportStage::EntityCreate,
-                    },
-                )))
-            }
-        })
-        .collect()
-}
-
-fn stage_import_packets(
-    workspace: &mut MutationWorkspace<'_>,
-    packets: Vec<ImportStagingPacket>,
-    lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<Vec<ImportStagedRow>, TransactionCommitError> {
-    if packets.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    let packet_item_count = packets.iter().map(|packet| packet.rows.len()).sum();
-    let packet_max_width = packets
-        .iter()
-        .map(|packet| packet.rows.len())
-        .max()
-        .unwrap_or(0);
-    let strategy = record_import_strategy(lease, packets.len());
-    workspace.record_preparation_strategy(
-        packets.len(),
-        packet_item_count,
-        packet_max_width,
-        1,
-        strategy,
-    );
-    let Some(lease) = lease else {
-        return Ok(packets.into_iter().flat_map(|packet| packet.rows).collect());
-    };
-    let packet_ceiling = lease
-        .policy()
-        .charged_memory_bytes()
-        .map(|limit| limit / (packets.len() as u64).saturating_mul(8));
-    let inputs = packets
-        .into_iter()
-        .map(|packet| {
-            let packet_ceiling = packet_ceiling.map_or_else(
-                || crate::authority::commit::preparation::packets::import::import_result_capacity_bytes(
-                    packet.rows.iter().map(ImportStagedRow::owned_allocation_capacity_bytes),
-                ).ok_or(crate::contracts::execution::read_only_packets::PacketExecutionStop::Admission(
-                    crate::contracts::execution::read_only_packets::PacketAdmissionDenial::MemoryOverflow,
-                )),
-                Ok,
-            )?;
-            Ok(crate::contracts::execution::read_only_packets::ReadOnlyPacket {
-            identity: PartitionIdentity::new(packet.header.packet_index_floor as u64),
-            input_bytes: (packet.rows.capacity() as u64)
-                .saturating_mul(std::mem::size_of::<ImportStagedRow>() as u64)
-                .saturating_add(
-                    packet
-                        .rows
-                        .iter()
-                        .map(ImportStagedRow::owned_allocation_capacity_bytes)
-                        .sum::<u64>(),
-                ),
-            memory: crate::contracts::execution::packet_memory::PacketMemory::Declared { scratch: packet_ceiling, result: packet_ceiling },
-            value: packet,
-            })
-        })
-        .collect::<Result<Vec<_>, crate::contracts::execution::read_only_packets::PacketExecutionStop>>()?;
-    let streams = crate::contracts::execution::read_only_packets::execute_read_only_packets(
-        inputs,
-        lease,
-        import_packet_stream,
-        |stream| {
-            stream.owned_allocation_capacity_bytes(|_, row| row.owned_allocation_capacity_bytes())
-        },
-    )?;
-    Ok(canonical_merge_streams(streams)
-        .into_iter()
-        .map(|(_, row)| row)
-        .collect())
-}
-
-fn record_import_strategy(
-    lease: Option<&ExecutionResourceLease<'_>>,
-    packet_count: usize,
-) -> crate::contracts::transactions::data::preparation_strategy::PreparationStrategy {
-    strategy_for_parallel_packets(lease, packet_count)
-}
-
-fn import_packet_stream(
-    packet: &ImportStagingPacket,
-    context: &mut crate::contracts::execution::packet_memory::PacketKernelContext<'_, '_, '_>,
-) -> Result<
-    OrderedReductionStream<ImportReductionKey, ImportStagedRow>,
-    worth_execution::MapKernelFailure<
-        crate::contracts::execution::read_only_packets::PacketBudgetDenial,
-    >,
-> {
-    let mut stream = Vec::new();
-    for (offset, row) in packet.rows.iter().enumerate() {
-        context.checkpoint(1)?;
-        context.claim_result(
-            (std::mem::size_of::<(ImportReductionKey, ImportStagedRow)>() as u64)
-                .saturating_add(row.owned_allocation_capacity_bytes()),
-        )?;
-        stream
-            .try_reserve_exact(1)
-            .map_err(|_| worth_execution::MapKernelFailure::ResultCapacityExceeded)?;
-        stream.push((
-            ImportReductionKey::new(
-                packet.header.identity.partition_id,
-                0,
-                packet.header.packet_index_floor + offset,
-            ),
-            row.clone(),
-        ));
-    }
-    Ok(OrderedReductionStream::new(stream))
 }

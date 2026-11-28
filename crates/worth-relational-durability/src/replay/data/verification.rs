@@ -18,7 +18,6 @@ pub enum ReplayObservableSurface {
     History,
     BranchHead,
     Lineage,
-    Strategy,
     DerivedIndexes,
 }
 
@@ -49,10 +48,6 @@ pub enum ReplayMismatchClass {
     SnapshotDrift,
     BranchHeadDrift,
     LineageDrift,
-    StrategyArtifactDrift,
-    StrategyExecutorUnavailable,
-    StrategyExecutionFailure,
-    StrategyLoweringDrift,
     DerivedIndexDrift,
     SchemaTransitionDrift,
     SchemaContinuationDescriptorDrift,

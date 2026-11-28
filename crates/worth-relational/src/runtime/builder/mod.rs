@@ -6,8 +6,6 @@ pub use definition::RelationalRuntimeDefinition;
 #[cfg(test)]
 mod tests;
 
-use crate::commit_strategies::data::execution::executor_registration::CommitStrategyExecutionRegistration;
-use crate::commit_strategies::data::CommitStrategyRegistration;
 use crate::config::data::{
     AdjacencyPolicy, CascadeDeletePolicy, CompiledLanePolicy, CrossContextPolicy, DurabilityPolicy,
     DurableLogPolicy, MvccConfig, PublicationConfig, RelationalConfigOverride,
@@ -19,7 +17,7 @@ use crate::schema::data::RelationalSchemaRegistry;
 use crate::symbols::data::ClientKeySymbolPolicy;
 use crate::validation::data::{CustomInvariantRegistration, InvariantCatalog};
 
-pub use setup_sections::{DurabilitySetup, RuntimeSetup, SchemaSetup, StorageSetup, StrategySetup};
+pub use setup_sections::{DurabilitySetup, RuntimeSetup, SchemaSetup, StorageSetup};
 
 #[derive(Debug, Clone)]
 pub struct RelationalRuntimeBuilder {
@@ -27,8 +25,6 @@ pub struct RelationalRuntimeBuilder {
     overrides: RelationalConfigOverride,
     custom_invariants: Vec<CustomInvariantRegistration>,
     managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
-    commit_strategy_executors: Vec<CommitStrategyExecutionRegistration>,
-    post_commit_consumer: Option<std::sync::Arc<dyn crate::publication::PostCommitConsumer>>,
 }
 
 impl Default for RelationalRuntimeBuilder {
@@ -38,8 +34,6 @@ impl Default for RelationalRuntimeBuilder {
             overrides: RelationalConfigOverride::default(),
             custom_invariants: Vec::new(),
             managed_sources: Vec::new(),
-            commit_strategy_executors: Vec::new(),
-            post_commit_consumer: None,
         }
     }
 }
@@ -78,12 +72,6 @@ impl RelationalRuntimeBuilder {
         self
     }
 
-    pub fn strategy_setup(mut self, configure: impl FnOnce(&mut StrategySetup<'_>)) -> Self {
-        let mut setup = StrategySetup { builder: &mut self };
-        configure(&mut setup);
-        self
-    }
-
     pub fn runtime_name(mut self, runtime_name: impl Into<String>) -> Self {
         self.overrides.execution.runtime_name = Some(runtime_name.into());
         self
@@ -116,32 +104,6 @@ impl RelationalRuntimeBuilder {
         program: crate::validation::candidate_source::ManagedIndexSourceProgram,
     ) -> Self {
         self.managed_sources.push(program);
-        self
-    }
-
-    pub fn commit_strategy(mut self, commit_strategy: CommitStrategyRegistration) -> Self {
-        self.overrides
-            .commit_strategies
-            .registrations
-            .get_or_insert_with(Vec::new)
-            .push(commit_strategy);
-        self
-    }
-
-    pub fn commit_strategy_executor(
-        mut self,
-        commit_strategy_executor: CommitStrategyExecutionRegistration,
-    ) -> Self {
-        self.commit_strategy_executors
-            .push(commit_strategy_executor);
-        self
-    }
-
-    pub fn post_commit_consumer(
-        mut self,
-        post_commit_consumer: std::sync::Arc<dyn crate::publication::PostCommitConsumer>,
-    ) -> Self {
-        self.post_commit_consumer = Some(post_commit_consumer);
         self
     }
 
@@ -252,9 +214,8 @@ impl RelationalRuntimeBuilder {
     pub fn resolve(self) -> RelationalRuntimeDefinition {
         RelationalRuntimeDefinition::new(
             RelationalRuntimeConfig::resolved(self.profile, self.overrides),
-            RuntimeExtensions::new(self.custom_invariants, self.commit_strategy_executors)
-                .with_managed_index_sources(self.managed_sources)
-                .with_post_commit_consumer(self.post_commit_consumer),
+            RuntimeExtensions::new(self.custom_invariants)
+                .with_managed_index_sources(self.managed_sources),
         )
     }
 }

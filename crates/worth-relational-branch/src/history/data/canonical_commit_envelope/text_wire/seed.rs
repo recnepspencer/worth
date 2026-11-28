@@ -34,7 +34,7 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
         let mut branch_context = None;
         let mut branch_cell_checkpoint = None;
         let mut authority_kind = None;
-        let mut strategy_artifacts = None;
+        let mut retired_strategy_slot = false;
         let mut schema_version = None;
         let mut schema_authority = None;
         let mut merged_plan = None;
@@ -158,10 +158,13 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                     authority_kind = Some(map.next_value()?);
                 }
                 "strategy_artifacts" => {
-                    if strategy_artifacts.is_some() {
+                    if retired_strategy_slot {
                         return Err(M::Error::duplicate_field("strategy_artifacts"));
                     }
-                    strategy_artifacts = Some(map.next_value()?);
+                    if map.next_value::<Option<serde::de::IgnoredAny>>()?.is_some() {
+                        return Err(M::Error::custom("strategy artifacts are retired"));
+                    }
+                    retired_strategy_slot = true;
                 }
                 "merge_execution_authority" => {
                     if map.next_value::<Option<serde::de::IgnoredAny>>()?.is_some() {
@@ -272,6 +275,9 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                 _ => return Err(M::Error::custom("unknown canonical envelope field")),
             }
         }
+        if !retired_strategy_slot {
+            return Err(M::Error::missing_field("strategy_artifacts"));
+        }
         Ok(CanonicalEnvelopeWire {
             artifact_format: worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat::Ordinary,
             index_definition_delta: index_definition_delta
@@ -308,8 +314,6 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                 .ok_or_else(|| M::Error::missing_field("branch_cell_checkpoint"))?,
             authority_kind: authority_kind
                 .ok_or_else(|| M::Error::missing_field("authority_kind"))?,
-            strategy_artifacts: strategy_artifacts
-                .ok_or_else(|| M::Error::missing_field("strategy_artifacts"))?,
             schema_version: schema_version
                 .ok_or_else(|| M::Error::missing_field("schema_version"))?,
             schema_authority: schema_authority

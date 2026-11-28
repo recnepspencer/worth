@@ -1,6 +1,6 @@
 mod commit;
 pub(crate) use worth_relational_branch::internal_port::inspection::data::{
-    graph, structural_identity, taxonomy, transaction,
+    graph, taxonomy, transaction,
 };
 mod historical;
 mod retention;
@@ -20,10 +20,6 @@ pub use retention::{
     PinStateObservation, ReclaimEligibility, RecordRetentionInspection,
     RetentionExecutionInspection, RetentionInspectionRequest, RetentionInspectionSummary,
     RetentionStateObservation, SnapshotPinInspection,
-};
-pub use structural_identity::{
-    StructuralIdentityComparison, StructuralIdentityComparisonVerdict, StructuralIdentityEvidence,
-    StructuralIdentityQueryRequest,
 };
 pub use taxonomy::{
     InspectionAccessPath, InspectionAvailability, InspectionDegradation, InspectionOrigin,

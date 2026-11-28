@@ -14,7 +14,7 @@ use crate::contracts::validation::data::rules::InvariantRule;
 
 use super::context::InvariantExecutionContext;
 use partition_isolation::evaluate_partition_isolation_contract;
-use record_surface_rules::{evaluate_record_surface_rule, evaluate_snapshot_entity_limit_rule};
+use record_surface_rules::evaluate_record_surface_rule;
 use relation_cardinality::{
     evaluate_cardinality_maximum_contract, evaluate_cardinality_minimum_contract,
 };
@@ -59,9 +59,6 @@ pub(crate) fn evaluate_rule(
             } else {
                 Vec::new()
             }
-        }
-        InvariantRule::MaxSnapshotEntities(limit) => {
-            single_violation(evaluate_snapshot_entity_limit_rule(context, class, *limit))
         }
         InvariantRule::UniqueEntityAspectField { field_locator } => single_violation(
             evaluate_unique_entity_aspect_field(context, class, field_locator),

@@ -1,14 +1,6 @@
 use std::sync::Arc;
 
 use super::RelationalRuntimeBuilder;
-use crate::commit_strategies::data::{
-    CommitStrategyDescriptor, CommitStrategyFamilyName, CommitStrategyId,
-    CommitStrategyRegistration, CommitStrategySemanticName, CommitStrategyVersion,
-    PersistentArtifactName, StrategyInputSchemaName, StrategyInputSchemaVersion,
-    StrategyIntentName, StrategyOutputSchemaName, StrategyPacketContract, StrategyReadContract,
-    StrategyReadCostClass, StrategyReadLocalityClass, StrategyReadScopeClass,
-    StrategyTraversalBasis,
-};
 use crate::validation::data::{
     CustomInvariantDescriptor, CustomInvariantExecutionContext, CustomInvariantExecutionError,
     CustomInvariantOperationalMetadata, CustomInvariantPreparationError,

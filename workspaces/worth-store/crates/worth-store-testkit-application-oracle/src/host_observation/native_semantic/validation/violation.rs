@@ -36,7 +36,6 @@ fn endpoints(value: &F) -> Option<(&EntityReference, &EntityReference)> {
         | F::Acyclicity { source, target, .. } => Some((source, target)),
         F::None
         | F::MergedIntentLimit { .. }
-        | F::SnapshotEntityLimit { .. }
         | F::UniqueEntityField { .. }
         | F::SidecarConsistency { .. }
         | F::RelationEndpointKindCrossContext { .. }
@@ -59,12 +58,6 @@ pub(super) fn correspond(
         return Err(bad());
     }
     match h {
-        F::SnapshotEntityLimit { version_id, .. } => {
-            let F::SnapshotEntityLimit { version_id: r, .. } = r else {
-                return Err(bad());
-            };
-            version(map, version_id, *r)?;
-        }
         F::RelationEndpointKindMismatch { source, target, .. }
         | F::RelationEndpointKindSelfEdge { source, target, .. }
         | F::RelationCardinalityPair { source, target, .. }

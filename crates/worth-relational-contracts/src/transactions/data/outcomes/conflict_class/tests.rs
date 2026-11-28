@@ -1,8 +1,7 @@
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::schema::data::{DescriptorSemanticsVersion, SchemaId, SchemaVersionId};
 use crate::transactions::data::outcomes::conflict_class::{
-    BulkImportRowDomain, BulkImportStage, ConflictClass, EntityUpdateMissingState,
-    RelationEndpointUpdateMissingState,
+    ConflictClass, EntityUpdateMissingState, RelationEndpointUpdateMissingState,
 };
 
 #[test]
@@ -32,17 +31,6 @@ fn relation_endpoint_state_conflicts_are_typed_not_json() {
 
     assert!(missing_state.detail().contains("retained endpoints"));
     assert!(kind_mismatch.detail().contains("intent kind 1"));
-}
-
-#[test]
-fn bulk_import_domain_mismatch_is_typed_not_json() {
-    let conflict = ConflictClass::BulkImportDomainMismatch {
-        expected: BulkImportRowDomain::Entity,
-        actual: BulkImportRowDomain::Relation,
-        stage: BulkImportStage::EntityCreate,
-    };
-
-    assert!(conflict.detail().contains("expected entity rows"));
 }
 
 // a707a48b1b retired the field-creation producer of UnsupportedAspectFieldTarget.

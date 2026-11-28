@@ -12,7 +12,6 @@ worth-relational-branch.workspace = true
 worth-relational-contracts.workspace = true
 worth-relational-indexes.workspace = true
 worth-relational-lineage.workspace = true
-worth-relational-commit-admission.workspace = true
 worth-relational-mutation.workspace = true
 worth-relational-storage.workspace = true
 worth-foundational = { path = "../worth-foundational" }

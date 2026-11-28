@@ -111,14 +111,6 @@ impl FullReadDoor {
                     entity,
                 )
                 .map(|_| ()),
-            Self::StructuralInspection => runtime
-                .inspect_what_happened()
-                .structural_identity(
-                    execution,
-                    worth_relational::facade::inspection::InspectionScope::Current,
-                    worth_relational::facade::transactions::RecordRef::Entity(entity),
-                )
-                .map(|_| ()),
             Self::RetentionSummary => runtime
                 .inspect_what_happened()
                 .retention_summary(

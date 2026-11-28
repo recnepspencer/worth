@@ -41,9 +41,7 @@ pub use crate::branch::{
 };
 pub use crate::branch::{
     RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
-    RelationalBranchBasisRetirementProgress, RelationalRecordAdvanceDenial,
-    RelationalRecordAdvanceLimits, RelationalRecordAdvanceObservation,
-    RetiredRelationalBranchBasis,
+    RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
 };
 pub use crate::history::data::RecordedRelationalJsonHeapQuote;
 pub use crate::history::retention::{

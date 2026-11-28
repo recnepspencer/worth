@@ -1,9 +1,9 @@
 use super::*;
 
-pub(super) fn certify_dense_fanout_compile_wave(
+pub(super) fn certify_dense_fanout_wave(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
-    let fanout_compile_samples = capture_counted_samples(|| {
+    let fanout_samples = capture_counted_samples(|| {
         let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
         let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
         let source = create_entity_in_partition(execution, &runtime, "net-driver", PartitionId(7));
@@ -56,24 +56,6 @@ pub(super) fn certify_dense_fanout_compile_wave(
             .expect("chip fanout commit")
             .clone();
 
-        let (artifact, compile_work) = measure_counted_work(execution, || {
-            runtime
-                .compiled_artifacts_authority()
-                .compile_execution_artifact(
-                    execution,
-                    commit.commit_id,
-                    vec![
-                        PartitionId(7),
-                        PartitionId(11),
-                        PartitionId(13),
-                        PartitionId(17),
-                        PartitionId(19),
-                        PartitionId(29),
-                    ],
-                )
-                .expect("chip fanout compiled artifact")
-        });
-
         let (outgoing_relations, adjacency_work) = measure_counted_work(execution, || {
             runtime
                 .storage_access()
@@ -86,10 +68,9 @@ pub(super) fn certify_dense_fanout_compile_wave(
             fresh_diagnostics_metrics(&runtime, diagnostics_start);
 
         CountedPerfSample {
-            charged_work: commit_work + compile_work + adjacency_work,
+            charged_work: commit_work + adjacency_work,
             metrics: perf_metrics!({
                 "commit_work": commit_work,
-                "compile_work": compile_work,
                 "adjacency_work": adjacency_work,
                 "changed_records": commit_outcome.changed_records.len(),
                 "dense_patch_record_count": dense_patch_record_count(&runtime),
@@ -101,22 +82,16 @@ pub(super) fn certify_dense_fanout_compile_wave(
                     RelationalRuntimeProfile::ChipSimulation,
                 ),
                 "adjacency_backend": format!("{:?}", runtime.config().storage.adjacency_policy.backend),
-                "compiled_artifact_authority_status": format!(
-                    "{:?}",
-                    runtime
-                        .compiled_artifacts()
-                        .compiled_artifact_authority_status(artifact.artifact_id)
-                ),
                 "counters": counters,
             }),
         }
     });
-    assert!(fanout_compile_samples
+    assert!(fanout_samples
         .iter()
         .all(|sample| sample.charged_work > 0));
     assert_counted_budget(
-        &fanout_compile_samples,
-        "chip fanout compile wave should preserve compressed adjacency truth and dense patch shape",
+        &fanout_samples,
+        "chip fanout mutation wave should preserve compressed adjacency truth and dense patch shape",
         |metrics| {
             metrics["changed_records"].as_u64() == Some(24)
                 && metrics["dense_patch_record_count"].as_u64() == Some(24)
@@ -125,11 +100,6 @@ pub(super) fn certify_dense_fanout_compile_wave(
                     == Some(&format!(
                         "{:?}",
                         AdjacencyBackend::CompressedFanoutAdjacency
-                    ))
-                && metrics["compiled_artifact_authority_status"].as_str()
-                    == Some(&format!(
-                        "{:?}",
-                        CompiledArtifactAuthorityStatus::Authoritative
                     ))
                 && metrics["diagnostic_artifact_count"].as_u64().unwrap_or(0) >= 1
                 && metrics["detailed_trace_entries"].as_u64() == Some(0)

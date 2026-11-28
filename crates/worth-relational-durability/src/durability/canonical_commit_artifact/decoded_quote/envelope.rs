@@ -184,6 +184,8 @@ fn field_allocation(
     projection: EnvelopeProjection,
 ) -> Result<OwnerAllocation, Refusal> {
     Ok(match field {
+        "strategy_artifacts" if value.is_none() => OwnerAllocation::default(),
+        "strategy_artifacts" => return Err(Refusal::NonCanonicalPayload),
         "index_definition_delta" => super::indexes::delta(value, request)?,
         "authored_index_writes" => super::indexes::authored(value, request)?,
         "required_output_codec_retirements" => super::codec_retirements::quote(value, request)?,
@@ -193,7 +195,6 @@ fn field_allocation(
         "commit" => super::semantic::receipt(value, request)?,
         "branch_context" => text(value, request)?,
         "branch_cell_checkpoint" => optional(value, |value| super::branches::cell(value, request))?,
-        "strategy_artifacts" => optional(value, |value| super::strategy::quote(value, request))?,
         "schema_authority" => super::schema::authority(value, request)?,
         "merged_plan" => super::plan::quote(value, request)?,
         "symbol_texts" => super::symbols::quote(value, request)?,

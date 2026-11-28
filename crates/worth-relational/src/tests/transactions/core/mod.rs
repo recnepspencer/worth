@@ -4,7 +4,6 @@ mod authored_write_history;
 mod branch_local_empty_basis;
 mod branch_root_selection_denials;
 mod branch_snapshot_affinity;
-mod bulk_mutation_planning;
 mod cancellation_boundaries;
 mod cancellation_critical_section;
 mod cancellation_residue_assertion;

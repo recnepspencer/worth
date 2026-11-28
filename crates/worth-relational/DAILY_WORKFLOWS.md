@@ -12,7 +12,6 @@ Use:
 - `schema_setup(...)`
 - `storage_setup(...)`
 - `durability_setup(...)`
-- `strategy_setup(...)`
 - `build()`, or `build_durable(...)` when commits must be durable before they
   are live; the medium moves into that one runtime
 
@@ -137,14 +136,11 @@ This is the deeper verification lane after history.
 Use these only when the job really calls for them:
 
 - `validation()`
-- `compiled_artifacts()`
 - `retention()`
 - `index_access()` / `index_authority()`
 - `merge()`
 - `durability()`
 - `durability_authority()`
-- `commit_strategies()`
-- `commit_strategies_authority()`
 
 That is not because they are hidden.
 

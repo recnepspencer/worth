@@ -1,9 +1,9 @@
 use super::*;
 
-pub(super) fn certify_branch_rollback_compile_step_window(
+pub(super) fn certify_branch_rollback_step_window(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
-    let branch_rollback_compile_samples = capture_counted_samples(|| {
+    let branch_rollback_samples = capture_counted_samples(|| {
         let feature_branch = BranchId("feature".to_string());
         let runtime = runtime_with_extra_entity_aspects_profile(
             RelationalRuntimeProfile::ChipSimulation,
@@ -144,23 +144,6 @@ pub(super) fn certify_branch_rollback_compile_step_window(
             .branch_head(&feature_branch)
             .expect("feature branch head")
             .clone();
-        let (artifact, compile_work) = measure_counted_work(execution, || {
-            runtime
-                .compiled_artifacts_authority()
-                .compile_execution_artifact(
-                    execution,
-                    feature_commit.commit_id,
-                    vec![
-                        PartitionId(7),
-                        PartitionId(11),
-                        PartitionId(13),
-                        PartitionId(17),
-                        PartitionId(19),
-                        PartitionId(29),
-                    ],
-                )
-                .expect("feature branch compiled artifact")
-        });
 
         let (outgoing_relations, adjacency_work) = measure_counted_work(execution, || {
             runtime
@@ -177,11 +160,10 @@ pub(super) fn certify_branch_rollback_compile_step_window(
             fresh_diagnostics_metrics(&runtime, diagnostics_start);
 
         CountedPerfSample {
-            charged_work: rollback_work + commit_work + compile_work + adjacency_work,
+            charged_work: rollback_work + commit_work + adjacency_work,
             metrics: perf_metrics!({
                 "rollback_work": rollback_work,
                 "commit_work": commit_work,
-                "compile_work": compile_work,
                 "adjacency_work": adjacency_work,
                 "rollback_effect_count": rollback.effect_count(),
                 "rollback_discarded_creations": rollback.summary.discarded_creation_count(),
@@ -190,30 +172,22 @@ pub(super) fn certify_branch_rollback_compile_step_window(
                 "outgoing_relation_count": outgoing_relations.len(),
                 "diagnostic_artifact_count": diagnostic_artifact_count,
                 "detailed_trace_entries": detailed_trace_entries,
-                "compiled_artifact_authority_status": format!(
-                    "{:?}",
-                    runtime
-                        .compiled_artifacts()
-                        .compiled_artifact_authority_status(artifact.artifact_id)
-                ),
                 "counters": runtime.performance_access().counters(),
             }),
         }
     });
-    assert!(branch_rollback_compile_samples
+    assert!(branch_rollback_samples
         .iter()
         .all(|sample| sample.charged_work > 0));
     assert_counted_budget(
-        &branch_rollback_compile_samples,
-        "chip branch rollback compile windows should discard abandoned fanout work and keep feature truth narrow",
+        &branch_rollback_samples,
+        "chip branch rollback windows should discard abandoned fanout work and keep feature truth narrow",
         |metrics| {
             metrics["rollback_effect_count"].as_u64() == Some(8)
                 && metrics["rollback_discarded_creations"].as_u64() == Some(8)
                 && metrics["rollback_restored_records"].as_u64() == Some(0)
                 && metrics["committed_changed_records"].as_u64() == Some(1)
                 && metrics["outgoing_relation_count"].as_u64() == Some(8)
-                && metrics["compiled_artifact_authority_status"].as_str()
-                    == Some(&format!("{:?}", CompiledArtifactAuthorityStatus::Authoritative))
                 && metrics["diagnostic_artifact_count"].as_u64().unwrap_or(0) >= 1
                 && counter_u64(metrics, "full_state_clones") == 0
         },

@@ -28,14 +28,7 @@ fn residency_failure_matrix_envelope_doors_preserve_every_failure_class() {
             ])
         {
             for (cause, sticky) in FAILURES {
-                let profile = if matches!(
-                    door,
-                    EnvelopeDoor::Surface(EnvelopeSurface::CompiledArtifact)
-                ) {
-                    RelationalRuntimeProfile::ChipSimulation
-                } else {
-                    RelationalRuntimeProfile::CertificationCore
-                };
+                let profile = RelationalRuntimeProfile::CertificationCore;
                 let fixture = reopened(execution, 16, tail_only, profile);
                 let runtime = fixture.runtime;
                 let source = fixture.source;

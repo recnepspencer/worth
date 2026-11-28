@@ -1,8 +1,7 @@
-use super::bulk_mutation_telemetry::{telemetry_from_strategy_batch, BulkMutationPlanTelemetry};
+use super::bulk_mutation_telemetry::BulkMutationPlanTelemetry;
 use super::publication_validation::DraftValidationInput;
 use crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan;
 use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
-use contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle;
 use contracts::transactions::data::primitives::TransactionId;
 use mutation::validation::engine::result::InvariantExecutionResult;
 use worth_relational_contracts::internal_port as contracts;
@@ -33,7 +32,6 @@ pub struct AuthoritativeCommitContext<V> {
     pub(super) validated_against_version_id: Option<contracts::identity::data::primitives::VersionId>,
     pub(super) validated_against_branch_version:
         Option<contracts::branch::version::RelationalBranchVersion>,
-    pub(super) strategy_commit_artifacts: Option<StrategyCommitArtifactBundle>,
 }
 
 #[derive(Debug)]
@@ -71,9 +69,6 @@ pub struct SelectedCommitMutation<V> {
     pub validated_against_version: contracts::identity::data::primitives::VersionId,
     pub validated_against_branch_version: contracts::branch::version::RelationalBranchVersion,
     pub batch_count: usize,
-    pub strategy_commit_artifacts: Option<StrategyCommitArtifactBundle>,
-    pub strategy_bulk_mutation_batch:
-        Option<contracts::transactions::data::primitives::ProvenanceCompleteBulkMutationBatch>,
     pub validation_complexity_delta:
         contracts::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
 }
@@ -107,20 +102,14 @@ impl<V: DraftValidationInput> AuthoritativeCommitContext<V> {
             validated_against_version,
             validated_against_branch_version,
             batch_count,
-            strategy_commit_artifacts,
-            strategy_bulk_mutation_batch,
             validation_complexity_delta,
             commit_work_budget,
         } = selected;
-        let bulk_mutation_telemetry = strategy_bulk_mutation_batch
-            .as_ref()
-            .map(telemetry_from_strategy_batch)
-            .or_else(|| {
-                super::bulk_mutation_telemetry::summarize_bulk_mutation_telemetry(
-                    prepared.plan.view().commands(),
-                    batch_count,
-                )
-            });
+        let bulk_mutation_telemetry =
+            super::bulk_mutation_telemetry::summarize_bulk_mutation_telemetry(
+                prepared.plan.view().commands(),
+                batch_count,
+            );
         Self {
             recovered_index_catalog: None,
             caller_association,
@@ -145,7 +134,6 @@ impl<V: DraftValidationInput> AuthoritativeCommitContext<V> {
             validated_against_commit_id: validated_against_commit,
             validated_against_version_id: Some(validated_against_version),
             validated_against_branch_version: Some(validated_against_branch_version),
-            strategy_commit_artifacts,
         }
     }
 }

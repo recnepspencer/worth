@@ -163,7 +163,6 @@ where
             installed.principal_kind(),
             installed.scope_kind(),
             installed.relational_paths().to_vec(),
-            [],
         )
         .map_err(|_| {
             refused(

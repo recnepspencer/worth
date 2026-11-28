@@ -327,7 +327,6 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
             &mut self.identities.symbols,
             BranchLocalDeleteAllowance::default(),
             &mut self.identities.records,
-            crate::contracts::execution::request_custody::request_lease(self.execution),
             // The borrowed context belongs to the enclosing ownership stage.
             // Nested mutation reports charge that stage, never redispatch its account.
             None,

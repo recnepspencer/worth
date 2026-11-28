@@ -13,33 +13,6 @@ use worth_foundational::facade::{
 };
 
 #[test]
-fn snapshot_entity_limit_fields_use_named_version_surface() {
-    let violation = InvariantViolation {
-        class: InvariantClass::SnapshotAudit,
-        code: DiagnosticCode::InvariantViolation,
-        detail: "snapshot entity limit".to_string(),
-        fields: InvariantViolationFields::SnapshotEntityLimit {
-            version_id: VersionId::new(8),
-            visible_entities: 13,
-            limit: 5,
-        },
-    };
-
-    match violation.fields {
-        InvariantViolationFields::SnapshotEntityLimit {
-            version_id,
-            visible_entities,
-            limit,
-        } => {
-            assert_eq!(version_id, VersionId::new(8));
-            assert_eq!(visible_entities, 13);
-            assert_eq!(limit, 5);
-        }
-        fields => panic!("expected typed snapshot entity limit fields, got {fields:?}"),
-    }
-}
-
-#[test]
 fn unique_entity_field_violation_uses_foundational_field_and_value_carriers() {
     let field = FieldKey::new("email").expect("valid field key");
     let field_locator = AspectFieldLocator::new(

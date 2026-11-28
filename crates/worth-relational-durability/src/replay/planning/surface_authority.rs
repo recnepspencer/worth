@@ -24,11 +24,6 @@ pub fn promised_replay_surfaces(
     {
         surfaces.push(ReplayObservableSurface::Lineage);
     }
-    if original.strategy_artifacts.is_some()
-        || recovered.is_some_and(|envelope| envelope.strategy_artifacts.is_some())
-    {
-        surfaces.push(ReplayObservableSurface::Strategy);
-    }
     if derived_index_surface_is_promised(original, recovered) {
         surfaces.push(DERIVED_INDEX_SURFACE);
     }

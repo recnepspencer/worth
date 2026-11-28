@@ -1,9 +1,9 @@
 use super::*;
 
-pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
+pub(super) fn certify_checkpoint_recovery_round_trip(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
-    let checkpoint_recover_compile_samples = capture_counted_samples(|| {
+    let checkpoint_recovery_samples = capture_counted_samples(|| {
         let medium = OwnedTestDurableMedium::new();
         let runtime =
             durable_runtime_profile_for_medium(RelationalRuntimeProfile::ChipSimulation, &medium);
@@ -52,22 +52,6 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
             .latest_commit()
             .expect("recovered chip commit")
             .clone();
-        let (artifact, compile_work) = measure_counted_work(execution, || {
-            recovered
-                .compiled_artifacts_authority()
-                .compile_execution_artifact(
-                    execution,
-                    recovered_commit.commit_id,
-                    vec![
-                        PartitionId(7),
-                        PartitionId(11),
-                        PartitionId(13),
-                        PartitionId(17),
-                        PartitionId(29),
-                    ],
-                )
-                .expect("recovered chip compiled artifact")
-        });
 
         let (outgoing_relations, adjacency_work) = measure_counted_work(execution, || {
             recovered
@@ -77,41 +61,27 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
         });
 
         CountedPerfSample {
-            charged_work: checkpoint_work + recover_work + compile_work + adjacency_work,
+            charged_work: checkpoint_work + recover_work + adjacency_work,
             metrics: perf_metrics!({
                 "checkpoint_work": checkpoint_work,
                 "recover_work": recover_work,
-                "compile_work": compile_work,
                 "adjacency_work": adjacency_work,
                 "recovered_commits": recovery_outcome.recovered_commits,
-                "compiled_record_count": artifact.compiled_record_count,
                 "recovered_durable_log_len": recovered.durability().durable_log().len(),
                 "outgoing_relation_count": outgoing_relations.len(),
-                "compiled_artifact_authority_status": format!(
-                    "{:?}",
-                    recovered
-                        .compiled_artifacts()
-                        .compiled_artifact_authority_status(artifact.artifact_id)
-                ),
                 "counters": recovered.performance_access().counters(),
             }),
         }
     });
-    assert!(checkpoint_recover_compile_samples
+    assert!(checkpoint_recovery_samples
         .iter()
         .all(|sample| sample.charged_work > 0));
     assert_counted_budget(
-        &checkpoint_recover_compile_samples,
-        "chip checkpoint window recovery should preserve compile-ready fanout truth after recovery",
+        &checkpoint_recovery_samples,
+        "chip checkpoint window recovery should preserve fanout truth after recovery",
         |metrics| {
             metrics["recovered_commits"].as_u64().unwrap_or(0) >= 1
-                && metrics["compiled_record_count"].as_u64().unwrap_or(0) > 0
                 && metrics["outgoing_relation_count"].as_u64() == Some(12)
-                && metrics["compiled_artifact_authority_status"].as_str()
-                    == Some(&format!(
-                        "{:?}",
-                        CompiledArtifactAuthorityStatus::Authoritative
-                    ))
                 && counter_u64(metrics, "full_state_clones") == 0
         },
     );

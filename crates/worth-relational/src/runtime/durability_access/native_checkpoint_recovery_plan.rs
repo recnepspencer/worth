@@ -31,7 +31,6 @@ pub(crate) fn native_checkpoint_recovery_plan(
         Vec::new(),
         runtime.durability.cold_source(),
     )
-    .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone())
 }
 
 pub(super) fn bind_source_runtime_identity(

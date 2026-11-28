@@ -2,7 +2,7 @@ use std::mem::size_of;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, FieldKey, InternedString};
 
-use super::{RelationalAuthorizationEffectTarget, RelationalAuthorizationPlanDenial};
+use super::RelationalAuthorizationPlanDenial;
 use super::{
     RelationalAuthorizationEntityAnchor, RelationalAuthorizationExactAdjacencyConstraint,
     RelationalAuthorizationFieldConstraint, RelationalAuthorizationObservationPlan,
@@ -115,19 +115,13 @@ impl RelationalAuthorizationObservationPlan {
     ) -> Result<Self, RelationalAuthorizationPlanAdmissionStop<Stop>> {
         use RelationalAuthorizationPlanAdmissionStop as Denial;
 
-        // Fund both outer vectors and the selected branch copy before their
-        // allocations. Each path and effect field then pays its nested copy.
+        // Fund the path directory and selected branch before cloning.
+        // Each path pays for its nested copy separately.
         admit(4, 0).map_err(Denial::Admission)?;
         let path_count = self.paths.len();
-        let effect_count = self.proposed_effects.len();
         let branch_bytes = snapshot.branch_id().0.len();
         let outer_bytes = path_count
             .checked_mul(size_of::<RelationalAuthorizationPathPlan>())
-            .and_then(|bytes| {
-                effect_count
-                    .checked_mul(size_of::<RelationalAuthorizationEffectTarget>())
-                    .and_then(|effects| bytes.checked_add(effects))
-            })
             .ok_or(Denial::AccountingOverflow)?;
         let copy_work = outer_bytes
             .checked_add(branch_bytes)
@@ -156,29 +150,6 @@ impl RelationalAuthorizationObservationPlan {
                     })?,
             );
         }
-        let mut proposed_effects = Vec::with_capacity(effect_count);
-        for effect in &self.proposed_effects {
-            if let Some(locator) = effect.field_locator() {
-                let mut nested_work = 0;
-                let mut nested_bytes = 0;
-                add_locator(locator, &mut nested_work, &mut nested_bytes, &mut admit).map_err(
-                    |stop| match stop {
-                        RelationalAuthorizationPathCloneStop::Admission(stop) => {
-                            Denial::Admission(stop)
-                        }
-                        RelationalAuthorizationPathCloneStop::AccountingOverflow => {
-                            Denial::AccountingOverflow
-                        }
-                    },
-                )?;
-                admit(
-                    u64::try_from(nested_work).map_err(|_| Denial::AccountingOverflow)?,
-                    u64::try_from(nested_bytes).map_err(|_| Denial::AccountingOverflow)?,
-                )
-                .map_err(Denial::Admission)?;
-            }
-            proposed_effects.push(effect.clone());
-        }
         Self::try_new_owned_admitted(
             snapshot,
             self.principal,
@@ -186,7 +157,6 @@ impl RelationalAuthorizationObservationPlan {
             self.principal_kind,
             self.scope_kind,
             paths,
-            proposed_effects,
             admit,
         )
     }
@@ -199,7 +169,6 @@ impl RelationalAuthorizationObservationPlan {
         principal_kind: KindId,
         scope_kind: KindId,
         paths: Vec<RelationalAuthorizationPathPlan>,
-        proposed_effects: Vec<RelationalAuthorizationEffectTarget>,
         mut admit: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<Self, RelationalAuthorizationPlanAdmissionStop<Stop>> {
         use RelationalAuthorizationPlanAdmissionStop as Denial;
@@ -259,7 +228,6 @@ impl RelationalAuthorizationObservationPlan {
             principal_kind,
             scope_kind,
             paths,
-            proposed_effects,
         )
         .map_err(Denial::Plan)
     }

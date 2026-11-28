@@ -9,7 +9,5 @@ pub mod proposal_identity;
 #[path = "validation/proposal_invariants.rs"]
 pub mod proposal_invariants;
 pub mod proposal_source;
-#[path = "validation/proposal_touches.rs"]
-pub mod proposal_touches;
 #[path = "validation/proposal_validation.rs"]
 pub mod proposal_validation;

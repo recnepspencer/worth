@@ -5,7 +5,7 @@ use crate::transactions::data::primitives::WorkerIntentBatch;
 use std::sync::{Arc, Mutex};
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
-fn assert_one_consult_per_safe_point(batches: usize, split: bool, strategy: bool) {
+fn assert_one_consult_per_safe_point(batches: usize, split: bool) {
     let runtime = runtime_with_test_schema();
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
@@ -29,17 +29,10 @@ fn assert_one_consult_per_safe_point(batches: usize, split: bool, strategy: bool
     let execution = ExecutionRequest::serial(&backing);
     let visits = Arc::new(Mutex::new(Vec::new()));
     let counted = Arc::clone(&visits);
-    let strategy_fixture = strategy.then(crate::commit_strategies::facade::lowered_commit_fixture);
     observation::with_stage_observer_for_test(
         Box::new(move |stage| counted.lock().unwrap().push(stage)),
         || {
-            if let Some((runtime, lowered)) = strategy_fixture {
-                let mut authority = runtime.commit_strategies_authority();
-                let proposal = authority.validate_lowered_plan(&execution, &runtime, lowered)?;
-                let candidate =
-                    authority.prepare_validated_commit(&execution, &runtime, proposal)?;
-                runtime.publish_prepared_candidate(&execution, candidate)
-            } else if split {
+            if split {
                 let proposal = runtime.validate_branch_transaction(&execution, transaction)?;
                 let candidate = runtime.prepare_validated_proposal(&execution, proposal)?;
                 let outcome = runtime
@@ -84,19 +77,14 @@ fn assert_one_consult_per_safe_point(batches: usize, split: bool, strategy: bool
 
 #[test]
 fn ordinary_commit_consults_once_per_named_safe_point() {
-    assert_one_consult_per_safe_point(1, false, false);
+    assert_one_consult_per_safe_point(1, false);
 }
 #[test]
 fn batch_commit_consults_once_per_named_safe_point() {
-    assert_one_consult_per_safe_point(3, false, false);
+    assert_one_consult_per_safe_point(3, false);
 }
 
 #[test]
 fn split_commit_consults_once_per_named_safe_point() {
-    assert_one_consult_per_safe_point(1, true, false);
-}
-
-#[test]
-fn strategy_commit_consults_once_per_named_safe_point() {
-    assert_one_consult_per_safe_point(1, false, true);
+    assert_one_consult_per_safe_point(1, true);
 }

@@ -1,4 +1,3 @@
-mod record_advance;
 pub use basis::{
     RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
     RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
@@ -39,10 +38,6 @@ pub(crate) mod lifecycle;
 pub(crate) mod materialization;
 mod owner_services;
 pub(crate) mod recorded_basis;
-pub use record_advance::{
-    RelationalRecordAdvanceDenial, RelationalRecordAdvanceLimits,
-    RelationalRecordAdvanceObservation,
-};
 pub use recorded_basis::{
     AdmittedRelationalMemoryComponent, ObservedRelationalMemoryComponent,
     RecordedRelationalCanonicalComponent, RecordedRelationalComponentReference,

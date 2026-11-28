@@ -30,8 +30,6 @@ pub use digest::digest_schema_transition_descriptor;
 pub use digest::digest_schema_transition_summary;
 pub use digest::digest_snapshot_summary;
 pub use digest::digest_snapshot_surface;
-pub use digest::digest_strategy_replay_descriptor;
-pub use digest::digest_strategy_replay_summary;
 pub use digest::{
     digest_diagnostics_batch_surface, digest_patch_batch_surface,
     digest_schema_transition_decision, digest_subscriber_boundary_cdc_surface,

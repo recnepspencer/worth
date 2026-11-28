@@ -1,5 +1,4 @@
 use super::RelationalBranchRootReclamationOutcome;
-use crate::storage::substrate::StorageAllocationOverflow;
 
 impl crate::runtime::RelationalRuntime {
     /// Explicit cold index maintenance. An in-flight cutover or unsettled
@@ -22,15 +21,6 @@ impl crate::runtime::RelationalRuntime {
     pub fn run_branch_root_reclamation_pass(&self) -> RelationalBranchRootReclamationOutcome {
         self.history
             .reclaim_retired_branch_roots(self.config.storage.retention.reclaim_batch_size)
-    }
-
-    /// Reclaim cold immutable branch roots, refusing any unrepresentable
-    /// reclamation counter or byte total with a typed overflow instead of saturating.
-    pub fn try_run_branch_root_reclamation_pass(
-        &self,
-    ) -> Result<RelationalBranchRootReclamationOutcome, StorageAllocationOverflow> {
-        self.history
-            .try_reclaim_retired_branch_roots(self.config.storage.retention.reclaim_batch_size)
     }
 
     /// Retired branch roots awaiting reclamation now.

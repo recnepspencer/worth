@@ -11,30 +11,7 @@ use super::{
     decode_aspect_value, encode_aspect_field_locator, encode_aspect_value,
     encode_length_prefixed_aspect_value, encode_u32,
 };
-use crate::commit_strategies::data::native_codec::{
-    decode_aspect_field_patch as decode_native_aspect_field_patch,
-    decode_aspect_value as decode_native_aspect_value,
-    encode_aspect_field_patch as encode_native_aspect_field_patch,
-    encode_aspect_value as encode_native_aspect_value, NativeCodecReader,
-};
 use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
-
-#[test]
-fn native_strategy_codec_uses_canonical_aspect_value_bytes() {
-    for value in canonical_aspect_value_samples() {
-        let mut canonical_bytes = Vec::new();
-        encode_length_prefixed_aspect_value(&mut canonical_bytes, &value);
-
-        let mut native_bytes = Vec::new();
-        encode_native_aspect_value(&mut native_bytes, &value);
-
-        assert_eq!(native_bytes, canonical_bytes);
-
-        let mut reader = NativeCodecReader::new(&native_bytes);
-        assert_eq!(decode_native_aspect_value(&mut reader).unwrap(), value);
-        reader.finish().unwrap();
-    }
-}
 
 #[test]
 fn reported_value_families_keep_one_canonical_tag_layout() {

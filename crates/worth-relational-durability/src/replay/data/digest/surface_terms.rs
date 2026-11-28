@@ -1,5 +1,4 @@
 use crate::replay::data::ReplaySnapshotSurface;
-use contracts::commit_strategies::data::artifacts::replay_descriptor::StrategyReplayDescriptor;
 use contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact;
 use contracts::history::data::commit_receipt::{OrderedParentList, RelationalCommitReceipt};
 use contracts::history::data::coordinates::{BranchId, CommitId};
@@ -162,32 +161,6 @@ pub fn digest_branch_head_summary(commit: Option<&RelationalCommitReceipt>) -> [
             .finish(),
         None => builder.tag(0).finish(),
     }
-}
-
-pub fn digest_strategy_replay_descriptor(descriptor: &StrategyReplayDescriptor) -> [u8; 32] {
-    ReplayDigestBuilder::new("worth.relational.replay.surface.strategy_descriptor.v1")
-        .u64(descriptor.strategy_id().0 as u64)
-        .digest_bytes(&descriptor.descriptor_digest().0)
-        .digest_bytes(&descriptor.input_digest().0)
-        .digest_bytes(&descriptor.output_digest().0)
-        .digest_bytes(&descriptor.mutation_program_digest().0)
-        .digest_bytes(descriptor.lowering_summary_digest())
-        .optional_digest(descriptor.preview_validation_summary_digest())
-        .optional_digest(descriptor.preview_validation_cost_digest())
-        .optional_commit_id(descriptor.validated_against_commit_id())
-        .optional_version_id(descriptor.validated_against_version_id())
-        .finish()
-}
-
-pub fn digest_strategy_replay_summary(descriptor: &StrategyReplayDescriptor) -> [u8; 32] {
-    ReplayDigestBuilder::new("worth.relational.replay.summary.strategy_descriptor.v1")
-        .u64(descriptor.strategy_id().0 as u64)
-        .digest_bytes(&descriptor.input_digest().0)
-        .digest_bytes(&descriptor.output_digest().0)
-        .digest_bytes(&descriptor.mutation_program_digest().0)
-        .optional_commit_id(descriptor.validated_against_commit_id())
-        .optional_version_id(descriptor.validated_against_version_id())
-        .finish()
 }
 
 pub fn digest_derived_index_surface(artifacts: &DerivedIndexArtifacts) -> [u8; 32] {

@@ -35,7 +35,6 @@ fn historical_relation_inspection_keeps_direct_commit_history_when_retained_only
     );
     assert!(inspection.record_observation.value.is_none());
     assert!(inspection.lineage_resolution_context.is_none());
-    assert!(inspection.structural_identity_evidence.is_none());
     assert_eq!(
         inspection
             .aspect_history_observation
@@ -103,20 +102,4 @@ fn historical_relation_inspection_reconstructs_record_truth_without_inventing_li
         _ => panic!("expected reconstructed relation record"),
     }
     assert!(inspection.lineage_resolution_context.is_none());
-    let structural = inspection
-        .structural_identity_evidence
-        .as_ref()
-        .expect("relation structural evidence");
-    assert_eq!(
-        structural.availability,
-        InspectionAvailability::Reconstructed
-    );
-    assert!(structural.structural_fingerprint.is_none());
-    assert!(structural.lineage_id.is_none());
-    assert!(structural
-        .degradations
-        .contains(&crate::facade::inspection::InspectionDegradation::MissingStructuralFingerprint));
-    assert!(structural
-        .degradations
-        .contains(&crate::facade::inspection::InspectionDegradation::MissingLineageIdentity));
 }

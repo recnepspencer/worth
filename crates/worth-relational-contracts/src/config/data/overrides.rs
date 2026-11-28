@@ -1,4 +1,3 @@
-use crate::commit_strategies::data::registration::CommitStrategyRegistration;
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
 use crate::history::data::coordinates::{BranchId, HistoryRetentionClass, VersionGraphPolicy};
 use crate::schema::data::RelationalSchemaRegistry;
@@ -33,11 +32,6 @@ pub struct HistoryConfigOverride {
 pub struct SchemaConfigOverride {
     pub registry: Option<RelationalSchemaRegistry>,
     pub invariant_catalog: Option<InvariantCatalog>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct CommitStrategiesConfigOverride {
-    pub registrations: Option<Vec<CommitStrategyRegistration>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -81,7 +75,6 @@ pub struct RelationalConfigOverride {
     pub diagnostics: DiagnosticsConfigOverride,
     pub history: HistoryConfigOverride,
     pub schema: SchemaConfigOverride,
-    pub commit_strategies: CommitStrategiesConfigOverride,
     pub identity: IdentityConfigOverride,
     pub storage: StorageConfigOverride,
     pub visibility: VisibilityConfigOverride,

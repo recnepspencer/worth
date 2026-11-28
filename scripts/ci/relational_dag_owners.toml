@@ -89,14 +89,6 @@ cap = 98000
 floor = 51000
 depends = ["contracts", "storage", "branch"]
 
-[owners.commit_admission]
-physical = true
-crate = "worth-relational-commit-admission"
-layer = 3
-cap = 3500
-floor = 2500
-depends = ["contracts", "storage", "branch"]
-
 [owners.indexes]
 physical = true
 crate = "worth-relational-indexes"
@@ -111,7 +103,7 @@ crate = "worth-relational-durability"
 layer = 4
 cap = 84000
 floor = 45400
-depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admission", "indexes"]
+depends = ["contracts", "storage", "branch", "lineage", "mutation", "indexes"]
 
 [owners.publication]
 physical = true
@@ -119,7 +111,7 @@ crate = "worth-relational-publication"
 layer = 5
 cap = 60000
 floor = 26600
-depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admission", "indexes", "durability"]
+depends = ["contracts", "storage", "branch", "lineage", "mutation", "indexes", "durability"]
 
 [owners.runtime]
 crate = "worth-relational"
@@ -131,7 +123,7 @@ layer = 6
 # +200 for Store M4.3f Round 3 fork-vs-retention-floor coordination and detached fork cold-source rebind.
 cap = 80000
 floor = 32000
-depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admission", "indexes", "durability", "publication"]
+depends = ["contracts", "storage", "branch", "lineage", "mutation", "indexes", "durability", "publication"]
 
 [paths]
 "facade/read.rs" = "runtime"
@@ -174,9 +166,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admi
 "storage/residency/tests.rs" = "runtime"
 "authority/mod.rs" = "runtime"
 "authorization/mod.rs" = "runtime"
-"commit_strategies/data/mod.rs" = "runtime"
-"commit_strategies/execution/mod.rs" = "runtime"
-"commit_strategies/mod.rs" = "runtime"
 "indexes/authority/maintenance/mod.rs" = "runtime"
 "indexes/authority/mod.rs" = "runtime"
 "mvcc/transaction/overlay_normalization.rs" = "runtime"
@@ -381,7 +370,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admi
 # Native custody stays below the live candidate and its completion receipt.
 "branch/materialization/completion.rs" = "runtime"
 "branch/owner_services" = "runtime"
-"branch/record_advance" = "runtime"
 # Export authenticates the retained member against Durability's selected image.
 "branch/recorded_basis/effect_export.rs" = "runtime"
 "branch/recorded_basis/live_export.rs" = "runtime"
@@ -393,12 +381,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admi
 "change_source" = "runtime"
 # Only the runtime admits a new observation or commit selection. Their retained
 # witnesses and retirement stay with the immutable Branch basis.
-"commit_strategies/execution/bound_execution" = "runtime"
-"commit_strategies/data/lowering" = "runtime"
-"commit_strategies/facade" = "runtime"
-"commit_strategies/facade_tests" = "runtime"
-"commit_strategies/lowering" = "runtime"
-"commit_strategies/lowering_boundary_tests" = "runtime"
 "content/transaction" = "runtime"
 # Portable schema registration rows own meaning separate from their enclosing image.
 
@@ -428,7 +410,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admi
 "history/access/patch_stream_commit" = "runtime"
 "history/authority" = "runtime"
 # Strategy-to-wire readmission drives an installed Runtime in the history court.
-"history/commit/artifact_tests/strategy_readmission.rs" = "courts"
 # Admit retained publication owners through the receiving runtime.
 "history/data/codec_retirement_closure/authored_restoration/live.rs" = "runtime"
 "history/data/codec_retirement_closure/coupled_restoration.rs" = "runtime"
@@ -517,7 +498,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admi
 # Prepared artifact accelerators and their sequence are consumed by the branch ledger.
 # Closing the source binds both Branch ledger and Publication route custody.
 # Original index member admission and source retirement stay in Durability.
-"simulation" = "runtime"
 "storage/access" = "runtime"
 "storage/authority" = "runtime"
 "storage/residency/cross_region_forgery_tests" = "runtime"
@@ -916,7 +896,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "lineage/access/selected_root_resolution" = "runtime"
 
 # Strategy registries and execution planning join merge. Live executor binding belongs to runtime.
-"commit_strategies/execution/bound_execution" = "runtime"
 
 # Merge owns its plan value exports. Runtime selects operands, binds authority and records work.
 
@@ -997,7 +976,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "history/access/relevant_writes/cursor/admission_runtime.rs" = "runtime"
 "history/access/relevant_writes/live_cursor.rs" = "runtime"
 "history/access/relevant_writes/maintenance.rs" = "runtime"
-"history/commit/artifact_tests/strategy_readmission.rs" = "courts"
 "history/data/codec_retirement_closure/authored_restoration/live.rs" = "runtime"
 "history/data/codec_retirement_closure/coupled_restoration.rs" = "runtime"
 "history/retention/live_reclamation.rs" = "runtime"

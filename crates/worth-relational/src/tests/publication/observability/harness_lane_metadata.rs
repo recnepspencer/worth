@@ -67,11 +67,6 @@ fn harness_phase8_certification_matrix_closes_out_supported_runtime_lanes() {
         "preparation_packet_count"
     )
     .is_some());
-    assert!(harness_summary_counter(
-        post_commit.diagnostics_summary.as_ref().unwrap(),
-        "post_commit_consumer_packet_count"
-    )
-    .is_some());
 }
 
 #[test]
@@ -121,13 +116,6 @@ fn harness_phase8_observed_matrix_exposes_mode_specific_metadata() {
     assert!(harness_summary_counter(staged_summary, "preparation_packet_count").is_some());
     assert!(
         harness_summary_counter(staged_summary, "preparation_packet_peak_width_total").is_some()
-    );
-    assert!(
-        harness_summary_counter(post_commit_summary, "post_commit_consumer_packet_count").is_some()
-    );
-    assert!(
-        harness_summary_counter(post_commit_summary, "post_commit_consumer_peak_width_total")
-            .is_some()
     );
 }
 

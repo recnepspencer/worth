@@ -21,8 +21,6 @@ impl From<ValidatedRelationalProposal>
             validated_against_version,
             validated_against_branch_version,
             batch_count,
-            strategy_commit_artifacts,
-            strategy_bulk_mutation_batch,
             validation_complexity_delta,
             commit_work_budget,
             ..
@@ -42,8 +40,6 @@ impl From<ValidatedRelationalProposal>
             validated_against_version,
             validated_against_branch_version,
             batch_count,
-            strategy_commit_artifacts,
-            strategy_bulk_mutation_batch,
             validation_complexity_delta,
             commit_work_budget,
         })

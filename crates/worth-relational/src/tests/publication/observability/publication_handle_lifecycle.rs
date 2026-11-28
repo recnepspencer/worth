@@ -310,25 +310,4 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
         .iter()
         .flat_map(|artifact| artifact.entries.iter())
         .any(|entry| entry.code == DiagnosticCode::CommitPublished));
-    assert_eq!(
-        parallel
-            .performance_access()
-            .counters()
-            .post_commit_consumer_packet_count,
-        3
-    );
-    assert_eq!(
-        parallel
-            .performance_access()
-            .counters()
-            .post_commit_serial_strategy_count,
-        3
-    );
-    assert_eq!(
-        parallel
-            .performance_access()
-            .counters()
-            .post_commit_parallel_strategy_count,
-        0
-    );
 }

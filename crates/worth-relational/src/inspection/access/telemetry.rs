@@ -34,18 +34,6 @@ impl<'runtime> InspectionAccess<'runtime> {
         });
     }
 
-    pub(crate) fn count_structural_identity_lookup(&self) {
-        self.runtime.services.instrumentation.count(|counters| {
-            counters.inspection_structural_identity_lookups += 1;
-        });
-    }
-
-    pub(crate) fn count_structural_identity_query_scan(&self) {
-        self.runtime.services.instrumentation.count(|counters| {
-            counters.inspection_structural_identity_query_scans += 1;
-        });
-    }
-
     pub(crate) fn count_budget_refusal(&self) {
         self.runtime
             .performance_access()

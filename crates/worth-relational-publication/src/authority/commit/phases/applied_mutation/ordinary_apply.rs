@@ -64,7 +64,6 @@ pub(crate) fn apply<'a>(
         &mut symbols,
         allowance,
         &mut records,
-        contracts::execution::request_custody::request_lease(execution),
         inputs.work.clone(),
         inputs
             .authored_coupling

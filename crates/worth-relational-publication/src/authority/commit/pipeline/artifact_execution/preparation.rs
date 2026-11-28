@@ -65,8 +65,6 @@ pub(super) struct PublicationPreparationInput<'a> {
     pub(super) created_relations: &'a contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     pub(super) naming_plan: Option<&'a contracts::lineage::data::postures::CommitNamingPlan>,
     pub(super) record_allocations: &'a worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::pending_allocations::PendingRecordAllocations,
-    pub(super) strategy_artifacts:
-        Option<contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle>,
     pub(super) schema_continuity: &'a SchemaContinuityPlan,
     pub(super) effect: worth_relational_mutation::internal_port::authority::mutation::effect::MutationEffect,
     pub(super) deferred_diagnostic_artifacts:
@@ -99,7 +97,6 @@ pub(super) fn prepare_publication_artifacts(
         created_relations,
         naming_plan,
         record_allocations,
-        strategy_artifacts,
         schema_continuity,
         effect,
         deferred_diagnostic_artifacts,
@@ -188,7 +185,6 @@ pub(super) fn prepare_publication_artifacts(
             created_relations,
             naming_plan,
             record_allocations,
-            strategy_artifacts,
             schema_continuity,
             changed_records: &publication.changed_records,
             diagnostics_summary: &diagnostics_summary,

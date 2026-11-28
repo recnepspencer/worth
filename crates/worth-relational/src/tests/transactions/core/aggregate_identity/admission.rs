@@ -46,17 +46,20 @@ fn ordinary_author_cannot_rewrite_a_valid_platform_identity_record() {
 fn added_private_rows_must_pass_final_snapshot_admission_after_prevalidation() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let member = std::sync::Arc::new(std::sync::OnceLock::new());
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry())
-        .invariant_catalog(InvariantCatalog {
-            registrations: vec![InvariantRegistration::snapshot_publication_blocking(
-                InvariantRule::MaxSnapshotEntities(4),
-            )],
-        })
+        .custom_invariant(
+            crate::validation::data::CustomInvariantRegistration::new(
+                super::minimum_membership::MinimumMembership(member.clone()),
+            )
+            .unwrap(),
+        )
         .build()
         .expect("valid native runtime configuration");
     let born = commit(execution, &runtime, "main", birth(&[1, 2, 0]));
     let ids = members(&born, 3);
+    member.set(ids[0]).unwrap();
     let before = runtime.history().branch_head(&BranchId("main".into()));
     let rows = records(execution, &runtime, &born.snapshot);
     let batch = rewire(

@@ -32,7 +32,6 @@ pub mod required_output;
 pub mod schema;
 pub mod schema_image;
 pub mod semantic;
-pub mod strategy;
 pub mod symbols;
 pub mod touches;
 pub mod validation;

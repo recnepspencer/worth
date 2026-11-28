@@ -30,7 +30,6 @@ pub enum RecordKindTag {
 pub enum InvariantRule {
     LiveRecordRequiresSidecar(RecordKindTag),
     MaxMergedIntents(usize),
-    MaxSnapshotEntities(usize),
     UniqueEntityAspectField {
         #[serde(with = "crate::aspect_wire::serde_canonical_aspect_field_locator")]
         field_locator: AspectFieldLocator,
@@ -76,7 +75,6 @@ impl InvariantRule {
                 NativeInvariantRuleId::LiveRecordRequiresSidecarRelation
             }
             Self::MaxMergedIntents(_) => NativeInvariantRuleId::MaxMergedIntents,
-            Self::MaxSnapshotEntities(_) => NativeInvariantRuleId::MaxSnapshotEntities,
             Self::UniqueEntityAspectField { .. } => NativeInvariantRuleId::UniqueEntityField,
             Self::EndpointKindContract(_) => NativeInvariantRuleId::EndpointKindContract,
             Self::CardinalityMaximumContract(_) => {
@@ -126,7 +124,6 @@ impl InvariantRule {
             semantics: match self {
                 Self::LiveRecordRequiresSidecar(_)
                 | Self::MaxMergedIntents(_)
-                | Self::MaxSnapshotEntities(_)
                 | Self::UniqueEntityAspectField { .. } => InvariantSemanticsClass::NativeAlwaysOn,
                 Self::EntityAspectExclusion
                 | Self::EndpointKindContract(_)
@@ -170,11 +167,6 @@ impl InvariantRuleOwnerPort for InvariantRule {
             Self::MaxMergedIntents(_) => InvariantRuleMetadata {
                 groups: InvariantGroupSet::of(InvariantGroup::PublicationCoherence),
                 cost: InvariantCostClass::Touched,
-            },
-            Self::MaxSnapshotEntities(_) => InvariantRuleMetadata {
-                groups: InvariantGroupSet::of(InvariantGroup::VersionVisibility)
-                    .union(InvariantGroupSet::of(InvariantGroup::PublicationCoherence)),
-                cost: InvariantCostClass::Global,
             },
             Self::UniqueEntityAspectField { .. } => InvariantRuleMetadata {
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance)
@@ -251,9 +243,6 @@ impl InvariantRuleOwnerPort for InvariantRule {
                     || execution_point == InvariantExecutionPoint::CommitBoundary
                     || execution_point == InvariantExecutionPoint::HarnessAudit
             }
-            Self::MaxSnapshotEntities(_) => {
-                execution_point == InvariantExecutionPoint::SnapshotPublication
-            }
             Self::EntityAspectExclusion
             | Self::EndpointKindContract(_)
             | Self::UniquenessContract(_)
@@ -288,7 +277,6 @@ impl InvariantRuleOwnerPort for InvariantRule {
                 left == right
             }
             (Self::MaxMergedIntents(_), Self::MaxMergedIntents(_))
-            | (Self::MaxSnapshotEntities(_), Self::MaxSnapshotEntities(_))
             | (Self::EntityAspectExclusion, Self::EntityAspectExclusion)
             | (Self::UniqueEntityAspectField { .. }, Self::UniqueEntityAspectField { .. }) => true,
             (Self::EndpointKindContract(left), Self::EndpointKindContract(right)) => {

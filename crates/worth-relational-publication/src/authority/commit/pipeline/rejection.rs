@@ -8,7 +8,7 @@ use contracts::transactions::data::outcomes::transaction_commit_error::Transacti
 use worth_foundational::time::MonotonicInstant;
 use worth_relational_contracts::internal_port as contracts;
 
-pub(super) fn stale_strategy_validation_basis(detail: &str) -> TransactionCommitError {
+pub(super) fn stale_proposal_validation_basis(detail: &str) -> TransactionCommitError {
     TransactionCommitError::conflict(CommitConflict::new(ConflictClass::StaleValidationBasis {
         detail: detail.to_string(),
     }))

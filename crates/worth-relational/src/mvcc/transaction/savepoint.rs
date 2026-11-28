@@ -109,14 +109,7 @@ impl super::BranchBoundRelationalTransaction {
             == self.overlay.normalization_generation)
             .then(|| self.savepoints[index].effective_records.clone());
         let drained = self.overlay.truncate_batches(batch_len, restored_index);
-        self.overlay.effective_records = carried_projection.unwrap_or_else(|| {
-            // Normalization re-authored retained references as well as their index.
-            let mut projection = super::effective_records::EffectiveRecords::default();
-            for batch in &self.overlay.batches {
-                projection.stage(batch);
-            }
-            projection
-        });
+        self.overlay.effective_records = carried_projection.unwrap_or_default();
         self.content = self.savepoints[index].content.clone();
         self.footprint = restored_footprint;
         self.last_merged_plan = None;

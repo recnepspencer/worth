@@ -3,6 +3,7 @@ pub mod authority;
 pub mod authorization;
 pub mod derived_relation;
 pub mod history;
+pub mod intent_admission;
 pub mod mvcc;
 pub mod projected_member_domain;
 pub mod runtime;

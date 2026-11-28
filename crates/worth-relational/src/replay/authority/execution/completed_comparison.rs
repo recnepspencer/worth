@@ -29,16 +29,6 @@ impl ReplayAuthority<'_> {
             Some(&reconstruction.envelope),
         );
         let mut mismatches = Vec::new();
-        if compared_surfaces.contains(&ReplayObservableSurface::Strategy) {
-            verify_strategy_reexecution_surface(
-                self.runtime,
-                &mut mismatches,
-                &admission.envelope,
-                &admission.commit_closure,
-                request.verification_mode,
-                execution,
-            )?;
-        }
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let selected_lineage_authority =
             if compared_surfaces.contains(&ReplayObservableSurface::Lineage) {

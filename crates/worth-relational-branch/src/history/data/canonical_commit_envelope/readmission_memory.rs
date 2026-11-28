@@ -1,5 +1,4 @@
 //! Concrete original-request admissions move with the decoded owners.
-use worth_relational_contracts::internal_port::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundleOwnerPort as _;
 #[derive(Default)]
 pub struct CanonicalEnvelopeReadmissionMemory {
     pub input: Option<worth_execution::ExecutionImmutableBytes>,
@@ -11,7 +10,6 @@ pub struct CanonicalEnvelopeReadmissionMemory {
     pub codec_declarations: Option<CodecDeclarationsReadmissionMemory>,
     pub validation: Option<crate::transactions::data::outcomes::commit_semantic_result::validation::ValidationReadmissionMemory>,
     pub schema: Option<crate::schema::data::SchemaTransitionReadmissionMemory>,
-    pub strategy: Option<StrategyReadmissionMemory>,
     pub cascades: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
     pub selection: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
     pub origin: Option<worth_execution::ExecutionMemoryReservation>,
@@ -45,20 +43,5 @@ impl CodecDeclarationsReadmissionMemory {
             return Err("unmatched codec declaration admission");
         }
         Ok(())
-    }
-}
-
-/// The two escaping strategy allocations retain separate original leaf bills.
-/// This fixed handoff value allocates no roster and carries no authority.
-pub struct StrategyReadmissionMemory {
-    pub input: Option<worth_execution::ExecutionMemoryReservation>,
-    pub targets: Option<worth_execution::ExecutionMemoryReservation>,
-}
-impl StrategyReadmissionMemory {
-    pub fn attach(
-        &mut self,
-        strategy: &mut crate::commit_strategies::data::StrategyCommitArtifactBundle,
-    ) -> Result<(), &'static str> {
-        strategy.attach_readmission_memory(&mut self.input, &mut self.targets)
     }
 }

@@ -56,7 +56,6 @@ pub fn canonical_schema_envelope_input_for_test(
         },
         BranchId("schema-input".into()),
         CanonicalCommitAuthorityKind::VersionedTransaction,
-        None,
         registry.primary_schema_version_id(),
         registry.authority_snapshot(),
         MergedCommitPlan {

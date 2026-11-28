@@ -84,23 +84,12 @@ pub fn replay_fork_transitions(
     crate::durability::data::RecoveryBranchTransitions::Selected(forks)
 }
 
-pub fn authoritative_replay_envelopes(
-    history: CanonicalHistoryRead<'_>,
-    chain: &[CommitId],
-) -> Vec<CommitId> {
+pub fn authoritative_replay_envelopes(chain: &[CommitId]) -> Vec<CommitId> {
     let target_commit_id = chain.last().copied();
     let mut restore_authoritative_envelope_commit_ids = chain
         .iter()
         .copied()
         .filter(|commit_id| Some(*commit_id) != target_commit_id)
-        .chain(
-            chain
-                .iter()
-                .copied()
-                .filter_map(|commit_id| history.canonical_envelope(commit_id))
-                .filter(|envelope| envelope.strategy_artifacts.is_some())
-                .map(|envelope| envelope.commit.commit_id),
-        )
         .collect::<Vec<_>>();
     restore_authoritative_envelope_commit_ids.sort_unstable();
     restore_authoritative_envelope_commit_ids

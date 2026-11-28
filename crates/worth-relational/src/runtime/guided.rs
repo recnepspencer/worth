@@ -5,7 +5,6 @@ use crate::replay::ReplayAccess;
 use crate::runtime::durability_access::DurabilityAccess;
 use crate::runtime::RelationalRuntime;
 use crate::runtime::VisibilityReadContext;
-use crate::simulation::{SimulationAccess, SimulationAuthority};
 use crate::validation::InvariantAccess;
 use crate::visibility::authority::VisibilityAuthority;
 use crate::visibility::retention::VisibilityRetentionAuthority;
@@ -25,14 +24,6 @@ impl RelationalRuntime {
 
     pub fn validation(&self) -> InvariantAccess<'_> {
         self.invariant_access()
-    }
-
-    pub fn compiled_artifacts(&self) -> SimulationAccess<'_> {
-        self.simulation_access()
-    }
-
-    pub fn compiled_artifacts_authority(&self) -> SimulationAuthority<'_> {
-        self.simulation_authority()
     }
 
     pub fn retention(&self) -> VisibilityRetentionAuthority<'_> {

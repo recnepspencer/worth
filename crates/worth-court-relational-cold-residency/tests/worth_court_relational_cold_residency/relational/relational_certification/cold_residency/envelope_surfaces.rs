@@ -17,16 +17,14 @@ pub(super) enum EnvelopeSurface {
     CommitInspection,
     RecentInspection,
     RecentBranchInspection,
-    CompiledArtifact,
 }
 
 impl EnvelopeSurface {
-    pub(super) const ALL: [Self; 5] = [
+    pub(super) const ALL: [Self; 4] = [
         Self::VersionSummary,
         Self::CommitInspection,
         Self::RecentInspection,
         Self::RecentBranchInspection,
-        Self::CompiledArtifact,
     ];
     pub(super) fn read(
         self,
@@ -35,24 +33,6 @@ impl EnvelopeSurface {
         receipt: &worth_relational::facade::history::RelationalCommitReceipt,
     ) -> Result<usize, RelationalExecutionDenialCause> {
         Ok(match self {
-            Self::CompiledArtifact => {
-                runtime
-                    .compiled_artifacts_authority()
-                    .compile_execution_artifact(
-                        execution,
-                        receipt.commit_id,
-                        vec![worth_relational::facade::identity::PartitionId::main()],
-                    )
-                    .map_err(|failure| match failure.authority_status {
-                        worth_relational::facade::runtime::CompiledArtifactAuthorityStatus::ReadRequest(
-                            cause,
-                        ) => cause,
-                        other => {
-                            panic!("enabled fixture compile source must be readable: {other:?}")
-                        }
-                    })?
-                    .compiled_record_count
-            }
             Self::VersionSummary => runtime
                 .history()
                 .historical_committed_version(execution, receipt.version_id)?
@@ -96,15 +76,7 @@ fn envelope_surfaces_keep_index_facts_readable_and_refuse_cold_body_damage() {
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for door in EnvelopeSurface::ALL {
         for damaged in [false, true] {
-            let profile = match door {
-                EnvelopeSurface::CompiledArtifact => RelationalRuntimeProfile::ChipSimulation,
-                EnvelopeSurface::VersionSummary
-                | EnvelopeSurface::CommitInspection
-                | EnvelopeSurface::RecentInspection
-                | EnvelopeSurface::RecentBranchInspection => {
-                    RelationalRuntimeProfile::CertificationCore
-                }
-            };
+            let profile = RelationalRuntimeProfile::CertificationCore;
             let original = source_with_profile(execution, 16, false, profile);
             let counter = original.source;
             counter.damaged.store(true, Ordering::Relaxed);

@@ -7,8 +7,8 @@ pub(super) const BOUNDED_FOLD: ComplexityContract = ComplexityContract {
     budget_summary: "Checkpoint output has at most eight dependency layers. Layered distinct encoded fold input is at most 64 MiB, or capture demands Full and writes one flat image before publication. Intrinsic flat history size remains subject to the 1 GiB Full input/output limits. These bounds are independent of restart count; threshold maintenance is explicit capture I/O, while below-threshold capture performs no region loads.",
     status: ComplexityStatus::Verified,
     proof_tests: &[
-        "storage::residency::tests::history_consolidation_tests::restart_cycles_keep_full_history_input_bounded_with_headroom",
-        "storage::residency::tests::history_consolidation_tests::consolidation_damage_is_sticky_and_a_stopped_capture_is_retryable",
-        "storage::residency::tests::layered_history_tests::head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loading",
+        "internal_port::storage::residency::tests::history_consolidation_tests::restart_cycles_keep_full_history_input_bounded_with_headroom",
+        "internal_port::storage::residency::tests::history_consolidation_tests::consolidation_damage_is_sticky_and_a_stopped_capture_is_retryable",
+        "internal_port::storage::residency::tests::layered_history_tests::head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loading",
     ],
 };
