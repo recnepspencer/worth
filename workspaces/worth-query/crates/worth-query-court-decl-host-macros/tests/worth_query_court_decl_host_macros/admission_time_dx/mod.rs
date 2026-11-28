@@ -6,13 +6,12 @@
 //! default Home reads the system clock. Caller-forged dates are refused at
 //! commit, judged in the zone the application chooses.
 mod courts;
-mod envelope_and_undo_court;
+mod envelope_clock;
 mod handler;
 mod invariant;
 mod program;
 mod recovery_court;
 mod schema;
-mod undo;
 
 use program::{owner, DatedHome};
 use schema::{LotView, ReadLot};

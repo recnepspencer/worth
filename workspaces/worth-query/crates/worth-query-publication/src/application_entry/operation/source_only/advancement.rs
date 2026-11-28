@@ -265,7 +265,6 @@ where
         match outcome {
             other
                 if self.admission.description.source.is_none()
-                    && self.admission.recorded_correction.is_none()
                     && native_posture::fresh_retry_eligible::<S, I>(&other) =>
             {
                 *self.state = SourceState::<S, I>::RetryableNoEffect(other);

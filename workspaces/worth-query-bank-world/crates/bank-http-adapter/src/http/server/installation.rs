@@ -60,7 +60,6 @@ where
         configuration.opaque_handle_capacity(),
         configuration.maximum_deadline(),
         Arc::clone(&recovery_registry),
-        Arc::clone(&continuation_registry),
     )?;
     let (queue, dispatcher_task) = BankHttpExecutionQueue::start(
         Arc::clone(&application),

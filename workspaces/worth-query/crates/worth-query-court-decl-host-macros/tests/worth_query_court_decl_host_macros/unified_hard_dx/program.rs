@@ -15,10 +15,9 @@ use worth_query_host::facade::{
 
 use super::actions::*;
 use super::body_links::*;
-use super::details_correction::*;
 use super::queries::*;
 use super::schema::*;
-use super::title_correction::*;
+use super::rename_task::*;
 
 worth_query_decl::facade::worth_query_principal_issuer!(pub DaymarkIssuer);
 worth_query_decl::facade::worth_query_authentication_audience!(pub HostAudience);
@@ -39,17 +38,13 @@ worth_query_application_program! {
         identity: "daymark.unified.program.v1",
         contribution: DaymarkContribution {
             identity: "daymark.unified.contribution.v1",
-            members: [DaymarkFragment, DaymarkPrincipal, CorrectTaskState, CorrectTaskTitle,
-                CorrectTaskDetails],
+            members: [DaymarkFragment, DaymarkPrincipal],
         },
         managed_indexes: [TaskTitleIndex],
         feature: DaymarkFeature => DaymarkDefinition / DaymarkRuntime {
             identity: "daymark.unified.feature.v1",
             schema: |schema| {
                 schema
-                    .declared_operation(restore_task_state_definition())
-                    .declared_operation(restore_task_title_definition())
-                    .declared_operation(restore_task_details_definition())
             };
             query(ReadyTasksBinding) { definition: ReadyTasksQuery::definition(); };
             query(LiveReadyTasksBinding) { definition: LiveReadyTasksQuery::definition(); };
@@ -80,12 +75,8 @@ worth_query_application_program! {
             body_action(SetDependencyBinding, SetDependencyDelivery) as SetDependencyAction {
                 operation: set_dependency_definition();
             };
-            body_action_ref(RestoreTaskStateBinding, RestoreTaskStateDelivery) as RestoreTaskStateAction {};
-            body_action_ref(SetTaskStateBinding, SetTaskStateDelivery) as SetTaskStateAction {};
-            body_action_ref(RenameTaskBinding, RenameTaskDelivery) as RenameTaskAction {};
-            body_action_ref(RestoreTaskTitleBinding, RestoreTaskTitleDelivery) as RestoreTaskTitleAction {};
-            body_action_ref(EditTaskDetailsBinding, EditTaskDetailsDelivery) as EditTaskDetailsAction {};
-            body_action_ref(RestoreTaskDetailsBinding, RestoreTaskDetailsDelivery) as RestoreTaskDetailsAction {};
+            body_action(SetTaskStateBinding, SetTaskStateDelivery) as SetTaskStateAction { operation: set_task_state_definition(); };
+            body_action(RenameTaskBinding, RenameTaskDelivery) as RenameTaskAction { operation: rename_task_definition(); };
         }
     }
 }

@@ -209,10 +209,8 @@ no incoming link) renders `Internal`; a withheld disclosure renders
 ## Workflow Homes
 
 `WorthQueryWorkflowApplicationHome` forwards the plain Home's
-`correction_history(_with_scope)`, `undo`/`redo` (and `_with_key`,
-`_authored`), `fork_preview(_with_scope)`, `continue_preview_recovery`,
-`adopt_preview`, `close_branch`,
- `catch_up_temporal(_observing)` and
+`fork_preview(_with_scope)`, `continue_preview_recovery`,
+`adopt_preview`, `close_branch`, `catch_up_temporal(_observing)` and
 `pump_temporal(_observing)` with the same signatures. `discard_preview(preview)`
 replaces `preview.discard(&home)`, because a workflow Home does not lend its
 plain Home. Every session call above works on its sessions and, through

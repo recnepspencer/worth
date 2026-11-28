@@ -13,9 +13,8 @@ which order*.
 
 For a new feature, start with the **unified Target DX** (`worth_query_application_program!`,
 `#[derive(WorthQueryRow)]`, unified `#[derive(WorthQuery)]` with predicates and
-`live = whole_result`, `#[derive(WorthQueryCorrection)]`, `WorthQueryApplicationHome::open_directory`,
-`home.session(me)`, `fork_preview` / `adopt_preview`, and
-`home.undo` / `home.undo_authored`). The lower-level builders later in this guide
+`live = whole_result`, `WorthQueryApplicationHome::open_directory`,
+`home.session(me)`, `fork_preview` / `adopt_preview`). The lower-level builders later in this guide
 explain the underlying contracts and support specialized composition.
 
 ### Unified Application Quickstart (Target DX #1–#8)
@@ -65,7 +64,7 @@ pub struct ReadyTasks {
 }
 
 // 3. One-line persistent Directory Home open, reusable session, live refresh,
-//    preview forks and restart-safe authored-body undo.
+//    preview forks.
 let home = WorthQueryApplicationHome::<DaymarkSchema, DaymarkProgram>::open_directory(
     &path,
     WorthQueryHomeConfig::new(build_id, (DaymarkRuntime::new(),))
@@ -81,7 +80,7 @@ let rows: Vec<TaskRow> = session.query(ReadyTasks {
 let mut live = session.subscribe(ReadyTasks {
     project: 1, priority: None, due_before: Some(cutoff),
 })?;
-let commit = session.run(SetTaskState { task: 1, state: "DONE".into() })?;
+session.run(SetTaskState { task: 1, state: "DONE".into() })?;
 let updated = live.refresh(&session)?; // re-admits principal & grants fresh every call
 live.close()?;
 
@@ -91,10 +90,6 @@ home.session(&me).on_branch(preview.branch()).run(RescheduleTask { task: 3, due_
 let previous = home.adopt_preview(preview)?;
 home.close_branch(previous)?;
 
-// Restart-safe authored-body undo/redo.
-let entry = commit.correction_entry();
-home.undo_authored::<CorrectTaskState>(&entry, &me)?;
-home.redo_authored::<CorrectTaskState>(&entry, &me)?;
 home.close_clean()?;
 ```
 
@@ -111,7 +106,6 @@ Tier-3 certification runs in Track C4 / Landing 3). For the short lifecycle path
 |---|---|---|
 | Choose durable facts, names and links | [Native representations](native-representations.md), then [source subgraphs](source-subgraphs.md) | Independently mutable fields, entities, typed relations and an explicit read closure; canonical atoms need a recorded reason |
 | Explain a query result or an authored operation | [Inspect original evidence](#inspect-original-source-and-query-evidence) | Saved source/query receipts and current inspection permissions |
-| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/docs/execution/recorded-source-correction.md), including [consecutive original sources](../workspaces/worth-query/docs/execution/recorded-source-correction.md#reverse-consecutive-original-sources) and the [compiled consecutive-undo journeys](../workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/certification/application_graph/correction/consecutive_undo.rs) | A source receipt, current principal, target branch and client key; declare the inverse and disclosure query in the contribution. Canonical authored writes require exact later source/reversal pairs on the selected ancestry. Original and target support must agree under compatible installed meaning and full-generation identity, including complete aspect content, presence and live adjacency. Relation-dependent fields remain separate dependencies. Retain endpoint custody; handle typed unavailable evidence and stale-target refusals through the returned owners. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
 | Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
 | Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
@@ -191,7 +185,7 @@ some declaration macros. `worth_query_mutation_binding!`,
 | 2 | Declare features, managed indexes & the program in one block | `worth_query_application_program!` | [Complete definitions](#complete-feature-definitions), [§3](#3-declare-features-and-the-program) |
 | 3 | Open or reopen a persistent Directory Home | `WorthQueryApplicationHome::open_directory(&path, WorthQueryHomeConfig::desktop_default(build))` / `home.open_disposition()` / `home.close_clean()` | [§4](#4-install-or-reopen) |
 | 4 | Run actions, typed queries, whole-result live subscriptions & managed-index watches | `let session = home.session(&me);` → `session.run(...)`, `session.query(...) -> Vec<Row>`, `session.subscribe(...)`, `session.watch(...)`, `session.ensure_index_ready(intent)` / `session.ensure_default_index_ready::<Query>()` | [§5](#5-run-the-program) |
-| 5 | Fork "what-if" previews and run undo/redo | `home.fork_preview(...)` / `home.adopt_preview(...)`, `home.undo(...)` / `home.undo_authored::<C>(...)` / `home.redo_authored::<C>(...)` | [§5](#5-run-the-program) |
+| 5 | Fork "what-if" previews | `home.fork_preview(...)` / `home.adopt_preview(...)` | [§5](#5-run-the-program) |
 | 6 | Install the workflow vocabulary | `WorthQueryApplicationWorkflowSpecInstallation::begin(..)…finish()`, then `retain_workflow_spec(..)` | [§6.2](#62-install-the-workflow-vocabulary-once) |
 | 7 | Author and validate a workflow | `ApplicationWorkflowDefinitionBuilder::<Spec>::new(..)`, nodes, connections, `finish()?.validate()?` | [§6.3](#63-author-a-definition) |
 | 8 | Publish, start, and advance it | `bind_definition`, `prepare_workflow_publication`, `prepare_workflow_instance_start`, `prepare_workflow_advance` | [§6.6](#66-publish-discover-start-advance) |
@@ -4665,9 +4659,7 @@ cleanup-free terminal domain refusal before output publication. Its evidence
 means the original source was saved and no current output was produced; it is
 not positive settlement. Unexecuted, partial, settled, multiply retained,
 dependent and discovered custody remain ineligible. No source or producer is
-reexecuted to complete unavailability. The [direct deferred-correction courts](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/deferred_completion/courts.rs)
-exercise the actual recorded inverse, producer value, current authority and
-Native completion.
+reexecuted to complete unavailability.
 
 Capture the original meaning once. Supply a fresh authenticated ordinary request
 for every `advance`, delivery and close. Native admission checks current authority
@@ -5271,165 +5263,16 @@ Another route's Preserve grants no custody, even when both publications share
 one commit ID. The refusal retains the current publication and actual record
 and owner subjects.
 
-An authored `retire_created` or `restore_retired` binding supplies the exact source
-identity. Native admits an ordinary authored Create as the distinguished anchor
-and independently computes every live opted-in publication scoped by that source,
-then publications scoped by their members. Submit exactly the anchor and every
-live member of those complete publications. Partial, repeated, extra and
-foreign-source rosters refuse with typed causes and affected native records;
-retirement publishes once. Inspect `commit_denial.authored_retirement_error()` for
-its original `authored_retirement_refusal()` and `context.affected_records`.
-`restore_retired` restores the source and every owned
-publication in one transaction, preserving each producer's provenance and route
-while allocating fresh native generations and remapping owned relation endpoints.
-A restoration supplies historical output association, not producer readiness.
+An authored retirement identifies its source through its typed output. Native
+computes the live opted-in publications scoped by that source and their
+transitively owned members. The candidate retires the exact roster. Inspect
+`commit_denial.authored_retirement_error()` for the typed refusal and the affected
+records when the candidate's roster differs.
 
-A correction may explicitly carry co-anchors with
-`retire_created::<C, Family, Source, Inverse>()`
-`.co_retire_created::<C, CoFamily, CoSource, CoInverse>()`. For a Retire-to-Create
-inverse, use `restore_retired` followed by `co_restore_retired` instead. Each
-co-role declares its own family and Create/Retire correspondence, with matching
-exactly-one or zero-or-one cardinality. An absent optional role remains absent.
-Every present co-anchor must be genuinely authored and belong to no live
-publication. Native selects one closure from all anchors together; an undeclared
-extra Retire role is still an extra. Each restored anchor comes from its own
-inverse Create, retaining its logical key and receiving a fresh native ID.
-Declare and observe the demanded pre-image fields for each present anchor and
-set the pre-image byte bound for their total payload.
-The demand may include different entity kinds, such as a Feature and its
-co-born Body, when every kind is a declared authored anchor of that operation.
-Installation refuses an unrelated entity kind with that kind as its subject.
-Read a particular co-anchor with
-`preimage.field_for_output(&CoRole::DESCRIPTOR, &locus)`; equal field loci on
-different anchors retain their own original values.
-
-An authored anchor may also own a variable number of independently keyed
-members. Extend its existing authored correction declaration:
-
-```rust
-ApplicationAuthoredCorrection::restore_retired::<C, AnchorFamily, Retired, Created>()
-    .owned_members::<C, MemberFamily, RetiredMembers, CreatedMembers, _, _>(
-        MemberOf::reference(),
-    )
-```
-
-`RetiredMembers` and `CreatedMembers` are ordinary output-role families with
-minimum zero and the respective single lifecycle posture. `MemberFamily`
-declares the member's native logical-key field. Installation requires the named
-owner relation to run from that member kind to the anchor kind, with exactly
-one target per live member (`source_min = source_max = 1`). The roster is
-exactly the live sources of that relation into the anchor; there is no stored
-roster list and no implied ownership from another relation.
-
-The ordinary candidate binds every retiring member, unlinks its owner and
-intra-roster relations, and deletes the anchor and members in the same commit.
-Native compares the actual owner adjacency with those roles before relation-law
-validation. `MissingOwnedMember`, `ForeignOwnedMember`, `RepeatedOwnedMember`,
-`ExtraOwnedMember` and `DanglingOwnedMember` retain their affected records through
-`authored_retirement_error()`. A member cannot substitute for its typed anchor.
-Restoration creates that anchor and all original members with their logical keys
-and fresh Native IDs. Declare and observe the member key and every field to
-restore in the existing `DeclaredPreImageDemand`, and add the owner and changed
-intra-roster relation loci with `with_relations`. The recorded inverse compares
-relations after remapping the original anchor and member endpoints to those
-fresh IDs. Exactly-one owner cardinality still refuses a restored member without
-its anchor. An outside relation into a member remains outside the closure;
-`RejectDeleteWithLiveRelations` still produces the typed `EndpointDeletion` denial.
-
-The demand's `maximum_encoded_bytes` bounds the total logical retained payload,
-across the anchor and every member. Fields charge their native scalar semantic
-width, including the scalar tag. Each relation transition charges 86 bytes for
-its complete record/kind and before/after endpoint coordinates; retained content
-also spends the same bound. A field total over the bound refuses as
-`WorthQueryPreImageRetentionDenial::ExceedsByteBound`; a relation total over it
-refuses as `WorthQueryRelationPreImageDenial::ExceedsByteBound`, before any effect.
-A whole-roster replace may retire the old anchor and create its replacement
-under the same logical key in one candidate. Declare the replacement's optional
-Create-to-Retire co-anchor with `co_retire_created` and give its members their own
-Create-to-Retire output families through `owned_members`. The retired anchor and
-members use the opposite correspondence. The existing recorded inverse then
-retires the exact replacement and restores the prior anchor, every prior member
-and the original links, including removed members. Membership always comes from
-the owner relation; the replacement intent is an ordinary typed command, not a
-stored source snapshot. Each lifecycle family has its own explicit posture.
-The unique-field owner admits a replacement key only when that same sealed
-batch deletes its exact observed holder. The original indexed selection stays
-in decision support; deleting another holder or claiming the value twice still
-refuses. An empty roster retains its intra-member empty loci from the genuinely
-observed empty owner adjacency, rather than inventing a member to read.
-
-A local recorded correction can delete zero to many members of several
-families while their owners stay live. Declare each family with its own owner
-relation:
-
-```rust
-ApplicationAuthoredCorrection::live_owner_members::<C, MemberFamily, Deleted, Restored, _, _>(
-    MemberOf::reference(),
-)
-.and_live_owner_members::<C, NoteFamily, DeletedNotes, RestoredNotes, _, _>(
-    NoteOf::reference(),
-)
-```
-
-`Deleted` and `Restored` are output-role families with minimum zero and one
-lifecycle posture each; an exactly-one role is refused at installation. The
-inverse answers each source role through the inverse family role with the same
-suffix. Each owner relation is the same exactly-one relation used by the
-roster and must be in the relation demand; this never requests a roster
-replacement. Demand and observe every changed incident relation, the logical
-key and all fields to restore. A demanded relation the mutation did not change
-retains as empty, so `relation_count` there reports the mutation's own changes.
-A mutation that moves no member commits, and its inverse restores none.
-
-Required-output delivery keeps this mutation's admitted Edit scope alongside
-its exact member retirement or restoration custody. Each linked surviving
-writer publishes a preserving successor. The graph may also require outputs
-from newly selected sources through ordinary Edit admission; an unaffected
-current source can verify without running its producer. That verification does
-not replace a mandatory linked writer. Recorded inverse, reapplication and
-canonical checkpoint recovery retain both obligations. Whole-source Retire
-and Restore keep their exact writer catalogs and refuse extra or missing writers.
-They may still read an outside parent through Native's exact current-output
-proof, without enrolling another writer. If that parent needs a new publication,
-the retirement refuses `ExtraCoupledOwner` before a producer handler runs.
-
-The retained fields are the mutation's own changes: every demanded field of
-each member it retires, and each demanded field it changes on a record that
-stays. The live owner's kind is covered by the declared owner relation in the
-relation demand, so one inverse may also restore changed owner fields beside
-its deleted members. An unrelated kind still requires its own authored anchor;
-a relation absent from the demand cannot cover its owner's fields.
-Witness a staying member through a Preserve family role and read its
-prior value with `field_for_family_member`; a field the mutation left alone is
-absent. A retiring member may lack a demanded optional field or optional
-aspect: read it in the handler, and the observed absence retains nothing, so
-`field_for_family_member` answers `None` and the inverse leaves it unset. A
-demanded field the handler never read on a retiring member refuses with
-`MissingDemandedField`, present or not. This holds for every authored anchor
-and co-anchor, and costs one probe per absence the attempt observed.
-
-For `MissingDemandedField`, the commit denial's existing `detail()` names the
-retention branch and the exact target and locus when known. This is diagnostic
-text; use `preimage_retention_denial()` for programmatic classification.
-
-Each original Retire role identifies one deleted member. Native's validated
-relation footprint matches its retained family key to exactly one fresh member
-and carries that old-to-fresh pair into relation inversion. The family's
-logical key is the only correspondence. The original live owner must remain its
-owner, and the retained member fields must match exactly. A changed key refuses
-with `IncompleteInverse`, duplicate recreated keys with `RepeatedInverse`, a
-different owner with `ForeignEndpoint`, a recreated member of a declared family
-that the source did not retire with `ExtraInverse`, and changed retained fields
-with `RestoredFieldMismatch`. These typed pre-image failures name the affected
-member through `relation_preimage_failure()` and publish no effects. This uses
-the same total retained-byte bound and never re-evaluates the original
-candidate or recreates the unaffected roster. The member pass costs one
-correspondence probe per created member against the recorded members; it never
-reads a roster.
-
-Historical member fields are read using `family_member_suffix`,
-`family_member_entity` and `field_for_family_member` on the recorded pre-image.
-These descriptive values grant no current read or mutation authority.
+Required-output delivery preserves current custody for surviving writers.
+An unaffected parent can verify through Native's current-output proof. If a
+parent requires a fresh publication outside the writer catalog, retirement
+refuses `ExtraCoupledOwner` before a producer handler runs.
 
 If a retired authored source is still linked by a surviving source-owned
 publication, declare that owner's root through the program's existing output
@@ -5444,12 +5287,8 @@ coupled_outputs |visitor| {
 },
 ```
 
-`demand_from_source` derives the typed demand from the original input;
-`demand_from_preimage` can also use the retained correction material. For example,
-a stage retirement can derive its body demand from that stage's body key.
-`ApplicationCorrectionBinding::visit_coupled_outputs` declares the correction's
-roots and defaults to the source binding's declaration. Install those same roots
-and connections in the program output graph.
+`demand_from_source` derives the typed demand from the original input. Install
+the same roots and connections in the program output graph.
 
 Query runs the declared owners' Preserve producers against the unpublished
 candidate. Each producer removes and replaces its own records and edges. Native
@@ -5459,22 +5298,6 @@ retirement and every admitted Preserve publish in one atomic commit. A required
 coupling with no declaration refuses before any effect. Declarations remain
 inert when no surviving owner is required; a closed owner already covered by the
 retirement closure does not run a producer.
-
-A recorded creation inverse may retire a producer, its owned publication and
-its generated roster while retained owners perform their own cleanup. Aggregate
-preparation treats paths incident to an entity retired by this same candidate as
-retired paths, including while a coupled writer still holds its deferred edges.
-Native compares the actual before and candidate images; an endpoint already
-unavailable before this candidate still refuses with `RecordUnavailable`.
-Commits that delete no entities carry only a constant-size deletion summary and
-perform no additional endpoint acquisitions.
-
-Correction derives the same declared coupling with fresh source IDs. Native
-restores closed publications, while surviving owners run their own Preserves.
-A subsequent demand for a recreated owner follows ordinary Preserve and reuse
-rules using the actual producer antecedent, including after repeated Native-only
-restore/retire cycles. Restoration grants no producer readiness or replayable
-producer-input contract.
 
 ### Runtime cohorts and positioned authored execution
 
@@ -5520,17 +5343,6 @@ support validation. The default dependency-DAG mode still refuses a declared
 producer-before-prefix dependency. Final generation or
 frontier advancement is an ordinary declared action in this same envelope,
 not another publication or a new public seal capability.
-
-A recorded corrective request has the same collection entry:
-`reverse(&source).idempotency(key).limits(limits)` followed by
-`edit_envelope::<Correction, Program, RequiredRoot>(&program)`. Reapplication
-has the corresponding entry. Source disclosure, original input derivation and
-nominal admission precede the whole-envelope replay lookup; inverse handlers
-run only for genuine Unseen. Append the ordinary final Edit to that returned
-runtime envelope. Its one commit retains the actual corrective prefix and
-original causality; later authored/producer changes cannot satisfy its inverse.
-A recovered request returns the authentic original receipt, not live stage
-results. Pending/recovery/drift classification remains the whole-key owner's.
 
 To confirm a cached answer without starting a new edit, rebuild the original
 runtime envelope from its original request-construction data and call
@@ -5989,31 +5801,6 @@ work inside coupled handlers, with independently admitted current-C read
 permission and the edit's genuinely held commit lane. Native never labels the
 transaction-before basis as a coupled producer's consumed applied input image.
 
-For an authored splice that changes relations, add typed relation loci to the
-recorded inverse's pre-image demand:
-
-```rust,ignore
-let demand = DeclaredPreImageDemand::new(field_loci, maximum_encoded_bytes)
-    .with_relations([
-        DeclaredPreImageRelationLocus::from_relation(PreviousStage::reference()),
-    ]);
-```
-
-Use `relations_only` when the inverse needs no field material. The original
-operation must declare and perform the relation reads, including absence at a
-new endpoint pair. Correction material distinguishes an authenticated empty
-locus from unavailable material with `relation_count`; `relation_at` supplies
-each original/performed endpoint pair. `output_entity` supplies the original
-role coordinate. These coordinates describe history and grant no current write
-access: reacquire a surviving endpoint with `reader.resolve_historical_entity`,
-and use each inverse Create for a restored authored anchor. Remove the original
-replacement links and recreate exactly the prior endpoint pairs. A changed,
-missing, extra or foreign inverse refuses before effect with
-`relation_preimage_failure()` and its actual `affected_records`. Audit-retained
-relation deletion currently refuses `UnsupportedVisibility` before the source
-edit because the existing correction support rules cannot reverse that visibility.
-Explicit Unlink supports a true deletion and exact restoration.
-
 A tracked orbit whose aggregate and complete walk are wholly within the actual
 admitted producer's own predecessor publication supplies output reads. On succession Query retains the
 actual committed postcondition, so replacing an owned edge does not cause a
@@ -6071,11 +5858,7 @@ retains its own provenance, route and predecessor. This also covers an independe
 generator whose removed members own opted-in children.
 
 Regrowth creates fresh source generations and fresh owned publications through
-the existing producer rules. Undo the authored size edit through its recorded
-correction, then demand outputs again; redo selects the recorded reversal
-alternative and uses reapplication. These size-edit inverses do not restore the
-old derived generations. Whole-source authored restoration retains its existing
-`restore_retired` rules. Every intermediate publication must opt
+the existing producer rules. Every intermediate publication must opt
 in for a producer-created source to join the authored root's cascade.
 An owned publication cannot be
 restored or republished without its live source (`PublicationOwnerUnavailable`).
@@ -6947,7 +6730,6 @@ These commits carry the trusted instant to installed invariants:
 |---|---|
 | Actions (handler and body), background calls, recurring rule firings | The operation's admission reading |
 | Multi-stage edit envelopes | One reading shared by every stage and the commit |
-| `home.undo` / `home.redo` and their `_authored` forms, corrections and reapplication | The inverse operation's admission reading |
 | Program adoption | The adoption's admission reading |
 | The initial-state seed | One reading taken when the Home installs |
 
@@ -7034,10 +6816,9 @@ untouched, accepts a lot on its last Mountain day after UTC has rolled over,
 refuses it at Mountain midnight, proves the handler and invariant see one
 instant that moves only with the held clock, stamps live time on a default
 Home, and reopens a Directory Home after the lot has expired. Its
-[envelope and undo court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/admission_time_dx/envelope_and_undo_court.rs)
+[envelope admission-time court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/admission_time_dx/envelope_clock.rs)
 shows two envelope stages and the commit sharing one reading of a source that
-ticks on every read, an undo committing at a trusted instant, and a redo
-refused at the current one after the redone expiry has passed. The
+ticks on every read. The
 [body admission-time court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/body_admission_time_dx/courts.rs)
 stamps a body birth with the commit's own instant, moves it only with the held
 clock, refuses without trusted time, shares one ticking instant across a body
@@ -8497,7 +8278,7 @@ let pending = owned
 | `home.owned_session(session)` | A `'static` `WorthQueryOwnedWorkflowSession` holding the Home's runtime and installed configuration; it dereferences to `WorthQueryOwnedSession` (`spawn_query`, `spawn_run`, `on_commit`, ...). A session of another Home is returned unchanged |
 | `owned.with_workflow(\|session, vocabulary\| ..)`, `owned.spawn_with_workflow(..)` | Lend the session and a vocabulary bound to that call's runtime; the spawned form runs on the session's call worker and completes a `WorthQueryPending` (`with_waker`, `try_take`, `wait`) |
 | `home.close_clean()` | Retires the Home and its workflow configuration and releases every owned workflow session: later calls refuse `HomeClosed`, queued calls complete `WorthQueryBackgroundDenial::HomeClosed` |
-| `home.undo(..)`, `home.correction_history(..)`, `home.fork_preview(..)`, `home.adopt_preview(..)`, `home.discard_preview(..)`, `home.catch_up_temporal::<B>(..)` | The plain Home's correction, what-if preview and temporal catch-up calls, forwarded with the same signatures and refusals |
+| `home.fork_preview(..)`, `home.adopt_preview(..)`, `home.discard_preview(..)`, `home.catch_up_temporal::<B>(..)` | The plain Home's what-if preview and temporal catch-up calls, forwarded with the same signatures and refusals |
 | `session.snapshot_at_commit(&receipt, work)`, `snapshot.record_history::<History>(..)`, `snapshot.workflow_audit::<Spec, Subject, Audit>(..)`, `snapshot.causal_timeline::<..>(..)` | Audit time-travel: a snapshot pinned at an earlier commit, the record's governed change log and the instance's transition audit trail (advancer, executor, proposer, approver) at that commit. See [Causal audit reads](../workspaces/worth-query/docs/capabilities/causal-audit-reads.md) |
 
 While an owned workflow session is attached, `support_workflow_spec` refuses
@@ -9352,10 +9133,7 @@ actual historical affected rows in both Source images can exclude nonmatching
 edits using the installed forward predicate; exact refinement never removes a
 matching candidate. Missing/expired material stays conservative. Every remaining
 candidate needs genuine performed cancellation before strict original and complete
-target comparison. The same ordinary correction path qualifies prefix and
-indirect box/contact inputs; governed historical relevance stays conservative. See the
-[correction guide](../workspaces/worth-query/docs/execution/recorded-source-correction.md#qualified-managed-source-support).
-Independent ordinary field and adjacency revision facts still apply. Thus equal
+target comparison. Independent ordinary field and adjacency revision facts still apply. Thus equal
 restored managed content does not guarantee that every populated observation
 remains eligible. Actual root-predicate reads keep their revision facts even
 when their output is empty. The restoration positive qualifies exact-refinement-
@@ -10294,8 +10072,7 @@ evidence through `recorded_receipt()` and already-held live evidence through
 
 Bank exposes this composition through `bank_application_home(location, seed)`
 using the full static `BankSchema`, `BankApplication` and actual P1/P2 roster.
-The borrowed `BankHomeRuntime::attach(home.runtime())` authenticates afresh and
-uses the shared `prepare_send_money_correction` command. The generic Home seeds
+The borrowed `BankHomeRuntime::attach(home.runtime())` authenticates afresh. The generic Home seeds
 only first creation; reopening uses its existing state, declaration and bound
 validated revisions without eagerly attaching workflow execution. Genuine full
 providers, account/estate resources, principal binding, index and invariant
@@ -10305,19 +10082,6 @@ requires exclusive entry/executor owners and discharged output custody;
 executable aliases, source preparation or unsettled work refuse Busy. This does
 not admit activated producer, async or workflow execution. Existing Memory and
 workflow APIs retain their identities and behavior.
-
-For the native retained correction journey, acquire the source commit selection
-before closing its Fresh owner and before another mutation. Prepare under
-current teller disclosure, publish the inverse and lawfully close that same
-Fresh inverse. Release every old alias and lease before graceful Home close;
-do not publish an intervening mutation between lease release and close. After
-reopen, obtain fresh authorization and real source/inverse selections before
-exact-source/key replay. Replay returns a new acting owner of the same recorded
-inverse; after one ordinary dependency edit, advance that owner for Recorded
-delivery and close it. Keep the current selections until delivery ends. Missing
-history/material, foreign identities and Busy remain typed refusals. This
-ordered graceful contract does not persist pending owners, issue authority from
-receipt data, or admit actual external compensation.
 
 Treat `ProductPreparationPending` as original custody. Keep the returned
 terminal and business key; duplicate requests must observe that custody rather
@@ -10410,8 +10174,7 @@ Source-scope-owned output cannot be physically suspended independently. The ordi
 
 Use `ApplicationNoOutputGraph` as the output choice for an ordinary authored
 stage that has no required output of its own: `push_stage::<ApplicationNoOutputGraph, _>(intent)`
-(or static `stage::<ApplicationNoOutputGraph, _>`). The same explicit choice works
-for correction/reapplication `edit_envelope::<C, Program, ApplicationNoOutputGraph>`.
+(or static `stage::<ApplicationNoOutputGraph, _>`).
 An action can still create or retire real typed Native rows; this choice means
 it has no demanded geometry graph, not that its effects are absent.
 

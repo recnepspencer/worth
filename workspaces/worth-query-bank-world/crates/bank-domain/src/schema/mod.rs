@@ -1,8 +1,6 @@
-mod approved_payment_correction;
+mod approved_payment_aftermath;
 mod authentication;
 mod contributions;
-mod correction;
-mod correction_input;
 mod decision_read_manifest;
 mod entities;
 mod estate;
@@ -11,6 +9,7 @@ mod governance;
 mod manifest;
 mod money_movement_program;
 mod operations;
+mod payment_input_identity;
 mod posting_integrity;
 mod precondition_manifest;
 mod program_deployment;
@@ -19,10 +18,8 @@ mod relations;
 mod values;
 mod workflow;
 
-pub use approved_payment_correction::ReverseApprovedPayment;
 pub use authentication::*;
 pub use contributions::{BankAccounts, BankEstate, BankPayments};
-pub use correction::ReverseSentMoney;
 pub use entities::*;
 pub use estate::*;
 pub use fields::*;

@@ -11,11 +11,11 @@ use worth_query_host::facade::{
     },
     application_installation::ApplicationBuildIdentity,
     product::WorthQueryProductBranchCreateError,
-    WorthQueryApplicationHome, WorthQueryHomeAuthoredCorrectionOutcome, WorthQueryHomeConfig,
+    WorthQueryApplicationHome, WorthQueryHomeConfig,
     WorthQueryPreviewDiscardDenial, WorthQueryPreviewForkDenial,
 };
 
-use super::actions::{CorrectTaskState, ProbeOccupiedTaskState, SequencedAutoKey, SetTaskState};
+use super::actions::{ProbeOccupiedTaskState, SequencedAutoKey, SetTaskState};
 use super::courts::{open_daymark, temp_home_path};
 use super::program::{owner, seed, DaymarkHome, DaymarkRuntime};
 use super::queries::ReadTaskDetails;
@@ -149,25 +149,23 @@ fn close_branch_refuses_active_branch_protection() {
 fn auto_keys_survive_frozen_clock_restarts_and_preoccupied_keys() {
     // 1. Directory Home reopen with repeated frozen clock (t = 0 across restarts).
     let path = temp_home_path("sol-blocker-8-frozen-clock");
-    let first_entry = {
+    {
         let frozen_before = WorthQueryAdmissionTimeController::new().unwrap();
         let _ = frozen_before.hold();
         let clock = frozen_before.clock();
         let home = open_daymark(&path, &clock);
-        let entry = {
+        {
             let me = owner(&home, &clock);
-            let commit = home
+            home
                 .session(&me)
                 .run(SetTaskState {
                     task: 1,
                     state: "REVIEW".to_owned(),
                 })
                 .expect("commit 1 under frozen clock succeeds");
-            commit.correction_entry()
         };
         home.close_clean().unwrap();
-        entry
-    };
+    }
 
     {
         // Brand-new frozen clock at the exact same t = 0 after restart!
@@ -178,37 +176,12 @@ fn auto_keys_survive_frozen_clock_restarts_and_preoccupied_keys() {
         {
             let me = owner(&home, &clock);
             let session = home.session(&me);
-            let undone = home
-                .undo_authored::<CorrectTaskState>(&first_entry, &me)
-                .expect("undo_authored under repeated frozen clock succeeds");
-            assert!(matches!(
-                undone,
-                WorthQueryHomeAuthoredCorrectionOutcome::Committed { .. }
-            ));
-            assert_eq!(
-                session.query(ReadTaskDetails { task: 1 }).unwrap()[0].state,
-                "OPEN"
-            );
-
-            let redone = home
-                .redo_authored::<CorrectTaskState>(&first_entry, &me)
-                .expect("redo_authored under repeated frozen clock succeeds");
-            assert!(matches!(
-                redone,
-                WorthQueryHomeAuthoredCorrectionOutcome::Committed { .. }
-            ));
-            assert_eq!(
-                session.query(ReadTaskDetails { task: 1 }).unwrap()[0].state,
-                "REVIEW"
-            );
-
-            let second = session
+            session
                 .run(SetTaskState {
                     task: 1,
                     state: "DONE".to_owned(),
                 })
                 .expect("commit 2 under repeated frozen clock succeeds freshly");
-            let _ = second.correction_entry();
             assert_eq!(
                 session.query(ReadTaskDetails { task: 1 }).unwrap()[0].state,
                 "DONE"

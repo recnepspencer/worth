@@ -6,12 +6,10 @@
 use super::super::protocol::{BankHttpCommitDescription, BankHttpDenial};
 use super::mutation_refusal::source_denial;
 use bank_domain::schema::{
-    BankSchema, Deposit, FreezeEstateAccount, RestoreFrozenEstateAccountBinding,
-    ReverseJournalMutationBinding, SendMoney, Withdraw,
+    BankSchema, Deposit, FreezeEstateAccount, SendMoney, Withdraw,
 };
 use bank_server::{
-    BankApplication, DepositAction, EstateAccountFreezeAction, RestoreFrozenAccountAction,
-    ReverseJournalAction, SendMoneyAction, WithdrawalAction,
+    BankApplication, DepositAction, EstateAccountFreezeAction, SendMoneyAction, WithdrawalAction,
 };
 use std::num::NonZeroUsize;
 use worth_query_host::facade::{
@@ -43,20 +41,6 @@ custody!(
     ApplicationRetainedCommit,
     retained
 );
-custody!(
-    CorrectionCustody,
-    WorthQueryCapturedMutationInput<BankSchema, ReverseJournalMutationBinding>,
-    ReverseJournalAction,
-    ApplicationRetainedCommit,
-    retained
-);
-custody!(
-    ReapplicationCustody,
-    WorthQueryCapturedMutationInput<BankSchema, bank_domain::schema::SendMoneyMutationBinding>,
-    SendMoneyAction,
-    ApplicationRetainedCommit,
-    retained
-);
 
 custody!(
     EstateFreezeCustody,
@@ -65,23 +49,13 @@ custody!(
     ApplicationSourceCompletion,
     source
 );
-custody!(
-    EstateCorrectionCustody,
-    WorthQueryCapturedMutationInput<BankSchema, RestoreFrozenEstateAccountBinding>,
-    RestoreFrozenAccountAction,
-    ApplicationSourceCompletion,
-    source
-);
 
 pub(super) enum SourceMutationCustody {
     CapabilityRevocation(super::capability_revocation_custody::CapabilityRevocationCustody),
     EstateFreeze(EstateFreezeCustody),
-    EstateCorrection(EstateCorrectionCustody),
     Deposit(DepositCustody),
     Withdraw(WithdrawalCustody),
     SendMoney(SendMoneyCustody),
-    Correction(CorrectionCustody),
-    Reapplication(ReapplicationCustody),
 }
 pub(super) enum CustodyDescription {
     Pending(
@@ -111,10 +85,6 @@ impl SourceMutationCustody {
                 .take_closed()
                 .map(ClosedMutationSource::EstateFreeze)
                 .map_err(Self::EstateFreeze),
-            Self::EstateCorrection(owner) => owner
-                .take_closed()
-                .map(ClosedMutationSource::EstateCorrection)
-                .map_err(Self::EstateCorrection),
             Self::Deposit(owner) => owner
                 .take_closed()
                 .map(ClosedMutationSource::Deposit)
@@ -127,14 +97,6 @@ impl SourceMutationCustody {
                 .take_closed()
                 .map(ClosedMutationSource::SendMoney)
                 .map_err(Self::SendMoney),
-            Self::Correction(owner) => owner
-                .take_closed()
-                .map(ClosedMutationSource::Correction)
-                .map_err(Self::Correction),
-            Self::Reapplication(owner) => owner
-                .take_closed()
-                .map(ClosedMutationSource::Reapplication)
-                .map_err(Self::Reapplication),
         }
     }
 
@@ -144,10 +106,6 @@ impl SourceMutationCustody {
         history: NonZeroUsize,
     ) -> (Self, Option<BankHttpDenial>) {
         match self {
-            Self::Reapplication(owner) => {
-                let (owner, denial) = owner.advance(request, history);
-                (Self::Reapplication(owner), denial)
-            }
             Self::CapabilityRevocation(owner) => {
                 let (owner, denial) = owner.advance(request);
                 (Self::CapabilityRevocation(owner), denial)
@@ -155,14 +113,6 @@ impl SourceMutationCustody {
             Self::EstateFreeze(owner) => {
                 let (owner, denial) = owner.advance(request, history);
                 (Self::EstateFreeze(owner), denial)
-            }
-            Self::EstateCorrection(owner) => {
-                let (owner, denial) = owner.advance(request, history);
-                (Self::EstateCorrection(owner), denial)
-            }
-            Self::Correction(owner) => {
-                let (owner, denial) = owner.advance(request, history);
-                (Self::Correction(owner), denial)
             }
             Self::Deposit(owner) => {
                 let (owner, denial) = owner.advance(request, history);
@@ -183,10 +133,6 @@ impl SourceMutationCustody {
         request: &WorthQueryApplicationRequest<'_, '_, '_, BankSchema>,
     ) -> Result<Self, (Self, BankHttpDenial)> {
         match self {
-            Self::Reapplication(owner) => owner
-                .close(request)
-                .map(Self::Reapplication)
-                .map_err(|(owner, denial)| (Self::Reapplication(owner), denial)),
             Self::CapabilityRevocation(owner) => owner
                 .close(request)
                 .map(Self::CapabilityRevocation)
@@ -195,14 +141,6 @@ impl SourceMutationCustody {
                 .close(request)
                 .map(Self::EstateFreeze)
                 .map_err(|(owner, denial)| (Self::EstateFreeze(owner), denial)),
-            Self::EstateCorrection(owner) => owner
-                .close(request)
-                .map(Self::EstateCorrection)
-                .map_err(|(owner, denial)| (Self::EstateCorrection(owner), denial)),
-            Self::Correction(owner) => owner
-                .close(request)
-                .map(Self::Correction)
-                .map_err(|(owner, denial)| (Self::Correction(owner), denial)),
             Self::Deposit(owner) => owner
                 .close(request)
                 .map(Self::Deposit)
@@ -222,11 +160,8 @@ impl SourceMutationCustody {
         request: &WorthQueryApplicationRequest<'_, '_, '_, BankSchema>,
     ) -> Result<WorthQueryOperationCleanupReceipt, BankHttpDenial> {
         match self {
-            Self::Reapplication(owner) => owner.release_cleanup(request),
             Self::CapabilityRevocation(owner) => owner.release_cleanup(request),
             Self::EstateFreeze(owner) => owner.release_cleanup(request),
-            Self::EstateCorrection(owner) => owner.release_cleanup(request),
-            Self::Correction(owner) => owner.release_cleanup(request),
             Self::Deposit(owner) => owner.release_cleanup(request),
             Self::Withdraw(owner) => owner.release_cleanup(request),
             Self::SendMoney(owner) => owner.release_cleanup(request),
@@ -234,11 +169,8 @@ impl SourceMutationCustody {
     }
     pub(super) fn observation(&self) -> Option<&WorthQueryApplicationReadObservation> {
         match self {
-            Self::Reapplication(owner) => owner.observation(),
             Self::CapabilityRevocation(owner) => owner.observation(),
             Self::EstateFreeze(owner) => owner.observation(),
-            Self::EstateCorrection(owner) => owner.observation(),
-            Self::Correction(owner) => owner.observation(),
             Self::Deposit(owner) => owner.observation(),
             Self::Withdraw(owner) => owner.observation(),
             Self::SendMoney(owner) => owner.observation(),
@@ -246,11 +178,8 @@ impl SourceMutationCustody {
     }
     pub(super) fn description(&self) -> CustodyDescription {
         match self {
-            Self::Reapplication(owner) => owner.description(),
             Self::CapabilityRevocation(owner) => owner.description(),
             Self::EstateFreeze(owner) => owner.description(),
-            Self::EstateCorrection(owner) => owner.description(),
-            Self::Correction(owner) => owner.description(),
             Self::Deposit(owner) => owner.description(),
             Self::Withdraw(owner) => owner.description(),
             Self::SendMoney(owner) => owner.description(),

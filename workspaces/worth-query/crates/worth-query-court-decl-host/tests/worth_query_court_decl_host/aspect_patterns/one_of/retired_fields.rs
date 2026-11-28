@@ -3,7 +3,6 @@ use super::*;
 use sparse::annotation::{AnnotationNote, AnnotationValue};
 use worth_query_decl::facade::application_aftermath::*;
 pub mod correction;
-mod courts;
 pub mod restore;
 pub mod retire;
 pub struct Family;

@@ -21,8 +21,8 @@ pub use worth_query_host::facade::primary_graph::{
 pub use super::assertions::key;
 pub use super::ready_payment::ReadyPaymentWorld;
 
-#[path = "owner_custody/correction.rs"]
-pub mod correction;
+#[path = "owner_custody/terminal_rail.rs"]
+pub mod terminal_rail;
 
 pub fn cancel(
     ready: &ReadyPaymentWorld,

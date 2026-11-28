@@ -157,105 +157,23 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
     }
 }
 
-pub struct ReverseLink;
-impl ApplicationCorrectionBinding<NumericSchema> for ReverseLink {
-    const IDENTITY: &'static str = "adjacency-correction.reverse-link.v1";
-    type Source = Binding;
-    type InverseIntent = Link;
-    type Disclosure = query::ReadBinding;
-
-    fn recover_source_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+pub struct RegisterLink;
+impl worth_query_decl::facade::application_schema::fragment::Registration<NumericSchema> for RegisterLink {
+    fn register(
+        schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<NumericSchema>,
     ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
-    >{
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
-            bytes, expected, bounds,
-            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
-        )
-    }
-
-    fn recover_inverse_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
-    ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
-                NumericSchema,
-                Self,
-            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
-                NumericSchema,
-            >>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<NumericSchema>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
-            bytes, expected, bounds,
-            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<NumericSchema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
-        )
-    }
-    fn source_definition() -> ApplicationOperationDefinitionBuilder<
-        NumericSchema,
-        ConfigureAdjacencyLink,
-        Link,
-        true,
-        false,
-    > {
-        ConfigureAdjacencyLink::reference()
+        Ok(schema
+            .declared_operation(
+                ConfigureAdjacencyLink::reference()
             .definition()
             .no_external_effect()
-    }
-    fn disclosure_parameters(
-        _: &Link,
-    ) -> Result<ApplicationQueryParameterSet<query::ReadQuery>, ApplicationCorrectionDerivationDenial>
-    {
-        Ok(query::parameters())
-    }
-    fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
-            [DeclaredPreImageLocus::from_field(Primary::at("Primary"))],
-            InlineCounterBinding::encode(&Counter(u64::MAX))
-                .unwrap()
-                .semantic_byte_width(),
-        ))
-    }
-    fn derive_correction(
-        original: &Link,
-        material: ApplicationCorrectionSourceMaterial<'_, NumericSchema>,
-    ) -> Result<Link, ApplicationCorrectionDerivationDenial> {
-        use ApplicationCorrectionDerivationDenial::{
-            InvalidPreImage, MissingPreImage, UnsupportedSourceMeaning,
-        };
-        let ApplicationCorrectionSourceMaterial::RecordedInverse(preimage) = material else {
-            return Err(UnsupportedSourceMeaning);
-        };
-        let primary = InlineCounterBinding::decode(
-            preimage
-                .field(&DeclaredPreImageLocus::from_field(Primary::at("Primary")))
-                .ok_or(MissingPreImage)?,
-        )
-        .map_err(|_| InvalidPreImage)?
-        .0;
-        Ok(Link {
-            key: original.key.clone(),
-            other: original.other.clone(),
-            present: !original.present,
-            primary,
-        })
-    }
-    fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
-        Ok(format!("reverse-adjacency:{key}"))
-    }
-    fn visit<V: ApplicationCorrectionVisitor<NumericSchema>>(
-        dispatch: ApplicationCorrectionDispatch<NumericSchema, Self, V>,
-    ) -> V::Output {
-        dispatch.conventional()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .application_mutation_binding::<Binding>())
     }
 }
 pub struct Feature;

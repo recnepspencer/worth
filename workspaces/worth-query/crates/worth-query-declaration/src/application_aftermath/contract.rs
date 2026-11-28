@@ -17,7 +17,6 @@ pub struct DeclaredApplicationAftermathContract<Schema> {
     authority: DeclaredCorrectionAuthority,
     mechanism: Option<DeclaredCorrectionMechanism<Schema>>,
     reconciliation: Option<DeclaredReconciliationProcedure>,
-    correction_binding: Option<super::correction_binding::CorrectionBindingDeclaration>,
 }
 
 impl<Schema> Clone for DeclaredApplicationAftermathContract<Schema> {
@@ -26,7 +25,6 @@ impl<Schema> Clone for DeclaredApplicationAftermathContract<Schema> {
             authority: self.authority,
             mechanism: self.mechanism.clone(),
             reconciliation: self.reconciliation.clone(),
-            correction_binding: self.correction_binding.clone(),
         }
     }
 }
@@ -38,7 +36,6 @@ impl<Schema> std::fmt::Debug for DeclaredApplicationAftermathContract<Schema> {
             .field("authority", &self.authority)
             .field("mechanism", &self.mechanism)
             .field("reconciliation", &self.reconciliation)
-            .field("correction_binding", &self.correction_binding)
             .finish()
     }
 }
@@ -48,7 +45,6 @@ impl<Schema> PartialEq for DeclaredApplicationAftermathContract<Schema> {
         self.authority == other.authority
             && self.mechanism == other.mechanism
             && self.reconciliation == other.reconciliation
-            && self.correction_binding == other.correction_binding
     }
 }
 
@@ -66,13 +62,11 @@ impl<Schema> Ord for DeclaredApplicationAftermathContract<Schema> {
             &self.authority,
             &self.mechanism,
             &self.reconciliation,
-            &self.correction_binding,
         )
             .cmp(&(
                 &other.authority,
                 &other.mechanism,
                 &other.reconciliation,
-                &other.correction_binding,
             ))
     }
 }
@@ -83,7 +77,6 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
             authority: DeclaredCorrectionAuthority::RuntimeAlone,
             mechanism: Some(mechanism),
             reconciliation: None,
-            correction_binding: None,
         }
     }
 
@@ -95,7 +88,6 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
             authority: DeclaredCorrectionAuthority::RuntimeWithExternalOwner,
             mechanism: Some(mechanism),
             reconciliation: Some(reconciliation),
-            correction_binding: None,
         }
     }
 
@@ -104,33 +96,11 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
             authority: DeclaredCorrectionAuthority::NotCorrectable,
             mechanism: None,
             reconciliation: None,
-            correction_binding: None,
         }
     }
 
     pub const fn authority(&self) -> DeclaredCorrectionAuthority {
         self.authority
-    }
-
-    /// Derives the mechanism and corrective association from one typed declaration.
-    pub fn correction_binding<Correction>() -> Self
-    where
-        Schema: crate::application_schema::ApplicationSchema,
-        Correction: super::ApplicationCorrectionBinding<Schema>,
-    {
-        let reconciliation = Correction::completed_external_reconciliation();
-        Self {
-            authority: if reconciliation.is_some() {
-                DeclaredCorrectionAuthority::RuntimeWithExternalOwner
-            } else {
-                DeclaredCorrectionAuthority::RuntimeAlone
-            },
-            mechanism: Some(Correction::mechanism()),
-            reconciliation,
-            correction_binding: Some(
-                super::correction_binding::CorrectionBindingDeclaration::of::<Schema, Correction>(),
-            ),
-        }
     }
 
     pub const fn mechanism(&self) -> Option<&DeclaredCorrectionMechanism<Schema>> {
@@ -146,11 +116,6 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
         _authority: AftermathAssociationAuthority<Schema>,
         operation: &str,
     ) -> AssociatedAftermathContract {
-        let correction = self
-            .correction_binding
-            .as_ref()
-            .map(|binding| binding.identity)
-            .unwrap_or(operation);
         let mut fields = Vec::new();
         if let Some(DeclaredCorrectionMechanism::RecordedInverse(inverse)) = &self.mechanism {
             fields.extend(
@@ -161,36 +126,21 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
                     .map(|locus| locus.recipe.clone()),
             );
         }
-        let demand_check = validate_expression(correction, self.mechanism.as_ref(), self.reconciliation.as_ref()).and_then(|()| match &self.mechanism {
-            Some(DeclaredCorrectionMechanism::RecordedInverse(inverse)) => inverse.preimage_demand().validate().map_err(|cause| crate::application_schema::ApplicationSchemaDeclarationDenial::InvalidCorrectionDemand { correction: correction.to_owned(), cause }),
+        let demand_check = validate_expression(operation, self.mechanism.as_ref(), self.reconciliation.as_ref()).and_then(|()| match &self.mechanism {
+            Some(DeclaredCorrectionMechanism::RecordedInverse(inverse)) => inverse.preimage_demand().validate().map_err(|cause| crate::application_schema::ApplicationSchemaDeclarationDenial::InvalidCorrectionDemand { correction: operation.to_owned(), cause }),
             _ => Ok(()),
         });
-        let contract = demand_check
-            .and_then(|()| {
-                self.correction_binding
-                    .as_ref()
-                    .map(|binding| binding.compose(self.reconciliation.clone()))
-                    .transpose()
-            })
-            .map(|composed| {
-                let binding = composed.map(|composed| {
-                    fields.extend(composed.fields);
-                    composed.binding
-                });
-                PortableApplicationAftermathContract {
-                    authority: self.authority,
-                    mechanism: self
-                        .mechanism
-                        .map(DeclaredCorrectionMechanism::into_portable),
-                    reconciliation: self.reconciliation,
-                    correction_binding: binding,
-                }
-            });
+        let contract = demand_check.map(|()| PortableApplicationAftermathContract {
+            authority: self.authority,
+            mechanism: self.mechanism.map(DeclaredCorrectionMechanism::into_portable),
+            reconciliation: self.reconciliation,
+            correction_binding: None,
+        });
         AssociatedAftermathContract {
             contract,
             fields: fields
                 .into_iter()
-                .map(|field| (correction.to_owned(), field))
+                .map(|field| (operation.to_owned(), field))
                 .collect(),
         }
     }

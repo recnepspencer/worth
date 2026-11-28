@@ -11,7 +11,6 @@ use bank_server::{
 use worth_query_bank_testkit_server::facade::{
     estate_operations::freeze_account::fixture::{self as estate, DynamicIdentity},
     ordinary_reads::fixture::proposals::{binding, create_business, fund, grant, key},
-    recorded_correction::fixture::home_policy,
     support::{authentication_configuration, local_principal, request_scope},
 };
 use worth_query_host::facade::{
@@ -241,4 +240,16 @@ pub(super) fn close(home: Home) {
     .unwrap();
     assert!(closed.is_closed());
     closed.reclaim();
+}
+
+fn home_policy() -> worth_foundational::ExecutionRequestPolicy {
+    worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            Some(128 * 1024 * 1024),
+            Some(128_000_000),
+        ),
+    )
 }

@@ -75,7 +75,7 @@ fn refuse_and_retry(
     cause: ValueCodecDenial,
 ) {
     let (application, authority) = host::install_with_projection();
-    let before = super::super::model::required_output_courts::head(&application);
+    let before = super::head(&application);
     assert_eq!(read(&application, &authority, &encoding), 5);
     let scope = request_scope();
     let principal = authenticate_operator(application.installed_schema(), &scope);
@@ -96,7 +96,7 @@ fn refuse_and_retry(
     };
     let outcome = run(value, "unreadable-domain-write");
     assert_eq!(
-        super::super::model::required_output_courts::head(&application),
+        super::head(&application),
         before,
         "unreadable domain bytes published: {outcome:?}"
     );
@@ -124,7 +124,7 @@ fn refuse_and_retry(
         "{retry:?}"
     );
     assert_ne!(
-        super::super::model::required_output_courts::head(&application),
+        super::head(&application),
         before
     );
     assert_eq!(read(&application, &authority, &encoding), 7);

@@ -21,14 +21,6 @@ impl ApplicationSchema for IdentityExecutionSchema {
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
         fragment::declare(Self)
     }
-    fn visit_correction<
-        V: worth_query_declaration::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
-    >(
-        source: std::any::TypeId,
-        visitor: V,
-    ) -> V::Output {
-        fragment::visit_correction(Self, source, visitor)
-    }
 }
 impl IdentityExecutionSchema {
     pub fn declaration(
@@ -52,7 +44,6 @@ impl ApplicationSchemaContribution<IdentityExecutionSchema> for IdentityExecutio
         GrantRecords,
         ElevationRecords,
         Contracts,
-        correction_source::recorded::RecordedLabelEdit,
     );
 }
 impl IdentityExecutionContribution {
@@ -70,6 +61,14 @@ impl Registration<IdentityExecutionSchema> for Contracts {
     > {
         Ok({
             let schema = schema
+                .declared_operation(
+                    label_edit::EditLabel::reference()
+                        .definition()
+                        .no_external_effect()
+                        .no_aftermath()
+                        .finish(),
+                )
+                .application_mutation_binding::<label_edit::LabelBinding>()
                 .principal_binding(IdentityBinding::reference())
                 .ability(ViewAccount::reference())
                 .ability(EditAccount::reference())

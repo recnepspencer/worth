@@ -164,13 +164,6 @@ where
             ),
         };
         stage
-            .map(|stage| match context.correction {
-                Some(intent) => stage.with_correction_intent(
-                    &worth_query_execution::publication_boundary::program_publication_access(),
-                    intent,
-                ),
-                None => stage,
-            })
             .map_err(|cause| {
                 Failure::Mutation(WorthQueryApplicationRequestMutationDenial::Handler(
                     MutationHandlerExecutionDenial::Handler(HandlerExecutionDenial::new(cause)),
@@ -191,12 +184,6 @@ where
         values: Vec<StageValue>,
         brand: Arc<()>,
     ) -> Result<WorthQueryEditEnvelopeOutcome, Failure> {
-        if self.corrective && self.correction_source.is_none() {
-            return Err(Failure::Correction(Box::new(crate::application_entry::WorthQueryApplicationCorrectionDenial::RecordedOutcomeUnavailable)));
-        }
-        if context.correction.is_some() && !self.corrective {
-            return Err(Failure::Correction(Box::new(crate::application_entry::WorthQueryApplicationCorrectionDenial::SourceBindingUnavailable)));
-        }
         let request = WorthQueryApplicationMutationRequest::new(
             context.application,
             context.principal,
@@ -222,7 +209,6 @@ where
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .ok_or(Failure::ForeignProgram)?;
         extension.envelope = Some(envelope_intent);
-        extension.correction = context.correction;
         let capture = stages.first().expect("admitted nonempty prefix");
         let (completed, work) = capture
             .prepare_prefix_candidate::<I::Binding>(
@@ -285,40 +271,17 @@ where
         let binding = candidate.extension.apply(
             WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&candidate.identities),
         );
-        let (commit, result) = match &self.correction_source {
-            Some(source) => {
-                let action =
-                    crate::application_entry::correction::publication::PreparedCorrectionAction {
-                        application: context.application,
-                        owner,
-                        program: captured,
-                        identities: candidate.identities,
-                        result: candidate.result,
-                        source: source.clone(),
-                    };
-                action.commit_envelope::<P, R>(
-                    program,
-                    phase,
-                    binding,
-                    unseen,
-                    execution.allocation_policy(),
-                )
-            }
-            None => (
-                R::commit(
+        let commit = R::commit(
                     program,
                     phase,
                     &owner,
                     captured,
                     &candidate.identities,
-                    None,
                     binding,
                     unseen,
                     execution.allocation_policy(),
-                ),
-                candidate.result,
-            ),
-        };
+                );
+        let result = candidate.result;
         match commit.landed() {
             Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Recovered(receipt)) => Ok(WorthQueryEditEnvelopeOutcome::RecoveredCommitted(receipt)),
             Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Live { receipt }) => {

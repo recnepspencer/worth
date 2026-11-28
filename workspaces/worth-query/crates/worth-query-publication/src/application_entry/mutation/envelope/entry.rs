@@ -1,6 +1,5 @@
 //! The heterogeneous stage list keeps each installed binding and root nominal.
 use super::*;
-pub(in crate::application_entry) mod corrective;
 pub mod outputs;
 mod stage_capture;
 pub(in crate::application_entry) mod typed;
@@ -121,8 +120,6 @@ where S: ApplicationSchema, I: ApplicationMutationIntent<S> {
     pub(in crate::application_entry) expected_source: Option<crate::application_entry::mutation::request::WorthQueryMutationExpectedSource<<<I::Binding as ApplicationMutationBinding<S>>::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<S>>::Query>>,
     pub(in crate::application_entry) input: ApplicationEncodedInput<<I::Binding as ApplicationMutationBinding<S>>::InputBinding>,
     pub(in crate::application_entry) marker: PhantomData<fn() -> R>,
-    pub(in crate::application_entry) correction_source: Option<Arc<worth_query_execution::publication_boundary::recorded_correction::WorthQueryPreparedCorrectionSource>>,
-    pub(in crate::application_entry) corrective: bool,
     pub(in crate::application_entry) original: Mutex<Option<AuthoredEditStageAdmission<S, I::Binding>>>,
     pub(in crate::application_entry) commit_extension: Arc<Mutex<Option<crate::application_entry::mutation::commit_binding::WorthQueryCommitExtension>>>,
 }

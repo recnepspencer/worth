@@ -55,6 +55,6 @@ fn paired_protected_account_detail_worlds_publish_equal_complete_commit_surfaces
     );
     assert_eq!(
         left.aftermath().posture(),
-        Some(WorthQueryPublishedAftermathPosture::Reversible)
+        Some(WorthQueryPublishedAftermathPosture::Irreversible)
     );
 }

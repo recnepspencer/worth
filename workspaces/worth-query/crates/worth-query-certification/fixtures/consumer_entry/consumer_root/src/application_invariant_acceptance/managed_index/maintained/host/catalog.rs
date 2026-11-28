@@ -13,9 +13,9 @@ impl ApplicationSchemaContribution<Catalog> for Contribution {
         super::super::geometry::schema::GeometryRecords,
         ContributionContracts,
         (
-            correction::recorded::Note,
-            correction::recorded::Mover,
-            correction::recorded::Motion,
+            correction::recorded::RegisterNote,
+            correction::recorded::RegisterMover,
+            correction::recorded::RegisterMotion,
         ),
     );
 }

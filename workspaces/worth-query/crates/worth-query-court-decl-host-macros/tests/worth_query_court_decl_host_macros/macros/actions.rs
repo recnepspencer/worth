@@ -132,11 +132,19 @@ pub fn reschedule_definition() -> ApplicationOperationDefinition<Schema, Resched
         .expect("the reschedule body belongs to its operation")
 }
 
-pub fn complete_body() -> ApplicationOperationBody<Schema, CompleteTask, Complete> {
-    CompleteTask::reference()
+pub fn complete_definition() -> ApplicationOperationDefinition<Schema, CompleteTask, Complete> {
+    let operation = CompleteTask::reference();
+    let body = operation
         .body()
         .assign_input(Done::at("Done"), "done")
         .expect("the column is writable")
         .finish()
-        .expect("the complete body is complete")
+        .expect("the complete body is complete");
+    operation
+        .definition()
+        .no_external_effect()
+        .no_aftermath()
+        .finish()
+        .with_body(body)
+        .expect("the body belongs to the complete operation")
 }

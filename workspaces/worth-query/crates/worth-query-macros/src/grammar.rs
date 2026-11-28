@@ -111,17 +111,6 @@ pub(crate) fn type_list(meta: &ParseNestedMeta<'_>) -> syn::Result<Vec<Type>> {
         .collect())
 }
 
-/// `key(e1, e2, ..)`: a parenthesized, comma-separated list of expressions.
-pub(crate) fn expr_list(meta: &ParseNestedMeta<'_>) -> syn::Result<Vec<syn::Expr>> {
-    let content;
-    syn::parenthesized!(content in meta.input);
-    Ok(
-        Punctuated::<syn::Expr, Token![,]>::parse_terminated(&content)?
-            .into_iter()
-            .collect(),
-    )
-}
-
 /// `key(..)`: parenthesized tokens forwarded verbatim to a declaration macro.
 pub(crate) fn token_group(meta: &ParseNestedMeta<'_>) -> syn::Result<TokenStream> {
     let content;

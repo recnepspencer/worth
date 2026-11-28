@@ -5,7 +5,6 @@ const PRIVATE_AGGREGATES: bool = false;
 producer_succession_fixture!();
 mod checkpoint;
 mod checkpoint_value;
-mod correction_courts;
 mod courts;
 mod history_courts;
 mod independent_generator_courts;

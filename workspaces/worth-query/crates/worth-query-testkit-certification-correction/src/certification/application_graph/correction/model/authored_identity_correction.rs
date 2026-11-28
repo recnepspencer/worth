@@ -12,241 +12,41 @@ impl ApplicationAuthoredCorrectionFamily<NumericSchema> for Family {
         ApplicationAuthoredLogicalKey::from_field(Key::at("Key"))
     }
 }
-pub struct UndoCreate;
-pub struct UndoRetire;
-impl ApplicationCorrectionBinding<NumericSchema> for UndoCreate {
-    const IDENTITY: &'static str = "authored-identity.undo-create.v1";
-    type Source = CreateBinding;
-    type InverseIntent = Retire;
-    type Disclosure = query::ReadBinding;
-
-    fn recover_source_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+pub struct RegisterCreate;
+pub struct RegisterRetire;
+impl worth_query_decl::facade::application_schema::fragment::Registration<NumericSchema> for RegisterCreate {
+    fn register(
+        schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<NumericSchema>,
     ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
-    >{
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
-            bytes, expected, bounds,
-            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
-        )
-    }
-
-    fn recover_inverse_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
-    ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
-                NumericSchema,
-                Self,
-            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
-                NumericSchema,
-            >>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<NumericSchema>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
-            bytes, expected, bounds,
-            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<NumericSchema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
-        )
-    }
-    fn source_definition(
-    ) -> ApplicationOperationDefinitionBuilder<NumericSchema, CreateOperation, Create, true, false>
-    {
-        CreateOperation::reference()
+        Ok(schema
+            .declared_operation(
+                CreateOperation::reference()
             .definition()
             .no_external_effect()
-    }
-    fn disclosure_parameters(
-        _: &Create,
-    ) -> Result<ApplicationQueryParameterSet<query::ReadQuery>, ApplicationCorrectionDerivationDenial>
-    {
-        Ok(query::parameters())
-    }
-    fn authored_identity() -> Option<ApplicationAuthoredCorrection<NumericSchema>> {
-        Some(ApplicationAuthoredCorrection::retire_created::<
-            Self,
-            Family,
-            Created,
-            Retired,
-        >())
-    }
-    fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
-        DeclaredCorrectionMechanism::recorded_create_inverse_binding::<Self>()
-    }
-    fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<NumericSchema>> {
-        vec![ApplicationCorrectionOutput::<CreateBinding, Created>::field(Key::at("Key"))]
-    }
-    fn derive_correction(
-        original: &Create,
-        material: ApplicationCorrectionSourceMaterial<'_, NumericSchema>,
-    ) -> Result<Retire, ApplicationCorrectionDerivationDenial> {
-        use ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning;
-        let ApplicationCorrectionSourceMaterial::CreatedEntity(fields) = material else {
-            return Err(UnsupportedSourceMeaning);
-        };
-        let key = StringApplicationValueBinding::decode(
-            fields
-                .field(
-                    &ApplicationCorrectionOutput::<CreateBinding, Created>::field(Key::at("Key")),
-                )
-                .map_err(|_| UnsupportedSourceMeaning)?,
-        )
-        .map_err(|_| UnsupportedSourceMeaning)?;
-        Ok(Retire {
-            key: original.key.clone(),
-            target: original.inverse_target.clone().unwrap_or(key),
-            wrong_restore_key: false,
-            collateral: original.collateral.clone(),
-        })
-    }
-    fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
-        Ok(format!("undo-authored-create:{key}"))
-    }
-    fn visit<V: ApplicationCorrectionVisitor<NumericSchema>>(
-        dispatch: ApplicationCorrectionDispatch<NumericSchema, Self, V>,
-    ) -> V::Output {
-        dispatch.conventional()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .application_mutation_binding::<CreateBinding>())
     }
 }
-impl ApplicationCorrectionBinding<NumericSchema> for UndoRetire {
-    const IDENTITY: &'static str = "authored-identity.undo-retire.v1";
-    type Source = RetireBinding;
-    type InverseIntent = Restore;
-    type Disclosure = query::ReadBinding;
-
-    fn recover_source_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+impl worth_query_decl::facade::application_schema::fragment::Registration<NumericSchema> for RegisterRetire {
+    fn register(
+        schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<NumericSchema>,
     ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
-    >{
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
-            bytes, expected, bounds,
-            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
-        )
-    }
-
-    fn recover_inverse_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
-    ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
-                NumericSchema,
-                Self,
-            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
-                NumericSchema,
-            >>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<NumericSchema>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
-            bytes, expected, bounds,
-            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<NumericSchema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
-        )
-    }
-    fn source_definition() -> ApplicationOperationDefinitionBuilder<
-        NumericSchema,
-        RetireAuthoredEntity,
-        Retire,
-        true,
-        false,
-    > {
-        RetireAuthoredEntity::reference()
+        Ok(schema
+            .declared_operation(
+                RetireAuthoredEntity::reference()
             .definition()
             .no_external_effect()
-    }
-    fn disclosure_parameters(
-        _: &Retire,
-    ) -> Result<ApplicationQueryParameterSet<query::ReadQuery>, ApplicationCorrectionDerivationDenial>
-    {
-        Ok(query::parameters())
-    }
-    fn authored_identity() -> Option<ApplicationAuthoredCorrection<NumericSchema>> {
-        Some(ApplicationAuthoredCorrection::restore_retired::<
-            Self,
-            Family,
-            Retired,
-            Created,
-        >())
-    }
-    fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
-            [
-                DeclaredPreImageLocus::from_field(Key::at("Key")),
-                DeclaredPreImageLocus::from_field(Primary::at("Primary")),
-                DeclaredPreImageLocus::from_field(Secondary::at("Secondary")),
-                DeclaredPreImageLocus::from_field(ReadEnabled::at("ReadEnabled")),
-                DeclaredPreImageLocus::from_field(Ceiling::at("Ceiling")),
-                DeclaredPreImageLocus::from_field(Calculated::at("Calculated")),
-            ],
-            usize::MAX,
-        ))
-    }
-    fn derive_correction(
-        original: &Retire,
-        material: ApplicationCorrectionSourceMaterial<'_, NumericSchema>,
-    ) -> Result<Restore, ApplicationCorrectionDerivationDenial> {
-        use ApplicationCorrectionDerivationDenial::{
-            InvalidPreImage, MissingPreImage, UnsupportedSourceMeaning,
-        };
-        let ApplicationCorrectionSourceMaterial::RecordedInverse(preimage) = material else {
-            return Err(UnsupportedSourceMeaning);
-        };
-        macro_rules! field {
-            ($Field:ty, $Codec:ty) => {
-                <$Codec>::decode(
-                    preimage
-                        .field(&DeclaredPreImageLocus::from_field(<$Field>::at(
-                            stringify!($Field),
-                        )))
-                        .ok_or(MissingPreImage)?,
-                )
-                .map_err(|_| InvalidPreImage)?
-            };
-        }
-        let mut name = field!(Key, StringApplicationValueBinding);
-        // An intentionally defective inverse supplies the public rejection control.
-        if original.wrong_restore_key {
-            name.push_str("-wrong");
-        }
-        Ok(Restore {
-            key: original.key.clone(),
-            name,
-            primary: field!(Primary, InlineCounterBinding).0,
-            secondary: field!(Secondary, U64ApplicationValueBinding),
-            read_enabled: field!(ReadEnabled, BoolApplicationValueBinding),
-            ceiling: field!(Ceiling, U64ApplicationValueBinding),
-            calculated: field!(Calculated, U64ApplicationValueBinding),
-            collateral: original.collateral.clone(),
-        })
-    }
-    fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
-        Ok(format!("undo-authored-retire:{key}"))
-    }
-    fn reapplication_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
-        Ok(format!("reapply-authored-retire:{key}"))
-    }
-    fn visit_reapplication<V: ApplicationReapplicationVisitor<NumericSchema>>(
-        dispatch: ApplicationReapplicationDispatch<NumericSchema, Self, V>,
-    ) -> V::Output {
-        dispatch.conventional()
-    }
-    fn visit<V: ApplicationCorrectionVisitor<NumericSchema>>(
-        dispatch: ApplicationCorrectionDispatch<NumericSchema, Self, V>,
-    ) -> V::Output {
-        dispatch.conventional()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .application_mutation_binding::<RetireBinding>())
     }
 }

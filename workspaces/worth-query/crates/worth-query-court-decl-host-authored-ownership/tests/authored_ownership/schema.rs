@@ -66,15 +66,6 @@ where
     const NAME: &'static str = "Model";
     const MAJOR: u32 = 1;
     const MINOR: u32 = 0;
-    fn visit_correction<V: ApplicationCorrectionVisitor<Self>>(
-        source: std::any::TypeId,
-        visitor: V,
-    ) -> V::Output {
-        match visit_correction::<Self, V>(source, visitor) {
-            Ok(output) => output,
-            Err(visitor) => visitor.unavailable(),
-        }
-    }
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
         if CONTENT != (MODE == 43) {
@@ -155,7 +146,8 @@ impl<S: Scenario> Registration<S> for Contracts {
                     .application_query(query::definition())
                     .application_query_binding::<query::Binding<S>>(),
             ))
-            .correction::<correction::UndoCreate<S>>();
+            .declared_operation(lifecycle::CreateOp::reference().definition().no_external_effect().no_aftermath().finish())
+            .application_mutation_binding::<lifecycle::CreateBinding<S>>();
             let schema = if S::MODE == 71 {
                 query_feature::Manual::<S, false>::declare_members(schema)
             } else {
@@ -181,50 +173,11 @@ impl<S: Scenario> Registration<S> for Contracts {
             } else {
                 schema
             };
-            if S::MODE == 4 {
-                // The inverse Retire has no correction declaration: only the
-                // prepared retire_created correction can supply its anchor.
-                schema.declared_operation(
-                    lifecycle::RetireOp::reference()
-                        .definition()
-                        .no_external_effect()
-                        .no_aftermath()
-                        .finish(),
-                )
-            } else {
-                schema.correction::<correction::UndoRetire<S>>()
-            }
+            schema.declared_operation(
+                lifecycle::RetireOp::reference().definition().no_external_effect().no_aftermath().finish(),
+            )
         })
     }
-}
-pub fn visit_correction<S: Scenario, V: ApplicationCorrectionVisitor<S>>(
-    source: std::any::TypeId,
-    visitor: V,
-) -> Result<V::Output, V> {
-    if matches!(S::MODE, 48 | 68 | 69 | 70)
-        && source == std::any::TypeId::of::<parameter_inverse::Binding<S>>()
-    {
-        return Ok(dispatch_application_correction::<
-            S,
-            parameter_inverse::Inverse<S>,
-            V,
-        >(visitor));
-    }
-    if source == std::any::TypeId::of::<lifecycle::CreateBinding<S>>() {
-        return Ok(dispatch_application_correction::<
-            S,
-            correction::UndoCreate<S>,
-            V,
-        >(visitor));
-    }
-    if S::MODE != 4 && source == std::any::TypeId::of::<lifecycle::RetireBinding<S>>() {
-        return Ok(dispatch_application_correction::<
-            S,
-            correction::UndoRetire<S>,
-            V,
-        >(visitor));
-    }
-    Err(visitor)
 }
 impl<S: Scenario> WorthQueryApplicationContribution<S> for Contribution {
     type Configuration = ();

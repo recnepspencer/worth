@@ -11,7 +11,7 @@ fn safe_retry_of_already_completed_effect_adds_no_contact_and_no_physical_conseq
         .expect("the estate rail source installs once");
     world.transport.under(FaultScript::Succeed, world::PATIENT);
     let (receipt_closed, source) = world.commit_with_source(
-        bank_domain::proposals::BankIdempotencyKey::new("completed-notice-correction").unwrap(),
+        bank_domain::proposals::BankIdempotencyKey::new("completed-notice-recovery").unwrap(),
     );
     let receipt = receipt_closed
         .live_receipt()
@@ -46,22 +46,6 @@ fn safe_retry_of_already_completed_effect_adds_no_contact_and_no_physical_conseq
             observation: terminal.original_world_commit().owner_identity().get(),
         }
     );
-    // This is the generic original-source entrance, before selecting any inverse family.
-    // A legacy external aftermath name does not install a typed correction association.
-    let request = world.fixture.world.runtime.request(&specialist, &scope);
-    let corrections = request.corrections();
-    let selection = corrections.select_coordinates(
-        &coordinates,
-        worth_query_host::facade::application_entry::WorthQueryCorrectionHistoryLimits::new(
-            None,
-            std::num::NonZeroUsize::MIN,
-        ),
-    );
-    assert!(matches!(selection,
-        Err(worth_query_host::facade::application_entry::WorthQueryApplicationCorrectionDenial::Source(
-            worth_query_host::facade::primary_graph::WorthQueryCorrectionSelectionDenial::SourceNotCorrectable
-        ))
-    ), "completed external notice has no installed typed correction");
     // Any contact would run this fault path; completion must win before
     // transport admission, so the rail is never asked (9.17.7 race court).
     world

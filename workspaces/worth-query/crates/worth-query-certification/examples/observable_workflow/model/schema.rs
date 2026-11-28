@@ -86,7 +86,7 @@ impl ApplicationSchemaContribution<DocumentRetentionSchema> for DocumentRetentio
         RetentionModel,
         super::workflow::declaration::WorkflowGrants,
         Contracts,
-        super::correctable_retention::RestoreReviewedRetention,
+        super::correctable_retention::RegisterReviewedRetention,
     );
 }
 impl DocumentRetentionContribution {

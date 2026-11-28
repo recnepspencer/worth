@@ -121,7 +121,6 @@ pub(super) struct Handoff {
     pub rejection_home: worth_foundational::facade::HomeIdentity,
     pub rejection_position: NonZeroU64,
     pub pending: super::external::Pending,
-    pub reversals: super::correction::Reversals,
 }
 impl Handoff {
     pub fn write(&self, path: &Path) {

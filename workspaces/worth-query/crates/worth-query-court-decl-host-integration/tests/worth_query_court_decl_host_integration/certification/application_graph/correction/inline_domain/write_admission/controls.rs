@@ -20,7 +20,7 @@ fn run(value: u64, work: u64, memory: u64, work_stop: bool) {
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(application.installed_schema(), &scope);
-    let before = super::super::super::model::required_output_courts::head(&application);
+    let before = super::super::head(&application);
     let execute = |work, memory, key: &str| {
         let lease = ExecutionAuthority::serial()
             .request_lease(LeaseRequest {
@@ -48,7 +48,7 @@ fn run(value: u64, work: u64, memory: u64, work_stop: bool) {
     };
     let outcome = execute(work, memory, "bounded-domain-write");
     assert_eq!(
-        super::super::super::model::required_output_courts::head(&application),
+        super::super::head(&application),
         before,
         "refused request published: {outcome:?}"
     );
@@ -95,7 +95,7 @@ fn run(value: u64, work: u64, memory: u64, work_stop: bool) {
         "{retry:?}"
     );
     assert_ne!(
-        super::super::super::model::required_output_courts::head(&application),
+        super::super::head(&application),
         before
     );
 }

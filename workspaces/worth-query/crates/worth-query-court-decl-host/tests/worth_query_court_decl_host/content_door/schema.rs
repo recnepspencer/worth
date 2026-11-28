@@ -45,8 +45,8 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
     type Members = (
         ContentModel,
         Contracts,
-        revision::Restore,
-        created_content::Capture,
+        revision::RegisterRevision,
+        created_content::RegisterCreation,
     );
 }
 

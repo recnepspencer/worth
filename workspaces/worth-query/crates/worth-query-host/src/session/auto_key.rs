@@ -2,11 +2,9 @@
 //! in canonical durable branch and commit identity components (never process
 //! owner ordinals, live incarnation fences, or wall-clock samples).
 use sha2::{Digest, Sha256};
-use worth_foundational::facade::ExecutionRequestPolicy;
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_execution::facade::{
-    application_contribution::{WorthQueryAdvancementDenial, WorthQueryAdvancementPhase},
+    application_contribution::WorthQueryAdvancementPhase,
     primary_graph::{
         WorthQueryPrimaryGraphApplicationRuntime, WorthQueryProductBranchAdmissionDenial,
     },
@@ -69,27 +67,6 @@ impl WorthQueryAutoIdempotencyKey for String {
     }
 }
 
-/// Derives a 63-bit decimal integer correction key from durable branch state
-/// and a deterministic probe index. Decimal 63-bit strings parse cleanly for
-/// `u64`, `i64`, `u128`, and `String` action idempotency keys alike.
-pub(crate) fn derive_decimal_correction_key(seed: [u8; 32], tag: &[u8], probe: u64) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(b"worth.auto-correction-key.v1");
-    hasher.update(tag);
-    hasher.update(seed);
-    hasher.update(probe.to_le_bytes());
-    let digest = hasher.finalize();
-    let mut hi_bytes = [0u8; 8];
-    hi_bytes.copy_from_slice(&digest[0..8]);
-    let value = (u64::from_le_bytes(hi_bytes) & (i64::MAX as u64)).max(1);
-    value.to_string()
-}
-
-pub(crate) enum DurableSeedDenial {
-    Advancement(WorthQueryAdvancementDenial),
-    Selection(WorthQueryProductBranchAdmissionDenial),
-}
-
 /// Computes the canonical 32-byte seed purely from durable branch/commit
 /// components — never hashing process owner ordinals, live incarnation fences,
 /// or `Debug` formatting.
@@ -116,29 +93,4 @@ pub(crate) fn durable_branch_seed_in_advancement<Schema: ApplicationSchema>(
     let mut out = [0u8; 32];
     out.copy_from_slice(&digest);
     Ok(out)
-}
-
-/// Derives the canonical durable branch seed under the Home's installed
-/// default execution policy (matching `WorthQueryHostSession`'s policy ceiling).
-pub(crate) fn durable_branch_seed_for_installed<Schema: ApplicationSchema>(
-    graph: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    branch: WorthQueryProductBranch,
-    scope: &WorthQueryRequestScope,
-) -> Result<[u8; 32], DurableSeedDenial> {
-    let policy = super::lease::default_session_policy(graph.installed_execution_policy());
-    durable_branch_seed(graph, branch, policy, scope)
-}
-
-/// Derives the canonical durable branch seed under the caller's execution policy.
-pub(crate) fn durable_branch_seed<Schema: ApplicationSchema>(
-    graph: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    branch: WorthQueryProductBranch,
-    policy: ExecutionRequestPolicy,
-    scope: &WorthQueryRequestScope,
-) -> Result<[u8; 32], DurableSeedDenial> {
-    super::lease::with_policy_advancement(graph, policy, scope, |phase| {
-        durable_branch_seed_in_advancement(graph, branch, &phase)
-            .map_err(DurableSeedDenial::Selection)
-    })
-    .map_err(DurableSeedDenial::Advancement)?
 }

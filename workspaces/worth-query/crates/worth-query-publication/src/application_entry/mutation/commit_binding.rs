@@ -21,7 +21,6 @@ pub(in crate::application_entry) struct WorthQueryCommitExtension {
     pub(super) workflow_transition: Option<[u8; 32]>,
     pub(super) workflow_birth: Option<[u8; 32]>,
     pub(super) workflow_succession: Option<[u8; 32]>,
-    pub(in crate::application_entry) correction: Option<worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent>,
 }
 
 impl WorthQueryCommitExtension {
@@ -38,10 +37,6 @@ impl WorthQueryCommitExtension {
         };
         let idempotency = match self.transport_intent {
             Some(intent) => idempotency.bind_transport_intent(&intent),
-            None => idempotency,
-        };
-        let idempotency = match self.correction {
-            Some(correction) => correction.bind_idempotency(idempotency),
             None => idempotency,
         };
         let idempotency = match self.source {

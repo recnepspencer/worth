@@ -13,7 +13,7 @@ mod creation;
 pub(super) mod links;
 mod replacement;
 mod retirement;
-pub(super) use correction::{UndoCreate, UndoRetire};
+pub(super) use correction::{RegisterCreation, RegisterRetirement};
 use replacement::*;
 pub(super) mod query;
 #[derive(Clone, Debug, Eq, PartialEq, WorthValue)]

@@ -20,7 +20,7 @@ use crate::application_home::WorthQueryApplicationHome;
 /// A Home's committed-basis version, from `committed_basis_version()`.
 ///
 /// It changes after every commit that publishes to any branch of the Home
-/// (sessions, undo/redo, workflows, previews and raw requests alike) and never
+/// (sessions, workflows, previews and raw requests alike) and never
 /// otherwise. Compare two values of the same open Home: a reopened Home starts
 /// a new sequence, which compares unequal to every value of the old one.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]

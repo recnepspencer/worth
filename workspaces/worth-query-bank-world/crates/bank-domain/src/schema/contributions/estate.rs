@@ -13,7 +13,6 @@ impl ApplicationSchemaContribution<BankSchema> for BankEstate {
     type Members = (
         crate::schema::EstateRecords,
         Contracts,
-        crate::schema::RestoreRecordedEstateFreeze,
     );
 }
 impl BankEstate {

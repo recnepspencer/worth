@@ -52,8 +52,6 @@ where
             input,
             marker: PhantomData,
             expected_source: source.source,
-            correction_source: None,
-            corrective: false,
             original: Mutex::new(None),
             commit_extension: Arc::new(Mutex::new(None)),
         }));

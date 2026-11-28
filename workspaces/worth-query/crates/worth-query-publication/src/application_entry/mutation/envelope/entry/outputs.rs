@@ -1,13 +1,8 @@
 //! Declaration-owned output choices share one nominal stage executor.
 use super::*;
 use crate::application_entry::mutation::preparation::CandidateProgram;
-use std::num::NonZeroUsize;
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_declaration::facade::application_aftermath::ApplicationCorrectionBinding;
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationIdentities, ApplicationMutationInputScope,
+    ApplicationMutationIdentities,
 };
 use worth_query_declaration::facade::application_program::{
     ApplicationDiscoveredOutputGraph, ApplicationNoOutputGraph, ApplicationOutputGraph,
@@ -15,12 +10,7 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_execution::facade::application_installation::WorthQuerySelectedProgramOwner;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitOutcome, WorthQueryCorrectionDerivationDenial,
-    WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
-    WorthQuerySelectedProductOperation,
-};
-use worth_query_execution::publication_boundary::recorded_correction::{
-    WorthQueryCorrectionCommandKey, WorthQueryPreparedCorrectionSource,
+    WorthQueryApplicationCommitOutcome,
 };
 
 mod sealed {
@@ -33,17 +23,6 @@ mod authored;
 mod discovered;
 mod required;
 type Failure = crate::application_entry::WorthQueryPerformedMutationExecutionDenial;
-type SelectedSource<S, B> = Result<
-    (
-        ApplicationEncodedInput<<B as ApplicationMutationBinding<S>>::InputBinding>,
-        Arc<WorthQueryPreparedCorrectionSource>,
-    ),
-    WorthQueryCorrectionDerivationDenial,
->;
-
-/// Shared typed execution for fixed roots, discovered roots and no graph.
-/// Consumers cannot add an output policy or supply a program presentation.
-#[doc(hidden)]
 pub trait EditStageOutputs<S, B>: sealed::Outputs + ApplicationProgramOutputShape<S>
 where
     S: ApplicationSchema,
@@ -74,35 +53,8 @@ where
         owner: &WorthQuerySelectedProgramOwner<'_, S>,
         program: CandidateProgram<S, B>,
         identities: &ApplicationMutationIdentities<'_, S, B>,
-        source: Option<Arc<WorthQueryPreparedCorrectionSource>>,
         binding: WorthQueryApplicationIdempotencyBinding,
         unseen: &UnseenAuthoredEnvelope<'_>,
         allocation: ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome;
-    fn inverse<C>(
-        target: &WorthQuerySelectedProductOperation<'_, S>,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
-        scope: &WorthQueryRequestScope,
-        source: &WorthQuerySelectedCorrectionSource<'_, S>,
-        key: &WorthQueryCorrectionCommandKey,
-        maximum_history: Option<NonZeroUsize>,
-        maximum_results: NonZeroUsize,
-    ) -> SelectedSource<S, B>
-    where
-        C: ApplicationCorrectionBinding<S>,
-        C::InverseIntent: ApplicationMutationIntent<S, Binding = B>;
-    fn reapplication<C>(
-        target: &WorthQuerySelectedProductOperation<'_, S>,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
-        scope: &WorthQueryRequestScope,
-        source: &WorthQuerySelectedCorrectionAlternative<'_, S>,
-        key: &WorthQueryCorrectionCommandKey,
-        maximum_history: Option<NonZeroUsize>,
-        maximum_results: NonZeroUsize,
-    ) -> SelectedSource<S, B>
-    where
-        C: ApplicationCorrectionBinding<S, Source = B>,
-        B::Input: ApplicationMutationInputScope<S, B>;
 }

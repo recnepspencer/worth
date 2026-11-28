@@ -4,15 +4,6 @@
 //! [`WorthQueryUserFacingRefusal`] adds a closed category, a retry hint and
 //! one jargon-free sentence suitable for a UI banner.
 //!
-//! ```
-//! use worth_query_host::facade::{
-//!     WorthQueryHomeUndoDenial, WorthQueryRefusalCategory, WorthQueryUserFacingRefusal,
-//! };
-//! let denial = WorthQueryHomeUndoDenial::Conflict;
-//! assert_eq!(denial.refusal_category(), WorthQueryRefusalCategory::Conflict);
-//! assert!(!denial.user_message().contains("Conflict"));
-//! ```
-//!
 //! An application rule names itself with a [`WorthQueryDomainRefusal`]: a
 //! stable `code` to branch on and an operator `message` shown verbatim. A
 //! hand-written handler returns `HandlerResult::domain_refusal(code, message)`;
@@ -48,7 +39,6 @@
 //! ));
 //! ```
 mod audit_inspection;
-mod correction;
 mod custody;
 mod eligibility;
 mod history_read;

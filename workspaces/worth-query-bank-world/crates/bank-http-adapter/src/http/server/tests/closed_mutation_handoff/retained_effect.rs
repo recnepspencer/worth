@@ -303,7 +303,7 @@ async fn deposit_collection(
     let scheduler = scheduled.unwrap();
     let input = parse_deposit("fixture:1", "fixture:100", 1).unwrap();
     let controls = BankMutationControls::new(scope.clone(), BankIdempotencyKey::new(id).unwrap());
-    let (mut owner, _) = start(rt, &actor, input, controls, &request, work, None).unwrap();
+    let (mut owner, _) = start(rt, &actor, input, controls, &request, work).unwrap();
     drop(scheduler);
     let (posture, cleanup) = inspect(&owner).expect("initial Pending; actual Recorded");
     assert_eq!(posture, Stage::Indeterminate);

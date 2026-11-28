@@ -261,22 +261,7 @@ It transfers the original input, typed preconditions and owned idempotency key
 into the installed `BankApplication` deposit action. Construction retains no
 principal or request scope. The five money actions declare distinct retained
 delivery contracts. Deposit, withdrawal and send-money builders expose owning
-construction. Recorded journal correction enters through
-`prepare_send_money_correction` and retains the installed reversal's delivery.
-
-Historical SendMoney reapplication uses the retained original source input.
-Keep each needed occurrence's completed operation owner alive through historical
-selection and retries; its retained observation owns that occurrence's World
-history lease. Close those owners normally when the history is no longer needed.
-Read bounded `request.corrections().alternatives(...)` pages and continue until
-the native traversal completes. `into_page()` retains the latest page independently
-of the old request. Under a fresh request, call
-`corrections().select_alternative_coordinates(&page, &chosen_source, limits)` and
-pass the selected alternative to
-`prepare_send_money_reapplication(&principal, &scope, &alternative, key, limits)`.
-Publish its preparation and retain the returned ordinary SendMoney owner through
-delivery and close. A changed target requires refreshed history; an exact retry
-uses the same historical source and command key.
+construction.
 
 Advance the returned operation with `operation.advance(&fresh_request,
 maximum_history_work)`, using `runtime.request(&fresh_principal, &fresh_scope)`
@@ -583,14 +568,6 @@ result; `Recovered` reports native evidence without inventing that result.
 `accept_owned_applied` returns the same completed owner on refusal and retains it
 alongside native workflow progression on success. Close that owner explicitly.
 
-To compensate the committed payment's journal, retain its receipt's
-`correction_source().coordinates()` and call
-`prepare_approved_payment_correction(&teller, &scope, &coordinates, key, limits)`.
-The original rail completion and workflow settlement must both be complete.
-The returned preparation owns the installed reversal's retained delivery;
-publish or continue it, inspect its original receipt and close its owner with a
-fresh request. Current teller authority governs the journal compensation while
-the original payment and remote settlement keep their completed dispositions.
 
 `retain_payment_assessment` owns a separate admitted observation and
 `advance_payment_assessment` supplies the current authenticated request. Closing

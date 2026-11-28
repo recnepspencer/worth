@@ -7,7 +7,6 @@ use bank_server::{
     mutations, BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationControls,
 };
 mod capability_revocation;
-pub(super) mod correction;
 pub(super) fn start(
     runtime: &BankIdentityRuntime,
     principal: &BankAuthenticatedPrincipal,
@@ -20,26 +19,10 @@ pub(super) fn start(
         bank_domain::schema::BankSchema,
     >,
     history: std::num::NonZeroUsize,
-    history_page: Option<
-        &worth_query_host::facade::primary_graph::WorthQueryCorrectionAlternativesPage,
-    >,
 ) -> Result<(SourceMutationCustody, Option<BankHttpDenial>), BankHttpDenial> {
     let constructed = match input {
-        AdmittedBankHttpMutation::ReapplySendMoney { source, .. } => {
-            return correction::reapplication::start(
-                runtime,
-                principal,
-                &source,
-                controls,
-                history,
-                history_page.ok_or_else(|| denial(BankHttpDenialKind::Stale))?,
-            );
-        }
         AdmittedBankHttpMutation::RevokeEstateCapability(action) => {
             return capability_revocation::start(runtime, principal, action, controls, request);
-        }
-        AdmittedBankHttpMutation::CorrectEstateFreeze(source) => {
-            return correction::estate::start(runtime, principal, &source, controls, history);
         }
         AdmittedBankHttpMutation::FreezeEstateAccount(input) => {
             match runtime
@@ -53,9 +36,6 @@ pub(super) fn start(
                 }
                 Err(refusal) => return Err(super::construction_denial::construction(refusal)),
             }
-        }
-        AdmittedBankHttpMutation::CorrectSendMoney(source) => {
-            return correction::start(runtime, principal, &source, controls, history);
         }
         AdmittedBankHttpMutation::Deposit(input) => {
             match runtime

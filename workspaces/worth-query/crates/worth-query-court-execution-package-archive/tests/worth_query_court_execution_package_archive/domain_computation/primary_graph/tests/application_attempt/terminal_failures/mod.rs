@@ -351,10 +351,6 @@ fn owner_validated_application_touch_outside_installed_ceiling_is_denied() {
 
 #[path = "aftermath_sealing_interruption/mod.rs"]
 pub mod aftermath_sealing_interruption;
-#[path = "causal_fact_survives_post_commit_snapshot_failure_via_relational/mod.rs"]
-pub mod causal_fact_survives_post_commit_snapshot_failure_via_relational;
-#[path = "idempotency_without_the_claimed_causal_fact_is_not_equivalent/mod.rs"]
-pub mod idempotency_without_the_claimed_causal_fact_is_not_equivalent;
 #[path = "preparation_rejection_is_denied_without_effect_or_idempotency_re/mod.rs"]
 pub mod preparation_rejection_is_denied_without_effect_or_idempotency_re;
 #[path = "pretransaction_commit_failure_is_proved_aborted_and_applies_noth/mod.rs"]

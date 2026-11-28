@@ -1,4 +1,4 @@
-//! Source custody stops, declined evidence and non-committed correction outcomes.
+//! Source custody stops and declined evidence.
 use worth_query_declaration::facade::application_operation::ApplicationMutationIntent;
 use worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolution as Keyed;
 use worth_query_installation::facade::ApplicationSchema;
@@ -6,10 +6,6 @@ use worth_query_publication::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryTerminalSourceEvidence,
 };
 
-use crate::application_home::{
-    WorthQueryHomeAuthoredCorrectionOutcome, WorthQueryHomeCorrectionOutcome,
-
-};
 use crate::source_custody::{WorthQueryAnyTerminalSourceEvidence, WorthQuerySourceCustodyPending};
 
 use super::request::{ALREADY_DONE, BUSY, CANCELLED, RULE_REFUSED, TIMED_OUT};
@@ -81,33 +77,6 @@ impl WorthQueryUserFacingRefusal for WorthQuerySourceCustodyPending {
         match self {
             Self::Retention(_) | Self::Progress | Self::Close(_) => STILL_SAVING,
             Self::Refused(_) => BUSY,
-        }
-    }
-}
-
-impl<Schema, Program> WorthQueryHomeAuthoredCorrectionOutcome<Schema, Program> {
-    /// Why this undo or redo did not commit, for an end user; `None` once committed.
-    pub fn refusal_summary(&self) -> Option<Summary> {
-        match self {
-            Self::Committed { .. } => None,
-            Self::Declined { evidence, .. } => Some(evidence.user_summary()),
-            Self::Pending { cause, .. } => Some(cause.user_summary()),
-            Self::IdempotencyIntentDrift => Some(DIFFERENT_REQUEST),
-            Self::PublicationPending | Self::ProductUnpublished(_) => Some(STILL_SAVING),
-        }
-    }
-}
-
-impl WorthQueryHomeCorrectionOutcome {
-    /// Why this undo or redo did not commit, for an end user; `None` once committed.
-    pub fn refusal_summary(&self) -> Option<Summary> {
-        match self {
-            Self::Committed { .. } | Self::AlreadyCommitted(_) | Self::RecoveredCommitted(_) => {
-                None
-            }
-            Self::DomainDenied(_) => Some(RULE_REFUSED),
-            Self::Other(outcome) => uncommitted_outcome(outcome),
-            Self::PublicationPending | Self::ProductUnpublished(_) => Some(STILL_SAVING),
         }
     }
 }

@@ -18,31 +18,31 @@ fn reconcilable_estate_operations_publish_their_installed_posture() {
 }
 
 #[test]
-fn reversible_estate_operations_publish_their_installed_posture() {
+fn database_only_freeze_has_no_aftermath_contract() {
     let bank = installed_bank();
     assert_installed_posture(
         &bank,
         FreezeEstateAccountOperation::reference(),
-        Some(PublishedAftermathPosture::Reversible),
+        None,
         "FreezeAccount",
-    );
-    assert_installed_posture(
-        &bank,
-        RevokeEstateCapabilityOperation::reference(),
-        Some(PublishedAftermathPosture::Reversible),
-        "RevokeCapability",
-    );
-    assert_installed_posture(
-        &bank,
-        ApproveEstateEmergencyAccessOperation::reference(),
-        Some(PublishedAftermathPosture::Reversible),
-        "ApproveEmergencyAccess",
     );
 }
 
 #[test]
 fn irreversible_estate_operations_publish_their_installed_posture() {
     let bank = installed_bank();
+    assert_installed_posture(
+        &bank,
+        RevokeEstateCapabilityOperation::reference(),
+        Some(PublishedAftermathPosture::Irreversible),
+        "RevokeCapability",
+    );
+    assert_installed_posture(
+        &bank,
+        ApproveEstateEmergencyAccessOperation::reference(),
+        Some(PublishedAftermathPosture::Irreversible),
+        "ApproveEmergencyAccess",
+    );
     assert_installed_posture(
         &bank,
         OpenEstateCaseOperation::reference(),

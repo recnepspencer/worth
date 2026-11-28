@@ -25,7 +25,6 @@ use worth_query_host::facade::{
 use super::handler::StampLotHandler;
 use super::invariant::{self, TrustedDates};
 use super::schema::*;
-use super::undo::*;
 
 worth_query_decl::facade::worth_query_authentication_method!(DatedMethod);
 worth_query_decl::facade::worth_query_authentication_audience!(DatedAudience);
@@ -39,10 +38,7 @@ impl ApplicationFeature<DatedSchema> for DatedFeature {
 
 worth_query_application_contribution! {
     pub feature DatedActions<DatedSchema> for DatedFeature => DatedRuntime {
-        schema: |schema| { schema.declared_operation(restore_lot_expiry_definition()) };
         query(ReadLotBinding) { definition: ReadLotQuery::definition(); };
-        body_action_ref(ExtendLotBinding, LotExtended) as ExtendLotAction {};
-        body_action_ref(RestoreLotExpiryBinding, LotExpiryRestored) as RestoreLotExpiryAction {};
         action stamp(StampLotBinding, LotStamped, StampLotHandler) as StampLotAction {};
     }
 }
@@ -101,7 +97,7 @@ worth_query_application_program! {
         >,
         contribution: DatedContribution {
             identity: "admission-time.dx.contribution.v1",
-            members: [Records, OwnerBinding, CorrectLotExpiry],
+            members: [Records, OwnerBinding],
         },
         feature_definition: DatedDefinition,
     }

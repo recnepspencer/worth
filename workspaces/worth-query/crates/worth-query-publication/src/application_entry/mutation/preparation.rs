@@ -101,60 +101,6 @@ where
         )
     }
 
-    /// Uses the caller's existing owning identity carrier for the same candidate spine.
-    pub(in crate::application_entry) fn prepare_owned_candidate<'request>(
-        &'request mut self,
-        phase: &AdvancementPhase<'_>,
-        identities: ApplicationMutationIdentities<'request, Schema, Intent::Binding>,
-        prepare: impl FnOnce(
-            &Self,
-            &ApplicationMutationIdentities<'_, Schema, Intent::Binding>,
-            WorthQueryStagedMutation<Schema, Intent>,
-        ) -> Result<
-            super::authorization::PreparedMutation<Schema, Intent::Binding>,
-            WorthQueryApplicationRequestMutationDenial,
-        >,
-        decision_work: &mut worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
-        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<
-        CandidatePreparation<'request, Schema, Intent::Binding>,
-        WorthQueryApplicationRequestMutationDenial,
-    > {
-        self.require_workflow_transition()?;
-        let staged = self.stage()?;
-        let prepared = self.prepare_staged_candidate(
-            phase,
-            identities,
-            staged,
-            prepare,
-            decision_work,
-            allocation_policy,
-        )?;
-        match prepared {
-            CandidatePreparation::Prepared(mut candidate) => {
-                let access =
-                    worth_query_execution::publication_boundary::program_publication_access();
-                if !candidate.program.requires_original_input_retention(&access) {
-                    candidate.program = candidate
-                        .program
-                        .retain_performed_correction_input::<Intent::Binding>(
-                            &access,
-                            phase,
-                            self.request.application,
-                            candidate.identities.encoded_input(),
-                        )
-                        .map_err(|cause| {
-                            WorthQueryApplicationRequestMutationDenial::Handler(
-                                MutationHandlerExecutionDenial::Attempt(cause),
-                            )
-                        })?;
-                }
-                Ok(CandidatePreparation::Prepared(candidate))
-            }
-            settled => Ok(settled),
-        }
-    }
-
     fn prepare_staged_candidate<'request>(
         &'request self,
         phase: &AdvancementPhase<'_>,

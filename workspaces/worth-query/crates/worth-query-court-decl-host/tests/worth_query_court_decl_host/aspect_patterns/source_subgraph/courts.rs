@@ -16,51 +16,6 @@ fn expected(key: &str, left: u64, right: u64) -> GraphRow {
     }
 }
 #[test]
-fn correction_restores_an_extension_aspect_and_preserves_neighbors() {
-    let host = world::install(world::Fault::None, Hashes::default());
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
-    let before = request.retain_current_read().unwrap();
-    assert_eq!(world::source(&request), expected("source", 11, 22));
-    let receipt = world::edit_source(&host, &request, 15);
-    assert_eq!(world::source(&request), expected("source", 15, 22));
-    let previous = request
-        .at(&before)
-        .query(graph_read::source::Read("source".into()))
-        .execute()
-        .unwrap();
-    assert_eq!(previous.rows(), &[expected("source", 11, 22)]);
-    let limits = WorthQueryCorrectionHistoryLimits::new(None, std::num::NonZeroUsize::MIN);
-    let selected = request.corrections().select(&receipt, limits).unwrap();
-    let preparation = request
-        .corrections()
-        .reverse(&selected)
-        .idempotency("undo-member")
-        .limits(limits)
-        .prepare()
-        .unwrap();
-    let WorthQueryApplicationCorrectionPreparation::Prepared(prepared) = preparation else {
-        panic!("exact retained member preimage must prepare");
-    };
-    let outcome = prepared.publish().unwrap();
-    assert!(
-        matches!(
-            outcome,
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        ),
-        "{outcome:?}"
-    );
-    assert_eq!(world::source(&request), expected("source", 11, 22));
-    // Reacquire the old graph through authentic pinned custody after undo.
-    let previous_again = request
-        .at(&before)
-        .query(graph_read::source::Read("source".into()))
-        .execute()
-        .unwrap();
-    assert_eq!(previous_again.rows(), &[expected("source", 11, 22)]);
-}
-#[test]
 fn parent_witness_covers_a_generated_child_that_readiness_does_not_select() {
     let hashes = Hashes::default();
     let host = world::install(world::Fault::None, hashes.clone());
@@ -199,9 +154,3 @@ pub(crate) fn fingerprint(left: u64) -> (String, [u8; 32]) {
         .unwrap_or_else(|error| panic!("close: {:?}", error.denial()));
     (content, identity)
 }
-
-mod owned_members;
-
-mod owned_member_refusals;
-
-mod member_families;

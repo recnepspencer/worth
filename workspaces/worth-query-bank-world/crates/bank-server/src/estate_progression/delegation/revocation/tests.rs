@@ -126,43 +126,6 @@ fn exact_revocation_retry_replays_after_the_grant_is_revoked() {
     assert!(matches!(replay, CommandCourtOutcome::RecoveredCommitted(_)));
 }
 
-/// Q8.26-C1: the retention demand attaches from the installed contract, with no
-/// per-operation opt-in that could omit it.
-///
-/// `RevokeCapability` declares `RecordedInverse` with `ExactPriorTruth` over
-/// `CapabilityGrantStatusField`, but it commits through the specialized
-/// capability-revocation program whose constructor hard-coded
-/// `preimage_demand: None`. Only `FreezeAccount` ever called the public
-/// `with_preimage_demand` builder, so this operation declared a correction
-/// mechanism and retained nothing to correct with. No existing test noticed,
-/// because "did it commit" is blind to an empty pre-image — the two tests above
-/// both commit revocations and neither can see it.
-#[test]
-fn revocation_retains_its_declared_preimage_without_a_per_operation_opt_in() {
-    let fixture = revocation_world("capability-revocation-retains-preimage");
-    let specialist = fixture.authenticate();
-    let outcome = crate::estate_progression::delegation::command_courts::complete_revocation(
-        &fixture.runtime,
-        &specialist,
-        revocation_action(),
-        &idempotency(161),
-        &request_scope(),
-    )
-    .expect("the exact command should revoke the active target");
-    let CommandCourtOutcome::Committed(receipt) = outcome else {
-        panic!("revocation must commit: {outcome:?}");
-    };
-    let receipt = receipt
-        .live_receipt()
-        .expect("fresh command owns a live receipt");
-    assert!(
-        receipt.retained_preimage(),
-        "RevokeCapability declares RecordedInverse/ExactPriorTruth, so its commit \
-         must carry the pre-image its installed contract demands"
-    );
-    assert!(receipt.performed_preimage_retention_work());
-}
-
 fn generic_empty_program(
     runtime: &BankIdentityRuntime,
     admission: AdmittedCapabilityRevocation,

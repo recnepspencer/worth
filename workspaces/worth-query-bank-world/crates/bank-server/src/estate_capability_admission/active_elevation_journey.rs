@@ -85,19 +85,10 @@ fn approved_emergency_discloses_account_details_and_terminal_state_reads_back() 
     assert_completed_readback(&fixture, &requester, identity);
 }
 
-/// Q8.26-C6: a commit retains a pre-image exactly when its installed contract
-/// declares one — and the negative twin holds in the same journey.
-///
-/// `ApproveEmergencyAccess` declares `RecordedInverse` over
-/// `EmergencyAccessStatusField`, so its commit must carry the demanded slice.
-/// `RequestEmergencyAccess` is a create lane declared `not_correctable`: there
-/// is no prior truth, so it must carry nothing. Asserting only the positive
-/// would pass against a runtime that retained indiscriminately, which would
-/// make every receipt claim an inverse it cannot honour.
 #[test]
-fn retention_follows_the_declared_mechanism_on_both_lifecycle_commits() {
+fn elevation_request_and_approval_retain_no_inverse_preimage() {
     let fixture = emergency_request_world(
-        "estate-emergency-retention-by-mechanism",
+        "estate-elevation-no-inverse-preimage",
         GrantSpec::emergency_view(),
         EstateWorkflowStage::Administration,
     );
@@ -125,37 +116,8 @@ fn retention_follows_the_declared_mechanism_on_both_lifecycle_commits() {
         },
     );
 
-    assert!(
-        approved.approval_retained_preimage_present(),
-        "ApproveEmergencyAccess declares RecordedInverse/ExactPriorTruth, so its \
-         commit must carry the pre-image its installed contract demands"
-    );
-    assert!(
-        !approved.request_retained_preimage_present(),
-        "RequestEmergencyAccess is a not_correctable create lane — it has no \
-         prior truth, so its commit must retain nothing"
-    );
-    assert!(
-        approved.approval_prior_status_is_requested(),
-        "approval must retain the exact pre-commit Requested status"
-    );
-    let demanded = approved
-        .approval_retention_work()
-        .expect("approval commit carries retention work");
-    assert!(demanded.validated_intents_examined() > 0);
-    assert!(demanded.mutation_targets_materialized() > 0);
-    assert!(demanded.decision_facts_examined() > 0);
-    assert!(demanded.candidates_materialized() > 0);
-    assert_eq!(demanded.demanded_loci_examined(), 1);
-
-    let ordinary = approved
-        .request_retention_work()
-        .expect("request commit carries zero-valued work evidence");
-    assert_eq!(ordinary.validated_intents_examined(), 0);
-    assert_eq!(ordinary.mutation_targets_materialized(), 0);
-    assert_eq!(ordinary.decision_facts_examined(), 0);
-    assert_eq!(ordinary.candidates_materialized(), 0);
-    assert_eq!(ordinary.demanded_loci_examined(), 0);
+    assert!(!approved.approval_retained_preimage_present());
+    assert!(!approved.request_retained_preimage_present());
 }
 
 fn assert_approved_account_disclosure(

@@ -134,6 +134,3 @@ compares ten and 10,000 unrelated retained record changes with identical finite
 page limits, backing and actual per-page request-work maxima. It traverses every
 empty incomplete prefix before the one independently selected matching record.
 Total traversal still grows with the retained source.
-
-The [correction history](../execution/recorded-source-correction.md) remains the
-owner of inverse, pre-image and reapplication meaning.

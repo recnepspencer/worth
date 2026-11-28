@@ -77,7 +77,7 @@ impl ApplicationSchemaContribution<DocumentRetentionSchema> for DocumentRetentio
         DocumentPrincipalBinding,
         super::workflow::declaration::WorkflowGrants,
         RetentionPrograms,
-        super::correctable_retention::RestoreReviewedRetention,
+        super::correctable_retention::RegisterReviewedRetention,
     );
 }
 impl DocumentRetentionContribution {

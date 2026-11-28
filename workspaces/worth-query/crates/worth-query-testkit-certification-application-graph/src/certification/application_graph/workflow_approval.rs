@@ -37,8 +37,6 @@ pub mod authentication;
 pub mod back_custody;
 #[path = "workflow_approval/commit_boundary.rs"]
 pub mod commit_boundary;
-#[path = "workflow_approval/correction.rs"]
-pub mod correction;
 #[path = "workflow_approval/custody.rs"]
 pub mod custody;
 #[path = "workflow_approval/effect_currentness.rs"]

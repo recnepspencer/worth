@@ -16,4 +16,3 @@ pub(in crate::checkpoint_recovery::computation_partition::oracle) mod correction
 mod equal_output;
 worth_execution::needs_os_threads! { mod interleaving; }
 mod tree;
-mod undo;

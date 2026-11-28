@@ -66,7 +66,7 @@ Executable journeys:
 ### Execution, aftermath, and recovery
 
 - [Application Aftermath, External Effects, And Recovery](./execution/application-aftermath-and-recovery.md): post-commit consequences, bounded external effects, and settlement recovery.
-- [Correct A Recorded Source Operation](./execution/recorded-source-correction.md): recorded correction and source reversal.
+- [Retain an original operation](./execution/durable-original-operation.md): durable custody across a graceful reopen.
 - [Retained Delivery For No-Output Actions](./foundations/source-only-retained-delivery.md): a no-output action delivers a read-only observation of its original commit.
 - [Reclaim Retired Storage](./execution/storage-retention.md): history windows, bookmarks and the release of obsolete owners.
 

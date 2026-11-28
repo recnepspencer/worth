@@ -11,8 +11,6 @@ use bank_domain::model::{
 use bank_server::BankEmployeeAssignmentSeed;
 use serde::Deserialize;
 
-mod correction;
-
 #[derive(Deserialize)]
 pub struct BankHttpProcessEstateWorld {
     pub branch: u64,
@@ -25,7 +23,6 @@ pub struct BankHttpProcessEstateWorld {
     pub grant: u64,
     pub aftermath: Option<BankHttpProcessEstateAftermathWorld>,
     pub elevation: Option<BankHttpProcessEstateElevationWorld>,
-    pub correction: Option<correction::BankHttpProcessEstateCorrectionWorld>,
 }
 
 #[derive(Deserialize)]
@@ -118,9 +115,6 @@ impl BankHttpProcessEstateWorld {
             specialist,
             EmployeeRole::EstateSpecialist,
         )];
-        if let Some(correction) = self.correction {
-            world = correction.install(world, institution, branch, estate, account, specialist)?;
-        }
         if let Some(aftermath) = self.aftermath {
             let installed = aftermath.install(
                 world,

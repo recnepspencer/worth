@@ -7,7 +7,6 @@ mod desktop_open;
 mod discard;
 mod dispatch_journal;
 mod failure_close;
-mod history_and_undo;
 mod maintenance;
 mod opening;
 pub(crate) mod owned_holds;
@@ -32,12 +31,6 @@ pub use desktop_open::{
 pub use discard::{discard_home, WorthQueryApplicationHomeDiscardDenial};
 pub use failure_close::{
     WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
-};
-pub use history_and_undo::{
-    WorthQueryCorrectionEntry, WorthQueryCorrectionHistory, WorthQueryCorrectionHistoryEntry,
-    WorthQueryCorrectionHistoryLimit, WorthQueryHomeAuthoredCorrectionOutcome,
-    WorthQueryHomeCorrectionOutcome, WorthQueryHomeUndoDenial,
-    DEFAULT_CORRECTION_HISTORY_LIMITS,
 };
 pub use preview::{
     WorthQueryPreviewAdoptDenial, WorthQueryPreviewAdoptFailure, WorthQueryPreviewDiscardDenial,

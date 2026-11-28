@@ -70,13 +70,6 @@ uses a declared source-only owning action, observes actual native fresh evidence
 closes independent cleanup and reads current/retained product truth. Real partial
 publication/refusal are exercised by the public owning certification courts.
 
-Use [recorded source correction](recorded-source-correction.md) to select an
-original receipt, prepare its declared inverse under current authority and
-publish a new child of the target branch. Its history chooser lists explicit
-reversal alternatives for retained reapplication. Reapplication uses the
-original source input with fresh admission and the source action's installed
-delivery and recovery owners.
-
 ## Ordinary operation recovery
 
 The [owning action entry](../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
@@ -822,7 +815,7 @@ binding. Each external-effect operation contract declares one typed effect.
 
 ## Related Docs
 
-- [Recorded source correction](recorded-source-correction.md)
+- [Durable original operation custody](durable-original-operation.md)
 
 - [Canonical Graph Obligation Progression](../domain-capabilities/canonical-graph-obligation-progression.md)
 - [Provider Sessions And Decision Read-Sets](../domain-capabilities/provider-sessions-and-decision-read-sets.md)

@@ -18,7 +18,6 @@ plumbing.
 - bind conditional providers and named clocks without owning Signal scheduling;
 - request bounded produced outputs and consume their exact retained occurrence;
 - perform source-bound edits and current, exact, or live reads through one request;
-- [correct a recorded operation](../execution/recorded-source-correction.md) under current authority while preserving intervening disjoint edits;
 - [explain original results and source operations](../capabilities/cross-runtime-causal-inspection.md) with fresh permission, including producer comparisons and saved values;
 - keep transport code descriptive rather than authoritative.
 
@@ -81,31 +80,6 @@ The main owners remain separate:
 - Signal owns policy decisions and temporal wake eligibility;
 - Query owns application installation, admission, progression, and publication;
 - the host supplies adapters and resources but does not reinterpret decisions.
-
-### Correct a performed operation
-
-Use `request.corrections()` to select a performed source and apply its declared
-inverse or compensating action. The application declares an
-`ApplicationCorrectionBinding`; the caller selects its source, supplies an
-idempotency key, prepares against the current target, then publishes. The new
-commit records the original source and preserves unrelated intervening edits.
-
-For retained reapplication, enable `visit_reapplication` and implement
-`reapplication_key` on that declaration. Read
-`corrections().alternatives(&source, limits, maximum_entries)` through its
-continuation, and select the caller's chosen reversal from the completed page.
-Then use `corrections().reapply(&alternative).idempotency(key).limits(limits)`
-with the original source action's delivery. The source input is retained, while
-the current request supplies fresh authority. Ordinary edits preserve the
-history choices; the selected branch's canonical relationships determine which
-reversal a new reapplication consumes.
-
-Keep the source selection alive through the correction and its retries. Choose
-`prepare_operation` for an action with source-completion or retained-commit
-delivery, and advance and close the returned owning handle. Fixed required
-outputs use `prepare_performed`. The
-[recorded source correction guide](../execution/recorded-source-correction.md)
-provides the declaration, request, retention, delivery and recovery examples.
 
 ### Inspect record and aspect history
 
@@ -1227,7 +1201,7 @@ Arc headers, native preparation and evidence indexes remain separate owners.
 - [Graph Read Access Planning](../authoring/graph-read-access-planning.md)
 - [Conditional Installed Operations](../domain-capabilities/conditional-installed-operations.md)
 - [Application Aftermath, External Effects, And Recovery](../execution/application-aftermath-and-recovery.md)
-- [Correct A Recorded Source Operation](../execution/recorded-source-correction.md)
+- [Durable original operation custody](../execution/durable-original-operation.md)
 
 Failed producer cleanup belongs to the admitted demand, not to cloned denial
 diagnostics. Fixed owning progression transfers it into the existing operation

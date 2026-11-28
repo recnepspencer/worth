@@ -359,7 +359,6 @@ mod capability_command_contract;
 mod causal_inspection_contract;
 mod closed_delivery_contract;
 mod collection_contract;
-mod correction_facade_contract;
 mod cutover_contract;
 mod disclosure_and_program_fences_contract;
 mod discovered_currentness_contract;

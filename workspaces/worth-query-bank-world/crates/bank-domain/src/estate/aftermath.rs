@@ -6,11 +6,10 @@
 
 use worth_query_decl::facade::application_aftermath::{
     DeclaredAftermathPostcondition, DeclaredApplicationAftermathContract, DeclaredCompensation,
-    DeclaredCorrectionMechanism, DeclaredLoweringCorrespondenceRef, DeclaredPreImageDemand,
-    DeclaredPreImageLocus, DeclaredReconciliationProcedure, DeclaredRecordedInverse,
+    DeclaredCorrectionMechanism, DeclaredReconciliationProcedure,
 };
 
-use crate::schema::{BankSchema, CapabilityGrantStatusField, EmergencyAccessStatusField};
+use crate::schema::BankSchema;
 
 use super::EstateCapabilityOperation;
 
@@ -44,28 +43,6 @@ pub fn declared_aftermath_for(
                 DeclaredReconciliationProcedure::new("confirm-death-notice-with-authority"),
             ),
         ),
-        EstateCapabilityOperation::FreezeAccount => Some(
-            DeclaredApplicationAftermathContract::runtime_alone(
-                <crate::schema::RestoreRecordedEstateFreeze as worth_query_decl::facade::application_aftermath::ApplicationCorrectionBinding<BankSchema>>::mechanism(),
-            ),
-        ),
-        // Activation and emergency-request create lanes: the grant/access record
-        // does not exist yet, so ExactPriorTruth recorded-inverse is not an
-        // honest correction. Correction is a separate revoke/approve operation.
-        EstateCapabilityOperation::DelegateCapability
-        | EstateCapabilityOperation::RequestEmergencyAccess => {
-            Some(DeclaredApplicationAftermathContract::not_correctable())
-        }
-        EstateCapabilityOperation::RevokeCapability => Some(runtime_alone_inverse(
-            "restore-revoked-capability",
-            "estate-revoke-inverse",
-            DeclaredPreImageLocus::from_field(CapabilityGrantStatusField::at("CapabilityGrantStatusField")),
-        )),
-        EstateCapabilityOperation::ApproveEmergencyAccess => Some(runtime_alone_inverse(
-            "revoke-emergency-access",
-            "estate-emergency-inverse",
-            DeclaredPreImageLocus::from_field(EmergencyAccessStatusField::at("EmergencyAccessStatusField")),
-        )),
         EstateCapabilityOperation::DisburseEstate => {
             Some(DeclaredApplicationAftermathContract::runtime_alone(
                 DeclaredCorrectionMechanism::Compensation(
@@ -78,7 +55,12 @@ pub fn declared_aftermath_for(
                 ),
             ))
         }
-        EstateCapabilityOperation::OpenEstateCase
+        EstateCapabilityOperation::FreezeAccount
+        | EstateCapabilityOperation::DelegateCapability
+        | EstateCapabilityOperation::RequestEmergencyAccess
+        | EstateCapabilityOperation::RevokeCapability
+        | EstateCapabilityOperation::ApproveEmergencyAccess
+        | EstateCapabilityOperation::OpenEstateCase
         | EstateCapabilityOperation::RecognizeExecutor
         | EstateCapabilityOperation::RevokeEmergencyAccess
         | EstateCapabilityOperation::CompleteMandatoryReview
@@ -86,19 +68,4 @@ pub fn declared_aftermath_for(
             Some(DeclaredApplicationAftermathContract::not_correctable())
         }
     }
-}
-
-fn runtime_alone_inverse(
-    inverse_operation: &str,
-    lowering: &str,
-    preimage_locus: DeclaredPreImageLocus<BankSchema>,
-) -> DeclaredApplicationAftermathContract<BankSchema> {
-    DeclaredApplicationAftermathContract::runtime_alone(
-        DeclaredCorrectionMechanism::RecordedInverse(DeclaredRecordedInverse::new(
-            inverse_operation,
-            DeclaredLoweringCorrespondenceRef::new(lowering),
-            DeclaredAftermathPostcondition::ExactPriorTruth,
-            DeclaredPreImageDemand::new([preimage_locus], 256),
-        )),
-    )
 }

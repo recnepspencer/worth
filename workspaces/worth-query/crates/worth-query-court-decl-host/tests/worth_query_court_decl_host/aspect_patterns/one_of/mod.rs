@@ -21,7 +21,6 @@ mod schema;
 mod world;
 use schema::*;
 mod lifecycle;
-mod redo;
 mod restore_first;
 
 mod sparse;

@@ -284,11 +284,11 @@ fn estate_contract_installs_exact_grant_currentness_meaning() {
     assert_eq!(workflow.grant().field(), "CapabilityWorkflowStageField");
     assert_eq!(workflow.resource().field(), "EstateWorkflowStageField");
     assert_eq!(
-        currentness.validity().not_before().field(),
-        "CapabilityValidFromField"
+        currentness.validity().not_before().map(|field| field.field()),
+        Some("CapabilityValidFromField")
     );
     assert_eq!(
-        currentness.validity().not_after().field(),
-        "CapabilityValidThroughField"
+        currentness.validity().not_after().map(|field| field.field()),
+        Some("CapabilityValidThroughField")
     );
 }

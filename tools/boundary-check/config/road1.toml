@@ -1434,3 +1434,44 @@ forbidden_identifiers = [
   "WorthQueryOwnedApplicationHistoryDocument",
 ]
 guidance = "In-place document history is retired. Branch-native workspace history is planned separately."
+
+[[source_identifier_denials]]
+root = "workspaces"
+exclude_paths = ["workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/compile_fail/inverse_undo/ui/correction_derive.rs"]
+forbidden_identifiers = ["WorthQueryCorrection", "derive_worth_query_correction", "preimage_fields"]
+guidance = "Query application declarations may not author inverse undo"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates/worth-query-host/src"
+forbidden_identifiers = [
+    "undo", "undo_with_key", "redo", "redo_with_key",
+    "undo_authored", "undo_authored_with_key", "redo_authored", "redo_authored_with_key",
+    "correction_history", "correction_history_with_scope",
+]
+guidance = "Application Home and Workflow Application Home may not expose flat inverse undo or redo history"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-query-bank-world"
+forbidden_identifiers = [
+    "ApplicationCorrectionBinding", "recorded_inverse_binding",
+    "recorded_create_inverse_binding", "prepare_send_money_correction",
+    "prepare_estate_freeze_correction", "prepare_approved_payment_correction",
+]
+guidance = "Bank declares irreversible external-effect aftermath directly and uses the native recovery handle"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates/worth-query-declaration/src"
+forbidden_identifiers = [
+    "application_correction_authoring", "CorrectionWitness", "CorrectionBindingDeclaration",
+    "recorded_inverse_binding", "recorded_create_inverse_binding",
+]
+guidance = "Schema composition does not install hand-authored inverse undo"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates/worth-query-publication/src/application_entry"
+forbidden_identifiers = [
+    "corrections", "correction_envelope", "recover_recorded_correction",
+    "WorthQueryApplicationCorrectionPreparation", "WorthQueryOperationCorrectionPreparation",
+    "WorthQueryCorrectionHistoryLimits",
+]
+guidance = "Publication accepts ordinary operations and preserves external-effect aftermath through its recovery owner"

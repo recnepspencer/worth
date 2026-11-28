@@ -1,6 +1,5 @@
 //! Mid-thread authored splice and its independently checked exact relation inverse.
 use super::{lifecycle::*, *};
-mod courts;
 pub mod inspection;
 #[derive(
     Clone, Copy, Debug, Eq, PartialEq, worth_query_decl::facade::application_schema::WorthValue,

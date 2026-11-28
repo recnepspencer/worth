@@ -10,7 +10,7 @@ use worth_query_decl::facade::worth_query_identity;
 
 mod action;
 mod body_and_scope;
-mod correction_and_program;
+mod collapsed_program;
 mod ergonomics_edge_cases;
 mod host_negative_ergonomics;
 mod hygiene_and_typed_input_courts;

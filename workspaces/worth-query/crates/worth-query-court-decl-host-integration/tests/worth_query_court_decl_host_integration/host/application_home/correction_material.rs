@@ -1,25 +1,15 @@
-//! Public directory originals and corrections use the shared installed handler.
-mod correction_custody;
-mod durable_witness;
-mod expiry;
+//! Public directory original operations use the shared installed handler.
 mod handler_ergonomics;
-mod kill_divergent_branch;
 mod kill_original_owner;
-mod kill_pin_transfer;
-mod kill_split_completion;
 pub(in crate::host) mod numeric_home;
 mod original_operation;
-mod prepared_reopen;
 mod program;
 mod refused_custody;
-mod reopen_generation;
-mod stage_correction;
 use program::*;
 use super::*;
-use worth_query_host::facade::application_entry::{WorthQueryApplicationMutationOutcome as Outcome,
-    WorthQueryCorrectionHistoryLimits, WorthQueryApplicationCorrectionPreparation as Prepared};
+use worth_query_host::facade::application_entry::{WorthQueryApplicationMutationOutcome as Outcome};
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture as label;
-use label::correction_source::label_edit::*;
+use label::label_edit::*;
 fn scope() -> WorthQueryRequestScope {
     WorthQueryRequestScope::new(Some(Instant::now() + Duration::from_secs(120)),
         WorthQueryCancellationSource::new().token(),
@@ -104,84 +94,5 @@ fn acknowledged_home_original_transfers_its_single_interpretation_across_gracefu
     );
     home.close(&execution)
         .unwrap_or_else(|refused| panic!("original reopened close: {refused:?}"))
-        .reclaim();
-}
-#[test]
-fn home_correction_uses_original_material_and_the_durable_key_after_graceful_reopen() {
-    let location = fixture::location();
-    let lease = checkpoint_capture::lease(256 * 1024 * 1024);
-    let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let home = open(location.clone(), execution);
-    let receipt = edit(&home);
-    let coordinate = receipt.correction_source().coordinates();
-    drop(receipt);
-    home.close(&execution)
-        .unwrap_or_else(|refused| panic!("before correction close: {refused:?}"))
-        .reclaim();
-    let home = open(location.clone(), execution);
-    let request = scope();
-    let limits =
-        WorthQueryCorrectionHistoryLimits::new(None, std::num::NonZeroUsize::new(8).unwrap());
-    {
-        let runtime = home.runtime();
-        let principal = label::authentication::authenticate_external(
-            runtime.runtime().installed_schema(),
-            "alice",
-            Duration::from_secs(120),
-            &request,
-        );
-        let corrections = runtime.request(&principal, &request).corrections();
-        let source = corrections.select_coordinates(&coordinate, limits).unwrap();
-        let prepared = runtime
-            .request(&principal, &request)
-            .corrections()
-            .reverse(&source)
-            .idempotency("reverse-label")
-            .limits(limits)
-            .prepare()
-            .unwrap();
-        let Prepared::Prepared(prepared) = prepared else {
-            panic!("first correction prepares exactly once");
-        };
-        match prepared.publish().unwrap() {
-            Outcome::Committed { result, .. } => {
-                assert_eq!(result.downcast_ref::<LabelEdit>().unwrap().label, "primary")
-            }
-            other => panic!("actual ordinary inverse: {other:?}"),
-        }
-        drop(source);
-    }
-    home.close(&execution)
-        .unwrap_or_else(|refused| panic!("after correction close: {refused:?}"))
-        .reclaim();
-    let home = open(location, execution);
-    let runtime = home.runtime();
-    let principal = label::authentication::authenticate_external(
-        runtime.runtime().installed_schema(),
-        "alice",
-        Duration::from_secs(120),
-        &request,
-    );
-    let source = runtime
-        .request(&principal, &request)
-        .corrections()
-        .select_coordinates(&coordinate, limits)
-        .unwrap();
-    let retry = runtime
-        .request(&principal, &request)
-        .corrections()
-        .reverse(&source)
-        .idempotency("reverse-label")
-        .limits(limits)
-        .prepare()
-        .unwrap();
-    assert!(
-        matches!(retry, Prepared::Settled(Outcome::RecoveredCommitted(_))),
-        "the same key observes the original durable inverse"
-    );
-    drop(retry);
-    drop(source);
-    home.close(&execution)
-        .unwrap_or_else(|refused| panic!("retry close: {refused:?}"))
         .reclaim();
 }

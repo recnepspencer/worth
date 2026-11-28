@@ -1,5 +1,6 @@
 //! Stage order and tokens are request-owned; only execute performs work.
 use super::*;
+use std::ops::ControlFlow;
 pub struct NoEditStages;
 pub struct WithEditStage<Previous, Root, Intent, Source = ()> {
     pub(super) previous: Previous,
@@ -25,8 +26,6 @@ impl<'a, S: ApplicationSchema> WorthQueryApplicationRequest<'a, 'a, 'a, S> {
                 scope: self.scope,
                 branch: self.branch,
                 order: ApplicationEditEnvelopeOrder::DeclaredDependencies,
-                correction: None,
-
             },
             stages: NoEditStages,
             brand: Arc::new(()),
@@ -109,29 +108,26 @@ where
         Stages: entry::CaptureEditStages<S, Program, Key>,
         Key: serde::Serialize + Send + Sync + 'static,
     {
-        self.advance_with_front(
+        self.advance_with_admission(
             program,
             allocation,
             AuthoredEnvelopeResolutionPurpose::Execute,
-            |_, _, _, _, _| Ok(None),
+            |_, _, _, _, _| ControlFlow::Continue(()),
         )
     }
 
-    pub(in crate::application_entry) fn advance_with_front<Program>(
+    pub(in crate::application_entry) fn advance_with_admission<Program>(
         self,
         program: &WorthQueryProgramApplicationRuntime<S, Program>,
         allocation: ExecutionAllocationPolicy<'_, '_>,
         purpose: AuthoredEnvelopeResolutionPurpose,
-        front: impl FnOnce(
+        admit: impl FnOnce(
             &mut EnvelopeContext<'_, S>,
-            &WorthQueryProgramApplicationRuntime<S, Program>,
             &WorthQueryAdvancementPhase<'_>,
-            &Arc<ApplicationEditEnvelopeKey<Key>>,
-            &mut Vec<Box<dyn entry::EditEntry<S, Program, Key>>>,
-        ) -> Result<
-            Option<WorthQueryEditEnvelopeOutcome>,
-            WorthQueryEditEnvelopeExecutionDenial,
-        >,
+            &ApplicationEditEnvelopeKey<Key>,
+            ApplicationEditIntentIdentity,
+            &dyn entry::EditEntry<S, Program, Key>,
+        ) -> ControlFlow<()>,
     ) -> Result<WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeExecutionDenial>
     where
         Program: ApplicationProgramDefinition<S>,
@@ -155,13 +151,10 @@ where
                         .map_err(envelope_failure)?,
                 );
             let mut entries = Vec::new();
-            if let Some(outcome) = front(&mut context, program, &phase, &key, &mut entries)? {
-                return Ok(outcome);
-            }
             self.envelope.stages.capture(&mut entries)?;
-            if entries.is_empty() {
+            let Some(first) = entries.first() else {
                 return Ok(WorthQueryEditEnvelopeOutcome::Empty);
-            }
+            };
             let intents = entries
                 .iter()
                 .map(|entry| entry.intent())
@@ -176,6 +169,9 @@ where
                     )
                 })
                 .map_err(envelope_failure)?;
+            if admit(&mut context, &phase, &key, intent, first.as_ref()).is_break() {
+                return Ok(WorthQueryEditEnvelopeOutcome::Unseen);
+            }
             let values = entries
                 .iter()
                 .map(|_| Arc::new(Mutex::new(None)))

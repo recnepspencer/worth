@@ -1,0 +1,5 @@
+error[E0599]: no associated function or constant named `undo` found for struct `WorthQueryApplicationHome<Schema, Program>` in the current scope
+  --> tests/worth_query_court_decl_host_native_fragments/compile_fail/inverse_undo/ui/application_home_undo.rs:10:59
+   |
+10 |     let _ = WorthQueryApplicationHome::<Schema, Program>::undo;
+   |                                                           ^^^^ associated function or constant not found in `WorthQueryApplicationHome<Schema, Program>`

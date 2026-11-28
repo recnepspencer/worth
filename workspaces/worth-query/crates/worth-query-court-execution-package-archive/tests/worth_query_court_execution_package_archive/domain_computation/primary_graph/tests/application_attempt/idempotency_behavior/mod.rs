@@ -274,7 +274,5 @@ fn same_operation_intent_cannot_cross_an_admitted_scope() {
 
 #[path = "equivalent_retry_recovers_original_receipt_while_intent_drift_is/mod.rs"]
 pub mod equivalent_retry_recovers_original_receipt_while_intent_drift_is;
-#[path = "history_retirement/mod.rs"]
-pub mod history_retirement;
 #[path = "lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admiss/mod.rs"]
 pub mod lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admiss;

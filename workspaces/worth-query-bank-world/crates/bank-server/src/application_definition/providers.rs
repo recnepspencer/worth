@@ -10,7 +10,7 @@ use bank_domain::schema::{
     RecognizeEstateExecutorMutationBinding, RejectPaymentMutationBinding,
     RejectedPaymentAssessmentBinding, RejectedPaymentAssessmentProducer,
     RejectedPaymentAssessmentProvider, RejectedPaymentAssessmentReadiness,
-    ReleaseEstateMutationBinding, RestoreFrozenEstateAccountBinding,
+    ReleaseEstateMutationBinding,
     RetransmitEstateDeathNoticeMutationBinding, ReverseJournalMutationBinding,
     RevokeAccountAccessMutationBinding, SendMoneyMutationBinding, WithdrawMutationBinding,
 };
@@ -32,7 +32,7 @@ use crate::mutation_handlers::{
     DisburseEstateHandler, FreezeEstateAccountHandler, GrantAccountAccessHandler,
     InitiateBusinessPaymentHandler, NotifyEstateDeathHandler, OpenEstateCaseHandler,
     RecognizeEstateExecutorHandler, RejectPaymentHandler, RejectedPaymentAssessmentHandler,
-    ReleaseEstateHandler, RestoreFrozenEstateAccountHandler, RetransmitEstateDeathNoticeHandler,
+    ReleaseEstateHandler, RetransmitEstateDeathNoticeHandler,
     ReverseJournalHandler, RevokeAccountAccessHandler, SendMoneyHandler, WithdrawHandler,
 };
 
@@ -126,7 +126,6 @@ impl WorthQueryApplicationContribution<BankSchema> for BankEstateProvider {
             RetransmitEstateDeathNoticeHandler,
         )?;
         setup.handler::<FreezeEstateAccountMutationBinding, _>(FreezeEstateAccountHandler)?;
-        setup.handler::<RestoreFrozenEstateAccountBinding, _>(RestoreFrozenEstateAccountHandler)?;
         setup.handler::<OpenEstateCaseMutationBinding, _>(OpenEstateCaseHandler)?;
         setup
             .handler::<RecognizeEstateExecutorMutationBinding, _>(RecognizeEstateExecutorHandler)?;

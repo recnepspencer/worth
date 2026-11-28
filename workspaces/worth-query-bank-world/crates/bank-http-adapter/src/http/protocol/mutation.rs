@@ -92,19 +92,9 @@ pub enum BankHttpMutationOperation {
         expected_accounting_revision: Option<u64>,
         expected_status: Option<BankHttpExpectedAccountStatus>,
     },
-    CorrectSendMoney {
-        source: super::BankHttpCorrectionSource,
-    },
-    ReapplySendMoney {
-        history_token: String,
-        source: super::BankHttpCorrectionSource,
-    },
     FreezeEstateAccount {
         estate: u64,
         account: String,
-    },
-    CorrectEstateFreeze {
-        source: super::BankHttpCorrectionSource,
     },
     RevokeEstateCapability {
         estate: u64,

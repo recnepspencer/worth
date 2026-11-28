@@ -5,7 +5,7 @@ pub use operations::*;
 pub use operations::{Restoration, Restore, RestoreBinding, Restored};
 mod correction;
 mod effects;
-pub use correction::UndoDelete;
+pub use correction::RegisterDeletion;
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {

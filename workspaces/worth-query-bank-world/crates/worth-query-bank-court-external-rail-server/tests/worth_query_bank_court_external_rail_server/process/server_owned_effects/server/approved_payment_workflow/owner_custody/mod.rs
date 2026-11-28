@@ -5,7 +5,7 @@
 
 pub(crate) use worth_query_bank_testkit_server::facade::approved_payment_workflow::owner_custody::*;
 
-pub(crate) mod correction;
+pub(crate) mod terminal_rail;
 
 #[test]
 fn a_cancellation_stays_blocked_after_rail_completion_without_inbound() {

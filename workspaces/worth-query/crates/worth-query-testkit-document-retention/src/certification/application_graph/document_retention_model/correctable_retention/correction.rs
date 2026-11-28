@@ -1,7 +1,7 @@
 pub use super::*;
 pub use worth_query_host::facade::declaration::{application_aftermath::*, application_query::*};
 
-pub struct RestoreReviewedRetention;
+pub struct RegisterReviewedRetention;
 impl ApplicationMutationInputScope<Schema, SetRetentionBinding> for SetRetentionInput {
     fn scope_for_binding(
         &self,
@@ -12,108 +12,21 @@ impl ApplicationMutationInputScope<Schema, SetRetentionBinding> for SetRetention
         .scope_binding()
     }
 }
-impl ApplicationCorrectionBinding<Schema> for RestoreReviewedRetention {
-    const IDENTITY: &'static str = "document-retention.restore-reviewed.v1";
-    type Source = CorrectableRetentionBinding;
-    type InverseIntent = SetRetentionIntent;
-    type Disclosure = DocumentRetentionQueryBinding;
-
-    fn recover_source_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+impl worth_query_decl::facade::application_schema::fragment::Registration<Schema> for RegisterReviewedRetention {
+    fn register(
+        schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
-    >{
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
-            bytes, expected, bounds,
-        )
-    }
-
-    fn recover_inverse_input(
-        bytes: &[u8],
-        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
-        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
-    ) -> Result<
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
-            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
-                Schema,
-                Self,
-            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
-                Schema,
-            >>::InputBinding,
-        >,
-        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<Schema>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
-            bytes, expected, bounds,
-        )
-    }
-    fn source_definition() -> ApplicationOperationDefinitionBuilder<
-        Schema,
-        CorrectableRetention,
-        SetRetentionInput,
-        true,
-        false,
-    > {
-        CorrectableRetention::reference()
+        Ok(schema
+            .declared_operation(
+                CorrectableRetention::reference()
             .definition()
             .no_external_effect()
-    }
-    fn disclosure_parameters(
-        _: &SetRetentionInput,
-    ) -> Result<
-        ApplicationQueryParameterSet<DocumentRetentionQuery>,
-        ApplicationCorrectionDerivationDenial,
-    > {
-        Ok(ApplicationQueryParameterSet::new())
-    }
-    fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
-            [DeclaredPreImageLocus::from_field(
-                DocumentRetentionField::at("DocumentRetentionField"),
-            )],
-            U64ApplicationValueBinding::encode(&u64::MAX)
-                .unwrap()
-                .semantic_byte_width(),
-        ))
-    }
-    fn derive_correction(
-        original: &SetRetentionInput,
-        material: ApplicationCorrectionSourceMaterial<'_, Schema>,
-    ) -> Result<SetRetentionIntent, ApplicationCorrectionDerivationDenial> {
-        use ApplicationCorrectionDerivationDenial::*;
-        let ApplicationCorrectionSourceMaterial::RecordedInverse(preimage) = material else {
-            return Err(UnsupportedSourceMeaning);
-        };
-        let retention_days = U64ApplicationValueBinding::decode(
-            preimage
-                .field(&DeclaredPreImageLocus::from_field(
-                    DocumentRetentionField::at("DocumentRetentionField"),
-                ))
-                .ok_or(MissingPreImage)?,
-        )
-        .map_err(|_| InvalidPreImage)?;
-        Ok(SetRetentionIntent {
-            input: SetRetentionInput {
-                identity: original.identity.clone(),
-                retention_days,
-            },
-        })
-    }
-    fn inverse_key(key: &str) -> Result<u64, ApplicationValueEncodeDenial> {
-        // The fixture presents decimal command keys, using the binding's actual key type.
-        key.parse().map_err(|_| ApplicationValueEncodeDenial::CodecRejected {
-            binding_identity: worth_query_host::facade::declaration::portable_identity::WorthQueryPortableTypeIdentity::declared(Self::IDENTITY),
-            reason: "correction command key must be decimal",
-        })
-    }
-    fn visit<V: ApplicationCorrectionVisitor<Schema>>(
-        dispatch: ApplicationCorrectionDispatch<Schema, Self, V>,
-    ) -> V::Output {
-        dispatch.conventional()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .application_mutation_binding::<CorrectableRetentionBinding>())
     }
 }

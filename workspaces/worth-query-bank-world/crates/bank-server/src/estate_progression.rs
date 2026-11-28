@@ -37,7 +37,7 @@ pub use disburse_estate::BankEstateDisbursementProjectionDenial;
 pub use elevation_lifecycle::{
     BankApprovedEstateElevation, BankEstateElevationApprovalOutcome,
     BankEstateElevationCloseOutcome, BankEstateElevationClosureKind,
-    BankEstateElevationRequestOutcome, BankEstateElevationRetentionWork, BankEstateMandatoryReview,
+    BankEstateElevationRequestOutcome, BankEstateMandatoryReview,
     BankEstateMandatoryReviewOutcome, BankRequestedEstateElevation, BankReviewedEstateElevation,
 };
 pub use freeze_account::BankEstateFreezeProjectionDenial;

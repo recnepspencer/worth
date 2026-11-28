@@ -72,7 +72,6 @@ pub struct EnvelopeContext<'a, S> {
     pub(in crate::application_entry) scope: &'a worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     pub(in crate::application_entry) branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     pub(in crate::application_entry) order: ApplicationEditEnvelopeOrder,
-    pub(in crate::application_entry) correction: Option<worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent>,
 }
 pub(super) type StageValue = Arc<Mutex<Option<Box<dyn Any + Send>>>>;
 pub(in crate::application_entry) type Connection<S, R> = <<R as ApplicationOutputGraphShape<S>>::RootConnection as ApplicationConnectionShape<S>>::Binding;

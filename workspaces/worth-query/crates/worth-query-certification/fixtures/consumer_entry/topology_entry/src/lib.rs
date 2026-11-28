@@ -96,7 +96,7 @@ pub(crate) type CheckpointRecords = (checkpoint_recovery::computation_partition:
 #[cfg(test)]
 pub(crate) type CheckpointMembers<S> = (
     CheckpointRecords,
-    checkpoint_recovery::computation_partition::entry_correction::recorded::RecordedEntryCorrection<
+    checkpoint_recovery::computation_partition::entry_correction::recorded::RegisterEntryEdit<
         S,
     >,
 );

@@ -163,7 +163,7 @@ async fn completed_rail_callback() {
     let bank_user_node::BankUserNodeMutationOutcome::Forwarded {
         response:
             bank_http_adapter::BankHttpMutationOutcome::Completed {
-                sequence, source, ..
+                sequence, ..
             },
     } = resumed
     else {
@@ -260,20 +260,7 @@ async fn completed_rail_callback() {
         contacts_before_retry + 1,
     )
     .await;
-    let original_world = terminal.original_world_commit();
-    correction::assert_completed_notice_refuses_journal_inverse(
-        &client,
-        node_address,
-        rail.local_addr(),
-        &source,
-        (
-            original_world.owner_identity().get(),
-            original_world.ordinal(),
-        ),
-    )
-    .await;
-
-    correction::assert_original_notice_replays(&client, node_address, &request).await;
+    replay::assert_original_notice_replays(&client, node_address, &request).await;
     assert_eq!(proxy.captured().len(), 2, "replay cannot dispatch again");
 
     duplicate::assert_exact_callbacks(&client, bank_address, &captured[0]).await;

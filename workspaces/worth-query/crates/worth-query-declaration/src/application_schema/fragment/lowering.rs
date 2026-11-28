@@ -10,7 +10,6 @@ use std::marker::PhantomData;
 
 mod aspect;
 mod contribution;
-mod correction;
 mod extension;
 mod relation_payload;
 

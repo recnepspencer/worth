@@ -4,7 +4,7 @@ mod correction;
 mod effects;
 mod mark;
 mod operations;
-pub use correction::Revision;
+pub use correction::RegisterRevision;
 pub use mark::*;
 pub use operations::*;
 pub fn declare(

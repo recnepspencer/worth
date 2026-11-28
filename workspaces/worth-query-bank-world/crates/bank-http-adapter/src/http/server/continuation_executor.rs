@@ -23,7 +23,6 @@ use super::query_denial::query_denial;
 use super::query_publication::describe_query_publication;
 
 mod activity;
-pub(super) mod correction_history;
 use activity::{execute_page, execute_resume};
 mod replay;
 #[cfg(test)]
@@ -50,7 +49,6 @@ pub(super) struct AdmittedResumeRequest {
 enum ContinuationCommand {
     Page(ContinuationJob<AdmittedPageRequest>),
     Resume(ContinuationJob<AdmittedResumeRequest>),
-    Correction(correction_history::HistoryJob),
 }
 
 struct ContinuationJob<R> {
@@ -136,11 +134,6 @@ async fn run<A>(
 {
     while let Some(command) = receiver.recv().await {
         match command {
-            ContinuationCommand::Correction(job) => {
-                let outcome =
-                    correction_history::execute(application.as_ref(), &registry, &job).await;
-                let _ = job.response.send(outcome);
-            }
             ContinuationCommand::Page(job) => {
                 let outcome = execute_page(application.as_ref(), &registry, &job).await;
                 let _ = job.response.send(outcome);

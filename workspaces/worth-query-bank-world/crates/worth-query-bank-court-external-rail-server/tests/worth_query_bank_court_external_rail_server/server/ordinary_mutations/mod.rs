@@ -14,7 +14,6 @@ pub(crate) mod program_families;
 
 pub(crate) mod publication;
 
-pub(crate) mod recorded_correction;
 
 pub(crate) mod retained_publication;
 

@@ -45,11 +45,11 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
         SourceModel,
         SourceFeature,
         Contracts,
-        correction::Restore,
-        roster::UndoCreate,
-        roster::UndoRetire,
-        roster::local_member::UndoDelete,
-        roster::sparse_owner::Revision,
+        correction::RegisterEdit,
+        roster::RegisterCreation,
+        roster::RegisterRetirement,
+        roster::local_member::RegisterDeletion,
+        roster::sparse_owner::RegisterRevision,
     );
 }
 

@@ -197,29 +197,6 @@ where
     }
 }
 
-impl BankHomeRuntime<'_> {
-    pub fn prepare_send_money_correction<'a>(
-        &'a self,
-        principal: &BankAuthenticatedPrincipal,
-        scope: &WorthQueryRequestScope,
-        source: &worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceCoordinates,
-        key: &str,
-        limits: worth_query_host::facade::application_entry::WorthQueryCorrectionHistoryLimits,
-    ) -> Result<
-        crate::BankSendMoneyCorrectionPreparation<'a>,
-        worth_query_host::facade::application_entry::WorthQueryApplicationCorrectionDenial,
-    > {
-        crate::correction::prepare_send_money_correction(
-            self.runtime,
-            principal,
-            scope,
-            source,
-            key,
-            limits,
-        )
-    }
-}
-
 pub(super) fn admit_authentication_adapter<Adapter>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
     configuration: BankAuthenticationConfiguration,

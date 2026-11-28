@@ -4,21 +4,17 @@
 //! - Blocker 5: generic-family `as ActionAlias` (fixed + generic + schema-generic)
 //! - Blocker 6: domain result carrier without inherent `result_shape` via `definition_with`
 //! - Blocker 7: correction callback hygiene (`original`, `preimage`, `key`) and wrong-scalar pre-image
-use super::super::actions::{complete_body, Complete, CompleteBinding, RenameBinding, Renamed};
-use super::super::completion_correction::{DetailsBinding, DetailsQuery, RestoreCompletion};
+use super::super::actions::{CompleteBinding, RenameBinding, Renamed};
 use super::super::schema::*;
 use super::board;
-use worth_foundational::facade::AspectValue;
-use worth_query_decl::facade::application_aftermath::*;
 use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
 use worth_query_decl::facade::application_program::*;
 use worth_query_decl::facade::application_query::*;
 use worth_query_decl::facade::application_schema::fragment::NativeScalars;
 use worth_query_decl::facade::application_schema::*;
-use worth_query_decl::facade::portable_identity::WorthQueryPortableTypeIdentity;
 use worth_query_decl::facade::{
     worth_query_identity_namespace, worth_query_portable_type,
-    worth_query_structured_value_binding, WorthQuery, WorthQueryCorrection, WorthQueryRecord,
+    worth_query_structured_value_binding, WorthQuery, WorthQueryRecord,
     WorthQuerySchema,
 };
 use worth_query_host::facade::worth_query_application_contribution;
@@ -186,154 +182,3 @@ fn generic_feature_action_aliases_avoid_unused_type_parameters() {
 }
 
 // --- Blocker 7: Callback hygiene (`original`, `preimage`, `key`) & wrong-scalar preimage ---
-fn original(
-    _: &Complete,
-) -> Result<ApplicationQueryParameterSet<DetailsQuery>, ApplicationCorrectionDerivationDenial> {
-    Ok(ApplicationQueryParameterSet::new())
-}
-
-fn preimage(
-    orig: &Complete,
-    mat: &dyn ApplicationCorrectionPreImage<Schema>,
-) -> Result<RestoreCompletion, ApplicationCorrectionDerivationDenial> {
-    let was_done = decode_preimage_field(mat, TaskFacts::done())?;
-    Ok(RestoreCompletion {
-        task: orig.task,
-        expected: orig.done,
-        done: was_done,
-    })
-}
-
-fn key(raw: &str) -> Result<u64, ApplicationValueEncodeDenial> {
-    raw.parse()
-        .map_err(|_| ApplicationValueEncodeDenial::CodecRejected {
-            binding_identity: WorthQueryPortableTypeIdentity::declared(
-                "macros.parity.hygiene-correction.v1",
-            ),
-            reason: "invalid key",
-        })
-}
-
-fn demand_bytes() -> usize {
-    BoolApplicationValueBinding::encode(&true)
-        .unwrap()
-        .semantic_byte_width()
-}
-
-#[derive(WorthQueryCorrection)]
-#[worth_query(
-    schema = Schema,
-    identity = "macros.parity.hygiene-correction.v1",
-    source = CompleteBinding,
-    inverse = RestoreCompletion,
-    disclosure = DetailsBinding,
-    disclosure_parameters = original,
-    source_body = complete_body,
-    preimage_fields(TaskFacts::done()),
-    preimage_bytes = demand_bytes(),
-    derive = preimage,
-    inverse_key = key,
-)]
-pub struct HygienicCorrection;
-
-fn __worth_correction_original(
-    orig: &Complete,
-) -> Result<ApplicationQueryParameterSet<DetailsQuery>, ApplicationCorrectionDerivationDenial> {
-    original(orig)
-}
-
-fn __worth_correction_preimage(
-    orig: &Complete,
-    mat: &dyn ApplicationCorrectionPreImage<Schema>,
-) -> Result<RestoreCompletion, ApplicationCorrectionDerivationDenial> {
-    preimage(orig, mat)
-}
-
-fn __worth_correction_key(raw: &str) -> Result<u64, ApplicationValueEncodeDenial> {
-    key(raw)
-}
-
-#[derive(WorthQueryCorrection)]
-#[worth_query(
-    schema = Schema,
-    identity = "macros.parity.mixed-site-hygiene-correction.v1",
-    source = CompleteBinding,
-    inverse = RestoreCompletion,
-    disclosure = DetailsBinding,
-    disclosure_parameters = __worth_correction_original,
-    source_body = complete_body,
-    preimage_fields(TaskFacts::done()),
-    preimage_bytes = demand_bytes(),
-    derive = __worth_correction_preimage,
-    inverse_key = __worth_correction_key,
-)]
-pub struct ExactSpellingHygieneCorrection;
-
-struct WrongScalarPreImage(AspectValue);
-impl ApplicationCorrectionPreImage<Schema> for WrongScalarPreImage {
-    fn field(&self, _locus: &DeclaredPreImageLocus<Schema>) -> Option<&AspectValue> {
-        Some(&self.0)
-    }
-}
-
-#[test]
-fn correction_callbacks_named_original_preimage_key_and_wrong_scalar_preimage() {
-    let orig = Complete {
-        task: 9,
-        done: true,
-    };
-    assert!(
-        <HygienicCorrection as ApplicationCorrectionBinding<Schema>>::disclosure_parameters(&orig)
-            .is_ok()
-    );
-    assert_eq!(
-        <HygienicCorrection as ApplicationCorrectionBinding<Schema>>::inverse_key("77"),
-        Ok(77)
-    );
-    let valid_pre = WrongScalarPreImage(AspectValue::Bool(false));
-    assert_eq!(
-        <HygienicCorrection as ApplicationCorrectionBinding<Schema>>::derive_correction(
-            &orig,
-            ApplicationCorrectionSourceMaterial::RecordedInverse(&valid_pre),
-        ),
-        Ok(RestoreCompletion {
-            task: 9,
-            expected: true,
-            done: false,
-        })
-    );
-    assert!(
-        <ExactSpellingHygieneCorrection as ApplicationCorrectionBinding<Schema>>::disclosure_parameters(
-            &orig,
-        )
-        .is_ok()
-    );
-    assert_eq!(
-        <ExactSpellingHygieneCorrection as ApplicationCorrectionBinding<Schema>>::inverse_key("88"),
-        Ok(88)
-    );
-    assert_eq!(
-        <ExactSpellingHygieneCorrection as ApplicationCorrectionBinding<Schema>>::derive_correction(
-            &orig,
-            ApplicationCorrectionSourceMaterial::RecordedInverse(&valid_pre),
-        ),
-        Ok(RestoreCompletion {
-            task: 9,
-            expected: true,
-            done: false,
-        })
-    );
-    let wrong_scalar = WrongScalarPreImage(AspectValue::String("not-a-bool".into()));
-    assert_eq!(
-        decode_preimage_field(&wrong_scalar, TaskFacts::done()).err(),
-        Some(ApplicationCorrectionDerivationDenial::InvalidPreImage)
-    );
-    assert_eq!(
-        <HygienicCorrection as ApplicationCorrectionBinding<Schema>>::derive_correction(
-            &orig,
-            ApplicationCorrectionSourceMaterial::RecordedInverse(&wrong_scalar),
-        )
-        .err(),
-        Some(ApplicationCorrectionDerivationDenial::InvalidPreImage)
-    );
-}

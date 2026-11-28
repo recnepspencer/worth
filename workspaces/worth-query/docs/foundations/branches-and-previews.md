@@ -198,29 +198,6 @@ and stale or mixed-basis refusal.
 
 ### Branch history and retirement
 
-To correct a retained operation on a branch, bind an ordinary request with
-`.on_branch(target)` and use its
-[recorded correction entry](../execution/recorded-source-correction.md).
-Selection proves the source belongs to the target's retained ancestry; preparation
-checks current disclosure, program meaning and inverse authority. Publication
-appends one child of that target and preserves its disjoint intervening edits.
-
-Correction alternatives also belong to the selected branch's history. Use
-`request.corrections().alternatives(...)`, follow its continuation to completion,
-and select the historical reversal the user chose. The completed traversal
-resolves the active reversal on that exact target. For example, after a source
-is reversed, reapplied and reversed again, choosing the first reversal reapplies
-the retained source input and consumes the currently active reversal. The
-receipt records both identities. A sibling branch keeps its own active reversal
-and continuation.
-
-Each history continuation binds its target observation. If the branch advances
-between pages or before selection, obtain a new traversal with a fresh request.
-Keep the command's idempotency key when retrying a submitted correction: an
-equivalent retry resolves its original performed occurrence. The
-[history chooser example](../../crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/tree_reapplication.rs)
-shows explicit older-alternative selection, pagination and ordinary close.
-
 A selected occurrence pins exact history for repeatable reads while the branch
 head advances. Closing a product retires its World history first and then any
 private component branches. History a live branch still reaches is not the
@@ -239,11 +216,6 @@ choose the branch used by subsequent requests after the steps succeed. Use
 `close` to retire a discarded branch and release its resources. A refused step
 on the fork leaves the parent's head and history unchanged.
 
-The fork reads its parent's history as its own, so corrections can select a
-source made on either branch. Retained history grows with the actual authored
-operations across branch selection changes. The
-[fork transaction example](../../crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/fork_head_adoption.rs)
-shows request execution, explicit branch selection and retirement.
 History pages are branch-occurrence scoped and bounded by the caller's nonzero
 limit. Their entries are descriptive until `select` asks World to issue an
 exact historical observation; copied commit identities cannot perform that
