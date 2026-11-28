@@ -1,5 +1,0 @@
-error[E0599]: no method named `prepare_replacement_lowering` found for reference `&worth_ui_runtime::runtime::launch::runtime_instance::WorthUiRuntimeFrameworkLoop` in the current scope
- --> tests/ui/runtime_authority/fail/raw_runtime_cannot_lower_artifact_only_replacement.rs:4:21
-  |
-4 |     let _ = runtime.prepare_replacement_lowering((), ());
-  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `&worth_ui_runtime::runtime::launch::runtime_instance::WorthUiRuntimeFrameworkLoop`

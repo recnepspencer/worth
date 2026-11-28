@@ -1,2 +1,0 @@
-error[E0432]: unresolved import `worth_ui_query_binding::WorthUiQueryOperatingWorldGateway`
- --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_diagnostics/fail/query_operating_world_gateway_is_not_a_facade.rs

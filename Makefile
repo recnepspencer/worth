@@ -1,46 +1,15 @@
 # WORTH build targets
 #
-# UI builds land in target-ui/, platform crate builds in target/. Both can
-# run simultaneously without Cargo lock contention.
-#
 # Usage:
-#   make ui            - build the native Platform Pulse binary
-#   make ui-run        - run the native Platform Pulse binary
-#   make ui-test       - run the WORTH UI workspace tests
 #   make platform      - build the root platform crates
 #   make platform-test - run the root platform crate tests
 #   make test          - run everything
 #   make relational-allocation-probes - run the worth-relational allocation-slope lane
 
-UI_MANIFEST := workspaces/worth-ui/Cargo.toml
-UI_APP      := worth-ui-platform-pulse
-UI_TARGET   := $(CURDIR)/target-ui
 QUERY_MANIFEST := workspaces/worth-query/Cargo.toml
 
 WORTH_LOG        ?= compact
 WORTH_TRACE_DIR  ?=
-
-# -- UI targets (isolated target dir) -----------------------------------------
-
-.PHONY: ui
-ui:
-	CARGO_TARGET_DIR=$(UI_TARGET) cargo build --manifest-path $(UI_MANIFEST) -p $(UI_APP) $(ARGS)
-
-.PHONY: ui-release
-ui-release:
-	CARGO_TARGET_DIR=$(UI_TARGET) cargo build --manifest-path $(UI_MANIFEST) -p $(UI_APP) --release $(ARGS)
-
-.PHONY: ui-run
-ui-run:
-	CARGO_TARGET_DIR=$(UI_TARGET) cargo run --manifest-path $(UI_MANIFEST) -p $(UI_APP) --bin worth-ui-platform-pulse $(ARGS)
-
-.PHONY: ui-test
-ui-test:
-	CARGO_TARGET_DIR=$(UI_TARGET) cargo test --manifest-path $(UI_MANIFEST) --workspace $(ARGS)
-
-.PHONY: ui-check
-ui-check:
-	CARGO_TARGET_DIR=$(UI_TARGET) cargo check --manifest-path $(UI_MANIFEST) --workspace --all-features $(ARGS)
 
 # -- Platform crate targets (default target dir) ------------------------------
 
@@ -110,10 +79,10 @@ platform-check:
 # -- Combined -----------------------------------------------------------------
 
 .PHONY: test
-test: platform-test ui-test query-closeout
+test: platform-test query-closeout
 
 .PHONY: check
-check: platform-check ui-check determinism-guards determinism-golden signal-runtime-guards line-caps boundary-check agent-context-check
+check: platform-check determinism-guards determinism-golden signal-runtime-guards line-caps boundary-check agent-context-check
 
 # -- Guards -------------------------------------------------------------------
 
@@ -143,11 +112,6 @@ agent-context-check:
 
 # -- Helpers ------------------------------------------------------------------
 
-.PHONY: clean-ui
-clean-ui:
-	rm -rf $(UI_TARGET)
-
 .PHONY: clean
 clean:
 	cargo clean
-	rm -rf $(UI_TARGET)

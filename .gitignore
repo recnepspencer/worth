@@ -4,10 +4,6 @@
 **/target/
 /target-*/
 **/target-*/
-!workspaces/worth-ui/crates/worth-ui-inspection/src/target/
-!workspaces/worth-ui/crates/worth-ui-inspection/src/target/**
-!workspaces/worth-ui/crates/worth-ui-certification/tests/fixtures/topology_negative/inspection_role_purity_drift/crates/worth-ui-inspection/src/target/
-!workspaces/worth-ui/crates/worth-ui-certification/tests/fixtures/topology_negative/inspection_role_purity_drift/crates/worth-ui-inspection/src/target/**
 !crates/worth-runtime-bridge/src/input/envelope/target/
 !crates/worth-runtime-bridge/src/input/envelope/target/native_basis.rs
 !workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/target/
@@ -68,14 +64,8 @@ mb_n4_log.txt
 /workspaces/worth-store/p8f/
 /workspaces/worth-store/p8m/
 
-# Cross-process Worth UI ledger settlement lock
-plans/worth-ui/milestone-3.14.1-proof-ledger.lock
-
 # Claude Code personal overrides
 .claude/settings.local.json
-
-# Linux platform-qualification scratch notes and the windowing spike
-.linux-ui-notes/
 
 # Lean 4 Lake build cache
 **/.lake/

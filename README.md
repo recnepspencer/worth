@@ -189,7 +189,9 @@ Guides: [workspace README](workspaces/worth-store/README.md) and
 [facade README](workspaces/worth-store/crates/worth-store/README.md).
 Engineering sequence: [Database Foundation Roadmap](plans/database-foundation/roadmap.md).
 
-### UI (`workspaces/worth-ui/`)
+### UI
+
+Worth UI now lives at [recnepspencer/worth-ui](https://github.com/recnepspencer/worth-ui).
 
 > **Parked (2026-11-20).** Worth UI does not build: its Query binding still depends on the retired `worth-query` engine. Migration is tracked in [#262](https://github.com/recnepspencer/worth/issues/262).
 
@@ -212,14 +214,11 @@ grant mutation authority.
 | `worth-ui-certification`, `-test-support` | Lifecycle and anti-bypass proofs | Certification |
 | `apps/platform-pulse` | The permanent reference native application | Reference app |
 
-Guide: [WORTH UI AI Discovery](workspaces/worth-ui/AI_README.md).
-
 ### Reference applications
 
 | Path | What it is |
 |---|---|
 | [`workspaces/worth-query-bank-world`](workspaces/worth-query-bank-world/docs/public-consumer-contract.md) | A complete banking domain, server, HTTP adapter, user node, and fault-injecting external service. It consumes Query **only** through `worth-query-decl` and `worth-query-host`. This is the best end-to-end example of the consumer boundary. |
-| `workspaces/worth-ui/apps/platform-pulse` | A native application that exercises the UI and Query path |
 | [`apps/WORTH-signal-demo`](apps/WORTH-signal-demo/README.md) | A browser demo of `worth-signals-wasm` |
 
 ## Dependency order
@@ -258,7 +257,6 @@ that implements them over Relational's public `change_source` API.
 | [`workspaces/worth-query`](workspaces/worth-query) | Query: declarations, installation, admission, execution, publication, facades, replay, certification |
 | [`workspaces/worth-contracts`](workspaces/worth-contracts) | Pure public schema contracts |
 | [`workspaces/worth-store`](workspaces/worth-store) | Durable physical store, recovery, integrity, operations, certification |
-| [`workspaces/worth-ui`](workspaces/worth-ui) | UI DSL, runtime, Query binding, hosts, native platform, reference app |
 | [`workspaces/worth-query-bank-world`](workspaces/worth-query-bank-world) | End-to-end reference domain for the Query consumer boundary |
 | [`apps`](apps) | Demonstrations |
 | [`docs`](docs) | Public documentation: philosophy, how it works, glossary, API map, coding guidelines |

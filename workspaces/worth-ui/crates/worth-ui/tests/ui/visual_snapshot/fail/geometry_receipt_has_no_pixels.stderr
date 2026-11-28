@@ -1,2 +1,0 @@
-error[E0599]: no method named `pixel_artifact` found for reference `&UiVisualSnapshotReceipt<UiGeometryOnly>` in the current scope
- --> $WORKSPACE/crates/worth-ui/tests/ui/visual_snapshot/fail/geometry_receipt_has_no_pixels.rs

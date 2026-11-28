@@ -1,9 +1,0 @@
-error[E0432]: unresolved imports `worth_ui_host_contract::UiMountedPresentationLeaseGate`, `worth_ui_host_contract::UiMountedPresentationRuntimeAuthority`, `worth_ui_host_contract::UiMountedPresentationWork`
- --> tests/ui/presentation_work_issuance_requires_runtime_authority.rs
- help: a similar name exists in the module
- help: a similar name exists in the module
- help: a similar name exists in the module
-
-error[E0603]: module `mounting` is private
- --> tests/ui/presentation_work_issuance_requires_runtime_authority.rs
- note: the module `mounting` is defined here

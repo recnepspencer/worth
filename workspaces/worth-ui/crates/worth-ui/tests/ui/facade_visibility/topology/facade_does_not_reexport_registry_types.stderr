@@ -1,7 +1,0 @@
-error[E0432]: unresolved imports `worth_ui::facade::CommandRegistry`, `worth_ui::facade::ComponentRegistry`
- --> tests/ui/facade_visibility/topology/facade_does_not_reexport_registry_types.rs:1:24
-  |
-1 | use worth_ui::facade::{CommandRegistry, ComponentRegistry};
-  |                        ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^ no `ComponentRegistry` in `facade`
-  |                        |
-  |                        no `CommandRegistry` in `facade`

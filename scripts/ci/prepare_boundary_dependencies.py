@@ -19,9 +19,8 @@ def manifests(root):
            for path in domain_manifests):
         raise ValueError('domain workspace manifest must be a literal Cargo.toml path')
     selected = {'Cargo.toml', *domain_manifests}
-    for key in ('subworkspaces', 'context_workspaces'):
-        for row in policy.get(key, []):
-            selected.add(str(Path(row['path'])/'Cargo.toml').replace('\\', '/'))
+    for row in policy.get('subworkspaces', []):
+        selected.add(str(Path(row['path'])/'Cargo.toml').replace('\\', '/'))
     for key in ('dependency_denials', 'source_dependency_allowlists', 'dependency_target_allowlists'):
         selected.update(row['workspace_manifest'] for row in policy.get(key, []))
     for line in (config/'test-workspaces.txt').read_text(encoding='utf-8').splitlines():

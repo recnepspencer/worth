@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::WorthUiLastValidRuntimeState`
- --> tests/ui/runtime_authority/fail/forged_last_valid_receipt_not_installable.rs:2:5
-  |
-2 |     WorthUiLastValidRuntimeState,
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `WorthUiLastValidRuntimeState` in `facade`

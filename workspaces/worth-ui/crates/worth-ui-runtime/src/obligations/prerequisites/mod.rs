@@ -1,3 +1,0 @@
-mod prerequisite_evidence_ref;
-
-pub use prerequisite_evidence_ref::UiObligationPrerequisiteEvidenceRef;

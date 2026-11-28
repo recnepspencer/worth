@@ -1,7 +1,0 @@
-error[E0624]: method `execute_framework_turn` is private
- --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/ordinary_framework_turn_is_not_callable.rs
- help: items from traits can only be used if the trait is in scope
- help: trait `WorthUiFrameworkTurnCertificationExt` which provides `execute_framework_turn` is implemented but not in scope; perhaps you want to import it
-
-error[E0599]: no method named `into_execution` found for struct `WorthUiMountedFrameFrameworkTransitionStop<'session>` in the current scope
- --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/ordinary_framework_turn_is_not_callable.rs

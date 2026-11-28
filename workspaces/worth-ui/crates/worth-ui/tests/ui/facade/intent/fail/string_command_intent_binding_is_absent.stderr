@@ -1,2 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::declaration::CommandRuntimeIntentBinding`
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/string_command_intent_binding_is_absent.rs

@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui_inspection::UiInspectionSubsystem`
- --> tests/ui/lifecycle/external_inspection_subsystem_bootstrap_is_private.rs:1:5
-  |
-1 | use worth_ui_inspection::UiInspectionSubsystem;
-  |     ^^^^^^^^^^^^^^^^^^^^^---------------------
-  |     |                    |
-  |     |                    help: a similar name exists in the module: `UiInspectionPosture`
-  |     no `UiInspectionSubsystem` in the root

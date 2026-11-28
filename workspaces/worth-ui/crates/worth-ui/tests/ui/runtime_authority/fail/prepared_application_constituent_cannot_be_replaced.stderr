@@ -1,3 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::app::WorthUiPreparedApplicationAuthority`
- --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/prepared_application_constituent_cannot_be_replaced.rs
- help: a similar name exists in the module

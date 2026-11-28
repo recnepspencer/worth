@@ -1,4 +1,0 @@
-error[E0308]: mismatched types
- --> tests/ui/phase5_async_authority/live_authority_cannot_be_reconstructed_or_substituted.rs
- note: expected `WorthUiPresentationValidatedCompletion`, found `UiMountedSurfacePresentationCompletion`
- note: method defined here

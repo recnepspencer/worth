@@ -1,2 +1,0 @@
-error[E0451]: field `identity` of struct `UiHostMeasurementRequest` is private
- --> tests/ui/request_constructor_private.rs

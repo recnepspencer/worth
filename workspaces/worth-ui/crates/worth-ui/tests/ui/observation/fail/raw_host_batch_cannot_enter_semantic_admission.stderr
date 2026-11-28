@@ -1,3 +1,0 @@
-error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-ui/tests/ui/observation/fail/raw_host_batch_cannot_enter_semantic_admission.rs
- note: method defined here

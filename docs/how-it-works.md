@@ -2045,7 +2045,7 @@ stacks blur:
 `worth-ui-query-binding` is the only crate that turns Query products into UI
 registrations and observations. Applications import `worth-ui` and, for a
 native window, `worth-ui-native-platform`. Guide:
-[UI AI discovery](../workspaces/worth-ui/AI_README.md).
+[UI AI discovery](https://github.com/recnepspencer/worth-ui/blob/main/AI_README.md).
 
 ### 15.4 Signal in the browser
 

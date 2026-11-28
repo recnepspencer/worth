@@ -1,7 +1,0 @@
-[package]
-name = "fake-admission-consumer"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-runtime-bypass = { package = "worth-ui-runtime", path = "../../../../../../../worth-ui-runtime" }

@@ -1,8 +1,0 @@
-error: cannot construct `WorthUiSealedSemanticPackage` with struct literal syntax due to private fields
- --> tests/ui/declaration/external_callers_cannot_forge_or_bypass_semantic_package.rs
-
-error[E0599]: no method named `with_artifact_input` found for struct `WorthUiApplicationBuilder` in the current scope
- --> tests/ui/declaration/external_callers_cannot_forge_or_bypass_semantic_package.rs
-
-error[E0599]: no method named `with_declarations` found for struct `WorthUiApplicationBuilder` in the current scope
- --> tests/ui/declaration/external_callers_cannot_forge_or_bypass_semantic_package.rs

@@ -1,4 +1,0 @@
-mod mosaic_sizing_accepted_registration_proof;
-mod mosaic_sizing_registration;
-
-pub(crate) use mosaic_sizing_accepted_registration_proof::MosaicSizingAcceptedRegistrationProof;

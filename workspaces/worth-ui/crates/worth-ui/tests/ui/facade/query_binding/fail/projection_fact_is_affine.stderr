@@ -1,4 +1,0 @@
-error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/query_binding/fail/projection_fact_is_affine.rs
- note: expected `UiScalarProjectionFactReceipt`, found `&UiScalarProjectionFactReceipt`
- note: `UiScalarProjectionFactReceipt` does not implement `Clone`, so `&UiScalarProjectionFactReceipt` was cloned instead

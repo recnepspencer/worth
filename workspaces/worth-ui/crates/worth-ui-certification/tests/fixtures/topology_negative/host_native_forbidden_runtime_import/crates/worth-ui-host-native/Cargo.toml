@@ -1,7 +1,0 @@
-[package]
-name = "host-native-forbidden-runtime-import"
-version = "0.0.0"
-edition = "2021"
-
-[dependencies]
-worth-ui-runtime = "0.0.0"

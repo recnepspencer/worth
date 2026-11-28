@@ -1,2 +1,0 @@
-error[E0599]: no method named `with_readiness` found for struct `CommandDescriptor` in the current scope
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/static_command_readiness_is_absent.rs

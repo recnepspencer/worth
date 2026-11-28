@@ -1,9 +1,0 @@
-error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/confirmation_and_product_routes_cannot_cross.rs
- note: expected `UiResolvedProductIntentRoute`, found `UiResolvedConfirmationIntentRoute`
- note: function defined here
-
-error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/confirmation_and_product_routes_cannot_cross.rs
- note: expected `UiResolvedConfirmationIntentRoute`, found `UiResolvedProductIntentRoute`
- note: function defined here

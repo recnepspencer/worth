@@ -1,7 +1,0 @@
-[package]
-name = "fake-obligation-consumer"
-version = "0.0.0"
-edition = "2021"
-
-[dependencies]
-worth-ui-runtime = { path = "../../../../../worth-ui-runtime" }

@@ -70,7 +70,7 @@ parallel authority lane.
 ## Hard Invariants
 
 Every workspace and package root has one build except the named other-team
-roots `workspaces/worth-store`, `workspaces/worth-ui`, and `crates/worth-proof`.
+roots `workspaces/worth-store` and `crates/worth-proof`.
 No Cargo features are declared beyond Signal's retained product profiles/default
 (including WASM forwarding) and Signal-only `test-peak-allocation`. Empty feature
 tables and feature arrays on governed dependencies are refused. Unit-test-only

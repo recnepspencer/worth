@@ -1,3 +1,0 @@
-error[E0277]: the trait bound `UiIntentConfirmationChallenge: Clone` is not satisfied
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/confirmation_challenge_authority_is_sealed.rs
- note: required by a bound in `requires_clone`

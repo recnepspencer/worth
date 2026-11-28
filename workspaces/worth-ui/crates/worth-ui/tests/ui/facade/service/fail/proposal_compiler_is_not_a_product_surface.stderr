@@ -1,2 +1,0 @@
-error[E0433]: cannot find `UiServiceProposalCompiler` in `service`
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/service/fail/proposal_compiler_is_not_a_product_surface.rs

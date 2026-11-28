@@ -1,5 +1,0 @@
-error[E0616]: field `total_width` of struct `RegisteredCapabilitySet` is private
- --> tests/ui/facade/lifecycle/snapshot_authority/registered_set/registered_capability_set_not_publicly_mutable.rs:5:50
-  |
-5 |     app.capabilities().registered_capabilities().total_width = 1;
-  |                                                  ^^^^^^^^^^^ private field

@@ -1,4 +1,0 @@
-error[E0308]: mismatched types
- --> tests/ui/phase_five/alpha_color_views_cannot_substitute.rs
- note: expected `UiAlphaRasterRecordView<'_>`, found `UiColorRasterRecordView<'_>`
- note: function defined here

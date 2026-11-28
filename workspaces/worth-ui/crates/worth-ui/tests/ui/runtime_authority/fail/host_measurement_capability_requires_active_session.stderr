@@ -1,2 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::host`
- --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/host_measurement_capability_requires_active_session.rs

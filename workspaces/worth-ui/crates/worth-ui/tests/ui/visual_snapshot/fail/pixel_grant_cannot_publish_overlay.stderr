@@ -1,5 +1,0 @@
-error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-ui/tests/ui/visual_snapshot/fail/pixel_grant_cannot_publish_overlay.rs
- note: expected reference `&UiVisualOverlayGrant`
-   found reference `&UiVisualPixelCaptureGrant`
- note: method defined here

@@ -1,3 +1,0 @@
-error[E0277]: the trait bound `UiIntentOperabilityProof: Clone` is not satisfied
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/operability_proof_is_move_only.rs
- note: required by a bound in `requires_clone`

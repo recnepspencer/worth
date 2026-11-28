@@ -1,7 +1,0 @@
-error[E0369]: binary operation `<` cannot be applied to type `UiMountedPaintCommandIdentity`
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/construction/host_binding/paint_identities_are_not_orderable.rs
- note: `UiMountedPaintCommandIdentity` does not implement `PartialOrd`
-
-error[E0369]: binary operation `<` cannot be applied to type `UiMountedPaintOrderIdentity`
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/construction/host_binding/paint_identities_are_not_orderable.rs
- note: `UiMountedPaintOrderIdentity` does not implement `PartialOrd`

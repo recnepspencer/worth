@@ -1,2 +1,0 @@
-error[E0451]: field `request` of struct `UiHostMeasurementObservation` is private
- --> tests/ui/host_observation_private.rs

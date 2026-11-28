@@ -1,2 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::app::UiMountedSurfaceBaselineReceipt`
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/construction/host_binding/surface_baseline_receipt_cannot_be_reconstructed.rs

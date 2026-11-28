@@ -468,10 +468,6 @@ crates/worth-runtime-bridge/ crates/worth-court-runtime-world/tests/worth_court_
 crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution-contracts/src/conditional_owner/conditional_execution.rs
 crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/primary_graph/application_runtime/operation_control.rs
 crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution-runtime/src/domain_computation/execution_runtime/product_world/source_owner.rs
-crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-certification/tests/application_contracts/projection_authority/qp_05.rs
-crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-certification/tests/application_contracts/projection_lifecycle/qp_02.rs
-crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-certification/tests/application_contracts/projection_lifecycle/support.rs
-crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-query-binding/src/scalar_projection_drift_tests.rs
 crates/worth-runtime-world/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/guarded_cutover.rs
 crates/worth-runtime-world/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/memory_handoff.rs
 crates/worth-runtime-world/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/memory_handoff/deadline.rs
@@ -2733,7 +2729,6 @@ workspaces/worth-query/crates/worth-query-execution-runtime/ workspaces/worth-qu
 workspaces/worth-query/crates/worth-query-execution-runtime/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/tests/fixture/world_installation/mod.rs
 workspaces/worth-query/crates/worth-query-execution-runtime/ workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/advancement_custody.rs
 workspaces/worth-query/crates/worth-query-execution-runtime/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/graceful/signal/operations.rs
-workspaces/worth-query/crates/worth-query-execution-runtime/ workspaces/worth-ui/crates/worth-ui-query-binding/src/product_projection/status_integrity/lease_tests.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests/currency_work_stop.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/src/approved_payment_workflow/request_phase.rs
@@ -4105,7 +4100,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_interruption/publication.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_observation/occurrence.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_observation/projection.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-ui/crates/worth-ui-query-binding/src/product_projection/status_integrity/lease_tests.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/dispatch_custody/inbound_custody/acknowledgement.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/dispatch_custody/recovery_admission/refusal.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/reopening/checkpoint_restart/writer.rs

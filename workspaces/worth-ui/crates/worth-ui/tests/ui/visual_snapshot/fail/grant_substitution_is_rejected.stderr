@@ -1,5 +1,0 @@
-error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-ui/tests/ui/visual_snapshot/fail/grant_substitution_is_rejected.rs
- note: expected reference `&UiVisualPixelCaptureGrant`
-   found reference `&UiVisualGeometryGrant`
- note: method defined here

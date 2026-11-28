@@ -14,17 +14,9 @@ case "$SCOPE" in
       'crates/**/*.rs'
       'workspaces/worth-query-bank-world/crates/**/*.rs'
       'workspaces/worth-query/crates/**/*.rs'
-      'workspaces/worth-ui/crates/**/*.rs'
-      'workspaces/worth-ui/apps/**/*.rs'
       'workspaces/worth-store/crates/**/*.rs'
       'workspaces/worth-store/tools/**/*.rs'
     )
-    ;;
-  worth-ui)
-    PATHS=('workspaces/worth-ui/crates/**/*.rs' 'workspaces/worth-ui/apps/**/*.rs')
-    ;;
-  worth-ui-apps)
-    PATHS=('workspaces/worth-ui/apps/**/*.rs')
     ;;
   dirty)
     PATHS=()
@@ -38,7 +30,7 @@ case "$SCOPE" in
     PATHS=()
     ;;
   *)
-    echo "usage: $0 [workspace|worth-ui|worth-ui-apps|dirty|diff BASE]" >&2
+    echo "usage: $0 [workspace|dirty|diff BASE]" >&2
     exit 2
     ;;
 esac

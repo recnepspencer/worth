@@ -1,3 +1,0 @@
-error: cannot construct `UiProjectionBinding` with struct literal syntax due to private fields
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/query_binding/fail/projection_binding_construction_is_private.rs
- help: you might have meant to use the `query_issued` associated function

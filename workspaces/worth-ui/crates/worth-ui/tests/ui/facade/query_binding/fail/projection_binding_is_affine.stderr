@@ -1,3 +1,0 @@
-error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/query_binding/fail/projection_binding_is_affine.rs
- note: `UiProjectionBinding` does not implement `Clone`, so `&UiProjectionBinding` was cloned instead

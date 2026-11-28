@@ -1,7 +1,0 @@
-{
-  "protocol": "worth-ui.platform-pulse.intent-source",
-  "schema_version": 1,
-  "revision": 2,
-  "operability": "confirmation_required",
-  "executor_gate": "held"
-}

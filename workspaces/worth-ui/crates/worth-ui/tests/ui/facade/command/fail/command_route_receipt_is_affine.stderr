@@ -1,3 +1,0 @@
-error[E0277]: the trait bound `UiCommandRouteReceipt: Clone` is not satisfied
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/command/fail/command_route_receipt_is_affine.rs
- note: required by a bound in `requires_clone`

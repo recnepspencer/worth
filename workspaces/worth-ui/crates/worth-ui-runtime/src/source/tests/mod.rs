@@ -1,8 +1,0 @@
-mod phase10_artifact_digest_tests;
-mod phase11_dependency_metadata_tests;
-mod phase4_snapshot_resolution_tests;
-mod phase5_structural_legality_tests;
-mod phase6_binding_semantics_tests;
-mod phase7_identity_seeding_tests;
-mod phase8_canonical_artifact_tests;
-mod phase9_artifact_inspection_tests;

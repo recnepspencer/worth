@@ -1,4 +1,0 @@
-error[E0308]: mismatched types
- --> tests/ui/host/caller_defined_certification_host_is_rejected.rs
- note: expected `WorthUiHeadlessRecorder`, found `AlternateHost`
- note: associated function defined here

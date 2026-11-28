@@ -31,7 +31,7 @@ class LocalSelectionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             (root/'Cargo.toml').write_text('[workspace]\nmembers=[]\n', encoding='utf-8')
-            for relative in ('workspaces/worth-store', 'workspaces/worth-ui',
+            for relative in ('workspaces/worth-store',
                              'workspaces/worth-query/external-consumer'):
                 directory = root/relative; directory.mkdir(parents=True)
                 (directory/'Cargo.toml').write_text('[workspace]\nmembers=[]\n', encoding='utf-8')

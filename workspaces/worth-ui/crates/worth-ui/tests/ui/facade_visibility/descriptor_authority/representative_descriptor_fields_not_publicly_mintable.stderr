@@ -1,5 +1,0 @@
-error[E0451]: fields `id`, `label`, `description`, `icon`, `default_shortcut`, `route`, `category` and `projection_eligibility` of struct `CommandDescriptor` are private
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade_visibility/descriptor_authority/representative_descriptor_fields_not_publicly_mintable.rs
-
-error[E0451]: fields `id`, `allowed_families`, `permission`, `ordering`, `diagnostics`, `support`, `contribution_reference` and `global_mutation_hooks` of struct `PluginSlotDescriptor` are private
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade_visibility/descriptor_authority/representative_descriptor_fields_not_publicly_mintable.rs

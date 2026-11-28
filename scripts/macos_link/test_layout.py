@@ -123,8 +123,6 @@ class DriverTests(unittest.TestCase):
         config = tomllib.loads(Path('.cargo/config.toml').read_text())
         flags = config['build']['rustflags']
         self.assertIn('overflow-checks=on', flags)
-        self.assertIn('worth_ui_windowing="wayland"', flags)
-        self.assertIn('worth_ui_adapter="hardware"', flags)
         targets = config['target']
         self.assertEqual(targets['aarch64-apple-darwin'], {'linker': 'scripts/macos_linker'})
         self.assertEqual(targets['x86_64-pc-windows-msvc'], {'linker': 'scripts/windows_linker.cmd'})

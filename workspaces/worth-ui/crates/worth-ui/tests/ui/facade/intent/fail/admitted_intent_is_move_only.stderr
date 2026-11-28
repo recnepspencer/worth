@@ -1,6 +1,0 @@
-error[E0277]: the trait bound `UiAdmittedIntent<I>: Clone` is not satisfied
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/admitted_intent_is_move_only.rs
- note: required by a bound in `require_clone`
-
-error[E0382]: use of moved value: `admitted`
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/admitted_intent_is_move_only.rs

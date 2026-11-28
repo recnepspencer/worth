@@ -11,14 +11,6 @@ pub(crate) struct OrientationContract {
     pub(crate) seed_skeleton_paths: Vec<String>,
     pub(crate) query_audience: QueryAudienceContractSpec,
     pub(crate) subworkspace_paths: Vec<String>,
-    pub(crate) context_workspaces: Vec<ContextWorkspaceSpec>,
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct ContextWorkspaceSpec {
-    pub(crate) path: String,
-    pub(crate) package_prefix: String,
-    pub(crate) certification_packages: Vec<String>,
 }
 
 pub(crate) struct ExemplarRouteSpec {
@@ -122,15 +114,6 @@ pub(crate) fn load_orientation_contract(path: &Path) -> Result<OrientationContra
             .into_iter()
             .map(|subworkspace| subworkspace.path)
             .collect(),
-        context_workspaces: config
-            .context_workspaces
-            .into_iter()
-            .map(|workspace| ContextWorkspaceSpec {
-                path: workspace.path,
-                package_prefix: workspace.package_prefix,
-                certification_packages: workspace.certification_packages,
-            })
-            .collect(),
     })
 }
 
@@ -141,8 +124,6 @@ struct BoundaryConfig {
     routing_proof: RoutingProofConfig,
     seed_skeletons: Vec<SeedSkeletonConfig>,
     subworkspaces: Vec<SubworkspaceConfig>,
-    #[serde(default)]
-    context_workspaces: Vec<ContextWorkspaceConfig>,
 }
 
 #[derive(Deserialize)]
@@ -204,14 +185,6 @@ struct SeedSkeletonConfig {
 #[derive(Deserialize)]
 struct SubworkspaceConfig {
     path: String,
-}
-
-#[derive(Deserialize)]
-struct ContextWorkspaceConfig {
-    path: String,
-    package_prefix: String,
-    #[serde(default)]
-    certification_packages: Vec<String>,
 }
 
 #[derive(Deserialize)]

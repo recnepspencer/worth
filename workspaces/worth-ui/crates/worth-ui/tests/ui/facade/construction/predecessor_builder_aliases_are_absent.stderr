@@ -1,2 +1,0 @@
-error[E0432]: unresolved imports `worth_ui::facade::app::WorthUiAppBuilder`, `worth_ui::facade::app::WorthUiBuilder`
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/construction/predecessor_builder_aliases_are_absent.rs

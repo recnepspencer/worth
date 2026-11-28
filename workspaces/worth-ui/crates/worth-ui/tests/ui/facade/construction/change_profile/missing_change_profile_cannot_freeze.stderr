@@ -1,3 +1,0 @@
-error[E0599]: no method named `freeze` found for struct `WorthUiApplicationBuilder<UiChangeProfileMissing>` in the current scope
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/construction/change_profile/missing_change_profile_cannot_freeze.rs
- note: the method was found for `WorthUiApplicationBuilder`

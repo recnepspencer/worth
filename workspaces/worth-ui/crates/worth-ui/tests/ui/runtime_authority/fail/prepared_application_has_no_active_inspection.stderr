@@ -1,2 +1,0 @@
-error[E0599]: no method named `inspect_runtime` found for reference `&WorthUiApp` in the current scope
- --> $WORKSPACE/crates/worth-ui/tests/ui/runtime_authority/fail/prepared_application_has_no_active_inspection.rs

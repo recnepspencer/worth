@@ -1,5 +1,0 @@
-error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/query_binding/fail/projection_fact_reassembly_is_private.rs
- note: expected struct `UiProjectionFactReceipt`
-    found tuple `(UiQueryEvidenceReference, UiQueryEvidenceReference, UiQueryEvidenceReference, UiQueryEvidenceReference)`
- note: function defined here

@@ -1,2 +1,0 @@
-error[E0599]: no method named `bind_framework_host` found for struct `WorthUiApplicationBuilder<ChangeProfileState, IntentWiringState>` in the current scope
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/construction/host_binding/bound_builder_cannot_replace_host.rs

@@ -1,9 +1,0 @@
-error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-ui/tests/ui/visual_snapshot/fail/hit_test_requires_distinct_explicit_order.rs
- note: expected `ComponentHitTestContract`, found `ComponentAllocationMeasurementContract`
- note: method defined here
-
-error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-ui/tests/ui/visual_snapshot/fail/hit_test_requires_distinct_explicit_order.rs
- note: expected `ComponentHitTestOrder`, found integer
- note: associated function defined here

@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `worth_ui::runtime`
- --> tests/ui/runtime_authority/fail/runtime_internal_module_is_not_public.rs:1:15
-  |
-1 | use worth_ui::runtime::WorthUiRuntime;
-  |               ^^^^^^^ could not find `runtime` in `worth_ui`

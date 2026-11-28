@@ -85,13 +85,9 @@ pub fn under(path: &str, directory: &str) -> bool {
             .is_some_and(|s| s.starts_with('/'))
 }
 pub fn governed(path: &str) -> bool {
-    ![
-        "workspaces/worth-store",
-        "workspaces/worth-ui",
-        "crates/worth-proof",
-    ]
-    .iter()
-    .any(|p| under(path, p))
+    !["workspaces/worth-store", "crates/worth-proof"]
+        .iter()
+        .any(|p| under(path, p))
 }
 pub fn table<'a>(value: &'a toml::Value, key: &str) -> Vec<&'a toml::Value> {
     value

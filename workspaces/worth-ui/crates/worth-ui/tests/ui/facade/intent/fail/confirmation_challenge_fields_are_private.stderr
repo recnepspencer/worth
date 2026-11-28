@@ -1,2 +1,0 @@
-error[E0451]: fields `candidate`, `decision`, `policy_identity`, `issued_at_millis`, `expires_at_millis`, `lineage` and `slot_identity` of struct `UiIntentConfirmationChallenge` are private
- --> $WORKSPACE/crates/worth-ui/tests/ui/facade/intent/fail/confirmation_challenge_fields_are_private.rs
