@@ -7,7 +7,8 @@ use worth_foundational::facade::RelationDirection;
 use super::super::breadth_first_frontier::BreadthFirstFrontier;
 use super::{
     memory, PinnedStructuralWalk, PinnedStructuralWalkDenialKind as Denial,
-    PinnedStructuralWalkReads, PinnedStructuralWalkScope, PinnedStructuralWalkVisit,
+    PinnedStructuralWalkLimit, PinnedStructuralWalkReads, PinnedStructuralWalkScope,
+    PinnedStructuralWalkVisit,
 };
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::identity::data::{EntityId, RelationId};
@@ -16,6 +17,23 @@ use crate::visibility::materialization::read_records::projection::{
     RelationalAdjacencyDirection, RelationalAdjacencyVisit, RelationalEntityMetadata,
     RelationalRelationMetadata, VisibilityProjectionView,
 };
+
+pub(super) enum WalkStop {
+    Denied(Denial),
+    BudgetExhausted(PinnedStructuralWalkLimit),
+}
+
+impl From<Denial> for WalkStop {
+    fn from(denial: Denial) -> Self {
+        Self::Denied(denial)
+    }
+}
+
+impl From<Cause> for WalkStop {
+    fn from(cause: Cause) -> Self {
+        Self::Denied(cause.into())
+    }
+}
 
 pub(super) fn execute(
     projection: &VisibilityProjectionView,
@@ -26,7 +44,7 @@ pub(super) fn execute(
     work: &mut usize,
     unavailable: &mut Option<EntityId>,
     mut memory: memory::WalkMemory,
-) -> Result<PinnedStructuralWalk, Denial> {
+) -> Result<PinnedStructuralWalk, WalkStop> {
     let mut frontier = BreadthFirstFrontier::new();
     let mut visits = BTreeMap::new();
     let mut relations = BTreeMap::new();
@@ -34,6 +52,12 @@ pub(super) fn execute(
     for root in scope.roots {
         checkpoint(context, scope, work, 1)?;
         if !roots.contains(root) {
+            if scope
+                .budget
+                .is_some_and(|budget| roots.len() >= budget.maximum_nodes)
+            {
+                return Err(WalkStop::BudgetExhausted(PinnedStructuralWalkLimit::Nodes));
+            }
             memory.claim_scratch(memory::tree_entry::<EntityId, ()>()?)?;
             roots.insert(*root);
         }
@@ -126,7 +150,7 @@ pub(super) fn execute(
                             RelationDirection::Reverse => (record.target, record.source),
                         };
                         if anchor != entity.entity_id {
-                            return Err(Denial::EndpointUnavailable);
+                            return Err(Denial::EndpointUnavailable.into());
                         }
                         // Emit physical self/back/diamond edges even if discovery deduplicates.
                         if let std::collections::btree_map::Entry::Vacant(entry) =
@@ -139,6 +163,14 @@ pub(super) fn execute(
                             entry.insert(record);
                         }
                         if !frontier.contains(&neighbor) {
+                            if scope
+                                .budget
+                                .is_some_and(|budget| distance >= budget.maximum_depth)
+                            {
+                                return Err(WalkStop::BudgetExhausted(
+                                    PinnedStructuralWalkLimit::Depth,
+                                ));
+                            }
                             let next = distance.checked_add(1).ok_or(Denial::DistanceOverflow)?;
                             discover(
                                 projection,
@@ -157,7 +189,7 @@ pub(super) fn execute(
                         }
                     }
                 }
-                Ok::<_, Denial>(())
+                Ok::<_, WalkStop>(())
             },
         )??;
         memory.release_temporary()?;
@@ -206,9 +238,15 @@ fn discover(
     work: &mut usize,
     unavailable: &mut Option<EntityId>,
     memory: &mut memory::WalkMemory,
-) -> Result<(), Denial> {
+) -> Result<(), WalkStop> {
     if frontier.contains(&id) {
         return Ok(());
+    }
+    if scope
+        .budget
+        .is_some_and(|budget| frontier.discovered_count() >= budget.maximum_nodes)
+    {
+        return Err(WalkStop::BudgetExhausted(PinnedStructuralWalkLimit::Nodes));
     }
     checkpoint(
         context,
@@ -230,14 +268,14 @@ fn discover(
     // The refusal names the record: its caller may know why it is gone.
     let Some(entity) = entity else {
         *unavailable = Some(id);
-        return Err(Denial::EndpointUnavailable);
+        return Err(Denial::EndpointUnavailable.into());
     };
     if entity.kind_id != scope.entity_kind {
-        return Err(Denial::WrongEntityKind);
+        return Err(Denial::WrongEntityKind.into());
     }
     if entity.lifecycle != RecordLifecycleState::Live {
         *unavailable = Some(id);
-        return Err(Denial::EndpointUnavailable);
+        return Err(Denial::EndpointUnavailable.into());
     }
     frontier.enqueue(entity.entity_id, (entity, distance, root), || {
         let queue = memory::vector_bytes::<(RelationalEntityMetadata, usize, EntityId)>(8)?;

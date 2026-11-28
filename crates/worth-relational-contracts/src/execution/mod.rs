@@ -1,5 +1,6 @@
 pub mod denial;
 pub mod denial_cause;
+pub mod monotonic_time;
 pub mod phase_observation;
 pub mod request_stage;
 pub mod result_memory;

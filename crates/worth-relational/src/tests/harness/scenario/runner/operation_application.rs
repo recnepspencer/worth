@@ -7,7 +7,7 @@ use crate::facade::transactions::{
     RelationMutationIntent, ReplaceEntityIntent, WorkerIntentBatch,
 };
 use crate::tests::harness::scenario::operation::ScenarioOperation;
-use crate::tests::harness::scenario::seed::DeterministicGenerator;
+use worth_dst::Rng;
 use crate::tests::support::{
     create_relation_in_partition, release_test_commit_snapshot, try_update_entity_on_branch, KindId,
 };
@@ -21,7 +21,7 @@ pub(super) fn apply_operation(
     snapshots: &mut Vec<SnapshotHandle>,
     relations: &mut Vec<ActiveRelation>,
     branches: &mut Vec<BranchId>,
-    generator: &mut DeterministicGenerator,
+    generator: &mut Rng,
     name_counter: &mut u64,
     seed: u64,
     step: usize,
@@ -199,7 +199,7 @@ fn create_live_relation(
     runtime: &RelationalRuntime,
     entities: &[EntityId],
     relations: &mut Vec<ActiveRelation>,
-    generator: &mut DeterministicGenerator,
+    generator: &mut Rng,
     source_slot: usize,
     target_slot: usize,
     partition: crate::facade::identity::PartitionId,
@@ -213,7 +213,7 @@ fn create_live_relation(
     let source = entities[source_slot.min(entities.len() - 1)];
     let mut target = entities[target_slot.min(entities.len() - 1)];
     if target == source {
-        target = entities[(generator.next_u64() as usize) % entities.len()];
+        target = generator.pick(entities);
     }
     if source == target {
         return;

@@ -1,4 +1,5 @@
 //! Normalize staged commands and validate them against the selected immutable state.
+use worth_relational_contracts::internal_port::execution::monotonic_time::{elapsed_since, monotonic_now};
 use contracts::config::data::policies::CrossContextPolicy;
 use contracts::schema::data::RelationalSchemaRegistry;
 use contracts::transactions::data::canonical_intent_key::canonical_intent_key;
@@ -37,7 +38,7 @@ impl StagedPlanValidation<'_> {
     ) -> Result<(OwnedNormalizedPlan, MergedPlanPreparationTiming), TransactionCommitError> {
         let created_entities = collect_created_entity_refs(&intents.plan().merged_intents);
         let deleted_relations = collect_deleted_relation_ids(&intents.plan().merged_intents);
-        let validation_started = worth_execution::MonotonicClock::system().now();
+        let validation_started = monotonic_now();
         for intent in &intents.plan().merged_intents {
             let mut candidates_scanned = 0;
             let validation = validate_intent(
@@ -56,11 +57,11 @@ impl StagedPlanValidation<'_> {
             }
             validation?;
         }
-        let validation_micros = validation_started.elapsed().as_micros() as u64;
-        let sort_started = worth_execution::MonotonicClock::system().now();
+        let validation_micros = elapsed_since(validation_started).as_micros() as u64;
+        let sort_started = monotonic_now();
         intents.intents_mut().sort_by_key(canonical_intent_key);
-        let sort_micros = sort_started.elapsed().as_micros() as u64;
-        let conflict_started = worth_execution::MonotonicClock::system().now();
+        let sort_micros = elapsed_since(sort_started).as_micros() as u64;
+        let conflict_started = monotonic_now();
         detect_conflicting_updates(&intents.plan().merged_intents)?;
         if let Some(commands) = self.coupled_commands {
             let needs_copy = commands.lock().unwrap_or_else(|e| e.into_inner()).is_none();
@@ -78,7 +79,7 @@ impl StagedPlanValidation<'_> {
             MergedPlanPreparationTiming {
                 validation_micros,
                 sort_micros,
-                conflict_detection_micros: conflict_started.elapsed().as_micros() as u64,
+                conflict_detection_micros: elapsed_since(conflict_started).as_micros() as u64,
             },
         ))
     }

@@ -1,6 +1,6 @@
 use worth_foundational::facade::AspectKey;
 
-use crate::identity::data::EntityId;
+use crate::identity::data::{EntityId, RelationId};
 
 use super::{RelationalBorrowedRecordReadDenial, VisibilityProjectionView};
 
@@ -22,6 +22,40 @@ impl VisibilityProjectionView {
             .map_err(RelationalBorrowedRecordReadDenial::Execution)?;
         Ok(self.selected_entity_aspect_version(entity, aspect))
     }
+    /// Native version for one aspect on a live exact-generation relation.
+    /// The outer option identifies the relation, and the inner option the aspect.
+    pub fn read_relation_aspect_version(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        relation: RelationId,
+        aspect: &AspectKey,
+    ) -> Result<Option<Option<u64>>, RelationalBorrowedRecordReadDenial> {
+        if !self.is_exact_basis() {
+            return Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired);
+        }
+        self.demand_regions_head(execution, [relation.partition_id])
+            .map_err(RelationalBorrowedRecordReadDenial::Execution)?;
+        Ok(self.selected_relation_aspect_version(relation, aspect))
+    }
+
+    fn selected_relation_aspect_version(
+        &self,
+        relation: RelationId,
+        aspect: &AspectKey,
+    ) -> Option<Option<u64>> {
+        let partition = self.admitted_head_region(relation.partition_id)?;
+        let arena = partition.relation_arena();
+        let slot = arena.get(&relation)?;
+        if !slot.is_live() || slot.generation() != relation.generation_value() {
+            return None;
+        }
+        let versions = arena.aspect_versions_at(relation.slot_index())?;
+        let symbol = self
+            .symbols
+            .with_read(|symbols| symbols.symbol(aspect.as_str()));
+        Some(symbol.and_then(|symbol| versions.get(&symbol).copied()))
+    }
+
     fn selected_entity_aspect_version(
         &self,
         entity: EntityId,

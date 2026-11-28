@@ -1,7 +1,8 @@
 //! Execute one exact-root walk under the original request.
 use super::{
-    memory, traversal, PinnedStructuralWalk, PinnedStructuralWalkDenial,
-    PinnedStructuralWalkDenialKind, PinnedStructuralWalkReads, PinnedStructuralWalkScope,
+    memory, traversal, BoundedPinnedStructuralWalk, PinnedStructuralWalk,
+    PinnedStructuralWalkBudget, PinnedStructuralWalkDenial, PinnedStructuralWalkDenialKind,
+    PinnedStructuralWalkReads, PinnedStructuralWalkScope,
 };
 use crate::visibility::materialization::read_records::projection::{
     pinned::PinnedProjectionSource, VisibilityProjectionView,
@@ -14,6 +15,30 @@ pub fn complete(
     scope: PinnedStructuralWalkScope<'_>,
     source: PinnedProjectionSource<'_>,
 ) -> Result<PinnedStructuralWalk, PinnedStructuralWalkDenial> {
+    match run(execution, scope, source)? {
+        BoundedPinnedStructuralWalk::Complete(walk) => Ok(walk),
+        BoundedPinnedStructuralWalk::BudgetExhausted { .. } => {
+            unreachable!("complete walks have no structural budget")
+        }
+    }
+}
+
+pub fn bounded(
+    execution: &ExecutionRequest<'_, '_>,
+    mut scope: PinnedStructuralWalkScope<'_>,
+    budget: PinnedStructuralWalkBudget,
+    source: PinnedProjectionSource<'_>,
+) -> Result<BoundedPinnedStructuralWalk, PinnedStructuralWalkDenial> {
+    scope.budget = Some(budget);
+    run(execution, scope, source)
+}
+
+fn run(
+    execution: &ExecutionRequest<'_, '_>,
+    scope: PinnedStructuralWalkScope<'_>,
+    source: PinnedProjectionSource<'_>,
+) -> Result<BoundedPinnedStructuralWalk, PinnedStructuralWalkDenial> {
+    use traversal::WalkStop;
     let mut reads = PinnedStructuralWalkReads::default();
     let mut work = 0;
     let mut endpoint = None;
@@ -29,7 +54,7 @@ pub fn complete(
         if !(*schema.owner_entity_kinds()).contains_key(&scope.entity_kind)
             || !(*schema.owner_relation_kinds()).contains_key(&scope.relation_kind)
         {
-            return Err(PinnedStructuralWalkDenialKind::KindUnavailable);
+            return Err(PinnedStructuralWalkDenialKind::KindUnavailable.into());
         }
         let projection = VisibilityProjectionView::from_pinned(source);
         let memory = memory::WalkMemory::new(execution, context.has_accounting())?;
@@ -44,19 +69,16 @@ pub fn complete(
             memory,
         )
     });
-    match result {
-        Ok((Ok(walk), _physical)) => {
-            if let Some(control) = scope.control {
-                control().map_err(|cause| PinnedStructuralWalkDenial {
-                    kind: PinnedStructuralWalkDenialKind::Read(cause),
-                    endpoint: None,
-                    reads,
-                    work,
-                })?;
-            }
-            Ok(walk)
+    let result = match result {
+        Ok((Ok(walk), _physical)) => Ok(BoundedPinnedStructuralWalk::Complete(walk)),
+        Ok((Err(WalkStop::BudgetExhausted(limit)), _physical)) => {
+            Ok(BoundedPinnedStructuralWalk::BudgetExhausted {
+                limit,
+                reads,
+                work_units: work,
+            })
         }
-        Ok((Err(kind), _physical)) => Err(PinnedStructuralWalkDenial {
+        Ok((Err(WalkStop::Denied(kind)), _physical)) => Err(PinnedStructuralWalkDenial {
             kind,
             endpoint,
             reads,
@@ -70,5 +92,14 @@ pub fn complete(
             reads,
             work,
         }),
+    }?;
+    if let Some(control) = scope.control {
+        control().map_err(|cause| PinnedStructuralWalkDenial {
+            kind: PinnedStructuralWalkDenialKind::Read(cause),
+            endpoint: None,
+            reads,
+            work,
+        })?;
     }
+    Ok(result)
 }

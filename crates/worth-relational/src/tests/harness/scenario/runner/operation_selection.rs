@@ -4,17 +4,17 @@ use crate::facade::snapshots::SnapshotHandle;
 
 use super::{ActiveRelation, SeededScenarioConfig};
 use crate::tests::harness::scenario::operation::ScenarioOperation;
-use crate::tests::harness::scenario::seed::DeterministicGenerator;
+use worth_dst::Rng;
 
 pub(super) fn choose_operation(
-    generator: &mut DeterministicGenerator,
+    generator: &mut Rng,
     entities: &[EntityId],
     snapshots: &[SnapshotHandle],
     relations: &[ActiveRelation],
     branches: &[BranchId],
     config: &SeededScenarioConfig,
 ) -> ScenarioOperation {
-    match generator.next_u64() % 15 {
+    match generator.below(15) {
         0 => ScenarioOperation::CreateEntity {
             partition: scenario_partition(generator.next_u64()),
             name: String::new(),
@@ -63,11 +63,11 @@ pub(super) fn choose_operation(
     }
 }
 
-fn random_slot(generator: &mut DeterministicGenerator, len: usize) -> usize {
+fn random_slot(generator: &mut Rng, len: usize) -> usize {
     if len == 0 {
         0
     } else {
-        (generator.next_u64() as usize) % len
+        generator.below(len)
     }
 }
 

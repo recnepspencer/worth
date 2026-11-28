@@ -15,12 +15,15 @@ use worth_relational_branch::internal_port as branch;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_indexes::internal_port::indexes::access::selected_index::PinnedIndex;
 
+mod aggregate_membership;
 pub mod aggregate_reads;
 use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::naming_basis_binding::LineageNamingBasisBinding;
 pub mod candidate;
+mod content;
 pub mod derived_source;
 pub mod frontier_reads;
 pub mod index_lookups;
+mod relation_aspects;
 
 pub use candidate::RelationalAppliedCandidateReadIdentity;
 use contracts::indexes::data::applied_candidate_qualification::CandidateReadPhase;

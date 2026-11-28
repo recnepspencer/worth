@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::execution::monotonic_time::monotonic_now;
 use super::rejection::{attach_rejection, elapsed_micros};
 use crate::authority::commit::phases::history::{resolve_commit_history, ResolvedCommitHistory};
 use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
@@ -16,7 +17,7 @@ pub(super) fn resolve_authoritative_history_phase(
     commit_id: contracts::history::data::coordinates::CommitId,
 ) -> Result<ResolvedCommitHistory, TransactionCommitError> {
     commit_log.begin_phase(CommitPhase::HistoryResolution);
-    let phase_started = worth_execution::MonotonicClock::system().now();
+    let phase_started = monotonic_now();
     let history = resolve_commit_history(basis, version_id, commit_id)
         .map_err(|error| attach_rejection(commit_log, CommitPhase::HistoryResolution, error))?;
     let history_summary = history.summary();

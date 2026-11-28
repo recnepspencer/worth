@@ -1342,6 +1342,19 @@ and subsequent dependency-driven advancement.
 | Choose physical placement for admitted deterministic partitions | Use `workers::ExecutionPlacement` to build a worker policy for `ExecutionAuthority`; use the lease to inspect resolved placement. [Execution workers](../crates/worth-execution/README.md) |
 | Reproduce a seeded court schedule with clock faults | Use `worth-dst::DstRunner` with a `Spec` and a `Seed`. [Deterministic simulation](../crates/worth-dst/README.md) |
 
+### Native pinned reads and inspection
+
+Acquire a `RelationalReadPort` through `runtime.read_truth().pin_read_capability`.
+It carries the selected root and exposes borrowed relation aspect payloads and
+fields, aspect versions, paired field support, and `read_content` against the
+selected content directory. Use `bounded_relation_walk` to distinguish a
+complete walk from node or depth exhaustion. The scope's work limit also
+bounds adjacency scanning. Derived relation count and existence evaluate the
+exact recipe without retaining a dependency roster. `orbit_of` and
+`component_of` select installed aggregate groups through the aggregate reader.
+Use `runtime.inspect_what_happened()` for residency pressure, connectivity
+summaries and branch-scoped MVCC counter observations.
+
 ## Known gaps
 
 Personal tree undo, redo, checkout and grouped gestures are held for branch-native

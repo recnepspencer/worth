@@ -1,4 +1,5 @@
 //! Latch of one caller-owned patch-position pause.
+use crate::execution::monotonic_time::RelationalCutoverDeadline;
 
 /// Release gate for the reservation-held pause. Opening never blocks, so an
 /// observer can free the publisher before it asserts, and waiting is bounded, so
@@ -23,15 +24,13 @@ impl PatchPositionReservationLatch {
     }
 
     pub(super) fn wait_for_open(&self, budget: std::time::Duration) {
-        let deadline = worth_execution::MonotonicClock::system().now() + budget;
+        let deadline = RelationalCutoverDeadline::system_after(budget);
         let mut opened = self
             .opened
             .lock()
             .unwrap_or_else(|error| error.into_inner());
         while !*opened {
-            let Some(remaining) =
-                deadline.checked_duration_since(worth_execution::MonotonicClock::system().now())
-            else {
+            let Some(remaining) = deadline.remaining() else {
                 return;
             };
             opened = self

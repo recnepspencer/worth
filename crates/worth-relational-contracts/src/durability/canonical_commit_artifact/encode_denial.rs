@@ -74,6 +74,9 @@ impl std::error::Error for RelationalCanonicalCommitArtifactEncodeDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Allocation(denial) => Some(denial),
+            Self::Readmission(cause) => Some(cause),
+            Self::Request(cause) => Some(cause),
+            Self::StorageUnavailable(cause) => Some(cause),
             _ => None,
         }
     }

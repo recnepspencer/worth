@@ -80,4 +80,11 @@ impl std::fmt::Display for RelationalContentDenial {
         write!(formatter, "Native content admission refused: {self:?}")
     }
 }
-impl std::error::Error for RelationalContentDenial {}
+impl std::error::Error for RelationalContentDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Execution(cause) => Some(cause),
+            _ => None,
+        }
+    }
+}

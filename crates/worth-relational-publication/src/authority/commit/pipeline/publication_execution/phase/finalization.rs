@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::execution::monotonic_time::{elapsed_since, monotonic_now};
 use super::PublicationSettlementInputs;
 use worth_relational_branch::internal_port as branch;
 use worth_relational_contracts::internal_port as contracts;
@@ -46,11 +47,11 @@ pub(super) fn finalize_published_commit(
         mirror_publication,
         phase_timing,
     );
-    let started = worth_execution::MonotonicClock::system().now();
+    let started = monotonic_now();
     prepared_history.install(inputs.history, patch_position);
     phase_timing.history_publish_micros = phase_timing
         .history_publish_micros
-        .saturating_add(started.elapsed().as_micros() as u64);
+        .saturating_add(elapsed_since(started).as_micros() as u64);
     advance_visibility(
         inputs,
         branch_id,
@@ -94,11 +95,11 @@ fn publish_storage(
     prepared: worth_relational_storage::internal_port::storage::mirror_plan::PreparedMirrorPublication,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
-    let started = worth_execution::MonotonicClock::system().now();
+    let started = monotonic_now();
     worth_relational_storage::internal_port::storage::mirror_publication::publish_prepared_mirror(
         partitions, counters, prepared,
     );
-    timing.storage_commit_micros = started.elapsed().as_micros() as u64;
+    timing.storage_commit_micros = elapsed_since(started).as_micros() as u64;
 }
 
 fn advance_visibility(
@@ -109,14 +110,14 @@ fn advance_visibility(
     published_snapshot_basis: &branch::history::retention::selected_snapshot::VisibilitySnapshotBasis,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
-    let started = worth_execution::MonotonicClock::system().now();
+    let started = monotonic_now();
     inputs.visibility.move_residency(
         branch_id,
         previous_branch_head_version,
         Some(version_id),
         Some(published_snapshot_basis),
     );
-    timing.visibility_pin_micros = started.elapsed().as_micros() as u64;
+    timing.visibility_pin_micros = elapsed_since(started).as_micros() as u64;
 }
 
 fn reconcile_published_retention(
@@ -125,13 +126,13 @@ fn reconcile_published_retention(
     version_id: contracts::identity::data::primitives::VersionId,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
-    let started = worth_execution::MonotonicClock::system().now();
+    let started = monotonic_now();
     let fence = inputs
         .visibility
         .directory
         .retention_fence_version(version_id);
     inputs.retention.reconcile(changed_records, fence);
-    timing.retention_reconcile_micros = started.elapsed().as_micros() as u64;
+    timing.retention_reconcile_micros = elapsed_since(started).as_micros() as u64;
 }
 
 fn compact_durability(
@@ -139,9 +140,9 @@ fn compact_durability(
     policy: &contracts::config::data::policies::DurableLogPolicy,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
-    let started = worth_execution::MonotonicClock::system().now();
+    let started = monotonic_now();
     log.compact_if_needed(policy);
-    timing.compaction_micros = started.elapsed().as_micros() as u64;
+    timing.compaction_micros = elapsed_since(started).as_micros() as u64;
 }
 
 fn publish_artifacts(
@@ -153,10 +154,10 @@ fn publish_artifacts(
     slot: branch::runtime::state::subsystems::visibility::snapshot_handles::published_capacity::PublishedSnapshotSlotReservation,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) -> contracts::snapshots::data::coordinates::SnapshotId {
-    let started = worth_execution::MonotonicClock::system().now();
+    let started = monotonic_now();
     let snapshot_id =
         publication.publish_artifacts(version_id, artifacts, patch_position, basis, slot);
-    timing.bundle_publish_micros = started.elapsed().as_micros() as u64;
+    timing.bundle_publish_micros = elapsed_since(started).as_micros() as u64;
     snapshot_id
 }
 
@@ -172,12 +173,12 @@ fn consume_post_commit_artifacts(
     input: PostCommitArtifactInput<'_>,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
-    let started = worth_execution::MonotonicClock::system().now();
+    let started = monotonic_now();
     publication.consume_post_commit_artifacts(
         input.commit_id,
         input.snapshot_id,
         input.branch_id.clone(),
         &input.commit_reference.parents,
     );
-    timing.post_commit_consumer_micros = started.elapsed().as_micros() as u64;
+    timing.post_commit_consumer_micros = elapsed_since(started).as_micros() as u64;
 }

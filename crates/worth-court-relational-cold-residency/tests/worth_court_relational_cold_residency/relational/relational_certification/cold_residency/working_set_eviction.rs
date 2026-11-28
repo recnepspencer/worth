@@ -156,6 +156,7 @@ fn fresh_budgeted_runtime_reports_residency_pressure_before_reopen() {
         .build()
         .unwrap();
     let snapshot = runtime
+        .inspect_what_happened()
         .residency_pressure()
         .expect("freshly opened budgeted runtime exposes residency pressure");
     assert_eq!(snapshot.head_resident_bytes, 0);

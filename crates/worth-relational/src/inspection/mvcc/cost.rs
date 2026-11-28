@@ -165,6 +165,16 @@ impl RelationalMvccCounterObservation {
     }
 }
 
+impl crate::inspection::InspectionAccess<'_> {
+    /// Observe counter deltas from the scope's selected branches and baseline.
+    pub fn observe_mvcc_counters(
+        &self,
+        scope: &RelationalMvccCostScope,
+    ) -> Result<RelationalMvccCounterObservation, RelationalBranchSharingInspectionDenial> {
+        self.runtime.observe_mvcc_counters(scope)
+    }
+}
+
 impl RelationalRuntime {
     pub fn branch_retention_cost_counters(
         &self,

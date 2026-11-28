@@ -1170,6 +1170,7 @@ dependencies = [
  "sized-chunks",
  "smallvec",
  "stats_alloc",
+ "worth-dst",
  "worth-execution",
  "worth-foundational",
  "worth-harness",

@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::execution::monotonic_time::RelationalCutoverDeadline;
 use std::sync::Arc;
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::runtime::operation_control::RelationalOperationControlOwnerPort as _;
@@ -15,7 +16,7 @@ impl PreparedBranchPublicationPreflight {
     pub(super) fn perform_cutover(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<RelationalCutoverDeadline<'_>>,
         allow_effect: Option<&mut dyn FnMut() -> bool>,
     ) -> Option<RelationalPublicationOutcome> {
         let _publication_lifecycle = self
@@ -29,7 +30,7 @@ impl PreparedBranchPublicationPreflight {
             ) {
                 return Some(RelationalPublicationOutcome::RequestStopped(stop));
             }
-            if worth_execution::MonotonicClock::system().now() >= deadline {
+            if deadline.is_elapsed() {
                 return Some(cutover_deadline_elapsed());
             }
         }

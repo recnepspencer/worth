@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::execution::monotonic_time::{elapsed_since, monotonic_now};
 use contracts::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 use mutation::mvcc::transaction::footprint::validation_dependencies::RelationalTransactionFootprintOwnerPort as _;
 use mutation::mvcc::transaction::footprint::RelationalTransactionFootprintOwnerPort as _;
@@ -15,7 +16,6 @@ use contracts::transactions::data::mutation_planning::CommitTopology;
 use contracts::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::collections::{BTreeMap, BTreeSet};
-use std::time::Instant;
 use working_state_inputs::{WorkingStateDraft, WorkingStateDraftRuntime, WorkingStateScope};
 use worth_relational_branch::internal_port::branch::root_selection::SelectedRelationalBranchState;
 use worth_relational_branch::internal_port::branch::selected_read::SelectedRelationalBranchRead;
@@ -186,7 +186,7 @@ where
 {
     let inputs = runtime.into();
     let draft = transaction.into();
-    let normalization_started = Instant::now();
+    let normalization_started = monotonic_now();
     let intents = inputs.normalization.normalized(
         draft.transaction,
         draft.overlay,
@@ -199,8 +199,8 @@ where
         draft.basis_schema,
         &intents.plan().merged_intents,
     )?;
-    let normalization_micros = normalization_started.elapsed().as_micros() as u64;
-    let merge_plan_started = Instant::now();
+    let normalization_micros = elapsed_since(normalization_started).as_micros() as u64;
+    let merge_plan_started = monotonic_now();
     let (merged_plan, merged_plan_timing) = StagedPlanValidation {
         schema: draft.mutation_schema.registry(),
         cross_context: inputs.cross_context,
@@ -208,7 +208,7 @@ where
         coupled_commands: draft.coupled_commands,
     }
     .validate(&selected, intents, request)?;
-    let merge_plan_micros = merge_plan_started.elapsed().as_micros() as u64;
+    let merge_plan_micros = elapsed_since(merge_plan_started).as_micros() as u64;
     draft
         .footprint
         .derive_validation_dependencies(merged_plan.plan(), request.allocation_policy())
@@ -276,14 +276,15 @@ pub fn prepare_authoritative_working_state_scope_for_base<'a>(
 ) -> (CommitStructuralSummary, WorkingState, CommitPhaseTiming) {
     let inputs = inputs.into();
     let mut phase_timing = CommitPhaseTiming::default();
-    let summary_started = Instant::now();
+    let summary_started = monotonic_now();
     let mut structural_summary = CommitStructuralSummary::derive(base_state, merged_plan);
     if let Some(footprint) = footprint {
         structural_summary
             .touched_partitions
             .extend(footprint.validation_partitions());
     }
-    phase_timing.draft_structural_summary_micros = summary_started.elapsed().as_micros() as u64;
+    phase_timing.draft_structural_summary_micros =
+        elapsed_since(summary_started).as_micros() as u64;
     let clone_mode = match structural_summary.commit_topology {
         // The read demand cannot use an entity-only image: real relation and
         // endpoint preimages must reach judgment without claiming a graph write.
@@ -341,7 +342,7 @@ pub fn prepare_authoritative_working_state_scope_for_base<'a>(
         sparse_entity_slot_count.unwrap_or(cloned_entity_slots),
         entity_working_set_layout,
     );
-    let clone_started = Instant::now();
+    let clone_started = monotonic_now();
     let working_state = WorkingState::from_touched_partitions_with_layout_and_sparse_slots(
         base_state,
         structural_summary.touched_partitions.iter().copied(),
@@ -351,7 +352,7 @@ pub fn prepare_authoritative_working_state_scope_for_base<'a>(
         sparse_entity_slots.as_ref(),
         sparse_relation_overlay_partitions.as_ref(),
     );
-    phase_timing.draft_working_state_clone_micros = clone_started.elapsed().as_micros() as u64;
+    phase_timing.draft_working_state_clone_micros = elapsed_since(clone_started).as_micros() as u64;
     if matches!(clone_mode, PartitionCloneMode::Full) {
         working_state_metrics::count_working_state_clone(
             inputs.instrumentation,

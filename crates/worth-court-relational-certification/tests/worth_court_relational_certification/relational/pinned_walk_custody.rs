@@ -6,6 +6,10 @@ use worth_foundational::facade::RelationDirection;
 use worth_relational::facade::{
     config::CascadeDeletePolicy,
     identity::{EntityId, KindId, PartitionId},
+    read::{
+        BoundedPinnedStructuralWalk, PinnedStructuralWalkBudget, PinnedStructuralWalkLimit,
+        RelationalReadPort,
+    },
     runtime::{PinnedStructuralWalkReads, PinnedStructuralWalkScope, RelationalRuntime},
     transactions::{CreateIntent, EntitySpec, RecordRef},
 };
@@ -81,6 +85,34 @@ fn complete_walk_is_global_canonical_and_keeps_physical_cycle_edges() {
             entity_records: 5
         }
     );
+    let port: &RelationalReadPort = &pin;
+    for (maximum_depth, maximum_nodes, expected) in [
+        (2, 5, Some(PinnedStructuralWalkLimit::Depth)),
+        (3, 4, Some(PinnedStructuralWalkLimit::Nodes)),
+        (3, 5, None),
+    ] {
+        let outcome = port
+            .bounded_relation_walk(
+                &request,
+                scope(&ids[..1], RelationDirection::Forward),
+                PinnedStructuralWalkBudget {
+                    maximum_depth,
+                    maximum_nodes,
+                },
+            )
+            .unwrap();
+        match outcome {
+            BoundedPinnedStructuralWalk::BudgetExhausted { limit, reads, .. } => {
+                assert_eq!(Some(limit), expected);
+                assert_eq!(reads.entity_records, 4);
+            }
+            BoundedPinnedStructuralWalk::Complete(bounded) => {
+                assert_eq!(expected, None);
+                assert_eq!(bounded.visits(), walk.visits());
+                assert_eq!(bounded.relations(), walk.relations());
+            }
+        }
+    }
     let reverse = pin
         .complete_relation_walk(&request, scope(&ids[4..5], RelationDirection::Reverse))
         .unwrap();

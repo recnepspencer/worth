@@ -216,4 +216,11 @@ impl fmt::Display for LineageNameDenial {
     }
 }
 
-impl std::error::Error for LineageNameDenial {}
+impl std::error::Error for LineageNameDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::GroupNaming { denial, .. } => Some(denial),
+            _ => None,
+        }
+    }
+}

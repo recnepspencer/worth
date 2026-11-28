@@ -7,6 +7,7 @@ use worth_relational_publication::internal_port::mvcc::publication::outcome::Rel
 use worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::definition_preparation::PreparedRelationalIndexDefinitionsOwnerPort as _;
 use super::*;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::execution::monotonic_time::RelationalCutoverDeadline;
 
 pub(super) enum CutoverProfile {
     Ordinary,
@@ -32,6 +33,11 @@ impl PreparedMemoryRelationalCutover<'_, '_, '_> {
     /// original request. Actual custody still returns outside the callback;
     /// an elapsed cutoff performs nothing.
     pub fn perform_before(self, deadline: std::time::Instant) {
+        self.perform_before_sampled(RelationalCutoverDeadline::from_system_instant(deadline));
+    }
+
+    /// Narrow this cutover using a deadline on its original sampled timeline.
+    pub fn perform_before_sampled(self, deadline: RelationalCutoverDeadline<'_>) {
         self.inner.perform_with_cutoff(Some(deadline), None);
     }
 
@@ -44,7 +50,10 @@ impl PreparedMemoryRelationalCutover<'_, '_, '_> {
         deadline: Option<std::time::Instant>,
         allow_effect: &mut dyn FnMut() -> bool,
     ) {
-        self.inner.perform_with_cutoff(deadline, Some(allow_effect));
+        self.inner.perform_with_cutoff(
+            deadline.map(RelationalCutoverDeadline::from_system_instant),
+            Some(allow_effect),
+        );
     }
 }
 
@@ -61,7 +70,7 @@ impl PreparedRelationalCutover<'_, '_, '_> {
 
     fn perform_with_cutoff(
         self,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<RelationalCutoverDeadline<'_>>,
         allow_effect: Option<&mut dyn FnMut() -> bool>,
     ) {
         *self.outcome = self

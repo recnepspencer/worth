@@ -1,7 +1,8 @@
+use worth_dst::{DstRunner, Seed, Spec};
+
 use crate::facade::snapshots::SnapshotHandle;
 use crate::tests::harness::fixtures::runtime::build_runtime;
 use crate::tests::harness::scenario::operation::ScenarioOperation;
-use crate::tests::harness::scenario::seed::DeterministicGenerator;
 use crate::tests::support::{
     checkpoint_for_schema_version, create_entity_in_partition, SchemaVersionId,
 };
@@ -34,18 +35,14 @@ pub(crate) fn run_seeded_scenario(
     let mut snapshots: Vec<SnapshotHandle> = Vec::new();
     let mut relations: Vec<ActiveRelation> = Vec::new();
     let mut branches = vec![scenario_branch_main()];
-    let mut generator = DeterministicGenerator::new(config.seed);
     let mut operations = Vec::with_capacity(config.steps);
     let mut name_counter = 0_u64;
 
-    for step in 0..config.steps {
+    let spec = Spec::new(Seed::new(config.seed), 0, config.steps);
+    DstRunner::run(&spec, |step, runner| {
+        let generator = runner.rng();
         let operation = choose_operation(
-            &mut generator,
-            &entities,
-            &snapshots,
-            &relations,
-            &branches,
-            &config,
+            generator, &entities, &snapshots, &relations, &branches, &config,
         );
         apply_operation(
             execution,
@@ -54,7 +51,7 @@ pub(crate) fn run_seeded_scenario(
             &mut snapshots,
             &mut relations,
             &mut branches,
-            &mut generator,
+            generator,
             &mut name_counter,
             config.seed,
             step,
@@ -63,7 +60,9 @@ pub(crate) fn run_seeded_scenario(
         operations.push(operation);
         run_periodic_authority_work(execution, &mut runtime, &config, step, &mut operations);
         maybe_record_checkpoint(&runtime, &config, &mut checkpoints);
-    }
+        Ok::<(), std::convert::Infallible>(())
+    })
+    .expect("scenario steps are infallible");
     record_final_checkpoint(&runtime, &mut checkpoints);
 
     SeededScenarioWorld {
@@ -97,7 +96,7 @@ pub(crate) fn run_property_scenario(
     let mut snapshots: Vec<SnapshotHandle> = Vec::new();
     let mut relations: Vec<ActiveRelation> = Vec::new();
     let mut branches = vec![scenario_branch_main()];
-    let mut generator = DeterministicGenerator::new(0xC0FFEE);
+    let mut generator = Seed::new(0xC0FFEE).rng();
     let mut name_counter = 0_u64;
 
     for (step, operation) in operations.iter().enumerate() {

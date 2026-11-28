@@ -9,7 +9,8 @@ pub mod outcome;
 pub mod traversal;
 
 pub use outcome::{
-    PinnedStructuralWalk, PinnedStructuralWalkDenial, PinnedStructuralWalkDenialKind,
+    BoundedPinnedStructuralWalk, PinnedStructuralWalk, PinnedStructuralWalkBudget,
+    PinnedStructuralWalkDenial, PinnedStructuralWalkDenialKind, PinnedStructuralWalkLimit,
     PinnedStructuralWalkReads, PinnedStructuralWalkVisit,
 };
 
@@ -20,6 +21,7 @@ pub struct PinnedStructuralWalkScope<'input> {
     relation_kind: KindId,
     direction: RelationDirection,
     maximum_work: Option<usize>,
+    budget: Option<PinnedStructuralWalkBudget>,
     control:
         Option<&'input dyn Fn() -> Result<(), crate::execution::RelationalExecutionDenialCause>>,
     #[cfg(test)]
@@ -39,6 +41,7 @@ impl<'input> PinnedStructuralWalkScope<'input> {
             relation_kind,
             direction,
             maximum_work: None,
+            budget: None,
             control: None,
             #[cfg(test)]
             observer: None,

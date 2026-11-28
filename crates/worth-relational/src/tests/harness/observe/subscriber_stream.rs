@@ -70,13 +70,10 @@ pub(crate) fn random_checkpoints_from_patches(
         return Vec::new();
     }
 
-    let mut state = seed.wrapping_mul(0x9E3779B97F4A7C15).wrapping_add(1);
+    let mut rng = worth_dst::Seed::new(seed).rng();
     let mut checkpoints = Vec::new();
     for _ in 0..samples.min(patches.len()) {
-        state = state
-            .wrapping_mul(6364136223846793005)
-            .wrapping_add(1442695040888963407);
-        let index = (state as usize) % patches.len();
+        let index = rng.below(patches.len());
         let checkpoint = checkpoint_for_schema_version(patches[index].position, SchemaVersionId(1));
         if !checkpoints.contains(&checkpoint) {
             checkpoints.push(checkpoint);

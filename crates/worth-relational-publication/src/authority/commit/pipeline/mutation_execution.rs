@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::execution::monotonic_time::monotonic_now;
 use super::boundary_validation::BoundaryValidatedCommitExecution;
 use super::draft_execution::PreparedCommitState;
 use super::phase_backing::CommitPhaseBacking;
@@ -59,7 +60,7 @@ pub(super) fn mutate_commit_execution(
         );
         let (_, _, _, commit_log, phase_timing) = prepared.admitted.phase_view().into_parts();
         commit_log.begin_phase(CommitPhase::AuthoritativeMutation);
-        let started = worth_execution::MonotonicClock::system().now();
+        let started = monotonic_now();
         commit_log.complete_phase(CommitPhase::AuthoritativeMutation);
         phase_timing.authoritative_mutation_micros = super::rejection::elapsed_micros(started);
         MutatedCommitExecution {

@@ -2,6 +2,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{mpsc, Mutex};
 use std::time::Duration;
+use worth_relational_contracts::internal_port::execution::monotonic_time::RelationalCutoverDeadline;
 
 #[derive(Default)]
 pub(super) struct LifecycleOrderControl {
@@ -78,10 +79,10 @@ impl super::RelationalCanonicalPublicationRoutes {
         })
     }
     pub fn await_transition_lifecycle_contact_for_test(&self, prior: u64) {
-        let deadline = worth_execution::MonotonicClock::system().now() + Duration::from_secs(10);
+        let deadline = RelationalCutoverDeadline::system_after(Duration::from_secs(10));
         while self.transition_lifecycle_contacts_for_test() == prior {
             assert!(
-                worth_execution::MonotonicClock::system().now() < deadline,
+                !deadline.is_elapsed(),
                 "transition reached lifecycle admission"
             );
             std::thread::yield_now();

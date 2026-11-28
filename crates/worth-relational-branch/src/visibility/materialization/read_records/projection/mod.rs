@@ -5,6 +5,8 @@ pub use adjacency_support::RelationalAdjacencySupportDenial;
 pub mod aspect_field_support;
 pub mod aspect_presence_support;
 pub mod aspect_versions;
+mod relation_aspect_reads;
+mod relation_aspect_support;
 pub use aspect_presence_support::RelationalAspectPresenceSupportDenial;
 pub mod basis_reads;
 pub mod borrowed_adjacency;
