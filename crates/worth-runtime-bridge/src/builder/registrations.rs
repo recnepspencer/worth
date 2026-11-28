@@ -13,11 +13,6 @@ impl<PatchState, SnapshotState, SignalState, BranchHeadState, MappingState>
         self
     }
 
-    pub fn register_structural(mut self, declaration: StructuralIdentityDeclaration) -> Self {
-        self.structural_declarations.push(declaration);
-        self
-    }
-
     pub fn register_semantic_correspondence(
         mut self,
         registration: BridgeSemanticCorrespondenceRegistration,
@@ -58,7 +53,6 @@ impl<PatchState, SnapshotState, SignalState, BranchHeadState>
             snapshot_reader_pool: self.snapshot_reader_pool,
             source_adapter_registrations: self.source_adapter_registrations,
             source_declarations: self.source_declarations,
-            structural_declarations: self.structural_declarations,
             mapping_registrations: PresentMappingRegistrations(vec![registration]),
             aspect_registrations: self.aspect_registrations,
             semantic_dependency_registrations: self.semantic_dependency_registrations,

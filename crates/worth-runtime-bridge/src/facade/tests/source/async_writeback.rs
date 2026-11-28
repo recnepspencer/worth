@@ -317,3 +317,54 @@ fn standard_writeback_never_calls_authority_for_a_superseded_completion() {
     );
     assert_eq!(writes.load(Ordering::Relaxed), 1);
 }
+
+#[test]
+fn completion_receipt_lives_only_with_its_runtime_issued_capability() {
+    let runtime = runtime_with_authority();
+    let foreign_lane = runtime.fork_managed_request_lane();
+    let completion = admitted_authoritative_request_response_completion(
+        &runtime,
+        NodeId::new(517, 0),
+        "receipt",
+    );
+    let admitted = runtime
+        .admit_async_writeback(authoritative_writeback_request(&completion, "receipt"))
+        .expect("authority admits the completion");
+    let staged = runtime
+        .stage_async_writeback_effect(&admitted)
+        .expect("authority stages the completion");
+
+    let foreign = foreign_lane.commit_async_writeback(&staged);
+    assert_eq!(
+        foreign
+            .rejected()
+            .expect("foreign lane is refused")
+            .rejected_class(),
+        BridgeAsyncWritebackRejectedClass::CompletionOwnerMismatch
+    );
+    let commit = runtime.commit_async_writeback(&staged);
+    let receipt = commit
+        .committed()
+        .expect("owner commits")
+        .authority_receipt();
+    let digest = std::sync::Arc::downgrade(&receipt.share_authoritative_artifact_digest());
+    drop(commit);
+    let retry = runtime.clone().commit_async_writeback(&staged);
+    assert_eq!(
+        retry
+            .noop()
+            .expect("runtime clone sees the receipt")
+            .noop_class(),
+        BridgeAsyncWritebackNoopClass::DuplicateCompletion
+    );
+
+    drop((retry, foreign, staged, admitted, completion));
+    assert!(digest.upgrade().is_none());
+
+    let next = admitted_authoritative_request_response_completion(
+        &runtime,
+        NodeId::new(518, 0),
+        "next-receipt",
+    );
+    assert!(next.writeback_receipt().try_reserve().unwrap().is_none());
+}

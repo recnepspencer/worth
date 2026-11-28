@@ -174,13 +174,11 @@ impl EvidenceFlags {
             temporal_wake: has(CausalEvidenceFamily::SignalInvalidation),
             async_completion: has(CausalEvidenceFamily::SignalEvaluation)
                 || has(CausalEvidenceFamily::SignalForensicAvailability),
-            replay: has(CausalEvidenceFamily::BridgeReplay)
-                || has(CausalEvidenceFamily::SignalReplayCursor),
+            replay: has(CausalEvidenceFamily::SignalReplayCursor),
             preview: has(CausalEvidenceFamily::BridgePreview),
             stale_failure: has(CausalEvidenceFamily::BridgeSourceFailure)
                 || bridge_denial_family == Some(BridgeCausalEvidenceFamily::BridgeSourceFailure),
             continuity: has(CausalEvidenceFamily::BridgeContinuity)
-                || has(CausalEvidenceFamily::BridgeStream)
                 || has(CausalEvidenceFamily::SignalReplayCursor),
         }
     }

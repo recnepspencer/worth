@@ -7,18 +7,16 @@ fn pricing_shock_historical_commit_reads_bridge_visible_provenance_from_truth() 
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let scenario = generated_pricing_scenario();
-    let runtime = build_pricing_runtime(
-        pricing_reference_source(),
-        RecordingSignalBridgeSink::default(),
-    );
+    let truth = RelationalPricing::reference(execution, &scenario, None);
+    let runtime = truth.runtime(RecordingSignalBridgeSink::default());
 
     let historical = runtime
         .evaluate(
             BridgeTruthViewEvaluationRequest::for_historical_commit(
-                crate::truth_identity_fixtures::truth_branch_fixture("pricing-shock"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
+                TruthBranchIdentity::from_relational_branch_id("pricing-shock"),
+                truth.shock_commit.clone(),
             )
-            .with_read_packet(pricing_provenance_read_packet("rubber")),
+            .with_read_packet(truth.rubber_provenance_packet()),
             execution,
         )
         .expect("historical pricing shock provenance should materialize");
@@ -30,7 +28,7 @@ fn pricing_shock_historical_commit_reads_bridge_visible_provenance_from_truth() 
 
     assert_eq!(
         historical.snapshot_identity().as_str(),
-        "snapshot:pricing-shock"
+        truth.shock_snapshot().as_str()
     );
     assert_eq!(
         provenance_texts.regime_text(),
@@ -78,28 +76,30 @@ fn pricing_shock_historical_provenance_corruption_is_detectable_against_independ
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let scenario = generated_pricing_scenario();
-    let runtime = build_pricing_runtime(
-        pricing_reference_source_with_corrupted_shock_provenance("shock-delta", "999999"),
-        RecordingSignalBridgeSink::default(),
+    let truth = RelationalPricing::reference(
+        execution,
+        &scenario,
+        Some(("shock-delta", "999999".to_owned())),
     );
+    let runtime = truth.runtime(RecordingSignalBridgeSink::default());
 
     let provenance_eval = runtime
         .evaluate(
             BridgeTruthViewEvaluationRequest::for_historical_commit(
-                crate::truth_identity_fixtures::truth_branch_fixture("pricing-shock"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
+                TruthBranchIdentity::from_relational_branch_id("pricing-shock"),
+                truth.shock_commit.clone(),
             )
-            .with_read_packet(pricing_provenance_read_packet("rubber")),
+            .with_read_packet(truth.rubber_provenance_packet()),
             execution,
         )
         .expect("corrupted historical provenance should still materialize as truth");
     let cost_eval = runtime
         .evaluate(
             BridgeTruthViewEvaluationRequest::for_historical_commit(
-                crate::truth_identity_fixtures::truth_branch_fixture("pricing-shock"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
+                TruthBranchIdentity::from_relational_branch_id("pricing-shock"),
+                truth.shock_commit.clone(),
             )
-            .with_read_packet(pricing_component_read_packet("rubber")),
+            .with_read_packet(truth.rubber_read_packet()),
             execution,
         )
         .expect("historical component cost should still materialize");
@@ -111,11 +111,11 @@ fn pricing_shock_historical_provenance_corruption_is_detectable_against_independ
 
     assert_eq!(
         provenance_eval.snapshot_identity().as_str(),
-        "snapshot:pricing-shock"
+        truth.shock_snapshot().as_str()
     );
     assert_eq!(
-        read_single_money_cents(&cost_eval),
-        scenario.speculative_rubber_cost
+        read_cost(&cost_eval, execution),
+        scenario.speculative_rubber_cost.to_string()
     );
     assert_eq!(
         provenance_texts.regime_text(),
@@ -192,20 +192,19 @@ fn pricing_shock_provenance_mutation_sweep_is_detectable_against_independent_ora
             "999999".to_owned(),
         ),
     ] {
-        let runtime = build_pricing_runtime(
-            pricing_reference_source_with_corrupted_shock_provenance(
-                field,
-                corrupted_aspect_value_text.clone(),
-            ),
-            RecordingSignalBridgeSink::default(),
+        let truth = RelationalPricing::reference(
+            execution,
+            &scenario,
+            Some((field, corrupted_aspect_value_text.clone())),
         );
+        let runtime = truth.runtime(RecordingSignalBridgeSink::default());
         let historical = runtime
             .evaluate(
                 BridgeTruthViewEvaluationRequest::for_historical_commit(
-                    crate::truth_identity_fixtures::truth_branch_fixture("pricing-shock"),
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
+                    TruthBranchIdentity::from_relational_branch_id("pricing-shock"),
+                    truth.shock_commit.clone(),
                 )
-                .with_read_packet(pricing_provenance_read_packet("rubber")),
+                .with_read_packet(truth.rubber_provenance_packet()),
                 execution,
             )
             .expect("corrupted provenance field should still materialize");
@@ -213,7 +212,7 @@ fn pricing_shock_provenance_mutation_sweep_is_detectable_against_independent_ora
 
         assert_eq!(
             historical.snapshot_identity().as_str(),
-            "snapshot:pricing-shock"
+            truth.shock_snapshot().as_str()
         );
         assert_eq!(
             provenance_texts.field_text(field),

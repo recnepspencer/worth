@@ -51,7 +51,6 @@ impl AdmittedBridgeWritebackContract {
         authority_inputs: BridgeWritebackAuthorityInputs,
         lowered_policy: &LoweredBridgeExecutionPolicy,
     ) -> Result<Self, crate::error::BridgeWritebackError> {
-        reject_unadmitted_phase_1_writeback_shapes(&validated_declaration)?;
         if validated_declaration.declaration().request_mode()
             != crate::writeback::BridgeWritebackRequestMode::WritebackCapable
         {
@@ -82,20 +81,12 @@ impl AdmittedBridgeWritebackContract {
 
         let lowered_policy_digest = Arc::<str>::from(lowered_policy.digest().to_owned());
         let canonical_basis = Arc::<str>::from(format!(
-            "admitted-bridge-writeback-contract|declaration={}|validated={}|family={}|strategy={}|diagnostics:{:?}|replay:{}|lowered-policy={}",
+            "admitted-bridge-writeback-contract|declaration={}|validated={}|diagnostics:{:?}|replay:{}|lowered-policy={}",
             validated_declaration
                 .declaration()
                 .declaration_identity()
                 .as_str(),
             validated_declaration.canonical_basis(),
-            validated_declaration
-                .family_basis()
-                .expect("admitted writeback contract requires family basis")
-                .digest(),
-            validated_declaration
-                .strategy_basis()
-                .expect("admitted writeback contract requires strategy basis")
-                .digest(),
             authority_inputs.diagnostics_tier(),
             authority_inputs.replay_artifacts_permitted(),
             lowered_policy_digest.as_ref(),
@@ -137,22 +128,4 @@ impl AdmittedBridgeWritebackContract {
     pub fn digest(&self) -> &str {
         self.digest.as_ref()
     }
-}
-
-fn reject_unadmitted_phase_1_writeback_shapes(
-    validated_declaration: &ValidatedBridgeWritebackDeclaration,
-) -> Result<(), crate::error::BridgeWritebackError> {
-    if validated_declaration.family_basis().is_none() {
-        return Err(crate::error::BridgeWritebackError::new(
-            crate::error::BridgeWritebackErrorKind::FamilyBindingMismatch,
-            format!(
-                "Writeback declaration `{}` cannot admit without validated family basis.",
-                validated_declaration
-                    .declaration()
-                    .declaration_identity()
-                    .as_str()
-            ),
-        ));
-    }
-    Ok(())
 }

@@ -7,7 +7,6 @@ use crate::identity::{BridgeIdentity, WritebackLoopPreventionIdentityTag};
 use super::{
     BridgeDerivedWritebackEffect, BridgeWritebackFeedbackContext,
     BridgeWritebackFeedbackProvenance, BridgeWritebackIdempotenceBasis,
-    BridgeWritebackLoopDisposition,
 };
 
 pub type BridgeWritebackLoopPreventionIdentity = BridgeIdentity<WritebackLoopPreventionIdentityTag>;
@@ -148,4 +147,11 @@ fn classify_disposition(
             }
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum BridgeWritebackLoopDisposition {
+    AllowAuthoritativeAttempt,
+    CanonicalNoop,
+    RejectAsUnsafeFeedback,
 }

@@ -2,7 +2,6 @@ use crate::source::{
     SourceFailureRecord, SourceFailureRecordIdentity, SourceMaterializationRecord,
     SourceMaterializationRecordIdentity,
 };
-use crate::stream::{CheckpointTokenIdentity, StreamReplayRecordIdentity};
 
 use super::*;
 
@@ -21,20 +20,6 @@ impl BridgeDiagnosticsFacade {
             .source_failure_records()
     }
 
-    pub fn stream_checkpoints(&self) -> Vec<ConsumerCheckpointToken> {
-        self.state
-            .read()
-            .expect("bridge diagnostics lock poisoned")
-            .stream_checkpoints()
-    }
-
-    pub fn stream_replay_records(&self) -> Vec<CanonicalStreamReplayRecord> {
-        self.state
-            .read()
-            .expect("bridge diagnostics lock poisoned")
-            .stream_replay_records()
-    }
-
     pub fn last_source_materialization_record(&self) -> Option<SourceMaterializationRecord> {
         self.state
             .read()
@@ -47,20 +32,6 @@ impl BridgeDiagnosticsFacade {
             .read()
             .expect("bridge diagnostics lock poisoned")
             .last_source_failure_record()
-    }
-
-    pub fn last_stream_checkpoint(&self) -> Option<ConsumerCheckpointToken> {
-        self.state
-            .read()
-            .expect("bridge diagnostics lock poisoned")
-            .last_stream_checkpoint()
-    }
-
-    pub fn last_stream_replay_record(&self) -> Option<CanonicalStreamReplayRecord> {
-        self.state
-            .read()
-            .expect("bridge diagnostics lock poisoned")
-            .last_stream_replay_record()
     }
 
     pub fn source_materialization_record_for_identity(
@@ -91,35 +62,5 @@ impl BridgeDiagnosticsFacade {
             .read()
             .expect("bridge diagnostics lock poisoned")
             .source_failure_record_for_identity(failure_identity)
-    }
-
-    pub fn stream_checkpoint_for_identity(
-        &self,
-        checkpoint_identity: &CheckpointTokenIdentity,
-    ) -> Option<ConsumerCheckpointToken> {
-        self.state
-            .read()
-            .expect("bridge diagnostics lock poisoned")
-            .stream_checkpoint_for_identity(checkpoint_identity)
-    }
-
-    pub fn stream_replay_record_for_identity(
-        &self,
-        replay_record_identity: &StreamReplayRecordIdentity,
-    ) -> Option<CanonicalStreamReplayRecord> {
-        self.state
-            .read()
-            .expect("bridge diagnostics lock poisoned")
-            .stream_replay_record_for_identity(replay_record_identity)
-    }
-
-    pub fn stream_replay_record_for_checkpoint_identity(
-        &self,
-        checkpoint_identity: &CheckpointTokenIdentity,
-    ) -> Option<CanonicalStreamReplayRecord> {
-        self.state
-            .read()
-            .expect("bridge diagnostics lock poisoned")
-            .stream_replay_record_for_checkpoint_identity(checkpoint_identity)
     }
 }

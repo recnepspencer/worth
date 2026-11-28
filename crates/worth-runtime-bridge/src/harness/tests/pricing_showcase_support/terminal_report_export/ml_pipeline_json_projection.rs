@@ -67,7 +67,7 @@ impl PricingWorkloadCertificationBundle {
                     "writeback_family_kind": format!("{:?}", self.writeback.family_kind),
                     "writeback_strategy_class": format!("{:?}", self.writeback.strategy_class),
                     "writeback_commit_outcome_class": format!("{:?}", self.writeback.commit_outcome_class),
-                    "writeback_commit_replay_semantic_digest": self.writeback.commit_replay_semantic_digest,
+                    "writeback_committed_effect_intent_digest": self.writeback.committed_effect_intent_digest,
                 },
                 "historical_provenance": {
                     "main_commit": self.provenance.main_commit.as_str(),

@@ -3,20 +3,20 @@ use worth_harness::facade::{ExecutionProfile, ExecutionRequest, HarnessAdapter, 
 
 use crate::facade::{BridgeSourceCapability, BridgeSourceCapabilitySet, BridgeTruthViewSelector};
 use crate::harness::adapter::{BridgeHarnessAdapter, BridgeHarnessTargetId};
-use crate::harness::fixtures::BridgeHarnessFixture;
+use crate::harness::fixtures::{BridgeHarnessFixture, NamedTruth};
 use crate::source::{SourceDeclaration, SourceDeclarationIdentity};
-
-use super::super::support::{committed_patch_on_branch, registration, snapshot};
 
 pub(super) fn source_fixture(
     name: &str,
 ) -> worth_harness::facade::ScenarioFixture<BridgeHarnessFixture> {
+    let (scenario, commit) = NamedTruth::scenario_on_branch("analysis", "alice");
     ScenarioPlan::new(
         name,
-        BridgeHarnessFixture::new(vec![registration()])
+        BridgeHarnessFixture::new(vec![NamedTruth::mapping()])
             .with_policy(crate::facade::BridgeRuntimePolicy::development())
             .with_source_declaration(historical_source_declaration(
                 SourceDeclarationIdentity::admit_bridge_owned("source:analysis-history"),
+                commit,
             ))
             .with_source_adapter_capabilities(BridgeSourceCapabilitySet::new(vec![
                 BridgeSourceCapability::SnapshotRead,
@@ -24,18 +24,7 @@ pub(super) fn source_fixture(
                 BridgeSourceCapability::BranchRead,
                 BridgeSourceCapability::ReplayContinuityRead,
             ]))
-            .with_committed_patch(committed_patch_on_branch(
-                crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
+            .with_relational_truth(scenario),
     )
     .declare_input("source")
     .declare_observation("source")
@@ -44,12 +33,13 @@ pub(super) fn source_fixture(
 
 pub(super) fn historical_source_declaration(
     declaration_identity: SourceDeclarationIdentity,
+    commit: crate::facade::TruthCommitIdentity,
 ) -> SourceDeclaration {
     SourceDeclaration::new(
         declaration_identity,
         BridgeTruthViewSelector::historical_commit(
-            crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+            crate::facade::TruthBranchIdentity::from_relational_branch_id("analysis"),
+            commit,
         ),
         BridgeSourceCapabilitySet::new(vec![
             BridgeSourceCapability::SnapshotRead,

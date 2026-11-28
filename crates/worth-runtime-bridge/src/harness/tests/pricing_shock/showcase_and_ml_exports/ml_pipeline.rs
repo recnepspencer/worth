@@ -6,6 +6,8 @@ fn pricing_shock_ml_pipeline_export_contains_full_traceable_simulation_artifacts
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
+    let scenario = generated_pricing_scenario();
+    let truth = RelationalPricing::reference(resource_request, &scenario, None);
     let bundle = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-ml-export"),
@@ -52,10 +54,7 @@ fn pricing_shock_ml_pipeline_export_contains_full_traceable_simulation_artifacts
             .first_material()
             .expect("simulation should rank at least one material")
     );
-    assert_eq!(
-        bundle.provenance.shock_commit,
-        crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock")
-    );
+    assert_eq!(bundle.provenance.shock_commit, truth.shock_commit);
     assert!(!bundle.matrix.reference.source_commit.as_str().is_empty());
     assert!(!bundle
         .matrix
@@ -158,7 +157,7 @@ fn pricing_shock_ml_pipeline_export_lineage_graph_is_well_formed() {
         bundle.restart_replay.source_commit.as_str().to_owned(),
         bundle.restart_replay.route_identity.as_str().to_owned(),
         format!("{:?}", bundle.writeback.family_kind),
-        bundle.writeback.commit_replay_semantic_digest.clone(),
+        bundle.writeback.committed_effect_intent_digest.clone(),
         bundle.hostile_failure.source_commit.as_str().to_owned(),
         bundle.hostile_failure.source_snapshot.as_str().to_owned(),
         bundle.digest(),

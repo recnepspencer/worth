@@ -13,12 +13,6 @@ use crate::snapshot::{
     TruthSnapshotIdentity,
 };
 use crate::source::BridgeSourceCapability;
-use crate::structural::{
-    StructuralFingerprintEquivalenceContract, StructuralFingerprintFamily,
-    StructuralFingerprintNormalizationRule, StructuralFingerprintOmissionPolicy,
-    StructuralFingerprintOrderingRule, StructuralIdentityDeclaration,
-    StructuralIdentityDeclarationIdentity, StructuralSchemaIdentity, StructuralTruthViewBasis,
-};
 
 mod support;
 pub(in crate::facade::tests) use support::*;
@@ -33,8 +27,5 @@ mod request_lanes;
 mod source;
 mod speculation;
 mod standard_path;
-mod stream;
-mod stream_protocol;
-mod structural;
 pub(crate) mod subscription;
 mod writeback;

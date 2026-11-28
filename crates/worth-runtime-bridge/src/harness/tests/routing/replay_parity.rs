@@ -4,11 +4,8 @@ use crate::facade::{
     BridgePolicyDeclarationIdentity, BridgeRequestKind,
 };
 
-use super::super::support::{
-    build_runtime_with_aspects, committed_patch, field_aspect_registration, field_slice_snapshot,
-    registration,
-};
-use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBridgeSink};
+use super::super::support::build_runtime_with_aspects;
+use crate::harness::fixtures::{NamedTruth, RecordingSignalBridgeSink};
 
 #[test]
 fn replayed_slice_route_matches_original_canonical_slice_artifact() {
@@ -16,38 +13,24 @@ fn replayed_slice_route_matches_original_canonical_slice_artifact() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(field_slice_snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
+    let truth = NamedTruth::new();
+    let (commit, _observation) = truth.commit_name(execution, "alice");
     let runtime = build_runtime_with_aspects(
-        source,
+        truth.source,
         RecordingSignalBridgeSink::default(),
-        vec![registration()],
-        vec![field_aspect_registration()],
+        vec![NamedTruth::mapping()],
+        vec![NamedTruth::aspect_mapping()],
     );
 
     let result = runtime
         .deliver_invalidation(
             runtime
-                .plan_committed_patch(
-                    BridgeRouteRequest::for_commit(
-                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                    ),
-                    execution,
-                )
+                .plan_committed_patch(BridgeRouteRequest::for_commit(commit), execution)
                 .expect("slice route should plan"),
             execution,
         )
         .expect("slice route should deliver");
+    assert_eq!(result.result_summary().subscription_slice_count(), 1);
     let canonical = runtime
         .diagnostics()
         .last_canonical_route_record()
@@ -76,23 +59,13 @@ fn replayed_policy_scoped_route_preserves_route_policy_digest_in_route_record() 
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(field_slice_snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
+    let truth = NamedTruth::new();
+    let (commit, _observation) = truth.commit_name(execution, "alice");
     let runtime = build_runtime_with_aspects(
-        source,
+        truth.source,
         RecordingSignalBridgeSink::default(),
-        vec![registration()],
-        vec![field_aspect_registration()],
+        vec![NamedTruth::mapping()],
+        vec![NamedTruth::aspect_mapping()],
     );
     let declaration = BridgePolicyDeclaration::new(
         BridgePolicyDeclarationIdentity::admit_bridge_owned("policy:route-record-visible"),
@@ -114,9 +87,7 @@ fn replayed_policy_scoped_route_preserves_route_policy_digest_in_route_record() 
         .deliver_invalidation(
             runtime
                 .plan_committed_patch_with_route_policy(
-                    BridgeRouteRequest::for_commit(
-                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                    ),
+                    BridgeRouteRequest::for_commit(commit),
                     &route_policy,
                     execution,
                 )

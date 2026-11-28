@@ -134,7 +134,7 @@ impl PricingWorkloadCertificationBundle {
                 "restart_replay_route_identity": self.restart_replay.route_identity.as_str(),
                 "hostile_failure_class": format!("{:?}", self.hostile_failure.failure_class),
                 "restart_failure_kind": format!("{:?}", self.restart_failure.error_kind),
-                "writeback_commit_replay_semantic_digest": self.writeback.commit_replay_semantic_digest,
+                "writeback_committed_effect_intent_digest": self.writeback.committed_effect_intent_digest,
                 "bundle_digest": self.digest(),
                 "suite_25": self.suite_25_artifact_json(),
                 "suite_26": self.suite_26_artifact_json(),

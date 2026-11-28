@@ -2,71 +2,6 @@ use super::{BridgeErrorKind, *};
 use worth_execution::report::RetryHint;
 use worth_execution::report::{DenialClass::*, Disposition::*};
 
-impl BridgeErrorKind for BridgeStreamErrorKind {
-    fn report(&self) -> (DenialClass, Disposition, &'static str) {
-        match self {
-            Self::UnsupportedConsumerShape => (
-                InvalidInput,
-                CorrectInput,
-                "bridge.stream.unsupported_consumer_shape",
-            ),
-            Self::UnsupportedResumeMode => (
-                InvalidInput,
-                CorrectInput,
-                "bridge.stream.unsupported_resume_mode",
-            ),
-            Self::ProtocolVersionMismatch => (
-                InvalidInput,
-                CorrectInput,
-                "bridge.stream.protocol_version_mismatch",
-            ),
-            Self::CheckpointContractMismatch => (
-                Conflict,
-                Final,
-                "bridge.stream.checkpoint_contract_mismatch",
-            ),
-            Self::CheckpointStreamMismatch => {
-                (Conflict, Final, "bridge.stream.checkpoint_stream_mismatch")
-            }
-            Self::CheckpointTruncated => {
-                (Unavailable, Escalate, "bridge.stream.checkpoint_truncated")
-            }
-            Self::IllegalCoalescingBoundary => (
-                Invariant,
-                Escalate,
-                "bridge.stream.illegal_coalescing_boundary",
-            ),
-            Self::NonIdempotentDuplicateObservation => (
-                Invariant,
-                Escalate,
-                "bridge.stream.non_idempotent_duplicate_observation",
-            ),
-            Self::BackpressurePolicyViolation => (
-                Invariant,
-                Escalate,
-                "bridge.stream.backpressure_policy_violation",
-            ),
-            Self::StreamReplayMismatch => {
-                (Invariant, Escalate, "bridge.stream.stream_replay_mismatch")
-            }
-            Self::StreamDeliveryRejected => (
-                ExternalEffect,
-                Escalate,
-                "bridge.stream.stream_delivery_rejected",
-            ),
-            Self::InvalidStreamMaterial => (
-                InvalidInput,
-                CorrectInput,
-                "bridge.stream.invalid_stream_material",
-            ),
-        }
-    }
-
-    fn summary(&self) -> &'static str {
-        "Bridge could not process the stream request."
-    }
-}
-
 impl BridgeErrorKind for BridgeSpeculationErrorKind {
     fn report(&self) -> (DenialClass, Disposition, &'static str) {
         match self {
@@ -126,11 +61,6 @@ impl BridgeErrorKind for BridgeWritebackErrorKind {
                 Reauthorize,
                 "bridge.writeback.policy_rejected",
             ),
-            Self::StrategyUnavailable => (
-                Unavailable,
-                Escalate,
-                "bridge.writeback.strategy_unavailable",
-            ),
             Self::FamilyBindingMismatch => (
                 Invariant,
                 Escalate,
@@ -146,11 +76,6 @@ impl BridgeErrorKind for BridgeWritebackErrorKind {
                 Final,
                 "bridge.writeback.idempotence_basis_mismatch",
             ),
-            Self::CausalityEffectMismatch => (
-                Invariant,
-                Escalate,
-                "bridge.writeback.causality_effect_mismatch",
-            ),
             Self::StaleTruthBasis => (
                 Conflict,
                 Retry(RetryHint::AfterBasisAdvance),
@@ -159,7 +84,6 @@ impl BridgeErrorKind for BridgeWritebackErrorKind {
             Self::InvariantRejected => (Invariant, Escalate, "bridge.writeback.invariant_rejected"),
             Self::StrategyFailed => (ExternalEffect, Escalate, "bridge.writeback.strategy_failed"),
             Self::StrategyPanicked => (Defect, Escalate, "bridge.writeback.strategy_panicked"),
-            Self::ReplayMismatch => (Invariant, Escalate, "bridge.writeback.replay_mismatch"),
             Self::AuthorityDenied => (
                 Authorization,
                 Reauthorize,

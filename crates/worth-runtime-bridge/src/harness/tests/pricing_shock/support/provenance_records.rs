@@ -1,138 +1,3 @@
-use super::*;
-
-pub(in crate::harness::tests::pricing_shock) fn snapshot_with_provenance(
-    snapshot: &SnapshotFixture,
-    attributions: &[&PricingCommitAttribution],
-) -> SnapshotFixture {
-    let mut records = snapshot.records().to_vec();
-    for attribution in attributions {
-        let component = attribution.material.key();
-        records.push(SnapshotReadRecord::for_request(
-            &pricing_provenance_read_request(component, "regime"),
-            worth_foundational::facade::AspectValue::String(
-                (format!("{:?}", attribution.material_attribution.regime)).into(),
-            ),
-        ));
-        records.push(SnapshotReadRecord::for_request(
-            &pricing_provenance_read_request(component, "external-factor"),
-            worth_foundational::facade::AspectValue::String(
-                (attribution
-                    .material_attribution
-                    .external_factor_microunits
-                    .to_string())
-                .into(),
-            ),
-        ));
-        records.push(SnapshotReadRecord::for_request(
-            &pricing_provenance_read_request(component, "factor-delta"),
-            worth_foundational::facade::AspectValue::String(
-                (attribution
-                    .material_attribution
-                    .factor_delta_microunits
-                    .to_string())
-                .into(),
-            ),
-        ));
-        records.push(SnapshotReadRecord::for_request(
-            &pricing_provenance_read_request(component, "trend-delta"),
-            worth_foundational::facade::AspectValue::String(
-                (attribution
-                    .material_attribution
-                    .trend_delta_microunits
-                    .to_string())
-                .into(),
-            ),
-        ));
-        records.push(SnapshotReadRecord::for_request(
-            &pricing_provenance_read_request(component, "jump-delta"),
-            worth_foundational::facade::AspectValue::String(
-                (attribution
-                    .material_attribution
-                    .jump_delta_microunits
-                    .to_string())
-                .into(),
-            ),
-        ));
-        records.push(SnapshotReadRecord::for_request(
-            &pricing_provenance_read_request(component, "shock-delta"),
-            worth_foundational::facade::AspectValue::String(
-                (attribution.shock_delta_microunits.to_string()).into(),
-            ),
-        ));
-        records.push(SnapshotReadRecord::for_request(
-            &pricing_provenance_read_request(component, "shock-multiplier"),
-            worth_foundational::facade::AspectValue::String(
-                (attribution.shock_multiplier_per_mille.to_string()).into(),
-            ),
-        ));
-    }
-    SnapshotFixture::new(snapshot.identity().clone(), records)
-        .with_read_result_identity(snapshot.read_result_identity().clone())
-}
-
-pub(in crate::harness::tests::pricing_shock) fn snapshot_with_corrupted_provenance_field(
-    snapshot: &SnapshotFixture,
-    component: &str,
-    field: &str,
-    content: impl Into<String>,
-) -> SnapshotFixture {
-    let target_request = pricing_provenance_read_request(component, field);
-    let target_correlation_id = target_request.correlation_id().clone();
-    let replacement_content = content.into();
-    let mut replaced = false;
-    let mut records = Vec::with_capacity(snapshot.records().len());
-    for record in snapshot.records() {
-        if record.correlation_id() == &target_correlation_id {
-            records.push(SnapshotReadRecord::for_request(
-                &target_request,
-                worth_foundational::facade::AspectValue::String(replacement_content.clone().into()),
-            ));
-            replaced = true;
-        } else {
-            records.push(record.clone());
-        }
-    }
-    assert!(
-        replaced,
-        "provenance correlation `{}` should exist before corruption",
-        target_correlation_id.as_str()
-    );
-    SnapshotFixture::new(snapshot.identity().clone(), records)
-        .with_read_result_identity(snapshot.read_result_identity().clone())
-}
-
-pub(in crate::harness::tests::pricing_shock) fn snapshot_with_identity(
-    snapshot: &SnapshotFixture,
-    snapshot_identity: TruthSnapshotIdentity,
-) -> SnapshotFixture {
-    SnapshotFixture::new(snapshot_identity.clone(), snapshot.records().to_vec())
-        .with_read_result_identity(snapshot_identity)
-}
-
-pub(in crate::harness::tests::pricing_shock) fn read_single_aspect_value_text(
-    evaluation: &crate::facade::BridgeTruthViewEvaluation,
-) -> String {
-    let reads = evaluation
-        .observation()
-        .read_planned_packet(worth_execution::ExecutionRequest::serial(
-            &crate::snapshot::test_serial_request(),
-        ))
-        .expect("truth-view read packet should materialize");
-    pricing_aspect_value_text(
-        reads.records()[0]
-            .scalar_aspect_value()
-            .expect("pricing snapshot read should return a scalar aspect value"),
-    )
-}
-
-pub(in crate::harness::tests::pricing_shock) fn read_single_money_cents(
-    evaluation: &crate::facade::BridgeTruthViewEvaluation,
-) -> i64 {
-    read_single_aspect_value_text(evaluation)
-        .parse::<i64>()
-        .expect("pricing aspect value should be parseable as integer cents")
-}
-
 pub(in crate::harness::tests::pricing_shock) fn read_pricing_provenance_aspect_text_packet(
     evaluation: &crate::facade::BridgeTruthViewEvaluation,
 ) -> PricingProvenanceAspectTextPacket {
@@ -248,4 +113,24 @@ pub(in crate::harness::tests::pricing_shock) fn pricing_aspect_value_text(
         worth_foundational::facade::AspectValue::Int64(value) => value.to_string(),
         other => panic!("pricing snapshot expected string or integer aspect value, got {other:?}"),
     }
+}
+
+pub(in crate::harness::tests::pricing_shock) fn read_cost(
+    evaluation: &crate::facade::BridgeTruthViewEvaluation,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> String {
+    let result = evaluation
+        .observation()
+        .read_planned_packet(execution)
+        .unwrap();
+    let value = result.records()[0].validated_value_posture().unwrap();
+    let worth_foundational::facade::ContractValidatedAspectValueView::Struct(cost) =
+        value.payload().view()
+    else {
+        panic!("the native cost read must preserve its struct contract")
+    };
+    pricing_aspect_value_text(
+        cost.get(&crate::relational_source::relational_test_support::field_key("usd"))
+            .expect("declared cost field"),
+    )
 }

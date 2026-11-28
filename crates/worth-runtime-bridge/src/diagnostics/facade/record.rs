@@ -92,53 +92,6 @@ impl BridgeDiagnosticsFacade {
             .record_source_failure(record, self.config.route_record_limit);
     }
 
-    pub(crate) fn record_stream_checkpoint(&self, record: ConsumerCheckpointToken) {
-        if !self.config.records_enabled {
-            return;
-        }
-
-        self.state
-            .write()
-            .expect("bridge diagnostics lock poisoned")
-            .record_stream_checkpoint(record, self.config.route_record_limit);
-    }
-
-    pub(crate) fn record_stream_replay_record(&self, record: CanonicalStreamReplayRecord) {
-        if !self.config.records_enabled {
-            return;
-        }
-
-        self.state
-            .write()
-            .expect("bridge diagnostics lock poisoned")
-            .record_stream_replay_record(record, self.config.route_record_limit);
-    }
-
-    pub(crate) fn record_structural_remap(&self, record: BridgeCanonicalStructuralRemapRecord) {
-        if !self.config.records_enabled {
-            return;
-        }
-
-        self.state
-            .write()
-            .expect("bridge diagnostics lock poisoned")
-            .record_structural_remap(record, self.config.route_record_limit);
-    }
-
-    pub(crate) fn record_structural_branch_comparison(
-        &self,
-        record: BridgeCanonicalStructuralBranchComparisonRecord,
-    ) {
-        if !self.config.records_enabled {
-            return;
-        }
-
-        self.state
-            .write()
-            .expect("bridge diagnostics lock poisoned")
-            .record_structural_branch_comparison(record, self.config.route_record_limit);
-    }
-
     pub(crate) fn record_delivery_failure(
         &self,
         source: BridgeFailureSource,

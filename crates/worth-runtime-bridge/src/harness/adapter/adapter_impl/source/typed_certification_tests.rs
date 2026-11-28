@@ -3,24 +3,20 @@ use worth_harness::facade::{ExecutionProfile, HarnessAdapter, ScenarioPlan};
 use super::certification_bundle::SourceHarnessCertificationBundle;
 use super::{execute_source_request, SourceHarnessExecution, SourceHarnessTarget};
 use crate::error::BridgeDeliveryErrorKind;
-use crate::facade::{
-    BridgeCommittedPatchEnvelope, BridgeCommittedPatchItem, BridgeMappingId,
-    BridgeMappingRegistration, BridgeProducerMetadata, BridgeSourceCapability,
-    BridgeSourceCapabilitySet, BridgeTruthViewSelector, CoarseRoutingMode, MappingSelector,
-    SignalInvalidationScope, SnapshotReadRecord, SnapshotReadRequest, TruthBranchIdentity,
-    TruthCommitIdentity, TruthPatchIdentity, TruthPatchScope, TruthSnapshotIdentity,
-};
+use crate::facade::{BridgeSourceCapability, BridgeSourceCapabilitySet, BridgeTruthViewSelector};
 use crate::harness::adapter::{BridgeHarnessAdapter, BridgeHarnessSession};
-use crate::harness::fixtures::{BridgeHarnessFixture, SnapshotFixture};
+use crate::harness::fixtures::{BridgeHarnessFixture, NamedTruth};
 use crate::source::{SourceDeclaration, SourceDeclarationIdentity};
 
 fn source_fixture(name: &str) -> worth_harness::facade::ScenarioFixture<BridgeHarnessFixture> {
+    let (scenario, commit) = NamedTruth::scenario_on_branch("analysis", "alice");
     ScenarioPlan::new(
         name,
-        BridgeHarnessFixture::new(vec![registration()])
+        BridgeHarnessFixture::new(vec![NamedTruth::mapping()])
             .with_policy(crate::facade::BridgeRuntimePolicy::development())
             .with_source_declaration(historical_source_declaration(
                 SourceDeclarationIdentity::admit_bridge_owned("source:analysis-history"),
+                commit,
             ))
             .with_source_adapter_capabilities(BridgeSourceCapabilitySet::new(vec![
                 BridgeSourceCapability::SnapshotRead,
@@ -28,48 +24,22 @@ fn source_fixture(name: &str) -> worth_harness::facade::ScenarioFixture<BridgeHa
                 BridgeSourceCapability::BranchRead,
                 BridgeSourceCapability::ReplayContinuityRead,
             ]))
-            .with_committed_patch(committed_patch_on_branch(
-                crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-            ))
-            .with_snapshot(snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
+            .with_relational_truth(scenario),
     )
     .declare_input("source")
     .declare_observation("source")
     .compile()
 }
 
-fn registration() -> BridgeMappingRegistration {
-    BridgeMappingRegistration::new(
-        BridgeMappingId::admit_bridge_owned("profile-name"),
-        TruthPatchScope::for_entity_field(
-            MappingSelector::exact("user"),
-            worth_foundational::facade::AspectKey::new("profile").expect("valid native aspect key"),
-            worth_foundational::facade::FieldKey::new("name".to_owned())
-                .expect("valid native field key"),
-        ),
-        crate::snapshot::SnapshotReadContract::scalar(
-            worth_foundational::facade::AspectKey::new("profile").expect("valid native aspect key"),
-            worth_foundational::facade::ScalarAspectType::String,
-        ),
-        SignalInvalidationScope::admit_bridge_owned("signal.profile"),
-        CoarseRoutingMode::Direct,
-    )
-}
-
 fn historical_source_declaration(
     declaration_identity: SourceDeclarationIdentity,
+    commit: crate::facade::TruthCommitIdentity,
 ) -> SourceDeclaration {
     SourceDeclaration::new(
         declaration_identity,
         BridgeTruthViewSelector::historical_commit(
-            crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+            crate::facade::TruthBranchIdentity::from_relational_branch_id("analysis"),
+            commit,
         ),
         BridgeSourceCapabilitySet::new(vec![
             BridgeSourceCapability::SnapshotRead,
@@ -77,55 +47,6 @@ fn historical_source_declaration(
             BridgeSourceCapability::BranchRead,
             BridgeSourceCapability::ReplayContinuityRead,
         ]),
-    )
-}
-
-fn committed_patch_on_branch(
-    branch_identity: TruthBranchIdentity,
-    commit_identity: TruthCommitIdentity,
-    patch_identity: TruthPatchIdentity,
-    snapshot_identity: TruthSnapshotIdentity,
-) -> BridgeCommittedPatchEnvelope {
-    BridgeCommittedPatchEnvelope::new(
-        crate::input::envelope::BridgeCommittedPatchEnvelopeIdentity::new_with_metadata(
-            BridgeProducerMetadata::bridge_harness_fixture(),
-            commit_identity,
-            patch_identity,
-            snapshot_identity,
-            branch_identity,
-        ),
-        vec![BridgeCommittedPatchItem::with_target(
-            "user",
-            crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                worth_foundational::facade::AspectLocator::new(
-                    worth_foundational::facade::LocatorAuthority::Authoritative,
-                    worth_foundational::facade::AspectKey::new("profile")
-                        .expect("valid bridge patch aspect key"),
-                ),
-                worth_foundational::facade::CanonicalFieldPath::single(
-                    worth_foundational::facade::FieldKey::new("name".to_owned())
-                        .expect("valid foundational field key"),
-                ),
-            ),
-        )],
-    )
-    .expect("source certification committed patch should construct")
-}
-
-fn snapshot(snapshot_identity: TruthSnapshotIdentity, text: &str) -> SnapshotFixture {
-    SnapshotFixture::new(
-        snapshot_identity,
-        vec![SnapshotReadRecord::for_request(
-            &SnapshotReadRequest::for_coarse(
-                "user",
-                crate::snapshot::SnapshotReadContract::scalar(
-                    worth_foundational::facade::AspectKey::new("profile")
-                        .expect("valid source snapshot aspect key"),
-                    worth_foundational::facade::ScalarAspectType::String,
-                ),
-            ),
-            worth_foundational::facade::AspectValue::String(text.into()),
-        )],
     )
 }
 

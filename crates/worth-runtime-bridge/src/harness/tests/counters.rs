@@ -1,9 +1,7 @@
 use crate::facade::BridgeRouteRequest;
+use crate::harness::fixtures::NamedTruth;
 
-use super::support::{
-    build_runtime_with_aspects, committed_patch, field_aspect_registration, field_slice_snapshot,
-    registration,
-};
+use super::support::{build_runtime_with_aspects, field_aspect_registration, registration};
 use crate::facade::{
     BridgeDeliveryIntent, BridgePreviewSessionDeclaration, BridgePreviewSessionDeclarationIdentity,
     BridgeReplayMode, BridgeRequestKind, BridgeSignalBranchIdentity, BridgeSourceCapability,
@@ -12,7 +10,7 @@ use crate::facade::{
     HistoricalEvaluationDeclaration, SnapshotReadPacket, TruthBranchIdentity,
     TruthSnapshotIdentity,
 };
-use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBridgeSink};
+use crate::harness::fixtures::RecordingSignalBridgeSink;
 use crate::speculation::BridgePreviewSessionIdentity;
 
 struct CounterPreviewSessionBasisInput {
@@ -42,34 +40,21 @@ fn bridge_counters_expose_digest_input_bytes() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(field_slice_snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
+    let truth = NamedTruth::new();
+    let (commit_a, _observation_a) = truth.commit_name(execution, "alice");
+    let source = truth.source.clone();
+
     let runtime = build_runtime_with_aspects(
         source,
         RecordingSignalBridgeSink::default(),
-        vec![registration()],
-        vec![field_aspect_registration()],
+        vec![NamedTruth::mapping()],
+        vec![NamedTruth::aspect_mapping()],
     );
 
     let result = runtime
         .deliver_invalidation(
             runtime
-                .plan_committed_patch(
-                    BridgeRouteRequest::for_commit(
-                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                    ),
-                    execution,
-                )
+                .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a.clone()), execution)
                 .expect("route should plan before digest budget capture"),
             execution,
         )
@@ -85,29 +70,22 @@ fn historical_evaluation_counters_capture_selector_branch_and_materialization_wi
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(field_slice_snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
+    let truth = NamedTruth::new();
+    let (commit_a, _observation_a) = truth.commit_name(execution, "alice");
+    let _head = truth.bind_main_head();
+    let source = truth.source.clone();
+
     let runtime = build_runtime_with_aspects(
         source,
         RecordingSignalBridgeSink::default(),
-        vec![registration()],
-        vec![field_aspect_registration()],
+        vec![NamedTruth::mapping()],
+        vec![NamedTruth::aspect_mapping()],
     );
 
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::historical_commit(
             crate::truth_identity_fixtures::truth_branch_fixture("main"),
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+            commit_a.clone(),
         ),
         BridgeReplayMode::Enabled,
         runtime.policy().diagnostics_tier(),
@@ -139,7 +117,8 @@ fn historical_evaluation_counters_capture_selector_branch_and_materialization_wi
 
 #[test]
 fn speculation_counters_capture_preview_discard_promotion_and_replay_widths() {
-    let source = InMemoryRelationalBridgeSource::default();
+    let source =
+        crate::relational_source::relational_test_support::empty_bridge_relational_source();
     let runtime = build_runtime_with_aspects(
         source,
         RecordingSignalBridgeSink::default(),

@@ -39,6 +39,7 @@ pub(super) struct PricingReferenceBundle {
     pub(super) main_rubber_cost_cents: i64,
     pub(super) speculative_truth_branch: TruthBranchIdentity,
     pub(super) speculative_signal_branch: BridgeSignalBranchIdentity,
+    pub(super) speculative_commit: TruthCommitIdentity,
     pub(super) speculative_snapshot: TruthSnapshotIdentity,
     pub(super) speculative_rubber_cost_cents: i64,
 }
@@ -141,13 +142,10 @@ pub(super) struct PricingWritebackBundle {
     pub(super) strategy_class: BridgeWritebackStrategyClass,
     pub(super) commit_outcome_class: BridgeWritebackOutcomeClass,
     pub(super) noop_outcome_class: BridgeWritebackOutcomeClass,
-    pub(super) commit_replay_semantic_digest: String,
-    pub(super) noop_replay_semantic_digest: String,
+    pub(super) committed_effect_intent_digest: String,
+    pub(super) retried_effect_intent_digest: String,
     pub(super) shared_authoritative_artifact: bool,
     pub(super) authority_commit_count: usize,
-    pub(super) execution_request_count: usize,
-    pub(super) execution_commit_count: usize,
-    pub(super) execution_noop_count: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

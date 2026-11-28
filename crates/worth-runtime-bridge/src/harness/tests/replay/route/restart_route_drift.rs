@@ -1,8 +1,5 @@
-use super::super::super::support::{
-    committed_patch, committed_patch_items, registration, snapshot,
-};
 use crate::harness::adapter::{BridgeHarnessAdapter, BridgeHarnessTargetId};
-use crate::harness::fixtures::BridgeHarnessFixture;
+use crate::harness::fixtures::{BridgeHarnessFixture, ProfileTruth, ScenarioRelationalTruth};
 use worth_harness::facade::{ExecutionProfile, ExecutionRequest, ScenarioPlan};
 use worth_harness::runtime::HarnessAdapter;
 
@@ -13,29 +10,20 @@ fn bridge_replay_detects_route_drift_after_restart_shaped_truth_change() {
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let adapter = BridgeHarnessAdapter;
+    let truth = ProfileTruth::new(resource_request);
+    let commit = truth.commit.clone();
     let fixture = ScenarioPlan::new(
         "bridge-replay-restart-drift",
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_committed_patch(committed_patch(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
+        BridgeHarnessFixture::new(vec![ProfileTruth::mapping()]).with_relational_truth(
+            ScenarioRelationalTruth::new(truth.native, truth.commit, vec![truth.observation], None),
+        ),
     )
     .declare_input("commit-a")
     .declare_observation("route")
     .compile();
     let request = ExecutionRequest::target(
         "deliver-commit-a",
-        BridgeHarnessTargetId::committed_route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ),
+        BridgeHarnessTargetId::committed_route(commit.clone()),
     );
     let profile = ExecutionProfile::development("development");
 
@@ -57,48 +45,18 @@ fn bridge_replay_detects_route_drift_after_restart_shaped_truth_change() {
         .last_canonical_route_record()
         .expect("original canonical bridge route record");
 
+    let drifted = ProfileTruth::on_branch_with_field(resource_request, "main", "status");
+    assert_eq!(drifted.commit, commit);
     let drifted_fixture = ScenarioPlan::new(
         "bridge-replay-restart-drift-rehydrated",
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_committed_patch(committed_patch_items(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                vec![
-                    crate::facade::BridgeCommittedPatchItem::with_target(
-                        "user",
-                        crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                            worth_foundational::facade::AspectLocator::new(
-                                worth_foundational::facade::LocatorAuthority::Authoritative,
-                                worth_foundational::facade::AspectKey::new("profile")
-                                    .expect("valid bridge patch aspect key"),
-                            ),
-                            worth_foundational::facade::CanonicalFieldPath::single(
-                                worth_foundational::facade::FieldKey::new("avatar".to_owned())
-                                    .expect("valid foundational field key"),
-                            ),
-                        ),
-                    ),
-                    crate::facade::BridgeCommittedPatchItem::with_target(
-                        "user",
-                        crate::facade::BridgeCommittedPatchTarget::entity_field_path(
-                            worth_foundational::facade::AspectLocator::new(
-                                worth_foundational::facade::LocatorAuthority::Authoritative,
-                                worth_foundational::facade::AspectKey::new("profile")
-                                    .expect("valid bridge patch aspect key"),
-                            ),
-                            worth_foundational::facade::CanonicalFieldPath::single(
-                                worth_foundational::facade::FieldKey::new("name".to_owned())
-                                    .expect("valid foundational field key"),
-                            ),
-                        ),
-                    ),
-                ],
-            ))
-            .with_snapshot(snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
+        BridgeHarnessFixture::new(vec![ProfileTruth::mapping()]).with_relational_truth(
+            ScenarioRelationalTruth::new(
+                drifted.native,
+                drifted.commit,
+                vec![drifted.observation],
+                None,
+            ),
+        ),
     )
     .declare_input("commit-a")
     .declare_observation("route")

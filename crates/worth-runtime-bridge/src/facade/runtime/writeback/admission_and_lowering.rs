@@ -23,11 +23,7 @@ impl RuntimeBridge {
             self.policy.allow_replay_artifacts(),
             self.policy.diagnostics_tier(),
         );
-        let contract =
-            AdmittedBridgeWritebackContract::new(validated, authority_inputs, lowered_policy)?;
-        self.diagnostics
-            .record_writeback_admission(BridgeWritebackFamilyAdmissionRecord::new(&contract));
-        Ok(contract)
+        AdmittedBridgeWritebackContract::new(validated, authority_inputs, lowered_policy)
     }
 
     /// Lowers a writeback effect from contract, causality, and effect identity inputs.
@@ -38,35 +34,7 @@ impl RuntimeBridge {
         effect_identity: BridgeWritebackEffectIdentity,
         effect_intent: BridgeWritebackEffectIntent,
     ) -> BridgeDerivedWritebackEffect {
-        let mapped_input = self.map_writeback_family_input(contract, causality, effect_intent);
-        BridgeDerivedWritebackEffect::new(effect_identity, &mapped_input)
-    }
-
-    /// Produces and records the mapper envelope for a writeback family input.
-    pub fn lower_writeback_mapper_envelope(
-        &self,
-        contract: &AdmittedBridgeWritebackContract,
-        causality: &BridgeWritebackNativeCausalityInputs,
-        effect_intent: BridgeWritebackEffectIntent,
-    ) -> BridgeWritebackMapperEnvelope {
-        let envelope = BridgeWritebackMapperEnvelope::new(contract, causality, effect_intent);
-        self.diagnostics
-            .record_writeback_mapper_envelope(envelope.clone());
-        envelope
-    }
-
-    /// Maps bridge-native writeback family inputs from mapper-envelope evidence.
-    pub fn map_writeback_family_input(
-        &self,
-        contract: &AdmittedBridgeWritebackContract,
-        causality: &BridgeWritebackNativeCausalityInputs,
-        effect_intent: BridgeWritebackEffectIntent,
-    ) -> BridgeMappedWritebackFamilyInput {
-        let envelope = self.lower_writeback_mapper_envelope(contract, causality, effect_intent);
-        let mapped_input = BridgeMappedWritebackFamilyInput::from_mapper_envelope(&envelope);
-        self.diagnostics
-            .record_writeback_mapped_family_input(mapped_input.clone());
-        mapped_input
+        BridgeDerivedWritebackEffect::new(effect_identity, contract, causality, effect_intent)
     }
 
     /// Derives feedback provenance for a lowered writeback effect.

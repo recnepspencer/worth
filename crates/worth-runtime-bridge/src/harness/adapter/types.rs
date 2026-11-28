@@ -1,15 +1,4 @@
-use crate::facade::BridgeCommittedPatchEnvelope;
-
-use super::super::fixtures::{
-    InMemoryRelationalBridgeSource, RecordingSignalBridgeSink, RecordingTruthWritebackAuthority,
-    SnapshotFixture,
-};
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BridgeHarnessMutation {
-    PublishCommittedPatch(BridgeCommittedPatchEnvelope),
-    PublishSnapshot(SnapshotFixture),
-}
+use super::super::fixtures::{RecordingSignalBridgeSink, RecordingTruthWritebackAuthority};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub(crate) enum SourceAdapterShape {
@@ -44,7 +33,6 @@ pub(crate) enum SourceAdapterBehavior {
 #[derive(Debug, Clone)]
 pub struct BridgeHarnessSession {
     pub(crate) runtime: Option<crate::facade::RuntimeBridge>,
-    pub(crate) source: InMemoryRelationalBridgeSource,
     pub(crate) sink: RecordingSignalBridgeSink,
     pub(crate) writeback_authority: RecordingTruthWritebackAuthority,
     pub(crate) source_adapter_shape: SourceAdapterShape,
@@ -57,7 +45,6 @@ impl Default for BridgeHarnessSession {
     fn default() -> Self {
         Self {
             runtime: None,
-            source: InMemoryRelationalBridgeSource::default(),
             sink: RecordingSignalBridgeSink::default(),
             writeback_authority: RecordingTruthWritebackAuthority::default(),
             source_adapter_shape: SourceAdapterShape::Direct,

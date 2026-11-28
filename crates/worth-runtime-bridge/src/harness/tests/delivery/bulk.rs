@@ -1,4 +1,5 @@
 use super::*;
+use crate::harness::fixtures::NamedTruth;
 
 #[test]
 fn bridge_bulk_delivery_keeps_preplanned_snapshots_after_newer_truth_arrives() {
@@ -6,44 +7,35 @@ fn bridge_bulk_delivery_keeps_preplanned_snapshots_after_newer_truth_arrives() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_committed_patch(committed_patch(
-        commit_b(),
-        patch_b(),
-        snapshot_b(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(snapshot_a(), "alice"));
-    source.insert_snapshot(snapshot(snapshot_b(), "bob"));
+    let truth = NamedTruth::new();
+    let (first, first_observation) = truth.commit_name(execution, "alice");
+    let (second, second_observation) = truth.commit_name(execution, "bob");
     let sink = RecordingSignalBridgeSink::default();
-    let runtime = build_runtime(source.clone(), sink.clone(), vec![registration()]);
+    let runtime = build_runtime(
+        truth.source.clone(),
+        sink.clone(),
+        vec![NamedTruth::mapping()],
+    );
 
     let plan = runtime
         .plan_bulk_workload(
             BridgeBulkWorkloadRequest::new(vec![
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(first.clone())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(second)),
             ]),
             execution,
         )
         .expect("bridge should plan the bulk workload");
 
-    source.insert_committed_patch(committed_patch(
-        commit_c(),
-        patch_c(),
-        snapshot_c(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(snapshot_c(), "charlie"));
+    let (_, newer) = truth.commit_name(execution, "carol");
+    assert_ne!(
+        newer.snapshot_identity(),
+        first_observation.snapshot_identity()
+    );
+    assert_ne!(
+        newer.snapshot_identity(),
+        second_observation.snapshot_identity()
+    );
 
     let result = runtime
         .deliver_bulk_workload_plan(plan, execution)
@@ -70,8 +62,14 @@ fn bridge_bulk_delivery_keeps_preplanned_snapshots_after_newer_truth_arrives() {
     assert_eq!(
         delivered_snapshot_identities,
         vec![
-            crate::facade::RelationalBridgeSnapshotIdentityParts::new(1, 1),
-            crate::facade::RelationalBridgeSnapshotIdentityParts::new(2, 1)
+            first_observation
+                .snapshot_identity()
+                .relational_snapshot_parts()
+                .unwrap(),
+            second_observation
+                .snapshot_identity()
+                .relational_snapshot_parts()
+                .unwrap()
         ]
     );
     let mut sink_snapshot_identities = sink
@@ -89,8 +87,14 @@ fn bridge_bulk_delivery_keeps_preplanned_snapshots_after_newer_truth_arrives() {
     assert_eq!(
         sink_snapshot_identities,
         vec![
-            crate::facade::RelationalBridgeSnapshotIdentityParts::new(1, 1),
-            crate::facade::RelationalBridgeSnapshotIdentityParts::new(2, 1)
+            first_observation
+                .snapshot_identity()
+                .relational_snapshot_parts()
+                .unwrap(),
+            second_observation
+                .snapshot_identity()
+                .relational_snapshot_parts()
+                .unwrap()
         ]
     );
 }
@@ -101,31 +105,17 @@ fn bridge_bulk_delivery_accepts_replayed_canonical_bulk_plan() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_committed_patch(committed_patch(
-        commit_b(),
-        patch_b(),
-        snapshot_b(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(snapshot_a(), "alice"));
-    source.insert_snapshot(snapshot(snapshot_b(), "bob"));
+    let truth = NamedTruth::new();
+    let (first, _first_observation) = truth.commit_name(execution, "alice");
+    let (second, _second_observation) = truth.commit_name(execution, "bob");
     let sink = RecordingSignalBridgeSink::default();
-    let runtime = build_runtime(source, sink.clone(), vec![registration()]);
+    let runtime = build_runtime(truth.source, sink.clone(), vec![NamedTruth::mapping()]);
 
     let planned = runtime
         .plan_bulk_workload(
             BridgeBulkWorkloadRequest::new(vec![
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(first.clone())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(second)),
             ]),
             execution,
         )
@@ -166,51 +156,27 @@ fn bridge_bulk_delivery_is_stable_across_input_order() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let left_source = InMemoryRelationalBridgeSource::default();
-    left_source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    left_source.insert_committed_patch(committed_patch(
-        commit_b(),
-        patch_b(),
-        snapshot_b(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    left_source.insert_snapshot(snapshot(snapshot_a(), "alice"));
-    left_source.insert_snapshot(snapshot(snapshot_b(), "bob"));
+    let truth = NamedTruth::new();
+    let (first, _first) = truth.commit_name(execution, "alice");
+    let (second, _second) = truth.commit_name(execution, "bob");
     let left_sink = RecordingSignalBridgeSink::default();
-    let left_runtime = build_runtime(left_source, left_sink.clone(), vec![registration()]);
-
-    let right_source = InMemoryRelationalBridgeSource::default();
-    right_source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    right_source.insert_committed_patch(committed_patch(
-        commit_b(),
-        patch_b(),
-        snapshot_b(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    right_source.insert_snapshot(snapshot(snapshot_a(), "alice"));
-    right_source.insert_snapshot(snapshot(snapshot_b(), "bob"));
     let right_sink = RecordingSignalBridgeSink::default();
-    let right_runtime = build_runtime(right_source, right_sink.clone(), vec![registration()]);
+    let left_runtime = build_runtime(
+        truth.source.clone(),
+        left_sink.clone(),
+        vec![NamedTruth::mapping()],
+    );
+    let right_runtime = build_runtime(
+        truth.source,
+        right_sink.clone(),
+        vec![NamedTruth::mapping()],
+    );
 
     let left_plan = left_runtime
         .plan_bulk_workload(
             BridgeBulkWorkloadRequest::new(vec![
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(first.clone())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(second.clone())),
             ]),
             execution,
         )
@@ -218,8 +184,8 @@ fn bridge_bulk_delivery_is_stable_across_input_order() {
     let right_plan = right_runtime
         .plan_bulk_workload(
             BridgeBulkWorkloadRequest::new(vec![
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(second.clone())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(first.clone())),
             ]),
             execution,
         )
@@ -265,31 +231,32 @@ fn bridge_bulk_delivery_replay_matches_original_serial_reduction_path() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_committed_patch(committed_patch(
-        commit_b(),
-        patch_b(),
-        snapshot_a(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(snapshot_a(), "alice"));
+    let truth = NamedTruth::new();
+    let (first, _first_observation) = truth.commit_name(execution, "alice");
+    let (second, second_observation) = truth.commit_name(execution, "bob");
+    let shared_snapshot = second_observation.snapshot_identity().clone();
     let original_sink = RecordingSignalBridgeSink::default();
-    let original_runtime =
-        build_runtime(source.clone(), original_sink.clone(), vec![registration()]);
+    let original_runtime = build_runtime(
+        truth.source.clone(),
+        original_sink.clone(),
+        vec![NamedTruth::mapping()],
+    );
 
     let original_plan = original_runtime
         .plan_bulk_workload(
             BridgeBulkWorkloadRequest::new(vec![
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_b())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::from(
+                    crate::facade::RelationalCommittedPatchRequest::at_snapshot(
+                        first.clone(),
+                        shared_snapshot.clone(),
+                    ),
+                )),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::from(
+                    crate::facade::RelationalCommittedPatchRequest::at_snapshot(
+                        second,
+                        shared_snapshot.clone(),
+                    ),
+                )),
             ]),
             execution,
         )
@@ -300,7 +267,11 @@ fn bridge_bulk_delivery_replay_matches_original_serial_reduction_path() {
         .expect("original serial-reduction bulk workload should deliver");
 
     let replay_sink = RecordingSignalBridgeSink::default();
-    let replay_runtime = build_runtime(source, replay_sink.clone(), vec![registration()]);
+    let replay_runtime = build_runtime(
+        truth.source,
+        replay_sink.clone(),
+        vec![NamedTruth::mapping()],
+    );
     let replayed_plan = replay_runtime
         .replay_canonical_bulk_plan_record(&canonical, execution)
         .expect("replayed serial-reduction bulk workload should reconstruct");
@@ -345,26 +316,19 @@ fn bridge_bulk_delivery_rejects_invalid_parallel_upgrade_for_rejected_plan() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(snapshot_a(), "alice"));
+    let truth = NamedTruth::new();
+    let (first, _first_observation) = truth.commit_name(execution, "alice");
     let runtime = build_runtime(
-        source,
+        truth.source,
         RecordingSignalBridgeSink::default(),
-        vec![registration()],
+        vec![NamedTruth::mapping()],
     );
 
     let rejected_plan = runtime
         .plan_bulk_workload(
             BridgeBulkWorkloadRequest::new(vec![
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
-                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(commit_a())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(first.clone())),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(first.clone())),
             ]),
             execution,
         )

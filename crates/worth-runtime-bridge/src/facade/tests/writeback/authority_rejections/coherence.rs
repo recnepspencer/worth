@@ -1,7 +1,7 @@
 use super::super::support::*;
 
 #[test]
-fn runtime_rejects_strategy_coherence_mismatch_before_authority_execution() {
+fn runtime_rejects_idempotence_from_another_effect_before_authority_execution() {
     let runtime = runtime_with_writeback_authority(BridgeRuntimePolicy::default());
     let lowered_policy = lowered_policy(&runtime);
     let contract_a = runtime
@@ -62,10 +62,10 @@ fn runtime_rejects_strategy_coherence_mismatch_before_authority_execution() {
 
     let error = runtime
         .execute_writeback_authority(&contract_a, &effect_a, &mismatched_idempotence)
-        .expect_err("strategy coherence drift should fail before authority execution");
+        .expect_err("idempotence bound to another effect should fail before authority execution");
 
     assert_eq!(
         error.kind(),
-        BridgeWritebackErrorKind::FamilyBindingMismatch
+        BridgeWritebackErrorKind::IdempotenceBasisMismatch
     );
 }

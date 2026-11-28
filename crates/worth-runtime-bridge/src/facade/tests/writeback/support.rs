@@ -1,16 +1,14 @@
 pub(super) use super::super::*;
 pub(super) use crate::facade::{
-    BridgeContinuityAuthoritativeIdentity, BridgeContinuityResolvedTargetIdentity,
-    BridgeContinuityTargetCollection, BridgeDerivedWritebackEffect, BridgeExecutionPolicyClass,
-    BridgePolicyDeclaration, BridgePolicyDeclarationIdentity, BridgeRequestKind,
-    BridgeRouteIdentity, BridgeRuntimePolicy, BridgeWritebackAuthoritativeStateBasis,
-    BridgeWritebackCausalityIdentity, BridgeWritebackDeclaration,
-    BridgeWritebackDeclarationIdentity, BridgeWritebackEffectClass, BridgeWritebackEffectIdentity,
-    BridgeWritebackEffectIntent, BridgeWritebackErrorKind, BridgeWritebackFailureClass,
-    BridgeWritebackFamilyKind, BridgeWritebackIdempotenceClass, BridgeWritebackIdempotenceIdentity,
-    BridgeWritebackLoopDisposition, BridgeWritebackNativeCausalityInputs,
-    BridgeWritebackRequestMode, BridgeWritebackStrategyClass,
-    BridgeWritebackStrategyCoherenceDisposition, BridgeWritebackStrategyDescriptorBasis,
+    BridgeDerivedWritebackEffect, BridgeExecutionPolicyClass, BridgePolicyDeclaration,
+    BridgePolicyDeclarationIdentity, BridgeRequestKind, BridgeRouteIdentity, BridgeRuntimePolicy,
+    BridgeWritebackAuthoritativeStateBasis, BridgeWritebackCausalityIdentity,
+    BridgeWritebackDeclaration, BridgeWritebackDeclarationIdentity, BridgeWritebackEffectClass,
+    BridgeWritebackEffectIdentity, BridgeWritebackEffectIntent, BridgeWritebackErrorKind,
+    BridgeWritebackFailureClass, BridgeWritebackFamilyKind, BridgeWritebackIdempotenceClass,
+    BridgeWritebackIdempotenceIdentity, BridgeWritebackLoopDisposition,
+    BridgeWritebackNativeCausalityInputs, BridgeWritebackRequestMode, BridgeWritebackStrategyClass,
+    BridgeWritebackStrategyDescriptorBasis,
 };
 use std::sync::{Arc, RwLock};
 use worth_foundational::facade::{AspectKey, AspectValue};
@@ -27,11 +25,6 @@ pub(super) struct FailingWritebackAuthority;
 pub(super) struct PanickingWritebackAuthority;
 
 #[derive(Clone, Default)]
-pub(super) struct InspectingWritebackAuthority {
-    last_request: Arc<RwLock<Option<crate::adapter::TruthWritebackRequest>>>,
-}
-
-#[derive(Clone, Default)]
 pub(super) struct MismatchedReceiptWritebackAuthority {
     prior_request: Arc<RwLock<Option<crate::adapter::TruthWritebackRequest>>>,
 }
@@ -41,22 +34,6 @@ pub(super) struct MalformedRejectedReceiptWritebackAuthority;
 
 #[derive(Clone)]
 pub(super) struct MalformedSuccessfulReceiptWritebackAuthority;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum ExpectedAuthorityStage {
-    RequestDispatch,
-    ValidatedReceipt,
-    RejectedReceipt,
-}
-
-impl InspectingWritebackAuthority {
-    pub(super) fn take_last_request(&self) -> Option<crate::adapter::TruthWritebackRequest> {
-        self.last_request
-            .write()
-            .expect("inspecting writeback authority lock poisoned")
-            .take()
-    }
-}
 
 impl crate::adapter::TruthWritebackAuthority for RejectingWritebackAuthority {
     fn execute_writeback(
@@ -93,23 +70,6 @@ impl crate::adapter::TruthWritebackAuthority for PanickingWritebackAuthority {
     ) -> Result<crate::adapter::TruthWritebackReceipt, crate::adapter::TruthWritebackAuthorityError>
     {
         panic!("writeback strategy panic");
-    }
-}
-
-impl crate::adapter::TruthWritebackAuthority for InspectingWritebackAuthority {
-    fn execute_writeback(
-        &self,
-        request: crate::adapter::TruthWritebackRequest,
-    ) -> Result<crate::adapter::TruthWritebackReceipt, crate::adapter::TruthWritebackAuthorityError>
-    {
-        *self
-            .last_request
-            .write()
-            .expect("inspecting writeback authority lock poisoned") = Some(request.clone());
-        Ok(crate::adapter::TruthWritebackReceipt::new(
-            crate::facade::BridgeWritebackOutcomeClass::AuthoritativeCommit,
-            &request,
-        ))
     }
 }
 
@@ -162,38 +122,6 @@ impl crate::adapter::TruthWritebackAuthority for MalformedSuccessfulReceiptWrite
     }
 }
 
-pub(super) fn assert_last_execution_failure(
-    runtime: &RuntimeBridge,
-    expected_failure_class: BridgeWritebackFailureClass,
-    expected_stage: ExpectedAuthorityStage,
-) {
-    let record = runtime
-        .diagnostics()
-        .last_writeback_execution_record()
-        .expect("authority rejection should retain a typed execution record");
-
-    assert_eq!(record.failure_class(), Some(expected_failure_class));
-    assert!(record.failure_digest().is_some());
-    assert!(record.mapper_record_digest().is_some());
-    assert!(record.candidate_digest().is_some());
-    assert!(record.request_digest().is_some());
-    assert_eq!(record.outcome_digest(), None);
-    assert_eq!(record.outcome_class(), None);
-    assert_eq!(record.replay_bundle_digest(), None);
-    assert_eq!(record.counters().writeback_failure_count(), 1);
-
-    match expected_stage {
-        ExpectedAuthorityStage::RequestDispatch => {
-            assert_eq!(record.receipt_digest(), None);
-            assert_eq!(record.counters().writeback_request_count(), 1);
-        }
-        ExpectedAuthorityStage::ValidatedReceipt | ExpectedAuthorityStage::RejectedReceipt => {
-            assert!(record.receipt_digest().is_some());
-            assert_eq!(record.counters().writeback_request_count(), 1);
-        }
-    }
-}
-
 pub(super) fn lowered_policy(
     runtime: &RuntimeBridge,
 ) -> crate::facade::LoweredBridgeExecutionPolicy {
@@ -234,6 +162,44 @@ pub(super) fn writeback_declaration(
             )
         }
     }
+}
+
+pub(super) fn causality_basis(
+    identity: BridgeWritebackCausalityIdentity,
+    truth_trigger_evidence_text: &str,
+) -> BridgeWritebackNativeCausalityInputs {
+    BridgeWritebackNativeCausalityInputs::new(
+        identity.clone(),
+        crate::truth_identity_fixtures::truth_commit_fixture(truth_trigger_evidence_text),
+        BridgeRouteIdentity::admit_bridge_owned(identity.as_str()),
+        crate::truth_identity_fixtures::truth_snapshot_fixture(identity.as_str()),
+        crate::truth_identity_fixtures::truth_snapshot_fixture(identity.as_str()),
+    )
+}
+
+pub(super) fn writeback_effect_intent(
+    effect_class: BridgeWritebackEffectClass,
+    marker: impl Into<String>,
+) -> BridgeWritebackEffectIntent {
+    let marker = marker.into();
+    let aspect_key = match effect_class {
+        BridgeWritebackEffectClass::ProjectedStateDiff => "bridge.writeback.projected-state-diff",
+        BridgeWritebackEffectClass::AspectReconciliation => {
+            "bridge.writeback.aspect-reconciliation"
+        }
+    };
+    BridgeWritebackEffectIntent::validated_scalar_patch(
+        effect_class,
+        AspectKey::new(aspect_key).expect("static writeback effect aspect key is valid"),
+        AspectValue::String(marker.into()),
+    )
+    .expect("writeback effect test intent should validate as a foundational scalar patch")
+}
+
+pub(super) fn truth_state_basis(
+    effect: &BridgeDerivedWritebackEffect,
+) -> BridgeWritebackAuthoritativeStateBasis {
+    BridgeWritebackAuthoritativeStateBasis::from_effect(effect)
 }
 
 pub(super) fn writeback_declaration_with_shape(
@@ -278,70 +244,6 @@ pub(super) fn writeback_declaration_with_shape(
     }
 }
 
-pub(super) fn causality_basis(
-    identity: BridgeWritebackCausalityIdentity,
-    truth_trigger_evidence_text: &str,
-) -> BridgeWritebackNativeCausalityInputs {
-    BridgeWritebackNativeCausalityInputs::new(
-        identity.clone(),
-        crate::truth_identity_fixtures::truth_commit_fixture(truth_trigger_evidence_text),
-        BridgeRouteIdentity::admit_bridge_owned(identity.as_str()),
-        crate::truth_identity_fixtures::truth_snapshot_fixture(identity.as_str()),
-        crate::truth_identity_fixtures::truth_snapshot_fixture(identity.as_str()),
-    )
-}
-
-pub(super) fn mutation_causality_basis(
-    identity: BridgeWritebackCausalityIdentity,
-    truth_trigger_evidence_text: &str,
-    effect_intent: &BridgeWritebackEffectIntent,
-) -> BridgeWritebackNativeCausalityInputs {
-    let aspect_key = effect_intent
-        .authoritative_patch()
-        .whole_aspect_sets()
-        .next()
-        .map(|(aspect_key, _)| aspect_key.clone())
-        .expect("mutation authority test intent should contain one whole-aspect set");
-    let subject = crate::facade::BridgeMutationSubject::from_effect_intent_and_touches(
-        crate::facade::BridgeMutationSubjectTarget::new(
-            "BridgeMutationTestRecord",
-            crate::facade::RelationalBridgeRecordIdentityParts::entity(1, 7, 0),
-            crate::facade::BridgeMutationSubjectKind::Updated,
-        ),
-        effect_intent,
-        [crate::facade::BridgeMutationSubjectTouch::whole_aspect(
-            aspect_key,
-        )],
-    )
-    .expect("mutation authority test subject should cover its concrete patch");
-    causality_basis(identity, truth_trigger_evidence_text).bind_mutation_subject(subject)
-}
-
-pub(super) fn writeback_effect_intent(
-    effect_class: BridgeWritebackEffectClass,
-    marker: impl Into<String>,
-) -> BridgeWritebackEffectIntent {
-    let marker = marker.into();
-    let aspect_key = match effect_class {
-        BridgeWritebackEffectClass::ProjectedStateDiff => "bridge.writeback.projected-state-diff",
-        BridgeWritebackEffectClass::AspectReconciliation => {
-            "bridge.writeback.aspect-reconciliation"
-        }
-    };
-    BridgeWritebackEffectIntent::validated_scalar_patch(
-        effect_class,
-        AspectKey::new(aspect_key).expect("static writeback effect aspect key is valid"),
-        AspectValue::String(marker.into()),
-    )
-    .expect("writeback effect test intent should validate as a foundational scalar patch")
-}
-
-pub(super) fn truth_state_basis(
-    effect: &BridgeDerivedWritebackEffect,
-) -> BridgeWritebackAuthoritativeStateBasis {
-    BridgeWritebackAuthoritativeStateBasis::from_effect(effect)
-}
-
 pub(super) fn projected_strategy_descriptor_basis() -> BridgeWritebackStrategyDescriptorBasis {
     BridgeWritebackStrategyDescriptorBasis::for_writeback_contract(
         BridgeWritebackFamilyKind::ProjectedStateDiff,
@@ -349,16 +251,4 @@ pub(super) fn projected_strategy_descriptor_basis() -> BridgeWritebackStrategyDe
         BridgeWritebackStrategyClass::ProjectedStateDiffReconciliation,
         BridgeWritebackIdempotenceClass::RequireSemanticNoopSuppression,
     )
-}
-
-pub(super) fn execute_native_commit_outcome(
-    runtime: &RuntimeBridge,
-    contract: &crate::facade::AdmittedBridgeWritebackContract,
-    effect: &crate::facade::BridgeDerivedWritebackEffect,
-    idempotence: &crate::facade::BridgeWritebackIdempotenceBasis,
-) -> crate::facade::BridgeWritebackAuthorityOutcome {
-    runtime
-        .execute_writeback_authority(contract, effect, idempotence)
-        .expect("native writeback authority should commit")
-        .0
 }

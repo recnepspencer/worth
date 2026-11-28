@@ -5,11 +5,12 @@ use crate::facade::{
 };
 
 use super::super::support::registration;
-use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBridgeSink};
+use crate::harness::fixtures::RecordingSignalBridgeSink;
+use crate::relational_source::relational_test_support::empty_bridge_relational_source;
 
 #[test]
 fn ambiguous_slice_registration_fails_explicitly() {
-    let source = InMemoryRelationalBridgeSource::default();
+    let source = empty_bridge_relational_source();
 
     let error = RuntimeBridgeBuilder::new()
         .with_relational_source(source.clone())

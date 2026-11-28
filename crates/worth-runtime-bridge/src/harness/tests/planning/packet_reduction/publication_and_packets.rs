@@ -1,7 +1,4 @@
-use super::{
-    build_runtime, committed_patch, registration, snapshot, surface_widening_registration,
-    InMemoryRelationalBridgeSource, RecordingSignalBridgeSink,
-};
+use super::{build_runtime, RecordingSignalBridgeSink};
 use crate::facade::{
     BridgeBulkWorkloadRequest, BridgeBulkWorkloadSegment, BridgeInvalidationReductionFamily,
     BridgeMappingWideningClass, BridgeParallelAdmissionReason, BridgeRouteRequest,

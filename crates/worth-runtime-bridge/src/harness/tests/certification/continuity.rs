@@ -2,58 +2,43 @@ use worth_harness::facade::{
     certification_matrix, ExecutionProfile, ExecutionRequest, HarnessAdapter, ScenarioPlan,
 };
 
-use super::super::support::{
-    committed_patch, field_aspect_registration, field_slice_snapshot, registration,
-};
-use super::continuity_authority::{
-    ambiguous_continuity_authority, continuity_authority, continuity_authority_with_successor,
-};
-use crate::facade::{
-    BridgeContinuityAuthorityBasis, BridgeHistoricalResolvedRecordIdentity, BridgeLineageContext,
-};
 use crate::harness::adapter::{BridgeHarnessAdapter, BridgeHarnessTargetId};
-use crate::harness::fixtures::BridgeHarnessFixture;
+use crate::harness::fixtures::{BridgeHarnessFixture, ProfileTruth};
+
+fn continuity_fixture(
+    name: &str,
+    branch: &str,
+    ambiguous: bool,
+) -> (
+    worth_harness::facade::ScenarioFixture<BridgeHarnessFixture>,
+    BridgeHarnessTargetId,
+) {
+    let serial = crate::snapshot::test_serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&serial);
+    let truth = ProfileTruth::on_branch_with_field(execution, branch, "title");
+    let target = BridgeHarnessTargetId::committed_route(truth.commit.clone());
+    let fixture = BridgeHarnessFixture::new(vec![ProfileTruth::mapping()])
+        .with_aspect_mapping(ProfileTruth::aspect_mapping())
+        .with_lineage_context(truth.lineage_context())
+        .with_relational_truth(truth.into_scenario());
+    let fixture = if ambiguous {
+        fixture.with_ambiguous_lineage()
+    } else {
+        fixture
+    };
+    (
+        ScenarioPlan::new(name, fixture)
+            .declare_input("profile-update")
+            .declare_observation("route")
+            .compile(),
+        target,
+    )
+}
 
 #[test]
 fn bridge_continuity_certification_matrix_reports_candidate_profile_parity() {
-    let fixture = ScenarioPlan::new(
-        "bridge-continuity-certification",
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_aspect_mapping(field_aspect_registration())
-            .with_lineage_context(BridgeLineageContext::new(
-                BridgeContinuityAuthorityBasis::new(
-                    crate::truth_identity_fixtures::truth_branch_fixture("main"),
-                    crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                ),
-            ))
-            .with_continuity_authority(
-                "user",
-                continuity_authority(
-                    crate::truth_identity_fixtures::truth_branch_fixture("main"),
-                    crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                ),
-            )
-            .with_committed_patch(committed_patch(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(field_slice_snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
-    )
-    .declare_input("commit-a")
-    .declare_observation("route")
-    .compile();
-    let request = ExecutionRequest::target(
-        "deliver-commit-a",
-        BridgeHarnessTargetId::committed_route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ),
-    );
+    let (fixture, target) = continuity_fixture("bridge-continuity-certification", "main", false);
+    let request = ExecutionRequest::target("deliver-profile-update", target);
 
     let report = certification_matrix(
         BridgeHarnessAdapter,
@@ -74,80 +59,11 @@ fn bridge_continuity_certification_matrix_reports_candidate_profile_parity() {
 fn bridge_harness_branch_divergence_changes_terminal_continuity_export() {
     let adapter = BridgeHarnessAdapter;
     let profile = ExecutionProfile::development("baseline");
-    let request = ExecutionRequest::target(
-        "deliver-commit-a",
-        BridgeHarnessTargetId::committed_route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ),
-    );
-
-    let main_fixture = ScenarioPlan::new(
-        "bridge-continuity-main",
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_aspect_mapping(field_aspect_registration())
-            .with_lineage_context(BridgeLineageContext::new(
-                BridgeContinuityAuthorityBasis::new(
-                    crate::truth_identity_fixtures::truth_branch_fixture("main"),
-                    crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                ),
-            ))
-            .with_continuity_authority(
-                "user",
-                continuity_authority_with_successor(
-                    crate::truth_identity_fixtures::truth_branch_fixture("main"),
-                    crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                    BridgeHistoricalResolvedRecordIdentity::admit_bridge_owned("entity:0:4:2"),
-                ),
-            )
-            .with_committed_patch(committed_patch(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(field_slice_snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
-    )
-    .declare_input("commit-a")
-    .declare_observation("route")
-    .compile();
-
-    let feature_fixture = ScenarioPlan::new(
-        "bridge-continuity-feature",
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_aspect_mapping(field_aspect_registration())
-            .with_lineage_context(BridgeLineageContext::new(
-                BridgeContinuityAuthorityBasis::new(
-                    crate::truth_identity_fixtures::truth_branch_fixture("feature"),
-                    crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                ),
-            ))
-            .with_continuity_authority(
-                "user",
-                continuity_authority_with_successor(
-                    crate::truth_identity_fixtures::truth_branch_fixture("feature"),
-                    crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                    BridgeHistoricalResolvedRecordIdentity::admit_bridge_owned("entity:0:5:2"),
-                ),
-            )
-            .with_committed_patch(committed_patch(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(field_slice_snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
-    )
-    .declare_input("commit-a")
-    .declare_observation("route")
-    .compile();
+    let (main_fixture, main_target) = continuity_fixture("bridge-continuity-main", "main", false);
+    let (feature_fixture, feature_target) =
+        continuity_fixture("bridge-continuity-feature", "feature", false);
+    let main_request = ExecutionRequest::target("deliver-profile-update", main_target);
+    let feature_request = ExecutionRequest::target("deliver-profile-update", feature_target);
 
     let mut main_runtime = adapter.create_runtime().expect("main harness runtime");
     adapter
@@ -157,7 +73,7 @@ fn bridge_harness_branch_divergence_changes_terminal_continuity_export() {
         .load_fixture(&mut main_runtime, &main_fixture)
         .expect("main harness load fixture");
     let main_run = adapter
-        .execute(&mut main_runtime, &main_fixture, &request, &profile)
+        .execute(&mut main_runtime, &main_fixture, &main_request, &profile)
         .expect("main harness execute");
 
     let mut feature_runtime = adapter.create_runtime().expect("feature harness runtime");
@@ -168,7 +84,12 @@ fn bridge_harness_branch_divergence_changes_terminal_continuity_export() {
         .load_fixture(&mut feature_runtime, &feature_fixture)
         .expect("feature harness load fixture");
     let feature_run = adapter
-        .execute(&mut feature_runtime, &feature_fixture, &request, &profile)
+        .execute(
+            &mut feature_runtime,
+            &feature_fixture,
+            &feature_request,
+            &profile,
+        )
         .expect("feature harness execute");
 
     assert_ne!(main_run.summary, feature_run.summary);
@@ -183,44 +104,8 @@ fn bridge_harness_branch_divergence_changes_terminal_continuity_export() {
 fn bridge_harness_continuity_exports_ambiguous_rejection_record() {
     let adapter = BridgeHarnessAdapter;
     let profile = ExecutionProfile::development("baseline");
-    let request = ExecutionRequest::target(
-        "deliver-commit-a",
-        BridgeHarnessTargetId::committed_route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ),
-    );
-    let fixture = ScenarioPlan::new(
-        "bridge-continuity-ambiguous",
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_aspect_mapping(field_aspect_registration())
-            .with_lineage_context(BridgeLineageContext::new(
-                BridgeContinuityAuthorityBasis::new(
-                    crate::truth_identity_fixtures::truth_branch_fixture("main"),
-                    crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                ),
-            ))
-            .with_continuity_authority(
-                "user",
-                ambiguous_continuity_authority(
-                    crate::truth_identity_fixtures::truth_branch_fixture("main"),
-                    crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                ),
-            )
-            .with_committed_patch(committed_patch(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(field_slice_snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
-    )
-    .declare_input("commit-a")
-    .declare_observation("route")
-    .compile();
+    let (fixture, target) = continuity_fixture("bridge-continuity-ambiguous", "main", true);
+    let request = ExecutionRequest::target("deliver-profile-update", target);
 
     let mut runtime = adapter.create_runtime().expect("harness runtime");
     adapter

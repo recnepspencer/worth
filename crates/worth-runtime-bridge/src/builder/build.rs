@@ -39,12 +39,6 @@ fn finalize_source_configuration(
     Ok((source_registry, source_adapter))
 }
 
-fn finalize_structural_configuration(
-    structural_declarations: Vec<StructuralIdentityDeclaration>,
-) -> Result<AdmittedStructuralRegistry, BridgeBuildError> {
-    AdmittedStructuralRegistry::freeze(structural_declarations)
-}
-
 impl
     RuntimeBridgeBuilder<
         PresentCommittedPatchSource,
@@ -66,7 +60,6 @@ impl
             self.source_declarations,
             self.source_adapter_registrations,
         )?;
-        let structural_registry = finalize_structural_configuration(self.structural_declarations)?;
         Ok(RuntimeBridge::new(
             policy,
             self.diagnostic_sink,
@@ -79,7 +72,6 @@ impl
             self.snapshot_reader_pool,
             source_registry,
             source_adapter,
-            structural_registry,
             mapping_registry,
             aspect_registry,
             subscription_family_registry,
@@ -109,7 +101,6 @@ impl
             self.source_declarations,
             self.source_adapter_registrations,
         )?;
-        let structural_registry = finalize_structural_configuration(self.structural_declarations)?;
         Ok(RuntimeBridge::new(
             policy,
             self.diagnostic_sink,
@@ -122,7 +113,6 @@ impl
             self.snapshot_reader_pool,
             source_registry,
             source_adapter,
-            structural_registry,
             mapping_registry,
             aspect_registry,
             subscription_family_registry,

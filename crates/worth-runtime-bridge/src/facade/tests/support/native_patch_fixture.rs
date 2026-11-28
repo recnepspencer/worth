@@ -1,28 +1,5 @@
-use crate::input::envelope::{
-    BridgeCommittedPatchEnvelope, BridgeCommittedPatchEnvelopeIdentity, BridgeCommittedPatchItem,
-    BridgeProducerMetadata, TruthBranchIdentity, TruthCommitIdentity, TruthPatchIdentity,
-};
-use crate::snapshot::TruthSnapshotIdentity;
+use crate::input::envelope::BridgeCommittedPatchItem;
 use worth_foundational::facade::{AspectKey, AspectLocator, CanonicalFieldPath, FieldKey};
-
-pub(in crate::facade::tests) fn canonical_envelope(
-    branch: TruthBranchIdentity,
-    commit: TruthCommitIdentity,
-    patch: TruthPatchIdentity,
-    snapshot: TruthSnapshotIdentity,
-) -> BridgeCommittedPatchEnvelope {
-    BridgeCommittedPatchEnvelope::new(
-        BridgeCommittedPatchEnvelopeIdentity::new_with_metadata(
-            BridgeProducerMetadata::bridge_harness_fixture(),
-            commit,
-            patch,
-            snapshot,
-            branch,
-        ),
-        vec![native_profile_name_patch_item()],
-    )
-    .expect("fixture envelopes should validate")
-}
 
 pub(in crate::facade::tests) fn native_profile_name_patch_item() -> BridgeCommittedPatchItem {
     BridgeCommittedPatchItem::with_target(

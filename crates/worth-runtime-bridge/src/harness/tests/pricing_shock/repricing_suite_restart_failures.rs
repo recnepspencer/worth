@@ -130,10 +130,16 @@ fn pricing_shock_restart_replay_preserves_canonical_truth_across_rebuild() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let restart =
-        capture_pricing_restart_replay_bundle(BridgeRuntimePolicy::development(), resource_request);
+    let scenario = generated_pricing_scenario();
+    let truth = RelationalPricing::reference(resource_request, &scenario, None);
+    let restart = capture_pricing_restart_replay_bundle(
+        BridgeRuntimePolicy::development(),
+        &truth,
+        resource_request,
+    );
     let replay = capture_pricing_certification_matrix(
         BridgeRuntimePolicy::development(),
+        &truth,
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-restart-parity"),
         resource_request,
     )
@@ -166,20 +172,12 @@ fn pricing_shock_missing_snapshot_fails_with_typed_delivery_record() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(pricing_patch(
-        pricing_patch_envelope_identity(
-            crate::truth_identity_fixtures::truth_branch_fixture("main"),
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-missing-snapshot"),
-            crate::truth_identity_fixtures::truth_patch_fixture("patch:steel-missing-snapshot"),
-            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-missing"),
-        ),
-        "steel",
-    ));
-
-    let sink = RecordingSignalBridgeSink::default();
-    let runtime = build_pricing_runtime(source, sink);
-    let failure = capture_pricing_missing_snapshot_failure_bundle(&runtime, resource_request);
+    let truth = RelationalPricing::new(resource_request, 100, 40, 56);
+    let failure = capture_pricing_missing_snapshot_failure_bundle(
+        &truth,
+        BridgeRuntimePolicy::development(),
+        resource_request,
+    );
 
     assert!(
         matches!(failure.error_kind, BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
@@ -187,12 +185,6 @@ fn pricing_shock_missing_snapshot_fails_with_typed_delivery_record() {
     assert!(
         matches!(failure.failure_class, BridgeFailureClass::Delivery(BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause)) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
     );
-    assert_eq!(
-        failure.source_commit,
-        crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-missing-snapshot")
-    );
-    assert_eq!(
-        failure.source_snapshot,
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-missing")
-    );
+    assert_eq!(failure.source_commit, truth.steel_commit.clone());
+    assert_eq!(failure.source_snapshot, truth.steel_snapshot().clone());
 }

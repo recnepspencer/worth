@@ -1,15 +1,11 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
-
 use crate::facade::{
     BridgeAspectRegistration, BridgeAspectRegistrationId, BridgeCommittedPatchEnvelope,
     BridgeMappingId, BridgeMappingRegistration, BridgeProducerMetadata, CoarseRoutingMode,
     InvalidationSink, MappingSelector, RuntimeBridgeBuilder, SignalBridgeSinkError,
-    SignalInvalidationScope, SliceWideningPolicy, SnapshotReadRecord, SnapshotReadRequest,
-    SnapshotReaderPool, SubscriptionSliceKind, TruthBranchIdentity, TruthCommitIdentity,
-    TruthDeltaSurfaceKind, TruthPatchIdentity, TruthPatchScope, TruthSnapshotIdentity,
+    SignalInvalidationScope, SliceWideningPolicy, SubscriptionSliceKind, TruthBranchIdentity,
+    TruthCommitIdentity, TruthDeltaSurfaceKind, TruthPatchIdentity, TruthPatchScope,
+    TruthSnapshotIdentity,
 };
-use crate::harness::fixtures::{InMemoryRelationalBridgeSource, SnapshotFixture};
 use crate::truth_identity_fixtures::truth_branch;
 
 pub(super) fn registration() -> BridgeMappingRegistration {
@@ -155,82 +151,26 @@ pub(super) fn committed_patch_items(
     .expect("harness committed patch envelope should construct")
 }
 
-pub(super) fn snapshot(snapshot_identity: TruthSnapshotIdentity, value: &str) -> SnapshotFixture {
-    SnapshotFixture::new(
-        snapshot_identity,
-        vec![coarse_snapshot_record(
-            "user",
-            "profile",
-            worth_foundational::facade::AspectValue::String((value).into()),
-        )],
-    )
-}
-
-pub(super) fn field_slice_snapshot(
-    snapshot_identity: TruthSnapshotIdentity,
-    value: &str,
-) -> SnapshotFixture {
-    let field_slice_request = field_slice_snapshot_read_request("user", "profile", "name");
-    SnapshotFixture::new(
-        snapshot_identity,
-        vec![SnapshotReadRecord::for_request(
-            &field_slice_request,
-            worth_foundational::facade::AspectValue::String((value).into()),
-        )],
-    )
-}
-
-pub(super) fn coarse_snapshot_record(
-    entity: &str,
-    aspect: &str,
-    value: worth_foundational::facade::AspectValue,
-) -> SnapshotReadRecord {
-    SnapshotReadRecord::for_request(
-        &SnapshotReadRequest::for_coarse(
-            entity,
-            crate::snapshot::SnapshotReadContract::scalar(
-                worth_foundational::facade::AspectKey::new(aspect)
-                    .expect("valid coarse snapshot aspect key"),
-                worth_foundational::facade::ScalarAspectType::String,
-            ),
-        ),
-        value,
-    )
-}
-
-fn field_slice_snapshot_read_request(
-    entity: &str,
-    aspect: &str,
-    field: &str,
-) -> SnapshotReadRequest {
-    let aspect_key =
-        worth_foundational::facade::AspectKey::new(aspect).expect("valid field-slice aspect key");
-    let aspect_locator = worth_foundational::facade::AspectLocator::new(
-        worth_foundational::facade::LocatorAuthority::Authoritative,
-        aspect_key.clone(),
-    );
-    let field_path = worth_foundational::facade::CanonicalFieldPath::single(
-        worth_foundational::facade::FieldKey::new(field.to_owned()).expect("valid field key"),
-    );
-    let field_locator = worth_foundational::facade::AspectFieldLocator::from_aspect(
-        aspect_locator.clone(),
-        field_path.clone(),
-    );
-    SnapshotReadRequest::for_native_subscription_slice(
-        entity,
-        crate::snapshot::SnapshotReadContract::scalar(
-            aspect_key,
-            worth_foundational::facade::ScalarAspectType::String,
-        ),
-        aspect_locator,
-        Some(field_locator),
-        worth_foundational::facade::AspectMask::new([field_path]),
-        SubscriptionSliceKind::SignalField,
-    )
+pub(super) fn build_runtime_with_snapshot_source(
+    patch_source: impl crate::facade::CommittedPatchSource,
+    snapshot_source: impl crate::facade::SnapshotReadSource,
+    sink: impl InvalidationSink,
+    mapping: BridgeMappingRegistration,
+    aspect: Option<BridgeAspectRegistration>,
+) -> crate::facade::RuntimeBridge {
+    let mut builder = RuntimeBridgeBuilder::new()
+        .with_committed_patch_source(patch_source)
+        .with_snapshot_read_source(snapshot_source)
+        .with_signal_sink(sink)
+        .register_mapping(mapping);
+    if let Some(aspect) = aspect {
+        builder = builder.register_aspect_mapping(aspect);
+    }
+    builder.build().expect("snapshot protocol fixture builds")
 }
 
 pub(super) fn build_runtime<S>(
-    source: InMemoryRelationalBridgeSource,
+    source: impl crate::adapter::RelationalBridgeSource + crate::adapter::TruthBranchHeadSource + Clone,
     sink: S,
     mappings: Vec<BridgeMappingRegistration>,
 ) -> crate::facade::RuntimeBridge
@@ -241,7 +181,7 @@ where
 }
 
 pub(super) fn build_runtime_with_aspects<S>(
-    source: InMemoryRelationalBridgeSource,
+    source: impl crate::adapter::RelationalBridgeSource + crate::adapter::TruthBranchHeadSource + Clone,
     sink: S,
     mappings: Vec<BridgeMappingRegistration>,
     aspect_mappings: Vec<BridgeAspectRegistration>,
@@ -285,49 +225,6 @@ impl InvalidationSink for RejectingSignalSink {
     }
 }
 
-#[derive(Clone)]
-pub(super) struct CountingSnapshotReaderPool {
-    source: InMemoryRelationalBridgeSource,
-    acquire_count: Arc<AtomicUsize>,
-    release_count: Arc<AtomicUsize>,
-}
-
-impl CountingSnapshotReaderPool {
-    pub(super) fn new(source: InMemoryRelationalBridgeSource) -> Self {
-        Self {
-            source,
-            acquire_count: Arc::new(AtomicUsize::new(0)),
-            release_count: Arc::new(AtomicUsize::new(0)),
-        }
-    }
-
-    pub(super) fn acquire_count(&self) -> usize {
-        self.acquire_count.load(Ordering::SeqCst)
-    }
-
-    pub(super) fn release_count(&self) -> usize {
-        self.release_count.load(Ordering::SeqCst)
-    }
-}
-
-impl SnapshotReaderPool for CountingSnapshotReaderPool {
-    fn acquire(
-        &self,
-        identity: &TruthSnapshotIdentity,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<
-        Box<dyn crate::facade::TruthSnapshotReader>,
-        crate::facade::RelationalBridgeSourceError,
-    > {
-        self.acquire_count.fetch_add(1, Ordering::SeqCst);
-        crate::facade::SnapshotReadSource::open_snapshot(&self.source, identity, execution)
-    }
-
-    fn release(&self, _reader: Box<dyn crate::facade::TruthSnapshotReader>) {
-        self.release_count.fetch_add(1, Ordering::SeqCst);
-    }
-}
-
 pub(super) fn field_aspect_registration() -> BridgeAspectRegistration {
     BridgeAspectRegistration::new(
         BridgeAspectRegistrationId::admit_bridge_owned("profile-name-field"),
@@ -343,29 +240,6 @@ pub(super) fn field_aspect_registration() -> BridgeAspectRegistration {
         ),
         TruthDeltaSurfaceKind::EntityField,
         SubscriptionSliceKind::SignalField,
-        SliceWideningPolicy::Disallow,
-    )
-}
-
-pub(super) fn field_aspect_registration_with_kind(
-    registration_id: &str,
-    surface_kind: TruthDeltaSurfaceKind,
-    slice_kind: SubscriptionSliceKind,
-) -> BridgeAspectRegistration {
-    BridgeAspectRegistration::new(
-        BridgeAspectRegistrationId::admit_bridge_owned(registration_id),
-        TruthPatchScope::for_entity_field(
-            MappingSelector::exact("user"),
-            worth_foundational::facade::AspectKey::new("profile").expect("valid native aspect key"),
-            worth_foundational::facade::FieldKey::new("name".to_owned())
-                .expect("valid native field key"),
-        ),
-        crate::snapshot::SnapshotReadContract::scalar(
-            worth_foundational::facade::AspectKey::new("profile").expect("valid native aspect key"),
-            worth_foundational::facade::ScalarAspectType::String,
-        ),
-        surface_kind,
-        slice_kind,
         SliceWideningPolicy::Disallow,
     )
 }

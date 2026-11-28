@@ -1,27 +1,16 @@
-use super::super::support::{committed_patch, registration, snapshot};
 use crate::facade::BridgeHistoricalEvaluationFailureClass;
 use crate::harness::adapter::{BridgeHarnessAdapter, BridgeHarnessTargetId};
-use crate::harness::fixtures::BridgeHarnessFixture;
+use crate::harness::fixtures::{BridgeHarnessFixture, NamedTruth, ScenarioRelationalTruth};
 use worth_harness::facade::{ExecutionProfile, ExecutionRequest, ScenarioPlan};
 use worth_harness::runtime::HarnessAdapter;
 
 #[test]
 fn bridge_harness_rejects_unavailable_historical_view_explicitly() {
     let adapter = BridgeHarnessAdapter;
+    let (truth, _commit) = ScenarioRelationalTruth::named("alice", true);
     let fixture = ScenarioPlan::new(
         "bridge-historical-missing-view",
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_committed_patch(committed_patch(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
+        BridgeHarnessFixture::new(vec![NamedTruth::mapping()]).with_relational_truth(truth),
     )
     .declare_input("history-commit:main:missing-commit")
     .declare_observation("historical")
@@ -29,7 +18,7 @@ fn bridge_harness_rejects_unavailable_historical_view_explicitly() {
     let request = ExecutionRequest::target(
         "historical-missing",
         BridgeHarnessTargetId::historical_commit(
-            crate::truth_identity_fixtures::truth_branch_fixture("main"),
+            crate::facade::TruthBranchIdentity::from_relational_branch_id("main"),
             crate::truth_identity_fixtures::truth_commit_fixture("missing-commit"),
         ),
     );
@@ -63,6 +52,6 @@ fn bridge_harness_rejects_unavailable_historical_view_explicitly() {
     );
     assert_eq!(
         failure.branch_identity().as_str(),
-        crate::truth_identity_fixtures::truth_branch_fixture("main").as_str()
+        crate::facade::TruthBranchIdentity::from_relational_branch_id("main").as_str()
     );
 }

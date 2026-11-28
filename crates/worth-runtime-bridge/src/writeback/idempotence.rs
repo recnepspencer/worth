@@ -4,10 +4,7 @@ use sha2::{Digest, Sha256};
 
 use crate::identity::{BridgeIdentity, BridgeIdentityEvidence, WritebackIdempotenceIdentityTag};
 
-use super::{
-    BridgeDerivedWritebackEffect, BridgeWritebackIdempotenceClass,
-    BridgeWritebackStrategyDescriptorBasis,
-};
+use super::{BridgeDerivedWritebackEffect, BridgeWritebackStrategyDescriptorBasis};
 
 pub type BridgeWritebackIdempotenceIdentity = BridgeIdentity<WritebackIdempotenceIdentityTag>;
 
@@ -168,4 +165,10 @@ impl BridgeWritebackIdempotenceBasis {
     pub fn idempotence_class(&self) -> BridgeWritebackIdempotenceClass {
         self.idempotence_class
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum BridgeWritebackIdempotenceClass {
+    RequireSemanticNoopSuppression,
+    AllowRepeatedAuthorityAttempt,
 }

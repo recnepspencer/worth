@@ -7,12 +7,6 @@ use crate::speculation::{
     BridgePreviewDiscardRecord, BridgePreviewExecutionRecord, BridgePreviewPromotionRecord,
     BridgePreviewSessionIdentity,
 };
-use crate::stream::{CanonicalStreamReplayRecord, ConsumerCheckpointToken};
-use crate::writeback::{
-    BridgeMappedWritebackFamilyInput, BridgeWritebackExecutionRecord,
-    BridgeWritebackFamilyAdmissionRecord, BridgeWritebackMapperEnvelope,
-    BridgeWritebackMapperRecord, BridgeWritebackReplayRecord,
-};
 
 use super::bulk::BridgeBulkPlanExplanation;
 use super::continuity::{BridgeCanonicalContinuityRecord, BridgeContinuityExplanation};
@@ -29,18 +23,6 @@ use super::speculation::{
     BridgePreviewPromotionExplanation, BridgePreviewReplayExplanation,
 };
 use super::state::{BridgeDiagnosticsConfig, BridgeDiagnosticsState};
-use super::stream::{BridgeStreamCheckpointExplanation, BridgeStreamReplayExplanation};
-use super::structural::{
-    BridgeCanonicalStructuralBranchComparisonRecord, BridgeCanonicalStructuralRemapRecord,
-};
-use super::writeback::{
-    BridgeMappedWritebackFamilyInputExplanation, BridgeWritebackAdmissionExplanation,
-    BridgeWritebackCandidateExplanation, BridgeWritebackExecutionExplanation,
-    BridgeWritebackLoopPreventionExplanation, BridgeWritebackMapperEnvelopeExplanation,
-    BridgeWritebackMapperExplanation, BridgeWritebackOutcomeExplanation,
-    BridgeWritebackReplayExplanation, BridgeWritebackReplayRecordExplanation,
-    BridgeWritebackStrategyCoherenceExplanation,
-};
 use super::BridgeRouteExplanation;
 
 mod conditional_history;
@@ -50,12 +32,20 @@ mod policy;
 mod query;
 mod record;
 mod speculation;
-mod writeback;
-mod writeback_readmission;
 
 #[derive(Debug, Clone)]
 pub struct BridgeDiagnosticsFacade {
     config: Arc<BridgeDiagnosticsConfig>,
     operator_reports: operator_reports::BridgeOperatorReports,
     state: Arc<RwLock<BridgeDiagnosticsState>>,
+}
+
+impl BridgeDiagnosticsFacade {
+    pub(crate) fn for_authored_installation(&self) -> Self {
+        Self {
+            config: Arc::clone(&self.config),
+            operator_reports: self.operator_reports.clone(),
+            state: Arc::new(RwLock::new(Default::default())),
+        }
+    }
 }

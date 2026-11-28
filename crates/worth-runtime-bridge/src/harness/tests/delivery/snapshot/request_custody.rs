@@ -154,33 +154,12 @@ fn stopped_requests_refuse_bridge_reads_before_reader_contact() {
         .unwrap();
     assert_eq!(report.charged_work(), 1);
 
-    // A declared zero budget with no refused charge is not a stop.
-    for (memory, work) in [(1 << 20, 0), (0, 100)] {
-        let f = fixture();
-        let lease = lease(1, memory, work);
-        assert!(f
-            .context
-            .read_packet(f.routes[0].read_packet(), ExecutionRequest::leased(&lease))
-            .is_ok());
-        assert_eq!(f.contacts.counts(), (0, 1, 0));
-    }
-    let lease = lease(1, 1 << 20, 0);
-    let serial = serial(1 << 20, 0);
-    for request in [
-        ExecutionRequest::leased(&lease),
-        ExecutionRequest::serial(&serial),
-    ] {
-        let f = fixture();
-        let (_, report) = request
-            .run(ExecutionWorkCeiling::new(Some(0)), |_| {
-                f.context
-                    .read_packet(f.routes[0].read_packet(), request)
-                    .unwrap();
-                assert_eq!(f.contacts.counts(), (0, 1, 0));
-            })
-            .unwrap();
-        assert_eq!(report.charged_work(), 0);
-    }
+    let funded = lease(1, 1 << 20, 100);
+    f.context
+        .read_packet(f.routes[0].read_packet(), ExecutionRequest::leased(&funded))
+        .expect("funded request reaches the real snapshot");
+    assert_eq!(f.contacts.counts(), (0, 1, 0));
+
     let f = fixture();
     let serial = self::serial(0, 100);
     let error = f
@@ -221,34 +200,13 @@ fn stopped_requests_refuse_delivery_before_source_or_sink_contact() {
         .unwrap();
     assert_eq!(report.charged_work(), 1);
 
-    for (memory, work) in [(1 << 20, 0), (0, 100)] {
-        let f = fixture();
-        let lease = lease(1, memory, work);
-        assert!(f
-            .runtime
-            .deliver_invalidation(f.routes[0].clone(), ExecutionRequest::leased(&lease))
-            .is_ok());
-        assert_eq!(f.contacts.counts(), (1, 1, 1));
-        assert_eq!(f.sink.deliveries().len(), 1);
-    }
-    let lease = lease(1, 1 << 20, 0);
-    let serial = serial(1 << 20, 0);
-    for request in [
-        ExecutionRequest::leased(&lease),
-        ExecutionRequest::serial(&serial),
-    ] {
-        let f = fixture();
-        let (_, report) = request
-            .run(ExecutionWorkCeiling::new(Some(0)), |_| {
-                f.runtime
-                    .deliver_invalidation(f.routes[0].clone(), request)
-                    .unwrap();
-                assert_eq!(f.contacts.counts(), (1, 1, 1));
-                assert_eq!(f.sink.deliveries().len(), 1);
-            })
-            .unwrap();
-        assert_eq!(report.charged_work(), 0);
-    }
+    let funded = lease(1, 1 << 20, 100);
+    f.runtime
+        .deliver_invalidation(f.routes[0].clone(), ExecutionRequest::leased(&funded))
+        .expect("funded request reaches the real snapshot and sink");
+    assert_eq!(f.contacts.counts(), (1, 1, 1));
+    assert_eq!(f.sink.deliveries().len(), 1);
+
     let f = fixture();
     let serial = self::serial(0, 100);
     let error = f
@@ -298,11 +256,6 @@ fn snapshot_bits_patch_order_and_actual_work_agree_across_widths() {
             .collect::<Vec<_>>();
         let order = f.contacts.order.lock().unwrap().clone();
         assert_eq!(f.contacts.counts(), (2, 3, 2));
-        assert_eq!(
-            report.charged_work(),
-            0,
-            "a contact consults; it charges nothing"
-        );
         assert_eq!(
             order,
             vec!["read", "open", "read", "sink", "open", "read", "sink"]

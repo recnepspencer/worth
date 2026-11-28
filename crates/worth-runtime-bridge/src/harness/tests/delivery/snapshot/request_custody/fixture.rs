@@ -1,7 +1,6 @@
-//! An explicit external-source fixture; the Bridge wrappers own custody.
-use super::super::super::{committed_patch, registration, snapshot};
+//! Contacts observed around the real Relational source and Signal sink.
 use crate::facade::*;
-use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBridgeSink};
+use crate::harness::fixtures::{NamedTruth, RecordingSignalBridgeSink};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc, Mutex,
@@ -29,8 +28,8 @@ impl Contacts {
         )
     }
 }
-struct CountingSource(InMemoryRelationalBridgeSource, Arc<Contacts>);
-impl SnapshotReadSource for CountingSource {
+struct CountingSource<S>(S, Arc<Contacts>);
+impl<S: SnapshotReadSource> SnapshotReadSource for CountingSource<S> {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
@@ -39,7 +38,7 @@ impl SnapshotReadSource for CountingSource {
         self.1.opens.fetch_add(1, Ordering::SeqCst);
         self.1.order.lock().unwrap().push("open");
         Ok(Box::new(CountingReader(
-            self.0.open_snapshot(identity, request)?,
+            SnapshotReadSource::open_snapshot(&self.0, identity, request)?,
             self.1.clone(),
         )))
     }
@@ -77,41 +76,31 @@ pub(super) struct Fixture {
     pub(super) context: BridgeSnapshotContext<Box<dyn TruthSnapshotReader>>,
     pub(super) contacts: Arc<Contacts>,
     pub(super) sink: RecordingSignalBridgeSink,
+    _retained: Vec<RelationalBridgeObservationLease>,
 }
 pub(super) fn fixture() -> Fixture {
-    let source = InMemoryRelationalBridgeSource::default();
-    for (id, value) in [(1, "Ada"), (2, "Grace")] {
-        source.insert_committed_patch(committed_patch(
-            crate::truth_identity_fixtures::truth_commit(id),
-            crate::truth_identity_fixtures::truth_patch(id),
-            crate::truth_identity_fixtures::truth_snapshot(id, 1),
-            worth_foundational::facade::FieldKey::new("name".to_owned()).unwrap(),
-        ));
-        source.insert_snapshot(snapshot(
-            crate::truth_identity_fixtures::truth_snapshot(id, 1),
-            value,
-        ));
-    }
+    let serial = crate::snapshot::test_serial_request();
+    let request = worth_execution::ExecutionRequest::serial(&serial);
+    let truth = NamedTruth::new();
+    let (first_commit, first_observation) = truth.commit_name(request, "Ada");
+    let (second_commit, second_observation) = truth.commit_name(request, "Grace");
+    let retained = vec![first_observation, second_observation];
+    let commits = [first_commit, second_commit];
+    let source = truth.source;
     let contacts = Arc::new(Contacts::default());
     let sink = RecordingSignalBridgeSink::default();
     let runtime = RuntimeBridge::builder()
         .with_committed_patch_source(source.clone())
         .with_snapshot_read_source(CountingSource(source.clone(), contacts.clone()))
         .with_signal_sink(CountingSink(sink.clone(), contacts.clone()))
-        .register_mapping(registration())
+        .register_mapping(NamedTruth::mapping())
         .build()
         .unwrap();
-    let serial = crate::snapshot::test_serial_request();
-    let request = worth_execution::ExecutionRequest::serial(&serial);
-    let routes = (1..=2)
-        .map(|id| {
+    let routes = commits
+        .into_iter()
+        .map(|commit| {
             runtime
-                .plan_committed_patch(
-                    BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit(
-                        id,
-                    )),
-                    request,
-                )
+                .plan_committed_patch(BridgeRouteRequest::for_commit(commit), request)
                 .unwrap()
         })
         .collect::<Vec<_>>();
@@ -119,10 +108,7 @@ pub(super) fn fixture() -> Fixture {
         .iter()
         .all(|route| !route.read_packet().reads().is_empty()));
     let reader = CountingSource(source, contacts.clone())
-        .open_snapshot(
-            &crate::truth_identity_fixtures::truth_snapshot(1, 1),
-            request,
-        )
+        .open_snapshot(retained[0].snapshot_identity(), request)
         .unwrap();
     let context = BridgeSnapshotContext::bind(reader);
     contacts.reset();
@@ -132,5 +118,6 @@ pub(super) fn fixture() -> Fixture {
         context,
         contacts,
         sink,
+        _retained: retained,
     }
 }

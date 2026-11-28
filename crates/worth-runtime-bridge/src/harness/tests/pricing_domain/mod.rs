@@ -2,7 +2,6 @@ mod attribution;
 mod feed_profiles;
 mod material_catalog;
 mod pricing_math;
-mod snapshot_export;
 mod stream_simulation;
 #[cfg(test)]
 mod tests;

@@ -1,11 +1,9 @@
-use super::super::{
-    build_runtime, commit_a, committed_patch, patch_a, registration, snapshot, snapshot_a,
-};
+use super::super::build_runtime;
 use crate::facade::{
     BridgeDeliveryErrorKind, BridgeDeliveryReceipt, BridgeExecutionDenial, BridgeRouteRequest,
     BridgeSignalInvalidationDelivery, InvalidationSink, SignalBridgeSinkError,
 };
-use crate::harness::fixtures::InMemoryRelationalBridgeSource;
+use crate::harness::fixtures::NamedTruth;
 use std::num::NonZeroUsize;
 use worth_execution::{
     CancellationToken, ExecutionRequest, ExecutionResourceLease, ExecutionScan,
@@ -119,17 +117,13 @@ fn every_sink_resource_cause_survives_delivery_to_the_caller() {
         Refusal::Nested,
         Refusal::Equivalence,
     ] {
-        let source = InMemoryRelationalBridgeSource::default();
-        source.insert_committed_patch(committed_patch(
-            commit_a(),
-            patch_a(),
-            snapshot_a(),
-            worth_foundational::facade::FieldKey::new("name".to_owned()).unwrap(),
-        ));
-        source.insert_snapshot(snapshot(snapshot_a(), "alice"));
-        let runtime = build_runtime(source, RefusingSink(refusal), vec![registration()]);
+        let truth = NamedTruth::new();
+        let (commit_a, _observation) = truth.commit_name(execution, "alice");
+        let source = truth.source.clone();
+
+        let runtime = build_runtime(source, RefusingSink(refusal), vec![NamedTruth::mapping()]);
         let route = runtime
-            .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
+            .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a.clone()), execution)
             .unwrap();
         let lease = crate::snapshot::test_execution_lease(CancellationToken::new());
         let error = runtime
@@ -147,9 +141,8 @@ fn every_sink_resource_cause_survives_delivery_to_the_caller() {
                 assert!(matches!(
                     denial,
                     Own::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
-                        admitted: 4096,
-                        ..
-                    })
+                        requested, admitted, ..
+                    }) if requested > 4096 && admitted <= 4096
                 ))
             }
             Refusal::Overflow => assert_eq!(denial, Own::ChargedBytesOverflow),
@@ -176,18 +169,14 @@ fn serial_delivery(
     request: &worth_execution::SerialRequest,
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::BridgeDeliveryError {
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        commit_a(),
-        patch_a(),
-        snapshot_a(),
-        worth_foundational::facade::FieldKey::new("name".to_owned()).unwrap(),
-    ));
-    source.insert_snapshot(snapshot(snapshot_a(), "alice"));
+    let truth = NamedTruth::new();
+    let (commit_a, _observation_a) = truth.commit_name(execution, "alice");
+    let source = truth.source.clone();
+
     let sink = crate::harness::fixtures::RecordingSignalBridgeSink::default();
-    let runtime = build_runtime(source, sink.clone(), vec![registration()]);
+    let runtime = build_runtime(source, sink.clone(), vec![NamedTruth::mapping()]);
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a.clone()), execution)
         .unwrap();
     let error = runtime
         .deliver_invalidation(route, ExecutionRequest::serial(request))

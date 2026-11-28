@@ -122,16 +122,15 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_reference_worklo
     policy: BridgeRuntimePolicy,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeSubscriptionReferenceWorkloadSufficiency {
-    let fixture_bundle = capture_pricing_workload_certification_bundle(
+    let scenario = generated_pricing_scenario();
+    let truth = RelationalPricing::reference(resource_request, &scenario, None);
+    let fixture_bundle = capture_pricing_workload_certification_bundle_at_truth(
         policy,
+        &truth,
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-reference-workload-skin"),
         resource_request,
     );
-    let runtime = build_pricing_runtime_with_policy(
-        pricing_reference_source(),
-        RecordingSignalBridgeSink::default(),
-        policy,
-    );
+    let runtime = truth.runtime_with_policy(RecordingSignalBridgeSink::default(), policy);
     let manifest = pricing_reference_workload_manifest(&runtime);
     let declaration = runtime
         .plan_subscription_reference_workload(&manifest, pricing_reference_workload_lane_requests())

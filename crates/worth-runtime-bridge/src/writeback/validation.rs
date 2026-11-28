@@ -3,15 +3,13 @@ use std::sync::Arc;
 use crate::facade::BridgeRequestKind;
 
 use super::{
-    BridgeWritebackDeclaration, BridgeWritebackFamilyBasis, BridgeWritebackRequestMode,
-    BridgeWritebackStrategyBasis,
+    BridgeWritebackDeclaration, BridgeWritebackEffectClass, BridgeWritebackFamilyKind,
+    BridgeWritebackIdempotenceClass, BridgeWritebackRequestMode, BridgeWritebackStrategyClass,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidatedBridgeWritebackDeclaration {
     declaration: BridgeWritebackDeclaration,
-    family_basis: Option<BridgeWritebackFamilyBasis>,
-    strategy_basis: Option<BridgeWritebackStrategyBasis>,
     canonical_basis: Arc<str>,
 }
 
@@ -27,48 +25,22 @@ impl ValidatedBridgeWritebackDeclaration {
         reject_writeback_capable_missing_strategy_descriptor(&declaration)?;
         reject_writeback_capable_missing_strategy_class(&declaration)?;
         reject_strategy_descriptor_basis_mismatch(&declaration)?;
-        let family_basis = (declaration.request_mode()
-            == BridgeWritebackRequestMode::WritebackCapable)
-            .then(|| BridgeWritebackFamilyBasis::from_declaration(&declaration))
-            .transpose()?;
-        let strategy_basis = (declaration.request_mode()
-            == BridgeWritebackRequestMode::WritebackCapable)
-            .then(|| BridgeWritebackStrategyBasis::from_declaration(&declaration));
-
-        let canonical_basis = Arc::<str>::from(format!(
-            "validated-bridge-writeback-declaration|declaration={}|request-kind:{:?}|request-mode:{:?}|family={}|strategy={}|writeback={}",
-            declaration.declaration_identity().as_str(),
-            declaration.request_kind(),
-            declaration.request_mode(),
-            family_basis
-                .as_ref()
-                .map(|basis| basis.digest())
-                .unwrap_or("none"),
-            strategy_basis
-                .as_ref()
-                .map(|basis| basis.digest())
-                .unwrap_or("none"),
-            declaration.digest(),
+        if let Some(family) = declaration.family_kind() {
+            require_family_shape(&declaration, family)?;
+        }
+        let canonical_basis = Arc::from(format!(
+            "validated-bridge-writeback-declaration|declaration={}",
+            declaration.digest()
         ));
 
         Ok(Self {
             declaration,
-            family_basis,
-            strategy_basis,
             canonical_basis,
         })
     }
 
     pub fn declaration(&self) -> &BridgeWritebackDeclaration {
         &self.declaration
-    }
-
-    pub fn strategy_basis(&self) -> Option<&BridgeWritebackStrategyBasis> {
-        self.strategy_basis.as_ref()
-    }
-
-    pub fn family_basis(&self) -> Option<&BridgeWritebackFamilyBasis> {
-        self.family_basis.as_ref()
     }
 
     pub fn canonical_basis(&self) -> &str {
@@ -233,5 +205,62 @@ fn reject_strategy_descriptor_basis_mismatch(
         ));
     }
 
+    Ok(())
+}
+
+fn require_family_shape(
+    declaration: &BridgeWritebackDeclaration,
+    family: BridgeWritebackFamilyKind,
+) -> Result<(), crate::error::BridgeWritebackError> {
+    let (effect, strategy) = match family {
+        BridgeWritebackFamilyKind::ProjectedStateDiff => (
+            BridgeWritebackEffectClass::ProjectedStateDiff,
+            BridgeWritebackStrategyClass::ProjectedStateDiffReconciliation,
+        ),
+        BridgeWritebackFamilyKind::AspectReconciliation => (
+            BridgeWritebackEffectClass::AspectReconciliation,
+            BridgeWritebackStrategyClass::AspectReconciliationCommit,
+        ),
+    };
+    if declaration.effect_class() != effect
+        || declaration.strategy_class() != Some(strategy)
+        || declaration.idempotence_class()
+            != BridgeWritebackIdempotenceClass::RequireSemanticNoopSuppression
+    {
+        return Err(crate::error::BridgeWritebackError::new(
+            crate::error::BridgeWritebackErrorKind::FamilyBindingMismatch,
+            format!("writeback declaration is incompatible with family {family:?}"),
+        ));
+    }
+    Ok(())
+}
+
+pub(crate) fn validate_authority_inputs(
+    contract: &super::AdmittedBridgeWritebackContract,
+    effect: &super::BridgeDerivedWritebackEffect,
+    idempotence: &super::BridgeWritebackIdempotenceBasis,
+) -> Result<(), crate::error::BridgeWritebackError> {
+    use crate::error::{BridgeWritebackError, BridgeWritebackErrorKind};
+
+    let declaration = contract.validated_declaration().declaration();
+    if contract.digest() != effect.contract_digest()
+        || declaration.effect_class() != effect.effect_class()
+    {
+        return Err(BridgeWritebackError::new(
+            BridgeWritebackErrorKind::FamilyBindingMismatch,
+            "writeback effect does not belong to the admitted contract",
+        ));
+    }
+    if idempotence.idempotence_class() != declaration.idempotence_class()
+        || idempotence.lowered_policy_digest() != contract.lowered_policy_digest()
+        || idempotence.effect_intent_digest() != effect.effect_intent_digest()
+        || idempotence.causality_digest() != effect.causality_digest()
+        || idempotence.strategy_descriptor_basis() != effect.strategy_descriptor_basis()
+    {
+        return Err(BridgeWritebackError::new(
+            BridgeWritebackErrorKind::IdempotenceBasisMismatch,
+            "writeback idempotence does not match the admitted effect and policy",
+        ));
+    }
     Ok(())
 }

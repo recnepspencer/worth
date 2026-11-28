@@ -17,20 +17,17 @@ use crate::source::BridgeSourceCapabilitySet;
 use super::super::fixtures::BridgeHarnessFixture;
 use super::target_id::BridgeHarnessTargetId;
 use super::types::{
-    BridgeHarnessAdapter, BridgeHarnessError, BridgeHarnessMutation, BridgeHarnessSession,
-    PolicyBuilderLoadOrder, SourceAdapterBehavior, SourceAdapterShape, SourceBuilderLoadOrder,
+    BridgeHarnessAdapter, BridgeHarnessError, BridgeHarnessSession, PolicyBuilderLoadOrder,
+    SourceAdapterBehavior, SourceAdapterShape, SourceBuilderLoadOrder,
 };
 use policy::execute_policy_request;
 use source::execute_source_request;
 use speculation::execute_speculation_request;
-use stream::execute_stream_request;
-use structural::execute_structural_request;
-use writeback::execute_writeback_request;
 
 impl HarnessAdapter for BridgeHarnessAdapter {
     type Runtime = BridgeHarnessSession;
     type Fixture = BridgeHarnessFixture;
-    type Mutation = BridgeHarnessMutation;
+    type Mutation = std::convert::Infallible;
     type TargetId = BridgeHarnessTargetId;
     type Error = BridgeHarnessError;
 
@@ -60,8 +57,6 @@ impl HarnessAdapter for BridgeHarnessAdapter {
             "bridge_historical_evaluation_record".to_string(),
             "bridge_source_materialization_record".to_string(),
             "bridge_speculation_record".to_string(),
-            "bridge_structural_remap_record".to_string(),
-            "bridge_structural_branch_comparison_record".to_string(),
         ]);
         capabilities
     }
@@ -88,10 +83,10 @@ impl HarnessAdapter for BridgeHarnessAdapter {
 
     fn apply_mutation_batch(
         &self,
-        runtime: &mut Self::Runtime,
-        batch: &MutationBatch<Self::Mutation>,
+        _runtime: &mut Self::Runtime,
+        _batch: &MutationBatch<Self::Mutation>,
     ) -> Result<(), Self::Error> {
-        runtime_loading::apply_bridge_mutation_batch(runtime, batch)
+        Ok(())
     }
 
     fn execute(
@@ -164,9 +159,6 @@ impl HarnessAdapter for BridgeHarnessAdapter {
                             continuity_summary,
                         }
                     }
-                    HarnessTarget::Stream(stream_target) => HarnessExecution::Stream(
-                        execute_stream_request(runtime_bridge, stream_target, resource_request)?,
-                    ),
                     HarnessTarget::Source(source_target) => {
                         HarnessExecution::Source(execute_source_request(
                             runtime_bridge,
@@ -188,23 +180,6 @@ impl HarnessAdapter for BridgeHarnessAdapter {
                             runtime_bridge,
                             &fixture.fixture,
                             speculation_target,
-                            resource_request,
-                        )?)
-                    }
-                    HarnessTarget::Structural(structural_target) => {
-                        HarnessExecution::Structural(execute_structural_request(
-                            runtime_bridge,
-                            &fixture.fixture,
-                            structural_target,
-                            resource_request,
-                        )?)
-                    }
-                    HarnessTarget::Writeback(writeback_target) => {
-                        HarnessExecution::Writeback(execute_writeback_request(
-                            runtime,
-                            runtime_bridge,
-                            &fixture.fixture,
-                            writeback_target,
                             resource_request,
                         )?)
                     }
@@ -294,11 +269,7 @@ mod runtime_loading;
 mod snapshot_capture;
 mod source;
 mod speculation;
-mod stream;
-mod structural;
 mod terminal_report_export;
-mod writeback;
-mod writeback_certification;
 use execution::{
     execute_historical_request, harness_target_from_id, HarnessExecution, HarnessTarget,
 };

@@ -5,11 +5,10 @@ use sha2::{Digest, Sha256};
 use crate::facade::{
     AdmittedBridgePolicyContract, AdmittedBridgeWritebackContract,
     BridgeAsyncRequestTruthViewBasisKind, BridgeDerivedWritebackEffect,
-    BridgeValidatedWritebackCandidate, BridgeWritebackAuthoritativeStateBasis,
-    BridgeWritebackCausalityIdentity, BridgeWritebackIdempotenceBasis,
-    BridgeWritebackIdempotenceIdentity, BridgeWritebackLoopDisposition,
+    BridgeWritebackAuthoritativeStateBasis, BridgeWritebackCausalityIdentity,
+    BridgeWritebackIdempotenceBasis, BridgeWritebackIdempotenceIdentity,
     BridgeWritebackLoopPreventionReport, BridgeWritebackNativeCausalityInputs,
-    BridgeWritebackStrategyCoherenceReport, LoweredBridgeExecutionPolicy, RuntimeBridge,
+    LoweredBridgeExecutionPolicy, RuntimeBridge,
 };
 use crate::identity::{AsyncWritebackStagedEffectIdentityTag, BridgeIdentity};
 use crate::routing::BridgeRouteIdentity;
@@ -35,8 +34,6 @@ pub struct StagedBridgeAsyncWritebackEffect {
     authoritative_state_basis: BridgeWritebackAuthoritativeStateBasis,
     idempotence: BridgeWritebackIdempotenceBasis,
     loop_prevention: BridgeWritebackLoopPreventionReport,
-    strategy_coherence: BridgeWritebackStrategyCoherenceReport,
-    candidate: Option<BridgeValidatedWritebackCandidate>,
     counters: BridgeAsyncWritebackCounters,
     canonical_basis: Arc<str>,
     digest: Arc<str>,
@@ -127,35 +124,8 @@ impl StagedBridgeAsyncWritebackEffect {
         );
         let loop_prevention =
             runtime.classify_writeback_loop_prevention(&effect, &idempotence, None);
-        let strategy_coherence = runtime.classify_writeback_strategy_coherence(
-            &writeback_contract,
-            &effect,
-            &idempotence,
-        );
-        let candidate = if loop_prevention.disposition()
-            == BridgeWritebackLoopDisposition::AllowAuthoritativeAttempt
-        {
-            Some(
-                runtime
-                    .validate_writeback_candidate(
-                        &writeback_contract,
-                        &effect,
-                        &idempotence,
-                        &loop_prevention,
-                        &strategy_coherence,
-                    )
-                    .map_err(|error| {
-                        BridgeAsyncWritebackRejection::new(
-                            BridgeAsyncWritebackRejectionKind::CandidateValidationRejected,
-                            error.to_string(),
-                        )
-                    })?,
-            )
-        } else {
-            None
-        };
         let canonical_basis = Arc::<str>::from(format!(
-            "bridge-async-writeback-staged-effect|admission={}|mapper-output={}|policy={}|writeback-contract={}|causality={}|effect={}|idempotence={}|loop-prevention={}|strategy-coherence={}|candidate={}",
+            "bridge-async-writeback-staged-effect|admission={}|mapper-output={}|policy={}|writeback-contract={}|causality={}|effect={}|idempotence={}|loop-prevention={}",
             admitted.digest(),
             mapper_output.digest(),
             policy_contract.digest(),
@@ -164,11 +134,6 @@ impl StagedBridgeAsyncWritebackEffect {
             effect.digest(),
             idempotence.digest(),
             loop_prevention.digest(),
-            strategy_coherence.digest(),
-            candidate
-                .as_ref()
-                .map(|value| value.digest())
-                .unwrap_or("-"),
         ));
         let digest = Sha256::digest(canonical_basis.as_bytes());
 
@@ -186,8 +151,6 @@ impl StagedBridgeAsyncWritebackEffect {
             authoritative_state_basis,
             idempotence,
             loop_prevention,
-            strategy_coherence,
-            candidate,
             counters: BridgeAsyncWritebackCounters::staged(),
             canonical_basis,
             digest: Arc::from(format!(
@@ -238,14 +201,6 @@ impl StagedBridgeAsyncWritebackEffect {
 
     pub fn loop_prevention(&self) -> &BridgeWritebackLoopPreventionReport {
         &self.loop_prevention
-    }
-
-    pub fn strategy_coherence(&self) -> &BridgeWritebackStrategyCoherenceReport {
-        &self.strategy_coherence
-    }
-
-    pub fn candidate(&self) -> Option<&BridgeValidatedWritebackCandidate> {
-        self.candidate.as_ref()
     }
 
     pub fn counters(&self) -> &BridgeAsyncWritebackCounters {

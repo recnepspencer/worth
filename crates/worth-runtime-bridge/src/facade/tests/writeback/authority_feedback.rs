@@ -38,25 +38,6 @@ fn runtime_rejects_authority_execution_when_no_writeback_authority_is_bound() {
         .expect_err("missing authority binding must fail closed");
 
     assert_eq!(error.kind(), BridgeWritebackErrorKind::AuthorityDenied);
-
-    let execution_record = runtime
-        .diagnostics()
-        .last_writeback_execution_record()
-        .expect("missing authority rejection should retain execution evidence");
-    assert_eq!(
-        execution_record.failure_class(),
-        Some(BridgeWritebackFailureClass::AuthorityDenied)
-    );
-    assert!(execution_record.mapper_record_digest().is_some());
-    assert!(execution_record.candidate_digest().is_some());
-    assert_eq!(execution_record.request_digest(), None);
-    assert_eq!(execution_record.receipt_digest(), None);
-    assert_eq!(
-        execution_record
-            .counters()
-            .writeback_authority_denial_count(),
-        1
-    );
 }
 
 #[test]

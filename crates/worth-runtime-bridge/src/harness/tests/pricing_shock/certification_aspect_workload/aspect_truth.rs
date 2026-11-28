@@ -1,6 +1,6 @@
 use super::super::support::{
     capture_pricing_aspect_bundle, BridgeAspectRegistrationId, BridgeRuntimePolicy,
-    FineGrainedMatchStatus, SubscriptionSliceKind, TruthDeltaSurfaceKind,
+    FineGrainedMatchStatus, RelationalPricing, SubscriptionSliceKind, TruthDeltaSurfaceKind,
 };
 use super::EXPECTED_COST_USD_TARGET_BASIS;
 
@@ -10,21 +10,13 @@ fn pricing_shock_aspect_lane_preserves_fine_grained_truth_and_history() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
+    let truth = RelationalPricing::new(resource_request, 145, 40, 56);
     let aspect =
-        capture_pricing_aspect_bundle(BridgeRuntimePolicy::development(), resource_request);
+        capture_pricing_aspect_bundle(BridgeRuntimePolicy::development(), &truth, resource_request);
 
-    assert_eq!(
-        aspect.snapshot,
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-aspect")
-    );
-    assert_eq!(
-        aspect.source_branch,
-        crate::truth_identity_fixtures::truth_branch_fixture("main")
-    );
-    assert_eq!(
-        aspect.source_commit,
-        crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-aspect")
-    );
+    assert_eq!(aspect.snapshot, *truth.steel_snapshot());
+    assert_eq!(aspect.source_branch.relational_branch_id(), Some("main"));
+    assert_eq!(aspect.source_commit, truth.steel_commit);
     assert_eq!(
         aspect.truth_surface_kind,
         TruthDeltaSurfaceKind::EntityField

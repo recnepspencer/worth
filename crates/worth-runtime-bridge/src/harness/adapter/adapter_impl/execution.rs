@@ -4,12 +4,9 @@ pub(super) enum HarnessTarget {
     CommittedRoute {
         commit_identity: TruthCommitIdentity,
     },
-    Stream(super::stream::StreamHarnessTarget),
     Source(super::source::SourceHarnessTarget),
     Policy(super::policy::PolicyHarnessTarget),
     Speculation(super::speculation::SpeculationHarnessTarget),
-    Structural(super::structural::StructuralHarnessTarget),
-    Writeback(super::writeback::WritebackHarnessTarget),
     HistoricalCommit {
         branch_identity: TruthBranchIdentity,
         commit_identity: TruthCommitIdentity,
@@ -32,12 +29,9 @@ pub(super) enum HarnessExecution {
         record: crate::facade::BridgeCanonicalHistoricalEvaluationRecord,
         explanation: BridgeHistoricalEvaluationExplanation,
     },
-    Stream(super::stream::StreamHarnessExecution),
     Source(super::source::SourceHarnessExecution),
     Policy(super::policy::PolicyHarnessExecution),
     Speculation(super::speculation::SpeculationHarnessExecution),
-    Structural(super::structural::StructuralHarnessExecution),
-    Writeback(super::writeback::WritebackHarnessExecution),
 }
 
 pub(super) fn execute_historical_request(
@@ -72,19 +66,9 @@ pub(super) fn harness_target_from_id(
     target: &BridgeHarnessTargetId,
 ) -> Result<HarnessTarget, BridgeHarnessError> {
     match target {
-        BridgeHarnessTargetId::CommittedRoute { commit_identity } => Ok(HarnessTarget::CommittedRoute {
-            commit_identity: commit_identity.clone(),
-        }),
-        BridgeHarnessTargetId::StreamRouting { commit_window } => {
-            stream_window_target(commit_window).map(|window| {
-                HarnessTarget::Stream(super::stream::StreamHarnessTarget::RoutingWindow { window })
-            })
-        }
-        BridgeHarnessTargetId::StreamReplayAudit { commit_window } => {
-            stream_window_target(commit_window).map(|window| {
-                HarnessTarget::Stream(super::stream::StreamHarnessTarget::ReplayAuditWindow {
-                    window,
-                })
+        BridgeHarnessTargetId::CommittedRoute { commit_identity } => {
+            Ok(HarnessTarget::CommittedRoute {
+                commit_identity: commit_identity.clone(),
             })
         }
         BridgeHarnessTargetId::SourceMaterialize {
@@ -147,72 +131,6 @@ pub(super) fn harness_target_from_id(
         BridgeHarnessTargetId::SpeculationChurnCertification => Ok(HarnessTarget::Speculation(
             super::speculation::SpeculationHarnessTarget::ChurnCertification,
         )),
-        BridgeHarnessTargetId::StructuralRemapExact {
-            declaration_identity,
-        } => structural_target(declaration_identity, StructuralTargetKind::RemapExact),
-        BridgeHarnessTargetId::StructuralRemapAmbiguous {
-            declaration_identity,
-        } => structural_target(declaration_identity, StructuralTargetKind::RemapAmbiguous),
-        BridgeHarnessTargetId::StructuralRemapNoSafeMatch {
-            declaration_identity,
-        } => structural_target(declaration_identity, StructuralTargetKind::RemapNoSafeMatch),
-        BridgeHarnessTargetId::StructuralRemapLineageDivergence {
-            declaration_identity,
-        } => structural_target(
-            declaration_identity,
-            StructuralTargetKind::RemapLineageDivergence,
-        ),
-        BridgeHarnessTargetId::StructuralRemapIdentityConflict {
-            declaration_identity,
-        } => structural_target(
-            declaration_identity,
-            StructuralTargetKind::RemapIdentityConflict,
-        ),
-        BridgeHarnessTargetId::StructuralRemapReplay {
-            declaration_identity,
-        } => structural_target(declaration_identity, StructuralTargetKind::RemapReplay),
-        BridgeHarnessTargetId::StructuralBranchCompare {
-            declaration_identity,
-        } => structural_target(declaration_identity, StructuralTargetKind::BranchCompare),
-        BridgeHarnessTargetId::StructuralBranchReplay {
-            declaration_identity,
-        } => structural_target(declaration_identity, StructuralTargetKind::BranchReplay),
-        BridgeHarnessTargetId::WritebackDuplicateCertification => Ok(HarnessTarget::Writeback(
-            super::writeback::WritebackHarnessTarget::DuplicateCertification,
-        )),
-        BridgeHarnessTargetId::WritebackAuthorityDenialCertification => {
-            Ok(HarnessTarget::Writeback(
-                super::writeback::WritebackHarnessTarget::AuthorityDenialCertification,
-            ))
-        }
-        BridgeHarnessTargetId::WritebackFeedbackLoopCertification => Ok(HarnessTarget::Writeback(
-            super::writeback::WritebackHarnessTarget::FeedbackLoopCertification,
-        )),
-        BridgeHarnessTargetId::WritebackReplayMismatchCertification => {
-            Ok(HarnessTarget::Writeback(
-                super::writeback::WritebackHarnessTarget::ReplayMismatchCertification,
-            ))
-        }
-        BridgeHarnessTargetId::WritebackExtensibleFamilyCertification => {
-            Ok(HarnessTarget::Writeback(
-                super::writeback::WritebackHarnessTarget::ExtensibleFamilyCertification,
-            ))
-        }
-        BridgeHarnessTargetId::WritebackMultiFamilyAdmissionBoundaryCertification => {
-            Ok(HarnessTarget::Writeback(
-                super::writeback::WritebackHarnessTarget::MultiFamilyAdmissionBoundaryCertification,
-            ))
-        }
-        BridgeHarnessTargetId::WritebackCrossFamilyReplayLoopIsolationCertification => {
-            Ok(HarnessTarget::Writeback(
-                super::writeback::WritebackHarnessTarget::CrossFamilyReplayLoopIsolationCertification,
-            ))
-        }
-        BridgeHarnessTargetId::WritebackHostMapperParityCertification => {
-            Ok(HarnessTarget::Writeback(
-                super::writeback::WritebackHarnessTarget::HostMapperParityCertification,
-            ))
-        }
         BridgeHarnessTargetId::HistoricalCommit {
             branch_identity,
             commit_identity,
@@ -224,71 +142,4 @@ pub(super) fn harness_target_from_id(
             branch_identity: branch_identity.clone(),
         }),
     }
-}
-
-fn stream_window_target(
-    commit_window: &[TruthCommitIdentity],
-) -> Result<super::stream::NativeStreamCommitWindow, BridgeHarnessError> {
-    super::stream::NativeStreamCommitWindow::from_commits(commit_window.iter().cloned())
-}
-
-enum StructuralTargetKind {
-    RemapExact,
-    RemapAmbiguous,
-    RemapNoSafeMatch,
-    RemapLineageDivergence,
-    RemapIdentityConflict,
-    RemapReplay,
-    BranchCompare,
-    BranchReplay,
-}
-
-fn structural_target(
-    declaration_identity: &crate::structural::StructuralIdentityDeclarationIdentity,
-    kind: StructuralTargetKind,
-) -> Result<HarnessTarget, BridgeHarnessError> {
-    let declaration_identity = declaration_identity.clone();
-    let target = match kind {
-        StructuralTargetKind::RemapExact => {
-            super::structural::StructuralHarnessTarget::RemapExact {
-                declaration_identity,
-            }
-        }
-        StructuralTargetKind::RemapAmbiguous => {
-            super::structural::StructuralHarnessTarget::RemapAmbiguous {
-                declaration_identity,
-            }
-        }
-        StructuralTargetKind::RemapNoSafeMatch => {
-            super::structural::StructuralHarnessTarget::RemapNoSafeMatch {
-                declaration_identity,
-            }
-        }
-        StructuralTargetKind::RemapLineageDivergence => {
-            super::structural::StructuralHarnessTarget::RemapLineageDivergence {
-                declaration_identity,
-            }
-        }
-        StructuralTargetKind::RemapIdentityConflict => {
-            super::structural::StructuralHarnessTarget::RemapIdentityConflict {
-                declaration_identity,
-            }
-        }
-        StructuralTargetKind::RemapReplay => {
-            super::structural::StructuralHarnessTarget::RemapReplay {
-                declaration_identity,
-            }
-        }
-        StructuralTargetKind::BranchCompare => {
-            super::structural::StructuralHarnessTarget::BranchCompare {
-                declaration_identity,
-            }
-        }
-        StructuralTargetKind::BranchReplay => {
-            super::structural::StructuralHarnessTarget::BranchReplay {
-                declaration_identity,
-            }
-        }
-    };
-    Ok(HarnessTarget::Structural(target))
 }

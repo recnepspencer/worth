@@ -69,11 +69,6 @@ fn runtime_rejects_receipt_with_mismatched_request_digest() {
         .expect_err("mismatched receipt request digests must fail closed");
 
     assert_eq!(error.kind(), BridgeWritebackErrorKind::InvariantRejected);
-    assert_last_execution_failure(
-        &runtime,
-        BridgeWritebackFailureClass::InvariantRejected,
-        ExpectedAuthorityStage::ValidatedReceipt,
-    );
 }
 
 #[test]
@@ -124,11 +119,6 @@ fn runtime_rejects_rejected_receipt_without_failure_class() {
         .expect_err("rejected receipts without failure class must fail closed");
 
     assert_eq!(error.kind(), BridgeWritebackErrorKind::InvariantRejected);
-    assert_last_execution_failure(
-        &runtime,
-        BridgeWritebackFailureClass::InvariantRejected,
-        ExpectedAuthorityStage::ValidatedReceipt,
-    );
 }
 
 #[test]
@@ -179,9 +169,4 @@ fn runtime_rejects_successful_receipt_with_failure_class() {
         .expect_err("successful receipts with failure class must fail closed");
 
     assert_eq!(error.kind(), BridgeWritebackErrorKind::InvariantRejected);
-    assert_last_execution_failure(
-        &runtime,
-        BridgeWritebackFailureClass::InvariantRejected,
-        ExpectedAuthorityStage::ValidatedReceipt,
-    );
 }

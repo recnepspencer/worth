@@ -1,10 +1,7 @@
 use crate::facade::{BridgeDeliveryErrorKind, BridgeRouteRequest};
-use crate::harness::fixtures::InMemoryRelationalBridgeSource;
+use crate::harness::fixtures::NamedTruth;
 
-use super::super::support::{
-    build_runtime_with_aspects, committed_patch, field_aspect_registration, field_slice_snapshot,
-    registration, RejectingSignalSink,
-};
+use super::super::support::{build_runtime_with_aspects, RejectingSignalSink};
 
 #[test]
 fn bridge_sink_rejection_records_failure_diagnostics_with_slice_identity() {
@@ -12,32 +9,19 @@ fn bridge_sink_rejection_records_failure_diagnostics_with_slice_identity() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(field_slice_snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
+    let truth = NamedTruth::new();
+    let (commit_a, _observation_a) = truth.commit_name(execution, "alice");
+    let source = truth.source.clone();
+
     let runtime = build_runtime_with_aspects(
         source,
         RejectingSignalSink,
-        vec![registration()],
-        vec![field_aspect_registration()],
+        vec![NamedTruth::mapping()],
+        vec![NamedTruth::aspect_mapping()],
     );
 
     let route = runtime
-        .plan_committed_patch(
-            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-a",
-            )),
-            execution,
-        )
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a), execution)
         .expect("route should plan before sink rejection");
     let expected_slice_identity = route
         .lowering_summary()

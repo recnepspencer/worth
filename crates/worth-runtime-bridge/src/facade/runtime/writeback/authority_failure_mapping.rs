@@ -8,9 +8,6 @@ pub(super) fn map_writeback_failure_class(
             BridgeWritebackErrorKind::WritebackNotRequested
         }
         BridgeWritebackFailureClass::PolicyRejected => BridgeWritebackErrorKind::PolicyRejected,
-        BridgeWritebackFailureClass::StrategyUnavailable => {
-            BridgeWritebackErrorKind::StrategyUnavailable
-        }
         BridgeWritebackFailureClass::FamilyBindingMismatch => {
             BridgeWritebackErrorKind::FamilyBindingMismatch
         }
@@ -20,16 +17,12 @@ pub(super) fn map_writeback_failure_class(
         BridgeWritebackFailureClass::IdempotenceBasisMismatch => {
             BridgeWritebackErrorKind::IdempotenceBasisMismatch
         }
-        BridgeWritebackFailureClass::CausalityEffectMismatch => {
-            BridgeWritebackErrorKind::CausalityEffectMismatch
-        }
         BridgeWritebackFailureClass::StaleTruthBasis => BridgeWritebackErrorKind::StaleTruthBasis,
         BridgeWritebackFailureClass::InvariantRejected => {
             BridgeWritebackErrorKind::InvariantRejected
         }
         BridgeWritebackFailureClass::StrategyFailed => BridgeWritebackErrorKind::StrategyFailed,
         BridgeWritebackFailureClass::StrategyPanicked => BridgeWritebackErrorKind::StrategyPanicked,
-        BridgeWritebackFailureClass::ReplayMismatch => BridgeWritebackErrorKind::ReplayMismatch,
         BridgeWritebackFailureClass::AuthorityDenied => BridgeWritebackErrorKind::AuthorityDenied,
         BridgeWritebackFailureClass::PreviewWritebackRejected => {
             BridgeWritebackErrorKind::PreviewWritebackRejected
@@ -45,65 +38,6 @@ pub(super) fn panic_content_message(content: Box<dyn std::any::Any + Send>) -> S
     } else {
         "non-string panic content".to_string()
     }
-}
-
-pub(super) fn map_writeback_error_kind_to_failure_class(
-    error_kind: BridgeWritebackErrorKind,
-) -> BridgeWritebackFailureClass {
-    match error_kind {
-        BridgeWritebackErrorKind::WritebackNotRequested => {
-            BridgeWritebackFailureClass::WritebackNotRequested
-        }
-        BridgeWritebackErrorKind::PolicyRejected => BridgeWritebackFailureClass::PolicyRejected,
-        BridgeWritebackErrorKind::StrategyUnavailable => {
-            BridgeWritebackFailureClass::StrategyUnavailable
-        }
-        BridgeWritebackErrorKind::FamilyBindingMismatch => {
-            BridgeWritebackFailureClass::FamilyBindingMismatch
-        }
-        BridgeWritebackErrorKind::StrategyDescriptorMismatch => {
-            BridgeWritebackFailureClass::StrategyDescriptorMismatch
-        }
-        BridgeWritebackErrorKind::IdempotenceBasisMismatch => {
-            BridgeWritebackFailureClass::IdempotenceBasisMismatch
-        }
-        BridgeWritebackErrorKind::CausalityEffectMismatch => {
-            BridgeWritebackFailureClass::CausalityEffectMismatch
-        }
-        BridgeWritebackErrorKind::StaleTruthBasis => BridgeWritebackFailureClass::StaleTruthBasis,
-        BridgeWritebackErrorKind::InvariantRejected => {
-            BridgeWritebackFailureClass::InvariantRejected
-        }
-        BridgeWritebackErrorKind::StrategyFailed => BridgeWritebackFailureClass::StrategyFailed,
-        BridgeWritebackErrorKind::StrategyPanicked => BridgeWritebackFailureClass::StrategyPanicked,
-        BridgeWritebackErrorKind::ReplayMismatch => BridgeWritebackFailureClass::ReplayMismatch,
-        BridgeWritebackErrorKind::AuthorityDenied => BridgeWritebackFailureClass::AuthorityDenied,
-        BridgeWritebackErrorKind::PreviewWritebackRejected => {
-            BridgeWritebackFailureClass::PreviewWritebackRejected
-        }
-    }
-}
-
-pub(super) fn writeback_failure_digest(
-    error: &BridgeWritebackError,
-    contract: &AdmittedBridgeWritebackContract,
-    effect: &BridgeDerivedWritebackEffect,
-    idempotence: &BridgeWritebackIdempotenceBasis,
-) -> std::sync::Arc<str> {
-    use sha2::{Digest, Sha256};
-
-    let canonical_basis = format!(
-        "bridge-writeback-execution-failure|kind:{:?}|contract={}|effect={}|idempotence={}|message={}",
-        error.kind(),
-        contract.digest(),
-        effect.digest(),
-        idempotence.digest(),
-        error
-    );
-    let digest = Sha256::digest(canonical_basis.as_bytes());
-    std::sync::Arc::from(format!(
-        "bridge-writeback-execution-failure:sha256:{digest:x}"
-    ))
 }
 
 pub(super) fn validate_writeback_receipt_contract(

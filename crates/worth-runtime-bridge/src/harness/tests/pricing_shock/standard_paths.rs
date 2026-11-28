@@ -6,39 +6,12 @@ fn pricing_shock_standard_path_routes_evaluates_and_keeps_speculation_local() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(pricing_patch(
-        pricing_patch_envelope_identity(
-            crate::truth_identity_fixtures::truth_branch_fixture("main"),
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
-            crate::truth_identity_fixtures::truth_patch_fixture("patch:steel-main"),
-            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main"),
-        ),
-        "steel",
-    ));
-    source.insert_committed_patch(pricing_patch(
-        pricing_patch_envelope_identity(
-            crate::truth_identity_fixtures::truth_branch_fixture("main"),
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-main"),
-            crate::truth_identity_fixtures::truth_patch_fixture("patch:rubber-main"),
-            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main"),
-        ),
-        "rubber",
-    ));
-    source.insert_snapshot(pricing_snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main"),
-        "100",
-        "40",
-    ));
-
+    let truth = RelationalPricing::new(execution, 100, 40, 56);
     let sink = RecordingSignalBridgeSink::default();
-    let runtime = build_pricing_runtime(source.clone(), sink.clone());
+    let runtime = truth.runtime(sink.clone());
 
     let steel_route = runtime
-        .route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
-            execution,
-        )
+        .route(truth.steel_commit.clone(), execution)
         .expect("steel pricing route should succeed");
     let steel_eval = runtime
         .evaluate_current(steel_route.target(), execution)
@@ -46,7 +19,7 @@ fn pricing_shock_standard_path_routes_evaluates_and_keeps_speculation_local() {
     let branch_eval = runtime
         .evaluate(
             BridgeTruthViewEvaluationRequest::for_branch_head(
-                crate::truth_identity_fixtures::truth_branch_fixture("main"),
+                TruthBranchIdentity::from_relational_branch_id("main"),
             ),
             execution,
         )
@@ -59,15 +32,15 @@ fn pricing_shock_standard_path_routes_evaluates_and_keeps_speculation_local() {
     );
     assert_eq!(
         steel_route.result().receipt().snapshot_identity().as_str(),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main").as_str()
+        truth.steel_snapshot().as_str()
     );
     assert_eq!(
         steel_eval.snapshot().snapshot_identity().as_str(),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main").as_str()
+        truth.steel_snapshot().as_str()
     );
     assert_eq!(
         branch_eval.snapshot_identity().as_str(),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main").as_str()
+        truth.main_snapshot().as_str()
     );
     let diagnostics = runtime.diagnostics();
     let delivered_targets = diagnostics
@@ -90,7 +63,7 @@ fn pricing_shock_standard_path_routes_evaluates_and_keeps_speculation_local() {
     let discarded = runtime
         .speculate(BridgeSpeculativeSessionRequest::new(
             BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-discard"),
-            pricing_preview_declaration(),
+            truth.preview_declaration(),
             4,
             2,
             2,
@@ -102,7 +75,7 @@ fn pricing_shock_standard_path_routes_evaluates_and_keeps_speculation_local() {
     let promoted = runtime
         .speculate(BridgeSpeculativeSessionRequest::new(
             BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-promote"),
-            pricing_preview_declaration(),
+            truth.preview_declaration(),
             4,
             2,
             2,
@@ -146,13 +119,18 @@ fn pricing_shock_split_screen_keeps_main_and_speculative_truth_isolated() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let scenario = generated_pricing_scenario();
-    let source = pricing_reference_source();
+    let truth = RelationalPricing::new(
+        execution,
+        scenario.main_steel_cost,
+        scenario.main_rubber_cost,
+        scenario.speculative_rubber_cost,
+    );
     let sink = RecordingSignalBridgeSink::default();
-    let runtime = build_pricing_runtime(source, sink);
+    let runtime = truth.runtime(sink);
     let comparison = runtime
         .speculate(BridgeSpeculativeSessionRequest::new(
             BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-compare"),
-            pricing_preview_declaration(),
+            truth.preview_declaration(),
             4,
             2,
             2,
@@ -160,13 +138,11 @@ fn pricing_shock_split_screen_keeps_main_and_speculative_truth_isolated() {
         .expect("pricing shock comparison preview should activate")
         .compare_to_main();
 
-    let rubber_read = pricing_component_read_packet("rubber");
+    let rubber_read = truth.rubber_read_packet();
     let main_eval = runtime
         .evaluate(
             comparison
-                .main_evaluation_request(crate::truth_identity_fixtures::truth_branch_fixture(
-                    "main",
-                ))
+                .main_evaluation_request(TruthBranchIdentity::from_relational_branch_id("main"))
                 .with_read_packet(rubber_read.clone()),
             execution,
         )
@@ -180,18 +156,15 @@ fn pricing_shock_split_screen_keeps_main_and_speculative_truth_isolated() {
         )
         .expect("speculative branch should evaluate against its isolated snapshot");
     let live_main_route = runtime
-        .route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
-            execution,
-        )
+        .route(truth.steel_commit.clone(), execution)
         .expect("main branch routing should remain live while speculation is open");
 
-    let main_rubber_cost = read_single_aspect_value_text(&main_eval);
-    let speculative_rubber_cost = read_single_aspect_value_text(&speculative_eval);
+    let main_rubber_cost = read_cost(&main_eval, execution);
+    let speculative_rubber_cost = read_cost(&speculative_eval, execution);
 
     assert_eq!(
-        comparison.truth_branch_identity().as_str(),
-        crate::truth_identity_fixtures::truth_branch_fixture("pricing-shock").as_str()
+        comparison.truth_branch_identity().relational_branch_id(),
+        Some("pricing-shock")
     );
     assert_eq!(
         comparison.signal_branch_identity().as_str(),
@@ -199,11 +172,11 @@ fn pricing_shock_split_screen_keeps_main_and_speculative_truth_isolated() {
     );
     assert_eq!(
         main_eval.snapshot_identity().as_str(),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main").as_str()
+        truth.main_snapshot().as_str()
     );
     assert_eq!(
         speculative_eval.snapshot_identity().as_str(),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-shock").as_str()
+        truth.shock_snapshot().as_str()
     );
     assert_eq!(main_rubber_cost, scenario.main_rubber_cost.to_string());
     assert_eq!(
@@ -216,7 +189,7 @@ fn pricing_shock_split_screen_keeps_main_and_speculative_truth_isolated() {
             .receipt()
             .snapshot_identity()
             .as_str(),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-main").as_str()
+        truth.steel_snapshot().as_str()
     );
     assert_eq!(
         live_main_route.result().receipt().delivered_target_count(),

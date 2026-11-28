@@ -1,9 +1,6 @@
-use super::super::super::support::{
-    build_runtime_with_aspects, committed_patch, field_aspect_registration,
-    field_aspect_registration_with_kind, field_slice_snapshot, registration,
-};
-use crate::facade::{BridgeRouteRequest, SubscriptionSliceKind, TruthDeltaSurfaceKind};
-use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBridgeSink};
+use super::super::super::support::build_runtime_with_aspects;
+use crate::facade::{BridgeRouteRequest, SubscriptionSliceKind};
+use crate::harness::fixtures::{ProfileTruth, RecordingSignalBridgeSink};
 
 #[test]
 fn bridge_replay_rejects_subscription_slice_drift() {
@@ -11,30 +8,18 @@ fn bridge_replay_rejects_subscription_slice_drift() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let original_source = InMemoryRelationalBridgeSource::default();
-    original_source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    original_source.insert_snapshot(field_slice_snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
+    let truth = ProfileTruth::new(execution);
+    let original_source = truth.native.source.clone();
     let original_runtime = build_runtime_with_aspects(
         original_source,
         RecordingSignalBridgeSink::default(),
-        vec![registration()],
-        vec![field_aspect_registration()],
+        vec![ProfileTruth::mapping()],
+        vec![ProfileTruth::aspect_mapping()],
     );
 
     let route = original_runtime
         .plan_committed_patch(
-            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-a",
-            )),
+            BridgeRouteRequest::for_commit(truth.commit.clone()),
             execution,
         )
         .expect("original route should plan before replay certification");
@@ -46,25 +31,13 @@ fn bridge_replay_rejects_subscription_slice_drift() {
         .last_canonical_route_record()
         .expect("original runtime should expose a canonical route record");
 
-    let restarted_source = InMemoryRelationalBridgeSource::default();
-    restarted_source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    restarted_source.insert_snapshot(field_slice_snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
+    let restarted_source = truth.native.source.clone();
     let restarted_runtime = build_runtime_with_aspects(
         restarted_source,
         RecordingSignalBridgeSink::default(),
-        vec![registration()],
-        vec![field_aspect_registration_with_kind(
-            "profile-name-region",
-            TruthDeltaSurfaceKind::EntityField,
+        vec![ProfileTruth::mapping()],
+        vec![ProfileTruth::aspect_mapping_with_kind(
+            "profile-title-region",
             SubscriptionSliceKind::SignalRegion,
         )],
     );

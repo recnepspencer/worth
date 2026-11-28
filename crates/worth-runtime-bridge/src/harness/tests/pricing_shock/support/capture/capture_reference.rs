@@ -1,15 +1,13 @@
 use super::*;
 
-pub(in crate::harness::tests::pricing_shock) fn capture_pricing_reference_bundle(
+fn capture_pricing_reference_bundle(
     runtime: &RuntimeBridge,
+    truth: &RelationalPricing,
     preview_session_identity: BridgePreviewSessionIdentity,
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingReferenceBundle {
     let route = runtime
-        .route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
-            execution,
-        )
+        .route(truth.steel_commit.clone(), execution)
         .expect("pricing reference route should succeed");
     let route_record = runtime
         .diagnostics()
@@ -18,16 +16,16 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_reference_bundle
     let main_eval = runtime
         .evaluate(
             BridgeTruthViewEvaluationRequest::for_branch_head(
-                crate::truth_identity_fixtures::truth_branch_fixture("main"),
+                TruthBranchIdentity::from_relational_branch_id("main"),
             )
-            .with_read_packet(pricing_component_read_packet("rubber")),
+            .with_read_packet(truth.rubber_read_packet()),
             execution,
         )
         .expect("pricing main evaluation should succeed");
     let comparison = runtime
         .speculate(BridgeSpeculativeSessionRequest::new(
             preview_session_identity,
-            pricing_preview_declaration(),
+            truth.preview_declaration(),
             4,
             2,
             2,
@@ -38,7 +36,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_reference_bundle
         .evaluate(
             comparison
                 .speculative_evaluation_request()
-                .with_read_packet(pricing_component_read_packet("rubber")),
+                .with_read_packet(truth.rubber_read_packet()),
             execution,
         )
         .expect("pricing speculative evaluation should succeed");
@@ -56,41 +54,27 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_reference_bundle
             .selector_identity()
             .clone(),
         main_snapshot: main_eval.snapshot_identity().clone(),
-        main_rubber_cost_cents: read_single_money_cents(&main_eval),
+        main_rubber_cost_cents: read_cost(&main_eval, execution)
+            .parse()
+            .expect("native pricing cost"),
         speculative_truth_branch: comparison.truth_branch_identity().clone(),
         speculative_signal_branch: comparison.signal_branch_identity().clone(),
+        speculative_commit: truth.shock_commit.clone(),
         speculative_snapshot: speculative_eval.snapshot_identity().clone(),
-        speculative_rubber_cost_cents: read_single_money_cents(&speculative_eval),
+        speculative_rubber_cost_cents: read_cost(&speculative_eval, execution)
+            .parse()
+            .expect("native pricing cost"),
     }
 }
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_aspect_bundle(
     policy: BridgeRuntimePolicy,
+    truth: &RelationalPricing,
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingAspectBundle {
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(pricing_patch(
-        pricing_patch_envelope_identity(
-            crate::truth_identity_fixtures::truth_branch_fixture("main"),
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-aspect"),
-            crate::truth_identity_fixtures::truth_patch_fixture("patch:steel-aspect"),
-            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-aspect"),
-        ),
-        "steel",
-    ));
-    source.insert_snapshot(pricing_aspect_snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot:pricing-aspect"),
-        "145",
-        "40",
-    ));
-
-    let runtime =
-        build_pricing_runtime_with_aspects(source, RecordingSignalBridgeSink::default(), policy);
+    let runtime = truth.aspect_runtime(policy);
     let route = runtime
-        .route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-aspect"),
-            execution,
-        )
+        .route(truth.steel_commit.clone(), execution)
         .expect("aspect-aware pricing route should succeed");
 
     let route_record = runtime
@@ -126,14 +110,16 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_aspect_bundle(
 }
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_missing_snapshot_failure_bundle(
-    runtime: &RuntimeBridge,
+    truth: &RelationalPricing,
+    policy: BridgeRuntimePolicy,
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingFailureBundle {
+    let runtime = truth.fault_runtime(
+        PricingFault::UnavailableSnapshot(truth.steel_snapshot().clone()),
+        policy,
+    );
     let error = runtime
-        .route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-missing-snapshot"),
-            execution,
-        )
+        .route(truth.steel_commit.clone(), execution)
         .expect_err("pricing route should fail when the source snapshot is absent");
     let error_kind = match error {
         BridgeStandardRouteError::Delivery(error) => error.kind(),
@@ -155,15 +141,13 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_missing_snapshot
     }
 }
 
-pub(in crate::harness::tests::pricing_shock) fn capture_pricing_replay_bundle(
+fn capture_pricing_replay_bundle(
     runtime: &RuntimeBridge,
+    commit: TruthCommitIdentity,
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingReplayBundle {
     runtime
-        .route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
-            execution,
-        )
+        .route(commit, execution)
         .expect("pricing replay control route should succeed");
     let canonical_record = runtime
         .diagnostics()
@@ -183,21 +167,153 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_replay_bundle(
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_certification_matrix(
     policy: BridgeRuntimePolicy,
+    truth: &RelationalPricing,
     preview_session_identity: BridgePreviewSessionIdentity,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingCertificationMatrix {
-    let runtime = build_pricing_runtime_with_policy(
-        pricing_reference_source(),
-        RecordingSignalBridgeSink::default(),
-        policy,
-    );
+    let runtime = truth.runtime_with_policy(RecordingSignalBridgeSink::default(), policy);
 
     PricingCertificationMatrix {
         reference: capture_pricing_reference_bundle(
             &runtime,
+            truth,
             preview_session_identity,
             resource_request,
         ),
-        replay: capture_pricing_replay_bundle(&runtime, resource_request),
+        replay: capture_pricing_replay_bundle(
+            &runtime,
+            truth.steel_commit.clone(),
+            resource_request,
+        ),
     }
+}
+
+use super::super::relational_provenance::{
+    corrupt_provenance, provenance_aspects, provenance_values,
+};
+use super::super::route_and_runtime::pricing_aspect;
+use super::capture_lifecycle::update_component;
+use crate::harness::fixtures::RelationalFixture;
+use crate::relational_source::relational_test_support::{
+    aspect_key, changed_entities, field_key, fork_branch, single_string_aspect_field_patch,
+    test_owner_begin_transaction_for_branch, AspectSchemaFixture, ENTITY_KIND,
+};
+use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
+use worth_relational::facade::{
+    history::BranchId,
+    identity::{EntityId, PartitionId},
+    symbols::ClientKey,
+    transactions::{CreateIntent, EntitySpec, MutationIntent, WorkerIntentBatch},
+};
+
+impl RelationalPricing {
+    pub fn new(execution: ExecutionRequest<'_, '_>, steel: i64, rubber: i64, shock: i64) -> Self {
+        Self::publish(execution, [(steel, None), (rubber, None), (shock, None)])
+    }
+
+    pub fn reference(
+        execution: ExecutionRequest<'_, '_>,
+        scenario: &GeneratedPricingScenario,
+        corrupt_shock: Option<(&str, String)>,
+    ) -> Self {
+        let mut shock = provenance_values(&scenario.commit_attributions["commit:rubber-shock"]);
+        if let Some((field, value)) = corrupt_shock {
+            corrupt_provenance(&mut shock, field, value);
+        }
+        Self::publish(
+            execution,
+            [
+                (scenario.main_steel_cost, None),
+                (
+                    scenario.main_rubber_cost,
+                    Some(provenance_values(
+                        &scenario.commit_attributions["commit:rubber-main"],
+                    )),
+                ),
+                (scenario.speculative_rubber_cost, Some(shock)),
+            ],
+        )
+    }
+
+    fn publish(
+        execution: ExecutionRequest<'_, '_>,
+        [steel, rubber, shock]: [(i64, Option<[String; 7]>); 3],
+    ) -> Self {
+        let main = BranchId("main".to_owned());
+        let branch = BranchId("pricing-shock".to_owned());
+        let native = RelationalFixture::attach(
+            AspectSchemaFixture {
+                entity_aspects: std::iter::once(pricing_aspect())
+                    .chain(provenance_aspects())
+                    .collect(),
+                ..AspectSchemaFixture::default()
+            }
+            .build_runtime(),
+            "pricing",
+        );
+        let runtime = &native.runtime;
+        let source = &native.source;
+        let steel_id = create_component(execution, &native, &main, "steel");
+        let rubber_id = create_component(execution, &native, &main, "rubber");
+
+        let steel_commit = update_component(execution, &native, &main, steel_id, steel);
+        let main_identity = runtime.branch_identity(&main).unwrap();
+        let (_, basis) = source.observe_branch_basis(&main_identity).unwrap();
+        let steel_observation = source.retain_branch_basis_for_bridge(&basis).unwrap();
+
+        let rubber_commit = update_component(execution, &native, &main, rubber_id, rubber);
+        let (_, main_basis) = source.observe_branch_basis(&main_identity).unwrap();
+        let main_head = source
+            .bind_branch_head_basis_for_bridge(&main_basis)
+            .unwrap();
+        fork_branch(&execution, runtime, branch.clone(), &main);
+
+        let shock_commit = update_component(execution, &native, &branch, rubber_id, shock);
+        let shock_identity = runtime.branch_identity(&branch).unwrap();
+        let (_, shock_basis) = source.observe_branch_basis(&shock_identity).unwrap();
+        let shock_head = source
+            .bind_branch_head_basis_for_bridge(&shock_basis)
+            .unwrap();
+
+        Self {
+            native,
+            steel: steel_id,
+            rubber: rubber_id,
+            steel_commit: TruthCommitIdentity::from_relational_commit_id(
+                steel_commit.commit.commit_id.0,
+            ),
+            rubber_commit: TruthCommitIdentity::from_relational_commit_id(
+                rubber_commit.commit.commit_id.0,
+            ),
+            shock_commit: TruthCommitIdentity::from_relational_commit_id(
+                shock_commit.commit.commit_id.0,
+            ),
+            steel_observation,
+            main_head,
+            shock_head,
+        }
+    }
+}
+
+fn create_component(
+    execution: ExecutionRequest<'_, '_>,
+    native: &RelationalFixture,
+    branch: &BranchId,
+    name: &str,
+) -> EntityId {
+    let runtime = &native.runtime;
+    let mut tx = test_owner_begin_transaction_for_branch(runtime, branch.clone());
+    tx.push_batch(
+        WorkerIntentBatch::new(name).push(MutationIntent::Create(CreateIntent::Entity(
+            EntitySpec {
+                partition_id: PartitionId::main(),
+                kind_id: ENTITY_KIND,
+                client_key: ClientKey::raw(name),
+                fields: single_string_aspect_field_patch(aspect_key("cost"), field_key("usd"), "0"),
+            },
+        ))),
+        ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
+    changed_entities(&tx.commit(&execution, runtime).unwrap())[0]
 }

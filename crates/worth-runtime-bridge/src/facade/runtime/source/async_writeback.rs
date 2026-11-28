@@ -23,10 +23,7 @@ impl RuntimeBridge {
         submission: BridgeAsyncWritebackSubmission<'_>,
     ) -> Result<BridgeAsyncWritebackOutcome, BridgeAsyncWritebackRejection> {
         let request = match submission {
-            BridgeAsyncWritebackSubmission::Admitted(request) => {
-                self.require_writeback_completion_owner(request.completion().request_identity())?;
-                request
-            }
+            BridgeAsyncWritebackSubmission::Admitted(request) => request,
             BridgeAsyncWritebackSubmission::Superseded(classification) => {
                 self.require_writeback_completion_owner(
                     classification.denied_completion().request_identity(),
@@ -62,6 +59,7 @@ impl RuntimeBridge {
         &self,
         request: BridgeAsyncWritebackAdmissionRequest,
     ) -> Result<AdmittedBridgeAsyncWriteback, BridgeAsyncWritebackRejection> {
+        self.require_writeback_completion_owner(request.completion().request_identity())?;
         AdmittedBridgeAsyncWriteback::admit(
             request,
             self.policy.diagnostics_tier(),
@@ -76,6 +74,7 @@ impl RuntimeBridge {
         &self,
         writeback: &AdmittedBridgeAsyncWriteback,
     ) -> Result<StagedBridgeAsyncWritebackEffect, BridgeAsyncWritebackRejection> {
+        self.require_writeback_completion_owner(writeback.request_identity())?;
         StagedBridgeAsyncWritebackEffect::stage(self, writeback)
     }
 
@@ -85,6 +84,6 @@ impl RuntimeBridge {
         &self,
         staged: &StagedBridgeAsyncWritebackEffect,
     ) -> BridgeAsyncWritebackCommitReport {
-        BridgeAsyncWritebackCommitReport::commit(self.signal_runtime_key, self, staged)
+        BridgeAsyncWritebackCommitReport::commit(self, staged)
     }
 }

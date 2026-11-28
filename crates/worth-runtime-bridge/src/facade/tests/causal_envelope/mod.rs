@@ -20,7 +20,7 @@ mod retained_mapping;
 mod retained_mapping_bulk;
 mod retained_mapping_digest_support;
 mod retained_mapping_edges;
-mod retained_mapping_stream_history;
+mod retained_mapping_history;
 mod retained_mapping_support;
 mod retained_record_denials;
 

@@ -1,11 +1,6 @@
 use crate::facade::tests::runtime;
-use crate::facade::tests::speculation::{
-    preview_declaration, structural_basis, StructuralBasisInput, StructuralSemanticsVersion,
-};
-use crate::facade::{
-    BridgePreviewLifecycleStateKind, BridgeRuntimePolicy, StructuralIdentityDeclarationIdentity,
-    StructuralSchemaIdentity,
-};
+use crate::facade::tests::speculation::{preview_declaration, structural_basis};
+use crate::facade::{BridgePreviewLifecycleStateKind, BridgeRuntimePolicy};
 use crate::speculation::BridgePreviewSessionIdentity;
 
 #[test]
@@ -68,21 +63,7 @@ fn runtime_rejects_post_discard_reentry_and_preserves_canonical_discard_bundle()
     let hostile_reentry_error = runtime
         .admit_preview_session(
             BridgePreviewSessionIdentity::admit_bridge_owned("preview-session:discard-terminal"),
-            preview_declaration().with_structural_basis(structural_basis(StructuralBasisInput {
-                schema_identity: StructuralSchemaIdentity::admit_bridge_owned(
-                    "schema:hostile-reentry",
-                ),
-                declaration_identity: StructuralIdentityDeclarationIdentity::admit_bridge_owned(
-                    "structural:hostile-reentry",
-                ),
-                truth_branch_identity: crate::truth_identity_fixtures::truth_branch_fixture(
-                    "truth:hostile-reentry",
-                ),
-                snapshot_identity: crate::truth_identity_fixtures::truth_snapshot_fixture(
-                    "snapshot:hostile-reentry",
-                ),
-                semantics_version: StructuralSemanticsVersion::HostileReentry,
-            })),
+            preview_declaration().with_structural_basis(structural_basis(2)),
         )
         .expect_err("discarded preview session identity must reject hostile re-entry");
     assert_eq!(

@@ -242,15 +242,7 @@ fn bridge_family_for(family: CausalEvidenceFamily) -> Option<BridgeCausalEvidenc
             BridgeCausalEvidenceFamily::BridgeSourceFailure
         }
         CausalEvidenceFamily::BridgeContinuity => BridgeCausalEvidenceFamily::BridgeContinuity,
-        CausalEvidenceFamily::BridgeStructural => BridgeCausalEvidenceFamily::BridgeStructuralRemap,
-        CausalEvidenceFamily::BridgeStream | CausalEvidenceFamily::BridgeReplay => {
-            BridgeCausalEvidenceFamily::BridgeStreamReplay
-        }
         CausalEvidenceFamily::BridgePreview => BridgeCausalEvidenceFamily::BridgePreviewExecution,
-        CausalEvidenceFamily::BridgeWriteback => {
-            BridgeCausalEvidenceFamily::BridgeWritebackExecution
-        }
-        CausalEvidenceFamily::BridgeMapper => BridgeCausalEvidenceFamily::BridgeWritebackMapper,
         CausalEvidenceFamily::SignalInvalidation => BridgeCausalEvidenceFamily::SignalInvalidation,
         CausalEvidenceFamily::SignalEvaluation => BridgeCausalEvidenceFamily::SignalEvaluation,
         CausalEvidenceFamily::SignalForensicAvailability => {

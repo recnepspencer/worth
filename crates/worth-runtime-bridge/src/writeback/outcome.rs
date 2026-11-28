@@ -4,7 +4,7 @@ use sha2::{Digest, Sha256};
 
 use crate::adapter::TruthWritebackReceipt;
 
-use super::{BridgeWritebackIdempotenceBasis, BridgeWritebackOutcomeClass};
+use super::BridgeWritebackIdempotenceBasis;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgeWritebackAuthorityOutcome {
@@ -93,4 +93,26 @@ fn derive_authority_outcome_artifact_digest(
     Arc::from(format!(
         "bridge-writeback-authority-artifact:sha256:{digest:x}"
     ))
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum BridgeWritebackOutcomeClass {
+    CanonicalNoop,
+    AuthoritativeCommit,
+    Rejected,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum BridgeWritebackFailureClass {
+    WritebackNotRequested,
+    PolicyRejected,
+    FamilyBindingMismatch,
+    StrategyDescriptorMismatch,
+    IdempotenceBasisMismatch,
+    StaleTruthBasis,
+    InvariantRejected,
+    StrategyFailed,
+    StrategyPanicked,
+    AuthorityDenied,
+    PreviewWritebackRejected,
 }

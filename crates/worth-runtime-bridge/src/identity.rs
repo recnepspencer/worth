@@ -70,10 +70,6 @@ impl<Tag> BridgeIdentity<Tag> {
         }
     }
 
-    pub(crate) fn from_retained_evidence_reference(evidence: &BridgeIdentityEvidence) -> Self {
-        Self::from_reference_evidence(evidence.revalidate_bridge_retained_reference())
-    }
-
     pub fn bridge_admission_evidence(&self) -> BridgeIdentityEvidence {
         BridgeIdentityEvidence::from_external_authority(
             crate::identity_authority::bridge_truth_external_identity_token(Arc::clone(
@@ -167,16 +163,11 @@ bridge_identity_tags! {
     ReducedPublicationIdentityTag, ReducedRoutingTargetIdentityTag, ReducedTruthViewIdentityTag,
     ReducedContinuityIdentityTag, ReducedWideningIdentityTag, RoutingPacketIdentityTag,
     TruthViewPacketIdentityTag, ContinuityPacketIdentityTag, WideningPacketIdentityTag,
-    ReductionPacketIdentityTag, ChangeStreamDeclarationIdentityTag, StreamProtocolIdentityTag,
-    ConsumerContractIdentityTag, StreamMemberIdentityTag, StreamPositionIdentityTag, StreamWindowIdentityTag,
-    CheckpointTokenIdentityTag, StreamReplayRecordIdentityTag, BackpressureDecisionIdentityTag,
+    ReductionPacketIdentityTag,
+
+
     SourceDeclarationIdentityTag, SourceContractIdentityTag, SourceMaterializationRecordIdentityTag,
-    SourceFailureRecordIdentityTag, StructuralSchemaIdentityTag, StructuralEquivalenceContractIdentityTag,
-    StructuralDeclarationIdentityTag, StructuralContractIdentityTag, StructuralTruthViewBasisIdentityTag,
-
-
-    StructuralCandidateIdentityTag, StructuralFingerprintIdentityTag, StructuralRemapRecordIdentityTag,
-    StructuralBranchComparisonRecordIdentityTag, SpeculativeSignalBranchIdentityTag,
+    SourceFailureRecordIdentityTag, SpeculativeSignalBranchIdentityTag,
     PreviewBranchBindingIdentityTag, PreviewSessionDeclarationIdentityTag, PreviewSessionIdentityTag,
     PreviewExecutionRecordIdentityTag, PreviewDiscardRecordIdentityTag, PreviewPromotionRecordIdentityTag,
     PromotionAdmissibilityProofIdentityTag, PreviewReuseEquivalenceIdentityTag, TemporalBasisIdentityTag,
@@ -192,13 +183,13 @@ bridge_identity_tags! {
     AsyncWritebackNoopIdentityTag, AsyncWritebackRejectedIdentityTag,
     AsyncWritebackCausalityTransferReceiptIdentityTag, PolicyDeclarationIdentityTag,
     PolicyContractIdentityTag, LoweredExecutionPolicyIdentityTag, PolicyProvenanceIdentityTag,
-    WritebackDeclarationIdentityTag, WritebackFamilyIdentityTag, WritebackStrategyIdentityTag,
-    WritebackStrategyCoherenceIdentityTag, WritebackContractIdentityTag,
-    WritebackAdmissionRecordIdentityTag, WritebackCausalityIdentityTag,
-    WritebackMapperEnvelopeIdentityTag, WritebackMappedFamilyInputIdentityTag,
+    WritebackDeclarationIdentityTag,
+    WritebackContractIdentityTag,
+    WritebackCausalityIdentityTag,
+
     WritebackEffectIdentityTag, WritebackIdempotenceIdentityTag, WritebackLoopPreventionIdentityTag,
-    WritebackCandidateIdentityTag, WritebackMapperWitnessIdentityTag, WritebackMapperRecordIdentityTag,
-    WritebackExecutionRecordIdentityTag, WritebackReplayRecordIdentityTag,
+
+
 }
 
 impl BridgeIdentityAuthorityKind for PreviewSessionIdentityTag {

@@ -1,6 +1,5 @@
-use super::super::super::support::{committed_patch, registration, snapshot};
 use crate::harness::adapter::{BridgeHarnessAdapter, BridgeHarnessTargetId};
-use crate::harness::fixtures::BridgeHarnessFixture;
+use crate::harness::fixtures::{BridgeHarnessFixture, NamedTruth, ScenarioRelationalTruth};
 use worth_harness::facade::{ExecutionProfile, ExecutionRequest, ReplayRequest, ScenarioPlan};
 use worth_harness::runtime::{HarnessAdapter, ReplayHarnessAdapter};
 
@@ -11,29 +10,18 @@ fn bridge_replay_capture_exposes_last_route_record() {
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let adapter = BridgeHarnessAdapter;
+    let (truth, commit) = ScenarioRelationalTruth::named("alice", false);
+    let snapshot = truth.snapshot().clone();
     let fixture = ScenarioPlan::new(
         "bridge-replay",
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_committed_patch(committed_patch(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
+        BridgeHarnessFixture::new(vec![NamedTruth::mapping()]).with_relational_truth(truth),
     )
     .declare_input("commit-a")
     .declare_observation("route")
     .compile();
     let request = ExecutionRequest::target(
         "deliver-commit-a",
-        BridgeHarnessTargetId::committed_route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ),
+        BridgeHarnessTargetId::committed_route(commit.clone()),
     );
     let profile = ExecutionProfile::development("development");
 
@@ -75,11 +63,11 @@ fn bridge_replay_capture_exposes_last_route_record() {
 
     assert_eq!(
         typed_replay.source_commit().as_str(),
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a").as_str()
+        commit.clone().as_str()
     );
     assert_eq!(
         typed_replay.source_snapshot().as_str(),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a").as_str()
+        snapshot.clone().as_str()
     );
     assert_eq!(replay.requested_targets, request.targets);
 }

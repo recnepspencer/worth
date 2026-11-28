@@ -1,6 +1,5 @@
 use super::*;
 
-mod closeout;
 pub use crate::home_retirement::{
     BridgeHomeRetirementDenial, BridgeHomeRetirementProgress, RetiredRuntimeBridge,
     RetiringRuntimeBridge, RetiringWorldCorrespondence,
@@ -21,8 +20,6 @@ pub use source::{
     BridgeSignalWake,
 };
 mod speculation;
-mod stream;
-mod structural;
 mod subscription;
 mod writeback;
 
@@ -41,7 +38,6 @@ pub struct RuntimeBridge {
     pub(crate) writeback_authority: Option<Arc<dyn TruthWritebackAuthority>>,
     pub(crate) source_registry: AdmittedSourceRegistry,
     pub(crate) source_adapter: Option<Arc<dyn BridgeSourceAdapter>>,
-    pub(crate) structural_registry: AdmittedStructuralRegistry,
     pub(crate) mapping_registry: FrozenMappingRegistry,
     pub(crate) aspect_registry: FrozenAspectMappingRegistry,
     pub(crate) subscription_family_registry: FrozenSubscriptionFamilyRegistry,
@@ -80,10 +76,6 @@ impl std::fmt::Debug for RuntimeBridge {
             .field(
                 "source_contract_count",
                 &self.source_registry.contracts().len(),
-            )
-            .field(
-                "structural_contract_count",
-                &self.structural_registry.contracts().len(),
             )
             .field(
                 "subscription_family_count",

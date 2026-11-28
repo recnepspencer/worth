@@ -1,7 +1,6 @@
 use super::{
-    build_runtime, committed_patch, snapshot, surface_widening_registration,
-    BridgeBulkWorkloadRequest, BridgeBulkWorkloadSegment, BridgeMappingWideningClass,
-    BridgeRouteRequest, InMemoryRelationalBridgeSource, RecordingSignalBridgeSink,
+    build_runtime, BridgeBulkWorkloadRequest, BridgeBulkWorkloadSegment,
+    BridgeMappingWideningClass, BridgeRouteRequest, RecordingSignalBridgeSink,
 };
 
 #[test]
@@ -10,30 +9,17 @@ fn bridge_bulk_packet_set_emits_widening_packets_for_widening_admitted_slices() 
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
+    let truth = ProfileTruth::new(execution);
     let runtime = build_runtime(
-        source,
+        truth.native.source.clone(),
         RecordingSignalBridgeSink::default(),
-        vec![surface_widening_registration()],
+        vec![ProfileTruth::widening_mapping()],
     );
 
     let planned = runtime
         .plan_bulk_workload(
             BridgeBulkWorkloadRequest::new(vec![BridgeBulkWorkloadSegment::new(
-                BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                ),
+                BridgeRouteRequest::for_commit(truth.commit.clone()),
             )]),
             execution,
         )
@@ -47,7 +33,7 @@ fn bridge_bulk_packet_set_emits_widening_packets_for_widening_admitted_slices() 
     );
     assert_eq!(
         planned.packet_set().widening_packets()[0].widening_class(),
-        BridgeMappingWideningClass::Surface
+        BridgeMappingWideningClass::EntitySurface
     );
     assert!(planned.packet_set().widening_packets()[0]
         .bounded_scope_identity()
@@ -91,3 +77,5 @@ fn bridge_bulk_packet_set_emits_widening_packets_for_widening_admitted_slices() 
         3
     );
 }
+
+use crate::harness::fixtures::ProfileTruth;

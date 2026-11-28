@@ -44,11 +44,6 @@ fn runtime_maps_typed_authority_rejection_into_bridge_error_kind() {
         .expect_err("typed authority rejection should surface as bridge error");
 
     assert_eq!(error.kind(), BridgeWritebackErrorKind::StaleTruthBasis);
-    assert_last_execution_failure(
-        &runtime,
-        BridgeWritebackFailureClass::StaleTruthBasis,
-        ExpectedAuthorityStage::RejectedReceipt,
-    );
 }
 
 #[test]
@@ -93,11 +88,6 @@ fn runtime_maps_authority_transport_failure_into_strategy_failed() {
         .expect_err("authority transport failure should surface as bridge error");
 
     assert_eq!(error.kind(), BridgeWritebackErrorKind::StrategyFailed);
-    assert_last_execution_failure(
-        &runtime,
-        BridgeWritebackFailureClass::StrategyFailed,
-        ExpectedAuthorityStage::RequestDispatch,
-    );
 }
 
 #[test]
@@ -142,9 +132,4 @@ fn runtime_maps_authority_panic_into_strategy_panicked() {
         .expect_err("authority panic should surface as typed bridge error");
 
     assert_eq!(error.kind(), BridgeWritebackErrorKind::StrategyPanicked);
-    assert_last_execution_failure(
-        &runtime,
-        BridgeWritebackFailureClass::StrategyPanicked,
-        ExpectedAuthorityStage::RequestDispatch,
-    );
 }

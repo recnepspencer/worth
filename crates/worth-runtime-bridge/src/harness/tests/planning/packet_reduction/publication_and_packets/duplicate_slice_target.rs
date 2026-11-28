@@ -1,7 +1,7 @@
 use super::{
-    build_runtime, committed_patch, registration, snapshot, BridgeBulkWorkloadRequest,
-    BridgeBulkWorkloadSegment, BridgeInvalidationReductionFamily, BridgeParallelAdmissionReason,
-    BridgeRouteRequest, InMemoryRelationalBridgeSource, RecordingSignalBridgeSink,
+    build_runtime, BridgeBulkWorkloadRequest, BridgeBulkWorkloadSegment,
+    BridgeInvalidationReductionFamily, BridgeParallelAdmissionReason, BridgeRouteRequest,
+    RecordingSignalBridgeSink,
 };
 
 #[test]
@@ -10,32 +10,21 @@ fn bridge_bulk_packet_reduction_collapses_duplicate_slice_targets() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let source = InMemoryRelationalBridgeSource::default();
-    source.insert_committed_patch(committed_patch(
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        worth_foundational::facade::FieldKey::new("name".to_owned())
-            .expect("valid harness field key"),
-    ));
-    source.insert_snapshot(snapshot(
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        "alice",
-    ));
+    let truth = ProfileTruth::new(execution);
     let runtime = build_runtime(
-        source,
+        truth.native.source.clone(),
         RecordingSignalBridgeSink::default(),
-        vec![registration()],
+        vec![ProfileTruth::mapping()],
     );
 
     let planned = runtime
         .plan_bulk_workload(
             BridgeBulkWorkloadRequest::new(vec![
                 BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                    truth.commit.clone(),
                 )),
                 BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                    truth.commit.clone(),
                 )),
             ]),
             execution,
@@ -53,7 +42,7 @@ fn bridge_bulk_packet_reduction_collapses_duplicate_slice_targets() {
         planned.packet_set().reduction_packets()[0].reduced_subscription_slice_identity(),
         planned.packet_set().routing_packets()[0].subscription_slice_identity()
     );
-    assert_eq!(planned.packet_set().counters().bulk_packet_count(), 4);
+    assert_eq!(planned.packet_set().counters().bulk_packet_count(), 6);
     assert_eq!(
         planned.execution_plan().parallel_admission().reason(),
         BridgeParallelAdmissionReason::SharedTruthViewMaterializationTarget
@@ -66,3 +55,5 @@ fn bridge_bulk_packet_reduction_collapses_duplicate_slice_targets() {
         1
     );
 }
+
+use crate::harness::fixtures::ProfileTruth;

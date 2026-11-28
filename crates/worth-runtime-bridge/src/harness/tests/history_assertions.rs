@@ -1,6 +1,7 @@
 use crate::facade::{
     BridgeCanonicalHistoricalEvaluationRecord, BridgeHistoricalEvaluationReplaySummary,
-    BridgeHistoricalMaterializationPath,
+    BridgeHistoricalMaterializationPath, TruthBranchIdentity, TruthCommitIdentity,
+    TruthSnapshotIdentity,
 };
 use crate::harness::adapter::BridgeHarnessSession;
 
@@ -29,27 +30,18 @@ pub(super) fn replay_historical_record(
         .expect("historical replay should reconstruct the canonical record")
 }
 
-pub(super) fn assert_historical_record(
+pub(super) fn assert_native_historical_record(
     record: &BridgeCanonicalHistoricalEvaluationRecord,
-    snapshot_identity: &str,
-    branch_identity: &str,
-    commit_identity: &str,
+    snapshot_identity: &TruthSnapshotIdentity,
+    branch_identity: &TruthBranchIdentity,
+    commit_identity: &TruthCommitIdentity,
     materialization_path: BridgeHistoricalMaterializationPath,
 ) {
+    assert_eq!(record.decision_log().snapshot_identity(), snapshot_identity);
+    assert_eq!(record.decision_log().branch_identity(), branch_identity);
     assert_eq!(
-        record.decision_log().snapshot_identity().as_str(),
-        crate::truth_identity_fixtures::truth_snapshot_fixture(snapshot_identity).as_str()
-    );
-    assert_eq!(
-        record.decision_log().branch_identity().as_str(),
-        crate::truth_identity_fixtures::truth_branch_fixture(branch_identity).as_str()
-    );
-    assert_eq!(
-        record
-            .decision_log()
-            .commit_identity()
-            .map(|identity| identity.as_str()),
-        Some(crate::truth_identity_fixtures::truth_commit_fixture(commit_identity).as_str())
+        record.decision_log().commit_identity(),
+        Some(commit_identity)
     );
     assert_eq!(
         record.decision_log().materialization_path(),
@@ -61,15 +53,12 @@ pub(super) fn assert_historical_record(
 pub(super) fn assert_historical_replay_summary(
     replay_summary: &BridgeHistoricalEvaluationReplaySummary,
     record: &BridgeCanonicalHistoricalEvaluationRecord,
-    snapshot_identity: &str,
+    snapshot_identity: &TruthSnapshotIdentity,
 ) {
     assert_eq!(replay_summary.record_identity(), record.record_identity());
     assert_eq!(
         replay_summary.decision_log_identity(),
         record.decision_log().decision_log_identity()
     );
-    assert_eq!(
-        replay_summary.snapshot_identity().as_str(),
-        crate::truth_identity_fixtures::truth_snapshot_fixture(snapshot_identity).as_str()
-    );
+    assert_eq!(replay_summary.snapshot_identity(), snapshot_identity);
 }

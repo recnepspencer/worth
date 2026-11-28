@@ -1,12 +1,9 @@
 use super::super::history_assertions::{
     assert_historical_replay_summary, last_historical_record, replay_historical_record,
 };
-use super::super::support::{committed_patch, registration, snapshot};
-use crate::harness::adapter::{BridgeHarnessAdapter, BridgeHarnessMutation, BridgeHarnessTargetId};
-use crate::harness::fixtures::BridgeHarnessFixture;
-use worth_harness::facade::{
-    ExecutionProfile, ExecutionRequest, MutationBatch, ReplayRequest, ScenarioPlan,
-};
+use crate::harness::adapter::{BridgeHarnessAdapter, BridgeHarnessTargetId};
+use crate::harness::fixtures::{BridgeHarnessFixture, NamedTruth, ScenarioRelationalTruth};
+use worth_harness::facade::{ExecutionProfile, ExecutionRequest, ReplayRequest, ScenarioPlan};
 use worth_harness::runtime::{HarnessAdapter, ReplayHarnessAdapter};
 
 #[test]
@@ -16,20 +13,21 @@ fn bridge_harness_replays_historical_record() {
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let adapter = BridgeHarnessAdapter;
+
+    let truth = NamedTruth::new();
+    let (commit, observation) = truth.commit_name(resource_request, "alice");
+    let head = truth.bind_main_head();
+    let snapshot = head.snapshot_identity().clone();
     let fixture = ScenarioPlan::new(
         "bridge-historical-replay",
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_committed_patch(committed_patch(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
+        BridgeHarnessFixture::new(vec![NamedTruth::mapping()]).with_relational_truth(
+            ScenarioRelationalTruth::new(
+                truth.native(),
+                commit.clone(),
+                vec![observation],
+                Some(head),
+            ),
+        ),
     )
     .declare_input("history-commit:main:commit-a")
     .declare_observation("historical")
@@ -37,8 +35,8 @@ fn bridge_harness_replays_historical_record() {
     let request = ExecutionRequest::target(
         "historical-commit-a",
         BridgeHarnessTargetId::historical_commit(
-            crate::truth_identity_fixtures::truth_branch_fixture("main"),
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+            crate::facade::TruthBranchIdentity::from_relational_branch_id("main"),
+            commit,
         ),
     );
     let profile = ExecutionProfile::development("development");
@@ -68,7 +66,7 @@ fn bridge_harness_replays_historical_record() {
 
     let record = last_historical_record(&session);
     let replay_summary = replay_historical_record(&session, &record, resource_request);
-    assert_historical_replay_summary(&replay_summary, &record, "snapshot-a");
+    assert_historical_replay_summary(&replay_summary, &record, &snapshot);
 }
 
 #[test]
@@ -78,20 +76,21 @@ fn bridge_harness_replays_historical_record_after_newer_publication_arrives() {
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let adapter = BridgeHarnessAdapter;
+
+    let truth = NamedTruth::new();
+    let (commit, observation) = truth.commit_name(resource_request, "alice");
+    let head = truth.bind_main_head();
+    let snapshot = head.snapshot_identity().clone();
     let fixture = ScenarioPlan::new(
         "bridge-historical-replay-stability",
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_committed_patch(committed_patch(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ))
-            .with_snapshot(snapshot(
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-                "alice",
-            )),
+        BridgeHarnessFixture::new(vec![NamedTruth::mapping()]).with_relational_truth(
+            ScenarioRelationalTruth::new(
+                truth.native(),
+                commit.clone(),
+                vec![observation],
+                Some(head),
+            ),
+        ),
     )
     .declare_input("history-commit:main:commit-a")
     .declare_observation("historical")
@@ -99,8 +98,8 @@ fn bridge_harness_replays_historical_record_after_newer_publication_arrives() {
     let request = ExecutionRequest::target(
         "historical-commit-a",
         BridgeHarnessTargetId::historical_commit(
-            crate::truth_identity_fixtures::truth_branch_fixture("main"),
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+            crate::facade::TruthBranchIdentity::from_relational_branch_id("main"),
+            commit,
         ),
     );
     let profile = ExecutionProfile::development("development");
@@ -116,23 +115,9 @@ fn bridge_harness_replays_historical_record_after_newer_publication_arrives() {
         .execute(&mut session, &fixture, &request, &profile)
         .expect("historical execution should succeed");
 
-    let mutation = MutationBatch::new("publish-newer-history")
-        .push(BridgeHarnessMutation::PublishCommittedPatch(
-            committed_patch(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-                crate::truth_identity_fixtures::truth_patch_fixture("patch-b"),
-                crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-b"),
-                worth_foundational::facade::FieldKey::new("name".to_owned())
-                    .expect("valid harness field key"),
-            ),
-        ))
-        .push(BridgeHarnessMutation::PublishSnapshot(snapshot(
-            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-b"),
-            "bob",
-        )));
-    adapter
-        .apply_mutation_batch(&mut session, &mutation)
-        .expect("mutation batch should apply");
+    let (_updated_commit, updated_observation) = truth.commit_name(resource_request, "bob");
+    assert_ne!(updated_observation.snapshot_identity(), &snapshot);
+    // Keep the original explicitly admitted Bridge head while Relational publishes newer truth.
 
     let _replay = adapter
         .capture_replay(
@@ -149,5 +134,5 @@ fn bridge_harness_replays_historical_record_after_newer_publication_arrives() {
 
     let record = last_historical_record(&session);
     let replay_summary = replay_historical_record(&session, &record, resource_request);
-    assert_historical_replay_summary(&replay_summary, &record, "snapshot-a");
+    assert_historical_replay_summary(&replay_summary, &record, &snapshot);
 }
