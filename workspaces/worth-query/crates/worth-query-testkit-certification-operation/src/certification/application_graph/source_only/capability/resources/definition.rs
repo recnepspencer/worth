@@ -45,11 +45,11 @@ pub fn definition() -> ApplicationResourceDefinition<CapabilitySchema, Resource>
         );
     }
     ApplicationResourceDefinition::request_response(
-        ApplicationResourceRequestResponseProfile {
-            retry_max_attempts: 3,
-            retry_delay_milliseconds: 2,
-            timeout_milliseconds: 5,
+        ApplicationResourceFixedDelayRetry {
+            maximum_attempts: core::num::NonZeroU32::new(3).unwrap(),
+            delay: core::time::Duration::from_millis(2),
         },
+        core::time::Duration::from_millis(5),
         ApplicationResourceLimits {
             maximum_live: 2,
             maximum_retained_results: 1,

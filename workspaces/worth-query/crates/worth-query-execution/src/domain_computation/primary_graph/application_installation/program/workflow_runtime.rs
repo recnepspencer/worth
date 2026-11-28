@@ -12,6 +12,7 @@ mod authentication;
 mod configuration;
 pub use configuration::WorthQueryWorkflowRuntimeConfiguration;
 mod registration;
+mod retained;
 mod support;
 mod vocabulary;
 pub(crate) use authentication::workflow_approval_authentication_intent;
@@ -213,6 +214,7 @@ pub enum WorthQueryWorkflowRuntimeBindingDenial {
     RuntimeKeepaliveRetained,
     ForeignProgram,
     ForeignAuthenticationOwner,
+    WorkflowSpecNotRetained,
     /// The program already has a vocabulary on this runtime.
     AlreadySupported,
     /// This spec was already installed for the program with different node

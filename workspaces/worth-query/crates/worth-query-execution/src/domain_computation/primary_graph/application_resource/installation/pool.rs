@@ -52,15 +52,10 @@ impl<Schema: ApplicationSchema, Binding: ApplicationResourceBinding<Schema>>
                 .map_err(|cause| denial(format!("{cause:?}")))
             })
             .collect::<Result<BTreeMap<_, _>, _>>()?;
-        let profile = parts.profile;
-        let delay = profile
-            .retry_delay_milliseconds
-            .checked_mul(1_000_000)
-            .ok_or_else(|| denial("retry duration overflows source nanoseconds"))?;
-        let timeout = profile
-            .timeout_milliseconds
-            .checked_mul(1_000_000)
-            .ok_or_else(|| denial("timeout duration overflows source nanoseconds"))?;
+        let delay = u64::try_from(parts.retry.delay.as_nanos())
+            .map_err(|_| denial("retry duration overflows source nanoseconds"))?;
+        let timeout = u64::try_from(parts.attempt_timeout.as_nanos())
+            .map_err(|_| denial("timeout duration overflows source nanoseconds"))?;
         let limits = parts.limits;
         let live = usize::try_from(limits.maximum_live)
             .map_err(|_| denial("resource pool width overflow"))?;
@@ -90,7 +85,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationResourceBinding<Schema>>
                 format!("{identity}:{ordinal}"),
                 payload_contract,
                 limits.maximum_frame_bytes,
-                profile.retry_max_attempts,
+                parts.retry.maximum_attempts.get(),
                 delay,
                 timeout,
             )

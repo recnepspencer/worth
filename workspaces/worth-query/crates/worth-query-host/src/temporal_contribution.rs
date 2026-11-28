@@ -13,11 +13,7 @@
 //! [`WorthQueryInstalledDesktopTemporalClock`], the sole implementor of sealed
 //! [`WorthQueryDesktopTemporalHomeBinding`]) and advance missed occurrences
 //! explicitly on reopen or foreground ticks through
-//! `WorthQueryApplicationHome::catch_up_temporal` /
-//! `catch_up_temporal_observing` / `pump_temporal` / `pump_temporal_observing`
-//! (or low-level [`pump_temporal_catch_up_until`] /
-//! [`pump_temporal_catch_up_until_observing`] / [`pump_temporal_catch_up`] /
-//! [`pump_temporal_catch_up_observing`]).
+//! [`pump_temporal_catch_up_until`] or [`pump_temporal_catch_up`].
 
 mod catch_up;
 mod clock;
@@ -25,11 +21,7 @@ mod contract;
 mod home_binding;
 mod installer;
 mod recurring;
-mod recurring_binding_macro;
 mod recurring_fire;
-mod recurring_invoker_macro;
-mod recurring_macro;
-mod recurring_parts_macro;
 mod recurring_vocabulary;
 
 pub use catch_up::{

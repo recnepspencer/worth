@@ -33,15 +33,15 @@ pub(super) fn append(
     }
     basis.u32(
         format!("{prefix}.retry.maximum-attempts"),
-        parts.profile.retry_max_attempts,
+        parts.retry.maximum_attempts.get(),
     );
     basis.u64(
         format!("{prefix}.retry.delay-ms"),
-        parts.profile.retry_delay_milliseconds,
+        parts.retry.delay.as_millis() as u64,
     );
     basis.u64(
         format!("{prefix}.timeout-ms"),
-        parts.profile.timeout_milliseconds,
+        parts.attempt_timeout.as_millis() as u64,
     );
     basis.u32(format!("{prefix}.limits.live"), parts.limits.maximum_live);
     basis.u32(

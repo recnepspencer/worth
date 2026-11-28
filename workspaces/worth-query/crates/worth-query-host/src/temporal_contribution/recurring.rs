@@ -1,7 +1,6 @@
 //! Stock recurring desktop rule: the canonical occurrence input, its
 //! projection from a rule row, next-occurrence arithmetic and fresh owner
-//! admission. [`crate::worth_query_recurring_rule!`] binds these to one
-//! application's schema; the rule row stays the authoritative truth.
+//! admission. The application binds these to its schema and owns the rule row.
 
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -52,8 +51,7 @@ worth_query_declaration::worth_query_structured_value_binding!(
 );
 
 /// A recurring rule's reconstruction row: the occurrence it schedules and its
-/// lifecycle. [`crate::worth_query_recurring_rule!`] implements it for the
-/// rule's `#[derive(WorthQueryRow)]` row.
+/// lifecycle.
 pub trait WorthQueryRecurringRow {
     fn occurrence(&self) -> WorthQueryRecurringOccurrence;
     fn lifecycle(&self) -> WorthQueryRecurringLifecycle;
@@ -162,8 +160,7 @@ where
     }
 }
 
-/// Fires recurring rule `Rule`'s occurrences; its operation invoker is bound
-/// to the application schema by [`crate::worth_query_recurring_rule!`].
+/// Invoker identity for the application's recurring rule.
 pub struct WorthQueryRecurringInvoker<Rule>(PhantomData<fn() -> Rule>);
 
 impl<Rule> Default for WorthQueryRecurringInvoker<Rule> {

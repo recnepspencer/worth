@@ -15,7 +15,6 @@ mod refusal;
 mod request;
 mod retirement;
 mod runtime;
-mod temporal_catch_up;
 mod transition;
 mod workflow;
 pub use checkpoint::WorthQueryApplicationHomeCheckpointDenial;
@@ -45,7 +44,6 @@ pub use retirement::{
     WorthQueryDirectoryOpenRetired, WorthQueryHomeRetirement, WorthQueryHomeRetirementStop,
 };
 pub use runtime::{WorthQueryApplicationHome, WorthQueryHomeOpenDisposition};
-pub(crate) use temporal_catch_up::catch_up_temporal_in;
 pub use transition::{
     NoHomeProgramTransition, WorthQueryApplicationHomeTransitionRequired,
     WorthQueryHomePredecessorRefusal, WorthQueryHomeProgramTransition,
@@ -53,10 +51,7 @@ pub use transition::{
     WorthQueryHomeProgramTransitionOpenRefused, WorthQueryHomeProgramTransitionPlan,
     WorthQueryHomeProgramTransitionStep,
 };
-pub use workflow::{
-    WorthQueryWorkflowApplicationHome, WorthQueryWorkflowHomeBindingRefused,
-    WorthQueryWorkflowHomeCloseRefused, WorthQueryWorkflowHomeClosed,
-};
+pub use workflow::WorthQueryWorkflowHomeBindingRefused;
 pub use worth_query_execution::facade::application_home_integration::QueryHomeProgramActivationDenial;
 pub use worth_store_application::facade::ApplicationHomeQueryRootDenial;
 pub use worth_store_application::ApplicationHomeCheckpointLimits as WorthQueryApplicationHomeCheckpointLimits;

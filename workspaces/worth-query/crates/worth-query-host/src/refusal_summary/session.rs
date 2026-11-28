@@ -12,7 +12,7 @@ use crate::temporal_contribution::WorthQueryTemporalCatchUpDenial;
 
 use super::request::{
     ALREADY_DONE, BUSY, CANCELLED, CAPACITY, INTERNAL, MISSING_ITEM, PERMISSION, SESSION_EXPIRED,
-    TIMED_OUT, UNSUPPORTED,
+    TIMED_OUT,
 };
 use super::stops::{authorization, projection, session};
 use super::summary::{
@@ -146,7 +146,6 @@ impl WorthQueryUserFacingRefusal for WorthQueryTemporalCatchUpDenial {
         match self {
             Self::Advancement(cause) => cause.user_summary(),
             Self::BranchSelection(_) | Self::ClockPort(_) => BUSY,
-            Self::TemporalBindingNotInstalled => UNSUPPORTED,
             Self::InvalidMaxSteps { .. } | Self::ForeignClockHandle | Self::ClockAdvance(_) => {
                 INTERNAL
             }

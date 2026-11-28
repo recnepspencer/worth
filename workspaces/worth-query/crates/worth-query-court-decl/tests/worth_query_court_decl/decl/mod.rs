@@ -15,3 +15,4 @@ mod extension_compile_fail;
 mod fragment_relation_extensions;
 
 mod principal_requirements;
+mod managed_index_diagnostics;

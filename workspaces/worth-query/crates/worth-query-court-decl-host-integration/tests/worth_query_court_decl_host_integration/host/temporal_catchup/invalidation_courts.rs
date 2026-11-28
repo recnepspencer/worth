@@ -1,7 +1,7 @@
 //! Integration courts for foreign clock-handle rejection and granular
-//! invalidation delivery preservation across catch-up and post-progress stops
-//! (Sol Round 1 blockers 4 & 6 and Round 2 finding 5).
+//! invalidation delivery preservation across catch-up and post-progress stops.
 
+use super::pump::{catch_up as pump_reminders, catch_up_observing};
 use worth_query_host::facade::{
     domain::{
         WorthQueryClockCoordinate, WorthQueryClockSourceIdentity, WorthQueryClockTimelineIdentity,
@@ -18,7 +18,6 @@ use super::{
     program::{
         installed, mutate_reminder, mutate_reminder_returning_change, open_memory_home,
         open_memory_home_with_controls, open_memory_home_with_observation_limit, read_reminders,
-        DesktopReminderConditional,
     },
     schema::MutateReminderInput,
     with_leased_request,
@@ -50,7 +49,8 @@ fn catch_up(
 ) -> worth_query_host::facade::temporal_contribution::WorthQueryTemporalCatchUpReport<
     DesktopReminderClock,
 > {
-    home.catch_up_temporal::<DesktopReminderConditional>(
+    pump_reminders(
+        home,
         WorthQueryClockCoordinate::from_nanoseconds(ns),
         execution,
         WorthQueryTemporalCatchUpPolicy::bounded(max_steps).unwrap(),
@@ -137,14 +137,14 @@ fn desktop_temporal_catch_up_preserves_and_delivers_owed_granular_invalidations(
         mutate_reminder(&home, active_reminder("i2", 3, 100, 0, 1), 4);
         controls.set_next_gate_write(None);
         let mut streamed = Vec::new();
-        let observed = home
-            .catch_up_temporal_observing::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(25),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-                |batch| streamed.push(batch),
-            )
-            .unwrap();
+        let observed = catch_up_observing(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(25),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+            |batch| streamed.push(batch),
+        )
+        .unwrap();
         assert_eq!(
             observed.status(),
             &WorthQueryTemporalCatchUpStatus::CaughtUp
@@ -295,14 +295,14 @@ fn desktop_temporal_direct_delivery_carries_across_same_branch_successor() {
         // observation so a same-branch successor carries `direct`.
         mutate_reminder(&home, active_reminder("i2", 1, 50, 0, 1), 2);
         let mut streamed = Vec::new();
-        let observed = home
-            .catch_up_temporal_observing::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(15),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-                |batch| streamed.push(batch),
-            )
-            .unwrap();
+        let observed = catch_up_observing(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(15),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+            |batch| streamed.push(batch),
+        )
+        .unwrap();
         assert_eq!(
             observed.status(),
             &WorthQueryTemporalCatchUpStatus::CaughtUp

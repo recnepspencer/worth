@@ -4,6 +4,8 @@
 //! derived strictly from the RNG seed, live Relational rows, and real Host
 //! catch-up receipts — NEVER from the reference oracle.
 
+use crate::host::temporal_catchup::pump::*;
+
 use worth_execution::ExecutionRequest;
 use worth_query_host::facade::{
     domain::WorthQueryClockCoordinate,
@@ -30,12 +32,12 @@ pub(super) fn exercise_cancelled_pump(
 ) {
     let mut accepted_now = st.last_accepted_clock;
     with_cancelled_request(|c_exec| {
-        let report = h
-            .pump_temporal::<DesktopReminderConditional>(
-                c_exec,
-                WorthQueryTemporalCatchUpPolicy::bounded(1).unwrap(),
-            )
-            .unwrap();
+        let report = pump(
+            h,
+            c_exec,
+            WorthQueryTemporalCatchUpPolicy::bounded(1).unwrap(),
+        )
+        .unwrap();
         assert_eq!(report.status(), &WorthQueryTemporalCatchUpStatus::Cancelled);
         assert_eq!(report.fired(), 0);
         if let Some(observed) = report.last_observed_time() {
@@ -72,12 +74,12 @@ pub(super) fn exercise_budget_pump(
     }
     let mut accepted_now = st.last_accepted_clock;
     with_leased_request(128 * 1024 * 1024, Some(1), |tiny_exec| {
-        let report = h
-            .pump_temporal::<DesktopReminderConditional>(
-                tiny_exec,
-                WorthQueryTemporalCatchUpPolicy::bounded(1).unwrap(),
-            )
-            .unwrap();
+        let report = pump(
+            h,
+            tiny_exec,
+            WorthQueryTemporalCatchUpPolicy::bounded(1).unwrap(),
+        )
+        .unwrap();
         assert_eq!(
             report.status(),
             &WorthQueryTemporalCatchUpStatus::BudgetExhausted
@@ -128,12 +130,12 @@ pub(super) fn exercise_auth_refusal(
         passive_total_fired(&pre_rows),
         &pre_rows,
     );
-    let report = h
-        .pump_temporal::<DesktopReminderConditional>(
-            execution,
-            WorthQueryTemporalCatchUpPolicy::bounded(1).unwrap(),
-        )
-        .unwrap();
+    let report = pump(
+        h,
+        execution,
+        WorthQueryTemporalCatchUpPolicy::bounded(1).unwrap(),
+    )
+    .unwrap();
     assert_eq!(
         report.status(),
         &WorthQueryTemporalCatchUpStatus::AuthorizationRefused
@@ -263,13 +265,13 @@ pub(super) fn pump_one_step(
 ) -> &'static str {
     let target_now = st.clock;
     let before_rows = read_reminders(home);
-    let report = home
-        .catch_up_temporal::<DesktopReminderConditional>(
-            WorthQueryClockCoordinate::from_nanoseconds(target_now),
-            execution,
-            WorthQueryTemporalCatchUpPolicy::bounded(1).unwrap(),
-        )
-        .unwrap();
+    let report = catch_up(
+        &home,
+        WorthQueryClockCoordinate::from_nanoseconds(target_now),
+        execution,
+        WorthQueryTemporalCatchUpPolicy::bounded(1).unwrap(),
+    )
+    .unwrap();
     let accepted_now = report
         .last_observed_time()
         .expect("accepted catch-up step must report its actual observed coordinate")

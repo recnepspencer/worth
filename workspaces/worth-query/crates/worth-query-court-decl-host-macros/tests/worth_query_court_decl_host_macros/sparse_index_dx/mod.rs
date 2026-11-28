@@ -5,6 +5,7 @@
 mod live_source;
 mod probe;
 mod program;
+mod refinement;
 mod schema;
 
 use program::{open, owner, SparseHome};

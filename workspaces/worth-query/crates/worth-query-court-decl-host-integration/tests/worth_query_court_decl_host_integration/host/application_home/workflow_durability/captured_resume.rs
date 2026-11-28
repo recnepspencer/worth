@@ -40,7 +40,11 @@ fn directory_captured_workflow_resumes_the_original_target_and_key_after_close()
             .mutate(input())
             .without_source()
             .idempotency(&1012u64)
-            .for_workflow_operation(home.vocabulary(), &required)
+            .for_workflow_operation(
+                home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                    .unwrap(),
+                &required,
+            )
             .unwrap()
             .advanced()
             .execute_in_program(
@@ -119,7 +123,12 @@ fn propose_captured(
         .mutate(authoring_intent())
         .without_source()
         .idempotency(&key)
-        .prepare_workflow_proposal_with_inputs(home.vocabulary(), instance, &inputs)
+        .prepare_workflow_proposal_with_inputs(
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
+            instance,
+            &inputs,
+        )
         .unwrap()
         .execute();
     assert!(

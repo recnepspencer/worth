@@ -51,6 +51,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramRuntime
 > {
     pub(in crate::domain_computation::primary_graph) runtime:
         Option<WorthQueryPrimaryGraphApplicationRuntime<Schema>>,
+    pub(in crate::domain_computation::primary_graph) workflow:
+        Option<Box<dyn std::any::Any + Send + Sync>>,
     pub(in crate::domain_computation::primary_graph) program:
         std::sync::Arc<WorthQueryInstalledApplicationProgram<Schema, Program>>,
     pub(in crate::domain_computation::primary_graph) connection_types: Box<[TypeId]>,

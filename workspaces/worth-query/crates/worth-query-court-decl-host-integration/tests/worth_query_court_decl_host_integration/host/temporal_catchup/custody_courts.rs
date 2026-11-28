@@ -2,6 +2,8 @@
 //! preservation across fresh branch selection and explicit `retry_original_key`
 //! settlement (Sol Round 1 blocker 5 & Round 2 finding 4).
 
+use super::pump::{catch_up as pump_reminders, catch_up_observing};
+
 use worth_query_host::facade::{
     domain::WorthQueryClockCoordinate,
     primary_graph::{
@@ -18,7 +20,7 @@ use super::{
     adapters::{AuthControl, InvokerControls, ReminderFireLog},
     program::{
         installed, mutate_reminder, open_directory_home, open_directory_home_configured,
-        read_reminders, unique_temp_dir, DesktopReminderConditional, ReminderHome,
+        read_reminders, unique_temp_dir, ReminderHome,
     },
     schema::MutateReminderInput,
     with_leased_request,
@@ -78,7 +80,8 @@ fn catch_up(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     max_steps: usize,
 ) -> WorthQueryTemporalCatchUpReport<super::adapters::DesktopReminderClock> {
-    home.catch_up_temporal::<DesktopReminderConditional>(
+    pump_reminders(
+        home,
         WorthQueryClockCoordinate::from_nanoseconds(ns),
         execution,
         WorthQueryTemporalCatchUpPolicy::bounded(max_steps).unwrap(),
@@ -246,14 +249,14 @@ fn desktop_temporal_restored_invalidations_carry_across_same_branch_successor() 
         assert!(failed.granular_invalidation_batches().is_empty());
 
         let mut streamed_batches = Vec::new();
-        let recovered = home
-            .catch_up_temporal_observing::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(20),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-                |batch| streamed_batches.push(batch),
-            )
-            .unwrap();
+        let recovered = catch_up_observing(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(20),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+            |batch| streamed_batches.push(batch),
+        )
+        .unwrap();
         assert_caught_up(&recovered);
         let installation = home.primary_graph().granular_invalidation_installation();
         let delivered_count: usize = streamed_batches

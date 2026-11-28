@@ -32,11 +32,11 @@ impl ApplicationResourceBinding<DocumentRetentionSchema> for Monitor {
 }
 pub fn definition() -> ApplicationResourceDefinition<DocumentRetentionSchema, Monitor> {
     ApplicationResourceDefinition::request_response(
-        ApplicationResourceRequestResponseProfile {
-            retry_max_attempts: 2,
-            retry_delay_milliseconds: 2,
-            timeout_milliseconds: 5,
+        ApplicationResourceFixedDelayRetry {
+            maximum_attempts: core::num::NonZeroU32::new(2).unwrap(),
+            delay: core::time::Duration::from_millis(2),
         },
+        core::time::Duration::from_millis(5),
         ApplicationResourceLimits {
             maximum_live: 1,
             maximum_retained_results: 1,

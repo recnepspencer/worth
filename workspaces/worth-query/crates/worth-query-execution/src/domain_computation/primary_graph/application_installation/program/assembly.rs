@@ -186,6 +186,7 @@ where
         );
     Ok(WorthQueryProgramApplicationRuntime {
         backing: std::sync::Arc::new(super::program_runtime::WorthQueryProgramRuntimeBacking {
+            workflow: None,
             runtime: Some(runtime),
             program: installed,
             connection_types: Program::Outputs::connection_types()

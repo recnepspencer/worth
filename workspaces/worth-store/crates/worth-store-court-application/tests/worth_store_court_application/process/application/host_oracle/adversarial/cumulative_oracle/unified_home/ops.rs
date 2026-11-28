@@ -111,7 +111,7 @@ pub(super) fn observe_doc_wf_state(
         .request(&rev, &sc)
         .at(&basis)
         .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-            wf.vocabulary(),
+            wf.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(),
             orig,
             wf_input(),
             wf_input(),
@@ -136,7 +136,7 @@ pub(super) fn observe_doc_wf_state(
 }
 
 pub(super) fn observe_doc_wf_locators(wf: &WorkflowHome, locators: &[Vec<u8>]) -> Vec<String> {
-    let p0_rev = *wf.workflow_spec().program_revision();
+    let p0_rev = *wf.retained_workflow_spec::<GovernedDocumentWorkflow>().expect("workflow registered").program_revision();
     locators
         .iter()
         .map(|bytes| {
@@ -228,7 +228,7 @@ pub(super) fn advance_doc_wf_historical(wf: &WorkflowHome) {
         .request(&rev, &sc)
         .at(&basis)
         .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-            wf.vocabulary(),
+            wf.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(),
             &orig,
             wf_input(),
             wf_input(),

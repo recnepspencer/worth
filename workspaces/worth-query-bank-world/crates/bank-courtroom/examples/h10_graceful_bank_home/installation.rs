@@ -14,15 +14,11 @@ use worth_query_bank_testkit_server::facade::{
     support::{authentication_configuration, local_principal, request_scope},
 };
 use worth_query_host::facade::{
-    application_contribution::with_bootstrap_advancement, WorthQueryApplicationHomeLocation,
-    WorthQueryWorkflowApplicationHome,
+    application_contribution::with_bootstrap_advancement, WorthQueryApplicationHome,
+    WorthQueryApplicationHomeLocation,
 };
 
-pub(super) type Home = WorthQueryWorkflowApplicationHome<
-    BankSchema,
-    ApprovedBusinessPaymentWorkflow,
-    BankAssessedPaymentsApplication,
->;
+pub(super) type Home = WorthQueryApplicationHome<BankSchema, BankAssessedPaymentsApplication>;
 pub(super) const BUSINESS: BusinessId = BusinessId::new(40).unwrap();
 pub(super) const RECIPIENT: BankPrincipalId = estate::FOREIGN_OWNER;
 pub(super) const NOTIFICATION_ESTATE: bank_domain::estate::EstateCaseId =

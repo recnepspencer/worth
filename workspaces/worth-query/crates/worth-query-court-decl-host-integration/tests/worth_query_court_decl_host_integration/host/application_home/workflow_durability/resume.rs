@@ -188,7 +188,11 @@ pub(super) fn perform(
         })
         .without_source()
         .idempotency(&1012u64)
-        .for_workflow_operation(home.vocabulary(), required)
+        .for_workflow_operation(
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
+            required,
+        )
         .unwrap()
         .advanced()
         .execute_in_program(

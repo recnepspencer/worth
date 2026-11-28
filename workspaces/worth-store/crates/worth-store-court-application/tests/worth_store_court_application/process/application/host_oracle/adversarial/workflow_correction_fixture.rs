@@ -24,7 +24,7 @@ use worth_query_host::facade::{
     application_installation::WorthQueryApplicationProgramRoster,
     runtime::ExecutionAllocationPolicy,
     WorthQueryApplicationHomeLocation as Location, WorthQueryApplicationHomeRequest,
-    WorthQueryWorkflowApplicationHome,
+    WorthQueryApplicationHome,
 };
 use worth_query_testkit_document_retention::facade::document_retention_model::{
     actor_generation::validated_actor_program,
@@ -56,7 +56,7 @@ use worth_store_testkit_application_oracle::facade::{
 };
 
 pub(super) type WorkflowHome =
-    WorthQueryWorkflowApplicationHome<Schema, GovernedDocumentWorkflow, RetentionProgramP0>;
+    WorthQueryApplicationHome<Schema, RetentionProgramP0>;
 
 const DEF_NAME: &str = "reviewed-document";
 const KEY_PUB: u64 = 5001;
@@ -164,7 +164,7 @@ pub(super) fn advance(
         .mutate(adv_intent())
         .without_source()
         .idempotency(&key)
-        .prepare_workflow_advance(home.vocabulary(), instance)
+        .prepare_workflow_advance(home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), instance)
         .unwrap()
         .execute()
 }
@@ -185,7 +185,7 @@ fn run_assessment(
             .mutate(adv_intent())
             .without_source()
             .idempotency(&assess_key)
-            .prepare_workflow_advance(home.vocabulary(), instance.clone())
+            .prepare_workflow_advance(home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), instance.clone())
             .unwrap()
             .into_assessment_demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
             .unwrap()
@@ -210,7 +210,7 @@ fn run_assessment(
         .mutate(adv_intent())
         .without_source()
         .idempotency(&accept_key)
-        .prepare_workflow_advance(home.vocabulary(), instance)
+        .prepare_workflow_advance(home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), instance)
         .unwrap()
         .accept_assessment(&settlement)
         .unwrap();
@@ -235,7 +235,7 @@ fn publish_and_start_workflow(
     let installed = home
         .runtime()
         .with_host_advancement(|phase| {
-            home.vocabulary().workflow_spec_on(&phase, runtime.current_world()).unwrap()
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap().workflow_spec_on(&phase, runtime.current_world()).unwrap()
         })
         .unwrap();
     let contract = installed.bind_definition(correctable_workflow_def()).unwrap();
@@ -257,7 +257,7 @@ fn publish_and_start_workflow(
         })
         .without_source()
         .idempotency(&KEY_START)
-        .prepare_workflow_instance_start(home.vocabulary(), published.definition().clone())
+        .prepare_workflow_instance_start(home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), published.definition().clone())
         .unwrap();
     let original = prepared_start.discovery_intent();
     let WorkflowInstanceStartOutcome::Started(started) = prepared_start.execute() else {
@@ -280,7 +280,7 @@ fn approve_workflow(
         .mutate(authoring_intent())
         .without_source()
         .idempotency(&KEY_PROPOSE)
-        .prepare_workflow_proposal(home.vocabulary(), instance.clone())
+        .prepare_workflow_proposal(home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), instance.clone())
         .unwrap()
         .execute()
     else {
@@ -304,7 +304,7 @@ fn approve_workflow(
         .without_source()
         .idempotency(&KEY_APPROVE)
         .prepare_workflow_approval(
-            home.vocabulary(), instance, &required, proposed.proposal(), WorkflowApprovalDecision::Approve,
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), instance, &required, proposed.proposal(), WorkflowApprovalDecision::Approve,
         )
         .unwrap();
     let intent = signing.authentication_intent().cloned().unwrap();
@@ -340,7 +340,7 @@ pub(super) fn discover_original_start(home: &WorkflowHome) -> WorthQueryWorkflow
     let found = req
         .at(&basis)
         .discover_workflow_definition::<GovernedDocumentWorkflow, MetadataRead>(
-            home.vocabulary(), &target, wf_input(),
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), &target, wf_input(),
         )
         .unwrap();
     let WorthQueryWorkflowDefinitionDiscovery::Current(def) = found.definition() else {
@@ -353,7 +353,7 @@ pub(super) fn discover_original_start(home: &WorkflowHome) -> WorthQueryWorkflow
         })
         .without_source()
         .idempotency(&KEY_START)
-        .prepare_workflow_instance_start(home.vocabulary(), def.clone())
+        .prepare_workflow_instance_start(home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), def.clone())
         .unwrap()
         .discovery_intent()
 }
@@ -371,7 +371,7 @@ pub(super) fn run_correctable_step(
         .request(&reviewer, &scope)
         .at(&basis)
         .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-            home.vocabulary(), original, wf_input(), wf_input(),
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), original, wf_input(), wf_input(),
         )
         .unwrap()
     else {
@@ -392,7 +392,7 @@ pub(super) fn run_correctable_step(
         })
         .without_source()
         .idempotency(&KEY_APPLY)
-        .for_workflow_operation(home.vocabulary(), &required).unwrap()
+        .for_workflow_operation(home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), &required).unwrap()
         .advanced()
         .execute_in_program(home.runtime(), ExecutionAllocationPolicy::SystemAllocation).unwrap()
 }

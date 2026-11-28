@@ -15,6 +15,7 @@ use worth_query_host::facade::{
     worth_query_application_program, WorthQueryApplicationHome, WorthQueryHomeConfig,
 };
 
+use super::refinement::{FindExactTitleBinding, FindExactTitleQuery, RefinedTitleIndex};
 use super::schema::*;
 
 worth_query_decl::facade::worth_query_authentication_method!(SparseMethod);
@@ -28,11 +29,12 @@ worth_query_application_program! {
             identity: "sparse.dx.contribution.v1",
             members: [Records, OwnerBinding],
         },
-        managed_indexes: [TitleIndex, FocusIndex],
+        managed_indexes: [TitleIndex, FocusIndex, RefinedTitleIndex],
         feature: SparseFeature => SparseDefinition / SparseRuntime {
             identity: "sparse.dx.feature.v1",
             query(ReadInboxBinding) { definition: ReadInboxQuery::definition(); };
             query(FindTitleBinding) { definition: FindTitleQuery::definition(); };
+            query(FindExactTitleBinding) { definition: FindExactTitleQuery::definition(); };
             query(ReadFocusBinding) { definition: ReadFocusQuery::definition(); };
             body_action(AddTaskBinding, TaskAdded) as AddTaskAction { operation: add_task_operation(); };
             body_action(EditTaskBinding, TaskEdited) as EditTaskAction { operation: edit_task_operation(); };

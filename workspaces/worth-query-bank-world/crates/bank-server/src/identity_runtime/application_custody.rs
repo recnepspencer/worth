@@ -10,11 +10,10 @@ use worth_query_host::facade::{
         WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowVocabulary,
     },
     domain::WorthQueryInstalledApplicationWorkflowSpec,
-    WorthQueryApplicationHome, WorthQueryWorkflowApplicationHome,
+    WorthQueryApplicationHome,
 };
 
-pub type BankWorkflowHome =
-    WorthQueryWorkflowApplicationHome<BankSchema, ApprovedBusinessPaymentWorkflow, BankApplication>;
+pub type BankWorkflowHome = WorthQueryApplicationHome<BankSchema, BankApplication>;
 
 pub(crate) enum BankApplicationCustody {
     Memory(
@@ -99,7 +98,9 @@ impl BankApplicationCustody {
     > {
         match self {
             Self::Memory(runtime) => runtime.workflow_spec(),
-            Self::Home(home) => home.workflow_spec(),
+            Self::Home(home) => home
+                .retained_workflow_spec()
+                .expect("Bank registered its payment workflow"),
         }
     }
 }
@@ -110,7 +111,9 @@ impl<'a> From<&'a BankApplicationCustody>
     fn from(custody: &'a BankApplicationCustody) -> Self {
         match custody {
             BankApplicationCustody::Memory(runtime) => runtime.vocabulary(),
-            BankApplicationCustody::Home(home) => home.vocabulary(),
+            BankApplicationCustody::Home(home) => home
+                .workflow_vocabulary()
+                .expect("Bank registered its payment workflow"),
         }
     }
 }

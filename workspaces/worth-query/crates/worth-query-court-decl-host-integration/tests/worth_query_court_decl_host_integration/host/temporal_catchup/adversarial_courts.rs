@@ -2,6 +2,8 @@
 //! terminal refusal, and caller-funded budget & cancellation enforcement
 //! (Sol Round 1 blockers 1 & 2).
 
+use crate::host::temporal_catchup::pump::*;
+
 use worth_execution::{CancellationSource, ExecutionRequest, ExecutionResourceLease, LeaseRequest};
 use worth_foundational::facade::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -14,10 +16,7 @@ use worth_query_host::facade::{
 
 use super::{
     adapters::{AuthControl, InvokerControls, ReminderFireLog},
-    program::{
-        installed, mutate_reminder, open_memory_home_with_controls, read_reminders,
-        DesktopReminderConditional,
-    },
+    program::{installed, mutate_reminder, open_memory_home_with_controls, read_reminders},
     schema::MutateReminderInput,
     with_leased_request,
 };
@@ -50,13 +49,13 @@ fn desktop_temporal_catch_up_distinguishes_unobserved_write_from_authorization_r
             },
             1,
         );
-        let report = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(15),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-            )
-            .unwrap();
+        let report = catch_up(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(15),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+        )
+        .unwrap();
         assert_eq!(
             report.status(),
             &WorthQueryTemporalCatchUpStatus::OperationRefused,
@@ -114,13 +113,13 @@ fn desktop_temporal_catch_up_reports_backpressured_never_caught_up_on_capacity_d
             }
         }
         assert!(!pinned.is_empty());
-        let stopped = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(15),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
-            )
-            .unwrap();
+        let stopped = catch_up(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(15),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
+        )
+        .unwrap();
         assert_eq!(
             stopped.status(),
             &WorthQueryTemporalCatchUpStatus::Backpressured,
@@ -131,13 +130,13 @@ fn desktop_temporal_catch_up_reports_backpressured_never_caught_up_on_capacity_d
         drop(pinned);
         assert_eq!(read_reminders(&home)["i1"].fired_count, 0);
 
-        let resumed = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(15),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-            )
-            .unwrap();
+        let resumed = catch_up(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(15),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+        )
+        .unwrap();
         assert_eq!(resumed.status(), &WorthQueryTemporalCatchUpStatus::CaughtUp);
         assert_eq!(resumed.fired(), 1);
         assert!(!resumed.remaining());
@@ -171,13 +170,13 @@ fn desktop_temporal_catch_up_enforces_caller_budget_and_mid_step_cancel_on_admit
             },
             1,
         );
-        let pre = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(5),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
-            )
-            .unwrap();
+        let pre = catch_up(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(5),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
+        )
+        .unwrap();
         assert_eq!(pre.status(), &WorthQueryTemporalCatchUpStatus::CaughtUp);
         assert_eq!(pre.fired(), 0);
 
@@ -186,12 +185,12 @@ fn desktop_temporal_catch_up_enforces_caller_budget_and_mid_step_cancel_on_admit
             .advance_to(WorthQueryClockCoordinate::from_nanoseconds(15))
             .unwrap();
         with_leased_request(128 * 1024 * 1024, Some(5), |tiny_exec| {
-            let exhausted = home
-                .pump_temporal::<DesktopReminderConditional>(
-                    tiny_exec,
-                    WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
-                )
-                .unwrap();
+            let exhausted = pump(
+                &home,
+                tiny_exec,
+                WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
+            )
+            .unwrap();
             assert_eq!(
                 exhausted.status(),
                 &WorthQueryTemporalCatchUpStatus::BudgetExhausted,
@@ -215,12 +214,12 @@ fn desktop_temporal_catch_up_enforces_caller_budget_and_mid_step_cancel_on_admit
         })
         .unwrap();
         let cancel_exec = ExecutionRequest::leased(&lease);
-        let cancelled = home
-            .pump_temporal::<DesktopReminderConditional>(
-                &cancel_exec,
-                WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
-            )
-            .unwrap();
+        let cancelled = pump(
+            &home,
+            &cancel_exec,
+            WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
+        )
+        .unwrap();
         assert_eq!(
             cancelled.status(),
             &WorthQueryTemporalCatchUpStatus::Cancelled,
@@ -231,12 +230,12 @@ fn desktop_temporal_catch_up_enforces_caller_budget_and_mid_step_cancel_on_admit
         assert_eq!(read_reminders(&home)["i1"].fired_count, 0);
 
         controls.set_cancel_on_project(None);
-        let resumed = home
-            .pump_temporal::<DesktopReminderConditional>(
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-            )
-            .unwrap();
+        let resumed = pump(
+            &home,
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+        )
+        .unwrap();
         assert_eq!(resumed.status(), &WorthQueryTemporalCatchUpStatus::CaughtUp);
         assert_eq!(resumed.fired(), 1);
         assert_eq!(read_reminders(&home)["i1"].lifecycle, "completed");

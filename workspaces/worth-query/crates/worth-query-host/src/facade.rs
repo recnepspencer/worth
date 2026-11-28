@@ -286,10 +286,8 @@ pub use crate::application_home::{
     WorthQueryHomeProgramTransitionPlan, WorthQueryHomeProgramTransitionStep,
     WorthQueryHomeRetirement, WorthQueryHomeRetirementStop, WorthQueryPreviewAdoptDenial,
     WorthQueryPreviewAdoptFailure, WorthQueryPreviewDiscardDenial, WorthQueryPreviewDiscardFailure,
-    WorthQueryPreviewFork, WorthQueryPreviewForkDenial, WorthQueryWorkflowApplicationHome,
-    WorthQueryWorkflowHomeBindingRefused, WorthQueryWorkflowHomeCloseRefused,
-    WorthQueryWorkflowHomeClosed, DEFAULT_HOST_EXECUTION_POLICY,
-    DEFAULT_HOST_EXECUTION_WORK_CEILING,
+    WorthQueryPreviewFork, WorthQueryPreviewForkDenial, WorthQueryWorkflowHomeBindingRefused,
+    DEFAULT_HOST_EXECUTION_POLICY, DEFAULT_HOST_EXECUTION_WORK_CEILING,
 };
 /// Non-blocking owned-session calls and push commit notification for a Home.
 pub use crate::background::{
@@ -309,16 +307,15 @@ pub mod eligibility;
 pub use crate::session::{
     WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQueryLocalSessionDenial,
     WorthQueryOwnedLiveSubscription, WorthQueryOwnedSession, WorthQueryOwnedSessionDenial,
-    WorthQueryOwnedWorkflowSession, WorthQueryPage, WorthQueryPageCursor, WorthQuerySessionCommit,
-    WorthQuerySessionIndexedQuery, WorthQuerySessionPrincipalSource, WorthQuerySessionQuery,
-    WorthQuerySessionRunDenial, WorthQuerySessionSnapshot, WorthQuerySessionSnapshotDenial,
-    WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,
-    WorthQueryTypedLiveSubscription, WorthQueryTypedManagedIndexRefreshDenial,
-    WorthQueryTypedManagedIndexWatch,
+    WorthQueryPage, WorthQueryPageCursor, WorthQuerySessionCommit, WorthQuerySessionIndexedQuery,
+    WorthQuerySessionPrincipalSource, WorthQuerySessionQuery, WorthQuerySessionRunDenial,
+    WorthQuerySessionSnapshot, WorthQuerySessionSnapshotDenial, WorthQueryTypedLiveCloseDenial,
+    WorthQueryTypedLiveRefreshDenial, WorthQueryTypedLiveSubscription,
+    WorthQueryTypedManagedIndexRefreshDenial, WorthQueryTypedManagedIndexWatch,
 };
 pub use crate::{
-    worth_query_principal_registry, worth_query_recurring_rule, worth_query_remote_codec,
-    worth_query_scope_access, worth_query_shared_access,
+    worth_query_principal_registry, worth_query_remote_codec, worth_query_scope_access,
+    worth_query_shared_access,
 };
 /// Read-only observations for facade-only certification; these reports grant no authority.
 pub use worth_query_execution::facade::{

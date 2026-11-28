@@ -119,7 +119,7 @@ impl GovernedWorkflowOwner for GovernedDirectoryHome {
         DocumentRetentionSchema,
         GovernedDocumentWorkflow,
     > {
-        self.home().vocabulary()
+        self.home().workflow_vocabulary().expect("workflow registered")
     }
     fn workflow_spec(
         &self,
@@ -127,7 +127,7 @@ impl GovernedWorkflowOwner for GovernedDirectoryHome {
         DocumentRetentionSchema,
         GovernedDocumentWorkflow,
     > {
-        self.home().workflow_spec()
+        self.home().retained_workflow_spec().expect("workflow registered")
     }
     fn support_workflow_spec(
         &mut self,

@@ -26,12 +26,14 @@ and payload plan grant no resource permission. `scope` and `parameters` map the
 input once at Start. Later actions reissue the funded original selector and
 parameters without rerunning those mappers or retaining a cloned business input.
 
-`ApplicationResourceDefinition::request_response` includes the retry/timeout
-profile, independent Start/Inspect/Advance/Close requirements, disclosure
-contract, maximum live requests, retained results, ingress slots, input bytes and
-frame bytes. Installation compares the complete transported value profile with
-the real typed inventory before any provider contact. The profile text cannot
-construct a decoder or Native proof.
+`ApplicationResourceDefinition::request_response` takes a fixed-delay retry
+policy, a per-attempt timeout, independent Start/Inspect/Advance/Close
+requirements, a disclosure contract, and limits for live requests, retained
+results, ingress slots, input bytes and frame bytes. The portable duration
+fields store positive whole milliseconds bounded by the runtime clock's
+unsigned nanosecond range. Installation compares the complete transported
+value profile with the real typed inventory before any provider contact.
+The profile text cannot construct a decoder or Native proof.
 
 Configure the provider with the declaring contribution's
 `setup.resource::<Binding, Provider, Clock, Source>(provider, clock_arc)`. All

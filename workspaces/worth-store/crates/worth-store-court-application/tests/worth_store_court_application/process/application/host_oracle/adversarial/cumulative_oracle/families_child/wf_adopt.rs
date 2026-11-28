@@ -142,7 +142,7 @@ fn read_wf_state(
         .request(&rev, &sc)
         .at(&basis)
         .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-            home.vocabulary(),
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(),
             orig,
             wf_input(),
             wf_input(),
@@ -174,7 +174,7 @@ fn advance_wf_to_historical(
         .request(&rev, &sc)
         .at(&basis)
         .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-            home.vocabulary(),
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(),
             orig,
             wf_input(),
             wf_input(),

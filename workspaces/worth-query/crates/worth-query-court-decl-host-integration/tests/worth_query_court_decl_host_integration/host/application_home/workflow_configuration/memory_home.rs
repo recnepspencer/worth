@@ -1,16 +1,9 @@
 //! Actual public Memory Home construction, retaining every original owner.
 use super::*;
-use document::{
-    programs::RetentionProgramP0, schema::DocumentRetentionSchema,
-    workflow::ReviewedDocumentWorkflow,
-};
-use worth_query_host::facade::{WorthQueryApplicationHome, WorthQueryWorkflowApplicationHome};
+use document::{programs::RetentionProgramP0, schema::DocumentRetentionSchema};
+use worth_query_host::facade::WorthQueryApplicationHome;
+
 pub(super) type MemoryHome = WorthQueryApplicationHome<DocumentRetentionSchema, RetentionProgramP0>;
-pub(super) type WorkflowHome = WorthQueryWorkflowApplicationHome<
-    DocumentRetentionSchema,
-    ReviewedDocumentWorkflow,
-    RetentionProgramP0,
->;
 
 pub(super) fn open() -> MemoryHome {
     use worth_query_host::facade::{
@@ -36,7 +29,7 @@ pub(super) fn open() -> MemoryHome {
     .unwrap()
 }
 
-pub(super) fn bind(home: MemoryHome) -> WorkflowHome {
+pub(super) fn bind(home: MemoryHome) -> MemoryHome {
     let workflow = document::workflow::install_workflow_spec(
         home.runtime().installed_schema(),
         home.runtime().installed_program(),

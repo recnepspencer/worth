@@ -31,8 +31,15 @@ pub(super) fn validate(parts: &WorthQueryPortableApplicationResourceParts) -> Re
     {
         return Err(Denial::UnsupportedValueProfile);
     }
-    if !parts.profile.is_valid() {
-        return Err(Denial::InvalidRequestResponseProfile);
+    if ![parts.retry.delay, parts.attempt_timeout]
+        .into_iter()
+        .all(|duration| {
+            !duration.is_zero()
+                && duration.subsec_nanos().is_multiple_of(1_000_000)
+                && u64::try_from(duration.as_nanos()).is_ok()
+        })
+    {
+        return Err(Denial::InvalidTemporalPolicy);
     }
     if !parts.limits.is_valid() {
         return Err(Denial::InvalidLimits);

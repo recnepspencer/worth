@@ -1,0 +1,5 @@
+error: stock managed index kinds do not support refinement; use `kind = custom(provider)` with a refinement-capable provider
+  --> tests/ui/stock_index_refinement.rs:10:18
+   |
+10 |     refinement = Some(ApplicationManagedIndexRefinement::row_local("example.exact", 1)),
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

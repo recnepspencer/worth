@@ -32,7 +32,7 @@ mod sealed {
 
 /// Sealed declarative hook implemented exclusively by installer-paired desktop
 /// temporal bindings so
-/// [`crate::application_home::WorthQueryApplicationHome::catch_up_temporal`]
+/// callers of [`super::pump_temporal_catch_up_until`]
 /// can resolve the runtime clock handle and caller-pumped desktop clock handle
 /// with a guaranteed shared clock source state.
 pub trait WorthQueryDesktopTemporalHomeBinding<Schema: ApplicationSchema>: sealed::Sealed {

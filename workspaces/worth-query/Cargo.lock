@@ -851,6 +851,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_spanned"
+version = "1.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c187e0a369471c550af028cba56d4f4fa2a489ad28151ae95a4d340a2a8b782"
+dependencies = [
+ "serde_core",
+]
+
+[[package]]
 name = "serde_stacker"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -973,6 +982,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "target-tuple"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "876fef147edbcbddc8ac5cbbba92c7b86519e314e86638596c09673b2ed01e7f"
+
+[[package]]
 name = "tempfile"
 version = "3.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -986,10 +1001,34 @@ dependencies = [
 ]
 
 [[package]]
-name = "toml_datetime"
-version = "1.1.2+spec-1.1.0"
+name = "termcolor"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b86d767906c6c42421dcba507eb9d203e779497710a47782a224bb871653053"
+checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
+dependencies = [
+ "winapi-util",
+]
+
+[[package]]
+name = "toml"
+version = "1.2.3+spec-1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26b1f26e9485c1fa43ee89fe76e9f3fb9e2e52bb227f8594b4d687496b83d073"
+dependencies = [
+ "indexmap",
+ "serde_core",
+ "serde_spanned",
+ "toml_datetime",
+ "toml_parser",
+ "toml_writer",
+ "winnow",
+]
+
+[[package]]
+name = "toml_datetime"
+version = "1.1.3+spec-1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "173f25c883cd2176a2d8212155638c0a60d484a9d84546d270866f40f56b6e49"
 dependencies = [
  "serde_core",
 ]
@@ -1008,18 +1047,39 @@ dependencies = [
 
 [[package]]
 name = "toml_parser"
-version = "1.1.5+spec-1.1.0"
+version = "1.1.7+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "baa693a8032d7e1cada7d0041e96126df243179ff061456783ac7f12bda4744c"
+checksum = "0bb28d6e049a9766c3bd91a8326e6179f5b132dec87906bb97018ef7a2f3431a"
 dependencies = [
  "winnow",
 ]
+
+[[package]]
+name = "toml_writer"
+version = "1.2.0+spec-1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "009dbb7700f11c55ef83aebbe4c0e9cf1f1ac0844bd8d6f00dc38f302026e13a"
 
 [[package]]
 name = "tracking-allocator"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b61e0cb3385e17df7db29c565b40fd0350dfe8a076c7eea83d416e30cfd0581"
+
+[[package]]
+name = "trybuild"
+version = "1.0.122"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62db9c92d704393fbf2132041720cc80b689f2d3f28521015c2ac866223c11b8"
+dependencies = [
+ "glob",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "target-tuple",
+ "termcolor",
+ "toml",
+]
 
 [[package]]
 name = "typenum"
@@ -1483,6 +1543,8 @@ dependencies = [
 name = "worth-query-court-decl"
 version = "0.1.0"
 dependencies = [
+ "trybuild",
+ "worth-query-decl",
  "worth-query-testkit-decl",
 ]
 

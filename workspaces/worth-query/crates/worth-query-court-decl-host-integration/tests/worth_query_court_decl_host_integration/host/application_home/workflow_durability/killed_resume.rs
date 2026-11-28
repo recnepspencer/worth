@@ -224,7 +224,7 @@ fn original_start(
     let found = request
         .at(&basis)
         .discover_workflow_definition::<GovernedDocumentWorkflow, document::workflow::governed_read::MetadataRead>(
-            home.vocabulary(),
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(),
             &target,
             observation::input(),
         )
@@ -241,7 +241,11 @@ fn original_start(
         })
         .without_source()
         .idempotency(&1002u64)
-        .prepare_workflow_instance_start(home.vocabulary(), definition.clone())
+        .prepare_workflow_instance_start(
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
+            definition.clone(),
+        )
         .unwrap()
         .discovery_intent()
 }

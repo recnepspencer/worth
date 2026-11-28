@@ -10,7 +10,7 @@ use super::birth::birth_in;
 use super::program::owner;
 use super::subject_control::StartRequest;
 use super::subject_lookup::{pages, subject};
-use super::workflow::{open_home, publish};
+use super::workflow::{open_home, publish, RequestWorkflow};
 use super::{at, COMPANY};
 
 #[test]
@@ -28,7 +28,12 @@ fn a_migrated_birth_follows_its_successor_onto_the_next_subject_page() {
         .mutate(StartRequest(subject(COMPANY, 303)))
         .without_source()
         .idempotency(&30_u64)
-        .prepare_workflow_instance_migration(home.vocabulary(), born.clone(), v2.clone(), "review")
+        .prepare_workflow_instance_migration(
+            home.workflow_vocabulary::<RequestWorkflow>().unwrap(),
+            born.clone(),
+            v2.clone(),
+            "review",
+        )
         .unwrap_or_else(|denial| panic!("the born instance admits migration: {denial:?}"))
         .execute();
     let WorkflowInstanceStartOutcome::Started(done) = migration else {

@@ -9,13 +9,12 @@ use worth_query_host::facade::application_installation::{
     ApplicationBuildIdentity, WorthQueryApplicationProgramRoster,
 };
 use worth_query_host::facade::{
-    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
-    WorthQueryWorkflowApplicationHome,
+    WorthQueryApplicationHome, WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
 
 worth_query_decl::facade::worth_query_authentication_method!(CertificationMethod);
 worth_query_decl::facade::worth_query_authentication_audience!(DocumentRetentionHostAudience);
-type Home = WorthQueryWorkflowApplicationHome<Schema, Spec, Program>;
+type Home = WorthQueryApplicationHome<Schema, Program>;
 fn input() -> SetRetentionInput {
     SetRetentionInput {
         identity: document::retention_entry::DOCUMENT_IDENTITY.into(),
@@ -104,7 +103,7 @@ fn advance(
         .mutate(Advance(input()))
         .without_source()
         .idempotency(&key)
-        .prepare_workflow_advance(home.vocabulary(), instance)
+        .prepare_workflow_advance(home.workflow_vocabulary::<Spec>().unwrap(), instance)
         .unwrap()
         .execute()
 }
@@ -118,7 +117,12 @@ fn read(
     let basis = request.retain_current_read().unwrap();
     request
         .at(&basis)
-        .read_original_workflow::<Spec, Read, Read>(home.vocabulary(), original, input(), input())
+        .read_original_workflow::<Spec, Read, Read>(
+            home.workflow_vocabulary::<Spec>().unwrap(),
+            original,
+            input(),
+            input(),
+        )
         .unwrap()
 }
 #[test]
@@ -149,7 +153,8 @@ fn directory_workflow_retains_a_nonempty_operation_output_inventory_across_close
         let principal = authenticate(&home, &scope);
         let request = home.runtime().request(&principal, &scope);
         let contract = home
-            .workflow_spec()
+            .retained_workflow_spec::<Spec>()
+            .expect("workflow registered")
             .bind_definition(graph.finish().unwrap().validate().unwrap())
             .unwrap();
         let definition = match request
@@ -167,7 +172,10 @@ fn directory_workflow_retains_a_nonempty_operation_output_inventory_across_close
             .mutate(Start(input()))
             .without_source()
             .idempotency(&402u64)
-            .prepare_workflow_instance_start(home.vocabulary(), definition)
+            .prepare_workflow_instance_start(
+                home.workflow_vocabulary::<Spec>().unwrap(),
+                definition,
+            )
             .unwrap();
         let original = start.discovery_intent();
         let instance = match start.execute() {
@@ -179,7 +187,10 @@ fn directory_workflow_retains_a_nonempty_operation_output_inventory_across_close
                 .mutate(Control(input()))
                 .without_source()
                 .idempotency(&403u64)
-                .prepare_workflow_proposal(home.vocabulary(), instance.clone())
+                .prepare_workflow_proposal(
+                    home.workflow_vocabulary::<Spec>().unwrap(),
+                    instance.clone()
+                )
                 .unwrap()
                 .execute(),
             WorkflowProposalOutcome::Published(_)
@@ -200,7 +211,7 @@ fn directory_workflow_retains_a_nonempty_operation_output_inventory_across_close
             .mutate(Intent(input()))
             .without_source()
             .idempotency(&405u64)
-            .for_workflow_operation(home.vocabulary(), &required)
+            .for_workflow_operation(home.workflow_vocabulary::<Spec>().unwrap(), &required)
             .unwrap()
             .advanced()
             .execute_in_program(

@@ -16,7 +16,8 @@ pub(super) fn publish(
     let installed = home
         .runtime()
         .with_host_advancement(|phase| {
-            home.vocabulary()
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap()
                 .workflow_spec_on(&phase, home.runtime().runtime().current_world())
                 .unwrap()
         })
@@ -55,7 +56,11 @@ pub(super) fn start(
         })
         .without_source()
         .idempotency(&key)
-        .prepare_workflow_instance_start(home.vocabulary(), definition)
+        .prepare_workflow_instance_start(
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
+            definition,
+        )
         .unwrap();
     let original = prepared.discovery_intent();
     match prepared.execute() {
@@ -91,7 +96,12 @@ pub(super) fn propose(
         .mutate(authoring_intent())
         .without_source()
         .idempotency(&key)
-        .prepare_workflow_proposal_with_inputs(home.vocabulary(), instance, &inputs)
+        .prepare_workflow_proposal_with_inputs(
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
+            instance,
+            &inputs,
+        )
         .unwrap()
         .execute();
     match outcome {
@@ -117,7 +127,11 @@ pub(super) fn advance(
         })
         .without_source()
         .idempotency(&key)
-        .prepare_workflow_advance(home.vocabulary(), instance)
+        .prepare_workflow_advance(
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
+            instance,
+        )
         .unwrap()
         .execute()
 }
@@ -144,7 +158,8 @@ pub(super) fn approve(
         .without_source()
         .idempotency(&key)
         .prepare_workflow_approval(
-            home.vocabulary(),
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
             instance,
             required,
             proposal,

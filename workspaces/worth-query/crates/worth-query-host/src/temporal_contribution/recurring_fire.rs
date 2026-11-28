@@ -82,7 +82,7 @@ impl std::fmt::Display for WorthQueryRecurringFireDenial {
 impl std::error::Error for WorthQueryRecurringFireDenial {}
 
 /// A domain action declared with `on_fire: Hook { creates: [..]; links: [..];
-/// writes: [..]; }` on `worth_query_recurring_rule!`. The access block grants
+/// writes: [..]; }` on explicit application registration. The access block grants
 /// the fire operation exactly those effects; `on_fire` authors them inside the
 /// fire commit, which is applied once per occurrence however often catch-up
 /// runs.
@@ -102,7 +102,7 @@ pub trait WorthQueryRecurringFireHook<Schema, Operation, RuleEntity> {
 
 /// A domain action declared with `on_fire: Hook { creates: [..]; links: [..];
 /// writes: [..]; } in Target by TargetFacts::key()` on
-/// `worth_query_recurring_rule!`: each fire first resolves its `Target` row
+/// explicit application registration: each fire first resolves its `Target` row
 /// whose unique `key` field equals [`Self::target_key`], at the fire's
 /// decision basis, and hands it to `on_fire` beside the rule row.
 ///

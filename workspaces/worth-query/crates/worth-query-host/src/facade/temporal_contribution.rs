@@ -1,6 +1,4 @@
-//! Higher-level desktop temporal contribution, the stock recurring rule
-//! ([`crate::facade::worth_query_recurring_rule!`]) and bounded caller-pumped
-//! reopen catch-up.
+//! Desktop temporal registration and bounded caller-pumped catch-up.
 
 pub use crate::temporal_contribution::{
     install_desktop_temporal_clock_operation, install_desktop_temporal_operation,
@@ -30,5 +28,3 @@ pub use crate::temporal_contribution::{
     WorthQueryRecurringRow, WorthQueryRecurringRuleIdentity, WorthQueryRecurringRuleRefusal,
     WorthQueryRecurringScheduleDecision, WorthQueryRecurringTargetedFireHook,
 };
-#[doc(hidden)]
-pub use worth_query_declaration::__worth_query_operation_access;

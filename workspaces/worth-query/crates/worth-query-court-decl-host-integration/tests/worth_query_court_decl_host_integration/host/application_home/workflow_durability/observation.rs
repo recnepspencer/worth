@@ -12,7 +12,8 @@ pub(super) fn read<P>(
     request
         .at(&basis)
         .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-            home.vocabulary(),
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
             original,
             input(),
             input(),
@@ -54,7 +55,8 @@ pub(super) fn proposal(
     let page = request
         .at(&basis)
         .read_workflow_history::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-            home.vocabulary(),
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
             read.target().unwrap(),
             input(),
             input(),

@@ -1,6 +1,8 @@
 //! Focused unit & Directory Home integration courts + 64-seed DST for desktop
 //! temporal contribution and bounded caller-pumped reopen catch-up.
 
+use self::pump::pump as pump_reminders;
+
 mod adapters;
 mod adversarial_courts;
 mod catchup_dst;
@@ -9,6 +11,7 @@ mod custody_courts;
 mod invalidation_courts;
 mod mismatched_due_court;
 mod program;
+mod pump;
 mod schema;
 mod serial_and_capacity_courts;
 
@@ -33,7 +36,7 @@ use worth_query_host::facade::{
 };
 
 use adapters::{AuthControl, DesktopReminderClock, ReminderFireLog};
-use program::{installed, open_memory_home, DesktopReminderConditional};
+use program::{installed, open_memory_home};
 
 fn with_leased_request<R>(
     max_memory_bytes: u64,
@@ -113,12 +116,12 @@ fn desktop_temporal_bounds_and_clock_handle_refuse_invalid_ceilings_and_regressi
     with_leased_request(128 * 1024 * 1024, None, |execution| {
         let home = open_memory_home(ReminderFireLog::default(), AuthControl::valid(), execution);
         installed(&home).desktop_clock().close();
-        let stopped = home
-            .pump_temporal::<DesktopReminderConditional>(
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
-            )
-            .unwrap();
+        let stopped = pump_reminders(
+            &home,
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
+        )
+        .unwrap();
         assert_eq!(
             stopped.status(),
             &WorthQueryTemporalCatchUpStatus::ClockStopped(

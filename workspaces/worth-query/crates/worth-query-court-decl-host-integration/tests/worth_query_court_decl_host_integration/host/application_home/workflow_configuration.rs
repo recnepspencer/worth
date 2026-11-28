@@ -20,8 +20,8 @@ fn memory_home_workflow_configuration_survives_close_refusal_and_resumes_the_ori
     let Err(refused) = home.close(&execution) else {
         panic!("Memory has no Directory close lifecycle");
     };
-    assert!(refused.reason().directory_denial().is_none());
-    assert!(refused.reason().query_denial().is_none());
+    assert!(refused.directory_denial().is_none());
+    assert!(refused.query_denial().is_none());
     let Err(refused) = refused.try_close(&execution) else {
         panic!("retry must preserve the same Memory close refusal");
     };

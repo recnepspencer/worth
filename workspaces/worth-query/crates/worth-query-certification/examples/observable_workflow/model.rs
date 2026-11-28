@@ -115,22 +115,34 @@ pub fn retain_mixed_workflow(application: installation::Home) -> MixedApplicatio
 
 /// The example retains its installed workflow Home and signing owner.
 pub struct MixedApplication {
-    pub workflow: worth_query_host::facade::WorthQueryWorkflowApplicationHome<
+    pub workflow: worth_query_host::facade::WorthQueryApplicationHome<
         schema::DocumentRetentionSchema,
-        crate::definition::MixedWorkflow,
         crate::program::MixedProgram,
     >,
     pub authentication: workflow::CertificationAuthenticationOwner,
 }
 
 impl std::ops::Deref for MixedApplication {
-    type Target = worth_query_host::facade::WorthQueryWorkflowApplicationHome<
+    type Target = worth_query_host::facade::WorthQueryApplicationHome<
         schema::DocumentRetentionSchema,
-        crate::definition::MixedWorkflow,
         crate::program::MixedProgram,
     >;
     fn deref(&self) -> &Self::Target {
         &self.workflow
+    }
+}
+
+impl MixedApplication {
+    pub fn vocabulary(
+        &self,
+    ) -> worth_query_host::facade::application_installation::WorthQueryWorkflowVocabulary<
+        '_,
+        schema::DocumentRetentionSchema,
+        crate::definition::MixedWorkflow,
+    > {
+        self.workflow
+            .workflow_vocabulary()
+            .expect("workflow registered")
     }
 }
 
@@ -142,6 +154,6 @@ impl<'application> From<&'application MixedApplication>
     >
 {
     fn from(application: &'application MixedApplication) -> Self {
-        application.workflow.vocabulary()
+        application.vocabulary()
     }
 }

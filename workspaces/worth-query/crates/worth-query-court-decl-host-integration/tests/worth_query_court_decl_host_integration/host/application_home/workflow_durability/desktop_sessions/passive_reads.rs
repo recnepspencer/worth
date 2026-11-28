@@ -108,11 +108,11 @@ pub(super) fn frontier_at(
 pub(super) fn spawn_frontier(
     owned: &Owned,
     original: Original,
-) -> WorthQueryPending<
-    (CompositeCommitIdentity, Frontier),
-    worth_query_host::facade::application_installation::WorthQueryWorkflowRuntimeBindingDenial,
-> {
-    owned.spawn_with_workflow(move |session, vocabulary| {
+) -> WorthQueryPending<(CompositeCommitIdentity, Frontier), std::convert::Infallible> {
+    owned.spawn_with_session(move |session| {
+        let vocabulary = session
+            .workflow_vocabulary::<GovernedDocumentWorkflow>()
+            .expect("workflow registered");
         let snapshot = session.snapshot().unwrap();
         let pinned = snapshot.selected_commit().clone();
         (pinned, frontier_at(&snapshot, vocabulary, &original))

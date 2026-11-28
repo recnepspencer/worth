@@ -20,7 +20,12 @@ pub(super) fn settle(
         })
         .without_source()
         .idempotency(&idempotency)
-        .prepare_workflow_advance(application.vocabulary(), instance)
+        .prepare_workflow_advance(
+            application
+                .workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
+            instance,
+        )
         .expect("assessment-head workflow admission must succeed")
         .into_assessment_demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
         .expect("the typed demand must match the installed assessment contract")
@@ -70,7 +75,12 @@ pub(super) fn accept(
         })
         .without_source()
         .idempotency(&idempotency)
-        .prepare_workflow_advance(application.vocabulary(), instance)
+        .prepare_workflow_advance(
+            application
+                .workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
+            instance,
+        )
         .expect("assessment acceptance must receive fresh workflow admission")
         .accept_assessment(settlement)
         .unwrap()

@@ -51,7 +51,7 @@ pub fn pages(
     macro_rules! page {
         ($after:expr) => {
             at.read_workflow_instances::<RequestWorkflow, SubjectRead>(
-                home.vocabulary(),
+                home.workflow_vocabulary::<RequestWorkflow>().unwrap(),
                 &target,
                 subject(request.0, request.1),
                 WorthQueryWorkflowReadExtent::Subject,
@@ -127,7 +127,10 @@ fn complete(home: &WorkflowHome, caller: &Caller, instance: PublishedWorkflowIns
         .mutate(Review(acme()))
         .without_source()
         .idempotency(&10_u64)
-        .prepare_workflow_proposal(home.vocabulary(), instance.clone())
+        .prepare_workflow_proposal(
+            home.workflow_vocabulary::<RequestWorkflow>().unwrap(),
+            instance.clone(),
+        )
         .unwrap_or_else(|denial| panic!("the reacquired locator admits a proposal: {denial:?}"))
         .execute();
     assert!(
@@ -138,7 +141,10 @@ fn complete(home: &WorkflowHome, caller: &Caller, instance: PublishedWorkflowIns
         .mutate(AdvanceRequest(acme()))
         .without_source()
         .idempotency(&20_u64)
-        .prepare_workflow_advance(home.vocabulary(), instance)
+        .prepare_workflow_advance(
+            home.workflow_vocabulary::<RequestWorkflow>().unwrap(),
+            instance,
+        )
         .unwrap_or_else(|denial| panic!("the reacquired locator admits an advance: {denial:?}"))
         .execute();
     assert!(

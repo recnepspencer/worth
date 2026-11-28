@@ -46,7 +46,8 @@ fn start_and_wait(
     let actor = authenticate_operator(runtime.installed_schema(), &scope);
     let definition = crate::definition::definition();
     let contract = application
-        .workflow_spec()
+        .retained_workflow_spec::<crate::definition::MixedWorkflow>()
+        .expect("workflow registered")
         .bind_definition(definition)
         .unwrap();
     let published = runtime
