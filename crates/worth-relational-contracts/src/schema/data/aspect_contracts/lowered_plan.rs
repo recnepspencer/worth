@@ -33,6 +33,7 @@ impl Default for AspectContractPlanCatalog {
 pub struct LoweredAspectContractPlan {
     pub kind_id: KindId,
     pub plan_revision: AspectContractPlanRevision,
+    pub exclusion_groups: Vec<super::AspectExclusionGroupDeclaration>,
     pub executable_bindings: SmallVec<[LoweredAspectContractBinding; 8]>,
 }
 

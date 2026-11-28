@@ -15,20 +15,33 @@ fn joined_thirty_two_case_one_of_installs_and_reads_every_case_through_view() {
 }
 
 #[test]
-fn joined_one_of_refuses_two_present_cases_before_any_constructor() {
-    let world = World::new();
-    let error = world.read(33, Form).unwrap_err();
-    let FragmentDenial::CorruptOneOf {
-        entity, present, ..
-    } = error
-    else {
-        panic!("presence must refuse before decoding the invalid row: {error:?}")
+fn joined_one_of_refuses_two_present_cases_at_native_publication() {
+    use worth_relational::facade::transactions::{
+        ConflictClass, InvariantViolationFields, TransactionCommitError,
     };
-    assert_eq!(entity, "entry");
-    assert_eq!(
-        present,
-        ["large_cases.entry.case01", "large_cases.entry.case32"]
-    );
+
+    let Err(denial) = World::try_with_two_cases() else {
+        panic!("two cases must refuse publication");
+    };
+    let WorthQueryConditionalRuntimeInstallationDenialKind::PrimaryGraphPublication(cause) =
+        denial.kind()
+    else {
+        panic!("expected the primary publication cause: {denial:?}");
+    };
+    let Some(TransactionCommitError::Conflict { error, .. }) = cause.native_commit_denial() else {
+        panic!("expected the original Native conflict: {cause:?}");
+    };
+    assert!(matches!(
+        &error.class,
+        ConflictClass::InvariantViolation {
+            fields: InvariantViolationFields::EntityAspectExclusion {
+                required: true,
+                active_count: 2,
+                ..
+            },
+            ..
+        }
+    ));
 }
 
 fn decode(name: &str, number: Option<u64>) -> Result<Value, RecordRefusal> {

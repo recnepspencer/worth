@@ -18,6 +18,39 @@ pub(super) fn committed<O: ApplicationOperationMarkerIdentity<Fixture> + 'static
 }
 
 #[test]
+fn refused_raw_case_edits_leave_no_effect_when_the_candidate_commits() {
+    let world = World::new(Mode::Named);
+    let before = world.read().unwrap();
+    let (mut candidate, target) = world.column_candidate();
+
+    let sibling = FieldSelection::<Fixture, Item, Measured, u64>::at("components[0]");
+    let conflict = candidate.write_field(&target, sibling, 17).unwrap_err();
+    assert_eq!(
+        conflict.kind(),
+        WorthQueryApplicationAttemptDenialKind::ConflictingEffectStep
+    );
+    assert!(conflict
+        .subject()
+        .ends_with("requires an atomic case transition"));
+
+    let removal = candidate
+        .remove_aspect(&target, aspect(Fixture, Item, Named))
+        .unwrap_err();
+    assert_eq!(
+        removal.kind(),
+        WorthQueryApplicationAttemptDenialKind::ConflictingEffectStep
+    );
+    assert!(removal
+        .subject()
+        .ends_with("requires an atomic case transition"));
+
+    // Commit the candidate after both refusals to detect any effect prefix
+    // retained before the guard returned.
+    committed(&world, candidate, 80);
+    assert_eq!(world.read().unwrap(), before);
+}
+
+#[test]
 fn writing_a_case_clears_its_native_siblings_in_the_same_commit() {
     let world = World::new(Mode::Named);
     let (mut candidate, target) = world.candidate(ChangeForm::reference());

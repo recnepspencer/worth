@@ -44,6 +44,7 @@ pub enum InvariantRule {
     AcyclicityContract(LoweredAcyclicityContract),
     PartitionIsolationContract(LoweredPartitionIsolationContract),
     ConnectivityMinimumContract(LoweredConnectivityMinimumContract),
+    EntityAspectExclusion,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -67,6 +68,7 @@ impl InvariantRule {
 
     pub fn rule_id(&self) -> InvariantRuleId {
         InvariantRuleId::Native(match self {
+            Self::EntityAspectExclusion => NativeInvariantRuleId::EntityAspectExclusion,
             Self::LiveRecordRequiresSidecar(RecordKindTag::Entity) => {
                 NativeInvariantRuleId::LiveRecordRequiresSidecarEntity
             }
@@ -126,7 +128,8 @@ impl InvariantRule {
                 | Self::MaxMergedIntents(_)
                 | Self::MaxSnapshotEntities(_)
                 | Self::UniqueEntityAspectField { .. } => InvariantSemanticsClass::NativeAlwaysOn,
-                Self::EndpointKindContract(_)
+                Self::EntityAspectExclusion
+                | Self::EndpointKindContract(_)
                 | Self::CardinalityMaximumContract(_)
                 | Self::CardinalityMinimumContract(_)
                 | Self::UniquenessContract(_)
@@ -155,6 +158,10 @@ pub trait InvariantRuleOwnerPort: Sized {
 impl InvariantRuleOwnerPort for InvariantRule {
     fn metadata(&self) -> InvariantRuleMetadata {
         match self {
+            Self::EntityAspectExclusion => InvariantRuleMetadata {
+                groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
+                cost: InvariantCostClass::Touched,
+            },
             Self::LiveRecordRequiresSidecar(_) => InvariantRuleMetadata {
                 groups: InvariantGroupSet::of(InvariantGroup::StorageCoherence)
                     .union(InvariantGroupSet::of(InvariantGroup::IdentityCoherence)),
@@ -247,7 +254,8 @@ impl InvariantRuleOwnerPort for InvariantRule {
             Self::MaxSnapshotEntities(_) => {
                 execution_point == InvariantExecutionPoint::SnapshotPublication
             }
-            Self::EndpointKindContract(_)
+            Self::EntityAspectExclusion
+            | Self::EndpointKindContract(_)
             | Self::UniquenessContract(_)
             | Self::SymmetryContract(_)
             | Self::EndpointDeletionIntegrityContract(_) => {
@@ -281,6 +289,7 @@ impl InvariantRuleOwnerPort for InvariantRule {
             }
             (Self::MaxMergedIntents(_), Self::MaxMergedIntents(_))
             | (Self::MaxSnapshotEntities(_), Self::MaxSnapshotEntities(_))
+            | (Self::EntityAspectExclusion, Self::EntityAspectExclusion)
             | (Self::UniqueEntityAspectField { .. }, Self::UniqueEntityAspectField { .. }) => true,
             (Self::EndpointKindContract(left), Self::EndpointKindContract(right)) => {
                 left.contract_id == right.contract_id

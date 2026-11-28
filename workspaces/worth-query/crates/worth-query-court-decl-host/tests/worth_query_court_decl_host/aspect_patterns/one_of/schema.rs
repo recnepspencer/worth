@@ -58,10 +58,7 @@ impl Registration<Schema> for Contracts {
         schema: ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
     {
-        Ok(
-            retired_fields::declare(restore_first::declare(retirement::declare(
-                authoring::declare(declare(schema)),
-            )))
+        Ok(restore_first::declare(retirement::declare(declare(schema)))
             .invariant(rule::definition())
             .application_query(query::definition())
             .application_query_binding::<query::Binding>()
@@ -72,8 +69,7 @@ impl Registration<Schema> for Contracts {
                     ApplicationQueryDisclosureContract::public(),
                 )
                 .unwrap(),
-            ),
-        )
+            ))
     }
 }
 

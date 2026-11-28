@@ -1316,6 +1316,7 @@
     "facade::schema::AspectContractPlanRevision",
     "facade::schema::AspectDeclarationTrace",
     "facade::schema::AspectDeclarationTraceRow",
+    "facade::schema::AspectExclusionGroupDeclaration",
     "facade::schema::AspectLoweringTrace",
     "facade::schema::AspectLoweringTraceRow",
     "facade::schema::AspectMergePolicyDeclaration",

@@ -95,6 +95,12 @@ fn declaration_allocation_bytes(
                     crate::schema::data::aspect_merge_policy::AspectMergePolicyDeclaration,
                 >()),
         )
+        .saturating_add(
+            crate::schema::data::AspectExclusionGroupDeclaration::allocation_bytes(
+                &declarations.exclusion_groups,
+            )
+            .unwrap_or(usize::MAX),
+        )
 }
 
 fn plan_catalog_allocation_bytes(plans: &AspectContractPlanCatalog) -> usize {
@@ -106,6 +112,12 @@ fn plan_catalog_allocation_bytes(plans: &AspectContractPlanCatalog) -> usize {
             plan.executable_bindings.iter().fold(
                 bytes
                     .saturating_add(std::mem::size_of_val(plan))
+                    .saturating_add(
+                        crate::schema::data::AspectExclusionGroupDeclaration::allocation_bytes(
+                            &plan.exclusion_groups,
+                        )
+                        .unwrap_or(usize::MAX),
+                    )
                     .saturating_add(plan.executable_bindings.capacity().saturating_mul(
                         std::mem::size_of::<crate::schema::data::LoweredAspectContractBinding>(),
                     )),

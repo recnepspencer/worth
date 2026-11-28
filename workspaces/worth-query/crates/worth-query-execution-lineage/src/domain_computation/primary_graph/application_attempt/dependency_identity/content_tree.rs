@@ -27,6 +27,17 @@ pub struct CompletedFactRoutes {
     routes: Arc<FactRoutes>,
 }
 impl CompletedFactRoutes {
+    pub fn aspect_presence(
+        &self,
+        body: &FactPayload,
+        entity: worth_relational::facade::identity::EntityId,
+        aspect: &worth_foundational::facade::AspectKey,
+    ) -> Option<bool> {
+        self.matches_body(body)
+            .then(|| self.routes.aspect_presence(entity, aspect))
+            .flatten()
+    }
+
     pub fn observes_field(
         &self,
         body: &FactPayload,

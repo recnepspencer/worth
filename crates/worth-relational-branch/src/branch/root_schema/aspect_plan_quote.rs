@@ -41,6 +41,11 @@ pub(super) fn retained_bytes(
         )
     {
         control.checkpoint()?;
+        add(
+            &mut bytes,
+            AspectExclusionGroupDeclaration::allocation_bytes(&declarations.exclusion_groups)
+                .ok_or(Denial::MemoryOverflow)?,
+        )?;
         if declarations.aspects.len() > 8 {
             add(
                 &mut bytes,

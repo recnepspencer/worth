@@ -14,6 +14,19 @@ impl<'a> InvariantViolationDiagnosticProjection<'a> {
                 definition,
                 violation,
             },
+            InvariantViolationFields::EntityAspectExclusion {
+                entity_id,
+                kind_id,
+                group_id,
+                required,
+                active_count,
+            } => Self::EntityAspectExclusion {
+                entity_id: *entity_id,
+                kind_id: *kind_id,
+                group_id,
+                required: *required,
+                active_count: *active_count,
+            },
             InvariantViolationFields::None => Self::None,
             InvariantViolationFields::MergedIntentLimit {
                 merged_intent_count,

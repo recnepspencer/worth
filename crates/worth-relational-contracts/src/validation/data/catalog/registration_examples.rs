@@ -11,6 +11,7 @@ pub enum InvariantRegistrationContract {
 impl InvariantRule {
     pub fn registration_examples() -> Vec<Self> {
         vec![
+            Self::EntityAspectExclusion,
             Self::LiveRecordRequiresSidecar(super::RecordKindTag::Entity),
             Self::LiveRecordRequiresSidecar(super::RecordKindTag::Relation),
             Self::MaxMergedIntents(1),
@@ -111,6 +112,7 @@ impl InvariantRule {
             Self::MaxMergedIntents(_)
             | Self::MaxSnapshotEntities(_)
             | Self::UniqueEntityAspectField { .. }
+            | Self::EntityAspectExclusion
             | Self::EndpointKindContract(_)
             | Self::CardinalityMaximumContract(_)
             | Self::CardinalityMinimumContract(_)

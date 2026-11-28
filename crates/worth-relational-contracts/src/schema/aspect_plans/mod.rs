@@ -1,4 +1,5 @@
 pub mod declarations;
+mod exclusion_groups;
 pub mod lowering;
 pub mod merge_policy_declarations;
 pub mod relation_integrity;
@@ -19,7 +20,6 @@ use declarations::{canonicalize_kind_aspect_declarations, RegistrationDomain};
 use lowering::lower_binding;
 use relation_integrity::canonicalize_relation_integrity_declarations;
 use relation_integrity_lowering::lower_relation_integrity_plan;
-use revision::derive_plan_revision;
 
 pub fn canonicalize_entity_registration(
     mut registration: crate::schema::data::EntityKindRegistration,
@@ -111,20 +111,7 @@ fn lower_kind_plan(
     Ok(LoweredAspectContractPlan {
         kind_id,
         plan_revision: declarations.plan_revision,
+        exclusion_groups: declarations.exclusion_groups.clone(),
         executable_bindings,
     })
-}
-
-fn derive_kind_plan_revision(
-    kind_id: crate::identity::data::KindId,
-    aspects: &[crate::schema::data::DeclaredAspectContractBinding],
-    identity_declarations: &[crate::schema::data::identity_declarations::IdentityBasisDeclaration],
-    merge_policy_declarations: &[crate::schema::data::aspect_merge_policy::AspectMergePolicyDeclaration],
-) -> Result<crate::schema::data::AspectContractPlanRevision, SchemaRegistryError> {
-    derive_plan_revision(
-        kind_id,
-        aspects,
-        identity_declarations,
-        merge_policy_declarations,
-    )
 }

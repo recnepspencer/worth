@@ -70,6 +70,7 @@ impl EffectCore<'_> {
                 name,
             ));
         }
+        self.require_exclusive_removal(entity, id, &key)?;
         let contract = PortableAspectContractBasis::from_contract(contract);
         self.effects
             .push(model::WorthQueryApplicationRealizedEffect::RemoveAspect {

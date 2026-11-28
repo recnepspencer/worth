@@ -112,6 +112,13 @@ fn native_rule(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<OwnerAllocation, Refusal> {
+    // A unit rule encodes as its name and retains no owned payload.
+    if !value.is_map() {
+        return match value.text(request)? {
+            "EntityAspectExclusion" => Ok(OwnerAllocation::default()),
+            _ => Err(malformed()),
+        };
+    }
     let mut bytes = OwnerAllocation::default();
     value.fields(request, |variant, value| {
         match variant {
@@ -241,6 +248,7 @@ fn violation_fields(
                     }
                     "field" => optional(value, |value| text(value, request))?,
                     "field_locator" => super::aspects::locator(value, request)?,
+                    "group_id" if variant == "EntityAspectExclusion" => text(value, request)?,
                     "value" if variant == "UniqueEntityField" => {
                         super::aspects::scalar(value, request)?
                     }

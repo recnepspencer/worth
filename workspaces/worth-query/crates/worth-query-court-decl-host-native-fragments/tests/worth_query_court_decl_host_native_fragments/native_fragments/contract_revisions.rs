@@ -20,6 +20,23 @@ macro_rules! lower {
 macro_rules! rows {
     ($set:ty, $row:ty) => { lower!($set, Members<$set, $row>) };
 }
+macro_rules! installed_variant_group_id {
+    ($members:ty) => {{
+        struct Variant;
+        impl ApplicationSchema for Variant {
+            const NAME: &'static str = Schema::NAME;
+            fn declaration(
+            ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial>
+            {
+                ApplicationSchemaDeclarationBuilder::from_fragment(Root::<Standard, $members>(
+                    PhantomData,
+                ))?
+                .build()
+            }
+        }
+        installed_group_id::<Variant>()
+    }};
+}
 type Declaration = ApplicationSchemaDeclaration<Schema>;
 #[derive(Debug, Eq, PartialEq)]
 struct Revisions {
@@ -239,6 +256,10 @@ fn one_of_case_order_keeps_the_same_case_revision() {
         (Owner<Standard, Reversed>, Extras<Standard, Reversed, Row>)
     );
     assert_eq!(revisions(&forward), revisions(&reversed));
+    assert_eq!(
+        installed_variant_group_id!((Owner<Standard, Forward>, Extras<Standard, Forward, Row>)),
+        installed_variant_group_id!((Owner<Standard, Reversed>, Extras<Standard, Reversed, Row>)),
+    );
 }
 #[test]
 fn renamed_rust_aspect_markers_with_the_same_names_keep_every_revision() {
@@ -256,7 +277,15 @@ fn renamed_rust_aspect_markers_with_the_same_names_keep_every_revision() {
             Extensions<Standard, E, RenamedExtra<Row>, (RenamedPayload<Row>,)>
         )
     );
-    assert_eq!(revisions(&rows!(Standard, Row)), revisions(&renamed));
+    let original = rows!(Standard, Row);
+    assert_eq!(revisions(&original), revisions(&renamed));
+    assert_eq!(
+        installed_group_id::<Schema>(),
+        installed_variant_group_id!((
+            Owner<Standard, E>,
+            Extensions<Standard, E, RenamedExtra<Row>, (RenamedPayload<Row>,)>
+        )),
+    );
 }
 #[test]
 fn an_unrelated_sibling_aspect_keeps_every_existing_revision() {
@@ -268,4 +297,38 @@ fn an_unrelated_sibling_aspect_keeps_every_existing_revision() {
 #[test]
 fn changing_field_queryability_moves_owned_extension_payload_and_case_revisions() {
     assert_all_move(&rows!(Standard, Row), &rows!(Standard, QueryableFieldRow));
+}
+
+fn installed_group_id<S: ApplicationSchema>() -> String {
+    use worth_query_host::facade::domain::*;
+    use worth_query_host::facade::runtime::WorthQueryExecutionRuntimeInstaller;
+
+    let declaration = S::declaration().unwrap();
+    let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
+        S::OWNER,
+        S::MAJOR,
+        S::MINOR,
+    ))
+    .application_schema(declaration.clone())
+    .validate()
+    .unwrap();
+    let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
+        .admit(package)
+        .unwrap();
+    let (runtime, _) = WorthQueryExecutionRuntimeInstaller::new()
+        .install(WorthQueryInstallationGeneration::initial(), [admitted])
+        .unwrap()
+        .into_parts();
+    let installed = runtime
+        .installed_packages()
+        .bind_application_schema(declaration)
+        .unwrap();
+    let groups: Vec<_> = installed
+        .value_bindings()
+        .exclusion_groups("item")
+        .collect();
+    let [(id, _, true)] = groups.as_slice() else {
+        panic!("expected one installed required group: {groups:?}");
+    };
+    (*id).to_owned()
 }

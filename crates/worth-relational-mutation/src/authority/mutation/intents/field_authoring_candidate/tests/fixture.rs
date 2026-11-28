@@ -37,6 +37,7 @@ pub(super) fn plan(wide: bool) -> LoweredAspectContractPlan {
     LoweredAspectContractPlan {
         kind_id: KindId(1),
         plan_revision: AspectContractPlanRevision(1),
+        exclusion_groups: Vec::new(),
         executable_bindings: smallvec::smallvec![
             LoweredAspectContractBinding {
                 contract: scalar,

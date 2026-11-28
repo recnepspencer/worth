@@ -1,3 +1,4 @@
+pub(super) mod aspect_exclusion;
 pub mod live_record_sidecars;
 pub mod snapshot_entity_limits;
 

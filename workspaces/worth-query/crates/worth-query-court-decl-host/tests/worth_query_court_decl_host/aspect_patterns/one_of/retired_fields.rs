@@ -32,10 +32,3 @@ pub fn loci() -> Vec<DeclaredPreImageLocus<Schema>> {
         DeclaredPreImageLocus::from_field(AnnotationNote::at("Note")),
     ]
 }
-pub fn declare(
-    schema: ApplicationSchemaDeclarationBuilder<Schema>,
-) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    schema
-        .application_mutation_binding::<retire::Binding>()
-        .application_mutation_binding::<restore::Binding>()
-}

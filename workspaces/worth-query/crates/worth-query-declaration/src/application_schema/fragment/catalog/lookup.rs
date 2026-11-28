@@ -1,5 +1,27 @@
 //! Type markers extract identities; concrete lookups walk the installed tables once.
 use super::*;
+
+impl FragmentCatalog {
+    #[doc(hidden)]
+    pub fn exclusive_groups(
+        &self,
+    ) -> impl Iterator<Item = (&str, &[u8; 32], bool, impl Iterator<Item = &str>)> {
+        self.definitions.values().flat_map(|fragment| {
+            fragment.groups.iter().map(move |((entity, _), group)| {
+                let cases = group
+                    .cases()
+                    .iter()
+                    .map(move |case| fragment.aspects[&(*entity, case.marker())].name());
+                (
+                    fragment.entities[entity].as_str(),
+                    group.contract(),
+                    !group.optional(),
+                    cases,
+                )
+            })
+        })
+    }
+}
 impl FragmentDefinition {
     pub fn aspects(&self) -> impl Iterator<Item = &AspectDefinition> {
         self.aspects.values()

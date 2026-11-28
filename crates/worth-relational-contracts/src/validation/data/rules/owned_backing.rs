@@ -6,7 +6,8 @@ use crate::internal_port::schema::data::relation_integrity::contract_id::Contrac
 impl InvariantRule {
     pub fn owned_allocation_capacity_bytes(&self) -> u64 {
         match self {
-            Self::LiveRecordRequiresSidecar(_)
+            Self::EntityAspectExclusion
+            | Self::LiveRecordRequiresSidecar(_)
             | Self::MaxMergedIntents(_)
             | Self::MaxSnapshotEntities(_) => 0,
             Self::UniqueEntityAspectField { field_locator } => {

@@ -109,6 +109,7 @@ impl WorthQueryPrimaryGraphLayout {
         let roles = physical_identity::PhysicalIdentityBindings::readmit(
             schema,
             native_contracts,
+            value_bindings,
             original,
             maximum_kind,
             maximum_aspect,
@@ -171,27 +172,28 @@ impl WorthQueryPrimaryGraphLayout {
             String,
             BTreeMap<AspectKey, DeclaredAspectContractBinding>,
         > = BTreeMap::new();
-        let lowered_contracts = lower_application_contract_bindings(native_contracts);
+        let lowered_contracts =
+            lower_application_contract_bindings(native_contracts, value_bindings);
         let relation_payload =
             relation_payload::ApplicationRelationPayloadLayout::lower(native_contracts)?;
         let mut contracts_by_entity = lowered_contracts.by_entity;
         let mut contracts_by_relation = lowered_contracts.by_relation;
 
         for (entity, kind_id) in &entity_kinds {
-            let aspects = contracts_by_entity.remove(entity).unwrap_or_default();
-            for binding in &aspects {
+            let declarations = contracts_by_entity.remove(entity).unwrap_or_default();
+            for binding in &declarations.aspects {
                 aspect_contracts
                     .entry(entity.clone())
                     .or_default()
                     .insert(binding.aspect_key(), binding.clone());
             }
-            registry = register_entity(
+            registry = registry_lowering::register_entity_with_contracts(
                 registry,
                 &schema_id,
                 schema_version_id,
                 entity,
                 *kind_id,
-                aspects,
+                declarations,
             )?;
         }
         for member in schema.members() {

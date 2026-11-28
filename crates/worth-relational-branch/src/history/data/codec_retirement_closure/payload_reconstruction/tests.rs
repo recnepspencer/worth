@@ -231,6 +231,7 @@ fn plan(contract: AspectContract) -> LoweredAspectContractPlan {
     LoweredAspectContractPlan {
         kind_id: crate::identity::data::KindId(1),
         plan_revision: AspectContractPlanRevision(1),
+        exclusion_groups: Vec::new(),
         executable_bindings: std::iter::once(LoweredAspectContractBinding {
             contract,
             target: AspectBinding::EntityField {

@@ -127,6 +127,9 @@ Choose [native representations](native-representations.md) before a durable
 value binding: flat scalar fields, named entities and actual typed relations.
 The [exclusive class aspect contract](native-representations.md#exclusive-class-aspects)
 covers tuple-declared cases, atomic sibling clearing and checked presence reads.
+Installation carries the exact-one or at-most-one group into Native
+`SchemaCompliance`, which checks touched live entities before commit.
+Use the whole-case writer for a required group transition.
 The [source-subgraph contract and court](source-subgraphs.md) cover partial member
 edit, pinned previous state, recorded undo and a generated-member witness.
 For allocation-independent, stable persistent identities across rebuilds, splits,

@@ -8,11 +8,7 @@ pub enum Change {
     WriteFirstThenRemove,
     RemoveNamedOnly,
     AddSecondOnly,
-    AddIncompleteOnly,
     Second,
-    Zero,
-    Two,
-    Incomplete,
 }
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
@@ -51,13 +47,6 @@ pub struct Decision {
     target: WorthQueryInvariantMutationTarget<Schema, Record>,
     selected: ObservedTarget<Record>,
     first: bool,
-    second: bool,
-    third: bool,
-}
-pub fn declare(
-    schema: ApplicationSchemaDeclarationBuilder<Schema>,
-) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    schema.application_mutation_binding::<Binding>()
 }
 impl ApplicationDeclaredOperation<Schema> for Transition {
     fn declare_access(
@@ -124,19 +113,15 @@ impl OperationHandler<Schema, Binding> for Handler {
                 )
             };
             let first = reader.field(&root, FirstValue::at("FirstValue"))?.is_some();
-            let second = reader
-                .field(&root, SecondValue::at("SecondValue"))?
-                .is_some();
+            reader.field(&root, SecondValue::at("SecondValue"))?;
             reader.field(&root, SecondRequired::at("SecondRequired"))?;
-            let third = reader.field(&root, ThirdValue::at("ThirdValue"))?.is_some();
+            reader.field(&root, ThirdValue::at("ThirdValue"))?;
             Ok((
                 class,
                 Decision {
                     target: reader.mutation_target(&root)?,
                     selected,
                     first,
-                    second,
-                    third,
                 },
             ))
         })();
@@ -177,7 +162,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)),
             };
         }
-        // These low-level writes deliberately forge invalid final candidates.
+        // Exercise the raw authoring surfaces as well as the atomic case write.
         let effect = (|| {
             let target = writer.projected_entity(&decision.target)?;
             match input.change {
@@ -199,33 +184,8 @@ impl OperationHandler<Schema, Binding> for Handler {
                     writer.write_field(&target, SecondValue::at("SecondValue"), 22)?;
                     return writer.write_field(&target, SecondRequired::at("SecondRequired"), 220);
                 }
-                Change::AddIncompleteOnly => {
-                    return writer.write_field(&target, SecondValue::at("SecondValue"), 22)
-                }
-                _ => {}
+                Change::Second => unreachable!("case write handled above"),
             }
-            let first = matches!(input.change, Change::Two);
-            let second = matches!(
-                input.change,
-                Change::Second | Change::Two | Change::Incomplete
-            );
-            if first {
-                writer.write_field(&target, FirstValue::at("FirstValue"), 11)?;
-            } else if decision.first {
-                writer.remove_aspect(&target, First::reference())?;
-            }
-            if second {
-                writer.write_field(&target, SecondValue::at("SecondValue"), 22)?;
-                if !matches!(input.change, Change::Incomplete) {
-                    writer.write_field(&target, SecondRequired::at("SecondRequired"), 220)?;
-                }
-            } else if decision.second {
-                writer.remove_aspect(&target, Second::reference())?;
-            }
-            if decision.third {
-                writer.remove_aspect(&target, Third::reference())?;
-            }
-            Ok(())
         })();
         match effect {
             Ok(()) => {

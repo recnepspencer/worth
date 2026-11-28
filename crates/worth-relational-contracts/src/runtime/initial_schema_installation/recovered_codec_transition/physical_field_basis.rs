@@ -84,6 +84,8 @@ fn compare_registries(
                 .aspect_contract_declarations
                 .merge_policy_declarations
                 != next.aspect_contract_declarations.merge_policy_declarations
+            || previous.aspect_contract_declarations.exclusion_groups
+                != next.aspect_contract_declarations.exclusion_groups
         {
             return Err("codec transition changed a protected entity contract".into());
         }

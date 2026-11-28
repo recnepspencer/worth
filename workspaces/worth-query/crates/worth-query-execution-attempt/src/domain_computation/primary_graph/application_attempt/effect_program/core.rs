@@ -14,6 +14,7 @@ use worth_relational::facade::transactions::EntityReference;
 pub mod aspect_removal;
 pub mod body_field;
 pub mod entity;
+mod exclusive_aspects;
 pub mod field_patch;
 pub mod field_write;
 pub mod initialization;

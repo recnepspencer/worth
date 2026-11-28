@@ -10,6 +10,13 @@ pub(super) fn invariant_violation_witness_key(
     fields: &InvariantViolationFields,
 ) -> InvariantWitnessKey {
     let key = match fields {
+        InvariantViolationFields::EntityAspectExclusion {
+            entity_id,
+            group_id,
+            ..
+        } => {
+            format!("entity_aspect_exclusion:{entity_id:?}:{group_id}")
+        }
         InvariantViolationFields::DerivedRelationGraph {
             definition,
             violation,

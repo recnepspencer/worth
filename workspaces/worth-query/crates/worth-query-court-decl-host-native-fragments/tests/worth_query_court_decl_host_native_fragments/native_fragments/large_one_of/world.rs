@@ -26,6 +26,17 @@ fn seed_case(seed: Seed, case: u8, value: u64) -> Seed {
 }
 impl World {
     pub fn new() -> Self {
+        Self::install(None).unwrap()
+    }
+
+    pub fn try_with_two_cases() -> Result<Self, WorthQueryConditionalRuntimeInstallationDenial> {
+        let conflicting = seed_case(seed_case(seed(33), 1, 1_001), 32, 1_032);
+        Self::install(Some(conflicting))
+    }
+
+    fn install(
+        extra: Option<Seed>,
+    ) -> Result<Self, WorthQueryConditionalRuntimeInstallationDenial> {
         worth_query_host::facade::application_contribution::with_bootstrap_advancement(
             resources::execution_policy(),
             |phase| {
@@ -71,10 +82,9 @@ impl World {
                         .bind_entity(seed_case(seed(case as u64), case, 1_000 + case as u64))
                         .unwrap();
                 }
-                // Presence must refuse before this first case's checked constructor.
-                bootstrap
-                    .bind_entity(seed_case(seed_case(seed(33), 1, 0), 32, 1_032))
-                    .unwrap();
+                if let Some(extra) = extra {
+                    bootstrap.bind_entity(extra).unwrap();
+                }
                 let invariant = bootstrap.retain_invariant_projection_authority();
                 let application = bootstrap
                     .conditional_application_runtime_installation(
@@ -85,12 +95,11 @@ impl World {
                         SignalConditionalEvaluationBudget::development(),
                     )
                     .unwrap()
-                    .publish(&phase)
-                    .unwrap();
-                Self {
+                    .publish(&phase)?;
+                Ok(Self {
                     application,
                     invariant,
-                }
+                })
             },
         )
         .unwrap()

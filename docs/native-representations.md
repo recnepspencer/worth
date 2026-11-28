@@ -43,13 +43,20 @@ aspects once. The enum owner supplies `From<CaseRow>` for every distinct row.
 Use `Option<Exclusive<Form>>` when absence is lawful.
 
 A whole-case write through `CandidateWriter::fragment` clears its sibling cases
-in that transaction. Reading the group uses actual aspect presence: exactly one
-case is required, or zero for an optional group. Multiple present cases are a
+in that transaction. Installation lowers the group to a Native
+`SchemaCompliance` rule. Native checks the applied post-state and refuses a
+touched live entity with zero cases in a required group or multiple cases in
+any group. A raw candidate write can activate a case only when its observations
+and pending effects establish that the siblings are absent.
+Removing the only active case of a required group requires a whole-case write.
+
+Reading the group uses actual aspect presence. Multiple present cases are a
 typed corruption refusal before any case constructor runs. Applications do not
 maintain a discriminator. The SDK owns any indexing scalar it requires.
 
 The [fragment courts](../workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/mod.rs)
-exercise actual sibling removal, optional absence and corrupt multiple presence.
+exercise actual sibling removal, optional absence and bootstrap refusal of
+invalid required groups.
 See [native schema fragments](native-schema-fragments.md) for the declaration and
 operation-record grants.
 

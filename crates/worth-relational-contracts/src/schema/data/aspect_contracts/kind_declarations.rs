@@ -9,6 +9,7 @@ pub struct KindAspectContractDeclarations {
     pub aspects: Vec<DeclaredAspectContractBinding>,
     pub identity_declarations: Vec<IdentityBasisDeclaration>,
     pub merge_policy_declarations: Vec<AspectMergePolicyDeclaration>,
+    pub exclusion_groups: Vec<super::AspectExclusionGroupDeclaration>,
 }
 
 impl KindAspectContractDeclarations {
@@ -18,6 +19,7 @@ impl KindAspectContractDeclarations {
             aspects,
             identity_declarations: Vec::new(),
             merge_policy_declarations: Vec::new(),
+            exclusion_groups: Vec::new(),
         }
     }
 
@@ -26,6 +28,14 @@ impl KindAspectContractDeclarations {
         identity_declarations: Vec<IdentityBasisDeclaration>,
     ) -> Self {
         self.identity_declarations = identity_declarations;
+        self
+    }
+
+    pub fn with_exclusion_groups(
+        mut self,
+        groups: Vec<super::AspectExclusionGroupDeclaration>,
+    ) -> Self {
+        self.exclusion_groups = groups;
         self
     }
 

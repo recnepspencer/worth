@@ -45,6 +45,13 @@ pub enum InvariantViolationDiagnosticProjection<'a> {
     UniqueEntityField {
         aspect_field: AspectFieldDiagnosticProjection<'a>,
     },
+    EntityAspectExclusion {
+        entity_id: EntityId,
+        kind_id: KindId,
+        group_id: &'a str,
+        required: bool,
+        active_count: usize,
+    },
     SidecarConsistency {
         partition_id: PartitionId,
         slot: usize,

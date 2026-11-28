@@ -7,6 +7,7 @@ use worth_query_declaration::facade::application_schema::{
     fragment::FragmentCatalog, ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind,
 };
 
+use super::exclusion_groups::WorthQueryInstalledAspectExclusionGroup;
 use super::WorthQueryInstalledApplicationValueBinding;
 
 type InstalledBindingsMap =
@@ -46,6 +47,7 @@ impl InstalledBindingsBacking for InstalledBindingsMap {
 #[derive(Clone)]
 pub struct WorthQueryInstalledApplicationValueBindingCatalog {
     fragments: Arc<dyn FragmentCatalogBacking>,
+    exclusion_groups: Arc<BTreeMap<String, Vec<WorthQueryInstalledAspectExclusionGroup>>>,
     content_formats: Arc<dyn FormatsBacking>,
     bindings: Arc<dyn InstalledBindingsBacking>,
 }
@@ -54,6 +56,7 @@ impl Default for WorthQueryInstalledApplicationValueBindingCatalog {
     fn default() -> Self {
         Self {
             fragments: Arc::new(FragmentCatalog::default()),
+            exclusion_groups: Arc::default(),
             content_formats: Arc::new(super::content::Formats::default()),
             bindings: Arc::new(InstalledBindingsMap::default()),
         }
@@ -113,6 +116,7 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
             .map(|(key, value)| (key, Arc::new(value)))
             .collect();
         Self {
+            exclusion_groups: Arc::new(super::exclusion_groups::lower(&fragments)),
             fragments: Arc::new(fragments),
             content_formats: Arc::new(content_formats),
             bindings: Arc::new(bindings),
@@ -125,6 +129,23 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
     ) -> Option<&worth_query_declaration::facade::application_schema::fragment::FragmentDefinition>
     {
         self.fragments_ref().fragment(marker)
+    }
+
+    pub fn exclusion_groups<'a>(
+        &'a self,
+        entity: &str,
+    ) -> impl Iterator<
+        Item = (
+            &'a str,
+            &'a std::collections::BTreeSet<worth_foundational::facade::AspectKey>,
+            bool,
+        ),
+    > + 'a {
+        self.exclusion_groups
+            .get(entity)
+            .into_iter()
+            .flatten()
+            .map(|group| (group.group_id.as_str(), &group.aspects, group.required))
     }
 
     pub fn fragments(&self) -> &FragmentCatalog {

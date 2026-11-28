@@ -2,6 +2,7 @@ mod catalog;
 mod compilation;
 mod content;
 mod denial;
+mod exclusion_groups;
 mod meaning;
 mod native_contract;
 pub use meaning::WorthQueryInstalledValueMeaningDenial;

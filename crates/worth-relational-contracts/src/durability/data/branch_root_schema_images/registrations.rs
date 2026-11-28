@@ -8,8 +8,9 @@ use crate::schema::data::identity_declarations::{
     IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
 };
 use crate::schema::data::{
-    DeclaredAspectContractBinding, EntityKindRegistration, KindAspectContractDeclarations,
-    RelationIntegrityDeclarations, RelationKindRegistration, SchemaId, SchemaVersionId,
+    AspectExclusionGroupDeclaration, DeclaredAspectContractBinding, EntityKindRegistration,
+    KindAspectContractDeclarations, RelationIntegrityDeclarations, RelationKindRegistration,
+    SchemaId, SchemaVersionId,
 };
 use serde::{Deserialize, Serialize};
 use worth_foundational::facade::{AspectBinding, PortableAspectContract};
@@ -40,6 +41,8 @@ pub struct DurableKindAspectDeclarations {
     aspects: Vec<DurableDeclaredAspectBinding>,
     pub identity_declarations: Vec<IdentityBasisDeclaration>,
     pub merge_policy_declarations: Vec<AspectMergePolicyDeclaration>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub exclusion_groups: Vec<AspectExclusionGroupDeclaration>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -55,6 +58,7 @@ impl DurableEntitySchemaRegistration {
         aspect_capacity: usize,
         identity_capacity: usize,
         policy_capacity: usize,
+        exclusion_group_capacity: usize,
     ) -> Option<usize> {
         std::alloc::Layout::array::<DurableDeclaredAspectBinding>(aspect_capacity)
             .ok()?
@@ -68,6 +72,13 @@ impl DurableEntitySchemaRegistration {
                 std::alloc::Layout::array::<AspectMergePolicyDeclaration>(policy_capacity)
                     .ok()?
                     .size(),
+            )?
+            .checked_add(
+                std::alloc::Layout::array::<AspectExclusionGroupDeclaration>(
+                    exclusion_group_capacity,
+                )
+                .ok()?
+                .size(),
             )
     }
 }
@@ -128,7 +139,11 @@ impl DurableEntitySchemaRegistration {
                 _ => {}
             }
         }
-        bytes.checked_mul(4)
+        bytes
+            .checked_add(AspectExclusionGroupDeclaration::allocation_bytes(
+                &declarations.exclusion_groups,
+            )?)?
+            .checked_mul(4)
     }
     pub fn capture(registration: &EntityKindRegistration) -> Self {
         Self {
@@ -196,6 +211,7 @@ impl DurableKindAspectDeclarations {
                 .collect(),
             identity_declarations: declarations.identity_declarations.clone(),
             merge_policy_declarations: declarations.merge_policy_declarations.clone(),
+            exclusion_groups: declarations.exclusion_groups.clone(),
         }
     }
 
@@ -216,6 +232,7 @@ impl DurableKindAspectDeclarations {
             .collect::<Result<Vec<_>, _>>()?;
         Ok(KindAspectContractDeclarations::new(aspects)
             .with_identity_declarations(self.identity_declarations.clone())
-            .with_merge_policy_declarations(self.merge_policy_declarations.clone()))
+            .with_merge_policy_declarations(self.merge_policy_declarations.clone())
+            .with_exclusion_groups(self.exclusion_groups.clone()))
     }
 }

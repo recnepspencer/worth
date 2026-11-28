@@ -17,6 +17,7 @@ fn projection_contract_admission_resolves_only_the_installed_scalar_field() {
     let plan = LoweredAspectContractPlan {
         kind_id: KindId(1),
         plan_revision: AspectContractPlanRevision(1),
+        exclusion_groups: Vec::new(),
         executable_bindings: smallvec![LoweredAspectContractBinding {
             contract: AspectContract::scalar(
                 aspect_key.clone(),

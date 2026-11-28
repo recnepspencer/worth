@@ -2,8 +2,8 @@ use crate::contracts::schema::compilation_control::SchemaCompilationControl;
 use crate::validation::custom_registry::FrozenCustomInvariantRegistry;
 pub mod native_points;
 pub mod native_registrations;
-use native_registrations::NativeRelationIntegrityInventory;
 use crate::contracts::identity::data::primitives::KindId;
+use native_registrations::NativeRelationIntegrityInventory;
 use std::collections::BTreeSet;
 
 /// Owner-admitted internal metadata kinds that Home readmission may scan on a
@@ -101,8 +101,21 @@ impl SchemaContractRuntimeSubsystem {
     ) -> Result<Self, crate::contracts::execution::denial_cause::RelationalExecutionDenialCause>
     {
         let registrations = NativeRelationIntegrityInventory::compile(registry, control)?;
-        let invariant_points =
-            native_points::NativeInvariantPoints::compile(declared, &registrations, control)?;
+        let aspect_exclusion = aspect_contract_plans.entity_plans.values().try_fold(
+            false,
+            |installed, plan| {
+                control.checkpoint()?;
+                Ok::<_, crate::contracts::execution::denial_cause::RelationalExecutionDenialCause>(
+                    installed || !plan.exclusion_groups.is_empty(),
+                )
+            },
+        )?;
+        let invariant_points = native_points::NativeInvariantPoints::compile(
+            declared,
+            &registrations,
+            aspect_exclusion,
+            control,
+        )?;
         Ok(Self {
             invariant_points,
             schema_authority_digest: match control {

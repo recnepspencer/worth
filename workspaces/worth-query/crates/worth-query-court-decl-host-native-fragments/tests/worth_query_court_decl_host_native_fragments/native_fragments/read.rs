@@ -1,19 +1,19 @@
 use super::*;
 
 #[test]
-fn two_native_cases_are_corruption_before_a_case_constructor_can_refuse() {
-    let world = World::new(Mode::BothBroken);
-    let error = world.read().unwrap_err();
-    assert!(matches!(error, FragmentDenial::CorruptOneOf { present, .. } if present.len() == 2));
+fn native_bootstrap_refuses_zero_or_two_cases_for_a_required_group() {
+    for mode in [Mode::None, Mode::Both] {
+        let result = World::try_seeded(mode, |seed| seed);
+        assert!(matches!(
+            result,
+            Err(worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial::ConditionalPublication(_))
+        ));
+    }
 }
 
 #[test]
-fn required_one_of_refuses_no_case_and_optional_one_of_returns_none() {
-    let world = World::new(Mode::None);
-    assert!(
-        matches!(world.read(), Err(FragmentDenial::CorruptOneOf { present, .. }) if present.is_empty())
-    );
-    assert_eq!(world.optional().unwrap(), None);
+fn optional_one_of_reads_as_none_without_a_case() {
+    assert_eq!(World::new(Mode::Named).optional().unwrap(), None);
 }
 
 #[test]

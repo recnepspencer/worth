@@ -22,8 +22,13 @@ impl NativeInvariantPoints {
     pub(super) fn compile(
         declared: &[InvariantRegistration],
         native: &[InvariantRegistration],
+        aspect_exclusion: bool,
         control: SchemaCompilationControl<'_, '_>,
     ) -> Result<Arc<Self>, Denial> {
+        let exclusion = aspect_exclusion.then(|| {
+            InvariantRegistration::commit_boundary_blocking(InvariantRule::EntityAspectExclusion)
+        });
+        let registrations = || exclusion.iter().chain(declared).chain(native);
         let mut counts = [0usize; Point::COUNT];
         let mut bytes = Layout::new::<[usize; 2]>()
             .extend(Layout::new::<Self>())
@@ -32,7 +37,7 @@ impl NativeInvariantPoints {
             .pad_to_align()
             .size();
         for (point, count) in counts.iter_mut().enumerate() {
-            for registration in declared.iter().chain(native) {
+            for registration in registrations() {
                 control.checkpoint()?;
                 if includes(point, registration) {
                     *count = count.checked_add(1).ok_or(Denial::MemoryOverflow)?;
@@ -50,7 +55,7 @@ impl NativeInvariantPoints {
         let mut points = std::array::from_fn(|point| Vec::with_capacity(counts[point]));
         for (point, entries) in points.iter_mut().enumerate() {
             for rejects_deletion in [true, false] {
-                for registration in declared.iter().chain(native) {
+                for registration in registrations() {
                     control.checkpoint()?;
                     if includes(point, registration)
                         && rejects_live_endpoint_deletion(registration) == rejects_deletion

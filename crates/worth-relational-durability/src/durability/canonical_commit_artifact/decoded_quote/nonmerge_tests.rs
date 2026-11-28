@@ -16,6 +16,7 @@ use contracts::validation::data::rule_id::{
 };
 use worth_relational_contracts::internal_port as contracts;
 pub mod corrective_sources;
+mod exclusion;
 pub mod optional_fields;
 use contracts::graph_member::key::{NativeMemberKey, ProjectedMemberCoordinate};
 use contracts::identity::data::primitives::PartitionId;
@@ -165,21 +166,20 @@ fn owned_decode_schema_text_and_error_clone_keep_original_leaf_grant() {
     drop(error);
     assert_eq!(budget.charged_memory_bytes(), 0);
     let (before, after) = optional_fields::schema();
-    let (memory, retained) =
+    let (_, retained) =
         schema::prepare_canonical_readmission(BorrowedPayload(&before), &request).unwrap();
-    drop(memory);
-    let (memory, omitted_retained) =
+    let (_, omitted_retained) =
         schema::prepare_canonical_readmission(BorrowedPayload(&after), &request).unwrap();
     assert_eq!(retained, omitted_retained);
-    drop(memory);
     let (before, after) = optional_fields::validation();
-    let (memory, retained) =
+    let (_, retained) =
         validation::prepare_canonical_readmission(BorrowedPayload(&before), &request).unwrap();
-    drop(memory);
-    let (memory, omitted_retained) =
+    let (_, omitted_retained) =
         validation::prepare_canonical_readmission(BorrowedPayload(&after), &request).unwrap();
     assert_eq!(retained, omitted_retained);
-    drop(memory);
+    exclusion::assert_roundtrip_and_quote(|bytes| {
+        validation::execution(BorrowedPayload(bytes), &request).unwrap()
+    });
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
 

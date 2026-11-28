@@ -32,6 +32,9 @@ pub(crate) fn evaluate_rule(
     rule: &InvariantRule,
 ) -> Vec<InvariantViolation> {
     match rule {
+        InvariantRule::EntityAspectExclusion => single_violation(
+            record_surface_rules::aspect_exclusion::evaluate(context, class),
+        ),
         InvariantRule::LiveRecordRequiresSidecar(kind) => {
             evaluate_record_surface_rule(context, class, kind)
         }

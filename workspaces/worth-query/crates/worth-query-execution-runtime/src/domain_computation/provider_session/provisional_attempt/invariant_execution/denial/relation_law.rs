@@ -206,6 +206,7 @@ impl<'a> WorthQueryRelationLawDenial<'a> {
             | InvariantViolationFields::StorageInconsistency { .. }
             | InvariantViolationFields::CustomInvariantFailure { .. }
             | InvariantViolationFields::CustomInvariantViolation { .. }
+            | InvariantViolationFields::EntityAspectExclusion { .. }
             | InvariantViolationFields::DerivedRelationGraph { .. } => None,
         }
     }
