@@ -1,12 +1,14 @@
+use std::borrow::Cow;
+
 use crate::input::envelope::BridgeCommittedPatchItem;
 use crate::mapping::freezing::{FrozenBridgeMappingRegistration, FrozenMappingRegistry};
 use crate::mapping::{TruthDeltaSurfaceKind, TruthPatchTargetView};
 use crate::routing::surfaces::TruthDeltaSurface;
 use worth_foundational::facade::{AspectKey, CanonicalFieldPath};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgeMappingLookupKey<'a> {
-    entity_identity: &'a str,
+    entity_identity: Cow<'a, str>,
     aspect_key: &'a AspectKey,
     field_path: Option<&'a CanonicalFieldPath>,
     surface_kind: TruthDeltaSurfaceKind,
@@ -20,7 +22,7 @@ impl<'a> BridgeMappingLookupKey<'a> {
         surface_kind: TruthDeltaSurfaceKind,
     ) -> Self {
         Self {
-            entity_identity,
+            entity_identity: Cow::Borrowed(entity_identity),
             aspect_key,
             field_path,
             surface_kind,
@@ -28,7 +30,7 @@ impl<'a> BridgeMappingLookupKey<'a> {
     }
 
     pub fn entity_identity(&self) -> &str {
-        self.entity_identity
+        self.entity_identity.as_ref()
     }
 
     pub fn aspect_key(&self) -> &AspectKey {
@@ -38,12 +40,12 @@ impl<'a> BridgeMappingLookupKey<'a> {
 
 impl<'a> From<&'a BridgeCommittedPatchItem> for BridgeMappingLookupKey<'a> {
     fn from(value: &'a BridgeCommittedPatchItem) -> Self {
-        Self::new(
-            value.entity_identity(),
-            value.aspect_key(),
-            value.field_locator().map(|locator| locator.field_path()),
-            value.surface_kind(),
-        )
+        Self {
+            entity_identity: value.entity_identity(),
+            aspect_key: value.aspect_key(),
+            field_path: value.field_locator().map(|locator| locator.field_path()),
+            surface_kind: value.surface_kind(),
+        }
     }
 }
 
@@ -107,7 +109,7 @@ impl FrozenMappingRegistry {
         let mut matches = self
             .registrations
             .iter()
-            .filter(|registration| registration.truth_scope().matches_key(key))
+            .filter(|registration| registration.truth_scope().matches_key(&key))
             .collect::<Vec<_>>();
         if matches.is_empty() {
             return BridgeMappingLookup::Missing;
@@ -142,7 +144,7 @@ impl FrozenMappingRegistry {
         surface: &'a TruthDeltaSurface,
     ) -> BridgeMappingLookup<'a> {
         self.lookup(BridgeMappingLookupKey::new(
-            surface.entity_identity(),
+            surface.entity_identity().as_ref(),
             surface.aspect_key(),
             surface.field_locator().map(|locator| locator.field_path()),
             surface.surface_kind(),

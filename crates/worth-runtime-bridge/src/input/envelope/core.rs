@@ -128,9 +128,7 @@ impl BridgeProducerMetadata {
 
 impl CheapClone for BridgeProducerMetadata {}
 
-pub type TruthCommitIdentity = BridgeIdentity<TruthCommitTag>;
-pub type TruthPatchIdentity = BridgeIdentity<TruthPatchTag>;
-pub type TruthBranchIdentity = BridgeIdentity<TruthBranchTag>;
+pub use crate::identity::truth::{TruthBranchIdentity, TruthCommitIdentity, TruthPatchIdentity};
 pub type BridgeCommittedPatchDigest = BridgeIdentity<CommittedPatchDigestTag>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -193,70 +191,4 @@ impl BridgeCommittedPatchEnvelopeIdentity {
     pub fn branch_identity(&self) -> &TruthBranchIdentity {
         &self.branch_identity
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct BridgePatchEnvelopeHeader {
-    producer_metadata: BridgeProducerMetadata,
-    commit_identity: TruthCommitIdentity,
-    patch_identity: TruthPatchIdentity,
-    snapshot_identity: TruthSnapshotIdentity,
-    branch_identity: TruthBranchIdentity,
-}
-
-impl BridgePatchEnvelopeHeader {
-    pub(super) fn new(
-        producer_metadata: BridgeProducerMetadata,
-        commit_identity: TruthCommitIdentity,
-        patch_identity: TruthPatchIdentity,
-        snapshot_identity: TruthSnapshotIdentity,
-        branch_identity: TruthBranchIdentity,
-    ) -> Self {
-        Self {
-            producer_metadata,
-            commit_identity,
-            patch_identity,
-            snapshot_identity,
-            branch_identity,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct BridgeEnvelopeCore<Body> {
-    pub(super) header: BridgePatchEnvelopeHeader,
-    pub(super) body: Body,
-}
-
-impl<Body> BridgeEnvelopeCore<Body> {
-    pub(super) fn new(header: BridgePatchEnvelopeHeader, body: Body) -> Self {
-        Self { header, body }
-    }
-
-    pub(super) fn producer_metadata(&self) -> &BridgeProducerMetadata {
-        &self.header.producer_metadata
-    }
-
-    pub(super) fn commit_identity(&self) -> &TruthCommitIdentity {
-        &self.header.commit_identity
-    }
-
-    pub(super) fn patch_identity(&self) -> &TruthPatchIdentity {
-        &self.header.patch_identity
-    }
-
-    pub(super) fn snapshot_identity(&self) -> &TruthSnapshotIdentity {
-        &self.header.snapshot_identity
-    }
-
-    pub(super) fn branch_identity(&self) -> &TruthBranchIdentity {
-        &self.header.branch_identity
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct CanonicalPatchEnvelopeBody {
-    pub(super) patch_summary: BridgeCommittedPatchSummary,
-    pub(super) patch_body: BridgeCommittedPatchBody,
-    pub(super) digest: BridgeCommittedPatchDigest,
 }

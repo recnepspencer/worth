@@ -53,11 +53,8 @@ pub fn prepare(
     let locator = layout
         .field_locator(locus.entity(), locus.aspect(), locus.field())
         .expect("installed output field");
-    let expected_record = worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(
-        entity.partition_id.0,
-        entity.local_slot.0,
-        entity.generation.0,
-    );
+    let expected_record =
+        worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::from_entity(entity);
     let Some(dependency) = lowering
         .semantic_dependencies()
         .find(|dependency| dependency.dependency_ordinal() == ordinal)

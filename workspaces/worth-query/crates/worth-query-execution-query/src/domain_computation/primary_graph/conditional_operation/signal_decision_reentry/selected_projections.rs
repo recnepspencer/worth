@@ -1,6 +1,6 @@
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
-use worth_runtime_bridge::facade::BridgeIdentityEvidence;
+use worth_runtime_bridge::facade::{TruthBranchIdentity, TruthSnapshotIdentity};
 
 use crate::domain_computation::primary_graph::primary_truth_branch_identity;
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
@@ -10,19 +10,14 @@ use crate::domain_computation::primary_graph::product_operation::SharedSelectedP
 /// pair arbitrary projection strings with a different Product.
 pub struct WorthQuerySelectedSignalProjections {
     owner_identity: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
-    branch: BridgeIdentityEvidence,
-    snapshot: BridgeIdentityEvidence,
+    branch: TruthBranchIdentity,
+    snapshot: TruthSnapshotIdentity,
 }
 
 impl WorthQuerySelectedSignalProjections {
     pub(in crate::domain_computation::primary_graph) fn prepare<Schema>(
         selected: &SharedSelectedProductOperation<'_, Schema>,
     ) -> Result<Self, CompanionPreflightStop> {
-        // Relational branch projection makes the input Arc, a framed String,
-        // and the final framed Arc at once. The snapshot evidence only shares
-        // its existing owner-issued Arc.
-
-        let branch = primary_truth_branch_identity();
         Ok(Self {
             owner_identity: selected
                 .selected()
@@ -30,12 +25,8 @@ impl WorthQuerySelectedSignalProjections {
                 .observation()
                 .branch_identity()
                 .owner_identity(),
-            branch: branch.bridge_admission_evidence(),
-            snapshot: selected
-                .selected()
-                .product()
-                .bridge_snapshot_identity()
-                .bridge_admission_evidence(),
+            branch: primary_truth_branch_identity(),
+            snapshot: *selected.selected().product().bridge_snapshot_identity(),
         })
     }
 
@@ -45,11 +36,11 @@ impl WorthQuerySelectedSignalProjections {
         self.owner_identity
     }
 
-    pub(in crate::domain_computation::primary_graph) fn branch(&self) -> &str {
+    pub(in crate::domain_computation::primary_graph) fn branch(&self) -> String {
         self.branch.terminal_projection_for_reporting()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn snapshot(&self) -> &str {
+    pub(in crate::domain_computation::primary_graph) fn snapshot(&self) -> String {
         self.snapshot.terminal_projection_for_reporting()
     }
 }

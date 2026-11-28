@@ -55,7 +55,7 @@ fn bridge_bulk_packet_set_tracks_truth_view_materialization_packets() {
             .iter()
             .map(|packet| packet.source_snapshot())
             .collect::<Vec<_>>(),
-        vec![snapshot_a.as_str(), snapshot_a.as_str()]
+        vec![snapshot_a.canonical_label(), snapshot_a.canonical_label()]
     );
     assert_eq!(
         planned
@@ -138,7 +138,7 @@ fn bridge_bulk_reduction_artifact_carries_truth_view_materializations() {
             .reduced_artifact()
             .reduced_truth_views()[0]
             .source_snapshot(),
-        observation_a.snapshot_identity().clone().as_str()
+        observation_a.snapshot_identity().clone().canonical_label()
     );
     assert_eq!(
         left.execution_plan()

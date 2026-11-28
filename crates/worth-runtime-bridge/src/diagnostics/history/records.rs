@@ -59,8 +59,8 @@ impl BridgeHistoricalEvaluationDecisionLog {
     ) -> Self {
         let commit_identity_basis = commit_identity
             .as_ref()
-            .map(TruthCommitIdentity::as_str)
-            .unwrap_or("none");
+            .map(TruthCommitIdentity::canonical_label)
+            .unwrap_or_else(|| "none".to_owned());
         let canonical_basis = format!(
             "historical-evaluation-decision-log|declaration={}|selector={}|policy={}|planned={}|authority={}|path={materialization_path:?}|branch={}|commit={}|snapshot={}",
             declaration_identity.as_str(),
@@ -68,9 +68,9 @@ impl BridgeHistoricalEvaluationDecisionLog {
             resolved_policy_digest.as_ref(),
             planned_packet_digest.as_ref(),
             authority_digest.as_ref(),
-            branch_identity.as_str(),
+            branch_identity.canonical_label(),
             commit_identity_basis,
-            snapshot_identity.as_str(),
+            snapshot_identity.canonical_label(),
         );
         let digest = Sha256::digest(canonical_basis.as_bytes());
         Self {

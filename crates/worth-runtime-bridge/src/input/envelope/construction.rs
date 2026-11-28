@@ -1,13 +1,13 @@
 use crate::error::{
     BridgeErrorContext, BridgePatchTargetCoordinate, BridgeRouteError, BridgeRouteErrorKind,
 };
+use crate::identity::record::BridgeRecordIdentity;
 use crate::mapping::TruthDeltaSurfaceKind;
 
 use super::{
     BridgeAuthoritativePatchLoweringCounters, BridgeCommittedPatchBody, BridgeCommittedPatchDigest,
     BridgeCommittedPatchEnvelope, BridgeCommittedPatchEnvelopeIdentity, BridgeCommittedPatchItem,
-    BridgeCommittedPatchSummary, BridgeCommittedRecordChange, BridgeEnvelopeCore,
-    BridgePatchEnvelopeHeader, CanonicalPatchEnvelopeBody,
+    BridgeCommittedPatchSummary, BridgeCommittedRecordChange,
 };
 
 mod producer_authority;
@@ -35,22 +35,9 @@ pub(super) fn construct_committed_patch_envelope_with_record_changes(
     authoritative_lowering: BridgeAuthoritativePatchLoweringCounters,
 ) -> Result<BridgeCommittedPatchEnvelope, BridgeRouteError> {
     validate_producer_metadata(envelope_identity.producer_metadata())?;
-    validate_identity(
-        "commit identity",
-        envelope_identity.commit_identity().as_str(),
-    )?;
-    validate_identity(
-        "patch identity",
-        envelope_identity.patch_identity().as_str(),
-    )?;
-    validate_identity(
-        "snapshot identity",
-        envelope_identity.snapshot_identity().as_str(),
-    )?;
-    validate_identity(
-        "branch identity",
-        envelope_identity.branch_identity().as_str(),
-    )?;
+    if let Some(branch) = envelope_identity.branch_identity().branch_id() {
+        validate_identity("branch identity", &branch.0)?;
+    }
 
     let patch_item_count = patch_items.len();
     let mut canonical_items = patch_items;
@@ -91,26 +78,12 @@ pub(super) fn construct_committed_patch_envelope_with_record_changes(
     let digest = BridgeCommittedPatchDigest::admit_bridge_owned(committed_patch_digest_from_basis(
         &committed_patch_digest_basis,
     ));
-    validate_identity("committed patch digest", digest.as_str())?;
 
-    Ok(BridgeCommittedPatchEnvelope::from_core(
-        BridgeEnvelopeCore::new(
-            BridgePatchEnvelopeHeader::new(
-                envelope_identity.producer_metadata().clone(),
-                envelope_identity.commit_identity().clone(),
-                envelope_identity.patch_identity().clone(),
-                envelope_identity.snapshot_identity().clone(),
-                envelope_identity.branch_identity().clone(),
-            ),
-            CanonicalPatchEnvelopeBody {
-                patch_summary,
-                patch_body: BridgeCommittedPatchBody::new(
-                    canonical_items,
-                    canonical_record_changes,
-                ),
-                digest,
-            },
-        ),
+    Ok(BridgeCommittedPatchEnvelope::canonical(
+        envelope_identity,
+        patch_summary,
+        BridgeCommittedPatchBody::new(canonical_items, canonical_record_changes),
+        digest,
     ))
 }
 
@@ -118,8 +91,8 @@ pub(super) fn canonical_patch_item_order(
     left: &BridgeCommittedPatchItem,
     right: &BridgeCommittedPatchItem,
 ) -> std::cmp::Ordering {
-    left.entity_identity()
-        .cmp(right.entity_identity())
+    left.record()
+        .cmp(right.record())
         .then_with(|| left.aspect_locator().cmp(right.aspect_locator()))
         .then_with(|| left.surface_kind().cmp(&right.surface_kind()))
         .then_with(|| left.field_locator().cmp(&right.field_locator()))
@@ -130,11 +103,10 @@ fn validate_patch_item(
     index: usize,
     item: &BridgeCommittedPatchItem,
 ) -> Result<(), BridgeRouteError> {
-    validate_identity(
-        &format!("patch item #{index} entity identity"),
-        item.entity_identity(),
-    )
-    .map_err(|error| error.with_context(patch_context(item)))?;
+    if let BridgeRecordIdentity::External(label) = item.record() {
+        validate_identity(&format!("patch item #{index} entity identity"), label)
+            .map_err(|error| error.with_context(patch_context(item)))?;
+    }
     validate_identity(
         &format!("patch item #{index} target canonical basis"),
         &item.target_canonical_basis(),

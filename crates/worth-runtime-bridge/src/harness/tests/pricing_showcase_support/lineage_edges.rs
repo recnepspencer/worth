@@ -14,36 +14,56 @@ impl PricingWorkloadCertificationBundle {
     ) -> Vec<PricingLineageProvenanceEdge> {
         vec![
             PricingLineageProvenanceEdge {
-                from: self.matrix.reference.source_commit.as_str().to_owned(),
-                to: self.matrix.reference.main_snapshot.as_str().to_owned(),
+                from: self
+                    .matrix
+                    .reference
+                    .source_commit
+                    .canonical_label()
+                    .to_owned(),
+                to: self
+                    .matrix
+                    .reference
+                    .main_snapshot
+                    .canonical_label()
+                    .to_owned(),
                 kind: "commit_to_snapshot",
                 surface: "reference",
             },
             PricingLineageProvenanceEdge {
-                from: self.provenance.main_commit.as_str().to_owned(),
-                to: self.provenance.main_snapshot.as_str().to_owned(),
+                from: self.provenance.main_commit.canonical_label().to_owned(),
+                to: self.provenance.main_snapshot.canonical_label().to_owned(),
                 kind: "commit_to_snapshot",
                 surface: "historical_provenance",
             },
             PricingLineageProvenanceEdge {
-                from: self.provenance.shock_commit.as_str().to_owned(),
-                to: self.provenance.shock_snapshot.as_str().to_owned(),
+                from: self.provenance.shock_commit.canonical_label().to_owned(),
+                to: self.provenance.shock_snapshot.canonical_label().to_owned(),
                 kind: "commit_to_snapshot",
                 surface: "historical_provenance",
             },
             PricingLineageProvenanceEdge {
-                from: self.matrix.reference.main_snapshot.as_str().to_owned(),
+                from: self
+                    .matrix
+                    .reference
+                    .main_snapshot
+                    .canonical_label()
+                    .to_owned(),
                 to: self
                     .matrix
                     .reference
                     .speculative_snapshot
-                    .as_str()
+                    .canonical_label()
                     .to_owned(),
                 kind: "fork_basis_to_speculative_snapshot",
                 surface: "branch_comparison",
             },
             PricingLineageProvenanceEdge {
-                from: self.matrix.replay.source_commit.as_str().to_owned(),
+                from: self
+                    .matrix
+                    .replay
+                    .source_commit
+                    .canonical_label()
+                    .to_owned(),
                 to: self.matrix.replay.route_identity.as_str().to_owned(),
                 kind: "commit_to_route",
                 surface: "replay",
@@ -55,7 +75,7 @@ impl PricingWorkloadCertificationBundle {
                 surface: "replay",
             },
             PricingLineageProvenanceEdge {
-                from: self.aspect.source_commit.as_str().to_owned(),
+                from: self.aspect.source_commit.canonical_label().to_owned(),
                 to: self.aspect.aspect_registration_id.as_str().to_owned(),
                 kind: "commit_to_aspect_registration",
                 surface: "aspect",
@@ -67,13 +87,21 @@ impl PricingWorkloadCertificationBundle {
                 surface: "aspect",
             },
             PricingLineageProvenanceEdge {
-                from: self.fanout.second_source_commit.as_str().to_owned(),
-                to: self.fanout.second_snapshot.as_str().to_owned(),
+                from: self
+                    .fanout
+                    .second_source_commit
+                    .canonical_label()
+                    .to_owned(),
+                to: self.fanout.second_snapshot.clone(),
                 kind: "commit_to_snapshot",
                 surface: "fanout",
             },
             PricingLineageProvenanceEdge {
-                from: self.restart_replay.source_commit.as_str().to_owned(),
+                from: self
+                    .restart_replay
+                    .source_commit
+                    .canonical_label()
+                    .to_owned(),
                 to: self.restart_replay.route_identity.as_str().to_owned(),
                 kind: "commit_to_route",
                 surface: "restart_replay",
@@ -85,8 +113,16 @@ impl PricingWorkloadCertificationBundle {
                 surface: "writeback",
             },
             PricingLineageProvenanceEdge {
-                from: self.hostile_failure.source_commit.as_str().to_owned(),
-                to: self.hostile_failure.source_snapshot.as_str().to_owned(),
+                from: self
+                    .hostile_failure
+                    .source_commit
+                    .canonical_label()
+                    .to_owned(),
+                to: self
+                    .hostile_failure
+                    .source_snapshot
+                    .canonical_label()
+                    .to_owned(),
                 kind: "hostile_commit_to_snapshot",
                 surface: "hostile",
             },

@@ -43,15 +43,15 @@ impl BridgeTruthViewAuthorityBasis {
             "truth-view-authority|selector={}|selector-basis={}|branch={}|commit={}|snapshot={}",
             selector.selector_identity().as_str(),
             selector.canonical_basis(),
-            selector.branch_identity().as_str(),
+            selector.branch_identity().canonical_label(),
             commit_identity
                 .as_ref()
-                .map(TruthCommitIdentity::as_str)
-                .unwrap_or("-"),
+                .map(TruthCommitIdentity::canonical_label)
+                .unwrap_or_else(|| "-".to_owned()),
             snapshot_identity
                 .as_ref()
-                .map(TruthSnapshotIdentity::as_str)
-                .unwrap_or("-"),
+                .map(TruthSnapshotIdentity::canonical_label)
+                .unwrap_or_else(|| "-".to_owned()),
         ));
         let digest = Sha256::digest(canonical_basis.as_bytes());
         Self {
@@ -204,7 +204,7 @@ mod tests {
         assert_eq!(
             left.canonical_basis(),
             format!(
-                "truth-view-authority|selector={}|selector-basis={}|branch=analysis|commit=-|snapshot=snapshot-a",
+                "truth-view-authority|selector={}|selector-basis={}|branch=relational-branch:analysis|commit=-|snapshot=relational-snapshot:1:version:1",
                 selector.selector_identity().as_str(),
                 selector.canonical_basis(),
             )

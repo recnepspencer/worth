@@ -78,8 +78,8 @@ impl BridgeTemporalCauseRecord {
         let truth_patch_identity = input
             .truth_patch_identity
             .as_ref()
-            .map(TruthPatchIdentity::as_str)
-            .unwrap_or("none");
+            .map(TruthPatchIdentity::canonical_label)
+            .unwrap_or_else(|| "none".to_owned());
         let truth_patch_digest = input.truth_patch_digest.as_deref().unwrap_or("none");
         let preview_basis_identity = input
             .preview_basis_identity

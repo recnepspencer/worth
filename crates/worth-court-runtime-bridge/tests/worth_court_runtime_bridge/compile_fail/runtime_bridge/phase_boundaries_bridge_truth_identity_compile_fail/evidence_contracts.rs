@@ -84,123 +84,67 @@ pub(super) fn contracts() -> Vec<Contract<'static>> {
             errors: &[
                 Diagnostic::Code {
                     code: "E0277",
-                    symbols: &["BridgeIdentity", "Display", "TruthCommitTag"],
+                    symbols: &["Display", "TruthCommitIdentity"],
+                },
+                Diagnostic::Code {
+                    code: "E0599",
+                    symbols: &["as_str", "TruthCommitIdentity"],
                 },
                 Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthCommitTag>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["BridgeIdentity", "TruthCommitTag", "str"],
+                    pairs: &[Pair { expected: "TruthCommitIdentity", found: "&str" }],
+                    symbols: &["TruthCommitIdentity", "str"],
+                },
+                Diagnostic::Code {
+                    code: "E0599",
+                    symbols: &["new", "TruthCommitIdentity"],
                 },
                 Diagnostic::Code {
                     code: "E0277",
-                    symbols: &["BridgeIdentity", "Display", "TruthSnapshotTag"],
+                    symbols: &["Display", "TruthSnapshotIdentity"],
+                },
+                Diagnostic::Code {
+                    code: "E0599",
+                    symbols: &["as_str", "TruthSnapshotIdentity"],
                 },
                 Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthSnapshotTag>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["BridgeIdentity", "TruthSnapshotTag", "str"],
+                    pairs: &[Pair { expected: "TruthSnapshotIdentity", found: "&str" }],
+                    symbols: &["TruthSnapshotIdentity", "str"],
+                },
+                Diagnostic::Code {
+                    code: "E0599",
+                    symbols: &["new", "TruthSnapshotIdentity"],
                 },
                 Diagnostic::Code {
                     code: "E0277",
-                    symbols: &["BridgeIdentity", "Display", "TruthPatchTag"],
+                    symbols: &["Display", "TruthPatchIdentity"],
+                },
+                Diagnostic::Code {
+                    code: "E0599",
+                    symbols: &["as_str", "TruthPatchIdentity"],
                 },
                 Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthPatchTag>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["BridgeIdentity", "TruthPatchTag", "str"],
+                    pairs: &[Pair { expected: "TruthPatchIdentity", found: "&str" }],
+                    symbols: &["TruthPatchIdentity", "str"],
+                },
+                Diagnostic::Code {
+                    code: "E0599",
+                    symbols: &["new", "TruthPatchIdentity"],
                 },
                 Diagnostic::Code {
                     code: "E0277",
-                    symbols: &["BridgeIdentity", "Display", "TruthBranchTag"],
+                    symbols: &["Display", "TruthBranchIdentity"],
+                },
+                Diagnostic::Code {
+                    code: "E0599",
+                    symbols: &["as_str", "TruthBranchIdentity"],
                 },
                 Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthBranchTag>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["BridgeIdentity", "TruthBranchTag", "str"],
+                    pairs: &[Pair { expected: "TruthBranchIdentity", found: "&str" }],
+                    symbols: &["TruthBranchIdentity", "str"],
                 },
                 Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["as_str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["as_str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["as_str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["as_str"],
+                    code: "E0599",
+                    symbols: &["new", "TruthBranchIdentity"],
                 },
             ],
         },
@@ -210,11 +154,11 @@ pub(super) fn contracts() -> Vec<Contract<'static>> {
                 Diagnostic::TypeMismatch {
                     pairs: &[
                         Pair {
-                            expected: "worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthBranchTag>",
-                            found: "worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthCommitTag>",
+                            expected: "TruthBranchIdentity",
+                            found: "TruthCommitIdentity",
                         },
                     ],
-                    symbols: &["BridgeIdentity", "TruthBranchTag", "TruthCommitTag"],
+                    symbols: &["TruthBranchIdentity", "TruthCommitIdentity"],
                 },
             ],
         },

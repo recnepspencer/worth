@@ -5,12 +5,12 @@ impl PricingWorkloadCertificationBundle {
     pub(in crate::harness::tests) fn showcase_artifact_json(&self) -> serde_json::Value {
         json!({
             "executive_summary": {
-                "main_branch": self.matrix.reference.source_branch.as_str(),
-                "speculative_truth_branch": self.matrix.reference.speculative_truth_branch.as_str(),
-                "main_snapshot": self.matrix.reference.main_snapshot.as_str(),
-                "speculative_snapshot": self.matrix.reference.speculative_snapshot.as_str(),
+                "main_branch": self.matrix.reference.source_branch.canonical_label(),
+                "speculative_truth_branch": self.matrix.reference.speculative_truth_branch.canonical_label(),
+                "main_snapshot": self.matrix.reference.main_snapshot.canonical_label(),
+                "speculative_snapshot": self.matrix.reference.speculative_snapshot.canonical_label(),
                 "same_fork_basis_preserved": true,
-                "shock_commit": self.provenance.shock_commit.as_str(),
+                "shock_commit": self.provenance.shock_commit.canonical_label(),
                 "shock_regime": self.provenance.shock_regime,
                 "shock_multiplier_per_mille": self.provenance.shock_multiplier_per_mille,
                 "main_vs_speculative_rubber_delta_cents":
@@ -25,36 +25,36 @@ impl PricingWorkloadCertificationBundle {
             "timeline": [
                 {
                     "phase": "main_basis",
-                    "branch": self.matrix.reference.source_branch.as_str(),
-                    "commit": self.matrix.reference.source_commit.as_str(),
-                    "snapshot": self.matrix.reference.main_snapshot.as_str(),
+                    "branch": self.matrix.reference.source_branch.canonical_label(),
+                    "commit": self.matrix.reference.source_commit.canonical_label(),
+                    "snapshot": self.matrix.reference.main_snapshot.canonical_label(),
                     "meaning": "ordinary live route basis",
                 },
                 {
                     "phase": "historical_main_provenance",
-                    "branch": self.matrix.reference.source_branch.as_str(),
-                    "commit": self.provenance.main_commit.as_str(),
-                    "snapshot": self.provenance.main_snapshot.as_str(),
+                    "branch": self.matrix.reference.source_branch.canonical_label(),
+                    "commit": self.provenance.main_commit.canonical_label(),
+                    "snapshot": self.provenance.main_snapshot.canonical_label(),
                     "meaning": "retained main-branch pricing provenance",
                 },
                 {
                     "phase": "speculative_shock",
-                    "branch": self.matrix.reference.speculative_truth_branch.as_str(),
-                    "commit": self.provenance.shock_commit.as_str(),
-                    "snapshot": self.provenance.shock_snapshot.as_str(),
+                    "branch": self.matrix.reference.speculative_truth_branch.canonical_label(),
+                    "commit": self.provenance.shock_commit.canonical_label(),
+                    "snapshot": self.provenance.shock_snapshot.canonical_label(),
                     "meaning": "branch-local crisis shock",
                 },
                 {
                     "phase": "main_interleaved_fanout",
-                    "branch": self.matrix.reference.source_branch.as_str(),
-                    "commit": self.fanout.second_source_commit.as_str(),
-                    "snapshot": self.fanout.second_snapshot.as_str(),
+                    "branch": self.matrix.reference.source_branch.canonical_label(),
+                    "commit": self.fanout.second_source_commit.canonical_label(),
+                    "snapshot": self.fanout.second_snapshot,
                     "meaning": "live high-fanout main-branch continuation",
                 },
             ],
             "branch_comparison": {
-                "main_snapshot": self.matrix.reference.main_snapshot.as_str(),
-                "speculative_snapshot": self.matrix.reference.speculative_snapshot.as_str(),
+                "main_snapshot": self.matrix.reference.main_snapshot.canonical_label(),
+                "speculative_snapshot": self.matrix.reference.speculative_snapshot.canonical_label(),
                 "main_rubber_cost_cents": self.matrix.reference.main_rubber_cost_cents,
                 "speculative_rubber_cost_cents": self.matrix.reference.speculative_rubber_cost_cents,
                 "delta_rubber_cost_cents":

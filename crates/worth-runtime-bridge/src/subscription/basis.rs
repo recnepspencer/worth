@@ -119,7 +119,7 @@ impl ValidatedSubscriptionBasisBinding {
                         BridgeSubscriptionBasisResolutionFailureKind::BranchHeadResolutionFailure,
                         format!(
                             "Bridge runtime failed to resolve branch head `{}` for subscription `{}`: {error}",
-                            branch_identity.as_str(),
+                            branch_identity.canonical_label(),
                             declaration.declaration_identity().as_str()
                         ),
                     )
@@ -129,9 +129,9 @@ impl ValidatedSubscriptionBasisBinding {
                         BridgeSubscriptionBasisResolutionFailureKind::BranchHeadMismatch,
                         format!(
                             "Bridge runtime resolved branch head request `{}` for subscription `{}` onto branch `{}`.",
-                            branch_identity.as_str(),
+                            branch_identity.canonical_label(),
                             declaration.declaration_identity().as_str(),
-                            patch.branch_identity().as_str()
+                            patch.branch_identity().canonical_label()
                         ),
                     ));
                 }
@@ -151,13 +151,13 @@ impl ValidatedSubscriptionBasisBinding {
             basis_kind.as_str(),
             branch_identity
                 .as_ref()
-                .map(TruthBranchIdentity::as_str)
-                .unwrap_or("-"),
+                .map(TruthBranchIdentity::canonical_label)
+                .unwrap_or_else(|| "-".to_owned()),
             commit_identity
                 .as_ref()
-                .map(TruthCommitIdentity::as_str)
-                .unwrap_or("-"),
-            snapshot_identity.as_str(),
+                .map(TruthCommitIdentity::canonical_label)
+                .unwrap_or_else(|| "-".to_owned()),
+            snapshot_identity.canonical_label(),
         ));
         let digest = Sha256::digest(canonical_basis.as_bytes());
 
@@ -222,7 +222,7 @@ fn bind_snapshot_basis(
                 BridgeSubscriptionBasisResolutionFailureKind::SnapshotAcquisitionFailure,
                 format!(
                     "Bridge runtime failed to acquire snapshot `{}` for subscription basis binding: {}",
-                    snapshot_identity.as_str(),
+                    snapshot_identity.canonical_label(),
                     error
                 ),
             ),
@@ -230,7 +230,7 @@ fn bind_snapshot_basis(
                 BridgeSubscriptionBasisResolutionFailureKind::SnapshotIdentityMismatch,
                 format!(
                     "Bridge runtime bound the wrong snapshot while proving subscription basis `{}`: {}",
-                    snapshot_identity.as_str(),
+                    snapshot_identity.canonical_label(),
                     error
                 ),
             ),
@@ -238,7 +238,7 @@ fn bind_snapshot_basis(
                 BridgeSubscriptionBasisResolutionFailureKind::SnapshotAcquisitionFailure,
                 format!(
                     "Bridge runtime failed to prove subscription snapshot basis `{}`: {}",
-                    snapshot_identity.as_str(),
+                    snapshot_identity.canonical_label(),
                     error
                 ),
             ),

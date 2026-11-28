@@ -174,12 +174,20 @@ impl PricingWorkloadCertificationBundle {
             branch_isolation: self.matrix.reference.main_snapshot
                 != self.matrix.reference.speculative_snapshot,
             policy: true,
-            source: !self.hostile_failure.source_commit.as_str().is_empty()
-                && !self.hostile_failure.source_snapshot.as_str().is_empty(),
+            source: !self
+                .hostile_failure
+                .source_commit
+                .canonical_label()
+                .is_empty()
+                && !self
+                    .hostile_failure
+                    .source_snapshot
+                    .canonical_label()
+                    .is_empty(),
             preview: self.discard.session_closed && self.promotion.session_closed,
             writeback: !self.writeback.committed_effect_intent_digest.is_empty(),
-            historical_provenance: !self.provenance.shock_commit.as_str().is_empty()
-                && !self.provenance.shock_snapshot.as_str().is_empty(),
+            historical_provenance: !self.provenance.shock_commit.canonical_label().is_empty()
+                && !self.provenance.shock_snapshot.canonical_label().is_empty(),
             portfolio: self.portfolio.product_count > 0,
             crisis: !self.crisis.crisis_name.is_empty() && self.crisis.affected_product_count > 0,
             strategy: !self.strategy.recommended_strategy.is_empty(),
@@ -254,8 +262,8 @@ impl PricingWorkloadCertificationBundle {
             failure_taxonomy_unclassified_count: 0,
             diagnostics_entrypoint_request_count: entrypoints.entrypoint_count(),
             showcase_entrypoint_request_count: usize::from(
-                !self.provenance.main_commit.as_str().is_empty()
-                    && !self.provenance.shock_commit.as_str().is_empty(),
+                !self.provenance.main_commit.canonical_label().is_empty()
+                    && !self.provenance.shock_commit.canonical_label().is_empty(),
             ),
             simulation_trace_bundle_count: usize::from(
                 !self.simulation.iteration_traces.is_empty(),
@@ -271,7 +279,11 @@ impl PricingWorkloadCertificationBundle {
 
     fn trust_attack_classification_count(&self) -> usize {
         [
-            !self.hostile_failure.source_commit.as_str().is_empty(),
+            !self
+                .hostile_failure
+                .source_commit
+                .canonical_label()
+                .is_empty(),
             self.restart_failure.replay_mismatch_count > 0,
             !format!("{:?}", self.restart_failure.error_kind).is_empty(),
             true,

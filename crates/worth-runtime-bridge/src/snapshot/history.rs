@@ -33,16 +33,16 @@ impl LoweredHistoricalEvaluationArtifact {
         let commit_identity = authority_basis.commit_identity().cloned();
         let commit_identity_basis = commit_identity
             .as_ref()
-            .map(|identity| format!("present:{}", identity.as_str()))
+            .map(|identity| format!("present:{}", identity.canonical_label()))
             .unwrap_or_else(|| "absent".to_string());
         let canonical_basis = Arc::<str>::from(format!(
             "lowered-historical-evaluation-artifact|declaration={}|planned={}|authority={}|branch={}|commit={}|snapshot={}|path={materialization_path:?}",
             observation.planned().declaration().declaration_identity().as_str(),
             observation.planned().digest(),
             authority_basis.digest(),
-            authority_basis.branch_identity().as_str(),
+            authority_basis.branch_identity().canonical_label(),
             commit_identity_basis.as_str(),
-            observation.snapshot_identity().as_str(),
+            observation.snapshot_identity().canonical_label(),
         ));
         let digest = Sha256::digest(canonical_basis.as_bytes());
         Self {

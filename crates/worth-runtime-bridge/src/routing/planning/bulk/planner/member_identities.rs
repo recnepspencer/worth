@@ -7,8 +7,8 @@ pub(super) fn bulk_continuity_member_identity(
         &format!(
             "bulk-continuity-member|authority={}|branch={}|snapshot={}",
             authority_basis.digest(),
-            authority_basis.branch_identity().as_str(),
-            authority_basis.snapshot_identity().as_str()
+            authority_basis.branch_identity().canonical_label(),
+            authority_basis.snapshot_identity().canonical_label()
         ),
     ))
 }
@@ -20,9 +20,9 @@ pub(super) fn bulk_truth_view_member_identity(
         "bulk-truth-view-member",
         &format!(
             "bulk-truth-view-member|branch={}|snapshot={}|commit={}",
-            route.source_branch().as_str(),
-            route.source_snapshot().as_str(),
-            route.source_commit().as_str()
+            route.source_branch().canonical_label(),
+            route.source_snapshot().canonical_label(),
+            route.source_commit().canonical_label()
         ),
     ))
 }

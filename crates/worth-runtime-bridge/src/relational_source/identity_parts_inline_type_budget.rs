@@ -8,9 +8,6 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
             "RelationalBridgeRecordIdentityParts",
             128 * 1024,
         );
-        owner.field::<RelationalBridgeRecordIdentityKind>("kind");
-        owner.field::<u32>("partition_id");
-        owner.field::<u64>("local_slot");
-        owner.field::<u32>("generation");
+        owner.field::<RecordCoordinate>("coordinate");
     }
 }

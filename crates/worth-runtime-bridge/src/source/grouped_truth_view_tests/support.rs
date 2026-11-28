@@ -62,13 +62,14 @@ impl TruthSnapshotReader for FixtureReader {
                         fixture_struct_value("todo"),
                     );
                 }
-                let snapshot_value = match (read.entity_identity(), read.aspect_key().as_str()) {
-                    ("entity-1", "identity.id") => AspectValue::String("task-1".into()),
-                    ("entity-1", "status.lane") => AspectValue::String("todo".into()),
-                    ("entity-2", "identity.id") => AspectValue::String("task-2".into()),
-                    ("entity-2", "status.lane") => AspectValue::String("doing".into()),
-                    _ => AspectValue::String("unknown".into()),
-                };
+                let snapshot_value =
+                    match (read.entity_identity().as_ref(), read.aspect_key().as_str()) {
+                        ("entity-1", "identity.id") => AspectValue::String("task-1".into()),
+                        ("entity-1", "status.lane") => AspectValue::String("todo".into()),
+                        ("entity-2", "identity.id") => AspectValue::String("task-2".into()),
+                        ("entity-2", "status.lane") => AspectValue::String("doing".into()),
+                        _ => AspectValue::String("unknown".into()),
+                    };
                 crate::snapshot::SnapshotReadRecord::for_request(read, snapshot_value)
             })
             .collect();

@@ -30,10 +30,8 @@ pub mod signal_decision_reentry {
         _application_basis:
             super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
         observation: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
-        _branch: TruthBranchIdentity,
+        branch: TruthBranchIdentity,
         snapshot: TruthSnapshotIdentity,
-        branch_projection: worth_runtime_bridge::facade::BridgeIdentityEvidence,
-        snapshot_projection: worth_runtime_bridge::facade::BridgeIdentityEvidence,
     }
 
     impl WorthQueryConditionalTruthBasis {
@@ -51,9 +49,7 @@ pub mod signal_decision_reentry {
                 product,
                 _application_basis: application_basis,
                 observation,
-                branch_projection: branch.bridge_admission_evidence(),
-                snapshot_projection: snapshot.bridge_admission_evidence(),
-                _branch: branch,
+                branch,
                 snapshot,
             }
         }
@@ -105,17 +101,17 @@ pub mod signal_decision_reentry {
         ) -> crate::domain_computation::primary_graph::WorthQueryGranularSourceReadBasis {
             crate::domain_computation::primary_graph::WorthQueryGranularSourceReadBasis::new(
                 self.snapshot.clone(),
-                self._branch.clone(),
+                self.branch.clone(),
                 std::sync::Arc::clone(&self.observation),
             )
         }
 
-        pub fn snapshot_projection(&self) -> &str {
-            self.snapshot_projection.terminal_projection_for_reporting()
+        pub fn snapshot_projection(&self) -> String {
+            self.snapshot.terminal_projection_for_reporting()
         }
 
-        pub fn branch_projection(&self) -> &str {
-            self.branch_projection.terminal_projection_for_reporting()
+        pub fn branch_projection(&self) -> String {
+            self.branch.terminal_projection_for_reporting()
         }
     }
 }

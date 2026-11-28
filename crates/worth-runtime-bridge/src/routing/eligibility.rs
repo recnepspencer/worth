@@ -130,7 +130,7 @@ pub(crate) fn validate_route_request(
                     BridgeRouteErrorKind::MissingMappingRegistration,
                     format!(
                         "No bridge mapping registration matched committed patch item `{}/{}/{}`.",
-                        item.entity_identity(),
+                        item.entity_identity().as_ref(),
                         item.aspect_key().as_str(),
                         item.target_canonical_basis()
                     ),

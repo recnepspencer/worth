@@ -6,9 +6,9 @@ pub(in crate::harness::adapter) fn route_record_json(
     json!({
         "route_identity": record.route_identity().as_str(),
         "invalidation_identity": record.invalidation_identity().as_str(),
-        "source_commit": record.source_commit().as_str(),
-        "source_patch": record.source_patch().as_str(),
-        "source_snapshot": record.source_snapshot().as_str(),
+        "source_commit": record.source_commit().canonical_label(),
+        "source_patch": record.source_patch().canonical_label(),
+        "source_snapshot": record.source_snapshot().canonical_label(),
         "source_digest": record.source_digest().as_str(),
         "route_planning_policy_digest": record.route_planning_policy_digest(),
         "mapping_context_digest": record.mapping_context().digest(),
@@ -74,7 +74,7 @@ pub(in crate::harness::adapter) fn historical_replay_summary_json(
     json!({
         "historical_record_identity": replay_record.record_identity().as_str(),
         "decision_log_identity": replay_record.decision_log_identity().as_str(),
-        "source_snapshot": replay_record.snapshot_identity().as_str(),
+        "source_snapshot": replay_record.snapshot_identity().canonical_label(),
     })
 }
 
@@ -85,9 +85,9 @@ pub(in crate::harness::adapter) fn route_replay_summary_json(
         "route_identity": replay_record.route_identity().as_str(),
         "invalidation_identity": replay_record.invalidation_identity().as_str(),
         "subscription_slice_identity": replay_record.subscription_slice_identity().as_str(),
-        "source_commit": replay_record.source_commit().as_str(),
-        "source_patch": replay_record.source_patch().as_str(),
-        "source_snapshot": replay_record.source_snapshot().as_str(),
+        "source_commit": replay_record.source_commit().canonical_label(),
+        "source_patch": replay_record.source_patch().canonical_label(),
+        "source_snapshot": replay_record.source_snapshot().canonical_label(),
     })
 }
 

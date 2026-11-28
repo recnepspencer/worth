@@ -21,7 +21,7 @@ pub(in crate::harness::adapter::adapter_impl) fn execution_summary_json(
             "route_identity": result.result_summary().route_identity().as_str(),
             "invalidation_identity": result.result_summary().invalidation_identity().as_str(),
             "subscription_slice_identity": result.result_summary().subscription_slice_identity().as_str(),
-            "snapshot_identity": result.result_summary().snapshot_identity().as_str(),
+            "snapshot_identity": result.result_summary().snapshot_identity().canonical_label(),
             "subscription_slice_count": result.result_summary().subscription_slice_count(),
             "delivered_target_count": result.result_summary().delivered_target_count(),
             "continuity_identity": continuity_summary
@@ -39,11 +39,11 @@ pub(in crate::harness::adapter::adapter_impl) fn execution_summary_json(
             "historical_artifact_identity": artifact.artifact_identity().as_str(),
             "historical_record_identity": record.record_identity().as_str(),
             "declaration_identity": record.declaration().declaration_identity().as_str(),
-            "snapshot_identity": explanation.snapshot_identity().as_str(),
-            "branch_identity": explanation.branch_identity().as_str(),
+            "snapshot_identity": explanation.snapshot_identity().canonical_label(),
+            "branch_identity": explanation.branch_identity().canonical_label(),
             "commit_identity": explanation
                 .commit_identity()
-                .map(|identity| identity.as_str()),
+                .map(|identity| identity.canonical_label()),
             "materialization_path": format!("{:?}", explanation.materialization_path()),
             "selector_width": record.counters().selector_width(),
             "branch_width": record.counters().branch_width(),
@@ -78,11 +78,11 @@ pub(in crate::harness::adapter::adapter_impl) fn execution_extensions_json(
                 "record_identity": record.record_identity().as_str(),
                 "decision_log_identity": record.decision_log().decision_log_identity().as_str(),
                 "declaration_identity": record.declaration().declaration_identity().as_str(),
-                "snapshot_identity": explanation.snapshot_identity().as_str(),
-                "branch_identity": explanation.branch_identity().as_str(),
+                "snapshot_identity": explanation.snapshot_identity().canonical_label(),
+                "branch_identity": explanation.branch_identity().canonical_label(),
                 "commit_identity": explanation
                     .commit_identity()
-                    .map(|identity| identity.as_str()),
+                    .map(|identity| identity.canonical_label()),
                 "materialization_path": format!("{:?}", explanation.materialization_path()),
                 "counters": {
                     "truth_view_selector_count": record.counters().truth_view_selector_count(),
@@ -127,7 +127,7 @@ fn route_execution_extensions_json(
             "bridge_delivery_receipt".to_string(),
             json!({
                 "delivered_target_count": result.receipt().delivered_target_count(),
-                "snapshot_identity": result.receipt().snapshot_identity().as_str(),
+                "snapshot_identity": result.receipt().snapshot_identity().canonical_label(),
             }),
         ),
         (
@@ -157,8 +157,8 @@ fn continuity_record_json(
         "continuity_request_digest": canonical.continuity_request_digest(),
         "continuity_resolution_digest": canonical.continuity_resolution_digest(),
         "continuity_artifact_identity": canonical.continuity_artifact_identity().as_str(),
-        "source_snapshot": canonical.source_snapshot().as_str(),
-        "source_branch": canonical.source_branch().as_str(),
+        "source_snapshot": canonical.source_snapshot().canonical_label(),
+        "source_branch": canonical.source_branch().canonical_label(),
         "outcome_classes": artifact
             .continuity_outcomes()
             .iter()

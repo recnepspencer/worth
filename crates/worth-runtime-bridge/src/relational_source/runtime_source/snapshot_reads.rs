@@ -12,7 +12,7 @@ impl RuntimeBridgeRelationalSource {
         branch: &crate::facade::TruthBranchIdentity,
     ) -> Result<bool, RelationalBridgeSourceError> {
         let selected = self.observation_bindings.resolve(identity)?;
-        Ok(branch.relational_branch_id() == Some(selected.branch_id().0.as_str()))
+        Ok(branch.branch_id() == Some(selected.branch_id()))
     }
 }
 
@@ -30,8 +30,8 @@ impl SnapshotReadSource for RuntimeBridgeRelationalSource {
         Ok(Box::new(
             RuntimePublicationSnapshotReader::for_observation_authority(
                 self.runtime.clone(),
-                identity.clone(),
-                observation.observation().clone(),
+                *identity,
+                observation.observation,
                 self.partition
                     .as_ref()
                     .map(|partition| partition.relational),

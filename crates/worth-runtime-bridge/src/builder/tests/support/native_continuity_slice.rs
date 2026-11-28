@@ -18,7 +18,7 @@ pub(in crate::builder::tests) fn native_prior_field_slice(
     );
     let projection_mask = AspectMask::new([field_locator.field_path().clone()]);
     let slice = crate::routing::BridgeSubscriptionSlice::from_continuity_parts(
-        entity_identity,
+        entity_identity.into(),
         aspect_locator,
         Some(field_locator),
         projection_mask,

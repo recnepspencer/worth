@@ -1,9 +1,9 @@
 use crate::facade::{
     BridgeAspectChangeWideningCause, BridgeCommittedPatchEnvelope,
     BridgeCommittedPatchEnvelopeIdentity, BridgeCommittedPatchItem, BridgeCommittedPatchTarget,
-    BridgeCommittedRecordChange, BridgeCommittedRecordChangeKind, BridgeProducerMetadata,
-    BridgeRouteError, BridgeRouteErrorKind, BridgeSemanticAspectChange, TruthBranchIdentity,
-    TruthCommitIdentity, TruthPatchIdentity, TruthSnapshotIdentity,
+    BridgeCommittedRecordChange, BridgeProducerMetadata, BridgeRouteError, BridgeRouteErrorKind,
+    BridgeSemanticAspectChange, TruthBranchIdentity, TruthCommitIdentity, TruthPatchIdentity,
+    TruthSnapshotIdentity,
 };
 use worth_foundational::facade::{AspectLocator, LocatorAuthority};
 #[cfg(test)]
@@ -84,10 +84,10 @@ pub(super) fn lower_canonical_patch(
     } = request;
     let identity = BridgeCommittedPatchEnvelopeIdentity::new_with_metadata(
         producer_metadata,
-        TruthCommitIdentity::from_relational_commit_id(commit_id.0),
-        TruthPatchIdentity::from_relational_patch_position(patch.position.0),
+        TruthCommitIdentity::relational(commit_id),
+        TruthPatchIdentity::relational(patch.position),
         snapshot_identity,
-        TruthBranchIdentity::from_relational_branch_id(branch_id.0.clone()),
+        TruthBranchIdentity::relational(branch_id.clone()),
     );
     let mut counters = gate_lowering_precision(patch, admitted_widening, execution)?;
     counters.source_record_patches_examined = source_record_patches_examined;
@@ -209,19 +209,13 @@ fn bridge_record_changes(
         .iter()
         .map(|record| {
             execution.consult()?;
-            let kind = match record.structural_change {
-                RecordStructuralChange::Created => BridgeCommittedRecordChangeKind::Created,
-                RecordStructuralChange::Updated => BridgeCommittedRecordChangeKind::Updated,
-                RecordStructuralChange::Deleted => BridgeCommittedRecordChangeKind::Deleted,
-                RecordStructuralChange::RetainedForAudit => {
-                    BridgeCommittedRecordChangeKind::RetainedForAudit
-                }
-                RecordStructuralChange::MaterializationSuspended => {
-                    BridgeCommittedRecordChangeKind::MaterializationSuspended
-                }
-                RecordStructuralChange::Rematerialized => {
-                    BridgeCommittedRecordChangeKind::Rematerialized
-                }
+            match record.structural_change {
+                RecordStructuralChange::Created
+                | RecordStructuralChange::Updated
+                | RecordStructuralChange::Deleted
+                | RecordStructuralChange::RetainedForAudit
+                | RecordStructuralChange::MaterializationSuspended
+                | RecordStructuralChange::Rematerialized => {}
                 // `RecordStructuralChange` is non-exhaustive outside Relational.
                 unknown => {
                     return Err(RelationalBridgePublicationDenial::new(
@@ -233,10 +227,10 @@ fn bridge_record_changes(
                     )
                     .into())
                 }
-            };
+            }
             Ok(BridgeCommittedRecordChange::from_relational_publication(
                 record_ref_identity(&record.target),
-                kind,
+                record.structural_change,
             ))
         })
         .collect()

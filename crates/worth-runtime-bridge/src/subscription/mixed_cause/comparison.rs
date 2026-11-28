@@ -174,7 +174,7 @@ impl Candidate {
     fn from_truth_patch(patch: &BridgeCommittedPatchEnvelope) -> Self {
         Self {
             family_kind: BridgeMixedCauseOrderFamilyKind::TruthPatch,
-            source_identity: Arc::from(patch.patch_identity().as_str().to_owned()),
+            source_identity: Arc::from(patch.patch_identity().canonical_label().to_owned()),
             source_digest: Arc::from(patch.digest().as_str().to_owned()),
             dedup_key: Arc::from(format!("truth-patch:{}", patch.digest().as_str())),
             precedence: 0,

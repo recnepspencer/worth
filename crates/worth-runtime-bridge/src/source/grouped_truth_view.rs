@@ -174,8 +174,14 @@ pub fn materialize_bridge_grouped_truth_view_from_projection(
 ) -> Result<BridgeGroupedTruthViewArtifact, BridgeGroupedTruthViewError> {
     if row_set.basis_snapshot_identity() != projection.basis_snapshot_identity() {
         return Err(BridgeGroupedTruthViewError::BasisSnapshotMismatch {
-            row_set_snapshot: row_set.basis_snapshot_identity().as_str().to_string(),
-            projection_snapshot: projection.basis_snapshot_identity().as_str().to_string(),
+            row_set_snapshot: row_set
+                .basis_snapshot_identity()
+                .canonical_label()
+                .to_string(),
+            projection_snapshot: projection
+                .basis_snapshot_identity()
+                .canonical_label()
+                .to_string(),
         });
     }
     if row_set.rows().len() != projection.members().len() {

@@ -52,7 +52,7 @@ impl RuntimeBridge {
                 "truth-view-observation|declaration={}|policy={}|snapshot={}",
                 planned.declaration().declaration_identity().as_str(),
                 planned.resolved_policy().digest(),
-                snapshot_identity.as_str()
+                snapshot_identity.canonical_label()
             ),
         );
         let materialization_path = historical_materialization_path_for(&planned);

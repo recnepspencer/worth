@@ -62,12 +62,12 @@ fn bridge_replay_capture_exposes_last_route_record() {
         .expect("typed route replay should succeed from retained route record");
 
     assert_eq!(
-        typed_replay.source_commit().as_str(),
-        commit.clone().as_str()
+        typed_replay.source_commit().canonical_label(),
+        commit.clone().canonical_label()
     );
     assert_eq!(
-        typed_replay.source_snapshot().as_str(),
-        snapshot.clone().as_str()
+        typed_replay.source_snapshot().canonical_label(),
+        snapshot.clone().canonical_label()
     );
     assert_eq!(replay.requested_targets, request.targets);
 }

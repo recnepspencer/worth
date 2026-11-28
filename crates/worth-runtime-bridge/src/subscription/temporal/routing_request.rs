@@ -47,8 +47,8 @@ impl BridgeTemporalWakeRoutingRequest {
                 .as_str(),
             activation_ready.temporal_activation_ready_identity().as_str(),
             temporal_basis.identity().as_str(),
-            truth_basis.branch_identity().as_str(),
-            truth_basis.snapshot_identity().as_str(),
+            truth_basis.branch_identity().canonical_label(),
+            truth_basis.snapshot_identity().canonical_label(),
             wake.wake_id().get(),
             wake.wake_ready_ordinal().get(),
             wake.wake_tick().get(),
@@ -112,8 +112,8 @@ impl BridgeTemporalWakeRoutingRequest {
                 .preview_basis()
                 .preview_basis_identity()
                 .as_str(),
-            truth_basis.branch_identity().as_str(),
-            truth_basis.snapshot_identity().as_str(),
+            truth_basis.branch_identity().canonical_label(),
+            truth_basis.snapshot_identity().canonical_label(),
             wake.wake_id().get(),
             wake.wake_ready_ordinal().get(),
             wake.wake_tick().get(),

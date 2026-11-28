@@ -23,7 +23,7 @@ fn grouped_truth_view_canonical_basis(
     let mut canonical_basis = format!(
         "bridge-grouped-truth-view|truth-view={}|snapshot={}|grouping={}|identity-binding={}|grouping-binding={}",
         row_set.truth_view_digest(),
-        row_set.basis_snapshot_identity().as_str(),
+        row_set.basis_snapshot_identity().canonical_label(),
         contract.native_grouping_aspect_key().as_str(),
         contract.identity_binding().aspect_key(),
         contract.grouping_binding().aspect_key()

@@ -71,7 +71,7 @@ fn route_digest_inputs_use_digest_shaped_route_entry_identity_not_raw_target_tex
 #[test]
 fn subscription_slice_digest_inputs_consume_slice_canonical_basis_not_target_basis() {
     let slice = BridgeSubscriptionSlice::from_continuity_parts(
-        "entity-1",
+        "entity-1".into(),
         aspect_locator("profile"),
         Some(worth_foundational::facade::AspectFieldLocator::from_aspect(
             aspect_locator("profile"),

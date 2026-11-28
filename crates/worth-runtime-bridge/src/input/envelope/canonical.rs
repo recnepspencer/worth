@@ -1,12 +1,14 @@
+use std::borrow::Cow;
+
 use super::*;
 use crate::error::BridgeRouteError;
+use crate::identity::record::BridgeRecordIdentity;
 use crate::mapping::TruthDeltaSurfaceKind;
 use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgeCommittedPatchItem {
-    entity_identity: Arc<str>,
-    relational_record_identity: Option<RelationalBridgeRecordIdentityParts>,
+    record: BridgeRecordIdentity,
     target: BridgeCommittedPatchTarget,
     semantic_change: Option<BridgeSemanticAspectChange>,
 }
@@ -17,30 +19,31 @@ impl BridgeCommittedPatchItem {
         target: BridgeCommittedPatchTarget,
     ) -> Self {
         Self {
-            entity_identity: entity_identity.into(),
-            relational_record_identity: None,
+            record: BridgeRecordIdentity::External(entity_identity.into()),
             target,
             semantic_change: None,
         }
     }
 
-    pub fn entity_identity(&self) -> &str {
-        self.entity_identity.as_ref()
+    pub fn entity_identity(&self) -> Cow<'_, str> {
+        self.record.reporting_label()
+    }
+
+    pub(crate) fn record(&self) -> &BridgeRecordIdentity {
+        &self.record
     }
 
     pub fn relational_record_identity_parts(&self) -> Option<RelationalBridgeRecordIdentityParts> {
-        self.relational_record_identity
+        self.record.relational()
     }
 
     pub(crate) fn from_relational_record_parts(
-        entity_identity: impl Into<Arc<str>>,
         relational_record_identity: RelationalBridgeRecordIdentityParts,
         target: BridgeCommittedPatchTarget,
         semantic_change: Option<BridgeSemanticAspectChange>,
     ) -> Self {
         Self {
-            entity_identity: entity_identity.into(),
-            relational_record_identity: Some(relational_record_identity),
+            record: BridgeRecordIdentity::Relational(relational_record_identity),
             target,
             semantic_change,
         }
@@ -87,13 +90,8 @@ impl BridgeCommittedPatchItem {
             || "none".to_string(),
             BridgeSemanticAspectChange::canonical_basis,
         );
-        format!(
-            "{}:{}{}:{}",
-            self.target_canonical_basis().len(),
-            self.target_canonical_basis(),
-            semantic.len(),
-            semantic,
-        )
+        let target = self.target_canonical_basis();
+        format!("{}:{target}{}:{semantic}", target.len(), semantic.len(),)
     }
 }
 
@@ -182,11 +180,26 @@ pub struct BridgeAuthoritativePatchLoweringCounters {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BridgeCommittedPatchEnvelope(BridgeEnvelopeCore<CanonicalPatchEnvelopeBody>);
+pub struct BridgeCommittedPatchEnvelope {
+    identity: BridgeCommittedPatchEnvelopeIdentity,
+    summary: BridgeCommittedPatchSummary,
+    body: BridgeCommittedPatchBody,
+    digest: BridgeCommittedPatchDigest,
+}
 
 impl BridgeCommittedPatchEnvelope {
-    pub(super) fn from_core(core: BridgeEnvelopeCore<CanonicalPatchEnvelopeBody>) -> Self {
-        Self(core)
+    pub(super) fn canonical(
+        identity: BridgeCommittedPatchEnvelopeIdentity,
+        summary: BridgeCommittedPatchSummary,
+        body: BridgeCommittedPatchBody,
+        digest: BridgeCommittedPatchDigest,
+    ) -> Self {
+        Self {
+            identity,
+            summary,
+            body,
+            digest,
+        }
     }
 
     pub fn new(
@@ -224,34 +237,34 @@ impl BridgeCommittedPatchEnvelope {
     }
 
     pub fn producer_metadata(&self) -> &BridgeProducerMetadata {
-        self.0.producer_metadata()
+        self.identity.producer_metadata()
     }
 
     pub fn commit_identity(&self) -> &TruthCommitIdentity {
-        self.0.commit_identity()
+        self.identity.commit_identity()
     }
 
     pub fn patch_identity(&self) -> &TruthPatchIdentity {
-        self.0.patch_identity()
+        self.identity.patch_identity()
     }
 
     pub fn snapshot_identity(&self) -> &TruthSnapshotIdentity {
-        self.0.snapshot_identity()
+        self.identity.snapshot_identity()
     }
 
     pub fn branch_identity(&self) -> &TruthBranchIdentity {
-        self.0.branch_identity()
+        self.identity.branch_identity()
     }
 
     pub fn patch_summary(&self) -> &BridgeCommittedPatchSummary {
-        &self.0.body.patch_summary
+        &self.summary
     }
 
     pub fn patch_body(&self) -> &BridgeCommittedPatchBody {
-        &self.0.body.patch_body
+        &self.body
     }
 
     pub fn digest(&self) -> &BridgeCommittedPatchDigest {
-        &self.0.body.digest
+        &self.digest
     }
 }

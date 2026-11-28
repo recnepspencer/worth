@@ -101,15 +101,15 @@ pub(super) fn digest_basis(
             .authoritative_source()
             .map(BridgeAuthoritativeSourceProvenance::canonical_basis)
             .unwrap_or_else(|| "none".to_string()),
-        commit_identity.as_str(),
-        patch_identity.as_str(),
-        snapshot_identity.as_str(),
-        branch_identity.as_str(),
+        commit_identity.canonical_label(),
+        patch_identity.canonical_label(),
+        snapshot_identity.canonical_label(),
+        branch_identity.canonical_label(),
         normalized_patch_item_count,
     );
     for item in canonical_items {
         basis.push_str("|item=");
-        basis.push_str(item.entity_identity());
+        basis.push_str(item.entity_identity().as_ref());
         basis.push(':');
         basis.push_str(&item.canonical_basis());
     }

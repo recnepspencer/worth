@@ -63,8 +63,8 @@ fn bridge_route_explanation_reconstructs_patch_to_invalidation_mapping() {
     assert_eq!(explanation.route_entries().len(), 1);
     assert_eq!(explanation.invalidation_targets().len(), 1);
     assert_eq!(
-        explanation.snapshot_identity().as_str(),
-        truth.observation.snapshot_identity().as_str()
+        explanation.snapshot_identity().canonical_label(),
+        truth.observation.snapshot_identity().canonical_label()
     );
     let entry = &explanation.route_entries()[0];
     assert!(matches!(
@@ -218,12 +218,12 @@ fn bridge_continuity_explanation_reconstructs_canonical_continuity_truth() {
 
     assert_eq!(explanation.route_identity(), route_record.route_identity());
     assert_eq!(
-        explanation.source_snapshot().as_str(),
-        truth.observation.snapshot_identity().as_str()
+        explanation.source_snapshot().canonical_label(),
+        truth.observation.snapshot_identity().canonical_label()
     );
     assert_eq!(
-        explanation.source_branch().as_str(),
-        crate::truth_identity_fixtures::truth_branch("main").as_str()
+        explanation.source_branch().canonical_label(),
+        crate::truth_identity_fixtures::truth_branch("main").canonical_label()
     );
     assert_eq!(explanation.continuity_outcomes().len(), 1);
     assert_eq!(

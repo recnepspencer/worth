@@ -111,16 +111,16 @@ impl BridgeAsyncRequestTruthViewBasis {
             "bridge-async-request-truth-view-basis|kind={kind:?}|branch={}|commit={}|snapshot={}|preview-active={}|preview-parent={}",
             truth_branch_identity
                 .as_ref()
-                .map(TruthBranchIdentity::as_str)
-                .unwrap_or("-"),
+                .map(TruthBranchIdentity::canonical_label)
+                .unwrap_or_else(|| "-".to_owned()),
             truth_commit_identity
                 .as_ref()
-                .map(TruthCommitIdentity::as_str)
-                .unwrap_or("-"),
+                .map(TruthCommitIdentity::canonical_label)
+                .unwrap_or_else(|| "-".to_owned()),
             truth_snapshot_identity
                 .as_ref()
-                .map(TruthSnapshotIdentity::as_str)
-                .unwrap_or("-"),
+                .map(TruthSnapshotIdentity::canonical_label)
+                .unwrap_or_else(|| "-".to_owned()),
             preview_active_subscription_identity
                 .as_ref()
                 .map(BridgeIdentity::as_str)

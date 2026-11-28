@@ -8,8 +8,8 @@ impl PricingWorkloadCertificationBundle {
     ) -> Option<serde_json::Value> {
         match commit_identity {
             "commit:rubber-main" => Some(json!({
-                "branch": self.matrix.reference.source_branch.as_str(),
-                "snapshot": self.provenance.main_snapshot.as_str(),
+                "branch": self.matrix.reference.source_branch.canonical_label(),
+                "snapshot": self.provenance.main_snapshot.canonical_label(),
                 "regime": self.provenance.main_regime,
                 "external_factor_microunits": self.provenance.main_external_factor_microunits,
                 "shock_delta_microunits": 0,
@@ -21,8 +21,8 @@ impl PricingWorkloadCertificationBundle {
                     self.provenance.representative_fuel_shipping_component_cents,
             })),
             "commit:rubber-shock" => Some(json!({
-                "branch": self.matrix.reference.speculative_truth_branch.as_str(),
-                "snapshot": self.provenance.shock_snapshot.as_str(),
+                "branch": self.matrix.reference.speculative_truth_branch.canonical_label(),
+                "snapshot": self.provenance.shock_snapshot.canonical_label(),
                 "regime": self.provenance.shock_regime,
                 "external_factor_microunits": self.provenance.shock_external_factor_microunits,
                 "factor_delta_microunits": self.provenance.shock_factor_delta_microunits,

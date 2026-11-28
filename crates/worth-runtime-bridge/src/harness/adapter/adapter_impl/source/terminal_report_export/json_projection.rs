@@ -138,7 +138,7 @@ fn source_record_extension(
             "planned_packet_digests": record.planned_packet_digests(),
             "read_packet_digests": record.read_packets().iter().map(crate::snapshot::SnapshotReadPacket::digest).collect::<Vec<_>>(),
             "authority_basis_digests": record.authority_basis_digests(),
-            "snapshot_identities": record.snapshot_identities().iter().map(crate::snapshot::TruthSnapshotIdentity::as_str).collect::<Vec<_>>(),
+            "snapshot_identities": record.snapshot_identities().iter().map(crate::snapshot::TruthSnapshotIdentity::canonical_label).collect::<Vec<_>>(),
             "materialization_paths": record.materialization_paths().iter().map(|path| format!("{path:?}")).collect::<Vec<_>>(),
             "digest": record.digest(),
             "explanation": {
@@ -149,7 +149,7 @@ fn source_record_extension(
                 "planned_packet_set_digest": explanation.planned_packet_set_digest(),
                 "materialized_packet_set_digest": explanation.materialized_packet_set_digest(),
                 "packet_count": explanation.packet_count(),
-                "snapshot_identities": explanation.snapshot_identities().iter().map(crate::snapshot::TruthSnapshotIdentity::as_str).collect::<Vec<_>>(),
+                "snapshot_identities": explanation.snapshot_identities().iter().map(crate::snapshot::TruthSnapshotIdentity::canonical_label).collect::<Vec<_>>(),
                 "materialization_paths": explanation.materialization_paths().iter().map(|path| format!("{path:?}")).collect::<Vec<_>>(),
             }
         }),

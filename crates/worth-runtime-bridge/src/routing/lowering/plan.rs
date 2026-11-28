@@ -49,8 +49,10 @@ impl BridgeLoweringPlan {
     ) -> Self {
         let invalidation_targets = CanonicalInvalidationTargets::new(invalidation_targets);
         let subscription_slices = CanonicalSubscriptionSlices::new(subscription_slices);
-        let subscription_slice_basis =
-            subscription_slice_digest_basis(source_snapshot.as_str(), subscription_slices.slices());
+        let subscription_slice_basis = subscription_slice_digest_basis(
+            &source_snapshot.canonical_label(),
+            subscription_slices.slices(),
+        );
         let subscription_slice_identity = BridgeSubscriptionSliceIdentity::admit_bridge_owned(
             digest_string("subscription-slices", &subscription_slice_basis),
         );
@@ -207,9 +209,9 @@ impl ValidatedBridgeLoweringPlan {
             &lowering_provenance_digest_basis(
                 plan.route_identity(),
                 plan.provenance.planning_provenance().digest(),
-                plan.source_commit().as_str(),
-                plan.source_patch().as_str(),
-                plan.source_snapshot().as_str(),
+                &plan.source_commit().canonical_label(),
+                &plan.source_patch().canonical_label(),
+                &plan.source_snapshot().canonical_label(),
             ),
         );
         if plan.provenance.digest() != expected_provenance_digest.as_ref() {

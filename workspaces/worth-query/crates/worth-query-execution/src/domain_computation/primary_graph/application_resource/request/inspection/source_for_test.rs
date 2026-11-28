@@ -71,12 +71,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
             .truth_view_basis()
             .truth_commit_identity();
         Ok((
-            actual
-                == Some(
-                    &worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(
-                        commit.0,
-                    ),
-                ),
+            actual == Some(&worth_runtime_bridge::facade::TruthCommitIdentity::relational(commit)),
             commit.0,
             observed.truth_version().as_u64(),
         ))

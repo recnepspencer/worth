@@ -15,12 +15,14 @@ use crate::identity_authority::{
 };
 
 mod evidence;
+pub(crate) mod lineage;
+pub(crate) mod record;
+pub(crate) mod truth;
 
 pub use evidence::{bridge_identity_reporting_label, BridgeIdentityEvidence};
 
 pub struct BridgeIdentity<Tag> {
     value: Arc<str>,
-    payload: BridgeIdentityPayload,
     _tag: PhantomData<Tag>,
 }
 
@@ -34,7 +36,6 @@ impl<Tag> BridgeIdentity<Tag> {
     ) -> Self {
         Self {
             value: identity.value().clone(),
-            payload: BridgeIdentityPayload::OpaqueText,
             _tag: PhantomData,
         }
     }
@@ -43,20 +44,8 @@ impl<Tag> BridgeIdentity<Tag> {
         Self::new(admit_bridge_truth_authority_identity(value))
     }
 
-    pub(crate) fn with_payload(value: impl Into<Arc<str>>, payload: BridgeIdentityPayload) -> Self {
-        Self {
-            value: value.into(),
-            payload,
-            _tag: PhantomData,
-        }
-    }
-
     pub(crate) fn as_str(&self) -> &str {
         self.value.as_ref()
-    }
-
-    pub(crate) fn payload(&self) -> &BridgeIdentityPayload {
-        &self.payload
     }
 
     pub(crate) fn from_reference_evidence(
@@ -64,7 +53,6 @@ impl<Tag> BridgeIdentity<Tag> {
     ) -> Self {
         Self {
             value: evidence.value().clone(),
-            payload: BridgeIdentityPayload::OpaqueText,
             _tag: PhantomData,
         }
     }
@@ -83,7 +71,7 @@ where
     Tag: BridgeIdentityAuthorityKind,
 {
     pub fn bridge_trust_boundary(&self) -> BridgeTruthBoundaryBridgedIdentity<Arc<str>, Tag::Kind> {
-        admit_bridge_truth_authority_identity_for_kind::<Tag::Kind>(Arc::clone(&self.value))
+        admit_bridge_truth_authority_identity_for_kind::<_, Tag::Kind>(Arc::clone(&self.value))
             .bridge_trust_boundary()
     }
 
@@ -94,7 +82,10 @@ where
 
 impl<Tag> Clone for BridgeIdentity<Tag> {
     fn clone(&self) -> Self {
-        Self::with_payload(Arc::clone(&self.value), self.payload.clone())
+        Self {
+            value: Arc::clone(&self.value),
+            _tag: PhantomData,
+        }
     }
 }
 
@@ -107,7 +98,7 @@ macro_rules! bridge_identity_tags {
 }
 
 bridge_identity_tags! {
-    TruthCommitTag, TruthPatchTag, TruthBranchTag, TruthSnapshotTag, CommittedPatchDigestTag,
+    CommittedPatchDigestTag,
     MappingIdTag, FrozenMappingRegistrationIdentityTag, AspectRegistrationIdTag,
     SignalInvalidationScopeTag, TruthDeltaSurfaceIdentityTag, TruthViewSelectorIdentityTag,
     HistoricalEvaluationDeclarationIdentityTag, SnapshotReadTargetIdentityTag, RouteIdentityTag,
@@ -154,7 +145,7 @@ bridge_identity_tags! {
     SubscriptionSharedDeliveryPlanIdentityTag, SubscriptionSharedDeliveryLayoutIdentityTag,
     SubscriptionSharedDeliveryBundleDraftIdentityTag, SubscriptionSharedDeliveryBundleSealedIdentityTag,
     SubscriptionSharedDeliveryProjectionIdentityTag, SubscriptionSharedDeliveryAcknowledgementIdentityTag,
-    ContinuityIdentityTag, HistoricalResolvedLineageIdentityTag, HistoricalResolvedRecordIdentityTag,
+    ContinuityIdentityTag,
     HistoricalEvaluationRecordIdentityTag, HistoricalEvaluationDecisionLogIdentityTag,
     HistoricalEvaluationArtifactIdentityTag, HistoricalEvaluationFailureIdentityTag, WorkloadIdentityTag,
     BulkPlanningIdentityTag, BulkAdmissionProfileIdentityTag, BulkPacketRegionIdentityTag,
@@ -166,7 +157,7 @@ bridge_identity_tags! {
 
 
     SourceDeclarationIdentityTag, SourceContractIdentityTag, SourceMaterializationRecordIdentityTag,
-    SourceFailureRecordIdentityTag, SpeculativeSignalBranchIdentityTag,
+    SourceFailureRecordIdentityTag,
     PreviewSessionIdentityTag,
 
     TemporalBasisIdentityTag,
@@ -201,12 +192,7 @@ impl BridgeIdentityAuthorityKind for WritebackDeclarationIdentityTag {
 
 impl<Tag> PartialEq for BridgeIdentity<Tag> {
     fn eq(&self, other: &Self) -> bool {
-        match (&self.payload, &other.payload) {
-            (BridgeIdentityPayload::OpaqueText, BridgeIdentityPayload::OpaqueText) => {
-                self.value == other.value
-            }
-            _ => self.payload == other.payload,
-        }
+        self.value == other.value
     }
 }
 
@@ -220,63 +206,18 @@ impl<Tag> PartialOrd for BridgeIdentity<Tag> {
 
 impl<Tag> Ord for BridgeIdentity<Tag> {
     fn cmp(&self, other: &Self) -> Ordering {
-        match (&self.payload, &other.payload) {
-            (BridgeIdentityPayload::OpaqueText, BridgeIdentityPayload::OpaqueText) => {
-                self.value.cmp(&other.value)
-            }
-            _ => self.payload.cmp(&other.payload),
-        }
+        self.value.cmp(&other.value)
     }
 }
 
 impl<Tag> Hash for BridgeIdentity<Tag> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        match &self.payload {
-            BridgeIdentityPayload::OpaqueText => self.value.hash(state),
-            payload => payload.hash(state),
-        }
+        self.value.hash(state)
     }
 }
 
 impl<Tag> fmt::Debug for BridgeIdentity<Tag> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("BridgeIdentity").field(&"<opaque>").finish()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) enum BridgeIdentityPayload {
-    OpaqueText,
-    RelationalBranch { branch_id: Arc<str> },
-    RelationalCommit { commit_id: u64 },
-    RelationalPatch { patch_position: u64 },
-    RelationalSnapshot { snapshot_id: u64, version_id: u64 },
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{BridgeIdentity, BridgeIdentityPayload, TruthCommitTag};
-
-    #[test]
-    fn debug_does_not_expose_identity_payload() {
-        let identity = BridgeIdentity::<TruthCommitTag>::admit_bridge_owned("commit-1");
-
-        let debug = format!("{identity:?}");
-
-        assert!(!debug.contains("commit-1"));
-        assert!(debug.contains("<opaque>"));
-    }
-
-    #[test]
-    fn relational_truth_identity_can_store_typed_payload() {
-        let identity = BridgeIdentity::<TruthCommitTag>::with_payload(
-            "relational-commit:7",
-            BridgeIdentityPayload::RelationalCommit { commit_id: 7 },
-        );
-
-        assert_eq!(
-            identity.payload(),
-            &BridgeIdentityPayload::RelationalCommit { commit_id: 7 }
-        );
     }
 }

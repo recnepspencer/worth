@@ -36,8 +36,8 @@ impl RuntimeBridgeRelationalSource {
         let selected = lease.resolve_for(&self.observation_bindings)?;
         let reader = RuntimePublicationSnapshotReader::for_observation_authority(
             self.runtime.clone(),
-            lease.snapshot_identity().clone(),
-            selected.observation().clone(),
+            *lease.snapshot_identity(),
+            selected.observation,
             self.partition
                 .as_ref()
                 .map(|partition| partition.relational),

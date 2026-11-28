@@ -37,9 +37,9 @@ impl PricingWorkloadCertificationBundle {
     fn suite_25_terminal_export_basis_json(&self) -> serde_json::Value {
         json!({
             "causality": {
-                "source_commit": self.matrix.reference.source_commit.as_str(),
-                "main_snapshot": self.matrix.reference.main_snapshot.as_str(),
-                "speculative_snapshot": self.matrix.reference.speculative_snapshot.as_str(),
+                "source_commit": self.matrix.reference.source_commit.canonical_label(),
+                "main_snapshot": self.matrix.reference.main_snapshot.canonical_label(),
+                "speculative_snapshot": self.matrix.reference.speculative_snapshot.canonical_label(),
                 "promotion_session_identity": self.promotion.promotion_session_identity.as_str(),
                 "writeback_committed_effect_intent_digest": self.writeback.committed_effect_intent_digest,
             },
@@ -53,7 +53,7 @@ impl PricingWorkloadCertificationBundle {
             "explanation": {
                 "evaluation_record_identity": self.matrix.reference.evaluation_record_identity.as_str(),
                 "evaluation_selector_identity": self.matrix.reference.evaluation_selector_identity.as_str(),
-                "shock_commit": self.provenance.shock_commit.as_str(),
+                "shock_commit": self.provenance.shock_commit.canonical_label(),
                 "shock_regime": self.provenance.shock_regime,
                 "shock_multiplier_per_mille": self.provenance.shock_multiplier_per_mille,
             },
@@ -70,15 +70,15 @@ impl PricingWorkloadCertificationBundle {
     fn reference_workload_terminal_export_basis_json(&self) -> serde_json::Value {
         json!({
             "ordinary_matrix": {
-                "source_branch": self.matrix.reference.source_branch.as_str(),
-                "source_commit": self.matrix.reference.source_commit.as_str(),
-                "route_snapshot": self.matrix.reference.route_snapshot.as_str(),
-                "main_snapshot": self.matrix.reference.main_snapshot.as_str(),
+                "source_branch": self.matrix.reference.source_branch.canonical_label(),
+                "source_commit": self.matrix.reference.source_commit.canonical_label(),
+                "route_snapshot": self.matrix.reference.route_snapshot.canonical_label(),
+                "main_snapshot": self.matrix.reference.main_snapshot.canonical_label(),
                 "main_rubber_cost_cents": self.matrix.reference.main_rubber_cost_cents,
-                "speculative_snapshot": self.matrix.reference.speculative_snapshot.as_str(),
+                "speculative_snapshot": self.matrix.reference.speculative_snapshot.canonical_label(),
                 "speculative_rubber_cost_cents": self.matrix.reference.speculative_rubber_cost_cents,
-                "replay_source_commit": self.matrix.replay.source_commit.as_str(),
-                "replay_source_snapshot": self.matrix.replay.source_snapshot.as_str(),
+                "replay_source_commit": self.matrix.replay.source_commit.canonical_label(),
+                "replay_source_snapshot": self.matrix.replay.source_snapshot.canonical_label(),
             },
             "aspect_lane": {
                 "route_identity": self.aspect.route_identity.as_str(),
@@ -123,11 +123,11 @@ impl PricingWorkloadCertificationBundle {
         json!({
             "routing_failure": {
                 "class": format!("{:?}", self.hostile_failure.failure_class),
-                "source_commit": self.hostile_failure.source_commit.as_str(),
-                "source_snapshot": self.hostile_failure.source_snapshot.as_str(),
+                "source_commit": self.hostile_failure.source_commit.canonical_label(),
+                "source_snapshot": self.hostile_failure.source_snapshot.canonical_label(),
             },
             "historical_provenance_surface": {
-                "shock_commit": self.provenance.shock_commit.as_str(),
+                "shock_commit": self.provenance.shock_commit.canonical_label(),
                 "shock_regime": self.provenance.shock_regime,
                 "shock_delta_microunits": self.provenance.shock_delta_microunits,
                 "representative_sku": self.provenance.representative_sku,
@@ -149,8 +149,8 @@ impl PricingWorkloadCertificationBundle {
             "routing_failure": {
                 "error_kind": format!("{:?}", self.hostile_failure.error_kind),
                 "failure_class": format!("{:?}", self.hostile_failure.failure_class),
-                "source_commit": self.hostile_failure.source_commit.as_str(),
-                "source_snapshot": self.hostile_failure.source_snapshot.as_str(),
+                "source_commit": self.hostile_failure.source_commit.canonical_label(),
+                "source_snapshot": self.hostile_failure.source_snapshot.canonical_label(),
             },
             "restart_failure": {
                 "error_kind": format!("{:?}", self.restart_failure.error_kind),
@@ -164,8 +164,8 @@ impl PricingWorkloadCertificationBundle {
             "hostile_failure": {
                 "error_kind": format!("{:?}", self.hostile_failure.error_kind),
                 "failure_class": format!("{:?}", self.hostile_failure.failure_class),
-                "source_commit": self.hostile_failure.source_commit.as_str(),
-                "source_snapshot": self.hostile_failure.source_snapshot.as_str(),
+                "source_commit": self.hostile_failure.source_commit.canonical_label(),
+                "source_snapshot": self.hostile_failure.source_snapshot.canonical_label(),
             },
             "restart_failure": {
                 "error_kind": format!("{:?}", self.restart_failure.error_kind),

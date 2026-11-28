@@ -38,8 +38,7 @@ pub(crate) fn assert_context_retention(
         + size_of::<BridgeConditionalDecisionEvidence>() as u64
         + text("snapshot-label")
         + text("execution")
-        + text("query-binding")
-        + text(crate::truth_identity_fixtures::truth_snapshot(1, 1).as_str());
+        + text("query-binding");
     let context =
         arc_layout::<BridgeRetentionReservation>() + text("snapshot-label") + text("main");
     // One Arc backing contains a Vec header and the embedded reservation. Its

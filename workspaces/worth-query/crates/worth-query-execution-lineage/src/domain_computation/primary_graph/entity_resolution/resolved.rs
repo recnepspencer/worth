@@ -214,10 +214,8 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
     pub fn relational_record_identity_parts(
         &self,
     ) -> worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts {
-        worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(
-            self.entity_id.partition_value(),
-            self.entity_id.local_slot_value(),
-            self.entity_id.generation_value(),
+        worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::from_entity(
+            self.entity_id,
         )
     }
 

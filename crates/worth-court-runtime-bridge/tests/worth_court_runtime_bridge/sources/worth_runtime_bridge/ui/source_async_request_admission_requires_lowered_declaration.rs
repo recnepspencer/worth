@@ -11,9 +11,9 @@ fn main() {
     let runtime: RuntimeBridge = fake();
     let validated: ValidatedBridgeAsyncSourceDeclaration = fake();
     let basis = BridgeAsyncRequestTruthViewBasis::authoritative(
-        TruthBranchIdentity::new("truth-main"),
-        TruthCommitIdentity::new("commit-a"),
-        TruthSnapshotIdentity::new("snapshot-a"),
+        TruthBranchIdentity::from_bridge_harness_label("truth-main"),
+        TruthCommitIdentity::from_bridge_harness_label("commit-a"),
+        TruthSnapshotIdentity::from_bridge_harness_label("snapshot-a"),
     );
     let _ = runtime.bind_async_request_basis(&validated, basis);
 }

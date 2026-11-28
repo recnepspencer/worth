@@ -62,7 +62,7 @@ fn bridge_snapshot_contract_rejects_missing_required_reads() {
         .unwrap();
     let required = &route.read_packet().reads()[0];
     let target = required.target_identity().clone();
-    let entity = required.entity_identity().to_owned();
+    let entity = required.entity_identity().into_owned();
 
     let error = runtime.deliver_invalidation(route, execution).unwrap_err();
 

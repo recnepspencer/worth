@@ -1,15 +1,10 @@
 use sha2::{Digest, Sha256};
 
-use crate::identity::{
-    BridgeIdentity, HistoricalResolvedLineageIdentityTag, HistoricalResolvedRecordIdentityTag,
-};
-
 use super::*;
 
-pub type BridgeHistoricalResolvedLineageIdentity =
-    BridgeIdentity<HistoricalResolvedLineageIdentityTag>;
-pub type BridgeHistoricalResolvedRecordIdentity =
-    BridgeIdentity<HistoricalResolvedRecordIdentityTag>;
+pub use crate::identity::lineage::{
+    BridgeHistoricalResolvedLineageIdentity, BridgeHistoricalResolvedRecordIdentity,
+};
 
 pub trait ContinuityLineageSource: Send + Sync + 'static {
     fn historical_lineage(
@@ -146,18 +141,18 @@ impl BridgeHistoricalLineageAuthority {
         let canonical_basis = format!(
             "historical-lineage-authority|authority={}|branch={}|snapshot={}|lineage-count={}|lineages={}|record-count={}|records={}|event-count={}|events={}",
             authority_basis.digest(),
-            authority_basis.branch_identity().as_str(),
-            authority_basis.snapshot_identity().as_str(),
+            authority_basis.branch_identity().canonical_label(),
+            authority_basis.snapshot_identity().canonical_label(),
             canonical_resolved_lineage_identities.len(),
             canonical_resolved_lineage_identities
                 .iter()
-                .map(BridgeHistoricalResolvedLineageIdentity::as_str)
+                .map(BridgeHistoricalResolvedLineageIdentity::canonical_label)
                 .collect::<Vec<_>>()
                 .join(","),
             canonical_resolved_record_identities.len(),
             canonical_resolved_record_identities
                 .iter()
-                .map(BridgeHistoricalResolvedRecordIdentity::as_str)
+                .map(BridgeHistoricalResolvedRecordIdentity::canonical_label)
                 .collect::<Vec<_>>()
                 .join(","),
             traversed_event_ids.len(),

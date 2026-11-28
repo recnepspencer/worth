@@ -146,10 +146,9 @@ pub use crate::input::envelope::{
     BridgeAuthoritativeSourceProfileError, BridgeAuthoritativeSourceProvenance,
     BridgeCommittedPatchBody, BridgeCommittedPatchDigest, BridgeCommittedPatchEnvelope,
     BridgeCommittedPatchEnvelopeIdentity, BridgeCommittedPatchItem, BridgeCommittedPatchSummary,
-    BridgeCommittedPatchTarget, BridgeCommittedRecordChange, BridgeCommittedRecordChangeKind,
-    BridgeProducerAuthorityKind, BridgeProducerMetadata, BridgeSemanticAspectChange,
-    BridgeSemanticAspectChangeBreadth, TruthBranchIdentity, TruthCommitIdentity,
-    TruthPatchIdentity, BRIDGE_PRODUCER_EXPORT_SCHEMA_V1,
+    BridgeCommittedPatchTarget, BridgeCommittedRecordChange, BridgeProducerAuthorityKind,
+    BridgeProducerMetadata, BridgeSemanticAspectChange, BridgeSemanticAspectChangeBreadth,
+    TruthBranchIdentity, TruthCommitIdentity, TruthPatchIdentity, BRIDGE_PRODUCER_EXPORT_SCHEMA_V1,
 };
 pub use crate::mapping::{
     AspectKeySelector, BridgeAspectRegistration, BridgeAspectRegistrationId,

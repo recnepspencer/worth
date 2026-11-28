@@ -54,7 +54,7 @@ fn runtime_replay_rejects_historical_authority_drift_as_authority_mismatch() {
             crate::input::envelope::BridgeCommittedPatchEnvelope,
             crate::adapter::RelationalBridgeSourceError,
         > {
-            let snapshot = if request.commit_identity().as_str() == "commit-a" {
+            let snapshot = if request.commit_identity().canonical_label() == "commit-a" {
                 "snapshot-b"
             } else {
                 "snapshot-a"
@@ -101,7 +101,7 @@ fn runtime_replay_rejects_historical_authority_drift_as_authority_mismatch() {
             Box<dyn crate::snapshot::TruthSnapshotReader>,
             crate::adapter::RelationalBridgeSourceError,
         > {
-            if identity.as_str() == "snapshot-b" {
+            if identity.canonical_label() == "snapshot-b" {
                 Ok(Box::new(StaticSnapshotReader))
             } else {
                 Err(crate::adapter::RelationalBridgeSourceError::new(

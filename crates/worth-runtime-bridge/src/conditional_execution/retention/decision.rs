@@ -8,7 +8,6 @@ use std::sync::Arc;
 pub(in crate::conditional_execution) fn reserve_decision(
     ledger: &Arc<BridgeRetentionLedger>,
     request: &BridgeConditionalExecutionRequest<'_>,
-    source_identity: Option<&crate::snapshot::TruthSnapshotIdentity>,
 ) -> Result<DecisionReservations, BridgeConditionalDenial> {
     let charge = (|| {
         let strings = [request.snapshot_identity, request.execution_identity];
@@ -18,9 +17,6 @@ pub(in crate::conditional_execution) fn reserve_decision(
         ])?;
         for value in strings {
             bytes = sum(&[bytes, arc_slice_charge::<u8>(value.len())?])?;
-        }
-        if let Some(identity) = source_identity {
-            bytes = sum(&[bytes, super::identity::identity(identity)?])?;
         }
         Ok(bytes)
     })()

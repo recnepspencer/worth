@@ -3,6 +3,8 @@ use worth_foundational::facade::{
     AuthoritativeAspectChangeKind, CanonicalFieldPath,
 };
 
+use worth_relational::facade::publication::RecordStructuralChange;
+
 use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -227,20 +229,10 @@ impl BridgeSemanticAspectChange {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum BridgeCommittedRecordChangeKind {
-    Created,
-    Updated,
-    Deleted,
-    RetainedForAudit,
-    MaterializationSuspended,
-    Rematerialized,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgeCommittedRecordChange {
     record_identity: RelationalBridgeRecordIdentityParts,
-    kind: BridgeCommittedRecordChangeKind,
+    kind: RecordStructuralChange,
 }
 
 impl BridgeCommittedRecordChange {
@@ -252,7 +244,7 @@ impl BridgeCommittedRecordChange {
     /// matches that source's installed profile.
     pub fn from_relational_publication(
         record_identity: RelationalBridgeRecordIdentityParts,
-        kind: BridgeCommittedRecordChangeKind,
+        kind: RecordStructuralChange,
     ) -> Self {
         Self {
             record_identity,
@@ -263,7 +255,7 @@ impl BridgeCommittedRecordChange {
     pub const fn record_identity(&self) -> RelationalBridgeRecordIdentityParts {
         self.record_identity
     }
-    pub const fn kind(&self) -> BridgeCommittedRecordChangeKind {
+    pub const fn kind(&self) -> RecordStructuralChange {
         self.kind
     }
 
@@ -271,14 +263,13 @@ impl BridgeCommittedRecordChange {
         length_delimited([
             self.record_identity.bridge_entity_identity(),
             match self.kind {
-                BridgeCommittedRecordChangeKind::Created => "created",
-                BridgeCommittedRecordChangeKind::Updated => "updated",
-                BridgeCommittedRecordChangeKind::Deleted => "deleted",
-                BridgeCommittedRecordChangeKind::RetainedForAudit => "retained-for-audit",
-                BridgeCommittedRecordChangeKind::MaterializationSuspended => {
-                    "materialization-suspended"
-                }
-                BridgeCommittedRecordChangeKind::Rematerialized => "rematerialized",
+                RecordStructuralChange::Created => "created",
+                RecordStructuralChange::Updated => "updated",
+                RecordStructuralChange::Deleted => "deleted",
+                RecordStructuralChange::RetainedForAudit => "retained-for-audit",
+                RecordStructuralChange::MaterializationSuspended => "materialization-suspended",
+                RecordStructuralChange::Rematerialized => "rematerialized",
+                _ => "unsupported-structural-change",
             }
             .to_string(),
         ])

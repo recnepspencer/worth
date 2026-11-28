@@ -7,7 +7,6 @@ pub(in crate::relational_source) use retirement::{
     RetiredRuntimePublicationSnapshotReader, RuntimePublicationSnapshotReaderRetirement,
 };
 
-use super::identities::record_ref_from_identity_parts;
 use super::snapshot_values::{
     export_entity_aspect_snapshot_value, export_relation_aspect_snapshot_value,
 };
@@ -137,8 +136,7 @@ fn read_packet(
                 "relational bridge snapshot read is outside the source partition authority",
             ));
         }
-        let record_ref = record_ref_from_identity_parts(identity_parts)
-            .map_err(|error| BridgeSnapshotReadError::new(error.to_string()))?;
+        let record_ref = identity_parts.record_ref();
         let aspect = read.aspect_key();
         let aspect_value =
             match record_ref {

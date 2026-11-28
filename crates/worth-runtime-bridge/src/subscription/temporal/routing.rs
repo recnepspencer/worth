@@ -51,7 +51,9 @@ fn route_temporal_cause(
                 request.temporal_basis_identity().as_str(),
                 request.wake_id(),
                 request.wake_tick(),
-                truth_patch.map(|patch| patch.patch_identity().as_str()),
+                truth_patch
+                    .map(|patch| patch.patch_identity().canonical_label())
+                    .as_deref(),
             ));
         }
 
@@ -63,7 +65,9 @@ fn route_temporal_cause(
                 request.temporal_basis_identity().as_str(),
                 request.wake_id(),
                 request.wake_tick(),
-                truth_patch.map(|patch| patch.patch_identity().as_str()),
+                truth_patch
+                    .map(|patch| patch.patch_identity().canonical_label())
+                    .as_deref(),
             ));
         }
 
@@ -77,7 +81,9 @@ fn route_temporal_cause(
                 request.temporal_basis_identity().as_str(),
                 request.wake_id(),
                 request.wake_tick(),
-                truth_patch.map(|patch| patch.patch_identity().as_str()),
+                truth_patch
+                    .map(|patch| patch.patch_identity().canonical_label())
+                    .as_deref(),
             ));
         }
     }
@@ -91,7 +97,7 @@ fn route_temporal_cause(
                 request.temporal_basis_identity().as_str(),
                 request.wake_id(),
                 request.wake_tick(),
-                Some(truth_patch.patch_identity().as_str()),
+                Some(&truth_patch.patch_identity().canonical_label()),
             ));
         }
         if truth_patch.branch_identity() != request.truth_branch_identity() {
@@ -102,7 +108,7 @@ fn route_temporal_cause(
                 request.temporal_basis_identity().as_str(),
                 request.wake_id(),
                 request.wake_tick(),
-                Some(truth_patch.patch_identity().as_str()),
+                Some(&truth_patch.patch_identity().canonical_label()),
             ));
         }
     }

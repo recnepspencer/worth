@@ -5,7 +5,6 @@ use crate::facade::{
 use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 use super::RuntimeBridgeRelationalSource;
-use crate::relational_source::identities::record_ref_from_identity_parts;
 use worth_relational::facade::transactions::RecordRef;
 
 impl RuntimeBridgeRelationalSource {
@@ -20,9 +19,7 @@ impl RuntimeBridgeRelationalSource {
         record: RelationalBridgeRecordIdentityParts,
     ) -> Result<Option<AuthoritativeRecordAspectState>, RelationalBridgeSourceError> {
         let observation = self.observation_bindings.resolve(snapshot)?;
-        let observed_branch =
-            TruthBranchIdentity::from_relational_branch_id(observation.branch_id().0.clone());
-        if &observed_branch != branch {
+        if branch.branch_id() != Some(observation.branch_id()) {
             return Err(RelationalBridgeSourceError::new(
                 crate::adapter::RelationalBridgeSourceErrorTag::Binding(
                     crate::adapter::BridgeSourceBindingDenial::TruthBranchMismatch,
@@ -38,7 +35,7 @@ impl RuntimeBridgeRelationalSource {
                 "retained relational entity projection is outside the source partition authority",
             ));
         }
-        let RecordRef::Entity(entity_id) = record_ref_from_identity_parts(record)? else {
+        let RecordRef::Entity(entity_id) = record.record_ref() else {
             return Err(RelationalBridgeSourceError::new(
                 crate::adapter::RelationalBridgeSourceErrorTag::Binding(
                     crate::adapter::BridgeSourceBindingDenial::EntityIdentityRequired,

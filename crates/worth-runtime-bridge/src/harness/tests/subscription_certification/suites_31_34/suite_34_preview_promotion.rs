@@ -49,7 +49,7 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
                 truth_branch_identity: crate::truth_identity_fixtures::truth_branch_fixture(
                     "analysis",
                 ),
-                signal_branch_identity: BridgeSignalBranchIdentity::admit_bridge_owned(format!(
+                signal_branch_identity: BridgeSignalBranchIdentity::from_stable_name(format!(
                     "signal:subscription:{suffix}"
                 )),
                 snapshot_identity: crate::truth_identity_fixtures::truth_snapshot_fixture(format!(
@@ -127,7 +127,7 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
         ),
         SubscriptionPreviewSessionIdentities {
             truth_branch_identity: crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
-            signal_branch_identity: BridgeSignalBranchIdentity::admit_bridge_owned(
+            signal_branch_identity: BridgeSignalBranchIdentity::from_stable_name(
                 "signal:subscription:malformed-work",
             ),
             snapshot_identity: crate::truth_identity_fixtures::truth_snapshot_fixture(
@@ -172,7 +172,7 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
         BridgePreviewSessionIdentity::admit_bridge_owned("preview-session:subscription:other-work"),
         SubscriptionPreviewSessionIdentities {
             truth_branch_identity: crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
-            signal_branch_identity: BridgeSignalBranchIdentity::admit_bridge_owned(
+            signal_branch_identity: BridgeSignalBranchIdentity::from_stable_name(
                 "signal:subscription:other-work",
             ),
             snapshot_identity: crate::truth_identity_fixtures::truth_snapshot_fixture(

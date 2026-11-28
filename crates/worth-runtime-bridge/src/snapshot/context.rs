@@ -136,8 +136,8 @@ mod tests {
         let context = BridgeSnapshotContext::bind(StaticReader);
 
         assert_eq!(
-            context.snapshot_identity().as_str(),
-            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a").as_str()
+            context.snapshot_identity().canonical_label(),
+            crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a").canonical_label()
         );
     }
 

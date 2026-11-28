@@ -40,9 +40,9 @@ impl TruthDeltaRoutingPacket {
             "truth-delta-routing-packet|workload={}|route={}|branch={}|commit={}|snapshot={}|subscription-slice={}|invalidation-target-count={}|packet-index={}",
             workload_identity.as_str(),
             route_identity.as_str(),
-            source_branch.as_str(),
-            source_commit.as_str(),
-            source_snapshot.as_str(),
+            source_branch.canonical_label(),
+            source_commit.canonical_label(),
+            source_snapshot.canonical_label(),
             subscription_slice_identity.as_str(),
             invalidation_target_count,
             packet_index,
@@ -75,20 +75,20 @@ impl TruthDeltaRoutingPacket {
         &self.route_identity
     }
 
-    pub fn source_commit(&self) -> &str {
-        self.source_commit.as_str()
+    pub fn source_commit(&self) -> String {
+        self.source_commit.canonical_label()
     }
 
-    pub fn source_branch(&self) -> &str {
-        self.source_branch.as_str()
+    pub fn source_branch(&self) -> String {
+        self.source_branch.canonical_label()
     }
 
     pub(crate) fn typed_source_branch(&self) -> &TruthBranchIdentity {
         &self.source_branch
     }
 
-    pub fn source_snapshot(&self) -> &str {
-        self.source_snapshot.as_str()
+    pub fn source_snapshot(&self) -> String {
+        self.source_snapshot.canonical_label()
     }
 
     pub(crate) fn typed_source_snapshot(&self) -> &TruthSnapshotIdentity {

@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -7,6 +8,7 @@ use worth_foundational::facade::{
 };
 use worth_proof::TransitionOutcome;
 
+use crate::identity::record::BridgeRecordIdentity;
 use crate::mapping::SubscriptionSliceKind;
 use crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts;
 use crate::snapshot::{
@@ -19,8 +21,7 @@ use crate::snapshot::{
 pub struct SnapshotReadRequest {
     correlation_id: SnapshotReadCorrelationId,
     correlation_discriminator: Option<Arc<str>>,
-    entity_identity: Arc<str>,
-    relational_record_identity: Option<RelationalBridgeRecordIdentityParts>,
+    record: BridgeRecordIdentity,
     target: SnapshotReadTarget,
     shape: SnapshotReadShape,
 }
@@ -36,31 +37,33 @@ impl SnapshotReadRequest {
         entity_identity: impl Into<Arc<str>>,
         contract: SnapshotReadContract,
     ) -> Self {
-        let entity_identity = entity_identity.into();
-        let target = SnapshotReadTarget::whole_aspect(contract);
-        let shape = SnapshotReadShape::Coarse;
-        let canonical_basis =
-            snapshot_read_request_canonical_basis(entity_identity.as_ref(), &target, &shape, None);
+        Self::for_record(
+            BridgeRecordIdentity::External(entity_identity.into()),
+            contract,
+        )
+    }
+
+    pub(crate) fn for_record(record: BridgeRecordIdentity, contract: SnapshotReadContract) -> Self {
+        Self::new(
+            record,
+            SnapshotReadTarget::whole_aspect(contract),
+            SnapshotReadShape::Coarse,
+        )
+    }
+
+    fn new(
+        record: BridgeRecordIdentity,
+        target: SnapshotReadTarget,
+        shape: SnapshotReadShape,
+    ) -> Self {
+        let canonical_basis = snapshot_read_request_canonical_basis(&record, &target, &shape, None);
         Self {
-            correlation_id: SnapshotReadCorrelationId::from_native_request_basis(
-                canonical_basis.as_ref(),
-            ),
+            correlation_id: SnapshotReadCorrelationId::from_native_request_basis(&canonical_basis),
             correlation_discriminator: None,
-            entity_identity,
-            relational_record_identity: None,
+            record,
             target,
             shape,
         }
-    }
-
-    pub(crate) fn for_coarse_relational_record(
-        entity_identity: impl Into<Arc<str>>,
-        relational_record_identity: RelationalBridgeRecordIdentityParts,
-        contract: SnapshotReadContract,
-    ) -> Self {
-        let mut request = Self::for_coarse(entity_identity, contract);
-        request.relational_record_identity = Some(relational_record_identity);
-        request
     }
 
     pub fn for_native_subscription_slice(
@@ -72,7 +75,7 @@ impl SnapshotReadRequest {
         slice_kind: SubscriptionSliceKind,
     ) -> Self {
         Self::from_native_subscription_slice(
-            entity_identity,
+            BridgeRecordIdentity::External(entity_identity.into()),
             contract,
             aspect_locator,
             field_locator,
@@ -82,54 +85,23 @@ impl SnapshotReadRequest {
     }
 
     pub(crate) fn from_native_subscription_slice(
-        entity_identity: impl Into<Arc<str>>,
+        record: BridgeRecordIdentity,
         contract: SnapshotReadContract,
         aspect_locator: AspectLocator,
         field_locator: Option<AspectFieldLocator>,
         projection_mask: AspectMask<ProjectionMask>,
         slice_kind: SubscriptionSliceKind,
     ) -> Self {
-        let entity_identity = entity_identity.into();
-        let target = SnapshotReadTarget::native_subscription_slice(
-            contract,
-            aspect_locator,
-            field_locator,
-            projection_mask,
-        );
-        let shape = SnapshotReadShape::SubscriptionSlice { slice_kind };
-        let canonical_basis =
-            snapshot_read_request_canonical_basis(entity_identity.as_ref(), &target, &shape, None);
-        Self {
-            correlation_id: SnapshotReadCorrelationId::from_native_request_basis(
-                canonical_basis.as_ref(),
+        Self::new(
+            record,
+            SnapshotReadTarget::native_subscription_slice(
+                contract,
+                aspect_locator,
+                field_locator,
+                projection_mask,
             ),
-            correlation_discriminator: None,
-            entity_identity,
-            relational_record_identity: None,
-            target,
-            shape,
-        }
-    }
-
-    pub(crate) fn from_native_subscription_slice_relational_record(
-        entity_identity: impl Into<Arc<str>>,
-        relational_record_identity: RelationalBridgeRecordIdentityParts,
-        contract: SnapshotReadContract,
-        aspect_locator: AspectLocator,
-        field_locator: Option<AspectFieldLocator>,
-        projection_mask: AspectMask<ProjectionMask>,
-        slice_kind: SubscriptionSliceKind,
-    ) -> Self {
-        let mut request = Self::from_native_subscription_slice(
-            entity_identity,
-            contract,
-            aspect_locator,
-            field_locator,
-            projection_mask,
-            slice_kind,
-        );
-        request.relational_record_identity = Some(relational_record_identity);
-        request
+            SnapshotReadShape::SubscriptionSlice { slice_kind },
+        )
     }
 
     pub(crate) fn with_correlation_discriminator(
@@ -146,12 +118,16 @@ impl SnapshotReadRequest {
         &self.correlation_id
     }
 
-    pub fn entity_identity(&self) -> &str {
-        self.entity_identity.as_ref()
+    pub fn entity_identity(&self) -> Cow<'_, str> {
+        self.record.reporting_label()
+    }
+
+    pub(crate) fn record(&self) -> &BridgeRecordIdentity {
+        &self.record
     }
 
     pub fn relational_record_identity_parts(&self) -> Option<RelationalBridgeRecordIdentityParts> {
-        self.relational_record_identity
+        self.record.relational()
     }
 
     pub fn aspect_key(&self) -> &AspectKey {
@@ -179,7 +155,7 @@ impl SnapshotReadRequest {
 
     pub(crate) fn canonical_basis(&self) -> Arc<str> {
         snapshot_read_request_canonical_basis(
-            self.entity_identity(),
+            &self.record,
             &self.target,
             &self.shape,
             self.correlation_discriminator.as_deref(),
@@ -312,18 +288,20 @@ fn validate_snapshot_read_record(
 }
 
 fn snapshot_read_request_canonical_basis(
-    entity_identity: &str,
+    record: &BridgeRecordIdentity,
     target: &SnapshotReadTarget,
     shape: &SnapshotReadShape,
     correlation_discriminator: Option<&str>,
 ) -> Arc<str> {
+    let entity_identity = record.reporting_label();
+    let domain = record.coordinate_domain();
     let basis = match shape {
         SnapshotReadShape::Coarse => format!(
-            "snapshot-read-request|entity={entity_identity}|target={}|shape=coarse",
+            "snapshot-read-request|domain={domain}|entity={entity_identity}|target={}|shape=coarse",
             target.target_identity().as_str(),
         ),
         SnapshotReadShape::SubscriptionSlice { slice_kind } => format!(
-            "snapshot-read-request|entity={entity_identity}|target={}|shape=subscription-slice|slice-kind={}",
+            "snapshot-read-request|domain={domain}|entity={entity_identity}|target={}|shape=subscription-slice|slice-kind={}",
             target.target_identity().as_str(),
             canonical_subscription_slice_kind_label(slice_kind),
         ),

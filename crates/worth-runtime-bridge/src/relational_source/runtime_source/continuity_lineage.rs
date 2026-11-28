@@ -8,7 +8,7 @@ use super::named_continuity::{project_named_authority, resolve_named_continuity}
 use super::{
     observation_bindings::RelationalBridgeSelectedObservation, RuntimeBridgeRelationalSource,
 };
-use crate::relational_source::identities::{record_ref_from_identity_parts, record_ref_identity};
+use crate::relational_source::identities::record_ref_identity;
 use worth_relational::facade::change_source::RelationalObservationReadDenial;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::lineage::HistoricalLineageResolution;
@@ -57,10 +57,7 @@ fn admit_lineage_request(
         .observation_bindings
         .resolve(request.authority_basis().snapshot_identity())
         .map_err(|error| lineage_error(error.to_string()))?;
-    let observed_branch = crate::facade::TruthBranchIdentity::from_relational_branch_id(
-        observation.branch_id().0.clone(),
-    );
-    if request.authority_basis().branch_identity() != &observed_branch {
+    if request.authority_basis().branch_identity().branch_id() != Some(observation.branch_id()) {
         return Err(lineage_error(
             "bridge continuity branch does not belong to the retained observation",
         ));
@@ -76,8 +73,7 @@ fn admit_lineage_request(
             "relational bridge lineage request is outside the source partition authority",
         ));
     }
-    let record = record_ref_from_identity_parts(identity)
-        .map_err(|error| lineage_error(error.to_string()))?;
+    let record = identity.record_ref();
     let RecordRef::Entity(entity_id) = record else {
         return Err(BridgeLineageSourceError::new(
             BridgeLineageSourceErrorKind::UnsupportedContinuityClass,
@@ -139,9 +135,8 @@ fn project_lineage_authority(
         .resolution
         .resolved
         .iter()
-        .map(|lineage| {
-            BridgeHistoricalResolvedLineageIdentity::from_relational_lineage_id(lineage.0)
-        })
+        .copied()
+        .map(BridgeHistoricalResolvedLineageIdentity::relational)
         .collect::<Vec<_>>();
     canonicalize(&mut lineage_identities);
 

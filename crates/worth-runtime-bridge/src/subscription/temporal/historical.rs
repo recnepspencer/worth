@@ -56,7 +56,7 @@ impl AdmittedHistoricalTemporalReplayBasis {
                 temporal_admission.family().kind(),
                 temporal_admission.temporal_admission_identity(),
                 None,
-                truth_basis.native_truth_locator(),
+                &truth_basis.native_truth_locator(),
             ));
         }
         let historical_truth = historical_truth_basis.truth_basis().basis();
@@ -66,7 +66,7 @@ impl AdmittedHistoricalTemporalReplayBasis {
                 temporal_admission.family().kind(),
                 temporal_admission.temporal_admission_identity(),
                 None,
-                historical_truth.snapshot_identity().as_str(),
+                &historical_truth.snapshot_identity().canonical_label(),
             ));
         }
         if truth_basis.branch_identity() != historical_truth.branch_identity() {
@@ -75,7 +75,7 @@ impl AdmittedHistoricalTemporalReplayBasis {
                 temporal_admission.family().kind(),
                 temporal_admission.temporal_admission_identity(),
                 None,
-                historical_truth.branch_identity().as_str(),
+                &historical_truth.branch_identity().canonical_label(),
             ));
         }
         if temporal_admission.temporal_basis().truth_basis() != historical_truth_basis.truth_basis()
@@ -96,7 +96,9 @@ impl AdmittedHistoricalTemporalReplayBasis {
                 temporal_admission.family().kind(),
                 temporal_admission.temporal_admission_identity(),
                 None,
-                retained_previous_values.truth_snapshot_identity().as_str(),
+                &retained_previous_values
+                    .truth_snapshot_identity()
+                    .canonical_label(),
             ));
         }
         if retained_previous_values.is_empty() {
@@ -114,7 +116,7 @@ impl AdmittedHistoricalTemporalReplayBasis {
                 temporal_admission.family().kind(),
                 temporal_admission.temporal_admission_identity(),
                 None,
-                truth_basis.branch_identity().as_str(),
+                &truth_basis.branch_identity().canonical_label(),
             ));
         }
 

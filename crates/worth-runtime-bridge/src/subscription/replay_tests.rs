@@ -87,7 +87,7 @@ impl crate::adapter::SnapshotReadSource for StaticSource {
         } else {
             Err(crate::adapter::RelationalBridgeSourceError::new(
                 crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
-                format!("unknown snapshot `{}`", identity.as_str()),
+                format!("unknown snapshot `{}`", identity.canonical_label()),
             ))
         }
     }

@@ -3,6 +3,7 @@ use crate::diagnostics::BridgeDiagnosticsFacade;
 use crate::identity::BridgeIdentityEvidence;
 use crate::routing::BridgeRouteIdentity;
 
+use super::super::digest_basis::retained_truth_label_part;
 use super::super::digest_basis::{
     compose_retained_causal_mapping_evidence_identity, retained_mapping_bridge_identity_part,
     RetainedCausalMappingDigestArtifact,
@@ -25,7 +26,7 @@ pub(crate) fn route_record_digest(
                 &[
                     retained_mapping_bridge_identity_part(record.route_identity()),
                     retained_mapping_bridge_identity_part(record.invalidation_identity()),
-                    retained_mapping_bridge_identity_part(record.source_commit()),
+                    retained_truth_label_part(record.source_commit().canonical_label()),
                 ],
             )
         })
@@ -53,8 +54,8 @@ pub(crate) fn historical_evaluation_record_digest(
                     retained_mapping_bridge_identity_part(
                         record.decision_log().decision_log_identity(),
                     ),
-                    retained_mapping_bridge_identity_part(
-                        record.decision_log().snapshot_identity(),
+                    retained_truth_label_part(
+                        record.decision_log().snapshot_identity().canonical_label(),
                     ),
                 ],
             )

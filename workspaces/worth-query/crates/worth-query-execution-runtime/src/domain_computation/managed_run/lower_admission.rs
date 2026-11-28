@@ -179,8 +179,8 @@ fn admit_native_execution_basis(
     }
     let (descriptor, packet, replay, diagnostics, delivery, product_observation) =
         request.into_parts();
-    let branch = worth_runtime_bridge::facade::TruthBranchIdentity::from_relational_branch_id(
-        descriptor.branch_id().0.clone(),
+    let branch = worth_runtime_bridge::facade::TruthBranchIdentity::relational(
+        descriptor.branch_id().clone(),
     );
     let relational_basis = relational
         .readmit_branch_basis(&descriptor)

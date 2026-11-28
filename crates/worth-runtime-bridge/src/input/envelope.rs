@@ -8,9 +8,7 @@ use worth_foundational::facade::{
 };
 
 use crate::clone_budget::CheapClone;
-use crate::identity::{
-    BridgeIdentity, CommittedPatchDigestTag, TruthBranchTag, TruthCommitTag, TruthPatchTag,
-};
+use crate::identity::{BridgeIdentity, CommittedPatchDigestTag};
 use crate::snapshot::TruthSnapshotIdentity;
 
 mod canonical;

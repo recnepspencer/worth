@@ -126,7 +126,10 @@ impl AdmittedBridgeTemporalSignalBasis {
     pub fn admit(
         basis: BridgeTemporalSignalBasis,
     ) -> TransitionOutcome<Self, BridgeTemporalSignalBasisDenial> {
-        match validate_nonempty("signal_branch", basis.branch_identity().as_str()) {
+        let branch = basis.branch_identity();
+        let branch_label = branch.canonical_label();
+        let branch_name = branch.relational_branch_id().unwrap_or(&branch_label);
+        match validate_nonempty("signal_branch", branch_name) {
             TransitionOutcome::Success(()) => {}
             TransitionOutcome::Denied(denial) => return TransitionOutcome::Denied(denial),
             _ => unreachable!("signal identity validation uses only denied"),
@@ -140,7 +143,7 @@ impl AdmittedBridgeTemporalSignalBasis {
         let canonical_ready = transition_canonical_ready(
             canonical_version(SIGNAL_BASIS_CANONICAL_VERSION),
             [
-                text_entry("signal_branch", basis.branch_identity().as_str()),
+                text_entry("signal_branch", &branch_label),
                 text_entry(
                     "signal_clock_domain",
                     clock_domain_label(basis.clock_domain()),

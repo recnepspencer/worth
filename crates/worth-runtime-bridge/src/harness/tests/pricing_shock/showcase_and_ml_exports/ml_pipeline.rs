@@ -55,12 +55,17 @@ fn pricing_shock_ml_pipeline_export_contains_full_traceable_simulation_artifacts
             .expect("simulation should rank at least one material")
     );
     assert_eq!(bundle.provenance.shock_commit, truth.shock_commit);
-    assert!(!bundle.matrix.reference.source_commit.as_str().is_empty());
+    assert!(!bundle
+        .matrix
+        .reference
+        .source_commit
+        .canonical_label()
+        .is_empty());
     assert!(!bundle
         .matrix
         .reference
         .speculative_truth_branch
-        .as_str()
+        .canonical_label()
         .is_empty());
     assert!(!bundle.aspect.aspect_registration_id.as_str().is_empty());
     assert!(!bundle
@@ -69,7 +74,11 @@ fn pricing_shock_ml_pipeline_export_contains_full_traceable_simulation_artifacts
         .as_str()
         .is_empty());
     assert!(bundle.provenance.shock_delta_microunits > 0);
-    assert!(!bundle.hostile_failure.source_commit.as_str().is_empty());
+    assert!(!bundle
+        .hostile_failure
+        .source_commit
+        .canonical_label()
+        .is_empty());
     assert_eq!(
         bundle.trust_attacks.replay_policy_error_kind,
         crate::facade::BridgePolicyRejectionKind::ReplayPolicyConflict
@@ -93,8 +102,8 @@ fn pricing_shock_ml_pipeline_export_contains_full_traceable_simulation_artifacts
     assert!(typed_edges
         .iter()
         .any(|edge| edge.kind == "commit_to_snapshot"
-            && edge.from == bundle.provenance.shock_commit.as_str()
-            && edge.to == bundle.provenance.shock_snapshot.as_str()));
+            && edge.from == bundle.provenance.shock_commit.canonical_label()
+            && edge.to == bundle.provenance.shock_snapshot.canonical_label()));
     assert!(typed_edges
         .iter()
         .any(|edge| edge.kind == "bundle_to_causality_digest" && edge.from == bundle.digest()));
@@ -120,19 +129,18 @@ fn pricing_shock_ml_pipeline_export_lineage_graph_is_well_formed() {
         .expect("ml export should expose lineage_provenance_edges as an array");
 
     let valid_nodes = std::collections::HashSet::from([
-        bundle.matrix.reference.source_commit.as_str().to_owned(),
-        bundle.matrix.reference.main_snapshot.as_str().to_owned(),
-        bundle.provenance.main_commit.as_str().to_owned(),
-        bundle.provenance.main_snapshot.as_str().to_owned(),
-        bundle.provenance.shock_commit.as_str().to_owned(),
-        bundle.provenance.shock_snapshot.as_str().to_owned(),
+        bundle.matrix.reference.source_commit.canonical_label(),
+        bundle.matrix.reference.main_snapshot.canonical_label(),
+        bundle.provenance.main_commit.canonical_label(),
+        bundle.provenance.main_snapshot.canonical_label(),
+        bundle.provenance.shock_commit.canonical_label(),
+        bundle.provenance.shock_snapshot.canonical_label(),
         bundle
             .matrix
             .reference
             .speculative_snapshot
-            .as_str()
-            .to_owned(),
-        bundle.aspect.source_commit.as_str().to_owned(),
+            .canonical_label(),
+        bundle.aspect.source_commit.canonical_label(),
         bundle.matrix.replay.route_identity.as_str().to_owned(),
         bundle
             .matrix
@@ -147,14 +155,14 @@ fn pricing_shock_ml_pipeline_export_lineage_graph_is_well_formed() {
             .promotion_session_identity
             .as_str()
             .to_owned(),
-        bundle.fanout.second_source_commit.as_str().to_owned(),
-        bundle.fanout.second_snapshot.as_str().to_owned(),
-        bundle.restart_replay.source_commit.as_str().to_owned(),
+        bundle.fanout.second_source_commit.canonical_label(),
+        bundle.fanout.second_snapshot.clone(),
+        bundle.restart_replay.source_commit.canonical_label(),
         bundle.restart_replay.route_identity.as_str().to_owned(),
         format!("{:?}", bundle.writeback.family_kind),
         bundle.writeback.committed_effect_intent_digest.clone(),
-        bundle.hostile_failure.source_commit.as_str().to_owned(),
-        bundle.hostile_failure.source_snapshot.as_str().to_owned(),
+        bundle.hostile_failure.source_commit.canonical_label(),
+        bundle.hostile_failure.source_snapshot.canonical_label(),
         bundle.digest(),
         bundle.suite_25_digest_evidence().causality_digest,
     ]);

@@ -189,7 +189,7 @@ fn assert_retained_route_binding(
             expected_retained_route_digest(
                 route_record.route_identity().as_str(),
                 route_record.invalidation_identity().as_str(),
-                route_record.source_commit().as_str(),
+                &route_record.source_commit().canonical_label(),
             )
             .as_str()
         )
@@ -215,10 +215,10 @@ fn assert_retained_historical_binding(
                     .decision_log()
                     .decision_log_identity()
                     .as_str(),
-                historical_record
+                &historical_record
                     .decision_log()
                     .snapshot_identity()
-                    .as_str(),
+                    .canonical_label(),
             )
             .as_str()
         )

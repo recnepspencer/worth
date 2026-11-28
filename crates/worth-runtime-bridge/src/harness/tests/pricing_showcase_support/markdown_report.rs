@@ -61,9 +61,12 @@ impl PricingWorkloadCertificationBundle {
                 "- Suite 26 digest: `{}`\n",
                 "- Suite 27 digest: `{}`\n"
             ),
-            self.matrix.reference.source_branch.as_str(),
-            self.matrix.reference.speculative_truth_branch.as_str(),
-            self.provenance.shock_commit.as_str(),
+            self.matrix.reference.source_branch.canonical_label(),
+            self.matrix
+                .reference
+                .speculative_truth_branch
+                .canonical_label(),
+            self.provenance.shock_commit.canonical_label(),
             self.provenance.shock_regime,
             self.provenance.shock_multiplier_per_mille,
             main_vs_speculative_delta,
@@ -94,10 +97,10 @@ impl PricingWorkloadCertificationBundle {
             self.writeback.commit_outcome_class,
             self.hostile_failure.failure_class,
             self.restart_failure.error_kind,
-            self.provenance.main_commit.as_str(),
-            self.provenance.main_snapshot.as_str(),
-            self.provenance.shock_commit.as_str(),
-            self.provenance.shock_snapshot.as_str(),
+            self.provenance.main_commit.canonical_label(),
+            self.provenance.main_snapshot.canonical_label(),
+            self.provenance.shock_commit.canonical_label(),
+            self.provenance.shock_snapshot.canonical_label(),
             self.provenance.representative_sku,
             self.provenance.representative_retail_price_cents,
             self.provenance.representative_shipping_cost_cents,

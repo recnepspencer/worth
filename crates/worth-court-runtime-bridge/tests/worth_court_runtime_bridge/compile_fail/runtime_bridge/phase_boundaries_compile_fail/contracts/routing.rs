@@ -4,24 +4,20 @@ use worth_testkit_compiler::{
 };
 
 pub(super) fn contracts() -> Vec<Contract<'static>> {
-    vec![
-        Contract {
-            fixture: "route_request_requires_truth_commit_identity.rs",
-            errors: &[
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthCommitTag>",
-                            found: "&str",
-                        },
-                    ],
-                    symbols: &["BridgeIdentity", "TruthCommitTag", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0277",
-                    symbols: &["BridgeRouteRequest", "From", "From<&str>", "str"],
-                },
-            ],
-        },
-    ]
+    vec![Contract {
+        fixture: "route_request_requires_truth_commit_identity.rs",
+        errors: &[
+            Diagnostic::TypeMismatch {
+                pairs: &[Pair {
+                    expected: "TruthCommitIdentity",
+                    found: "&str",
+                }],
+                symbols: &["TruthCommitIdentity", "str"],
+            },
+            Diagnostic::Code {
+                code: "E0277",
+                symbols: &["BridgeRouteRequest", "From", "From<&str>", "str"],
+            },
+        ],
+    }]
 }

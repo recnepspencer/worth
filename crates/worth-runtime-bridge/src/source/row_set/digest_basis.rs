@@ -21,7 +21,7 @@ fn row_set_canonical_basis(
 ) -> String {
     let mut canonical_basis = format!(
         "bridge-row-set|planned={planned_truth_view_digest}|snapshot={}",
-        snapshot_identity.as_str()
+        snapshot_identity.canonical_label()
     );
     for row in rows {
         canonical_basis.push_str("|row=");

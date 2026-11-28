@@ -242,8 +242,8 @@ pub(super) fn reduce_packet_set(
                         "reduced-continuity|workload={}|continuity-member={}|branch={}|snapshot={}",
                         workload_identity.as_str(),
                         continuity_member_identity.as_str(),
-                        branch_identity.as_str(),
-                        snapshot_identity.as_str(),
+                        branch_identity.canonical_label(),
+                        snapshot_identity.canonical_label(),
                     ),
                     ));
                 ReducedContinuityRemap::new(

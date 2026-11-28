@@ -81,17 +81,17 @@ pub(super) struct PricingCertificationMatrix {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct PricingDiscardBundle {
-    pub(super) live_main_snapshot: TruthSnapshotIdentity,
+    pub(super) live_main_snapshot: String,
     pub(super) speculative_rubber_cost_cents: i64,
-    pub(super) post_discard_main_snapshot: TruthSnapshotIdentity,
+    pub(super) post_discard_main_snapshot: String,
     pub(super) post_discard_main_steel_cost_cents: i64,
     pub(super) session_closed: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct PricingPromotionBundle {
-    pub(super) main_snapshot: TruthSnapshotIdentity,
-    pub(super) speculative_snapshot: TruthSnapshotIdentity,
+    pub(super) main_snapshot: String,
+    pub(super) speculative_snapshot: String,
     pub(super) main_rubber_cost_cents: i64,
     pub(super) speculative_rubber_cost_cents: i64,
     pub(super) promotion_session_identity: BridgePreviewSessionIdentity,
@@ -104,8 +104,8 @@ pub(super) struct PricingFanoutBundle {
     pub(super) first_delivery_target_count: usize,
     pub(super) second_delivery_target_count: usize,
     pub(super) second_source_commit: TruthCommitIdentity,
-    pub(super) second_snapshot: TruthSnapshotIdentity,
-    pub(super) branch_snapshot: TruthSnapshotIdentity,
+    pub(super) second_snapshot: String,
+    pub(super) branch_snapshot: String,
     pub(super) branch_steel_cost_cents: i64,
     pub(super) retained_target_count: usize,
     pub(super) first_target: String,
@@ -277,6 +277,18 @@ where
 impl<Tag> PricingCertificationBasisValue for &BridgeIdentity<Tag> {
     fn pricing_certification_basis_value(self) -> String {
         format!("{self:?}")
+    }
+}
+
+impl PricingCertificationBasisValue for &TruthCommitIdentity {
+    fn pricing_certification_basis_value(self) -> String {
+        self.canonical_label()
+    }
+}
+
+impl PricingCertificationBasisValue for &TruthSnapshotIdentity {
+    fn pricing_certification_basis_value(self) -> String {
+        self.canonical_label()
     }
 }
 

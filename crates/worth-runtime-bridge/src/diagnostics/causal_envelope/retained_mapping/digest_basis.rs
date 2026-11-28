@@ -170,6 +170,12 @@ pub(crate) fn retained_mapping_bridge_identity_part<T>(
     retained_mapping_evidence_part(identity.bridge_admission_evidence())
 }
 
+pub(crate) fn retained_truth_label_part(label: String) -> RetainedCausalMappingIdentityPart {
+    retained_mapping_evidence_part(BridgeIdentityEvidence::from_external_authority(
+        crate::identity_authority::bridge_truth_external_identity_token(label),
+    ))
+}
+
 pub(crate) fn retained_mapping_counter_part(value: usize) -> RetainedCausalMappingIdentityPart {
     RetainedCausalMappingIdentityPart::Counter(value)
 }

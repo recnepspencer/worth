@@ -2,9 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::identity::{BridgeIdentity, TruthSnapshotTag};
-
-pub type TruthSnapshotIdentity = BridgeIdentity<TruthSnapshotTag>;
+pub use crate::identity::truth::TruthSnapshotIdentity;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgeSnapshotToken {

@@ -90,8 +90,7 @@ impl WorthQueryPendingGranularInvalidations {
         &mut self,
         commit: worth_relational::facade::history::CommitId,
     ) -> Vec<BridgeGranularInvalidationDelivery> {
-        let target =
-            worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(commit.0);
+        let target = worth_runtime_bridge::facade::TruthCommitIdentity::relational(commit);
         let mut matched = Vec::new();
         let mut remaining = Vec::new();
         for delivery in std::mem::take(&mut self.direct) {

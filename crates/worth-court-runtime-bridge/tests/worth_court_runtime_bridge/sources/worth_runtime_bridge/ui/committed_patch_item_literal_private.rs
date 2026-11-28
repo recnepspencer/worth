@@ -6,7 +6,7 @@ use worth_runtime_bridge::facade::{BridgeCommittedPatchItem, BridgeCommittedPatc
 
 fn main() {
     let _item = BridgeCommittedPatchItem {
-        entity_identity: sealed_authority_placeholder(),
+        record: sealed_authority_placeholder(),
         target: BridgeCommittedPatchTarget::entity_field_path(
             AspectLocator::new(
                 LocatorAuthority::Authoritative,

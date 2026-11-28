@@ -35,8 +35,8 @@ impl BridgeContinuityAuthorityBasis {
         let digest_basis_kind = BridgeContinuityDigestBasisKind::PriorSubscriptionSlice;
         let canonical_basis = Arc::<str>::from(format!(
             "continuity-authority|authority:{authority_kind:?}|digest_basis:{digest_basis_kind:?}|branch:{}|snapshot:{}",
-            branch_identity.as_str(),
-            snapshot_identity.as_str(),
+            branch_identity.canonical_label(),
+            snapshot_identity.canonical_label(),
         ));
         let digest = Sha256::digest(canonical_basis.as_bytes());
         Self {

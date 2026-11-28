@@ -42,26 +42,14 @@ pub(super) fn canonical_read_packet(
     let mut reads = deduped
         .into_iter()
         .map(|slice| {
-            if let Some(record_identity) = slice.relational_record_identity_parts() {
-                SnapshotReadRequest::from_native_subscription_slice_relational_record(
-                    slice.entity_identity(),
-                    record_identity,
-                    slice.snapshot_read_contract().clone(),
-                    slice.aspect_locator().clone(),
-                    slice.field_locator().cloned(),
-                    slice.projection_mask().clone(),
-                    slice.slice_kind().clone(),
-                )
-            } else {
-                SnapshotReadRequest::from_native_subscription_slice(
-                    slice.entity_identity(),
-                    slice.snapshot_read_contract().clone(),
-                    slice.aspect_locator().clone(),
-                    slice.field_locator().cloned(),
-                    slice.projection_mask().clone(),
-                    slice.slice_kind().clone(),
-                )
-            }
+            SnapshotReadRequest::from_native_subscription_slice(
+                slice.record().clone(),
+                slice.snapshot_read_contract().clone(),
+                slice.aspect_locator().clone(),
+                slice.field_locator().cloned(),
+                slice.projection_mask().clone(),
+                slice.slice_kind().clone(),
+            )
         })
         .collect::<Vec<_>>();
     reads.sort_by(canonical_snapshot_request_order);
@@ -74,28 +62,16 @@ fn canonical_coarse_read_packet(entries: &[EligibleRouteEntry]) -> SnapshotReadP
         let contract = entry.registration().snapshot_read_contract().clone();
         deduped.insert(
             (
-                entry.item().entity_identity().to_owned(),
+                entry.item().record().clone(),
                 Arc::<str>::from(contract.canonical_basis()),
             ),
-            (contract, entry.item().relational_record_identity_parts()),
+            contract,
         );
     }
 
     let mut reads = deduped
         .into_iter()
-        .map(
-            |((entity_identity, _contract_basis), (contract, record_identity))| {
-                if let Some(record_identity) = record_identity {
-                    SnapshotReadRequest::for_coarse_relational_record(
-                        entity_identity,
-                        record_identity,
-                        contract,
-                    )
-                } else {
-                    SnapshotReadRequest::for_coarse(entity_identity, contract)
-                }
-            },
-        )
+        .map(|((record, _), contract)| SnapshotReadRequest::for_record(record, contract))
         .collect::<Vec<_>>();
     reads.sort_by(canonical_snapshot_request_order);
     SnapshotReadPacket::new(reads)

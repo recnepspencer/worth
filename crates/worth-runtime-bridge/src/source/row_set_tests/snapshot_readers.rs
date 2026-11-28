@@ -21,13 +21,14 @@ impl TruthSnapshotReader for FixtureReader {
             .reads()
             .iter()
             .map(|read| {
-                let aspect_value = match (read.entity_identity(), read.aspect_key().as_str()) {
-                    ("entity-1", "identity.id") => AspectValue::String("task-1".into()),
-                    ("entity-1", "status") => AspectValue::String("todo".into()),
-                    ("entity-2", "identity.id") => AspectValue::String("task-2".into()),
-                    ("entity-2", "status") => AspectValue::String("doing".into()),
-                    _ => AspectValue::String("unknown".into()),
-                };
+                let aspect_value =
+                    match (read.entity_identity().as_ref(), read.aspect_key().as_str()) {
+                        ("entity-1", "identity.id") => AspectValue::String("task-1".into()),
+                        ("entity-1", "status") => AspectValue::String("todo".into()),
+                        ("entity-2", "identity.id") => AspectValue::String("task-2".into()),
+                        ("entity-2", "status") => AspectValue::String("doing".into()),
+                        _ => AspectValue::String("unknown".into()),
+                    };
                 crate::snapshot::SnapshotReadRecord::for_request(read, aspect_value)
             })
             .collect();
@@ -89,7 +90,8 @@ impl TruthSnapshotReader for AuthoritativeAbsenceReader {
                 if read.entity_identity() == "entity-2" && read.aspect_key().as_str() == "status" {
                     crate::snapshot::SnapshotReadRecord::absent_for_request(read)
                 } else {
-                    let value = match (read.entity_identity(), read.aspect_key().as_str()) {
+                    let value = match (read.entity_identity().as_ref(), read.aspect_key().as_str())
+                    {
                         ("entity-1", "identity.id") => "task-1",
                         ("entity-1", "status") => "todo",
                         ("entity-2", "identity.id") => "task-2",
@@ -126,13 +128,14 @@ impl TruthSnapshotReader for ChangedStatusReader {
             .reads()
             .iter()
             .map(|read| {
-                let aspect_value = match (read.entity_identity(), read.aspect_key().as_str()) {
-                    ("entity-1", "identity.id") => AspectValue::String("task-1".into()),
-                    ("entity-1", "status") => AspectValue::String("done".into()),
-                    ("entity-2", "identity.id") => AspectValue::String("task-2".into()),
-                    ("entity-2", "status") => AspectValue::String("doing".into()),
-                    _ => AspectValue::String("unknown".into()),
-                };
+                let aspect_value =
+                    match (read.entity_identity().as_ref(), read.aspect_key().as_str()) {
+                        ("entity-1", "identity.id") => AspectValue::String("task-1".into()),
+                        ("entity-1", "status") => AspectValue::String("done".into()),
+                        ("entity-2", "identity.id") => AspectValue::String("task-2".into()),
+                        ("entity-2", "status") => AspectValue::String("doing".into()),
+                        _ => AspectValue::String("unknown".into()),
+                    };
                 crate::snapshot::SnapshotReadRecord::for_request(read, aspect_value)
             })
             .collect();
