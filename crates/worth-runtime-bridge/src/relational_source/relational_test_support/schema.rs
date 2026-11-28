@@ -132,6 +132,28 @@ pub(crate) fn entity_summary_struct_aspect(
     )
 }
 
+pub(crate) fn recorded_actor_aspect() -> DeclaredAspectContractBinding {
+    let key = aspect_key("actor");
+    let shape = aspects()
+        .struct_fields()
+        .required("partition", ScalarAspectType::UInt64)
+        .required("slot", ScalarAspectType::UInt64)
+        .required("generation", ScalarAspectType::UInt64)
+        .finish()
+        .unwrap();
+    declared(
+        AspectBinding::EntityField {
+            field: field_key("actor"),
+        },
+        aspects()
+            .contract()
+            .for_key(key.clone())
+            .identified_by(AspectIdentity(contract_identity(&key)))
+            .at_revision(aspects().vocabulary().revision(1))
+            .struct_aspect(shape),
+    )
+}
+
 fn declared(binding: AspectBinding, contract: AspectContract) -> DeclaredAspectContractBinding {
     DeclaredAspectContractBinding { binding, contract }
 }

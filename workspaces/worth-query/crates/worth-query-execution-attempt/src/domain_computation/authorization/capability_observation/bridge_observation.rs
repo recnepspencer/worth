@@ -3,12 +3,11 @@
 use worth_runtime_bridge::facade::{
     BridgeAuthorizationClauseObservation, BridgeAuthorizationObservation,
     BridgeAuthorizationRequirementObservation, BridgeAuthorizationRuleObservation,
-    BridgeRecordedActorComparison,
 };
 
 use super::super::capability_registry::{
-    WorthQueryCapabilityRequestGuard, WorthQueryCapabilityRequestValueAxis,
-    WorthQueryInstalledCapabilityPlan,
+    bridge_recorded_actor_comparison, WorthQueryCapabilityRequestGuard,
+    WorthQueryCapabilityRequestValueAxis, WorthQueryInstalledCapabilityPlan,
 };
 use super::super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
 use super::super::WorthQueryOperationAuthorizationDenial;
@@ -66,15 +65,7 @@ fn lower_observation(
     let mut observed_rules = Vec::with_capacity(rules.len());
     for rule in rules {
         let observed_requirements = if let Some((requirement, identity)) = rule.recorded_actor() {
-            use worth_query_declaration::facade::application_capability::ApplicationRecordedActorComparison;
-            let comparison = match requirement.comparison() {
-                ApplicationRecordedActorComparison::SamePrincipal => {
-                    BridgeRecordedActorComparison::SamePrincipal
-                }
-                ApplicationRecordedActorComparison::DifferentPrincipal => {
-                    BridgeRecordedActorComparison::DifferentPrincipal
-                }
-            };
+            let comparison = bridge_recorded_actor_comparison(requirement.comparison());
             let observed = recorded
                 .filter(|actor| actor.native.requirement() == requirement)
                 .and_then(|actor| actor.evidence.observation());
@@ -121,14 +112,16 @@ fn observe_clause(
         .paths()
         .get(index)
         .ok_or_else(|| super::invalid_policy(installed.contract().name()))?;
-    let guard = guard_matches(&template.guard, projection);
-    Ok(
-        BridgeAuthorizationClauseObservation::from_guarded_relational_path(
+    Ok(match &template.guard {
+        WorthQueryCapabilityRequestGuard::Unconditional => {
+            BridgeAuthorizationClauseObservation::from_relational_path(template.identity, path)
+        }
+        guard => BridgeAuthorizationClauseObservation::from_guarded_relational_path(
             template.identity,
             path,
-            guard,
+            guard_matches(guard, projection),
         ),
-    )
+    })
 }
 
 fn guard_matches(

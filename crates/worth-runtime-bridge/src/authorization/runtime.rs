@@ -206,9 +206,11 @@ fn same_shape(
                         .zip(&observed.requirements)
                         .all(|(required, actual)| {
                             required.clauses().len() == actual.clauses.len()
-                                && required.clauses().iter().zip(&actual.clauses).all(
-                                    |(expected, clause)| expected.identity() == clause.identity(),
-                                )
+                                && required
+                                    .clauses()
+                                    .iter()
+                                    .zip(&actual.clauses)
+                                    .all(|(expected, clause)| expected.admits(clause))
                         })
             })
 }
