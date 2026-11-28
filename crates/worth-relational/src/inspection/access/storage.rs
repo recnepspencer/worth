@@ -216,3 +216,12 @@ impl<'runtime> InspectionAccess<'runtime> {
             .unwrap_or((None, None))
     }
 }
+
+impl InspectionAccess<'_> {
+    /// Observe the configured working set without demanding any cold region.
+    pub fn residency_pressure(
+        &self,
+    ) -> Option<crate::storage::residency::working_set::ResidencyPressureSnapshot> {
+        self.runtime.residency_pressure()
+    }
+}

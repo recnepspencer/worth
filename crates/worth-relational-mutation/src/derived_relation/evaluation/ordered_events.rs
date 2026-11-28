@@ -17,6 +17,9 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
             key.reverse,
             self.read,
         )?;
+        if !self.retain_support {
+            return self.save(key, acquired.members);
+        }
         for data in acquired.support {
             let (entities, relations, adjacency) =
                 worth_relational_contracts::internal_port::derived_relation::read::take_dependencies(data);

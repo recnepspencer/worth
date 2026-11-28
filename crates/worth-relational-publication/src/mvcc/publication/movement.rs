@@ -1,4 +1,5 @@
 //! Compare the selected branch state and consume one prepared movement.
+use worth_relational_contracts::internal_port::execution::monotonic_time::RelationalCutoverDeadline;
 use contracts::mvcc::publication::outcome::failure::RelationalPublicationFailureOwnerPort as _;
 use std::sync::Arc;
 use worth_relational_contracts::internal_port as contracts;
@@ -77,7 +78,7 @@ impl BranchMovementCutover<'_, '_> {
             storage::runtime::state::subsystems::services::symbol_table::reservations::PreparedSymbolPublication,
         >,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<RelationalCutoverDeadline<'_>>,
         mut allow_effect: Option<&mut dyn FnMut() -> bool>,
         on_reservation: impl FnOnce(),
         settlement: &mut crate::runtime::state::runtime_state::publication_settlement_registry::RelationalPendingSettlementReservation,

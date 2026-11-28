@@ -5,6 +5,31 @@ use crate::visibility::materialization::read_records::projection::{
 };
 use worth_execution::ExecutionMemoryReservation;
 
+/// Maximum admitted shortest-path depth and number of distinct reached nodes.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct PinnedStructuralWalkBudget {
+    pub maximum_depth: usize,
+    pub maximum_nodes: usize,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PinnedStructuralWalkLimit {
+    Depth,
+    Nodes,
+}
+
+/// Exhaustion retains observations and work, without presenting an incomplete
+/// set of structural facts as a complete walk.
+#[derive(Debug)]
+pub enum BoundedPinnedStructuralWalk {
+    Complete(PinnedStructuralWalk),
+    BudgetExhausted {
+        limit: PinnedStructuralWalkLimit,
+        reads: PinnedStructuralWalkReads,
+        work_units: usize,
+    },
+}
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 /// Actual acquired lists and metadata, independent of private work and request cost.
 pub struct PinnedStructuralWalkReads {

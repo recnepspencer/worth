@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::execution::monotonic_time::monotonic_now;
 use super::super::phase_backing::CommitPhaseBacking;
 use super::super::rejection::{attach_rejection, elapsed_micros};
 use super::preparation::{
@@ -49,7 +50,7 @@ pub(super) fn assemble_authoritative_publication_phase(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<CommitPhaseBacking<PublicationPreparation>, TransactionCommitError> {
     commit_log.begin_phase(CommitPhase::ArtifactAssembly);
-    let phase_started = worth_execution::MonotonicClock::system().now();
+    let phase_started = monotonic_now();
     let mut effect = input.effect;
     let patch_fragments = std::mem::take(&mut effect.publication.patch_fragments);
     let lease = contracts::execution::request_custody::request_lease(execution);

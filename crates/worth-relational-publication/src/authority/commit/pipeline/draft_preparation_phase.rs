@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::execution::monotonic_time::monotonic_now;
 use super::rejection::elapsed_micros;
 use crate::authority::commit::phases::prepare::working_state_metrics::record_preparation_counters;
 use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
@@ -14,7 +15,7 @@ pub(super) fn record_draft_preparation_phase(
     public_structural_summary: &contracts::transactions::data::outcomes::commit_summaries::CommitStructuralSummary,
 ) {
     commit_log.begin_phase(CommitPhase::DraftPreparation);
-    let phase_started = worth_execution::MonotonicClock::system().now();
+    let phase_started = monotonic_now();
     record_preparation_counters(instrumentation, working_state, structural_summary);
     commit_log.record_structural_summary(public_structural_summary);
     commit_log.complete_phase(CommitPhase::DraftPreparation);

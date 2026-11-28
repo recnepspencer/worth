@@ -65,6 +65,10 @@ fn content_original_field_custody_restores_after_current_root_collects_the_ident
             RelationalContentDenial::EncodingInconsistency
         );
     }
+    let pin = runtime
+        .read_truth()
+        .pin_read_capability(&committed.snapshot, &[], &execution)
+        .unwrap();
     let mut custody = RelationalContentAttachments::default();
     custody.attach(&execution, &frame).unwrap();
     let mut txn = runtime
@@ -81,6 +85,28 @@ fn content_original_field_custody_restores_after_current_root_collects_the_ident
     assert_eq!(
         current
             .read_content(&execution, old_id, FORMAT)
+            .unwrap_err(),
+        RelationalContentDenial::MissingContent
+    );
+    assert!(current.read_content(&execution, current_id, FORMAT).is_ok());
+    let historical = runtime
+        .read_truth()
+        .try_project_historical_version(committed.version_id)
+        .unwrap();
+    assert_eq!(
+        historical
+            .read_content(&execution, current_id, FORMAT)
+            .unwrap_err(),
+        RelationalContentDenial::HistoryNotResident
+    );
+    assert_eq!(
+        pin.read_content(&execution, old_id, FORMAT)
+            .unwrap()
+            .bytes(),
+        super::expected::FRAME
+    );
+    assert_eq!(
+        pin.read_content(&execution, current_id, FORMAT)
             .unwrap_err(),
         RelationalContentDenial::MissingContent
     );

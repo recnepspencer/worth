@@ -20,6 +20,10 @@ impl<Entry> BreadthFirstFrontier<Entry> {
         self.seen.contains(entity)
     }
 
+    pub(super) fn discovered_count(&self) -> usize {
+        self.seen.len()
+    }
+
     pub(super) fn enqueue<E>(
         &mut self,
         entity: EntityId,

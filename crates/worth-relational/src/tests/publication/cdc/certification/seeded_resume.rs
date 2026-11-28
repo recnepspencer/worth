@@ -49,7 +49,15 @@ fn cdc_certification_seeded_matrix_is_deterministic_and_resume_exact() {
             &window_matrix,
         );
 
-        let checkpoints = sampled_checkpoints_from_patches(&full_left, 6);
+        let mut checkpoints = sampled_checkpoints_from_patches(&full_left, 6);
+        let seeded_checkpoints = random_checkpoints_from_patches(&full_left, seed, 6);
+        assert_eq!(
+            seeded_checkpoints,
+            random_checkpoints_from_patches(&full_right, seed, 6)
+        );
+        checkpoints.extend(seeded_checkpoints);
+        checkpoints.sort_by_key(|checkpoint| checkpoint.position().0);
+        checkpoints.dedup();
         let views = collect_multi_subscriber_views(&left.runtime, &checkpoints, &[1, 2, 4, 7]);
         assert_multi_subscriber_converges(
             &format!("seed {seed} multi-subscriber convergence"),

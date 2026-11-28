@@ -34,6 +34,12 @@ impl PublicationError {
         self.index_maintenance_denial.as_deref()
     }
 
+    pub(crate) fn authored_retirement_source(
+        &self,
+    ) -> Option<&crate::publication::data::authored_retirement_refusal::AuthoredRetirementRefusal> {
+        self.authored_retirement_refusal.as_ref()
+    }
+
     pub fn authored_retirement_refusal(
         &self,
     ) -> Option<crate::publication::data::authored_retirement_refusal::AuthoredRetirementRefusal>

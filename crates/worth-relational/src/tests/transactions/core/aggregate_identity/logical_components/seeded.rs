@@ -61,12 +61,6 @@ fn audit(execution: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime, targ
         .compared_surfaces
         .contains(&ReplayObservableSurface::Snapshot));
 }
-fn next(seed: &mut u64) -> usize {
-    *seed ^= *seed << 13;
-    *seed ^= *seed >> 7;
-    *seed ^= *seed << 17;
-    *seed as usize
-}
 fn toggle(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
@@ -123,6 +117,7 @@ fn toggle(
 #[cfg(test)]
 mod exhaustive {
     use super::*;
+    use worth_dst::{DstRunner, Seed, Spec};
 
     #[test]
     fn seeded_full_key_differential_fork_recovery_and_replay_keep_actual_names_and_lineage() {
@@ -182,15 +177,16 @@ mod exhaustive {
             .checkpoint(execution)
             .unwrap();
         let mut current = born.snapshot.clone();
-        let mut seed = 0x9181_0006_62f3_u64;
+        let spec = Spec::new(Seed::new(0x9181_0006_62f3), 0, 64);
         let mut saw_split = false;
         let mut saw_merge = false;
         let mut final_result = None;
-        for step in 0..64 {
+        DstRunner::run(&spec, |step, runner| {
+            let rng = runner.rng();
             let index = if step < 4 {
                 0
             } else {
-                next(&mut seed) % carriers.len()
+                rng.below(carriers.len())
             };
             let carrier = carriers[index];
             let batch = if step == 24 {
@@ -234,7 +230,7 @@ mod exhaustive {
                 }
                 batch
             } else if step < 2 || (step >= 4 && step % 2 == 0) {
-                let vertex = if step < 2 { 0 } else { next(&mut seed) % 4 };
+                let vertex = if step < 2 { 0 } else { rng.below(4) };
                 toggle(
                     execution,
                     &runtime,
@@ -246,7 +242,7 @@ mod exhaustive {
                     step,
                 )
             } else {
-                let side = if step < 4 { 1 } else { next(&mut seed) % 2 };
+                let side = if step < 4 { 1 } else { rng.below(2) };
                 let before = oracle.carriers[&carrier].anchors[side];
                 let after = if step == 2 {
                     Anchor::Region(0)
@@ -301,7 +297,9 @@ mod exhaustive {
             saw_merge |= merge;
             current = result.snapshot.clone();
             final_result = Some(result);
-        }
+            Ok::<(), std::convert::Infallible>(())
+        })
+        .expect("the oracle's steps are infallible");
         assert!(
             saw_split && saw_merge,
             "actual authored transitions must include both lineage kinds"

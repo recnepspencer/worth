@@ -1,10 +1,11 @@
+use worth_relational_contracts::internal_port::execution::monotonic_time::elapsed_since;
 use contracts::transactions::data::commit_log::CommitLog;
 use contracts::transactions::data::commit_log::CommitPhase;
 use contracts::transactions::data::outcomes::commit_conflict::CommitConflict;
 use contracts::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 use contracts::transactions::data::outcomes::conflict_class::ConflictClass;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
-use std::time::Instant;
+use worth_foundational::time::MonotonicInstant;
 use worth_relational_contracts::internal_port as contracts;
 
 pub(super) fn stale_strategy_validation_basis(detail: &str) -> TransactionCommitError {
@@ -42,6 +43,6 @@ pub(super) fn attach_rejection(
     error.with_commit_log(commit_log.clone())
 }
 
-pub(super) fn elapsed_micros(started: Instant) -> u64 {
-    started.elapsed().as_micros() as u64
+pub(super) fn elapsed_micros(started: MonotonicInstant) -> u64 {
+    elapsed_since(started).as_micros() as u64
 }

@@ -1,5 +1,7 @@
 # Extracted packages and the Runtime and court sources under crates/worth-relational/src.
 # Longest path wins. A module prefix matches both name.rs and name/.
+# Physical owners cover every source below their crate roots, including new
+# branch projection reads, contracts reports/time, and publication pin methods.
 # Court seeds are counted separately from production owners.
 court_seed = "courts"
 
@@ -114,6 +116,7 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admission", "indexes", "durability", "publication"]
 
 [paths]
+"facade/read.rs" = "runtime"
 "authority/commit/mod.rs" = "runtime"
 "authority/commit/pipeline/mod.rs" = "runtime"
 "authority/commit/preparation/mod.rs" = "runtime"

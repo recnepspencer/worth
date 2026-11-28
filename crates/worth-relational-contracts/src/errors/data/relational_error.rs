@@ -81,5 +81,3 @@ impl fmt::Display for RelationalError {
         }
     }
 }
-
-impl std::error::Error for RelationalError {}

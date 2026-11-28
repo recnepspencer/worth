@@ -27,6 +27,37 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
             maximum_work,
         )
     }
+    /// Count distinct outgoing derived endpoints. The exact recipe is evaluated
+    /// without retaining its dependency rosters or materializing a fact result.
+    pub fn derived_relation_count(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        definition: &Handle,
+        root: impl Into<NativeMemberKey>,
+        maximum_work: Option<usize>,
+    ) -> Result<usize, Denial> {
+        mutation::derived_relation::pinned::acquisition::count_projected_adjacency(
+            &self.project_read(),
+            execution,
+            definition,
+            root.into(),
+            maximum_work,
+        )
+        .map_err(|stop| stop.kind)
+    }
+
+    /// Test for an outgoing endpoint with the same exact evaluation and refusals.
+    pub fn has_derived_relations(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        definition: &Handle,
+        root: impl Into<NativeMemberKey>,
+        maximum_work: Option<usize>,
+    ) -> Result<bool, Denial> {
+        self.derived_relation_count(execution, definition, root, maximum_work)
+            .map(|count| count != 0)
+    }
+
     /// Evaluate the exact registered recipe under the original request.
     pub fn derived_source(
         &self,

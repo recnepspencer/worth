@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::execution::monotonic_time::RelationalCutoverDeadline;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
@@ -119,7 +120,7 @@ impl PerformedPublicationStream {
         route: Arc<CanonicalPublicationRoute>,
         original_payload: &worth_relational_durability::internal_port::durability::canonical_commit_artifact::prepared_payload::PreparedOriginalCanonicalPayload,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
-        cutover_before: Option<std::time::Instant>,
+        cutover_before: Option<RelationalCutoverDeadline<'_>>,
         mut allow_effect: Option<&mut dyn FnMut() -> bool>,
         medium: Option<&RelationalDurableMediumBinding>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

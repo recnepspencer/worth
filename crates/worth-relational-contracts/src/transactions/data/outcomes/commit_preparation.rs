@@ -62,6 +62,15 @@ impl CommitPreparationError {
         self.managed_source.as_ref()
     }
 
+    pub(crate) fn storage_unavailable(
+        &self,
+    ) -> Option<&crate::storage::data::storage_unavailable::RelationalStorageUnavailable> {
+        match &self.reason {
+            CommitPreparationReason::StorageUnavailable(failure) => Some(failure),
+            _ => None,
+        }
+    }
+
     pub const fn reason(&self) -> CommitPreparationReason {
         self.reason
     }

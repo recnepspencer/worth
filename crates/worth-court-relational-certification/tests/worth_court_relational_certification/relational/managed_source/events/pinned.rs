@@ -263,6 +263,20 @@ fn controlled_pinned_limit_foreign_and_malformed_refusals_keep_actual_work() {
         );
         assert!(denied.work > limited.work);
         assert!(denied.reads.adjacency_lists > 0 && denied.reads.relation_records > 0);
+        assert_eq!(
+            pin.derived_relation_count(&execution, &path, root, None),
+            Ok(1)
+        );
+        assert_eq!(
+            pin.has_derived_relations(&execution, &path, root, None),
+            Ok(true)
+        );
+        assert_eq!(
+            bad_pin.derived_relation_count(&execution, &path, root, None),
+            Err(DerivedRelationReadDenial::Definition(
+                DerivedRelationDenial::InvalidEventChain
+            )),
+        );
         // The original immutable pin still proves its complete lawful history.
         assert_eq!(
             pin.derived_relations_from(&execution, &path, root, None)

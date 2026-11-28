@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::execution::monotonic_time::monotonic_now;
 use worth_relational_branch::internal_port as branch;
 use worth_relational_contracts::internal_port as contracts;
 use super::super::rejection::elapsed_micros;
@@ -57,7 +58,7 @@ fn record_canonical_log_phase(
     } = input;
     let branch_id = &positioned_commit.envelope().commit.branch_id;
     commit_log.begin_phase(CommitPhase::DurableAppend);
-    let phase_started = worth_execution::MonotonicClock::system().now();
+    let phase_started = monotonic_now();
     commit_log.record_durable_append_prepared(
         commit_id,
         &branch_id.0,
@@ -115,7 +116,7 @@ pub(super) fn finalize_publication_phase(
         relation_lineages,
     );
     commit_log.begin_phase(CommitPhase::Publication);
-    let phase_started = worth_execution::MonotonicClock::system().now();
+    let phase_started = monotonic_now();
     let mut publication_phase_timing =
         crate::authority::commit::phases::finalize::PublicationPhaseTiming::default();
     finalize_published_commit(

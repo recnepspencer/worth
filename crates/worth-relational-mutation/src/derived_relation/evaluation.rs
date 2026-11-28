@@ -53,6 +53,7 @@ struct Evaluation<'a, Port> {
     entities: BTreeMap<EntityId, KindId>,
     relations: BTreeMap<RelationId, StructuralRelationRecord>,
     adjacency: BTreeSet<Adjacency>,
+    retain_support: bool,
 }
 
 /// The actual registry lookup is paid before any source acquisition.
@@ -98,36 +99,7 @@ pub(crate) fn evaluate_position(
     root: Member,
     read: &mut impl SourceRead,
 ) -> Result<Data, Denial> {
-    read.admit_definition(registry, handle)?;
-    let key = Key::root(handle.clone(), node, root, reverse);
-    let mut evaluation = Evaluation {
-        registry,
-        root_definition: handle.clone(),
-        read,
-        pending: Vec::new(),
-        values: MemoValues::default(),
-        entities: BTreeMap::new(),
-        relations: BTreeMap::new(),
-        adjacency: BTreeSet::new(),
-    };
-    let endpoints = handle
-        .owner_entry()
-        .endpoints
-        .get(node)
-        .ok_or(DefinitionDenial::InvalidExpression)?;
-    evaluation.member(
-        &key.anchor,
-        if reverse { &endpoints.1 } else { &endpoints.0 },
-    )?;
-    evaluation.push(Frame::Enter(key.clone()))?;
-    while let Some(frame) = evaluation.pending.pop() {
-        evaluation.read.checkpoint(1)?;
-        evaluation.step(frame)?;
-    }
-    let endpoints = evaluation
-        .values
-        .remove(&key, evaluation.read)?
-        .expect("complete root evaluation");
+    let (evaluation, endpoints) = evaluate(registry, handle, node, reverse, root, read, true)?;
     let output_bytes = endpoints
         .len()
         .checked_mul(size_of::<Member>())
@@ -164,6 +136,63 @@ pub(crate) fn evaluate_position(
         evaluation.adjacency.into_iter().collect(),
         evaluation.read.reads(),
     ))
+}
+
+/// Scalar adjacency observations still evaluate and deduplicate the complete
+/// endpoint set. Dependency rosters and result vectors are omitted.
+pub(super) fn count_position(
+    registry: &RelationalSchemaRegistry,
+    handle: &Handle,
+    node: usize,
+    reverse: bool,
+    root: Member,
+    read: &mut impl SourceRead,
+) -> Result<usize, Denial> {
+    let (_, endpoints) = evaluate(registry, handle, node, reverse, root, read, false)?;
+    Ok(endpoints.len())
+}
+
+fn evaluate<'a, Port: SourceRead>(
+    registry: &'a RelationalSchemaRegistry,
+    handle: &Handle,
+    node: usize,
+    reverse: bool,
+    root: Member,
+    read: &'a mut Port,
+    retain_support: bool,
+) -> Result<(Evaluation<'a, Port>, BTreeSet<Member>), Denial> {
+    read.admit_definition(registry, handle)?;
+    let key = Key::root(handle.clone(), node, root, reverse);
+    let mut evaluation = Evaluation {
+        registry,
+        root_definition: handle.clone(),
+        read,
+        pending: Vec::new(),
+        values: MemoValues::default(),
+        entities: BTreeMap::new(),
+        relations: BTreeMap::new(),
+        adjacency: BTreeSet::new(),
+        retain_support,
+    };
+    let endpoints = handle
+        .owner_entry()
+        .endpoints
+        .get(node)
+        .ok_or(DefinitionDenial::InvalidExpression)?;
+    evaluation.member(
+        &key.anchor,
+        if reverse { &endpoints.1 } else { &endpoints.0 },
+    )?;
+    evaluation.push(Frame::Enter(key.clone()))?;
+    while let Some(frame) = evaluation.pending.pop() {
+        evaluation.read.checkpoint(1)?;
+        evaluation.step(frame)?;
+    }
+    let endpoints = evaluation
+        .values
+        .remove(&key, evaluation.read)?
+        .expect("complete root evaluation");
+    Ok((evaluation, endpoints))
 }
 
 /// Fixed-width physical keys retain their one-unit insertion cost. Semantic

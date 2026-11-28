@@ -125,7 +125,7 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
         if kind != expected {
             return Err(DefinitionDenial::DiscontinuousEndpoints.into());
         }
-        if !self.entities.contains_key(&id) {
+        if self.retain_support && !self.entities.contains_key(&id) {
             self.read
                 .retain(size_of::<(EntityId, KindId)>() + 4 * size_of::<usize>())?;
             self.entities.insert(id, kind);
@@ -149,7 +149,7 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
             relation,
             outgoing: !key.reverse,
         };
-        if !self.adjacency.contains(&probe) {
+        if self.retain_support && !self.adjacency.contains(&probe) {
             self.read
                 .retain(size_of::<Adjacency>() + 4 * size_of::<usize>())?;
             self.adjacency.insert(probe);
@@ -167,7 +167,7 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
             }
             self.entity(record.source, from)?;
             self.entity(record.target, to)?;
-            if !self.relations.contains_key(&record.relation_id) {
+            if self.retain_support && !self.relations.contains_key(&record.relation_id) {
                 self.read
                     .retain(size_of::<StructuralRelationRecord>() + 4 * size_of::<usize>())?;
                 self.relations.insert(record.relation_id, record);

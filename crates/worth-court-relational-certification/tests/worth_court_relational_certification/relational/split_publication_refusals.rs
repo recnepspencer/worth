@@ -94,7 +94,10 @@ fn split_publication_cancelled_request_releases_candidate_and_records_discard() 
         ))
     ));
     assert_eq!(runtime.observe_branch(&identity).unwrap().0, before);
-    let observation = runtime.observe_mvcc_counters(&scope).unwrap();
+    let observation = runtime
+        .inspect_what_happened()
+        .observe_mvcc_counters(&scope)
+        .unwrap();
     assert_eq!(observation.sharing_cost_delta().candidate_discards, 1);
     assert_eq!(observation.sharing_cost_delta().publication_attempts, 0);
     prove_returned_slot(runtime, basis);

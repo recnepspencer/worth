@@ -46,6 +46,7 @@ mod commit_strategies;
 mod commit_result_publication;
 mod pinned_read_custody;
 mod pinned_read_publication;
+mod pinned_relation_aspects;
 mod pinned_walk_custody;
 mod pinned_walk_long_chain;
 mod public_cache_publication;

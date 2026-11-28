@@ -1,4 +1,4 @@
-use worth_execution::MonotonicClock;
+use worth_relational_contracts::internal_port::execution::monotonic_time::{elapsed_since, monotonic_now};
 use super::allocation_inventory::{
     RelationalAuthoritativeAllocationKind, RelationalAuthoritativeAllocationLocator,
     RelationalAuthoritativeAllocationObservation,
@@ -161,7 +161,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         runtime_instance_id: u64,
         root: &RelationalBranchRoot,
     ) -> Result<(), Denial> {
-        let start = self.census_work.as_ref().map(|_| MonotonicClock::system().now());
+        let start = self.census_work.as_ref().map(|_| monotonic_now());
         for region in root.storage_regions() {
             let region = region.map_err(|_| Denial::AuthoritativeByteBoundOverflow)?;
             if let Some(work) = self.census_work.as_mut() {
@@ -211,7 +211,7 @@ impl RelationalAuthoritativeAllocationAccounting {
                 ),
                 region.partition_state_bytes,
             );
-            let excluded_start = self.census_work.as_ref().map(|_| MonotonicClock::system().now());
+            let excluded_start = self.census_work.as_ref().map(|_| monotonic_now());
             if let Some(work) = self.census_work.as_mut() {
                 work.excluded_partition_walks += 1;
             }
@@ -242,11 +242,11 @@ impl RelationalAuthoritativeAllocationAccounting {
                     .insert((2 + lane as u8, allocation.id), bytes);
             }
             if let Some(work) = self.census_work.as_mut() {
-                work.excluded_walk_us += excluded_start.unwrap().elapsed().as_micros();
+                work.excluded_walk_us += elapsed_since(excluded_start.unwrap()).as_micros();
             }
         }
         if let Some(work) = self.census_work.as_mut() {
-            work.partition_walk_us += start.unwrap().elapsed().as_micros();
+            work.partition_walk_us += elapsed_since(start.unwrap()).as_micros();
         }
         Ok(())
     }
@@ -257,7 +257,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         root: &RelationalBranchRoot,
     ) -> Result<(), Denial> {
         use Denial::AuthoritativeByteBoundOverflow;
-        let start = self.census_work.as_ref().map(|_| MonotonicClock::system().now());
+        let start = self.census_work.as_ref().map(|_| monotonic_now());
         if let Some(work) = self.census_work.as_mut() {
             work.schema_inventory_computations += 1;
         }
@@ -321,7 +321,7 @@ impl RelationalAuthoritativeAllocationAccounting {
             );
         }
         if let Some(work) = self.census_work.as_mut() {
-            work.root_inventory_us += start.unwrap().elapsed().as_micros();
+            work.root_inventory_us += elapsed_since(start.unwrap()).as_micros();
         }
         Ok(())
     }
@@ -333,7 +333,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         derived_cache_bytes: u64,
     ) -> Result<(), Denial> {
         use Denial::AuthoritativeByteBoundOverflow;
-        let start = self.census_work.as_ref().map(|_| MonotonicClock::system().now());
+        let start = self.census_work.as_ref().map(|_| monotonic_now());
         for allocation in artifact.authoritative_allocation_observations() {
             let kind = match allocation.kind {
                 RelationalCommitAuthoritativeAllocationKind::ArtifactObject => {
@@ -379,7 +379,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         }
         if let Some(work) = self.census_work.as_mut() {
             work.catalog_artifacts += 1;
-            work.catalog_inventory_us += start.unwrap().elapsed().as_micros();
+            work.catalog_inventory_us += elapsed_since(start.unwrap()).as_micros();
         }
         Ok(())
     }

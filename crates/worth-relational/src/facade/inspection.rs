@@ -54,3 +54,5 @@ pub use crate::validation::engine::request::relation_law_sources::{
 };
 
 pub use crate::validation::candidate_source::image::inspection::inspect_managed_source_material;
+
+pub use crate::storage::residency::working_set::ResidencyPressureSnapshot;

@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::execution::monotonic_time::RelationalCutoverDeadline;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 use worth_relational_contracts::internal_port as contracts;
@@ -284,7 +285,7 @@ impl PreparedCanonicalPublicationRoute {
         &self,
         publication_cell: RelationalBranchPublicationCell,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
-        cutover_before: Option<std::time::Instant>,
+        cutover_before: Option<RelationalCutoverDeadline<'_>>,
         allow_effect: Option<&mut dyn FnMut() -> bool>,
         medium: Option<&worth_relational_durability::internal_port::durability::published_medium::binding::RelationalDurableMediumBinding>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -145,6 +145,9 @@ pub mod indexes;
 #[path = "facade/inspection.rs"]
 pub mod inspection;
 
+#[path = "facade/read.rs"]
+pub mod read;
+
 #[path = "facade/lineage.rs"]
 pub mod lineage;
 

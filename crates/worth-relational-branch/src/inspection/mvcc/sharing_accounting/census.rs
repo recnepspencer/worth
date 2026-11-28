@@ -1,5 +1,6 @@
 //! Owner-allocation union without per-root logical or excluded-lane inventories.
 //! Nested persistent aspect backing is visited at physical node/value granularity.
+use worth_relational_contracts::internal_port::execution::monotonic_time::{elapsed_since, monotonic_now};
 use super::*;
 use crate::branch::root::{
     RelationalRootAllocationVisitor, RelationalRootAuthoritativeAllocationObservation,
@@ -13,13 +14,13 @@ impl RelationalAuthoritativeAllocationAccounting {
         runtime_instance_id: u64,
         root: &RelationalBranchRoot,
     ) -> Result<(), Denial> {
-        let start = worth_execution::MonotonicClock::system().now();
+        let start = monotonic_now();
         self.census_work.as_mut().unwrap().roots += 1;
         let result = root.try_visit_authoritative_allocation_union(&mut CensusRootWalk {
             accounting: self,
             runtime_instance_id,
         });
-        self.census_work.as_mut().unwrap().root_union_us += start.elapsed().as_micros();
+        self.census_work.as_mut().unwrap().root_union_us += elapsed_since(start).as_micros();
         result
     }
 }
@@ -77,7 +78,7 @@ impl RelationalRootAllocationVisitor for CensusRootWalk<'_> {
         >,
         partition: Result<&PartitionState, RelationalStorageUnavailable>,
     ) -> Result<(), Denial> {
-        let start = worth_execution::MonotonicClock::system().now();
+        let start = monotonic_now();
         let region = region.map_err(|_| Denial::AuthoritativeByteBoundOverflow)?;
         let partition = partition.map_err(Denial::StorageUnavailable)?;
         self.accounting.census_work.as_mut().unwrap().region_entries += 1;
@@ -117,7 +118,7 @@ impl RelationalRootAllocationVisitor for CensusRootWalk<'_> {
             .census_work
             .as_mut()
             .unwrap()
-            .partition_walk_us += start.elapsed().as_micros();
+            .partition_walk_us += elapsed_since(start).as_micros();
         Ok(())
     }
 }
