@@ -10,8 +10,8 @@ use crate::schema::data::{
     SchemaRegistryError,
 };
 
-use super::derive_kind_plan_revision;
 use super::merge_policy_declarations::canonicalize_merge_policy_declarations;
+use super::revision::derive_kind_plan_revision;
 
 pub(super) enum RegistrationDomain {
     Entity,
@@ -46,18 +46,26 @@ pub(super) fn canonicalize_kind_aspect_declarations(
         }
         validate_declared_aspect(kind_id, aspect, &domain)?;
     }
+    let exclusion_groups = super::exclusion_groups::canonicalize(
+        kind_id,
+        declarations.exclusion_groups,
+        &seen,
+        &domain,
+    )?;
     identity_declarations.sort();
     let plan_revision = derive_kind_plan_revision(
         kind_id,
         &aspects,
         &identity_declarations,
         &merge_policy_declarations,
+        &exclusion_groups,
     )?;
     Ok(KindAspectContractDeclarations {
         plan_revision,
         aspects,
         identity_declarations,
         merge_policy_declarations,
+        exclusion_groups,
     })
 }
 

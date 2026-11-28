@@ -36,6 +36,7 @@ impl EffectCore<'_> {
             ));
         };
         let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
+        self.require_exclusive_write(field.entity(), *entity_id, &locator)?;
         if self.layout.field_is_optional(field.entity(), &locator) {
             return self.write_optional_value(
                 &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(
@@ -93,6 +94,9 @@ impl EffectCore<'_> {
             ));
         };
         let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
+        if value.is_some() {
+            self.require_exclusive_write(field.entity(), *entity_id, &locator)?;
+        }
         self.write_optional_value(
             &ApplicationFieldBindingLocus::new(field.entity(), field.aspect(), field.field()),
             *entity_id,

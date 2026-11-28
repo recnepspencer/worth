@@ -95,6 +95,7 @@ worth_query_operation!(pub ChangeForm for Fixture, input UnitInput);
 worth_query_operation_requires!(ChangeForm => [Edit]);
 impl OperationReads<ChangeForm> for Item {}
 impl OperationCreates<ChangeForm> for Item {}
+impl OperationRemovesAspects<ChangeForm> for Named {}
 impl Registration<Fixture> for ChangeForm {
     fn register(
         builder: ApplicationSchemaDeclarationBuilder<Fixture>,

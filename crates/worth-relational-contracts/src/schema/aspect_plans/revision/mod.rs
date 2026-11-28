@@ -14,11 +14,12 @@ use schema_plan_terms::{
     RevisionHasher,
 };
 
-pub(super) fn derive_plan_revision(
+pub(super) fn derive_kind_plan_revision(
     kind_id: KindId,
     aspects: &[DeclaredAspectContractBinding],
     identity_declarations: &[IdentityBasisDeclaration],
     merge_policy_declarations: &[AspectMergePolicyDeclaration],
+    exclusion_groups: &[crate::schema::data::AspectExclusionGroupDeclaration],
 ) -> Result<AspectContractPlanRevision, SchemaRegistryError> {
     let mut revision = RevisionHasher::new();
     for aspect in aspects {
@@ -31,6 +32,15 @@ pub(super) fn derive_plan_revision(
     for declaration in merge_policy_declarations {
         mix_merge_policy_declaration_terms(&mut revision, declaration);
     }
+    for group in exclusion_groups {
+        revision.mix_text("aspect_exclusion_group");
+        revision.mix_text(&group.group_id);
+        revision.mix_bool(group.required);
+        revision.mix_u128(group.aspects.len() as u128);
+        for aspect in &group.aspects {
+            revision.mix_aspect_key(aspect);
+        }
+    }
     Ok(AspectContractPlanRevision(revision.finish()))
 }
 
@@ -41,7 +51,7 @@ mod tests {
         ScalarAspectType,
     };
 
-    use super::derive_plan_revision;
+    use super::derive_kind_plan_revision;
     use crate::identity::data::KindId;
     use crate::schema::data::{AspectBinding, DeclaredAspectContractBinding};
 
@@ -76,7 +86,7 @@ mod tests {
     }
 
     fn revision_for(contract: AspectContract) -> crate::schema::data::AspectContractPlanRevision {
-        derive_plan_revision(
+        derive_kind_plan_revision(
             KindId(7),
             &[DeclaredAspectContractBinding {
                 binding: AspectBinding::EntityField {
@@ -85,6 +95,7 @@ mod tests {
                 },
                 contract,
             }],
+            &[],
             &[],
             &[],
         )

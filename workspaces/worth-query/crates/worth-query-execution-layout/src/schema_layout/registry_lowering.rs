@@ -124,13 +124,31 @@ pub fn register_entity(
     kind_id: KindId,
     aspects: Vec<DeclaredAspectContractBinding>,
 ) -> Result<RelationalSchemaRegistry, WorthQuerySchemaLayoutDenial> {
+    register_entity_with_contracts(
+        registry,
+        schema_id,
+        schema_version_id,
+        entity,
+        kind_id,
+        KindAspectContractDeclarations::new(aspects),
+    )
+}
+
+pub(super) fn register_entity_with_contracts(
+    registry: RelationalSchemaRegistry,
+    schema_id: &SchemaId,
+    schema_version_id: SchemaVersionId,
+    entity: &str,
+    kind_id: KindId,
+    aspect_contract_declarations: KindAspectContractDeclarations,
+) -> Result<RelationalSchemaRegistry, WorthQuerySchemaLayoutDenial> {
     registry
         .register_entity_kind(EntityKindRegistration {
             kind_id,
             kind_name: entity.to_string(),
             schema_id: schema_id.clone(),
             schema_version_id,
-            aspect_contract_declarations: KindAspectContractDeclarations::new(aspects),
+            aspect_contract_declarations,
         })
         .map_err(relational_schema_denial)
 }
@@ -261,12 +279,13 @@ fn lower_cascade_delete(value: ApplicationRelationDeletionPolicy) -> CascadeDele
 }
 
 pub(super) struct LoweredApplicationContractBindings {
-    pub by_entity: BTreeMap<String, Vec<DeclaredAspectContractBinding>>,
+    pub by_entity: BTreeMap<String, KindAspectContractDeclarations>,
     pub by_relation: BTreeMap<String, Vec<DeclaredAspectContractBinding>>,
 }
 
 pub(super) fn lower_application_contract_bindings(
     catalog: &WorthQueryInstalledApplicationSchemaContractCatalog,
+    values: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
 ) -> LoweredApplicationContractBindings {
     let mut by_entity = BTreeMap::<String, Vec<DeclaredAspectContractBinding>>::new();
     let mut by_relation = BTreeMap::<String, Vec<DeclaredAspectContractBinding>>::new();
@@ -288,7 +307,25 @@ pub(super) fn lower_application_contract_bindings(
             });
     }
     LoweredApplicationContractBindings {
-        by_entity,
+        by_entity: by_entity
+            .into_iter()
+            .map(|(entity, aspects)| {
+                let groups = values
+                    .exclusion_groups(&entity)
+                    .map(|(id, members, required)| {
+                        worth_relational::facade::schema::AspectExclusionGroupDeclaration {
+                            group_id: id.to_owned(),
+                            aspects: members.clone(),
+                            required,
+                        }
+                    })
+                    .collect();
+                (
+                    entity,
+                    KindAspectContractDeclarations::new(aspects).with_exclusion_groups(groups),
+                )
+            })
+            .collect(),
         by_relation,
     }
 }

@@ -30,6 +30,12 @@ pub(super) fn quote(
     for declaration in &declarations.merge_policy_declarations {
         memory.text(declaration.aspect_key.as_str())?;
     }
+    memory.add(
+        crate::schema::data::AspectExclusionGroupDeclaration::allocation_bytes(
+            &declarations.exclusion_groups,
+        )
+        .ok_or_else(super::overflow)?,
+    )?;
     Ok(())
 }
 

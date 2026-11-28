@@ -27,6 +27,7 @@ pub(super) fn native_rule_id_tag(value: NativeInvariantRuleId) -> u8 {
         NativeInvariantRuleId::AcyclicityContract => 13,
         NativeInvariantRuleId::PartitionIsolationContract => 14,
         NativeInvariantRuleId::ConnectivityMinimumContract => 15,
+        NativeInvariantRuleId::EntityAspectExclusion => 16,
     }
 }
 

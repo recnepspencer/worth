@@ -154,6 +154,13 @@ fn declarations(
     let mut bytes = array::<DeclaredAspectContractBinding>(value.aspects.capacity())?;
     add(
         &mut bytes,
+        size(
+            AspectExclusionGroupDeclaration::allocation_bytes(&value.exclusion_groups)
+                .ok_or(Denial::AllocationLayoutOverflow)?,
+        )?,
+    )?;
+    add(
+        &mut bytes,
         array::<crate::schema::data::identity_declarations::IdentityBasisDeclaration>(
             value.identity_declarations.capacity(),
         )?,

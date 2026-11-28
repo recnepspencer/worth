@@ -62,3 +62,5 @@ mod proposed_structural_walk;
 mod connectivity_publication;
 mod custom_invariant_receipts;
 mod invariant_narrowing_commit;
+
+mod aspect_exclusion;

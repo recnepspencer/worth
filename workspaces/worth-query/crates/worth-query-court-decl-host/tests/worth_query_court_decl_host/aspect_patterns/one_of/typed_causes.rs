@@ -48,72 +48,63 @@ fn assert_cause(denial: &WorthQueryCustomInvariantDenial, expected: &Refusal) {
     );
 }
 #[test]
-fn installation_retains_violation_and_evaluation_failure_causes() {
-    for (seed, expected) in [
-        (
-            None,
-            Refusal::Membership {
-                subject: "record".into(),
-                present: 0,
+fn installation_refuses_missing_required_case_and_preserves_custom_capacity_cause() {
+    use worth_relational::facade::transactions::{
+        ConflictClass, InvariantViolationFields, TransactionCommitError,
+    };
+
+    let Err(WorthQueryApplicationPreparationDenial::Publication(missing)) =
+        world::try_install_seed(None, None)
+    else {
+        panic!("missing required case must fail publication");
+    };
+    let Some(TransactionCommitError::Conflict { error, .. }) = missing.native_commit_denial()
+    else {
+        panic!("expected the original Native conflict: {missing:?}");
+    };
+    assert!(matches!(
+        &error.class,
+        ConflictClass::InvariantViolation {
+            fields: InvariantViolationFields::EntityAspectExclusion {
+                required: true,
+                active_count: 0,
+                ..
             },
-        ),
-        (
-            Some(256),
-            Refusal::Capacity {
-                field: "Record.First.FirstValue".into(),
-                maximum: 255,
-                observed: 256,
-            },
-        ),
-    ] {
-        let denial = match world::try_install_seed(None, seed) {
-            Err(denial) => denial,
-            Ok(_) => panic!("damaged policy must not install"),
-        };
-        assert_cause(&from_installation(&denial), &expected);
-    }
+            ..
+        }
+    ));
+    let denial = match world::try_install_seed(None, Some(256)) {
+        Err(denial) => denial,
+        Ok(_) => panic!("custom capacity rule must refuse the seed"),
+    };
+    assert_cause(&from_installation(&denial), &capacity_refusal());
     let host = world::try_install_seed(None, Some(255)).unwrap();
     assert_eq!(world::read(&host).first, Some(255));
 }
+
 #[test]
-fn commit_retains_the_same_violation_and_evaluation_failure_causes() {
+fn commit_retains_custom_capacity_failure_cause() {
     let host = world::install();
-    for (change, expected, key) in [
-        (
-            authoring::Change::Zero,
-            Refusal::Membership {
-                subject: "record".into(),
-                present: 0,
-            },
-            "cause-violation",
-        ),
-        (
-            authoring::Change::OverCapacity,
-            Refusal::Capacity {
-                field: "Record.First.FirstValue".into(),
-                maximum: 255,
-                observed: 256,
-            },
-            "cause-failure",
-        ),
-    ] {
-        let outcome = world::edit(&host, change, key);
-        let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
-            denial,
-        )) = outcome
-        else {
-            panic!("must refuse at publication: {outcome:?}")
-        };
-        assert_cause(denial.custom_invariant_denial().unwrap(), &expected);
-        assert_eq!(
-            denial.decode_invariant_refusal::<RefusalBinding>().unwrap(),
-            expected
-        );
-        assert_eq!(world::read(&host).first, Some(11));
+    let outcome = world::edit(&host, authoring::Change::OverCapacity, "cause-failure");
+    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
+        denial,
+    )) = outcome
+    else {
+        panic!("must refuse at publication: {outcome:?}");
+    };
+    let expected = capacity_refusal();
+    assert_cause(denial.custom_invariant_denial().unwrap(), &expected);
+    assert_eq!(
+        denial.decode_invariant_refusal::<RefusalBinding>().unwrap(),
+        expected
+    );
+    assert_eq!(world::read(&host).first, Some(11));
+}
+
+fn capacity_refusal() -> Refusal {
+    Refusal::Capacity {
+        field: "Record.First.FirstValue".into(),
+        maximum: 255,
+        observed: 256,
     }
-    assert!(matches!(
-        world::edit(&host, authoring::Change::Second, "cause-lawful"),
-        WorthQueryApplicationMutationOutcome::Committed { .. }
-    ));
-    assert_eq!(world::read(&host).second, Some(22));
 }

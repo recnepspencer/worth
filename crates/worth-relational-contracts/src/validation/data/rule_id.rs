@@ -24,6 +24,7 @@ pub enum NativeInvariantRuleId {
     AcyclicityContract,
     PartitionIsolationContract,
     ConnectivityMinimumContract,
+    EntityAspectExclusion,
 }
 
 /// Shared rule text has an intrinsic cold-read admission through every clone.

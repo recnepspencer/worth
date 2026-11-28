@@ -15,39 +15,40 @@ fn class_transition_is_atomic_and_invalid_final_states_do_not_publish() {
             third: None
         }
     );
-    for (n, (change, present)) in [
-        (authoring::Change::Zero, 0),
-        (authoring::Change::RemoveNamedOnly, 0),
-        (authoring::Change::AddSecondOnly, 2),
-        (authoring::Change::Two, 2),
-    ]
-    .into_iter()
-    .enumerate()
-    {
+    for (change, case, key) in [
+        (
+            authoring::Change::RemoveNamedOnly,
+            First::reference().name(),
+            "remove-active",
+        ),
+        (
+            authoring::Change::AddSecondOnly,
+            Second::reference().name(),
+            "activate-sibling",
+        ),
+    ] {
         let before = world::pin(&host);
-        let outcome = world::edit(&host, change, &format!("invalid-{n}"));
-        let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
-            denial,
+        let outcome = world::try_edit(&host, change, key);
+        let Err(WorthQueryApplicationRequestMutationDenial::Handler(
+            MutationHandlerExecutionDenial::Handler(denial),
         )) = outcome
         else {
-            panic!("must reach installed rule: {outcome:?}");
+            panic!("raw candidate authoring must refuse: {outcome:?}");
         };
+        let denial = denial
+            .downcast::<WorthQueryApplicationAttemptDenial>()
+            .unwrap();
         assert_eq!(
             denial.kind(),
-            WorthQueryApplicationCommitDenialKind::CustomInvariantDenied,
-            "case {n}: {denial:?}"
+            WorthQueryApplicationAttemptDenialKind::ConflictingEffectStep
         );
+        assert!(denial
+            .subject()
+            .ends_with(&format!(".{case} requires an atomic case transition")));
         assert_eq!(
-            denial
-                .decode_invariant_refusal::<rule::RefusalBinding>()
-                .unwrap(),
-            rule::Refusal::Membership {
-                subject: "record".into(),
-                present
-            }
+            before.selected_commit(),
+            world::pin(&host).selected_commit()
         );
-        let after = world::pin(&host);
-        assert_eq!(before.selected_commit(), after.selected_commit());
         assert_eq!(
             world::read(&host),
             query::Row {
@@ -90,64 +91,6 @@ fn class_transition_is_atomic_and_invalid_final_states_do_not_publish() {
             third: None
         }
     );
-}
-
-#[test]
-fn incomplete_present_class_refuses_without_publishing() {
-    let host = world::install();
-    for (n, change) in [
-        authoring::Change::Incomplete,
-        authoring::Change::AddIncompleteOnly,
-    ]
-    .into_iter()
-    .enumerate()
-    {
-        let before = world::pin(&host);
-        let outcome = world::edit(&host, change, &format!("incomplete-{n}"));
-        let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
-            denial,
-        )) = outcome
-        else {
-            panic!("malformed candidate must refuse: {outcome:?}");
-        };
-        assert_eq!(
-            denial.kind(),
-            WorthQueryApplicationCommitDenialKind::ProviderRejected
-        );
-        assert_eq!(
-            denial.stage(),
-            WorthQueryApplicationCommitDenialStage::ProposalBinding
-        );
-        // Existing public envelope renders the internal InvalidEffectValue and
-        // original validator's field subject; it has no typed validation accessor.
-        let detail = denial.detail().expect("actual validation subject");
-        assert!(
-            detail.starts_with("InvalidEffectValue: Record EntityId")
-                || detail.starts_with("InvalidEffectValue: Record RecordId"),
-            "{detail}"
-        );
-        assert!(
-            detail.contains(&format!(
-                ".{}: MissingRequiredField(FieldKey(\"SecondRequired\"))",
-                Second::reference().name()
-            )),
-            "{detail}"
-        );
-        assert_eq!(
-            before.selected_commit(),
-            world::pin(&host).selected_commit()
-        );
-        assert_eq!(
-            world::read(&host),
-            query::Row {
-                class: 1,
-                first: Some(11),
-                second: None,
-                required: None,
-                third: None
-            }
-        );
-    }
 }
 
 #[test]

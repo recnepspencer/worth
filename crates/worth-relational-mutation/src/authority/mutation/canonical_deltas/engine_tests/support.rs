@@ -62,6 +62,7 @@ pub(super) fn catalog_with_entity_binding(
         LoweredAspectContractPlan {
             kind_id,
             plan_revision: AspectContractPlanRevision(7),
+            exclusion_groups: Vec::new(),
             executable_bindings: smallvec::smallvec![LoweredAspectContractBinding {
                 contract,
                 target: binding,
@@ -82,6 +83,7 @@ pub(super) fn catalog_with_relation_binding(
         LoweredAspectContractPlan {
             kind_id,
             plan_revision: AspectContractPlanRevision(3),
+            exclusion_groups: Vec::new(),
             executable_bindings: smallvec::smallvec![LoweredAspectContractBinding {
                 contract,
                 target: binding,

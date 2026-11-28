@@ -1,6 +1,7 @@
 //! Actual A contracts select physical application roles before any B lowering.
 use super::super::registry_lowering::{
-    register_application_relation, register_entity, LoweredApplicationContractBindings,
+    register_application_relation, register_entity_with_contracts,
+    LoweredApplicationContractBindings,
 };
 use super::*;
 use worth_query_installation::facade::ApplicationSchemaMember;
@@ -27,7 +28,7 @@ pub(super) fn resolve(
             let actual = source
                 .entity_registration(candidate.kind_id)
                 .map_err(relational_schema_denial)?;
-            let expected = register_entity(
+            let expected = register_entity_with_contracts(
                 RelationalSchemaRegistry::new(),
                 &actual.schema_id,
                 actual.schema_version_id,

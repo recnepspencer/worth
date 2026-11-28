@@ -64,6 +64,7 @@ fn entity_field_delta_requires_authoritative_state() {
         LoweredAspectContractPlan {
             kind_id: KindId(1),
             plan_revision: AspectContractPlanRevision(7),
+            exclusion_groups: Vec::new(),
             executable_bindings: smallvec::smallvec![LoweredAspectContractBinding {
                 contract: aspects()
                     .contract()

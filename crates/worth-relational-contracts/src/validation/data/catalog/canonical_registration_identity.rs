@@ -90,6 +90,7 @@ impl RegistrationIdentityBytes {
 
     fn rule(&mut self, rule: &InvariantRule) {
         match rule {
+            InvariantRule::EntityAspectExclusion => self.tag(15),
             InvariantRule::LiveRecordRequiresSidecar(kind) => {
                 self.tag(1);
                 self.record_kind(kind);

@@ -54,6 +54,18 @@ impl InvariantViolationDiagnosticProjection<'_> {
                 "unique_entity_field",
                 [("aspect_field", aspect_field.to_diagnostic_value())],
             ),
+            Self::EntityAspectExclusion {
+                entity_id, kind_id, group_id, required, active_count,
+            } => violation_diagnostic_object(
+                "entity_aspect_exclusion",
+                [
+                    ("entity_id", RelationalDiagnosticValue::EntityId(*entity_id)),
+                    ("kind_id", RelationalDiagnosticValue::KindId(*kind_id)),
+                    ("group_id", RelationalDiagnosticValue::string(*group_id)),
+                    ("required", RelationalDiagnosticValue::Bool(*required)),
+                    ("active_count", RelationalDiagnosticValue::unsigned(*active_count)),
+                ],
+            ),
             Self::SidecarConsistency {
                 partition_id,
                 slot,

@@ -4,6 +4,7 @@ impl PhysicalIdentityBindings {
     pub(in crate::schema_layout) fn readmit(
         schema: &ErasedApplicationSchemaDeclaration,
         contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
+        values: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
         source: &RelationalSchemaRegistry,
         maximum_kind: Option<KindId>,
         maximum_aspect: Option<AspectIdentity>,
@@ -19,7 +20,9 @@ impl PhysicalIdentityBindings {
         }
         let (entities, relations) = source_application::resolve(
             schema,
-            &super::super::registry_lowering::lower_application_contract_bindings(contracts),
+            &super::super::registry_lowering::lower_application_contract_bindings(
+                contracts, values,
+            ),
             source,
             &snapshot,
         )?;

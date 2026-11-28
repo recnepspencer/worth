@@ -10,6 +10,7 @@ fn lowered_plan_admits_only_lowered_entity_scalar_fields() {
     let lowered = LoweredAspectContractPlan {
         kind_id: KindId(1),
         plan_revision: AspectContractPlanRevision(1),
+        exclusion_groups: Vec::new(),
         executable_bindings: smallvec::smallvec![
             LoweredAspectContractBinding {
                 contract: worth_foundational::AspectContract::scalar(

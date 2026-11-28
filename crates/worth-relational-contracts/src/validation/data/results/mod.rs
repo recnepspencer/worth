@@ -156,6 +156,13 @@ pub enum InvariantViolationFields {
         definition: crate::derived_relation::definition::DerivedRelationIdentity,
         violation: crate::derived_relation::laws::violation::DerivedRelationLawViolation,
     },
+    EntityAspectExclusion {
+        entity_id: EntityId,
+        kind_id: KindId,
+        group_id: String,
+        required: bool,
+        active_count: usize,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -211,6 +218,7 @@ impl InvariantViolationFieldsOwnerPort for InvariantViolationFields {
             } => (field_locator.owned_allocation_capacity_bytes() as u64)
                 .saturating_add(value.owned_allocation_capacity_bytes() as u64),
             Fields::SidecarConsistency { missing_label, .. } => missing_label.capacity() as u64,
+            Fields::EntityAspectExclusion { group_id, .. } => group_id.capacity() as u64,
             Fields::StorageInconsistency {
                 field,
                 missing_label,

@@ -47,6 +47,22 @@ impl WorthQueryPrimaryGraphLayout {
 }
 
 impl WorthQueryPrimaryGraphLayout {
+    pub fn aspect_exclusion_groups<'a>(
+        &'a self,
+        entity: &str,
+        aspect: &'a worth_foundational::facade::AspectKey,
+    ) -> impl Iterator<
+        Item = (
+            &'a std::collections::BTreeSet<worth_foundational::facade::AspectKey>,
+            bool,
+        ),
+    > + 'a {
+        self.value_bindings
+            .exclusion_groups(entity)
+            .filter(move |(_, members, _)| members.contains(aspect))
+            .map(|(_, members, required)| (members, required))
+    }
+
     pub fn record_presence_locator(
         &self,
         field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,

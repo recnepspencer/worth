@@ -26,8 +26,8 @@ use serde::{Deserialize, Serialize};
 
 pub use aspect_contracts::{
     AspectBinding, AspectContractPlanCatalog, AspectContractPlanRevision,
-    DeclaredAspectContractBinding, KindAspectContractDeclarations, LoweredAspectContractBinding,
-    LoweredAspectContractPlan, RelationalAspectChangeKind,
+    AspectExclusionGroupDeclaration, DeclaredAspectContractBinding, KindAspectContractDeclarations,
+    LoweredAspectContractBinding, LoweredAspectContractPlan, RelationalAspectChangeKind,
 };
 pub use aspect_traces::{
     AspectDeclarationTrace, AspectDeclarationTraceRow, AspectLoweringTrace, AspectLoweringTraceRow,

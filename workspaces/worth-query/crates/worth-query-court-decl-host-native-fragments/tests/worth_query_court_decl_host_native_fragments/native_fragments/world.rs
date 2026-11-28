@@ -12,7 +12,7 @@ pub(crate) enum Mode {
     None,
     Named,
     Measured,
-    BothBroken,
+    Both,
 }
 pub(super) type Program<O> = WorthQueryApplicationEffectProgramBuilder<Fixture, O, (), Item>;
 pub(crate) struct World {
@@ -126,7 +126,7 @@ impl World {
                         )
                         .unwrap();
                 }
-                if matches!(mode, Mode::Named | Mode::BothBroken) {
+                if matches!(mode, Mode::Named | Mode::Both) {
                     seed = seed
                         .record_field(
                             record_field(Fixture, Item, Named, "text")
@@ -136,20 +136,13 @@ impl World {
                         )
                         .unwrap();
                 }
-                if matches!(mode, Mode::Measured | Mode::BothBroken) {
+                if matches!(mode, Mode::Measured | Mode::Both) {
                     for (path, value) in [
                         ("components[0]", 17u64),
                         ("components[1]", 23),
                         ("components[2]", 31),
                         ("interval.start", 41),
-                        (
-                            "interval.end",
-                            if matches!(mode, Mode::BothBroken) {
-                                1
-                            } else {
-                                53
-                            },
-                        ),
+                        ("interval.end", 53),
                     ] {
                         seed = seed
                             .record_field(
