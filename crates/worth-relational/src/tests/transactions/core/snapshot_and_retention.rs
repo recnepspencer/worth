@@ -127,7 +127,7 @@ mod cold_source_support;
 mod epoch;
 
 #[derive(Default)]
-struct ColdRetentionCompanion {
+pub(super) struct ColdRetentionCompanion {
     slots: std::sync::Mutex<
         std::collections::BTreeMap<
             crate::facade::history::BranchId,

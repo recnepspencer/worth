@@ -47,19 +47,45 @@ impl RelationalRuntime {
         let root = if observation.commit_id() == Some(requested) {
             PinnedRoot::Observed(observation.clone())
         } else {
-            let retained = self
-                .history
-                .retain_historical_root(requested)
-                .map_err(Denial::Retention)?
-                .filter(|root| root.root().commit_id() == Some(requested))
-                .ok_or(Denial::RootUnavailable)?;
-            PinnedRoot::Historical(retained)
+            PinnedRoot::Historical(self.retain_reachable_commit_root(requested)?)
         };
         crate::execution::check_request(&execution).map_err(Denial::Execution)?;
         Ok(RelationalPinnedCommitObservation {
             runtime_id: self.runtime_instance_id(),
             root,
         })
+    }
+
+    fn retain_reachable_commit_root(
+        &self,
+        requested: CommitId,
+    ) -> Result<RelationalRetainedHistoricalRoot, RelationalPinnedCommitDenial> {
+        use RelationalPinnedCommitDenial as Denial;
+
+        if let Some(retained) = self
+            .history
+            .retain_historical_root(requested)
+            .map_err(Denial::Retention)?
+        {
+            return (retained.root().commit_id() == Some(requested))
+                .then_some(retained)
+                .ok_or(Denial::RootUnavailable);
+        }
+
+        let receipt = self
+            .history()
+            .immutable_commit_receipt(requested)
+            .ok_or(Denial::RootUnavailable)?;
+        let cell = self
+            .history
+            .branch_cell(&receipt.branch_id)
+            .ok_or(Denial::RootUnavailable)?;
+        let root = cell
+            .root()
+            .filter(|root| root.commit_id() == Some(requested))
+            .ok_or(Denial::RootUnavailable)?;
+        let binding = cell.head_retention().binding().map_err(Denial::Retention)?;
+        RelationalRetainedHistoricalRoot::acquire(&binding, root).map_err(Denial::Retention)
     }
 
     pub fn entity_record_at_pinned_commit(
