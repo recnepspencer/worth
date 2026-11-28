@@ -159,10 +159,7 @@ pub use crate::retention::frontier_pin::{
     NestedDropPolicy, PhysicalRootPointer, PinId, PinScope, PinSpec, PinnedFrontierLease,
     RetentionPortDenial, RuntimeWorldRetentionPort, HOME_ROOT_MANIFEST_VERSION,
 };
-pub use crate::retention::{
-    ComponentBasisDependencyClass, ComponentBasisDependencyCounts, RetentionCostSnapshot,
-    RetentionObligationDenial, RetentionReclamationReport, RetentionTransferDenial,
-};
+pub use crate::retention::{RetentionObligationDenial, RetentionTransferDenial};
 
 pub use worth_relational::facade::transactions::CommitResult;
 

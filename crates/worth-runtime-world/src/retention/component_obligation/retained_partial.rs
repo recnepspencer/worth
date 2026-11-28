@@ -5,7 +5,7 @@ use crate::identity::{CompositeBasisKey, RuntimeWorldOwnerIdentity};
 use super::super::unique_component_pin::ComponentBasisPinClaim;
 #[cfg(test)]
 use super::super::unique_component_pin::ExactComponentPinRequest;
-use super::super::ComponentBasisDependencyClass;
+use super::super::ComponentClaimKind;
 use super::ComponentBasisPinObligation;
 #[cfg(test)]
 use super::IssuedComponentPinPair;
@@ -24,7 +24,7 @@ impl RetainedPartialRetentionObligation {
         let (owner, basis, dependency, relational, signal) = pair.into_parts();
         assert_eq!(
             dependency,
-            ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects
+            ComponentClaimKind::ProductUnpublishedOwnerEffects
         );
         Self {
             owner,
@@ -44,11 +44,11 @@ impl RetainedPartialRetentionObligation {
         assert_eq!(signal.owner_identity(), owner);
         assert_eq!(
             relational.dependency(),
-            ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects
+            ComponentClaimKind::ProductUnpublishedOwnerEffects
         );
         assert_eq!(
             signal.dependency(),
-            ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects
+            ComponentClaimKind::ProductUnpublishedOwnerEffects
         );
         Self {
             owner,
@@ -70,19 +70,17 @@ impl RetainedPartialRetentionObligation {
             && self.relational.key()
                 == &ExactComponentPinRequest::relational(
                     basis,
-                    ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects,
+                    ComponentClaimKind::ProductUnpublishedOwnerEffects,
                 )
                 .key()
             && self.signal.key()
                 == &ExactComponentPinRequest::signal(
                     basis,
-                    ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects,
+                    ComponentClaimKind::ProductUnpublishedOwnerEffects,
                 )
                 .key()
-            && self.relational.dependency()
-                == ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects
-            && self.signal.dependency()
-                == ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects
+            && self.relational.dependency() == ComponentClaimKind::ProductUnpublishedOwnerEffects
+            && self.signal.dependency() == ComponentClaimKind::ProductUnpublishedOwnerEffects
     }
 }
 

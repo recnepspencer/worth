@@ -6,7 +6,7 @@ use crate::retention::unique_component_pin::{
     ComponentBasisLeaseIdentity, ComponentBasisPinClaim, ExactComponentBasisKey,
     ExactComponentPinRequest,
 };
-use crate::retention::ComponentBasisDependencyClass;
+use crate::retention::ComponentClaimKind;
 
 use super::super::RetentionObligationDenial;
 use super::{PinFlight, RuntimeWorldRetentionOwner};
@@ -20,7 +20,7 @@ enum PairReservation<'a> {
     Joined {
         request: ExactComponentPinRequest<'a>,
         key: ExactComponentBasisKey,
-        dependency: ComponentBasisDependencyClass,
+        dependency: ComponentClaimKind,
         flight: Arc<PinFlight>,
     },
     Owned(OwnedReservation<'a>),
@@ -30,16 +30,16 @@ enum PairReservation<'a> {
 struct OwnedReservation<'a> {
     request: ExactComponentPinRequest<'a>,
     key: ExactComponentBasisKey,
-    dependency: ComponentBasisDependencyClass,
+    dependency: ComponentClaimKind,
     lease_identity: ComponentBasisLeaseIdentity,
     flight: Arc<PinFlight>,
-    new_slot: bool,
 }
 
 struct PairReservationSet<'a> {
     basis: &'a AdmittedCompositeRuntimeWorldBasis,
-    dependency: ComponentBasisDependencyClass,
+    dependency: ComponentClaimKind,
     control: Arc<dyn RetentionControlSurface>,
+    unused_credit: Option<usize>,
     relational: PairReservation<'a>,
     signal: PairReservation<'a>,
 }
@@ -53,59 +53,18 @@ where
     pub(super) fn issue_pair(
         &self,
         basis: &AdmittedCompositeRuntimeWorldBasis,
-        dependency: ComponentBasisDependencyClass,
+        dependency: ComponentClaimKind,
     ) -> Result<IssuedComponentPinPair, RetentionObligationDenial> {
-        let reservation = match self.reserve_pair(basis, dependency) {
-            Ok(reservation) => reservation,
-            Err(denial) => {
-                self.record_batch_denial();
-                return Err(denial);
-            }
-        };
-        match self.resolve_pair(reservation) {
-            Ok(pair) => {
-                self.record_batch_admission();
-                Ok(pair)
-            }
-            Err(denial) => {
-                self.record_batch_denial();
-                Err(denial)
-            }
-        }
+        let reservation = self.reserve_pair(basis, dependency)?;
+        self.resolve_pair(reservation)
     }
 
     pub(super) fn issue_pair_with_reserved_capacity(
         &self,
         basis: &AdmittedCompositeRuntimeWorldBasis,
-        dependency: ComponentBasisDependencyClass,
+        dependency: ComponentClaimKind,
     ) -> Result<IssuedComponentPinPair, RetentionObligationDenial> {
-        let reservation = match self.reserve_pair_with_capacity(basis, dependency) {
-            Ok(reservation) => reservation,
-            Err(denial) => {
-                self.record_batch_denial();
-                return Err(denial);
-            }
-        };
-        match self.resolve_pair(reservation) {
-            Ok(pair) => {
-                self.record_batch_admission();
-                Ok(pair)
-            }
-            Err(denial) => {
-                self.restore_consumed_pair_capacity();
-                self.record_batch_denial();
-                Err(denial)
-            }
-        }
-    }
-
-    fn record_batch_admission(&self) {
-        let mut state = self.lock();
-        state.costs.batch_admitted = state.costs.batch_admitted.saturating_add(1);
-    }
-
-    fn record_batch_denial(&self) {
-        let mut state = self.lock();
-        state.costs.batch_denied = state.costs.batch_denied.saturating_add(1);
+        let reservation = self.reserve_pair_with_capacity(basis, dependency)?;
+        self.resolve_pair(reservation)
     }
 }

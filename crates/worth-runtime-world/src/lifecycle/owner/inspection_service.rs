@@ -36,9 +36,6 @@ where
     fn history_snapshot(&self) -> RuntimeWorldHistorySnapshot {
         self.state.history.snapshot()
     }
-    fn retention_costs(&self) -> crate::retention::RetentionCostSnapshot {
-        self.state.retention.cost_snapshot()
-    }
     fn trace_ancestry(
         &self,
         start: CompositeCommitIdentity,

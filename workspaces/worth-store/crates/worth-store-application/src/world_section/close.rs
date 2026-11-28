@@ -63,7 +63,7 @@ impl WorldSealedApplicationHome {
     pub fn incarnation(&self) -> worth_foundational::facade::HomeIncarnation {
         self.home.incarnation()
     }
-    /// Exact released origin and occurrence image keys, retained until explicit Home reclaim.
+    /// Completed checkpoint origin retirement, held until explicit Home reclaim.
     pub fn checkpoint_origin_retirement(
         &self,
     ) -> Option<&worth_runtime_world::facade::WorldCheckpointOriginRetirement> {

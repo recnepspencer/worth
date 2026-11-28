@@ -161,7 +161,7 @@ fn stale_expected_head_precedes_successor_validation_and_returns_proof() {
     assert!(stale_receipt.is_some());
     assert_eq!(
         stale_product_head.relational().dependency(),
-        crate::retention::ComponentBasisDependencyClass::ProductBranchHead
+        crate::retention::ComponentClaimKind::ProductBranchHead
     );
     let active_before_recovery_drop = fixture.owner.active_component_obligation_count();
     drop(stale_receipt);
@@ -262,10 +262,10 @@ fn bootstrap_product_head_protection_survives_without_an_observation() {
     assert_eq!(fixture.owner.active_component_obligation_count(), 4);
     drop(cell);
     assert_eq!(fixture.owner.active_component_obligation_count(), 2);
-    assert_eq!(fixture.owner.reclaim(2).reclaimed(), 0);
+    assert_eq!(fixture.owner.unique_pin_count(), 2);
     drop(catalog);
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
-    assert_eq!(fixture.owner.reclaim(2).reclaimed(), 2);
+    assert_eq!(fixture.owner.unique_pin_count(), 0);
 }
 
 #[test]

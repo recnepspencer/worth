@@ -103,10 +103,6 @@ fn observation_denials_issue_no_managed_authority_or_stranded_token() {
     ));
     let after_foreign_owner = foreign_fixture.owner.cost_snapshot();
     assert_eq!(
-        after_foreign_owner.batch_denied(),
-        before_foreign_owner.batch_denied() + 1
-    );
-    assert_eq!(
         after_foreign_owner.relational_contacts(),
         before_foreign_owner.relational_contacts()
     );

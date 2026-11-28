@@ -10,7 +10,7 @@ use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::identity::RuntimeWorldOwnerIdentity;
 
 use super::component_obligation::RetentionControlSurface;
-use super::ComponentBasisDependencyClass;
+use super::ComponentClaimKind;
 
 /// Exact component value selected by the Runtime World retention owner. The
 /// composite basis is only the source of the component value; retention never
@@ -36,13 +36,13 @@ pub(crate) enum ExactComponentBasisKey {
 pub(crate) struct ExactComponentPinRequest<'a> {
     owner: RuntimeWorldOwnerIdentity,
     component: ExactComponentBasis<'a>,
-    dependency: ComponentBasisDependencyClass,
+    dependency: ComponentClaimKind,
 }
 
 impl<'a> ExactComponentPinRequest<'a> {
     pub(crate) fn relational(
         basis: &'a AdmittedCompositeRuntimeWorldBasis,
-        dependency: ComponentBasisDependencyClass,
+        dependency: ComponentClaimKind,
     ) -> Self {
         Self {
             owner: basis.owner_identity(),
@@ -53,7 +53,7 @@ impl<'a> ExactComponentPinRequest<'a> {
 
     pub(crate) fn signal(
         basis: &'a AdmittedCompositeRuntimeWorldBasis,
-        dependency: ComponentBasisDependencyClass,
+        dependency: ComponentClaimKind,
     ) -> Self {
         Self {
             owner: basis.owner_identity(),
@@ -66,7 +66,7 @@ impl<'a> ExactComponentPinRequest<'a> {
         self.owner
     }
 
-    pub(crate) const fn dependency(self) -> ComponentBasisDependencyClass {
+    pub(crate) const fn dependency(self) -> ComponentClaimKind {
         self.dependency
     }
 
@@ -106,7 +106,7 @@ impl ComponentBasisLeaseIdentity {
 pub(crate) struct ComponentBasisPinClaim {
     pub(super) owner: RuntimeWorldOwnerIdentity,
     pub(super) key: ExactComponentBasisKey,
-    pub(super) dependency: ComponentBasisDependencyClass,
+    pub(super) dependency: ComponentClaimKind,
     pub(super) lease_identity: ComponentBasisLeaseIdentity,
     pub(super) control: Arc<dyn RetentionControlSurface>,
 }
@@ -127,7 +127,7 @@ impl ComponentBasisPinClaim {
     pub(super) fn new(
         owner: RuntimeWorldOwnerIdentity,
         key: ExactComponentBasisKey,
-        dependency: ComponentBasisDependencyClass,
+        dependency: ComponentClaimKind,
         lease_identity: ComponentBasisLeaseIdentity,
         control: Arc<dyn RetentionControlSurface>,
     ) -> Self {
@@ -144,7 +144,7 @@ impl ComponentBasisPinClaim {
         self.owner
     }
 
-    pub(crate) const fn dependency(&self) -> ComponentBasisDependencyClass {
+    pub(crate) const fn dependency(&self) -> ComponentClaimKind {
         self.dependency
     }
 }

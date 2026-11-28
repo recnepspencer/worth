@@ -16,6 +16,13 @@ fn mixed_same_head_race_has_one_winner_and_preserves_signal_loser() {
         }
     };
     let root = court.bootstrap();
+    let inspection = court.world.inspection_port();
+    let pin = RuntimeWorldRetentionKey::relational(root.basis());
+    let original_claims = inspection
+        .inspect_retention(&pin)
+        .unwrap()
+        .unwrap()
+        .live_claims();
     let token = RuntimeWorldCancellationSource::new().token();
     let signal_attempt = signal_prepared(&court, &root, &token);
     let relational_attempt = court.prepare_cargo(request_execution, &root, "5");
@@ -46,16 +53,15 @@ fn mixed_same_head_race_has_one_winner_and_preserves_signal_loser() {
             )
         });
         assert!(pause.wait_until_reached(WAIT));
-        let inspection = court.world.inspection_port();
-        let pin = RuntimeWorldRetentionKey::relational(root.basis());
+        // The Signal-only successor reuses the original Relational basis.
+        // Both the publication and its successor history hold that pin.
         assert_eq!(
             inspection
                 .inspect_retention(&pin)
                 .unwrap()
                 .unwrap()
-                .dependencies()
-                .get(ComponentBasisDependencyClass::ActivePublicationAttempt),
-            1
+                .live_claims(),
+            original_claims + 2
         );
         assert_eq!(
             signal
@@ -138,19 +144,15 @@ fn mixed_same_head_race_has_one_winner_and_preserves_signal_loser() {
             panic!("Signal moved but product head changed")
         };
         assert_eq!(loser.owner_effect_count(), 1);
-        let dependencies = inspection
-            .inspect_retention(&pin)
-            .unwrap()
-            .unwrap()
-            .dependencies();
-        assert_eq!(
-            dependencies.get(ComponentBasisDependencyClass::ActivePublicationAttempt),
-            0
-        );
-        assert_eq!(
-            dependencies.get(ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects),
-            1
-        );
+        let retained = loser
+            .successor_basis()
+            .expect("loser retains the performed pair");
+        for key in [
+            RuntimeWorldRetentionKey::relational(retained),
+            RuntimeWorldRetentionKey::signal(retained),
+        ] {
+            assert!(inspection.inspect_retention(&key).unwrap().is_some());
+        }
         let costs = loser
             .product_comparison_costs()
             .expect("actual final comparison");

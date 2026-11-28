@@ -182,23 +182,6 @@ where
     ) -> Vec<crate::identity::CompositeCommitIdentity> {
         self.state.history.retained_commits(candidates)
     }
-    fn reclaim_retention(
-        &self,
-        keys: &[crate::inspection::RuntimeWorldRetentionKey],
-        maximum: usize,
-    ) -> Result<
-        crate::retention::RetentionReclamationReport,
-        crate::inspection::RuntimeWorldRetentionInspectionDenial,
-    > {
-        let _operation = self
-            .reserve_recovery_operation_if_open_and_bootstrapped()
-            .map_err(|_| {
-                crate::inspection::RuntimeWorldRetentionInspectionDenial::OwnerUnavailable(
-                    super::RuntimeWorldOwnerUnavailable::new(),
-                )
-            })?;
-        self.state.retention.reclaim_keys(keys, maximum)
-    }
 }
 
 #[derive(Debug)]

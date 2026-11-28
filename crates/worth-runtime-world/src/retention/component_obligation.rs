@@ -14,7 +14,7 @@ use crate::identity::RuntimeWorldOwnerIdentity;
 use super::obligation_transfer::ComponentBasisObligationTransferDestination;
 use super::obligation_transfer::RetentionTransferDenial;
 use super::unique_component_pin::{ComponentBasisPinClaim, ExactComponentBasisKey};
-use super::ComponentBasisDependencyClass;
+use super::ComponentClaimKind;
 
 mod composite;
 mod history;
@@ -100,7 +100,7 @@ pub(crate) struct RetentionReleaseFailure {
 pub(super) trait RetentionControlSurface: Send + Sync {
     fn try_retire_shared_pair(
         &self,
-        dependency: ComponentBasisDependencyClass,
+        dependency: ComponentClaimKind,
         relational: &ComponentBasisPinClaim,
         signal: &ComponentBasisPinClaim,
     ) -> Result<(), ()>;
@@ -121,14 +121,14 @@ pub(super) trait RetentionControlSurface: Send + Sync {
     fn transfer_claim(
         &self,
         claim: ComponentBasisPinClaim,
-        target: ComponentBasisDependencyClass,
+        target: ComponentClaimKind,
     ) -> Result<ComponentBasisPinClaim, (ComponentBasisPinClaim, RetentionTransferDenial)>;
 
     fn transfer_pair(
         &self,
         relational: &mut ComponentBasisPinClaim,
         signal: &mut ComponentBasisPinClaim,
-        target: ComponentBasisDependencyClass,
+        target: ComponentClaimKind,
     ) -> Result<(), RetentionTransferDenial>;
 
     #[cfg(test)]
@@ -174,7 +174,7 @@ impl ComponentBasisPinObligation {
         }
     }
 
-    pub(crate) const fn dependency(&self) -> ComponentBasisDependencyClass {
+    pub(crate) const fn dependency(&self) -> ComponentClaimKind {
         match &self.claim {
             Some(claim) => claim.dependency,
             None => panic!("a live component obligation carries its claim"),
@@ -204,7 +204,7 @@ impl ComponentBasisPinObligation {
     pub(super) fn transfer_pair_to(
         &mut self,
         other: &mut Self,
-        target: ComponentBasisDependencyClass,
+        target: ComponentClaimKind,
     ) -> Result<(), RetentionTransferDenial> {
         let relational = self
             .claim

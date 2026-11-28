@@ -12,7 +12,6 @@ pub(crate) trait RuntimeWorldInspectionService:
         crate::durability::WorldReadmissionDenial,
     >;
     fn history_snapshot(&self) -> super::RuntimeWorldHistorySnapshot;
-    fn retention_costs(&self) -> crate::retention::RetentionCostSnapshot;
     fn trace_ancestry(
         &self,
         start: CompositeCommitIdentity,

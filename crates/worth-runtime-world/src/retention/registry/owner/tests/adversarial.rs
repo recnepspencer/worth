@@ -1,7 +1,7 @@
 use crate::retention::component_obligation::ComponentBasisReleaseOutcome;
 use crate::retention::registry::RetentionObligationDenial;
 use crate::retention::unique_component_pin::ExactComponentPinRequest;
-use crate::retention::ComponentBasisDependencyClass;
+use crate::retention::ComponentClaimKind;
 
 use super::fixture::{real_fixture, root_commit};
 
@@ -28,13 +28,6 @@ fn pair_capacity_denies_before_either_real_component_owner_is_contacted() {
     assert_eq!(fixture.owner.unique_pin_count(), 0);
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
     assert_eq!(fixture.owner.in_flight_acquisition_count(), 0);
-    let costs = fixture.owner.cost_snapshot();
-    assert_eq!(costs.batch_denied(), 1);
-    assert_eq!(costs.flights_started(), 0);
-    assert_eq!(costs.owner_acquisition_contacts(), 0);
-    assert_eq!(costs.relational_contacts(), 0);
-    assert_eq!(costs.signal_contacts(), 0);
-    assert_eq!(costs.rollbacks(), 0);
     assert_eq!(
         fixture
             .relational_runtime
@@ -75,11 +68,6 @@ fn pair_reservation_capacity_is_checked_for_both_flights_before_contact() {
     assert_eq!(fixture.owner.unique_pin_count(), 0);
     assert_eq!(fixture.owner.in_flight_acquisition_count(), 0);
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
-    let costs = fixture.owner.cost_snapshot();
-    assert_eq!(costs.batch_denied(), 1);
-    assert_eq!(costs.flights_started(), 0);
-    assert_eq!(costs.owner_acquisition_contacts(), 0);
-    assert_eq!(costs.rollbacks(), 0);
     assert_eq!(
         fixture
             .relational_runtime
@@ -136,7 +124,6 @@ fn reserved_pair_preconsumption_denial_returns_live_credit_for_recovery() {
     assert_eq!(fixture.owner.reserved_in_flight_acquisition_capacity(), 2);
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
     let after_denial = fixture.owner.cost_snapshot();
-    assert_eq!(after_denial.batch_denied(), before.batch_denied() + 1);
     assert_eq!(
         after_denial.owner_acquisition_contacts(),
         before.owner_acquisition_contacts()
@@ -161,8 +148,8 @@ fn reserved_pair_binds_to_owner_issued_publication_and_releases_once() {
     assert_eq!(fixture.owner.active_component_obligation_count(), 2);
     drop(publication);
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
-    assert_eq!(fixture.owner.unique_pin_count(), 2);
-    assert_eq!(fixture.owner.reclaim(2).reclaimed(), 2);
+
+    assert_eq!(fixture.owner.unique_pin_count(), 0);
 }
 
 #[test]
@@ -198,10 +185,9 @@ fn ready_plus_vacant_pair_counts_only_the_one_new_exact_slot() {
         .owner
         .issue_component(ExactComponentPinRequest::relational(
             &fixture.basis,
-            ComponentBasisDependencyClass::AdmittedObservation,
+            ComponentClaimKind::AdmittedObservation,
         ))
         .expect("first real Relational component claim");
-    let before_pair = fixture.owner.cost_snapshot();
 
     let publication = fixture
         .owner
@@ -210,28 +196,6 @@ fn ready_plus_vacant_pair_counts_only_the_one_new_exact_slot() {
     assert_eq!(fixture.owner.unique_pin_count(), 2);
     assert_eq!(fixture.owner.active_component_obligation_count(), 3);
     assert_eq!(fixture.owner.in_flight_acquisition_count(), 0);
-    let after_pair = fixture.owner.cost_snapshot();
-    assert_eq!(
-        after_pair.flights_started(),
-        before_pair.flights_started() + 1
-    );
-    assert_eq!(
-        after_pair.owner_acquisition_contacts(),
-        before_pair.owner_acquisition_contacts() + 1
-    );
-    assert_eq!(
-        after_pair.relational_contacts(),
-        before_pair.relational_contacts()
-    );
-    assert_eq!(
-        after_pair.signal_contacts(),
-        before_pair.signal_contacts() + 1
-    );
-    assert_eq!(
-        after_pair.unique_pin_hits(),
-        before_pair.unique_pin_hits() + 1,
-        "only the ready component is a unique-pin hit; the vacancy starts one flight"
-    );
     assert_eq!(
         fixture
             .relational_runtime
@@ -252,7 +216,7 @@ fn ready_plus_vacant_pair_counts_only_the_one_new_exact_slot() {
     drop(relational);
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
     assert_eq!(fixture.owner.cost_snapshot().owner_drop_releases(), 2);
-    assert_eq!(fixture.owner.reclaim(2).reclaimed(), 2);
+    assert_eq!(fixture.owner.unique_pin_count(), 0);
 }
 
 #[test]
@@ -267,7 +231,7 @@ fn same_key_reacquisition_gets_a_new_lease_generation_and_one_release_each() {
         .owner
         .issue_component(ExactComponentPinRequest::signal(
             &fixture.basis,
-            ComponentBasisDependencyClass::AdmittedObservation,
+            ComponentClaimKind::AdmittedObservation,
         ))
         .expect("first exact Signal claim");
     let first_identity = first.lease_identity();
@@ -284,7 +248,7 @@ fn same_key_reacquisition_gets_a_new_lease_generation_and_one_release_each() {
         .owner
         .issue_component(ExactComponentPinRequest::signal(
             &fixture.basis,
-            ComponentBasisDependencyClass::HistoricalInspection,
+            ComponentClaimKind::RetainedCompositeHistory,
         ))
         .expect("reacquisition reopens the released exact key");
     assert_ne!(second.lease_identity(), first_identity);
@@ -298,7 +262,6 @@ fn same_key_reacquisition_gets_a_new_lease_generation_and_one_release_each() {
         .expect("real Signal owner remains available");
     assert_eq!(fixture.owner.cost_snapshot().owner_release_contacts(), 1);
     assert_eq!(fixture.owner.cost_snapshot().owner_drop_releases(), 1);
-    assert_eq!(fixture.owner.cost_snapshot().owner_drop_releases(), 1);
     assert_eq!(
         relational.external_retention_acquires,
         before_relational.external_retention_acquires
@@ -307,11 +270,11 @@ fn same_key_reacquisition_gets_a_new_lease_generation_and_one_release_each() {
         signal.retention_registry_contacts(),
         before_signal.retention_registry_contacts() + 2
     );
-    assert_eq!(fixture.owner.reclaim(1).reclaimed(), 1);
+    assert_eq!(fixture.owner.unique_pin_count(), 0);
 }
 
 #[test]
-fn repeated_composite_use_has_fixed_owner_contacts_and_bounded_reclamation() {
+fn repeated_composite_use_shares_owner_contacts_and_evicts_after_final_drop() {
     let mut fixture = real_fixture(2, 4);
     let root = root_commit(&mut fixture);
     let before_relational = fixture.relational_runtime.branch_basis_cost_counters();
@@ -329,15 +292,6 @@ fn repeated_composite_use_has_fixed_owner_contacts_and_bounded_reclamation() {
         );
     }
 
-    let costs = fixture.owner.cost_snapshot();
-    assert_eq!(costs.batch_admitted(), 32);
-    assert_eq!(costs.batch_denied(), 0);
-    assert_eq!(costs.flights_started(), 2);
-    assert_eq!(costs.single_flight_joins(), 0);
-    assert_eq!(costs.owner_acquisition_contacts(), 2);
-    assert_eq!(costs.relational_contacts(), 1);
-    assert_eq!(costs.signal_contacts(), 1);
-    assert_eq!(costs.unique_pin_hits(), 62);
     assert_eq!(fixture.owner.unique_pin_count(), 2);
     assert_eq!(fixture.owner.active_component_obligation_count(), 64);
     assert_eq!(
@@ -368,5 +322,5 @@ fn repeated_composite_use_has_fixed_owner_contacts_and_bounded_reclamation() {
         after_relational.retained_basis_registry_entries,
         before_relational.retained_basis_registry_entries
     );
-    assert_eq!(fixture.owner.reclaim(2).reclaimed(), 2);
+    assert_eq!(fixture.owner.unique_pin_count(), 0);
 }

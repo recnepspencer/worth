@@ -1,6 +1,6 @@
 use super::RuntimeWorldRetentionOwner;
 use crate::retention::unique_component_pin::ComponentBasisPinClaim;
-use crate::retention::{ComponentBasisDependencyClass, RetentionTransferDenial};
+use crate::retention::{ComponentClaimKind, RetentionTransferDenial};
 use std::sync::Arc;
 
 impl<D, I, T> RuntimeWorldRetentionOwner<D, I, T>
@@ -17,7 +17,7 @@ where
         if relational.key == signal.key {
             return Err(RetentionTransferDenial::BasisMismatch);
         }
-        let target = ComponentBasisDependencyClass::RetainedCompositeHistory;
+        let target = ComponentClaimKind::RetainedCompositeHistory;
         let mut state = self.lock();
         for claim in [relational, signal] {
             if claim.owner != state.owner_identity {
@@ -28,7 +28,6 @@ where
                 .get(&claim.key)
                 .ok_or(RetentionTransferDenial::UnknownPin)?;
             if entry.lease_identity != claim.lease_identity
-                || entry.owner_lease.is_none()
                 || entry.counts.get(claim.dependency) == 0
             {
                 return Err(RetentionTransferDenial::UnknownPin);
@@ -66,7 +65,6 @@ where
                 .expect("validated count");
         }
         state.active_obligations = active;
-        state.costs.dependency_acquires = state.costs.dependency_acquires.saturating_add(2);
         Ok((first, second))
     }
 }

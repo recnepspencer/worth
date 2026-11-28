@@ -348,12 +348,4 @@ pub(crate) trait RuntimeWorldLifecycleService:
         &self,
         candidates: &[crate::identity::CompositeCommitIdentity],
     ) -> Vec<crate::identity::CompositeCommitIdentity>;
-    fn reclaim_retention(
-        &self,
-        keys: &[crate::inspection::RuntimeWorldRetentionKey],
-        maximum: usize,
-    ) -> Result<
-        crate::retention::RetentionReclamationReport,
-        crate::inspection::RuntimeWorldRetentionInspectionDenial,
-    >;
 }

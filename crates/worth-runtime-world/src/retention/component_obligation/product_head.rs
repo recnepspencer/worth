@@ -2,7 +2,7 @@ use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::identity::{CompositeBasisKey, RuntimeWorldOwnerIdentity};
 
 use super::super::unique_component_pin::{ComponentBasisPinClaim, ExactComponentPinRequest};
-use super::super::ComponentBasisDependencyClass;
+use super::super::ComponentClaimKind;
 use super::retained_partial::RetainedPartialRetentionObligation;
 use super::{ComponentBasisPinObligation, IssuedComponentPinPair};
 
@@ -36,7 +36,7 @@ impl ProductHeadRetentionObligation {
             return Ok(());
         };
         relational.control.try_retire_shared_pair(
-            ComponentBasisDependencyClass::ProductBranchHead,
+            ComponentClaimKind::ProductBranchHead,
             relational,
             signal,
         )?;
@@ -49,7 +49,7 @@ impl ProductHeadRetentionObligation {
 
     pub(crate) fn owner_issued(pair: IssuedComponentPinPair) -> Self {
         let (owner, basis, dependency, relational, signal) = pair.into_parts();
-        assert_eq!(dependency, ComponentBasisDependencyClass::ProductBranchHead);
+        assert_eq!(dependency, ComponentClaimKind::ProductBranchHead);
         Self::transferred(owner, basis, relational.into_claim(), signal.into_claim())
     }
 
@@ -63,12 +63,9 @@ impl ProductHeadRetentionObligation {
         assert_eq!(signal.owner_identity(), owner);
         assert_eq!(
             relational.dependency(),
-            ComponentBasisDependencyClass::ProductBranchHead
+            ComponentClaimKind::ProductBranchHead
         );
-        assert_eq!(
-            signal.dependency(),
-            ComponentBasisDependencyClass::ProductBranchHead
-        );
+        assert_eq!(signal.dependency(), ComponentClaimKind::ProductBranchHead);
         Self {
             owner,
             basis,
@@ -99,17 +96,14 @@ impl ProductHeadRetentionObligation {
             && self.relational.key()
                 == &ExactComponentPinRequest::relational(
                     basis,
-                    ComponentBasisDependencyClass::ProductBranchHead,
+                    ComponentClaimKind::ProductBranchHead,
                 )
                 .key()
             && self.signal.key()
-                == &ExactComponentPinRequest::signal(
-                    basis,
-                    ComponentBasisDependencyClass::ProductBranchHead,
-                )
-                .key()
-            && self.relational.dependency() == ComponentBasisDependencyClass::ProductBranchHead
-            && self.signal.dependency() == ComponentBasisDependencyClass::ProductBranchHead
+                == &ExactComponentPinRequest::signal(basis, ComponentClaimKind::ProductBranchHead)
+                    .key()
+            && self.relational.dependency() == ComponentClaimKind::ProductBranchHead
+            && self.signal.dependency() == ComponentClaimKind::ProductBranchHead
     }
 
     /// The only product-head-to-recovery transition. Both live claims already
@@ -127,7 +121,7 @@ impl ProductHeadRetentionObligation {
         let basis = self.basis.clone();
         self.relational.transfer_pair_to(
             &mut self.signal,
-            ComponentBasisDependencyClass::ProductUnpublishedOwnerEffects,
+            ComponentClaimKind::ProductUnpublishedOwnerEffects,
         )?;
         Ok(RetainedPartialRetentionObligation::transferred(
             self.owner,

@@ -40,7 +40,6 @@ impl InvalidationSink for AdmissionSink {
 }
 
 pub(super) struct RealFixture {
-    pub(super) budgets: crate::budget::RuntimeWorldBudgets,
     pub(super) owner: RuntimeWorldRetentionOwner<(), (), ()>,
     pub(super) owner_identity: RuntimeWorldOwnerIdentity,
     pub(super) basis: AdmittedCompositeRuntimeWorldBasis,
@@ -48,7 +47,7 @@ pub(super) struct RealFixture {
     pub(super) relational_runtime: Arc<worth_relational::facade::runtime::RelationalRuntime>,
     pub(super) _signal_runtime: SignalRuntime<(), (), (), (), ()>,
     pub(super) identities: RuntimeWorldOwnerConstructionContract,
-    pub(super) bridge: worth_runtime_bridge::facade::RuntimeBridge,
+    _bridge: worth_runtime_bridge::facade::RuntimeBridge,
 }
 
 pub(super) fn real_fixture(unique_pin_limit: u64, reservation_limit: u64) -> RealFixture {
@@ -215,7 +214,6 @@ pub(super) fn real_fixture(unique_pin_limit: u64, reservation_limit: u64) -> Rea
         budgets.active_observations(),
     );
     RealFixture {
-        budgets,
         owner,
         owner_identity,
         basis,
@@ -223,7 +221,7 @@ pub(super) fn real_fixture(unique_pin_limit: u64, reservation_limit: u64) -> Rea
         relational_runtime,
         _signal_runtime: signal_runtime,
         identities,
-        bridge,
+        _bridge: bridge,
     }
 }
 
