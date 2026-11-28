@@ -55,20 +55,20 @@ fn require_rewrite_refusal(rewrite: impl FnOnce(&mut serde_json::Value, &serde_j
     let complete = capture(&runtime, &request);
     medium.file_checkpoint(complete.checkpoint().clone());
     let raw = complete.source_artifact().as_bytes();
-    let len = u64::from_le_bytes(raw[44..52].try_into().unwrap()) as usize;
+    let len = u64::from_le_bytes(raw[84..92].try_into().unwrap()) as usize;
     let prefix = raw.len() - len;
     let mut normalized = crate::source_wire_value::read(&raw[prefix..]);
     rewrite(&mut normalized, &initial(complete.source_artifact()));
     let bytes = rmp_serde::to_vec_named(&normalized).unwrap();
     let mut changed = raw[..prefix].to_vec();
     changed.extend_from_slice(&bytes);
-    changed[44..52].copy_from_slice(&(bytes.len() as u64).to_le_bytes());
+    changed[84..92].copy_from_slice(&(bytes.len() as u64).to_le_bytes());
     use sha2::{Digest, Sha256};
-    let mut digest = Sha256::new();
-    digest.update(&changed[..52]);
-    digest.update(&changed[84..]);
-    changed[52..84].copy_from_slice(&digest.finalize());
-    assert_eq!(&changed[84..prefix], &raw[84..prefix]);
+    let payload_size = (changed.len() - 52) as u64;
+    changed[12..20].copy_from_slice(&payload_size.to_le_bytes());
+    let digest = Sha256::digest(&changed[52..]);
+    changed[20..52].copy_from_slice(&digest);
+    assert_eq!(&changed[92..prefix], &raw[92..prefix]);
     let length = changed.len();
     let changed =
         ExecutionImmutableBytes::from_external_bytes(Arc::new(changed.into_boxed_slice()));

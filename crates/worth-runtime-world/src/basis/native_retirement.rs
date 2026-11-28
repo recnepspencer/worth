@@ -1,50 +1,50 @@
 //! Original Native basis phase and its actual retired allocation.
-use worth_execution::ExecutionRequest;
+use worth_execution::{CooperativeRetirementState, CooperativeStep, ExecutionRequest};
 use worth_relational::facade::{
     branch::{
         AdmittedRelationalBranchBasis, RelationalBranchBasisRetirement,
-        RelationalBranchBasisRetirementDenial, RelationalBranchBasisRetirementProgress,
+        RelationalBranchBasisRetirementDenial as Denial, RelationalBranchBasisRetirementProgress,
         RetiredRelationalBranchBasis,
     },
     runtime::RelationalRuntime,
 };
+
 #[derive(Debug)]
-pub(crate) enum NativeBasisRetirement {
-    Retiring(Option<RelationalBranchBasisRetirement>),
-    Retired {
-        _original: RetiredRelationalBranchBasis,
-    },
-}
+pub(crate) struct NativeBasisRetirement(
+    CooperativeRetirementState<RelationalBranchBasisRetirement, RetiredRelationalBranchBasis>,
+);
+
 impl NativeBasisRetirement {
     pub(crate) fn new(basis: AdmittedRelationalBranchBasis) -> Self {
-        Self::Retiring(Some(basis.into_retirement()))
+        Self(CooperativeRetirementState::Retiring(Some(
+            basis.into_retirement(),
+        )))
     }
+
     pub(crate) fn advance(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         native: &RelationalRuntime,
-    ) -> Result<bool, RelationalBranchBasisRetirementDenial> {
-        match self {
-            Self::Retired { .. } => Ok(true),
-            Self::Retiring(original) => {
-                if original
-                    .as_mut()
-                    .expect("original task remains owned")
-                    .advance(request, native)?
-                    != RelationalBranchBasisRetirementProgress::Complete
-                {
-                    return Ok(false);
-                }
-                let original = original
-                    .take()
-                    .expect("complete original task")
-                    .into_retired()
-                    .unwrap_or_else(|_| unreachable!("Native reported Complete"));
-                *self = Self::Retired {
-                    _original: original,
-                };
-                Ok(true)
-            }
-        }
+    ) -> Result<bool, Denial> {
+        self.0
+            .advance_with(
+                request,
+                |task, request| match task.advance(request, native) {
+                    Ok(RelationalBranchBasisRetirementProgress::Complete) => {
+                        Ok(CooperativeStep::Complete(()))
+                    }
+                    Ok(_) => Ok(CooperativeStep::Continue),
+                    Err(Denial::Busy) => Ok(CooperativeStep::Busy),
+                    Err(Denial::Execution(stop)) => Ok(CooperativeStep::Stopped(stop)),
+                    Err(error) => Err(error),
+                },
+                |task| {
+                    Ok(task
+                        .into_retired()
+                        .unwrap_or_else(|_| unreachable!("Native reported Complete")))
+                },
+            )?
+            .into_progress(Denial::Busy, Denial::Execution)
+            .map(|complete| complete.is_some())
     }
 }

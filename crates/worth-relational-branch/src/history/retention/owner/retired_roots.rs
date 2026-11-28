@@ -1,19 +1,73 @@
 //! The original root inventory has one explicit gate, released before lane work.
 use super::*;
 use crate::history::retention::RetentionBusy;
+use std::collections::BTreeMap;
+use std::ops::{Deref, DerefMut};
 use std::sync::{RwLockReadGuard, RwLockWriteGuard};
+use worth_foundational::DagDirtyList;
+
+#[derive(Debug, Default)]
+pub(in crate::internal_port::history::retention) struct RetiredBranchRoots {
+    roots: BTreeMap<usize, RelationalRetiredBranchRoot>,
+    dirty: DagDirtyList<usize>,
+}
+
+impl Deref for RetiredBranchRoots {
+    type Target = BTreeMap<usize, RelationalRetiredBranchRoot>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.roots
+    }
+}
+
+impl DerefMut for RetiredBranchRoots {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.roots
+    }
+}
+
+impl RetiredBranchRoots {
+    pub(in crate::internal_port::history::retention) fn changed_count(&self) -> usize {
+        self.dirty.len()
+    }
+
+    pub(in crate::internal_port::history::retention) fn mark_changed(&mut self, key: usize) {
+        let mut links = self.roots[&key].dirty;
+        self.dirty.mark(key, &mut links, |neighbor, edit| {
+            self.roots
+                .get_mut(&neighbor)
+                .expect("live dirty neighbor")
+                .dirty
+                .apply(edit);
+        });
+        self.roots.get_mut(&key).expect("changed root").dirty = links;
+    }
+
+    pub(in crate::internal_port::history::retention) fn pop_changed(&mut self) -> Option<usize> {
+        let key = self.dirty.head()?;
+        let mut links = std::mem::take(&mut self.roots.get_mut(&key).expect("dirty root").dirty);
+        self.dirty.forget(&mut links, |neighbor, edit| {
+            self.roots
+                .get_mut(&neighbor)
+                .expect("live dirty neighbor")
+                .dirty
+                .apply(edit);
+        });
+        Some(key)
+    }
+}
 
 impl RelationalBranchRetentionOwnerInner {
     pub(in crate::internal_port::history::retention) fn read_retired_roots(
         &self,
-    ) -> RwLockReadGuard<'_, BTreeMap<usize, RelationalRetiredBranchRoot>> {
+    ) -> RwLockReadGuard<'_, RetiredBranchRoots> {
         self.retired_roots
             .read()
             .unwrap_or_else(|error| error.into_inner())
     }
     pub(in crate::internal_port::history::retention) fn write_retired_roots(
         &self,
-    ) -> RwLockWriteGuard<'_, BTreeMap<usize, RelationalRetiredBranchRoot>> {
+    ) -> RwLockWriteGuard<'_, RetiredBranchRoots> {
         self.retired_roots
             .write()
             .unwrap_or_else(|error| error.into_inner())

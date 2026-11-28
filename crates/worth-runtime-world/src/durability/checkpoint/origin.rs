@@ -1,6 +1,7 @@
 //! The durable Branch recipe owns its exact Native input independently of history.
 use crate::durability::WorldDurableMediumBinding;
 use crate::retention::HistoryRetentionObligation;
+use worth_execution::{drain_cooperative_retirement, try_lock_retirement, CooperativeStep};
 mod occurrences;
 use occurrences::CheckpointOccurrences;
 pub(crate) use occurrences::PreparedCheckpointOccurrence;
@@ -201,26 +202,16 @@ impl WorldDurableMediumBinding {
         native: &worth_relational::facade::runtime::RelationalRuntime,
     ) -> Result<WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial> {
         use WorldCheckpointOriginRetirementDenial as Denial;
-        let mut state = self
-            .checkpoint_origin
-            .try_lock()
-            .map_err(|_| Denial::Busy)?;
+        let mut state = try_lock_retirement(&self.checkpoint_origin).map_err(|_| Denial::Busy)?;
+        if let WorldCheckpointOriginState::Held(root, _) = &mut *state {
+            drain_origin(request, |request| root.advance_retirement(request, native))?;
+        }
         match &mut *state {
-            WorldCheckpointOriginState::Held(root, occurrences) => {
-                while !root
-                    .advance_retirement(request, native)
-                    .map_err(Denial::RecoveredCustody)?
-                {}
-                while !occurrences
-                    .advance_retirement(request, native)
-                    .map_err(Denial::RecoveredCustody)?
-                {}
-            }
-            WorldCheckpointOriginState::HeldTail(occurrences) => {
-                while !occurrences
-                    .advance_retirement(request, native)
-                    .map_err(Denial::RecoveredCustody)?
-                {}
+            WorldCheckpointOriginState::Held(_, occurrences)
+            | WorldCheckpointOriginState::HeldTail(occurrences) => {
+                drain_origin(request, |request| {
+                    occurrences.advance_retirement(request, native)
+                })?;
             }
             WorldCheckpointOriginState::Uninstalled => return Err(Denial::NotInstalled),
             WorldCheckpointOriginState::Retired => return Err(Denial::AlreadyRetired),
@@ -236,4 +227,26 @@ impl WorldDurableMediumBinding {
             _occurrences,
         })
     }
+}
+
+fn drain_origin(
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+    mut advance: impl FnMut(
+        &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, crate::lifecycle::RuntimeWorldCloseDenial>,
+) -> Result<(), WorldCheckpointOriginRetirementDenial> {
+    use crate::lifecycle::RuntimeWorldCloseDenial as Close;
+    use WorldCheckpointOriginRetirementDenial as Denial;
+    drain_cooperative_retirement(
+        request,
+        |request| match advance(request) {
+            Ok(true) => Ok(CooperativeStep::Complete(())),
+            Ok(false) => Ok(CooperativeStep::Continue),
+            Err(Close::Busy) => Ok(CooperativeStep::Busy),
+            Err(Close::Execution(stop)) => Ok(CooperativeStep::Stopped(stop)),
+            Err(error) => Err(Denial::RecoveredCustody(error)),
+        },
+        || Denial::RecoveredCustody(Close::Busy),
+        |stop| Denial::RecoveredCustody(Close::Execution(stop)),
+    )
 }

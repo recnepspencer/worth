@@ -1,6 +1,6 @@
 //! World retains the actual Native retirement phase and its inert completion.
 use super::RuntimeWorldCloseDenial as Denial;
-use worth_execution::ExecutionRequest;
+use worth_execution::{CooperativeRetirementState, CooperativeStep, ExecutionRequest};
 use worth_relational::facade::{
     change_source::RelationalRetainedObservationRetirementProgress as Progress,
     durability::{
@@ -8,40 +8,49 @@ use worth_relational::facade::{
         RetiredRelationalRecoveredPublication,
     },
 };
+
 #[derive(Debug)]
 pub(super) enum RecoveredNativeRetirement {
-    Active(RelationalRecoveredPublicationRetirement),
+    Active(
+        CooperativeRetirementState<
+            RelationalRecoveredPublicationRetirement,
+            RetiredRelationalRecoveredPublication,
+        >,
+    ),
     Publication(crate::history::ReadmittedPublicationRetirement),
-    Retired(RetiredRelationalRecoveredPublication),
 }
+
 impl RecoveredNativeRetirement {
     pub(super) fn new(original: RelationalRecoveredPublicationCustody) -> Self {
-        Self::Active(original.into_retirement())
+        Self::Active(CooperativeRetirementState::Retiring(Some(
+            original.into_retirement(),
+        )))
     }
+
     pub(super) fn advance(
-        self,
+        &mut self,
         request: &ExecutionRequest<'_, '_>,
         owner: &worth_relational::facade::runtime::RelationalRuntime,
-    ) -> (Self, Result<bool, Denial>) {
-        match self {
-            Self::Retired(retired) => (Self::Retired(retired), Ok(true)),
-            Self::Publication(mut task) => {
-                let progress = task.advance(request, owner);
-                (Self::Publication(task), progress)
-            }
-            Self::Active(mut task) => match task.advance(request) {
-                Progress::Advanced => (Self::Active(task), Ok(false)),
-                Progress::Busy => (Self::Active(task), Err(Denial::Busy)),
-                Progress::Stopped(cause) => (Self::Active(task), Err(Denial::Execution(cause))),
-                Progress::Refused(cause) => (
-                    Self::Active(task),
-                    Err(Denial::RecoveredNativeRetirement(cause)),
-                ),
-                Progress::Complete => match task.into_retired() {
-                    Ok(retired) => (Self::Retired(retired), Ok(true)),
-                    Err(task) => (Self::Active(task), Err(Denial::CloseProgressInvariant)),
-                },
+    ) -> Result<bool, Denial> {
+        let task = match self {
+            Self::Publication(task) => return task.advance(request, owner),
+            Self::Active(task) => task,
+        };
+        task.advance_with(
+            request,
+            |task, request| match task.advance(request) {
+                Progress::Advanced => Ok(CooperativeStep::Continue),
+                Progress::Busy => Ok(CooperativeStep::Busy),
+                Progress::Stopped(cause) => Ok(CooperativeStep::Stopped(cause)),
+                Progress::Refused(cause) => Err(Denial::RecoveredNativeRetirement(cause)),
+                Progress::Complete => Ok(CooperativeStep::Complete(())),
             },
-        }
+            |task| {
+                task.into_retired()
+                    .map_err(|task| (task, Denial::CloseProgressInvariant))
+            },
+        )?
+        .into_progress(Denial::Busy, Denial::Execution)
+        .map(|complete| complete.is_some())
     }
 }

@@ -17,11 +17,12 @@ impl HistoryReachabilityIndex {
             .product_head_protections
             .checked_sub(usize::from(seated))
             .expect("seated head");
-        let enqueue = direct == 0 && !record.dirty;
+        let enqueue = direct == 0 && !record.dirty.is_marked();
         // A dirty target is already queued. In particular, target==tail never
         // acquires the same mutex twice.
         let mut tail = if enqueue {
-            self.dirty_tail
+            self.dirty
+                .tail()
                 .as_ref()
                 .map(|tail| {
                     assert_ne!(tail, identity);
@@ -41,15 +42,15 @@ impl HistoryReachabilityIndex {
         record.product_head_protections = seat;
         counters.record_direct_protection_release();
         if enqueue {
-            record.dirty = true;
-            record.dirty_previous = self.dirty_tail.clone();
-            record.dirty_next = None;
-            if let Some(tail) = tail.as_mut() {
-                tail.as_mut().expect("installed dirty tail").dirty_next = Some(identity.clone());
-            } else {
-                self.dirty_head = Some(identity.clone());
-            }
-            self.dirty_tail = Some(identity.clone());
+            self.dirty
+                .mark(identity.clone(), &mut record.dirty, |_, edit| {
+                    tail.as_mut()
+                        .expect("preflight held the dirty tail")
+                        .as_mut()
+                        .expect("installed dirty tail")
+                        .dirty
+                        .apply(edit);
+                });
         }
         Ok(())
     }
@@ -140,13 +141,13 @@ mod tests {
         let retired = target.lock().unwrap().clone().unwrap();
         assert_eq!(retired.direct_protections, 0);
         assert_eq!(retired.product_head_protections, 0);
-        assert!(retired.dirty);
+        assert!(retired.dirty.is_marked());
         assert_eq!(
-            index.lock().unwrap().dirty_tail.as_ref(),
+            index.lock().unwrap().dirty.tail().as_ref(),
             Some(root.identity())
         );
         assert_eq!(
-            tail.lock().unwrap().as_ref().unwrap().dirty_next.as_ref(),
+            tail.lock().unwrap().as_ref().unwrap().dirty.next().as_ref(),
             Some(root.identity())
         );
         let released = counters.lock().unwrap().direct_protection_releases();

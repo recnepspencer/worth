@@ -4,8 +4,6 @@ pub mod index_roots;
 pub mod retired_roots;
 pub(super) use component_capture::has_live_obligation_room;
 pub use component_capture::CapturedExternalCheckpointComponents;
-use crossbeam_queue::SegQueue;
-use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
@@ -55,9 +53,8 @@ pub(super) struct RelationalBranchRetentionOwnerInner {
     pub(super) next_retirement_generation: AtomicU64,
     pub(super) retirement_slot_count: AtomicUsize,
     pub(super) retired_root_count: AtomicUsize,
-    pub(super) retired_roots: RwLock<BTreeMap<usize, RelationalRetiredBranchRoot>>,
+    pub(super) retired_roots: RwLock<retired_roots::RetiredBranchRoots>,
     pub(super) retired_root_locators: super::root_locators::RetiredRootLocators,
-    pub(super) retired_root_order: SegQueue<(usize, u64)>,
     pub(super) retired_enqueue_count: AtomicU64,
     pub(super) index_retention_roots_examined: AtomicU64,
     pub(super) maintenance_counters: Mutex<RelationalRetentionCostCounters>,
@@ -71,7 +68,8 @@ pub(super) struct RelationalRetiredBranchRoot {
         super::RelationalBranchRetentionBinding,
     >,
     pub(super) historical_binding: super::RelationalBranchRetentionBinding,
-    pub(super) reservations: usize,
+    pub(super) reservations: worth_foundational::DagReferenceCount,
+    pub(super) dirty: worth_foundational::DagDirtyLinks<usize>,
     pub(super) retired: bool,
     pub(super) generation: u64,
 }
@@ -169,9 +167,8 @@ impl RelationalBranchRetentionOwner {
                 next_retirement_generation: AtomicU64::new(0),
                 retirement_slot_count: AtomicUsize::new(0),
                 retired_root_count: AtomicUsize::new(0),
-                retired_roots: RwLock::new(BTreeMap::new()),
+                retired_roots: RwLock::default(),
                 retired_root_locators: Default::default(),
-                retired_root_order: SegQueue::new(),
                 retired_enqueue_count: AtomicU64::new(0),
                 index_retention_roots_examined: AtomicU64::new(0),
                 maintenance_counters: Mutex::new(RelationalRetentionCostCounters::default()),

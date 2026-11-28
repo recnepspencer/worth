@@ -1,7 +1,10 @@
 //! Home carries durable-owner journal evidence, never a projected memory registry.
 use super::{PreparedWorldCheckpoint, WorldCheckpointSubject};
 use sha2::{Digest, Sha256};
-use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
+use worth_execution::{
+    decode_framed_envelope, encode_framed_bytes, ExecutionImmutableBytes, ExecutionRequest,
+    FramedEnvelopeError, FramedEnvelopeSpec,
+};
 use worth_foundational::facade::*;
 use worth_relational::facade::durability::{
     CheckpointAdmissionAuthenticationMismatch as Authentication,
@@ -9,10 +12,32 @@ use worth_relational::facade::durability::{
     RelationalCheckpointAdmissionRefusal as Refusal,
 };
 
-const MAGIC: &[u8; 8] = b"WRWMREG1";
-const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(1);
-const PAYLOAD: usize = 229;
-const DOMAIN: &[u8] = b"worth.world.receipt-registry.home.v1\0";
+const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(2);
+const PAYLOAD: usize = 217;
+const SPEC: FramedEnvelopeSpec = FramedEnvelopeSpec {
+    magic: *b"WRWMREG1",
+    supported_versions: &[VERSION.get()],
+    max_payload_bytes: PAYLOAD as u64,
+};
+
+fn frame_refusal(error: FramedEnvelopeError) -> Refusal {
+    match error {
+        FramedEnvelopeError::Execution(cause) => Refusal::Request(cause.into()),
+        FramedEnvelopeError::UnsupportedVersion { found } => {
+            BoundaryProtocolVersion::try_new(found).map_or(Refusal::InvalidVersion, |found| {
+                match BoundaryProtocolCompatibilityWindow::inclusive(VERSION, VERSION).admit(found)
+                {
+                    Ok(_) => Refusal::Malformed,
+                    Err(cause) => Refusal::UnsupportedVersion(cause),
+                }
+            })
+        }
+        FramedEnvelopeError::ChecksumMismatch => {
+            Refusal::AuthenticationMismatch(Authentication::Directory)
+        }
+        _ => Refusal::Malformed,
+    }
+}
 
 impl PreparedWorldCheckpoint {
     /// Coordinates of this actual protected capture; descriptive, not authority.
@@ -54,12 +79,18 @@ impl PreparedWorldCheckpoint {
             return Err(Refusal::BindingMismatch(Binding::WorldImage));
         }
         let payload = payload(image, request)?;
-        let hash = companion_digest(&payload, request)?;
-        let mut bytes = ExecutionRequestArrayBuilder::allocate(*request, PAYLOAD + 32)
-            .map_err(Refusal::Buffer)?;
-        bytes.extend_from_slice(&payload).map_err(Refusal::Buffer)?;
-        bytes.extend_from_slice(&hash).map_err(Refusal::Buffer)?;
-        bytes.seal_immutable_bytes().map_err(Refusal::Buffer)
+        let bytes = encode_framed_bytes(
+            SPEC,
+            VERSION.get(),
+            request,
+            |sink| sink(&payload),
+            CompanionEmission::Buffer,
+        )
+        .map_err(|error| match error {
+            CompanionEmission::Frame(cause) => frame_refusal(cause),
+            CompanionEmission::Buffer(cause) => Refusal::Buffer(cause),
+        })?;
+        Ok(bytes)
     }
 }
 
@@ -79,18 +110,8 @@ impl WorldCheckpointSubject {
         if companion.is_empty() {
             return Err(Refusal::MissingArtifact);
         }
-        if companion.get(..8) != Some(MAGIC.as_slice()) {
-            return Err(Refusal::Malformed);
-        }
-        let version = companion
-            .get(8..12)
-            .and_then(|bytes| bytes.try_into().ok())
-            .ok_or(Refusal::Malformed)?;
-        let version = BoundaryProtocolVersion::try_new(u32::from_le_bytes(version))
-            .map_err(|_| Refusal::InvalidVersion)?;
-        BoundaryProtocolCompatibilityWindow::inclusive(VERSION, VERSION)
-            .admit(version)
-            .map_err(Refusal::UnsupportedVersion)?;
+        let (_, companion) =
+            decode_framed_envelope(SPEC, companion, request).map_err(frame_refusal)?;
         let CheckpointAdmissionScope::Home {
             home: recorded,
             world_image_digest,
@@ -104,14 +125,11 @@ impl WorldCheckpointSubject {
         }
         // Tag1 is DurableOwnerJournal. No memory movement or registry can be
         // inferred from Home bytes; interim capture-proof restoration is separate.
-        if companion.get(12) != Some(&1) {
+        if companion.first() != Some(&1) {
             return Err(Refusal::BindingMismatch(Binding::Scope));
         }
         let expected = payload(image, request)?;
-        if companion.len() != PAYLOAD + 32
-            || companion[..PAYLOAD] != expected
-            || companion[PAYLOAD..] != companion_digest(&expected, request)?
-        {
+        if companion != expected {
             return Err(Refusal::AuthenticationMismatch(Authentication::Directory));
         }
         Ok(())
@@ -130,9 +148,7 @@ fn payload(image: &Image, request: &ExecutionRequest<'_, '_>) -> Result<[u8; PAY
     let mut bytes = [0; PAYLOAD];
     let mut cursor = 0;
     for field in [
-        MAGIC.as_slice(),
-        &VERSION.get().to_le_bytes(),
-        &[1],
+        [1].as_slice(),
         &home.bytes(),
         &image.cut().canonical_through().to_le_bytes(),
         &image.cut().transitions_through().to_le_bytes(),
@@ -150,15 +166,18 @@ fn payload(image: &Image, request: &ExecutionRequest<'_, '_>) -> Result<[u8; PAY
     }
     Ok(bytes)
 }
-fn companion_digest(
-    payload: &[u8],
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<[u8; 32], Refusal> {
-    let mut hash = Sha256::new();
-    hash.update(DOMAIN);
-    update(&mut hash, payload, request)?;
-    Ok(hash.finalize().into())
+#[derive(Debug)]
+enum CompanionEmission {
+    Frame(FramedEnvelopeError),
+    Buffer(worth_execution::ExecutionRequestArrayDenial),
 }
+
+impl From<FramedEnvelopeError> for CompanionEmission {
+    fn from(error: FramedEnvelopeError) -> Self {
+        Self::Frame(error)
+    }
+}
+
 fn digest(bytes: &[u8], request: &ExecutionRequest<'_, '_>) -> Result<[u8; 32], Refusal> {
     let mut hash = Sha256::new();
     update(&mut hash, bytes, request)?;

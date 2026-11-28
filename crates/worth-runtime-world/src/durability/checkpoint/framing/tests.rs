@@ -1,5 +1,12 @@
-//! Pure framing meaning only: no execution request, runtime or recovery authority.
+//! The current World checkpoint uses the canonical empty frame.
 use super::*;
+use worth_execution::inspect_framed_envelope;
+
+fn inspect(bytes: &[u8]) -> Result<&[u8], Denial> {
+    inspect_framed_envelope(SPEC, bytes, |_| Ok::<_, FramedEnvelopeError>(()))
+        .map(|(_, payload)| payload)
+        .map_err(frame_denial)
+}
 
 fn literal_empty_frame() -> [u8; 52] {
     [
@@ -11,68 +18,37 @@ fn literal_empty_frame() -> [u8; 52] {
 #[test]
 fn literal_frame_checks_magic_version_length_and_payload_digest() {
     let bytes = literal_empty_frame();
-    assert!(inspect(&bytes, &mut |_| Ok(())).unwrap().is_empty());
+    assert!(inspect(&bytes).unwrap().is_empty());
     let mut damaged = bytes;
     damaged[0] ^= 1;
     assert!(matches!(
-        inspect(&damaged, &mut |_| Ok(())),
+        inspect(&damaged),
         Err(Denial::Frame(Frame::Malformed))
     ));
     let mut newer = bytes;
     newer[8] = 4;
     assert!(matches!(
-        inspect(&newer, &mut |_| Ok(())),
+        inspect(&newer),
         Err(Denial::Frame(Frame::UnsupportedVersion(_)))
     ));
     for version in [1u32, 2] {
         let mut older = bytes;
         older[8..12].copy_from_slice(&version.to_le_bytes());
         assert!(matches!(
-            inspect(&older, &mut |_| panic!(
-                "unsupported versions refuse before payload work"
-            )),
+            inspect(&older),
             Err(Denial::Frame(Frame::UnsupportedVersion(_)))
         ));
     }
     let mut length = bytes;
     length[12..20].copy_from_slice(&u64::MAX.to_le_bytes());
     assert!(matches!(
-        inspect(&length, &mut |_| Ok(())),
+        inspect(&length),
         Err(Denial::Frame(Frame::Malformed))
     ));
     let mut digest = bytes;
     digest[20] ^= 1;
     assert!(matches!(
-        inspect(&digest, &mut |_| Ok(())),
+        inspect(&digest),
         Err(Denial::Frame(Frame::DigestMismatch))
     ));
-}
-#[test]
-fn checksum_visits_bounded_chunks_and_returns_callback_refusal() {
-    let payload = vec![7; (64 << 10) + 1];
-    let mut bytes = literal_empty_frame().to_vec();
-    bytes[12..20].copy_from_slice(&(payload.len() as u64).to_le_bytes());
-    bytes[20..52].copy_from_slice(&Sha256::digest(&payload));
-    bytes.extend_from_slice(&payload);
-    let mut chunks = Vec::new();
-    assert_eq!(
-        inspect(&bytes, &mut |size| {
-            chunks.push(size);
-            Ok(())
-        })
-        .unwrap(),
-        payload
-    );
-    assert_eq!(chunks, [64 << 10, 1]);
-    let mut calls = 0;
-    let refused = inspect(&bytes, &mut |_| {
-        calls += 1;
-        if calls == 2 {
-            Err(Denial::PublicationBusy)
-        } else {
-            Ok(())
-        }
-    });
-    assert!(matches!(refused, Err(Denial::PublicationBusy)));
-    assert_eq!(calls, 2);
 }

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
+use worth_foundational::DagDirtyList;
 
 use crate::identity::CompositeCommitIdentity;
 
@@ -18,8 +19,7 @@ pub(in crate::history) use record::HistoryReachabilityRecord;
 pub(in crate::history) struct HistoryReachabilityIndex {
     records: HashMap<CompositeCommitIdentity, HistoryReachabilitySlot>,
     counters: HistoryCatalogCountersHandle,
-    dirty_head: Option<CompositeCommitIdentity>,
-    dirty_tail: Option<CompositeCommitIdentity>,
+    dirty: DagDirtyList<CompositeCommitIdentity>,
 }
 
 pub(in crate::history) type HistoryReachabilitySlot = Arc<Mutex<Option<HistoryReachabilityRecord>>>;
@@ -43,8 +43,7 @@ impl HistoryReachabilityIndex {
         Self {
             records: HashMap::new(),
             counters,
-            dirty_head: None,
-            dirty_tail: None,
+            dirty: DagDirtyList::default(),
         }
     }
 
@@ -89,15 +88,10 @@ impl HistoryReachabilityIndex {
             .expect("validated installed parent has a reachability row");
         let mut held = lock_slot(slot);
         let record = held.as_mut().expect("installed reachability record");
-        record.descendant_dependencies =
-            record
-                .descendant_dependencies
-                .checked_add(1)
-                .ok_or_else(|| {
-                    CompositeHistoryCatalogDenial::DependencyCountOverflow(parent.clone())
-                })?;
-        // A share of the dependencies, so it cannot overflow first.
-        record.forming_children += 1;
+        record
+            .dependencies
+            .reserve_child()
+            .map_err(|_| CompositeHistoryCatalogDenial::DependencyCountOverflow(parent.clone()))?;
         lock_counters(&self.counters).record_dependency_increment();
         Ok(())
     }
@@ -109,7 +103,7 @@ impl HistoryReachabilityIndex {
         child: &CompositeCommitIdentity,
     ) {
         self.settle_forming_child(parent);
-        self.install_child(parent, child);
+        self.link_installed_child(parent, child);
     }
 
     /// The reserved child of `parent` was abandoned with its dependency.
@@ -125,10 +119,7 @@ impl HistoryReachabilityIndex {
             .expect("a reserved child retains an installed parent row");
         let mut held = lock_slot(slot);
         let record = held.as_mut().expect("installed reachability record");
-        record.forming_children = record
-            .forming_children
-            .checked_sub(1)
-            .expect("each reserved child settles once");
+        record.dependencies.settle_forming_child();
     }
 
     pub(super) fn decrement_descendant_dependency(&mut self, parent: &CompositeCommitIdentity) {
@@ -138,10 +129,7 @@ impl HistoryReachabilityIndex {
             .expect("a reclaimed child retains an installed parent row");
         let mut held = lock_slot(slot);
         let record = held.as_mut().expect("installed reachability record");
-        record.descendant_dependencies = record
-            .descendant_dependencies
-            .checked_sub(1)
-            .expect("each installed child owns one parent dependency");
+        record.dependencies.release_dependency();
         lock_counters(&self.counters).record_dependency_decrement();
         drop(held);
         self.mark_changed(parent);
@@ -157,11 +145,11 @@ impl HistoryReachabilityIndex {
         assert_eq!(
             (
                 record.direct_protections,
-                record.descendant_dependencies,
-                record.forming_children,
+                record.descendant_dependencies(),
+                record.has_forming_child(),
                 record.product_head_protections
             ),
-            (0, 0, 0, 0)
+            (0, 0, false, 0)
         );
         record.direct_protections = 1;
         lock_counters(&self.counters).record_direct_protection_acquisition();

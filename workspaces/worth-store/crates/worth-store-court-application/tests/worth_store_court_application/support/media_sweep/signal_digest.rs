@@ -1,11 +1,11 @@
 //! Cryptographic verification and deterministic hashing of Signal (`WSIGOWNR`
-//! v1 kind 5) and nested `WSIGOWNR` / `WSIGAUTH` / `WSIGCONF` frames inside
+//! v2 kind 5) and nested `WSIGOWNR` / `WSIGAUTH` / `WSIGCONF` frames inside
 //! `WAPHCKP1` v3 `home.checkpoint` payloads.
 
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::{OrderedJournalName, ServingPhysicalRuntime};
 
-use super::manifest_digest::{u64_le, CheckpointDigestSummary};
+use super::manifest_digest::{u64_le, verify_frame, CheckpointDigestSummary};
 use super::section_digests::verify_world_journal_entry;
 
 pub(super) fn verify_and_hash_signal(
@@ -13,10 +13,8 @@ pub(super) fn verify_and_hash_signal(
     home: &[u8],
     out: &mut Sha256,
 ) -> Option<(Vec<[u8; 32]>, [u64; 2])> {
-    let p = verify_56b_frame(signal, b"WSIGOWNR")?;
-    let version = u32::from_le_bytes(signal[8..12].try_into().ok()?);
-    let kind = u32::from_le_bytes(signal[12..16].try_into().ok()?);
-    if version != 1 || kind != 5 {
+    let (kind, p) = owner_payload(signal)?;
+    if kind != 5 {
         return None;
     }
     let mut c = 0usize;
@@ -24,7 +22,8 @@ pub(super) fn verify_and_hash_signal(
         return None;
     }
     out.update(b"WSIGOWNR");
-    out.update(&signal[8..16]);
+    out.update(&signal[8..12]);
+    out.update(kind.to_le_bytes());
     // slot(8) + 6 frontier counters(48)
     out.update(read_slice(p, &mut c, 56)?);
     let snap_tag = *read_slice(p, &mut c, 1)?.first()?;
@@ -178,18 +177,20 @@ pub(super) fn verify_wsigownr_inner(
     sig_digests: &[[u8; 32]],
     out: &mut Sha256,
 ) -> Option<[u8; 32]> {
-    let payload = verify_56b_frame(frame, b"WSIGOWNR")?;
-    if u32::from_le_bytes(frame[8..12].try_into().ok()?) != 1 {
-        return None;
-    }
-    let kind = u32::from_le_bytes(frame[12..16].try_into().ok()?);
-    out.update(&frame[8..24]);
+    let (kind, payload) = owner_payload(frame)?;
+    out.update(&frame[8..20]);
+    out.update(kind.to_le_bytes());
     if kind == 1 {
         verify_signal_definition_payload(payload, home, sig_digests, out)?;
     } else {
         hash_replacing_identities(payload, home, sig_digests, out);
     }
     Some(Sha256::digest(frame).into())
+}
+
+fn owner_payload(frame: &[u8]) -> Option<(u32, &[u8])> {
+    let (kind, fields) = verify_frame(frame, b"WSIGOWNR", 2)?.split_at_checked(4)?;
+    Some((u32::from_le_bytes(kind.try_into().ok()?), fields))
 }
 
 fn verify_56b_frame<'a>(frame: &'a [u8], magic: &[u8; 8]) -> Option<&'a [u8]> {

@@ -15,8 +15,9 @@ impl super::RelationalBranchRetentionOwner {
             .map(|entry| {
                 // Inspect BEFORE adding this diagnostic's Arc. No obligation is
                 // issued, released or inferred from the observation.
-                let reclaimable =
-                    entry.retired && entry.reservations == 0 && Arc::strong_count(&entry.root) == 1;
+                let reclaimable = entry.retired
+                    && entry.reservations.count() == 0
+                    && Arc::strong_count(&entry.root) == 1;
                 RelationalRetiredRootStorageSnapshot {
                     root: Arc::clone(&entry.root),
                     reclaimable,

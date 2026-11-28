@@ -11,4 +11,4 @@ claim using the public DATA door and frozen protocol inputs; no private World
 constructor or new certification factory is exposed. A real multi-branch Home
 serving journey remains a separate H5 requirement.
 
-Each branch now carries length-delimited Native and Bridge descriptions and a Signal-owned source-point frame. The Signal coordinates are descriptive DATA; this court does not claim a live Signal owner or original definition bytes. The generator rebuilt every enclosing checksum and branch coverage digest after the clean protocol cutover.
+Each branch now carries length-delimited Native and Bridge descriptions and a version 2 Signal-owned source-point frame. The Signal coordinates are descriptive DATA; this court does not claim a live Signal owner or original definition bytes. The generator rebuilt every enclosing checksum and branch coverage digest after the clean protocol cutover.
