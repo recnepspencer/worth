@@ -289,6 +289,7 @@ impl InvariantRuleOwnerPort for InvariantRule {
             }
             (Self::MaxMergedIntents(_), Self::MaxMergedIntents(_))
             | (Self::MaxSnapshotEntities(_), Self::MaxSnapshotEntities(_))
+            | (Self::EntityAspectExclusion, Self::EntityAspectExclusion)
             | (Self::UniqueEntityAspectField { .. }, Self::UniqueEntityAspectField { .. }) => true,
             (Self::EndpointKindContract(left), Self::EndpointKindContract(right)) => {
                 left.contract_id == right.contract_id

@@ -248,6 +248,7 @@ fn violation_fields(
                     }
                     "field" => optional(value, |value| text(value, request))?,
                     "field_locator" => super::aspects::locator(value, request)?,
+                    "group_id" if variant == "EntityAspectExclusion" => text(value, request)?,
                     "value" if variant == "UniqueEntityField" => {
                         super::aspects::scalar(value, request)?
                     }
