@@ -188,7 +188,7 @@ pub fn verify_native_field_navigation_for_test(
     assert!(matches!(
         stopped,
         Err(
-            worth_relational_branch::internal_port::visibility::materialization::read_records::read_stop::ReadStop::Request(
+            worth_relational_contracts::internal_port::execution::request_or::RequestOr::Request(
                 crate::contracts::execution::denial_cause::RelationalExecutionDenialCause::Cancelled
             )
         )

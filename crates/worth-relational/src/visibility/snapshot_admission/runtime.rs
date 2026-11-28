@@ -1,6 +1,7 @@
 use super::*;
 
 impl super::super::authority::VisibilityAuthority<'_> {
+    #[cfg(test)]
     pub(in crate::visibility) fn open_active_snapshot_for_basis(
         &self,
         basis: crate::history::retention::VisibilitySnapshotBasis,
@@ -18,6 +19,7 @@ impl super::super::authority::VisibilityAuthority<'_> {
             .snapshot_for_observation(observation)
     }
 
+    #[cfg(test)]
     pub(crate) fn snapshot(
         &self,
     ) -> Result<crate::snapshots::data::SnapshotHandle, CurrentBranchSnapshotAdmissionDenial> {

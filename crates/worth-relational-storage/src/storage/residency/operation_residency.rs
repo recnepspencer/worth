@@ -70,9 +70,18 @@ impl OperationResidency {
         &slots[offset]
     }
 
+    fn cell_key(cell: &Arc<RelationalRegionResidency>) -> usize {
+        #[expect(
+            clippy::disallowed_methods,
+            reason = "The slot pins the allocation used as its lookup key; order is never observed"
+        )]
+        let key = Arc::as_ptr(cell) as usize;
+        key
+    }
+
     /// The slot already holding custody for `cell`, if this operation has one.
     pub(super) fn existing(&self, cell: &Arc<RelationalRegionResidency>) -> Option<&ScopedRegion> {
-        let key = Arc::as_ptr(cell) as usize;
+        let key = Self::cell_key(cell);
         let position = *self
             .positions
             .lock()
@@ -84,7 +93,7 @@ impl OperationResidency {
     /// The slot for `cell`, allocated on first use. The slot pins the cell, so
     /// its address key cannot be reused while this scope lives.
     pub(super) fn slot(&self, cell: &Arc<RelationalRegionResidency>) -> &ScopedRegion {
-        let key = Arc::as_ptr(cell) as usize;
+        let key = Self::cell_key(cell);
         let mut positions = self
             .positions
             .lock()

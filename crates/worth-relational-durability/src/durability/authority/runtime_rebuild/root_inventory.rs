@@ -6,7 +6,7 @@ use contracts::schema::data::RelationalSchemaRegistry;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
 use worth_relational_branch::internal_port::branch::basis_descriptor::RelationalBranchBasisDescriptor;
-use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis_descriptor_owner::RelationalBranchBasisDescriptorOwnerPort as _;
 use worth_relational_branch::internal_port::branch::root::RelationalBranchRoot;
 use worth_relational_branch::internal_port::runtime::state::subsystems::history::HistorySubsystem;
 use worth_relational_contracts::internal_port as contracts;

@@ -1,41 +1,17 @@
 //! Hash the exact authoritative payload without retaining encoded body bytes.
 use super::CanonicalCommitEnvelope;
 use sha2::{Digest, Sha256};
-use std::io::{Result as IoResult, Write};
+use worth_relational_contracts::internal_port::durability::artifact_payload_emission::digest::{
+    MeteredSha256Sink, Sha256Sink,
+};
 
-struct PayloadDigest {
-    hash: Sha256,
-    bytes: u64,
-}
-impl Write for PayloadDigest {
-    fn write(&mut self, bytes: &[u8]) -> IoResult<usize> {
-        self.bytes = self
-            .bytes
-            .checked_add(bytes.len() as u64)
-            .ok_or_else(|| std::io::Error::other("canonical payload byte count overflow"))?;
-        self.hash.update(bytes);
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> IoResult<()> {
-        Ok(())
-    }
-}
 impl CanonicalCommitEnvelope {
     pub(crate) fn authoritative_payload_digest(
         &self,
     ) -> Result<[u8; 32], rmp_serde::encode::Error> {
-        self.authoritative_payload_observation()
-            .map(|(_, digest)| digest)
-    }
-    pub(crate) fn authoritative_payload_observation(
-        &self,
-    ) -> Result<(u64, [u8; 32]), rmp_serde::encode::Error> {
-        let mut digest = PayloadDigest {
-            hash: Sha256::new(),
-            bytes: 0,
-        };
+        let mut digest = Sha256Sink::default();
         self.write_authoritative_payload(&mut digest)?;
-        Ok((digest.bytes, digest.hash.finalize().into()))
+        Ok(digest.0.finalize().into())
     }
 }
 
@@ -55,23 +31,24 @@ impl CanonicalCommitEnvelope {
             .map_err(|cause| Stop::Request(cause.into()))?;
         let mut answer = None;
         let scope = request.run_native_with_checkpoint(|context| {
-            let mut writer = RequestPayloadDigest {
-                inner: PayloadDigest {
-                    hash: Sha256::new(),
-                    bytes: 0,
-                },
-                context,
-                stop: None,
+            let mut charge = |bytes| {
+                if context.has_accounting() {
+                    context.checkpoint(bytes as u64)
+                } else {
+                    context.poll()
+                }
             };
+            let mut writer = MeteredSha256Sink::new(Sha256::new(), &mut charge);
             let encoded = self.write_authoritative_payload(&mut writer);
-            answer = Some(match (encoded, writer.stop.take()) {
+            let (hash, bytes, failure) = writer.into_parts();
+            answer = Some(match (encoded, failure) {
                 (_, Some(cause)) => Err(Stop::Request(cause.into())),
                 (Err(_), None) => Err(DurabilityError::new(
                     RecoveryFailureClass::CorruptCanonicalArtifact,
                     "canonical tuple observation refused",
                 )
                 .into()),
-                (Ok(()), None) => Ok((writer.inner.bytes, writer.inner.hash.finalize().into())),
+                (Ok(()), None) => Ok((bytes, hash.finalize().into())),
             });
         });
         match (scope, answer) {
@@ -84,34 +61,6 @@ impl CanonicalCommitEnvelope {
         }
     }
 }
-struct RequestPayloadDigest<'c, 's, 'a> {
-    inner: PayloadDigest,
-    context: &'c mut worth_execution::MapKernelContext<'s, 'a>,
-    stop: Option<worth_execution::MapKernelStop>,
-}
-impl Write for RequestPayloadDigest<'_, '_, '_> {
-    fn write(&mut self, bytes: &[u8]) -> IoResult<usize> {
-        for chunk in bytes.chunks(64 * 1024) {
-            let result = if self.context.has_accounting() {
-                self.context.checkpoint(chunk.len() as u64)
-            } else {
-                self.context.poll()
-            };
-            if let Err(cause) = result {
-                self.stop = Some(cause);
-                return Err(std::io::Error::other(
-                    "canonical observation request refused",
-                ));
-            }
-            self.inner.write_all(chunk)?;
-        }
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> IoResult<()> {
-        Ok(())
-    }
-}
-
 #[doc(hidden)]
 pub trait CanonicalEnvelopeDigestFixturePort {
     fn authoritative_payload_digest_for_test(&self) -> Result<[u8; 32], rmp_serde::encode::Error>;

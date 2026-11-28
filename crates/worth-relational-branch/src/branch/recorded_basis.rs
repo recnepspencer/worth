@@ -94,12 +94,20 @@ impl RecordedRelationalCanonicalComponent {
 pub use refusal::RelationalRecordedComponentRefusal;
 pub use worth_relational_contracts::internal_port::branch::recorded_basis::refusal;
 
-/// Operations used by the Relational owners.
+use copying::CanonicalDescription;
+use worth_execution::ExecutionRequest;
+
+#[doc(hidden)]
 pub trait RecordedRelationalComponentReferenceOwnerPort: Sized {
     fn from_readmitted_source(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         descriptor: &RelationalBranchBasisDescriptor,
         entry: &crate::history::commit::RelationalCommitIndexEntry,
+    ) -> Result<Self, RelationalRecordedComponentRefusal>;
+    fn copy_original(
+        execution: &ExecutionRequest<'_, '_>,
+        descriptor: &RelationalBranchBasisDescriptor,
+        target: Option<CanonicalDescription<'_>>,
     ) -> Result<Self, RelationalRecordedComponentRefusal>;
 }
 
@@ -119,5 +127,13 @@ impl RecordedRelationalComponentReferenceOwnerPort for RecordedRelationalCompone
                 roots: &entry.root,
             }),
         )
+    }
+
+    fn copy_original(
+        execution: &ExecutionRequest<'_, '_>,
+        descriptor: &RelationalBranchBasisDescriptor,
+        target: Option<CanonicalDescription<'_>>,
+    ) -> Result<Self, RelationalRecordedComponentRefusal> {
+        RecordedRelationalComponentReference::copy_original(execution, descriptor, target)
     }
 }

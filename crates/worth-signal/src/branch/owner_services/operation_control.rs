@@ -20,7 +20,7 @@ pub enum SignalOwnerOperationBoundaryForTest {
 mod deterministic {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::{Arc, Condvar, Mutex, Weak};
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
 
     use super::SignalOwnerOperationBoundaryForTest;
 

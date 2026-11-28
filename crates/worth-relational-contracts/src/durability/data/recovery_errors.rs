@@ -40,7 +40,6 @@ pub enum RecoveryFailureClass {
     /// beyond the recovered commit head.
     NonContiguousBranchTransitionTail,
     UnsupportedLegacySemantics,
-    LegacyMergeArtifactRetired,
     MissingAuthoritativeParentClosure,
     ReplayFailure,
     DurableIoFailure,
@@ -234,13 +233,6 @@ pub struct DurabilityError {
 }
 
 impl DurabilityError {
-    pub fn legacy_merge_artifact_retired() -> Self {
-        Self::new(
-            RecoveryFailureClass::LegacyMergeArtifactRetired,
-            "the stored commit contains retired legacy merge authority",
-        )
-    }
-
     pub fn new(class: RecoveryFailureClass, detail: impl Into<String>) -> Self {
         let suggested_fix = match class {
             RecoveryFailureClass::CheckpointSizeOverflow
@@ -268,7 +260,6 @@ impl DurabilityError {
             | RecoveryFailureClass::CorruptBranchTransitionArtifact
             | RecoveryFailureClass::NonContiguousBranchTransitionTail
             | RecoveryFailureClass::UnsupportedLegacySemantics
-            | RecoveryFailureClass::LegacyMergeArtifactRetired
             | RecoveryFailureClass::MissingAuthoritativeParentClosure
             | RecoveryFailureClass::ReplayFailure
             | RecoveryFailureClass::UnsupportedRetainedEntitySelectionReplay

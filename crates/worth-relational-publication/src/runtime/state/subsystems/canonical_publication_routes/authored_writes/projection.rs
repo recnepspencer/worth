@@ -1,11 +1,11 @@
 //! Project canonical authored intents, never the semantic-delta-only patch.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use branch::history::access::relevant_writes::generation::AuthoredWriteGeneration;
 use branch::history::access::relevant_writes::posting_key::AuthoredWritePostingKey;
 use branch::history::access::relevant_writes::selection::RelationalAuthoredWriteScope as Scope;
 use branch::history::access::relevant_writes::selection::RelationalAuthoredWriteSelector as Key;
 use branch::history::access::relevant_writes::RelationalAuthoredWriteDenial as Denial;
 use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelope;
-use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use contracts::history::data::coordinates::CommitId;
 use contracts::transactions::data::aspect_field_patch::AspectFieldPatch;
 use contracts::transactions::data::intents::mutation_intent::EntityMutationIntent;

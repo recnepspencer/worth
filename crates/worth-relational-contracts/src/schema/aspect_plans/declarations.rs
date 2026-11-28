@@ -79,13 +79,13 @@ fn canonicalize_identity_declarations(
         declarations = default_identity_declarations(kind_id, domain);
     }
     declarations.sort();
-    let mut seen = BTreeSet::new();
+    let mut previous = None;
     let aspect_keys = aspects
         .iter()
         .map(DeclaredAspectContractBinding::aspect_key)
         .collect::<BTreeSet<_>>();
     for declaration in &declarations {
-        if !seen.insert(declaration.clone()) {
+        if previous == Some(declaration) {
             return Err(SchemaRegistryError::invalid_aspect_declaration(
                 kind_id,
                 format!(
@@ -94,6 +94,7 @@ fn canonicalize_identity_declarations(
                 ),
             ));
         }
+        previous = Some(declaration);
         match &declaration.scope {
             IdentityBasisScope::EntityKind(scope_kind) => {
                 if *scope_kind != kind_id || !matches!(domain, RegistrationDomain::Entity) {

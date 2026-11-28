@@ -55,12 +55,20 @@ impl Clone for RegionLeaseCustody {
                 active: Mutex::new(false),
             };
         }
-        self.cell
-            .leases
-            .try_update(Ordering::AcqRel, Ordering::Acquire, |count| {
-                count.checked_add(1)
-            })
-            .expect(/* Proof: Every live lease owns a strong Arc to this cell; lease count is bounded by Arc strong count, whose maximum is below usize::MAX. */ "a resident lease count fits the address space");
+        let mut count = self.cell.leases.load(Ordering::Acquire);
+        loop {
+            // Each live lease owns a strong Arc, which fits below usize::MAX.
+            let next = count.checked_add(1).expect("a resident lease count fits the address space");
+            match self.cell.leases.compare_exchange_weak(
+                count,
+                next,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => break,
+                Err(actual) => count = actual,
+            }
+        }
         Self::accepted(self.cell.clone())
     }
 }

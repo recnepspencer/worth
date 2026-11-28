@@ -1,5 +1,5 @@
 use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateOwnerPort as _;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::original_inputs::CanonicalCommitEnvelopeOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
 use crate::authority::commit::pipeline::request_checkpoints::{observation, CommitStage};
 use crate::tests::support::{
     batch_create, create_entity_outcome, release_test_commit_snapshot, runtime_with_test_schema,

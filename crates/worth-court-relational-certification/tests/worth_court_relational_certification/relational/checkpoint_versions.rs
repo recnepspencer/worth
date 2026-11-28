@@ -73,7 +73,8 @@ fn current_checkpoint_preserves_meaning_and_retired_or_unknown_versions_refuse()
         b"WORTH-REL-CHK21\n".as_slice(),
         b"WORTH-REL-CHK22\n".as_slice(),
         b"WORTH-REL-CHK23\n".as_slice(),
-        b"WORTH-REL-CHK25\n".as_slice(),
+        b"WORTH-REL-CHK24\n".as_slice(),
+        b"WORTH-REL-CHK26\n".as_slice(),
         b"WORTH-REL-CHK\n".as_slice(),
     ] {
         let mut bytes = prefix.to_vec();
@@ -111,7 +112,7 @@ fn assert_unsupported(stop: RelationalRecoveryStop) {
         RelationalRecoveryStop::Durability(failure) => assert!(
             matches!(
                 failure.class,
-                RecoveryFailureClass::UnsupportedCheckpointVersion { supported: 24, .. }
+                RecoveryFailureClass::UnsupportedCheckpointVersion { supported: 25, .. }
                     | RecoveryFailureClass::UnsupportedLegacySemantics
             ),
             "{failure:?}"

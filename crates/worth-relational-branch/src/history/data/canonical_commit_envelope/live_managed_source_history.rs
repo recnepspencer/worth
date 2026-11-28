@@ -47,7 +47,7 @@ impl LiveManagedSourceHistory {
     fn bound(envelope: &CanonicalCommitEnvelope) -> Option<&BoundHistory> {
         let live = envelope.live_managed_source_history.0.as_ref()?;
         let owner = live.owner.upgrade()?;
-        std::ptr::eq(Arc::as_ptr(&owner), envelope).then_some(live)
+        std::ptr::eq(owner.as_ref(), envelope).then_some(live)
     }
 }
 /// The exact unpublished envelope whose canonical meaning matches the Source packet.
@@ -125,21 +125,4 @@ fn packet_matches(
         && envelope.schema_transition.is_none()
         && envelope.required_output_materialization.is_none()
         && envelope.required_output_codec_retirements.is_empty()
-}
-
-#[doc(hidden)]
-pub trait CanonicalCommitEnvelopeOwnerPort: Sized {
-    fn select_managed_source_history(
-        self,
-        packet: Option<Arc<PreparedSourceImpactHistory>>,
-    ) -> Result<SelectedManagedSourceHistory, Arc<Self>>;
-}
-
-impl CanonicalCommitEnvelopeOwnerPort for CanonicalCommitEnvelope {
-    fn select_managed_source_history(
-        self,
-        packet: Option<Arc<PreparedSourceImpactHistory>>,
-    ) -> Result<SelectedManagedSourceHistory, Arc<Self>> {
-        self.select_managed_source_history(packet)
-    }
 }

@@ -56,7 +56,7 @@ report!(DurabilityError, error => {
         Cause::DurableIoFailure | Cause::ColdStorageUnavailable => (Unavailable, Escalate),
         Cause::DeclaredSchemaMismatch | Cause::ProfileMismatch | Cause::RuntimeNameMismatch => (InvalidInput, CorrectInput),
         Cause::UnsupportedBranchRootImageVersion { .. } | Cause::UnsupportedCheckpointVersion { .. }
-        | Cause::UnsupportedLegacySemantics | Cause::LegacyMergeArtifactRetired
+        | Cause::UnsupportedLegacySemantics
         | Cause::UnsupportedRetainedEntitySelectionReplay | Cause::UnsupportedOwnedGraphSelectionReplay => (Unavailable, Final),
         Cause::SchemaMismatch | Cause::CorruptCheckpoint | Cause::CorruptCanonicalArtifact
         | Cause::NonContiguousCanonicalTail | Cause::CorruptBranchTransitionArtifact

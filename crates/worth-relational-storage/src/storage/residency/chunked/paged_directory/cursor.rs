@@ -78,13 +78,12 @@ impl<'d, K: DirectoryEntry + Ord, V: DirectoryEntry> DirectoryCursor<'d, K, V> {
     /// The next entry in ascending key order.
     pub fn next_entry(&mut self) -> Result<Option<(K, V)>, Cause> {
         loop {
-            if let Some((page, index)) = &mut self.leaf {
-                if let DirectoryPage::Leaf(entries) = &**page
-                    && let Some(entry) = entries.get(*index)
-                {
-                    *index += 1;
-                    return Ok(Some(*entry));
-                }
+            if let Some((page, index)) = &mut self.leaf
+                && let DirectoryPage::Leaf(entries) = &**page
+                && let Some(entry) = entries.get(*index)
+            {
+                *index += 1;
+                return Ok(Some(*entry));
             }
             self.leaf = None;
             if !self.advance_leaf()? {

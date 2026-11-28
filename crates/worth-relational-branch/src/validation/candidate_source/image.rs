@@ -121,13 +121,8 @@ impl ManagedIndexPublishedSourceRootFieldsPort for ManagedIndexPublishedSourceRo
     }
 }
 
-/// Operations used by the Relational owners.
-pub trait ManagedIndexBranchImageOwnerPort: Sized {
-    fn history_directory(&self) -> HistorySourceDirectory<'_>;
-}
-
-impl ManagedIndexBranchImageOwnerPort for ManagedIndexBranchImage {
-    fn history_directory(&self) -> HistorySourceDirectory<'_> {
+impl ManagedIndexBranchImage {
+    pub(crate) fn history_directory(&self) -> HistorySourceDirectory<'_> {
         HistorySourceDirectory(self.directory())
     }
 }
@@ -139,5 +134,55 @@ pub trait ManagedIndexBranchImageFieldsPort {
 impl ManagedIndexBranchImageFieldsPort for ManagedIndexBranchImage {
     fn owner_public_caches(&self) -> &Mutex<public_cache::PublicCacheDirectory> {
         &self.public_caches
+    }
+}
+
+use crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop as Stop;
+use worth_execution::ExecutionRequest;
+
+#[doc(hidden)]
+pub trait ManagedIndexBranchImageOwnerPort: Sized {
+    fn history_directory(&self) -> HistorySourceDirectory<'_>;
+    fn prepare_source(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        program: &Program,
+        scope: EntityId,
+        availability: Availability,
+        revision: crate::history::data::CommitId,
+        changed: bool,
+        payload: Option<&Payload>,
+    ) -> Result<(), Stop>;
+    fn retain_header(execution: &ExecutionRequest<'_, '_>, image: Self) -> Result<Arc<Self>, Stop>;
+}
+
+impl ManagedIndexBranchImageOwnerPort for ManagedIndexBranchImage {
+    fn history_directory(&self) -> HistorySourceDirectory<'_> {
+        self.history_directory()
+    }
+
+    fn prepare_source(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        program: &Program,
+        scope: EntityId,
+        availability: Availability,
+        revision: crate::history::data::CommitId,
+        changed: bool,
+        payload: Option<&Payload>,
+    ) -> Result<(), Stop> {
+        self.prepare_source(
+            execution,
+            program,
+            scope,
+            availability,
+            revision,
+            changed,
+            payload,
+        )
+    }
+
+    fn retain_header(execution: &ExecutionRequest<'_, '_>, image: Self) -> Result<Arc<Self>, Stop> {
+        ManagedIndexBranchImage::retain_header(execution, image)
     }
 }

@@ -1,6 +1,5 @@
 //! Lazy exact component images are read from this recovery's admitted directory.
 use super::*;
-use worth_relational_branch::internal_port::branch::recorded_basis::readmission::RelationalBranchBasisDescriptorOwnerPort as _;
 use worth_relational_branch::internal_port::branch::recorded_basis::{
     RecordedRelationalComponentReference as Recorded, RecordedRelationalComponentTarget as Target,
 };

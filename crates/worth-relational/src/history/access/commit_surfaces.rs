@@ -1,3 +1,4 @@
+#[cfg(test)]
 use crate::branch::{RelationalBranchReferenceObservation, RelationalBranchVersion};
 #[cfg(test)]
 use crate::history::data::CanonicalCommitEnvelope;
@@ -113,6 +114,7 @@ impl<'runtime> HistoryAccess<'runtime> {
         self.runtime.history.canonical_stream_position(commit_id)
     }
 
+    #[cfg(test)]
     pub(crate) fn contains_patch_stream_position(&self, position: PatchStreamPosition) -> bool {
         self.runtime
             .history
@@ -205,6 +207,7 @@ impl<'runtime> HistoryAccess<'runtime> {
             .or_else(|| self.latest_commit().map(|commit| commit.commit_id))
     }
 
+    #[cfg(test)]
     pub(crate) fn branch_reference_state(
         &self,
         branch_id: &BranchId,

@@ -100,20 +100,22 @@ fn consolidate_locked(
         .into_iter()
         .collect();
     for branch in remaining {
-        let mut cursor = branch.clone();
-        let mut visited = std::collections::BTreeSet::from([cursor.clone()]);
-        let nearest = loop {
-            if naming.root(&cursor).is_some() {
-                break Some(cursor);
-            }
-            let Some((parent, _)) = state.branch_forks.get(&cursor) else {
-                break None;
-            };
-            if !visited.insert(parent.clone()) {
-                break None;
-            }
-            cursor = parent.clone();
-        };
+        use std::ops::ControlFlow::{Break, Continue};
+        let Ok(nearest) = worth_relational_branch::internal_port::history::access::ancestry_walk::walk_acyclic_chain(
+            branch.clone(),
+            &mut std::collections::BTreeSet::new(),
+            || Ok::<_, std::convert::Infallible>(()),
+            |cursor| {
+                Ok(if naming.root(&cursor).is_some() {
+                    Break(Some(cursor))
+                } else if let Some((parent, _)) = state.branch_forks.get(&cursor) {
+                    Continue(parent.clone())
+                } else {
+                    Break(None)
+                })
+            },
+        );
+        let nearest = nearest.flatten();
         let Some(anc) = nearest else {
             continue;
         };

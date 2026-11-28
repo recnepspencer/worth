@@ -1,5 +1,5 @@
-use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewOwnerPort as _;
 use crate::tests::support::*;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 
 #[test]
 fn complexity_budget_partition_scoped_historical_entity_scans_are_partition_bounded() {

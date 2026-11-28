@@ -1,9 +1,8 @@
 //! Exact field indexes borrow native values; historical projections keep their read backing.
 use super::*;
 use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::query_locus_projection::{authoritative_state_query_locus_value, entity_query_locus_value, relation_query_locus_value};
-use worth_relational_branch::internal_port::visibility::materialization::read_records::read_stop::ReadStop;
+use worth_relational_contracts::internal_port::execution::request_or::RequestOr;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
-use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 
 impl IndexProjectionSource<'_> {
     pub(in crate::internal_port::indexes) fn try_for_each_entity_field<E>(
@@ -13,9 +12,10 @@ impl IndexProjectionSource<'_> {
         field: &AspectFieldLocator,
         mut before: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(EntityId, Option<&AspectValue>) -> Result<(), E>,
-    ) -> Result<(), worth_relational_branch::internal_port::visibility::materialization::read_records::read_stop::ReadStop<E>>{
+    ) -> Result<(), worth_relational_contracts::internal_port::execution::request_or::RequestOr<E>>
+    {
         crate::contracts::execution::request_custody::check_request(execution)
-            .map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Request)?;
         if !self.projection.is_exact_basis() {
             return self.try_for_each_entity(execution, kind, before, |record| {
                 visit(record.entity_id, entity_query_locus_value(record, field))
@@ -29,7 +29,7 @@ impl IndexProjectionSource<'_> {
                 .reconstruction
                 .map(|lane| root.reconstruct_region_head(lane, execution, partition_id))
                 .transpose()
-                .map_err(|failure| ReadStop::Request(failure.into()))?
+                .map_err(|failure| RequestOr::Request(failure.into()))?
                 .flatten();
             let serving;
             let partition = if let Some(head) = &reconstructed {
@@ -37,9 +37,9 @@ impl IndexProjectionSource<'_> {
             } else {
                 self.projection
                     .demand_regions_head(execution, [partition_id])
-                    .map_err(ReadStop::Request)?;
+                    .map_err(RequestOr::Request)?;
                 serving = self.projection.admitted_head_region(partition_id).ok_or_else(|| {
-                    ReadStop::Request(crate::contracts::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded)
+                    RequestOr::Request(crate::contracts::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded)
                 })?;
                 serving
             };
@@ -47,7 +47,7 @@ impl IndexProjectionSource<'_> {
             let slots = partition
                 .entity_arena()
                 .try_live_slots(|_navigation, bytes| {
-                    before(0, bytes).map_err(ReadStop::Admission)?;
+                    before(0, bytes).map_err(RequestOr::Inner)?;
                     navigation_bytes = bytes;
                     Ok(())
                 })?;
@@ -55,12 +55,12 @@ impl IndexProjectionSource<'_> {
                 // Preserve each candidate's checkpoint. The pinned native value
                 // needs no read-record allocation, including unrelated kinds.
                 crate::contracts::execution::request_custody::check_request(execution)
-                    .map_err(ReadStop::Request)?;
+                    .map_err(RequestOr::Request)?;
                 before(
                     worth_relational_branch::internal_port::visibility::materialization::read_records::read_prices::KEYED_RECORD,
                     navigation_bytes,
                 )
-                .map_err(ReadStop::Admission)?;
+                .map_err(RequestOr::Inner)?;
                 let Some(record) = partition.entity_arena().get_slot(slot) else {
                     continue;
                 };
@@ -74,10 +74,10 @@ impl IndexProjectionSource<'_> {
                         field,
                     ),
                 )
-                .map_err(ReadStop::Admission)?;
+                .map_err(RequestOr::Inner)?;
             }
             // The slot iterator has dropped; release only its temporary backing.
-            before(0, 0).map_err(ReadStop::Admission)?;
+            before(0, 0).map_err(RequestOr::Inner)?;
         }
         Ok(())
     }
@@ -89,9 +89,10 @@ impl IndexProjectionSource<'_> {
         field: &AspectFieldLocator,
         mut before: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(RelationId, Option<&AspectValue>) -> Result<(), E>,
-    ) -> Result<(), worth_relational_branch::internal_port::visibility::materialization::read_records::read_stop::ReadStop<E>>{
+    ) -> Result<(), worth_relational_contracts::internal_port::execution::request_or::RequestOr<E>>
+    {
         crate::contracts::execution::request_custody::check_request(execution)
-            .map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Request)?;
         if !self.projection.is_exact_basis() {
             return self.try_for_each_relation(execution, kind, before, |record| {
                 visit(
@@ -108,7 +109,7 @@ impl IndexProjectionSource<'_> {
                 .reconstruction
                 .map(|lane| root.reconstruct_region_head(lane, execution, partition_id))
                 .transpose()
-                .map_err(|failure| ReadStop::Request(failure.into()))?
+                .map_err(|failure| RequestOr::Request(failure.into()))?
                 .flatten();
             let serving;
             let partition = if let Some(head) = &reconstructed {
@@ -116,9 +117,9 @@ impl IndexProjectionSource<'_> {
             } else {
                 self.projection
                     .demand_regions_head(execution, [partition_id])
-                    .map_err(ReadStop::Request)?;
+                    .map_err(RequestOr::Request)?;
                 serving = self.projection.admitted_head_region(partition_id).ok_or_else(|| {
-                    ReadStop::Request(crate::contracts::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded)
+                    RequestOr::Request(crate::contracts::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded)
                 })?;
                 serving
             };
@@ -126,18 +127,18 @@ impl IndexProjectionSource<'_> {
             let slots = partition
                 .relation_arena()
                 .try_live_slots(|_navigation, bytes| {
-                    before(0, bytes).map_err(ReadStop::Admission)?;
+                    before(0, bytes).map_err(RequestOr::Inner)?;
                     navigation_bytes = bytes;
                     Ok(())
                 })?;
             for slot in slots {
                 crate::contracts::execution::request_custody::check_request(execution)
-                    .map_err(ReadStop::Request)?;
+                    .map_err(RequestOr::Request)?;
                 before(
                     worth_relational_branch::internal_port::visibility::materialization::read_records::read_prices::KEYED_RECORD,
                     navigation_bytes,
                 )
-                .map_err(ReadStop::Admission)?;
+                .map_err(RequestOr::Inner)?;
                 let Some(record) = partition.relation_arena().get_slot(slot) else {
                     continue;
                 };
@@ -151,10 +152,10 @@ impl IndexProjectionSource<'_> {
                         field,
                     ),
                 )
-                .map_err(ReadStop::Admission)?;
+                .map_err(RequestOr::Inner)?;
             }
             // The slot iterator has dropped; release only its temporary backing.
-            before(0, 0).map_err(ReadStop::Admission)?;
+            before(0, 0).map_err(RequestOr::Inner)?;
         }
         Ok(())
     }

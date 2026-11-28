@@ -1,6 +1,5 @@
 //! Closed preflight of an external native-only verb against actual current custody.
 use worth_relational_contracts::internal_port as contracts;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_branch::internal_port::publication::ownership::observation::{CurrentOwnershipContactsForTest, CurrentOwnershipContactsForTestOwnerPort as _};
 use worth_relational_branch::internal_port::branch::basis::{AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _};
 use contracts::schema::data::RelationalSchemaRegistryFieldsPort as _;
@@ -13,6 +12,7 @@ use contracts::transactions::data::outcomes::transaction_commit_error::Transacti
 use contracts::transactions::data::primitives::EntityReference;
 use contracts::transactions::data::primitives::RecordRef;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 pub fn probe_coherent_ownership_loss(
     execution: &ExecutionRequest<'_, '_>,
     basis: &AdmittedRelationalBranchBasis,

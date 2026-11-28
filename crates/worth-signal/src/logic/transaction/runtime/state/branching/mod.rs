@@ -1,5 +1,6 @@
 mod advancement;
 mod basis;
+#[cfg(test)]
 mod basis_canonical;
 mod basis_definition;
 mod basis_readmission;
@@ -33,13 +34,15 @@ pub use crate::branch::{
 #[cfg(test)]
 pub use basis::{
     bridge_signal_branch_basis_trust_boundary, BoundaryBridgedSignalBranchBasisArtifact,
+    SignalBranchBasisValidationOutcome, StaleSignalBranchBasisArtifact,
 };
 pub use basis::{
     SignalBranchBasis, SignalBranchBasisArtifact, SignalBranchBasisDenial,
-    SignalBranchBasisIdentity, SignalBranchBasisReady, SignalBranchBasisValidationOutcome,
-    SignalBranchHeadPosture, SignalBranchRestorePosture, StaleSignalBranchBasisArtifact,
+    SignalBranchBasisIdentity, SignalBranchBasisReady,
+    SignalBranchHeadPosture, SignalBranchRestorePosture,
     SIGNAL_BRANCH_BASIS_SCHEMA_VERSION,
 };
+#[cfg(test)]
 pub use basis_canonical::SignalBranchBasisCompactExplanation;
 pub(in crate::logic::transaction::runtime) use basis_definition::signal_definition_basis_from_registry;
 pub(in crate::logic::transaction::runtime) use branches::BranchAncestryState;

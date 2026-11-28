@@ -13,7 +13,8 @@
 //! not resident at capture, so a chunk commits to no history versions and its
 //! history summary is empty.
 use serde::Serialize;
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use worth_relational_contracts::internal_port::durability::artifact_payload_emission::digest::Sha256Sink;
 
 use super::cold_member_port::CollectedMembers;
 use super::member_io::ChunkMemberSink;
@@ -242,7 +243,7 @@ fn head_version<K: WireKind>(
         meta: Meta::<K>(&rows[last]),
         extra: Extra::<K>(&arena.extra[physical]),
     };
-    let mut digest = DigestWriter(Sha256::new());
+    let mut digest = Sha256Sink::default();
     rmp_serde::encode::write(&mut digest, &row).map_err(|_| Cause::Damaged)?;
     let mut payload = arena.generations[physical].to_be_bytes().to_vec();
     payload.extend_from_slice(&digest.0.finalize());
@@ -270,16 +271,5 @@ struct Extra<'a, K: WireKind>(&'a K::Extra);
 impl<K: WireKind> Serialize for Extra<'_, K> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         K::serialize_extra(self.0, serializer)
-    }
-}
-
-struct DigestWriter(Sha256);
-impl std::io::Write for DigestWriter {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        self.0.update(bytes);
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
     }
 }

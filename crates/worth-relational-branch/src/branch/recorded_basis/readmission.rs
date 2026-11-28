@@ -51,22 +51,3 @@ impl RelationalBranchBasisDescriptor {
         ))
     }
 }
-
-#[doc(hidden)]
-pub trait RelationalBranchBasisDescriptorOwnerPort: Sized {
-    fn bind_readmitted_root(
-        &self,
-        runtime_instance_id: u64,
-        root: &RelationalBranchRoot,
-    ) -> Result<Self, RelationalBranchBasisDenial>;
-}
-
-impl RelationalBranchBasisDescriptorOwnerPort for RelationalBranchBasisDescriptor {
-    fn bind_readmitted_root(
-        &self,
-        runtime_instance_id: u64,
-        root: &RelationalBranchRoot,
-    ) -> Result<Self, RelationalBranchBasisDenial> {
-        self.bind_readmitted_root(runtime_instance_id, root)
-    }
-}

@@ -189,7 +189,7 @@ impl VisibilityProjectionView {
                 include_audit: false,
             },
         )?;
-        use super::super::native_scan_stop::NativeScanStop;
+        use worth_relational_contracts::internal_port::execution::request_or::RequestOr;
         crate::execution::request_custody::check_request(execution)?;
         super::super::read_work::scan_with_memory(
             execution,
@@ -201,16 +201,16 @@ impl VisibilityProjectionView {
                     &mut |units, examined, reserved| {
                         if maximum_work_units.is_some_and(|maximum| examined + reserved >= maximum)
                         {
-                            return Err(NativeScanStop::Limit(
-                                AdjacencyTruthReadLimitExceeded::new(examined, reserved),
-                            ));
+                            return Err(RequestOr::Inner(AdjacencyTruthReadLimitExceeded::new(
+                                examined, reserved,
+                            )));
                         }
                         crate::execution::request_custody::check_request(execution)
-                            .map_err(NativeScanStop::Request)?;
-                        admit_work(units).map_err(NativeScanStop::Request)
+                            .map_err(RequestOr::Request)?;
+                        admit_work(units).map_err(RequestOr::Request)
                     },
                     memory,
-                    &NativeScanStop::Request,
+                    &RequestOr::Request,
                 )
             },
             |read| read.owned_bytes(),
@@ -249,16 +249,16 @@ impl VisibilityProjectionView {
                     &mut |units, examined, reserved| {
                         if maximum_work_units.is_some_and(|maximum| examined + reserved >= maximum)
                         {
-                            return Err(super::super::native_scan_stop::NativeScanStop::Limit(
+                            return Err(worth_relational_contracts::internal_port::execution::request_or::RequestOr::Inner(
                                 AdjacencyTruthReadLimitExceeded::new(examined, reserved),
                             ));
                         }
                         context
                             .checkpoint(units)
-                            .map_err(super::super::native_scan_stop::NativeScanStop::request)
+                            .map_err(worth_relational_contracts::internal_port::execution::request_or::RequestOr::from_kernel_stop)
                     },
                     memory,
-                    &super::super::native_scan_stop::NativeScanStop::Request,
+                    &worth_relational_contracts::internal_port::execution::request_or::RequestOr::Request,
                 )
             },
             |read| read.owned_bytes(),

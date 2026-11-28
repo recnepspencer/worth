@@ -199,14 +199,3 @@ fn require_materialization_posture(origin: &CanonicalRequiredOutputOrigin) -> Re
     }
     Ok(())
 }
-
-#[doc(hidden)]
-pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
-    fn is_unmerged_output_publication_step(&self) -> bool;
-}
-
-impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
-    fn is_unmerged_output_publication_step(&self) -> bool {
-        self.is_unmerged_output_publication_step()
-    }
-}

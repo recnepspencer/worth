@@ -5,7 +5,7 @@ use contracts::durability::data::recovery_stop::RelationalRecoveryStop;
 use sha2::{Digest, Sha256};
 use worth_execution::ExecutionRequest;
 use worth_relational_branch::internal_port::history::commit::payload_commitment::writer::{
-    in_context, CommitmentWriter,
+    in_context, write_commitment,
 };
 use worth_relational_contracts::internal_port as contracts;
 
@@ -17,11 +17,12 @@ impl CanonicalInputDigestPrefix {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, RelationalRecoveryStop> {
         in_context(request, |context| {
-            let mut writer = CommitmentWriter::new(Sha256::new(), context);
-            writer.bytes(&[0x84])?;
-            writer.value(&"result_image")?;
-            writer.value(&image)?;
-            Ok(Self(writer.hash))
+            write_commitment(Sha256::new(), context, |sink| {
+                sink.bytes(&[0x84])?;
+                sink.value(&"result_image")?;
+                sink.value(&image)
+            })
+            .map(Self)
         })
     }
     pub(crate) fn finish(
@@ -32,14 +33,15 @@ impl CanonicalInputDigestPrefix {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<[u8; 32], RelationalRecoveryStop> {
         in_context(request, |context| {
-            let mut writer = CommitmentWriter::new(self.0.clone(), context);
-            writer.value(&"prestate_schema")?;
-            writer.value(&prestate)?;
-            writer.value(&"result_schema")?;
-            writer.value(&result)?;
-            writer.value(&"mutation")?;
-            writer.value(mutation)?;
-            Ok(writer.hash.finalize().into())
+            let hash = write_commitment(self.0.clone(), context, |sink| {
+                sink.value(&"prestate_schema")?;
+                sink.value(&prestate)?;
+                sink.value(&"result_schema")?;
+                sink.value(&result)?;
+                sink.value(&"mutation")?;
+                sink.value(mutation)
+            })?;
+            Ok(hash.finalize().into())
         })
     }
 }
@@ -49,8 +51,7 @@ pub(crate) fn position_leaf(
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<[u8; 32], RelationalRecoveryStop> {
     in_context(request, |context| {
-        let mut writer = CommitmentWriter::new(Sha256::new(), context);
-        writer.value(&position)?;
-        Ok(writer.hash.finalize().into())
+        let hash = write_commitment(Sha256::new(), context, |sink| sink.value(&position))?;
+        Ok(hash.finalize().into())
     })
 }

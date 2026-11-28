@@ -28,7 +28,7 @@ pub(super) fn validate(
         runtime.input.projection.symbols,
         [id.partition_id],
     )
-    .map_err(|failure| super::super::request(failure))?;
+    .map_err(super::super::request)?;
     let kind = root
         .partition_state(id.partition_id)?
         .and_then(|partition| partition.entity_arena.get(&id))

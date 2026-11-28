@@ -50,14 +50,3 @@ impl RelationalBranchBasisDescriptor {
 #[cfg(test)]
 #[path = "canonical_runtime_frame_tests.rs"]
 mod tests;
-
-#[doc(hidden)]
-pub trait RelationalBranchBasisDescriptorOwnerPort: Sized {
-    fn in_canonical_frame(&self) -> Result<Self, RelationalBranchObservationConstructionDenial>;
-}
-
-impl RelationalBranchBasisDescriptorOwnerPort for RelationalBranchBasisDescriptor {
-    fn in_canonical_frame(&self) -> Result<Self, RelationalBranchObservationConstructionDenial> {
-        self.in_canonical_frame()
-    }
-}

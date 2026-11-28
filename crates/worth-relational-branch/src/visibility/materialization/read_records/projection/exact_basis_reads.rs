@@ -172,11 +172,13 @@ impl<'view> ExactProjectionReader<'view> {
     }
 }
 fn unbounded_stop<L>(
-    stop: super::super::native_scan_stop::NativeScanStop<L>,
+    stop: worth_relational_contracts::internal_port::execution::request_or::RequestOr<L>,
 ) -> crate::execution::denial_cause::RelationalExecutionDenialCause {
     match stop {
-        super::super::native_scan_stop::NativeScanStop::Request(cause) => cause,
-        super::super::native_scan_stop::NativeScanStop::Limit(_) => {
+        worth_relational_contracts::internal_port::execution::request_or::RequestOr::Request(
+            cause,
+        ) => cause,
+        worth_relational_contracts::internal_port::execution::request_or::RequestOr::Inner(_) => {
             crate::execution::denial_cause::RelationalExecutionDenialCause::WorkExhausted
         }
     }

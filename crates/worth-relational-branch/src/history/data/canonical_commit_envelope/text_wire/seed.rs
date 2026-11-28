@@ -166,14 +166,6 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                     }
                     retired_strategy_slot = true;
                 }
-                "merge_execution_authority" => {
-                    if map.next_value::<Option<serde::de::IgnoredAny>>()?.is_some() {
-                        return Err(M::Error::custom("legacy merge authority is retired"));
-                    }
-                }
-                "merge_parent_branches" | "merge_base_commits" => {
-                    map.next_value::<[serde::de::IgnoredAny; 0]>()?;
-                }
                 "schema_version" => {
                     if schema_version.is_some() {
                         return Err(M::Error::duplicate_field("schema_version"));
@@ -279,7 +271,6 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
             return Err(M::Error::missing_field("strategy_artifacts"));
         }
         Ok(CanonicalEnvelopeWire {
-            artifact_format: worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat::Ordinary,
             index_definition_delta: index_definition_delta
                 .ok_or_else(|| M::Error::missing_field("index_definition_delta"))?,
             semantic_result: semantic_result

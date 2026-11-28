@@ -30,25 +30,3 @@ impl CanonicalCommitEnvelopeBody {
             .filter(move |change| &change.record.target == target)
     }
 }
-
-#[doc(hidden)]
-pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
-    fn committed_record_changes(&self) -> impl Iterator<Item = CommittedRecordChange<'_>>;
-    fn committed_record_changes_for_target<'a>(
-        &'a self,
-        target: &'a RecordRef,
-    ) -> impl Iterator<Item = CommittedRecordChange<'a>> + 'a;
-}
-
-impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
-    fn committed_record_changes(&self) -> impl Iterator<Item = CommittedRecordChange<'_>> {
-        self.committed_record_changes()
-    }
-
-    fn committed_record_changes_for_target<'a>(
-        &'a self,
-        target: &'a RecordRef,
-    ) -> impl Iterator<Item = CommittedRecordChange<'a>> + 'a {
-        self.committed_record_changes_for_target(target)
-    }
-}

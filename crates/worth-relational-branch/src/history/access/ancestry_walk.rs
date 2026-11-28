@@ -96,3 +96,65 @@ pub fn common_ancestor(
         .copied()
         .max_by_key(|commit_id| commit_id.0)
 }
+
+/// Iterative Euler traversal of an already qualified, parent-first forest.
+/// The caller retains responsibility for validating the graph's edges.
+pub fn ancestry_intervals<N: Clone + Ord, Edge: Copy>(
+    roots: &BTreeSet<N>,
+    children: &std::collections::BTreeMap<N, Vec<(N, Edge)>>,
+    mut enter: impl FnMut(&N, Option<(&N, Edge)>),
+) -> std::collections::BTreeMap<N, (u32, u32)> {
+    enum Visit<N, Edge> {
+        Enter(N, Option<(N, Edge)>),
+        Exit(N),
+    }
+    let mut intervals = std::collections::BTreeMap::<N, (u32, u32)>::new();
+    let mut timer = 0;
+    let mut pending: Vec<_> = roots
+        .iter()
+        .rev()
+        .map(|root| Visit::Enter(root.clone(), None))
+        .collect();
+    while let Some(visit) = pending.pop() {
+        match visit {
+            Visit::Exit(node) => intervals.get_mut(&node).expect("node was entered").1 = timer,
+            Visit::Enter(node, parent) => {
+                if intervals.contains_key(&node) {
+                    continue;
+                }
+                timer += 1;
+                intervals.insert(node.clone(), (timer, timer));
+                enter(&node, parent.as_ref().map(|(parent, edge)| (parent, *edge)));
+                pending.push(Visit::Exit(node.clone()));
+                if let Some(children) = children.get(&node) {
+                    pending.extend(children.iter().rev().map(|(child, edge)| {
+                        Visit::Enter(child.clone(), Some((node.clone(), *edge)))
+                    }));
+                }
+            }
+        }
+    }
+    intervals
+}
+
+/// Follow a caller-defined chain with a shared seen set. Meter each actual
+/// arrival, including a repeated node, before examining or extending the chain.
+pub fn walk_acyclic_chain<N: Clone + Ord, T, E>(
+    start: N,
+    visited: &mut BTreeSet<N>,
+    mut charge_visit: impl FnMut() -> Result<(), E>,
+    mut step: impl FnMut(N) -> Result<std::ops::ControlFlow<T, N>, E>,
+) -> Result<Option<T>, E> {
+    use std::ops::ControlFlow;
+    let mut current = start;
+    loop {
+        charge_visit()?;
+        if !visited.insert(current.clone()) {
+            return Ok(None);
+        }
+        match step(current)? {
+            ControlFlow::Break(result) => return Ok(Some(result)),
+            ControlFlow::Continue(next) => current = next,
+        }
+    }
+}

@@ -148,6 +148,7 @@ impl DurabilitySubsystem {
 
     /// Every durable envelope, shared rather than copied, so scans never hold
     /// the subsystem lock while they read.
+    #[cfg(test)]
     pub(crate) fn log(&self) -> Vec<Arc<PositionedCanonicalCommit>> {
         self.canonical_coverage().log()
     }

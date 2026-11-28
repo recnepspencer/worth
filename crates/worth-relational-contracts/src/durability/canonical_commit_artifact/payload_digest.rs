@@ -46,10 +46,9 @@ impl std::fmt::Debug for RelationalCanonicalCommitArtifactDigest {
     }
 }
 
-pub enum RequestDigestDenial {
-    Frame(crate::durability::canonical_commit_artifact::frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal),
-    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
-}
+pub type RequestDigestDenial = crate::execution::request_or::RequestOr<
+    super::frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal,
+>;
 
 fn payload_leaves(
     payload: &[u8],
@@ -125,7 +124,7 @@ impl RelationalCanonicalCommitArtifactDigestOwnerPort for RelationalCanonicalCom
         payload: &[u8],
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<Self, RequestDigestDenial> {
-        let fields = payload_leaves(payload).map_err(RequestDigestDenial::Frame)?;
+        let fields = payload_leaves(payload).map_err(RequestDigestDenial::Inner)?;
         let mut leaves = [[0; 32]; 3];
         for (field, leaf) in fields.iter().zip(leaves.iter_mut()) {
             let mut hash = Sha256::new();

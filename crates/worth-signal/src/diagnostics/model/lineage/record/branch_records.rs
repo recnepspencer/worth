@@ -1,6 +1,6 @@
 use super::{LineageRecord, LineageRecordKind};
 
-use crate::state::{SignalBranchId, SignalSnapshotId};
+use crate::state::SignalBranchId;
 
 impl LineageRecord {
     pub fn branch_fork(

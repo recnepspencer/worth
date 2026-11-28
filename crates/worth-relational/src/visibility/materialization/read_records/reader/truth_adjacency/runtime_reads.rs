@@ -1,4 +1,5 @@
 //! Select the installed read operands before handing off to the read implementation.
+use worth_relational_contracts::internal_port::execution::request_or::RequestOr;
 use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::truth_adjacency::BoundedAdjacencyTruthReadFieldsPort as _;
 use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::truth_adjacency::AdjacencyTruthReadLimitExceededOwnerPort as _;
 use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::truth_adjacency::BoundedAdjacencyTruthReadOwnerPort as _;
@@ -78,20 +79,16 @@ impl VisibilityReadContext<'_> {
                             AdjacencyDirection::Outgoing,
                             &mut |units, examined, reserved| {
                                 if examined + reserved == maximum_work_units {
-                                    return Err(
-                                        super::super::super::native_scan_stop::NativeScanStop::Limit(
-                                            AdjacencyTruthReadLimitExceeded::new(
-                                                examined, reserved,
-                                            ),
-                                        ),
-                                    );
+                                    return Err(RequestOr::Inner(
+                                        AdjacencyTruthReadLimitExceeded::new(examined, reserved),
+                                    ));
                                 }
-                                context.checkpoint(units).map_err(
-                                    super::super::super::native_scan_stop::NativeScanStop::request,
-                                )
+                                context
+                                    .checkpoint(units)
+                                    .map_err(RequestOr::from_kernel_stop)
                             },
                             memory,
-                            &super::super::super::native_scan_stop::NativeScanStop::Request,
+                            &RequestOr::Request,
                         )
                     },
                     |read| super::super::super::read_footprint::relations(read.owner_records()),
@@ -171,20 +168,16 @@ impl VisibilityReadContext<'_> {
                             AdjacencyDirection::Incoming,
                             &mut |units, examined, reserved| {
                                 if examined + reserved == maximum_work_units {
-                                    return Err(
-                                        super::super::super::native_scan_stop::NativeScanStop::Limit(
-                                            AdjacencyTruthReadLimitExceeded::new(
-                                                examined, reserved,
-                                            ),
-                                        ),
-                                    );
+                                    return Err(RequestOr::Inner(
+                                        AdjacencyTruthReadLimitExceeded::new(examined, reserved),
+                                    ));
                                 }
-                                context.checkpoint(units).map_err(
-                                    super::super::super::native_scan_stop::NativeScanStop::request,
-                                )
+                                context
+                                    .checkpoint(units)
+                                    .map_err(RequestOr::from_kernel_stop)
                             },
                             memory,
-                            &super::super::super::native_scan_stop::NativeScanStop::Request,
+                            &RequestOr::Request,
                         )
                     },
                     |read| super::super::super::read_footprint::relations(read.owner_records()),

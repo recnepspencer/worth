@@ -55,8 +55,8 @@ pub fn execute_leased_scan_fragment(
                     Ok(())
                 },
             ).map_err(|stop| match stop {
-                crate::visibility::materialization::read_records::read_stop::ReadStop::Admission(stop) => stop,
-                crate::visibility::materialization::read_records::read_stop::ReadStop::Request(cause) => MapKernelFailure::Domain(QueryReadPacketDenial::ReadRequest(cause)),
+                worth_relational_contracts::internal_port::execution::request_or::RequestOr::Inner(stop) => stop,
+                worth_relational_contracts::internal_port::execution::request_or::RequestOr::Request(cause) => MapKernelFailure::Domain(QueryReadPacketDenial::ReadRequest(cause)),
             })?;
         (target_count, usize::from(!entities.is_empty()))
     } else if let Some((partition_id, kind_id, target_count)) = relation_scan_scope(work) {
@@ -84,8 +84,8 @@ pub fn execute_leased_scan_fragment(
                     Ok(())
                 },
             ).map_err(|stop| match stop {
-                crate::visibility::materialization::read_records::read_stop::ReadStop::Admission(stop) => stop,
-                crate::visibility::materialization::read_records::read_stop::ReadStop::Request(cause) => MapKernelFailure::Domain(QueryReadPacketDenial::ReadRequest(cause)),
+                worth_relational_contracts::internal_port::execution::request_or::RequestOr::Inner(stop) => stop,
+                worth_relational_contracts::internal_port::execution::request_or::RequestOr::Request(cause) => MapKernelFailure::Domain(QueryReadPacketDenial::ReadRequest(cause)),
             })?;
         (target_count, usize::from(!relations.is_empty()))
     } else {

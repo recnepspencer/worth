@@ -2,7 +2,6 @@
 use worth_relational_contracts::internal_port as contracts;
 use super::*;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::wire_projection::EnvelopeProjection;
-use contracts::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat;
 use contracts::history::data::canonical_record_allocation::{
     CancelledRecordAllocation, CanonicalRecordAllocation,
 };
@@ -11,7 +10,6 @@ use contracts::symbols::data::symbol::Symbol;
 pub(in super::super) fn quote(
     payload: &[u8],
     request: &ExecutionRequest<'_, '_>,
-    format: CanonicalCommitArtifactFormat,
 ) -> Result<DecodedQuote, Refusal> {
     let mut result = None;
     let mut seen = 0_u8;
@@ -30,12 +28,7 @@ pub(in super::super) fn quote(
             result = Some(canonical(
                 value,
                 request,
-                match format {
-                    CanonicalCommitArtifactFormat::Ordinary => EnvelopeProjection::Authoritative,
-                    CanonicalCommitArtifactFormat::LegacyMergeCapable => {
-                        EnvelopeProjection::LegacyAuthoritative
-                    }
-                },
+                EnvelopeProjection::Authoritative,
             )?);
         }
         Ok(())
@@ -54,7 +47,6 @@ pub(in super::super) fn canonical(
     result.control = worth_relational_branch::internal_port::history::data::canonical_commit_envelope::control_allocation::CanonicalEnvelopeControlAllocation::allocation_bytes()
         .ok_or_else(malformed)?;
     let mut seen = 0_u64;
-    let mut unexpected_legacy_slot = false;
     value.fields(request, |field, value| {
         let Some(index) = FIELDS.iter().position(|expected| *expected == field) else {
             // The old checkpoint wire ignored unknown fields. Its slice-backed
@@ -96,13 +88,6 @@ pub(in super::super) fn canonical(
             )?,
             "authority_kind" => result.selection = super::cascades::authority(value, request)?,
             "semantic_result" => result.semantic = super::semantic::quote(value, request)?,
-            "merge_execution_authority" | "merge_parent_branches" | "merge_base_commits" => {
-                require_retired_merge_slot_empty(field, value, request)?;
-                unexpected_legacy_slot |= !matches!(
-                    projection,
-                    EnvelopeProjection::LegacyAuthoritative | EnvelopeProjection::Checkpoint
-                );
-            }
             "index_definition_delta" => result.index_delta = super::indexes::delta(value, request)?,
             "authored_index_writes" => {
                 result.index_writes = super::indexes::authored(value, request)?
@@ -120,61 +105,7 @@ pub(in super::super) fn canonical(
         }
         Ok(())
     })?;
-    if unexpected_legacy_slot {
-        return Err(Refusal::NonCanonicalPayload);
-    }
     Ok(result)
-}
-
-fn require_retired_merge_slot_empty(
-    field: &str,
-    value: BorrowedPayload<'_>,
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<(), Refusal> {
-    if field == "merge_execution_authority" {
-        return if value.is_none() {
-            Ok(())
-        } else {
-            Err(Refusal::LegacyMergeArtifactRetired)
-        };
-    }
-    value.elements(request, |_| Err(Refusal::LegacyMergeArtifactRetired))?;
-    Ok(())
-}
-
-#[test]
-fn populated_legacy_merge_slots_refuse_before_deserialization() {
-    let host = worth_harness::facade::execution_fixture::serial_request();
-    let request = ExecutionRequest::serial(&host);
-    let absent_authority = rmp_serde::to_vec_named(&Option::<u64>::None).unwrap();
-    let present_authority = rmp_serde::to_vec_named(&Some(7_u64)).unwrap();
-    let empty_coordinates = rmp_serde::to_vec_named(&[0_u64; 0]).unwrap();
-    let present_coordinates = rmp_serde::to_vec_named(&[7_u64]).unwrap();
-    for (field, ordinary, merge) in [
-        (
-            "merge_execution_authority",
-            &absent_authority,
-            &present_authority,
-        ),
-        (
-            "merge_parent_branches",
-            &empty_coordinates,
-            &present_coordinates,
-        ),
-        (
-            "merge_base_commits",
-            &empty_coordinates,
-            &present_coordinates,
-        ),
-    ] {
-        assert!(
-            require_retired_merge_slot_empty(field, BorrowedPayload(ordinary), &request).is_ok()
-        );
-        assert!(matches!(
-            require_retired_merge_slot_empty(field, BorrowedPayload(merge), &request),
-            Err(Refusal::LegacyMergeArtifactRetired)
-        ));
-    }
 }
 
 fn field_allocation(
@@ -221,10 +152,7 @@ fn field_allocation(
         // Rejecting nonempty input BEFORE decode agrees with its existing exact
         // canonical re-encoding predicate, never accepting cache/diagnostic data.
         "diagnostics_summary" => {
-            if matches!(
-                projection,
-                EnvelopeProjection::Authoritative | EnvelopeProjection::LegacyAuthoritative
-            ) {
+            if matches!(projection, EnvelopeProjection::Authoritative) {
                 require_empty(value, request, "entries")?;
                 OwnerAllocation::default()
             } else {
@@ -254,7 +182,7 @@ fn require_empty(
         Ok(())
     })
 }
-const FIELDS: [&str; 37] = [
+const FIELDS: [&str; 34] = [
     "content",
     "coupled_authored_publication",
     "historical_output_selection",
@@ -273,9 +201,6 @@ const FIELDS: [&str; 37] = [
     "branch_cell_checkpoint",
     "authority_kind",
     "strategy_artifacts",
-    "merge_execution_authority",
-    "merge_parent_branches",
-    "merge_base_commits",
     "schema_version",
     "schema_authority",
     "merged_plan",

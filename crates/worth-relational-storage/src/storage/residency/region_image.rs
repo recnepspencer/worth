@@ -295,7 +295,7 @@ mod version_tests {
             b"WORTH-REL-REG+8\n",
             b"WORTH-REL-REG+7\n",
             b"WORTH-REL-REG07\n",
-            b"WORTH-REL-CHK24\n",
+            b"WORTH-REL-CHK25\n",
             b"",
         ] {
             let bytes = [frame, &[0; 40]].concat();

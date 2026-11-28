@@ -2,7 +2,9 @@ use crate::branch::{
     AdmittedRelationalForkSourceBasis, RelationalBranchTransitionStop,
     RelationalForkSourceDescriptor,
 };
-use crate::history::data::{BranchCreateError, BranchId};
+#[cfg(test)]
+use crate::history::data::BranchCreateError;
+use crate::history::data::BranchId;
 use crate::history::HistoryAuthority;
 use crate::runtime::RelationalRuntime;
 
@@ -74,6 +76,7 @@ impl HistoryAuthority<'_> {
     /// In-crate compatibility adapter for replay and preservation callers.
     /// It observes an owner fork token and delegates to `fork_branch`; it is
     /// not a public currentness door and is not a second fork authority.
+    #[cfg(test)]
     pub(crate) fn fork_branch_from(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

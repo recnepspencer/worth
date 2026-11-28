@@ -1,7 +1,7 @@
 //! Admit the exact framed body against its installed commit-index row.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::VerifiedCanonicalCommitFrame;
 use branch::history::commit::index_entry::RelationalCommitIndexEntry;
-use branch::history::data::association_discovery::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use branch::history::data::positioned_canonical_commit::PositionedCanonicalCommit;
 use contracts::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal as Refusal;
 use contracts::durability::data::recovery_stop::RelationalRecoveryStop;
@@ -27,12 +27,6 @@ impl VerifiedCanonicalCommitFrame {
                 Refusal::Content(cause) => cause.into(),
                 Refusal::FieldText(cause) => {
                     contracts::symbols::data::field_text::field_text_recovery_stop(cause)
-                }
-                Refusal::LegacyMergeArtifactRetired => {
-                    crate::durability::medium_recovery_readmission::artifact_refusal_stop(
-                        entry.position.0,
-                        error,
-                    )
                 }
                 _ => RelationalStorageUnavailable {
                     subject: RelationalStorageSubject::Envelope(entry.position),

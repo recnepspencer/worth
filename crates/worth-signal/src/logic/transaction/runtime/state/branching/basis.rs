@@ -1,11 +1,13 @@
 mod retained_charge;
 
+#[cfg(test)]
 use std::convert::Infallible;
 
 use serde::{Deserialize, Serialize};
+#[cfg(test)]
+use worth_proof::{StaleReadableBasis, TransitionOutcome};
 use worth_proof::{
     Artifact, AssumptionBasis, CurrentValidity, FreshnessScopedBasis, PhaseMarker,
-    StaleReadableBasis, TransitionOutcome,
 };
 
 use crate::branch::{
@@ -187,46 +189,57 @@ impl SignalBranchBasis {
         }
     }
 
+    #[cfg(test)]
     pub fn schema_version(&self) -> &str {
         &self.schema_version
     }
 
+    #[cfg(test)]
     pub fn branch_id(&self) -> SignalBranchId {
         self.branch_id
     }
 
+    #[cfg(test)]
     pub fn branch_name(&self) -> &str {
         &self.branch_name
     }
 
+    #[cfg(test)]
     pub fn snapshot_id(&self) -> Option<SignalSnapshotId> {
         self.snapshot_id
     }
 
+    #[cfg(test)]
     pub fn head_posture(&self) -> &SignalBranchHeadPosture {
         &self.head_posture
     }
 
+    #[cfg(test)]
     pub fn restore_posture(&self) -> &SignalBranchRestorePosture {
         &self.restore_posture
     }
 
+    #[cfg(test)]
     pub fn branch_component_digest(&self) -> &str {
         &self.branch_component_digest
     }
 
+    #[cfg(test)]
     pub fn snapshot_component_digest(&self) -> &str {
         &self.snapshot_component_digest
     }
 
+    #[cfg(test)]
     pub fn head_component_digest(&self) -> &str {
         &self.head_component_digest
     }
 
+    #[cfg(test)]
     pub fn restore_component_digest(&self) -> &str {
         &self.restore_component_digest
     }
 
+    #[cfg(test)]
     pub fn basis_digest(&self) -> &str {
         &self.basis_digest
     }
@@ -284,6 +297,7 @@ impl BoundaryBridgedSignalBranchBasisArtifact {
     }
 }
 
+#[cfg(test)]
 pub type StaleSignalBranchBasisArtifact = Artifact<
     SignalBranchBasisReady,
     SignalBranchBasis,
@@ -291,6 +305,7 @@ pub type StaleSignalBranchBasisArtifact = Artifact<
     StaleReadableBasis<SignalBranchBasisIdentity>,
 >;
 
+#[cfg(test)]
 pub type SignalBranchBasisValidationOutcome = TransitionOutcome<
     SignalBranchBasisArtifact,
     SignalBranchBasisDenial,

@@ -2,9 +2,8 @@
 use super::*;
 use crate::durability::canonical_commit_artifact::journal_source_read::readmit_journal_commit;
 use contracts::history::data::coordinates::CommitId;
-use worth_relational_branch::internal_port::branch::recorded_basis::{
-    RecordedRelationalComponentReferenceOwnerPort as _, RecordedRelationalComponentTarget as Target,
-};
+use worth_relational_branch::internal_port::branch::recorded_basis::RecordedRelationalComponentReferenceOwnerPort as _;
+use worth_relational_branch::internal_port::branch::recorded_basis::RecordedRelationalComponentTarget as Target;
 use worth_relational_branch::internal_port::branch::root::commit_evidence::RelationalRootCommitEvidence;
 use worth_relational_branch::internal_port::history::commit::retained_index::RetainedCanonicalIndex;
 use worth_relational_contracts::internal_port as contracts;

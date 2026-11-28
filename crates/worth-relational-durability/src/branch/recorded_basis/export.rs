@@ -5,11 +5,11 @@ use worth_foundational::FoundationalBranchTarget;
 use worth_relational_branch::internal_port::branch::basis::{
     AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _,
 };
-use worth_relational_branch::internal_port::branch::recorded_basis::copying::RecordedRelationalComponentReferenceOwnerPort as _;
+use worth_relational_branch::internal_port::branch::recorded_basis::RecordedRelationalComponentReferenceOwnerPort as _;
 use worth_relational_branch::internal_port::branch::recorded_basis::{
     copying, RecordedRelationalComponentReference,
 };
-use worth_relational_branch::internal_port::history::data::association_discovery::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_branch::internal_port::runtime::state::subsystems::history::HistorySubsystem;
 use worth_relational_contracts::internal_port as contracts;
 

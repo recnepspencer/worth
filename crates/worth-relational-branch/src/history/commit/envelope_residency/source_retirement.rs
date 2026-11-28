@@ -4,11 +4,7 @@ use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Ack;
 use crate::storage::data::directory_source_edge::NativeDirectoryRetirementHandoff;
 impl RelationalCommitEnvelopeResidency {
     fn try_source_state(&self) -> Result<std::sync::MutexGuard<'_, EnvelopeState>, Ack> {
-        match self.state.try_lock() {
-            Ok(state) => Ok(state),
-            Err(std::sync::TryLockError::Poisoned(error)) => Ok(error.into_inner()),
-            Err(std::sync::TryLockError::WouldBlock) => Err(Ack::Busy),
-        }
+        worth_execution::try_retirement_guard(self.state.try_lock(), Ack::Busy)
     }
     pub fn preflight_source_retirement(
         &self,

@@ -11,8 +11,10 @@ use crate::state::{SignalBranchHandle, SignalSnapshotV1};
 use super::super::runtime_state::SignalRuntime;
 use super::basis::{
     materialize_branch_basis, SignalBranchBasisArtifact, SignalBranchBasisDenial,
-    SignalBranchBasisIdentity, SignalBranchBasisValidationOutcome,
+    SignalBranchBasisIdentity,
 };
+#[cfg(test)]
+use super::basis::SignalBranchBasisValidationOutcome;
 use super::basis_definition::signal_definition_basis;
 
 impl<D, I, E, Ctx, T> SignalRuntime<D, I, E, Ctx, T>
@@ -135,6 +137,7 @@ where
         ))
     }
 
+    #[cfg(test)]
     pub(crate) fn validate_branch_basis_artifact(
         &mut self,
         basis: SignalBranchBasisArtifact,

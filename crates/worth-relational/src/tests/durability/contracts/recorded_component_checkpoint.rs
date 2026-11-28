@@ -6,7 +6,7 @@ use crate::facade::mvcc::RelationalCallerAssociation as Association;
 use crate::tests::support::*;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
-use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis_descriptor_owner::RelationalBranchBasisDescriptorOwnerPort as _;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
 use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
 
@@ -352,7 +352,7 @@ fn recorded_component_checkpoint_refuses_chk15_before_source_admission() {
         expect_durability_failure(stop).class,
         crate::durability::data::RecoveryFailureClass::UnsupportedCheckpointVersion {
             found: 15,
-            supported: 24,
+            supported: 25,
         }
     );
 }

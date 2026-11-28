@@ -1,4 +1,5 @@
 //! Authored endpoint intent gates canonical full-generation membership effects.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use branch::history::access::relevant_writes::generation::AuthoredWriteGeneration;
 use branch::history::access::relevant_writes::posting_key::AuthoredWritePostingKey;
 use branch::history::access::relevant_writes::selection::RelationalAuthoredWriteSelector as Key;
@@ -6,7 +7,6 @@ use branch::history::access::relevant_writes::RelationalAuthoredWriteDenial as D
 use branch::history::data::canonical_commit_envelope::descriptive_touches::RelationalDescriptiveTouch as Touch;
 use branch::history::data::canonical_commit_envelope::descriptive_touches::RelationalTouchAdjacencyDirection as Direction;
 use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelope;
-use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use contracts::identity::data::record_ids::RelationId;
 use contracts::transactions::data::intents::mutation_intent::MutationIntent;
 use contracts::transactions::data::intents::mutation_intent::RelationMutationIntent;

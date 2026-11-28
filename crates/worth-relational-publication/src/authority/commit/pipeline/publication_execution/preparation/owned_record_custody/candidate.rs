@@ -1,8 +1,6 @@
 //! Index this candidate's actual writes once; ownership remains the shared selector's.
 use worth_relational_branch::internal_port as branch;
 use worth_relational_contracts::internal_port as contracts;
-use branch::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
-use branch::history::data::canonical_commit_envelope::required_output_origin::historical_selection::absence::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use super::*;
 use branch::history::data::canonical_commit_envelope::required_output_origin::CanonicalRequiredOutputOrigin;
@@ -10,6 +8,7 @@ use contracts::history::data::coordinates::CommitId;
 use contracts::identity::data::record_ids::EntityId;
 use contracts::identity::data::record_ids::RelationId;
 use std::collections::{HashMap, HashSet};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 type Route<'a> = (
     &'a str,
     EntityId,

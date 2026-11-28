@@ -6,7 +6,7 @@ use contracts::branch::target::{
     RelationalBranchRootDescriptor, RelationalBranchTarget, RelationalBranchTargetOwnerPort as _,
 };
 use worth_foundational::facade::FoundationalBranchTarget;
-use worth_relational_branch::internal_port::branch::basis_descriptor::RelationalBranchBasisDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis_descriptor_owner::RelationalBranchBasisDescriptorOwnerPort as _;
 use worth_relational_branch::internal_port::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use worth_relational_branch::internal_port::branch::root::RelationalBranchRoot;
 use worth_relational_contracts::internal_port as contracts;

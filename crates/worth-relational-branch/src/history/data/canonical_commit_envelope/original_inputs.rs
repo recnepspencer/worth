@@ -33,30 +33,3 @@ impl CanonicalCommitEnvelope {
 
 pub mod observation;
 pub use observation::{RelationalIntroducedSchemaObservation, RelationalOriginalInputObservation};
-
-#[doc(hidden)]
-pub trait CanonicalCommitEnvelopeOwnerPort: Sized {
-    fn recorded_original_inputs(&self) -> Option<&RecordedCanonicalInputs>;
-    fn seal_recorded_original_inputs(&self);
-    fn retain_recorded_original_inputs(
-        &self,
-        inputs: RecordedCanonicalInputs,
-    ) -> Result<(), &'static str>;
-}
-
-impl CanonicalCommitEnvelopeOwnerPort for CanonicalCommitEnvelope {
-    fn recorded_original_inputs(&self) -> Option<&RecordedCanonicalInputs> {
-        self.recorded_original_inputs()
-    }
-
-    fn seal_recorded_original_inputs(&self) {
-        self.seal_recorded_original_inputs()
-    }
-
-    fn retain_recorded_original_inputs(
-        &self,
-        inputs: RecordedCanonicalInputs,
-    ) -> Result<(), &'static str> {
-        self.retain_recorded_original_inputs(inputs)
-    }
-}

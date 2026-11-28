@@ -385,6 +385,10 @@ impl<'a, K, V> Iterator for CowMapIter<'a, K, V> {
     }
 }
 
+#[expect(
+    clippy::collapsible_if,
+    reason = "CowMapDeltaSeal.lean mirrors the traversal source byte-for-byte"
+)]
 #[path = "cow_map_diff.rs"]
 mod diff;
 pub(crate) use diff::CowDiff;

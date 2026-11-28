@@ -2,9 +2,10 @@ use crate::history::data::CanonicalCommitEnvelope;
 
 use super::RelationalBranchRootCaptureDenial;
 use super::RelationalRootCorrectnessIndex;
-use sha2::{Digest, Sha256};
+use sha2::Digest;
 use std::io::Write;
 use worth_execution::{ExecutionRequest, MapKernelContext, MapKernelStop};
+use worth_relational_contracts::internal_port::durability::artifact_payload_emission::digest::Sha256Sink;
 
 /// Typed commitment to the complete state tuple selected by a branch root.
 ///
@@ -24,7 +25,9 @@ impl RelationalBranchVisibilityCommitment {
         schema_root: [u8; 32],
         correctness_index: RelationalRootCorrectnessIndex,
     ) -> Self {
-        compute(envelope, storage_root, schema_root, correctness_index, None)
+        compute(storage_root, schema_root, correctness_index, None, |writer| {
+            envelope.write_authoritative_payload(writer)
+        })
             .expect(/* Proof: The ordinary digest sink has no request refusal or I/O failure; the closed native tuple serialization is unchanged. */ "ordinary root visibility encoding")
     }
 
@@ -38,11 +41,11 @@ impl RelationalBranchVisibilityCommitment {
         let (result, _) = request
             .run_native_with_checkpoint(|context| {
                 compute(
-                    envelope,
                     storage_root,
                     schema_root,
                     correctness_index,
                     Some(context),
+                    |writer| envelope.write_authoritative_payload(writer),
                 )
             })
             .map_err(|cause| RelationalBranchRootCaptureDenial::Request(cause.into()))?;
@@ -57,32 +60,13 @@ impl RelationalBranchVisibilityCommitment {
     ) -> Result<Self, RelationalBranchRootCaptureDenial> {
         let mut answer = None;
         let scope = request.run_native_with_checkpoint(|context| {
-            let mut writer = VisibilityWriter {
-                hash: Sha256::new(),
-                context: Some(context),
-                stop: None,
-                payload: false,
-            };
-            let correctness = match correctness_index {
-                RelationalRootCorrectnessIndex::AuthoritativeFallback => [0],
-            };
-            let written = [
-                b"worth.relational.branch-visibility.v1\0".as_slice(),
-                storage_root.as_slice(),
-                schema_root.as_slice(),
-                correctness.as_slice(),
-            ]
-            .into_iter()
-            .try_for_each(|bytes| writer.write_all(bytes))
-            .and_then(|()| {
-                writer.payload = true;
-                writer.write_all(payload)
-            });
-            answer = Some(match (written, writer.stop.take()) {
-                (_, Some(cause)) => Err(RelationalBranchRootCaptureDenial::Request(cause.into())),
-                (Err(_), None) => unreachable!("visibility writer only refuses for its request"),
-                (Ok(()), None) => Ok(Self(writer.hash.finalize().into())),
-            });
+            answer = Some(compute(
+                storage_root,
+                schema_root,
+                correctness_index,
+                Some(context),
+                |writer| writer.write_all(payload),
+            ));
         });
         match (scope, answer) {
             (Ok(_), Some(answer)) => answer,
@@ -100,15 +84,15 @@ impl RelationalBranchVisibilityCommitment {
     }
 }
 
-fn compute(
-    envelope: &CanonicalCommitEnvelope,
+fn compute<E: std::fmt::Debug>(
     storage_root: [u8; 32],
     schema_root: [u8; 32],
     correctness_index: RelationalRootCorrectnessIndex,
     context: Option<&mut MapKernelContext<'_, '_>>,
+    write_payload: impl FnOnce(&mut VisibilityWriter<'_, '_, '_>) -> Result<(), E>,
 ) -> Result<RelationalBranchVisibilityCommitment, RelationalBranchRootCaptureDenial> {
     let mut output = VisibilityWriter {
-        hash: Sha256::new(),
+        hash: Sha256Sink::default(),
         context,
         stop: None,
         payload: false,
@@ -132,18 +116,18 @@ fn compute(
         }
     }
     output.payload = true;
-    let encoded = envelope.write_authoritative_payload(&mut output);
+    let encoded = write_payload(&mut output);
     if let Some(stop) = output.stop {
         return Err(RelationalBranchRootCaptureDenial::Request(stop.into()));
     }
     encoded.expect(/* Proof: The native tuple has no user serializer; the only fallible sink operation is the original request checkpoint, handled above. */ "canonical visibility encoding");
     Ok(RelationalBranchVisibilityCommitment(
-        output.hash.finalize().into(),
+        output.hash.0.finalize().into(),
     ))
 }
 
 struct VisibilityWriter<'context, 'scope, 'authority> {
-    hash: Sha256,
+    hash: Sha256Sink,
     context: Option<&'context mut MapKernelContext<'scope, 'authority>>,
     stop: Option<MapKernelStop>,
     payload: bool,
@@ -162,7 +146,7 @@ impl Write for VisibilityWriter<'_, '_, '_> {
                     // Other is terminal; Interrupted would make write_all retry.
                     return Err(std::io::ErrorKind::Other.into());
                 }
-                self.hash.update(chunk);
+                self.hash.write_all(chunk)?;
                 if self.payload {
                     crate::execution::phase_observation::hash_bytes(
                         crate::execution::phase_observation::HashPurpose::BranchVisibility,
@@ -171,7 +155,7 @@ impl Write for VisibilityWriter<'_, '_, '_> {
                 }
             }
         } else {
-            self.hash.update(bytes);
+            self.hash.write_all(bytes)?;
             if self.payload {
                 crate::execution::phase_observation::hash_bytes(
                     crate::execution::phase_observation::HashPurpose::BranchVisibility,

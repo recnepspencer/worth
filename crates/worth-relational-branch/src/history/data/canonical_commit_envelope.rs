@@ -85,8 +85,6 @@ pub use wire_projection::EnvelopeProjection;
 #[cfg_attr(not(doctest), doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/docs/facade_examples/canonical_envelope.md")))]
 #[derive(Debug)]
 pub struct CanonicalCommitEnvelope {
-    /// Physical format of the admitted authoritative artifact. It has no effect on commit meaning.
-    artifact_format: worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat,
     original_inputs: std::sync::OnceLock<Option<recorded_inputs::RecordedCanonicalInputs>>,
     /// Live exact-envelope acceleration; deep Clone and all codecs omit it.
     pub(crate) live_managed_source_history: LiveManagedSourceHistory,
@@ -130,10 +128,6 @@ impl Serialize for CanonicalCommitEnvelope {
 }
 
 impl CanonicalCommitEnvelope {
-    pub fn artifact_format(&self) -> worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat{
-        self.artifact_format
-    }
-
     /// Index definitions this commit's canonical catalog delta adds.
     pub fn index_definition_additions(&self) -> &[crate::indexes::data::DerivedIndexDefinition] {
         self.index_definition_delta.definitions()
@@ -351,7 +345,6 @@ fn intent_record_ref(intent: &MutationIntent) -> Option<RecordRef> {
 pub mod committed_record_changes;
 pub use committed_record_changes::CommittedRecordChange;
 
-
 #[path = "canonical_commit_envelope/tests.rs"]
 pub mod tests;
 #[path = "canonical_commit_envelope/text_wire.rs"]
@@ -365,17 +358,8 @@ pub mod lineage_rebuild_test;
 
 pub mod fixture_image;
 
-/// Operations used by the Relational owners.
-pub trait CanonicalCommitEnvelopeOwnerPort: Sized {
-    fn semantic_result_arc(
-        &self,
-    ) -> std::sync::Arc<
-        crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult,
-    >;
-}
-
-impl CanonicalCommitEnvelopeOwnerPort for CanonicalCommitEnvelope {
-    fn semantic_result_arc(
+impl CanonicalCommitEnvelope {
+    pub(crate) fn semantic_result_arc(
         &self,
     ) -> std::sync::Arc<
         crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult,
@@ -383,6 +367,7 @@ impl CanonicalCommitEnvelopeOwnerPort for CanonicalCommitEnvelope {
         self.semantic_result.clone()
     }
 }
+
 mod body_fixture;
 pub use body_fixture::{
     CanonicalCommitEnvelopeBodyFixturePort, CanonicalCommitEnvelopeFieldsPort,
@@ -393,3 +378,6 @@ mod body_owner_port;
 pub use body_owner_port::{
     CanonicalCommitEnvelopeBodyFieldsPort, CanonicalCommitEnvelopeBodyOwnerPort,
 };
+
+mod owner_port;
+pub use owner_port::CanonicalCommitEnvelopeOwnerPort;

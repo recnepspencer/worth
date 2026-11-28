@@ -4,11 +4,7 @@ use worth_relational_storage::internal_port::durability::medium::checkpoint_ackn
 use worth_relational_storage::internal_port::storage::data::directory_source_edge::NativeDirectoryRetirementHandoff;
 impl RelationalCheckpointManifestSelection {
     fn try_source_state(&self) -> Result<std::sync::MutexGuard<'_, CheckpointSelectionState>, Ack> {
-        match self.selected.try_lock() {
-            Ok(state) => Ok(state),
-            Err(std::sync::TryLockError::Poisoned(error)) => Ok(error.into_inner()),
-            Err(std::sync::TryLockError::WouldBlock) => Err(Ack::Busy),
-        }
+        worth_execution::try_retirement_guard(self.selected.try_lock(), Ack::Busy)
     }
     pub fn preflight_source_retirement(
         &self,

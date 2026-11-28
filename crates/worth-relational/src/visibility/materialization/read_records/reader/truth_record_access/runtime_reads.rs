@@ -1,5 +1,7 @@
 //! Select the installed read operands before handing off to the read implementation.
 use super::*;
+#[cfg(test)]
+use crate::storage::partition::DenseSlotBitSet;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 
 impl<'runtime> VisibilityReadContext<'runtime> {
@@ -96,6 +98,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         )
     }
 
+    #[cfg(test)]
     pub(crate) fn visible_entity_slots_from_state(
         &self,
         state: &(impl PartitionAccess + ?Sized),
@@ -136,6 +139,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             memory,
         )
     }
+    #[cfg(test)]
     pub(crate) fn visible_relation_slots_from_state(
         &self,
         state: &(impl PartitionAccess + ?Sized),

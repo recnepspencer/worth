@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
+#[cfg(test)]
 use crate::branch::{AdmittedRelationalBranchBasis, SelectedRelationalBranchState};
 use crate::performance::PerformanceAccess;
 use crate::runtime::state::subsystems::visibility::SnapshotIdentityAllocator;
 use crate::runtime::{
-    PublishedSnapshotCapacityOwner, PublishedSnapshotReservationDenial,
-    PublishedSnapshotSlotReservation, RecordIdentitySubsystem, RelationalPreparationHistory,
+    PublishedSnapshotCapacityOwner, RecordIdentitySubsystem, RelationalPreparationHistory,
     RelationalRuntimeConfig, RelationalRuntimeConfigurationBinding, RelationalRuntimeOwnerBinding,
     RelationalRuntimePublicationBinding, RuntimeServices, SchemaContractRuntimeSubsystem,
 };
@@ -160,14 +160,6 @@ impl RelationalPreparationRuntime {
         Ok((runtime, record_identity_memory))
     }
 
-    pub(crate) fn with_current_ownership(
-        &self,
-        current: Option<Arc<crate::publication::ownership::CurrentPublicationRoster>>,
-    ) -> Self {
-        let mut runtime = self.clone();
-        runtime.current_ownership = current;
-        runtime
-    }
     pub(crate) fn with_authored_coupling(
         mut self,
         coupling: Option<Arc<crate::mvcc::BoundAuthoredCoupling>>,
@@ -209,18 +201,13 @@ impl RelationalPreparationRuntime {
         self.services.runtime_instance_id()
     }
 
+    #[cfg(test)]
     pub(crate) fn current_version_id(&self) -> crate::identity::data::VersionId {
         self.history.current_version_id()
     }
 
     pub(crate) fn publication_binding(&self) -> RelationalRuntimePublicationBinding {
         self.publication_owner.clone()
-    }
-
-    pub(crate) fn reserve_published_snapshot_slot(
-        &self,
-    ) -> Result<PublishedSnapshotSlotReservation, PublishedSnapshotReservationDenial> {
-        self.snapshot_capacity.reserve()
     }
 
     pub(crate) fn published_snapshot_count(&self) -> usize {
@@ -235,6 +222,7 @@ impl RelationalPreparationRuntime {
         PerformanceAccess::from_instrumentation(&self.services.instrumentation)
     }
 
+    #[cfg(test)]
     pub(crate) fn selected_branch_state(
         &self,
         basis: &AdmittedRelationalBranchBasis,
@@ -249,12 +237,6 @@ impl RelationalPreparationRuntime {
 impl crate::capabilities::RuntimeConfigSource for RelationalPreparationRuntime {
     fn runtime_config(&self) -> &RelationalRuntimeConfig {
         self.config.as_ref()
-    }
-}
-
-impl crate::capabilities::InstrumentationSource for RelationalPreparationRuntime {
-    fn runtime_instrumentation(&self) -> &crate::runtime::RuntimeInstrumentation {
-        &self.services.instrumentation
     }
 }
 

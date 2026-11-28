@@ -24,6 +24,14 @@ impl CapturedCheckpointMembers {
         count: usize,
         entries: impl IntoIterator<Item = RelationalCheckpointMember>,
     ) -> Result<Self, Denial> {
+        Self::capture_fallible(request, count, entries.into_iter().map(Ok))
+    }
+
+    pub(crate) fn capture_fallible(
+        request: &ExecutionRequest<'_, '_>,
+        count: usize,
+        entries: impl IntoIterator<Item = Result<RelationalCheckpointMember, Denial>>,
+    ) -> Result<Self, Denial> {
         let bytes = Layout::new::<(usize, usize)>()
             .extend(Layout::new::<Backing>())
             .map_err(|_| {
@@ -39,7 +47,7 @@ impl CapturedCheckpointMembers {
             contracts::durability::data::native_checkpoint_capture_denial::array_capture_stop,
         )?;
         for entry in entries {
-            building.push(entry).map_err(
+            building.push(entry?).map_err(
                 contracts::durability::data::native_checkpoint_capture_denial::array_capture_stop,
             )?;
         }

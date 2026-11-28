@@ -39,9 +39,8 @@ impl CanonicalAspectStateMap {
         values: impl ExactSizeIterator<Item = ContractValidatedAspectValue>,
     ) -> Self {
         let mut allocation_bytes = 0_u128;
-        let entries = AspectEntryTree::from_sorted_values(values.map(|value| {
-            allocation_bytes += entry_bytes(&value);
-            value
+        let entries = AspectEntryTree::from_sorted_values(values.inspect(|value| {
+            allocation_bytes += entry_bytes(value);
         }));
         Self {
             entries,

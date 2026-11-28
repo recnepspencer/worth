@@ -66,7 +66,7 @@ pub(super) fn validate_ancestry(
                         false,
                         context,
                     )?;
-                    let mut required = super::super::scope_dependents::linked_owners(
+                    let required = super::super::scope_dependents::linked_owners(
                         &anchors, &retiring, &preceding, context,
                     )?;
                     let mut optional = Vec::new();

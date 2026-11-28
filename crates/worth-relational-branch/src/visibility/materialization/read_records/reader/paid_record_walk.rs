@@ -1,203 +1,109 @@
 //! Request-funded record walks have no independent work limit.
-use super::super::materialization::{
-    materialize_authoritative_entity_record_at_version,
-    materialize_authoritative_relation_record_at_version,
+use super::super::{
+    read_prices::{EXAMINE_SLOT, RESERVE_RECORD},
+    read_work::record_memory,
 };
-use super::super::read_prices::{EXAMINE_SLOT, RESERVE_RECORD};
-use super::super::visibility::{
-    entity_slot_matches_kind_at_version, relation_slot_matches_kind_at_version,
-};
+use super::record_class::{Entity, RecordClassOps, Relation};
 use super::{
     kind_scan_visibility::KindScanVisibility, projection_record_reader::ProjectionRecordReader,
 };
-use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::storage::overlay::PartitionAccess;
+use crate::execution::RelationalExecutionDenialCause as Stop;
+use crate::identity::data::{KindId, PartitionId};
+use crate::schema::data::RelationalSchemaRegistry;
+use crate::storage::{
+    data::{EntityReadRecord, RelationReadRecord},
+    overlay::PartitionAccess,
+};
+
 impl ProjectionRecordReader<'_> {
     pub fn paid_entities_in_partition(
         &self,
         state: &(impl PartitionAccess + ?Sized),
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-        partition_id: crate::identity::data::PartitionId,
-        kind: Option<crate::identity::data::KindId>,
+        registry: &RelationalSchemaRegistry,
+        partition_id: PartitionId,
+        kind: Option<KindId>,
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
-    {
-        if matches!(visibility, KindScanVisibility::Live) {
-            return self.paid_current_entities(
-                state.get_current_partition(partition_id),
-                registry,
-                kind,
-                charge,
-                memory,
-            );
-        }
-        let Some(partition) = state.get_partition(partition_id) else {
-            return Ok(Vec::new());
-        };
-        let mut records = Vec::new();
-        match visibility {
-            KindScanVisibility::Live => unreachable!(
-                /* Proof: The current-read dispatch returns via Head before this historical branch; only an immutable historical basis reaches this match. */
-                "current reads returned through Head"
-            ),
-            KindScanVisibility::AtVersion(version) => {
-                let (slots, held) = super::super::read_work::record_memory::occupied_slots(
-                    &partition.entity_arena,
-                    memory,
-                )?;
-                for slot in slots {
-                    charge(EXAMINE_SLOT).map_err(crate::execution::denial::kernel_stop)?;
-                    self.instrumentation.count(|counters| {
-                        counters.visibility_entity_slot_scans += 1;
-                    });
-                    let visible = kind.map_or_else(
-                        || {
-                            super::super::visibility::entity_visible_in_partition_at_version(
-                                partition, slot, version,
-                            )
-                        },
-                        |kind| {
-                            entity_slot_matches_kind_at_version(
-                                partition,
-                                slot,
-                                kind,
-                                version,
-                                self.current_version,
-                            )
-                        },
-                    );
-                    if !visible {
-                        continue;
-                    }
-                    charge(RESERVE_RECORD).map_err(crate::execution::denial::kernel_stop)?;
-                    let clone_bytes = super::super::read_work::record_quote::entity(
-                        registry, partition, slot, visibility,
-                    )?;
-                    super::super::read_work::record_memory::prepare_push(
-                        memory,
-                        &mut records,
-                        clone_bytes,
-                    )?;
-                    if let Some(record) = materialize_authoritative_entity_record_at_version(
-                        registry,
-                        partition,
-                        partition_id,
-                        slot,
-                        version,
-                    ) {
-                        self.instrumentation.count(|counters| {
-                            counters.visible_authoritative_entity_records_materialized += 1;
-                        });
-                        super::super::read_work::record_memory::settle_clone(
-                            memory,
-                            clone_bytes,
-                            super::super::read_footprint::entity(&record),
-                        )?;
-                        records.push(record);
-                    } else {
-                        super::super::read_work::record_memory::release(memory, clone_bytes)?;
-                    }
-                }
-                super::super::read_work::record_memory::release(memory, held)?;
-            }
-        }
-        Ok(records)
+    ) -> Result<Vec<EntityReadRecord>, Stop> {
+        self.paid_records_in_partition::<Entity>(
+            state,
+            registry,
+            partition_id,
+            kind,
+            visibility,
+            charge,
+            memory,
+        )
     }
+
     pub fn paid_relations_in_partition(
         &self,
         state: &(impl PartitionAccess + ?Sized),
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-        partition_id: crate::identity::data::PartitionId,
-        kind: Option<crate::identity::data::KindId>,
+        registry: &RelationalSchemaRegistry,
+        partition_id: PartitionId,
+        kind: Option<KindId>,
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<
-        Vec<RelationReadRecord>,
-        crate::execution::denial_cause::RelationalExecutionDenialCause,
-    > {
-        if matches!(visibility, KindScanVisibility::Live) {
-            return self.paid_current_relations(
+    ) -> Result<Vec<RelationReadRecord>, Stop> {
+        self.paid_records_in_partition::<Relation>(
+            state,
+            registry,
+            partition_id,
+            kind,
+            visibility,
+            charge,
+            memory,
+        )
+    }
+
+    pub(in crate::internal_port::visibility::materialization::read_records) fn paid_records_in_partition<
+        C: RecordClassOps,
+    >(
+        &self,
+        state: &(impl PartitionAccess + ?Sized),
+        registry: &RelationalSchemaRegistry,
+        partition_id: PartitionId,
+        kind: Option<KindId>,
+        visibility: KindScanVisibility,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<C::Record>, Stop> {
+        let KindScanVisibility::AtVersion(version) = visibility else {
+            return self.paid_current_records::<C>(
                 state.get_current_partition(partition_id),
                 registry,
                 kind,
                 charge,
                 memory,
             );
-        }
+        };
         let Some(partition) = state.get_partition(partition_id) else {
             return Ok(Vec::new());
         };
         let mut records = Vec::new();
-        match visibility {
-            KindScanVisibility::Live => unreachable!(
-                /* Proof: The current-read dispatch returns via Head before this historical branch; only an immutable historical basis reaches this match. */
-                "current reads returned through Head"
-            ),
-            KindScanVisibility::AtVersion(version) => {
-                let (slots, held) = super::super::read_work::record_memory::occupied_slots(
-                    &partition.relation_arena,
-                    memory,
-                )?;
-                for slot in slots {
-                    charge(EXAMINE_SLOT).map_err(crate::execution::denial::kernel_stop)?;
-                    self.instrumentation.count(|counters| {
-                        counters.visibility_relation_slot_scans += 1;
-                    });
-                    let visible = kind.map_or_else(
-                        || {
-                            super::super::visibility::relation_visible_in_partition_at_version(
-                                partition, slot, version,
-                            )
-                        },
-                        |kind| {
-                            relation_slot_matches_kind_at_version(
-                                partition,
-                                slot,
-                                kind,
-                                version,
-                                self.current_version,
-                            )
-                        },
-                    );
-                    if !visible {
-                        continue;
-                    }
-                    charge(RESERVE_RECORD).map_err(crate::execution::denial::kernel_stop)?;
-                    let clone_bytes = super::super::read_work::record_quote::relation(
-                        registry, partition, slot, visibility,
-                    )?;
-                    super::super::read_work::record_memory::prepare_push(
-                        memory,
-                        &mut records,
-                        clone_bytes,
-                    )?;
-                    if let Some(record) = materialize_authoritative_relation_record_at_version(
-                        registry,
-                        partition,
-                        partition_id,
-                        slot,
-                        version,
-                    ) {
-                        self.instrumentation.count(|counters| {
-                            counters.visible_authoritative_relation_records_materialized += 1;
-                        });
-                        super::super::read_work::record_memory::settle_clone(
-                            memory,
-                            clone_bytes,
-                            super::super::read_footprint::relation(&record),
-                        )?;
-                        records.push(record);
-                    } else {
-                        super::super::read_work::record_memory::release(memory, clone_bytes)?;
-                    }
-                }
-                super::super::read_work::record_memory::release(memory, held)?;
+        let (slots, held) = record_memory::occupied_slots(C::arena(partition), memory)?;
+        for slot in slots {
+            charge(EXAMINE_SLOT).map_err(crate::execution::denial::kernel_stop)?;
+            C::count_historical_slot(self.instrumentation);
+            if !C::visible(partition, slot, kind, version, self.current_version) {
+                continue;
+            }
+            charge(RESERVE_RECORD).map_err(crate::execution::denial::kernel_stop)?;
+            let clone_bytes = C::quote_history(registry, partition, slot, visibility)?;
+            record_memory::prepare_push(memory, &mut records, clone_bytes)?;
+            if let Some(record) = C::read_history(registry, partition, partition_id, slot, version)
+            {
+                C::count_materialization(self.instrumentation);
+                record_memory::settle_clone(memory, clone_bytes, C::record_bytes(&record))?;
+                records.push(record);
+            } else {
+                record_memory::release(memory, clone_bytes)?;
             }
         }
-        super::truth_record_access::sort_authoritative_relation_records(&mut records);
+        record_memory::release(memory, held)?;
+        C::order(&mut records);
         Ok(records)
     }
 }

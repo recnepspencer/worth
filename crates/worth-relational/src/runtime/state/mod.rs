@@ -41,7 +41,7 @@ pub(crate) use subsystems::{
     IndexDefinitionReadBinding, LineageIdentityAllocator, LineageNamingBasisBinding,
     LineageSubsystem, MirrorResidencyDemandBinding, PartitionEdition, PendingSymbolMeanings,
     PerformedCheckpointSelection, PublishedSnapshotCapacityOwner,
-    PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, ReclaimedRecordSlot,
+    ReclaimedRecordSlot,
     RecordIdentitySubsystem, RelationalCanonicalPublicationRoutes,
     RelationalCheckpointManifestSelection, RelationalForkMaterializationCost,
     RelationalForkOwnerBinding, RelationalPreparationHistory, ResidentLineageNode,

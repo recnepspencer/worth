@@ -1,7 +1,7 @@
-use crate::identity::data::{EntityId, LineageId, RelationId, StructuralFingerprint, VersionId};
+use crate::identity::data::{EntityId, RelationId, VersionId};
 use crate::inspection::data::InspectionScope;
 use crate::storage::access::RecordSlotSurface;
-use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::storage::data::RelationReadRecord;
 use crate::storage::substrate::{EntityRecordKind, RelationRecordKind};
 
 use super::InspectionAccess;
@@ -60,42 +60,6 @@ impl<'runtime> InspectionAccess<'runtime> {
             .storage
             .mvcc
             .auto_reclaim_deleted_records
-    }
-
-    pub(crate) fn scoped_authoritative_entity_record(
-        &self,
-        resident: &crate::runtime::ResidentPartitionEdition,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        scope: &InspectionScope,
-        entity_id: EntityId,
-    ) -> Result<Option<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        crate::execution::check_request(execution)?;
-        let read_view = match scope {
-            InspectionScope::Current => None,
-            _ => self.read_view_for_scope(execution, scope)?,
-        };
-        Ok(match scope {
-            InspectionScope::Current => {
-                crate::visibility::materialization::read_records::read_work::point(
-                    execution,
-                    || {
-                        self.runtime
-                            .read_truth()
-                            .authoritative_entity_record_for_id_at_version(
-                                resident,
-                                entity_id,
-                                self.runtime.current_version_id(),
-                            )
-                    },
-                    |record| {
-                        record.as_ref().map_or(0, crate::visibility::materialization::read_records::read_footprint::entity)
-                    },
-                )?
-            }
-            InspectionScope::Version(_) | InspectionScope::Snapshot(_) => read_view
-                .as_ref()
-                .and_then(|view| view.get_entity(entity_id).cloned()),
-        })
     }
 
     pub(crate) fn scoped_authoritative_relation_record(
@@ -198,22 +162,6 @@ impl<'runtime> InspectionAccess<'runtime> {
                 record.map(|record| (record.source, record.target))
             }
         })
-    }
-
-    pub(crate) fn entity_structural_sidecars(
-        &self,
-        resident: &crate::runtime::ResidentPartitionEdition,
-        entity_id: EntityId,
-    ) -> (Option<LineageId>, Option<StructuralFingerprint>) {
-        resident
-            .partition(entity_id.partition_id)
-            .and_then(|partition| {
-                partition.entity_arena.get(&entity_id).map(|slot_view| {
-                    let extra = slot_view.extra().clone();
-                    (extra.lineage_id, extra.structural_fingerprint)
-                })
-            })
-            .unwrap_or((None, None))
     }
 }
 

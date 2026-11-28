@@ -17,6 +17,7 @@ pub mod basis_currentness;
 #[path = "envelope/basis_descriptor.rs"]
 pub mod basis_descriptor;
 pub mod basis_descriptor_resolution;
+pub mod basis_descriptor_owner;
 pub mod basis_fixture;
 pub mod basis_identity_validation;
 pub mod basis_observation_inputs;

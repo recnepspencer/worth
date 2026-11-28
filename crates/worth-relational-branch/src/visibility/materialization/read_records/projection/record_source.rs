@@ -1,6 +1,5 @@
 use super::*;
 use crate::identity::data::VersionId;
-use crate::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionViewOwnerPort as _;
 
 impl super::ProjectionRecordSource for VisibilityProjectionView {
     fn demand_all_full(

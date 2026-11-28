@@ -1,4 +1,4 @@
-//! One checkpoint capture is one stage of its genuine request; legacy policy is test-only.
+//! One checkpoint capture is one stage of its genuine request.
 //!
 //! Work rate, charged cumulatively on that stage's meter against the request's
 //! remaining work: one unit per byte each serializer pass produces (a sizing
@@ -7,45 +7,26 @@
 //! charge and boundary observes cancellation and the deadline; none opens a
 //! scope, consults the request, or takes a reservation. Retained buffers admit
 //! their exact bytes on the stage's memory lineage once, before allocation.
-#[cfg(test)]
-use worth_execution::ExecutionAllocationPolicy;
 use worth_execution::{
     ExecutionByteBuffer, ExecutionRequest, ExecutionRequestArrayDenial, MapKernelContext,
 };
 use worth_relational_contracts::internal_port::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial as Denial;
 
-pub(crate) enum CheckpointEncodingControl<'stage, 'scope, 'lease, 'request, 'authority> {
-    Original {
-        execution: ExecutionRequest<'request, 'authority>,
-        stage: &'stage mut MapKernelContext<'scope, 'lease>,
-    },
-    #[cfg(test)]
-    Policy(ExecutionAllocationPolicy<'request, 'authority>),
+pub(crate) struct CheckpointEncodingControl<'stage, 'scope, 'lease, 'request, 'authority> {
+    pub(crate) execution: ExecutionRequest<'request, 'authority>,
+    pub(crate) stage: &'stage mut MapKernelContext<'scope, 'lease>,
 }
 
 impl CheckpointEncodingControl<'_, '_, '_, '_, '_> {
     pub(crate) fn checkpoint(&mut self, work: u64) -> Result<(), Denial> {
-        match self {
-            Self::Original { stage, .. } => {
-                worth_relational_contracts::internal_port::execution::request_stage::checkpoint(
-                    stage, work,
-                )
-                .map_err(|stop| Denial::Request(stop.into()))
-            }
-            #[cfg(test)]
-            Self::Policy(policy) => policy.check_live().map_err(Denial::Allocation),
-        }
+        worth_relational_contracts::internal_port::execution::request_stage::checkpoint(
+            self.stage, work,
+        )
+        .map_err(|stop| Denial::Request(stop.into()))
     }
+
     pub(super) fn allocate(&mut self, bytes: usize) -> Result<ExecutionByteBuffer, Denial> {
-        match self {
-            Self::Original { execution, stage } => {
-                ExecutionByteBuffer::allocate_in_stage(bytes, *execution, stage).map_err(allocation)
-            }
-            #[cfg(test)]
-            Self::Policy(policy) => {
-                ExecutionByteBuffer::allocate(bytes, *policy).map_err(Denial::Allocation)
-            }
-        }
+        ExecutionByteBuffer::allocate_in_stage(bytes, self.execution, self.stage).map_err(allocation)
     }
 }
 

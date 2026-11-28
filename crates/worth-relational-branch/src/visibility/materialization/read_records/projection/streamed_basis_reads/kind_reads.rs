@@ -14,25 +14,25 @@ pub(super) fn entity<E>(
     partition: Option<PartitionId>,
     mut prepare: impl FnMut(u64, u64) -> Result<(), E>,
     mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
-) -> Result<(), ReadStop<E>> {
-    crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+) -> Result<(), RequestOr<E>> {
+    crate::execution::request_custody::check_request(execution).map_err(RequestOr::Request)?;
     let Some(registry) = source.selected_schema_registry() else {
         return Ok(());
     };
     for id in source.selected_entity_ids(kind, partition) {
-        let id = id.map_err(|failure| ReadStop::Request(Cause::StorageUnavailable(failure)))?;
+        let id = id.map_err(|failure| RequestOr::Request(Cause::StorageUnavailable(failure)))?;
         source
             .demand_regions_head(execution, [id.partition_id])
-            .map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Request)?;
         let head = source
             .admitted_head_region(id.partition_id)
-            .ok_or_else(|| ReadStop::Request(corrupt(id.partition_id)))?;
+            .ok_or_else(|| RequestOr::Request(corrupt(id.partition_id)))?;
         if head
             .entity_arena()
             .get(&id)
             .is_none_or(|record| record.kind_id() != Some(kind))
         {
-            return Err(ReadStop::Request(corrupt(id.partition_id)));
+            return Err(RequestOr::Request(corrupt(id.partition_id)));
         }
         let bytes = super::super::super::read_work::record_quote::entity_head(
             registry,
@@ -44,30 +44,30 @@ pub(super) fn entity<E>(
                 .checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
                 .ok_or(Cause::ChargedBytesOverflow)
         })
-        .map_err(ReadStop::Request)?;
+        .map_err(RequestOr::Request)?;
         prepare(
             super::super::super::read_prices::EXAMINE_SLOT
                 + super::super::super::read_prices::KEYED_RECORD,
             bytes,
         )
-        .map_err(ReadStop::Admission)?;
-        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+        .map_err(RequestOr::Inner)?;
+        crate::execution::request_custody::check_request(execution).map_err(RequestOr::Request)?;
         let record = head.entity_record(registry, id);
         let actual = record
             .as_ref()
             .map_or(0, super::super::super::read_footprint::entity)
             .checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
             .ok_or(Cause::ChargedBytesOverflow)
-            .map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Request)?;
         if actual > bytes {
-            return Err(ReadStop::Request(Cause::ResultCapacityExceeded));
+            return Err(RequestOr::Request(Cause::ResultCapacityExceeded));
         }
-        prepare(0, actual).map_err(ReadStop::Admission)?;
+        prepare(0, actual).map_err(RequestOr::Inner)?;
         if let Some(record) = record {
-            visit(&record).map_err(ReadStop::Admission)?;
+            visit(&record).map_err(RequestOr::Inner)?;
         }
     }
-    prepare(0, 0).map_err(ReadStop::Admission)?;
+    prepare(0, 0).map_err(RequestOr::Inner)?;
     Ok(())
 }
 pub(super) fn relation<E>(
@@ -77,25 +77,25 @@ pub(super) fn relation<E>(
     partition: Option<PartitionId>,
     mut prepare: impl FnMut(u64, u64) -> Result<(), E>,
     mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
-) -> Result<(), ReadStop<E>> {
-    crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+) -> Result<(), RequestOr<E>> {
+    crate::execution::request_custody::check_request(execution).map_err(RequestOr::Request)?;
     let Some(registry) = source.selected_schema_registry() else {
         return Ok(());
     };
     for id in source.selected_relation_ids(kind, partition) {
-        let id = id.map_err(|failure| ReadStop::Request(Cause::StorageUnavailable(failure)))?;
+        let id = id.map_err(|failure| RequestOr::Request(Cause::StorageUnavailable(failure)))?;
         source
             .demand_regions_head(execution, [id.partition_id])
-            .map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Request)?;
         let head = source
             .admitted_head_region(id.partition_id)
-            .ok_or_else(|| ReadStop::Request(corrupt(id.partition_id)))?;
+            .ok_or_else(|| RequestOr::Request(corrupt(id.partition_id)))?;
         if head
             .relation_arena()
             .get(&id)
             .is_none_or(|record| record.kind_id() != Some(kind))
         {
-            return Err(ReadStop::Request(corrupt(id.partition_id)));
+            return Err(RequestOr::Request(corrupt(id.partition_id)));
         }
         let bytes = super::super::super::read_work::record_quote::relation_head(
             registry,
@@ -107,29 +107,29 @@ pub(super) fn relation<E>(
                 .checked_add(std::mem::size_of::<RelationReadRecord>() as u64)
                 .ok_or(Cause::ChargedBytesOverflow)
         })
-        .map_err(ReadStop::Request)?;
+        .map_err(RequestOr::Request)?;
         prepare(
             super::super::super::read_prices::EXAMINE_SLOT
                 + super::super::super::read_prices::KEYED_RECORD,
             bytes,
         )
-        .map_err(ReadStop::Admission)?;
-        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+        .map_err(RequestOr::Inner)?;
+        crate::execution::request_custody::check_request(execution).map_err(RequestOr::Request)?;
         let record = head.relation_record(registry, id);
         let actual = record
             .as_ref()
             .map_or(0, super::super::super::read_footprint::relation)
             .checked_add(std::mem::size_of::<RelationReadRecord>() as u64)
             .ok_or(Cause::ChargedBytesOverflow)
-            .map_err(ReadStop::Request)?;
+            .map_err(RequestOr::Request)?;
         if actual > bytes {
-            return Err(ReadStop::Request(Cause::ResultCapacityExceeded));
+            return Err(RequestOr::Request(Cause::ResultCapacityExceeded));
         }
-        prepare(0, actual).map_err(ReadStop::Admission)?;
+        prepare(0, actual).map_err(RequestOr::Inner)?;
         if let Some(record) = record {
-            visit(&record).map_err(ReadStop::Admission)?;
+            visit(&record).map_err(RequestOr::Inner)?;
         }
     }
-    prepare(0, 0).map_err(ReadStop::Admission)?;
+    prepare(0, 0).map_err(RequestOr::Inner)?;
     Ok(())
 }

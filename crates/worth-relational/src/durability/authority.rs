@@ -27,7 +27,6 @@ pub use recovery::{
     RelationalForkReadmissionCause, RelationalHomeProgramPlanningRoot,
     RelationalHomeRecoveryPreparationDenial,
 };
-pub(crate) use runtime_rebuild::envelope_replay::commit_stop::replay_commit_stop;
 pub(crate) use runtime_rebuild::index_catalog::RecoveredIndexCatalog;
 pub(crate) use runtime_rebuild::recorded_result_schema::RecordedReplayResultSchema;
 pub(crate) use runtime_rebuild::root_inventory::RecoveredRootInventory;

@@ -101,13 +101,7 @@ impl ResidentCommitPage {
                 .binary_search_by_key(&row.position.0, |entry| entry.position.0)
                 .ok()
                 .is_some_and(|slot| &index.heads[slot] != row);
-            if row
-                .commit
-                .parents
-                .iter()
-                .any(|parent| *parent == row.commit.commit_id)
-                || tail_mismatch
-                || head_mismatch
+            if row.commit.parents.contains(&row.commit.commit_id) || tail_mismatch || head_mismatch
             {
                 return Err(Cause::IntegrityMismatch);
             }

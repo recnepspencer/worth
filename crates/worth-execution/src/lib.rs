@@ -110,6 +110,6 @@ pub type ExecutionStop = WorkCeilingDenial;
 
 mod cooperative_retirement;
 pub use cooperative_retirement::{
-    drain_cooperative_retirement, try_lock_retirement, CooperativeRetireTask,
+    drain_cooperative_retirement, try_lock_retirement, try_retirement_guard, CooperativeRetireTask,
     CooperativeRetirementLockDenial, CooperativeRetirementState, CooperativeStep,
 };

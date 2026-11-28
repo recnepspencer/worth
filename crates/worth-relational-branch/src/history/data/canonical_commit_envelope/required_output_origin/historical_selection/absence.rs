@@ -27,14 +27,3 @@ impl CanonicalCommitEnvelopeBody {
             .flat_map(|event| event.absences.iter())
     }
 }
-
-#[doc(hidden)]
-pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
-    fn historical_absent_routes(&self) -> impl Iterator<Item = &CanonicalHistoricalOutputAbsence>;
-}
-
-impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
-    fn historical_absent_routes(&self) -> impl Iterator<Item = &CanonicalHistoricalOutputAbsence> {
-        self.historical_absent_routes()
-    }
-}

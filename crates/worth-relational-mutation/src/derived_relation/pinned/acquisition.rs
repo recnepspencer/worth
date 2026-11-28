@@ -1,5 +1,5 @@
 //! One controlled acquisition owner serves both old and receipt-bearing doors.
-use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 use super::*;
 use crate::contracts::derived_relation::read_shape::DerivedRelationReadShape;
 

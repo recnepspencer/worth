@@ -12,8 +12,9 @@
 //! members. A history selection derives its groups again from its
 //! selection, so it contributes no claim.
 
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::{
-    CanonicalCommitEnvelope, CanonicalCommitEnvelopeBodyOwnerPort as _,
+    CanonicalCommitEnvelope
 };
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_lineage::internal_port::durability::naming::decode_group_lineage_frame;

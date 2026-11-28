@@ -44,10 +44,6 @@ impl VisibilityProjectionView {
         )
     }
 
-
-
-
-
     pub(super) fn reader(&self) -> crate::visibility::materialization::read_records::reader::projection_record_reader::ProjectionRecordReader<'_>{
         crate::visibility::materialization::read_records::reader::projection_record_reader::ProjectionRecordReader::new(
             self.current_version,
@@ -159,18 +155,12 @@ impl VisibilityProjectionView {
 #[path = "historical_denial.rs"]
 pub mod historical_denial;
 
-/// Operations used by the Relational owners.
-pub trait VisibilityProjectionViewOwnerPort: Sized {
-    fn is_from_runtime(&self, runtime_instance_id: u64) -> bool;
-    fn selected_schema(&self) -> Option<SelectedProjectionSchema<'_>>;
-}
-
-impl VisibilityProjectionViewOwnerPort for VisibilityProjectionView {
-    fn is_from_runtime(&self, runtime_instance_id: u64) -> bool {
+impl VisibilityProjectionView {
+    pub(crate) fn is_from_runtime(&self, runtime_instance_id: u64) -> bool {
         self.runtime_identity == runtime_instance_id
     }
 
-    fn selected_schema(&self) -> Option<SelectedProjectionSchema<'_>> {
+    pub(crate) fn selected_schema(&self) -> Option<SelectedProjectionSchema<'_>> {
         let authority = self.basis.root()?.schema_authority();
         Some(SelectedProjectionSchema {
             registry: authority.registry(),

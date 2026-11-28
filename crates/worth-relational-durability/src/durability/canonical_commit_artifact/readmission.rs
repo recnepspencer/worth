@@ -74,7 +74,7 @@ fn digest_denial(
     cause: contracts::durability::canonical_commit_artifact::payload_digest::RequestDigestDenial,
 ) -> Refusal {
     match cause {
-        contracts::durability::canonical_commit_artifact::payload_digest::RequestDigestDenial::Frame(cause) => Refusal::Frame(cause),
+        contracts::durability::canonical_commit_artifact::payload_digest::RequestDigestDenial::Inner(cause) => Refusal::Frame(cause),
         contracts::durability::canonical_commit_artifact::payload_digest::RequestDigestDenial::Request(cause) => Refusal::Request(cause),
     }
 }

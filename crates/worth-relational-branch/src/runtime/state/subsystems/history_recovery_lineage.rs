@@ -80,21 +80,25 @@ fn branch_lineage_contains(
     branch_id: &BranchId,
     candidate: &BranchId,
 ) -> bool {
-    let mut cursor = Some(branch_id.clone());
-    let mut visited = std::collections::BTreeSet::new();
-    while let Some(current) = cursor {
-        if &current == candidate {
-            return true;
-        }
-        if !visited.insert(current.clone()) {
-            return false;
-        }
-        match history.branch_cell(&current) {
-            Some(cell) => cursor = cell.fork_source_branch_id(),
-            // A retired ancestor's cell was removed on delete, so its parent link
-            // is no longer live; the commit artifact and chronology fold still guard it.
-            None => return history.retired_branch_names().contains(&current),
-        }
-    }
-    false
+    use std::ops::ControlFlow::{Break, Continue};
+    let Ok(result) = crate::history::access::ancestry_walk::walk_acyclic_chain(
+        branch_id.clone(),
+        &mut std::collections::BTreeSet::new(),
+        || Ok::<_, std::convert::Infallible>(()),
+        |current| {
+            if &current == candidate {
+                return Ok(Break(true));
+            }
+            Ok(match history.branch_cell(&current) {
+                Some(cell) => match cell.fork_source_branch_id() {
+                    Some(parent) => Continue(parent),
+                    None => Break(false),
+                },
+                // The retired ancestor's live cell is gone. The immutable
+                // artifact and chronology fold still guard its provenance.
+                None => Break(history.retired_branch_names().contains(&current)),
+            })
+        },
+    );
+    result.unwrap_or(false)
 }

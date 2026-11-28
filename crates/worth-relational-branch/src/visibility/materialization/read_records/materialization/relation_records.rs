@@ -1,10 +1,10 @@
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::data::RelationReadRecord;
 use crate::storage::overlay::PartitionState;
-use crate::storage::substrate::HistoricalMetadata;
+use super::record_history::HistoricalSlot;
 
 use super::super::visibility::{
-    historical_created_at, historical_relation_lifecycle, historical_retired_at,
+    historical_relation_lifecycle,
     relation_visible_in_partition_at_version, visible_relation_metadata,
 };
 pub fn materialize_authoritative_relation_record_at_version(
@@ -17,11 +17,9 @@ pub fn materialize_authoritative_relation_record_at_version(
     if !relation_visible_in_partition_at_version(partition, slot, version_id) {
         return None;
     }
-    let history = partition.relation_arena.metadata_history_at(slot)?;
     let metadata = visible_relation_metadata(partition, slot, version_id)?;
-    let current = partition.relation_arena.get_slot(slot)?;
     let kind = registry.resolve_relation(metadata.kind_id).ok()?;
-    let retired_at = historical_retired_at(metadata.retired_at(), version_id);
+    let lifetime = HistoricalSlot::read(&partition.relation_arena, slot, metadata, version_id)?;
     Some(RelationReadRecord {
         relation_id: crate::identity::data::RelationId::new(
             partition_id,
@@ -30,13 +28,8 @@ pub fn materialize_authoritative_relation_record_at_version(
         ),
         kind,
         lifecycle: historical_relation_lifecycle(partition, slot, metadata, version_id),
-        created_at_version: historical_created_at(
-            history,
-            metadata,
-            current.generation(),
-            partition.relation_arena.created_at_for_slot(slot)?,
-        ),
-        retired_at_version: retired_at,
+        created_at_version: lifetime.created,
+        retired_at_version: lifetime.retired,
         source: metadata.endpoints.source,
         target: metadata.endpoints.target,
         authoritative_aspect_state: metadata.authoritative_aspect_state().cloned(),

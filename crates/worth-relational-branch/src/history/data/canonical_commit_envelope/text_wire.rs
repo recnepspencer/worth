@@ -23,8 +23,6 @@ use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 
 #[derive(Deserialize)]
 pub struct CanonicalEnvelopeWire<Symbols> {
-    #[serde(skip)]
-    artifact_format: worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat,
     index_definition_delta: super::CanonicalIndexDefinitionDelta,
     semantic_result: std::sync::Arc<
         crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult,
@@ -80,13 +78,6 @@ pub struct CanonicalEnvelopeWire<Symbols> {
     readmission_memory: super::CanonicalEnvelopeReadmissionMemory,
 }
 impl<Symbols> CanonicalEnvelopeWire<Symbols> {
-    pub fn bind_artifact_format(
-        &mut self,
-        format: worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat,
-    ) {
-        self.artifact_format = format;
-    }
-
     pub fn retain_readmission_memory(&mut self, memory: super::CanonicalEnvelopeReadmissionMemory) {
         self.readmission_memory = memory;
     }
@@ -251,7 +242,6 @@ impl<Symbols> CanonicalEnvelopeWire<Symbols> {
             descriptor_semantics_version: self.descriptor_semantics_version,
         };
         let envelope = super::CanonicalCommitEnvelope {
-            artifact_format: self.artifact_format,
             original_inputs: Default::default(),
             live_managed_source_history: Default::default(),
             decoded_bytes: self.readmission_memory.input.take(),

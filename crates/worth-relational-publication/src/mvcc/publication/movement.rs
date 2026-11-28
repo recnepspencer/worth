@@ -291,7 +291,7 @@ fn memory_frame_stop_outcome(
     use contracts::durability::canonical_commit_artifact::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial as Denial;
     let cause = match cause {
         Frame::Request(stop) => return RelationalPublicationOutcome::RequestStopped(stop),
-        Frame::Artifact(cause) => cause,
+        Frame::Inner(cause) => cause,
     };
     if let Err(stop) = execution.consult()
         && stop

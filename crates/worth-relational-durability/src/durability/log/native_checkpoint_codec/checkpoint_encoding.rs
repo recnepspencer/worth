@@ -1,4 +1,3 @@
-use super::checkpoint_wire::CheckpointWire;
 use super::manifest_capture::CapturedManifest;
 use crate::durability::data::DurableCheckpoint;
 use crate::durability::data::NativeCheckpointSectionBytes;
@@ -8,7 +7,7 @@ use worth_execution::{ExecutionAllocationPolicy, ExecutionImmutableBytes};
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_storage::internal_port::storage::data::checkpoint_member::RelationalCheckpointMember;
 pub mod writer;
-pub(crate) use writer::{count_value, encode_value, CheckpointEncodingControl};
+pub(crate) use writer::CheckpointEncodingControl;
 
 /// Encode changed DATA for hostile codec fixtures, with its external members;
 /// never an original-source capture or publication witness.
@@ -24,7 +23,7 @@ pub fn encode_checkpoint_members(
     policy.check_live()?;
     let mut answer = None;
     let handoff = execution.run_native_with_checkpoint(|stage| {
-        let mut control = CheckpointEncodingControl::Original {
+        let mut control = CheckpointEncodingControl {
             execution: *execution,
             stage,
         };
@@ -93,7 +92,7 @@ pub(crate) fn populate_expanded_canonical_members(
                 crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial::Request(
                     cause,
                 ) => RelationalNativeCheckpointCaptureDenial::Request(cause.into()),
-                crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial::Artifact(
+                crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial::Inner(
                     cause,
                 ) => cause.into(),
             })?;
@@ -152,41 +151,6 @@ pub(crate) fn encode_captured(
             .into_values()
             .chain(canonical.into_iter().flat_map(IntoIterator::into_iter)),
     )?;
-    let wire = CheckpointWire {
-        manifest: captured.manifest,
-        members: Vec::new(),
-        envelopes: Vec::new(),
-    };
-    let bytes = encode_value(control, super::CHECKPOINT_MAGIC, &wire)?;
-    let total = bytes.len();
-    // Count the exact sections without constructing another payload copy.
-    let branch_roots = count_value(control, &wire.manifest.roots)?;
-    let branch_cells = count_value(control, &wire.manifest.branch_cells)?;
-    let partition_mirror = count_value(control, &wire.manifest.mirror)?;
-    let envelopes = 0usize;
-    let derived_indexes = count_value(control, &wire.manifest.index_definitions)?;
-    let classified = [
-        branch_roots,
-        branch_cells,
-        partition_mirror,
-        envelopes,
-        derived_indexes,
-    ]
-    .into_iter()
-    .try_fold(0_usize, |total, size| total.checked_add(size))
-    .ok_or_else(|| writer::frame_mismatch("native checkpoint section accounting overflow"))?;
-    let sections = NativeCheckpointSectionBytes {
-        total,
-        envelopes,
-        branch_roots,
-        branch_cells,
-        partition_mirror,
-        derived_indexes,
-        framing_and_metadata: total.checked_sub(classified).ok_or_else(|| {
-            writer::frame_mismatch("native checkpoint section accounting overflow")
-        })?,
-    };
-    drop(wire);
-    control.checkpoint(0)?;
+    let (bytes, sections) = super::complete_encoding::encode_in_stage(&captured.manifest, control)?;
     Ok((bytes, sections, members, captured.publications))
 }

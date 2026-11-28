@@ -301,25 +301,3 @@ impl OwnedValidatedOutputOrigins {
         self.as_view().output_origin_for_route(meaning, context)
     }
 }
-
-#[doc(hidden)]
-pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
-    fn output_origins(&self) -> impl Iterator<Item = &Arc<CanonicalRequiredOutputOrigin>>;
-    fn validate_output_origins(
-        &self,
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<ValidatedOutputOrigins<'_>, Stop>;
-}
-
-impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
-    fn output_origins(&self) -> impl Iterator<Item = &Arc<CanonicalRequiredOutputOrigin>> {
-        self.output_origins()
-    }
-
-    fn validate_output_origins(
-        &self,
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<ValidatedOutputOrigins<'_>, Stop> {
-        self.validate_output_origins(context)
-    }
-}

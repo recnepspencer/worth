@@ -74,16 +74,16 @@ pub(super) fn read_request(
 }
 
 pub(super) fn read_stop(
-    stop: crate::branch::visibility::materialization::read_records::read_stop::ReadStop<
+    stop: worth_relational_contracts::internal_port::execution::request_or::RequestOr<
         IndexKernelStop,
     >,
 ) -> IndexKernelStop {
     match stop {
-        crate::branch::visibility::materialization::read_records::read_stop::ReadStop::Request(cause) => {
-            read_request(cause)
-        }
-        crate::branch::visibility::materialization::read_records::read_stop::ReadStop::Admission(stop) => {
-            stop
-        }
+        worth_relational_contracts::internal_port::execution::request_or::RequestOr::Request(
+            cause,
+        ) => read_request(cause),
+        worth_relational_contracts::internal_port::execution::request_or::RequestOr::Inner(
+            stop,
+        ) => stop,
     }
 }

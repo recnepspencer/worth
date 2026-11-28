@@ -1,11 +1,11 @@
 //! Native data entries derived from a selected C generation through applied deltas.
 //! No proposed index generation or Current entity identity is fabricated.
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 use crate::branch::indexes::data::bounded_entity_field_lookup::{
     BoundedEntityFieldLookupAdmissionStop as Stop, BoundedEntityFieldLookupDenial,
     BoundedEntityFieldLookupDenialOwnerPort as _, BoundedIndexParityMode,
 };
 use crate::branch::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
-use crate::branch::visibility::materialization::read_records::projection::pinned::VisibilityProjectionViewOwnerPort as _;
 use crate::branch::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use crate::branch::visibility::snapshot_states::resident_basis::ResidentVisibilitySnapshotBasis;
 use crate::contracts::execution::denial_cause::RelationalExecutionDenialCause as Cause;

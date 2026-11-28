@@ -1,7 +1,7 @@
 //! Prepared DATA commitment retains the exact immutable producer envelope.
-use branch::history::commit::payload_commitment::writer::{in_context, CommitmentWriter};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
+use branch::history::commit::payload_commitment::writer::{in_context, write_commitment};
 use branch::history::data::canonical_commit_envelope::authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
-use branch::history::data::canonical_commit_envelope::original_inputs::CanonicalCommitEnvelopeOwnerPort as _;
 use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelope;
 use contracts::durability::canonical_commit_artifact::payload_digest::{
     RelationalCanonicalCommitArtifactDigest as Digest,
@@ -28,14 +28,15 @@ impl PreparedOriginalCanonicalPayload {
     ) -> Result<Self, RelationalRecoveryStop> {
         let (canonical_leaf, inputs_leaf) = in_context(request, |context| {
             envelope.seal_recorded_original_inputs();
-            let mut canonical = CommitmentWriter::new(Sha256::new(), context);
-            canonical.value(&AuthoritativeArtifactEnvelopeRef::new(&envelope))?;
-            let canonical_leaf = CanonicalDigestId::new(canonical.hash.finalize().into());
-            let mut inputs = CommitmentWriter::new(Sha256::new(), context);
-            inputs.value(&envelope.recorded_original_inputs())?;
+            let canonical = write_commitment(Sha256::new(), context, |sink| {
+                sink.value(&AuthoritativeArtifactEnvelopeRef::new(&envelope))
+            })?;
+            let inputs = write_commitment(Sha256::new(), context, |sink| {
+                sink.value(&envelope.recorded_original_inputs())
+            })?;
             Ok((
-                canonical_leaf,
-                CanonicalDigestId::new(inputs.hash.finalize().into()),
+                CanonicalDigestId::new(canonical.finalize().into()),
+                CanonicalDigestId::new(inputs.finalize().into()),
             ))
         })?;
         Ok(Self {

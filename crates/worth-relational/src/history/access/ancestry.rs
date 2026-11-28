@@ -1,9 +1,7 @@
 pub(crate) use super::ancestry_walk::CommitAncestryInspection;
 use std::collections::BTreeSet;
-use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 
 use super::HistoryAccess;
-use crate::branch::AdmittedRelationalBranchBasis;
 #[cfg(test)]
 use crate::history::data::BranchId;
 use crate::history::data::CommitId;
@@ -82,29 +80,12 @@ impl<'runtime> HistoryAccess<'runtime> {
         self.max_commit_id_common_ancestor(left, right)
     }
 
-    /// Selects the common ancestor from two exact owner observations.  Raw
-    /// branch names are intentionally not a production currentness input.
-    pub(crate) fn latest_common_ancestor_between_bindings(
-        &self,
-        left_binding: &AdmittedRelationalBranchBasis,
-        right_binding: &AdmittedRelationalBranchBasis,
-    ) -> Option<CommitId> {
-        let left = self.bound_head_commit_id(left_binding)?;
-        let right = self.bound_head_commit_id(right_binding)?;
-        self.max_commit_id_common_ancestor(left, right)
-    }
-
-    fn bound_head_commit_id(&self, binding: &AdmittedRelationalBranchBasis) -> Option<CommitId> {
-        binding
-            .commit_identity()
-            .map(|identity| identity.commit_id())
-    }
-
     /// Returns the common ancestor selected by the runtime's current history
     /// rule: intersect both ancestor sets, then choose the maximum `CommitId`.
     ///
     /// This is the actual 7A-certified behavior. Callers should not read richer
     /// merge semantics into this helper than the implementation proves.
+    #[cfg(test)]
     pub(crate) fn max_commit_id_common_ancestor(
         &self,
         left: CommitId,

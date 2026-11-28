@@ -177,29 +177,31 @@ fn is_owning_branch_linear_ancestor(
     if older == newer {
         return Ok(false);
     }
-    let Some(mut current) = newer else {
+    let Some(current) = newer else {
         return Ok(false);
     };
-    let mut visited: BTreeSet<CommitId> = BTreeSet::new();
-    loop {
-        consult()?;
-        if !visited.insert(current) {
-            return Ok(false);
-        }
-        let Some(edge) = lookup(current) else {
-            return Ok(false);
-        };
-        if &edge.authoring_branch != branch {
-            return Ok(false);
-        }
-        match (older, edge.primary_parent) {
-            (Some(target), Some(parent)) if parent == target => return Ok(true),
-            (Some(_), Some(parent)) => current = parent,
-            (Some(_), None) => return Ok(false),
-            (None, None) => return Ok(true),
-            (None, Some(parent)) => current = parent,
-        }
-    }
+    use std::ops::ControlFlow::{Break, Continue};
+    let result =
+        worth_relational_branch::internal_port::history::access::ancestry_walk::walk_acyclic_chain(
+            current,
+            &mut BTreeSet::new(),
+            consult,
+            |current| {
+                let Some(edge) = lookup(current) else {
+                    return Ok(Break(false));
+                };
+                if &edge.authoring_branch != branch {
+                    return Ok(Break(false));
+                }
+                Ok(match (older, edge.primary_parent) {
+                    (Some(target), Some(parent)) if parent == target => Break(true),
+                    (_, Some(parent)) => Continue(parent),
+                    (Some(_), None) => Break(false),
+                    (None, None) => Break(true),
+                })
+            },
+        )?;
+    Ok(result.unwrap_or(false))
 }
 
 #[cfg(test)]

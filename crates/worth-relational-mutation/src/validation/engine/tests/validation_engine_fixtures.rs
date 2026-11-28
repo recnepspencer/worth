@@ -11,8 +11,10 @@ pub(super) use crate::contracts::schema::data::structural_invariants::AllowedCyc
 pub(super) use crate::contracts::schema::data::structural_invariants::ConnectivityMinimumContractDeclaration;
 pub(super) use crate::contracts::schema::data::structural_invariants::ConnectivityMinimumEnforcement;
 pub(super) use crate::contracts::schema::data::structural_invariants::DirectedTraversalKind;
-pub(super) use crate::contracts::schema::data::structural_invariants::PartitionIsolationContractDeclaration;
-pub(super) use crate::contracts::schema::data::structural_invariants::PartitionIsolationMode;
+#[cfg(test)]
+use crate::contracts::schema::data::structural_invariants::PartitionIsolationContractDeclaration;
+#[cfg(test)]
+use crate::contracts::schema::data::structural_invariants::PartitionIsolationMode;
 pub(super) use crate::contracts::schema::data::EntityKindRegistration;
 pub(super) use crate::contracts::schema::data::RelationKindRegistration;
 pub(super) use crate::contracts::schema::data::RelationalSchemaRegistry;
@@ -56,6 +58,7 @@ pub(super) use crate::validation::engine::{
     InvariantEngine, InvariantExecutionRequest, InvariantObservation, InvariantRequestProfile,
 };
 
+#[cfg(test)]
 pub(super) fn partition_isolation_registry() -> RelationalSchemaRegistry {
     RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
@@ -86,6 +89,7 @@ pub(super) fn partition_isolation_registry() -> RelationalSchemaRegistry {
         .unwrap()
 }
 
+#[cfg(test)]
 pub(super) fn cardinality_minimum_registry() -> RelationalSchemaRegistry {
     RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {

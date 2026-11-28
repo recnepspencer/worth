@@ -221,7 +221,7 @@ fn chk6_and_retired_inner_partition_grammars_are_refused() {
             .unwrap_err();
         assert!(matches!(
             expect_durability_failure(stop).class,
-            RecoveryFailureClass::UnsupportedCheckpointVersion { supported: 24, .. }
+            RecoveryFailureClass::UnsupportedCheckpointVersion { supported: 25, .. }
         ));
     }
     for retired in [

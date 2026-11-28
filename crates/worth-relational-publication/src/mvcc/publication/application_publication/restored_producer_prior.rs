@@ -1,6 +1,6 @@
 //! A Native-restored publication and its actual producer antecedent, without replay inputs.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_contracts::internal_port as contracts;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::*;
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasis;
 use contracts::execution::request_stage::checkpoint;

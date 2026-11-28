@@ -40,15 +40,14 @@ pub(crate) fn first_retained_commit<T: Clone>(
 pub(crate) fn compact_entry(entry: &NameEntry, floor: CommitId) -> Option<NameEntry> {
     let mut keep = first_retained_commit(&entry.timeline, floor)?;
     // An ended state at the floor still reports the lineage that ended there.
-    if matches!(entry.timeline.get(&keep), Some(NameState::Ended)) {
-        if let Some((live_commit, _)) = entry
+    if matches!(entry.timeline.get(&keep), Some(NameState::Ended))
+        && let Some((live_commit, _)) = entry
             .timeline
             .range(..keep)
             .rev()
             .find(|(_, state)| matches!(state, NameState::Live(_)))
-        {
-            keep = *live_commit;
-        }
+    {
+        keep = *live_commit;
     }
     let dropped_timeline = entry.timeline.get_min().is_some_and(|(min, _)| *min < keep);
     let effective = first_retained_commit(&entry.timeline, floor);

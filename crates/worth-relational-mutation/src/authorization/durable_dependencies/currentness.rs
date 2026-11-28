@@ -1,10 +1,10 @@
 //! Compare an issued native source stamp with one exact commit snapshot.
 
-use crate::branch_port::visibility::materialization::read_records::projection::registered_snapshot_projection::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
+use crate::branch_port::snapshots::data::{SnapshotHandle, SnapshotHandleFieldsPort as _};
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, CanonicalFieldPath, FieldKey, LocatorAuthority,
 };
-use crate::branch_port::snapshots::data::{SnapshotHandle, SnapshotHandleFieldsPort as _};
 
 use crate::branch_port::visibility::materialization::read_records::projection::adjacency_revision_read::RelationalAdjacencyDirection;
 use crate::branch_port::visibility::materialization::read_records::projection::creation::ProjectionInputs;

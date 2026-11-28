@@ -44,25 +44,3 @@ impl VisibilityProjectionView {
         ))
     }
 }
-
-#[doc(hidden)]
-pub trait VisibilityProjectionViewOwnerPort: Sized {
-    fn retain_exact_basis(&self) -> Option<crate::history::retention::VisibilitySnapshotBasis>;
-    fn from_observation(
-        inputs: ProjectionInputs<'_>,
-        observation: &crate::mvcc::observation::RelationalBranchObservation,
-    ) -> Result<Self, crate::branch::basis_denial::RelationalBranchBasisDenial>;
-}
-
-impl VisibilityProjectionViewOwnerPort for VisibilityProjectionView {
-    fn retain_exact_basis(&self) -> Option<crate::history::retention::VisibilitySnapshotBasis> {
-        self.retain_exact_basis()
-    }
-
-    fn from_observation(
-        inputs: ProjectionInputs<'_>,
-        observation: &crate::mvcc::observation::RelationalBranchObservation,
-    ) -> Result<Self, crate::branch::basis_denial::RelationalBranchBasisDenial> {
-        VisibilityProjectionView::from_observation(inputs, observation)
-    }
-}

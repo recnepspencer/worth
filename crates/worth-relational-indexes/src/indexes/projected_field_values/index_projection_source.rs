@@ -1,8 +1,6 @@
-use crate::branch::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 use crate::branch::visibility::materialization::read_records::projection::streamed_basis_reads::ProjectionRecordSource;
-use crate::branch::visibility::materialization::read_records::projection::view::{
-    VisibilityProjectionView, VisibilityProjectionViewOwnerPort as _,
-};
+use crate::branch::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use crate::contracts::identity::data::primitives::KindId;
 use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
 use crate::contracts::schema::data::aspect_contracts::lowered_plan::{
@@ -128,7 +126,7 @@ impl<'view> IndexProjectionSource<'view> {
         kind_id: KindId,
         before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
-    ) -> Result<(), crate::branch::visibility::materialization::read_records::read_stop::ReadStop<E>>
+    ) -> Result<(), worth_relational_contracts::internal_port::execution::request_or::RequestOr<E>>
     {
         self.projection.try_for_each_entity_record(
             execution,
@@ -144,7 +142,7 @@ impl<'view> IndexProjectionSource<'view> {
         kind_id: KindId,
         before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
-    ) -> Result<(), crate::branch::visibility::materialization::read_records::read_stop::ReadStop<E>>
+    ) -> Result<(), worth_relational_contracts::internal_port::execution::request_or::RequestOr<E>>
     {
         self.projection.try_for_each_relation_record(
             execution,
@@ -176,7 +174,7 @@ impl<'view> IndexProjectionSource<'view> {
         inspect: impl FnOnce(&EntityReadRecord) -> T,
     ) -> Result<
         Option<T>,
-        crate::branch::visibility::materialization::read_records::read_stop::ReadStop<E>,
+        worth_relational_contracts::internal_port::execution::request_or::RequestOr<E>,
     > {
         self.projection
             .with_entity_record(execution, entity_id, before, inspect)

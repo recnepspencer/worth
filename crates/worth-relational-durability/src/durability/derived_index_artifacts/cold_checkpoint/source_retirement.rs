@@ -15,11 +15,7 @@ impl DeferredIndexImage {
             .expect("only a serving image exposes its source directory")
     }
     fn try_source_state(&self) -> Result<std::sync::MutexGuard<'_, DeferredIndexState>, Denial> {
-        match self.admitted.try_lock() {
-            Ok(state) => Ok(state),
-            Err(std::sync::TryLockError::Poisoned(error)) => Ok(error.into_inner()),
-            Err(std::sync::TryLockError::WouldBlock) => Err(Denial::Busy),
-        }
+        worth_execution::try_retirement_guard(self.admitted.try_lock(), Denial::Busy)
     }
 }
 impl DeferredIndexImage {

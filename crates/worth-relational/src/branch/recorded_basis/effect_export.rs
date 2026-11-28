@@ -1,4 +1,6 @@
 //! Export recorded predecessor/successor descriptions from a readmitted effect.
+use worth_relational_branch::internal_port::branch::recorded_basis::RecordedRelationalComponentReferenceOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis_descriptor_owner::RelationalBranchBasisDescriptorOwnerPort as _;
 use super::{
     RecordedRelationalComponentReference, RecordedRelationalComponentTarget,
     RelationalRecordedComponentRefusal as Refusal,
@@ -9,11 +11,9 @@ use crate::durability::authority::ReadmittedRelationalAssociatedEffect;
 use crate::history::data::CommitId;
 use crate::runtime::RelationalRuntime;
 use branch::branch::basis_descriptor::{
-    RelationalBranchBasisDescriptor, RelationalBranchBasisDescriptorOwnerPort as _,
-    RelationalBranchBasisPosture, RelationalLiveBranchBasisDescriptorAxes,
+    RelationalBranchBasisDescriptor, RelationalBranchBasisPosture,
+    RelationalLiveBranchBasisDescriptorAxes,
 };
-use branch::branch::recorded_basis::copying::RecordedRelationalComponentReferenceOwnerPort as _;
-use branch::branch::recorded_basis::RecordedRelationalComponentReferenceOwnerPort as _;
 use branch::branch::reference::observation::relational_branch_observation;
 use contracts::branch::reference_checkpoint_data::CANONICAL_RUNTIME_INSTANCE_ID;
 use contracts::branch::root_capture_denial::RelationalBranchRootCaptureDenial;

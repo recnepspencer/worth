@@ -1,7 +1,7 @@
 //! Original-request control for the SAME positioned authoritative payload grammar.
 use super::RelationalCanonicalCommitArtifact as Artifact;
-use branch::history::commit::payload_commitment::digest_envelope_in_context_for_format;
-use branch::history::commit::payload_commitment::writer::{in_context, CommitmentWriter};
+use branch::history::commit::payload_commitment::digest_envelope_in_context;
+use branch::history::commit::payload_commitment::writer::{in_context, write_commitment};
 use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelope;
 use branch::history::data::positioned_canonical_commit::PositionedCanonicalCommit;
 use contracts::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
@@ -35,9 +35,8 @@ impl Artifact {
                 .into(),
             })?;
         in_context(request, |context| {
-            let mut writer = CommitmentWriter::new(Sha256::new(), context);
-            writer.bytes(canonical.0)?;
-            Ok(writer.hash.finalize().into())
+            let hash = write_commitment(Sha256::new(), context, |sink| sink.bytes(canonical.0))?;
+            Ok(hash.finalize().into())
         })
     }
     pub fn matches_positioned_payload_for_request(
@@ -53,14 +52,8 @@ impl Artifact {
                 return Ok(true);
             }
             // Both passes debit one context from the original request.
-            let format = original.envelope().artifact_format();
             let digest = |envelope, context: &mut _| {
-                digest_envelope_in_context_for_format(
-                    original.position(),
-                    envelope,
-                    format,
-                    context,
-                )
+                digest_envelope_in_context(original.position(), envelope, context)
             };
             let expected = digest(original.envelope(), context)?;
             let actual = digest(candidate, context)?;

@@ -12,34 +12,21 @@ use crate::publication::patch::data::PatchStreamPosition;
 
 pub(super) const MAGIC: [u8; 8] = *b"WRTHRCCA";
 pub const FORMAT_VERSION: u16 = 11;
-const LEGACY_FORMAT_VERSION: u16 = 10;
+use crate::durability::positioned_frame::{
+    PositionedFrameHeader, PositionedFrameRefusal, PositionedFrameSpec,
+};
+pub use crate::durability::positioned_frame::{DIGEST_OFFSET, HEADER_LEN};
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum CanonicalCommitArtifactFormat {
-    LegacyMergeCapable,
-    #[default]
-    Ordinary,
-}
-
-impl CanonicalCommitArtifactFormat {
-    fn version(self) -> u16 {
-        match self {
-            Self::LegacyMergeCapable => LEGACY_FORMAT_VERSION,
-            Self::Ordinary => FORMAT_VERSION,
-        }
-    }
-}
-
-const VERSION_OFFSET: usize = MAGIC.len();
-const POSITION_OFFSET: usize = VERSION_OFFSET + 2;
-const COMMIT_OFFSET: usize = POSITION_OFFSET + 8;
-pub const DIGEST_OFFSET: usize = COMMIT_OFFSET + 8;
-const LENGTH_OFFSET: usize = DIGEST_OFFSET + Digest::LEN;
-pub const HEADER_LEN: usize = LENGTH_OFFSET + 8;
+const SPEC: PositionedFrameSpec = PositionedFrameSpec {
+    magic: MAGIC,
+    version: FORMAT_VERSION,
+    maximum_frame: Some(MAXIMUM_ARTIFACT_BYTES),
+};
+#[cfg(test)]
+const LENGTH_OFFSET: usize = HEADER_LEN - 8;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CanonicalCommitArtifactHeader {
-    pub format: CanonicalCommitArtifactFormat,
     pub position: PatchStreamPosition,
     pub commit_id: CommitId,
     pub digest: Digest,
@@ -50,15 +37,14 @@ impl CanonicalCommitArtifactHeader {
     /// digest slot last, once the payload exists, so callers pass a
     /// placeholder digest here and overwrite `DIGEST_OFFSET` afterwards.
     pub fn emit(&self, payload_len: u64) -> [u8; HEADER_LEN] {
-        let mut header = [0_u8; HEADER_LEN];
-        header[..VERSION_OFFSET].copy_from_slice(&MAGIC);
-        header[VERSION_OFFSET..POSITION_OFFSET]
-            .copy_from_slice(&self.format.version().to_le_bytes());
-        header[POSITION_OFFSET..COMMIT_OFFSET].copy_from_slice(&self.position.0.to_le_bytes());
-        header[COMMIT_OFFSET..DIGEST_OFFSET].copy_from_slice(&self.commit_id.0.to_le_bytes());
-        header[DIGEST_OFFSET..LENGTH_OFFSET].copy_from_slice(self.digest.as_bytes());
-        header[LENGTH_OFFSET..].copy_from_slice(&payload_len.to_le_bytes());
-        header
+        SPEC.emit(
+            PositionedFrameHeader {
+                first: self.position.0,
+                second: self.commit_id.0,
+                digest: *self.digest.as_bytes(),
+            },
+            payload_len,
+        )
     }
 
     /// Verify one complete frame and return its header with the payload it
@@ -83,20 +69,15 @@ impl CanonicalCommitArtifactHeader {
     }
 
     pub fn inspect(frame: &[u8]) -> Result<(Self, &[u8]), Refusal> {
-        let header = Self {
-            format: read_frame_format(frame)?,
-            position: PatchStreamPosition(u64::from_le_bytes(fixed(frame, POSITION_OFFSET)?)),
-            commit_id: CommitId(u64::from_le_bytes(fixed(frame, COMMIT_OFFSET)?)),
-            digest: Digest::recorded(fixed(frame, DIGEST_OFFSET)?),
-        };
-        let declared = u64::from_le_bytes(fixed(frame, LENGTH_OFFSET)?);
-        if declared > (MAXIMUM_ARTIFACT_BYTES - HEADER_LEN) as u64 {
-            return Err(Refusal::SizeLimit {
-                declared_payload: declared,
-                maximum_frame: MAXIMUM_ARTIFACT_BYTES,
-            });
-        }
-        Ok((header, declared_payload(frame, declared)?))
+        let (header, payload) = SPEC.inspect(frame).map_err(frame_refusal)?;
+        Ok((
+            Self {
+                position: PatchStreamPosition(header.first),
+                commit_id: CommitId(header.second),
+                digest: Digest::recorded(header.digest),
+            },
+            payload,
+        ))
     }
 }
 
@@ -106,66 +87,45 @@ pub fn recorded_payload_digest(frame: &[u8]) -> Result<[u8; 32], Refusal> {
     CanonicalCommitArtifactHeader::inspect(frame).map(|(header, _)| *header.digest.as_bytes())
 }
 
-fn fixed<const N: usize>(frame: &[u8], offset: usize) -> Result<[u8; N], Refusal> {
-    frame
-        .get(offset..offset + N)
-        .and_then(|bytes| bytes.try_into().ok())
-        .ok_or(Refusal::TruncatedHeader {
-            available: frame.len(),
-        })
-}
-
-fn declared_payload(frame: &[u8], declared: u64) -> Result<&[u8], Refusal> {
-    let payload = &frame[HEADER_LEN..];
-    let available = payload.len() as u64;
-    if available < declared {
-        return Err(Refusal::TruncatedPayload {
-            declared,
-            available,
-        });
-    }
-    if available > declared {
-        return Err(Refusal::TrailingBytes {
-            declared,
-            available,
-        });
-    }
-    Ok(payload)
-}
-
 pub fn validate_frame_version(frame: &[u8]) -> Result<(), Refusal> {
-    read_frame_format(frame).map(|_| ())
+    SPEC.validate_version(frame).map_err(frame_refusal)
 }
 
-fn read_frame_format(frame: &[u8]) -> Result<CanonicalCommitArtifactFormat, Refusal> {
-    let magic = frame
-        .get(..VERSION_OFFSET)
-        .ok_or(Refusal::TruncatedHeader {
-            available: frame.len(),
-        })?;
-    if magic != MAGIC {
-        return Err(Refusal::UnrecognizedMagic);
+fn frame_refusal(cause: PositionedFrameRefusal) -> Refusal {
+    match cause {
+        PositionedFrameRefusal::TruncatedHeader { available } => {
+            Refusal::TruncatedHeader { available }
+        }
+        PositionedFrameRefusal::UnrecognizedMagic => Refusal::UnrecognizedMagic,
+        PositionedFrameRefusal::InvalidVersion => Refusal::InvalidVersion,
+        PositionedFrameRefusal::UnsupportedVersion(cause) => Refusal::UnsupportedVersion(cause),
+        PositionedFrameRefusal::TruncatedPayload {
+            declared,
+            available,
+        } => Refusal::TruncatedPayload {
+            declared,
+            available,
+        },
+        PositionedFrameRefusal::TrailingBytes {
+            declared,
+            available,
+        } => Refusal::TrailingBytes {
+            declared,
+            available,
+        },
+        PositionedFrameRefusal::SizeLimit {
+            declared_payload,
+            maximum_frame,
+        } => Refusal::SizeLimit {
+            declared_payload,
+            maximum_frame,
+        },
     }
-    let version = u16::from_le_bytes(fixed(frame, VERSION_OFFSET)?);
-    let version = worth_foundational::facade::BoundaryProtocolVersion::try_new(u32::from(version))
-        .map_err(|_| Refusal::InvalidVersion)?;
-    let supported = worth_foundational::facade::BoundaryProtocolVersion::new(FORMAT_VERSION as u32);
-    worth_foundational::facade::BoundaryProtocolCompatibilityWindow::inclusive(
-        worth_foundational::facade::BoundaryProtocolVersion::new(LEGACY_FORMAT_VERSION as u32),
-        supported,
-    )
-    .admit(version)
-    .map_err(Refusal::UnsupportedVersion)?;
-    Ok(match version.get() as u16 {
-        LEGACY_FORMAT_VERSION => CanonicalCommitArtifactFormat::LegacyMergeCapable,
-        _ => CanonicalCommitArtifactFormat::Ordinary,
-    })
 }
 
 #[test]
 fn content_artifact_ceiling_includes_header_and_refuses_before_payload_or_digest() {
     let mut header = CanonicalCommitArtifactHeader {
-        format: CanonicalCommitArtifactFormat::Ordinary,
         position: PatchStreamPosition(1),
         commit_id: CommitId(1),
         digest: Digest::unsealed(),
@@ -188,7 +148,7 @@ fn content_artifact_ceiling_includes_header_and_refuses_before_payload_or_digest
 
 #[test]
 fn only_current_artifact_version_is_admitted_before_payload_checks() {
-    for version in [LEGACY_FORMAT_VERSION - 1, FORMAT_VERSION + 1] {
+    for version in [10, FORMAT_VERSION + 1] {
         let mut frame = MAGIC.to_vec();
         frame.extend(version.to_le_bytes());
         assert!(matches!(

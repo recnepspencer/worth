@@ -180,7 +180,7 @@ fn copy_digest(
     cause: contracts::durability::canonical_commit_artifact::payload_digest::RequestDigestDenial,
 ) -> ControlledFrameCopyDenial {
     match cause {
-        contracts::durability::canonical_commit_artifact::payload_digest::RequestDigestDenial::Frame(cause) => {
+        contracts::durability::canonical_commit_artifact::payload_digest::RequestDigestDenial::Inner(cause) => {
             ControlledFrameCopyDenial::Frame(cause)
         }
         contracts::durability::canonical_commit_artifact::payload_digest::RequestDigestDenial::Request(cause) => {

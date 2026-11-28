@@ -1,22 +1,12 @@
 //! Stream the unchanged carrier encoding into its digest without a staging Vec.
 use super::SchemaImageData;
 use serde::Serialize;
-use sha2::{Digest, Sha256};
-
-struct DigestWriter(Sha256);
-impl std::io::Write for DigestWriter {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        self.0.update(bytes);
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
+use sha2::Digest;
+use worth_relational_contracts::internal_port::durability::artifact_payload_emission::digest::Sha256Sink;
 
 impl SchemaImageData {
     pub(super) fn recompute_digest(&self) -> Result<[u8; 32], rmp_serde::encode::Error> {
-        let mut output = DigestWriter(Sha256::new());
+        let mut output = Sha256Sink::default();
         output
             .0
             .update(b"worth.relational.branch-root-schema-image.v1\0");

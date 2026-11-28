@@ -10,14 +10,15 @@
 //! The bound is applied while the arena is walked, never after materializing
 //! the answer, so an over-large scope costs the declared budget and stops.
 
-pub mod directory;
-use super::super::materialization::materialize_authoritative_entity_record_at_version;
-use super::super::native_scan_stop::NativeScanStop;
-use super::super::visibility::entity_slot_matches_kind_at_version;
+use super::super::projection::exact_basis_reads::ExactProjectionReader;
+use super::bounded_kind_scan::{BoundedRecordClass, KindScan};
+use super::record_class::Entity;
 use super::{
     kind_scan_visibility::KindScanVisibility, projection_record_reader::ProjectionRecordReader,
 };
+use crate::identity::data::PartitionId;
 use crate::{storage::data::EntityReadRecord, storage::overlay::PartitionAccess};
+use worth_relational_contracts::internal_port::execution::request_or::RequestOr;
 
 /// The live entities of one kind, read under a declared work bound.
 #[derive(Debug)]
@@ -33,97 +34,6 @@ pub struct BoundedEntityKindTruthRead {
 pub struct EntityKindTruthReadLimitExceeded {
     entity_slots_examined: usize,
     entity_records_reserved: usize,
-}
-
-/// The running cost of one kind scan and the records it has reserved so far.
-pub(super) struct EntityKindScan<'charge, 'memory> {
-    memory: Option<&'charge mut worth_execution::ExecutionResultMemory<'memory>>,
-    charge: Option<&'charge mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
-    records: Vec<EntityReadRecord>,
-    entity_slots_examined: usize,
-    work_units: usize,
-    maximum_work_units: Option<usize>,
-}
-
-impl<'charge, 'memory> EntityKindScan<'charge, 'memory> {
-    pub(super) fn funded(
-        maximum_work_units: usize,
-        charge: &'charge mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-        memory: Option<&'charge mut worth_execution::ExecutionResultMemory<'memory>>,
-    ) -> Self {
-        Self::with_limit(Some(maximum_work_units), charge, memory)
-    }
-    pub(super) fn with_limit(
-        maximum_work_units: Option<usize>,
-        charge: &'charge mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-        memory: Option<&'charge mut worth_execution::ExecutionResultMemory<'memory>>,
-    ) -> Self {
-        Self {
-            charge: Some(charge),
-            memory,
-            records: Vec::new(),
-            entity_slots_examined: 0,
-            work_units: 0,
-            maximum_work_units,
-        }
-    }
-
-    fn examine_slot(&mut self) -> Result<(), NativeScanStop<EntityKindTruthReadLimitExceeded>> {
-        self.spend(super::super::read_prices::EXAMINE_SLOT)?;
-        self.entity_slots_examined += 1;
-        Ok(())
-    }
-
-    fn reserve_with(
-        &mut self,
-        clone_bytes: u64,
-        materialize: impl FnOnce() -> EntityReadRecord,
-    ) -> Result<(), NativeScanStop<EntityKindTruthReadLimitExceeded>> {
-        self.spend(super::super::read_prices::RESERVE_RECORD)?;
-        if let Some(memory) = self.memory.as_mut() {
-            super::super::read_work::record_memory::prepare_push(
-                memory,
-                &mut self.records,
-                clone_bytes,
-            )
-            .map_err(NativeScanStop::Request)?;
-        }
-        let record = materialize();
-        if let Some(memory) = self.memory.as_mut() {
-            super::super::read_work::record_memory::settle_clone(
-                memory,
-                clone_bytes,
-                super::super::read_footprint::entity(&record),
-            )
-            .map_err(NativeScanStop::Request)?;
-        }
-        self.records.push(record);
-        Ok(())
-    }
-
-    fn spend(
-        &mut self,
-        units: u64,
-    ) -> Result<(), NativeScanStop<EntityKindTruthReadLimitExceeded>> {
-        if self.maximum_work_units == Some(self.work_units) {
-            return Err(NativeScanStop::Limit(EntityKindTruthReadLimitExceeded {
-                entity_slots_examined: self.entity_slots_examined,
-                entity_records_reserved: self.records.len(),
-            }));
-        }
-        if let Some(charge) = self.charge.as_mut() {
-            charge(units).map_err(NativeScanStop::request)?;
-        }
-        self.work_units += 1;
-        Ok(())
-    }
-
-    pub(super) fn finish(self) -> BoundedEntityKindTruthRead {
-        BoundedEntityKindTruthRead {
-            records: self.records,
-            entity_slots_examined: self.entity_slots_examined,
-        }
-    }
 }
 
 impl BoundedEntityKindTruthRead {
@@ -167,6 +77,27 @@ impl EntityKindTruthReadLimitExceeded {
 }
 
 impl ProjectionRecordReader<'_> {
+    pub(in crate::internal_port::visibility::materialization::read_records) fn entities_from_directory(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: &ExactProjectionReader<'_>,
+        kind: crate::identity::data::KindId,
+        partition: Option<crate::identity::data::PartitionId>,
+        maximum: Option<usize>,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<BoundedEntityKindTruthRead, RequestOr<EntityKindTruthReadLimitExceeded>> {
+        let mut scan = KindScan::<Entity>::new(maximum, true, Some(charge), Some(memory));
+        self.scan_kind_from_directory(
+            execution,
+            source,
+            kind,
+            source.entity_ids(kind, partition),
+            &mut scan,
+        )?;
+        Ok(finish_scan(scan))
+    }
+
     pub fn bounded_entities_of_kind_in_state(
         &self,
         state: &(impl PartitionAccess + ?Sized),
@@ -176,140 +107,39 @@ impl ProjectionRecordReader<'_> {
         maximum_work_units: usize,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<BoundedEntityKindTruthRead, NativeScanStop<EntityKindTruthReadLimitExceeded>> {
-        let mut scan = EntityKindScan::funded(maximum_work_units, charge, Some(memory));
-        let (partitions, partition_bytes) = super::super::read_work::record_memory::partition_ids(
-            state,
-            scan.memory
-                .as_mut()
-                .expect(/* Proof: The private bounded scan constructor installs its initiating result loan; callbacks only borrow/resize it and no path takes it before scan completion. */ "native scan keeps its original loan"),
-        )
-        .map_err(NativeScanStop::Request)?;
-        for partition_id in partitions {
-            self.scan_entity_kind_in_partition(
-                state,
-                registry,
-                partition_id,
-                kind_id,
-                visibility,
-                &mut scan,
-            )?;
-        }
-        super::super::read_work::record_memory::release(
-            scan.memory
-                .as_mut()
-                .expect(/* Proof: The private bounded scan constructor installs its initiating result loan; callbacks only borrow/resize it and no path takes it before scan completion. */ "native scan keeps its original loan"),
-            partition_bytes,
-        )
-        .map_err(NativeScanStop::Request)?;
-        let read = scan.finish();
+    ) -> Result<BoundedEntityKindTruthRead, RequestOr<EntityKindTruthReadLimitExceeded>> {
+        let mut scan =
+            KindScan::<Entity>::new(Some(maximum_work_units), true, Some(charge), Some(memory));
+        self.scan_kind_in_state(state, registry, kind_id, visibility, &mut scan)?;
+        let read = finish_scan(scan);
         debug_assert!(
-            /* Proof: This private scan collects from the canonical partition/slot iterator and never reorders records after visibility selection. */
             super::truth_access::authoritative_entity_records_are_canonical(read.records())
         );
         Ok(read)
     }
+}
 
-    pub(super) fn scan_entity_kind_in_partition(
-        &self,
-        state: &(impl PartitionAccess + ?Sized),
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-        partition_id: crate::identity::data::PartitionId,
-        kind_id: crate::identity::data::KindId,
-        visibility: KindScanVisibility,
-        scan: &mut EntityKindScan<'_, '_>,
-    ) -> Result<(), NativeScanStop<EntityKindTruthReadLimitExceeded>> {
-        let current_version = self.current_version;
-        if matches!(visibility, KindScanVisibility::Live) {
-            let Some(head) = state.get_current_partition(partition_id) else {
-                return Ok(());
-            };
-            for slot in head.entity_arena().live_slots() {
-                scan.examine_slot()?;
-                if head
-                    .entity_arena()
-                    .get_slot(slot)
-                    .is_none_or(|record| record.kind_id() != Some(kind_id))
-                {
-                    continue;
-                }
-                scan.reserve_with(
-                    super::super::read_work::record_quote::entity_head(registry, head, slot)
-                        .map_err(NativeScanStop::Request)?,
-                    || {
-                        self.instrumentation.count(|counters| {
-                            counters.visible_authoritative_entity_records_materialized += 1;
-                        });
-                        head.entity_record(
-                            registry,
-                            crate::identity::data::EntityId::new(partition_id, slot as u64, 0),
-                        )
-                        .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "a matching live entity slot must materialize")
-                    },
-                )?;
-            }
-            return Ok(());
+fn finish_scan(scan: KindScan<'_, '_, Entity>) -> BoundedEntityKindTruthRead {
+    let (records, entity_slots_examined, _) = scan.finish();
+    BoundedEntityKindTruthRead {
+        records,
+        entity_slots_examined,
+    }
+}
+
+impl BoundedRecordClass for Entity {
+    type Denial = EntityKindTruthReadLimitExceeded;
+    const COUNT_MATERIALIZED: bool = true;
+
+    fn limit(examined: usize, reserved: usize) -> Self::Denial {
+        EntityKindTruthReadLimitExceeded {
+            entity_slots_examined: examined,
+            entity_records_reserved: reserved,
         }
-        let Some(partition) = state.get_partition(partition_id) else {
-            return Ok(());
-        };
-        match visibility {
-            KindScanVisibility::Live => unreachable!(
-                /* Proof: The current-read dispatch returns via Head before this historical branch; only an immutable historical basis reaches this match. */
-                "current scans returned through Head"
-            ),
-            KindScanVisibility::AtVersion(version_id) => {
-                let (slots, held) = super::super::read_work::record_memory::occupied_slots(
-                    &partition.entity_arena,
-                    scan.memory
-                        .as_mut()
-                        .expect(/* Proof: The private bounded scan constructor installs its initiating result loan; callbacks only borrow/resize it and no path takes it before scan completion. */ "native bounded scans carry the initiating result loan"),
-                )
-                .map_err(NativeScanStop::Request)?;
-                for slot in slots {
-                    scan.examine_slot()?;
-                    self.instrumentation.count(|counters| {
-                        counters.visibility_entity_slot_scans += 1;
-                    });
-                    if !entity_slot_matches_kind_at_version(
-                        partition,
-                        slot,
-                        kind_id,
-                        version_id,
-                        current_version,
-                    ) {
-                        continue;
-                    }
-                    scan.reserve_with(
-                        super::super::read_work::record_quote::entity(
-                            registry, partition, slot, visibility,
-                        )
-                        .map_err(NativeScanStop::Request)?,
-                        || {
-                            self.instrumentation.count(|counters| {
-                                counters.visible_authoritative_entity_records_materialized += 1;
-                            });
-                            materialize_authoritative_entity_record_at_version(
-                                registry,
-                                partition,
-                                partition_id,
-                                slot,
-                                version_id,
-                            )
-                            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "a matching historical entity slot must materialize")
-                        },
-                    )?;
-                }
-                super::super::read_work::record_memory::release(
-                    scan.memory
-                        .as_mut()
-                        .expect(/* Proof: The private bounded scan constructor installs its initiating result loan; callbacks only borrow/resize it and no path takes it before scan completion. */ "the original loan remains present"),
-                    held,
-                )
-                .map_err(NativeScanStop::Request)?;
-            }
-        }
-        Ok(())
+    }
+
+    fn unreadable(_: PartitionId, _: usize) -> Self::Denial {
+        panic!("a matching visible entity slot must materialize")
     }
 }
 
@@ -334,14 +164,14 @@ mod paid_stop_tests {
             worth_execution::MapKernelStop::WorkCeiling,
         ] {
             let mut charge = |_| Err(stop);
-            let mut scan = EntityKindScan::funded(8, &mut charge, None);
+            let mut scan = KindScan::<Entity>::new(Some(8), true, Some(&mut charge), None);
             assert_eq!(
                 scan.examine_slot(),
-                Err(NativeScanStop::Request(
-                    crate::execution::denial::kernel_stop(stop)
-                ))
+                Err(RequestOr::Request(crate::execution::denial::kernel_stop(
+                    stop
+                )))
             );
-            assert_eq!(scan.finish().entity_records_reserved(), 0);
+            assert_eq!(finish_scan(scan).entity_records_reserved(), 0);
         }
     }
 }

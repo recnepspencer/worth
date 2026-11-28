@@ -1,6 +1,6 @@
 //! Destruction of the final opaque value must not run under its directory lock.
+use worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImageOwnerPort as _;
 use crate::branch_port::validation::candidate_source::image::eviction::ManagedIndexBranchImageFixturePort as _;
-use crate::branch_port::validation::candidate_source::image::publication::ManagedIndexBranchImageOwnerPort as _;
 use crate::validation::candidate_source::image::ManagedIndexBranchImage;
 use std::sync::{Arc, Mutex};
 type Payload = Arc<dyn std::any::Any + Send + Sync>;

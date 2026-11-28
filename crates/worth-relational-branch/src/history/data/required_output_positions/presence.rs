@@ -1,4 +1,5 @@
 //! Durable current route presence, written only by the required-output position owner.
+use worth_relational_contracts::internal_port::durability::artifact_payload_emission::digest::Sha256Sink;
 use crate::history::data::CanonicalRequiredOutputOrigin;
 use crate::history::data::CommitId;
 use crate::identity::data::EntityId;
@@ -57,8 +58,8 @@ impl RoutePresence {
         self.digest == self.content_digest()
     }
     fn content_digest(&self) -> [u8; 32] {
-        use sha2::{Digest, Sha256};
-        let mut writer = RouteDigest(Sha256::new());
+        use sha2::Digest;
+        let mut writer = Sha256Sink::default();
         writer.0.update(if self.custody.is_some() {
             b"worth.current-route.v2\0"
         } else {
@@ -79,16 +80,5 @@ impl RoutePresence {
         )
         .expect("the closed scalar position grammar serializes");
         writer.0.finalize().into()
-    }
-}
-struct RouteDigest(sha2::Sha256);
-impl std::io::Write for RouteDigest {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        use sha2::Digest;
-        self.0.update(bytes);
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
     }
 }

@@ -38,14 +38,3 @@ impl VisibilityProjectionView {
         }
     }
 }
-
-#[doc(hidden)]
-pub trait VisibilityProjectionViewOwnerPort: Sized {
-    fn new<'a>(inputs: impl Into<ProjectionInputs<'a>>, basis: SnapshotStateBasis) -> Self;
-}
-
-impl VisibilityProjectionViewOwnerPort for VisibilityProjectionView {
-    fn new<'a>(inputs: impl Into<ProjectionInputs<'a>>, basis: SnapshotStateBasis) -> Self {
-        VisibilityProjectionView::new(inputs, basis)
-    }
-}

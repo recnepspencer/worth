@@ -1,9 +1,9 @@
 //! Bind memory components to their original live runtime and source.
+use worth_relational_branch::internal_port::branch::recorded_basis::RecordedRelationalComponentReferenceOwnerPort as _;
 use super::*;
 use crate::runtime::RelationalRuntime;
 use worth_foundational::FoundationalBranchTarget;
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
-use worth_relational_branch::internal_port::branch::recorded_basis::copying::RecordedRelationalComponentReferenceOwnerPort as _;
 use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::assemble_observed_relational_memory_component;
 use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::ObservedRelationalMemoryComponentFieldsPort as _;
 

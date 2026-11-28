@@ -1,5 +1,5 @@
 //! Linear `O(V + E)` combined live + retired fork-ancestry validation and
-//! index for read-free `CHK24` manifest validation.
+//! index for read-free `CHK25` manifest validation.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -184,30 +184,15 @@ impl<'a> AncestryIndex<'a> {
             (n, i, g)
         };
 
-        let mut euler: BTreeMap<&'a BranchId, (u32, u32)> = BTreeMap::new();
         let mut nearest_present: BTreeMap<&'a BranchId, &'a BranchId> = BTreeMap::new();
         let mut topmost_retired: BTreeMap<&'a BranchId, &'a BranchId> = BTreeMap::new();
         let mut retired_root: BTreeMap<&'a BranchId, &'a BranchId> = BTreeMap::new();
         let mut inherited_min: BTreeMap<&'a BranchId, ReqBounds> = BTreeMap::new();
         let mut best_min: BTreeMap<&'a BranchId, ReqBounds> = BTreeMap::new();
 
-        let mut timer = 0u32;
-        let mut stack: Vec<(&'a BranchId, Option<(&'a BranchId, u64)>, bool)> =
-            roots.iter().rev().map(|&r| (r, None, false)).collect();
-        while let Some((node, parent_edge, exiting)) = stack.pop() {
-            if exiting {
-                if let Some(slot) = euler.get_mut(node) {
-                    slot.1 = timer;
-                }
-                continue;
-            }
-            if euler.contains_key(node) {
-                continue;
-            }
-            timer += 1;
-            euler.insert(node, (timer, timer));
+        let euler = worth_relational_branch::internal_port::history::access::ancestry_walk::ancestry_intervals(&roots, &kids, |&node, parent_edge| {
             let own = own_mins(node);
-            if let Some((parent, fc)) = parent_edge {
+            if let Some((&parent, fc)) = parent_edge {
                 if committed.contains(parent) {
                     nearest_present.insert(node, parent);
                 } else if let Some(&anc) = nearest_present.get(parent) {
@@ -240,13 +225,7 @@ impl<'a> AncestryIndex<'a> {
                 }
                 best_min.insert(node, own);
             }
-            stack.push((node, None, true));
-            if let Some(children) = kids.get(node) {
-                for &(child, fc) in children.iter().rev() {
-                    stack.push((child, Some((node, fc)), false));
-                }
-            }
-        }
+        });
 
         Ok(Self {
             committed,

@@ -20,12 +20,13 @@ fn validate_alias_header_authority(
     base: &BranchNamingRoot,
     has_naming_schemes: bool,
 ) -> Result<(), DurabilityError> {
-    if root.has_active_domain(1) && !has_own_domain(root, 1) {
-        if !base.has_active_domain(1) || base.naming != root.naming {
-            return Err(corrupt(
-                "branch naming delta alias header disagrees with delta_base",
-            ));
-        }
+    if root.has_active_domain(1)
+        && !has_own_domain(root, 1)
+        && (!base.has_active_domain(1) || base.naming != root.naming)
+    {
+        return Err(corrupt(
+            "branch naming delta alias header disagrees with delta_base",
+        ));
     }
     if root.has_active_domain(2) && base.has_active_domain(2) {
         let covers_retention = base

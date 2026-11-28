@@ -1,11 +1,13 @@
 //! Complete one live required-output publication against the admitted branch.
-use worth_relational_contracts::internal_port as contracts;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::readmission::CanonicalCommitEnvelopeBodyOwnerPort as _;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use super::super::history_request::{OutputPreparationInputs, OutputPreparationRequest};
 use super::*;
-use worth_relational_branch::internal_port::branch::basis::{AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _};
 use crate::mvcc::publication::application_publication::RequiredOutputPublication as Publication;
+use worth_relational_branch::internal_port::branch::basis::{
+    AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _,
+};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_contracts::internal_port as contracts;
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn install_required_output_origin<'r>(

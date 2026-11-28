@@ -1,9 +1,5 @@
 use crate::data::graph::SignalGraph;
-use crate::data::node::CheckpointNodeImage;
 use crate::data::telemetry::RuntimeTelemetry;
-use crate::data::temporal::{
-    TemporalWakeOwner, TemporalWakeRetirementBatch, TemporalWakeRetirementReason,
-};
 use crate::logic::checkpoint::CheckpointRuntime;
 use crate::logic::transaction::runtime::config::SignalRuntimeConfig;
 use crate::state::{SignalBranchId, SignalSnapshotId};
@@ -291,26 +287,6 @@ where
 
     pub fn clear_branch_mutation_nodes(&mut self) {
         self.graph_mut().clear_branch_mutation_nodes();
-    }
-
-    pub fn replace_node_from_checkpoint_image(
-        &mut self,
-        node: crate::data::handle::NodeId,
-        image: CheckpointNodeImage,
-    ) -> Result<TemporalWakeRetirementBatch, crate::data::error::SignalError> {
-        if !self.graph().is_alive(node) {
-            return Err(crate::data::error::SignalError::invalid_input(format!(
-                "cannot replace checkpoint image for non-live node owner {node}"
-            )));
-        }
-
-        self.graph_mut()
-            .replace_entry_from_checkpoint_image(node, image)?;
-        self.derived.temporal.retire_wakes_for_owner(
-            TemporalWakeOwner::Node(node),
-            TemporalWakeRetirementReason::Superseded,
-            Some(&mut self.derived.telemetry.temporal),
-        )
     }
 }
 #[cfg(test)]

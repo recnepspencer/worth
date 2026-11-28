@@ -157,10 +157,10 @@ fn certify_with_memory<E: ChargedBytes>(
             },
         )
         .map_err(|stop| match stop {
-            crate::branch::visibility::materialization::read_records::read_stop::ReadStop::Admission(
+            worth_relational_contracts::internal_port::execution::request_or::RequestOr::Inner(
                 error,
             ) => error,
-            crate::branch::visibility::materialization::read_records::read_stop::ReadStop::Request(
+            worth_relational_contracts::internal_port::execution::request_or::RequestOr::Request(
                 cause,
             ) => native(prepared, cause),
         })?;

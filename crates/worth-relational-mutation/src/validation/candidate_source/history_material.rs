@@ -1,6 +1,6 @@
 //! Spend the original candidate budget while retaining the native historical material.
+use worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImageOwnerPort as _;
 use super::image::{HistorySourceDirectory, ManagedIndexBranchImage};
-use crate::branch_port::validation::candidate_source::image::ManagedIndexBranchImageOwnerPort as _;
 use crate::contracts::identity::data::record_ids::EntityId;
 use crate::contracts::validation::candidate_source::availability::ManagedIndexSourceAvailability as Availability;
 use crate::contracts::validation::candidate_source::program::{
