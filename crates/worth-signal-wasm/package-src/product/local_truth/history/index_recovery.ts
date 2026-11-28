@@ -3,22 +3,18 @@ import {
   createSnapshot,
   locusKey,
 } from "../authority/authority_state.js";
-import { canonicalDigest, immutableClone } from "../support/canonical.js";
+import { canonicalDigest } from "../support/canonical.js";
 import { success, unavailable } from "../support/outcomes.js";
 
 export function rebuildLocalTruthDerivedIndexes(state, schema) {
   try {
     requireCompatibleSchema(state, schema);
     validateBranchCatalog(state);
-    const lineageByBranch = new Map();
     const locusHeadByBranch = new Map();
     for (const branch of state.branches.values()) {
-      const rebuilt = rebuildBranchIndexes(state, schema, branch);
-      lineageByBranch.set(branch.id, rebuilt.lineage);
-      locusHeadByBranch.set(branch.id, rebuilt.locusHeads);
+      locusHeadByBranch.set(branch.id, rebuildBranchLocusHeads(state, schema, branch));
     }
     const next = cloneAuthorityState(state);
-    next.lineageByBranch = lineageByBranch;
     next.locusHeadByBranch = locusHeadByBranch;
     return success(next);
   } catch (error) {
@@ -29,16 +25,14 @@ export function rebuildLocalTruthDerivedIndexes(state, schema) {
   }
 }
 
-function rebuildBranchIndexes(state, schema, branch) {
+function rebuildBranchLocusHeads(state, schema, branch) {
   const checkpoint = state.checkpoints.get(branch.id) ?? null;
   if (branch.retired && !checkpoint && !state.commits.has(branch.headCommitId)) {
-    return { lineage: new Map(), locusHeads: new Map() };
+    return new Map();
   }
-  let lineage = new Map();
   let locusHeads = new Map();
   if (checkpoint) {
     validateCheckpoint(state, checkpoint, branch);
-    lineage = new Map(checkpoint.lineage.map(([key, value]) => [key, immutableClone(value)]));
     locusHeads = new Map(checkpoint.locusHeads);
   }
   const commits = collectRequiredSegment(state, branch.headCommitId, checkpoint?.headCommitId ?? null);
@@ -54,11 +48,11 @@ function rebuildBranchIndexes(state, schema, branch) {
     }
   }
   if (!checkpoint && commits[0]?.kind !== "genesis") {
-    if (branch.retired) return { lineage, locusHeads };
+    if (branch.retired) return locusHeads;
     throw new Error(`branch ${branch.id} has neither a checkpoint nor a complete genesis segment`);
   }
   requireSnapshot(state, branch.snapshotId);
-  return { lineage, locusHeads };
+  return locusHeads;
 }
 
 function validateCheckpoint(state, checkpoint, branch) {

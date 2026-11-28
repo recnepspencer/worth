@@ -148,21 +148,13 @@ export function isLocalTruthAuthority(value) {
 }
 
 async function attachDerivation(outcome, state, project) {
-  if (outcome.posture !== "success" && outcome.posture !== "advisory") {
-    return outcome;
-  }
-  const commit = outcome.posture === "success"
-    ? outcome.value.commit ?? outcome.value
-    : outcome.value.commit ?? outcome.value;
-  if (!commit || commit.artifactFamily !== "LocalTruthCommit") {
-    return outcome;
-  }
+  if (outcome.posture !== "success") return outcome;
+  const commit = outcome.value;
   const snapshot = state.snapshots.get(commit.afterSnapshotId);
   const derivation = await project?.(commit, snapshot, state) ?? null;
   return success(deepFreeze({
     artifactFamily: "LocalTruthCommitOutcome",
     commit,
-    merge: outcome.value.commit ? outcome.value : null,
     derivation,
   }));
 }

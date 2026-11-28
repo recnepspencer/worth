@@ -14,8 +14,6 @@ pub(super) fn reject_delivery(
     source: BridgeFailureSource,
     error: BridgeDeliveryError,
 ) -> BridgeDeliveryError {
-    runtime
-        .diagnostic_sink
-        .record_delivery_failure(source, &error);
+    runtime.diagnostics.record_delivery_failure(source, &error);
     error
 }

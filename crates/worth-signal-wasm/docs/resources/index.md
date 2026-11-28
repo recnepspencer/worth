@@ -14,9 +14,9 @@ framework.
 
 Worth describes the request and owns the browser-local resource lifecycle. Your
 `load(params, request)` function performs the actual I/O, and your server remains
-the authority for durable server data. If exact recovery, a narrow update, or a
-merge cannot be proved from the declared shape and available runtime support,
-Worth reports that honestly instead of approximating it.
+the authority for durable server data. Worth reports unavailability when the
+declared shape or retained evidence cannot support a narrow update or exact
+recovery.
 
 ## The Common Path
 
@@ -126,9 +126,8 @@ resource runtime; it simply gives you more authoring responsibility.
   visibly partial, stale, delivery-awaited, or refetch-required.
 - Optimistic rollback and exact recovery depend on the selected effect profile
   and retained runtime support.
-- Replay, restore, merge, and rebase can return a typed unavailable result.
-  Worth does not invent missing history or arbitrary JavaScript deep-merge
-  semantics.
+- Replay and restore report typed unavailability when required history or
+  snapshots are missing.
 - Named `apiScope` defaults must be stable. Put parameter-dependent defaults in
   `api.scope({...})`.
 

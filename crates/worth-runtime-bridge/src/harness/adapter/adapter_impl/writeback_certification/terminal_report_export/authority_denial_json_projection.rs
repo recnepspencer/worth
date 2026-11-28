@@ -72,7 +72,6 @@ fn authority_boundary_json(matrix: &AuthorityDenialBoundaryMatrix) -> serde_json
     json!({
         "preview_validation_failure": boundary_failure_json(matrix.preview_validation_failure()),
         "unbound_authority_failure": boundary_failure_json(matrix.unbound_authority_failure()),
-        "merge_authority_failure": boundary_failure_json(matrix.merge_authority_failure()),
         "unsafe_feedback_failure": boundary_failure_json(matrix.unsafe_feedback_failure()),
         "contradictory_feedback_failure": boundary_failure_json(matrix.contradictory_feedback_failure()),
     })
@@ -99,8 +98,6 @@ fn boundary_failure_json(failure: &AuthorityDenialBoundaryFailure) -> serde_json
         "strategy_coherence_disposition": failure
             .strategy_coherence_disposition()
             .map(|disposition| format!("{disposition:?}")),
-        "authority_request_digest": failure.authority_request_digest(),
-        "authority_receipt_digest": failure.authority_receipt_digest(),
         "denial_class": failure.denial_class().as_str(),
         "failure_kind": format!("{:?}", failure.failure_kind()),
         "failure_digest": failure.failure_digest(),

@@ -33,7 +33,7 @@ fn exact_retirement_contract_consumes_a_linear_plan_before_registry_removal() {
         expected_parent,
         branch.head_snapshot_id,
         branch.head_snapshot_id,
-        SignalBranchRetirementReason::Merged,
+        SignalBranchRetirementReason::Superseded,
         &expected_terminal_digest,
     );
     let plan = match runtime.plan_signal_branch_retirement(

@@ -9,30 +9,6 @@ use crate::data::proof::PartitionScopeSet;
 use crate::data::reuse::ReuseBasis;
 use crate::diagnostics::lineage::LineageArtifactId;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub enum ArtifactAuthorityClass {
-    #[default]
-    TargetAuthoritative,
-    BranchLocalSpeculative,
-    DerivedOnly,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub enum MergeAdoptability {
-    #[default]
-    Adoptable,
-    NonAdoptableBranchLocal,
-    NonAdoptableDerivedOnly,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub struct ArtifactMergeAuthority {
-    #[serde(default)]
-    pub authority_class: ArtifactAuthorityClass,
-    #[serde(default)]
-    pub adoptability: MergeAdoptability,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(transparent)]
 pub struct ContinuityAuthorityToken(Option<ArtifactContinuityToken>);

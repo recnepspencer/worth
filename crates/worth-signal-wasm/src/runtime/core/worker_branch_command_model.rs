@@ -62,7 +62,6 @@ pub struct WorkerRetireBranchRequest {
 #[serde(rename_all = "camelCase")]
 pub enum WorkerBranchRetirementReason {
     Rejected,
-    Merged,
     Superseded,
     DependencyCancellation,
     ProjectionRebuild,

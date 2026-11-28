@@ -62,7 +62,6 @@ not a collaboration server and does not merge independent drafts.
 - [Resource Line Source](./resource-line-source.md)
 - [Resource Settlement](./resource-settlement.md)
 - [Resource Drift](./resource-drift.md)
-- [Resource Merge](./resource-merge.md)
 - [Resource Reset](./resource-reset.md)
 - [Replay And Restore](./replay-and-restore.md)
 - [Resource Action Execution](./resource-action-execution.md)

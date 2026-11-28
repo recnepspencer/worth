@@ -257,7 +257,7 @@ fn retire_exact_preserves_retirement_in_progress_denial_and_rollback() {
     let plan = match runtime.plan_signal_branch_retirement(
         target.clone(),
         basis,
-        SignalBranchRetirementReason::Merged,
+        SignalBranchRetirementReason::Superseded,
     ) {
         TransitionOutcome::Success(plan) => plan,
         other => panic!("the pre-seal plan must issue: {other:?}"),

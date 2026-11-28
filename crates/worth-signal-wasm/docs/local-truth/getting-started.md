@@ -15,7 +15,7 @@ Relational platform.
 - keep browser-local application values in one explicit authority;
 - commit a semantic field without replacing an arbitrary object;
 - give Signal exact aspects to invalidate after the commit;
-- gain branches, snapshots, merge, and inspection without adding another
+- gain branches, snapshots, and inspection without adding another
   state store later.
 
 ## Stable Entry Points
@@ -191,7 +191,6 @@ from initial setup after another commit would correctly return
 ## How It Relates To Other Features
 
 - Add [branches](./branches-and-snapshots.md) when work must be isolated.
-- Add [merge](./branch-merge.md) when independent branches must compose.
 - Use [history and rebuild](./history-and-rebuild.md) for retained inspection
   and disposable Signal recovery.
 - Use Query and Relational instead when the authority must survive this

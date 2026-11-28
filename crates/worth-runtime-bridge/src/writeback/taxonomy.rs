@@ -58,7 +58,6 @@ pub enum BridgeWritebackFailureClass {
     CausalityEffectMismatch,
     StaleTruthBasis,
     InvariantRejected,
-    MergeAuthorityRejected,
     StrategyFailed,
     StrategyPanicked,
     ReplayMismatch,
@@ -150,7 +149,6 @@ mod tests {
                 BridgeWritebackFailureClass::CausalityEffectMismatch,
                 BridgeWritebackFailureClass::StaleTruthBasis,
                 BridgeWritebackFailureClass::InvariantRejected,
-                BridgeWritebackFailureClass::MergeAuthorityRejected,
                 BridgeWritebackFailureClass::StrategyFailed,
                 BridgeWritebackFailureClass::StrategyPanicked,
                 BridgeWritebackFailureClass::ReplayMismatch,
@@ -158,7 +156,7 @@ mod tests {
                 BridgeWritebackFailureClass::PreviewWritebackRejected,
             ]
             .len(),
-            15
+            14
         );
     }
 }

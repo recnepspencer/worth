@@ -90,13 +90,12 @@ These are part of the supported contract, not accidental error cases:
 - construction can reject with a structured construction artifact;
 - runtime compatibility assertions throw with required and missing capability
   names;
-- resource settlement, delivery, effect merge, replay, restore, rollback,
+- resource settlement, delivery, replay, restore, rollback,
   download, and transfer surfaces use discriminated outcomes;
-- form readiness, admission, action, reset, replay/restore, and resource merge
-  surfaces preserve blockers and unavailable outcomes;
+- form readiness, admission, action, reset, and replay/restore preserve blockers and unavailable outcomes;
 - router projection, admission, recovery, navigation, replay, and restore expose
   typed non-admitted or unavailable states;
-- Local Truth mutation and merge return explicit outcome unions.
+- Local Truth mutations return explicit outcome unions.
 
 Do not replace these outcomes with booleans or parse their human-readable
 messages. Narrow on the documented discriminator and retain the supplied
@@ -119,7 +118,7 @@ retained without promising an ordinary executable path today.
 
 - signal values and runtime execution history;
 - runtime snapshots and branches;
-- TypeScript Local Truth values, commits, and manual merge resolution;
+- TypeScript Local Truth values and commits;
 - browser host persistence.
 
 These surfaces can be exact and inspectable without being durable or shared.
@@ -131,7 +130,6 @@ Use your platform truth layer for durable multi-process authority.
 - durable database transactions from `signals.transaction(...)`;
 - authenticated identity from host-supplied actor metadata;
 - cross-process Local Truth collaboration;
-- application-value conflict resolution from native runtime branch merge alone;
 - addressability or durable identity derived from `debugName`;
 - unlimited diagnostics or history retention;
 - synchronous access to worker-first operations merely because compatibility

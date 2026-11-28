@@ -55,10 +55,6 @@ impl SignalGraph {
                     }
                     rebuild_breadth += replay.replay_event_count as u64;
                 }
-                crate::logic::transaction::RequiredDerivedRebuildSet::MergeSupport(_) => {
-                    restored.clear_branch_mutation_nodes();
-                    rebuild_breadth += restore_plan.coarse_reasons().len() as u64;
-                }
                 crate::logic::transaction::RequiredDerivedRebuildSet::TemporalState(temporal) => {
                     rebuild_breadth += temporal
                         .scheduled_wake_count
@@ -70,6 +66,10 @@ impl SignalGraph {
         restored.with_telemetry(|telemetry| {
             telemetry.checkpoint.restore_required_derived_breadth += rebuild_breadth;
         });
+        // Snapshot reconstruction must not publish the replayed changes again.
+        if proof.journal.replay_event_count > 0 {
+            restored.clear_branch_mutation_nodes();
+        }
         restored.readmit_checkpoint_causes()?;
         Ok(())
     }

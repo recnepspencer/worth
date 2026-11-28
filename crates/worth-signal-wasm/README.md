@@ -4,7 +4,7 @@ Worth Signals is a browser state runtime for applications that need explicit
 behavior, inspectable decisions, and reproducible execution.
 
 Start with local inputs and computed values. Add resources, forms, routing, or
-browser-local branch merge when the application actually has those problems.
+browser-local branches when the application actually has those problems.
 The package keeps those responsibilities separate so React components do not
 become an accidental state engine, cache, workflow system, and audit log at the
 same time.

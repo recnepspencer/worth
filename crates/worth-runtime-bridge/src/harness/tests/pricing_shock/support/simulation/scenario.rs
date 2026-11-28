@@ -1,10 +1,5 @@
 use super::*;
 
-#[derive(Clone)]
-pub(in crate::harness::tests::pricing_shock) struct RejectingPricingWritebackAuthority {
-    pub(in crate::harness::tests::pricing_shock) failure_class: BridgeWritebackFailureClass,
-}
-
 pub(in crate::harness::tests::pricing_shock) fn writeback_effect_intent(
     effect_class: BridgeWritebackEffectClass,
     marker: impl Into<String>,
@@ -338,18 +333,5 @@ pub(in crate::harness::tests::pricing_shock) fn pricing_commit_attribution(
         shock_delta_microunits,
         shock_multiplier_per_mille,
         representative_product: world.explain_product_price(representative_sku),
-    }
-}
-
-impl TruthWritebackAuthority for RejectingPricingWritebackAuthority {
-    fn execute_writeback(
-        &self,
-        request: TruthWritebackRequest,
-    ) -> Result<TruthWritebackReceipt, TruthWritebackAuthorityError> {
-        Ok(TruthWritebackReceipt::new_with_failure_class(
-            crate::facade::BridgeWritebackOutcomeClass::Rejected,
-            Some(self.failure_class),
-            &request,
-        ))
     }
 }

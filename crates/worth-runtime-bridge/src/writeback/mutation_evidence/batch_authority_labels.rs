@@ -82,7 +82,6 @@ pub(super) const fn writeback_failure_label(failure: BridgeWritebackFailureClass
         BridgeWritebackFailureClass::CausalityEffectMismatch => "causality-effect-mismatch",
         BridgeWritebackFailureClass::StaleTruthBasis => "stale-truth-basis",
         BridgeWritebackFailureClass::InvariantRejected => "invariant-rejected",
-        BridgeWritebackFailureClass::MergeAuthorityRejected => "merge-authority-rejected",
         BridgeWritebackFailureClass::StrategyFailed => "strategy-failed",
         BridgeWritebackFailureClass::StrategyPanicked => "strategy-panicked",
         BridgeWritebackFailureClass::ReplayMismatch => "replay-mismatch",

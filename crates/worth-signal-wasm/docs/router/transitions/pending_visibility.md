@@ -53,8 +53,6 @@ if (prefetched) {
 
 ## How It Relates To Other Features
 
-- speculation has its own pending visibility contract in
-  [Visible Projection](../speculation/visible_projection.md)
 - resource continuity is covered in [Continuity Preservation](./continuity_preservation.md)
 
 ## Inspection And Debugging

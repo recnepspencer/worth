@@ -24,7 +24,6 @@ use super::history::{
 };
 use super::records::{BridgeFailureClass, BridgeFailureRecord, BridgeRouteRecord};
 use super::replay::{BridgeCanonicalRouteRecord, BridgeReplayRecord};
-use super::sink::DiagnosticSink;
 use super::speculation::{
     BridgePreviewDiscardExplanation, BridgePreviewExecutionExplanation,
     BridgePreviewPromotionExplanation, BridgePreviewReplayExplanation,
@@ -49,7 +48,6 @@ mod explain;
 mod policy;
 mod query;
 mod record;
-mod sink;
 mod speculation;
 mod writeback;
 mod writeback_readmission;

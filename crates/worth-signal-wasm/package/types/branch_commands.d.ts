@@ -39,7 +39,6 @@ export interface WorkerApplyTransactionToBranchReceipt {
 
 export type WorkerBranchRetirementReason =
   | "rejected"
-  | "merged"
   | "superseded"
   | "dependencyCancellation"
   | "projectionRebuild";

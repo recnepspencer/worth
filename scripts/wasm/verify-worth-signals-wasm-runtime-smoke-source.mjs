@@ -454,7 +454,6 @@ await Promise.resolve(preservedShippingOption.relink());
 const preservedShippingAfterFallbackRelink = preservedShippingOption();
 const history = signals.history();
 const branch = history.current_branch();
-const previewBranch = await history.create_branch("preview");
 const replay = history.replay_for_branch(branch.id);
 const snapshot = history.snapshot();
 const branchSnapshot = history.branch_snapshot(branch.id);
@@ -502,18 +501,6 @@ const performanceSummary = diagnostics.performanceSummary();
 const hostCapabilityReport = diagnostics.hostCapabilityReport();
 const latestHostCapabilityEvent = diagnostics.latestHostCapabilityEvent();
 const recentHostCapabilityEvents = diagnostics.recentHostCapabilityEvents();
-const previewPlan = history.plan_merge_policy_preview({
-  source_branch_id: previewBranch.id,
-  target_branch_id: branch.id,
-});
-const previewPlanProof = history.plan_merge_policy_preview_with_proof({
-  source_branch_id: previewBranch.id,
-  target_branch_id: branch.id,
-});
-const previewResult = history.merge_branches_policy_preview({
-  source_branch_id: previewBranch.id,
-  target_branch_id: branch.id,
-});
 const itemDetailGraphSummary = itemDetailGraph.summary();
 const itemDetailGraphRead = itemDetailGraph.read();
 const itemDetailGraphInputs = itemDetailGraph.readInputs();
@@ -813,27 +800,6 @@ const summary = {
   portableImportErrorMessage: portableImportError?.message ?? null,
   specialistGraphProfile: specialistGraphSummary.profile,
   specialistTouchedNodes: specialistEvaluateDirty.touchedNodes,
-  previewBranchId: previewBranch.id,
-  previewPlanSource: previewPlan.source_branch_id,
-  previewPlanStrategy: previewPlan.selected_semantics.strategy_name,
-  previewPlanResolution: previewPlan.resolution_plan?.divergence ?? null,
-  previewPlanNodeMapIsArray: Array.isArray(previewPlan.node_map),
-  previewPlanNodePlansAreTyped:
-    Array.isArray(previewPlan.node_plan) &&
-    previewPlan.node_plan.every((entry) => typeof entry.decision === "string"),
-  previewPlanAdoptionCoreIsTyped:
-    Array.isArray(previewPlan.adoption_core) &&
-    previewPlan.adoption_core.every((entry) => typeof entry.source_node === "string"),
-  previewPlanAdoptionPolicyIsTyped:
-    Array.isArray(previewPlan.adoption_policy) &&
-    previewPlan.adoption_policy.every((entry) => typeof entry.runtime_artifact === "string"),
-  previewPlanDigest: previewPlanProof.proof.planDigest,
-  previewResultCounter: previewResult.counters.replay_event_count,
-  previewResultRecordsAreTyped:
-    Array.isArray(previewResult.records) &&
-    previewResult.records.every(
-      (record) => typeof record.source_node === "string" && typeof record.action === "string",
-    ),
   itemDetailGraphId: itemDetailGraphSummary.id,
   itemDetailGraphInputNames: itemDetailGraphSummary.inputNames,
   itemDetailGraphOutputNames: itemDetailGraphSummary.outputNames,

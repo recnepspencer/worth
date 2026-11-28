@@ -45,8 +45,7 @@ where
     }
 
     pub fn build(self) -> SignalRuntime<D, I, E, Ctx, T> {
-        self.build_validated().expect(
-            "signal runtime schema bindings and merge semantics must match the effective frozen registries",
-        )
+        self.build_validated()
+            .expect("signal runtime schema bindings must match the effective frozen registries")
     }
 }

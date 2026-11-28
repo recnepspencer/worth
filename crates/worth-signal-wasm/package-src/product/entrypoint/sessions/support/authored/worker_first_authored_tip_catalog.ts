@@ -125,7 +125,7 @@ export function tipBranchId(branch) {
   return String(branch.id);
 }
 
-/** Restore/merge can rewrite tip catalog contents without changing branch id. */
+/** Restore can rewrite tip catalog contents without changing branch id. */
 export function historyOperationMayDropAuthoredCatalog(operation) {
   return typeof operation === "string"
     && (operation.includes("restore") || operation.includes("merge"));

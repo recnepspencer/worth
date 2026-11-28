@@ -127,7 +127,7 @@ impl RuntimeBridge {
                 decision_log,
                 counters,
             ));
-        self.diagnostic_sink
+        self.diagnostics
             .record_historical_evaluation(record.clone());
         record
     }

@@ -2,9 +2,8 @@ use crate::data::error::SignalError;
 use crate::data::output::{ArtifactContinuityToken, OutputIdentity};
 use crate::data::output_equivalence::OutputEquivalencePolicy;
 use crate::data::trace::{
-    ArtifactMergeAuthority, ArtifactTransitionKey, CompactChangedScopeProof,
-    ContinuityAuthorityToken, HotArtifactWrite, ReuseOperationalBasis, RuntimeArtifactHot,
-    RuntimeArtifactState, RuntimeArtifactWarm,
+    ArtifactTransitionKey, CompactChangedScopeProof, ContinuityAuthorityToken, HotArtifactWrite,
+    ReuseOperationalBasis, RuntimeArtifactHot, RuntimeArtifactState, RuntimeArtifactWarm,
 };
 use crate::logic::evaluation::EvaluationWork;
 use crate::logic::evaluation::{
@@ -190,7 +189,6 @@ impl SignalGraph {
                         effect.operational.reuse_boundary_authority.clone(),
                     ),
                     lineage_artifact_id: ArtifactTransitionKey::default(),
-                    merge_authority: ArtifactMergeAuthority::default(),
                 },
             )),
             cold_intent,

@@ -42,8 +42,6 @@ console.log(form.resourceDrift().history);
 
 ## How It Relates To Other Features
 
-- Read [Resource Merge](./resource-merge.md) when drift resolution needs a merge
-  preview.
 - Read [Source Compatibility And Draft Migration](../validation/source-compatibility-and-draft-migration.md)
   when the source change is schema drift rather than resource drift.
 
@@ -64,5 +62,4 @@ console.log(form.resourceDrift().history);
 
 ## Related Docs
 
-- [Resource Merge](./resource-merge.md)
 - [Resource Settlement](./resource-settlement.md)

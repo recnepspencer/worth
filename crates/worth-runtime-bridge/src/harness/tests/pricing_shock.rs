@@ -1,7 +1,7 @@
 mod certification_aspect_workload;
 mod historical_basis_failures;
 mod historical_provenance_oracles;
-mod lifecycle_fanout_writeback_merge;
+mod lifecycle_fanout_writeback;
 mod reference_workload_sufficiency;
 mod repricing_suite_restart_failures;
 mod routing_replay_attacks;

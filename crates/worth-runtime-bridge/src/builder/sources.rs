@@ -34,7 +34,6 @@ impl<SnapshotState, SignalState, BranchHeadState, MappingState>
             source_adapter_registrations: self.source_adapter_registrations,
             source_declarations: self.source_declarations,
             structural_declarations: self.structural_declarations,
-            diagnostic_sink: self.diagnostic_sink,
             mapping_registrations: self.mapping_registrations,
             aspect_registrations: self.aspect_registrations,
             semantic_dependency_registrations: self.semantic_dependency_registrations,
@@ -76,7 +75,6 @@ impl<PatchState, SignalState, BranchHeadState, MappingState>
             source_adapter_registrations: self.source_adapter_registrations,
             source_declarations: self.source_declarations,
             structural_declarations: self.structural_declarations,
-            diagnostic_sink: self.diagnostic_sink,
             mapping_registrations: self.mapping_registrations,
             aspect_registrations: self.aspect_registrations,
             semantic_dependency_registrations: self.semantic_dependency_registrations,
@@ -119,7 +117,6 @@ impl<SignalState, MappingState>
             source_adapter_registrations: self.source_adapter_registrations,
             source_declarations: self.source_declarations,
             structural_declarations: self.structural_declarations,
-            diagnostic_sink: self.diagnostic_sink,
             mapping_registrations: self.mapping_registrations,
             aspect_registrations: self.aspect_registrations,
             semantic_dependency_registrations: self.semantic_dependency_registrations,
@@ -177,7 +174,6 @@ impl<PatchState, SnapshotState, BranchHeadState, MappingState>
             source_adapter_registrations: self.source_adapter_registrations,
             source_declarations: self.source_declarations,
             structural_declarations: self.structural_declarations,
-            diagnostic_sink: self.diagnostic_sink,
             mapping_registrations: self.mapping_registrations,
             aspect_registrations: self.aspect_registrations,
             semantic_dependency_registrations: self.semantic_dependency_registrations,
@@ -291,16 +287,9 @@ impl<PatchState, SnapshotState, SignalState, BranchHeadState, MappingState>
             source_adapter_registrations: self.source_adapter_registrations,
             source_declarations: self.source_declarations,
             structural_declarations: self.structural_declarations,
-            diagnostic_sink: self.diagnostic_sink,
             mapping_registrations: self.mapping_registrations,
             aspect_registrations: self.aspect_registrations,
             semantic_dependency_registrations: self.semantic_dependency_registrations,
         }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn with_diagnostics_sink(mut self, sink: Arc<dyn DiagnosticSink>) -> Self {
-        self.diagnostic_sink = Some(sink);
-        self
     }
 }

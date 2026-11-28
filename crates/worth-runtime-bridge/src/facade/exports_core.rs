@@ -106,11 +106,10 @@ pub use crate::delivery::{
 pub use crate::error::{
     BridgeBuildError, BridgeBuildErrorKind, BridgeContinuityError, BridgeContinuityErrorKind,
     BridgeDeliveryError, BridgeDeliveryErrorKind, BridgeErrorContext, BridgeLineageSourceError,
-    BridgeLineageSourceErrorKind, BridgeMergeError, BridgeMergeErrorKind,
-    BridgePatchTargetCoordinate, BridgeReplayError, BridgeReplayErrorKind, BridgeRouteError,
-    BridgeRouteErrorKind, BridgeSnapshotReadCoordinate, BridgeSpeculationError,
-    BridgeSpeculationErrorKind, BridgeStreamError, BridgeStreamErrorKind, BridgeWritebackError,
-    BridgeWritebackErrorKind,
+    BridgeLineageSourceErrorKind, BridgePatchTargetCoordinate, BridgeReplayError,
+    BridgeReplayErrorKind, BridgeRouteError, BridgeRouteErrorKind, BridgeSnapshotReadCoordinate,
+    BridgeSpeculationError, BridgeSpeculationErrorKind, BridgeStreamError, BridgeStreamErrorKind,
+    BridgeWritebackError, BridgeWritebackErrorKind,
 };
 pub use crate::execution_basis::{
     BridgeBoundExecutionBasis, BridgeExecutionBasisCounters, BridgeExecutionBasisDenial,

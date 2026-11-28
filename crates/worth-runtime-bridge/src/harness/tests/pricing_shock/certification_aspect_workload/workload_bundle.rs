@@ -2,7 +2,7 @@ use super::super::support::{
     capture_pricing_workload_certification_bundle, generated_pricing_scenario,
     BridgeAspectRegistrationId, BridgeDeliveryErrorKind, BridgeFailureClass,
     BridgePreviewLifecycleStateKind, BridgePreviewSessionIdentity, BridgeReplayErrorKind,
-    BridgeRuntimePolicy, BridgeWritebackErrorKind, FineGrainedMatchStatus,
+    BridgeRuntimePolicy,
 };
 use super::EXPECTED_COST_USD_TARGET_BASIS;
 
@@ -147,10 +147,6 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
     );
     assert_eq!(bundle.writeback.authority_commit_count, 1);
     assert_eq!(
-        bundle.writeback.rejection_error_kind,
-        BridgeWritebackErrorKind::MergeAuthorityRejected
-    );
-    assert_eq!(
         bundle.provenance.main_commit,
         crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-main")
     );
@@ -200,7 +196,7 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
     assert_eq!(counters.causality_bundle_count, 1);
     assert_eq!(counters.causality_bundle_replay_match_count, 3);
     assert_eq!(counters.causality_bundle_replay_mismatch_count, 1);
-    assert_eq!(counters.failure_taxonomy_classification_count, 3);
+    assert_eq!(counters.failure_taxonomy_classification_count, 2);
     assert_eq!(counters.failure_taxonomy_unclassified_count, 0);
     assert_eq!(
         counters.diagnostics_entrypoint_request_count,
@@ -208,7 +204,7 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
     );
     assert_eq!(counters.showcase_entrypoint_request_count, 1);
     assert_eq!(counters.simulation_trace_bundle_count, 1);
-    assert_eq!(counters.trust_attack_classification_count, 7);
+    assert_eq!(counters.trust_attack_classification_count, 6);
     assert_eq!(counters.diagnostics_entrypoint_reconstruction_count, 1);
     assert_eq!(counters.speculative_branch_bundle_count, 1);
     assert_eq!(counters.speculative_discard_residue_check_count, 1);
@@ -228,10 +224,6 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
     assert_ne!(suite_26.failure_digest, suite_26.replay_failure_digest);
     assert!(
         matches!(bundle.hostile_failure.failure_class, BridgeFailureClass::Delivery(BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(ref cause)) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure)
-    );
-    assert_eq!(
-        bundle.writeback.rejection_error_kind,
-        BridgeWritebackErrorKind::MergeAuthorityRejected
     );
     assert_eq!(
         bundle.restart_failure.error_kind,

@@ -58,10 +58,6 @@ where
                     }
                     rebuild_breadth += replay.replay_event_count as u64;
                 }
-                crate::logic::transaction::RequiredDerivedRebuildSet::MergeSupport(_) => {
-                    graph.clear_branch_mutation_nodes();
-                    rebuild_breadth += restore_plan.coarse_reasons().len() as u64;
-                }
                 crate::logic::transaction::RequiredDerivedRebuildSet::TemporalState(temporal) => {
                     rebuild_breadth += temporal
                         .scheduled_wake_count
@@ -73,6 +69,10 @@ where
         graph.with_telemetry(|telemetry| {
             telemetry.checkpoint.restore_required_derived_breadth += rebuild_breadth;
         });
+        // Snapshot reconstruction must not publish the replayed changes again.
+        if proof.journal.replay_event_count > 0 {
+            graph.clear_branch_mutation_nodes();
+        }
         graph.readmit_checkpoint_causes()?;
         Ok(())
     }

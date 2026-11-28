@@ -182,8 +182,6 @@ The child becomes ready only after every required parent confirms.
   and effect-owned branches.
 - [Rollback And Recovery](./rollback-and-recovery.md) separates targeted effect
   rejection from historical restore.
-- [Merge And Rebase](./merge-and-rebase.md) explains explicit branch merge
-  planning outside normal effect closeout.
 - Resource-backed forms consume the same line effects; they do not own a second
   rollback system.
 

@@ -188,18 +188,15 @@ impl RuntimeBridge {
         source_registry: AdmittedSourceRegistry,
         source_adapter: Option<Arc<dyn BridgeSourceAdapter>>,
         structural_registry: AdmittedStructuralRegistry,
-        diagnostic_sink: Option<Arc<dyn DiagnosticSink>>,
         mapping_registry: FrozenMappingRegistry,
         aspect_registry: FrozenAspectMappingRegistry,
         subscription_family_registry: FrozenSubscriptionFamilyRegistry,
         semantic_dependency_registry: crate::correspondence::AdmittedSemanticDependencyRegistry,
     ) -> Self {
         let diagnostics = BridgeDiagnosticsFacade::new(policy);
-        let diagnostic_sink = diagnostic_sink.unwrap_or_else(|| Arc::new(diagnostics.clone()));
         let authoritative_source_profile = committed_patch_source.authoritative_source_profile();
         let signal_runtime_key = fresh_signal_runtime_key();
         Self {
-            diagnostic_sink,
             diagnostics,
             policy,
             committed_patch_source,

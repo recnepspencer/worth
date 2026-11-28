@@ -39,8 +39,6 @@ pub use crate::data::output::ComputationKey as RecipeKey;
 pub use crate::data::output::KeyedComputation as KeyedRecipe;
 pub use crate::data::proof::DirtyBatch as ChangeBatch;
 pub use crate::data::proof::SourceRecomputeAdmission as ChangeBatchAdmission;
-#[deprecated(note = "use ChangeBatchAdmission; this records root admission, not commit")]
-pub type ChangeBatchCommit = ChangeBatchAdmission;
 pub use crate::data::resource::{
     resource_certification_builder, resource_certification_bundle,
     resource_certification_bundle_parity_report, resource_milestone_b_certification_run,

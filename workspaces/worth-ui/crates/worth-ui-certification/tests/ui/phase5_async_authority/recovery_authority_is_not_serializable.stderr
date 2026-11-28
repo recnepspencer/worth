@@ -1721,12 +1721,9 @@ error[E0277]: the trait bound `WorthUiPresentationRecoveryRequiredReceipt: serde
   worth_signal::data::temporal::wake::transitions::TemporalWakeReschedule
   worth_signal::data::temporal::wake::transitions::TemporalWakeRetirementBatch
   worth_signal::data::temporal::wake::transitions::TemporalWakeReuse
-  worth_signal::data::trace::authority::ArtifactAuthorityClass
-  worth_signal::data::trace::authority::ArtifactMergeAuthority
   worth_signal::data::trace::authority::ArtifactTransitionKey
   worth_signal::data::trace::authority::CompactChangedScopeProof
   worth_signal::data::trace::authority::ContinuityAuthorityToken
-  worth_signal::data::trace::authority::MergeAdoptability
   worth_signal::data::trace::authority::ReuseOperationalBasis
   worth_signal::data::trace::evidence::CausalityMetadata
   worth_signal::data::trace::records::ExecutionTraceStamp
@@ -2068,7 +2065,6 @@ error[E0277]: the trait bound `WorthUiPresentationRecoveryRequiredReceipt: serde
   worth_signal::logic::transaction::runtime::state::reconstructability::checkpoint_journal::CheckpointRecord
   worth_signal::logic::transaction::runtime::state::reconstructability::checkpoint_journal::DependencyIndexRebuildProof
   worth_signal::logic::transaction::runtime::state::reconstructability::checkpoint_journal::JournalSegment
-  worth_signal::logic::transaction::runtime::state::reconstructability::checkpoint_journal::MergeSupportRebuildProof
   worth_signal::logic::transaction::runtime::state::reconstructability::checkpoint_journal::ReplaySuffixRebuildProof
   worth_signal::logic::transaction::runtime::state::reconstructability::checkpoint_journal::RequiredDerivedRebuildSet
   worth_signal::logic::transaction::runtime::state::reconstructability::checkpoint_journal::TemporalStateRebuildProof

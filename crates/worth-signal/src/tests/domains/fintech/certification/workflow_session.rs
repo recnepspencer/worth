@@ -187,7 +187,6 @@ impl SignalFintechWorkflowCertificationAdapter {
                 | "Restored"
                 | "BranchedFrom"
                 | "BranchSwitched"
-                | "MergedFrom"
                 | "MemoizedReuse"
                 | "InvalidatedWithoutReplacement" => Ok(event.to_string()),
                 other => Err(SignalError::invalid_input(format!(

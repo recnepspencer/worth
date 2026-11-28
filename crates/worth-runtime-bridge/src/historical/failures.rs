@@ -147,7 +147,7 @@ impl RuntimeBridge {
         detail: impl Into<Arc<str>>,
         counters: BridgeHistoricalEvaluationCounters,
     ) {
-        self.diagnostic_sink.record_historical_evaluation_failure(
+        self.diagnostics.record_historical_evaluation_failure(
             BridgeHistoricalEvaluationFailureRecord::new(
                 declaration.declaration_identity().clone(),
                 declaration.selector().selector_identity().clone(),

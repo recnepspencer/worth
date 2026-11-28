@@ -5,7 +5,7 @@
 Signal branch bases let you name one exact, live branch state without exposing
 mutable graph internals. A basis says which runtime, branch, Signal definition,
 snapshot posture, and reference generation you observed. Use it when work must
-fork, restore, advance, merge, or retain a particular Signal branch without silently
+fork, restore, advance, or retain a particular Signal branch without silently
 falling back to whatever branch is current later.
 
 A **component obligation** (a retention lease) is the second half of that story.
@@ -15,7 +15,7 @@ moves on without it.
 ## Why You Use It
 
 - Fork background or preview work from the exact state you inspected.
-- Reject a stale request after another transaction, snapshot, restore, or merge
+- Reject a stale request after another transaction, snapshot, or restore
   moves the branch reference.
 - Carry a descriptive basis through JSON and ask the owning runtime to readmit
   it before it can operate.
@@ -37,7 +37,6 @@ methods on `SignalRuntime`:
 - `readmit_retained_signal_branch_basis`
 - `signal_component_retention_terminal_counts`
 - `advance_signal_branch(execution, context, expected, apply)`
-- `merge` for guided planning and `merge_branch` for the full-branch shortcut
 - `capture_signal_branch_snapshot`
 - `reconstruct_signal_branch_snapshot` for pristine-runtime construction only
 - `plan_signal_branch_retirement` and `retire_signal_branch`
@@ -228,7 +227,7 @@ releases that final internal obligation before reclamation.
 ## How It Executes
 
 1. Observe a known branch through its owning runtime.
-2. Borrow the admitted basis for fork, restore, merge, compatibility, or mutation.
+2. Borrow the admitted basis for fork, restore, compatibility, or mutation.
 3. Signal compares the complete live observation before effects.
 4. A successful reference-moving operation returns a new admitted basis.
 5. If the basis crosses a transport boundary, send only its descriptor and
@@ -247,7 +246,7 @@ releases that final internal obligation before reclamation.
 Owner, definition, lifecycle, snapshot, and generation failures remain
 distinct so callers can choose retry, refresh, or rejection deliberately.
 Fork validates its owner identity before allocating a catalog entry. Fork,
-restore, advance, and canonical merge distinguish basis denials before effects
+restore and advance distinguish basis denials before effects
 from failures that occur only after the owner performed the operation.
 
 ## Small Example
@@ -436,10 +435,6 @@ cargo run -p worth-signal --example branch_bases
 - Transactions remain Signal's mutation engine. `advance_signal_branch`
   supplies exact branch admission and returns the resulting basis together
   with the transaction receipt.
-- Existing Signal-local merge planning and execution consume exact admitted
-  source and target bases. Successful execution returns the merge result with
-  the newly admitted target basis; raw branch handles remain private engine
-  inputs.
 - `capture_signal_branch_snapshot` consumes an exact admitted expectation and
   returns both an owner-bound snapshot and the post-capture basis.
   `restore_signal_branch` validates both exact owner basis and snapshot owner,

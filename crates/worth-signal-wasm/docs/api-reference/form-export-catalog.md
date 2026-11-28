@@ -353,14 +353,6 @@ Source declaration: `package/types/forms/resource_drift.d.ts`
 - `FormResourceDriftReport` — Aggregates current resource drift, affected fields, and history.
 - `FormResourceDriftStatus` — Names whether resource drift is clear, detected, or unresolved.
 
-## Resource Merge
-
-Source declaration: `package/types/forms/resource_merge.d.ts`
-
-- `FormResourceMergeArtifact` — Records one resource merge, conflict, or unavailable outcome.
-- `FormResourceMergeReport` — Aggregates resource merge state, conflicts, evidence, and history.
-- `FormResourceMergeStatus` — Names the current resource merge posture.
-
 ## Resource Source Inspection
 
 Source declaration: `package/types/forms/resource_source.d.ts`

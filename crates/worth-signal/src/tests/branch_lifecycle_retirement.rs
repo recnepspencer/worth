@@ -243,7 +243,7 @@ fn ordered_retirement_batch_closes_child_then_parent_as_one_plan() {
         (
             child.clone(),
             child_basis,
-            SignalBranchRetirementReason::Merged,
+            SignalBranchRetirementReason::Superseded,
         ),
         (
             parent.clone(),

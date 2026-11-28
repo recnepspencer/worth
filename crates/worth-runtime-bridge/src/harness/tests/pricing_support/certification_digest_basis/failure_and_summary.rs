@@ -31,10 +31,6 @@ impl PricingWorkloadCertificationBundle {
                 "simulation_trace_count",
                 self.simulation.iteration_traces.len(),
             ),
-            PricingCertificationBasisEntry::debug(
-                "writeback_rejection",
-                self.writeback.rejection_error_kind,
-            ),
             PricingCertificationBasisEntry::debug("restart_error", self.restart_failure.error_kind),
         ]
     }
@@ -54,10 +50,6 @@ impl PricingWorkloadCertificationBundle {
             PricingCertificationBasisEntry::new(
                 "hostile_commit",
                 &self.hostile_failure.source_commit,
-            ),
-            PricingCertificationBasisEntry::debug(
-                "writeback_failure",
-                self.writeback.rejection_error_kind,
             ),
             PricingCertificationBasisEntry::debug("restart_error", self.restart_failure.error_kind),
             PricingCertificationBasisEntry::new(
@@ -91,10 +83,6 @@ impl PricingWorkloadCertificationBundle {
             PricingCertificationBasisEntry::new(
                 "restart_mismatch_count",
                 self.restart_failure.replay_mismatch_count,
-            ),
-            PricingCertificationBasisEntry::debug(
-                "writeback_failure",
-                self.writeback.rejection_error_kind,
             ),
         ]
     }

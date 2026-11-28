@@ -141,16 +141,9 @@ pub struct ReplaySuffixRebuildProof {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MergeSupportRebuildProof {
-    pub authority_branch_id: SignalBranchId,
-    pub replay_event_count: u32,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RequiredDerivedRebuildSet {
     DependencyIndexes(DependencyIndexRebuildProof),
     ReplaySuffix(ReplaySuffixRebuildProof),
-    MergeSupport(MergeSupportRebuildProof),
     TemporalState(TemporalStateRebuildProof),
 }
 

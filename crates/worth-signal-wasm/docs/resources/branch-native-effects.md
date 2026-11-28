@@ -82,10 +82,8 @@ locus conflicts use server revision when provided, then stable admission order.
 
 ## Resource Locus And Native Proof
 
-Native merge proof decides whether branch state conflicts. Resource-locus
-materialization applies the winning item, aspect, field, region, JSON path,
-summary, insert, delete, or replacement to canonical value. This is not a
-partial object merge performed by the native runtime.
+Resource-locus materialization applies the winning item, aspect, field,
+region, JSON path, summary, insert, delete, or replacement to canonical value.
 
 ## Anti-Patterns
 
@@ -100,5 +98,4 @@ partial object merge performed by the native runtime.
 - [Concurrent Optimistic Effects](./effects/concurrency-and-dependencies.md)
 - [Branch-Native Effects](./effects/branch-native-effects.md)
 - [Rollback And Recovery](./effects/rollback-and-recovery.md)
-- [Effect Merge And Rebase](./merge-and-rebase.md)
 - [History And Restore](./debugging/restore-replay-and-recover.md)

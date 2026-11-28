@@ -4,7 +4,6 @@ import {
   createCommit,
   createSnapshot,
   locusKey,
-  boundLocalTruthReviews,
   readBranchSnapshot,
   requireCurrentBasis,
 } from "../authority/authority_state.js";
@@ -167,7 +166,7 @@ export function publishStagedCommit(state, staged) {
     }),
     commit: staged.commit,
   }));
-  return boundLocalTruthReviews(next);
+  return next;
 }
 
 function findDuplicateRequest(state, rawRequest) {

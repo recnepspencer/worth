@@ -167,7 +167,6 @@ This is for bridge authors and deeper integration work.
 - event subscribers
 - effect mapping
 - checkpoint evaluators
-- deeper merge and proof-heavy forms
 
 It matters. It just is not where most users should start.
 
@@ -176,7 +175,6 @@ It matters. It just is not where most users should start.
 History is exposed through the runtime:
 
 - `runtime.history()`
-- `runtime.merge()` with admitted source and target branch bases
 - `runtime.target(node)`
 - `tx.target(node)`
 

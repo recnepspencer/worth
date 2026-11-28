@@ -209,7 +209,7 @@ fn reject_replay(
     error: BridgeReplayError,
 ) -> BridgeReplayError {
     runtime
-        .diagnostic_sink
+        .diagnostics
         .record_replay_failure(replay_failure_source(record, counters), &error);
     error
 }

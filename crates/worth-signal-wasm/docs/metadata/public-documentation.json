@@ -75,7 +75,6 @@
         { "path": "router/recovery/stale_deep_link_recovery", "title": "Recovery", "kind": "troubleshooting" },
         { "path": "router/breadcrumbs/breadcrumb_declarations", "title": "Breadcrumbs", "kind": "guide" },
         { "path": "router/resources/route_resource_declarations", "title": "Route Resources", "kind": "guide" },
-        { "path": "router/speculation/speculative_sessions", "title": "Speculative Navigation", "kind": "guide" },
         { "path": "router/forms/route_authority_handoff", "title": "Forms And Continuity", "kind": "guide" },
         { "path": "router/runtime_placement/worker_first_default", "title": "Runtime Placement", "kind": "concept" },
         { "path": "router/diagnostics/diagnostics_surfaces", "title": "Router Diagnostics", "kind": "troubleshooting" }
@@ -88,7 +87,6 @@
         { "path": "local-truth/README", "title": "Local Truth Overview", "kind": "landing" },
         { "path": "local-truth/getting-started", "title": "Create Local Truth", "kind": "tutorial" },
         { "path": "local-truth/branches-and-snapshots", "title": "Branches And Snapshots", "kind": "guide" },
-        { "path": "local-truth/branch-merge", "title": "Branch Merge And Manual Resolution", "kind": "guide" },
         { "path": "local-truth/history-and-rebuild", "title": "History, Compaction, And Rebuild", "kind": "guide" },
         { "path": "local-truth/authority-boundaries", "title": "Standalone And Platform Boundaries", "kind": "concept" },
         { "path": "local-truth/api-reference", "title": "Local Truth API Reference", "kind": "reference" }
@@ -278,7 +276,7 @@
       "truthOwner": "A resource line owns browser-local request, lifecycle, projected value, and evidence for one resource identity.",
       "limits": [
         "A resource line is not the durable server database.",
-        "Narrow updates, exact recovery, and merge require declared shape and available proof."
+        "Narrow updates and exact recovery require declared shape and available proof."
       ],
       "evidence": [
         "package/product/resource_runtime/authoring/api_route/api_url_semantic_finalizers.test.mjs",
@@ -294,7 +292,7 @@
       "truthOwner": "The form controller owns draft and form lifecycle; its declared source owns source truth.",
       "limits": [
         "The TypeScript form controller does not render controls, perform arbitrary host I/O, provide a collaboration transport, or turn process-local history into durable audit truth.",
-        "Resource replay, restore, merge, and rollback require compatible retained resource authority and can report unavailable."
+        "Resource replay, restore, and rollback require compatible retained resource authority and can report unavailable."
       ],
       "evidence": [
         "package/product/signals_runtime/forms/closeout/full_forms_hostile_convergence.test.mjs",

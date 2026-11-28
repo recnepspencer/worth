@@ -93,7 +93,7 @@ after installing the metadata reservation, so `RetainedAdmittedBasis` and
 Retirement planning on the sealed owner consumes the caller's existing
 operation admission and exact admitted basis; it never performs a second
 admission. The owner validates the basis runtime and definition before registry
-contact, observes lineage/merge metadata before the retention ledger, releases
+contact, observes lineage metadata before the retention ledger, releases
 those short guards, and then contacts the canonical branch cell once for its
 real handle and complete current observation. Planning creates only the
 existing linear `PlannedSignalBranchRetirement`: it installs no retirement

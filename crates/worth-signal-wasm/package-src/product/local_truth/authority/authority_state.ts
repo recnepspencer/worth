@@ -8,7 +8,6 @@ import {
 import { validateSchemaValue } from "../schema/schema_declaration.js";
 
 const ISSUED_LOCAL_TRUTH_BASES = new WeakSet();
-const MAX_RETAINED_LOCAL_TRUTH_REVIEWS = 256;
 
 export function createInitialAuthorityState({
   authorityId,
@@ -79,18 +78,13 @@ export function createInitialAuthorityState({
     branches: new Map([[branch.id, branch]]),
     snapshots: new Map([[snapshot.id, snapshot]]),
     commits: new Map([[commit.id, commit]]),
-    reviews: new Map(),
     checkpoints: new Map(),
-    resolutionAdmissions: new Map(),
-    customAlternatives: new Map(),
     requestLog: new Map(),
-    lineageByBranch: new Map([[branch.id, new Map()]]),
     locusHeadByBranch: new Map([[branch.id, createGenesisLocusHeads(schema, values, commit.id)]]),
     decisionLog: [],
     derivations: new Map(),
     counters: {
       commits: 1,
-      merges: 0,
       branches: 1,
       projections: 0,
       rebuilds: 0,
@@ -148,12 +142,8 @@ export function cloneAuthorityState(state) {
     branches: new Map(state.branches),
     snapshots: new Map(state.snapshots),
     commits: new Map(state.commits),
-    reviews: new Map(state.reviews),
     checkpoints: new Map(state.checkpoints),
-    resolutionAdmissions: new Map(state.resolutionAdmissions),
-    customAlternatives: new Map(state.customAlternatives),
     requestLog: new Map(state.requestLog),
-    lineageByBranch: cloneNestedMaps(state.lineageByBranch),
     locusHeadByBranch: cloneNestedMaps(state.locusHeadByBranch),
     decisionLog: state.decisionLog.slice(),
     derivations: new Map(state.derivations),
@@ -210,13 +200,6 @@ export function requireCurrentBasis(state, branch, basis) {
 
 export function locusKey(entityId, aspectId) {
   return `${entityId.length}:${entityId}${aspectId}`;
-}
-
-export function boundLocalTruthReviews(state) {
-  while (state.reviews.size > MAX_RETAINED_LOCAL_TRUTH_REVIEWS) {
-    state.reviews.delete(state.reviews.keys().next().value);
-  }
-  return state;
 }
 
 function createGenesisLocusHeads(schema, values, commitId) {

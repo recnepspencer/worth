@@ -3,10 +3,10 @@ use crate::error::BridgeDeliveryErrorKind;
 use crate::facade::{
     BridgeAspectRegistrationId, BridgeFailureClass, BridgePolicyFieldKind,
     BridgePolicyRejectionKind, BridgePreviewLifecycleStateKind, BridgeReplayErrorKind,
-    BridgeRouteErrorKind, BridgeSignalBranchIdentity, BridgeWritebackErrorKind,
-    BridgeWritebackFailureClass, BridgeWritebackFamilyKind, BridgeWritebackOutcomeClass,
-    BridgeWritebackStrategyClass, FineGrainedMatchStatus, SubscriptionSliceKind,
-    TruthBranchIdentity, TruthCommitIdentity, TruthDeltaSurfaceKind, TruthSnapshotIdentity,
+    BridgeRouteErrorKind, BridgeSignalBranchIdentity, BridgeWritebackFamilyKind,
+    BridgeWritebackOutcomeClass, BridgeWritebackStrategyClass, FineGrainedMatchStatus,
+    SubscriptionSliceKind, TruthBranchIdentity, TruthCommitIdentity, TruthDeltaSurfaceKind,
+    TruthSnapshotIdentity,
 };
 use crate::identity::BridgeIdentity;
 use crate::routing::{BridgeInvalidationIdentity, BridgeRouteIdentity};
@@ -148,10 +148,6 @@ pub(super) struct PricingWritebackBundle {
     pub(super) execution_request_count: usize,
     pub(super) execution_commit_count: usize,
     pub(super) execution_noop_count: usize,
-    pub(super) rejection_error_kind: BridgeWritebackErrorKind,
-    pub(super) rejection_failure_class: BridgeWritebackFailureClass,
-    pub(super) rejection_request_emitted: bool,
-    pub(super) rejection_receipt_emitted: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -79,8 +79,7 @@ Examples:
 - `signals.resource.effects.serverCanonical()`
 - `signals.resource.effects.pessimistic()`
 
-An effect profile decides things like optimism, rollback posture, and merge /
-rebase availability.
+An effect profile sets optimism and rollback posture.
 
 ## Patch
 

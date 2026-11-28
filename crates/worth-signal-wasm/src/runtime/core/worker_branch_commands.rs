@@ -260,7 +260,6 @@ impl From<WorkerBranchRetirementReason> for SignalBranchRetirementReason {
     fn from(reason: WorkerBranchRetirementReason) -> Self {
         match reason {
             WorkerBranchRetirementReason::Rejected => Self::Rejected,
-            WorkerBranchRetirementReason::Merged => Self::Merged,
             WorkerBranchRetirementReason::Superseded => Self::Superseded,
             WorkerBranchRetirementReason::DependencyCancellation => Self::DependencyCancellation,
             WorkerBranchRetirementReason::ProjectionRebuild => Self::ProjectionRebuild,

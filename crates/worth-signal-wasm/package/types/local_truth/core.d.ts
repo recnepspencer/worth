@@ -23,7 +23,7 @@ export interface LocalTruthBranchReceipt {
   readonly artifactFamily: "LocalTruthBranchReceipt";
   readonly id: string;
   readonly name: string;
-  readonly kind: "ordinary" | "resolution";
+  readonly kind: "ordinary";
   readonly parentBranchId: string | null;
   readonly forkCommitId: string;
   readonly forkSnapshotId: string;
@@ -55,10 +55,7 @@ export interface LocalTruthCommit {
   readonly parentCommitId: string | null;
   readonly beforeSnapshotId: string | null;
   readonly afterSnapshotId: string;
-  readonly kind: "genesis" | "mutation" | "merge";
-  readonly sourceBranchId?: string;
-  readonly sourceHeadCommitId?: string;
-  readonly reviewId?: string;
+  readonly kind: "genesis" | "mutation";
   readonly operations: ReadonlyArray<LocalTruthAspectOperation>;
   readonly [localTruthCommitBrand]: true;
 }
@@ -92,10 +89,7 @@ export interface LocalTruthCheckpoint<T extends object = Record<string, unknown>
   readonly headCommitId: string;
   readonly snapshotId: string;
   readonly values: Readonly<Record<string, T>>;
-  readonly lineage: ReadonlyArray<readonly [string, {
-    readonly sourceCommitId: string;
-    readonly sourceValue: unknown;
-  }]>;
+  readonly lineage: readonly [];
   readonly locusHeads: ReadonlyArray<readonly [string, string]>;
   readonly compactedCommitCount: number;
   readonly compactedCommitDigests: ReadonlyArray<string>;

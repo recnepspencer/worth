@@ -6,7 +6,6 @@ mod easy_observation;
 mod evaluated_dependencies;
 mod graph_transaction_boundaries;
 mod hot_path_contracts;
-mod merge_api_boundaries;
 mod observed_demand;
 mod runtime_configuration;
 mod runtime_policy_defaults;

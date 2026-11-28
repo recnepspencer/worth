@@ -71,11 +71,10 @@ evidence. A **basis** is the server or branch version the update expects to
 extend. When that proof is stale or incompatible, the line can deny the update
 or require refresh instead of accepting a plausible-looking payload.
 
-## Merge, Replay, And Restore
+## Replay And Restore
 
 These are proof-bearing capabilities, not generic object utilities:
 
-- merge and rebase operate on declared resource loci and branch ancestry;
 - replay requires retained executable history;
 - exact restore requires an exact retained snapshot;
 - compact inverse rollback is not the same guarantee as exact restore;
@@ -87,7 +86,6 @@ These are proof-bearing capabilities, not generic object utilities:
 - Treating raw authoring as an invitation to bypass family validation.
 - Accepting external delivery without checking basis and compatibility.
 - Assuming every retained history entry can be replayed.
-- Calling JavaScript deep merge a resource merge without locus proof.
 
 ## Reference
 

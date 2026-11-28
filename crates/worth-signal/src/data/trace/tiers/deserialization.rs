@@ -1,9 +1,9 @@
 //! Decode the existing flat wire schema without Serde's u128-incompatible flatten buffer.
 use super::{
-    ArtifactMergeAuthority, ArtifactTransitionKey, CompactChangedScopeProof,
-    ContinuityAuthorityToken, MemoizedResultOrigin, OutputChange, OutputIdentity,
-    ReuseBoundaryAuthority, ReuseOperationalBasis, ReuseOrigin, RuntimeArtifactHot,
-    RuntimeArtifactState, RuntimeArtifactWarm, StableHashValue,
+    ArtifactTransitionKey, CompactChangedScopeProof, ContinuityAuthorityToken,
+    MemoizedResultOrigin, OutputChange, OutputIdentity, ReuseBoundaryAuthority,
+    ReuseOperationalBasis, ReuseOrigin, RuntimeArtifactHot, RuntimeArtifactState,
+    RuntimeArtifactWarm, StableHashValue,
 };
 use serde::{Deserialize, Deserializer};
 
@@ -38,8 +38,6 @@ struct FlatArtifactWire {
     reuse_boundary_authority: Option<ReuseBoundaryAuthority>,
     #[serde(default)]
     lineage_artifact_id: ArtifactTransitionKey,
-    #[serde(default)]
-    merge_authority: ArtifactMergeAuthority,
 }
 
 impl<'de> Deserialize<'de> for RuntimeArtifactState {
@@ -64,7 +62,6 @@ impl<'de> Deserialize<'de> for RuntimeArtifactState {
                 reuse_origin: wire.reuse_origin,
                 reuse_boundary_authority: wire.reuse_boundary_authority,
                 lineage_artifact_id: wire.lineage_artifact_id,
-                merge_authority: wire.merge_authority,
             },
         })
     }

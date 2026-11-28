@@ -7,11 +7,9 @@ mod summary;
 mod tiers;
 mod writes;
 
-#[cfg(test)]
-pub use authority::ArtifactAuthorityClass;
 pub use authority::{
-    ArtifactMergeAuthority, ArtifactTransitionKey, CompactChangedScopeProof,
-    ContinuityAuthorityToken, MergeAdoptability, ReuseOperationalBasis,
+    ArtifactTransitionKey, CompactChangedScopeProof, ContinuityAuthorityToken,
+    ReuseOperationalBasis,
 };
 pub use evidence::CausalityMetadata;
 #[cfg(test)]

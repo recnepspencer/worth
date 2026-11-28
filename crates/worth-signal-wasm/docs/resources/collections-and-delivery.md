@@ -276,8 +276,8 @@ catalogLine.deliver(
 
 When the response shape is not just "some array of items", prefer the topology
 that describes the server contract directly. These response contracts preserve
-topology-specific effect proof, diagnostics/history evidence, merge posture,
-and traversal/reconstruction cost counters:
+topology-specific effect proof, diagnostics and history evidence, and
+traversal and reconstruction cost counters.
 
 - `connection<T>()(...)` for GraphQL-style edges and nodes
 - `entityStore<T>()(...)` for normalized entity bags
@@ -289,9 +289,8 @@ and traversal/reconstruction cost counters:
 - `tree<T>()(...)` for recursive trees
 - `detail<T>()` and `summary<T>()` for response-owned broad replacement lines
 
-For branch-native optimistic effects, JSON path aspects, merge/rebase proof,
-and lifecycle reads, use
-[Branch-Native Resource Effects](./branch-native-effects.md).
+For branch-native optimistic effects, JSON path aspects, and lifecycle reads,
+see [Branch-Native Resource Effects](./branch-native-effects.md).
 
 ## Inspection And Debugging
 
@@ -309,7 +308,7 @@ that owns the bad shape, such as `resource.response.array(...)` or
   `.list(...)`; the response contract owns those.
 - Do not use the generic `collection<T>()(...)` helper for known server
   topologies when a dedicated response topology exists. Use the topology helper
-  so diagnostics, history, merge proof, and cost counters can name the real
+  so diagnostics, history, and cost counters can name the real
   locus.
 - Do not hide custom item replacement inside `objectAspects<T>()(...)`.
   `objectAspects` is for replacing fields on item objects, not for changing the

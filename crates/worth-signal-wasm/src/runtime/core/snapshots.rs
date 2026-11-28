@@ -58,7 +58,7 @@ impl RuntimeCore {
         if target_branch_id != self.runtime.current_branch().id.0 {
             // A runtime snapshot belongs to the branch it was captured on.
             // Restoring it reactivates that branch first, so a snapshot taken
-            // before a branch was created, switched to, or merged remains
+            // before a branch was created or switched to remains
             // restorable afterwards.
             self.switch_branch(target_branch_id).map_err(|error| {
                 WorthSignalJsError::invalid_input(format!(
