@@ -5,7 +5,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::unique_write_dependencies::observe_unique_values;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::merge_unique_values::MergeWorld;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::unique_write_world::UniqueWriteWorld;
 use worth_foundational::facade::AspectValue;
 use worth_foundational::facade::InternedString;
 use worth_relational::facade::history::BranchId;
@@ -14,7 +14,7 @@ fn delegation_child_identity_records_absence_and_taken_values_once() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = MergeWorld::new();
+    let world = UniqueWriteWorld::new();
     let held = world.create(execution, "main", "held-child", 7);
     let unique = world.unique(Some(world.index));
     world.mutate(execution, |runtime| {

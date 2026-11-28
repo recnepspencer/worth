@@ -45,8 +45,6 @@ pub mod index_refresh;
 pub mod invariant_projection;
 #[path = "live_delivery/mod.rs"]
 pub mod live_delivery;
-#[path = "merge_unique_values/mod.rs"]
-pub mod merge_unique_values;
 #[path = "output_binding_identity/mod.rs"]
 pub mod output_binding_identity;
 #[path = "output_family_identity/mod.rs"]

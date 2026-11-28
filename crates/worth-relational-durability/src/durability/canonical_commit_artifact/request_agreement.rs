@@ -1,6 +1,6 @@
 //! Original-request control for the SAME positioned authoritative payload grammar.
 use super::RelationalCanonicalCommitArtifact as Artifact;
-use branch::history::commit::payload_commitment::digest_envelope_in_context;
+use branch::history::commit::payload_commitment::digest_envelope_in_context_for_format;
 use branch::history::commit::payload_commitment::writer::{in_context, CommitmentWriter};
 use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelope;
 use branch::history::data::positioned_canonical_commit::PositionedCanonicalCommit;
@@ -53,9 +53,17 @@ impl Artifact {
                 return Ok(true);
             }
             // Both passes debit one context from the original request.
-            let expected =
-                digest_envelope_in_context(original.position(), original.envelope(), context)?;
-            let actual = digest_envelope_in_context(original.position(), candidate, context)?;
+            let format = original.envelope().artifact_format();
+            let digest = |envelope, context: &mut _| {
+                digest_envelope_in_context_for_format(
+                    original.position(),
+                    envelope,
+                    format,
+                    context,
+                )
+            };
+            let expected = digest(original.envelope(), context)?;
+            let actual = digest(candidate, context)?;
             Ok(expected == actual)
         })
     }

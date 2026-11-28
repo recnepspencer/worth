@@ -14,8 +14,6 @@ pub(super) fn unchanged(
     adjacency: &[contracts::authority::mutation::adjacency_delta::AdjacencyDelta],
     envelope: &branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBody,
     symbols: &worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::reservations::PendingSymbolMeanings,
-    merge_base: &[contracts::history::data::coordinates::CommitId],
-    merge_parents: &[contracts::history::data::coordinates::BranchId],
 ) -> Result<bool, TransactionCommitError> {
     if !adjacency.is_empty()
         || !(*envelope.owner_content()).records().is_empty()
@@ -25,8 +23,6 @@ pub(super) fn unchanged(
         || envelope.schema_transition.is_some()
         || envelope.schema_continuation_descriptor.is_some()
         || envelope.schema_reconciliation_descriptor.is_some()
-        || !merge_base.is_empty()
-        || !merge_parents.is_empty()
     {
         return Ok(false);
     }

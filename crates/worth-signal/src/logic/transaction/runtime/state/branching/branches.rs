@@ -9,10 +9,8 @@ mod selection;
 mod snapshot_storage;
 mod transfer;
 
+pub(in crate::logic::transaction::runtime) use authority::BranchAncestryState;
 pub(crate) use authority::BranchState;
-pub(in crate::logic::transaction::runtime) use authority::{
-    BranchAncestryState, LatestMergeReference,
-};
 pub(crate) use canonical_transaction::SignalCanonicalCallerUnwind;
 pub(in crate::logic::transaction::runtime) use catalog::BranchManager;
 pub(in crate::logic::transaction::runtime::state) use catalog::DEFAULT_MAXIMUM_STORED_SIGNAL_BRANCH_SNAPSHOTS;
@@ -29,7 +27,7 @@ use crate::data::telemetry::RuntimeTelemetry;
 use crate::logic::transaction::runtime::config::SignalRuntimeConfig;
 use crate::state::{SignalBranchId, SignalSnapshotId};
 
-use super::super::merge::BranchMutationLedger;
+use super::super::branching::branch_mutation_journal::BranchMutationLedger;
 use super::super::reconstructability::{AuthorityState, DerivedState};
 
 #[derive(Debug, Clone)]

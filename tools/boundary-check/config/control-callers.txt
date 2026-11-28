@@ -177,7 +177,6 @@ crates/worth-relational-contracts/ crates/worth-court-runtime-world/tests/worth_
 crates/worth-relational-contracts/ crates/worth-relational-branch/src/history/data/canonical_commit_envelope/required_output_origin/payload_coverage/tests.rs
 crates/worth-relational-contracts/ crates/worth-relational-branch/src/branch/root_physical_linkage_tests.rs
 crates/worth-relational-contracts/ crates/worth-relational-branch/src/branch/root_tests.rs
-crates/worth-relational-contracts/ crates/worth-relational-durability/src/durability/canonical_commit_artifact/decoded_quote/merge/admission/tests.rs
 crates/worth-relational-contracts/ crates/worth-relational-durability/src/durability/canonical_commit_artifact/frame_reference_encoding.rs
 crates/worth-relational-contracts/ crates/worth-relational-branch/src/history/data/publication_relations/creation/tests/committed_images.rs
 crates/worth-relational-contracts/ crates/worth-relational-lineage/src/lineage/authority/posture_fixture/records.rs
@@ -224,7 +223,7 @@ crates/worth-relational-storage/ crates/worth-relational-lineage/src/lineage/aut
 crates/worth-relational-storage/ crates/worth-relational-lineage/src/lineage/authority/untouched_keeper_merge.rs
 crates/worth-relational-storage/ crates/worth-relational-mutation/src/aggregate_identity/derived_source/tests.rs
 crates/worth-relational-storage/ crates/worth-relational-publication/src/authority/commit/touched_scope.rs
-crates/worth-relational-storage/ crates/worth-relational-merge/src/authority/intent_merge/relation_validation/relation_identity_scan.rs
+crates/worth-relational-storage/ crates/worth-relational-commit-admission/src/intent_admission/relation_validation/relation_identity_scan.rs
 crates/worth-relational-storage/ crates/worth-relational-mutation/src/authority/mutation/aspect_versions.rs
 crates/worth-relational-storage/ crates/worth-relational-mutation/src/authority/mutation/canonical_deltas/engine_tests/support.rs
 crates/worth-relational-storage/ crates/worth-relational-branch/src/branch/pinned_walk_request_tests.rs
@@ -324,10 +323,6 @@ crates/worth-relational-branch/ crates/worth-relational/src/tests/durability/con
 crates/worth-relational-branch/ crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery/lineage_regression.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/durability/contracts/lineage_event_allocator_recovery.rs
-crates/worth-relational-branch/ crates/worth-relational/src/tests/durability/contracts/merge_replay_continuity.rs
-crates/worth-relational-branch/ crates/worth-relational/src/tests/history/milestone_7e_phase_a.rs
-crates/worth-relational-branch/ crates/worth-relational/src/tests/history/milestone_7e_phase_e.rs
-crates/worth-relational-branch/ crates/worth-relational/src/tests/history/milestone_7e_phase_m/fixtures.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/history/replay/derived_index_and_workload.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/history/replay/lineage_authority_basis.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/publication/cdc/subscriber_resume/boundary_collection.rs
@@ -359,7 +354,6 @@ crates/worth-relational-branch/ crates/worth-relational-durability/src/durabilit
 crates/worth-relational-branch/ crates/worth-relational-durability/src/durability/derived_index_artifacts/captured_decode/tests.rs
 crates/worth-relational-branch/ crates/worth-relational-durability/src/durability/derived_index_artifacts/checkpoint_delta.rs
 crates/worth-relational-branch/ crates/worth-relational-durability/src/durability/derived_index_artifacts/checkpoint_delta/complete_view/tests.rs
-crates/worth-relational-branch/ crates/worth-relational/src/history/access/merge_branch_basis.rs
 crates/worth-relational-branch/ crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs
 crates/worth-relational-branch/ crates/worth-relational/src/history/data/canonical_commit_envelope/payload_encoding_tests.rs
 crates/worth-relational-branch/ crates/worth-relational/src/history/retention/component_cut_tests.rs
@@ -412,7 +406,6 @@ crates/worth-relational-branch/ crates/worth-relational/src/tests/durability/con
 crates/worth-relational-branch/ crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/durability/contracts/rejected_and_parent_closure.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/harness/scenario/runner/scenario_execution.rs
-crates/worth-relational-branch/ crates/worth-relational/src/tests/history/milestone_8_5_kubernetes/replay_recovery.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/lineage/fork_scale.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/performance_profiles/sustained_load_matrix/commit_query_churn.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/profiles/compiled_artifacts.rs
@@ -987,7 +980,7 @@ workspaces/worth-query/crates/worth-query-execution-layout/ workspaces/worth-que
 workspaces/worth-query/crates/worth-query-execution-layout/ workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/native_output_witness/checkpoint/tests/mod.rs
 workspaces/worth-query/crates/worth-query-execution-layout/ workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/tests/republication/mod.rs
 workspaces/worth-query/crates/worth-query-execution-layout/ workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/scalar_input/output/attribution.rs
-workspaces/worth-query/crates/worth-query-execution-layout/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/merge_unique_values/mod.rs
+workspaces/worth-query/crates/worth-query-execution-layout/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/unique_write_world.rs
 workspaces/worth-query/crates/worth-query-execution-layout/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt/src/domain_computation/primary_graph/provider/committed_dispatch_outbox/owner_test_support/mod.rs
 workspaces/worth-query/crates/worth-query-execution-layout/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/tests/fixture/capability_status_mutation/mod.rs
 workspaces/worth-query/crates/worth-query-execution-layout/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/tests/fixture/program_activation/mod.rs
@@ -1532,7 +1525,7 @@ workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-qu
 workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/provider/decision_facts/comparison/tests/principal_staleness/mod.rs
 workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/components/mod.rs
 workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/identity/mod.rs
-workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/merge_unique_values/mod.rs
+workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/unique_write_world.rs
 workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt/src/domain_computation/managed_run/tests/causal_fixture/relational_source/mod.rs
 workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt/src/domain_computation/primary_graph/application_attempt/compare_and_commit/commit_receipt/certification/mod.rs
 workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt/src/domain_computation/primary_graph/application_output_demand/registry/prerequisite_claims/custody_note_steps/mod.rs
@@ -1935,7 +1928,7 @@ workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-quer
 workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/required_wave/performed/certification/acknowledgement_basis/mod.rs
 workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/world/mod.rs
 workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/fixture/decision_read_world/mod.rs
-workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/merge_unique_values/mod.rs
+workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/unique_write_world.rs
 workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/registered/overlay_conflict_tests/mod.rs
 workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/application_contribution/partitioned_computation/attribution_tests/mod.rs
 workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/application_contribution/partitioned_computation/incremental/tests/projected_attempt/mod.rs
@@ -2958,7 +2951,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/endpoint_fence.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/foreign_aggregate/retained.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/locality.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/merged_generation.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/metadata_guard.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/relation_splice/courts.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/certification/application_graph/correction/consecutive_undo.rs
@@ -3851,9 +3843,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/index_maintenance_interruptions/consumers/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/index_maintenance_interruptions/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/index_maintenance_interruptions/refresh_consults/mod.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/merge_unique_updates/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/merge_unique_values/counts/mod.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/merge_unique_values/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/product_branch_creation_recovery/creation_release/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/product_branch_creation_recovery/fork_failure/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/product_branch_creation_recovery/mod.rs
@@ -4047,7 +4037,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/application_query/observed_source_fixture/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/fixture/decision_read_world/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/live_delivery_support/mod.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/merge_unique_values/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/unique_write_world.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/recoverable_commit_support/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/provider_session/graph_provider/tests/support/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/provider_session/tests/mod.rs
@@ -4253,12 +4243,6 @@ workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-s
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/process/store/physical_record_journeys/physical_work/close_plan/task.rs
 
 # Existing Runtime merge verification courts use Merge-owned controls.
-crates/worth-relational-merge/ crates/worth-relational/src/merge/execution/mod.rs
-crates/worth-relational-merge/ crates/worth-relational/src/tests/history/milestone_7c_phase_a/compilation_denials.rs
-crates/worth-relational-merge/ crates/worth-relational/src/tests/history/milestone_7c_phase_a/prepared_merge_verification.rs
-crates/worth-relational-merge/ crates/worth-relational/src/tests/history/milestone_7c_phase_d.rs
-crates/worth-relational-merge/ crates/worth-relational/src/tests/history/milestone_7d_phase_b/executable_admission.rs
-crates/worth-relational-merge/ crates/worth-relational/src/tests/history/milestone_7d_phase_c.rs
 
 # Existing Runtime index courts observe their selected Indexes operations.
 crates/worth-relational-indexes/ crates/worth-relational/src/tests/query/execution/read_law_matrix/refusals.rs
@@ -4343,7 +4327,6 @@ crates/worth-relational-durability/ crates/worth-relational/src/tests/durability
 crates/worth-relational-durability/ crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs
 crates/worth-relational-durability/ crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery/lineage_regression.rs
 crates/worth-relational-durability/ crates/worth-relational/src/tests/durability/contracts/lineage_event_allocator_recovery.rs
-crates/worth-relational-durability/ crates/worth-relational/src/tests/durability/contracts/merge_replay_continuity.rs
 crates/worth-relational-durability/ crates/worth-relational/src/tests/durability/contracts/native_checkpoint/speculative_symbols.rs
 crates/worth-relational-durability/ crates/worth-relational/src/tests/durability/contracts/native_checkpoint_restore_benchmark.rs
 crates/worth-relational-durability/ crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs
@@ -4351,11 +4334,6 @@ crates/worth-relational-durability/ crates/worth-relational/src/tests/durability
 crates/worth-relational-durability/ crates/worth-relational/src/tests/durability/contracts/rejected_and_parent_closure.rs
 crates/worth-relational-durability/ crates/worth-relational/src/tests/durability/contracts/tail_checkpoint_validation.rs
 crates/worth-relational-durability/ crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs
-crates/worth-relational-durability/ crates/worth-relational/src/tests/history/milestone_7d_phase_d/merge_descriptive_touches.rs
-crates/worth-relational-durability/ crates/worth-relational/src/tests/history/milestone_7e_phase_a.rs
-crates/worth-relational-durability/ crates/worth-relational/src/tests/history/milestone_7e_phase_e.rs
-crates/worth-relational-durability/ crates/worth-relational/src/tests/history/milestone_7e_phase_m/fixtures.rs
-crates/worth-relational-durability/ crates/worth-relational/src/tests/history/milestone_8_5_kubernetes/replay_recovery.rs
 crates/worth-relational-durability/ crates/worth-relational/src/tests/publication/cdc/subscriber_resume/boundary_collection.rs
 crates/worth-relational-durability/ crates/worth-relational/src/tests/publication/contracts/publication_identity.rs
 crates/worth-relational-durability/ crates/worth-relational/src/tests/schema/continuity/commit_artifact_publication.rs

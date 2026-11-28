@@ -68,12 +68,12 @@ cap = 98000
 floor = 51000
 depends = ["contracts", "storage", "branch"]
 
-[owners.merge]
+[owners.commit_admission]
 physical = true
-crate = "worth-relational-merge"
+crate = "worth-relational-commit-admission"
 layer = 3
-cap = 24000
-floor = 9900
+cap = 3500
+floor = 2500
 depends = ["contracts", "storage", "branch"]
 
 [owners.indexes]
@@ -90,7 +90,7 @@ crate = "worth-relational-durability"
 layer = 4
 cap = 84000
 floor = 45400
-depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes"]
+depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admission", "indexes"]
 
 [owners.publication]
 physical = true
@@ -98,7 +98,7 @@ crate = "worth-relational-publication"
 layer = 5
 cap = 60000
 floor = 26600
-depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability"]
+depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admission", "indexes", "durability"]
 
 [owners.runtime]
 crate = "worth-relational"
@@ -110,7 +110,7 @@ layer = 6
 # +200 for Store M4.3f Round 3 fork-vs-retention-floor coordination and detached fork cold-source rebind.
 cap = 80000
 floor = 32000
-depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
+depends = ["contracts", "storage", "branch", "lineage", "mutation", "commit_admission", "indexes", "durability", "publication"]
 
 [paths]
 "authority/commit/mod.rs" = "runtime"
@@ -158,8 +158,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "commit_strategies/mod.rs" = "runtime"
 "indexes/authority/maintenance/mod.rs" = "runtime"
 "indexes/authority/mod.rs" = "runtime"
-"merge/planning_artifact/mod.rs" = "runtime"
-"merge/policy/mod.rs" = "runtime"
 "mvcc/transaction/overlay_normalization.rs" = "runtime"
 "mvcc/validation/proposal_footprint/mod.rs" = "runtime"
 "mvcc/validation/proposal_identity.rs" = "runtime"
@@ -266,7 +264,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "mvcc/publication/companion/registration/retirement_tests.rs" = "runtime"
 "authority/commit/pipeline/execution.rs" = "runtime"
 "authority/commit/pipeline/runtime_candidate_orchestration.rs" = "runtime"
-"authority/commit/pipeline/runtime_merge_draft.rs" = "runtime"
 
 "runtime/invariant_view.rs" = "runtime"
 "runtime/settlement_port.rs" = "runtime"
@@ -333,7 +330,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "visibility/materialization/read_records/reader/request_paid_truth.rs" = "runtime"
 
 
-"runtime/merge_ownership_probe.rs" = "runtime"
 
 
 # Longest physical path wins. Mixed roots stay with the live owner, and
@@ -412,7 +408,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/access/ancestry" = "runtime"
 "history/access/branch_envelope_reads" = "runtime"
 "history/access/bounded_commit_patches.rs" = "runtime"
-"history/access/merge_branch_basis.rs" = "runtime"
 "history/access/commit_surfaces" = "runtime"
 "history/access/envelope_reads" = "runtime"
 "history/access/patch_stream_commit" = "runtime"
@@ -465,24 +460,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "lineage/access/records" = "runtime"
 "lineage/access/resolution" = "runtime"
 "lineage/access/selected_root_resolution" = "runtime"
-"merge/access" = "runtime"
-"merge/causal_scope" = "runtime"
-"merge/conflict_scope" = "runtime"
-"merge/correspondence_witness_access" = "runtime"
-"merge/execution/authority_verification" = "runtime"
-"merge/execution/mod.rs" = "runtime"
-"merge/execution/named_outputs" = "runtime"
-"merge/facade" = "runtime"
-"merge/identity_scope" = "runtime"
-"merge/lowering_scope" = "runtime"
-"merge/mod.rs" = "runtime"
-"merge/planning" = "runtime"
-"merge/planning_artifact/performance_counters" = "runtime"
-"merge/planning_artifact/selected_basis" = "runtime"
-"merge/policy/selected_basis" = "runtime"
-"merge/proof_packet_access" = "runtime"
-"merge/schema_reconciliation_witness_access" = "runtime"
-"merge/strategy_witness_access" = "runtime"
 "mvcc" = "runtime"
 "mvcc/publication/port.rs" = "runtime"
 "mvcc/publication/port_cutover.rs" = "runtime"
@@ -812,7 +789,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "mvcc/publication/companion/registration/retirement.rs" = "runtime"
 "authority/commit/pipeline/execution.rs" = "runtime"
 "authority/commit/pipeline/runtime_candidate_orchestration.rs" = "runtime"
-"authority/commit/pipeline/runtime_merge_draft.rs" = "runtime"
 "runtime/state/subsystems/history_catalog_recovery.rs" = "durability"
 "runtime/state/subsystems/history_catalog_recovery/inventory.rs" = "durability"
 "runtime/state/subsystems/history_catalog_recovery/source_binding.rs" = "durability"
@@ -931,23 +907,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "commit_strategies/execution/bound_execution" = "runtime"
 
 # Merge owns its plan value exports. Runtime selects operands, binds authority and records work.
-"merge/access" = "runtime"
-"merge/causal_scope" = "runtime"
-"merge/conflict_scope" = "runtime"
-"merge/correspondence_witness_access" = "runtime"
-"merge/execution/authority_verification" = "runtime"
-"merge/execution/mod.rs" = "runtime"
-"merge/execution/named_outputs" = "runtime"
-"merge/identity_scope" = "runtime"
-"merge/lowering_scope" = "runtime"
-"merge/mod.rs" = "runtime"
-"merge/planning" = "runtime"
-"merge/planning_artifact/performance_counters" = "runtime"
-"merge/planning_artifact/selected_basis" = "runtime"
-"merge/policy/selected_basis" = "runtime"
-"merge/proof_packet_access" = "runtime"
-"merge/schema_reconciliation_witness_access" = "runtime"
-"merge/strategy_witness_access" = "runtime"
 
 # Runtime owns the admitted cutover receiver.
 "mvcc/publication/port.rs" = "runtime"
@@ -1025,7 +984,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "history/access/aspect_history/mod.rs" = "runtime"
 "history/access/aspect_history_queries.rs" = "runtime"
 "history/access/bounded_commit_patches.rs" = "runtime"
-"history/access/merge_branch_basis.rs" = "runtime"
 "history/access/mod.rs" = "runtime"
 "history/access/relevant_writes/cursor/admission_runtime.rs" = "runtime"
 "history/access/relevant_writes/live_cursor.rs" = "runtime"
@@ -1177,7 +1135,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 # Frozen schema executors and exact captured receiver pairs precede live installation.
 
 # The installed receiver binds the original fork, merge and preparation services.
-"runtime/merge_ownership_probe.rs" = "runtime"
 
 # Selected applied field deltas and their request-funded read kernels serve Branch and Indexes.
 

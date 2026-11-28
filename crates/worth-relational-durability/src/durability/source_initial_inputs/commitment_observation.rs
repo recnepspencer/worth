@@ -21,10 +21,9 @@ impl RelationalCompleteSourceArtifact {
         Refusal,
     > {
         let checkpoint = self.checkpoint()?;
-        let raw = checkpoint
-            .bytes()
-            .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
-            .ok_or(Refusal::Malformed)?;
+        let raw =
+            crate::durability::log::native_checkpoint_codec::checkpoint_payload(checkpoint.bytes())
+                .map_err(|_| Refusal::Malformed)?;
         let schema_bytes = BorrowedPayload(raw)
             .field("manifest", request)
             .map_err(Refusal::Payload)?

@@ -1897,11 +1897,11 @@ dependencies = [
  "worth-foundational",
  "worth-proof",
  "worth-relational-branch",
+ "worth-relational-commit-admission",
  "worth-relational-contracts",
  "worth-relational-durability",
  "worth-relational-indexes",
  "worth-relational-lineage",
- "worth-relational-merge",
  "worth-relational-mutation",
  "worth-relational-publication",
  "worth-relational-storage",
@@ -1922,6 +1922,19 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-proof",
+ "worth-relational-contracts",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-commit-admission"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-relational-branch",
  "worth-relational-contracts",
  "worth-relational-storage",
 ]
@@ -1954,10 +1967,10 @@ dependencies = [
  "worth-foundational",
  "worth-proof",
  "worth-relational-branch",
+ "worth-relational-commit-admission",
  "worth-relational-contracts",
  "worth-relational-indexes",
  "worth-relational-lineage",
- "worth-relational-merge",
  "worth-relational-mutation",
  "worth-relational-storage",
 ]
@@ -1984,21 +1997,6 @@ dependencies = [
  "serde",
  "worth-execution",
  "worth-foundational",
- "worth-relational-branch",
- "worth-relational-contracts",
- "worth-relational-storage",
-]
-
-[[package]]
-name = "worth-relational-merge"
-version = "0.1.0"
-dependencies = [
- "rmp-serde",
- "serde",
- "sha2",
- "worth-execution",
- "worth-foundational",
- "worth-proof",
  "worth-relational-branch",
  "worth-relational-contracts",
  "worth-relational-storage",
@@ -2038,11 +2036,11 @@ dependencies = [
  "worth-foundational",
  "worth-proof",
  "worth-relational-branch",
+ "worth-relational-commit-admission",
  "worth-relational-contracts",
  "worth-relational-durability",
  "worth-relational-indexes",
  "worth-relational-lineage",
- "worth-relational-merge",
  "worth-relational-mutation",
  "worth-relational-storage",
 ]

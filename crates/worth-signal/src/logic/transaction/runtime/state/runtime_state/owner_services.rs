@@ -42,17 +42,6 @@ where
         )
     }
 
-    #[cfg(test)]
-    pub(crate) fn inject_merge_participation_unwind_for_owner_contract(
-        &mut self,
-        source_branch_id: crate::state::SignalBranchId,
-        target_branch_id: crate::state::SignalBranchId,
-    ) {
-        self.branches
-            .mark_merge_participants(source_branch_id, target_branch_id);
-        panic!("inject unwind after canonical merge participation begins");
-    }
-
     pub(crate) fn owner_service_issuance_capability(
         &self,
     ) -> Result<(), SignalOwnerServiceIssuanceDenial> {

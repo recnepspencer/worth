@@ -129,6 +129,7 @@ pub enum SignalAuthoredImageDenial {
     TierVocabulary(super::SignalDurableTierVocabularyDenial),
     SizeLimit,
     ChecksumMismatch,
+    LegacyMergeArtifactRetired,
     UnsupportedVersion(worth_foundational::facade::BoundaryProtocolUnsupportedVersion),
     StorageProfileMismatch {
         recorded_aspects: u32,

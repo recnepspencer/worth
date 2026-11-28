@@ -228,3 +228,46 @@ fn embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining
         }
     }
 }
+
+// Original V10 journal position 2 from the pre-retirement Store Directory writer.
+const V10_ORDINARY_FRAME: &[u8] = include_bytes!("shared_readmission_tests/v10-ordinary.frame");
+
+#[test]
+fn legacy_v10_ordinary_frame_readmits_and_reencodes_byte_for_byte() {
+    let host = worth_harness::facade::execution_fixture::serial_request();
+    let request = ExecutionRequest::serial(&host);
+    let frame = Frame::copy_frame_original(V10_ORDINARY_FRAME, &request)
+        .unwrap_or_else(|_| panic!("captured V10 frame must verify"));
+    let admitted = frame.readmitted_body(&request).unwrap();
+    assert_eq!(admitted.position(), PatchStreamPosition(2));
+    assert_eq!(
+        admitted.envelope().artifact_format(),
+        contracts::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat::LegacyMergeCapable,
+    );
+    let reencoded = encode_canonical_frame_for_request(&admitted, &request).unwrap();
+    assert_eq!(reencoded.as_bytes(), V10_ORDINARY_FRAME);
+}
+
+#[test]
+fn ordinary_v11_frame_refuses_even_empty_legacy_merge_slots() {
+    use contracts::durability::canonical_commit_artifact::{
+        frame::{CanonicalCommitArtifactFormat, CanonicalCommitArtifactHeader},
+        readmission_refusal::RelationalCanonicalCommitArtifactRefusal as Refusal,
+    };
+
+    let (mut header, payload) = CanonicalCommitArtifactHeader::verify(V10_ORDINARY_FRAME).unwrap();
+    // The header version is outside the payload commitment. The mutation keeps
+    // valid framing, coordinates and digest, including the three empty slots.
+    header.format = CanonicalCommitArtifactFormat::Ordinary;
+    let mut frame = header.emit(payload.len() as u64).to_vec();
+    frame.extend_from_slice(payload);
+
+    let host = worth_harness::facade::execution_fixture::serial_request();
+    let request = ExecutionRequest::serial(&host);
+    let frame = Frame::copy_frame_original(&frame, &request)
+        .unwrap_or_else(|_| panic!("a version-only mutation must preserve frame verification"));
+    assert!(matches!(
+        frame.readmitted_body(&request),
+        Err(Refusal::NonCanonicalPayload)
+    ));
+}

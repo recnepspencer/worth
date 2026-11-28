@@ -18,7 +18,7 @@ pub(super) fn assert_recovered_commit_truth(
     commit_id: CommitId,
     subjects: TruthSubjects<'_>,
 ) {
-    use super::merge_execution_observation::capture_aspect_truth_bundle;
+    use super::checkpoint_truth_observation::capture_aspect_truth_bundle;
     assert_eq!(
         capture_aspect_truth_bundle(execution, original, subjects.entities),
         capture_aspect_truth_bundle(execution, recovered, subjects.entities),

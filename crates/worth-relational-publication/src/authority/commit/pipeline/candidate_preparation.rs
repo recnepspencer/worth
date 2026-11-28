@@ -1,13 +1,10 @@
 //! Move the original history proof into candidate registration after early frames expire.
 use super::authority_context::AuthoritativeCommitContext;
-use super::execution_admission::AdmittedCommitState;
 use super::history_preparation::{prepare_bound_history, HistoryPreparationInputs};
-use super::merge_draft::AcceptedMergeDraft;
 use super::publication_validation::DraftValidationInput;
 use crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding;
 use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
-use worth_execution::ExecutionRequest;
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_mutation::internal_port as mutation;
@@ -27,12 +24,12 @@ pub struct CandidateArtifactSelection<'a> {
 }
 
 /// The exact selected publication and history owners for early preparation.
-pub struct CandidateHistoryInputs<'a, Draft> {
+pub struct CandidateHistoryInputs<'a> {
     pub runtime_identity: u64,
     pub publication: &'a RelationalRuntimePublicationBinding,
     pub history: &'a RelationalPreparationHistory,
     pub diagnostics: &'a crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore,
-    pub prepare: HistoryPreparationInputs<'a, Draft>,
+    pub prepare: HistoryPreparationInputs<'a>,
 }
 
 pub struct HistoryPreparedCandidate<'scope, 'authority> {
@@ -61,16 +58,11 @@ pub struct HistoryPreparedCandidate<'scope, 'authority> {
 
 // Later publication locals must not occupy the deep admission/draft call's frame.
 #[inline(never)]
-pub fn prepare_history<'scope, 'authority, V: DraftValidationInput, Draft>(
+pub fn prepare_history<'scope, 'authority, V: DraftValidationInput>(
     execution: &worth_execution::ExecutionRequest<'scope, 'authority>,
-    inputs: CandidateHistoryInputs<'_, Draft>,
+    inputs: CandidateHistoryInputs<'_>,
     mut context: AuthoritativeCommitContext<V>,
 ) -> Result<CommitPhaseBacking<HistoryPreparedCandidate<'scope, 'authority>>, TransactionCommitError>
-where
-    Draft: FnOnce(
-        &ExecutionRequest<'_, '_>,
-        &AdmittedCommitState<V>,
-    ) -> Result<AcceptedMergeDraft, TransactionCommitError>,
 {
     let required_output_publication = context.required_output_publication.take();
     let caller_association = context.caller_association.take();

@@ -1,16 +1,12 @@
 use super::*;
 use crate::facade::{
-    BridgeCanonicalBulkPlanRecord, BridgeCanonicalContinuityRecord, BridgeCanonicalMergeRecord,
+    BridgeCanonicalBulkPlanRecord, BridgeCanonicalContinuityRecord,
     BridgeCanonicalStructuralBranchComparisonRecord, BridgeCanonicalStructuralRemapRecord,
     BridgeCausalEvidenceBinding, BridgeCausalEvidenceFamily, BridgeCausalEvidenceOwner,
     BridgeCausalEvidenceReference, BridgeCausalEvidenceReferenceIdentity,
     BridgeHistoricalEvaluationFailureRecord, BridgeHistoricalResolvedLineageIdentity,
-    BridgeHistoricalResolvedRecordIdentity, BridgeMergeAuthorityBasis,
-    BridgeMergeAuthorityBasisKind, BridgeMergeConsumptionClass, BridgeMergeOntologyMappingSurface,
-    BridgeMergeParentOrderProof, BridgeMergeStructuralAdvisoryDisposition,
-    BridgeRouteResultSummary, CanonicalStreamReplayRecord, ConsumerCheckpointToken,
-    MergeHistoryDeclaration, MergeHistoryDeclarationIdentity, SourceFailureRecord,
-    SourceMaterializationRecord,
+    BridgeHistoricalResolvedRecordIdentity, BridgeRouteResultSummary, CanonicalStreamReplayRecord,
+    ConsumerCheckpointToken, SourceFailureRecord, SourceMaterializationRecord,
 };
 
 #[derive(Clone)]
@@ -151,15 +147,6 @@ pub(super) fn bridge_continuity_reference(
     )
 }
 
-pub(super) fn bridge_merge_reference(
-    record: &BridgeCanonicalMergeRecord,
-) -> BridgeCausalEvidenceReference {
-    missing_bridge_reference(
-        BridgeCausalEvidenceFamily::BridgeMerge,
-        record.record_identity().as_str(),
-    )
-}
-
 pub(super) fn bridge_historical_evaluation_failure_reference(
     record: &BridgeHistoricalEvaluationFailureRecord,
 ) -> BridgeCausalEvidenceReference {
@@ -182,28 +169,6 @@ pub(super) fn binding_for<'a>(
                 && binding.reference_evidence_identity().as_str() == reference_identity
         })
         .expect("expected retained bridge binding should be present")
-}
-
-pub(super) fn registered_causal_merge(
-    declaration_identity: MergeHistoryDeclarationIdentity,
-) -> MergeHistoryDeclaration {
-    let authority_artifact_identity = format!("merge-artifact:{}", declaration_identity.as_str());
-    MergeHistoryDeclaration::new(
-        declaration_identity,
-        BridgeMergeConsumptionClass::AspectReconciliationMerge,
-        BridgeMergeOntologyMappingSurface::direct_phase_m9_0("rel-merge-v1"),
-        BridgeMergeAuthorityBasis::new(
-            BridgeMergeAuthorityBasisKind::OrderedMergeCommit,
-            authority_artifact_identity,
-            "rel-merge-v1",
-            "schema-policy-v1",
-            BridgeMergeParentOrderProof::new(vec![
-                crate::truth_identity_fixtures::truth_commit_fixture("parent-a"),
-                crate::truth_identity_fixtures::truth_commit_fixture("parent-b"),
-            ]),
-        ),
-    )
-    .with_structural_advisory(BridgeMergeStructuralAdvisoryDisposition::AdvisoryConsistent)
 }
 
 pub(super) fn branch_comparison_declaration(
@@ -233,10 +198,7 @@ pub(super) fn branch_comparison_declaration(
     )
 }
 
-pub(super) fn retained_runtime(
-    merge_declaration: MergeHistoryDeclaration,
-    branch_declaration: StructuralIdentityDeclaration,
-) -> RuntimeBridge {
+pub(super) fn retained_runtime(branch_declaration: StructuralIdentityDeclaration) -> RuntimeBridge {
     RuntimeBridgeBuilder::new()
         .with_policy(BridgeRuntimePolicy::default())
         .with_relational_source(StaticSource)
@@ -277,7 +239,6 @@ pub(super) fn retained_runtime(
             )),
         ))
         .register_structural(branch_declaration)
-        .register_merge(merge_declaration)
         .register_mapping(BridgeMappingRegistration::new(
             BridgeMappingId::admit_bridge_owned("mapping"),
             TruthPatchScope::for_entity_field(

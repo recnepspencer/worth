@@ -9,10 +9,6 @@ import {
 } from "./resource_effect_closeout_plan.js";
 
 async function executeResourceEffectConfirmation(options) {
-  const nativeMergeProof = await options.history.plan_merge_branches_with_proof(
-    options.effect.branch.branch.branch.id,
-    options.canonicalBranchId,
-  );
   const settlingEffect = Object.freeze({
     ...options.effect,
     serverRevision: options.settlement.serverRevision ?? null,
@@ -25,7 +21,6 @@ async function executeResourceEffectConfirmation(options) {
     serverPatch: options.settlement.serverPatch ?? null,
     serverRevision: options.settlement.serverRevision ?? null,
     sameLocusOpenEffects: options.sameLocusConfirmedEffects,
-    nativeMergeProof,
     applyPatch: materialize,
   });
   const reconciliation = executePlannedResourceEffectReconciliation(

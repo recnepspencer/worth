@@ -43,12 +43,6 @@ impl BridgeHarnessTargetId {
                 "source-reject-snapshot-drift:{}",
                 declaration_identity.as_str()
             ),
-            Self::MergeExecute {
-                declaration_identity,
-            } => format!("merge-execute:{}", declaration_identity.as_str()),
-            Self::MergeReplay {
-                declaration_identity,
-            } => format!("merge-replay:{}", declaration_identity.as_str()),
             Self::PolicyProvenanceCertification => "policy-provenance-certify".to_owned(),
             Self::PolicyRejectionCertification => "policy-rejection-certify".to_owned(),
             Self::PolicyAmbientLeakCertification => "policy-ambient-leak-certify".to_owned(),

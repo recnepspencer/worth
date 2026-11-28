@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
-use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthorityOwnerPort as _;
 
 use crate::authority::commit::pipeline::execution::execute_authoritative_commit;
 use crate::authority::commit::pipeline::AuthoritativeCommitContext;
@@ -8,16 +7,12 @@ use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalR
 use crate::history::data::{CanonicalCommitAuthorityKind, CanonicalCommitEnvelope};
 use crate::runtime::RelationalRuntime;
 
-use super::super::branch_readmission::owner_merge_parent_bases;
 use super::super::branch_readmission::recovered_branch_basis;
 use super::super::history_parity::validate_recovered_history_parity;
-use super::super::merge_plan::{missing_merge_authority, prepare_recovered_merge_plan};
 use super::super::recovered_schema_basis::RecoveredSchemaBasis;
 use super::committed_artifacts::apply_authoritative_commit_artifacts;
 use super::owner_bindings::owner_options_for_branch;
-use super::path::{
-    governed_merge_authority_was_published, is_metadata_only_merge_commit, materialization_mode,
-};
+use super::path::materialization_mode;
 
 pub(super) fn replay_envelope_effect(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
@@ -35,21 +30,8 @@ pub(super) fn replay_envelope_effect(
         .demand_checkpoint_image(execution)
         .map_err(RelationalRecoveryStop::from)?;
     let envelope = positioned.envelope();
-    if envelope.authority_kind() == CanonicalCommitAuthorityKind::BranchReferenceMovement
-        || is_metadata_only_merge_commit(envelope)
-    {
+    if envelope.authority_kind() == CanonicalCommitAuthorityKind::BranchReferenceMovement {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        if governed_merge_authority_was_published(envelope) {
-            // Metadata-only replay consumes proof consistency, not a copied
-            // mutation plan. Use the same actual published authority predicate.
-            if !envelope
-                .merge_execution_authority
-                .as_ref()
-                .is_some_and(|authority| authority.retains_consistent_proof_packet_authority())
-            {
-                return Err(missing_merge_authority(envelope).into());
-            }
-        }
         recovered_branch_basis((&*restored).into(), &envelope.branch_context)?;
         apply_authoritative_commit_artifacts(execution, restored, positioned, false, false)?;
         let branch_basis = recovered_branch_basis((&*restored).into(), &envelope.branch_context)?;
@@ -84,14 +66,10 @@ pub(super) fn replay_envelope_effect(
             .map_err(|detail| {
                 DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
             })?;
-        if envelope.authority_kind() == CanonicalCommitAuthorityKind::BranchReferenceMovement {
-            restored
-                .lineage
-                .install_recovered_event_batch(envelope.lineage_events(), envelope.commit.commit_id)
-                .map_err(|detail| {
-                    DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail)
-                })?;
-        }
+        restored
+            .lineage
+            .install_recovered_event_batch(envelope.lineage_events(), envelope.commit.commit_id)
+            .map_err(|detail| DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail))?;
         return Ok(());
     }
     super::super::index_catalog::predecessor::reconstruct_predecessor(
@@ -101,26 +79,14 @@ pub(super) fn replay_envelope_effect(
         &envelope.branch_context,
         &catalog,
     )?;
-    if envelope.merge_parent_branches.is_empty() {
-        replay_ordinary_commit(
-            execution,
-            restored,
-            envelope,
-            positioned.position(),
-            catalog,
-            recorded_result_schema,
-        )?;
-    } else {
-        replay_merge_commit(
-            execution,
-            restored,
-            envelope,
-            positioned.position(),
-            catalog,
-            recorded_result_schema,
-        )?;
-    }
-    Ok(())
+    replay_ordinary_commit(
+        execution,
+        restored,
+        envelope,
+        positioned.position(),
+        catalog,
+        recorded_result_schema,
+    )
 }
 
 pub(super) fn restore_authoritative_artifacts_when_required(
@@ -172,11 +138,7 @@ pub(super) fn replay_ordinary_commit(
             .current_write_version(),
         envelope,
     )?;
-    let mut options = owner_options_for_branch(restored, &envelope.branch_context)?;
-    options = options.with_merge_parent_bases(owner_merge_parent_bases(
-        (&*restored).into(),
-        &envelope.merge_parent_branches,
-    )?);
+    let options = owner_options_for_branch(restored, &envelope.branch_context)?;
     let options = with_recorded_result_schema(
         configure_recovered_schema(options, &schema_basis),
         recorded_result_schema,
@@ -244,70 +206,6 @@ fn with_recorded_result_schema(
         Some(recorded) => options.with_recorded_result_schema(recorded),
         None => options,
     }
-}
-
-pub(super) fn replay_merge_commit(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    restored: &mut RelationalRuntime,
-    envelope: &CanonicalCommitEnvelope,
-    position: crate::publication::patch::data::PatchStreamPosition,
-    catalog: crate::durability::authority::RecoveredIndexCatalog,
-    recorded_result_schema: Option<crate::durability::authority::runtime_rebuild::recorded_result_schema::RecordedReplayResultSchema>,
-) -> Result<(), RelationalRecoveryStop> {
-    crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-    let merge_plan = prepare_recovered_merge_plan(envelope, execution)?;
-    let schema_basis = RecoveredSchemaBasis::admit(
-        restored
-            .config
-            .schema
-            .descriptor_canonical_basis_policy
-            .current_write_version(),
-        envelope,
-    )?;
-    let mut options = owner_options_for_branch(restored, &envelope.branch_context)?;
-    options = options.with_merge_parent_bases(owner_merge_parent_bases(
-        (&*restored).into(),
-        &envelope.merge_parent_branches,
-    )?);
-    let context = AuthoritativeCommitContext::from_merge(
-        with_recorded_result_schema(
-            configure_recovered_schema(options, &schema_basis),
-            recorded_result_schema,
-        )
-        .with_recovered_content((*envelope.owner_content()).records().clone()),
-        merge_plan,
-    )
-    .map_err(|_| {
-        DurabilityError::new(
-            RecoveryFailureClass::ReplayFailure,
-            format!(
-                "failed to reconstruct merge authority context for durable merge commit {}",
-                envelope.commit.commit_id.0
-            ),
-        )
-    })?;
-    let outcome = execute_authoritative_commit(
-        execution,
-        restored,
-        context.with_recovered_index_catalog(catalog),
-    )
-    .map_err(|error| {
-        let detail = format!(
-            "failed to replay durable merge commit {}",
-            envelope.commit.commit_id.0
-        );
-        super::commit_stop::replay_commit_stop(error, detail)
-    })?;
-    let validation = if outcome.patch_position() != position {
-        Err(DurabilityError::new(
-            RecoveryFailureClass::ReplayFailure,
-            "replayed durable merge stream position drifted",
-        ))
-    } else {
-        schema_basis.validate_replayed(outcome.envelope())
-    };
-    release_replayed_snapshot(restored, &outcome.snapshot)?;
-    validation.map_err(Into::into)
 }
 
 fn release_replayed_snapshot(

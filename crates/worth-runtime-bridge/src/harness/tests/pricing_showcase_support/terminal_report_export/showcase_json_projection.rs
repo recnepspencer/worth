@@ -53,13 +53,6 @@ impl PricingWorkloadCertificationBundle {
                     "snapshot": self.fanout.second_snapshot.as_str(),
                     "meaning": "live high-fanout main-branch continuation",
                 },
-                {
-                    "phase": "merged_authority",
-                    "branch": self.matrix.reference.source_branch.as_str(),
-                    "commit": "merge:pricing-shock",
-                    "snapshot": self.merge.merged_snapshot.as_str(),
-                    "meaning": "authoritative merged pricing truth",
-                }
             ],
             "branch_comparison": {
                 "main_snapshot": self.matrix.reference.main_snapshot.as_str(),
@@ -71,9 +64,6 @@ impl PricingWorkloadCertificationBundle {
                     - self.matrix.reference.main_rubber_cost_cents,
                 "main_and_speculative_distinct": self.matrix.reference.main_snapshot
                     != self.matrix.reference.speculative_snapshot,
-                "merged_snapshot": self.merge.merged_snapshot.as_str(),
-                "merged_matches_speculative_rubber_cost":
-                    self.merge.merged_rubber_cost_cents == self.merge.speculative_rubber_cost_cents,
             },
             "portfolio_blast_radius": {
                 "product_count": self.portfolio.product_count,
@@ -144,7 +134,6 @@ impl PricingWorkloadCertificationBundle {
                 "restart_replay_route_identity": self.restart_replay.route_identity.as_str(),
                 "hostile_failure_class": format!("{:?}", self.hostile_failure.failure_class),
                 "restart_failure_kind": format!("{:?}", self.restart_failure.error_kind),
-                "merge_bundle_digest": self.merge.bundle_digest,
                 "writeback_commit_replay_semantic_digest": self.writeback.commit_replay_semantic_digest,
                 "bundle_digest": self.digest(),
                 "suite_25": self.suite_25_artifact_json(),

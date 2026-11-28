@@ -20,16 +20,7 @@ fn declaration_codec_preserves_nondefault_contracts_schema_policies_and_scopes()
             SignalSchemaVersion::new(2, 3),
             "schema-meaning",
         )),
-        merge_strategy_name: Some(MergeStrategyName::new("merge")),
-        conflict_policy_name: Some(ConflictPolicyName::new("conflict")),
-        identity_matcher_name: Some(IdentityMatcherName::new("identity")),
-        source_only_policy_name: Some(SourceOnlyPolicyName::new("source")),
-        deletion_policy_name: Some(DeletionPolicyName::new("deletion")),
-        conflict_isolation_policy_name: Some(ConflictIsolationPolicyName::new("isolation")),
-        aspect_merge_policy_bindings: vec![AspectMergePolicyBinding::new(
-            Aspect::new(2),
-            AspectMergePolicyName::new("aspect"),
-        )],
+
         comparator: Some(VersionComparatorPolicy::Custom {
             key: "compare".into(),
         }),
@@ -280,6 +271,36 @@ fn lowered_conditional_roles_cannot_replace_a_missing_definition() {
         assert!(matches!(
             graph_rows::read_definition(&mut input),
             Err(Denial::ConditionalDefinitionMissing)
+        ));
+    }
+}
+
+#[test]
+fn authored_image_configuration_refuses_legacy_merge_policy_data() {
+    let config = NodeEvaluationConfig::default();
+    let mut ordinary = Vec::new();
+    configuration::write(
+        &mut Write::new(branch(), &mut |part| {
+            ordinary.extend_from_slice(part);
+            Ok(())
+        }),
+        &config,
+    )
+    .unwrap();
+    let mut read = Read::new(&ordinary, branch());
+    read.materialize = true;
+    assert_eq!(configuration::read(&mut read).unwrap(), config);
+    read.finish().unwrap();
+
+    // With the schema binding absent, the six legacy presence bits follow
+    // the schema flag, then the little-endian legacy aspect binding count.
+    assert_eq!(&ordinary[..11], &[0; 11]);
+    for legacy_slot in 1..=7 {
+        let mut populated = ordinary.clone();
+        populated[legacy_slot] = 1;
+        assert!(matches!(
+            configuration::read(&mut Read::new(&populated, branch())),
+            Err(Denial::LegacyMergeArtifactRetired)
         ));
     }
 }

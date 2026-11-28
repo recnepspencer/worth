@@ -3,6 +3,7 @@ use super::VerifiedCanonicalCommitFrame;
 use branch::history::commit::index_entry::RelationalCommitIndexEntry;
 use branch::history::data::association_discovery::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use branch::history::data::positioned_canonical_commit::PositionedCanonicalCommit;
+use contracts::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal as Refusal;
 use contracts::durability::data::recovery_stop::RelationalRecoveryStop;
 use contracts::storage::data::storage_unavailable::{
     RelationalStorageSubject, RelationalStorageUnavailable,
@@ -19,12 +20,26 @@ impl VerifiedCanonicalCommitFrame {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
         self.check_index(entry)?;
-        let admitted=self.readmitted_body(execution).map_err(|error| match error {
-            contracts::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::Request(cause)=>RelationalRecoveryStop::Request(cause),
-            contracts::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::Content(cause) => cause.into(),
-                contracts::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::FieldText(cause)=>contracts::symbols::data::field_text::field_text_recovery_stop(cause),
-            _=>RelationalStorageUnavailable{subject:RelationalStorageSubject::Envelope(entry.position),cause:Cause::Damaged}.into(),
-        })?;
+        let admitted = self
+            .readmitted_body(execution)
+            .map_err(|error| match error {
+                Refusal::Request(cause) => RelationalRecoveryStop::Request(cause),
+                Refusal::Content(cause) => cause.into(),
+                Refusal::FieldText(cause) => {
+                    contracts::symbols::data::field_text::field_text_recovery_stop(cause)
+                }
+                Refusal::LegacyMergeArtifactRetired => {
+                    crate::durability::medium_recovery_readmission::artifact_refusal_stop(
+                        entry.position.0,
+                        error,
+                    )
+                }
+                _ => RelationalStorageUnavailable {
+                    subject: RelationalStorageSubject::Envelope(entry.position),
+                    cause: Cause::Damaged,
+                }
+                .into(),
+            })?;
         Self::check_positioned(entry, admitted, execution)
     }
     pub(crate) fn check_index(

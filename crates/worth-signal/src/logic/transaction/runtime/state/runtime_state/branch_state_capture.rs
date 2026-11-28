@@ -2,7 +2,7 @@ use crate::logic::checkpoint::CheckpointRuntime;
 
 use super::super::branching::{BranchAncestryState, BranchState};
 
-use super::super::merge::BranchMutationLedger;
+use super::super::branching::branch_mutation_journal::BranchMutationLedger;
 
 use super::super::reconstructability::{AuthorityState, DerivedState};
 

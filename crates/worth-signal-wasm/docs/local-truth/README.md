@@ -1,8 +1,7 @@
 # Local Truth
 
 Local Truth is the browser-local application-value authority for a standalone
-editor that genuinely needs branches, aspect-aware commits, snapshots, and
-reviewable merge decisions. It is a good fit for a local design tool, an
+editor that needs branches, aspect-aware commits, and snapshots. It is a good fit for a local design tool, an
 offline experiment, or a single-process workflow whose state is allowed to end
 when that browser process ends.
 
@@ -74,8 +73,6 @@ earned:
 | --- | --- | --- |
 | Declare fields and publish one change | `localTruthSchema(...)`, `signals.localTruth(...)`, `commit(...)` | [Your First Local Truth Store](./getting-started.md) |
 | Isolate independent work | `forkBranch(...)`, `branch(...)` | [Branches And Snapshots](./branches-and-snapshots.md) |
-| Compose disjoint work | `previewMerge(...)`, `resolveMerge(...)` | [Aspect Merge And Manual Resolution](./branch-merge.md) |
-| Resolve overlapping work | `createResolutionBranch(...)`, `resolutionAlternative(...)` | [Aspect Merge And Manual Resolution](./branch-merge.md) |
 | Inspect retained time | `history(...)`, `historicalSnapshot(...)`, `checkpoint(...)` | [History, Compaction, And Rebuild](./history-and-rebuild.md) |
 | Recover disposable computation | `derivation(...)`, `destroyDerivation(...)`, `rebuildDerivation(...)` | [History, Compaction, And Rebuild](./history-and-rebuild.md) |
 | Choose browser-local or platform authority | Query / Relational / Bridge / Signal ownership | [Authority Boundaries](./authority-boundaries.md) |
@@ -85,7 +82,6 @@ earned:
 
 - declared top-level entity aspects and their validation/equivalence rules;
 - immutable process-local commits, snapshots, branch heads, and current bases;
-- merge previews, authority-issued alternatives, decisions, and request replay;
 - retained history segments, checkpoints, and authority-local compaction;
 - exact delivery of committed values into declared Signal aspects.
 
@@ -117,7 +113,6 @@ commit graph in memory is still memory.
 
 1. [Your First Local Truth Store](./getting-started.md)
 2. [Branches And Snapshots](./branches-and-snapshots.md)
-3. [Aspect Merge And Manual Resolution](./branch-merge.md)
-4. [History, Compaction, And Rebuild](./history-and-rebuild.md)
-5. [Authority Boundaries](./authority-boundaries.md)
-6. [Local Truth API Reference](./api-reference.md)
+3. [History, Compaction, And Rebuild](./history-and-rebuild.md)
+4. [Authority Boundaries](./authority-boundaries.md)
+5. [Local Truth API Reference](./api-reference.md)

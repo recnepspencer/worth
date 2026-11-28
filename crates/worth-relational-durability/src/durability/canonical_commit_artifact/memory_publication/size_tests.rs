@@ -15,6 +15,7 @@ fn memory_frame_sizing_obeys_the_reader_limit_before_allocation() {
         Err(Denial::FrameSizeOverflow)
     ));
     let header = CanonicalCommitArtifactHeader {
+        format: contracts::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat::Ordinary,
         position: PatchStreamPosition(1),
         commit_id: contracts::history::data::coordinates::CommitId(1),
         digest: contracts::durability::canonical_commit_artifact::payload_digest::RelationalCanonicalCommitArtifactDigest::unsealed(),

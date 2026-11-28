@@ -42,22 +42,6 @@ function normalizeWorkerBranchId(branchId, operation) {
   return BigInt(branchId);
 }
 
-function normalizeWorkerMergePreviewRequest(request, operation) {
-  if (!request || typeof request !== "object" || Array.isArray(request)) {
-    throw new TypeError(`${operation} expects a merge preview request object`);
-  }
-  return {
-    ...request,
-    source_branch_id: normalizeWorkerPreviewBranchId(
-      request.source_branch_id,
-      `${operation}.source_branch_id`,
-    ),
-    target_branch_id: normalizeWorkerPreviewBranchId(
-      request.target_branch_id,
-      `${operation}.target_branch_id`,
-    ),
-  };
-}
 
 function normalizeWorkerPreviewBranchId(branchId, operation) {
   if (typeof branchId === "bigint") {
@@ -133,6 +117,5 @@ export {
   deserializeError,
   normalizeOptionalWasmUrl,
   normalizeWorkerBranchId,
-  normalizeWorkerMergePreviewRequest,
   normalizeWorkerUrl,
 };

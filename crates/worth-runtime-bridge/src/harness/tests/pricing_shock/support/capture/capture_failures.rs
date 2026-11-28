@@ -1,8 +1,5 @@
 use super::*;
-use crate::facade::{
-    BridgeMergeDenialClass, BridgeMergePrecedenceStage, BridgePolicyFieldKind,
-    BridgePolicyRejectionKind, BridgeRouteErrorKind,
-};
+use crate::facade::{BridgePolicyFieldKind, BridgePolicyRejectionKind, BridgeRouteErrorKind};
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_restart_replay_bundle(
     policy: BridgeRuntimePolicy,
@@ -184,43 +181,15 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_route_policy_con
     error.kind()
 }
 
-pub(in crate::harness::tests::pricing_shock) fn capture_pricing_merge_denial_bundle(
-) -> (BridgeMergePrecedenceStage, BridgeMergeDenialClass) {
-    let runtime = build_pricing_runtime_with_merge(
-        pricing_reference_source(),
-        RecordingSignalBridgeSink::default(),
-        BridgeRuntimePolicy::development(),
-    );
-    let contract = runtime
-        .admit_merge_history(pricing_topology_denial_merge_declaration())
-        .expect("registered topology-denial merge should admit");
-    let bundle = runtime
-        .replay_merge_history(&contract)
-        .expect("registered topology-denial merge should replay as a denied merge bundle");
-    (
-        bundle
-            .lowered_packet_set()
-            .blocked_stage()
-            .expect("topology-denial merge should retain a blocked stage"),
-        bundle
-            .lowered_packet_set()
-            .denial_class()
-            .expect("topology-denial merge should retain a typed denial class"),
-    )
-}
-
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_trust_attack_bundle(
 ) -> PricingTrustAttackBundle {
     let (replay_policy_error_kind, replay_policy_failure_class) =
         capture_pricing_replay_policy_failure_bundle();
     let route_policy_error_kind = capture_pricing_route_policy_conflict_bundle();
-    let (merge_denial_blocked_stage, merge_denial_class) = capture_pricing_merge_denial_bundle();
 
     PricingTrustAttackBundle {
         replay_policy_error_kind,
         replay_policy_failure_class,
         route_policy_error_kind,
-        merge_denial_blocked_stage,
-        merge_denial_class,
     }
 }

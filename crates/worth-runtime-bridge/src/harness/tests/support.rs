@@ -369,23 +369,3 @@ pub(super) fn field_aspect_registration_with_kind(
         SliceWideningPolicy::Disallow,
     )
 }
-
-pub(super) fn merge_declaration(
-    declaration_identity: crate::facade::MergeHistoryDeclarationIdentity,
-    class: crate::facade::BridgeMergeConsumptionClass,
-    parents: impl IntoIterator<Item = crate::facade::TruthCommitIdentity>,
-) -> crate::facade::MergeHistoryDeclaration {
-    let authority_artifact_identity = format!("merge-artifact:{}", declaration_identity.as_str());
-    crate::facade::MergeHistoryDeclaration::new(
-        declaration_identity,
-        class,
-        crate::facade::BridgeMergeOntologyMappingSurface::direct_phase_m9_0("rel-merge-v1"),
-        crate::facade::BridgeMergeAuthorityBasis::new(
-            crate::facade::BridgeMergeAuthorityBasisKind::OrderedMergeCommit,
-            authority_artifact_identity,
-            "rel-merge-v1",
-            "schema-policy-v1",
-            crate::facade::BridgeMergeParentOrderProof::new(parents.into_iter().collect()),
-        ),
-    )
-}

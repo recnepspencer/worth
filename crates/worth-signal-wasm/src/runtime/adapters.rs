@@ -5,8 +5,6 @@ use crate::runtime::compute_callbacks::CapturedHostCapabilityRead;
 use crate::runtime::policy::RuntimePolicySpec;
 use crate::runtime::summaries::{RuntimeSnapshotEnvelope, RuntimeStoreSnapshot};
 
-mod merge;
-pub use merge::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HostCapabilityTransportArtifact {

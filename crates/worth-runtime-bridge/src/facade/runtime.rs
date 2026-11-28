@@ -12,7 +12,6 @@ mod execution_entries;
 mod historical_and_replay;
 mod home_program_mapping;
 pub use home_program_mapping::BridgeHomeProgramMappingDenial;
-mod merge;
 mod policy;
 mod routing_and_bulk;
 mod source;
@@ -39,7 +38,6 @@ pub struct RuntimeBridge {
     pub(crate) source_registry: AdmittedSourceRegistry,
     pub(crate) source_adapter: Option<Arc<dyn BridgeSourceAdapter>>,
     pub(crate) structural_registry: AdmittedStructuralRegistry,
-    pub(crate) merge_registry: AdmittedMergeRegistry,
     pub(crate) mapping_registry: FrozenMappingRegistry,
     pub(crate) aspect_registry: FrozenAspectMappingRegistry,
     pub(crate) subscription_family_registry: FrozenSubscriptionFamilyRegistry,
@@ -82,10 +80,6 @@ impl std::fmt::Debug for RuntimeBridge {
             .field(
                 "structural_contract_count",
                 &self.structural_registry.contracts().len(),
-            )
-            .field(
-                "merge_contract_count",
-                &self.merge_registry.contracts().len(),
             )
             .field(
                 "subscription_family_count",

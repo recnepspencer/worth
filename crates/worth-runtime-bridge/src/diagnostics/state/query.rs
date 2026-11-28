@@ -29,13 +29,6 @@ impl BridgeDiagnosticsState {
             .collect()
     }
 
-    pub(crate) fn merge_records(&self) -> Vec<BridgeCanonicalMergeRecord> {
-        self.merge_records
-            .iter()
-            .map(|record| (**record).clone())
-            .collect()
-    }
-
     pub(crate) fn historical_records(&self) -> Vec<BridgeCanonicalHistoricalEvaluationRecord> {
         self.historical_records
             .iter()
@@ -110,10 +103,6 @@ impl BridgeDiagnosticsState {
         self.continuity_records
             .back()
             .map(|record| (**record).clone())
-    }
-
-    pub(crate) fn last_merge_record(&self) -> Option<BridgeCanonicalMergeRecord> {
-        self.merge_records.back().map(|record| (**record).clone())
     }
 
     pub(crate) fn last_historical_record(
@@ -218,16 +207,6 @@ impl BridgeDiagnosticsState {
     ) -> Option<BridgeCanonicalBulkPlanRecord> {
         self.latest_bulk_by_workload_identity
             .get(workload_identity.as_str())
-            .cloned()
-            .map(|record| (*record).clone())
-    }
-
-    pub(crate) fn merge_record_for_identity(
-        &self,
-        record_identity: &BridgeMergeRecordIdentity,
-    ) -> Option<BridgeCanonicalMergeRecord> {
-        self.latest_merge_by_record_identity
-            .get(record_identity.as_str())
             .cloned()
             .map(|record| (*record).clone())
     }

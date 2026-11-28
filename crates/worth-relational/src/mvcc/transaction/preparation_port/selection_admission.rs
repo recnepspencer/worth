@@ -41,7 +41,6 @@ pub(super) fn require_pristine(
     let intent = &transaction.intent;
     if !transaction.batches().is_empty()
         || !transaction.read_leases.is_empty()
-        || !transaction.merge_parent_bases.is_empty()
         || transaction.recovered_codec_publication_custody.is_some()
         || transaction.schema_authority_input.is_some()
         || intent.proposed_schema_transition().is_some()

@@ -31,17 +31,6 @@ impl BridgeDiagnosticsFacade {
             .record_continuity(record, self.config.route_record_limit);
     }
 
-    pub(crate) fn record_merge(&self, record: BridgeCanonicalMergeRecord) {
-        if !self.config.records_enabled {
-            return;
-        }
-
-        self.state
-            .write()
-            .expect("bridge diagnostics lock poisoned")
-            .record_merge(record, self.config.route_record_limit);
-    }
-
     pub(crate) fn record_bulk(&self, record: BridgeCanonicalBulkPlanRecord) {
         if !self.config.records_enabled {
             return;

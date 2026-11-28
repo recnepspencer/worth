@@ -43,53 +43,6 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                 }))
         })?
     }
-
-    /// Merge only a private Native fork, using the two actual World-issued bases.
-    #[doc(hidden)]
-    pub fn probe_current_ownership_after_merge_for_test(
-        &self,
-        branch: WorthQueryProductBranch,
-        other: WorthQueryProductBranch,
-        owner: EntityId,
-        request: &WorthQueryRequestScope,
-    ) -> Result<
-        Result<
-            (
-                worth_relational::facade::history::RelationalCommitReceipt,
-                Result<(), TransactionCommitError>,
-            ),
-            TransactionCommitError,
-        >,
-        WorthQueryAdvancementDenial,
-    > {
-        self.with_application_advancement(request, |phase| {
-            let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
-            let (_, current, _) = self
-                .on_branch(branch)
-                .select(&phase)
-                .expect("the actual current branch remains admitted")
-                .into_parts();
-            let (_, other, _) = self
-                .on_branch(other)
-                .select(&phase)
-                .expect("the actual fork remains admitted")
-                .into_parts();
-            let graph = self
-                .runtime
-                .primary_graph()
-                .expect("the installed graph remains live");
-            Ok(graph
-                .integration_handle()
-                .with_runtime(&execution, |runtime| {
-                    runtime.probe_current_owned_member_after_merge_for_test(
-                        &execution,
-                        current.relational_basis(),
-                        other.relational_basis(),
-                        owner,
-                    )
-                }))
-        })?
-    }
 }
 
 impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {

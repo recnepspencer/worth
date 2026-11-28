@@ -43,9 +43,7 @@ pub trait RecoveryPlanOwnerPort: Sized {
         &crate::durability::source_initial_inputs::producer_roster::OriginalBranchSchemaInputs,
     >;
     fn tail_log(&self) -> &[crate::durability::migration::ReadmittedCanonicalCommit];
-    fn commit_strategy_executors(
-        &self,
-    ) -> &merge::commit_strategies::execution::registry::FrozenCommitStrategyExecutorRegistry;
+    fn commit_strategy_executors(&self) -> &FrozenCommitStrategyExecutorRegistry;
 
     fn new(
         config: contracts::config::data::runtime_config::RelationalRuntimeConfig,
@@ -65,7 +63,7 @@ pub trait RecoveryPlanOwnerPort: Sized {
 
     fn with_commit_strategy_executors(
         self,
-        executors: merge::commit_strategies::execution::registry::FrozenCommitStrategyExecutorRegistry,
+        executors: FrozenCommitStrategyExecutorRegistry,
     ) -> Self;
 
     fn tail_commit_count(&self) -> usize;
@@ -143,9 +141,7 @@ impl RecoveryPlanOwnerPort for RecoveryPlan {
         &self.tail_log
     }
 
-    fn commit_strategy_executors(
-        &self,
-    ) -> &merge::commit_strategies::execution::registry::FrozenCommitStrategyExecutorRegistry {
+    fn commit_strategy_executors(&self) -> &FrozenCommitStrategyExecutorRegistry {
         &self.commit_strategy_executors
     }
 
@@ -179,7 +175,7 @@ impl RecoveryPlanOwnerPort for RecoveryPlan {
 
     fn with_commit_strategy_executors(
         self,
-        executors: merge::commit_strategies::execution::registry::FrozenCommitStrategyExecutorRegistry,
+        executors: FrozenCommitStrategyExecutorRegistry,
     ) -> Self {
         self.with_commit_strategy_executors(executors)
     }

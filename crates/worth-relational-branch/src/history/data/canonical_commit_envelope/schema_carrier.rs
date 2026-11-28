@@ -3,9 +3,8 @@ use worth_foundational::facade::{AspectContract, PortableAspectContract};
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 use crate::identity::data::KindId;
-use crate::merge::data::{
-    identity::IdentityBasisDeclaration, policy::AspectMergePolicyDeclaration,
-};
+use crate::schema::data::aspect_merge_policy::AspectMergePolicyDeclaration;
+use crate::schema::data::identity_declarations::IdentityBasisDeclaration;
 use crate::schema::data::{
     DescriptorSemanticsVersion, KindAspectContractDeclarations, RelationIntegrityDeclarations,
     RelationalSchemaRegistry,

@@ -23,7 +23,6 @@ pub(super) use crate::commit_strategies::strategies::{
     ReplicaConvergenceStrategy,
 };
 pub(super) use crate::facade::history::BranchId;
-pub(super) use crate::facade::merge::{MergeIntent, MergePlanningRequest};
 pub(super) use crate::facade::replay::{
     RelationalReplayRequest, ReplayExecutionMode, ReplayFailureClass, ReplayMismatchClass,
     ReplayObservableSurface, ReplayVerificationMode,

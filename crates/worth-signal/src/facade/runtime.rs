@@ -140,18 +140,18 @@ pub use crate::logic::transaction::{
     TEMPORAL_CERTIFICATION_BUNDLE_SCHEMA_VERSION, TEMPORAL_REPLAY_PARITY_SCHEMA_VERSION,
 };
 pub use crate::logic::transaction::{
-    BatchChangeSession, PlannedRuntimeMerge, PlannedSignalBranchRetirement,
-    PlannedSignalBranchRetirementBatch, Recipe, RequiredDerivedRebuildSet, RuntimeMerge,
-    SignalBranchRetirementBatchDenial, SignalBranchRetirementBatchReceipt,
-    SignalBranchRetirementDenial, SignalBranchRetirementReason, SignalBranchRetirementReceipt,
-    SignalObservationAdmissionDenial, SignalObservationCompletion, SignalObservationRequest,
-    SignalObservationSession, SignalObservationSurface, SignalRuntime, SignalRuntimeBuilder,
-    SignalTransaction, TemporalCertificationBuilder, TemporalCertificationBundle,
-    TemporalCertificationBundleMismatchClass, TemporalCertificationBundleParityReport,
-    TemporalCertificationFailure, TemporalCertificationFamily, TemporalCertificationRecord,
-    TemporalCertificationSummary, TemporalEligibilityFact, TemporalReconstructabilityArtifact,
-    TemporalReplayMismatchClass, TemporalReplayParityReport, TemporalStateRebuildProof,
-    TemporalTransactionEvidence, TransactionOutcome, TransactionResult, TransactionTiming,
+    BatchChangeSession, PlannedSignalBranchRetirement, PlannedSignalBranchRetirementBatch, Recipe,
+    RequiredDerivedRebuildSet, SignalBranchRetirementBatchDenial,
+    SignalBranchRetirementBatchReceipt, SignalBranchRetirementDenial, SignalBranchRetirementReason,
+    SignalBranchRetirementReceipt, SignalObservationAdmissionDenial, SignalObservationCompletion,
+    SignalObservationRequest, SignalObservationSession, SignalObservationSurface, SignalRuntime,
+    SignalRuntimeBuilder, SignalTransaction, TemporalCertificationBuilder,
+    TemporalCertificationBundle, TemporalCertificationBundleMismatchClass,
+    TemporalCertificationBundleParityReport, TemporalCertificationFailure,
+    TemporalCertificationFamily, TemporalCertificationRecord, TemporalCertificationSummary,
+    TemporalEligibilityFact, TemporalReconstructabilityArtifact, TemporalReplayMismatchClass,
+    TemporalReplayParityReport, TemporalStateRebuildProof, TemporalTransactionEvidence,
+    TransactionOutcome, TransactionResult, TransactionTiming,
 };
 #[cfg(test)]
 pub use crate::logic::transaction::{

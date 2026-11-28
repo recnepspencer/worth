@@ -31,17 +31,12 @@ impl WorldSelectionReplay {
                 .positioned_if_resident()
                 .ok_or_else(|| corrupt("World component has no replayed original body"))?;
             if !crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::matches_positioned_payload_for_request(
-                &positioned, original.positioned().canonical_arc(), request,
+                original.positioned(), positioned.canonical_arc(), request,
             )? || positioned.position() != original.position() {
                 return Err(corrupt("World component differs from its admitted original Native body"));
             }
-            let observed = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::positioned_payload_digest(&positioned)
-                .map_err(|_| corrupt("World component original payload could not be committed"))?;
-            if observed != digest {
-                return Err(corrupt("World component original payload digest mismatch"));
-            }
             RetainedCanonicalIndex::from_publication(
-                &positioned,
+                original.positioned(),
                 artifact.roots(),
                 digest,
                 request,

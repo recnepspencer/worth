@@ -28,14 +28,7 @@ where
         runtime
             .branches
             .set_maximum_stored_snapshots(self.maximum_stored_branch_snapshots);
-        runtime.merge_strategy_registry = self.merge_strategy_registry;
-        runtime.merge_base_strategy_registry = self.merge_base_strategy_registry;
-        runtime.aspect_merge_policy_registry = self.aspect_merge_policy_registry;
-        runtime.conflict_isolation_registry = self.conflict_isolation_registry;
-        runtime.conflict_policy_registry = self.conflict_policy_registry;
-        runtime.identity_matcher_registry = self.identity_matcher_registry;
-        runtime.source_only_policy_registry = self.source_only_policy_registry;
-        runtime.deletion_policy_registry = self.deletion_policy_registry;
+
         runtime
             .resource
             .set_policy_registry(self.resource_policy_registry);
@@ -47,7 +40,7 @@ where
             runtime.set_tier_policy(policy);
         }
         runtime.validate_schema_bindings()?;
-        runtime.validate_merge_semantics()?;
+
         Ok(runtime)
     }
 

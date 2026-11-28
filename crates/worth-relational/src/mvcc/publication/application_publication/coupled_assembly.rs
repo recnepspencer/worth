@@ -295,7 +295,6 @@ impl BranchBoundRelationalTransaction {
             || installed.runtime_instance_id() != self.basis.identity().runtime_instance_id()
             || owners.before() != &self.basis
             || self.intent.materialization_mode().is_some()
-            || !self.merge_parent_bases.is_empty()
             || retirement_admission
                 .as_ref()
                 .map_or(!owners.retirements().is_empty(), |admission| {

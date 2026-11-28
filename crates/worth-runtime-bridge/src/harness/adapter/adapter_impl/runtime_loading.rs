@@ -97,9 +97,6 @@ pub(super) fn load_bridge_fixture(
     for structural_declaration in fixture.fixture.structural_declarations() {
         builder = builder.register_structural(structural_declaration.clone());
     }
-    for merge_declaration in fixture.fixture.merge_declarations() {
-        builder = builder.register_merge(merge_declaration.clone());
-    }
     if !fixture.fixture.source_declarations().is_empty() {
         let source_adapter = FixtureSourceAdapter {
             capabilities: fixture_source_adapter_capabilities(fixture),

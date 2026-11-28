@@ -113,30 +113,6 @@ export function createWorkerFirstHistoryFacade(session) {
     restore_branch_snapshot_by_id(branchId, snapshotId) {
       return session.bridge.restoreBranchSnapshotById(branchId, snapshotId);
     },
-    merge_branches(sourceBranchId, targetBranchId) {
-      return session.bridge.mergeBranches(sourceBranchId, targetBranchId);
-    },
-    merge_branches_with_proof(sourceBranchId, targetBranchId) {
-      return session.bridge.mergeBranchesWithProof(sourceBranchId, targetBranchId);
-    },
-    plan_merge_branches(sourceBranchId, targetBranchId) {
-      return session.bridge.planMergeBranches(sourceBranchId, targetBranchId);
-    },
-    plan_merge_branches_with_proof(sourceBranchId, targetBranchId) {
-      return session.bridge.planMergeBranchesWithProof(sourceBranchId, targetBranchId);
-    },
-    plan_merge_policy_preview(request) {
-      return session.bridge.planMergePolicyPreview(request);
-    },
-    plan_merge_policy_preview_with_proof(request) {
-      return session.bridge.planMergePolicyPreviewWithProof(request);
-    },
-    merge_branches_policy_preview(request) {
-      return session.bridge.mergeBranchesPolicyPreview(request);
-    },
-    merge_branches_policy_preview_with_proof(request) {
-      return session.bridge.mergeBranchesPolicyPreviewWithProof(request);
-    },
     branch_state_proof(branchId) {
       return session.bridge.branchStateProof(branchId);
     },
@@ -161,10 +137,6 @@ export function createWorkerFirstHistoryFacade(session) {
         freezeObject({
           proofSchemaVersion: runtimeProofReportValue.proofSchemaVersion,
           registryBundleDigest: runtimeProofReportValue.registryBundleDigest,
-          loweredStrategyBundleDigest: null,
-          mergePlanDigest: null,
-          mergeResultDigest: null,
-          lineageDigest: null,
           branchStateDigest: replayedState.stateDigest,
         }),
       ));

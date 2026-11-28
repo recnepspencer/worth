@@ -44,7 +44,6 @@ impl DecodedQuote {
             origin: reserve(request, self.origin.retained)?,
             cascades: reserve_shared(request, self.cascades.retained)?,
             selection: reserve_shared(request, self.selection.retained)?,
-            merge: None,
             schema: None,
             strategy: None,
             validation: None,
@@ -105,7 +104,6 @@ pub(in super::super) fn admit_canonical(
     memory.strategy = strategy;
     memory.validation = Some(validation);
     memory.codec_declarations = Some(codec);
-    memory.merge = super::merge::prepare_canonical_readmission(canonical, request)?;
     Ok((memory, transient))
 }
 

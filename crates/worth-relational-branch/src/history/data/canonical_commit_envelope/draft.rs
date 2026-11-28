@@ -2,8 +2,8 @@
 use super::{CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody};
 use crate::diagnostics::data::RelationalDiagnosticArtifact;
 use crate::history::data::{
-    BranchId, CanonicalAuthoredIndexWrites, CanonicalCommitAuthorityKind, CommitId,
-    RelationalCommitReceipt, RelationalDescriptiveTouchGraph,
+    BranchId, CanonicalAuthoredIndexWrites, CanonicalCommitAuthorityKind, RelationalCommitReceipt,
+    RelationalDescriptiveTouchGraph,
 };
 use crate::indexes::data::DerivedIndexArtifacts;
 use crate::lineage::data::PublishedLineageArtifact;
@@ -13,7 +13,6 @@ use crate::schema::data::{
     SchemaReconciliationDescriptor, SchemaTransitionArtifact, SchemaVersionId,
 };
 use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
-use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 
 pub struct CanonicalCommitEnvelopeDraft {
     body: CanonicalCommitEnvelopeBody,
@@ -37,9 +36,6 @@ impl CanonicalCommitEnvelopeDraft {
         branch_context: BranchId,
         authority_kind: CanonicalCommitAuthorityKind,
         strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
-        merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
-        merge_parent_branches: Vec<BranchId>,
-        merge_base_commits: Vec<CommitId>,
         schema_version: SchemaVersionId,
         schema_authority: SchemaAuthoritySnapshot,
         merged_plan: MergedCommitPlan,
@@ -72,9 +68,6 @@ impl CanonicalCommitEnvelopeDraft {
                 branch_cell_checkpoint: None,
                 authority_kind,
                 strategy_artifacts,
-                merge_execution_authority,
-                merge_parent_branches,
-                merge_base_commits,
                 schema_version,
                 schema_authority,
                 merged_plan,
@@ -129,6 +122,7 @@ impl CanonicalCommitEnvelopeDraft {
         crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultRefusal,
     >{
         let envelope = CanonicalCommitEnvelope {
+            artifact_format: worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat::Ordinary,
             original_inputs: Default::default(),
             live_managed_source_history: Default::default(),
             decoded_bytes: None,

@@ -1,4 +1,4 @@
-use super::merge_execution_observation::diagnostic_field;
+use super::checkpoint_truth_observation::diagnostic_field;
 use worth_relational::facade::diagnostics::DiagnosticCode;
 use worth_relational::facade::diagnostics::DiagnosticsScope;
 use worth_relational::facade::diagnostics::RelationalDiagnosticValue;

@@ -10,13 +10,6 @@ import { readHistoricalSnapshot } from "../history/historical_snapshot.js";
 import { requireDeclaredSchema } from "../schema/schema_declaration.js";
 import { deepFreeze } from "../support/canonical.js";
 import { denied, success } from "../support/outcomes.js";
-import {
-  createLocalTruthResolutionBranch,
-  issueCustomResolutionAlternative,
-  previewLocalTruthMerge,
-  validateResolutionBranchMutation,
-} from "../merge/merge_review.js";
-import { resolveAndCommitLocalTruthMerge } from "../merge/merge_execution.js";
 
 const LOCAL_TRUTH_AUTHORITIES = new WeakSet();
 
@@ -67,61 +60,12 @@ export function createLocalTruthAuthority(
     async commit(request) {
       requireActive();
       await initialization;
-      const resolutionAdmission = validateResolutionBranchMutation(state, request);
-      if (resolutionAdmission.posture !== "success") {
-        return resolutionAdmission;
-      }
       const result = admitLocalTruthMutation(state, schema, request, internal.faultInjector);
       state = result.state;
       if (result.outcome.posture === "advisory") {
         return result.outcome;
       }
       return attachDerivation(result.outcome, state, internal.onCommitted);
-    },
-    async previewMerge(request) {
-      requireActive();
-      await initialization;
-      const result = previewLocalTruthMerge(state, schema, request);
-      state = result.state;
-      return result.outcome;
-    },
-    async createResolutionBranch(request) {
-      requireActive();
-      await initialization;
-      const result = createLocalTruthResolutionBranch(state, request);
-      state = result.state;
-      if (result.outcome.posture !== "success") {
-        return result.outcome;
-      }
-      const derivation = await internal.onBranchFork?.(
-        result.outcome.value.branch,
-        state.branches.get(result.outcome.value.branch.parentBranchId),
-        state,
-      );
-      return success(deepFreeze({ ...result.outcome.value, derivation: derivation ?? null }));
-    },
-    async resolutionAlternative(request) {
-      requireActive();
-      await initialization;
-      const result = issueCustomResolutionAlternative(state, schema, request);
-      state = result.state;
-      return result.outcome;
-    },
-    async resolveMerge(request) {
-      requireActive();
-      await initialization;
-      const result = resolveAndCommitLocalTruthMerge(state, schema, request, internal.faultInjector);
-      state = result.state;
-      if (result.outcome.posture === "advisory") {
-        return result.outcome;
-      }
-      const outcome = await attachDerivation(result.outcome, state, internal.onCommitted);
-      if (result.outcome.posture === "success") {
-        await Promise.all(result.outcome.value.retiredResolutionBranchIds.map((branchId) => (
-          internal.projection?.destroy(branchId)
-        )));
-      }
-      return outcome;
     },
     async forkBranch(request) {
       requireActive();

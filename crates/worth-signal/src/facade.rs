@@ -125,7 +125,7 @@ pub use self::runtime::{
     ChangeBatchAdmission, ChangeBatchCommit, History, IntervalWakeRegeneration,
     PlannedSignalBranchRetirement, PlannedSignalBranchRetirementBatch, PreviousValueRevision,
     ReadyTemporalWake, RecipeInstance, RetiredTemporalWake, RunSummary, RuntimeConfig,
-    RuntimeMerge, RuntimePolicy, ScheduledTemporalWake, SignalBranchRetirementBatchReceipt,
+    RuntimePolicy, ScheduledTemporalWake, SignalBranchRetirementBatchReceipt,
     SignalBranchRetirementReason, SignalBranchRetirementReceipt, SignalObservationAdmissionDenial,
     SignalObservationCompletion, SignalObservationRequest, SignalObservationSession,
     SignalObservationSurface, SignalRuntime, SignalTransaction, TemporalFrontierSnapshot,

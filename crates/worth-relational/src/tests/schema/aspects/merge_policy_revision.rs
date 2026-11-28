@@ -1,6 +1,6 @@
 use worth_foundational::AspectKey;
 
-use crate::facade::merge::{
+use crate::facade::schema::{
     AspectMergePolicyDeclaration, AspectMergePolicyKind, IdentityBasisDeclaration,
     IdentityBasisKind, IdentityBasisScope,
 };
@@ -31,7 +31,7 @@ fn schema_plan_revision_changes_when_identity_or_merge_policy_semantics_change()
         base.clone()
             .with_merge_policy_declarations(vec![AspectMergePolicyDeclaration {
                 aspect_key: name_key.clone(),
-                policy: AspectMergePolicyKind::PreferRicher,
+                policy: AspectMergePolicyKind::RetiredValueShape,
             }]);
 
     let base_registry = RelationalSchemaRegistry::new()

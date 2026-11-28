@@ -2,7 +2,6 @@ mod constructors;
 mod terminal_projection;
 
 use crate::facade::{TruthBranchIdentity, TruthCommitIdentity};
-use crate::merge::MergeHistoryDeclarationIdentity;
 use crate::source::SourceDeclarationIdentity;
 use crate::structural::StructuralIdentityDeclarationIdentity;
 
@@ -34,12 +33,6 @@ pub enum BridgeHarnessTargetId {
     },
     SourceRejectSnapshotDrift {
         declaration_identity: SourceDeclarationIdentity,
-    },
-    MergeExecute {
-        declaration_identity: MergeHistoryDeclarationIdentity,
-    },
-    MergeReplay {
-        declaration_identity: MergeHistoryDeclarationIdentity,
     },
     PolicyProvenanceCertification,
     PolicyRejectionCertification,

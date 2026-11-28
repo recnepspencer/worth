@@ -1,16 +1,15 @@
 use worth_harness::facade::ScenarioPlan;
 
 use super::super::support::{
-    coarse_snapshot_record, committed_patch, committed_patch_on_branch, merge_declaration,
-    registration, snapshot,
+    coarse_snapshot_record, committed_patch, committed_patch_on_branch, registration, snapshot,
 };
 use crate::facade::{
     BridgeSourceCapability, BridgeSourceCapabilitySet, BridgeTruthViewSelector,
-    MergeHistoryDeclarationIdentity, StructuralFingerprintEquivalenceContract,
-    StructuralFingerprintFamily, StructuralFingerprintNormalizationRule,
-    StructuralFingerprintOmissionPolicy, StructuralFingerprintOrderingRule,
-    StructuralIdentityDeclaration, StructuralIdentityDeclarationIdentity, StructuralSchemaIdentity,
-    StructuralTruthViewBasis, TruthSnapshotIdentity,
+    StructuralFingerprintEquivalenceContract, StructuralFingerprintFamily,
+    StructuralFingerprintNormalizationRule, StructuralFingerprintOmissionPolicy,
+    StructuralFingerprintOrderingRule, StructuralIdentityDeclaration,
+    StructuralIdentityDeclarationIdentity, StructuralSchemaIdentity, StructuralTruthViewBasis,
+    TruthSnapshotIdentity,
 };
 use crate::harness::fixtures::BridgeHarnessFixture;
 use crate::source::{SourceDeclaration, SourceDeclarationIdentity};
@@ -185,35 +184,6 @@ pub(crate) fn mixed_structural_fixture(
     )
     .declare_input("structural")
     .declare_observation("structural")
-    .compile()
-}
-
-pub(crate) fn mixed_merge_fixture(
-    name: &str,
-) -> worth_harness::facade::ScenarioFixture<BridgeHarnessFixture> {
-    ScenarioPlan::new(
-        name,
-        BridgeHarnessFixture::new(vec![registration()])
-            .with_policy(crate::facade::BridgeRuntimePolicy::development())
-            .with_merge_declaration(merge_declaration(
-                MergeHistoryDeclarationIdentity::admit_bridge_owned("merge:m13-mixed"),
-                crate::facade::BridgeMergeConsumptionClass::AspectReconciliationMerge,
-                [
-                    crate::truth_identity_fixtures::truth_commit_fixture("parent-a"),
-                    crate::truth_identity_fixtures::truth_commit_fixture("parent-b"),
-                ],
-            ))
-            .with_merge_declaration(merge_declaration(
-                MergeHistoryDeclarationIdentity::admit_bridge_owned("merge:m13-topology-denial"),
-                crate::facade::BridgeMergeConsumptionClass::TopologyRewireMerge,
-                [
-                    crate::truth_identity_fixtures::truth_commit_fixture("parent-a"),
-                    crate::truth_identity_fixtures::truth_commit_fixture("parent-b"),
-                ],
-            )),
-    )
-    .declare_input("merge")
-    .declare_observation("merge")
     .compile()
 }
 

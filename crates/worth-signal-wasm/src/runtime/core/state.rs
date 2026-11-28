@@ -3,7 +3,6 @@ use std::collections::BTreeMap;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
-use serde::{Deserialize, Serialize};
 use worth_signal::facade::{
     Aspect, AspectVersion, DependencyEdge, NodeId, SignalRuntime as NativeRuntime,
 };
@@ -27,20 +26,6 @@ pub(crate) type SharedStore = Arc<Mutex<RuntimeStore>>;
 pub(super) type SharedCallbackDiagnostics = Arc<Mutex<BTreeMap<String, CallbackDiagnosticState>>>;
 pub type SharedCore = Rc<RefCell<super::RuntimeCore>>;
 pub(super) type WasmRuntime = NativeRuntime<(), (), (), SharedStore, ()>;
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct MergePolicyPreviewRequest {
-    pub source_branch_id: u64,
-    pub target_branch_id: u64,
-    #[serde(default)]
-    pub conflict_policy_name: Option<String>,
-    #[serde(default)]
-    pub conflict_isolation_policy_name: Option<String>,
-    #[serde(default)]
-    pub identity_matcher_name: Option<String>,
-    #[serde(default)]
-    pub deletion_policy_name: Option<String>,
-}
 
 #[derive(Debug, Clone)]
 pub(super) struct CatalogEntry {

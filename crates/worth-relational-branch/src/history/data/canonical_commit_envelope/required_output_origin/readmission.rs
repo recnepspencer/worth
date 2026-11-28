@@ -92,9 +92,6 @@ impl CanonicalCommitEnvelopeBody {
 
     pub(crate) fn is_unmerged_output_publication_step(&self) -> bool {
         self.commit.parents.len() <= 1
-            && self.merge_execution_authority.is_none()
-            && self.merge_parent_branches.is_empty()
-            && self.merge_base_commits.is_empty()
     }
 
     pub(super) fn validate_output_origin_header(

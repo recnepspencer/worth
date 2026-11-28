@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-pub(crate) use {std::collections::BTreeSet, worth_relational::facade::history::BranchId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord, worth_relational::facade::branch::RelationalBranchBasisDenial, worth_relational::facade::history::RelationalMergeBranchBasisDenial, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_branch_batch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::fork_supply_chain_branch_from_main, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::lower_supply_chain_production_delta, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::observation::observe_observation as observe_supply_chain_observation};
+pub(crate) use {std::collections::BTreeSet, worth_relational::facade::history::BranchId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::schema::EntityRecord, worth_relational::facade::branch::RelationalBranchBasisDenial, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::commit_branch_batch, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::branch_operations::fork_supply_chain_branch_from_main, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::runtime_driver::lowering::lower_supply_chain_production_delta, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::observation::observe_observation as observe_supply_chain_observation};
 
 #[test]
 fn history_and_visibility_read_the_observation_selected_root() {
@@ -68,98 +68,4 @@ fn history_and_visibility_read_the_observation_selected_root() {
     );
     assert_eq!(voyage_status(&observation), status_before);
     assert_ne!(voyage_status(&current_observation), status_before);
-}
-
-#[test]
-fn merge_history_resolves_from_two_exact_observations() {
-    let host_request =
-        worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let (world, _) = certified_supply_chain_world(execution, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale::court());
-    let main_identity = world.runtime.main_branch_identity();
-    let (_, main_basis) = world.runtime.observe_branch(&main_identity).unwrap();
-    let main_observation = main_basis.observation();
-    let main_head = world
-        .runtime
-        .history()
-        .branch_head_for_observation(&main_observation)
-        .unwrap()
-        .unwrap();
-
-    let storm = BranchId("storm".to_owned());
-    fork_supply_chain_branch_from_main(execution, &world.runtime, storm.clone());
-    let batch = lower_supply_chain_production_delta(
-        execution,
-        &world.runtime,
-        &world.program,
-        &world.handles,
-        &storm,
-        &std::collections::BTreeSet::new(),
-        worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scenario_delta_vocabulary::DeltaId::StormRerouteAurora,
-    )
-    .unwrap();
-    commit_branch_batch(execution, &world.runtime, storm.clone(), batch);
-    let storm_identity = world.runtime.branch_identity(&storm).unwrap();
-    let (_, storm_basis) = world.runtime.observe_branch(&storm_identity).unwrap();
-    let storm_observation = storm_basis.observation();
-    let storm_head = world
-        .runtime
-        .history()
-        .branch_head_for_observation(&storm_observation)
-        .unwrap()
-        .unwrap();
-
-    let merge_basis = world
-        .runtime
-        .history()
-        .merge_branch_basis_for_observations(&storm_observation, &main_observation)
-        .unwrap();
-
-    assert_eq!(merge_basis.source_head().commit_id, storm_head.commit_id);
-    assert_eq!(merge_basis.target_head().commit_id, main_head.commit_id);
-    assert_eq!(
-        merge_basis.merge_base().commit().commit_id,
-        main_head.commit_id
-    );
-}
-
-#[test]
-fn merge_history_preserves_source_and_target_observation_denials() {
-    let host_request =
-        worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let (owner, _) = certified_supply_chain_world(execution, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale::court());
-    let (foreign, _) = certified_supply_chain_world(execution, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale::court());
-    let owner_identity = owner.runtime.main_branch_identity();
-    let foreign_identity = foreign.runtime.main_branch_identity();
-    let (_, owner_basis) = owner.runtime.observe_branch(&owner_identity).unwrap();
-    let (_, foreign_basis) = foreign.runtime.observe_branch(&foreign_identity).unwrap();
-    let owner_observation = owner_basis.observation();
-    let foreign_observation = foreign_basis.observation();
-
-    let source_denial = owner
-        .runtime
-        .history()
-        .merge_branch_basis_for_observations(&foreign_observation, &owner_observation)
-        .expect_err("foreign source observation must be denied as the source");
-    assert!(matches!(
-        source_denial,
-        worth_relational::facade::history::RelationalMergeBranchBasisDenial::SourceObservationDenied(
-            worth_relational::facade::branch::RelationalBranchBasisDenial::ForeignRuntime { .. }
-        )
-    ));
-
-    let target_denial = owner
-        .runtime
-        .history()
-        .merge_branch_basis_for_observations(&owner_observation, &foreign_observation)
-        .expect_err("foreign target observation must be denied as the target");
-    assert!(matches!(
-        target_denial,
-        worth_relational::facade::history::RelationalMergeBranchBasisDenial::TargetObservationDenied(
-            worth_relational::facade::branch::RelationalBranchBasisDenial::ForeignRuntime { .. }
-        )
-    ));
 }

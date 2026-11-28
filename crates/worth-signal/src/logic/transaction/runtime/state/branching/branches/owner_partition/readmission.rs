@@ -64,7 +64,6 @@ where
                 children_by_parent: children,
                 retirement_reservations: BTreeSet::new(),
                 retirement_receipts: BTreeMap::new(),
-                active_merge_participants: BTreeSet::new(),
                 maximum_retirement_receipts: MAXIMUM_RETAINED_SIGNAL_BRANCH_RETIREMENT_RECEIPTS,
                 reserved_retirement_receipt_count: 0,
                 next_snapshot_id,

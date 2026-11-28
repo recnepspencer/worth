@@ -1,6 +1,5 @@
 use crate::history::HistoryAccess;
 use crate::inspection::InspectionAccess;
-use crate::merge::MergeAccess;
 use crate::publication::PublicationSurface;
 use crate::replay::ReplayAccess;
 use crate::runtime::durability_access::DurabilityAccess;
@@ -58,9 +57,5 @@ impl RelationalRuntime {
 
     pub fn durability(&self) -> DurabilityAccess<'_> {
         self.durability_access()
-    }
-
-    pub fn merge(&self) -> MergeAccess<'_> {
-        self.merge_access()
     }
 }

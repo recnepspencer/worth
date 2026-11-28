@@ -20,7 +20,6 @@ use super::types::{
     BridgeHarnessAdapter, BridgeHarnessError, BridgeHarnessMutation, BridgeHarnessSession,
     PolicyBuilderLoadOrder, SourceAdapterBehavior, SourceAdapterShape, SourceBuilderLoadOrder,
 };
-use merge::execute_merge_request;
 use policy::execute_policy_request;
 use source::execute_source_request;
 use speculation::execute_speculation_request;
@@ -58,7 +57,6 @@ impl HarnessAdapter for BridgeHarnessAdapter {
             "bridge_route_record".to_string(),
             "bridge_replay_record".to_string(),
             "bridge_delivery_receipt".to_string(),
-            "bridge_merge_record".to_string(),
             "bridge_historical_evaluation_record".to_string(),
             "bridge_source_materialization_record".to_string(),
             "bridge_speculation_record".to_string(),
@@ -177,9 +175,6 @@ impl HarnessAdapter for BridgeHarnessAdapter {
                             resource_request,
                         )?)
                     }
-                    HarnessTarget::Merge(merge_target) => HarnessExecution::Merge(
-                        execute_merge_request(runtime_bridge, &fixture.fixture, merge_target)?,
-                    ),
                     HarnessTarget::Policy(policy_target) => {
                         HarnessExecution::Policy(execute_policy_request(
                             runtime_bridge,
@@ -294,7 +289,6 @@ impl HarnessAdapter for BridgeHarnessAdapter {
     }
 }
 
-mod merge;
 mod policy;
 mod runtime_loading;
 mod snapshot_capture;

@@ -95,8 +95,6 @@ pub(super) fn finalize_publication_phase(
         commit_id,
         commit_reference,
         branch_id,
-        merge_base_commits,
-        merge_parent_branches,
         deferred_diagnostic_artifacts,
     } = prepared;
     commit_log.record_publication_position(positioned_commit.position());
@@ -131,10 +129,8 @@ pub(super) fn finalize_publication_phase(
             commit_id,
             commit_reference: &commit_reference,
             branch_id: &branch_id,
-            merge_base_commits: &merge_base_commits,
             artifacts,
             patch_position: positioned_commit.position(),
-            merge_parent_branches: &merge_parent_branches,
             phase_timing: &mut publication_phase_timing,
             published_snapshot_basis,
             published_snapshot_slot,

@@ -23,26 +23,6 @@ mod domain_computation_primary_graph_application_runtime_certification_controls_
                 .probe_owned_edge_retarget_for_test(branch, owner, target, request)
         }
         #[doc(hidden)]
-        pub fn probe_current_ownership_after_merge_for_test(
-            &self,
-            branch: WorthQueryProductBranch,
-            other: WorthQueryProductBranch,
-            owner: EntityId,
-            request: &WorthQueryRequestScope,
-        ) -> Result<
-            Result<
-                (
-                    worth_relational::facade::history::RelationalCommitReceipt,
-                    Result<(), TransactionCommitError>,
-                ),
-                TransactionCommitError,
-            >,
-            WorthQueryAdvancementDenial,
-        > {
-            self.inner
-                .probe_current_ownership_after_merge_for_test(branch, other, owner, request)
-        }
-        #[doc(hidden)]
         pub fn probe_current_metadata_writes_for_test(
             &self,
             branch: WorthQueryProductBranch,

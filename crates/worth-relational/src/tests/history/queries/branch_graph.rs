@@ -87,10 +87,6 @@ fn branch_history_helpers_expose_ancestor_and_merge_base_reasoning() {
 
     assert_eq!(chain, vec![main.commit.commit_id, feature.commit.commit_id]);
     assert_eq!(merge_base, Some(main.commit.commit_id));
-    assert!(runtime.history().can_merge_branch_into(
-        &BranchId("feature".to_string()),
-        &BranchId("main".to_string())
-    ));
 }
 
 #[test]

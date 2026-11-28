@@ -8,13 +8,7 @@ pub(super) fn memory_bound(
     working: &worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState,
     deltas: &[CanonicalRecordAspectDelta],
     maximum: usize,
-    mode: &TouchPreparationMode,
-    lease: &ExecutionResourceLease<'_>,
-) -> Result<Option<u64>, TransactionCommitError> {
-    if matches!(mode, TouchPreparationMode::NativeMerge) {
-        // Full-partition merge growth retains its existing preparation bound.
-        return Ok(lease.policy().charged_memory_bytes().map(|limit| limit / 8));
-    }
+) -> Result<u64, TransactionCommitError> {
     let mut bytes = (maximum as u64)
         .saturating_mul(size_of::<Touch>() as u64)
         .saturating_mul(2);
@@ -55,5 +49,5 @@ pub(super) fn memory_bound(
             }).map_err(|failure| TransactionCommitError::execution(contracts::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial { kind: contracts::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(contracts::execution::denial::kernel_failure(failure)), partition_identity: None }))?;
         }
     }
-    Ok(Some(bytes))
+    Ok(bytes)
 }

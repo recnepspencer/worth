@@ -19,11 +19,6 @@ NOISY_CASES = {
 }
 
 BURSTY_CASES = {
-    ("merge_lineage_matrix", "merge_execution_feature_adoption"),
-    ("merge_lineage_matrix", "merge_execution_feature_adoption_zero_diagnostics_budget"),
-    ("merge_lineage_matrix", "merge_execute_phase_timing_feature_adoption"),
-    ("merge_lineage_matrix", "merge_execution_vs_persisted_commit_floor"),
-    ("merge_lineage_matrix", "merge_prepare_vs_execute_feature_adoption"),
     ("query_packet_matrix", "explicit_targets_cross_partition"),
     ("workflow_matrix", "trade_correction_analysis_round_trip"),
     ("workflow_matrix", "fintech_intraday_risk_branch_round_trip"),
@@ -59,7 +54,6 @@ EXTREME_VOLATILE_CASES = {
 }
 
 TINY_CASES = {
-    ("merge_lineage_matrix", "merge_planning_divergent_update"),
     ("merge_lineage_matrix", "lineage_branch_divergence_breadth"),
     ("query_packet_matrix", "entity_kind_scan_partition_matrix"),
     ("retention_reclaim_matrix", "replay_pin_release_deleted_relation"),

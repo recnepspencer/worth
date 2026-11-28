@@ -8,7 +8,6 @@ pub struct CanonicalEnvelopeReadmissionMemory {
     pub index_delta: Option<worth_execution::ExecutionMemoryReservation>,
     pub index_writes: Option<worth_execution::ExecutionMemoryReservation>,
     pub association: Option<worth_execution::ExecutionMemoryReservation>,
-    pub merge: Option<crate::merge::data::readmission_memory::MergeReadmissionMemory>,
     pub codec_declarations: Option<CodecDeclarationsReadmissionMemory>,
     pub validation: Option<crate::transactions::data::outcomes::commit_semantic_result::validation::ValidationReadmissionMemory>,
     pub schema: Option<crate::schema::data::SchemaTransitionReadmissionMemory>,

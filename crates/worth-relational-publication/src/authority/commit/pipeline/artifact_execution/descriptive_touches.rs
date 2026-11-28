@@ -3,7 +3,7 @@ use worth_relational_branch::internal_port::history::data::canonical_commit_enve
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use std::mem::size_of;
 
-use worth_execution::{ExecutionResourceLease, MapKernelFailure};
+use worth_execution::MapKernelFailure;
 use worth_foundational::facade::{AspectBinding, AspectShape, CanonicalFieldPath};
 
 use worth_relational_mutation::internal_port::authority::mutation::canonical_deltas::field_changes::visit_changed_fields;
@@ -23,7 +23,6 @@ type Failure = MapKernelFailure<PacketBudgetDenial>;
 
 pub(super) enum TouchPreparationMode {
     Ordinary,
-    NativeMerge,
     Unavailable,
 }
 
@@ -57,7 +56,6 @@ impl TouchBudget<'_, '_, '_, '_, '_> {
 
 pub(super) fn prepare(
     work_budget: Option<&contracts::execution::request_work::RequestWorkBudget>,
-    symbols: &worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     catalog: &worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::catalog_publication::CapturedIndexDefinitionCatalog,
     selected: &worth_relational_branch::internal_port::branch::root_selection::SelectedRelationalBranchState,
     working: &worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState,
@@ -91,44 +89,29 @@ pub(super) fn prepare(
             )
             .map_err(|stop| TransactionCommitError::execution(stop.into()))?;
             let bound =
-                extent::memory_bound(catalog, selected, working, deltas, maximum, &mode, lease)?;
+                extent::memory_bound(catalog, selected, working, deltas, maximum)?;
             let build = |checked: &mut PacketPreparationBudget<'_, '_, '_, '_>| {
                 build(
-                    symbols,
                     catalog,
                     selected,
                     working,
                     deltas,
                     adjacency,
-                    &mode,
                     maximum,
                     &mut TouchBudget::Checked(checked),
                 )
             };
-            match bound {
-                Some(bound) => contracts::execution::packet_preparation::prepare_borrowed_artifact(
-                    lease,
-                    work_budget,
-                    bound,
-                    build,
-                ),
-                None => contracts::execution::packet_preparation::tracked::prepare_tracked_artifact(
-                    execution,
-                    lease,
-                    work_budget,
-                    build,
-                ),
-            }
+            contracts::execution::packet_preparation::prepare_borrowed_artifact(
+                lease, work_budget, bound, build,
+            )
             .map_err(|stop| TransactionCommitError::execution(stop.into()))
         }
         None => build(
-            symbols,
             catalog,
             selected,
             working,
             deltas,
             adjacency,
-            &mode,
             maximum_touch_count(catalog, deltas, adjacency, &mut TouchBudget::Legacy).map_err(
                 |failure| {
                     TransactionCommitError::execution(
@@ -156,13 +139,11 @@ pub(super) fn prepare(
 }
 
 fn build(
-    symbols: &worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     catalog: &worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::catalog_publication::CapturedIndexDefinitionCatalog,
     selected: &worth_relational_branch::internal_port::branch::root_selection::SelectedRelationalBranchState,
     working: &worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState,
     deltas: &[CanonicalRecordAspectDelta],
     adjacency: &[AdjacencyDelta],
-    mode: &TouchPreparationMode,
     maximum: usize,
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<(Graph, u64), Failure> {
@@ -200,19 +181,6 @@ fn build(
             anchor: target,
             direction: Direction::Incoming,
         });
-    }
-    if matches!(mode, TouchPreparationMode::NativeMerge)
-        && !merge::append(
-            symbols,
-            catalog,
-            selected,
-            working,
-            adjacency,
-            &mut touches,
-            budget,
-        )?
-    {
-        return Ok((Graph::unavailable(), budget.claimed_bytes()));
     }
     let comparisons = (touches.len() as u64)
         .checked_mul((usize::BITS - touches.len().max(1).leading_zeros()) as u64)
@@ -343,7 +311,7 @@ fn append_delta(
                         .iter()
                         .filter(|definition| definition.index_id.0 < catalog.next_index_id)
                     {
-                        append_index(
+                        index::append_index(
                             selected, working, delta, binding, field, definition, touches, budget,
                         )?;
                     }
@@ -356,8 +324,6 @@ fn append_delta(
 }
 
 pub mod index;
-pub mod merge;
-use index::append_index;
 
 pub mod extent;
 

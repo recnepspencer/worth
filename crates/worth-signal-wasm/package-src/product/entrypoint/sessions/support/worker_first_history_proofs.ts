@@ -59,19 +59,13 @@ export function createReplayArtifactProofReport(
   expected,
   replayed,
 ) {
-  const frozenExpected = freezeObject({
-    strategyWitness: null,
-    compatibilityWitness: null,
-    scopedMergeProof: null,
-    ...expected,
-  });
-  const frozenReplayed = freezeObject({
-    strategyWitness: null,
-    compatibilityWitness: null,
-    scopedMergeProof: null,
-    ...replayed,
-  });
+  const frozenExpected = freezeArtifactProofInput(expected);
+  const frozenReplayed = freezeArtifactProofInput(replayed);
   const mismatchClasses = [];
+  if (frozenExpected.proofSchemaVersion !== proofSchemaVersion
+    || frozenReplayed.proofSchemaVersion !== proofSchemaVersion) {
+    mismatchClasses.push("ProofSchemaVersionMismatch");
+  }
   compareOptionalDigest(
     frozenExpected.registryBundleDigest,
     frozenReplayed.registryBundleDigest,
@@ -79,41 +73,6 @@ export function createReplayArtifactProofReport(
     "RegistryBundleDigestMismatch",
     mismatchClasses,
   );
-  compareOptionalDigest(
-    frozenExpected.loweredStrategyBundleDigest,
-    frozenReplayed.loweredStrategyBundleDigest,
-    "MissingLoweredStrategyBundleDigest",
-    "LoweredStrategyBundleDigestMismatch",
-    mismatchClasses,
-  );
-  compareOptionalDigest(
-    frozenExpected.mergePlanDigest,
-    frozenReplayed.mergePlanDigest,
-    "MissingMergePlanDigest",
-    "MergePlanDigestMismatch",
-    mismatchClasses,
-  );
-  compareOptionalDigest(
-    frozenExpected.mergeResultDigest,
-    frozenReplayed.mergeResultDigest,
-    "MissingMergeResultDigest",
-    "MergeResultDigestMismatch",
-    mismatchClasses,
-  );
-  compareOptionalDigest(
-    frozenExpected.lineageDigest,
-    frozenReplayed.lineageDigest,
-    "MissingLineageDigest",
-    "LineageDigestMismatch",
-    mismatchClasses,
-  );
-  if (!frozenExpected.proofSchemaVersion.startsWith(proofSchemaVersion)
-    || !frozenReplayed.proofSchemaVersion.startsWith(proofSchemaVersion)) {
-    mismatchClasses.push("LegacyMergeArtifactUnsupported");
-  }
-  if (frozenExpected.proofSchemaVersion !== frozenReplayed.proofSchemaVersion) {
-    mismatchClasses.push("ProofSchemaVersionMismatch");
-  }
   if (frozenExpected.branchStateDigest !== frozenReplayed.branchStateDigest) {
     mismatchClasses.push("BranchStateDigestMismatch");
   }
@@ -123,6 +82,18 @@ export function createReplayArtifactProofReport(
     replayed: frozenReplayed,
     parity: mismatchClasses.length === 0,
     mismatchClasses: freezeObject(mismatchClasses),
+  });
+}
+
+function freezeArtifactProofInput(input) {
+  const fields = ["proofSchemaVersion", "registryBundleDigest", "branchStateDigest"];
+  if (Object.keys(input).some((field) => !fields.includes(field))) {
+    throw new TypeError("replay artifact proof contains retired or unsupported fields");
+  }
+  return freezeObject({
+    proofSchemaVersion: input.proofSchemaVersion,
+    registryBundleDigest: input.registryBundleDigest ?? null,
+    branchStateDigest: input.branchStateDigest,
   });
 }
 

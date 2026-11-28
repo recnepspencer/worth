@@ -20,10 +20,11 @@ use crate::schema::data::{
     SchemaReconciliationDescriptor, SchemaTransitionArtifact, SchemaVersionId,
 };
 use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
-use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 
 #[derive(Deserialize)]
 pub struct CanonicalEnvelopeWire<Symbols> {
+    #[serde(skip)]
+    artifact_format: worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat,
     index_definition_delta: super::CanonicalIndexDefinitionDelta,
     semantic_result: std::sync::Arc<
         crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult,
@@ -55,9 +56,6 @@ pub struct CanonicalEnvelopeWire<Symbols> {
         Option<crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint>,
     authority_kind: CanonicalCommitAuthorityKind,
     strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
-    merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
-    merge_parent_branches: Vec<BranchId>,
-    merge_base_commits: Vec<CommitId>,
     schema_version: SchemaVersionId,
     schema_authority: SchemaAuthoritySnapshot,
     merged_plan: MergedCommitPlan,
@@ -83,6 +81,13 @@ pub struct CanonicalEnvelopeWire<Symbols> {
     readmission_memory: super::CanonicalEnvelopeReadmissionMemory,
 }
 impl<Symbols> CanonicalEnvelopeWire<Symbols> {
+    pub fn bind_artifact_format(
+        &mut self,
+        format: worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat,
+    ) {
+        self.artifact_format = format;
+    }
+
     pub fn retain_readmission_memory(&mut self, memory: super::CanonicalEnvelopeReadmissionMemory) {
         self.readmission_memory = memory;
     }
@@ -116,14 +121,7 @@ impl<Symbols> CanonicalEnvelopeWire<Symbols> {
             (Some(memory), Some(strategy)) => memory.attach(strategy)?,
             _ => return Err("canonical strategy admission does not match its decoded subject"),
         }
-        match (
-            self.readmission_memory.merge.as_mut(),
-            self.merge_execution_authority.as_ref(),
-        ) {
-            (None, None) => Ok(()),
-            (Some(memory), Some(actual)) => memory.attach(actual),
-            _ => Err("canonical merge admission does not match its decoded subject"),
-        }
+        Ok(())
     }
 
     /// Commit identity as decoded, before any admission. An enclosing frame
@@ -245,9 +243,6 @@ impl<Symbols> CanonicalEnvelopeWire<Symbols> {
             branch_cell_checkpoint: self.branch_cell_checkpoint,
             authority_kind: self.authority_kind,
             strategy_artifacts: self.strategy_artifacts,
-            merge_execution_authority: self.merge_execution_authority,
-            merge_parent_branches: self.merge_parent_branches,
-            merge_base_commits: self.merge_base_commits,
             schema_version: self.schema_version,
             schema_authority: self.schema_authority,
             merged_plan: self.merged_plan,
@@ -266,6 +261,7 @@ impl<Symbols> CanonicalEnvelopeWire<Symbols> {
             descriptor_semantics_version: self.descriptor_semantics_version,
         };
         let envelope = super::CanonicalCommitEnvelope {
+            artifact_format: self.artifact_format,
             original_inputs: Default::default(),
             live_managed_source_history: Default::default(),
             decoded_bytes: self.readmission_memory.input.take(),

@@ -3,7 +3,6 @@ import type {
   CallableSignals,
   FormController,
   RouterBrowserHistoryStory,
-  SpeculativeRouteBranchCommit,
 } from "./index.js";
 
 interface Project {
@@ -207,22 +206,5 @@ const writebackReport = await routes.applyBrowserHistoryWriteback(
   admissionFacts,
 );
 story.record(writebackReport);
-
-const speculation = routes.speculate(location.href, {
-  commitPosture: "merge-preview-before-commit",
-  visiblePosture: "preserve-visible-until-commit",
-});
-
-if (speculation) {
-  const session = await speculation.open(signals.history());
-  const dirtyExit = await session.dirtyExit(signals.specialist());
-  const mergePreview = await session.commitPreview();
-  const commit: SpeculativeRouteBranchCommit = await session.commit(
-    mergePreview,
-    dirtyExit,
-    dirtyExit.confirm(),
-  );
-  commit.outcome().visibleProjection();
-}
 
 signals.free();

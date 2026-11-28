@@ -98,8 +98,6 @@ mod current_fence;
 
 mod endpoint_fence;
 
-mod merged_generation;
-
 mod cold_owned_revision;
 
 mod sheet_boundary;

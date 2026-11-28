@@ -39,7 +39,6 @@ pub struct BridgeHarnessFixture {
     aspect_mappings: Vec<BridgeAspectRegistration>,
     source_declarations: Vec<crate::source::SourceDeclaration>,
     structural_declarations: Vec<crate::structural::StructuralIdentityDeclaration>,
-    merge_declarations: Vec<crate::merge::MergeHistoryDeclaration>,
     source_adapter_capabilities: Option<crate::source::BridgeSourceCapabilitySet>,
     committed_patches: Vec<BridgeCommittedPatchEnvelope>,
     snapshots: Vec<SnapshotFixture>,
@@ -55,7 +54,6 @@ impl BridgeHarnessFixture {
             aspect_mappings: Vec::new(),
             source_declarations: Vec::new(),
             structural_declarations: Vec::new(),
-            merge_declarations: Vec::new(),
             source_adapter_capabilities: None,
             committed_patches: Vec::new(),
             snapshots: Vec::new(),
@@ -92,14 +90,6 @@ impl BridgeHarnessFixture {
         structural_declaration: crate::structural::StructuralIdentityDeclaration,
     ) -> Self {
         self.structural_declarations.push(structural_declaration);
-        self
-    }
-
-    pub fn with_merge_declaration(
-        mut self,
-        merge_declaration: crate::merge::MergeHistoryDeclaration,
-    ) -> Self {
-        self.merge_declarations.push(merge_declaration);
         self
     }
 
@@ -153,10 +143,6 @@ impl BridgeHarnessFixture {
 
     pub fn structural_declarations(&self) -> &[crate::structural::StructuralIdentityDeclaration] {
         &self.structural_declarations
-    }
-
-    pub fn merge_declarations(&self) -> &[crate::merge::MergeHistoryDeclaration] {
-        &self.merge_declarations
     }
 
     pub fn source_adapter_capabilities(&self) -> Option<&crate::source::BridgeSourceCapabilitySet> {

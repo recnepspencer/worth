@@ -11,9 +11,7 @@ pub(in crate::harness::tests::pricing_shock) use crate::error::BridgeDeliveryErr
 pub(in crate::harness::tests::pricing_shock) use crate::facade::{
     BridgeAspectRegistration, BridgeAspectRegistrationId, BridgeCommittedPatchEnvelope,
     BridgeCommittedPatchItem, BridgeDiagnosticsTier, BridgeExecutionPolicyClass,
-    BridgeFailureClass, BridgeMappingId, BridgeMappingRegistration, BridgeMergeAuthorityBasis,
-    BridgeMergeAuthorityBasisKind, BridgeMergeConsumptionClass, BridgeMergeOntologyMappingSurface,
-    BridgeMergeParentOrderProof, BridgeMergeStructuralAdvisoryDisposition, BridgePolicyDeclaration,
+    BridgeFailureClass, BridgeMappingId, BridgeMappingRegistration, BridgePolicyDeclaration,
     BridgePolicyDeclarationIdentity, BridgePreviewResidueClass, BridgePreviewSessionDeclaration,
     BridgePreviewSessionDeclarationIdentity, BridgeReplayErrorKind, BridgeRequestKind,
     BridgeRuntimePolicy, BridgeSignalBranchIdentity, BridgeSourceCapability,
@@ -31,11 +29,10 @@ pub(in crate::harness::tests::pricing_shock) use crate::facade::{
     BridgeWritebackEffectIntent, BridgeWritebackErrorKind, BridgeWritebackFailureClass,
     BridgeWritebackFamilyKind, BridgeWritebackIdempotenceClass, BridgeWritebackIdempotenceIdentity,
     BridgeWritebackRequestMode, BridgeWritebackStrategyClass, CoarseRoutingMode,
-    FineGrainedMatchStatus, MappingSelector, MergeHistoryDeclaration,
-    MergeHistoryDeclarationIdentity, RuntimeBridge, RuntimeBridgeBuilder, SignalInvalidationScope,
-    SliceWideningPolicy, SnapshotReadRecord, SubscriptionSliceKind, TruthBranchIdentity,
-    TruthCommitIdentity, TruthDeltaSurfaceKind, TruthPatchIdentity, TruthPatchScope,
-    TruthSnapshotIdentity,
+    FineGrainedMatchStatus, MappingSelector, RuntimeBridge, RuntimeBridgeBuilder,
+    SignalInvalidationScope, SliceWideningPolicy, SnapshotReadRecord, SubscriptionSliceKind,
+    TruthBranchIdentity, TruthCommitIdentity, TruthDeltaSurfaceKind, TruthPatchIdentity,
+    TruthPatchScope, TruthSnapshotIdentity,
 };
 pub(in crate::harness::tests::pricing_shock) use crate::harness::fixtures::{
     BridgeHarnessFixture, InMemoryRelationalBridgeSource, RecordingSignalBridgeSink,

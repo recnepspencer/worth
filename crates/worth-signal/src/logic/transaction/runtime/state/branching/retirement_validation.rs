@@ -48,9 +48,6 @@ where
                 child_branch_ids: children,
             });
         }
-        if self.branches.is_merge_participant(branch_id) {
-            return Err(SignalBranchRetirementDenial::MergeParticipant { branch_id });
-        }
         let active_leases = self.branches.branch_retention_count(branch_id);
         if active_leases != 0 {
             return Err(SignalBranchRetirementDenial::RetainedComponentBasis {

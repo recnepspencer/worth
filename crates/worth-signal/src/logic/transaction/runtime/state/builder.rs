@@ -10,11 +10,6 @@ use crate::runtime_policy::SignalRuntimePolicy;
 use crate::schema::data::SignalSchemaRegistry;
 
 use super::branching::DEFAULT_MAXIMUM_STORED_SIGNAL_BRANCH_SNAPSHOTS;
-use super::merge::{
-    FrozenAspectMergePolicyRegistry, FrozenConflictIsolationRegistry, FrozenConflictPolicyRegistry,
-    FrozenDeletionPolicyRegistry, FrozenIdentityMatcherRegistry, FrozenMergeBaseStrategyRegistry,
-    FrozenMergeStrategyRegistry, FrozenSourceOnlyPolicyRegistry,
-};
 
 mod assembly;
 mod policy;
@@ -42,14 +37,7 @@ pub struct SignalRuntimeBuilder<
 {
     graph: Box<SignalGraph>,
     schema_registry: SignalSchemaRegistry,
-    merge_strategy_registry: FrozenMergeStrategyRegistry,
-    merge_base_strategy_registry: FrozenMergeBaseStrategyRegistry,
-    aspect_merge_policy_registry: FrozenAspectMergePolicyRegistry,
-    conflict_isolation_registry: FrozenConflictIsolationRegistry,
-    conflict_policy_registry: FrozenConflictPolicyRegistry,
-    identity_matcher_registry: FrozenIdentityMatcherRegistry,
-    source_only_policy_registry: FrozenSourceOnlyPolicyRegistry,
-    deletion_policy_registry: FrozenDeletionPolicyRegistry,
+
     resource_policy_registry: FrozenResourcePolicyRegistry,
     checkpoint_policy: CheckpointPolicy<D>,
     fallback_comparator: VersionComparatorPolicy,
@@ -74,14 +62,7 @@ where
         Self {
             graph,
             schema_registry: SignalSchemaRegistry::default(),
-            merge_strategy_registry: FrozenMergeStrategyRegistry::built_in(),
-            merge_base_strategy_registry: FrozenMergeBaseStrategyRegistry::built_in(),
-            aspect_merge_policy_registry: FrozenAspectMergePolicyRegistry::built_in(),
-            conflict_isolation_registry: FrozenConflictIsolationRegistry::built_in(),
-            conflict_policy_registry: FrozenConflictPolicyRegistry::built_in(),
-            identity_matcher_registry: FrozenIdentityMatcherRegistry::built_in(),
-            source_only_policy_registry: FrozenSourceOnlyPolicyRegistry::built_in(),
-            deletion_policy_registry: FrozenDeletionPolicyRegistry::built_in(),
+
             resource_policy_registry: FrozenResourcePolicyRegistry::built_in(),
             checkpoint_policy: CheckpointPolicy::new(CheckpointBarrier::PerOperation),
             fallback_comparator: VersionComparatorPolicy::Exact,

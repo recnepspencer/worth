@@ -10,7 +10,6 @@ pub(in crate::harness::tests) struct PricingBundleComparisonEvidence {
     pub(in crate::harness::tests) restart_replay_equal: bool,
     pub(in crate::harness::tests) restart_failure_equal: bool,
     pub(in crate::harness::tests) writeback_equal: bool,
-    pub(in crate::harness::tests) merge_equal: bool,
     pub(in crate::harness::tests) provenance_equal: bool,
     pub(in crate::harness::tests) portfolio_equal: bool,
     pub(in crate::harness::tests) crisis_equal: bool,
@@ -31,7 +30,6 @@ impl PricingBundleComparisonEvidence {
             && self.restart_replay_equal
             && self.restart_failure_equal
             && self.writeback_equal
-            && self.merge_equal
             && self.provenance_equal
             && self.portfolio_equal
             && self.crisis_equal
@@ -50,7 +48,6 @@ pub(in crate::harness::tests) struct PricingDiagnosticsEntrypointEvidence {
     pub(in crate::harness::tests) policy: bool,
     pub(in crate::harness::tests) source: bool,
     pub(in crate::harness::tests) preview: bool,
-    pub(in crate::harness::tests) merge: bool,
     pub(in crate::harness::tests) writeback: bool,
     pub(in crate::harness::tests) residue: bool,
     pub(in crate::harness::tests) historical_provenance: bool,
@@ -77,14 +74,13 @@ impl PricingDiagnosticsEntrypointEvidence {
         self.insufficiency_count() == 0
     }
 
-    fn entrypoint_availability(&self) -> [bool; 14] {
+    fn entrypoint_availability(&self) -> [bool; 13] {
         [
             self.routing,
             self.branch_isolation,
             self.policy,
             self.source,
             self.preview,
-            self.merge,
             self.writeback,
             self.residue,
             self.historical_provenance,
@@ -104,7 +100,6 @@ pub(in crate::harness::tests) struct PricingBundleCompletenessEvidence {
     pub(in crate::harness::tests) has_policy_artifact: bool,
     pub(in crate::harness::tests) has_source_artifact: bool,
     pub(in crate::harness::tests) has_preview_artifact: bool,
-    pub(in crate::harness::tests) has_merge_artifact: bool,
     pub(in crate::harness::tests) has_writeback_artifact: bool,
     pub(in crate::harness::tests) has_residue_artifact: bool,
     pub(in crate::harness::tests) has_historical_provenance_artifact: bool,
@@ -121,8 +116,6 @@ pub(in crate::harness::tests) struct PricingBundleCompletenessEvidence {
 pub(in crate::harness::tests) struct PricingReferenceWorkloadComparisonEvidence {
     pub(in crate::harness::tests) main_vs_speculative_snapshot_distinct: bool,
     pub(in crate::harness::tests) main_vs_speculative_rubber_cost_distinct: bool,
-    pub(in crate::harness::tests) merged_vs_premerge_rubber_cost_distinct: bool,
-    pub(in crate::harness::tests) merged_vs_speculative_rubber_cost_equal: bool,
     pub(in crate::harness::tests) discard_vs_promotion_classification_distinct: bool,
     pub(in crate::harness::tests) hostile_failure_vs_restart_failure_distinct: bool,
     pub(in crate::harness::tests) historical_provenance_commit_matches_shock: bool,
@@ -168,7 +161,6 @@ impl PricingWorkloadCertificationBundle {
             restart_replay_equal: self.restart_replay == other.restart_replay,
             restart_failure_equal: self.restart_failure == other.restart_failure,
             writeback_equal: self.writeback == other.writeback,
-            merge_equal: self.merge == other.merge,
             provenance_equal: self.provenance == other.provenance,
             portfolio_equal: self.portfolio == other.portfolio,
             crisis_equal: self.crisis == other.crisis,
@@ -191,7 +183,6 @@ impl PricingWorkloadCertificationBundle {
             source: !self.hostile_failure.source_commit.as_str().is_empty()
                 && !self.hostile_failure.source_snapshot.as_str().is_empty(),
             preview: self.discard.has_discard_record && self.promotion.has_promotion_explanation,
-            merge: !self.merge.bundle_digest.is_empty(),
             writeback: !self.writeback.commit_replay_semantic_digest.is_empty(),
             residue: self.discard.has_discard_record,
             historical_provenance: !self.provenance.shock_commit.as_str().is_empty()
@@ -215,7 +206,6 @@ impl PricingWorkloadCertificationBundle {
             has_policy_artifact: entrypoints.policy,
             has_source_artifact: entrypoints.source,
             has_preview_artifact: entrypoints.preview,
-            has_merge_artifact: entrypoints.merge,
             has_writeback_artifact: entrypoints.writeback,
             has_residue_artifact: entrypoints.residue,
             has_historical_provenance_artifact: entrypoints.historical_provenance,
@@ -237,10 +227,6 @@ impl PricingWorkloadCertificationBundle {
                 != self.matrix.reference.speculative_snapshot,
             main_vs_speculative_rubber_cost_distinct: self.matrix.reference.main_rubber_cost_cents
                 != self.matrix.reference.speculative_rubber_cost_cents,
-            merged_vs_premerge_rubber_cost_distinct: self.merge.merged_rubber_cost_cents
-                != self.merge.main_premerge_rubber_cost_cents,
-            merged_vs_speculative_rubber_cost_equal: self.merge.merged_rubber_cost_cents
-                == self.merge.speculative_rubber_cost_cents,
             discard_vs_promotion_classification_distinct: self.discard.lifecycle_state
                 != self.promotion.lifecycle_state,
             hostile_failure_vs_restart_failure_distinct: format!(
@@ -261,7 +247,7 @@ impl PricingWorkloadCertificationBundle {
                 .simulation
                 .ranked_materials_by_damage
                 .is_empty(),
-            trust_attack_matrix_is_typed: self.trust_attack_classification_count() == 8,
+            trust_attack_matrix_is_typed: self.trust_attack_classification_count() == 7,
         }
     }
 

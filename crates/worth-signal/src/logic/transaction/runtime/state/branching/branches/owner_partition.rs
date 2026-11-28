@@ -52,7 +52,6 @@ where
     children_by_parent: BTreeMap<SignalBranchId, BTreeSet<SignalBranchId>>,
     retirement_reservations: BTreeSet<SignalBranchId>,
     retirement_receipts: BTreeMap<SignalBranchId, SignalBranchRetirementReceipt>,
-    active_merge_participants: BTreeSet<SignalBranchId>,
     maximum_retirement_receipts: usize,
     reserved_retirement_receipt_count: usize,
     next_snapshot_id: u64,
@@ -94,7 +93,6 @@ where
             children_by_parent: std::mem::take(&mut branches.children_by_parent),
             retirement_reservations: BTreeSet::new(),
             retirement_receipts: std::mem::take(&mut branches.retirement_receipts),
-            active_merge_participants: std::mem::take(&mut branches.active_merge_participants),
             maximum_retirement_receipts: MAXIMUM_RETAINED_SIGNAL_BRANCH_RETIREMENT_RECEIPTS,
             reserved_retirement_receipt_count: 0,
             next_snapshot_id: branches.next_snapshot_id,
@@ -178,10 +176,6 @@ where
             .get(&branch_id)
             .map(|children| children.iter().copied().collect())
             .unwrap_or_default()
-    }
-
-    pub(crate) fn is_merge_participant(&self, branch_id: SignalBranchId) -> bool {
-        self.active_merge_participants.contains(&branch_id)
     }
 
     pub(crate) fn retain_retirement_receipt(&mut self, receipt: SignalBranchRetirementReceipt) {
@@ -313,7 +307,6 @@ where
             && self.snapshots.is_empty()
             && self.children_by_parent.is_empty()
             && self.retirement_receipts.is_empty()
-            && self.active_merge_participants.is_empty()
             && self.retention.is_none()
     }
 }

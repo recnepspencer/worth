@@ -36,13 +36,7 @@ test("detail responses close whole-response effect topology proof", async () => 
       },
     });
     assert.equal(localEffect.optimistic.rollback.kind, "effectBranchRetirementAvailable");
-    assert.equal(localEffect.profile.rebase, "nativeMergePlan");
-    const mergePlan = signals.resource.branch.planMerge({
-      source_branch_id: localEffect.optimistic.branchId,
-      target_branch_id: 0,
-    });
-    assert.equal(mergePlan.kind, "planned");
-    assert.equal(typeof mergePlan.proof.planDigest, "string");
+    assert.equal(localEffect.profile.rebase, "unavailable");
     assert.deepEqual(
       line.history().verificationPackage().lifecycle.lastEffect.locusProof,
       localEffect.locusProof,
@@ -108,13 +102,7 @@ test("summary responses close whole-response effect topology proof", async () =>
       },
     });
     assert.equal(localEffect.optimistic.rollback.kind, "effectBranchRetirementAvailable");
-    assert.equal(localEffect.profile.rebase, "nativeMergePlan");
-    const mergePlan = signals.resource.branch.planMerge({
-      source_branch_id: localEffect.optimistic.branchId,
-      target_branch_id: 0,
-    });
-    assert.equal(mergePlan.kind, "planned");
-    assert.equal(typeof mergePlan.proof.planDigest, "string");
+    assert.equal(localEffect.profile.rebase, "unavailable");
     assert.deepEqual(
       line.history().verificationPackage().lifecycle.lastEffect.locusProof,
       localEffect.locusProof,

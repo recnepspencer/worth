@@ -29,9 +29,6 @@ import {
   finalizeProjectedOutletContracts,
 } from "./router_projection_outlet_contract.js";
 import {
-  createSpeculativeRouteBranchPlan,
-} from "./speculation/router_speculative_branch_plan.js";
-import {
   createProjectedRoutePrefetchArtifact,
   tryCreateProjectedRouteWarmupArtifact,
 } from "./transition/router_warmup_artifact.js";
@@ -64,13 +61,6 @@ function attachProjectionRoot(tree, rootNodes, navigationSupport) {
     [ROUTE_TREE_ROOT]: true,
     project(routeAuthority) {
       return projectRouteCandidate(routeAuthority);
-    },
-    speculate(routeAuthority, options = {}) {
-      const projectedCandidate = projectRouteCandidate(routeAuthority);
-      if (projectedCandidate === null) {
-        return null;
-      }
-      return projectedCandidate.speculate(options);
     },
     warmup(routeAuthority, trigger = "intent") {
       const projectedCandidate = projectRouteCandidate(routeAuthority);
@@ -209,9 +199,6 @@ function projectResolvedRouteTree(rootNodes, routeAuthority, projectRouteCandida
     },
     prefetch(trigger = "intent") {
       return this.warmup(trigger);
-    },
-    speculate(options = {}) {
-      return createSpeculativeRouteBranchPlan(this, options);
     },
     admission(facts = {}) {
       return createProjectedRouteAdmissionPlan(this, matchedDeclarations, projectRouteCandidate, facts);

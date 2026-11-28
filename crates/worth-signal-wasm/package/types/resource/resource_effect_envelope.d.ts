@@ -31,7 +31,7 @@ export interface ResourceEffectProfileDigest {
   readonly optimism: "branchSpeculative" | "none";
   readonly confirmation: "exact" | "serverCanonical" | "acceptedPendingDelivery";
   readonly rollback: "branchRestore" | "branchRestoreOrInverse" | "unavailable";
-  readonly rebase: "nativeMergePlan" | "unavailable";
+  readonly rebase: "unavailable";
   readonly preimage: "none" | "compactInverse" | "digestOnly" | "retainedFragment";
 }
 

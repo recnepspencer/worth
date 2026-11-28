@@ -25,13 +25,7 @@ impl RetainedStorageMeasurement for NodeEvaluationConfig {
         work.visit()?;
         let Self {
             schema_binding,
-            merge_strategy_name,
-            conflict_policy_name,
-            identity_matcher_name,
-            source_only_policy_name,
-            deletion_policy_name,
-            conflict_isolation_policy_name,
-            aspect_merge_policy_bindings,
+
             contract,
             condition,
             comparator,
@@ -40,13 +34,6 @@ impl RetainedStorageMeasurement for NodeEvaluationConfig {
         } = self;
         Charge::ZERO
             .checked_add(schema_binding.retained_heap_charge(work)?)?
-            .checked_add(merge_strategy_name.retained_heap_charge(work)?)?
-            .checked_add(conflict_policy_name.retained_heap_charge(work)?)?
-            .checked_add(identity_matcher_name.retained_heap_charge(work)?)?
-            .checked_add(source_only_policy_name.retained_heap_charge(work)?)?
-            .checked_add(deletion_policy_name.retained_heap_charge(work)?)?
-            .checked_add(conflict_isolation_policy_name.retained_heap_charge(work)?)?
-            .checked_add(aspect_merge_policy_bindings.retained_heap_charge(work)?)?
             .checked_add(contract.retained_heap_charge(work)?)?
             .checked_add(condition.retained_heap_charge(work)?)?
             .checked_add(comparator.retained_heap_charge(work)?)?

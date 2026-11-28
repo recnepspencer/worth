@@ -71,9 +71,6 @@ fn canonical_effect_drift(
     if durable.owner_authored_index_writes() != replayed.owner_authored_index_writes() {
         drifted.push("authored_index_writes");
     }
-    compare!(merge_execution_authority);
-    compare!(merge_parent_branches);
-    compare!(merge_base_commits);
     compare!(schema_version);
     compare!(schema_authority);
     if durable.merged_plan.merged_intents != replayed.merged_plan.merged_intents {
@@ -162,52 +159,8 @@ pub(super) fn validate_expected_recovery_parent_shape(
             ),
             worth_foundational::FoundationalBranchTarget::Empty => None,
         });
-    // The branch-reference cell is the only currentness authority.  An empty
-    // cell is an explicit empty target, not permission to infer a head from
-    // the envelope's parent list.
-    let admitted_target_head = current_branch_head;
-
-    if envelope.merge_parent_branches.is_empty() {
-        let expected = admitted_target_head.into_iter().collect::<Vec<_>>();
-        if observed_parents != expected.as_slice() {
-            return Err(DurabilityError::new(
-                RecoveryFailureClass::ReplayFailure,
-                format!(
-                    "recovered durable history parity drifted for commit {}",
-                    envelope.commit.commit_id.0
-                ),
-            )
-            .with_history_drift_class(HistoryDriftClass::DurabilityParityDrift));
-        }
-        return Ok(());
-    }
-
-    let mut expected = Vec::with_capacity(envelope.merge_parent_branches.len() + 1);
-    if let Some(target_head) = admitted_target_head {
-        expected.push(target_head);
-    }
-    for branch in &envelope.merge_parent_branches {
-        let branch_head = history
-            .branch_cell(branch)
-            .and_then(|cell| match cell.observation().target() {
-                worth_foundational::FoundationalBranchTarget::Basis(target) => Some(
-                    contracts::history::data::coordinates::CommitId(target.selected_commit_id()),
-                ),
-                worth_foundational::FoundationalBranchTarget::Empty => None,
-            })
-            .ok_or_else(|| {
-                DurabilityError::new(
-                    RecoveryFailureClass::ReplayFailure,
-                    format!(
-                        "recovered durable history parity drifted for commit {}",
-                        envelope.commit.commit_id.0
-                    ),
-                )
-                .with_history_drift_class(HistoryDriftClass::DurabilityParityDrift)
-            })?;
-        expected.push(branch_head);
-    }
-    if observed_parents != expected.as_slice() {
+    let expected = current_branch_head.as_slice();
+    if observed_parents != expected {
         return Err(DurabilityError::new(
             RecoveryFailureClass::ReplayFailure,
             format!(

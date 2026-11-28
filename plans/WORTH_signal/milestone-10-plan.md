@@ -1,5 +1,7 @@
 # Milestone 10 Engineering Spec: Extensible Merge Strategies
 
+> Historical specification. Semantic Git Phase 0B superseded the merge taxonomy and execution sections below.
+
 > **Status:** Active engineering spec
 >
 > **Roadmap parent:** [signal_architecture2.md](./signal_architecture2.md)

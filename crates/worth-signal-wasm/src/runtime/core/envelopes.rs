@@ -2,13 +2,11 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use worth_signal::facade::adapters::{
-    branch_state_proof_report, merge_plan_proof_report, merge_result_proof_report,
-    replay_artifact_proof_report, replay_parity_proof_report, runtime_proof_report,
-    BranchStateProofReport, MergePlanProofReport, MergeResultProofReport, ReplayArtifactProofInput,
-    ReplayArtifactProofReport, ReplayParityProofReport, RuntimeProofReport,
-    BRANCH_STATE_PROOF_BASIS_VERSION,
+    branch_state_proof_report, replay_artifact_proof_report, replay_parity_proof_report,
+    runtime_proof_report, BranchStateDenseGridProofBasis, BranchStateProofBasis,
+    BranchStateProofReport, ReplayArtifactProofInput, ReplayArtifactProofReport,
+    ReplayParityProofReport, RuntimeProofReport, BRANCH_STATE_PROOF_BASIS_VERSION,
 };
-use worth_signal::facade::adapters::{BranchMergePlan, BranchMergeResult};
 use worth_signal::facade::history::RuntimeBranchId;
 
 use crate::boundary::errors::WorthSignalJsError;
@@ -17,12 +15,13 @@ use crate::runtime::adapters::{
     HostCapabilityTransportArtifact, RuntimeDefinitionEnvelope, RuntimeEnvelope,
     UnavailableCallbackArtifact,
 };
-use crate::runtime::summaries::{public_callback_read_ids, RuntimeSnapshotEnvelope};
+use crate::runtime::summaries::{
+    public_callback_read_ids, RuntimeSnapshotEnvelope, RuntimeStoreSnapshot,
+};
 
-use super::merge_state::build_branch_state_proof_basis;
 use super::state::{
-    CallbackDiagnosticState, CatalogEntry, DenseGridFamily, RuntimeStore, StoredRecipeDefinition,
-    WebRuntimeMetrics, WebSignalKind,
+    BranchRuntimeState, CallbackDiagnosticState, CatalogEntry, DenseGridFamily, RuntimeStore,
+    StoredRecipeDefinition, WebRuntimeMetrics, WebSignalKind,
 };
 use super::RuntimeCore;
 
@@ -228,21 +227,7 @@ impl RuntimeCore {
     }
 
     pub fn runtime_proof_report(&self) -> RuntimeProofReport {
-        runtime_proof_report(
-            self.runtime.schema_registry().registry_digest(),
-            self.runtime.merge_strategy_registry().registry_digest(),
-            self.runtime
-                .merge_base_strategy_registry()
-                .registry_digest(),
-            self.runtime
-                .aspect_merge_policy_registry()
-                .registry_digest(),
-            self.runtime.conflict_isolation_registry().registry_digest(),
-            self.runtime.conflict_policy_registry().registry_digest(),
-            self.runtime.identity_matcher_registry().registry_digest(),
-            self.runtime.source_only_policy_registry().registry_digest(),
-            self.runtime.deletion_policy_registry().registry_digest(),
-        )
+        runtime_proof_report(self.runtime.schema_registry().registry_digest())
     }
 
     pub fn branch_state_proof(
@@ -294,34 +279,39 @@ impl RuntimeCore {
         Ok(replay_artifact_proof_report(
             expected,
             ReplayArtifactProofInput {
-                proof_schema_version: runtime_proof.proof_schema_version.clone(),
+                proof_schema_version: runtime_proof.proof_schema_version,
                 registry_bundle_digest: Some(runtime_proof.registry_bundle_digest),
-                lowered_strategy_bundle_digest: None,
-                merge_plan_digest: None,
-                merge_result_digest: None,
-                lineage_digest: None,
-                strategy_witness: None,
-                compatibility_witness: None,
-                scoped_merge_proof: None,
                 branch_state_digest: replayed_state.state_digest,
             },
         ))
     }
+}
 
-    pub(super) fn merge_plan_proof_report(
-        &self,
-        plan: &BranchMergePlan,
-    ) -> Result<MergePlanProofReport, WorthSignalJsError> {
-        Ok(merge_plan_proof_report(
-            plan,
-            &self.runtime_proof_report().registry_bundle_digest,
-        ))
+fn build_branch_state_proof_basis(
+    state: &BranchRuntimeState,
+) -> BranchStateProofBasis<RuntimeStoreSnapshot> {
+    let mut catalog_ids = state.metadata.catalog.keys().cloned().collect::<Vec<_>>();
+    catalog_ids.sort();
+    let mut dense_grids = state
+        .metadata
+        .dense_grids
+        .iter()
+        .map(|(family_id, grid)| BranchStateDenseGridProofBasis {
+            family_id: family_id.clone(),
+            width: grid.width,
+            height: grid.height,
+            key_count: grid.key_to_index.len(),
+            ids: grid.ids.clone(),
+        })
+        .collect::<Vec<_>>();
+    dense_grids.sort_by(|left, right| left.family_id.cmp(&right.family_id));
+    for grid in &mut dense_grids {
+        grid.ids.sort();
     }
-
-    pub(super) fn merge_result_proof_report(
-        &self,
-        result: &BranchMergeResult,
-    ) -> Result<MergeResultProofReport, WorthSignalJsError> {
-        Ok(merge_result_proof_report(result))
+    BranchStateProofBasis {
+        proof_schema_version: BRANCH_STATE_PROOF_BASIS_VERSION.to_owned(),
+        catalog_ids,
+        dense_grids,
+        store: state.store.clone(),
     }
 }

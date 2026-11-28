@@ -212,18 +212,14 @@ pub(super) fn surface_basis_for_diagnostics(
 pub(super) fn surface_basis_for_history(
     envelope: &CanonicalCommitEnvelope,
 ) -> ReplaySurfaceComparisonBasis {
-    let history = (
-        OrderedParentList::from_authoritative(envelope.commit.parents.clone()),
-        envelope.merge_parent_branches.clone(),
-        envelope.merge_base_commits.clone(),
-    );
+    let history = OrderedParentList::from_authoritative(envelope.commit.parents.clone());
     ReplaySurfaceComparisonBasis::new(
         ReplaySurfaceAuthorityKind::History,
         Some(VerifiedReplaySurfaceDigest::from_digest(
             ReplaySurfaceAuthorityKind::History,
-            digest_history_surface(&history.0, &history.1, &history.2),
+            digest_history_surface(&history, &[], &[]),
         )),
-        Some(digest_history_summary(&history.0)),
+        Some(digest_history_summary(&history)),
     )
 }
 

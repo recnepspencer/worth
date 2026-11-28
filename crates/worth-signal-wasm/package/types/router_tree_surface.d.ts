@@ -28,10 +28,6 @@ import type {
   RouterLayoutDeclaration,
 } from "./router_projection_surface.js";
 import type {
-  SpeculativeRouteBranchOptions,
-  SpeculativeRouteBranchPlan,
-} from "./router_speculation_surface.js";
-import type {
   RouteTransitionArtifact,
   RouteTransitionOptions,
   RouteTransitionTarget,
@@ -157,15 +153,6 @@ export type RouterResolvedTree<TTree extends RouterDefinitionTree> =
     ): ProjectedRouteCandidate<
       RouterResolvedLeafUnion<TTree>,
       RouterResolvedLayoutUnion<TTree>
-    > | null;
-    speculate(
-      rawHref: string | RawLocationAuthority | CanonicalUrlAuthority,
-      options?: SpeculativeRouteBranchOptions,
-    ): SpeculativeRouteBranchPlan<
-      ProjectedRouteCandidate<
-        RouterResolvedLeafUnion<TTree>,
-        RouterResolvedLayoutUnion<TTree>
-      >
     > | null;
     warmup(
       rawHref: string | RawLocationAuthority | CanonicalUrlAuthority,

@@ -11,7 +11,6 @@ export function buildFormVerificationPackage(form, diagnosticsSnapshot) {
   const sourceAdmission = form.sourceAdmission();
   const draftRestore = form.draftRestore();
   const resourceSource = state.resourceSource;
-  const resourceMerge = state.resourceMerge;
   const resourceDrift = state.resourceDrift;
   const attachmentTransfers = state.attachmentTransfers;
   const formDeclaration = state.declaration;
@@ -72,9 +71,6 @@ export function buildFormVerificationPackage(form, diagnosticsSnapshot) {
   const actionHistoryDigests = historyDigestChain(actionHistory, ["resultDigest"]);
   const actionExecutionHistoryDigests = historyDigestChain(actionExecutionHistory, ["executionDigest"]);
   const asyncValidationHistoryDigests = historyDigestChain(asyncValidationHistory, ["lifecycleDigest"]);
-  const resourceMergeHistoryDigests = resourceMerge.history.map(
-    (artifact) => artifact.resultDigest ?? artifact.digest ?? null,
-  );
   const resourceDriftHistoryDigests = historyDigestChain(resourceDrift.history, ["resultDigest"]);
   const interactionHistoryDigests = historyDigestChain(interactionHistory, ["interactionDigest", "intentDigest"]);
   const navigationHistoryDigests = historyDigestChain(navigationHistory, ["navigationDigest"]);
@@ -98,7 +94,6 @@ export function buildFormVerificationPackage(form, diagnosticsSnapshot) {
     sourceAdmissionDigest: digestWithLabel("sourceAdmissionDigest", sourceAdmission),
     draftRestoreDigest: digestWithLabel("draftRestoreDigest", draftRestore),
     resourceSourceDigest: resourceSource?.digest ?? null,
-    resourceMergeDigest: resourceMerge.digest,
     resourceDriftDigest: resourceDrift.digest,
     resourceShapeDigest: resourceSource?.shape.digest ?? null,
     resourceLifecycleDigest: resourceSource?.lifecycle.digest ?? null,
@@ -166,7 +161,6 @@ export function buildFormVerificationPackage(form, diagnosticsSnapshot) {
       replayRestoreHistory.map((artifact) => artifact.replayRestoreDigest),
     ),
     stateHistoryDigest: digestFormStateHistory(stateHistory),
-    resourceMergeHistoryDigest: digestWithLabel("resourceMergeHistoryDigest", resourceMergeHistoryDigests),
     resourceDriftHistoryDigest: digestWithLabel("resourceDriftHistoryDigest", resourceDriftHistoryDigests),
     mutationResponseReconciliationDigest: digestWithLabel(
       "mutationResponseReconciliationDigest",
@@ -252,7 +246,6 @@ export function buildFormVerificationPackage(form, diagnosticsSnapshot) {
     performanceEnvelope: formPerformanceEnvelope({
       sourceCompatibility,
       resourceSource,
-      resourceMerge,
       resourceDrift,
       attachmentTransfers,
       host,
@@ -308,7 +301,6 @@ function formPerformanceEnvelope(reports) {
     navigationOperations: reports.navigationHistory.length,
     sourceCompatibilityOperations: reports.sourceCompatibilityHistory.length,
     resourceSource: reports.resourceSource?.counters ?? null,
-    resourceMerge: reports.resourceMerge.counters,
     resourceDrift: reports.resourceDrift.counters,
     hostFacts: reports.host.counters,
     inputCapabilities: reports.inputCapabilities.counters,

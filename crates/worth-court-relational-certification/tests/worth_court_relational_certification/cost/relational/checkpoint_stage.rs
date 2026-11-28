@@ -35,7 +35,7 @@ use worth_testkit_relational::aspect_storage::{
 use worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request;
 
 /// The native checkpoint prefix; it is emitted but not sized.
-const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK24\n";
+const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK25\n";
 /// Journal artifact header: magic 8, version 2, position 8, commit 8,
 /// digest 32, payload length 8.
 const ARTIFACT_HEADER_BYTES: usize = 66;

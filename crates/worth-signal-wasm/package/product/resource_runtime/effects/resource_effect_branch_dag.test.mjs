@@ -28,16 +28,6 @@ test("ten concurrent sibling effects isolate random success and failure", async 
       "derivedEffectProjectionBranch",
     );
     const projectionBeforeRebuild = line.effects().projection();
-    const projectionAuthorityDenial = runtime.signals.resource.branch.planMerge({
-      source_branch_id: projectionBeforeRebuild,
-      target_branch_id: canonicalBranch.id,
-    });
-    assert.equal(projectionAuthorityDenial.kind, "denied");
-    assert.equal(projectionAuthorityDenial.reason, "mergePlanUnavailable");
-    assert.match(
-      projectionAuthorityDenial.detail,
-      /cannot authorize canonical merge/,
-    );
     const rebuiltProjection = await line.effects().rebuildProjection();
     assert.deepEqual(
       rebuiltProjection.projectedValue,

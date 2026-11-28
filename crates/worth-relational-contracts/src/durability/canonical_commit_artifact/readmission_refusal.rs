@@ -17,6 +17,8 @@ pub enum RelationalCanonicalCommitArtifactRefusal {
     Frame(RelationalCanonicalCommitArtifactFrameRefusal),
     /// The digested payload is not a current artifact payload.
     PayloadDecode { detail: String },
+    /// This envelope carries retired merge authority or merge-parent metadata.
+    LegacyMergeArtifactRetired,
     /// The header position differs from the position inside the payload.
     PositionDisagreement {
         header: PatchStreamPosition,
@@ -58,6 +60,8 @@ impl std::fmt::Display for RelationalCanonicalCommitArtifactRefusal {
                 formatter,
                 "canonical commit artifact payload is undecodable: {detail}"
             ),
+            Self::LegacyMergeArtifactRetired => formatter
+                .write_str("canonical commit artifact carries retired legacy merge authority"),
             Self::PositionDisagreement { header, payload } => write!(
                 formatter,
                 "canonical commit artifact header position {} disagrees with payload position {}",

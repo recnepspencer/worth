@@ -6,7 +6,6 @@ import { validateForm } from "./validation/execution.js";
 import { visibleMessages } from "./validation/artifacts.js";
 import { evaluateSteps } from "./steps/artifacts.js";
 import { planActions } from "./actions/planning.js";
-import { resourceMergeVisibleMessages } from "./resource_merge/report.js";
 
 export function createDerivedReportBindings({
   formRef,
@@ -68,7 +67,6 @@ export function createDerivedReportBindings({
     visibleMessages() {
       return Object.freeze([
         ...visibleMessages(formRef().validation()),
-        ...resourceMergeVisibleMessages(formRef().resourceMerge()),
       ]);
     },
     steps() {

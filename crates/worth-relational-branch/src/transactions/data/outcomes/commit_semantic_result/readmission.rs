@@ -58,7 +58,7 @@ pub fn validate_envelope(
         || semantic.owner_publication().merge_parent_count
             != semantic.owner_receipt().parents.len().saturating_sub(1)
         || semantic.owner_history().parent_count != semantic.owner_receipt().parents.len()
-        || semantic.owner_history().merge_base_count != envelope.merge_base_commits.len()
+        || semantic.owner_history().merge_base_count != 0
         || semantic
             .owner_structural()
             .touched_partitions

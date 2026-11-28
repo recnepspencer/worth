@@ -176,11 +176,11 @@ try {
   },
   {
     id: 6,
-    title: "Merge Aspects, Not Objects",
-    purpose: "Two branches edit one gear. Worth merges them aspect by aspect against the fork basis — disjoint edits compose themselves, and a real collision becomes one decision.",
-    preface: "Branching is the easy part. Deciding what a merge means is where most state management gives up and hands you last-write-wins. Here, every commit names the exact aspects it changed — thickness, gear count, hole size — so the runtime can compare each aspect to the basis both branches forked from. Different aspects? They merge without a question. The same aspect on both sides? You get a review with both values, and nothing is overwritten silently. Every commit stays inspectable afterward, and the code on this page is the production source, excerpted live.",
+    title: "Branch and Inspect Gear Designs",
+    purpose: "Two writable branches record independent, exact aspect edits to one gear.",
+    preface: "Fork a design branch from Main. Move either gear and select a commit to see the values stored at that point.",
     difficulty: "Advanced",
-    primaryMessage: "Declared aspects make merges mechanical: disjoint edits compose, collisions become one decision.",
+    primaryMessage: "Each branch records the exact aspects that changed.",
     WORTHCode: `const branch = await gearTruth.forkBranch({
   parentBranchId: main.id,
   expectedParentBasis: main.basis,
@@ -191,26 +191,17 @@ await gearTruth.commit({
   branchId: branch.id,
   expectedBasis: branch.basis,
   operations: gearChanges,
-});
-
-const review = await gearTruth.previewMerge(mergeRequest);
-await gearTruth.resolveMerge({ reviewId: review.id, selections: [] });`,
-    alternativeName: "UI-owned object merge",
-    alternativeCode: `// The component becomes the truth authority.
-const merged = {
-  ...target,
-  teeth: chooseSource ? source.teeth : target.teeth,
-};
-setState(merged);`,
-    explanationAlternative: "The component decides the merged values itself. It has no record of the basis either side started from, so it cannot tell a deliberate change from a stale overwrite — and after setState, no evidence remains that a merge happened at all.",
-    explanationWORTH: "A process-local TypeScript authority owns the branches, the aspect commits, merge admission, and the atomic merge commit. Everything on the page — values, conflicts, history, the signal projection strip — is read back from that authority, not composed in React.",
+});`,
+    alternativeName: "Component-local state",
+    alternativeCode: `setGear((gear) => ({ ...gear, teeth: 24 }));`,
+    explanationAlternative: "The component stores the current gear value.",
+    explanationWORTH: "Local Truth records each edit against an admitted branch basis and projects the committed values to Signal.",
     whatYouGet: [
       "Two writable branches forked from one basis",
       "One-aspect commits: release a slider, commit one locus",
-      "Merges that only ask about true collisions — with both values shown",
       "A commit graph where every node is a sealed, inspectable snapshot",
       "A live Signal projection receipt — its native basis digest advances with every commit"
     ],
-    relatedDocsPath: "local-truth/branch-merge"
+    relatedDocsPath: "local-truth/branches-and-snapshots"
   }
 ];

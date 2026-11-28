@@ -6,8 +6,6 @@ import {
   type ResourceEffectCloseoutMatrix,
   type ResourceEffectCloseoutMatrixRow,
   type ResourceEffectProfile,
-  type ResourceEffectMergeExecutionResult,
-  type ResourceEffectMergePlanResult,
 } from "../../../index.js";
 
 const signals = await createSignals({ deployment: "mainThreadCompatibility" });
@@ -49,55 +47,18 @@ const diagnosticsEffects: ResourceEffectProfile | null =
 void lineEffects;
 void diagnosticsEffects;
 void signals.resource.effects.deliveryAuthoritative();
-void await signals.resource.branch.planMerge({
-  source_branch_id: 0,
-  target_branch_id: 0,
-});
 void directResourceDetail.line({ id: "direct" }).request().effects;
 
 const branchNativeCloseout: ResourceEffectCloseoutMatrix =
   signals.resource.effects.closeoutMatrix(resourceEffects.branchNative());
-const mergeRebaseRow:
+const confirmationRow:
   | ResourceEffectCloseoutMatrixRow
   | undefined = branchNativeCloseout.rows.find(
-    (row) => row.effectFamily === "mergeRebase",
+    (row) => row.effectFamily === "confirmation",
   );
 
-void branchNativeCloseout.proofLanes.includes("branchMerge");
-void mergeRebaseRow?.performanceProof;
-void mergeRebaseRow?.evidence.branchMerge.includes(
-  "resource_branch_effect_merge_execution.test.mjs",
+void branchNativeCloseout.proofLanes.includes("diagnosticsHistory");
+void confirmationRow?.performanceProof;
+void confirmationRow?.evidence.diagnosticsHistory.includes(
+  "resource_effect_server_confirmation.test.mjs",
 );
-
-function consumeResourceMergePlan(result: ResourceEffectMergePlanResult): string {
-  if (result.kind === "denied") {
-    return result.reason;
-  }
-  const artifact = result.resourceEffect.rebaseArtifact;
-  if (artifact.kind === "mappingUnavailable") {
-    return artifact.native.records[0]?.sourceNode ?? artifact.reason;
-  }
-  if (artifact.kind === "conflict") {
-    return artifact.conflicts[0]?.resource.effectLocus ?? artifact.kind;
-  }
-  return artifact.proof.nativeMergePlanDigest;
-}
-
-function consumeResourceMergeExecution(
-  result: ResourceEffectMergeExecutionResult,
-): string {
-  if (result.kind === "denied") {
-    return result.reason;
-  }
-  const artifact = result.resourceEffect.mergeArtifact;
-  if (artifact.kind === "mappingUnavailable") {
-    return artifact.resource.effectId;
-  }
-  if (artifact.kind === "mergedWithConflictRecords") {
-    return artifact.conflicts[0]?.proof.nativeMergeResultDigest ?? artifact.kind;
-  }
-  return artifact.proof.nativeMergeLineageDigest;
-}
-
-void consumeResourceMergePlan;
-void consumeResourceMergeExecution;

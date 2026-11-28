@@ -80,32 +80,6 @@ export type {
   RuntimeProofReport,
 } from "./diagnostics/branch_history.js";
 
-export type {
-  AdoptedNodeContractSummary,
-  AdoptionCarryPolicySummary,
-  AdoptionPlanCoreSummary,
-  AdoptionTargetIdentitySummary,
-  ConflictResolutionPlanSummary,
-  ConflictResolutionRecordSummary,
-  LoweredMergeBaseSummary,
-  MergeArtifactAuthoritySummary,
-  MergeArtifactRecord,
-  MergeBaseSummary,
-  MergeComparableSummary,
-  MergeCountersSummary,
-  MergeDependencyFingerprintSummary,
-  MergeNodeMapEntrySummary,
-  MergePlanArtifact,
-  MergePlanProofEnvelope,
-  MergePlanProofReport,
-  MergePolicyPreviewRequest,
-  MergeResultArtifact,
-  MergeResultProofEnvelope,
-  MergeResultProofReport,
-  MergeSemanticsSummary,
-  NodeMergeInputStateSummary,
-  NodeMergePlanSummary,
-} from "./diagnostics/merge.js";
 
 export type {
   EventEpochSummary,

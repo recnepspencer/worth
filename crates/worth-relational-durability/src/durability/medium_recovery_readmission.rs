@@ -177,7 +177,7 @@ fn readmit_contiguous_tail(
     Ok(tail)
 }
 
-fn artifact_refusal_stop(
+pub(crate) fn artifact_refusal_stop(
     position: u64,
     refusal: RelationalCanonicalCommitArtifactRefusal,
 ) -> RelationalRecoveryStop {
@@ -186,6 +186,15 @@ fn artifact_refusal_stop(
             RelationalRecoveryStop::Request(cause)
         }
         RelationalCanonicalCommitArtifactRefusal::Content(cause) => cause.into(),
+        RelationalCanonicalCommitArtifactRefusal::LegacyMergeArtifactRetired => {
+            DurabilityError::new(
+                RecoveryFailureClass::LegacyMergeArtifactRetired,
+                format!(
+                    "canonical artifact at position {position} carries retired merge authority"
+                ),
+            )
+            .into()
+        }
         RelationalCanonicalCommitArtifactRefusal::FieldText(cause) => {
             match contracts::symbols::data::field_text::field_text_recovery_stop(cause) {
                 RelationalRecoveryStop::Durability(mut error)

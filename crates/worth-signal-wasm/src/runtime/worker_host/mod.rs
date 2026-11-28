@@ -49,7 +49,6 @@ mod worker_runtime_identity;
 mod worker_runtime_shell;
 mod worker_runtime_shell_branches;
 mod worker_runtime_shell_lock;
-mod worker_runtime_shell_merge;
 mod worker_signal_readback;
 mod worker_unavailable_compatibility_artifact;
 

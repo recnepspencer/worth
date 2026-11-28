@@ -176,32 +176,6 @@ export function createRootHistoryFacade(rootSession) {
     restore_branch_snapshot_by_id(branchId, snapshotId) {
       return withNotification(rootSession.restoreHistoryBranchSnapshotById(branchId, snapshotId));
     },
-    merge_branches(sourceBranchId, targetBranchId) {
-      return withNotification(rootSession.mergeHistoryBranches(sourceBranchId, targetBranchId));
-    },
-    merge_branches_with_proof(sourceBranchId, targetBranchId) {
-      return withNotification(
-        rootSession.mergeHistoryBranchesWithProof(sourceBranchId, targetBranchId),
-      );
-    },
-    plan_merge_branches(sourceBranchId, targetBranchId) {
-      return rootSession.bridge().planMergeBranches(sourceBranchId, targetBranchId);
-    },
-    plan_merge_branches_with_proof(sourceBranchId, targetBranchId) {
-      return rootSession.bridge().planMergeBranchesWithProof(sourceBranchId, targetBranchId);
-    },
-    plan_merge_policy_preview(request) {
-      return rootSession.bridge().planMergePolicyPreview(request);
-    },
-    plan_merge_policy_preview_with_proof(request) {
-      return rootSession.bridge().planMergePolicyPreviewWithProof(request);
-    },
-    merge_branches_policy_preview(request) {
-      return rootSession.mergeHistoryBranchesPolicyPreview(request);
-    },
-    merge_branches_policy_preview_with_proof(request) {
-      return rootSession.mergeHistoryBranchesPolicyPreviewWithProof(request);
-    },
     branch_state_proof(branchId) {
       return requireWorkerFirstBranchValue(
         rootSession,
@@ -236,10 +210,6 @@ export function createRootHistoryFacade(rootSession) {
         freezeObject({
           proofSchemaVersion: context.runtimeProofReport.proofSchemaVersion,
           registryBundleDigest: context.runtimeProofReport.registryBundleDigest,
-          loweredStrategyBundleDigest: null,
-          mergePlanDigest: null,
-          mergeResultDigest: null,
-          lineageDigest: null,
           branchStateDigest: requireWorkerFirstBranchValue(
             rootSession,
             replayedBranchId,

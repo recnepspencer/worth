@@ -24,7 +24,6 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<BTreeMap<SignalBranchId, SignalBranchRetirementReceipt>>(
             "retirement_receipts",
         );
-        owner.field::<BTreeSet<SignalBranchId>>("active_merge_participants");
         owner.field::<usize>("maximum_retirement_receipts");
         owner.field::<usize>("reserved_retirement_receipt_count");
         owner.field::<u64>("next_snapshot_id");

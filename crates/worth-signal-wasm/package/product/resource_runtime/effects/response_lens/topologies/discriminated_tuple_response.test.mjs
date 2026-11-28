@@ -42,13 +42,7 @@ test("discriminated tuple responses lower item replacement through active varian
       reconstructionBreadth: 1,
     });
     assert.equal(itemEffect.optimistic.rollback.kind, "effectBranchRetirementAvailable");
-    assert.equal(itemEffect.profile.rebase, "nativeMergePlan");
-    const mergePlan = signals.resource.branch.planMerge({
-      source_branch_id: itemEffect.optimistic.branchId,
-      target_branch_id: 0,
-    });
-    assert.equal(mergePlan.kind, "planned");
-    assert.equal(typeof mergePlan.proof.planDigest, "string");
+    assert.equal(itemEffect.profile.rebase, "unavailable");
 
     line.deliver(signalsMod.resourceDelivery.patch({
       packetId: "pkt-tuple",

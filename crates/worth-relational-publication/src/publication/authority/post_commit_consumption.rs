@@ -14,8 +14,6 @@ impl<'runtime> PublicationAuthority<'runtime> {
         snapshot_id: SnapshotId,
         branch_id: BranchId,
         parents: &[CommitId],
-        merge_parent_branches: &[BranchId],
-        merge_base_commits: &[CommitId],
     ) {
         self.instrumentation.count(|counters| {
             counters.post_commit_consumer_packet_count += 1;
@@ -37,8 +35,8 @@ impl<'runtime> PublicationAuthority<'runtime> {
             snapshot_id,
             &branch_id,
             parents,
-            merge_parent_branches,
-            merge_base_commits,
+            &[],
+            &[],
             consumer_failure,
         );
         self.push_bounded_diagnostic(

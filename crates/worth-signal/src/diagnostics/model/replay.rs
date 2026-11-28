@@ -8,9 +8,7 @@ use crate::data::handle::NodeId;
 use crate::data::reuse::{PersistentCorrespondenceKind, ReuseOrigin};
 use crate::diagnostics::lineage::LineageArtifactId;
 use crate::logic::planner::TaskExecutionOutcome;
-use crate::logic::transaction::{
-    ScopedMergeProofPacket, SignalMergeCompatibilityWitness, SignalMergeStrategyWitness,
-};
+
 use crate::state::{SignalBranchId, SignalSnapshotId};
 
 #[derive(
@@ -36,51 +34,13 @@ pub enum ReplayEventKind {
 pub enum ReplayEventDetail {
     TaskOutcome(TaskExecutionOutcome),
     Message(String),
-    BranchMergeSummary {
-        message: String,
-        #[serde(with = "super::replay_strategy_witness_serde")]
-        strategy_witness: SignalMergeStrategyWitness,
-        #[serde(with = "super::replay_compatibility_witness_serde")]
-        compatibility_witness: SignalMergeCompatibilityWitness,
-        scoped_merge_proof: ScopedMergeProofPacket,
-    },
 }
 
 impl ReplayEventDetail {
     pub fn as_message(&self) -> Option<&str> {
         match self {
-            Self::Message(message) | Self::BranchMergeSummary { message, .. } => {
-                Some(message.as_str())
-            }
+            Self::Message(message) => Some(message.as_str()),
             Self::TaskOutcome(_) => None,
-        }
-    }
-
-    pub fn as_scoped_merge_proof(&self) -> Option<&ScopedMergeProofPacket> {
-        match self {
-            Self::BranchMergeSummary {
-                scoped_merge_proof, ..
-            } => Some(scoped_merge_proof),
-            Self::TaskOutcome(_) | Self::Message(_) => None,
-        }
-    }
-
-    pub fn as_strategy_witness(&self) -> Option<&SignalMergeStrategyWitness> {
-        match self {
-            Self::BranchMergeSummary {
-                strategy_witness, ..
-            } => Some(strategy_witness),
-            Self::TaskOutcome(_) | Self::Message(_) => None,
-        }
-    }
-
-    pub fn as_compatibility_witness(&self) -> Option<&SignalMergeCompatibilityWitness> {
-        match self {
-            Self::BranchMergeSummary {
-                compatibility_witness,
-                ..
-            } => Some(compatibility_witness),
-            Self::TaskOutcome(_) | Self::Message(_) => None,
         }
     }
 }

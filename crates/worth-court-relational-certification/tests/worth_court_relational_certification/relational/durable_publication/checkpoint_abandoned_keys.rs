@@ -1,7 +1,7 @@
 //! A discarded preparation leaves publication unchanged and later truth recoverable.
 use super::branch_history_publications::transaction;
 use super::branch_history_recovery::current_head;
-use super::merge_execution_observation::read_entity_aspect_field_display;
+use super::checkpoint_truth_observation::read_entity_aspect_field_display;
 use worth_relational::facade::history::BranchId;
 use worth_testkit_relational::{
     aspect_storage::{

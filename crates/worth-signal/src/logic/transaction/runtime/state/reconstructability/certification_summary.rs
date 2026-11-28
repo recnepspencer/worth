@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::data::error::SignalError;
 
-use super::super::merge::canonical_digest;
+use super::super::canonical_digest;
 use super::certification::{
     TemporalCertificationFailure, TemporalCertificationFamily, TemporalCertificationRecord,
     REQUIRED_TEMPORAL_CERTIFICATION_FAMILIES,

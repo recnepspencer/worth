@@ -1,22 +1,16 @@
 use super::history_resolution_phase::resolve_authoritative_history_phase;
 use super::mutation_execution::MutatedCommitExecution;
 use super::phase_backing::CommitPhaseBacking;
-use crate::authority::commit::phases::history::CommitHistoryPreparation;
 use crate::authority::commit::phases::schema_continuity::{
     prepare_schema_continuity_diagnostics, resolve_schema_continuity,
 };
 use contracts::transactions::data::commit_log::CommitPhase;
-use contracts::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
 
 pub(super) struct HistoryBoundCommitExecution {
     mutated: MutatedCommitExecution,
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
-    merge_parent_branches: Vec<contracts::history::data::coordinates::BranchId>,
-    additional_diagnostics_entries:
-        Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticsEntry>,
-    merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
     schema_continuity: crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan,
     deferred_diagnostic_artifacts:
         Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
@@ -38,18 +32,12 @@ impl HistoryBoundCommitExecution {
     ) -> (
         MutatedCommitExecution,
         crate::authority::commit::phases::history::ResolvedCommitHistory,
-        Vec<contracts::history::data::coordinates::BranchId>,
-        Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticsEntry>,
-        Option<PublishedMergeExecutionAuthority>,
         crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan,
         Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
     ) {
         (
             self.mutated,
             self.history,
-            self.merge_parent_branches,
-            self.additional_diagnostics_entries,
-            self.merge_execution_authority,
             self.schema_continuity,
             self.deferred_diagnostic_artifacts,
         )
@@ -73,51 +61,14 @@ pub(super) fn bind_commit_history(
         let version_id = mutated.version_id();
         let commit_id = mutated.prepared.proposal_identity.commit_id();
         let admitted = &mut mutated.prepared.admitted;
-        let merge_diagnostics_plan = admitted.merge_execution_diagnostics_plan().cloned();
-        let (_, validation_input, _, merge_plan, commit_log, phase_timing) =
-            admitted.phase_view().into_parts();
+        let (_, validation_input, _, commit_log, phase_timing) = admitted.phase_view().into_parts();
         let history = resolve_authoritative_history_phase(
-            execution,
-            CommitHistoryPreparation {
-                history: inputs.history,
-                profile: inputs.diagnostics.profile,
-                diagnostics: inputs.diagnostics.store,
-            },
             commit_log,
             phase_timing,
             validation_input.basis(),
-            validation_input.merge_parent_bases(),
             version_id,
             commit_id,
-            merge_plan,
         )?;
-        let additional_diagnostics_entries = merge_plan
-            .map(|plan| {
-                vec![
-                    worth_relational_merge::internal_port::merge::execution_diagnostics::merge_execution_summary_entry(
-                        &plan.merge_execution_summary,
-                        &plan.structural_summary,
-                        history.commit_id,
-                    ),
-                ]
-            })
-            .unwrap_or_default();
-        let mut deferred_diagnostic_artifacts = if let (Some(plan), Some(diagnostics_plan)) =
-            (merge_plan, merge_diagnostics_plan.as_ref())
-        {
-            vec![
-                worth_relational_merge::internal_port::merge::execution_diagnostics::merge_execution_success_artifact(
-                    &plan.merge_execution_summary,
-                    diagnostics_plan,
-                    history.commit_id,
-                    inputs.diagnostics.profile.max_entries_per_artifact,
-                ),
-            ]
-        } else {
-            Vec::new()
-        };
-        let merge_execution_authority =
-            merge_plan.map(PublishedMergeExecutionAuthority::from_merge_plan);
         let schema_continuity =
             resolve_schema_continuity(execution, inputs, &history.branch_id, validation_input)
                 .map_err(|error| {
@@ -127,17 +78,11 @@ pub(super) fn bind_commit_history(
                         error,
                     )
                 })?;
-        deferred_diagnostic_artifacts.extend(prepare_schema_continuity_diagnostics(
-            &history.branch_id,
-            &schema_continuity,
-        ));
-        let merge_parent_branches = validation_input.merge_parent_branch_ids();
+        let deferred_diagnostic_artifacts =
+            prepare_schema_continuity_diagnostics(&history.branch_id, &schema_continuity);
         HistoryBoundCommitExecution {
             mutated,
             history,
-            merge_parent_branches,
-            additional_diagnostics_entries,
-            merge_execution_authority,
             schema_continuity,
             deferred_diagnostic_artifacts,
         }

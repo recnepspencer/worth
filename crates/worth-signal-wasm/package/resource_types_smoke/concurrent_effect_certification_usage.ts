@@ -49,7 +49,6 @@ const certificationEvidence = {
     recoveredWithoutDuplicateCommit: true,
     phases: [
       "responseRecorded",
-      "canonicalReconciliation",
       "projectionRefresh",
       "branchRetirement",
     ],

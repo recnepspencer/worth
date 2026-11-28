@@ -48,3 +48,11 @@ pub use crate::schema::data::{
     SubscriberBoundaryVisibility, SymmetryContractDeclaration, SymmetryMode,
     UniquenessContractDeclaration, UniquenessScope, ValidatedSchemaTransition,
 };
+
+pub use crate::schema::data::aspect_merge_policy::{
+    AspectMergePolicyDeclaration, AspectMergePolicyKind, CustomMergePolicyIdentity, MergePolicyName,
+};
+pub use crate::schema::data::identity_declarations::{
+    CustomIdentityBasisIdentity, DeclaredIdentityKeys, IdentityBasisDeclaration, IdentityBasisKind,
+    IdentityBasisName, IdentityBasisScope,
+};

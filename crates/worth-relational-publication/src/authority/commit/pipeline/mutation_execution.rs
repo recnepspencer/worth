@@ -57,7 +57,7 @@ pub(super) fn mutate_commit_execution(
             instrumentation,
             &working_state,
         );
-        let (_, _, _, _, commit_log, phase_timing) = prepared.admitted.phase_view().into_parts();
+        let (_, _, _, commit_log, phase_timing) = prepared.admitted.phase_view().into_parts();
         commit_log.begin_phase(CommitPhase::AuthoritativeMutation);
         let started = std::time::Instant::now();
         commit_log.complete_phase(CommitPhase::AuthoritativeMutation);

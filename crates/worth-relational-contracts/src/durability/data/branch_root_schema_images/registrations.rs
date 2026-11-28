@@ -1,10 +1,12 @@
 //! Portable kind-registration capture and structural readmission.
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 use crate::identity::data::KindId;
-use crate::merge::data::identity::{
+use crate::schema::data::aspect_merge_policy::{
+    AspectMergePolicyDeclaration, AspectMergePolicyKind,
+};
+use crate::schema::data::identity_declarations::{
     IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
 };
-use crate::merge::data::policy::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
 use crate::schema::data::{
     DeclaredAspectContractBinding, EntityKindRegistration, KindAspectContractDeclarations,
     RelationIntegrityDeclarations, RelationKindRegistration, SchemaId, SchemaVersionId,

@@ -3,7 +3,6 @@ import {
   createSnapshot,
   locusKey,
 } from "../authority/authority_state.js";
-import { sourceIntegrationKey } from "../merge/merge_basis.js";
 import { canonicalDigest, immutableClone } from "../support/canonical.js";
 import { success, unavailable } from "../support/outcomes.js";
 
@@ -53,13 +52,6 @@ function rebuildBranchIndexes(state, schema, branch) {
     for (const operation of commit.operations) {
       locusHeads.set(locusKey(operation.entityId, operation.aspectId), commit.id);
     }
-    for (const update of commit.lineageUpdates) {
-      const locus = locusKey(update.entityId, update.aspectId);
-      lineage.set(sourceIntegrationKey(update.sourceBranchId, locus), {
-        sourceCommitId: update.sourceCommitId,
-        sourceValue: immutableClone(update.sourceValue),
-      });
-    }
   }
   if (!checkpoint && commits[0]?.kind !== "genesis") {
     if (branch.retired) return { lineage, locusHeads };
@@ -79,6 +71,9 @@ function validateCheckpoint(state, checkpoint, branch) {
     || checkpoint.snapshotId !== checkpoint.branch.snapshotId
   ) {
     throw new Error(`checkpoint ${branch.id} is foreign or internally inconsistent`);
+  }
+  if (checkpoint.lineage.length !== 0) {
+    throw new Error(`legacy merge checkpoint ${branch.id} is retired`);
   }
   if (checkpoint.compactedCommitCount !== checkpoint.compactedCommitDigests.length) {
     throw new Error(`checkpoint ${branch.id} has an invalid compacted commit count`);
@@ -125,6 +120,9 @@ function collectRequiredSegment(state, headCommitId, stopCommitId) {
 }
 
 function validateCommit(state, commit) {
+  if (commit.kind === "merge" || (commit.lineageUpdates?.length ?? 0) !== 0) {
+    throw new Error(`legacy merge commit ${commit.id} is retired`);
+  }
   const { id, integrityDigest, ...payload } = commit;
   const digest = canonicalDigest(payload);
   if (

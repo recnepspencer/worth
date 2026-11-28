@@ -16,7 +16,6 @@ where
         self.graph().has_initial_empty_origin()
             && self.ancestry.parent_branch_id.is_none()
             && self.ancestry.forked_from_snapshot_id.is_none()
-            && self.ancestry.latest_merge_reference.is_none()
             && self.mutation_ledger.pending.is_empty()
             && self.mutation_ledger.baseline_snapshot_id.is_none()
     }

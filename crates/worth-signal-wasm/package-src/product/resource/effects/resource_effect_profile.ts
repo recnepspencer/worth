@@ -10,7 +10,7 @@ const PROFILE_DEFINITIONS = Object.freeze({
     optimism: "branchSpeculative",
     confirmation: "serverCanonical",
     rollback: "branchRestoreOrInverse",
-    rebase: "nativeMergePlan",
+    rebase: "unavailable",
     preimage: "compactInverse",
   }),
   serverCanonical: Object.freeze({
@@ -18,7 +18,7 @@ const PROFILE_DEFINITIONS = Object.freeze({
     optimism: "branchSpeculative",
     confirmation: "serverCanonical",
     rollback: "branchRestoreOrInverse",
-    rebase: "nativeMergePlan",
+    rebase: "unavailable",
     preimage: "compactInverse",
   }),
   pessimistic: Object.freeze({
@@ -34,7 +34,7 @@ const PROFILE_DEFINITIONS = Object.freeze({
     optimism: "none",
     confirmation: "acceptedPendingDelivery",
     rollback: "unavailable",
-    rebase: "nativeMergePlan",
+    rebase: "unavailable",
     preimage: "none",
   }),
   nonReversible: Object.freeze({
@@ -50,7 +50,7 @@ const PROFILE_DEFINITIONS = Object.freeze({
     optimism: "branchSpeculative",
     confirmation: "serverCanonical",
     rollback: "branchRestore",
-    rebase: "nativeMergePlan",
+    rebase: "unavailable",
     preimage: "digestOnly",
   }),
 });
@@ -123,7 +123,6 @@ function requireCustomProfileOptions(options) {
     "unavailable",
   ]);
   const rebase = requireProfileField("rebase", options.rebase, [
-    "nativeMergePlan",
     "unavailable",
   ]);
   const preimage = requireProfileField("preimage", options.preimage, [

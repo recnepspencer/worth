@@ -70,12 +70,7 @@ pub use contracts::transactions::data::outcomes::commit_summaries::CommitSchemaS
 pub use contracts::transactions::data::outcomes::commit_summaries::CommitStructuralSummary;
 pub use worth_relational_mutation::internal_port::transactions::data::outcomes::live_commit_validation::CommitValidation;
 pub use contracts::transactions::data::outcomes::conflict_class::ConflictClass;
-pub use contracts::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlan;
-pub use outcomes::MergeExecutionOutcome;
-pub use contracts::transactions::data::outcomes::plan_artifacts::MergeExecutionStructuralSummary;
-pub use contracts::transactions::data::outcomes::plan_artifacts::MergeExecutionSummary;
 pub use contracts::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
-pub use contracts::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 pub use contracts::transactions::data::outcomes::conflict_class::record_aspect_patch_denial::RecordAspectPatchDenial;
 pub use contracts::transactions::data::outcomes::conflict_class::record_aspect_patch_denial::RecordAspectPatchTarget;
 pub use contracts::transactions::data::outcomes::rollback::RollbackEffect;

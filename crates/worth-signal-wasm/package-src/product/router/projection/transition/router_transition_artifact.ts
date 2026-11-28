@@ -121,9 +121,6 @@ function classifyVisibleChangeSource(targetResolution, targetOutcome, visiblePol
   if (targetResolution.requestedSource === "prefetchAdmission") {
     return "prefetchAdmission";
   }
-  if (targetResolution.requestedSource === "speculativeCommit") {
-    return "speculativeCommit";
-  }
   if (targetResolution.requestedSource === "redirect") {
     return "redirect";
   }

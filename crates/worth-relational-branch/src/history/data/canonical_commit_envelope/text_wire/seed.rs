@@ -35,9 +35,6 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
         let mut branch_cell_checkpoint = None;
         let mut authority_kind = None;
         let mut strategy_artifacts = None;
-        let mut merge_execution_authority = None;
-        let mut merge_parent_branches = None;
-        let mut merge_base_commits = None;
         let mut schema_version = None;
         let mut schema_authority = None;
         let mut merged_plan = None;
@@ -167,22 +164,12 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                     strategy_artifacts = Some(map.next_value()?);
                 }
                 "merge_execution_authority" => {
-                    if merge_execution_authority.is_some() {
-                        return Err(M::Error::duplicate_field("merge_execution_authority"));
+                    if map.next_value::<Option<serde::de::IgnoredAny>>()?.is_some() {
+                        return Err(M::Error::custom("legacy merge authority is retired"));
                     }
-                    merge_execution_authority = Some(map.next_value()?);
                 }
-                "merge_parent_branches" => {
-                    if merge_parent_branches.is_some() {
-                        return Err(M::Error::duplicate_field("merge_parent_branches"));
-                    }
-                    merge_parent_branches = Some(map.next_value()?);
-                }
-                "merge_base_commits" => {
-                    if merge_base_commits.is_some() {
-                        return Err(M::Error::duplicate_field("merge_base_commits"));
-                    }
-                    merge_base_commits = Some(map.next_value()?);
+                "merge_parent_branches" | "merge_base_commits" => {
+                    map.next_value::<[serde::de::IgnoredAny; 0]>()?;
                 }
                 "schema_version" => {
                     if schema_version.is_some() {
@@ -286,6 +273,7 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
             }
         }
         Ok(CanonicalEnvelopeWire {
+            artifact_format: worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat::Ordinary,
             index_definition_delta: index_definition_delta
                 .ok_or_else(|| M::Error::missing_field("index_definition_delta"))?,
             semantic_result: semantic_result
@@ -322,12 +310,6 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                 .ok_or_else(|| M::Error::missing_field("authority_kind"))?,
             strategy_artifacts: strategy_artifacts
                 .ok_or_else(|| M::Error::missing_field("strategy_artifacts"))?,
-            merge_execution_authority: merge_execution_authority
-                .ok_or_else(|| M::Error::missing_field("merge_execution_authority"))?,
-            merge_parent_branches: merge_parent_branches
-                .ok_or_else(|| M::Error::missing_field("merge_parent_branches"))?,
-            merge_base_commits: merge_base_commits
-                .ok_or_else(|| M::Error::missing_field("merge_base_commits"))?,
             schema_version: schema_version
                 .ok_or_else(|| M::Error::missing_field("schema_version"))?,
             schema_authority: schema_authority

@@ -20,7 +20,6 @@ const ROUTE_LAYOUT_PLACEMENT = Symbol("worth.router.layout-placement");
 const ROUTE_OUTLET_CONTRACT = Symbol("worth.router.outlet-contract");
 const ROUTE_PROJECTED_CANDIDATE = Symbol("worth.router.projected-candidate");
 const ROUTE_PREFETCH_ARTIFACT = Symbol("worth.router.prefetch-artifact");
-const ROUTE_SPECULATIVE_BRANCH_PLAN = Symbol("worth.router.speculative-branch-plan");
 const ROUTE_ADMISSION_PLAN = Symbol("worth.router.admission-plan");
 const ROUTE_ADMITTED_CAPABILITY = Symbol("worth.router.admitted-capability");
 const ROUTE_OUTCOME = Symbol("worth.router.outcome");
@@ -57,7 +56,6 @@ export {
   ROUTE_PROJECTED_CANDIDATE,
   ROUTE_PROJECTED_CAPABILITY,
   ROUTE_REFERENCE,
-  ROUTE_SPECULATIVE_BRANCH_PLAN,
   ROUTE_TRANSITION_ARTIFACT,
   ROUTE_TREE_ROOT,
 };

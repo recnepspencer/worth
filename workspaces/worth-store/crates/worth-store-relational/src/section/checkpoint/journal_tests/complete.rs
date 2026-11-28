@@ -4,6 +4,14 @@ use crate::{RelationalSectionCheckpointDenial as Denial, RelationalSectionCloseD
 use worth_relational::facade::durability::RelationalCheckpointAcknowledgementDenial as Ack;
 use worth_relational::facade::runtime::RelationalRuntimeCloseDenial;
 
+fn serial_request() -> SerialRequest {
+    SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationSource::new().token(),
+        None,
+    )
+}
+
 /// The one production preparation: the Home admission image is sealed from the
 /// actual capture, then bound with the caller's World companion. This layer
 /// owns no World, so the coordinates and companion are opaque fixture values.
@@ -80,11 +88,7 @@ fn section(
 
 #[test]
 fn genuine_complete_section_retains_capture_and_resumes_same_selection_ack() {
-    let serial = SerialRequest::from_memory(
-        SerialMemoryBudget::new(None),
-        CancellationSource::new().token(),
-        None,
-    );
+    let serial = serial_request();
     let execution = &ExecutionRequest::serial(&serial);
     let (_directory, section, selected) = section(execution);
     let prepared =
@@ -146,11 +150,7 @@ fn genuine_complete_section_retains_capture_and_resumes_same_selection_ack() {
 
 #[test]
 fn weak_complete_preparation_preserves_close_stop_resume_and_owner_loss() {
-    let serial = SerialRequest::from_memory(
-        SerialMemoryBudget::new(None),
-        CancellationSource::new().token(),
-        None,
-    );
+    let serial = serial_request();
     let execution = &ExecutionRequest::serial(&serial);
     let (_directory, section, selected) = section(execution);
     let preparation = section.complete_checkpoint_preparation();
@@ -205,11 +205,7 @@ fn weak_complete_preparation_preserves_close_stop_resume_and_owner_loss() {
 #[test]
 fn owned_visibility_cache_retires_before_external_capture_recheck_and_source_seal() {
     use worth_relational::facade::runtime::RelationalSourceCloseProgress as Progress;
-    let serial = SerialRequest::from_memory(
-        SerialMemoryBudget::new(None),
-        CancellationSource::new().token(),
-        None,
-    );
+    let serial = serial_request();
     let execution = &ExecutionRequest::serial(&serial);
     let (_directory, section, _selected) = section(execution);
     let native = section.runtime();
@@ -272,4 +268,133 @@ fn owned_visibility_cache_retires_before_external_capture_recheck_and_source_sea
         }
     }
     panic!("the finite original source graph must finish retirement");
+}
+
+#[test]
+fn legacy_directory_reopens_ordinary_checkpoint_and_journal() {
+    reopen_legacy_directory(include_bytes!("legacy_directory/ordinary.bin"), 1, 2, false);
+}
+
+#[test]
+fn legacy_directory_refuses_merge_below_checkpoint_head() {
+    reopen_legacy_directory(
+        include_bytes!("legacy_directory/merge-checkpoint.bin"),
+        4,
+        5,
+        true,
+    );
+}
+
+#[test]
+fn legacy_directory_refuses_merge_in_uncompacted_journal() {
+    reopen_legacy_directory(
+        include_bytes!("legacy_directory/merge-tail.bin"),
+        1,
+        3,
+        true,
+    );
+}
+
+fn reopen_legacy_directory(
+    files: &[u8],
+    covered_position: u64,
+    tail_position: u64,
+    merge_retired: bool,
+) {
+    use worth_relational::facade::durability::{RecoveryFailureClass, RelationalRecoveryStop};
+    let directory = tempfile::tempdir().unwrap();
+    super::media::persist_legacy_relational_records(directory.path(), files);
+    let serial = serial_request();
+    let execution = &ExecutionRequest::serial(&serial);
+    let schema = RelationalSchemaRegistry::new()
+        .register_entity_kind(EntityKindRegistration {
+            kind_id: KindId(1),
+            kind_name: "legacy.directory.record".into(),
+            schema_id: SchemaId("legacy.directory".into()),
+            schema_version_id: SchemaVersionId(1),
+            aspect_contract_declarations: KindAspectContractDeclarations::new(Vec::new()),
+        })
+        .unwrap();
+
+    let (format, _, access) = physical::configuration();
+    let media = physical::media(directory.path());
+    let registry = OrderedJournalRegistry::declare(
+        3,
+        &[RELATIONAL_CANONICAL_COMMITS, RELATIONAL_BRANCH_TRANSITIONS],
+        &["home.checkpoint"],
+    )
+    .unwrap();
+    let admission = PhysicalRecordOpen::new(format, access, physical::durability(&media))
+        .with_journal_registry(registry);
+    let serving = Arc::new(physical::success(media.open_record_store(admission)));
+    let source = StoreColdSource::new(serving.clone());
+    let selected = Arc::new(Selected::default());
+    let record = serving
+        .anchored_records()
+        .unwrap()
+        .read(AnchoredRecordName::new("home.checkpoint").unwrap(), 1 << 30)
+        .unwrap()
+        .unwrap();
+    let read = read_expected(&source, record.version(), execution).unwrap();
+    source
+        .select_initial_members_from_read(&read, execution)
+        .unwrap();
+    assert!(record
+        .bytes()
+        .windows(16)
+        .any(|bytes| bytes == b"WORTH-REL-CHK24\n"));
+    let checkpoint = crate::section::codec::decode(record.bytes(), execution).unwrap();
+    assert_eq!(checkpoint.covered().0, covered_position);
+    let tail = crate::recovered_history::journal_tail(&serving, covered_position).unwrap();
+    assert_eq!(tail.last().unwrap().position().0, tail_position);
+    let transitions =
+        crate::recovered_transitions::transition_tail(&serving, checkpoint.covered_transitions().0)
+            .unwrap();
+    let recovery =
+        RelationalDurableRecoverySource::new(Some(checkpoint), tail, transitions, source.clone());
+    let mut recovered = runtime(&serving, &source, &selected, &schema);
+    let outcome = recovered
+        .durability()
+        .recovery_plan_from_source(
+            execution,
+            recovery,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .and_then(|plan| recovered.durability_recovery().recover(execution, plan));
+    if merge_retired {
+        match outcome.unwrap_err() {
+            RelationalRecoveryStop::Durability(cause) => {
+                assert_eq!(
+                    cause.class,
+                    RecoveryFailureClass::LegacyMergeArtifactRetired
+                );
+            }
+            other => panic!("expected a typed legacy merge refusal, got {other:?}"),
+        }
+        assert!(recovered.history().latest_patch_stream_position().is_none());
+    } else {
+        outcome.unwrap();
+        let (_, basis) = recovered
+            .observe_branch(&recovered.main_branch_identity())
+            .unwrap();
+        let snapshot = recovered
+            .snapshots()
+            .snapshot_for_observation(&basis.observation())
+            .unwrap();
+        let restored = recovered
+            .read_truth()
+            .read_snapshot(&snapshot, execution)
+            .unwrap()
+            .unwrap();
+        assert_eq!(restored.entities().len(), 2);
+        recovered.snapshots().release_snapshot(&snapshot).unwrap();
+        assert_eq!(
+            recovered
+                .history()
+                .latest_patch_stream_position()
+                .unwrap()
+                .0,
+            tail_position
+        );
+    }
 }

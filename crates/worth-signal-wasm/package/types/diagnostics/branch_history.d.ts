@@ -5,14 +5,6 @@ import type {
 export interface RuntimeProofReport {
   proofSchemaVersion: string;
   schemaRegistryDigest: string;
-  mergeStrategyRegistryDigest: string;
-  mergeBaseStrategyRegistryDigest: string;
-  aspectMergePolicyRegistryDigest: string;
-  conflictIsolationRegistryDigest: string;
-  conflictPolicyRegistryDigest: string;
-  identityMatcherRegistryDigest: string;
-  sourceOnlyPolicyRegistryDigest: string;
-  deletionPolicyRegistryDigest: string;
   registryBundleDigest: string;
 }
 
@@ -53,18 +45,9 @@ export interface LineageSummary {
 }
 
 export type ReplayMismatchClass =
-  | "LegacyMergeArtifactUnsupported"
   | "ProofSchemaVersionMismatch"
   | "MissingRegistryBundleDigest"
   | "RegistryBundleDigestMismatch"
-  | "MissingLoweredStrategyBundleDigest"
-  | "LoweredStrategyBundleDigestMismatch"
-  | "MissingMergePlanDigest"
-  | "MergePlanDigestMismatch"
-  | "MissingMergeResultDigest"
-  | "MergeResultDigestMismatch"
-  | "MissingLineageDigest"
-  | "LineageDigestMismatch"
   | "BranchStateDigestMismatch";
 
 export interface BranchStateProofReport {
@@ -78,10 +61,6 @@ export interface BranchStateProofReport {
 export interface ReplayArtifactProofInput {
   proofSchemaVersion: string;
   registryBundleDigest: string | null;
-  loweredStrategyBundleDigest: string | null;
-  mergePlanDigest: string | null;
-  mergeResultDigest: string | null;
-  lineageDigest: string | null;
   branchStateDigest: string;
 }
 

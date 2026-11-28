@@ -135,16 +135,6 @@ pub(super) fn apply_operation(
                 step,
             );
         }
-        ScenarioOperation::MergeBranchIntoMain { branch_slot } => {
-            merge_branch_into_main(
-                execution,
-                runtime,
-                entities,
-                relations,
-                branches,
-                *branch_slot,
-            );
-        }
         ScenarioOperation::RunRetentionPass => {
             let _ = runtime.retention().run_pass(execution).unwrap();
             refresh_live_world(execution, runtime, entities, relations);
@@ -343,31 +333,6 @@ fn create_branch(
         .is_ok()
     {
         branches.push(branch);
-    }
-}
-
-fn merge_branch_into_main(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    entities: &mut Vec<EntityId>,
-    relations: &mut Vec<ActiveRelation>,
-    branches: &[BranchId],
-    branch_slot: usize,
-) {
-    if branches.len() <= 1 {
-        return;
-    }
-    let branch = branches[branch_slot.min(branches.len() - 1)].clone();
-    if branch.0 != "main" {
-        let txn = crate::tests::support::test_owner_begin_merge_transaction(
-            runtime,
-            scenario_branch_main(),
-            vec![branch],
-        );
-        if let Ok(outcome) = txn.commit(execution, runtime) {
-            release_test_commit_snapshot(runtime, &outcome);
-            refresh_live_world(execution, runtime, entities, relations);
-        }
     }
 }
 

@@ -7,9 +7,6 @@ import {
   comparableBranchStateProof,
   comparableGraphSummary,
   comparableHistorySurfaceSummary,
-  comparableMergePlan,
-  comparableMergeResult,
-  comparableMergeResultProof,
   comparablePerformanceSummary,
   comparableRecentHistory,
   comparableReplayParityProof,
@@ -203,62 +200,12 @@ test("default worker-first root exposes synchronous cached diagnostics, history,
       compatibilityImportedSignals.history().branch_snapshot_id(compatibilityFeatureBranch.id),
     );
     assert.equal(workerSignals.read(outputId), compatibilityImportedSignals.read(outputId));
-    const workerMergePlan = await workerSignals.history().plan_merge_branches(
-      workerFeatureBranch.id,
-      0,
-    );
-    assert.equal(workerMergePlan.source_branch_id, workerFeatureBranch.id);
-    assert.equal(workerMergePlan.target_branch_id, 0);
-    assert.equal(typeof workerMergePlan.merge_kind, "string");
-    const workerMergePlanProof = await workerSignals.history().plan_merge_policy_preview_with_proof({
-      source_branch_id: workerFeatureBranch.id,
-      target_branch_id: 0,
-    });
-    assert.deepEqual(
-      comparableMergePlan(workerMergePlanProof.plan),
-      comparableMergePlan(workerMergePlan),
-    );
-    assert.equal(typeof workerMergePlanProof.proof?.proofSchemaVersion, "string");
-    const workerMergePreview = await workerSignals.history().merge_branches_policy_preview({
-      source_branch_id: workerFeatureBranch.id,
-      target_branch_id: 0,
-    });
-    assert.equal(typeof workerMergePreview.merge_kind, "string");
-    const workerMergePreviewProof = await workerSignals.history().merge_branches_policy_preview_with_proof({
-      source_branch_id: workerFeatureBranch.id,
-      target_branch_id: 0,
-    });
-    assert.deepEqual(
-      comparableMergeResult(workerMergePreviewProof.result),
-      comparableMergeResult(workerMergePreview),
-    );
-    assert.equal(typeof workerMergePreviewProof.proof?.proofSchemaVersion, "string");
-    const workerAppliedMerge = await workerSignals.history().merge_branches(workerFeatureBranch.id, 0);
-    assert.deepEqual(
-      comparableMergeResult(workerAppliedMerge),
-      comparableMergeResult(workerMergePreview),
-    );
-    compatibilityImportedSignals.history().merge_branches(compatibilityFeatureBranch.id, 0);
-    assert.equal(workerSignals.read(outputId), compatibilityImportedSignals.read(outputId));
-    assert.deepEqual(
-      comparableRuntimeBranch(workerSignals.history().current_branch()),
-      comparableRuntimeBranch(compatibilityImportedSignals.history().current_branch()),
-    );
-
     const workerProofBranch = await workerSignals.history().create_branch("feature-proof");
     const compatibilityProofBranch = compatibilityImportedSignals.history().create_branch("feature-proof");
     await workerSignals.history().switch_branch(workerProofBranch.id);
     compatibilityImportedSignals.history().switch_branch(compatibilityProofBranch.id);
     await importedGraph.writeInput("count", 17);
     await compatibilityImportedGraph.writeInput("count", 17);
-    assert.deepEqual(
-      comparableMergeResultProof(
-        await workerSignals.history().merge_branches_with_proof(workerProofBranch.id, 0),
-      ),
-      comparableMergeResultProof(
-        compatibilityImportedSignals.history().merge_branches_with_proof(compatibilityProofBranch.id, 0),
-      ),
-    );
     assert.equal(workerSignals.read(outputId), compatibilityImportedSignals.read(outputId));
 
     // Exact runtime restore artifacts are root-branch evidence on both deployments: while the

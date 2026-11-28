@@ -1,25 +1,3 @@
-mod milestone_7a;
-mod milestone_7b;
-mod milestone_7c_phase_a;
-mod milestone_7c_phase_d;
-mod milestone_7c_phase_e;
-mod milestone_7c_phase_g;
-#[path = "milestone_7d_phase_b/executable_admission.rs"]
-mod milestone_7d_phase_b;
-mod milestone_7d_phase_c;
-mod milestone_7d_phase_d;
-mod milestone_7e_phase_a;
-mod milestone_7e_phase_b;
-mod milestone_7e_phase_c;
-mod milestone_7e_phase_e;
-mod milestone_7e_phase_f;
-mod milestone_7e_phase_g;
-mod milestone_7e_phase_h;
-mod milestone_7e_phase_i;
-mod milestone_7e_phase_l;
-mod milestone_7e_phase_m;
-mod milestone_8_5;
-mod milestone_8_5_kubernetes;
 mod queries;
 mod replay;
 

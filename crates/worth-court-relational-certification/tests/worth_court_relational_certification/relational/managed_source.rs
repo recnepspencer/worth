@@ -10,10 +10,6 @@ use worth_relational::facade::{
     config::{CascadeDeletePolicy, CrossContextPolicy},
     history::BranchId,
     identity::*,
-    merge::{
-        LoweredRecordDecisionKind, MergeExecutionPreparationError, MergeExecutionRequest,
-        MergeIntent,
-    },
     runtime::*,
     schema::*,
     symbols::ClientKey,
@@ -166,8 +162,7 @@ fn native_managed_source_stages_all_scopes_before_validation_and_reborrows_each_
         .unwrap();
     let source_identity = runtime.branch_identity(&source_branch).unwrap();
     let (_, source_basis) = runtime.observe_branch(&source_identity).unwrap();
-    // Authored source-branch edit and merge expectation: retain A->x,
-    // remove B->x. Main still contains both edges until the actual merge.
+    // The source edit removes B->x and keeps A->x.
     *court.expected.lock().unwrap() =
         BTreeMap::from([(a, (vec![x], vec![x])), (b, (vec![x], vec![]))]);
     court.staged.lock().unwrap().clear();
@@ -187,107 +182,6 @@ fn native_managed_source_stages_all_scopes_before_validation_and_reborrows_each_
         )
         .unwrap();
     transaction.commit(&execution, &runtime).unwrap();
-
-    let bound = runtime
-        .bind_merge_execution_request(MergeExecutionRequest::new(
-            BranchId("main".into()),
-            source_branch,
-            MergeIntent::ReconcileIntoTarget,
-        ))
-        .unwrap();
-    // Native requires manual resolution for source-deleted/target-live records.
-    // The ordinary source-branch deletion above keeps its exact roster oracle;
-    // it cannot lawfully be used as an executable merge fixture.
-    court.staged.lock().unwrap().clear();
-    court.observed.lock().unwrap().clear();
-    let refused_before_planning = court.foreign_observation.load(Ordering::SeqCst);
-    let error = runtime
-        .prepare_merge_execution(&execution, bound)
-        .unwrap_err();
-    let MergeExecutionPreparationError::NotExecutionReady(report) = error else {
-        panic!("expected the installed deletion rule, got {error:?}");
-    };
-    assert_eq!(
-        (
-            report.record_count,
-            report.blocked_count,
-            report.rejected_count
-        ),
-        (1, 1, 0)
-    );
-    assert_eq!(report.denied_records.len(), 1);
-    assert_eq!(report.denied_records[0].record, RecordRef::Relation(b_x));
-    assert_eq!(
-        report.denied_records[0].decision,
-        LoweredRecordDecisionKind::Block
-    );
-    assert!(court.staged.lock().unwrap().is_empty());
-    assert!(court.observed.lock().unwrap().is_empty());
-    assert_eq!(
-        court.foreign_observation.load(Ordering::SeqCst),
-        refused_before_planning
-    );
-
-    // A new fork of unchanged main contributes two genuine source-only edges.
-    // No deletion policy is bypassed: main still has A->x and B->x, and the
-    // merge must add A->y and B->y through the normal merge execution owner.
-    let source_branch = BranchId("managed-source-additions".into());
-    let (_, fork_basis) = runtime
-        .observe_fork_source(&BranchId("main".into()))
-        .unwrap();
-    runtime
-        .fork_branch(&execution, source_branch.clone(), fork_basis)
-        .unwrap();
-    let source_identity = runtime.branch_identity(&source_branch).unwrap();
-    let (_, source_basis) = runtime.observe_branch(&source_identity).unwrap();
-    let mut expanded = vec![x, y];
-    expanded.sort();
-    *court.expected.lock().unwrap() =
-        BTreeMap::from([(a, (vec![x], expanded.clone())), (b, (vec![x], expanded))]);
-    let mut additions = WorkerIntentBatch::new("shared-source-additions");
-    for (scope, label) in [(a, "A-y"), (b, "B-y")] {
-        additions = additions.push(MutationIntent::Create(CreateIntent::Relation(
-            RelationSpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(2),
-                client_key: ClientKey::raw(label),
-                source: EntityReference::Existing(scope),
-                target: EntityReference::Existing(y),
-                fields: Default::default(),
-            },
-        )));
-    }
-    let mut transaction = runtime
-        .begin_branch_transaction(
-            &source_basis,
-            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-        )
-        .unwrap();
-    transaction
-        .push_batch(
-            additions,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    transaction.commit(&execution, &runtime).unwrap();
-    let bound = runtime
-        .bind_merge_execution_request(MergeExecutionRequest::new(
-            BranchId("main".into()),
-            source_branch,
-            MergeIntent::ReconcileIntoTarget,
-        ))
-        .unwrap();
-    let prepared = runtime.prepare_merge_execution(&execution, bound).unwrap();
-    assert!(!prepared.merged_intents().is_empty());
-    court.staged.lock().unwrap().clear();
-    court.observed.lock().unwrap().clear();
-    let refused_before_merge = court.foreign_observation.load(Ordering::SeqCst);
-    runtime
-        .execute_prepared_merge(&execution, prepared)
-        .unwrap();
-    assert_eq!(*court.staged.lock().unwrap(), BTreeSet::from([a, b]));
-    assert_eq!(*court.observed.lock().unwrap(), BTreeSet::from([a, b]));
-    assert!(court.foreign_observation.load(Ordering::SeqCst) > refused_before_merge);
 }
 
 // Keep actual runtime/request construction in this existing registered court root.

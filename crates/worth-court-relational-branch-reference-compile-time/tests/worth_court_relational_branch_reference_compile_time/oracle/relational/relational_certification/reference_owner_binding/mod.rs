@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-pub(crate) use {worth_relational::facade::history::BranchId, worth_relational::facade::merge::MergeExecutionRequest, worth_relational::facade::merge::MergeIntent, worth_relational::facade::branch::RelationalBranchBasisDenial, worth_relational::facade::branch::RelationalBranchIdentityDenial, worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_relational::facade::transactions::WorkerIntentBatch, crate::relational_certification::ordinary_context::reference_attempt_evidence::assert_denial_left_no_reference_residue, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, crate::relational_certification::ordinary_context::reference_attempt_evidence::capture_reference_evidence, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world};
+pub(crate) use {worth_relational::facade::history::BranchId, worth_relational::facade::branch::RelationalBranchBasisDenial, worth_relational::facade::branch::RelationalBranchIdentityDenial, worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale, worth_relational::facade::transactions::WorkerIntentBatch, crate::relational_certification::ordinary_context::reference_attempt_evidence::assert_denial_left_no_reference_residue, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::assert_oracle_matches, crate::relational_certification::ordinary_context::reference_attempt_evidence::capture_reference_evidence, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::certified_baseline::certified_supply_chain_world};
 
 #[test]
 fn owner_issues_transaction_context_from_exact_main_identity() {
@@ -101,38 +101,6 @@ fn owner_issued_transaction_basis_is_denied_before_foreign_transaction_creation(
         world.commit.commit_id,
     );
     assert_denial_left_no_reference_residue(&before, &after);
-    assert_oracle_matches(execution, &world, &expected);
-}
-
-#[test]
-fn public_owner_binding_path_prepares_merge_without_test_adapter() {
-    let host_request =
-        worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let (world, expected) = certified_supply_chain_world(execution, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale::court());
-    let (_, source_basis) = world
-        .runtime
-        .observe_fork_source(&BranchId("main".to_owned()))
-        .expect("main has a fork source");
-    world
-        .runtime
-        .fork_branch(execution, BranchId("storm".to_owned()), source_basis)
-        .expect("storm branch is installed by the owner");
-
-    let raw = worth_relational::facade::merge::MergeExecutionRequest::new(
-        BranchId("main".to_owned()),
-        BranchId("storm".to_owned()),
-        worth_relational::facade::merge::MergeIntent::ReconcileIntoTarget,
-    );
-    let owner_bound = world
-        .runtime
-        .bind_merge_execution_request(raw)
-        .expect("the runtime owner binds both exact branch cells");
-    world
-        .runtime
-        .prepare_merge_execution(execution, owner_bound)
-        .expect("the non-test production facade accepts only owner-bound merge requests");
     assert_oracle_matches(execution, &world, &expected);
 }
 

@@ -45,12 +45,6 @@ fn finalize_structural_configuration(
     AdmittedStructuralRegistry::freeze(structural_declarations)
 }
 
-fn finalize_merge_configuration(
-    merge_declarations: Vec<MergeHistoryDeclaration>,
-) -> Result<AdmittedMergeRegistry, BridgeBuildError> {
-    AdmittedMergeRegistry::freeze(merge_declarations)
-}
-
 impl
     RuntimeBridgeBuilder<
         PresentCommittedPatchSource,
@@ -73,7 +67,6 @@ impl
             self.source_adapter_registrations,
         )?;
         let structural_registry = finalize_structural_configuration(self.structural_declarations)?;
-        let merge_registry = finalize_merge_configuration(self.merge_declarations)?;
         Ok(RuntimeBridge::new(
             policy,
             self.committed_patch_source.0,
@@ -86,7 +79,6 @@ impl
             source_registry,
             source_adapter,
             structural_registry,
-            merge_registry,
             self.diagnostic_sink,
             mapping_registry,
             aspect_registry,
@@ -118,7 +110,6 @@ impl
             self.source_adapter_registrations,
         )?;
         let structural_registry = finalize_structural_configuration(self.structural_declarations)?;
-        let merge_registry = finalize_merge_configuration(self.merge_declarations)?;
         Ok(RuntimeBridge::new(
             policy,
             self.committed_patch_source.0,
@@ -131,7 +122,6 @@ impl
             source_registry,
             source_adapter,
             structural_registry,
-            merge_registry,
             self.diagnostic_sink,
             mapping_registry,
             aspect_registry,

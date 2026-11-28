@@ -58,9 +58,6 @@ pub enum SignalBranchRetirementDenial {
         branch_id: SignalBranchId,
         child_branch_ids: Vec<SignalBranchId>,
     },
-    MergeParticipant {
-        branch_id: SignalBranchId,
-    },
     RetainedComponentBasis {
         branch_id: SignalBranchId,
         active_leases: u32,

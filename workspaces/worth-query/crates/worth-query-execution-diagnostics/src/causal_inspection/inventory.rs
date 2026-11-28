@@ -29,7 +29,6 @@ pub enum CausalEvidenceFamily {
     BridgeSourceMaterialization,
     BridgeSourceFailure,
     BridgeContinuity,
-    BridgeMerge,
     BridgeStructural,
     BridgeStream,
     BridgePreview,
@@ -49,7 +48,7 @@ pub enum CausalEvidenceFamily {
 }
 
 impl CausalEvidenceFamily {
-    pub const ALL: [Self; 27] = [
+    pub const ALL: [Self; 26] = [
         Self::QueryInspection,
         Self::QueryMutationCausality,
         Self::QueryMutationProvenance,
@@ -60,7 +59,6 @@ impl CausalEvidenceFamily {
         Self::BridgeSourceMaterialization,
         Self::BridgeSourceFailure,
         Self::BridgeContinuity,
-        Self::BridgeMerge,
         Self::BridgeStructural,
         Self::BridgeStream,
         Self::BridgePreview,
@@ -91,7 +89,6 @@ impl CausalEvidenceFamily {
             Self::BridgeSourceMaterialization => "bridge_source_materialization",
             Self::BridgeSourceFailure => "bridge_source_failure",
             Self::BridgeContinuity => "bridge_continuity",
-            Self::BridgeMerge => "bridge_merge",
             Self::BridgeStructural => "bridge_structural",
             Self::BridgeStream => "bridge_stream",
             Self::BridgePreview => "bridge_preview",
@@ -216,12 +213,6 @@ pub fn causal_evidence_inventory_rows() -> Vec<CausalEvidenceInventoryRow> {
             Family::BridgeContinuity,
             "BridgeDiagnosticsFacade::continuity_records",
             "continuity_digest",
-        ),
-        CausalEvidenceInventoryRow::new(
-            Owner::RuntimeBridge,
-            Family::BridgeMerge,
-            "BridgeDiagnosticsFacade::merge_records",
-            "merge_digest",
         ),
         CausalEvidenceInventoryRow::new(
             Owner::RuntimeBridge,

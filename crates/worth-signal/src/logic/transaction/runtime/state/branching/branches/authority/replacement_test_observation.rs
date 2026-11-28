@@ -5,12 +5,11 @@ use crate::data::handle::NodeId;
 use crate::data::telemetry::RuntimeTelemetry;
 use crate::logic::checkpoint::CheckpointReplacementObservation;
 use crate::logic::transaction::runtime::config::SignalRuntimeConfigReplacementObservation;
-use crate::logic::transaction::runtime::state::merge::{BranchMergeKind, BranchMergeStrategy};
+
 use crate::logic::transaction::runtime::state::resource::ResourceRuntimeState;
 use crate::logic::transaction::runtime::state::temporal::TemporalRuntimeState;
-use crate::state::{SignalBranchId, SignalSnapshotId};
 
-use super::{BranchAncestryState, BranchMutationLedger, BranchState, LatestMergeReference};
+use super::{BranchAncestryState, BranchMutationLedger, BranchState};
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct SignalBranchReplacementObservation<D, I, T>
@@ -71,20 +70,5 @@ where
             ancestry: self.ancestry.clone(),
             mutation_ledger: self.mutation_ledger.clone(),
         }
-    }
-
-    pub(crate) fn populate_replacement_ancestry_contract(
-        &mut self,
-        source_branch_id: SignalBranchId,
-    ) {
-        self.ancestry
-            .set_latest_merge_reference(Some(LatestMergeReference::new(
-                source_branch_id,
-                Some(SignalSnapshotId(701)),
-                Some(SignalSnapshotId(702)),
-                Some(SignalSnapshotId(703)),
-                BranchMergeKind::ConflictResolved,
-                BranchMergeStrategy::RebaseSourceOntoTarget,
-            )));
     }
 }

@@ -21,7 +21,6 @@
     "./package/types-smoke.ts",
     "./package/observation-target-types-smoke.ts",
     "./package/router-phase-five-types-smoke.ts",
-    "./package/router-phase-six-types-smoke.ts",
     "./package/router-phase-eight-types-smoke.ts",
     "./package/router-phase-ten-types-smoke.ts",
     "./package/forms-phase-one-types-smoke.ts",

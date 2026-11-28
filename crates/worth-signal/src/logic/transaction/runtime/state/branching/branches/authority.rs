@@ -8,7 +8,7 @@ use crate::logic::checkpoint::CheckpointRuntime;
 use crate::logic::transaction::runtime::config::SignalRuntimeConfig;
 use crate::state::{SignalBranchId, SignalSnapshotId};
 
-use super::super::super::merge::{BranchMergeKind, BranchMergeStrategy, BranchMutationLedger};
+use super::super::super::branching::branch_mutation_journal::BranchMutationLedger;
 use super::super::super::reconstructability::{AuthorityState, DerivedState};
 use super::super::super::temporal::TemporalRuntimeState;
 
@@ -69,41 +69,10 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(in crate::logic::transaction::runtime) struct LatestMergeReference {
-    source_branch_id: SignalBranchId,
-    source_snapshot_id: Option<SignalSnapshotId>,
-    target_snapshot_id_before: Option<SignalSnapshotId>,
-    target_snapshot_id_after: Option<SignalSnapshotId>,
-    merge_kind: BranchMergeKind,
-    merge_strategy: BranchMergeStrategy,
-}
-
-impl LatestMergeReference {
-    pub fn new(
-        source_branch_id: SignalBranchId,
-        source_snapshot_id: Option<SignalSnapshotId>,
-        target_snapshot_id_before: Option<SignalSnapshotId>,
-        target_snapshot_id_after: Option<SignalSnapshotId>,
-        merge_kind: BranchMergeKind,
-        merge_strategy: BranchMergeStrategy,
-    ) -> Self {
-        Self {
-            source_branch_id,
-            source_snapshot_id,
-            target_snapshot_id_before,
-            target_snapshot_id_after,
-            merge_kind,
-            merge_strategy,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::logic::transaction::runtime) struct BranchAncestryState {
     branch_id: SignalBranchId,
     parent_branch_id: Option<SignalBranchId>,
     forked_from_snapshot_id: Option<SignalSnapshotId>,
-    latest_merge_reference: Option<LatestMergeReference>,
 }
 
 impl BranchAncestryState {
@@ -116,15 +85,7 @@ impl BranchAncestryState {
             branch_id,
             parent_branch_id,
             forked_from_snapshot_id,
-            latest_merge_reference: None,
         }
-    }
-
-    pub fn set_latest_merge_reference(
-        &mut self,
-        latest_merge_reference: Option<LatestMergeReference>,
-    ) {
-        self.latest_merge_reference = latest_merge_reference;
     }
 
     pub fn branch_id(&self) -> SignalBranchId {
@@ -326,11 +287,6 @@ where
     pub fn reset_mutation_ledger(&mut self, baseline_snapshot: Option<SignalSnapshotId>) {
         self.mutation_ledger =
             BranchMutationLedger::default().with_baseline_snapshot(baseline_snapshot);
-    }
-
-    #[cfg(test)]
-    pub fn clear_merge_boundary_proof(&mut self) {
-        self.mutation_ledger = BranchMutationLedger::default();
     }
 
     pub fn clear_branch_mutation_nodes(&mut self) {

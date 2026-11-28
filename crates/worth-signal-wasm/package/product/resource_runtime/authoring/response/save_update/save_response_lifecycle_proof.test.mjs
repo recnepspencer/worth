@@ -47,14 +47,14 @@ test("save response plans carry rollback posture and merge proof for exact detai
     assert.equal(proof.rollback.kind, "notApplicable");
     assert.equal(proof.rollback.mode, null);
     assert.equal(proof.rollback.branchId, null);
-    assert.equal(proof.mergeRebase.kind, "nativeMergePlan");
+    assert.equal(proof.mergeRebase.kind, "unavailable");
     assert.equal(proof.mergeRebase.granularity, "line");
     assert.equal(proof.mergeRebase.locusKind, "line");
     assert.match(plan.lifecycleProof.rollbackDigest, /notApplicable/);
     assert.match(plan.lifecycleProof.replayExactDigest, /reconciliation:mutationTarget1:.*:available:SameRuntimeSignalExact/);
     assert.match(plan.lifecycleProof.restoreExactDigest, /reconciliation:mutationTarget1:.*:available:SameRuntimeBranchExact/);
     assert.ok(plan.lifecycleProof.rollbackDigest.includes(proof.effectId));
-    assert.match(plan.lifecycleProof.mergeRebaseDigest, /nativeMergePlan:line/);
+    assert.match(plan.lifecycleProof.mergeRebaseDigest, /unavailable:line/);
     assert.ok(plan.lifecycleProof.mergeRebaseDigest.includes(proof.effectId));
     assert.equal(plan.counters.lifecycleProofBreadth, 1);
   } finally {
@@ -154,7 +154,7 @@ test("save response plans name granular field and summary merge proof", async ()
     );
     assert.match(
       fieldPlan.lifecycleProof.mergeRebaseDigest,
-      /nativeMergePlan:field:name:detailField/,
+      /unavailable:field:name:detailField/,
     );
     assert.equal(
       summaryPlan.lifecycleProof.entries[0].mergeRebase.granularity,
@@ -303,11 +303,11 @@ test("save response plans name detail JSON path and region merge proof", async (
     );
     assert.match(
       jsonPathPlan.lifecycleProof.mergeRebaseDigest,
-      /nativeMergePlan:jsonPath:title/,
+      /unavailable:jsonPath:title/,
     );
     assert.match(
       regionPlan.lifecycleProof.mergeRebaseDigest,
-      /nativeMergePlan:region:graph:region-subtree/,
+      /unavailable:region:graph:region-subtree/,
     );
   } finally {
     await runtime.cleanup();
@@ -357,7 +357,7 @@ test("save response plans name collection item merge proof", async () => {
     assert.equal(plan.lifecycleProof.entries[0].restoreExact.kind, "available");
     assert.equal(plan.lifecycleProof.entries[0].mergeRebase.granularity, "item:t1");
     assert.equal(plan.lifecycleProof.entries[0].mergeRebase.locusKind, "membership");
-    assert.match(plan.lifecycleProof.mergeRebaseDigest, /nativeMergePlan:item:t1/);
+    assert.match(plan.lifecycleProof.mergeRebaseDigest, /unavailable:item:t1/);
     assert.equal(plan.counters.lifecycleProofBreadth, 1);
   } finally {
     await runtime.cleanup();

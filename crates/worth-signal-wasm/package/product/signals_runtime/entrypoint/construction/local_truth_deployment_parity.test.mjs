@@ -62,17 +62,6 @@ async function runScenario(deployment) {
     expectedBasis: target.basis,
     operations: [{ entityId: "gear", aspectId: "label", value: "Final drive" }],
   });
-  const preview = await truth.previewMerge({
-    sourceBranchId: source.id,
-    targetBranchId: target.id,
-    expectedSourceBasis: (await truth.branch(source.id)).value.basis,
-    expectedTargetBasis: (await truth.branch(target.id)).value.basis,
-  });
-  const merge = await truth.resolveMerge({
-    requestId: "merge",
-    reviewId: preview.value.id,
-    selections: [],
-  });
   const inspection = await truth.inspect();
   const destroyed = await truth.destroyDerivation(target.id);
   const afterDestroy = await truth.inspect();
@@ -93,22 +82,19 @@ async function runScenario(deployment) {
     targetForkDerivation: target.derivation.posture,
     targetForkDigest: target.derivation.digest,
     targetCommitId: targetCommit.value.commit.id,
-    mergeCommitId: merge.value.commit.id,
     sourceDerivation: sourceCommit.value.derivation.posture,
     sourceProjectionDigest: sourceCommit.value.derivation.digest,
     sourceDerivationReason: sourceCommit.value.derivation.reason ?? null,
     targetDerivation: targetCommit.value.derivation.posture,
     targetProjectionDigest: targetCommit.value.derivation.digest,
     targetDerivationReason: targetCommit.value.derivation.reason ?? null,
-    mergeDerivation: merge.value.derivation.posture,
-    mergeProjectionDigest: merge.value.derivation.digest,
-    mergeDerivationReason: merge.value.derivation.reason ?? null,
     destroyedPosture: destroyed.posture,
     rebuiltPosture: rebuilt.posture,
     truthSurvivedDestroy: afterDestroy.digest === inspection.digest,
     truthSurvivedRebuild: afterRebuild.digest === inspection.digest,
     truthDigest: inspection.digest,
     targetValue: inspection.values[target.id].gear,
+    sourceValue: inspection.values[source.id].gear,
     counters: inspection.counters,
   };
 }
@@ -121,12 +107,12 @@ test("worker-first and compatibility local truth converge on the same semantic h
     const workerFirst = await runScenario("workerFirst");
     assert.deepEqual(workerFirst, compatibility);
     assert.deepEqual(workerFirst.targetValue, {
-      teeth: 24,
+      teeth: 16,
       material: "steel",
       rotation: 0,
       label: "Final drive",
     });
-    assert.equal(workerFirst.mergeDerivation, "Current");
+    assert.equal(workerFirst.sourceValue.teeth, 24);
     assert.equal(workerFirst.destroyedPosture, "RebuildRequired");
     assert.equal(workerFirst.rebuiltPosture, "Current");
     assert.equal(workerFirst.truthSurvivedDestroy, true);

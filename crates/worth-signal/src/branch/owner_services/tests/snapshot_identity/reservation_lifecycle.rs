@@ -1,7 +1,4 @@
-use crate::branch::{
-    admit_runtime_signal_branch_observation, SignalBranchMergeDenial,
-    SignalBranchSnapshotCaptureDenial,
-};
+use crate::branch::{admit_runtime_signal_branch_observation, SignalBranchSnapshotCaptureDenial};
 use crate::data::graph::SignalGraph;
 use crate::logic::transaction::SignalRuntime;
 use crate::state::SignalSnapshotId;
@@ -220,43 +217,4 @@ fn unsealed_capture_reports_the_same_precise_identity_exhaustion_before_movement
         after.observation().compare(&before).is_ok(),
         "unsealed identity exhaustion cannot move the exact branch reference"
     );
-}
-
-#[test]
-fn unsealed_merge_reports_identity_exhaustion_before_target_movement() {
-    let mut graph = SignalGraph::new();
-    graph
-        .diagnostics_state_mut()
-        .synchronize_branch_snapshot_allocator(u64::MAX, 1);
-    let mut runtime = SignalRuntime::<(), (), (), (), ()>::build_for::<()>(graph);
-    let initial = runtime
-        .observe_signal_branch_basis(runtime.current_branch())
-        .expect("the exhausted merge world admits its root");
-    let (source, source_basis) = runtime
-        .fork_signal_branch("exhausted-merge-source", &initial)
-        .expect("the source sibling forks")
-        .into_parts();
-    let (target, target_basis) = runtime
-        .fork_signal_branch("exhausted-merge-target", &initial)
-        .expect("the target sibling forks")
-        .into_parts();
-    let before = target_basis.observation().clone();
-
-    assert!(matches!(
-        runtime.merge_branch(&source_basis, &target_basis),
-        Err(SignalBranchMergeDenial::SnapshotIdentityExhausted {
-            next_snapshot_id: SignalSnapshotId(u64::MAX),
-        })
-    ));
-    let source_after = runtime
-        .observe_signal_branch_basis(source)
-        .expect("the denied merge leaves the source observable");
-    assert!(source_after
-        .observation()
-        .compare(source_basis.observation())
-        .is_ok());
-    let target_after = runtime
-        .observe_signal_branch_basis(target)
-        .expect("the denied merge leaves the target observable");
-    assert!(target_after.observation().compare(&before).is_ok());
 }

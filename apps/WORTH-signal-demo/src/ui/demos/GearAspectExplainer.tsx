@@ -12,13 +12,8 @@ export function GearAspectExplainer() {
     <section className="gear-aspect-explainer">
       <div className="gear-aspect-copy">
         <span>Declared aspects</span>
-        <h3>The unit of merge is one aspect.</h3>
-        <p>
-          Release a slider and it commits exactly one declared aspect. That is why
-          the merge can be mechanical: changes to different aspects compose on
-          their own, and a collision becomes one small decision — with both values
-          and the shared basis on the table.
-        </p>
+        <h3>Each commit records the edited aspects.</h3>
+        <p>Each slider release submits a field change to the selected branch. The history shows which values each commit recorded.</p>
         <div className="gear-aspect-list">
           <AspectReadout description="Extrusion depth" id="thickness" />
           <AspectReadout description="Gear count" id="teeth" />

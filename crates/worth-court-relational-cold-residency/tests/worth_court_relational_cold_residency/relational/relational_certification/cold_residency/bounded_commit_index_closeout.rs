@@ -326,7 +326,7 @@ fn tail_replay_with_non_head_checkpoint_parent_recovers_cleanly() {
         .unwrap();
     producer.release_component_basis(held).unwrap();
     drop((historical_basis, services));
-    let _ = super::merge_publications::create(
+    let _ = super::branch_publications::create(
         request,
         &producer,
         "tail-on-non-head",

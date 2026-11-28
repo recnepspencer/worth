@@ -57,7 +57,6 @@ prop_compose! {
         match tag {
             0 => ScenarioOperation::CreateBranch { branch_name: String::new(), from_branch_slot: 0 },
             1 => ScenarioOperation::UpdateEntity { entity_slot: a, name: String::new(), branch_slot: a },
-            2 => ScenarioOperation::MergeBranchIntoMain { branch_slot: a },
             3 => ScenarioOperation::CaptureSnapshot,
             4 => ScenarioOperation::ReleaseSnapshot { snapshot_slot: a },
             5 => ScenarioOperation::RunRetentionPass,

@@ -1727,7 +1727,6 @@ const diagnostics = signals.diagnostics();
 const history = signals.history();
 const specialist = signals.specialist();
 const currentBranch = history.current_branch();
-const previewBranch = await history.create_branch("preview");
 const branchReplay = history.replay_for_branch(currentBranch.id);
 const branchSnapshot = history.branch_snapshot(currentBranch.id);
 const branchEnvelope = history.branch_snapshot_envelope(currentBranch.id);
@@ -1740,28 +1739,8 @@ const parityProof = history.replay_parity_proof(currentBranch.id, currentBranch.
 const artifactProof = history.replay_artifact_proof({
   proofSchemaVersion: proof.proofSchemaVersion,
   registryBundleDigest: proof.registryBundleDigest,
-  loweredStrategyBundleDigest: null,
-  mergePlanDigest: null,
-  mergeResultDigest: null,
-  lineageDigest: null,
   branchStateDigest: branchProof.stateDigest,
 }, currentBranch.id);
-const previewPlan = await history.plan_merge_policy_preview({
-  source_branch_id: previewBranch.id,
-  target_branch_id: currentBranch.id,
-});
-const previewPlanProof = await history.plan_merge_policy_preview_with_proof({
-  source_branch_id: previewBranch.id,
-  target_branch_id: currentBranch.id,
-});
-const previewResult = await history.merge_branches_policy_preview({
-  source_branch_id: previewBranch.id,
-  target_branch_id: currentBranch.id,
-});
-const previewResultProof = await history.merge_branches_policy_preview_with_proof({
-  source_branch_id: previewBranch.id,
-  target_branch_id: currentBranch.id,
-});
 const graphSummary = diagnostics.summaryNow();
 const specialistGraphSummary = specialist.graphSummary();
 const specialistEvaluateDirty = await specialist.evaluateDirty();
@@ -1818,18 +1797,6 @@ const branchSnapshotBranchId = branchSnapshot.meta.branch_id;
 const branchEnvelopeSnapshotId = branchEnvelope.snapshot.meta.snapshot_id;
 const parityMismatchCount = parityProof.mismatchClasses.length;
 const artifactParity = artifactProof.parity;
-const previewPlanSource = previewPlan.source_branch_id;
-const previewPlanStrategy = previewPlan.selected_semantics.strategy_name;
-const previewPlanResolution = previewPlan.resolution_plan?.divergence ?? null;
-const previewPlanNodeMapEntry = previewPlan.node_map[0]?.source_node ?? null;
-const previewPlanDecision = previewPlan.node_plan[0]?.decision ?? null;
-const previewPlanAdoptionSource = previewPlan.adoption_core[0]?.source_node ?? null;
-const previewPlanCarryPolicy = previewPlan.adoption_policy[0]?.runtime_artifact ?? null;
-const previewPlanDigest = previewPlanProof.proof.planDigest;
-const previewResultTarget = previewResult.target_branch;
-const previewResultRecordNode = previewResult.records[0]?.source_node ?? null;
-const previewResultCounter = previewResult.counters.replay_event_count;
-const previewResultDigest = previewResultProof.proof.resultDigest;
 
 signals.transaction((tx) => {
   tx.set(count, snapshot.count + commit.touchedNodes);
@@ -2170,7 +2137,6 @@ void diagnostics;
 void history;
 void specialist;
 void currentBranch;
-void previewBranch;
 void branchReplay;
 void branchSnapshot;
 void branchEnvelope;
@@ -2179,10 +2145,6 @@ void branchEnvelopeRestoreMode;
 void branchProof;
 void parityProof;
 void artifactProof;
-void previewPlan;
-void previewPlanProof;
-void previewResult;
-void previewResultProof;
 void graphProfile;
 void specialistGraphProfile;
 void specialistTouchedNodes;
@@ -2217,18 +2179,6 @@ void branchSnapshotBranchId;
 void branchEnvelopeSnapshotId;
 void parityMismatchCount;
 void artifactParity;
-void previewPlanSource;
-void previewPlanStrategy;
-void previewPlanResolution;
-void previewPlanNodeMapEntry;
-void previewPlanDecision;
-void previewPlanAdoptionSource;
-void previewPlanCarryPolicy;
-void previewPlanDigest;
-void previewResultTarget;
-void previewResultRecordNode;
-void previewResultCounter;
-void previewResultDigest;
 void viewportState;
 void viewportSize;
 void viewportWidth;

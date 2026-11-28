@@ -178,57 +178,6 @@ fn strategy_artifacts_are_bound_into_the_committed_root() {
 }
 
 #[test]
-fn merge_execution_authority_is_bound_into_the_committed_root() {
-    let host_request = worth_harness::facade::execution_fixture::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema();
-    create_entity_outcome(execution, &runtime, "merge-main");
-    runtime
-        .history_authority()
-        .fork_branch_from(
-            execution,
-            BranchId("feature".to_owned()),
-            &BranchId("main".to_owned()),
-        )
-        .expect("feature branch forks");
-    create_entity_outcome_on_branch(
-        execution,
-        &runtime,
-        "merge-feature",
-        BranchId("feature".to_owned()),
-    );
-    let prepared = runtime
-        .prepare_merge_execution(
-            execution,
-            crate::merge::data::requests::raw::MergeExecutionRequest::new(
-                BranchId("main".to_owned()),
-                BranchId("feature".to_owned()),
-                crate::merge::data::requests::raw::MergeIntent::ReconcileIntoTarget,
-            ),
-        )
-        .expect("governed merge prepares");
-    let outcome = runtime
-        .execute_prepared_merge(execution, prepared)
-        .expect("governed merge executes");
-    let (root, mut envelope) =
-        committed_root_and_envelope(execution, &runtime, outcome.commit.commit.commit_id);
-    assert!(envelope
-        .body_mut_for_test()
-        .merge_execution_authority
-        .take()
-        .is_some());
-
-    assert_axis_mutation_rejected(
-        execution,
-        &runtime,
-        &root,
-        envelope,
-        "merge execution authority",
-    );
-}
-
-#[test]
 fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
     let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

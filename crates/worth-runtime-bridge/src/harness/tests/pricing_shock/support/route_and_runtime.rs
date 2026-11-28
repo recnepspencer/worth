@@ -160,32 +160,6 @@ pub(in crate::harness::tests::pricing_shock) fn build_pricing_runtime_with_aspec
         .expect("pricing runtime with aspects should build")
 }
 
-pub(in crate::harness::tests::pricing_shock) fn build_pricing_runtime_with_merge(
-    source: InMemoryRelationalBridgeSource,
-    sink: RecordingSignalBridgeSink,
-    policy: BridgeRuntimePolicy,
-) -> RuntimeBridge {
-    RuntimeBridgeBuilder::new()
-        .with_truth_source(source.clone())
-        .with_truth_branch_head_source(source)
-        .with_compute_sink(sink)
-        .with_policy(policy)
-        .register_mapping(pricing_mapping(
-            "steel",
-            SignalInvalidationScope::admit_bridge_owned("price:bicycle"),
-        ))
-        .register_mapping(pricing_mapping(
-            "rubber",
-            SignalInvalidationScope::admit_bridge_owned("price:scooter"),
-        ))
-        .register_aspect_mapping(pricing_field_aspect_registration("steel"))
-        .register_aspect_mapping(pricing_field_aspect_registration("rubber"))
-        .register_merge(pricing_merge_declaration())
-        .register_merge(pricing_topology_denial_merge_declaration())
-        .build()
-        .expect("pricing runtime with merge should build")
-}
-
 pub(in crate::harness::tests::pricing_shock) fn build_high_fanout_pricing_runtime(
     source: InMemoryRelationalBridgeSource,
     sink: RecordingSignalBridgeSink,
@@ -253,46 +227,6 @@ pub(in crate::harness::tests::pricing_shock) fn pricing_preview_declaration(
             crate::facade::BridgePreviewRetainedArtifactSchema::PreviewLifecycleArtifactsV1,
         ),
     )
-}
-
-pub(in crate::harness::tests::pricing_shock) fn pricing_merge_declaration(
-) -> MergeHistoryDeclaration {
-    MergeHistoryDeclaration::new(
-        MergeHistoryDeclarationIdentity::admit_bridge_owned("merge:pricing-shock"),
-        BridgeMergeConsumptionClass::AspectReconciliationMerge,
-        BridgeMergeOntologyMappingSurface::direct_phase_m9_0("rel-merge-v1"),
-        BridgeMergeAuthorityBasis::new(
-            BridgeMergeAuthorityBasisKind::OrderedMergeCommit,
-            "merge-artifact:pricing-shock",
-            "rel-merge-v1",
-            "schema-policy-v1",
-            BridgeMergeParentOrderProof::new(vec![
-                crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-main"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
-            ]),
-        ),
-    )
-    .with_structural_advisory(BridgeMergeStructuralAdvisoryDisposition::AdvisoryConsistent)
-}
-
-pub(in crate::harness::tests::pricing_shock) fn pricing_topology_denial_merge_declaration(
-) -> MergeHistoryDeclaration {
-    MergeHistoryDeclaration::new(
-        MergeHistoryDeclarationIdentity::admit_bridge_owned("merge:pricing-topology-denial"),
-        BridgeMergeConsumptionClass::TopologyRewireMerge,
-        BridgeMergeOntologyMappingSurface::direct_phase_m9_0("rel-merge-v1"),
-        BridgeMergeAuthorityBasis::new(
-            BridgeMergeAuthorityBasisKind::OrderedMergeCommit,
-            "merge-artifact:pricing-topology-denial",
-            "rel-merge-v1",
-            "schema-policy-v1",
-            BridgeMergeParentOrderProof::new(vec![
-                crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-main"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
-            ]),
-        ),
-    )
-    .with_structural_advisory(BridgeMergeStructuralAdvisoryDisposition::AdvisoryConsistent)
 }
 
 pub(in crate::harness::tests::pricing_shock) fn pricing_component_read_packet(

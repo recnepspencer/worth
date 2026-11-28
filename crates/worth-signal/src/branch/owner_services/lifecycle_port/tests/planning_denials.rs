@@ -6,7 +6,7 @@ use super::super::super::lifecycle_state::MAXIMUM_IN_FLIGHT_SIGNAL_OWNER_OPERATI
 use super::super::super::tests::runtime_root::runtime_with_two_branches;
 
 #[test]
-fn planning_distinguishes_current_canonical_live_child_and_merge_participant() {
+fn planning_distinguishes_current_and_canonical_branches_and_live_children() {
     let (mut current_runtime, current, _, target_basis) = runtime_with_two_branches();
     let current_basis = current_runtime
         .observe_signal_branch_basis(current.clone())
@@ -54,20 +54,6 @@ fn planning_distinguishes_current_canonical_live_child_and_merge_participant() {
             branch_id,
             child_branch_ids,
         }) if branch_id == parent.id && child_branch_ids == vec![child.id]
-    ));
-
-    let (mut merge_runtime, selected, target, merge_basis) = runtime_with_two_branches();
-    let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        merge_runtime.inject_merge_participation_unwind_for_owner_contract(selected.id, target.id);
-    }));
-    assert!(unwind.is_err(), "the controlled merge boundary unwinds");
-    let (_, _, merge_port) = merge_runtime
-        .owner_port_slots()
-        .expect("interrupted merge metadata seals");
-    assert!(matches!(
-        merge_port.plan_retirement_exact(merge_basis, SignalBranchRetirementReason::Rejected),
-        TransitionOutcome::Denied(SignalBranchRetirementDenial::MergeParticipant { branch_id })
-            if branch_id == target.id
     ));
 }
 

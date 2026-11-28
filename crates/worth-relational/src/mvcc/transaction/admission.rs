@@ -243,7 +243,6 @@ impl crate::runtime::RelationalRuntime {
             mutation_authority: crate::branch::issue_relational_branch_mutation_authority(),
             transaction_id: services.next_transaction_id(),
             intent,
-            merge_parent_bases: Vec::new(),
             schema_authority_input: None,
             home_target: None,
             home_step,

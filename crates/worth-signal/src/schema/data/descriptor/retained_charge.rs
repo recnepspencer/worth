@@ -23,13 +23,6 @@ impl RetainedStorageMeasurement for SignalSchemaDescriptor {
         let Self {
             semantic_name,
             default_contract,
-            default_merge_strategy_name,
-            default_conflict_policy_name,
-            default_identity_matcher_name,
-            default_source_only_policy_name,
-            default_deletion_policy_name,
-            default_conflict_isolation_policy_name,
-            default_aspect_merge_policy_bindings,
             digest,
             id: _,
             version: _,
@@ -37,13 +30,6 @@ impl RetainedStorageMeasurement for SignalSchemaDescriptor {
         Charge::ZERO
             .checked_add(semantic_name.retained_heap_charge(work)?)?
             .checked_add(default_contract.retained_heap_charge(work)?)?
-            .checked_add(default_merge_strategy_name.retained_heap_charge(work)?)?
-            .checked_add(default_conflict_policy_name.retained_heap_charge(work)?)?
-            .checked_add(default_identity_matcher_name.retained_heap_charge(work)?)?
-            .checked_add(default_source_only_policy_name.retained_heap_charge(work)?)?
-            .checked_add(default_deletion_policy_name.retained_heap_charge(work)?)?
-            .checked_add(default_conflict_isolation_policy_name.retained_heap_charge(work)?)?
-            .checked_add(default_aspect_merge_policy_bindings.retained_heap_charge(work)?)?
             .checked_add(digest.retained_heap_charge(work)?)
     }
 }

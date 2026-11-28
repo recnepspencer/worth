@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::super::super::transaction::TemporalTransactionEvidence;
-use super::super::merge::canonical_digest;
+use super::super::canonical_digest;
 use super::super::retention_omission::RetentionOmission;
 use super::super::temporal::TemporalRuntimeState;
 use crate::data::temporal::{RuntimeClockBasis, TemporalWakeSummary};

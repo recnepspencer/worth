@@ -43,11 +43,7 @@ fn panic_after_performed_fork() {
         .lookup_cell(&admission, world.source_branch.id)
         .expect("fork rollback source cell is live");
     let source_before = source_cell.fork_source_state_truth_after_fault();
-    assert!(!source_before
-        .mutation_ledger
-        .structural_merge_journal()
-        .records
-        .is_empty());
+    assert!(!source_before.mutation_ledger.pending.is_empty());
     drop(admission);
     let before = world.owner.cost_snapshot();
     let destination_id = crate::state::SignalBranchId(
@@ -253,11 +249,7 @@ fn fork_installation_panic_preserves_performed_destination_and_releases_source_c
         .lookup_cell(&admission, world.source_branch.id)
         .expect("fork rollback source cell is live");
     let source_before = source_cell.fork_source_state_truth_after_fault();
-    assert!(!source_before
-        .mutation_ledger
-        .structural_merge_journal()
-        .records
-        .is_empty());
+    assert!(!source_before.mutation_ledger.pending.is_empty());
     drop(admission);
     let before = world.owner.cost_snapshot();
     let destination_id = crate::state::SignalBranchId(

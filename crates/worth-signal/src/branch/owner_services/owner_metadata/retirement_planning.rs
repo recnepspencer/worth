@@ -6,7 +6,6 @@ use super::{SignalOwnerMetadata, SignalOwnerMetadataAuthorizationDenial};
 
 pub(in crate::branch::owner_services) struct SignalOwnerRetirementPlanningFacts {
     pub(in crate::branch::owner_services) child_branch_ids: Vec<SignalBranchId>,
-    pub(in crate::branch::owner_services) merge_participant: bool,
 }
 
 impl<D, I, T> SignalOwnerMetadata<D, I, T>
@@ -26,7 +25,6 @@ where
         let state = self.lock();
         Ok(SignalOwnerRetirementPlanningFacts {
             child_branch_ids: state.branch_children(branch_id),
-            merge_participant: state.is_merge_participant(branch_id),
         })
     }
 }

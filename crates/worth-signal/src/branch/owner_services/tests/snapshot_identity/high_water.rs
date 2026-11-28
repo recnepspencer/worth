@@ -260,36 +260,3 @@ fn reconstruction_rejects_a_branch_pristine_root_after_owner_identity_use() {
         Err(SignalBranchSnapshotReconstructionDenial::NonPristineRuntime)
     ));
 }
-
-#[test]
-fn sibling_capture_then_merge_uses_the_runtime_global_snapshot_identity() {
-    let (graph, _, _) = populated_graph();
-    let mut runtime = SignalRuntime::<(), (), (), (), ()>::build_for::<()>(graph);
-    let initial = runtime
-        .observe_signal_branch_basis(runtime.current_branch())
-        .expect("the merge world admits its root");
-    let (_, source_basis) = runtime
-        .fork_signal_branch("merge-source", &initial)
-        .expect("the source sibling forks")
-        .into_parts();
-    let (_, target_basis) = runtime
-        .fork_signal_branch("merge-target", &initial)
-        .expect("the target sibling forks")
-        .into_parts();
-    let source_capture = runtime
-        .capture_signal_branch_snapshot(&source_basis)
-        .expect("the source sibling advances the global identity high-water");
-    let source_id = source_capture.snapshot().meta.snapshot_id;
-    let merged = runtime
-        .merge_branch(source_capture.captured_basis(), &target_basis)
-        .expect("the lawful sibling merge completes");
-    let target_id = merged
-        .result()
-        .target_snapshot_id_after
-        .expect("merge finalization captures the target state");
-
-    assert!(
-        target_id > source_id,
-        "merge artifact finalization must advance the runtime-global allocator"
-    );
-}

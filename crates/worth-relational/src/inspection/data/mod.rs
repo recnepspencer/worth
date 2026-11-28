@@ -3,8 +3,6 @@ pub(crate) use worth_relational_branch::internal_port::inspection::data::{
     graph, structural_identity, taxonomy, transaction,
 };
 mod historical;
-pub(crate) use worth_relational_merge::internal_port::inspection::data::merge_support_rows;
-pub(crate) use worth_relational_merge::internal_port::inspection::data::merge_support_witness;
 mod retention;
 
 pub use commit::{CommitInspection, RecentCommitInspectionRequest, RecentCommitInspectionWindow};
@@ -17,16 +15,6 @@ pub use historical::{
     HistoricalAspectObservation, HistoricalAvailabilityObservation, HistoricalInspectionMode,
     HistoricalOpenResult, HistoricalRecordInspection, HistoricalRecordObservation,
     HistoricalRecordValue, HistoricalSnapshotView,
-};
-pub use merge_support_rows::{
-    RelationalMergeSupportInspectionAbsenceKind,
-    RelationalMergeSupportInspectionCompatibilityPosture, RelationalMergeSupportInspectionRow,
-    RelationalMergeSupportInspectionRowKind,
-};
-pub(crate) use merge_support_witness::RelationalMergeSupportInspectionInput;
-pub use merge_support_witness::{
-    RelationalMergeSupportInspectionDenial, RelationalMergeSupportInspectionSurface,
-    RelationalMergeSupportInspectionWitness,
 };
 pub use retention::{
     PinStateObservation, ReclaimEligibility, RecordRetentionInspection,

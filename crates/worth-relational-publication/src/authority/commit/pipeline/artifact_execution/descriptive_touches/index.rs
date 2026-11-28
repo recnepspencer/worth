@@ -21,59 +21,11 @@ pub(super) fn append_index(
     if !binding_targets_field(binding, &delta.target, field) {
         return Ok(());
     }
-    append_index_for_field(
-        IndexTouchInput {
-            selected,
-            working,
-            old_record: &delta.target,
-            new_record: &delta.target,
-            old_kind: Some(delta.kind_id),
-            new_kind: Some(delta.kind_id),
-            aspect: &binding.aspect_key,
-            field,
-            definition,
-            locator,
-        },
-        touches,
-        budget,
-    )
-}
-
-pub(super) struct IndexTouchInput<'a> {
-    pub(super) selected: &'a worth_relational_branch::internal_port::branch::root_selection::SelectedRelationalBranchState,
-    pub(super) working: &'a worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState,
-    pub(super) old_record: &'a RecordRef,
-    pub(super) new_record: &'a RecordRef,
-    pub(super) old_kind: Option<contracts::identity::data::primitives::KindId>,
-    pub(super) new_kind: Option<contracts::identity::data::primitives::KindId>,
-    pub(super) aspect: &'a worth_foundational::facade::AspectKey,
-    pub(super) field: &'a worth_foundational::facade::FieldKey,
-    pub(super) definition: &'a contracts::indexes::data::definition::DerivedIndexDefinition,
-    pub(super) locator: &'a worth_foundational::facade::AspectFieldLocator,
-}
-
-pub(super) fn append_index_for_field(
-    input: IndexTouchInput<'_>,
-    touches: &mut Vec<Touch>,
-    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
-) -> Result<(), Failure> {
-    let IndexTouchInput {
-        selected,
-        working,
-        old_record,
-        new_record,
-        old_kind,
-        new_kind,
-        aspect,
-        field,
-        definition,
-        locator,
-    } = input;
     let locator_visits = u64::try_from(locator.field_path().fields().len())
         .map_err(|_| MapKernelFailure::ResultCapacityExceeded)?;
     budget.checkpoint(locator_visits.saturating_mul(2).saturating_add(2))?;
-    let old = authoritative_state(selected, old_record);
-    let new = authoritative_state(working, new_record);
+    let old = authoritative_state(selected, &delta.target);
+    let new = authoritative_state(working, &delta.target);
     let old_value =
         worth_relational_branch::internal_port::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_value(
             old, locator,
@@ -94,71 +46,55 @@ pub(super) fn append_index_for_field(
                 .ok_or(MapKernelFailure::ResultCapacityExceeded)
         })?;
     budget.checkpoint(2 + (key_bytes / 64))?;
-    let metadata_bytes = (aspect.owned_allocation_capacity_bytes() as u64)
+    let metadata_bytes = (binding.aspect_key.owned_allocation_capacity_bytes() as u64)
         .checked_add(field.owned_allocation_capacity_bytes() as u64)
         .and_then(|bytes| {
             bytes.checked_add(size_of::<worth_foundational::facade::FieldKey>() as u64)
         })
         .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
-    let metadata_copies = if old_kind != new_kind { 2_u64 } else { 1_u64 };
     budget.claim(
         key_bytes
-            .checked_add(
-                metadata_bytes
-                    .checked_mul(metadata_copies)
-                    .ok_or(MapKernelFailure::ResultCapacityExceeded)?,
-            )
+            .checked_add(metadata_bytes)
             .ok_or(MapKernelFailure::ResultCapacityExceeded)?,
     )?;
     let old_key = worth_relational_branch::internal_port::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_comparison_key(old, locator);
     let new_key = worth_relational_branch::internal_port::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_comparison_key(new, locator);
-    if old_key != new_key || old_kind != new_kind || old_record != new_record {
-        if old_kind == new_kind {
-            if let Some(kind) = new_kind {
-                super::merge::push(
-                    touches,
-                    Touch::IndexMembership {
-                        index: definition.index_id,
-                        kind,
-                        aspect: aspect.clone(),
-                        path: CanonicalFieldPath::single(field.clone()),
-                        old_key,
-                        new_key,
-                    },
-                    budget,
-                )?;
-            }
-        } else {
-            if let (Some(kind), Some(old_key)) = (old_kind, old_key) {
-                super::merge::push(
-                    touches,
-                    Touch::IndexMembership {
-                        index: definition.index_id,
-                        kind,
-                        aspect: aspect.clone(),
-                        path: CanonicalFieldPath::single(field.clone()),
-                        old_key: Some(old_key),
-                        new_key: None,
-                    },
-                    budget,
-                )?;
-            }
-            if let (Some(kind), Some(new_key)) = (new_kind, new_key) {
-                super::merge::push(
-                    touches,
-                    Touch::IndexMembership {
-                        index: definition.index_id,
-                        kind,
-                        aspect: aspect.clone(),
-                        path: CanonicalFieldPath::single(field.clone()),
-                        old_key: None,
-                        new_key: Some(new_key),
-                    },
-                    budget,
-                )?;
-            }
-        }
+    if old_key != new_key {
+        push_index_touch(
+            touches,
+            Touch::IndexMembership {
+                index: definition.index_id,
+                kind: delta.kind_id,
+                aspect: binding.aspect_key.clone(),
+                path: CanonicalFieldPath::single(field.clone()),
+                old_key,
+                new_key,
+            },
+            budget,
+        )?;
     }
+    Ok(())
+}
+
+fn push_index_touch(
+    touches: &mut Vec<Touch>,
+    touch: Touch,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
+) -> Result<(), Failure> {
+    if touches.len() == touches.capacity() {
+        let new_capacity = touches.capacity().saturating_mul(2).max(4);
+        let growth = new_capacity
+            .checked_sub(touches.capacity())
+            .and_then(|slots| slots.checked_mul(size_of::<Touch>()))
+            .and_then(|bytes| bytes.checked_mul(2))
+            .and_then(|bytes| u64::try_from(bytes).ok())
+            .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
+        budget.claim(growth)?;
+        touches
+            .try_reserve_exact(new_capacity - touches.len())
+            .map_err(|_| MapKernelFailure::ResultCapacityExceeded)?;
+    }
+    touches.push(touch);
     Ok(())
 }
 

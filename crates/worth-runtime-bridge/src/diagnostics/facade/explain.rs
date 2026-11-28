@@ -18,21 +18,9 @@ impl BridgeDiagnosticsFacade {
         BridgeContinuityExplanation::from_canonical_record(record)
     }
 
-    pub fn explain_merge_record(
-        &self,
-        record: &BridgeCanonicalMergeRecord,
-    ) -> BridgeMergeExplanation {
-        BridgeMergeExplanation::from_canonical_record(record)
-    }
-
     pub fn explain_last_continuity_record(&self) -> Option<BridgeContinuityExplanation> {
         self.last_canonical_continuity_record()
             .map(|record| BridgeContinuityExplanation::from_canonical_record(&record))
-    }
-
-    pub fn explain_last_merge_record(&self) -> Option<BridgeMergeExplanation> {
-        self.last_merge_record()
-            .map(|record| BridgeMergeExplanation::from_canonical_record(&record))
     }
 
     pub fn explain_bulk_record(

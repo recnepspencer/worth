@@ -98,7 +98,6 @@ where
                 branch: cell.branch,
                 observation: cell.observation,
                 child_branch_ids: metadata.child_branch_ids,
-                merge_participant: metadata.merge_participant,
                 external_retentions: retention.external,
                 admitted_retentions: retention.admitted_or_reserved,
             },
@@ -150,7 +149,6 @@ where
                 branch: cell.branch,
                 observation: cell.observation,
                 child_branch_ids: metadata.child_branch_ids,
-                merge_participant: metadata.merge_participant,
                 external_retentions: retention.external,
                 admitted_retentions: retention.admitted_or_reserved,
             },
@@ -194,11 +192,6 @@ where
             return TransitionOutcome::denied(SignalBranchRetirementDenial::LiveChildren {
                 branch_id,
                 child_branch_ids: blocking_children,
-            });
-        }
-        if evidence.merge_participant {
-            return TransitionOutcome::denied(SignalBranchRetirementDenial::MergeParticipant {
-                branch_id,
             });
         }
         if evidence.external_retentions != 0 {
@@ -269,7 +262,6 @@ struct RetirementPlanningEvidence {
     branch: SignalBranchHandle,
     observation: SignalBranchObservation,
     child_branch_ids: Vec<SignalBranchId>,
-    merge_participant: bool,
     external_retentions: u32,
     admitted_retentions: u32,
 }

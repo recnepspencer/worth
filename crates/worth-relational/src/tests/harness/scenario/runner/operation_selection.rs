@@ -51,11 +51,6 @@ pub(super) fn choose_operation(
             branch_name: String::new(),
             from_branch_slot: random_slot(generator, branches.len()),
         },
-        8 if config.branch_pressure && branches.len() > 1 => {
-            ScenarioOperation::MergeBranchIntoMain {
-                branch_slot: random_slot(generator, branches.len() - 1) + 1,
-            }
-        }
         9 => ScenarioOperation::CaptureSnapshot,
         10 if !snapshots.is_empty() => ScenarioOperation::ReleaseSnapshot {
             snapshot_slot: random_slot(generator, snapshots.len()),

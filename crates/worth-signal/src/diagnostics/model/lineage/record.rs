@@ -12,11 +12,7 @@ use super::identity::LineageArtifactId;
 use super::transitions::{ArtifactTransitionKind, InvalidationCause, SnapshotRestoreKind};
 use crate::data::handle::NodeId;
 use crate::logic::planner::{ExecutionRecordId, SemanticSegmentId};
-use crate::logic::transaction::{
-    ArtifactMergeAction, BranchConflictResolutionPlan, BranchMergeConflictKind,
-    BranchMergeDivergence, BranchMergeKind, BranchMergeReconciliationPolicy, BranchMergeStrategy,
-    MergeDecisionBasis,
-};
+
 use crate::state::{SignalBranchId, SignalSnapshotId};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -41,34 +37,7 @@ pub enum LineageRecordKind {
         from_branch_display_name: String,
         to_branch_display_name: String,
     },
-    BranchMerge {
-        source_branch_id: SignalBranchId,
-        target_branch_id: SignalBranchId,
-        merge_kind: BranchMergeKind,
-        divergence: BranchMergeDivergence,
-        merge_strategy: BranchMergeStrategy,
-        reconciliation_policy: BranchMergeReconciliationPolicy,
-        resolution_plan: Option<BranchConflictResolutionPlan>,
-        merged_snapshot_id: Option<SignalSnapshotId>,
-        source_branch_display_name: String,
-        target_branch_display_name: String,
-    },
-    ArtifactMerge {
-        source_node: NodeId,
-        target_node: Option<NodeId>,
-        source_branch_id: SignalBranchId,
-        target_branch_id: SignalBranchId,
-        source_artifact_id: Option<LineageArtifactId>,
-        target_artifact_id_before: Option<LineageArtifactId>,
-        target_artifact_id_after: Option<LineageArtifactId>,
-        merge_action: ArtifactMergeAction,
-        decision_basis: MergeDecisionBasis,
-        merge_kind: BranchMergeKind,
-        divergence: BranchMergeDivergence,
-        merge_strategy: BranchMergeStrategy,
-        reconciliation_policy: BranchMergeReconciliationPolicy,
-        resolved_conflict_kinds: Vec<BranchMergeConflictKind>,
-    },
+
     SnapshotRestore {
         snapshot_id: SignalSnapshotId,
         node: Option<NodeId>,

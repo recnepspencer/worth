@@ -56,7 +56,6 @@ const phaseEightResourceSourceKind = phaseEightResourceForm.resourceSource()?.so
 const phaseEightResourceShapeKind = phaseEightResourceForm.resourceSource()?.shape.familyKind;
 const phaseEightResourceSourceDigest = phaseEightResourceForm.verification().digests.resourceSourceDigest;
 const phaseEightResourceShapeDigest = phaseEightResourceForm.verification().digests.resourceShapeDigest;
-const phaseEightResourceMergeDigest = phaseEightResourceForm.verification().digests.resourceMergeDigest;
 const phaseEightResourceEffectProfileName = phaseEightResourceForm.resourceSource()?.effectProfile.profile?.name;
 const phaseEightResourceVisibleSelectionKind = phaseEightResourceForm.resourceSource()?.visibleSelection.kind;
 const phaseEightResourceVerificationPackageDigest = phaseEightResourceForm.resourceSource()?.verification.packageDigest;
@@ -64,11 +63,6 @@ const phaseEightResourceEffectCloseoutDigest =
   phaseEightResourceForm.verification().digests.resourceEffectCloseoutMatrixDigest;
 const phaseEightResourceVisibleBranchDigest =
   phaseEightResourceForm.verification().digests.resourceVisibleBranchSelectionDigest;
-const phaseEightResourceMergePreview = phaseEightResourceForm.previewResourceMerge({
-  source_branch_id: 0,
-  target_branch_id: 0,
-});
-const phaseEightResourceMergeStatus = phaseEightResourceForm.resourceMerge().summary.status;
 const phaseEightResourceDriftStatus = phaseEightResourceForm.resourceDrift().summary.status;
 const phaseEightAttachmentTransferBinding =
   phaseEightResourceAttachmentForm.attachmentTransfers().fields[0]?.bindingKind;
@@ -78,7 +72,6 @@ const phaseEightAttachmentTransferDigest =
   phaseEightResourceAttachmentForm.verification().digests.attachmentTransferDigest;
 const phaseEightResourceTransferDigest =
   phaseEightResourceAttachmentForm.verification().digests.resourceTransferDigest;
-const phaseEightResourceMergeCleared = phaseEightResourceForm.clearResourceMerge("clear smoke");
 const phaseEightReplayRestoreDigest = phaseEightResourceForm.verification().digests.replayRestoreDigest;
 const phaseEightResourceSubmitEffectProfileSource =
   phaseEightResourceActionForm.actionPlan("submit").resourceEffectProfile.source;
@@ -157,20 +150,16 @@ void phaseEightResourceSourceKind;
 void phaseEightResourceShapeKind;
 void phaseEightResourceSourceDigest;
 void phaseEightResourceShapeDigest;
-void phaseEightResourceMergeDigest;
 void phaseEightResourceEffectProfileName;
 void phaseEightResourceVisibleSelectionKind;
 void phaseEightResourceVerificationPackageDigest;
 void phaseEightResourceEffectCloseoutDigest;
 void phaseEightResourceVisibleBranchDigest;
-void phaseEightResourceMergePreview;
-void phaseEightResourceMergeStatus;
 void phaseEightResourceDriftStatus;
 void phaseEightAttachmentTransferBinding;
 void phaseEightAttachmentTransferSurfaceFields;
 void phaseEightAttachmentTransferDigest;
 void phaseEightResourceTransferDigest;
-void phaseEightResourceMergeCleared;
 void phaseEightReplayRestoreDigest;
 void phaseEightResourceSubmitEffectProfileSource;
 void phaseEightResourceCustomActionSource;

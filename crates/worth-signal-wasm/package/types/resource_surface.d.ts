@@ -87,4 +87,3 @@ export {
   type ResourceMutationResponseCloseoutProofLane,
   type ResourceMutationResponses,
 } from "./resource/resource_mutation_response_closeout_matrix.js";
-export * from "./resource/resource_branch.js";

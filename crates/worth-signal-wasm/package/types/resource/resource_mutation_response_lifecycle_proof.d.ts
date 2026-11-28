@@ -16,7 +16,6 @@ export interface ResourceMutationResponseRollbackProof {
 
 export interface ResourceMutationResponseMergeRebaseProof {
   readonly kind:
-    | "nativeMergePlan"
     | "unavailable"
     | "identityMigrationUnavailable"
     | "notApplicable"

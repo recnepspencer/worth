@@ -8,9 +8,8 @@ pub(crate) use request_checkpoints::observation as stage_observation;
 pub(crate) use request_checkpoints::{consult_stage, CommitStage};
 pub(crate) use worth_relational_publication::internal_port::authority::commit::pipeline::{
     artifact_execution, authority_context, candidate_invariant_inputs, candidate_preparation,
-    execution_admission, history_preparation, merge_draft, performed_outcome, phase_backing,
+    execution_admission, history_preparation, performed_outcome, phase_backing,
     publication_execution, publication_validation, request_checkpoints,
 };
 pub(crate) mod execution;
 pub(crate) mod runtime_candidate_orchestration;
-pub(crate) mod runtime_merge_draft;

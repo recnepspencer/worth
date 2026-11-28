@@ -31,12 +31,6 @@ impl CanonicalCommitEnvelope {
 impl CanonicalCommitEnvelopeBody {
     pub(crate) fn allocation_inventory(&self) -> CanonicalCommitEnvelopeAllocationInventory {
         let commit_parents = vector_capacity_bytes(&self.commit.parents);
-        let merge_parent_storage = vector_capacity_bytes(&self.merge_parent_branches);
-        let merge_parent_names = self
-            .merge_parent_branches
-            .iter()
-            .map(|branch| branch.0.capacity() as u64)
-            .sum::<u64>();
         let merged_intents = vector_capacity_bytes(&self.merged_plan.merged_intents)
             .saturating_add(
                 self.merged_plan
@@ -91,9 +85,6 @@ impl CanonicalCommitEnvelopeBody {
             .saturating_add(optional_canonical_nested_bytes(
                 &self.branch_cell_checkpoint,
             ))
-            .saturating_add(merge_parent_storage)
-            .saturating_add(merge_parent_names)
-            .saturating_add(vector_capacity_bytes(&self.merge_base_commits))
             // Schema backing is shared with the root authority, which inventories it once.
             .saturating_add(merged_intents)
             .saturating_add(vector_capacity_bytes(&self.record_allocations))
@@ -105,9 +96,6 @@ impl CanonicalCommitEnvelopeBody {
             // owner-defined variable-size footprint; the fixed Option/object
             // storage is already charged by the envelope object allocation.
             .saturating_add(optional_canonical_nested_bytes(&self.strategy_artifacts))
-            .saturating_add(optional_canonical_nested_bytes(
-                &self.merge_execution_authority,
-            ))
             .saturating_add(optional_canonical_nested_bytes(&self.schema_transition))
             .saturating_add(optional_canonical_nested_bytes(
                 &self.schema_continuation_descriptor,

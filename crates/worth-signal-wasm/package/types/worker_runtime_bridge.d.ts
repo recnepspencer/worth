@@ -219,30 +219,6 @@ export interface WorkerRuntimeBridge {
   branches(): Promise<ReadonlyArray<RuntimeBranchHandle>>;
   createBranch(name: string): Promise<RuntimeBranchHandle>;
   switchBranch(branchId: bigint | number): Promise<unknown>;
-  planMergeBranches(
-    sourceBranchId: bigint | number,
-    targetBranchId: bigint | number,
-  ): Promise<MergePlanArtifact>;
-  planMergeBranchesWithProof(
-    sourceBranchId: bigint | number,
-    targetBranchId: bigint | number,
-  ): Promise<MergePlanProofEnvelope>;
-  mergeBranches(
-    sourceBranchId: bigint | number,
-    targetBranchId: bigint | number,
-  ): Promise<MergeResultArtifact>;
-  mergeBranchesWithProof(
-    sourceBranchId: bigint | number,
-    targetBranchId: bigint | number,
-  ): Promise<MergeResultProofEnvelope>;
-  planMergePolicyPreview(request: MergePolicyPreviewRequest): Promise<MergePlanArtifact>;
-  planMergePolicyPreviewWithProof(
-    request: MergePolicyPreviewRequest,
-  ): Promise<MergePlanProofEnvelope>;
-  mergeBranchesPolicyPreview(request: MergePolicyPreviewRequest): Promise<MergeResultArtifact>;
-  mergeBranchesPolicyPreviewWithProof(
-    request: MergePolicyPreviewRequest,
-  ): Promise<MergeResultProofEnvelope>;
   replayForBranch(branchId: bigint | number): Promise<ReplaySummary>;
   branchSnapshotId(branchId: bigint | number): Promise<bigint | number>;
   branchSnapshotEnvelope(branchId: bigint | number): Promise<RuntimeSnapshotEnvelope>;
@@ -352,30 +328,6 @@ export interface WorkerFirstHistoryFacade {
     snapshot: WorkerSnapshotArtifact,
   ): Promise<unknown>;
   restore_branch_snapshot_by_id(branchId: bigint | number, snapshotId: bigint | number): Promise<unknown>;
-  plan_merge_branches(
-    sourceBranchId: bigint | number,
-    targetBranchId: bigint | number,
-  ): Promise<MergePlanArtifact>;
-  plan_merge_branches_with_proof(
-    sourceBranchId: bigint | number,
-    targetBranchId: bigint | number,
-  ): Promise<MergePlanProofEnvelope>;
-  merge_branches(
-    sourceBranchId: bigint | number,
-    targetBranchId: bigint | number,
-  ): Promise<MergeResultArtifact>;
-  merge_branches_with_proof(
-    sourceBranchId: bigint | number,
-    targetBranchId: bigint | number,
-  ): Promise<MergeResultProofEnvelope>;
-  plan_merge_policy_preview(request: MergePolicyPreviewRequest): Promise<MergePlanArtifact>;
-  plan_merge_policy_preview_with_proof(
-    request: MergePolicyPreviewRequest,
-  ): Promise<MergePlanProofEnvelope>;
-  merge_branches_policy_preview(request: MergePolicyPreviewRequest): Promise<MergeResultArtifact>;
-  merge_branches_policy_preview_with_proof(
-    request: MergePolicyPreviewRequest,
-  ): Promise<MergeResultProofEnvelope>;
   branch_state_proof(branchId: bigint | number): Promise<BranchStateProofReport>;
   replay_parity_proof(
     expectedBranchId: bigint | number,

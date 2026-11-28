@@ -37,6 +37,4 @@ pub(in crate::internal_port::authority::commit::pipeline::publication_execution)
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) commit_reference: RelationalCommitReceipt,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) branch_basis: worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasis,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) branch_id: BranchId,
-    pub(in crate::internal_port::authority::commit::pipeline::publication_execution) merge_base_commits: Vec<CommitId>,
-    pub(in crate::internal_port::authority::commit::pipeline::publication_execution) merge_parent_branches: Vec<BranchId>,
 }

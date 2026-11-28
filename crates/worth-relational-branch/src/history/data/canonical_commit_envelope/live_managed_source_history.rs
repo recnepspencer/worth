@@ -123,9 +123,6 @@ fn packet_matches(
         && packet.proposed == envelope.commit.version_id
         && envelope.authority_kind == CanonicalCommitAuthorityKind::VersionedTransaction
         && envelope.schema_transition.is_none()
-        && envelope.merge_execution_authority.is_none()
-        && envelope.merge_parent_branches.is_empty()
-        && envelope.merge_base_commits.is_empty()
         && envelope.required_output_materialization.is_none()
         && envelope.required_output_codec_retirements.is_empty()
 }

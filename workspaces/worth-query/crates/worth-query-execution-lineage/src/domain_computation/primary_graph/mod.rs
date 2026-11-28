@@ -32,7 +32,6 @@ pub mod index_currency;
 pub mod index_refresh;
 pub mod initial_schema_denial;
 pub mod invariant_projection;
-pub mod merge_unique_values;
 pub mod observations;
 pub mod operation_body;
 pub mod ordinary_read;

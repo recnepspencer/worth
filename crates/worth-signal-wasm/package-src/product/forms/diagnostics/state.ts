@@ -13,7 +13,6 @@ export function readFormDiagnosticsState(form, fieldDeclarations) {
     availability: form.availability(),
     admission: form.admission(),
     resourceSource: form.resourceSource(),
-    resourceMerge: form.resourceMerge(),
     resourceDrift: form.resourceDrift(),
     attachmentTransfers: form.attachmentTransfers(),
     host: form.host(),

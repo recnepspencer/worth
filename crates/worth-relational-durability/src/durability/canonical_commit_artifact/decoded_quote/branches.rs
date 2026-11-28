@@ -1,7 +1,5 @@
 //! Exact descriptive branch axes own names and parent vectors, never roots.
 use super::*;
-use contracts::history::data::merge_branch_basis::ancestors::MergeBasisAncestorsOwnerPort as _;
-use worth_relational_contracts::internal_port as contracts;
 
 pub(super) fn descriptor(
     value: BorrowedPayload<'_>,
@@ -66,56 +64,5 @@ fn observation(
         }
         Ok(())
     })?;
-    Ok(bytes)
-}
-pub(super) fn merge_basis(
-    value: BorrowedPayload<'_>,
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<OwnerAllocation, Refusal> {
-    let mut bytes = OwnerAllocation::default();
-    value.fields(request, |field, value| {
-        add(
-            &mut bytes,
-            match field {
-                "source_head" | "target_head" => super::semantic::receipt(value, request)?,
-                "merge_base" => merge_base(value, request)?,
-                _ => OwnerAllocation::default(),
-            },
-        )
-    })?;
-    Ok(bytes)
-}
-fn merge_base(
-    value: BorrowedPayload<'_>,
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<OwnerAllocation, Refusal> {
-    let mut bytes = OwnerAllocation::default();
-    value.fields(request, |field, value| {
-        add(
-            &mut bytes,
-            match field {
-                "commit" => super::semantic::receipt(value, request)?,
-                "supporting_left_ancestors" | "supporting_right_ancestors" => {
-                    ancestors(value, request)?
-                }
-                _ => OwnerAllocation::default(),
-            },
-        )
-    })?;
-    Ok(bytes)
-}
-
-fn ancestors(
-    value: BorrowedPayload<'_>,
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<OwnerAllocation, Refusal> {
-    let mut bytes =
-        shared_vector::<contracts::history::data::coordinates::CommitId>(value, request, |_| {
-            Ok(OwnerAllocation::default())
-        })?;
-    add(
-        &mut bytes,
-        contracts::history::data::merge_branch_basis::ancestors::MergeBasisAncestors::control_bytes().ok_or_else(malformed)?,
-    )?;
     Ok(bytes)
 }

@@ -19,7 +19,7 @@ use worth_relational_mutation::internal_port as mutation;
 
 /// Admission owns the exact draft only until the consuming Draft handoff.
 pub(super) struct AdmittedCommitExecution<V> {
-    prepared_scope: Option<super::authority_context::PreparedAuthorityScope>,
+    prepared_scope: super::authority_context::PreparedAuthorityScope,
     state: AdmittedCommitState<V>,
 }
 impl<V> AdmittedCommitExecution<V> {
@@ -27,7 +27,7 @@ impl<V> AdmittedCommitExecution<V> {
         self,
     ) -> (
         AdmittedCommitState<V>,
-        Option<super::authority_context::PreparedAuthorityScope>,
+        super::authority_context::PreparedAuthorityScope,
     ) {
         (self.state, self.prepared_scope)
     }
@@ -40,9 +40,7 @@ pub struct AdmittedCommitState<V = CommitPublicationValidationInput> {
     selected_branch_state: worth_relational_branch::internal_port::branch::root_selection::SelectedRelationalBranchState,
     phase_timing: CommitPhaseTiming,
     commit_log: CommitLog,
-    authority_input: super::authority_context::CommitAuthorityInput,
-    merge_execution_accounting: Option<super::authority_context::MergeExecutionAccounting>,
-    merge_execution_diagnostics_plan: Option<contracts::merge::data::execution_artifacts::MergeExecutionDiagnosticsPlan>,
+    authority_input: crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan,
     prevalidated_invariants: Option<mutation::validation::engine::result::InvariantExecutionResult>,
     strategy_commit_artifacts: Option<contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle>,
     diagnostics: Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
@@ -55,7 +53,7 @@ pub struct AdmittedCommitState<V = CommitPublicationValidationInput> {
 pub(super) struct AdmittedCommitPhaseView<'a, V> {
     transaction_id: TransactionId,
     validation_input: &'a V,
-    authority_input: &'a super::authority_context::CommitAuthorityInput,
+    authority_input: &'a crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan,
     commit_log: &'a mut CommitLog,
     phase_timing: &'a mut CommitPhaseTiming,
 }
@@ -67,24 +65,13 @@ impl<'a, V> AdmittedCommitPhaseView<'a, V> {
         TransactionId,
         &'a V,
         RelationalSemanticPlan<'a>,
-        Option<
-            &'a contracts::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlan,
-        >,
         &'a mut CommitLog,
         &'a mut CommitPhaseTiming,
     ) {
-        let (merged_plan, merge_history_plan) = match self.authority_input {
-            super::authority_context::CommitAuthorityInput::Mutation(plan) => (plan.view(), None),
-            super::authority_context::CommitAuthorityInput::Merge(plan) => (
-                RelationalSemanticPlan::Mutation(&plan.plan().merged_plan),
-                Some(plan.plan()),
-            ),
-        };
         (
             self.transaction_id,
             self.validation_input,
-            merged_plan,
-            merge_history_plan,
+            self.authority_input.view(),
             self.commit_log,
             self.phase_timing,
         )
@@ -98,21 +85,11 @@ impl<V> AdmittedCommitState<V> {
 
     /// Authored/consequence commands only. Complete scope uses semantic_plan.
     pub fn command_plan(&self) -> &MergedCommitPlan {
-        match &self.authority_input {
-            super::authority_context::CommitAuthorityInput::Mutation(plan) => {
-                plan.view().commands()
-            }
-            super::authority_context::CommitAuthorityInput::Merge(plan) => &plan.plan().merged_plan,
-        }
+        self.authority_input.view().commands()
     }
 
     pub fn semantic_plan(&self) -> RelationalSemanticPlan<'_> {
-        match &self.authority_input {
-            super::authority_context::CommitAuthorityInput::Mutation(plan) => plan.view(),
-            super::authority_context::CommitAuthorityInput::Merge(plan) => {
-                RelationalSemanticPlan::Mutation(&plan.plan().merged_plan)
-            }
-        }
+        self.authority_input.view()
     }
 
     pub fn selected_branch_state(
@@ -121,26 +98,8 @@ impl<V> AdmittedCommitState<V> {
         &self.selected_branch_state
     }
 
-    pub fn merge_history_plan(
-        &self,
-    ) -> Option<&contracts::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlan>
-    {
-        match &self.authority_input {
-            super::authority_context::CommitAuthorityInput::Mutation(_) => None,
-            super::authority_context::CommitAuthorityInput::Merge(plan) => Some(plan.plan()),
-        }
-    }
-
     pub fn validation_input(&self) -> &V {
         &self.validation_input
-    }
-
-    pub(super) fn accept_merge_draft(
-        &mut self,
-        draft: super::merge_draft::AcceptedMergeDraft,
-    ) -> super::authority_context::PreparedAuthorityScope {
-        self.prevalidated_invariants = Some(draft.invariants);
-        draft.scope
     }
 
     pub(super) fn take_prevalidated_invariants(
@@ -171,18 +130,6 @@ impl<V> AdmittedCommitState<V> {
         &self,
     ) -> Option<&contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle>{
         self.strategy_commit_artifacts.as_ref()
-    }
-
-    pub(super) fn take_merge_accounting(
-        &mut self,
-    ) -> Option<super::authority_context::MergeExecutionAccounting> {
-        self.merge_execution_accounting.take()
-    }
-
-    pub(super) fn merge_execution_diagnostics_plan(
-        &self,
-    ) -> Option<&contracts::merge::data::execution_artifacts::MergeExecutionDiagnosticsPlan> {
-        self.merge_execution_diagnostics_plan.as_ref()
     }
 
     pub(super) fn into_result_parts(
@@ -235,10 +182,7 @@ pub(super) fn admit_commit_execution<V: DraftValidationInput>(
     inputs: CommitExecutionAdmission<'_>,
     context: AuthoritativeCommitContext<V>,
 ) -> Result<AdmittedCommitExecution<V>, TransactionCommitError> {
-    let complexity_before = context
-        .complexity_baseline
-        .clone()
-        .unwrap_or_else(|| inputs.instrumentation.complexity_snapshot());
+    let complexity_before = inputs.instrumentation.complexity_snapshot();
     enforce_validated_strategy_basis(
         &inputs,
         context.transaction_id,
@@ -246,23 +190,9 @@ pub(super) fn admit_commit_execution<V: DraftValidationInput>(
         context.validated_against_commit_id,
         context.validated_against_version_id,
         context.validated_against_branch_version,
-        context
-            .prepared_scope
-            .as_ref()
-            .map(|scope| &scope.mutation_proposal.0),
+        Some(&context.prepared_scope.mutation_proposal.0),
     )?;
-    let selected_branch_state = context
-        .prepared_scope
-        .as_ref()
-        .map(|scope| scope.selected_branch_state.clone())
-        .map(Ok)
-        .unwrap_or_else(|| {
-            worth_relational_branch::internal_port::branch::root_selection::SelectedRelationalBranchState::from_owner_basis(
-                inputs.runtime_identity,
-                context.validation_input.basis(),
-            )
-            .map_err(TransactionCommitError::preparation)
-        })?;
+    let selected_branch_state = context.prepared_scope.selected_branch_state.clone();
     if let Some(telemetry) = context.bulk_mutation_telemetry.as_ref() {
         record_bulk_mutation_telemetry(inputs.instrumentation, telemetry);
     }
@@ -283,8 +213,6 @@ pub(super) fn admit_commit_execution<V: DraftValidationInput>(
             phase_timing: context.phase_timing,
             commit_log: CommitLog::new(),
             authority_input: context.authority_input,
-            merge_execution_accounting: context.merge_execution_accounting,
-            merge_execution_diagnostics_plan: context.merge_execution_diagnostics_plan,
             prevalidated_invariants: context.prevalidated_invariants,
             strategy_commit_artifacts: context.strategy_commit_artifacts,
             diagnostics: Vec::new(),

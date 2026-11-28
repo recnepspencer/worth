@@ -55,19 +55,19 @@ fn durability_contract_failure_aspect_plan_mismatch_is_explicit() {
     let mismatched_registry = AspectSchemaFixture {
         entity_aspects: vec![
             entity_field_aspect(aspect_key("display_name"), field_key("name")),
-            super::merge_witness_schema::materialize(
+            declared_aspect(
                 worth_testkit_relational::aspect_storage::definition::lifecycle_aspect(),
             ),
         ],
         relation_aspects: vec![
             relation_field_aspect(aspect_key("label"), field_key("label")),
-            super::merge_witness_schema::materialize(
+            declared_aspect(
                 worth_testkit_relational::aspect_storage::definition::lifecycle_aspect(),
             ),
-            super::merge_witness_schema::materialize(
+            declared_aspect(
                 worth_testkit_relational::aspect_storage::definition::relation_source_aspect(),
             ),
-            super::merge_witness_schema::materialize(
+            declared_aspect(
                 worth_testkit_relational::aspect_storage::definition::relation_target_aspect(),
             ),
         ],
@@ -246,4 +246,10 @@ fn durability_contract_failure_relation_integrity_plan_mismatch_is_explicit() {
         }) if expected_contract_ids == &vec![worth_relational::facade::schema::ContractId::from("source_max_one")]
             && found_contract_ids == &vec![worth_relational::facade::schema::ContractId::from("source_max_two")]
     ));
+}
+
+fn declared_aspect(
+    (binding, contract): worth_testkit_relational::aspect_storage::definition::DeclaredAspect,
+) -> worth_relational::facade::schema::DeclaredAspectContractBinding {
+    worth_relational::facade::schema::DeclaredAspectContractBinding { binding, contract }
 }

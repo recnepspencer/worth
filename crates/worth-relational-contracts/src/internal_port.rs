@@ -18,7 +18,6 @@ pub mod identity;
 pub mod identity_authority;
 pub mod indexes;
 pub mod lineage;
-pub mod merge;
 pub mod mvcc;
 pub mod performance;
 pub mod projected_member_domain;

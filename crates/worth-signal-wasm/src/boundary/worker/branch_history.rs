@@ -6,7 +6,6 @@ use crate::boundary::restore_tokens::{
     load_snapshot, load_snapshot_envelope, store_snapshot, store_snapshot_envelope,
 };
 use crate::boundary::serde::{from_js, from_json_wire, to_js, to_js_structured, to_json_wire};
-use crate::runtime::core::MergePolicyPreviewRequest;
 use crate::runtime::summaries::RuntimeSnapshotEnvelope;
 use crate::runtime::worker_host::{
     WorkerApplyTransactionToBranchRequest, WorkerCloseoutEffectBranchRequest,
@@ -185,77 +184,6 @@ impl SignalWorkerRuntime {
     #[wasm_bindgen(js_name = branchStateProof)]
     pub fn branch_state_proof(&self, branch_id: u64) -> Result<JsValue, JsValue> {
         to_js(&self.branch_state_proof_for_test(branch_id)?).map_err(JsValue::from)
-    }
-
-    #[wasm_bindgen(js_name = planMergeBranches)]
-    pub fn plan_merge_branches(
-        &self,
-        source_branch_id: u64,
-        target_branch_id: u64,
-    ) -> Result<JsValue, JsValue> {
-        to_js(&self.plan_merge_branches_for_test(source_branch_id, target_branch_id)?)
-            .map_err(JsValue::from)
-    }
-
-    #[wasm_bindgen(js_name = planMergeBranchesWithProof)]
-    pub fn plan_merge_branches_with_proof(
-        &self,
-        source_branch_id: u64,
-        target_branch_id: u64,
-    ) -> Result<JsValue, JsValue> {
-        to_js(&self.plan_merge_branches_with_proof_for_test(source_branch_id, target_branch_id)?)
-            .map_err(JsValue::from)
-    }
-
-    #[wasm_bindgen(js_name = mergeBranches)]
-    pub fn merge_branches(
-        &self,
-        source_branch_id: u64,
-        target_branch_id: u64,
-    ) -> Result<JsValue, JsValue> {
-        to_js(&self.merge_branches_for_test(source_branch_id, target_branch_id)?)
-            .map_err(JsValue::from)
-    }
-
-    #[wasm_bindgen(js_name = mergeBranchesWithProof)]
-    pub fn merge_branches_with_proof(
-        &self,
-        source_branch_id: u64,
-        target_branch_id: u64,
-    ) -> Result<JsValue, JsValue> {
-        to_js(&self.merge_branches_with_proof_for_test(source_branch_id, target_branch_id)?)
-            .map_err(JsValue::from)
-    }
-
-    #[wasm_bindgen(js_name = planMergePolicyPreview)]
-    pub fn plan_merge_policy_preview(&self, request: JsValue) -> Result<JsValue, JsValue> {
-        let request: MergePolicyPreviewRequest = from_js(request).map_err(JsValue::from)?;
-        to_js(&self.plan_merge_policy_preview_for_test(request)?).map_err(JsValue::from)
-    }
-
-    #[wasm_bindgen(js_name = planMergePolicyPreviewWithProof)]
-    pub fn plan_merge_policy_preview_with_proof(
-        &self,
-        request: JsValue,
-    ) -> Result<JsValue, JsValue> {
-        let request: MergePolicyPreviewRequest = from_js(request).map_err(JsValue::from)?;
-        to_js(&self.plan_merge_policy_preview_with_proof_for_test(request)?).map_err(JsValue::from)
-    }
-
-    #[wasm_bindgen(js_name = mergeBranchesPolicyPreview)]
-    pub fn merge_branches_policy_preview(&self, request: JsValue) -> Result<JsValue, JsValue> {
-        let request: MergePolicyPreviewRequest = from_js(request).map_err(JsValue::from)?;
-        to_js(&self.merge_branches_policy_preview_for_test(request)?).map_err(JsValue::from)
-    }
-
-    #[wasm_bindgen(js_name = mergeBranchesPolicyPreviewWithProof)]
-    pub fn merge_branches_policy_preview_with_proof(
-        &self,
-        request: JsValue,
-    ) -> Result<JsValue, JsValue> {
-        let request: MergePolicyPreviewRequest = from_js(request).map_err(JsValue::from)?;
-        to_js(&self.merge_branches_policy_preview_with_proof_for_test(request)?)
-            .map_err(JsValue::from)
     }
 }
 

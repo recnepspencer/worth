@@ -118,7 +118,7 @@ pub(super) fn read_native_with_members(
     let mut directory = rmp_serde::from_slice::<Wire>(
         checkpoint
             .bytes()
-            .strip_prefix(b"WORTH-REL-CHK24\n")
+            .strip_prefix(b"WORTH-REL-CHK25\n")
             .unwrap(),
     )
     .unwrap()

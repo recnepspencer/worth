@@ -8,7 +8,6 @@ pub mod fixture;
 pub mod index_refresh;
 #[path = "live_delivery_support/mod.rs"]
 pub mod live_delivery_support;
-#[path = "merge_unique_values/mod.rs"]
-pub mod merge_unique_values;
 #[path = "recoverable_commit_support/mod.rs"]
 pub mod recoverable_commit_support;
+pub mod unique_write_world;

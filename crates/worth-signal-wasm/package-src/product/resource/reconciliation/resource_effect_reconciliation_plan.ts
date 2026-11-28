@@ -24,13 +24,6 @@ function planResourceEffectReconciliation(request) {
       `resource reconciliation has no materializer for patch kind ${patch.kind}`,
     );
   }
-  if (isNarrow && request.nativeMergeProof === null) {
-    throw reconciliationDenial(
-      "nativeMergeProofUnavailable",
-      request.effect.effectId,
-      "narrow resource reconciliation requires native merge conflict proof",
-    );
-  }
   const sameLocusOpenEffects = request.sameLocusOpenEffects.filter(
     (effect) => effect.effectId !== request.effect.effectId,
   );
@@ -47,7 +40,6 @@ function planResourceEffectReconciliation(request) {
     baseValue: request.effect.baseValue,
     canonicalValue: request.canonicalValue,
     patch,
-    nativeMergeProof: request.nativeMergeProof,
     materialization: Object.freeze({
       kind: isNarrow
         ? "resourceLocusMaterialization"

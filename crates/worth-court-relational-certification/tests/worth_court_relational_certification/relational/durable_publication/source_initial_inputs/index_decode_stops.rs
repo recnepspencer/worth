@@ -129,7 +129,7 @@ fn recovered_indexes(
     let payload = image
         .checkpoint()
         .bytes()
-        .strip_prefix(b"WORTH-REL-CHK24\n")
+        .strip_prefix(b"WORTH-REL-CHK25\n")
         .unwrap();
     let member = rmp_serde::from_slice(crate::messagepack_value_spans::field(
         crate::messagepack_value_spans::field(payload, "manifest"),

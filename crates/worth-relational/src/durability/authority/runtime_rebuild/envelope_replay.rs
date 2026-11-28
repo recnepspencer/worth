@@ -17,7 +17,7 @@ mod owner_bindings;
 mod interruption_tests;
 
 use effect::{replay_envelope_effect, restore_authoritative_artifacts_when_required};
-use path::{is_metadata_only_merge_commit, validate_replay_path};
+use path::validate_replay_path;
 use preparation::{prepare_replay_context, ReplayPreparationInputs};
 
 pub(super) fn replay_readmitted_envelope(
@@ -79,9 +79,8 @@ pub(super) fn replay_readmitted_envelope(
             ),
         );
         let positioned = readmitted.positioned().clone();
-        let replays_mutation_pipeline = envelope.authority_kind()
-            == CanonicalCommitAuthorityKind::VersionedTransaction
-            && !is_metadata_only_merge_commit(envelope);
+        let replays_mutation_pipeline =
+            envelope.authority_kind() == CanonicalCommitAuthorityKind::VersionedTransaction;
         if !replays_mutation_pipeline
             && (!envelope.record_allocations().is_empty()
                 || !envelope.cancelled_record_allocations().is_empty())

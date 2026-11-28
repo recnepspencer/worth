@@ -54,7 +54,6 @@ function classifyResourceDriftObservation(observation) {
   const effectiveDigest = stableValueDigest(observation.effective);
   const hadLocalDraft = draftDigest !== "{}";
   const sourceCompatibilityBlockerList = sourceCompatibilityBlockers(observation.sourceCompatibility);
-  const resourceMerge = activeResourceMerge(observation.resourceMerge);
   if (sourceCompatibilityBlockerList.length > 0) {
     return Object.freeze({
       sourceKind: "resourceLine",
@@ -64,47 +63,11 @@ function classifyResourceDriftObservation(observation) {
       draftDigest,
       effectiveDigest,
       sourceCompatibilityPosture: observation.sourceCompatibility.posture,
-      resourceMergeStatus: resourceMerge?.status ?? null,
       visibleSelectionKind: observation.resourceSource.visibleSelection.kind,
       blockers: sourceCompatibilityBlockerList,
       messages: Object.freeze([]),
       reason: observation.sourceCompatibility.reason
         ?? "remote resource source drift blocked local draft truth because schema compatibility is unavailable",
-    });
-  }
-  if (resourceMerge?.status === "conflict") {
-    return Object.freeze({
-      sourceKind: "resourceLine",
-      currentSourceDigest: observation.currentSourceDigest,
-      status: "conflict",
-      hadLocalDraft,
-      draftDigest,
-      effectiveDigest,
-      sourceCompatibilityPosture: observation.sourceCompatibility.posture,
-      resourceMergeStatus: resourceMerge.status,
-      visibleSelectionKind: observation.resourceSource.visibleSelection.kind,
-      blockers: resourceMerge.blockers,
-      messages: resourceMerge.messages,
-      reason: "remote resource source drift conflicts with the current local draft truth",
-    });
-  }
-  if (
-    resourceMerge?.status === "unavailable"
-    && resourceMerge.blockers.some((blocker) => blocker.kind === "resource:mergeMappingUnavailable")
-  ) {
-    return Object.freeze({
-      sourceKind: "resourceLine",
-      currentSourceDigest: observation.currentSourceDigest,
-      status: "blocked",
-      hadLocalDraft,
-      draftDigest,
-      effectiveDigest,
-      sourceCompatibilityPosture: observation.sourceCompatibility.posture,
-      resourceMergeStatus: resourceMerge.status,
-      visibleSelectionKind: observation.resourceSource.visibleSelection.kind,
-      blockers: resourceMerge.blockers,
-      messages: resourceMerge.messages,
-      reason: resourceMerge.reason,
     });
   }
   return Object.freeze({
@@ -117,7 +80,6 @@ function classifyResourceDriftObservation(observation) {
     draftDigest,
     effectiveDigest,
     sourceCompatibilityPosture: observation.sourceCompatibility.posture,
-    resourceMergeStatus: resourceMerge?.status ?? null,
     visibleSelectionKind: observation.resourceSource.visibleSelection.kind,
     blockers: Object.freeze([]),
     messages: Object.freeze([]),
@@ -127,14 +89,6 @@ function classifyResourceDriftObservation(observation) {
         : "remote resource source drift preserved the local draft without admitted resource branch rebase proof"
       : "remote resource source drift preserved source truth because no local draft was active",
   });
-}
-
-function activeResourceMerge(report) {
-  const current = report.current;
-  if (current === null || current.stale === true) {
-    return null;
-  }
-  return current;
 }
 
 function normalizeArtifact(artifact, context) {

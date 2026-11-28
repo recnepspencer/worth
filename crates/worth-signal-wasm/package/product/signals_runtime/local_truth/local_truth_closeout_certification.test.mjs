@@ -11,7 +11,6 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../
 test("certification manifest closes every required evidence lane", () => {
   assert.deepEqual(Object.keys(localTruthCertificationManifest), [
     "authority",
-    "mergeSemantics",
     "derivation",
     "deployment",
     "boundedness",
@@ -26,10 +25,7 @@ test("certification manifest closes every required evidence lane", () => {
 });
 
 test("docs state both one-way authority lanes and process-local limits", async () => {
-  const guide = await read("crates/worth-signal-wasm/docs/local-truth/branch-merge.md");
   const boundaries = await read("crates/worth-signal-wasm/docs/local-truth/authority-boundaries.md");
-  assert.match(guide, /TypeScript Local Truth -> Signal derivation/u);
-  assert.match(guide, /in-memory and process-local/u);
   assert.match(boundaries, /Query -> Relational -> Bridge -> Signal/u);
   assert.match(boundaries, /TypeScript Local Truth -> Signal/u);
   assert.match(boundaries, /does not provide MVCC, persistence, replication/u);
@@ -45,8 +41,6 @@ test("Rust Signal and the live gear UI contain no local-truth or object-merge sh
   ].join("\n");
   assert.doesNotMatch(liveGear, /composeManualMergedState|manualMergedObject/u);
   assert.match(liveGear, /forkBranch/u);
-  assert.match(liveGear, /previewMerge/u);
-  assert.match(liveGear, /resolveMerge/u);
   assert.match(liveGear, /inspection\.values/u);
 });
 

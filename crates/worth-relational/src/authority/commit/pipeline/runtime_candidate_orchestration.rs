@@ -10,8 +10,7 @@ pub(crate) fn prepare_consulted_authoritative_commit(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut context: AuthoritativeCommitContext<crate::mvcc::RelationalTransactionValidationInput>,
 ) -> Result<crate::mvcc::publication::PreparedRelationalCommitCandidate, TransactionCommitError> {
-    if matches!(&context.authority_input,
-        super::authority_context::CommitAuthorityInput::Mutation(plan) if plan.retained().is_some())
+    if context.authority_input.retained().is_some()
         && runtime.durability_admission.has_attached_medium()
     {
         return Err(TransactionCommitError::publication_denied(

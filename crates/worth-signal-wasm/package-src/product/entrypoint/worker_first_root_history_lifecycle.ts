@@ -92,55 +92,6 @@ export function createWorkerFirstRootHistoryLifecycle(deps) {
         activeImportContext,
       );
     },
-    async mergeBranches(sourceBranchId, targetBranchId) {
-      await deps.ready();
-      deps.requireActive("history.merge_branches");
-      await deps.authoredRuntime.settlePendingPublications();
-      await deps.settlePendingMutations();
-      const activeImportContext = deps.activeImportContext();
-      const result = await deps.bridge.mergeBranches(sourceBranchId, targetBranchId);
-      await deps.refreshAfterHistoryMutation("history.merge_branches", activeImportContext);
-      return result;
-    },
-    async mergeBranchesWithProof(sourceBranchId, targetBranchId) {
-      await deps.ready();
-      deps.requireActive("history.merge_branches_with_proof");
-      await deps.authoredRuntime.settlePendingPublications();
-      await deps.settlePendingMutations();
-      const activeImportContext = deps.activeImportContext();
-      const envelope = await deps.bridge.mergeBranchesWithProof(sourceBranchId, targetBranchId);
-      await deps.refreshAfterHistoryMutation(
-        "history.merge_branches_with_proof",
-        activeImportContext,
-      );
-      return envelope;
-    },
-    async mergeBranchesPolicyPreview(request) {
-      await deps.ready();
-      deps.requireActive("history.merge_branches_policy_preview");
-      await deps.authoredRuntime.settlePendingPublications();
-      await deps.settlePendingMutations();
-      const activeImportContext = deps.activeImportContext();
-      const result = await deps.bridge.mergeBranchesPolicyPreview(request);
-      await deps.refreshAfterHistoryMutation(
-        "history.merge_branches_policy_preview",
-        activeImportContext,
-      );
-      return result;
-    },
-    async mergeBranchesPolicyPreviewWithProof(request) {
-      await deps.ready();
-      deps.requireActive("history.merge_branches_policy_preview_with_proof");
-      await deps.authoredRuntime.settlePendingPublications();
-      await deps.settlePendingMutations();
-      const activeImportContext = deps.activeImportContext();
-      const envelope = await deps.bridge.mergeBranchesPolicyPreviewWithProof(request);
-      await deps.refreshAfterHistoryMutation(
-        "history.merge_branches_policy_preview_with_proof",
-        activeImportContext,
-      );
-      return envelope;
-    },
     async evaluateDirty() {
       await deps.ready();
       deps.requireActive("specialist.evaluateDirty");

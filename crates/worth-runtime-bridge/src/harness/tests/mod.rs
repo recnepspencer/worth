@@ -8,7 +8,6 @@ mod diagnostics_continuity_source;
 mod explanations;
 mod history;
 mod history_assertions;
-mod merge;
 mod parity;
 mod planning;
 mod policy_certification;

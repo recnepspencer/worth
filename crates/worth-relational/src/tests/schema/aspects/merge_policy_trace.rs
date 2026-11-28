@@ -1,6 +1,6 @@
 use worth_foundational::AspectKey;
 
-use crate::facade::merge::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
+use crate::facade::schema::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
 use crate::facade::schema::{
     EntityKindRegistration, KindAspectContractDeclarations, RelationalSchemaRegistry, SchemaId,
     SchemaVersionId,
@@ -24,7 +24,7 @@ fn schema_merge_policy_declarations_are_traced_and_available_through_registry() 
             .with_merge_policy_declarations(vec![
                 AspectMergePolicyDeclaration {
                     aspect_key: name_key.clone(),
-                    policy: AspectMergePolicyKind::PreferRicher,
+                    policy: AspectMergePolicyKind::RetiredValueShape,
                 },
                 AspectMergePolicyDeclaration {
                     aspect_key: lifecycle_key.clone(),
@@ -48,7 +48,7 @@ fn schema_merge_policy_declarations_are_traced_and_available_through_registry() 
             },
             AspectMergePolicyDeclaration {
                 aspect_key: name_key,
-                policy: AspectMergePolicyKind::PreferRicher,
+                policy: AspectMergePolicyKind::RetiredValueShape,
             },
         ]
     );

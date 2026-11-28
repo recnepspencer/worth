@@ -53,8 +53,6 @@ where
                 _ => {
                     if let Some((_branch_id, children)) = self.children_by_parent.pop_first() {
                         lineages.push(children);
-                    } else if let Some(branch_id) = self.active_merge_participants.pop_first() {
-                        let _ = branch_id;
                     } else {
                         break;
                     }

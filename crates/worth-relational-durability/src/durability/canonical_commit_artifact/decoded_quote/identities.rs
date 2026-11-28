@@ -1,12 +1,14 @@
 //! Merge identity/policy descriptions own only their declared names and keys.
 use super::*;
-use contracts::merge::data::identity::custom_name::{
+use contracts::schema::data::aspect_merge_policy::custom_name::{
+    MergePolicyName, MergePolicyNameOwnerPort as _,
+};
+use contracts::schema::data::identity_declarations::custom_name::{
     IdentityBasisName, IdentityBasisNameOwnerPort as _,
 };
-use contracts::merge::data::identity::declared_keys::{
+use contracts::schema::data::identity_declarations::declared_keys::{
     DeclaredIdentityKeys, DeclaredIdentityKeysOwnerPort as _,
 };
-use contracts::merge::data::policy::custom_name::{MergePolicyName, MergePolicyNameOwnerPort as _};
 use worth_foundational::facade::AspectKey;
 use worth_relational_contracts::internal_port as contracts;
 

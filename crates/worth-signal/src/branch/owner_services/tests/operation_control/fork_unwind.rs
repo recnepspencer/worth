@@ -76,11 +76,7 @@ fn exercise_fork_post_install_fault(boundary: SignalOwnerOperationBoundaryForTes
     assert!(transaction.touched_nodes > 0);
     let source_before = source_cell.fork_source_state_truth_after_fault();
     assert!(
-        !source_before
-            .mutation_ledger
-            .structural_merge_journal()
-            .records
-            .is_empty(),
+        !source_before.mutation_ledger.pending.is_empty(),
         "fork rollback sensitivity requires a genuinely nonempty source journal"
     );
     let original_children = owner
@@ -252,11 +248,7 @@ fn fork_source_capture_fault_quarantines_only_source_and_releases_destination_cu
     let (basis, transaction) = advanced.into_parts();
     assert!(transaction.touched_nodes > 0);
     let source_before = source_cell.fork_source_state_truth_after_fault();
-    assert!(!source_before
-        .mutation_ledger
-        .structural_merge_journal()
-        .records
-        .is_empty());
+    assert!(!source_before.mutation_ledger.pending.is_empty());
     let children_before = owner
         .metadata
         .branch_children(&admission, source.id)

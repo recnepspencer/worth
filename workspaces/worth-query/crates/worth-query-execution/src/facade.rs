@@ -222,8 +222,6 @@ pub mod integration {
     pub use crate::domain_computation::primary_graph::{
         WorthQueryPrimaryGraphIndexRefreshDenial,
         WorthQueryPrimaryGraphIndexRefreshDenialKind,
-        WorthQueryMergeUniqueValueDenial,
-        WorthQueryMergeUniqueValueDenialKind,
         WorthQueryApplicationInvariantFactories,
         WorthQueryApplicationInvariantSchemaResolver,
     };

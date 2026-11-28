@@ -4,6 +4,7 @@ use branch::history::data::canonical_commit_envelope::original_inputs::Canonical
 use branch::history::data::positioned_canonical_commit::PositionedCanonicalCommit;
 use branch::runtime::state::subsystems::history::canonical_publication_routes::position_admission::readmit_positioned_canonical_commit;
 use contracts::durability::artifact_canonical_payload::is_canonical_payload_with_original_context;
+use contracts::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactHeader;
 use contracts::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal as Refusal;
 use contracts::history::data::coordinates::CommitId;
 use contracts::publication::patch::data::patch_position::PatchStreamPosition;
@@ -12,14 +13,14 @@ use worth_relational_branch::internal_port as branch;
 use worth_relational_contracts::internal_port as contracts;
 
 pub(super) fn readmit_canonical_body(
-    position: PatchStreamPosition,
-    commit_id: CommitId,
+    header: &CanonicalCommitArtifactHeader,
     payload: &[u8],
     execution: &ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
     input: Option<ExecutionImmutableBytes>,
 ) -> Result<PositionedCanonicalCommit, Refusal> {
-    let quote = super::decoded_quote::quote(payload, execution)?;
+    let (position, commit_id) = (header.position, header.commit_id);
+    let quote = super::decoded_quote::quote(payload, execution, header.format)?;
     let canonical = super::decoded_quote::field(
         contracts::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload(
             payload,
@@ -60,6 +61,7 @@ pub(super) fn readmit_canonical_body(
             )?;
         admission.attach(image)?;
     }
+    wire.canonical.bind_artifact_format(header.format);
     wire.canonical.retain_readmission_memory(memory);
     wire.canonical
         .attach_shared_readmission_memory()
