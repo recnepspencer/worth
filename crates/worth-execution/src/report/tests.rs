@@ -200,7 +200,7 @@ fn independent_threads_produce_equal_reports_and_canonical_bytes_at_each_depth()
 }
 
 #[test]
-fn cyclic_chain_preserves_unique_sources_and_records_the_omission() {
+fn cyclic_chain_is_omitted_with_a_typed_reason() {
     let mut denial = Denial::with_depth(2, 41);
     denial
         .cause
@@ -212,7 +212,7 @@ fn cyclic_chain_preserves_unique_sources_and_records_the_omission() {
         .cycle_visits = Some(AtomicUsize::new(0));
 
     let report = denial.to_operator_report(DiagnosticDetail::Redacted);
-    assert_eq!(report.chain().len(), 2);
+    assert!(report.chain().is_empty());
     assert_eq!(report.chain_end(), ReportChainEnd::Cycle);
     let wire: serde_json::Value = serde_json::from_str(&report.to_canonical_json()).unwrap();
     assert_eq!(wire["chain_end"], "cycle");

@@ -10,8 +10,8 @@ underlying operation's retry contract.
 Preserve causal errors with `Error::source()`. Call `to_operator_report` on a
 `&dyn Reportable`, or import `ReportProjection` to call it on a concrete error.
 The projection creates a read-only `OperatorReport` with frames ordered from
-immediate cause to root cause. A cyclic source chain keeps its unique prefix
-and records the cycle as a typed omission. Equality and `to_canonical_json()`
+immediate cause to root cause. A cyclic source chain yields a typed omission.
+Equality and `to_canonical_json()`
 describe the disclosed snapshot. Keep correlation IDs, timestamps, and
 sequence counters in the sink's surrounding event metadata.
 

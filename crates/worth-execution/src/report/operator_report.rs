@@ -35,7 +35,7 @@ impl ReportFrame {
     }
 }
 
-/// Whether every source was visited or the chain repeated a source.
+/// Whether the source chain was captured or omitted after detecting a cycle.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ReportChainEnd {
     Complete,
@@ -180,7 +180,7 @@ pub trait Reportable: Error + Send + Sync + ReportProjection + 'static {
 /// ```
 pub trait ReportProjection {
     /// Select `detail` using the receiving audience's disclosure policy.
-    /// Cyclic source chains report the unique prefix and a typed omission.
+    /// Cyclic source chains are omitted with a typed reason.
     fn to_operator_report(&self, detail: DiagnosticDetail) -> OperatorReport;
 }
 
@@ -212,19 +212,24 @@ fn project_chain(
     error: &dyn Reportable,
     detail: DiagnosticDetail,
 ) -> (Vec<ReportFrame>, ReportChainEnd) {
-    let root: &dyn Error = error;
     let mut seen = BTreeSet::new();
-    let mut chain = Vec::new();
+    let mut sources: Vec<&dyn Error> = Vec::new();
     let mut cause = error.source();
     while let Some(source) = cause {
-        if core::ptr::eq(source, root) || !seen.insert(core::ptr::from_ref(source)) {
-            return (chain, ReportChainEnd::Cycle);
+        if !seen.insert(core::ptr::from_ref(source)) {
+            // An error can have several vtables. Omit the malformed chain
+            // instead of encoding where one particular vtable first repeated.
+            return (Vec::new(), ReportChainEnd::Cycle);
         }
-        chain.push(ReportFrame {
-            detail: disclose(detail, || error.forensic_source_detail(source)),
-        });
+        sources.push(source);
         cause = source.source();
     }
+    let chain = sources
+        .into_iter()
+        .map(|source| ReportFrame {
+            detail: disclose(detail, || error.forensic_source_detail(source)),
+        })
+        .collect();
     (chain, ReportChainEnd::Complete)
 }
 
