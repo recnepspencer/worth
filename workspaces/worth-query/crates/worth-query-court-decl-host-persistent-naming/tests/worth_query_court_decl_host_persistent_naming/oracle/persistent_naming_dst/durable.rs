@@ -11,18 +11,7 @@
 //! unoptimized test profile, so the default run is 2 seeds of 4 steps;
 //! `WORTH_DST_DURABLE_SEEDS` and `WORTH_DST_DURABLE_STEPS` (at most the
 //! in-memory walk's 10) widen the sweep, and `WORTH_DST_SEED` runs one seed.
-use super::{sweep, Coverage, STEPS};
-
-fn var(name: &str) -> Option<u64> {
-    std::env::var(name).ok().and_then(|v| v.parse::<u64>().ok())
-}
-
-fn durable_seeds() -> Vec<u64> {
-    match var("WORTH_DST_SEED") {
-        Some(seed) => vec![seed],
-        None => (0..var("WORTH_DST_DURABLE_SEEDS").unwrap_or(2)).collect(),
-    }
-}
+use super::{seeds, sweep, var, Coverage, STEPS};
 
 /// Steps per durable seed: each one committed, crashed and reopened.
 pub(super) fn steps() -> usize {
@@ -31,7 +20,7 @@ pub(super) fn steps() -> usize {
 
 #[test]
 fn seeded_walks_survive_store_reopen_after_every_step() {
-    let seeds = durable_seeds();
+    let seeds = seeds("WORTH_DST_DURABLE_SEEDS", 2);
     let total: Coverage = sweep(&seeds, true);
     eprintln!(
         "persistent-naming durable DST: {} seeds x {} steps, {total:?}",

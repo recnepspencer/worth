@@ -7,9 +7,10 @@
 //! created (#426); otherwise a typed refusal, and the envelope commits
 //! nothing.
 use std::collections::BTreeSet;
+use worth_dst::Rng;
 
-use super::ops::{Op, Placement, Rng};
-use super::reference::{owner_name, Answer, Oracle, SCOPES};
+use super::ops::{Op, Placement};
+use super::reference::{Answer, Oracle, SCOPES};
 
 /// The earlier stage's mutation.
 #[derive(Clone, Debug)]
@@ -151,15 +152,15 @@ pub fn next(rng: &mut Rng, model: &Oracle, authored: &BTreeSet<usize>, minted: u
         0 => First::Edit(rng.pick(&live)),
         1 => commit(Op::Create {
             name: minted,
-            at: rng.placement(),
+            at: Placement::pick(rng),
         }),
         2 => commit(Op::Preserve {
             name: rng.pick(&live_authored),
-            at: rng.placement(),
+            at: Placement::pick(rng),
         }),
         3 => commit(Op::Restore {
             name: rng.pick(&restorable),
-            at: rng.placement(),
+            at: Placement::pick(rng),
         }),
         4 => commit(Op::Retire {
             name: rng.pick(&live),
@@ -247,66 +248,4 @@ fn touched(first: &First) -> Vec<usize> {
             _ => Vec::new(),
         },
     }
-}
-
-fn quoted(value: &str) -> String {
-    format!("\"{value}\"")
-}
-
-fn name(index: usize) -> String {
-    quoted(&format!("n{}", index + 1))
-}
-
-/// The `CandidateEnvelope` record's fields, as the model's action takes them.
-pub fn trace_fields(first: &First, read: Read, answer: &Answer) -> String {
-    let none = Placement::Issued;
-    let (kind, [x, y, z], [o1, o2], part) = match first {
-        First::Edit(n) => ("Edit", [*n; 3], [None; 2], none.part()),
-        First::Commit(op) => match op.as_ref() {
-            Op::Create { name, at } => ("Create", [*name; 3], [at.owner(); 2], at.part()),
-            Op::Preserve { name, at } => ("Preserve", [*name; 3], [at.owner(); 2], at.part()),
-            Op::Restore { name, at } => ("Restore", [*name; 3], [at.owner(); 2], at.part()),
-            Op::Retire { name } => ("Retire", [*name; 3], [None; 2], none.part()),
-            Op::Split { parent, pieces, at } => (
-                "Split",
-                [*parent, pieces[0], pieces[1]],
-                [at[0].owner(), at[1].owner()],
-                at[0].part(),
-            ),
-            Op::MergeKeep { keeper, other, .. } => (
-                "MergeKeep",
-                [*keeper, *other, *other],
-                [None; 2],
-                none.part(),
-            ),
-            other => panic!("not a candidate first stage: {other:?}"),
-        },
-    };
-    let (rk, rn, scope, sel) = match read {
-        Read::Resolve { name, scope, all } => (
-            "Resolve",
-            name,
-            scope.map_or("all", |owner| owner_name(Some(owner))),
-            if all { "AllDescendants" } else { "Exact" },
-        ),
-        Read::NameOf(name) => ("NameOf", name, "all", "Exact"),
-        Read::NameOfCreated => ("NameOfCreated", 0, "all", "Exact"),
-    };
-    let targets: Vec<String> = answer.targets.iter().map(|t| name(*t)).collect();
-    format!(
-        "\"action\":\"CandidateEnvelope\",\"kind\":{},\"x\":{},\"y\":{},\"z\":{},\"o1\":{},\"o2\":{},\"part\":{},\"rk\":{},\"rn\":{},\"scope\":{},\"sel\":{},\"status\":{},\"targets\":{{\"__set__\":[{}]}}",
-        quoted(kind),
-        name(x),
-        name(y),
-        name(z),
-        quoted(owner_name(o1)),
-        quoted(owner_name(o2)),
-        quoted(part),
-        quoted(rk),
-        name(rn),
-        quoted(scope),
-        quoted(sel),
-        quoted(answer.status),
-        targets.join(",")
-    )
 }

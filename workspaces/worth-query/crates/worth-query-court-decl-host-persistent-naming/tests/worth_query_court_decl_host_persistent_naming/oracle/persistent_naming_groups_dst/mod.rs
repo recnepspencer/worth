@@ -26,6 +26,7 @@
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
+use worth_dst::{Rng, Seed};
 
 mod candidate;
 mod driver;
@@ -34,8 +35,6 @@ mod trace;
 
 use driver::Driver;
 use model::{Model, Op};
-
-use super::persistent_naming_dst::Rng;
 
 const STEPS: usize = 10;
 const MEMBERS: usize = 6;
@@ -69,7 +68,7 @@ fn run_seed(
     let mut driver = Driver::new(seed, MEMBERS);
     let rank = driver.members.iter().map(|name| *name.as_bytes()).collect();
     let mut model = Model::new(rank);
-    let mut rng = Rng::new(seed ^ 0x6772_6f75_7073);
+    let mut rng = Seed::new(seed ^ 0x6772_6f75_7073).rng();
     let mut trace = trace::Trace::default();
     let mut coverage = BTreeMap::new();
     let mut ops = Vec::new();

@@ -1,6 +1,7 @@
 //! Seeded operation choice: every step picks one action the model enables
 //! from the current reference state, deterministically from a `u64` seed.
 use std::collections::BTreeSet;
+use worth_dst::Rng;
 
 use super::reference::Oracle;
 
@@ -16,6 +17,10 @@ pub enum Placement {
 }
 
 impl Placement {
+    pub fn pick(rng: &mut Rng) -> Self {
+        rng.pick(&[Self::Owned("a"), Self::Owned("b"), Self::Issued])
+    }
+
     pub fn part(self) -> &'static str {
         match self {
             Self::Owned(_) => "p1",
@@ -105,40 +110,6 @@ pub enum Op {
     },
 }
 
-/// SplitMix64: a tiny, portable, seed-stable generator.
-#[derive(Clone, Debug)]
-pub struct Rng(u64);
-
-impl Rng {
-    pub fn new(seed: u64) -> Self {
-        Self(seed)
-    }
-
-    pub fn next(&mut self) -> u64 {
-        self.0 = self.0.wrapping_add(0x9E37_79B9_7F4A_7C15);
-        let mut z = self.0;
-        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
-        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
-        z ^ (z >> 31)
-    }
-
-    pub fn below(&mut self, bound: usize) -> usize {
-        (self.next() % bound as u64) as usize
-    }
-
-    pub fn pick<T: Copy>(&mut self, items: &[T]) -> T {
-        items[self.below(items.len())]
-    }
-
-    pub fn placement(&mut self) -> Placement {
-        self.pick(&[
-            Placement::Owned("a"),
-            Placement::Owned("b"),
-            Placement::Issued,
-        ])
-    }
-}
-
 #[derive(Clone, Copy)]
 enum Kind {
     Create,
@@ -211,18 +182,18 @@ pub fn next_op(
     match rng.pick(&kinds) {
         Kind::Create => Op::Create {
             name: minted,
-            at: rng.placement(),
+            at: Placement::pick(rng),
         },
         Kind::Duplicate => Op::Duplicate {
             name: rng.pick(&live_authored),
         },
         Kind::Unnamed => Op::Unnamed {
-            at: rng.placement(),
+            at: Placement::pick(rng),
             pair: rng.below(2) == 0,
         },
         Kind::Preserve => Op::Preserve {
             name: rng.pick(&live_authored),
-            at: rng.placement(),
+            at: Placement::pick(rng),
         },
         Kind::Split => {
             let at = if rng.below(4) == 0 {
@@ -257,23 +228,23 @@ pub fn next_op(
         Kind::MergeMint => Op::MergeMint {
             parents: two(rng),
             minted,
-            at: rng.placement(),
+            at: Placement::pick(rng),
         },
         Kind::Retire => Op::Retire {
             name: rng.pick(&live),
         },
         Kind::Restore => Op::Restore {
             name: rng.pick(&restorable),
-            at: rng.placement(),
+            at: Placement::pick(rng),
         },
         Kind::Rebuild => Op::Rebuild,
         Kind::Coupled => Op::Coupled {
             names: [minted, minted + 1],
-            at: [rng.placement(), rng.placement()],
+            at: [Placement::pick(rng), Placement::pick(rng)],
         },
         Kind::CoupledDuplicate => Op::CoupledDuplicate {
             name: minted,
-            at: rng.placement(),
+            at: Placement::pick(rng),
         },
         Kind::Candidate => super::candidate::next(rng, model, authored, minted),
     }
