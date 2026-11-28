@@ -14,7 +14,7 @@ impl RelationalPinnedRead {
         let state_access: &(dyn PartitionAccess + Sync) = basis;
         let registry = basis.projection_root().schema_authority().registry();
         let version_id = basis.version_id();
-execute_leased_query_packets(
+        execute_leased_query_packets(
             packets,
             execution,
             remaining,
