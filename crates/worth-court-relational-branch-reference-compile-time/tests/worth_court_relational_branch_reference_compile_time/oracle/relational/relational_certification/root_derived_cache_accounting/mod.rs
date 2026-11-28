@@ -37,6 +37,7 @@ fn populated_derived_index_cache_stays_outside_owner_authority_accounting() {
                 ),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = world.runtime.index_authority().build_for_commit(

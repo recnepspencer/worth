@@ -32,9 +32,12 @@ impl InvariantViolationDiagnosticProjection<'_> {
                     ("limit", RelationalDiagnosticValue::unsigned(*limit)),
                 ],
             ),
-            Self::UniqueEntityField { aspect_field } => violation_diagnostic_object(
+            Self::UniqueEntityField { entity_kind_id, aspect_field } => violation_diagnostic_object(
                 "unique_entity_field",
-                [("aspect_field", aspect_field.to_diagnostic_value())],
+                [
+                    ("entity_kind_id", RelationalDiagnosticValue::KindId(*entity_kind_id)),
+                    ("aspect_field", aspect_field.to_diagnostic_value()),
+                ],
             ),
             Self::EntityAspectExclusion {
                 entity_id, kind_id, group_id, required, active_count,

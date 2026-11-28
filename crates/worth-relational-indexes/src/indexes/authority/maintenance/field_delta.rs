@@ -18,6 +18,7 @@ pub(super) fn entity(
     before: &IndexRootView,
     after: &IndexRootView,
     changed: &[EntityId],
+    kind_scope: Option<crate::contracts::identity::data::primitives::KindId>,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
     let mut seen = BTreeSet::new();
@@ -35,7 +36,9 @@ pub(super) fn entity(
             after,
             &mut edits,
             work,
-            super::field_keys::entity,
+            |execution, root, id, locator, work| {
+                super::field_keys::entity(execution, root, id, kind_scope, locator, work)
+            },
         )?;
     }
     grouped(

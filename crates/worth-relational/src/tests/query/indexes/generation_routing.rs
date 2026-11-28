@@ -19,6 +19,7 @@ fn generation_routing_respects_declared_branch_scope_without_history_inventory()
                     field_locator: field.clone(),
                 },
                 branch_scoped,
+                unique_entity_kind: None,
             })
             .expect("index fixture has identity capacity");
         let main_build = runtime.index_authority().build_for_commit(

@@ -45,6 +45,7 @@ fn register_manifest_indexes(runtime: &RelationalRuntime, count: usize) {
                     field_locator: locator.clone(),
                 },
                 branch_scoped: false,
+                unique_entity_kind: None,
             })
             .unwrap();
     }

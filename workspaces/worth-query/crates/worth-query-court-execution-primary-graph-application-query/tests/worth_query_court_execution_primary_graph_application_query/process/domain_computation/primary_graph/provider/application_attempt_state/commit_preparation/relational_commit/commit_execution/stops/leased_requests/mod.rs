@@ -164,6 +164,7 @@ pub fn related_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
             name: "probe.related".to_owned(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::RelatedEntityOrdering {
                 relation_kind: KindId(2),
                 parent_endpoint: RelatedEntityEndpoint::SourceParent,

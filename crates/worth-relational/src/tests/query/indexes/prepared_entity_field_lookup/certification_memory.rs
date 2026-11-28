@@ -22,6 +22,7 @@ fn certification_keeps_owned_admission_error_and_refuses_its_real_heap() {
                 field_locator: locator.clone(),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(

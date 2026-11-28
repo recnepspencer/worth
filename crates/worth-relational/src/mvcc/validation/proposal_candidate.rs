@@ -191,6 +191,15 @@ pub(super) fn validate(
         .map_or(prepared.plan.view(), |admission| {
             prepared.plan.view().with_commands(&admission.plan)
         });
+    let unique_fields = super::unique_field_proposals::prepare(
+        &runtime,
+        execution,
+        &validation_input,
+        &selected,
+        &mutation,
+        identity.proposed_version_id(),
+        invariant_plan.commands(),
+    )?;
     let names = mutation.proposal_names(
         round.lineage_preparation_authority(),
         &validation_input,
@@ -221,5 +230,6 @@ pub(super) fn validate(
         identity,
         validation_input,
         invariants,
+        unique_fields,
     }))
 }

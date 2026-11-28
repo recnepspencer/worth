@@ -58,6 +58,7 @@ fn schema_meanings_with_one_version_keep_distinct_kind_routes() {
             index_id: DerivedIndexId(0),
             name: "schema-qualified-routing".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator:
                     crate::contracts::transactions::data::aspect_field_patch::planned_single_field_locator(

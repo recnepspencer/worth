@@ -14,6 +14,7 @@ fn stale_foreign_and_staged_inputs_refuse_before_selection_publication() {
     let request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let runtime = fixture().build_runtime();
+    worth_testkit_relational::aspect_storage::install_declared_unique_field_indexes(&runtime);
     let old = create(execution, &runtime, "model", "3");
     let model = changed_entities(&old)[0];
     let source = runtime
@@ -106,13 +107,14 @@ fn selection_rejudges_current_installed_uniqueness_instead_of_treating_commands_
     catalog
         .registrations
         .push(InvariantRegistration::mutation_sensitive_blocking(
-            InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("label")),
+            InvariantRule::unique_entity_aspect_field(worth_relational::facade::identity::KindId(1), worth_relational::facade::indexes::DerivedIndexId(1), aspect_key("name"), field_key("label")),
         ));
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(fixture().build_registry())
         .invariant_catalog(catalog)
         .build()
         .unwrap();
+    worth_testkit_relational::aspect_storage::install_declared_unique_field_indexes(&runtime);
     let old = create(execution, &runtime, "model", "3");
     let model = changed_entities(&old)[0];
     let source = runtime

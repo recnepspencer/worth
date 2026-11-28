@@ -18,6 +18,7 @@ pub(crate) fn register_case_book_index(world: &mut FintechWorld) -> DerivedIndex
                 field_locator: aspect_field_locator(aspect_key("book"), field_key("book")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity")
 }

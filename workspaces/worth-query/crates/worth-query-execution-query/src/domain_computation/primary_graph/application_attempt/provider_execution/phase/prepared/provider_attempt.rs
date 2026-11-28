@@ -11,7 +11,6 @@ pub fn prepare_application_provider_attempt(
     mutation_partition: worth_relational::facade::identity::PartitionId,
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
     prepare_provider_attempt(
-        lease.layout.unique_fields(),
         &|entity, aspect| lease.layout.aspect_binding(entity, aspect),
         mutation_partition,
         preparation.application_effect_count,

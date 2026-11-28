@@ -1,4 +1,4 @@
-//! A real untouched remote partition reached by the original uniqueness rule.
+//! A recovered unique index alongside an untouched cold entity partition.
 use super::{current_field_meanings::*, current_publications::create_entity, region_publications};
 use std::sync::{atomic::Ordering, Arc};
 use worth_execution::ExecutionRequest;
@@ -26,16 +26,18 @@ pub(super) struct CandidateFixture {
     pub directory: super::selected_directory::Directory,
 }
 pub(super) fn runtime(medium: &Arc<TestDurableMedium>) -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
+    let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(schema())
         .invariant_catalog(InvariantCatalog {
             registrations: vec![InvariantRegistration::commit_boundary_blocking(
-                InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
+                InvariantRule::unique_entity_aspect_field(worth_relational::facade::identity::KindId(1), worth_relational::facade::indexes::DerivedIndexId(1), aspect_key("name"), field_key("name")),
             )],
         })
         .build_durable(medium.attachment())
-        .unwrap()
+        .unwrap();
+    worth_testkit_relational::aspect_storage::install_declared_unique_field_indexes(&runtime);
+    runtime
 }
 pub(super) fn recovered(request: &ExecutionRequest<'_, '_>) -> CandidateFixture {
     let medium = TestDurableMedium::new();

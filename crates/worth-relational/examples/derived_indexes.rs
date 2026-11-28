@@ -25,6 +25,7 @@ fn main() {
                 field_locator: support::aspect_field_locator("name"),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
 

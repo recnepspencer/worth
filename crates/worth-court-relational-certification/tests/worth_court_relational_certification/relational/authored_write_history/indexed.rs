@@ -52,6 +52,7 @@ fn indexed_history_visits_exclude_other_values_and_sibling_ancestry() {
                 field_locator: name_locator(),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .unwrap();
     let key = |value: &str| RelationalAuthoredWriteSelector::EntityFieldIndex {

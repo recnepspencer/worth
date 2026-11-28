@@ -15,6 +15,7 @@ pub(super) struct PreparedProposalRound {
     pub(super) mutation: AppliedDraftCustody,
     pub(super) identity: RelationalMutationProposalIdentity,
     pub(super) validation_input: RelationalTransactionValidationInput,
+    pub(super) unique_fields: worth_relational_mutation::internal_port::validation::unique_field_probes::UniqueFieldProbeBatch,
     pub(super) invariants: crate::validation::engine::InvariantExecutionResult,
 }
 

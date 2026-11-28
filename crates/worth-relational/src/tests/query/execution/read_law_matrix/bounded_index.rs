@@ -34,6 +34,7 @@ fn runtime_bounded_index_law_keeps_cold_stop_limit_and_generation() {
                     field_locator: locator.clone(),
                 },
                 branch_scoped: false,
+                unique_entity_kind: None,
             })
             .expect("index fixture has identity capacity");
         if indexed {

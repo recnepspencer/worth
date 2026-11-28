@@ -76,6 +76,7 @@ fn witness_diagnostic_value(witness: &InvariantWitnessKey) -> RelationalDiagnost
             RelationalDiagnosticValue::string("pass"),
         )]),
         InvariantWitnessBasis::UniqueEntityAspectField {
+            entity_kind_id,
             field_locator,
             value,
             field_locator_canonical_bytes,
@@ -84,6 +85,10 @@ fn witness_diagnostic_value(witness: &InvariantWitnessKey) -> RelationalDiagnost
             (
                 "basis_kind",
                 RelationalDiagnosticValue::string("unique_entity_aspect_field"),
+            ),
+            (
+                "entity_kind_id",
+                RelationalDiagnosticValue::KindId(*entity_kind_id),
             ),
             (
                 "field_locator",

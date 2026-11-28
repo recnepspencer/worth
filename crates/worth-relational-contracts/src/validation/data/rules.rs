@@ -5,6 +5,8 @@ use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, CanonicalFieldPath, FieldKey, LocatorAuthority,
 };
 
+use crate::identity::data::KindId;
+use crate::indexes::data::definition::DerivedIndexId;
 use crate::schema::data::{
     LoweredAcyclicityContract, LoweredCardinalityMaximumContract,
     LoweredCardinalityMinimumContract, LoweredConnectivityMinimumContract,
@@ -31,6 +33,8 @@ pub enum InvariantRule {
     LiveRecordRequiresSidecar(RecordKindTag),
     MaxMergedIntents(usize),
     UniqueEntityAspectField {
+        entity_kind_id: KindId,
+        backing_index_id: DerivedIndexId,
         #[serde(with = "crate::aspect_wire::serde_canonical_aspect_field_locator")]
         field_locator: AspectFieldLocator,
     },
@@ -53,16 +57,35 @@ pub struct InvariantRuleMetadata {
 }
 
 impl InvariantRule {
-    pub fn unique_entity_aspect_field(aspect_key: AspectKey, field: FieldKey) -> Self {
-        Self::unique_entity_aspect_field_locator(AspectFieldLocator::new(
-            LocatorAuthority::Planned,
-            aspect_key,
-            CanonicalFieldPath::single(field),
-        ))
+    /// Require unique values within one entity kind. The backing definition
+    /// must declare the same kind and field in its equality postings.
+    pub fn unique_entity_aspect_field(
+        entity_kind_id: KindId,
+        backing_index_id: DerivedIndexId,
+        aspect_key: AspectKey,
+        field: FieldKey,
+    ) -> Self {
+        Self::unique_entity_aspect_field_locator(
+            entity_kind_id,
+            backing_index_id,
+            AspectFieldLocator::new(
+                LocatorAuthority::Planned,
+                aspect_key,
+                CanonicalFieldPath::single(field),
+            ),
+        )
     }
 
-    pub fn unique_entity_aspect_field_locator(field_locator: AspectFieldLocator) -> Self {
-        Self::UniqueEntityAspectField { field_locator }
+    pub fn unique_entity_aspect_field_locator(
+        entity_kind_id: KindId,
+        backing_index_id: DerivedIndexId,
+        field_locator: AspectFieldLocator,
+    ) -> Self {
+        Self::UniqueEntityAspectField {
+            entity_kind_id,
+            backing_index_id,
+            field_locator,
+        }
     }
 
     pub fn rule_id(&self) -> InvariantRuleId {
@@ -171,7 +194,7 @@ impl InvariantRuleOwnerPort for InvariantRule {
             Self::UniqueEntityAspectField { .. } => InvariantRuleMetadata {
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance)
                     .union(InvariantGroupSet::of(InvariantGroup::IdentityCoherence)),
-                cost: InvariantCostClass::Global,
+                cost: InvariantCostClass::Touched,
             },
             Self::EndpointKindContract(_) => InvariantRuleMetadata {
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance)

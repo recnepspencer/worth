@@ -18,6 +18,7 @@ fn replay_contract_reports_derived_index_drift_at_digest_layer_when_artifacts_ar
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     runtime.index_authority().build_for_commit(

@@ -32,9 +32,10 @@ pub(super) fn invariant_violation_witness_key(
             limit,
         } => format!("merged_intents:{merged_intent_count}:{limit}"),
         InvariantViolationFields::UniqueEntityField {
+            entity_kind_id,
             field_locator,
             value,
-        } => return unique_entity_aspect_field_witness_key(code, field_locator, value),
+        } => return unique_entity_aspect_field_witness_key(code, *entity_kind_id, field_locator, value),
         InvariantViolationFields::SidecarConsistency {
             partition_id,
             slot,
@@ -203,18 +204,21 @@ pub(super) fn invariant_violation_witness_key(
 
 fn unique_entity_aspect_field_witness_key(
     code: DiagnosticCode,
+    entity_kind_id: crate::identity::data::KindId,
     field_locator: &worth_foundational::facade::AspectFieldLocator,
     value: &worth_foundational::facade::AspectValue,
 ) -> InvariantWitnessKey {
     let field_locator_canonical_bytes = encode_aspect_field_locator(field_locator);
     let value_canonical_bytes = canonical_aspect_value_witness_basis(value);
     let key = format!(
-        "unique_entity_aspect_field:{code:?}:{}:{}",
+        "unique_entity_aspect_field:{code:?}:{}:{}:{}",
+        entity_kind_id.as_u32(),
         hex_bytes(&field_locator_canonical_bytes),
         hex_bytes(&value_canonical_bytes)
     );
     InvariantWitnessKey::unique_entity_aspect_field(
         key,
+        entity_kind_id,
         field_locator.clone(),
         value.clone(),
         field_locator_canonical_bytes,

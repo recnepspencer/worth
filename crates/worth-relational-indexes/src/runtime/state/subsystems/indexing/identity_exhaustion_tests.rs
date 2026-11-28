@@ -7,6 +7,7 @@ fn exhausted_definition_frontier_refuses_without_inserting() {
         index_id: DerivedIndexId(0),
         name: "frontier".into(),
         branch_scoped: false,
+        unique_entity_kind: None,
         kind: crate::contracts::indexes::data::definition::DerivedIndexKind::EntityField {
             field_locator:
                 crate::contracts::transactions::data::aspect_field_patch::planned_single_field_locator(

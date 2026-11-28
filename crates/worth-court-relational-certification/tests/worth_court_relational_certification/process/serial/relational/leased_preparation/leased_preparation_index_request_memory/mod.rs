@@ -83,6 +83,7 @@ fn one_large_index_build_stops_at_its_request_memory_without_publication() {
                     ),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let request = DerivedIndexBuildRequest {

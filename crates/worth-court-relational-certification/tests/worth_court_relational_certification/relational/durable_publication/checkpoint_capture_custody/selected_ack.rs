@@ -160,6 +160,7 @@ fn selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on
             index_id: DerivedIndexId(0),
             name: "pending-selected-definition".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: worth_relational::facade::transactions::planned_single_field_locator(
                     worth_foundational::facade::AspectKey::new("name").unwrap(),

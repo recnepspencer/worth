@@ -65,6 +65,7 @@ fn recovered_relation_field_generation_preserves_its_complete_binding_and_entrie
                 field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .unwrap();
     let built = runtime.index_authority().build_for_commit(
@@ -118,6 +119,7 @@ fn recovered_entity_field_lookup_certifies_the_original_bounded_candidates() {
                 field_locator: field.clone(),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .unwrap();
     let built = runtime.index_authority().build_for_commit(

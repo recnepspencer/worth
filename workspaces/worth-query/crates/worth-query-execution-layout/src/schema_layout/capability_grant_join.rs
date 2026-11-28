@@ -79,6 +79,7 @@ impl WorthQueryCapabilityGrantJoinLayout {
                 self.shared_entity_kind,
             )),
             branch_scoped: false,
+            unique_entity_kind: None,
         }
     }
 

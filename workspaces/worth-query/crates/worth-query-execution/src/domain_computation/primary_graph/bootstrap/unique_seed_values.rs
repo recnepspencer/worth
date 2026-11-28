@@ -82,10 +82,9 @@ pub(in crate::domain_computation::primary_graph) fn admit_values<'row>(
     values: &mut std::collections::BTreeSet<WorthQueryUniqueSeedValue>,
     writes: impl IntoIterator<Item = (KindId, &'row AspectFieldLocator, &'row AspectValue)>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    let unique = layout.unique_fields();
     let mut admitted = Vec::new();
     for (kind, locator, value) in writes {
-        if unique.index(kind, locator).is_none() {
+        if layout.unique_field_name(kind, locator).is_none() {
             continue;
         }
         assert!(!recovered, "unique seed values require a fresh graph");

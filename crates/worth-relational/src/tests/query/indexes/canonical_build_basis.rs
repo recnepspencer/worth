@@ -26,6 +26,7 @@ fn exact_basis_index_build_rejects_each_mixed_axis_without_publication() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let cases = [
@@ -102,6 +103,7 @@ fn derived_index_build_rejects_branch_claim_that_disagrees_with_source_commit() 
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
 
@@ -163,6 +165,7 @@ fn commit_index_build_returns_retention_backpressure_instead_of_panicking() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     runtime.set_retention_capacity_for_test(2, 8);

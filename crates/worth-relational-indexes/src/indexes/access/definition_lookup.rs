@@ -49,7 +49,8 @@ impl DerivedIndexDefinitionLookup {
             .iter()
             .find_map(|candidate| {
                 (candidate.kind == expected.kind
-                    && candidate.branch_scoped == expected.branch_scoped)
+                    && candidate.branch_scoped == expected.branch_scoped
+                    && candidate.unique_entity_kind == expected.unique_entity_kind)
                     .then(|| candidate.as_ref().clone())
             })
     }
@@ -99,6 +100,7 @@ pub mod tests {
             name: "same-name".to_owned(),
             kind,
             branch_scoped,
+            unique_entity_kind: None,
         };
         let lookup = DerivedIndexDefinitionLookup::new(vec![
             crate::branch::indexes::retained_definition::RetainedDerivedIndexDefinition::from_owned(
@@ -141,6 +143,7 @@ pub mod tests {
                 name: "missing".to_owned(),
                 kind,
                 branch_scoped: false,
+                unique_entity_kind: None,
             })
             .is_none());
     }

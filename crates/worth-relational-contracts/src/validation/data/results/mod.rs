@@ -32,6 +32,7 @@ pub enum InvariantViolationFields {
         limit: usize,
     },
     UniqueEntityField {
+        entity_kind_id: KindId,
         #[serde(with = "crate::aspect_wire::serde_canonical_aspect_field_locator")]
         field_locator: AspectFieldLocator,
         value: AspectValue,
@@ -210,6 +211,7 @@ impl InvariantViolationFieldsOwnerPort for InvariantViolationFields {
             Fields::UniqueEntityField {
                 field_locator,
                 value,
+                ..
             } => (field_locator.owned_allocation_capacity_bytes() as u64)
                 .saturating_add(value.owned_allocation_capacity_bytes() as u64),
             Fields::SidecarConsistency { missing_label, .. } => missing_label.capacity() as u64,

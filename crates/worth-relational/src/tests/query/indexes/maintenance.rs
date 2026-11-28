@@ -33,6 +33,7 @@ fn patch_local_field_maintenance_matches_independent_rebuild_and_preserves_prior
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let request = |commit_id| DerivedIndexBuildRequest {
@@ -115,6 +116,7 @@ fn exhausted_refresh_and_wrong_before_root_preserve_native_publication() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let request = |commit_id| DerivedIndexBuildRequest {
@@ -208,6 +210,7 @@ fn ordering_join_and_relation_field_updates_match_rebuild_after_local_changes() 
                 )],
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         },
         DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
@@ -218,6 +221,7 @@ fn ordering_join_and_relation_field_updates_match_rebuild_after_local_changes() 
                 KindId(1),
             )),
             branch_scoped: true,
+            unique_entity_kind: None,
         },
         DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
@@ -226,6 +230,7 @@ fn ordering_join_and_relation_field_updates_match_rebuild_after_local_changes() 
                 field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         },
     ];
     let ids = definitions

@@ -19,7 +19,7 @@ fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
     let catalog = InvariantCatalog {
         registrations: vec![
             worth_relational::facade::runtime::InvariantRegistration::commit_boundary_blocking(
-                worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(
+                worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(worth_relational::facade::identity::KindId(1_004), worth_relational::facade::indexes::DerivedIndexId(1),
                     worth_foundational::facade::AspectKey::new("call_sign")
                         .expect("call-sign aspect"),
                     worth_foundational::facade::FieldKey::new("call_sign")
@@ -95,7 +95,7 @@ fn global_uniqueness_rejects_two_colliding_creates_in_one_proposal_without_resid
     let catalog = InvariantCatalog {
         registrations: vec![
             worth_relational::facade::runtime::InvariantRegistration::commit_boundary_blocking(
-                worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(
+                worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(worth_relational::facade::identity::KindId(1_004), worth_relational::facade::indexes::DerivedIndexId(1),
                     worth_foundational::facade::AspectKey::new("call_sign")
                         .expect("call-sign aspect"),
                     worth_foundational::facade::FieldKey::new("call_sign")

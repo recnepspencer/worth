@@ -13,6 +13,7 @@ fn register(runtime: &RelationalRuntime, locator: AspectFieldLocator) -> Derived
                 field_locator: locator,
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("actual authored-field index registration succeeds")
 }

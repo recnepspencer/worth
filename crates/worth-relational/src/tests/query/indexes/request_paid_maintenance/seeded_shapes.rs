@@ -75,6 +75,7 @@ fn prove_shapes(shapes: impl IntoIterator<Item = (usize, usize)>) {
                         index_id: DerivedIndexId(0),
                         name: key.clone(),
                         branch_scoped: true,
+                        unique_entity_kind: None,
                         kind: DerivedIndexKind::EntityField {
                             field_locator: aspect_field_locator(aspect_key(&key), field_key(&key)),
                         },

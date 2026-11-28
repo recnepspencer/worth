@@ -1,5 +1,8 @@
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::branch::SelectedRelationalBranchState;
+use crate::history::data::BranchId;
+use worth_relational_branch::internal_port::branch::root::RelationalBranchRoot;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 use crate::transactions::data::MergedCommitPlan;
 use crate::validation::data::{InvariantGroupSet, InvariantPlanContract};
 use crate::validation::engine::{
@@ -18,11 +21,28 @@ impl<'runtime> InvariantAccess<'runtime> {
             execution,
             crate::authority::commit::pipeline::CommitStage::Validation,
         )?;
-        self.execute_for_state(
+        if self.has_unique_field_audit(profile) {
+            let identity = self.runtime.main_branch_identity();
+            let basis = self.runtime.admit_branch_basis(&identity).map_err(|_| {
+                let conflict = crate::transactions::data::ConflictClass::StaleValidationBasis {
+                    detail: "unique-field audit could not select the base branch".into(),
+                };
+                crate::transactions::data::CommitConflict::new(conflict)
+            })?;
+            let selected = SelectedRelationalBranchState::from_admitted_basis(&basis);
+            return self.execute_for_state_with_current_version(
+                execution, profile, InvariantObservation::committed_branch(&selected),
+                selected.version_id(), selected.version_id(), None,
+                Some((identity.branch_id(), selected.state().root())),
+            );
+        }
+        self.execute_for_state_with_current_version(
             execution,
             profile,
             InvariantObservation::committed(self.runtime.storage_access().current_edition()),
             self.runtime.current_version_id(),
+            self.runtime.current_version_id(),
+            None,
             None,
         )
     }
@@ -31,6 +51,7 @@ impl<'runtime> InvariantAccess<'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         profile: InvariantRequestProfile,
+        branch: &'state BranchId,
         selected_state: &'state SelectedRelationalBranchState,
         merged_plan: &'state MergedCommitPlan,
     ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError>
@@ -45,27 +66,7 @@ impl<'runtime> InvariantAccess<'runtime> {
             version_id,
             version_id,
             Some(merged_plan),
-        )
-    }
-
-    pub(super) fn execute_for_state<'state>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        profile: InvariantRequestProfile,
-        observation: InvariantObservation<'state>,
-        version_id: crate::identity::data::VersionId,
-        merged_plan: Option<&'state MergedCommitPlan>,
-    ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError>
-    where
-        'runtime: 'state,
-    {
-        self.execute_for_state_with_current_version(
-            execution,
-            profile,
-            observation,
-            version_id,
-            self.runtime.current_version_id(),
-            merged_plan,
+            Some((branch, selected_state.state().root())),
         )
     }
 
@@ -77,6 +78,7 @@ impl<'runtime> InvariantAccess<'runtime> {
         version_id: crate::identity::data::VersionId,
         current_version_id: crate::identity::data::VersionId,
         merged_plan: Option<&'state MergedCommitPlan>,
+        unique_field_root: Option<(&'state BranchId, &'state RelationalBranchRoot)>,
     ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError>
     where
         'runtime: 'state,
@@ -102,6 +104,10 @@ impl<'runtime> InvariantAccess<'runtime> {
             )));
         }
 
+        let audit = unique_field_root
+            .map(|(branch, root)| self.unique_field_audit(execution, profile, branch, root))
+            .transpose()?
+            .unwrap_or_default();
         let sources = [
             observation.committed_partition_access(),
             observation.enforcement_partition_access(),
@@ -112,7 +118,8 @@ impl<'runtime> InvariantAccess<'runtime> {
         let (answer, counts) = crate::storage::residency::probe_head_sources(
             execution, sources, |views| {
                 let counts = std::sync::Mutex::new(Default::default());
-                let view = self.view.with_counter_sink(&counts);
+                let view = self.view.with_counter_sink(&counts)
+                    .with_unique_field_audit(&audit.findings);
                 let answer = (|| -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError> {
                 let request = InvariantExecutionRequest::from_profile_with_contract_at_current_version(
                     execution,

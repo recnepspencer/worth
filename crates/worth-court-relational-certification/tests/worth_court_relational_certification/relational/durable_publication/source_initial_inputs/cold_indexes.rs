@@ -12,6 +12,7 @@ fn cold_complete_recapture_preserves_original_index_generations_and_live_tail() 
             index_id: DerivedIndexId(0),
             name: "cold-original-name".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: worth_relational::facade::transactions::planned_single_field_locator(
                     worth_foundational::facade::AspectKey::new("name").unwrap(),

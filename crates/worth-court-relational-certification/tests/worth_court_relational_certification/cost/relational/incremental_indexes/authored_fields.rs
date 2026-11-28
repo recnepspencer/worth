@@ -91,6 +91,7 @@ fn exercise(unrelated: usize) -> u64 {
                     index_id: DerivedIndexId(0),
                     name: format!("aspect-{ordinal}"),
                     branch_scoped: true,
+                    unique_entity_kind: None,
                     kind: DerivedIndexKind::EntityField { field_locator },
                 })
                 .unwrap()

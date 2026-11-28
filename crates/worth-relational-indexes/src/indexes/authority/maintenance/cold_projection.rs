@@ -25,7 +25,7 @@ pub(super) fn project(
             let mut rows = BTreeMap::new();
             for id in &records.entities {
                 if let Some((key, id)) =
-                    field_keys::entity(execution, Some(after), *id, field_locator, work)?
+                    field_keys::entity(execution, Some(after), *id, definition.unique_entity_kind, field_locator, work)?
                 {
                     let width = key.canonical_value_bytes().len() + 1;
                     push(&mut rows, key, id, width, work)?;

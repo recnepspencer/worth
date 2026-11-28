@@ -103,6 +103,7 @@ pub fn lookup(
             execution,
             (predecessor.index_id(), seed.generation_id),
             predecessor.field_locator(),
+            predecessor.retain_definition().unique_entity_kind,
             &seed,
         )
         .map_err(|cause| maintenance_denial(predecessor.index_id(), cause))?;

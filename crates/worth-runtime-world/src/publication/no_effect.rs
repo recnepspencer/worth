@@ -29,6 +29,7 @@ pub struct NoEffectCompositePublication {
     cause: NoEffectCause,
     expected_head: Option<ProductBranchObservation>,
     observed_head: Option<ProductBranchReferenceSnapshot>,
+    native_unique_field_denial: Option<std::sync::Arc<worth_relational::facade::mvcc::RelationalPublicationDenial>>,
 }
 
 impl NoEffectCompositePublication {
@@ -40,6 +41,7 @@ impl NoEffectCompositePublication {
             cause,
             expected_head,
             observed_head: None,
+            native_unique_field_denial: None,
         }
     }
 
@@ -49,6 +51,17 @@ impl NoEffectCompositePublication {
     ) -> Self {
         self.observed_head = observed_head;
         self
+    }
+
+    pub(crate) fn retain_native_unique_field_denial(
+        &mut self,
+        denial: Option<std::sync::Arc<worth_relational::facade::mvcc::RelationalPublicationDenial>>,
+    ) {
+        self.native_unique_field_denial = denial;
+    }
+
+    pub fn native_unique_field_denial(&self) -> Option<&worth_relational::facade::mvcc::RelationalPublicationDenial> {
+        self.native_unique_field_denial.as_deref()
     }
 
     pub const fn cause(&self) -> NoEffectCause {

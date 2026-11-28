@@ -323,6 +323,7 @@ fn register_relation_join_with_scope(
                 KindId(1),
             )),
             branch_scoped,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity")
 }

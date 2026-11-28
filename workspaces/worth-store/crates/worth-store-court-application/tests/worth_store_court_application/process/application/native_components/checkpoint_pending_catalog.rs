@@ -38,6 +38,7 @@ fn pending_selected_data_keeps_the_unaccepted_catalog_in_the_next_publication() 
             index_id: DerivedIndexId(0),
             name: "pending-selected-definition".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: worth_relational::facade::transactions::planned_single_field_locator(
                     crate::batches::aspect_key("name"),

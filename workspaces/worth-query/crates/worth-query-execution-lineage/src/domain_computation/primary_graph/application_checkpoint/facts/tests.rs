@@ -243,6 +243,7 @@ fn indexed_selection_wire_preserves_semantic_definition_and_signed_zero() {
                     field_locator: locator.clone(),
                 },
                 branch_scoped: true,
+                unique_entity_kind: None,
             },
         ),
         entity_kind: KindId(3),

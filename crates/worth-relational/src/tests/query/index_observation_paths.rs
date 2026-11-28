@@ -22,6 +22,7 @@ fn derived_index_build_materializes_latest_visible_entity_field_values() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
 
@@ -116,6 +117,7 @@ fn derived_index_build_materializes_declared_struct_field_through_field_projecti
                 field_locator: aspect_field_locator(aspect_key("summary"), field_key("title")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
 

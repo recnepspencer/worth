@@ -93,6 +93,7 @@ fn index_request_memory_refusal_reaches_application_caller() {
                         field_locator: locator,
                     },
                     branch_scoped: true,
+                    unique_entity_kind: None,
                 })
                 .expect("index fixture has identity capacity");
             let build_request = DerivedIndexBuildRequest {

@@ -37,6 +37,9 @@ pub fn require_performed(
                 ),
             ));
         }
+        RelationalPublicationOutcome::Denied(
+            contracts::mvcc::publication::outcome::refusals::RelationalPublicationDenial::UniqueFieldConflict(conflict),
+        ) => return Err(conflict.into()),
         RelationalPublicationOutcome::Denied(denial) => {
             return Err(TransactionCommitError::publication_denied(denial));
         }

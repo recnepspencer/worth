@@ -21,6 +21,7 @@ fn name_index(runtime: &crate::runtime::RelationalRuntime) -> DerivedIndexDefini
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity")
 }

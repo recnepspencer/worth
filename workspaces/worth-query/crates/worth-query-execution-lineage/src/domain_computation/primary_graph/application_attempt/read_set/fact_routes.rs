@@ -5,12 +5,8 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::Fac
 use std::collections::BTreeMap;
 use std::{mem::size_of, sync::Arc};
 use worth_execution::ExecutionMemoryReservation;
-use worth_foundational::facade::{
-    prepare_aspect_value_identity_basis, CanonicalAspectValueIdentityBasis,
-};
-use worth_foundational::facade::{AspectFieldLocator, AspectKey};
-use worth_relational::facade::identity::{EntityId, KindId, RelationId};
-use worth_relational::facade::indexes::DerivedIndexId;
+use worth_foundational::facade::{prepare_aspect_value_identity_basis, AspectFieldLocator, AspectKey};
+use worth_relational::facade::identity::{EntityId, RelationId};
 
 pub mod complete_sources;
 
@@ -21,15 +17,6 @@ pub struct FactRoutes {
     entities: BTreeMap<EntityId, usize>,
     complete_entities: BTreeMap<EntityId, usize>,
     relations: BTreeMap<RelationId, usize>,
-    selections: BTreeMap<
-        (
-            DerivedIndexId,
-            KindId,
-            AspectFieldLocator,
-            CanonicalAspectValueIdentityBasis,
-        ),
-        usize,
-    >,
     _memory: Option<ExecutionMemoryReservation>,
 }
 
@@ -73,15 +60,6 @@ impl FactRoutes {
             control.check_live()?;
             super::super::super::fact_verification_observation::effect_index_fact();
             super::super::super::fact_verification_observation::content_field_index();
-            if matches!(fact, Fact::IndexedEntitySelection { .. }) {
-                bytes = bytes
-                    .checked_add(
-                        fact.dependency_locator_byte_bound()
-                            .and_then(|n| n.checked_mul(4))
-                            .ok_or(StoreDenial::Representability)?,
-                    )
-                    .ok_or(StoreDenial::Representability)?;
-            }
         }
         let memory = control.policy().reserve_memory(bytes);
         control.check_live()?;
@@ -99,7 +77,6 @@ impl FactRoutes {
             entities: BTreeMap::new(),
             complete_entities: BTreeMap::new(),
             relations: BTreeMap::new(),
-            selections: BTreeMap::new(),
             _memory: memory,
         };
         for (ordinal, fact) in facts.enumerate() {
@@ -148,23 +125,6 @@ impl FactRoutes {
                             .or_insert(ordinal);
                     }
                 }
-                Fact::IndexedEntitySelection {
-                    index_id,
-                    entity_kind,
-                    locator,
-                    value,
-                    ..
-                } => {
-                    routes
-                        .selections
-                        .entry((
-                            *index_id,
-                            *entity_kind,
-                            locator.clone(),
-                            prepare_aspect_value_identity_basis(value),
-                        ))
-                        .or_insert(ordinal);
-                }
                 _ => {}
             }
         }
@@ -184,17 +144,6 @@ impl FactRoutes {
     }
     pub fn relation(&self, id: RelationId) -> Option<usize> {
         self.relations.get(&id).copied()
-    }
-    pub fn selection(
-        &self,
-        key: &(
-            DerivedIndexId,
-            KindId,
-            AspectFieldLocator,
-            CanonicalAspectValueIdentityBasis,
-        ),
-    ) -> Option<usize> {
-        self.selections.get(key).copied()
     }
     pub fn ordinals(&self, entity: EntityId, locator: &AspectFieldLocator) -> &[usize] {
         self.ordinals

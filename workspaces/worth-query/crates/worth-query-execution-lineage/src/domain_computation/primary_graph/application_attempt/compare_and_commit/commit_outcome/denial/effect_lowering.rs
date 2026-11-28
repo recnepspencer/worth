@@ -39,12 +39,22 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
+    pub fn unique_field_index_unavailable(stage: WorthQueryApplicationCommitDenialStage) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::UniqueIndexUnavailable,
+            stage,
+            detail: None,
+            cause: None,
+        }
+    }
+
     /// The entity type, unique field and key a `UniqueValueTaken` refusal names.
     pub fn keyed_entity(
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::WorthQueryKeyedEntityRefusal> {
         match self.cause.as_deref()? {
             DenialCause::KeyedEntity(keyed) => Some(keyed),
+            DenialCause::InvariantExecution(failure) => failure.keyed_entity(),
             _ => None,
         }
     }

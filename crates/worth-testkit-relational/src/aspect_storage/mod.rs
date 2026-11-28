@@ -109,3 +109,31 @@ materialized_binding!(
     entity_summary_struct_aspect,
     relation_field_aspect
 );
+
+/// Install only the backing equality indexes named by a fixture's native rules.
+pub fn install_declared_unique_field_indexes(runtime: &RelationalRuntime) {
+    use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexKind};
+    use worth_relational::facade::runtime::InvariantRule;
+    let config = runtime.config();
+    let mut installed = std::collections::BTreeSet::new();
+    for registration in config.schema.invariant_catalog.registrations {
+        let InvariantRule::UniqueEntityAspectField {
+            entity_kind_id,
+            backing_index_id,
+            field_locator,
+        } = registration.rule else {
+            continue;
+        };
+        if !installed.insert(backing_index_id) {
+            continue;
+        }
+        let definition = runtime.index_authority().register(DerivedIndexDefinition {
+            index_id: backing_index_id,
+            name: format!("fixture.unique.{}", backing_index_id.0),
+            kind: DerivedIndexKind::EntityField { field_locator },
+            branch_scoped: false,
+            unique_entity_kind: Some(entity_kind_id),
+        }).expect("fixture registers its declared equality index");
+        assert_eq!(definition.index_id, backing_index_id);
+    }
+}

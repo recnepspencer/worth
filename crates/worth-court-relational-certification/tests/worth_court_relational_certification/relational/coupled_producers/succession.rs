@@ -18,6 +18,7 @@ mod review_c3a;
 mod review_c3b;
 mod rounds;
 mod settlement;
+mod unique_field;
 
 type Candidate<'a> = RelationalAuthoredCoupledCandidate<'a>;
 type Failure = RelationalCoupledAssemblyFailure;

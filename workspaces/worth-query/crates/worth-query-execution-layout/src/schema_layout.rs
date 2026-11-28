@@ -57,10 +57,9 @@ mod signing_lifecycle;
 mod source_registration;
 mod support_admission;
 
-pub mod unique_fields;
+mod unique_fields;
 mod workflow_reads;
 
-pub use unique_fields::{WorthQueryUniqueFieldIndex, WorthQueryUniqueFields};
 
 use crate::outbox_layout::WorthQueryDispatchOutboxLayout;
 use crate::workflow_schema::WorthQueryWorkflowLayout;

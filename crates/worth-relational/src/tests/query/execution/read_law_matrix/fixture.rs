@@ -59,6 +59,7 @@ impl World {
                     field_locator: name.clone(),
                 },
                 branch_scoped: false,
+                unique_entity_kind: None,
             })
             .expect("index fixture has identity capacity");
         if indexed {

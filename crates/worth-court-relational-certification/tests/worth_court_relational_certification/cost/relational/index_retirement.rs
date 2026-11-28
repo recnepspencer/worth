@@ -27,6 +27,7 @@ fn sparse_publication_retires_more_predecessors_than_one_older_sweep() {
                         field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
                     },
                     branch_scoped: false,
+                    unique_entity_kind: None,
                 })
                 .unwrap()
         })
@@ -119,6 +120,7 @@ fn ordinary_retirement_is_flat_in_unreached_predecessor_indexes() {
                         index_id: DerivedIndexId(0),
                         name: format!("retirement-{ordinal}"),
                         branch_scoped: true,
+                        unique_entity_kind: None,
                         kind: if ordinal == 0 {
                             DerivedIndexKind::EntityField {
                                 field_locator: aspect_field_locator(

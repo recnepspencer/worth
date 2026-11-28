@@ -19,6 +19,7 @@ fn perf_index_parity_matrix() {
                     field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
                 },
                 branch_scoped: false,
+                unique_entity_kind: None,
             })
             .expect("index fixture has identity capacity");
 
@@ -102,6 +103,7 @@ fn perf_index_parity_matrix() {
                     field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
                 },
                 branch_scoped: false,
+                unique_entity_kind: None,
             })
             .expect("index fixture has identity capacity");
         let build = runtime.index_authority().build_for_commit(
@@ -188,6 +190,7 @@ fn perf_index_parity_matrix() {
                     field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
                 },
                 branch_scoped: false,
+                unique_entity_kind: None,
             })
             .expect("index fixture has identity capacity");
         let build = runtime.index_authority().build_for_commit(

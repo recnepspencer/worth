@@ -255,3 +255,20 @@ pub(crate) fn runtime_with_declared_aspect_schema_and_invariants(
         .build()
         .expect("valid native runtime configuration")
 }
+
+pub(crate) fn install_name_uniqueness_index(runtime: &RelationalRuntime) {
+    use crate::facade::indexes::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
+    let definition = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "unique.name".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: false,
+            unique_entity_kind: Some(KindId(1)),
+        })
+        .expect("the scoped test index installs");
+    assert_eq!(definition.index_id, DerivedIndexId(1));
+}

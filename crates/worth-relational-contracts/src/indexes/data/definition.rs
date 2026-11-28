@@ -37,6 +37,9 @@ pub struct DerivedIndexDefinition {
     pub name: String,
     pub kind: DerivedIndexKind,
     pub branch_scoped: bool,
+    /// Declare native uniqueness for one entity kind on this equality index.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unique_entity_kind: Option<crate::identity::data::KindId>,
 }
 
 /// Operations used by the Relational owners.

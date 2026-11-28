@@ -55,6 +55,7 @@ pub fn runtime(installed: usize) -> (RelationalRuntime, Vec<DerivedIndexId>) {
                     name: format!("scale-{i}"),
                     kind,
                     branch_scoped: true,
+                    unique_entity_kind: None,
                 })
                 .unwrap()
                 .index_id

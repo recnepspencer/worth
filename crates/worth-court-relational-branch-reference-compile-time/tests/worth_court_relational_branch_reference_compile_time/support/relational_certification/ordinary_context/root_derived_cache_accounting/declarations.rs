@@ -35,6 +35,7 @@ pub(crate) fn empty_entity_field_cache_growth(
                 ),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = world.runtime.index_authority().build_for_commit(

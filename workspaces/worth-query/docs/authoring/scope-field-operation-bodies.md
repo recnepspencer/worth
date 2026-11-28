@@ -559,19 +559,18 @@ symbolic slot, the logical request key and authorization. For example, declaring
 business identity, including creates under different admitted tenant scopes.
 Use a different authored identity shape if business uniqueness is tenant-local.
 
-The shared native handler tail observes each distinct assigned unique value
-through its installed equality index at the candidate's retained snapshot.
-Creation initializers, required assignments and present optional replacements
-use that same owner; optional clears consume no value. These intrinsic write
-dependencies are retained before signing/sealing, without requiring a supplier
-lookup or granting access to the other holders. Previously observed predicates
-are reused. Retiring the exact observed holder in the same atomic batch frees
-its value for one successor, regardless of effect order. Deleting another record
-does not free it. The ordinary native lowering law still refuses surviving
-holders or two writes of the same unique value within one candidate. A concurrent claimant
-cannot turn an observed absence into permission: publication rechecks the
-retained predicate and uniqueness. No losing creation or membership link commits.
-Unavailable indexes fail closed; uniqueness is never downgraded to a host precheck.
+Relational probes each assigned unique value in an equality index scoped to the
+declared entity kind. Creation initializers, required assignments, and present
+optional replacements claim values. Clearing a field or removing its holder
+lets one successor claim the value in the same atomic batch, regardless of
+effect order. Duplicate claims and surviving holders produce a keyed refusal
+without granting access to any holder.
+
+Relational checks the assigned keys again against the branch head at
+publication. If two transactions claim the same key concurrently, only one
+can commit. A missing or stale backing index refuses the write. A restored
+duplicate affects claims to that key while unrelated writes and repairs can
+proceed.
 
 ## Small Example
 

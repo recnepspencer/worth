@@ -17,6 +17,7 @@ fn index_query_keeps_the_admitted_root_after_same_and_sibling_reference_movement
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
@@ -113,6 +114,7 @@ fn current_query_prefers_its_exact_generation_over_a_later_historical_rebuild() 
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let first = runtime.index_authority().build_for_commit(
@@ -216,6 +218,7 @@ fn current_query_rejects_an_older_generation_and_returns_every_exact_match() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let older_build = runtime.index_authority().build_for_commit(

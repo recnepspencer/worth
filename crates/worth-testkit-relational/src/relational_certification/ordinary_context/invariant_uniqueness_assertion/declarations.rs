@@ -22,6 +22,7 @@ pub fn assert_unique_conflict(error: TransactionCommitError, value: &str) {
             worth_relational::facade::transactions::InvariantViolationFields::UniqueEntityField {
                 field_locator,
                 value: observed,
+                ..
             },
         ..
     } = class

@@ -88,6 +88,7 @@ fn bootstrap_index_build_keeps_the_serial_requests_cancellation() {
                 ),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let cancellation = CancellationSource::new();

@@ -32,6 +32,7 @@ fn retained_dangling_endpoint_deletion_matches_full_index_builds() {
                 )],
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         },
         DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
@@ -42,6 +43,7 @@ fn retained_dangling_endpoint_deletion_matches_full_index_builds() {
                 KindId(1),
             )),
             branch_scoped: true,
+            unique_entity_kind: None,
         },
         DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
@@ -50,6 +52,7 @@ fn retained_dangling_endpoint_deletion_matches_full_index_builds() {
                 field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         },
     ];
     let ids = definitions
@@ -230,6 +233,7 @@ fn preflight_exact_projection_excludes_unprojected_kind_and_charges_audit_retain
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         },
     )
     .unwrap();
@@ -242,6 +246,7 @@ fn preflight_exact_projection_excludes_unprojected_kind_and_charges_audit_retain
                 field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         },
     )
     .unwrap();

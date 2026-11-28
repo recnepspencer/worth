@@ -109,6 +109,7 @@ fn input() -> (Vec<u8>, Vec<u8>) {
                 ),
         },
         branch_scoped: true,
+        unique_entity_kind: None,
     };
     let delta = CanonicalIndexDefinitionDelta::prepared(1, 2, vec![definition], None);
     #[derive(serde::Serialize)]

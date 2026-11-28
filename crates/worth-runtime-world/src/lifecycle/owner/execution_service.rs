@@ -259,10 +259,15 @@ where
                 Err(RelationalExecutionFailure {
                     cause,
                     no_effect,
+                    native_unique_field_denial,
                     partial,
                 }) => {
                     let progress = CompositeAttemptProgress::new(partial, retained_signal);
-                    return self.retain_or_no_effect(attempt, progress, cause, no_effect);
+                    let mut terminal = self.retain_or_no_effect(attempt, progress, cause, no_effect);
+                    if let OwnerExecutionOutcome::NoEffect(no_effect) = &mut terminal {
+                        no_effect.retain_native_unique_field_denial(native_unique_field_denial);
+                    }
+                    return terminal;
                 }
             };
         let relational_successor = relational.successor_basis().cloned();

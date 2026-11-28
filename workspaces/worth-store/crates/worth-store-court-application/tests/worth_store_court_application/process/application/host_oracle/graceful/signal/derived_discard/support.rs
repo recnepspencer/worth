@@ -55,5 +55,6 @@ pub(super) fn entity_name_index() -> DerivedIndexDefinition {
             ),
         },
         branch_scoped: true,
+        unique_entity_kind: None,
     }
 }

@@ -32,6 +32,7 @@ fn pinned_read_shares_native_custody_and_outlives_the_runtime() {
                 ),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity")
         .index_id;

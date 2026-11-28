@@ -177,6 +177,7 @@ fn build_world(
             index_id: ORDER,
             name: "unchanged ordered derived children".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::RelatedEntityOrdering {
                 relation_kind: KindId(4),
                 parent_endpoint: RelatedEntityEndpoint::SourceParent,

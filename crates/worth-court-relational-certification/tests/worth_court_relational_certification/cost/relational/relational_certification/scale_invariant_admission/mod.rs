@@ -27,7 +27,7 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
     let catalog = InvariantCatalog {
         registrations: vec![
             worth_relational::facade::runtime::InvariantRegistration::commit_boundary_blocking(
-                worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(
+                worth_relational::facade::runtime::InvariantRule::unique_entity_aspect_field(worth_relational::facade::identity::KindId(1_004), worth_relational::facade::indexes::DerivedIndexId(1),
                     worth_foundational::facade::AspectKey::new("call_sign")
                         .expect("call-sign aspect"),
                     worth_foundational::facade::FieldKey::new("call_sign")

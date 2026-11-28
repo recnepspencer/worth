@@ -27,6 +27,7 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
             field_locator: field.clone(),
         },
         branch_scoped: true,
+        unique_entity_kind: None,
     };
     // More than one definition/generation exposes reset-to-zero and reset-to-one.
     let first = runtime

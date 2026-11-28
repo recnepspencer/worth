@@ -18,6 +18,7 @@ fn derived_index_contract_entity_field_equals_executes_through_real_index_path_w
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
@@ -103,6 +104,7 @@ fn derived_index_contract_entity_field_any_of_executes_through_real_index_path_w
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let latest_commit_id = runtime
@@ -195,6 +197,7 @@ fn derived_index_contract_matching_definition_without_generation_reports_missing
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
 
@@ -256,6 +259,7 @@ fn derived_index_contract_explicit_corrupt_generation_reports_corrupt_entries() 
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(

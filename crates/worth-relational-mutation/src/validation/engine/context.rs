@@ -228,6 +228,13 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
         self.runtime.entity_aspect_plan(kind_id)
     }
 
+    pub(crate) fn unique_field_duplicate(
+        &self,
+        index: crate::contracts::indexes::data::definition::DerivedIndexId,
+    ) -> Option<&worth_foundational::facade::AspectValue> {
+        self.runtime.unique_field_duplicate(index)
+    }
+
     pub fn metrics(&self) -> InvariantMetrics<'runtime> {
         self.runtime.performance_access()
     }

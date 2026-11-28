@@ -26,6 +26,7 @@ fn index_builds_use_the_memory_ceiling_of_their_request() {
                         field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
                     },
                     branch_scoped: true,
+                    unique_entity_kind: None,
                 })
                 .expect("index fixture has identity capacity")
                 .index_id
@@ -113,6 +114,7 @@ fn unleased_builds_keep_cancellation_and_deadline_without_publishing() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let request = DerivedIndexBuildRequest {

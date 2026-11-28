@@ -39,6 +39,7 @@ fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edi
                     field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
                 },
                 branch_scoped: true,
+                unique_entity_kind: None,
             })
             .expect("index fixture has identity capacity")
             .index_id

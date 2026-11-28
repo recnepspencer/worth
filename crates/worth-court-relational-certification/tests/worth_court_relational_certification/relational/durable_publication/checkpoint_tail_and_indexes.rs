@@ -71,6 +71,7 @@ fn durability_contract_checkpoint_recovers_index_metadata() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(

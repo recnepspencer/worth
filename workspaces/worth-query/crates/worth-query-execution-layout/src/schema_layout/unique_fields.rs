@@ -1,15 +1,9 @@
-//! The unique fields of an installed layout, by entity kind and locator.
-//!
-//! A unique field's lookup is its equality index; the index id is read from
-//! the field layout on every lookup, so an index not yet installed (`None`
-//! until installation registers it) reads as unavailable rather than as
-//! absent.
+//! Declared names for presenting a Native uniqueness refusal.
 
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::AspectFieldLocator;
 use worth_relational::facade::identity::KindId;
-use worth_relational::facade::indexes::DerivedIndexId;
 
 use super::{WorthQueryPrimaryFieldLayout, WorthQueryPrimaryGraphLayout};
 
@@ -33,105 +27,13 @@ impl WorthQueryUniqueFieldNames {
     }
 }
 
-/// A unique field's installed equality index, or its absence.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryUniqueFieldIndex {
-    Installed(DerivedIndexId),
-    Unavailable,
-}
-
-/// The unique fields one installed layout declares.
-#[derive(Clone, Copy)]
-pub struct WorthQueryUniqueFields<'layout> {
-    names: &'layout BTreeMap<KindId, BTreeMap<AspectFieldLocator, FieldName>>,
-    fields: &'layout BTreeMap<FieldName, WorthQueryPrimaryFieldLayout>,
-}
-
-impl<'layout> WorthQueryUniqueFields<'layout> {
-    /// A schema that declares no unique field.
-    pub fn none() -> WorthQueryUniqueFields<'static> {
-        static NAMES: BTreeMap<KindId, BTreeMap<AspectFieldLocator, FieldName>> = BTreeMap::new();
-        static FIELDS: BTreeMap<FieldName, WorthQueryPrimaryFieldLayout> = BTreeMap::new();
-        WorthQueryUniqueFields {
-            names: &NAMES,
-            fields: &FIELDS,
-        }
-    }
-
-    /// Whether the schema declares no unique field.
-    pub fn is_empty(&self) -> bool {
-        self.names.is_empty()
-    }
-
-    /// The declared `(entity, aspect, field)` names of a unique field.
-    pub fn declared_name(&self, kind: KindId, locator: &AspectFieldLocator) -> Option<&FieldName> {
-        self.names.get(&kind)?.get(locator)
-    }
-
-    /// The index a write of `locator` on `kind` must observe, or `None` when
-    /// the field is not unique.
-    pub fn index(
+impl WorthQueryPrimaryGraphLayout {
+    /// The declared entity, aspect, and field names for an installed unique key.
+    pub fn unique_field_name(
         &self,
         kind: KindId,
         locator: &AspectFieldLocator,
-    ) -> Option<WorthQueryUniqueFieldIndex> {
-        let name = self.names.get(&kind)?.get(locator)?;
-        Some(
-            match self
-                .fields
-                .get(name)
-                .and_then(|field| field.equality_index_id)
-            {
-                Some(index_id) => WorthQueryUniqueFieldIndex::Installed(index_id),
-                None => WorthQueryUniqueFieldIndex::Unavailable,
-            },
-        )
+    ) -> Option<&(String, String, String)> {
+        self.unique_fields.by_kind.get(&kind)?.get(locator)
     }
 }
-
-/// One unique field on one kind, owned, for lowering tests.
-pub struct WorthQueryUniqueFieldFixture {
-    names: BTreeMap<KindId, BTreeMap<AspectFieldLocator, FieldName>>,
-    fields: BTreeMap<FieldName, WorthQueryPrimaryFieldLayout>,
-}
-
-impl WorthQueryUniqueFieldFixture {
-    pub fn new(
-        kind: KindId,
-        locator: AspectFieldLocator,
-        equality_index_id: Option<DerivedIndexId>,
-    ) -> Self {
-        let name = ("Unique".to_owned(), "Identity".to_owned(), "Key".to_owned());
-        let field = WorthQueryPrimaryFieldLayout {
-            entity_kind: kind,
-            locator,
-            equality_queryable: true,
-            equality_index_id,
-            unique: true,
-            record_presence: None,
-        };
-        let fields = BTreeMap::from([(name, field)]);
-        Self {
-            names: WorthQueryUniqueFieldNames::lower(&fields).by_kind,
-            fields,
-        }
-    }
-
-    pub fn fields(&self) -> WorthQueryUniqueFields<'_> {
-        WorthQueryUniqueFields {
-            names: &self.names,
-            fields: &self.fields,
-        }
-    }
-}
-
-impl WorthQueryPrimaryGraphLayout {
-    pub fn unique_fields(&self) -> WorthQueryUniqueFields<'_> {
-        WorthQueryUniqueFields {
-            names: &self.unique_fields.by_kind,
-            fields: &self.fields,
-        }
-    }
-}
-
-mod court_doors_for_test;

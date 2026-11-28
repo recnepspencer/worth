@@ -25,6 +25,7 @@ fn complexity_budget_index_entity_field_equals_avoids_snapshot_materialization()
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
@@ -107,6 +108,7 @@ fn complexity_budget_index_relation_field_equals_avoids_snapshot_materialization
                 field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
@@ -185,6 +187,7 @@ fn complexity_budget_index_field_equals_reuses_warm_index_scratch_on_repeated_lo
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
@@ -261,6 +264,7 @@ fn complexity_budget_index_field_equals_reports_actual_result_width() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let latest_commit_id = runtime

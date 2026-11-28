@@ -6,3 +6,4 @@ pub mod execution;
 pub mod invariant_authority;
 pub mod proposed_state;
 pub mod reduction;
+pub mod unique_field_probes;

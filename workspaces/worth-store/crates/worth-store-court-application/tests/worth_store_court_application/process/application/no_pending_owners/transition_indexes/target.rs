@@ -98,5 +98,6 @@ pub(super) fn definition(
             ),
         },
         branch_scoped: true,
+        unique_entity_kind: None,
     }
 }

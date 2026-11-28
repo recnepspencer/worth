@@ -12,7 +12,7 @@ use crate::validation::data::rules::InvariantRule;
 #[test]
 fn canonical_catalog_digest_is_order_and_duplicate_independent_without_json_identity() {
     let unique_name =
-        InvariantRegistration::commit_boundary_blocking(InvariantRule::unique_entity_aspect_field(
+        InvariantRegistration::commit_boundary_blocking(InvariantRule::unique_entity_aspect_field(crate::identity::data::KindId(1), crate::indexes::data::definition::DerivedIndexId(1),
             worth_foundational::facade::AspectKey::new("profile.name").expect("valid test key"),
             worth_foundational::facade::FieldKey::new("value").expect("valid test key"),
         ));
@@ -106,7 +106,7 @@ fn every_invariant_variant_supports_at_least_one_execution_point_and_can_registe
 fn catalog_for_unique_field(aspect_key: AspectKey, field_key: FieldKey) -> InvariantCatalog {
     InvariantCatalog {
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
-            InvariantRule::unique_entity_aspect_field_locator(AspectFieldLocator::new(
+            InvariantRule::unique_entity_aspect_field_locator(crate::identity::data::KindId(1), crate::indexes::data::definition::DerivedIndexId(1), AspectFieldLocator::new(
                 LocatorAuthority::Planned,
                 aspect_key,
                 CanonicalFieldPath::single(field_key),

@@ -30,6 +30,7 @@ fn derived_index_contract_success_branch_scoped_build_keeps_storage_read() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let feature_build = runtime.index_authority().build_for_commit(
@@ -113,6 +114,7 @@ fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope(
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
@@ -240,6 +242,7 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
                 field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
@@ -323,6 +326,7 @@ fn derived_index_contract_branch_scoped_generation_reports_unsupported_branch() 
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(

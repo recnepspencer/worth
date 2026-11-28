@@ -47,6 +47,7 @@ pub struct InvariantRuntimeView<'a> {
     relation_count: usize,
     version_depth: usize,
     snapshot_pressure: bool,
+    unique_field_audit: &'a [(crate::contracts::indexes::data::definition::DerivedIndexId, worth_foundational::facade::AspectValue)],
     names: Option<&'a dyn crate::validation::custom_rule::CustomInvariantNameSource>,
     admission_time: Option<worth_foundational::facade::CanonicalTimestamp>,
 }
@@ -105,9 +106,32 @@ impl<'a> InvariantRuntimeView<'a> {
             relation_count: inputs.relation_count,
             version_depth: inputs.version_depth,
             snapshot_pressure: inputs.snapshot_pressure,
+            unique_field_audit: &[],
             names: None,
             admission_time: None,
         }
+    }
+
+    pub fn with_unique_field_audit(
+        mut self,
+        findings: &'a [(crate::contracts::indexes::data::definition::DerivedIndexId, worth_foundational::facade::AspectValue)],
+    ) -> Self {
+        self.unique_field_audit = findings;
+        self
+    }
+
+    pub(crate) fn unique_field_duplicate(
+        &self,
+        index: crate::contracts::indexes::data::definition::DerivedIndexId,
+    ) -> Option<&worth_foundational::facade::AspectValue> {
+        self.unique_field_audit.iter().find(|(id, _)| *id == index).map(|(_, value)| value)
+    }
+
+    pub fn native_registrations(
+        &self,
+        point: crate::contracts::validation::data::execution::InvariantExecutionPoint,
+    ) -> &[crate::contracts::validation::data::catalog::InvariantRegistration] {
+        &self.schema_contract_runtime.invariant_points[point as usize]
     }
 
     pub(crate) fn rejudges_home_target(&self) -> bool {
@@ -161,6 +185,7 @@ impl<'a> InvariantRuntimeView<'a> {
             relation_count: self.relation_count,
             version_depth: self.version_depth,
             snapshot_pressure: self.snapshot_pressure,
+            unique_field_audit: self.unique_field_audit,
             names: self.names,
             admission_time: self.admission_time,
         }

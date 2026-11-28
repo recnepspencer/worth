@@ -73,6 +73,7 @@ fn a_refused_publication_was_offered_to_the_medium_and_moved_nothing_live() {
             index_id: crate::indexes::data::DerivedIndexId(0),
             name: "refused-catalog".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: crate::indexes::data::DerivedIndexKind::EntityField {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },

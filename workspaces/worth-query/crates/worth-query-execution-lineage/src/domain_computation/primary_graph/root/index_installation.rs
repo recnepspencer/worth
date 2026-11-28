@@ -73,12 +73,15 @@ pub fn install_primary_graph_indexes(
                 field_locator: binding_layout.identity_locator.clone(),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })?;
         binding_layout.index_id = installed.index_id;
-        indexes_by_locator.insert(binding_layout.identity_locator.clone(), installed.index_id);
+        indexes_by_locator.insert((None, binding_layout.identity_locator.clone()), installed.index_id);
     }
     for ((entity, aspect, field), field_layout) in layout.equality_fields_mut() {
-        let index_id = if let Some(index_id) = indexes_by_locator.get(&field_layout.locator) {
+        let unique_entity_kind = field_layout.unique.then_some(field_layout.entity_kind);
+        let scope = (unique_entity_kind, field_layout.locator.clone());
+        let index_id = if let Some(index_id) = indexes_by_locator.get(&scope) {
             *index_id
         } else {
             let installed = install(DerivedIndexDefinition {
@@ -88,8 +91,9 @@ pub fn install_primary_graph_indexes(
                     field_locator: field_layout.locator.clone(),
                 },
                 branch_scoped: false,
+                unique_entity_kind,
             })?;
-            indexes_by_locator.insert(field_layout.locator.clone(), installed.index_id);
+            indexes_by_locator.insert(scope, installed.index_id);
             installed.index_id
         };
         field_layout.equality_index_id = Some(index_id);
@@ -108,6 +112,7 @@ pub fn install_primary_graph_indexes(
             field_locator: provider_idempotency.key_locator.clone(),
         },
         branch_scoped: false,
+        unique_entity_kind: None,
     })?;
     provider_idempotency.key_index_id = installed.index_id;
     let aftermath_causality = layout.provider_aftermath_causality_mut();
@@ -118,6 +123,7 @@ pub fn install_primary_graph_indexes(
             field_locator: aftermath_causality.key_locator.clone(),
         },
         branch_scoped: false,
+        unique_entity_kind: None,
     })?;
     aftermath_causality.key_index_id = installed.index_id;
     let lineage = &mut aftermath_causality.lineage;
@@ -145,6 +151,7 @@ pub fn install_primary_graph_indexes(
                 field_locator: locator.clone(),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })?
         .index_id;
     }

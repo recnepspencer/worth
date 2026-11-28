@@ -194,6 +194,7 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                     work.locator(field_locator)?;
                     pending_fields.push(field::PendingField::Entity {
                         index_id,
+                        kind_scope: definition.unique_entity_kind,
                         locator: field_locator.clone(),
                         entries,
                         edits: Default::default(),

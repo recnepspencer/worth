@@ -8,6 +8,7 @@ fn definition(index_id: u64, name: &str) -> DerivedIndexDefinition {
         index_id: DerivedIndexId(index_id),
         name: name.into(),
         branch_scoped: false,
+        unique_entity_kind: None,
         kind: crate::contracts::indexes::data::definition::DerivedIndexKind::EntityField {
             field_locator:
                 crate::contracts::transactions::data::aspect_field_patch::planned_single_field_locator(

@@ -35,6 +35,7 @@ fn exercise(records: usize, history: usize, unrelated_indexes: usize) -> fixture
                     index_id: DerivedIndexId(0),
                     name: format!("scale-{ordinal}"),
                     branch_scoped: true,
+                    unique_entity_kind: None,
                     kind: if ordinal == 0 {
                         DerivedIndexKind::EntityField {
                             field_locator: aspect_field_locator(

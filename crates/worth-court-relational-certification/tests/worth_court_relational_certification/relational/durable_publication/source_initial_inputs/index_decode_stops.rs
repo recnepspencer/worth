@@ -98,6 +98,7 @@ fn recovered_indexes(
             index_id: DerivedIndexId(0),
             name: "original-decoder-stop".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: worth_relational::facade::transactions::planned_single_field_locator(
                     worth_foundational::facade::AspectKey::new("name").unwrap(),

@@ -43,14 +43,9 @@ fn appended_workflow_facts_keep_their_context_after_an_issued_application_create
     ];
     let references = CreatedEffectReferences::new(&effects, application_partition);
     let facts = ObservedFactIndex::new(&[]);
-    let mut unique = UniqueValueWrites::new(
-        crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
-        &effects,
-    );
     let mut lowered = effects.into_iter().map(|effect| {
         lower_provider_effect(
             &facts,
-            &mut unique,
             &|_, _| None,
             &references,
             application_partition,

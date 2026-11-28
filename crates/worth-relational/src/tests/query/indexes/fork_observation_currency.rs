@@ -11,6 +11,7 @@ fn name_index(runtime: &RelationalRuntime, name: &str, branch_scoped: bool) -> D
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity")
         .index_id

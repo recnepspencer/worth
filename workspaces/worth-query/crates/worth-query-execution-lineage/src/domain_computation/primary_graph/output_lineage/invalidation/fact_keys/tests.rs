@@ -131,6 +131,7 @@ fn indexed_selection_matches_old_key_and_definition_touches() {
                     field_locator: locator.clone(),
                 },
                 branch_scoped: true,
+                unique_entity_kind: None,
             },
         ),
         entity_kind: kind,

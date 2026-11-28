@@ -49,13 +49,6 @@ impl<Schema, Operation, Input, Scope>
         Self::initialize_body_field(self, target, field, value)
     }
 
-    fn observe_unique_write_dependencies(
-        &mut self,
-        execution: &ExecutionRequest<'_, '_>,
-        allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        Self::observe_unique_write_dependencies(self, execution, allocation)
-    }
 
     fn field_locator(
         &self,

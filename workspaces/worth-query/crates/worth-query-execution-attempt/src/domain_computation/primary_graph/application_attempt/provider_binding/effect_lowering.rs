@@ -27,9 +27,7 @@ pub(super) type AspectContracts<'a> = dyn Fn(
         &worth_foundational::facade::AspectKey,
     ) -> Option<&'a worth_relational::facade::schema::DeclaredAspectContractBinding>
     + 'a;
-pub mod unique_values;
 pub(super) use observed_fact_index::ObservedFactIndex;
-pub(super) use unique_values::UniqueValueWrites;
 
 #[derive(Clone)]
 pub(super) enum WorthQueryLoweredProviderEffect {
@@ -112,7 +110,6 @@ impl CreatedEffectReferences {
 
 pub(super) fn lower_provider_effect(
     facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
-    unique: &mut UniqueValueWrites<'_>,
     contracts: &AspectContracts<'_>,
     created: &CreatedEffectReferences,
     mutation_partition: worth_relational::facade::identity::PartitionId,
@@ -126,9 +123,6 @@ pub(super) fn lower_provider_effect(
             fields,
             partition,
         } => {
-            for (locator, value) in &fields {
-                unique.admit(facts, kind, None, locator, value)?;
-            }
             lower_create_entity(partition.resolve(mutation_partition), kind, key, fields)
         }
         WorthQueryApplicationRealizedEffect::UpdateEntity {
@@ -140,9 +134,9 @@ pub(super) fn lower_provider_effect(
                 facts.aspect_absent(entity_id, field).map(|v| absent || v)
             })?;
             if absent || composed_aspect_patch {
-                entity_field_patch::ordinary(facts, unique, contracts, &entity, entity_id, fields)
+                entity_field_patch::ordinary(facts, contracts, &entity, entity_id, fields)
             } else {
-                lower_update_entity(facts, unique, entity_id, fields)
+                lower_update_entity(facts, entity_id, fields)
             }
         }
         WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
@@ -154,9 +148,9 @@ pub(super) fn lower_provider_effect(
                 facts.aspect_absent(entity_id, field).map(|v| absent || v)
             })?;
             if absent || composed_aspect_patch {
-                entity_field_patch::optional(facts, unique, contracts, &entity, entity_id, fields)
+                entity_field_patch::optional(facts, contracts, &entity, entity_id, fields)
             } else {
-                optional_field_patch::lower(facts, unique, entity_id, fields)
+                optional_field_patch::lower(facts, entity_id, fields)
             }
         }
         WorthQueryApplicationRealizedEffect::RemoveAspect {
@@ -215,16 +209,13 @@ fn lower_create_entity(
 
 fn lower_update_entity(
     facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
-    unique: &mut UniqueValueWrites<'_>,
     entity_id: EntityId,
     fields: BTreeMap<AspectFieldLocator, AspectValue>,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     let steps = fields
-        .iter()
-        .map(|(locator, value)| {
+        .keys()
+        .map(|locator| {
             let target = facts.field_identity(entity_id, locator)?;
-            let kind = facts.field_kind(entity_id, locator)?;
-            unique.admit(facts, kind, Some(entity_id), locator, value)?;
             effect_step(WorthQueryProvisionalEffectAction::Replace {
                 target_identity: target.into(),
             })

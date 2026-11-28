@@ -111,6 +111,7 @@ pub struct WorthQueryInvariantExecutionFailure {
     posture: WorthQueryInvariantExecutionFailurePosture,
     detail: Arc<str>,
     native: Option<NativeDenial>,
+    keyed_entity: Option<Arc<worth_query_execution_contracts::facade::WorthQueryKeyedEntityRefusal>>,
     affected_records: Option<Arc<[worth_relational::facade::transactions::RecordRef]>>,
 }
 
@@ -175,6 +176,7 @@ impl WorthQueryInvariantExecutionFailure {
             posture: WorthQueryInvariantExecutionFailurePosture::Denied,
             detail: detail.into(),
             native: None,
+            keyed_entity: None,
             affected_records: None,
         }
     }
@@ -188,6 +190,7 @@ impl WorthQueryInvariantExecutionFailure {
             posture: WorthQueryInvariantExecutionFailurePosture::Exhausted,
             detail: detail.into(),
             native: None,
+            keyed_entity: None,
             affected_records: None,
         }
     }
@@ -301,6 +304,7 @@ impl WorthQueryInvariantExecutionFailure {
             posture,
             detail: detail.into(),
             native: Some(native),
+            keyed_entity: None,
             affected_records: None,
         }
     }

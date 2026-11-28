@@ -225,6 +225,7 @@ fn pinned_read_keeps_rows_and_generation_across_a_commit_and_discard() {
                 field_locator: locator.clone(),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let snapshot = snapshot_for_main(&runtime);

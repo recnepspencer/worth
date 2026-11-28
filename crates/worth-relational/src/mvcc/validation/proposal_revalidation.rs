@@ -11,11 +11,12 @@ use super::validated_proposal::ValidatedRelationalProposal;
 impl RelationalPreparationRuntime {
     pub(crate) fn revalidate_proposal_for_publication(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: ValidatedRelationalProposal,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         #[cfg(test)]
         crate::mvcc::transaction::split_contacts::revalidation();
-        self.ensure_validated_proposal_branch_is_current(&candidate)?;
+
         if !candidate
             .state
             .receiver_epoch
@@ -56,6 +57,18 @@ impl RelationalPreparationRuntime {
                 "validated mutation belongs to an obsolete custom-invariant generation",
             ));
         }
+        let branch = candidate.state.validation_input.basis().identity();
+        if !candidate.state.unique_fields.claims().is_empty()
+            && let Some(cell) = self.history.branch_cell(branch.branch_id())
+            && cell.identity() == branch
+            && let Some(head) = cell.root()
+        {
+            worth_relational_publication::internal_port::mvcc::publication::unique_field_admission::admit(
+                execution, &self.index_definitions, branch.branch_id(), &head,
+                candidate.state.unique_fields.claims(),
+            ).map_err(TransactionCommitError::from)?;
+        }
+        self.ensure_validated_proposal_branch_is_current(&candidate)?;
         Ok(candidate)
     }
 

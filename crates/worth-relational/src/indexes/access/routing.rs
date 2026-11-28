@@ -131,7 +131,7 @@ fn index_rejection_for_packet(
         ) => match &definition.kind {
             DerivedIndexKind::EntityField {
                 field_locator: indexed_field_locator,
-            } if indexed_field_locator == field_locator => None,
+            } if indexed_field_locator == field_locator && definition.unique_entity_kind.is_none() => None,
             _ => Some(IndexQueryRejectionClass::UnsupportedScope),
         },
         (
@@ -168,7 +168,7 @@ fn candidate_generation_for_packet(
                 matches!(
                     &definition.kind,
                     DerivedIndexKind::EntityField { field_locator: indexed_field_locator }
-                        if indexed_field_locator == field_locator
+                        if indexed_field_locator == field_locator && definition.unique_entity_kind.is_none()
                 )
             })
             .filter_map(|definition| {
@@ -234,7 +234,7 @@ fn matching_index_definition_exists(
                 matches!(
                     &definition.kind,
                     DerivedIndexKind::EntityField { field_locator: indexed_field_locator }
-                        if indexed_field_locator == field_locator
+                        if indexed_field_locator == field_locator && definition.unique_entity_kind.is_none()
                 )
             })
         }

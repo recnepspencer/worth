@@ -180,6 +180,7 @@ pub fn compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invarian
         .install(program.schema_registry().clone())
         .map_err(crate::relational_certification::ordinary_context::world::supply_chain::compiler::SupplyChainCompilationError::SchemaInstallation)?;
 
+    crate::aspect_storage::install_declared_unique_field_indexes(&runtime);
     let commit_result = commit_definition(execution, &runtime, &program)?;
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime

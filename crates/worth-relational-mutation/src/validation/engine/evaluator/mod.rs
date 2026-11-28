@@ -5,7 +5,6 @@ pub mod relation_cardinality;
 pub mod relation_edge_rules;
 pub mod relation_endpoint_kind;
 pub mod relation_traversal;
-pub mod unique_entity_fields;
 pub(crate) use relation_cardinality::CurrentVersionMinimumIndex;
 
 use crate::contracts::validation::data::execution::InvariantClass;
@@ -24,7 +23,7 @@ use relation_edge_rules::{
 };
 use relation_endpoint_kind::evaluate_endpoint_kind_contract;
 use relation_traversal::{evaluate_acyclicity_contract, evaluate_connectivity_minimum_contract};
-use unique_entity_fields::evaluate_unique_entity_aspect_field;
+use crate::validation::unique_field_probes::UniqueFieldScope;
 
 pub(crate) fn evaluate_rule(
     context: &InvariantExecutionContext<'_, '_>,
@@ -60,9 +59,18 @@ pub(crate) fn evaluate_rule(
                 Vec::new()
             }
         }
-        InvariantRule::UniqueEntityAspectField { field_locator } => single_violation(
-            evaluate_unique_entity_aspect_field(context, class, field_locator),
-        ),
+        InvariantRule::UniqueEntityAspectField {
+            entity_kind_id, backing_index_id, field_locator,
+        } => single_violation(context.unique_field_duplicate(*backing_index_id).and_then(|value| {
+            let bytes = 4096u64
+                .saturating_add(field_locator.owned_allocation_capacity_bytes() as u64)
+                .saturating_add(value.owned_allocation_capacity_bytes() as u64);
+            context.claim_result(bytes).then(|| UniqueFieldScope {
+                entity_kind_id: *entity_kind_id,
+                backing_index_id: *backing_index_id,
+                field_locator,
+            }.violation(class, value.clone()))
+        })),
         InvariantRule::EndpointKindContract(contract) => {
             evaluate_endpoint_kind_contract(context, class, contract)
         }

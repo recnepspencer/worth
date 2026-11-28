@@ -18,6 +18,7 @@ fn request_paid_selected_field_refresh_leaves_unrelated_cold_index_unpublished()
                 ),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let selected = request.index_ids[0];

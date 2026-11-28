@@ -70,6 +70,7 @@ impl RelationalIndexDefinitionPreparation {
                     if actual.name == definition.name
                         && actual.kind == definition.kind
                         && actual.branch_scoped == definition.branch_scoped
+                        && actual.unique_entity_kind == definition.unique_entity_kind
                     {
                         return Ok(Some(actual.index_id));
                     }

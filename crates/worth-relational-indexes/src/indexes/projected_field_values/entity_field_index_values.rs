@@ -20,12 +20,16 @@ pub(in crate::internal_port::indexes) fn build_entity_aspect_field_index(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,
+    kind_scope: Option<crate::contracts::identity::data::primitives::KindId>,
 ) -> Result<
     BTreeMap<AuthoritativeFieldComparisonKey, Vec<EntityId>>,
     crate::contracts::execution::denial_cause::RelationalExecutionDenialCause,
 > {
     let mut entries = BTreeMap::new();
     for scope in entity_index_projection_scopes(projection, field_locator) {
+        if kind_scope.is_some_and(|kind| kind != scope.kind_id()) {
+            continue;
+        }
         projection.try_for_each_entity_field(execution, scope.kind_id(), field_locator,
             |_, _| Ok::<_, crate::contracts::execution::denial_cause::RelationalExecutionDenialCause>(()),
             |entity_id, value| {
@@ -49,6 +53,7 @@ pub(in crate::internal_port::indexes) fn build_entity_aspect_field_index_checked
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,
+    kind_scope: Option<crate::contracts::identity::data::primitives::KindId>,
     context: &mut crate::contracts::execution::packet_memory::PacketKernelContext<'_, '_, '_>,
 ) -> Result<BTreeMap<AuthoritativeFieldComparisonKey, Vec<EntityId>>, IndexKernelStop> {
     let mut entries = BTreeMap::new();
@@ -56,7 +61,9 @@ pub(in crate::internal_port::indexes) fn build_entity_aspect_field_index_checked
     let projected_bytes = std::cell::Cell::new(0);
     if let Some(plans) = projection.aspect_plans() {
         for plan in plans.entity_plans.values() {
-            if entity_index_projection_scope(plan, field_locator).is_none() {
+            if kind_scope.is_some_and(|kind| kind != plan.kind_id)
+                || entity_index_projection_scope(plan, field_locator).is_none()
+            {
                 continue;
             }
             projection

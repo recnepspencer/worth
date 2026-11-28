@@ -1,5 +1,6 @@
 mod execution;
 mod metadata;
+mod unique_field_audit;
 #[cfg(test)]
 pub(crate) mod test_support;
 #[cfg(test)]
@@ -81,12 +82,14 @@ impl<'runtime> InvariantAccess<'runtime> {
     pub(crate) fn commit_boundary_for_selected_branch_plan(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        branch: &crate::history::data::BranchId,
         selected_state: &SelectedRelationalBranchState,
         merged_plan: &MergedCommitPlan,
     ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError> {
         self.execute_for_selected_branch_committed_plan(
             execution,
             InvariantRequestProfile::CommitBoundary,
+            branch,
             selected_state,
             merged_plan,
         )
@@ -95,12 +98,14 @@ impl<'runtime> InvariantAccess<'runtime> {
     pub(crate) fn graph_composition_for_selected_branch_plan(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        branch: &crate::history::data::BranchId,
         selected_state: &SelectedRelationalBranchState,
         merged_plan: &MergedCommitPlan,
     ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError> {
         self.execute_for_selected_branch_committed_plan(
             execution,
             InvariantRequestProfile::GraphComposition,
+            branch,
             selected_state,
             merged_plan,
         )

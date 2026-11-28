@@ -150,6 +150,7 @@ fn taking_without_freeing_is_refused_by_the_installed_native_unique_invariant() 
     assert_eq!(
         fields,
         InvariantViolationFields::UniqueEntityField {
+            entity_kind_id: schema::KIND,
             field_locator: schema::locator("Alias", "Unique"),
             value: AspectValue::String("token".into()),
         }

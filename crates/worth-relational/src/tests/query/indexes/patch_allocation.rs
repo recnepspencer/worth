@@ -43,6 +43,7 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
             index_id: DerivedIndexId(0),
             name: "patch-memory.name".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },

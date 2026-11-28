@@ -36,9 +36,11 @@ impl<'a> InvariantViolationDiagnosticProjection<'a> {
                 limit: *limit,
             },
             InvariantViolationFields::UniqueEntityField {
+                entity_kind_id,
                 field_locator,
                 value,
             } => Self::UniqueEntityField {
+                entity_kind_id: *entity_kind_id,
                 aspect_field: AspectFieldDiagnosticProjection::new(
                     field_locator.aspect().aspect_key(),
                     field_locator.field_path().clone(),
