@@ -263,3 +263,132 @@ pub(super) fn named_holders(
     }
     (entities, relations)
 }
+
+/// Exact `(earliest, latest)` lineage event commit bounds visible on
+/// `branch_id` through `cutoff` when full event history is resident.
+///
+/// Queries only ancestor branches in `event_commits_by_branch`, ignoring all
+/// unrelated branch history (`O(ancestors * log H_branch)`).
+pub(super) fn branch_lineage_event_commit_bounds(
+    _full: &FullLineageRecoveryToken,
+    branch_id: &BranchId,
+    cutoff: CommitId,
+    event_commits_by_branch: &BTreeMap<BranchId, BTreeSet<CommitId>>,
+    branch_forks: &BTreeMap<BranchId, (BranchId, CommitId)>,
+) -> (Option<CommitId>, Option<CommitId>) {
+    let cutoffs = ancestor_commit_cutoffs(branch_id, cutoff, branch_forks);
+    let (mut earliest, mut latest): (Option<CommitId>, Option<CommitId>) = (None, None);
+    for (ancestor, max_commit) in cutoffs {
+        let Some(commits) = event_commits_by_branch.get(&ancestor) else {
+            continue;
+        };
+        if let Some(first) = commits.first().copied().filter(|&c| c <= max_commit) {
+            earliest = Some(earliest.map_or(first, |prev| prev.min(first)));
+        }
+        if let Some(last) = commits.range(..=max_commit).next_back().copied() {
+            latest = Some(latest.map_or(last, |prev| prev.max(last)));
+        }
+    }
+    (earliest, latest)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::contracts::identity::data::primitives::{LineageId, PartitionId};
+    use crate::contracts::identity::data::record_ids::EntityId;
+    use crate::contracts::lineage::data::events::LineageEventKind;
+    use crate::contracts::lineage::data::graph::assemble_lineage_node;
+    use crate::lineage::naming_pages::tests::unnamed_retirement_and_group_log_carry::unnamed_event;
+
+    #[test]
+    fn event_commit_bounds_respect_multi_hop_cutoffs_ignoring_unrelated_history() {
+        let mut state = LineageState::empty();
+        let main = BranchId("main".into());
+        let mid = BranchId("mid".into());
+        let leaf = BranchId("leaf".into());
+        let mut next_event_id = 1u64;
+        let mut next_lineage_id = 1u64;
+        let mut push_ev = |state: &mut LineageState, branch: &BranchId, commit: u64| {
+            let lid = LineageId(next_lineage_id);
+            next_lineage_id += 1;
+            let eid = EntityId::new(PartitionId::main(), next_lineage_id, 1);
+            state.record_node(assemble_lineage_node(lid, eid));
+            let ev = unnamed_event(
+                next_event_id,
+                branch,
+                CommitId(commit),
+                LineageEventKind::Create,
+                vec![],
+                vec![lid],
+            );
+            next_event_id += 1;
+            state
+                .install_recovered_event_batch(&[ev], CommitId(commit))
+                .unwrap();
+        };
+
+        // Flood 5,000 events across 50 unrelated branches spanning commits 1..=10_000.
+        for b in 0..50u64 {
+            let unrelated = BranchId(format!("unrelated-{b:02}"));
+            for k in 0..100u64 {
+                push_ev(&mut state, &unrelated, 1 + k * 100 + b);
+            }
+        }
+
+        // Multi-hop ancestry: main (commits 5, 10, 50) -> mid@20 (25, 35, 60) -> leaf@40 (42, 48, 80).
+        for c in [5, 10, 50] {
+            push_ev(&mut state, &main, c);
+        }
+        state.record_fork_ancestry_metadata(mid.clone(), main.clone(), CommitId(20));
+        for c in [25, 35, 60] {
+            push_ev(&mut state, &mid, c);
+        }
+        state.record_fork_ancestry_metadata(leaf.clone(), mid.clone(), CommitId(40));
+        for c in [42, 48, 80] {
+            push_ev(&mut state, &leaf, c);
+        }
+
+        let full = state.full_history.as_ref().expect("full history resident");
+        assert_eq!(
+            branch_lineage_event_commit_bounds(
+                full,
+                &leaf,
+                CommitId(45),
+                &state.event_commits_by_branch,
+                &state.branch_forks,
+            ),
+            (Some(CommitId(5)), Some(CommitId(42)))
+        );
+        assert_eq!(
+            branch_lineage_event_commit_bounds(
+                full,
+                &leaf,
+                CommitId(30),
+                &state.event_commits_by_branch,
+                &state.branch_forks,
+            ),
+            (Some(CommitId(5)), Some(CommitId(25)))
+        );
+        assert_eq!(
+            branch_lineage_event_commit_bounds(
+                full,
+                &leaf,
+                CommitId(4),
+                &state.event_commits_by_branch,
+                &state.branch_forks,
+            ),
+            (None, None)
+        );
+        assert_eq!(
+            branch_lineage_event_commit_bounds(
+                full,
+                &BranchId("never-seen".into()),
+                CommitId(10_000),
+                &state.event_commits_by_branch,
+                &state.branch_forks,
+            ),
+            (None, None)
+        );
+    }
+}

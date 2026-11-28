@@ -43,6 +43,7 @@ impl Fold {
             state.truth = contracts::branch::version::RelationalBranchVersion::initial();
             state.lifecycle = Lifecycle::Live;
             state.removed = false;
+            state.fork_origin = Some((source.clone(), source_head.selected_commit_id()));
             return self.record(target, state, request);
         }
         if let Transition::Fork {
@@ -70,6 +71,7 @@ impl Fold {
             }
             state.generation = worth_foundational::FoundationalBranchReferenceGeneration::initial();
             state.truth = contracts::branch::version::RelationalBranchVersion::initial();
+            state.fork_origin = Some((source.clone(), source_head.selected_commit_id()));
             return self.record(target, state, request);
         }
         let branch = entry.transition.branch();

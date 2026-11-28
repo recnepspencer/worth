@@ -20,6 +20,7 @@ mod codec_im;
 mod group_window;
 pub mod page;
 pub mod store;
+mod store_delta;
 pub mod tables;
 #[cfg(test)]
 pub(crate) mod tests;
@@ -52,6 +53,8 @@ fn physical_key_fits(key: &[u8]) -> bool {
 }
 /// Bound on one installed group scheme id in a branch header.
 pub const SCHEME_ID_BYTES: usize = 128;
+/// Maximum `delta_base` chain depth permitted in one checkpoint manifest.
+pub const MAX_DELTA_DEPTH: usize = 16;
 
 /// One page's fixed-bound descriptor.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -114,6 +117,34 @@ pub struct BranchNamingRoot {
     pub index: Option<NameIndexHeader>,
     pub groups: Option<GroupStateHeader>,
     pub pages: Vec<NamingPageRef>,
+    /// Optional base branch within the same checkpoint whose rows this branch
+    /// inherits when absent from `pages` (shadowed by `VALUE_TOMBSTONE_TAG`).
+    #[serde(default)]
+    pub delta_base: Option<BranchId>,
+}
+
+impl BranchNamingRoot {
+    /// Whether this root's headers declare `domain` active (present and not unavailable).
+    pub fn has_active_domain(&self, domain: u8) -> bool {
+        match domain {
+            tables::GROUP_MEMBER_DOMAIN | tables::GROUP_STATE_DOMAIN => {
+                self.groups.as_ref().is_some_and(|g| !g.unavailable)
+            }
+            1 => self.naming.is_some_and(|n| !n.unavailable),
+            2 => self.index.is_some_and(|i| !i.unavailable),
+            _ => false,
+        }
+    }
+}
+
+/// One retired intermediate branch's recorded fork edge so capture and
+/// read-free manifest validation resolve the same nearest live ancestor.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RetiredBranchFork {
+    pub branch: BranchId,
+    pub parent: BranchId,
+    pub fork_commit: u64,
 }
 
 /// The naming state a `CHK24` manifest retains.
@@ -126,6 +157,10 @@ pub struct CheckpointNamingState {
     pub group_log: Vec<NamingPageRef>,
     /// The newest commit the group log covers.
     pub group_log_through: Option<u64>,
+    /// Retired intermediate fork edges referenced by live branch ancestry,
+    /// strictly ascending by `branch`.
+    #[serde(default)]
+    pub retired_forks: Vec<RetiredBranchFork>,
 }
 
 impl CheckpointNamingState {
@@ -162,8 +197,28 @@ impl CheckpointNamingState {
         {
             return Err("naming roots are not strictly ascending by branch");
         }
+        let mut seen_locators: std::collections::BTreeMap<
+            RelationalDurableMemberLocator,
+            &NamingPageRef,
+        > = std::collections::BTreeMap::new();
         for root in &self.branches {
             validate_pages(&root.pages)?;
+            for page in &root.pages {
+                if let Some(&existing) = seen_locators.get(&page.member) {
+                    if existing != page {
+                        return Err("naming page locator referenced with conflicting descriptors");
+                    }
+                } else {
+                    seen_locators.insert(page.member, page);
+                }
+            }
+            if root.naming.is_none()
+                && root.index.is_none()
+                && root.groups.is_none()
+                && root.delta_base.is_some()
+            {
+                return Err("headerless naming root cannot carry delta_base");
+            }
             if let Some(groups) = &root.groups {
                 let mut prior: Option<&str> = None;
                 for scheme in &groups.schemes {
@@ -184,8 +239,37 @@ impl CheckpointNamingState {
             {
                 return Err("a branch root carries group log rows");
             }
+            if let Some(mut base) = root.delta_base.as_ref() {
+                let mut depth = 0usize;
+                let mut seen = std::collections::BTreeSet::from([&root.branch]);
+                loop {
+                    depth += 1;
+                    if depth > MAX_DELTA_DEPTH {
+                        return Err("naming root delta_base chain exceeds depth bound");
+                    }
+                    if !seen.insert(base) {
+                        return Err("naming root delta_base chain contains a cycle");
+                    }
+                    let Some(target) = self.root(base) else {
+                        return Err("naming root delta_base references missing branch");
+                    };
+                    match target.delta_base.as_ref() {
+                        Some(next) => base = next,
+                        None => break,
+                    }
+                }
+            }
         }
         validate_pages(&self.group_log)?;
+        for page in &self.group_log {
+            if let Some(&existing) = seen_locators.get(&page.member) {
+                if existing != page {
+                    return Err("naming page locator referenced with conflicting descriptors");
+                }
+            } else {
+                seen_locators.insert(page.member, page);
+            }
+        }
         if self.group_log.iter().any(|page| {
             !matches!(page.first[0], tables::GROUP_LOG | tables::VALUE_CHUNK)
                 || !matches!(page.last[0], tables::GROUP_LOG | tables::VALUE_CHUNK)
@@ -195,6 +279,48 @@ impl CheckpointNamingState {
         if !self.group_log.is_empty() && self.group_log_through.is_none() {
             return Err("the group log has no covered commit");
         }
+        if self
+            .retired_forks
+            .windows(2)
+            .any(|pair| pair[0].branch >= pair[1].branch)
+        {
+            return Err("retired fork edges are not strictly ascending by branch");
+        }
+        let retired_map: std::collections::BTreeMap<&BranchId, &BranchId> = self
+            .retired_forks
+            .iter()
+            .map(|edge| (&edge.branch, &edge.parent))
+            .collect();
+        let mut color: std::collections::BTreeMap<&BranchId, u8> =
+            std::collections::BTreeMap::new();
+        let mut path: Vec<&BranchId> = Vec::new();
+        for edge in &self.retired_forks {
+            if edge.branch == edge.parent || self.root(&edge.branch).is_some() {
+                return Err("retired fork edge is self-referential or names a live root");
+            }
+            if color.get(&edge.branch).copied().unwrap_or(0) != 0 {
+                continue;
+            }
+            path.clear();
+            let mut cursor = &edge.branch;
+            loop {
+                match color.get(cursor).copied().unwrap_or(0) {
+                    1 => return Err("retired fork edges contain a cycle"),
+                    2 => break,
+                    _ => {
+                        color.insert(cursor, 1);
+                        path.push(cursor);
+                        match retired_map.get(cursor) {
+                            Some(&next) => cursor = next,
+                            None => break,
+                        }
+                    }
+                }
+            }
+            for node in &path {
+                color.insert(node, 2);
+            }
+        }
         Ok(())
     }
 }
@@ -203,7 +329,11 @@ impl CheckpointNamingState {
 pub fn validate_pages(pages: &[NamingPageRef]) -> Result<(), &'static str> {
     let (mut prior, mut expected_chunks, mut actual_chunks): (Option<&NamingPageRef>, u64, u64) =
         (None, 0, 0);
+    let mut seen_locators = std::collections::BTreeSet::new();
     for page in pages {
+        if !seen_locators.insert(page.member) {
+            return Err("naming page locator referenced with conflicting descriptors");
+        }
         if page.entries == 0
             || page.entries > NAMING_PAGE_ENTRIES
             || !physical_key_fits(&page.first)

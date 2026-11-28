@@ -266,6 +266,124 @@ def checkCowFork (j : Json) : Except String Unit := do
   expect ((← slotsAt j "child") == slots child) "the fork's slots after its writes are not the model's"
   expect ((← slotsAt j "parent") == slots parent) "the source's slots after its writes are not the model's"
 
+def optNat (j : Json) : Except String (Option Nat) := do
+  if j.isNull then pure none else some <$> j.getNat?
+
+partial def idTree (j : Json) : Except String (CowMapDeltaSeal.IdTree (Option Nat)) := do
+  if j.isNull then
+    pure .leaf
+  else
+    match (← j.getArr?).toList with
+    | [idJ, hJ, lJ, kJ, vJ, rJ] =>
+      pure (.node (← idJ.getNat?) (← hJ.getNat?) (← idTree lJ) (← kJ.getNat?) (← optNat vJ) (← idTree rJ))
+    | _ => throw s!"not an IdTree node: {j.compress}"
+
+def checkBst : CowMapDeltaSeal.IdTree (Option Nat) → Option Nat → Option Nat → Bool
+  | .leaf, _, _ => true
+  | .node _ _ l k _ r, lo, hi =>
+    (lo.all (· < k)) && (hi.all (k < ·)) && checkBst l lo (some k) && checkBst r (some k) hi
+
+def checkAvl : CowMapDeltaSeal.IdTree (Option Nat) → Bool
+  | .leaf => true
+  | .node _ h l _ _ r =>
+    let hl := CowMapDeltaSeal.idHeight l
+    let hr := CowMapDeltaSeal.idHeight r
+    h == max hl hr + 1 && hl ≤ hr + 1 && hr ≤ hl + 1 && checkAvl l && checkAvl r
+
+def idTreeNodes : CowMapDeltaSeal.IdTree (Option Nat) → List (Nat × CowMapDeltaSeal.IdTree (Option Nat))
+  | .leaf => []
+  | t@(.node id _ l _ _ r) => (id, t) :: idTreeNodes l ++ idTreeNodes r
+
+def checkValidSharing (a b : CowMapDeltaSeal.IdTree (Option Nat)) : Bool :=
+  let bn := idTreeNodes b
+  (idTreeNodes a).all fun (id1, s1) =>
+    bn.all fun (id2, s2) => id1 != id2 || s1 == s2
+
+def diffItem (j : Json) : Except String (CowMapDeltaSeal.DiffItem (Option Nat)) := do
+  match (← j.getArr?).toList with
+  | [kind, k, v, prev] =>
+    let key ← k.getNat?
+    match ← kind.getStr? with
+    | "set" =>
+      let val ← optNat v
+      let prevSlot ← slot prev
+      pure (.set key val prevSlot)
+    | "removed" =>
+      let prevVal ← optNat prev
+      pure (.removed key prevVal)
+    | other => throw s!"unknown diff item kind {other}"
+  | _ => throw s!"not a diff item: {j.compress}"
+
+def checkCowDiff (j : Json) : Except String Unit := do
+  let empty : CowMapFork.Table Nat := { base := fun _ => none, delta := .leaf }
+  let base0 := CowMapFork.apply empty (← writes j "entries")
+  let child := CowMapFork.apply (CowMapFork.fork base0 base0.base).val (← writes j "child_writes")
+  let parent := CowMapFork.apply base0 (← writes j "parent_writes")
+  let childTree ← idTree (← j.getObjVal? "child_tree")
+  let parentTree ← idTree (← j.getObjVal? "parent_tree")
+  expect (checkBst childTree none none && checkBst parentTree none none)
+    "exported CowMap tree violates BST invariant"
+  expect (checkAvl childTree && checkAvl parentTree)
+    "exported CowMap tree violates AVL height/balance invariant"
+  expect (checkValidSharing childTree parentTree && checkValidSharing parentTree parentTree)
+    "exported Arc NodeIds violate ValidSharing"
+  let identicalVisited ← nat j "identical_visited"
+  expect (identicalVisited == 0) "diffing identical CowMap roots visited nodes"
+  let rustVisited ← nat j "visited"
+  let rustPtrChecks ← nat j "ptr_checks"
+  let rustPushSteps ← nat j "push_steps"
+  let size ← nat j "size"
+  if size >= 64 then
+    expect (rustVisited < size) s!"diff visited {rustVisited} nodes on size-{size} tree without skipping shared subtrees"
+  let rustDiffs ← (← (← j.getObjVal? "diffs").getArr?).toList.mapM diffItem
+  let limit ← nat j "limit"
+  let modelRun := CowMapDeltaSeal.cursorDiff childTree parentTree limit
+  expect (modelRun.val == some rustDiffs)
+    s!"exact ordered diff mismatch: Rust emitted {rustDiffs.length} items, model={modelRun.val.map List.length}"
+  expect (rustVisited == modelRun.visited && rustPtrChecks == modelRun.ptrChecks && rustPushSteps == modelRun.pushSteps)
+    s!"cursorDiff step-cost mismatch: Rust=({rustVisited},{rustPtrChecks},{rustPushSteps}), model=({modelRun.visited},{modelRun.ptrChecks},{modelRun.pushSteps})"
+  let tightRefused ← (← j.getObjVal? "tight_limit_refused").getBool?
+  if rustDiffs.length > 0 then
+    let tightModel := (CowMapDeltaSeal.cursorDiff childTree parentTree (rustDiffs.length - 1)).val
+    expect (tightRefused && tightModel.isNone)
+      s!"tight budget refusal mismatch: Rust refused={tightRefused}, model={tightModel.isNone}"
+  else
+    expect (!tightRefused) "empty diff should not report tight budget refusal"
+  let probes ← nat j "probes"
+  for q in List.range probes do
+    let applied := CowMapDeltaSeal.applyDiffItems (CowMapDeltaSeal.idRead parentTree) rustDiffs q
+    let expected := CowMapDeltaSeal.idRead childTree q
+    expect (applied == expected)
+      s!"cursorDiff reconstruction disagreed at key {q}: applied={applied}, expected={expected}"
+    expect (expected == (CowMapFork.get child.delta q).val && CowMapDeltaSeal.idRead parentTree q == (CowMapFork.get parent.delta q).val)
+      s!"exported IdTree disagreed with CowMapFork semantics at key {q}"
+
+def coldOpRow (j : Json) : Except String (Nat × CowMapDeltaSeal.DeltaOp Nat) := do
+  match (← j.getArr?).toList with
+  | [k, v] =>
+    let key ← k.getNat?
+    if v.isNull then pure (key, .tombstone)
+    else pure (key, .put (← v.getNat?))
+  | _ => throw s!"not a cold layer row: {j.compress}"
+
+def coldLayer (j : Json) : Except String (CowMapDeltaSeal.ColdLayer Nat) := do
+  let activeDomain ← (← j.getObjVal? "active_domain").getBool?
+  let isDelta ← (← j.getObjVal? "is_delta").getBool?
+  let rows ← (← (← j.getObjVal? "rows").getArr?).toList.mapM coldOpRow
+  pure { activeDomain, isDelta, rows }
+
+def checkColdChain (j : Json) : Except String Unit := do
+  let layers ← (← (← j.getObjVal? "layers").getArr?).toList.mapM coldLayer
+  let probes ← nat j "probes"
+  let rustGets ← (← (← j.getObjVal? "gets").getArr?).toList.mapM optNat
+  let modelGets := (List.range probes).map (CowMapDeltaSeal.resolveActiveChain layers)
+  expect (rustGets == modelGets)
+    s!"ColdNamingStore::get_root disagreed with resolveActiveChain: Rust={rustGets}, model={modelGets}"
+  let rustScan ← (← (← j.getObjVal? "scan").getArr?).toList.mapM pair
+  let modelScan := CowMapDeltaSeal.scanActiveChain layers
+  expect (rustScan == modelScan)
+    s!"ColdNamingStore::scan_root disagreed with scanActiveChain: Rust={rustScan}, model={modelScan}"
+
 def check (j : Json) : Except String Unit := do
   match ← (← j.getObjVal? "kind").getStr? with
   | "mint_order" => checkMintOrder j
@@ -275,6 +393,8 @@ def check (j : Json) : Except String Unit := do
   | "resolve" => checkResolve j
   | "fork_children" => checkForkChildren j
   | "cow_fork" => checkCowFork j
+  | "cow_diff" => checkCowDiff j
+  | "cold_chain" => checkColdChain j
   | "wire" => checkWire j
   | "disc" => checkDisc j
   | other => throw s!"unknown line kind {other}"

@@ -50,11 +50,13 @@ fn branch_state(
         index: None,
         groups: None,
         pages,
+        delta_base: None,
     };
     Arc::new(CheckpointNamingState {
         branches: vec![root],
         group_log,
         group_log_through,
+        retired_forks: Vec::new(),
     })
 }
 

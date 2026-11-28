@@ -154,6 +154,45 @@ impl AuthoritativeBranchNamingState {
         changes
     }
 
+    pub(super) fn delta_len(&self) -> usize {
+        self.lineage_holders.delta_len()
+            + self.holder_names.delta_len()
+            + self.live_holders.delta_len()
+            + self.live_lineages.delta_len()
+            + self.retired_lineages.delta_len()
+    }
+
+    pub(super) fn diff_encoded_against_bounded(
+        &self,
+        base: &Self,
+        cold_base: Option<(
+            &crate::lineage::naming_pages::store::ColdNamingStore,
+            &crate::lineage::naming_pages::BranchNamingRoot,
+        )>,
+        budget: usize,
+    ) -> Result<Option<Vec<(Vec<u8>, crate::lineage::naming_pages::builder::PageChange)>>, Cause>
+    {
+        let mut out = Vec::new();
+        macro_rules! step {
+            ($field:ident) => {
+                let rem = budget.saturating_sub(out.len());
+                let Some(part) =
+                    self.$field
+                        .diff_encoded_against_bounded(&base.$field, cold_base, rem)?
+                else {
+                    return Ok(None);
+                };
+                out.extend(part);
+            };
+        }
+        step!(lineage_holders);
+        step!(holder_names);
+        step!(live_holders);
+        step!(live_lineages);
+        step!(retired_lineages);
+        Ok(Some(out))
+    }
+
     /// Every live row across all naming-basis tables merged against `store`,
     /// for mixed-base branch capture.
     pub(super) fn collect_encoded_in(

@@ -13,7 +13,8 @@
     "PersistentNaming.TimeM",
     "PersistentNaming.ForkChildren",
     "PersistentNaming.ForkChildrenCost",
-    "PersistentNaming.CowMapForkCost"
+    "PersistentNaming.CowMapForkCost",
+    "PersistentNaming.CowMapDeltaSeal"
   ],
   "allowed_axioms": [],
   "theorems": [
@@ -168,6 +169,46 @@
     {
       "name": "PersistentNaming.GroupMember.projected_case_injective",
       "type": "∀ {carrier carrier' : Nat} {domain domain' : String × Nat × String} {caseName caseName' : String}, PersistentNaming.GroupMember.Key.projectedCase carrier domain caseName = PersistentNaming.GroupMember.Key.projectedCase carrier' domain' caseName' → carrier = carrier' ∧ domain = domain' ∧ caseName = caseName'"
+    },
+    {
+      "name": "PersistentNaming.CowMapDeltaSeal.cursorDiff_skip_identical",
+      "type": "∀ {α : Type} [DecidableEq α] (t : PersistentNaming.CowMapDeltaSeal.IdTree α) (limit : Nat), (PersistentNaming.CowMapDeltaSeal.cursorDiff t t limit).val = Option.some [] ∧ (PersistentNaming.CowMapDeltaSeal.cursorDiff t t limit).visited = 0 ∧ (PersistentNaming.CowMapDeltaSeal.cursorDiff t t limit).totalSteps = 1"
+    },
+    {
+      "name": "PersistentNaming.CowMapDeltaSeal.cursorDiff_eq_bounded_listDiff",
+      "type": "∀ {α : Type} [DecidableEq α] {a b : PersistentNaming.CowMapDeltaSeal.IdTree α}, PersistentNaming.CowMapDeltaSeal.ValidSharing a b → ∀ (limit : Nat), (PersistentNaming.CowMapDeltaSeal.cursorDiff a b limit).val = let d := PersistentNaming.CowMapDeltaSeal.listDiff (PersistentNaming.CowMapDeltaSeal.inOrder a) (PersistentNaming.CowMapDeltaSeal.inOrder b); if d.length ≤ limit then Option.some d else Option.none"
+    },
+    {
+      "name": "PersistentNaming.CowMapDeltaSeal.cursorDiff_budget_abort_iff",
+      "type": "∀ {α : Type} [DecidableEq α] {a b : PersistentNaming.CowMapDeltaSeal.IdTree α}, PersistentNaming.CowMapDeltaSeal.ValidSharing a b → ∀ (limit : Nat), (PersistentNaming.CowMapDeltaSeal.cursorDiff a b limit).val = Option.none ↔ (PersistentNaming.CowMapDeltaSeal.listDiff (PersistentNaming.CowMapDeltaSeal.inOrder a) (PersistentNaming.CowMapDeltaSeal.inOrder b)).length > limit"
+    },
+    {
+      "name": "PersistentNaming.CowMapDeltaSeal.cursorDiff_sound_and_sorted",
+      "type": "∀ {α : Type} [DecidableEq α] {fork base : PersistentNaming.CowMapDeltaSeal.IdTree α}, PersistentNaming.CowMapDeltaSeal.BST fork → PersistentNaming.CowMapDeltaSeal.BST base → PersistentNaming.CowMapDeltaSeal.ValidSharing fork base → ∀ {limit : Nat} {diffs : List (PersistentNaming.CowMapDeltaSeal.DiffItem α)}, (PersistentNaming.CowMapDeltaSeal.cursorDiff fork base limit).val = Option.some diffs → diffs.length ≤ limit ∧ PersistentNaming.CowMapDeltaSeal.StrictlySortedDiff diffs ∧ ∀ (q : Nat), PersistentNaming.CowMapDeltaSeal.applyDiffItems (PersistentNaming.CowMapDeltaSeal.idRead base) diffs q = PersistentNaming.CowMapDeltaSeal.idRead fork q"
+    },
+    {
+      "name": "PersistentNaming.CowMapDeltaSeal.avl_height_le_two_log2",
+      "type": "∀ {α : Type} {t : PersistentNaming.CowMapDeltaSeal.IdTree α}, PersistentNaming.CowMapDeltaSeal.AVL t → PersistentNaming.CowMapDeltaSeal.idHeight t ≤ 2 * Nat.log2 (PersistentNaming.CowMapDeltaSeal.idSize t + 1) + 1"
+    },
+    {
+      "name": "PersistentNaming.CowMapDeltaSeal.avlInsert_preserves_invariants",
+      "type": "∀ {α : Type} {t : PersistentNaming.CowMapDeltaSeal.IdTree α}, PersistentNaming.CowMapDeltaSeal.BST t → PersistentNaming.CowMapDeltaSeal.AVL t → PersistentNaming.CowMapDeltaSeal.ValidSharing t t → ∀ {nid : Nat}, PersistentNaming.CowMapDeltaSeal.IdsLt nid t → ∀ (k : Nat) (v : α), let t' := (PersistentNaming.CowMapDeltaSeal.avlInsert t k v nid).1; PersistentNaming.CowMapDeltaSeal.BST t' ∧ PersistentNaming.CowMapDeltaSeal.AVL t' ∧ PersistentNaming.CowMapDeltaSeal.ValidSharing t' t"
+    },
+    {
+      "name": "PersistentNaming.CowMapDeltaSeal.cursorDiff_after_avlInsert_steps_bounded",
+      "type": "∀ {α : Type} [DecidableEq α] {t : PersistentNaming.CowMapDeltaSeal.IdTree α}, PersistentNaming.CowMapDeltaSeal.BST t → PersistentNaming.CowMapDeltaSeal.AVL t → PersistentNaming.CowMapDeltaSeal.ValidSharing t t → ∀ {nid : Nat}, PersistentNaming.CowMapDeltaSeal.IdsLt nid t → ∀ (k : Nat) (v : α) (limit : Nat), let r := PersistentNaming.CowMapDeltaSeal.cursorDiff (PersistentNaming.CowMapDeltaSeal.avlInsert t k v nid).1 t limit; r.visited ≤ PersistentNaming.CowMapDeltaSeal.idHeight t + 3 ∧ r.totalSteps ≤ 4 * ((PersistentNaming.CowMapDeltaSeal.idHeight t + 3) * (PersistentNaming.CowMapDeltaSeal.idHeight t + 4))"
+    },
+    {
+      "name": "PersistentNaming.CowMapDeltaSeal.cursorDiff_after_avlInsert_log_bound",
+      "type": "∀ {α : Type} [DecidableEq α] {t : PersistentNaming.CowMapDeltaSeal.IdTree α}, PersistentNaming.CowMapDeltaSeal.BST t → PersistentNaming.CowMapDeltaSeal.AVL t → PersistentNaming.CowMapDeltaSeal.ValidSharing t t → ∀ {nid : Nat}, PersistentNaming.CowMapDeltaSeal.IdsLt nid t → ∀ (k : Nat) (v : α) (limit : Nat), let r := PersistentNaming.CowMapDeltaSeal.cursorDiff (PersistentNaming.CowMapDeltaSeal.avlInsert t k v nid).1 t limit; let L := 2 * Nat.log2 (PersistentNaming.CowMapDeltaSeal.idSize t + 1) + 1; r.visited ≤ L + 3 ∧ r.totalSteps ≤ 4 * ((L + 3) * (L + 4))"
+    },
+    {
+      "name": "PersistentNaming.CowMapDeltaSeal.resolveActiveChain_eq_applyActiveChain",
+      "type": "∀ {α : Type} (layers : List (PersistentNaming.CowMapDeltaSeal.ColdLayer α)) (q : Nat), PersistentNaming.CowMapDeltaSeal.resolveActiveChain layers q = PersistentNaming.CowMapDeltaSeal.applyActiveChain layers q"
+    },
+    {
+      "name": "PersistentNaming.CowMapDeltaSeal.scanActiveChain_sound",
+      "type": "∀ {α : Type} {layers : List (PersistentNaming.CowMapDeltaSeal.ColdLayer α)}, (∀ l ∈ layers, PersistentNaming.CowMapDeltaSeal.SortedKeys l.rows) → PersistentNaming.CowMapDeltaSeal.SortedKeys (PersistentNaming.CowMapDeltaSeal.scanActiveChain layers) ∧ ∀ (q : Nat), PersistentNaming.CowMapDeltaSeal.listLookup (PersistentNaming.CowMapDeltaSeal.scanActiveChain layers) q = PersistentNaming.CowMapDeltaSeal.resolveActiveChain layers q"
     }
   ]
 }

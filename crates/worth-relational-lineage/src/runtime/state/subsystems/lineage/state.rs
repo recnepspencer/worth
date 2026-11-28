@@ -32,6 +32,7 @@ pub struct LineageState {
     pub(super) naming_rebuilt_event_frontier: Option<u64>,
     pub(super) published_events: Vec<PublishedLineageEvent>,
     pub(super) published_event_positions: BTreeMap<u64, usize>,
+    pub(super) event_commits_by_branch: BTreeMap<BranchId, BTreeSet<CommitId>>,
     pub(super) published_group_lineage: Vec<super::group_states::PublishedGroupLineage>,
     pub(super) group_states: super::group_states::BranchGroupStates,
     pub(super) cold_naming: Option<Arc<dyn ColdNamingSource>>,
@@ -67,6 +68,7 @@ impl LineageState {
             naming_rebuilt_event_frontier: None,
             published_events: Vec::new(),
             published_event_positions: BTreeMap::new(),
+            event_commits_by_branch: BTreeMap::new(),
             published_group_lineage: Vec::new(),
             group_states: Default::default(),
             cold_naming: None,
@@ -126,6 +128,10 @@ impl LineageState {
                 *slot = Err(NamingBasisUnavailable::Storage(cause));
             }
         }
+        self.event_commits_by_branch
+            .entry(event.branch_id().clone())
+            .or_default()
+            .insert(publication_commit_id);
         self.published_events.push(PublishedLineageEvent {
             event,
             publication_commit_id,
@@ -299,6 +305,13 @@ impl LineageState {
             .enumerate()
             .map(|(position, published)| (published.event.event_id(), position))
             .collect();
+        self.event_commits_by_branch.clear();
+        for published in &self.published_events {
+            self.event_commits_by_branch
+                .entry(published.event.branch_id().clone())
+                .or_default()
+                .insert(published.publication_commit_id);
+        }
         let nodes = self.nodes.values();
         let events = self.published_events.iter().map(|p| p.event.as_ref());
         self.resolution_indexes.rebuild(lane, nodes, events);
@@ -339,52 +352,12 @@ impl LineageState {
         &mut self,
     ) -> impl Iterator<Item = (LineageEventRecord, CommitId)> + use<> {
         self.published_event_positions.clear();
+        self.event_commits_by_branch.clear();
         self.branch_naming_states.clear();
         self.name_indexes.clear();
         std::mem::take(&mut self.published_events)
             .into_iter()
             .map(|p| (Arc::unwrap_or_clone(p.event), p.publication_commit_id))
-    }
-
-    /// An independent state for a forked runtime (`O(resident)` COW fork).
-    pub fn fork_detached(&self) -> Self {
-        let state_id = super::recovery_token::next_state_id();
-        let branch_naming_states = self
-            .branch_naming_states
-            .iter()
-            .map(|(b, s)| {
-                (
-                    b.clone(),
-                    s.as_ref()
-                        .map(|s| s.fork(s.base().cloned()))
-                        .map_err(|e| *e),
-                )
-            })
-            .collect();
-        Self {
-            state_id,
-            nodes: self.nodes.clone(),
-            relation_lineages: self.relation_lineages.clone(),
-            relation_lineage_holders: self.relation_lineage_holders.clone(),
-            branch_forks: self.branch_forks.clone(),
-            fork_children: self.fork_children.clone(),
-            branch_naming_states,
-            name_indexes: self.name_indexes.fork_all(),
-            naming_rebuilt_event_frontier: self.naming_rebuilt_event_frontier,
-            published_events: self.published_events.clone(),
-            published_event_positions: self.published_event_positions.clone(),
-            published_group_lineage: self.published_group_lineage.clone(),
-            group_states: self.group_states.fork_all(),
-            cold_naming: self.cold_naming.clone(),
-            branch_generations: self.branch_generations.clone(),
-            next_generation: self.next_generation,
-            full_history: self
-                .full_history
-                .as_ref()
-                .map(|_| FullLineageRecoveryToken::fresh(state_id)),
-            resolution_indexes: self.resolution_indexes.clone(),
-            identity_allocator: self.identity_allocator.detached(),
-        }
     }
 }
 

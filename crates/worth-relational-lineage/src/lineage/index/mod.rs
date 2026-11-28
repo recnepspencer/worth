@@ -21,6 +21,7 @@ pub mod member_groups;
 pub mod preflight;
 pub mod recorded_name;
 pub mod retention;
+pub mod truncate;
 
 #[cfg(test)]
 mod name_index_conformance_trace;

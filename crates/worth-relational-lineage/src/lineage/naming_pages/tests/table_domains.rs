@@ -8,13 +8,13 @@ use std::sync::Arc;
 
 use worth_relational_contracts::internal_port::history::data::coordinates::BranchId;
 
-use super::super::builder::seal_pages;
+use super::super::builder::{seal_pages, seal_pages_with_ops, PageChange};
 use super::super::store::ColdNamingStore;
 use super::super::tables::{
     table_domain, GROUP_LIVE, GROUP_MEMBERS, INDEX_NAME, LINEAGE_HOLDER, MAX_INLINE_VALUE_BYTES,
     VALUE_CHUNK,
 };
-use super::super::{validate_pages, BranchNamingRoot, CheckpointNamingState};
+use super::super::{validate_pages, BranchNamingRoot, CheckpointNamingState, NameIndexHeader};
 use super::{CollectedMembers, MemSource};
 
 #[test]
@@ -43,11 +43,13 @@ fn naming_pages_isolate_domains_without_cross_domain_reads_and_refuse_mixed_desc
         index: None,
         groups: None,
         pages: pages1.clone(),
+        delta_base: None,
     };
     let state = CheckpointNamingState {
         branches: vec![root],
         group_log: Vec::new(),
         group_log_through: None,
+        retired_forks: Vec::new(),
     };
     let store = ColdNamingStore::open(Arc::new(state), source.clone());
     let mut sink2 = CollectedMembers::default();
@@ -117,4 +119,94 @@ fn group_member_rows_keep_their_own_contiguous_domain() {
             "domain {domain} is not one contiguous tag interval"
         );
     }
+}
+
+#[test]
+fn delta_scan_early_termination_does_not_fault_unavailable_next_page() {
+    let mk_key = |i: u64| {
+        let mut k = vec![INDEX_NAME];
+        k.extend_from_slice(&i.to_be_bytes());
+        k
+    };
+    let mut sink = CollectedMembers::default();
+    let base_ops: Vec<_> = (0..300u64)
+        .map(|i| (mk_key(i * 2), PageChange::Put(vec![(i & 0xff) as u8; 16])))
+        .collect();
+    let delta_ops: Vec<_> = (0..300u64)
+        .map(|i| {
+            (
+                mk_key(i * 2 + 1),
+                PageChange::Put(vec![((i + 7) & 0xff) as u8; 16]),
+            )
+        })
+        .collect();
+    let base_pages = seal_pages_with_ops(None, base_ops, &mut sink).unwrap();
+    let delta_pages = seal_pages_with_ops(None, delta_ops, &mut sink).unwrap();
+    assert!(base_pages.len() >= 2 && delta_pages.len() >= 2);
+    let source = MemSource::from_sink(sink);
+    // Remove page 1 from BOTH base and delta so faulting page 1 would fail.
+    {
+        let mut guard = source.members.lock().unwrap();
+        guard.remove(&base_pages[1].member);
+        guard.remove(&delta_pages[1].member);
+    }
+    let hdr = Some(NameIndexHeader {
+        earliest_commit: Some(1),
+        head: Some(1),
+        retention_floor: None,
+        unavailable: false,
+    });
+    let state = Arc::new(CheckpointNamingState {
+        branches: vec![
+            BranchNamingRoot {
+                branch: BranchId("base".into()),
+                naming: None,
+                index: hdr,
+                groups: None,
+                pages: base_pages.clone(),
+                delta_base: None,
+            },
+            BranchNamingRoot {
+                branch: BranchId("delta".into()),
+                naming: None,
+                index: hdr,
+                groups: None,
+                pages: delta_pages.clone(),
+                delta_base: Some(BranchId("base".into())),
+            },
+        ],
+        group_log: Vec::new(),
+        group_log_through: None,
+        retired_forks: Vec::new(),
+    });
+    let store = ColdNamingStore::open(Arc::clone(&state), source.clone());
+    let delta_root = state.root(&BranchId("delta".into())).unwrap();
+    // 1. Stopping on the first row (like `least_member`) faults only page 0 of each layer.
+    let mut first_visited = 0usize;
+    store
+        .scan_root(delta_root, &[INDEX_NAME], |_, _| {
+            first_visited += 1;
+            Ok(false)
+        })
+        .expect("single-row early-stop scan must succeed without faulting page 1");
+    assert_eq!(first_visited, 1);
+    assert_eq!(source.read_count(), 2);
+
+    // 2. Stopping on the exact last row of `base_pages[0]` (key `(base_pages[0].entries - 1) * 2`,
+    // which is interleaved row `2 * base_pages[0].entries - 1`) must NOT advance
+    // the base cursor onto missing `base_pages[1]`.
+    let last_base_p0_row = (base_pages[0].entries as usize) * 2 - 1;
+    let mut visited = 0usize;
+    store
+        .scan_root(delta_root, &[INDEX_NAME], |_, _| {
+            visited += 1;
+            Ok(visited < last_base_p0_row)
+        })
+        .expect("early-stop scan on last row of page 0 must not fault unavailable page 1");
+    assert_eq!(visited, last_base_p0_row);
+    assert_eq!(
+        source.read_count(),
+        2,
+        "only page 0 of base and delta should be faulted"
+    );
 }

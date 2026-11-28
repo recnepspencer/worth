@@ -6,7 +6,7 @@ import CanonicalGroupDelta.TimeM
 -- proof-mirror: crates/worth-relational-contracts/src/aggregate_identity/transition/group/transition_result.rs:42-61 sha256:b6973663b03b62cb2d0b2093215c8b134f46c53fb06fee1a1551059e456fb0d2
 -- proof-mirror: crates/worth-relational-lineage/src/durability/naming/group_frame_encoding.rs:125-161 sha256:76b3e36beb1a37b483fdd5ac3b7f1834bab670221e0d223cb77d744288f7a1af
 -- proof-mirror: crates/worth-relational-lineage/src/durability/naming/group_frame_encoding.rs:163-184 sha256:d962d9cfcc9c6162b1fa9afd27251ee997faad1ea5f977efcc3a6fae57841a28
--- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/branch_state.rs:314-342 sha256:1299b2237583a255b1c946e481ef7a88843c4f028fc3135154e06ddf10244441
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/branch_state.rs:336-364 sha256:1299b2237583a255b1c946e481ef7a88843c4f028fc3135154e06ddf10244441
 
 /-!
 # Kept-group member deltas: step bound, wire bound and replay equivalence

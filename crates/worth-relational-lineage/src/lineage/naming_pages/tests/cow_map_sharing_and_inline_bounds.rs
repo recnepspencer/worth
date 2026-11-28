@@ -106,11 +106,13 @@ fn single_branch_store(pages: Vec<NamingPageRef>, sink: CollectedMembers) -> Col
         index: None,
         groups: None,
         pages,
+        delta_base: None,
     };
     let state = CheckpointNamingState {
         branches: vec![root],
         group_log: Vec::new(),
         group_log_through: None,
+        retired_forks: Vec::new(),
     };
     ColdNamingStore::open(Arc::new(state), MemSource::from_sink(sink))
 }

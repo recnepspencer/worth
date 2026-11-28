@@ -9,6 +9,7 @@
 
 pub mod branch_state;
 pub mod committed;
+mod group_diff;
 mod group_install;
 pub mod group_read;
 mod group_rows;

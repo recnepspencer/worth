@@ -23,7 +23,9 @@ use worth_relational_storage::internal_port::storage::residency::working_set::{
 };
 
 use super::page::ResidentNamingPage;
-use super::tables::{chunk_key, parse_value_envelope, MAX_INLINE_VALUE_BYTES, VALUE_CHUNKED_TAG};
+use super::tables::{
+    chunk_key, parse_value_envelope, ValueEnvelope, MAX_INLINE_VALUE_BYTES, VALUE_CHUNKED_TAG,
+};
 use super::{page_for, CheckpointNamingState, NamingPageRef, NAMING_PAGE_BYTES};
 
 pub struct ColdNamingStore {
@@ -115,14 +117,16 @@ impl ColdNamingStore {
         Ok(self.page(&pages[slot])?.value(key).map(<[u8]>::to_vec))
     }
 
-    fn reassemble(
+    pub(super) fn reassemble(
         &self,
         pages: &[NamingPageRef],
         key: &[u8],
         raw: &[u8],
     ) -> Result<Vec<u8>, Cause> {
-        let Some((count, total)) = parse_value_envelope(raw)? else {
-            return Ok(raw[1..].to_vec());
+        let (count, total) = match parse_value_envelope(raw)? {
+            ValueEnvelope::Inline => return Ok(raw[1..].to_vec()),
+            ValueEnvelope::Chunked { count, total } => (count, total),
+            ValueEnvelope::Tombstone => return Err(Cause::Damaged),
         };
         let mut out = Vec::new();
         out.try_reserve_exact(total)
@@ -220,8 +224,11 @@ impl ColdNamingStore {
                 if !key.starts_with(prefix) {
                     return Ok(false);
                 }
-                if parse_value_envelope(raw)?.is_some() {
-                    return Err(Cause::Damaged);
+                match parse_value_envelope(raw)? {
+                    ValueEnvelope::Inline => {}
+                    ValueEnvelope::Chunked { .. } | ValueEnvelope::Tombstone => {
+                        return Err(Cause::Damaged);
+                    }
                 }
                 if !key_matches(key)? {
                     continue;
@@ -250,11 +257,12 @@ impl ColdNamingStore {
         drop(page);
         for (key, raw) in staged {
             let keep = match parse_value_envelope(&raw)? {
-                None => visit(&key, &raw[1..])?,
-                Some(_) => {
+                ValueEnvelope::Inline => visit(&key, &raw[1..])?,
+                ValueEnvelope::Chunked { .. } => {
                     let full = self.reassemble(pages, &key, &raw)?;
                     visit(&key, &full)?
                 }
+                ValueEnvelope::Tombstone => return Err(Cause::Damaged),
             };
             if !keep {
                 return Ok(false);

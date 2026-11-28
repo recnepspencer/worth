@@ -385,6 +385,10 @@ impl<'a, K, V> Iterator for CowMapIter<'a, K, V> {
     }
 }
 
+#[path = "cow_map_diff.rs"]
+mod diff;
+pub(crate) use diff::CowDiff;
+
 #[cfg(test)]
 #[path = "cow_map_fork_conformance_trace.rs"]
 mod fork_conformance_trace;

@@ -67,6 +67,7 @@ fn chunked_writer_refuses_values_above_64mib_and_rejects_malformed_prior_header(
         branches: Vec::new(),
         group_log: vec![prior_ref.clone()],
         group_log_through: Some(1),
+        retired_forks: Vec::new(),
     });
     let store = Arc::new(ColdNamingStore::open(
         state,
@@ -124,11 +125,13 @@ fn chunked_scan_succeeds_under_strict_one_page_memory_budget() {
         index: None,
         groups: None,
         pages: pages.clone(),
+        delta_base: None,
     };
     let state = Arc::new(CheckpointNamingState {
         branches: vec![root],
         group_log: pages.clone(),
         group_log_through: Some(3),
+        retired_forks: Vec::new(),
     });
     let mut max_page = 0u64;
     for page_ref in &pages {

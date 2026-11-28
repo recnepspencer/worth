@@ -131,7 +131,7 @@ impl NamingBaseLink {
     pub fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Cause> {
         let store = self.source.store().ok_or(Cause::SourceUnavailable)?;
         match self.root_in(&store) {
-            Some(root) => store.get(&root.pages, key),
+            Some(root) => store.get_root(root, key),
             None => Ok(None),
         }
     }
@@ -154,7 +154,7 @@ impl NamingBaseLink {
         visit: impl FnMut(&[u8], &[u8]) -> Result<bool, Cause>,
     ) -> Result<(), Cause> {
         match self.root_in(store) {
-            Some(root) => store.scan(&root.pages, prefix, visit),
+            Some(root) => store.scan_root(root, prefix, visit),
             None => Ok(()),
         }
     }

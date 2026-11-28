@@ -15,8 +15,19 @@ use super::store::ColdNamingStore;
 use super::tables::{
     chunk_key, encode_chunked_header, page_continuation_summary, parse_chunk_key,
     parse_group_log_key, parse_value_envelope, table_domain, verify_group_log_single_branch,
-    GROUP_LOG, MAX_INLINE_VALUE_BYTES, VALUE_CHUNK, VALUE_INLINE_TAG,
+    ValueEnvelope, GROUP_LOG, MAX_INLINE_VALUE_BYTES, VALUE_CHUNK, VALUE_INLINE_TAG,
+    VALUE_TOMBSTONE_TAG,
 };
+
+/// One row mutation applied when sealing a full or delta naming page run.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PageChange {
+    Put(Vec<u8>),
+    /// Writes a 1-byte tombstone shadowing a key in `delta_base`.
+    Tombstone,
+    /// Removes the row (and any continuation chunks) from the page run.
+    Remove,
+}
 use super::{
     logical_key_limit, physical_key_fits, NamingPageRef, NAMING_PAGE_BYTES, NAMING_PAGE_ENTRIES,
 };
@@ -39,12 +50,15 @@ fn prior_chunk_count(
     let Some(raw) = store.raw_get(pages, key)? else {
         return Ok(0);
     };
-    Ok(parse_value_envelope(&raw)?.map_or(0, |(count, _)| count))
+    Ok(match parse_value_envelope(&raw)? {
+        ValueEnvelope::Chunked { count, .. } => count,
+        ValueEnvelope::Inline | ValueEnvelope::Tombstone => 0,
+    })
 }
 
 fn expand_changes(
     prior: Option<(&ColdNamingStore, &[NamingPageRef])>,
-    changes: Vec<(Vec<u8>, Option<Vec<u8>>)>,
+    changes: Vec<(Vec<u8>, PageChange)>,
 ) -> Result<Vec<(Vec<u8>, Option<Vec<u8>>)>, Cause> {
     let mut expanded = Vec::with_capacity(changes.len());
     for (key, value) in changes {
@@ -57,18 +71,22 @@ fn expand_changes(
         }
         let old_chunks = prior_chunk_count(prior, &key)?;
         let new_chunks = match value {
-            None => {
+            PageChange::Remove => {
                 expanded.push((key.clone(), None));
                 0
             }
-            Some(bytes) if bytes.len() <= MAX_INLINE_VALUE_BYTES => {
+            PageChange::Tombstone => {
+                expanded.push((key.clone(), Some(vec![VALUE_TOMBSTONE_TAG])));
+                0
+            }
+            PageChange::Put(bytes) if bytes.len() <= MAX_INLINE_VALUE_BYTES => {
                 let mut wrapped = Vec::with_capacity(1 + bytes.len());
                 wrapped.push(VALUE_INLINE_TAG);
                 wrapped.extend_from_slice(&bytes);
                 expanded.push((key.clone(), Some(wrapped)));
                 0
             }
-            Some(bytes) => {
+            PageChange::Put(bytes) => {
                 let (count, header) = encode_chunked_header(bytes.len())?;
                 expanded.push((key.clone(), Some(header)));
                 for (index, chunk) in bytes.chunks(MAX_INLINE_VALUE_BYTES).enumerate() {
@@ -178,6 +196,20 @@ impl PageWriter<'_> {
 pub fn seal_pages(
     prior: Option<(&ColdNamingStore, &[NamingPageRef])>,
     changes: Vec<(Vec<u8>, Option<Vec<u8>>)>,
+    sink: &mut dyn ChunkMemberSink,
+) -> Result<Vec<NamingPageRef>, Cause> {
+    let ops = changes
+        .into_iter()
+        .map(|(key, value)| (key, value.map_or(PageChange::Remove, PageChange::Put)))
+        .collect();
+    seal_pages_with_ops(prior, ops, sink)
+}
+
+/// Pages `prior`'s rows with `PageChange` operations (`Put`, `Tombstone`, or
+/// `Remove`) in strictly ascending row-key order.
+pub fn seal_pages_with_ops(
+    prior: Option<(&ColdNamingStore, &[NamingPageRef])>,
+    changes: Vec<(Vec<u8>, PageChange)>,
     sink: &mut dyn ChunkMemberSink,
 ) -> Result<Vec<NamingPageRef>, Cause> {
     if changes.windows(2).any(|pair| pair[0].0 >= pair[1].0) {

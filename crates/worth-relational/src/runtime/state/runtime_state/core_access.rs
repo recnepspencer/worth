@@ -304,4 +304,35 @@ impl RelationalRuntime {
             .snapshot()
             .map(|dir| dir.naming_state().observation())
     }
+
+    /// Freezes and seals a read-only `CHK24` naming page snapshot of all
+    /// committed branches, returning `(page_count, new_member_bytes)`.
+    pub fn seal_naming_snapshot(&self) -> Result<(usize, usize), String> {
+        let (pages, bytes, _) = self.seal_naming_snapshot_with_visits()?;
+        Ok((pages, bytes))
+    }
+
+    /// Freezes and seals a read-only `CHK24` naming page snapshot of all
+    /// committed branches, returning `(page_count, new_member_bytes, diff_nodes_visited)`.
+    pub fn seal_naming_snapshot_with_visits(&self) -> Result<(usize, usize, usize), String> {
+        let committed: Vec<_> = self
+            .history
+            .branch_cells_snapshot()
+            .into_iter()
+            .filter(|cell| {
+                matches!(
+                    cell.observation.target(),
+                    worth_foundational::FoundationalBranchTarget::Basis(_)
+                )
+            })
+            .map(|cell| cell.branch_id)
+            .collect();
+        let frozen = self.lineage.freeze_naming();
+        let mut sink = worth_relational_storage::internal_port::storage::residency::chunked::cold_member_port::CollectedMembers::default();
+        let (state, visited) = frozen
+            .seal_with_diff_visits(&committed, &mut sink)
+            .map_err(|e| format!("{e:?}"))?;
+        let bytes: usize = sink.members.iter().map(|(_, b)| b.len()).sum();
+        Ok((state.page_members().len(), bytes, visited))
+    }
 }
