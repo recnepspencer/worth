@@ -26,7 +26,7 @@ exercises the complete desktop application flow on a real Directory Home:
 <!-- illustrative -->
 ```rust,ignore
 use worth_query_decl::facade::application_schema::CanonicalDate;
-use worth_query_decl::facade::{WorthQuery, WorthQueryRow, WorthQueryCorrection};
+use worth_query_decl::facade::{WorthQuery, WorthQueryRow};
 use worth_query_host::facade::{
     worth_query_application_program, WorthQueryApplicationHome, WorthQueryHomeConfig,
 };
@@ -181,7 +181,7 @@ some declaration macros. `worth_query_mutation_binding!`,
 
 | Step | What you do | The call | Section |
 |---|---|---|---|
-| 1 | Declare schema, rows, actions, corrections & unified queries | `#[derive(WorthQuerySchema)]`, `#[derive(WorthQueryRecord)]`, `#[derive(WorthQueryRow)]`, `#[derive(WorthQueryAction)]`, `#[derive(WorthQueryCorrection)]`, `#[derive(WorthQuery)]` | [Quickstart](#unified-application-quickstart-target-dx-18), [§2](#2-declare-the-schema-and-its-contributions) |
+| 1 | Declare schema, rows, actions & unified queries | `#[derive(WorthQuerySchema)]`, `#[derive(WorthQueryRecord)]`, `#[derive(WorthQueryRow)]`, `#[derive(WorthQueryAction)]`, `#[derive(WorthQuery)]` | [Quickstart](#unified-application-quickstart-target-dx-18), [§2](#2-declare-the-schema-and-its-contributions) |
 | 2 | Declare features, managed indexes & the program in one block | `worth_query_application_program!` | [Complete definitions](#complete-feature-definitions), [§3](#3-declare-features-and-the-program) |
 | 3 | Open or reopen a persistent Directory Home | `WorthQueryApplicationHome::open_directory(&path, WorthQueryHomeConfig::desktop_default(build))` / `home.open_disposition()` / `home.close_clean()` | [§4](#4-install-or-reopen) |
 | 4 | Run actions, typed queries, whole-result live subscriptions & managed-index watches | `let session = home.session(&me);` → `session.run(...)`, `session.query(...) -> Vec<Row>`, `session.subscribe(...)`, `session.watch(...)`, `session.ensure_index_ready(intent)` / `session.ensure_default_index_ready::<Query>()` | [§5](#5-run-the-program) |
@@ -1813,10 +1813,6 @@ also names `::worth_query_host`.
   `validate:`: an invalid input is refused at capture
   (`WorthQueryOperationInputCaptureDenial::Encoding(Validation(..))`) with its
   key returned, before any effect.
-- `WorthQueryCorrection` on a unit marker declares a standard recorded-inverse
-  `ApplicationCorrectionBinding<Schema>` (`source`, `inverse`, `disclosure`,
-  optional `source_body`, `preimage_fields(..)` + `preimage_bytes` or `demand`,
-  and `derive = fn`, using `decode_preimage_field` for typed pre-image reads).
 - `WorthBinaryValue` (`#[worth_binary(namespace = "...", version = 1)]` or
   `#[worth_query(identity = "...")]`) on a fixed-width struct declares a
   versioned, metered `BinaryValueDelegate`, `ApplicationScalarValueBinding`,

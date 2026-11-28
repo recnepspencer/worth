@@ -1,6 +1,5 @@
 //! Stage order and tokens are request-owned; only execute performs work.
 use super::*;
-use std::ops::ControlFlow;
 pub struct NoEditStages;
 pub struct WithEditStage<Previous, Root, Intent, Source = ()> {
     pub(super) previous: Previous,
@@ -108,26 +107,14 @@ where
         Stages: entry::CaptureEditStages<S, Program, Key>,
         Key: serde::Serialize + Send + Sync + 'static,
     {
-        self.advance_with_admission(
-            program,
-            allocation,
-            AuthoredEnvelopeResolutionPurpose::Execute,
-            |_, _, _, _, _| ControlFlow::Continue(()),
-        )
+        self.advance(program, allocation, AuthoredEnvelopeResolutionPurpose::Execute)
     }
 
-    pub(in crate::application_entry) fn advance_with_admission<Program>(
+    pub(super) fn advance<Program>(
         self,
         program: &WorthQueryProgramApplicationRuntime<S, Program>,
         allocation: ExecutionAllocationPolicy<'_, '_>,
         purpose: AuthoredEnvelopeResolutionPurpose,
-        admit: impl FnOnce(
-            &mut EnvelopeContext<'_, S>,
-            &WorthQueryAdvancementPhase<'_>,
-            &ApplicationEditEnvelopeKey<Key>,
-            ApplicationEditIntentIdentity,
-            &dyn entry::EditEntry<S, Program, Key>,
-        ) -> ControlFlow<()>,
     ) -> Result<WorthQueryEditEnvelopeOutcome, WorthQueryEditEnvelopeExecutionDenial>
     where
         Program: ApplicationProgramDefinition<S>,
@@ -137,7 +124,7 @@ where
         let envelope_failure = |cause| {
             WorthQueryEditEnvelopeExecutionDenial::envelope(Program::IDENTITY.as_str(), cause)
         };
-        let mut context = self.envelope.context;
+        let context = self.envelope.context;
         let application = context.application;
         let scope = context.scope;
         let advance = |phase: WorthQueryAdvancementPhase<'_>| {
@@ -152,9 +139,9 @@ where
                 );
             let mut entries = Vec::new();
             self.envelope.stages.capture(&mut entries)?;
-            let Some(first) = entries.first() else {
+            if entries.is_empty() {
                 return Ok(WorthQueryEditEnvelopeOutcome::Empty);
-            };
+            }
             let intents = entries
                 .iter()
                 .map(|entry| entry.intent())
@@ -169,9 +156,6 @@ where
                     )
                 })
                 .map_err(envelope_failure)?;
-            if admit(&mut context, &phase, &key, intent, first.as_ref()).is_break() {
-                return Ok(WorthQueryEditEnvelopeOutcome::Unseen);
-            }
             let values = entries
                 .iter()
                 .map(|_| Arc::new(Mutex::new(None)))

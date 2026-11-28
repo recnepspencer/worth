@@ -114,11 +114,10 @@ where
     where
         K: serde::Serialize + Send + Sync + 'static,
     {
-        self.envelope.advance_with_admission(
+        self.envelope.advance(
             self.program,
             allocation,
             AuthoredEnvelopeResolutionPurpose::Execute,
-            |_, _, _, _, _| std::ops::ControlFlow::Continue(()),
         )
     }
 
@@ -132,11 +131,10 @@ where
     where
         K: serde::Serialize + Send + Sync + 'static,
     {
-        self.envelope.advance_with_admission(
+        self.envelope.advance(
             self.program,
             allocation,
             AuthoredEnvelopeResolutionPurpose::ResolveOnly,
-            |_, _, _, _, _| std::ops::ControlFlow::Continue(()),
         )
     }
 
