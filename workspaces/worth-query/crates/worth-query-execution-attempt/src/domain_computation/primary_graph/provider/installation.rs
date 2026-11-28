@@ -45,7 +45,7 @@ impl WorthQueryPrimaryGraphProvider {
             teardown_sentinel: Default::default(),
         });
         let anchor = Arc::new(
-            crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::install_invariant_capable::<
+            crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::install_decision_capable::<
                 WorthQueryPrimaryLogicalGraph,
                 crate::domain_computation::runtime_ports::PrimaryGraphProviderArc,
             >(crate::domain_computation::runtime_ports::PrimaryGraphProviderArc(Arc::clone(&provider))),

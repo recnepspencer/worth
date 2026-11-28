@@ -42,7 +42,6 @@ pub mod ports {
         SessionBoundReadsCommitInternalPort, SessionPrepareOutcomeInternalPort,
     };
     pub use crate::domain_computation::provider_session::protocol::readmission::prepared::ProviderSessionGrantInternalPort;
-    pub use crate::domain_computation::provider_session::provisional_attempt::commit_progression_internal_port::InvariantApprovedProposedStateInternalPort;
     pub use crate::execution_runtime_internal_port::ExecutionRuntimeInternalPort;
     pub use crate::managed_run_custody_port::ExecutionRuntimeManagedRunCustodyPort;
     pub use crate::ports::*;

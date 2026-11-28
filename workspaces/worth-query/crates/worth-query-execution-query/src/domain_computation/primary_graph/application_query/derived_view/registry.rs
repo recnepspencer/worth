@@ -7,7 +7,6 @@ mod certification;
 pub mod index_directory;
 mod managed_index;
 mod managed_source;
-mod native_count;
 mod predicate;
 pub use managed_source::transition_target::TransitionTargetSourcesGuard;
 pub use predicate::PredicateNoticeDisposition;
@@ -57,20 +56,12 @@ impl PreparedManagedViewPublication {
     }
 }
 
-type NativeCountState = Arc<
-    super::retention::ManagedDerivedViewState<
-        worth_relational::facade::identity::EntityId,
-        native_count::ClosedCount,
-    >,
->;
-
 #[derive(Default)]
 struct RegistryState {
     source_branches:
         BTreeMap<worth_relational::facade::history::BranchId, managed_source::SourceBranchSlot>,
     next_id: u64,
     views: BTreeMap<u64, Weak<dyn RegisteredDerivedView>>,
-    native_counts: Vec<(u64, NativeCountState)>,
     indexes: index_directory::ManagedIndexDirectory,
 }
 
@@ -181,22 +172,12 @@ impl ManagedDerivedViewRegistry {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.views.remove(&id);
         let removed_index = state.indexes.remove(id);
-        let removed_count = if removed_index.is_none() {
-            state
-                .native_counts
-                .iter()
-                .position(|(actual, _)| *actual == id)
-                .map(|position| state.native_counts.remove(position))
-        } else {
-            None
-        };
         let empty = state
             .views
             .is_empty()
             .then(|| std::mem::take(&mut state.views));
         drop(state);
         drop(removed_index);
-        drop(removed_count);
         drop(empty);
     }
 
@@ -206,14 +187,13 @@ impl ManagedDerivedViewRegistry {
 
     #[inline(never)]
     fn dispose_on_execution_stack(&self) {
-        let (views, native_counts, indexes, source_branches) = {
+        let (views, indexes, source_branches) = {
             let mut state = self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             (
                 std::mem::take(&mut state.views),
-                std::mem::take(&mut state.native_counts),
                 std::mem::take(&mut state.indexes),
                 std::mem::take(&mut state.source_branches),
             )
@@ -227,7 +207,6 @@ impl ManagedDerivedViewRegistry {
         }
         indexes.dispose();
         self.sources.dispose_predicates();
-        drop(native_counts);
         drop(source_branches);
     }
 }

@@ -1,7 +1,5 @@
 use super::*;
-use crate::domain_computation::{
-    WorthQueryCustomInvariantDenial, WorthQueryInvariantExecutionFailure,
-};
+use crate::domain_computation::{InvariantViolationFields, WorthQueryInvariantExecutionFailure};
 use worth_relational::facade::runtime::{
     CustomInvariantRefusal, CustomInvariantRuleId, CustomInvariantSemanticIdentity,
     CustomInvariantSemanticVersion,
@@ -9,7 +7,7 @@ use worth_relational::facade::runtime::{
 
 #[test]
 fn producer_denial_and_retained_clone_keep_the_original_invariant_payload() {
-    let evidence = WorthQueryCustomInvariantDenial::Violation {
+    let evidence = InvariantViolationFields::CustomInvariantViolation {
         identity: CustomInvariantSemanticIdentity {
             rule_id: CustomInvariantRuleId::new("producer.integrity"),
             semantic_version: CustomInvariantSemanticVersion::new(1, 0),
@@ -21,7 +19,19 @@ fn producer_denial_and_retained_clone_keep_the_original_invariant_payload() {
     };
     let commit = graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
         graph::WorthQueryApplicationCommitDenialStage::InvariantExecution,
-        WorthQueryInvariantExecutionFailure::custom_invariant(evidence.clone(), "domain violation"),
+        WorthQueryInvariantExecutionFailure::relational_validation(
+            worth_relational::facade::transactions::TransactionCommitError::publication(
+                worth_relational::facade::publication::PublicationError::from_invariant_violation(
+                    worth_relational::facade::publication::PublicationStage::InvariantCheck,
+                    worth_relational::facade::transactions::InvariantViolation {
+                        class: worth_relational::facade::runtime::InvariantClass::CommitBoundary,
+                        code: worth_relational::facade::diagnostics::DiagnosticCode::InvariantViolation,
+                        detail: "domain violation".into(),
+                        fields: evidence.clone(),
+                    },
+                ),
+            ),
+        ),
     );
     let denial = commit_receipt(
         "producer",
@@ -30,10 +40,12 @@ fn producer_denial_and_retained_clone_keep_the_original_invariant_payload() {
     .unwrap_err();
     assert_eq!(denial.custom_invariant_denial(), Some(&evidence));
     assert_eq!(denial.clone().custom_invariant_denial(), Some(&evidence));
-    assert_eq!(
-        denial.custom_invariant_denial().unwrap().refusal_bytes(),
-        Some(b"{\"reason\":17}".as_slice())
-    );
+    assert!(matches!(
+        crate::domain_computation::provider_session::invariant_refusal_payload(
+            denial.custom_invariant_denial().unwrap(),
+        ),
+        Some(CustomInvariantRefusal::DeclaredValue { bytes, .. }) if bytes == b"{\"reason\":17}"
+    ));
 }
 
 #[test]

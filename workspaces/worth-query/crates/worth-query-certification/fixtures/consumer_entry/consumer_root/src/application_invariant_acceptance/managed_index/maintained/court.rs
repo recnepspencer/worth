@@ -324,7 +324,7 @@ fn require_violation<D: std::fmt::Debug, R: std::fmt::Debug>(
         denial.stage(),
         WorthQueryApplicationCommitDenialStage::InvariantExecution
     );
-    let Some(WorthQueryCustomInvariantDenial::Violation { identity, .. }) =
+    let Some(InvariantViolationFields::CustomInvariantViolation { identity, .. }) =
         denial.custom_invariant_denial()
     else {
         panic!("setup, Source-unavailable and READ failures cannot counterfeit the domain violation: {denial:?}")

@@ -21,7 +21,7 @@ pub use registry::{
 pub use retention::{
     WorthQueryManagedDerivedCollectionBatchRefreshDenial, WorthQueryManagedDerivedMemberToken,
     WorthQueryManagedDerivedStorageQuote, WorthQueryManagedDerivedValue,
-    WorthQueryManagedDerivedViewDenial, WorthQueryRuleReadableCollectionLifecycleForTest,
+    WorthQueryManagedDerivedViewDenial,
 };
 
 pub use worth_query_execution_lineage::facade::primary_graph::application_query::observed_source::WorthQueryManagedDerivedViewKey;

@@ -11,13 +11,12 @@ use graph::provider::WorthQueryProviderIdempotencyResolution;
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
 use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
-use worth_query_execution_runtime::facade::ports::InvariantApprovedProposedStateInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::SessionPrepareOutcomeInternalPort as _;
 
 pub struct WorthQueryAuthorizedProviderCommit<'run, 'a, 'provider, Schema, Operation, Input, Scope>
 {
-    candidate: crate::domain_computation::WorthQueryInvariantApprovedProposedState<'run>,
+    candidate: crate::domain_computation::WorthQueryValidatedProviderCandidate<'run>,
     authority: &'a super::WorthQueryApplicationCommitProgressionAuthority<
         'a,
         'provider,
@@ -31,7 +30,7 @@ pub struct WorthQueryAuthorizedProviderCommit<'run, 'a, 'provider, Schema, Opera
 }
 
 fn authorize_provider_commit<'run, 'a, 'provider, Schema, Operation, Input, Scope>(
-    candidate: crate::domain_computation::WorthQueryInvariantApprovedProposedState<'run>,
+    candidate: crate::domain_computation::WorthQueryValidatedProviderCandidate<'run>,
     authority: &'a super::WorthQueryApplicationCommitProgressionAuthority<
         'a,
         'provider,
@@ -96,7 +95,7 @@ where
 
 pub fn authorize_and_resolve_provider_commit<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    candidate: crate::domain_computation::WorthQueryInvariantApprovedProposedState<'_>,
+    candidate: crate::domain_computation::WorthQueryValidatedProviderCandidate<'_>,
     authority: &super::WorthQueryApplicationCommitProgressionAuthority<
         '_,
         '_,
@@ -123,7 +122,7 @@ where
 
 fn resolve_idempotency_under_authority<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    candidate: crate::domain_computation::WorthQueryInvariantApprovedProposedState<'_>,
+    candidate: crate::domain_computation::WorthQueryValidatedProviderCandidate<'_>,
     authority: &super::WorthQueryApplicationCommitProgressionAuthority<
         '_,
         '_,

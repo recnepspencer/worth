@@ -18,7 +18,6 @@ pub enum InstallationDenialCause {
     Content(worth_relational::facade::content::RelationalContentDenial),
     Readiness(super::super::application_contribution::WorthQueryOutputReadinessContractDenial),
     NativeCommit {
-        original: Box<worth_relational::facade::transactions::TransactionCommitError>,
         execution: crate::domain_computation::WorthQueryInvariantExecutionFailure,
     },
     Schema(worth_query_installation::facade::WorthQueryInstalledApplicationSchemaDenial),
@@ -176,21 +175,33 @@ impl WorthQueryPrimaryGraphInstallationDenial {
     /// Original custom invariant verdict/failure, not a string classification.
     pub fn custom_invariant_denial(
         &self,
-    ) -> Option<&crate::domain_computation::WorthQueryCustomInvariantDenial> {
+    ) -> Option<&crate::domain_computation::InvariantViolationFields> {
         self.invariant_execution_failure()?
             .custom_invariant_denial()
     }
-    /// Original native law evidence from the refused bootstrap commit.
-    pub fn relation_law(
+    /// Decode the original application refusal within the binding's wire bounds.
+    pub fn decode_invariant_refusal<Binding: worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding>(
         &self,
-    ) -> Option<crate::domain_computation::WorthQueryRelationLawDenial<'_>> {
+    ) -> Result<Binding::Value, crate::domain_computation::WorthQueryInvariantRefusalDecodeDenial> {
+        use crate::domain_computation::provider_session::{
+            decode_invariant_fields, WorthQueryInvariantRefusalDecodeDenial,
+        };
+        let fields = self.custom_invariant_denial()
+            .ok_or(WorthQueryInvariantRefusalDecodeDenial::NoDomainRefusal)?;
+        decode_invariant_fields::<Binding>(fields)
+    }
+
+    /// Original native law evidence from the refused bootstrap commit.
+    pub fn relation_law(&self) -> Option<&crate::domain_computation::InvariantViolationFields> {
         self.invariant_execution_failure()?.relation_law()
     }
     pub fn native_commit_denial(
         &self,
     ) -> Option<&worth_relational::facade::transactions::TransactionCommitError> {
         match self.cause.as_deref()? {
-            InstallationDenialCause::NativeCommit { original, .. } => Some(original),
+            InstallationDenialCause::NativeCommit { execution } => {
+                execution.relational_commit_error()
+            }
             _ => None,
         }
     }
@@ -198,9 +209,8 @@ impl WorthQueryPrimaryGraphInstallationDenial {
         mut self,
         original: worth_relational::facade::transactions::TransactionCommitError,
     ) -> Self {
-        let execution = crate::domain_computation::primary_graph::provider::invariant_execution_failure::map_validation_failure(original.clone());
+        let execution = crate::domain_computation::primary_graph::provider::invariant_execution_failure::map_validation_failure(original);
         self.cause = Some(Box::new(InstallationDenialCause::NativeCommit {
-            original: Box::new(original),
             execution,
         }));
         self

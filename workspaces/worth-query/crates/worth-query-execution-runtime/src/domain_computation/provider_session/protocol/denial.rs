@@ -215,7 +215,7 @@ impl WorthQueryProviderSessionFailure {
         error: worth_relational::facade::mvcc::TransactionCommitError,
     ) -> Self {
         self.native_preparation = Some(std::sync::Arc::new(
-            native_preparation::NativePreparationFailure(error),
+            native_preparation::NativePreparationFailure::Commit(error),
         ));
         self
     }
@@ -224,7 +224,32 @@ impl WorthQueryProviderSessionFailure {
     pub fn native_preparation_error(
         &self,
     ) -> Option<&worth_relational::facade::mvcc::TransactionCommitError> {
-        self.native_preparation.as_deref().map(|failure| &failure.0)
+        match self.native_preparation.as_deref()? {
+            native_preparation::NativePreparationFailure::Commit(error) => Some(error),
+            native_preparation::NativePreparationFailure::Execution(_) => None,
+        }
+    }
+
+    pub fn with_native_execution_denial(
+        mut self,
+        denial: worth_relational::facade::transactions::CommitExecutionDenial,
+    ) -> Self {
+        self.native_preparation = Some(std::sync::Arc::new(
+            native_preparation::NativePreparationFailure::Execution(denial),
+        ));
+        self
+    }
+
+    pub fn native_execution_denial(
+        &self,
+    ) -> Option<worth_relational::facade::transactions::CommitExecutionDenial> {
+        use native_preparation::NativePreparationFailure as Native;
+        use worth_relational::facade::transactions::TransactionCommitError;
+        match self.native_preparation.as_deref()? {
+            Native::Execution(denial) | Native::Commit(TransactionCommitError::Execution { denial, .. }) =>
+                Some(*denial),
+            Native::Commit(_) => None,
+        }
     }
 
     pub fn unsupported() -> Self {

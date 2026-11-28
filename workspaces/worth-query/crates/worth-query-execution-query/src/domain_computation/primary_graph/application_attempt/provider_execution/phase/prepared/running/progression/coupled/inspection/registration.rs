@@ -3,7 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::RegisteredProviderAttemptRuntimeExt as _;
 pub struct InspectedRegistration<'run> {
     pub custody: CoupledWriterCustody,
-    pub inspection: crate::domain_computation::WorthQueryProposedStateInspection<'run>,
+    pub inspection: crate::domain_computation::WorthQueryStagedProviderCandidate<'run>,
     pub source: Option<crate::domain_computation::primary_graph::application_query::AppliedSourcePublication>,
     pub coupled_outputs: crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
 }

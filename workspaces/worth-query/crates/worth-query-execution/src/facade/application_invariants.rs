@@ -31,6 +31,7 @@ pub use crate::domain_computation::primary_graph::WorthQueryInvariantProjectionW
 pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationInvariantFactories, WorthQueryApplicationInvariantSchemaResolver,
 };
+pub use crate::domain_computation::provider_session::decode_invariant_fields;
 pub use worth_foundational::facade::AspectValue;
 /// Original cascade policy carried by endpoint-deletion refusals.
 pub use worth_relational::facade::config::CascadeDeletePolicy;

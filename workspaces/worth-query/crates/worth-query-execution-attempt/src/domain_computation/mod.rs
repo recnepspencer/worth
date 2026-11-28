@@ -21,6 +21,7 @@ pub use worth_query_execution_runtime::facade::{
 pub use evidence_material::{canonical_indexed_operation_material, canonical_operation_material};
 pub use execution_runtime::*;
 pub mod provider_session {
+    pub use super::primary_graph::provider::commit_candidate::*;
     pub mod commit_deferred_primary;
     pub mod graph_work_primary;
     pub mod primary_read_capture;

@@ -226,8 +226,8 @@ pub use super::application_runtime::{
     WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
     WorthQueryOracleHistoryPageForTest, WorthQueryOracleOccurrenceForTest,
     WorthQueryOracleSignalMovementForTest, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryRuleReadableCollectionLifecycleForTest, WorthQueryStorageRetentionDenial,
-    WorthQueryStorageRetentionProgress, WorthQueryStorageRetentionStop,
+    WorthQueryStorageRetentionDenial, WorthQueryStorageRetentionProgress,
+    WorthQueryStorageRetentionStop,
 };
 pub use super::authenticated_principal::{
     WorthQueryApplicationPrincipalIdentity, WorthQueryAuthenticatedPrincipal,
@@ -346,7 +346,7 @@ pub use crate::domain_computation::runtime_time::{
     WorthQueryRuntimeTimeDenial,
 };
 pub use crate::domain_computation::{
-    WorthQueryCustomInvariantDenial, WorthQueryProductStaleApplication,
+    InvariantViolationFields, WorthQueryProductStaleApplication,
     WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
 };
 pub use decision_read::*;

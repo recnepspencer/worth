@@ -10,7 +10,7 @@ fn deleting_a_live_endpoint_precedes_the_cardinality_consequence_and_preserves_i
         WorthQueryApplicationCommitDenialStage::InvariantExecution
     );
     assert!(refusal.invariant_execution_failure().is_some());
-    let Some(WorthQueryRelationLawDenial::EndpointDeletion {
+    let Some(InvariantViolationFields::RelationEndpointDeletionIntegrity {
         contract_id,
         entity_id,
         remaining_relation_endpoint_count,
@@ -23,12 +23,12 @@ fn deleting_a_live_endpoint_precedes_the_cardinality_consequence_and_preserves_i
     };
     assert_eq!(contract_id.as_str(), "Feeds:deletion");
     assert_eq!(*entity_id, before.leaves[&0]);
-    assert_eq!(remaining_relation_endpoint_count, 1);
+    assert_eq!(*remaining_relation_endpoint_count, 1);
     assert_eq!(
-        mode,
+        *mode,
         EndpointDeletionIntegrityMode::RejectDeleteWithLiveRelations
     );
-    assert_eq!(cascade_delete_policy, None);
+    assert_eq!(*cascade_delete_policy, None);
     assert_eq!(read::feeds::committed(&world), before);
 
     world.close();
@@ -39,9 +39,9 @@ fn explicitly_unlinking_and_deleting_the_target_refuses_as_source_cardinality() 
     let mut world = install_with_feeds::<DeletionProtected>(1, &[], 1, &[(0, 0)]);
     let before = read::feeds::committed(&world);
     let refusal = denied(world.edit_feeds(1, 0, FeedsChange::UnlinkAndDeleteLeaf { key: 0 }));
-    let Some(WorthQueryRelationLawDenial::Cardinality {
+    let Some(InvariantViolationFields::RelationCardinalityEndpoint {
         contract_id,
-        member,
+        entity_id: member,
         boundary,
         count,
         limit,
@@ -52,9 +52,9 @@ fn explicitly_unlinking_and_deleting_the_target_refuses_as_source_cardinality() 
     };
     assert_eq!(contract_id.as_str(), "Feeds:cardinality");
     assert_eq!(member, &EntityReference::Existing(before.sources[&0]));
-    assert_eq!(boundary, RelationCardinalityBoundary::Source);
-    assert_eq!(count, 0);
-    assert_eq!(limit, 1);
+    assert_eq!(*boundary, RelationCardinalityBoundary::Source);
+    assert_eq!(*count, 0);
+    assert_eq!(*limit, 1);
     assert_eq!(read::feeds::committed(&world), before);
     world.close();
 }

@@ -1,0 +1,346 @@
+use std::sync::Arc;
+mod coupled_support;
+mod native_denial;
+pub mod refusal_decode;
+use native_denial::NativeDenial;
+pub use refusal_decode::{
+    canonical_wire_maximum, decode_invariant_fields, decode_refusal_payload, invariant_refusal_payload,
+    WorthQueryInvariantRefusalDecodeDenial,
+};
+use worth_execution::ExecutionAllocationDenial;
+
+pub use worth_relational::facade::transactions::InvariantViolationFields;
+mod validation_stop;
+
+/// Why invariant execution for a provisional attempt stopped.
+///
+/// Variants with fields carry the bound that was hit and, where known, the
+/// amount the attempt needed.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryInvariantExecutionDenialKind {
+    /// The existing Live occurrence cannot fence this candidate preparation.
+    ManagedPredicatePreparationUnavailable,
+    /// A Native participant has no retained Query settlement session.
+    CoupledSettlementMissing,
+    CoupledReadSupportChanged,
+    /// R3 settlement left members of one coupled group consuming each
+    /// other's outputs in a cycle: no order of the members derives them, so
+    /// the edit refuses whole before the World commit.
+    CoupledConsumptionCycle,
+    CoupledReadSupportUnavailable {
+        cause: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
+    },
+    /// Validation was refused by the execution owner before effects.
+    ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    /// Validation was stopped by cancellation or its deadline.
+    ExecutionControlStopped(crate::domain_computation::WorthQueryProviderSessionControlStopKind),
+    /// Physical backing refusal; the original owner cause is retained separately.
+    AllocationDenied,
+    /// The provider, or Relational behind it, refused the load, the touches, or
+    /// the verdict. The failure's detail says which.
+    ProviderRejected,
+    /// The admitted request interrupted actual Relational validation.
+    RequestInterrupted(worth_relational::facade::mvcc::RelationalOperationInterruption),
+    /// Relational deferred publication until its required derived companion can proceed.
+    RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
+    /// A custom invariant refused the candidate; see
+    /// [`WorthQueryInvariantExecutionFailure::custom_invariant_denial`].
+    CustomInvariantDenied,
+    /// The product basis the attempt was prepared against is no longer current.
+    ProductBasisStale,
+    /// Relational has no room to retain another observation.
+    RetentionCapacityExhausted,
+    /// Relational has no retention identities left.
+    RetentionIdentityExhausted,
+    /// Relational has no snapshot identities left.
+    SnapshotIdentityExhausted,
+    /// The transaction already holds the maximum number of savepoints.
+    SavepointCapacityExhausted {
+        /// The savepoint bound.
+        maximum_savepoints: usize,
+    },
+    /// Relational has no savepoint identities left.
+    SavepointIdentityExhausted,
+    /// Relational already holds the maximum number of candidates.
+    CandidateCapacityExhausted {
+        /// The candidate bound.
+        maximum_candidates: usize,
+    },
+    /// Relational already holds the maximum number of published snapshot
+    /// handles.
+    PublishedSnapshotCapacityExhausted {
+        /// The published snapshot handle bound.
+        maximum_handles: usize,
+    },
+    /// Relational has no candidate identities left.
+    CandidateIdentityExhausted,
+    /// Another publication holds the patch-position reservation; retry later.
+    PatchPositionReservationContended,
+    /// Relational has no proposal identities left.
+    ProposalIdentityExhausted,
+    /// The provider panicked while executing the invariant.
+    ProviderPanicked,
+    /// The provider returned evidence bound to a different invariant execution,
+    /// or a retained admission was presented for another attempt.
+    EvidenceSubstitution,
+    /// The loaded state omits a fact the plan requires, or includes one outside
+    /// the plan's closure.
+    StateLoadClosureMismatch,
+    /// A producer-required invariant's receipt did not admit the publication;
+    /// the admission denial keeps the receipt's verdict and basis.
+    ProducerRequirementNotAdmitted(
+        crate::domain_computation::primary_graph::WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    ),
+}
+
+/// How to read an invariant execution failure.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryInvariantExecutionFailurePosture {
+    /// The attempt was refused on its merits.
+    Denied,
+    /// A bound or identity space ran out; the attempt may succeed once
+    /// capacity returns.
+    Exhausted,
+}
+
+/// A typed invariant execution failure: its kind, its posture, a detail
+/// message, and the custom invariant's own denial when there is one.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryInvariantExecutionFailure {
+    kind: WorthQueryInvariantExecutionDenialKind,
+    posture: WorthQueryInvariantExecutionFailurePosture,
+    detail: Arc<str>,
+    native: Option<NativeDenial>,
+    affected_records: Option<Arc<[worth_relational::facade::transactions::RecordRef]>>,
+}
+
+impl WorthQueryInvariantExecutionFailure {
+    pub fn publication_readmission(
+        cause: worth_relational::facade::mvcc::TransactionCommitError,
+    ) -> Self {
+        Self::native_denied(
+            NativeDenial::PublicationReadmission(Arc::new(cause)),
+            "Native publication custody readmission refused",
+        )
+    }
+    pub fn publication_readmission_stop(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::TransactionCommitError> {
+        match self.native.as_ref()? {
+            NativeDenial::PublicationReadmission(cause) => Some(cause),
+            _ => None,
+        }
+    }
+    pub fn publication_cell_registration(
+        cause: worth_relational::facade::mvcc::PublicationCompanionRegistrationStop,
+    ) -> Self {
+        Self::native_denied(
+            NativeDenial::PublicationCellRegistration(cause),
+            "Native source mark-cell registration refused",
+        )
+    }
+    pub fn publication_cell_registration_stop(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::PublicationCompanionRegistrationStop> {
+        match self.native.as_ref()? {
+            NativeDenial::PublicationCellRegistration(cause) => Some(cause),
+            _ => None,
+        }
+    }
+    pub fn publication_companion(
+        cause: worth_relational::facade::mvcc::CompanionPreflightStop,
+    ) -> Self {
+        Self::native_denied(
+            NativeDenial::PublicationCompanion(cause),
+            "Native publication support could not be selected",
+        )
+    }
+    pub fn publication_companion_stop(
+        &self,
+    ) -> Option<worth_relational::facade::mvcc::CompanionPreflightStop> {
+        match self.native.as_ref()? {
+            NativeDenial::PublicationCompanion(cause) => Some(*cause),
+            _ => None,
+        }
+    }
+    /// Exact records whose Query settlement could not be admitted.
+    pub fn affected_records(&self) -> &[worth_relational::facade::transactions::RecordRef] {
+        self.affected_records.as_deref().unwrap_or(&[])
+    }
+
+    /// A failure with the `Denied` posture.
+    pub fn new(kind: WorthQueryInvariantExecutionDenialKind, detail: impl Into<Arc<str>>) -> Self {
+        Self {
+            kind,
+            posture: WorthQueryInvariantExecutionFailurePosture::Denied,
+            detail: detail.into(),
+            native: None,
+            affected_records: None,
+        }
+    }
+
+    pub fn exhausted(
+        kind: WorthQueryInvariantExecutionDenialKind,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self {
+            kind,
+            posture: WorthQueryInvariantExecutionFailurePosture::Exhausted,
+            detail: detail.into(),
+            native: None,
+            affected_records: None,
+        }
+    }
+
+    pub fn authored_retirement(
+        error: worth_relational::facade::publication::PublicationError,
+    ) -> Self {
+        let detail = error.detail.clone();
+        Self::native_denied(NativeDenial::AuthoredRetirement(Box::new(error)), detail)
+    }
+
+    /// The typed naming refusal [`Self::persistent_name`] carries.
+    pub fn persistent_name_refusal(
+        &self,
+    ) -> Option<&worth_relational::facade::lineage::LineageNameDenial> {
+        self.relational_commit_error()?.lineage_name_denial_ref()
+    }
+
+    /// Original authored retirement refusal and its affected records.
+    pub fn authored_retirement_error(
+        &self,
+    ) -> Option<&worth_relational::facade::publication::PublicationError> {
+        match self.native.as_ref()? {
+            NativeDenial::AuthoredRetirement(error) => Some(error),
+            NativeDenial::Validation(error) => match error.as_ref() {
+                worth_relational::facade::transactions::TransactionCommitError::Publication {
+                    error,
+                    ..
+                } if error.authored_retirement_refusal().is_some() => Some(error),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
+    pub fn native_staging(
+        denial: worth_relational::facade::mvcc::RelationalTransactionStagingDenial,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self::native_denied(NativeDenial::Staging(denial), detail)
+    }
+    pub fn content(
+        cause: worth_relational::facade::content::RelationalContentDenial,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self::native_denied(NativeDenial::Content(cause), detail)
+    }
+    pub fn content_denial(
+        &self,
+    ) -> Option<worth_relational::facade::content::RelationalContentDenial> {
+        match self.native.as_ref() {
+            Some(NativeDenial::Content(cause)) => Some(*cause),
+            _ => None,
+        }
+    }
+    pub fn managed_source(
+        denial: worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self::native_denied(NativeDenial::ManagedSource(denial), detail)
+    }
+    /// Original Source preparation cause, including the provider's owned error chain.
+    pub fn managed_source_denial(
+        &self,
+    ) -> Option<&worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial> {
+        match self.native.as_ref()? {
+            NativeDenial::ManagedSource(denial) => Some(denial),
+            NativeDenial::Validation(error) => match error.as_ref() {
+                worth_relational::facade::transactions::TransactionCommitError::Preparation {
+                    error,
+                    ..
+                } => error.managed_source_denial(),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+    /// Original native law evidence, borrowed from this failure.
+    pub fn relation_law(&self) -> Option<&InvariantViolationFields> {
+        self.invariant_violation_fields()
+            .filter(|fields| worth_query_execution_contracts::facade::is_relation_law(fields))
+    }
+
+    pub fn invariant_violation_fields(&self) -> Option<&InvariantViolationFields> {
+        worth_query_execution_contracts::facade::relational_invariant_fields(
+            self.relational_commit_error()?,
+        )
+    }
+
+    pub fn relational_commit_error(
+        &self,
+    ) -> Option<&worth_relational::facade::transactions::TransactionCommitError> {
+        match self.native.as_ref()? {
+            NativeDenial::Validation(error) | NativeDenial::PublicationReadmission(error) => {
+                Some(error)
+            }
+            _ => None,
+        }
+    }
+
+    pub fn physical_allocation(
+        denial: ExecutionAllocationDenial,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self::native_denied(NativeDenial::Allocation(denial), detail)
+    }
+    fn native_denied(native: NativeDenial, detail: impl Into<Arc<str>>) -> Self {
+        let (kind, posture) = native.classification();
+        Self {
+            kind,
+            posture,
+            detail: detail.into(),
+            native: Some(native),
+            affected_records: None,
+        }
+    }
+    /// Exact physical owner cause, including its original checked quote.
+    pub fn allocation_denial(&self) -> Option<&ExecutionAllocationDenial> {
+        self.native.as_ref().and_then(NativeDenial::allocation)
+    }
+    /// Original native staging refusal, including input-directory/count failures.
+    pub fn relational_staging_denial(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::RelationalTransactionStagingDenial> {
+        match self.native.as_ref() {
+            Some(NativeDenial::Staging(denial)) => Some(denial),
+            _ => None,
+        }
+    }
+    /// Why execution stopped.
+    pub fn kind(&self) -> WorthQueryInvariantExecutionDenialKind {
+        self.kind
+    }
+
+    /// A human-readable detail message.
+    pub fn detail(&self) -> &str {
+        &self.detail
+    }
+
+    /// Whether the failure was a refusal or exhaustion.
+    pub fn posture(&self) -> WorthQueryInvariantExecutionFailurePosture {
+        self.posture
+    }
+
+    /// The custom invariant's own denial, present only for
+    /// `CustomInvariantDenied`.
+    pub fn custom_invariant_denial(&self) -> Option<&InvariantViolationFields> {
+        self.invariant_violation_fields().filter(|fields| {
+            matches!(
+                fields,
+                InvariantViolationFields::CustomInvariantViolation { .. }
+                    | InvariantViolationFields::CustomInvariantFailure { .. }
+            )
+        })
+    }
+}

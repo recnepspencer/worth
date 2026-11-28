@@ -235,9 +235,9 @@ pub use application_runtime::{
     WorthQueryOracleHistoryPageForTest, WorthQueryOracleOccurrenceForTest,
     WorthQueryOracleSignalMovementForTest, WorthQueryPerformedInboundCompletion,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphApplicationRuntimeInner,
-    WorthQueryRecordedCompletionDenial, WorthQueryRuleReadableCollectionLifecycleForTest,
-    WorthQueryStorageRetentionDenial, WorthQueryStorageRetentionProgress,
-    WorthQueryStorageRetentionStop, WorthQueryUnpublishedInboundCompletion,
+    WorthQueryRecordedCompletionDenial, WorthQueryStorageRetentionDenial,
+    WorthQueryStorageRetentionProgress, WorthQueryStorageRetentionStop,
+    WorthQueryUnpublishedInboundCompletion,
 };
 pub use authenticated_principal::validate_freshness_at_snapshot;
 pub use authenticated_principal::{

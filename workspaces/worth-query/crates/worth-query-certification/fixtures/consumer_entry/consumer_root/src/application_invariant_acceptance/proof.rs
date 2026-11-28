@@ -10,8 +10,8 @@ use worth_query_host::facade::{
     application_installation::WorthQueryProgramApplicationRuntime,
     domain::WorthQueryInstalledApplicationSchema,
     primary_graph::{
-        WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
-        WorthQueryApplicationUncommitted, WorthQueryCustomInvariantDenial,
+        InvariantViolationFields, WorthQueryApplicationCommitDenialKind,
+        WorthQueryApplicationCommitDenialStage, WorthQueryApplicationUncommitted,
     },
 };
 use worth_query_topology_entry::{PlanarEdit, PlanarMutation, PlanarRead};
@@ -181,7 +181,7 @@ fn require_invariant_access_failure(outcome: MutationOutcome) {
     );
     assert!(matches!(
         denial.custom_invariant_denial(),
-        Some(WorthQueryCustomInvariantDenial::Failure { .. })
+        Some(InvariantViolationFields::CustomInvariantFailure { .. })
     ));
 }
 
@@ -296,7 +296,7 @@ fn require_planar_violation<Denial: std::fmt::Debug, Result: std::fmt::Debug>(
         denial.stage(),
         WorthQueryApplicationCommitDenialStage::InvariantExecution
     );
-    let Some(WorthQueryCustomInvariantDenial::Violation { identity, .. }) =
+    let Some(InvariantViolationFields::CustomInvariantViolation { identity, .. }) =
         denial.custom_invariant_denial()
     else {
         panic!("the denial must carry the domain violation, not an execution failure")

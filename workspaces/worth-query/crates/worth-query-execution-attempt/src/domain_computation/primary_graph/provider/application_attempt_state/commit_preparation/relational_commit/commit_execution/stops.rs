@@ -63,57 +63,36 @@ pub(super) fn index_preparation_stop(
 pub fn transaction_commit_stop(
     error: worth_relational::facade::mvcc::TransactionCommitError,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
-    use crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
-    use worth_relational::facade::mvcc::TransactionCommitError as Error;
-    match error {
-        Error::Execution { ref denial, .. } => match denial.kind {
-            worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
-                match relational_execution_stop(cause, denial.partition_identity) {
-                    Stop::PreEffectDenied(failure) => Stop::PreEffectDenied(
-                        WorthQueryProviderSessionFailure::new(
-                            crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
-                            WorthQueryProviderSessionProtocolStage::Commit,
-                            failure.detail(),
-                            Default::default(),
-                        ).with_native_preparation_error(error),
-                    ),
-                    stopped => stopped,
-                }
-            }
+    use crate::domain_computation::{
+        WorthQueryProviderSessionCommitStop as Stop, WorthQueryProviderSessionRecoveryPosture,
+    };
+    use worth_query_execution_contracts::facade::{
+        classify_relational_commit, commit_execution_kind, RelationalCommitStop as Route,
+        WorthQueryProviderSessionDenialKind as Kind,
+    };
+    let pre_effect = |kind, error: worth_relational::facade::mvcc::TransactionCommitError| {
+        WorthQueryProviderSessionFailure::new(
+            kind,
+            WorthQueryProviderSessionProtocolStage::Commit,
+            error.detail(),
+            Default::default(),
+        )
+        .with_native_preparation_error(error)
+    };
+    match classify_relational_commit(&error) {
+        Route::Execution(denial) => match commit_execution_kind(denial) {
+            Ok(_) => Stop::PreEffectDenied(pre_effect(Kind::ProviderRejected, error)),
+            Err(kind) => Stop::ControlStopped(
+                crate::domain_computation::WorthQueryProviderSessionCommitControlStopped::execution_preparation(kind, error.detail()),
+            ),
         },
-        Error::Interrupted { interruption, .. } => {
-            Stop::ControlStopped(interruption_control_stopped(interruption))
-        }
-        Error::PublicationDeferred { deferred, .. } => {
-            Stop::Deferred(publication_deferred(deferred))
-        }
-        // The durable medium may hold the commit, so it is never a pre-effect
-        // denial: the session requires commit recovery.
-        error @ Error::DurabilityUnresolved { .. } => Stop::Denied(
-            WorthQueryProviderSessionFailure::new(
-                crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
-                WorthQueryProviderSessionProtocolStage::Commit,
-                error.detail(),
-                crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
-            )
-            .with_native_preparation_error(error),
+        Route::Interrupted(event) => Stop::ControlStopped(interruption_control_stopped(event)),
+        Route::Deferred(deferred) => Stop::Deferred(publication_deferred(deferred)),
+        Route::PreEffect(kind) => Stop::PreEffectDenied(pre_effect(kind, error)),
+        Route::RecoveryRequired => Stop::Denied(
+            pre_effect(Kind::ProviderRejected, error)
+                .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired),
         ),
-        error @ (Error::Conflict { .. }
-        | Error::Publication { .. }
-        | Error::Preparation { .. }
-        | Error::PublicationDenied { .. }
-        | Error::PublicationFailed { .. }) => {
-            let failure = match &error {
-                Error::PublicationFailed { failure, .. } => publication_failure(failure),
-                _ => WorthQueryProviderSessionFailure::new(
-                    crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
-                    WorthQueryProviderSessionProtocolStage::Commit,
-                    error.detail(),
-                    crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
-                ),
-            }.with_native_preparation_error(error);
-            Stop::PreEffectDenied(failure)
-        }
     }
 }
 
@@ -137,58 +116,9 @@ fn publication_deferred(
     deferred: worth_relational::facade::mvcc::RelationalPublicationDeferred,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitDeferred {
     use crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind as Kind;
-    use worth_relational::facade::mvcc::RelationalPublicationDeferred as Deferred;
-    let kind = match deferred {
-        Deferred::CompanionRegistrationPending
-        | Deferred::CompanionRebindRequired
-        | Deferred::CompanionPreflight(_) => Kind::RelationalDeferred(deferred),
-        Deferred::PatchPositionReservationContended => Kind::PatchPositionReservationContended,
-        Deferred::RetentionBackpressure => Kind::RetentionCapacityExhausted,
-        Deferred::CandidateCapacityExhausted { maximum_candidates } => {
-            Kind::CandidateCapacityExhausted { maximum_candidates }
-        }
-        Deferred::PublishedSnapshotCapacityExhausted { maximum_handles } => {
-            Kind::PublishedSnapshotCapacityExhausted { maximum_handles }
-        }
-    };
     crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
-        kind,
+        Kind::RelationalDeferred(deferred),
         format!("{deferred:?}"),
-    )
-}
-
-fn publication_failure(
-    failure: &worth_relational::facade::mvcc::RelationalPublicationFailure,
-) -> WorthQueryProviderSessionFailure {
-    use worth_relational::facade::mvcc::RelationalPublicationFailureKind as Failure;
-    let kind = match failure.kind() {
-        Failure::SnapshotIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted
-        }
-        Failure::CandidateIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::CandidateIdentityExhausted
-        }
-        Failure::RetentionIdentityExhausted => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
-        }
-        Failure::OutputAdoptionRequired { .. }
-        | Failure::SnapshotCountOverflow
-        | Failure::PreparedRootMismatch
-        | Failure::PreparedBasisDescriptor(_)
-        | Failure::NextBasisAdmission(_)
-        | Failure::SelectedRootUnavailable
-        | Failure::BranchObservation(_)
-        | Failure::PatchPositionCapacityExhausted
-        | Failure::RetentionOwner
-        | Failure::PendingSettlementIdentityConflict => {
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected
-        }
-    };
-    WorthQueryProviderSessionFailure::new(
-        kind,
-        WorthQueryProviderSessionProtocolStage::Commit,
-        failure.detail(),
-        crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
     )
 }
 

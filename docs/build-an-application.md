@@ -6665,12 +6665,12 @@ history. Neither reading the denial nor decoding it reruns the rejected candidat
 At installation, seed refusals use `WorthQueryApplicationPreparationDenial::Publication`;
 conditional publication uses `ConditionalPublication` and
 `WorthQueryConditionalRuntimeInstallationDenialKind::PrimaryGraphPublication`.
-Inspect the enclosed graph denial's `custom_invariant_denial()`. Both installation and commit retain
-`WorthQueryCustomInvariantDenial::{Violation, Failure}` with the original invariant
-identity. `Failure` also retains its phase, failure kind and typed SDK cause.
-`decode_refusal::<Binding>()` decodes the original application value in either
-case; commit's `decode_invariant_refusal::<Binding>()` and byte accessor do the
-same. A closed application enum can distinguish, for example, a membership
+Inspect the enclosed graph denial's `custom_invariant_denial()` for
+`InvariantViolationFields::CustomInvariantViolation` or
+`InvariantViolationFields::CustomInvariantFailure`. Both carry the original
+invariant identity. A failure also carries its phase, failure kind, typed cause, and
+original detail. Call `decode_invariant_refusal::<Binding>()` on the graph denial
+to decode the original application value within the binding's wire bounds. A closed application enum can distinguish, for example, a membership
 violation from `Capacity { field, maximum, observed }` without parsing a message.
 
 When the caller only needs to know which rule refused and what to tell the

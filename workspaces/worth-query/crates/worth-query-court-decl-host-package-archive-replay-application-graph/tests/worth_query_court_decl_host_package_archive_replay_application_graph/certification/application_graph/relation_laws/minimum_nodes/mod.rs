@@ -8,7 +8,7 @@ fn cycles_count_other_entities_once_and_neither_self_nor_duplicate_edges_substit
     committed(world.edit(1, &[(0, 1), (0, 0), (2, 1)]));
     let before_removal = read::committed(&world);
     let refusal = denied(world.replace_edges(2, &[], &[(0, 1)]));
-    let Some(WorthQueryRelationLawDenial::ConnectivityMinimum {
+    let Some(InvariantViolationFields::ConnectivityMinimum {
         contract_id,
         source,
         reachable_target_count,
@@ -20,8 +20,8 @@ fn cycles_count_other_entities_once_and_neither_self_nor_duplicate_edges_substit
     };
     assert_eq!(contract_id.as_str(), "Precedes:reaches_at_least");
     assert_eq!(source, &EntityReference::Existing(before.identities[&0]));
-    assert_eq!(reachable_target_count, 0);
-    assert_eq!(minimum_reachable_targets, 2);
+    assert_eq!(*reachable_target_count, 0);
+    assert_eq!(*minimum_reachable_targets, 2);
     assert_eq!(
         read::committed(&world).multiplicity,
         before_removal.multiplicity
@@ -37,7 +37,7 @@ fn isolated_created_sources_refuse_and_a_return_edge_makes_the_same_creation_law
     let mut world = install::<MinimumTwo>(3, CYCLE);
     let before = read::committed(&world);
     let refusal = denied(world.create_node(0, true, true));
-    let Some(WorthQueryRelationLawDenial::ConnectivityMinimum {
+    let Some(InvariantViolationFields::ConnectivityMinimum {
         source,
         reachable_target_count,
         minimum_reachable_targets,
@@ -50,8 +50,8 @@ fn isolated_created_sources_refuse_and_a_return_edge_makes_the_same_creation_law
         panic!("unpublished source must retain its original creation reference: {source:?}")
     };
     assert_eq!(created.client_key.canonical_text(), "node-3");
-    assert_eq!(reachable_target_count, 0);
-    assert_eq!(minimum_reachable_targets, 2);
+    assert_eq!(*reachable_target_count, 0);
+    assert_eq!(*minimum_reachable_targets, 2);
     assert_eq!(read::identity(&world, 3), None);
     assert_eq!(read::committed(&world).multiplicity, before.multiplicity);
     committed(world.create_with(CreateNodeInput {
@@ -77,7 +77,7 @@ fn repeated_physical_paths_do_not_turn_one_distinct_reachable_target_into_two() 
     assert_eq!(before.multiplicity[&(0, 1)], 2);
     assert_eq!(before.multiplicity[&(1, 0)], 2);
     let refusal = denied(world.replace_edges(22, &[], &[(1, 2)]));
-    let Some(WorthQueryRelationLawDenial::ConnectivityMinimum {
+    let Some(InvariantViolationFields::ConnectivityMinimum {
         source,
         reachable_target_count,
         minimum_reachable_targets,
@@ -89,8 +89,8 @@ fn repeated_physical_paths_do_not_turn_one_distinct_reachable_target_into_two() 
     assert!([before.identities[&0], before.identities[&1]]
         .iter()
         .any(|identity| source == &EntityReference::Existing(*identity)));
-    assert_eq!(reachable_target_count, 1);
-    assert_eq!(minimum_reachable_targets, 2);
+    assert_eq!(*reachable_target_count, 1);
+    assert_eq!(*minimum_reachable_targets, 2);
     assert_eq!(read::committed(&world).multiplicity, before.multiplicity);
     committed(world.replace_edges(23, &[(0, 2)], &[(1, 2)]));
     world.close();

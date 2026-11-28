@@ -12,10 +12,9 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
         &mut self,
         relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
         root: &WorthQueryInvariantEntityIdentity<Schema, From>,
-        association:&worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation,
     ) -> Result<u64, WorthQueryComputationReadDenial> {
         self.reader
-            .decision_derived_count(relation, root, association)
+            .decision_derived_count(relation, root)
             .map_err(WorthQueryComputationReadDenial::Relations)
     }
 

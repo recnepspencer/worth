@@ -3,26 +3,17 @@ use std::sync::Arc;
 
 use worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupport;
 
-use super::semantic_provider_ports::{
-    self, WorthQueryErasedDecisionFactProvider, WorthQueryErasedInvariantExecutionProvider,
-    WorthQueryErasedProvisionalGraphProvider,
-};
+use super::semantic_provider_ports::{self, WorthQueryErasedDecisionFactProvider};
 use super::{WorthQueryGraphProviderExecution, WorthQueryGraphProviderExecutionStart};
 use crate::domain_computation::{
-    WorthQueryBoundInvariantExecutionView, WorthQueryDecisionFactAdmission,
-    WorthQueryDecisionFactComparisonAdmission, WorthQueryDecisionFactComparisonEvidence,
-    WorthQueryDecisionFactEvidence, WorthQueryDecisionFactEvidenceView,
-    WorthQueryDecisionFactRequestView, WorthQueryDecisionReadSetFailure,
-    WorthQueryGraphParticipationProvider, WorthQueryGraphProviderCall,
-    WorthQueryGraphProviderFailure, WorthQueryInvariantExecutionFailure,
-    WorthQueryInvariantProviderVerdict, WorthQueryInvariantStateLoadAdmission,
-    WorthQueryInvariantStateLoadEvidence, WorthQueryInvariantStateLoadRequestView,
-    WorthQueryInvariantVerdictAdmission, WorthQueryProviderExecutionPlanView,
-    WorthQueryProviderSessionFailure, WorthQueryProviderSessionLifecycle,
-    WorthQueryProviderSessionToken, WorthQueryProviderSessionTokenAdmission,
-    WorthQueryProviderSessionView, WorthQueryProvisionalEffectProgramView,
-    WorthQueryProvisionalFailure, WorthQueryProvisionalOverlayAdmission,
-    WorthQueryProvisionalOverlayEvidence, WorthQueryProvisionalOverlayEvidenceView,
+    WorthQueryDecisionFactAdmission, WorthQueryDecisionFactComparisonAdmission,
+    WorthQueryDecisionFactComparisonEvidence, WorthQueryDecisionFactEvidence,
+    WorthQueryDecisionFactEvidenceView, WorthQueryDecisionFactRequestView,
+    WorthQueryDecisionReadSetFailure, WorthQueryGraphParticipationProvider,
+    WorthQueryGraphProviderCall, WorthQueryGraphProviderFailure,
+    WorthQueryProviderExecutionPlanView, WorthQueryProviderSessionFailure,
+    WorthQueryProviderSessionLifecycle, WorthQueryProviderSessionToken,
+    WorthQueryProviderSessionTokenAdmission, WorthQueryProviderSessionView,
 };
 
 pub(super) trait WorthQueryErasedGraphParticipationProvider:
@@ -146,8 +137,6 @@ pub struct WorthQueryGraphProviderAnchor {
     pub(super) provider: Arc<dyn WorthQueryErasedGraphParticipationProvider>,
     pub(super) session_lifecycle: Option<Arc<dyn WorthQueryErasedProviderSessionLifecycle>>,
     pub(super) decision_fact_provider: Option<Arc<dyn WorthQueryErasedDecisionFactProvider>>,
-    pub(super) provisional_provider: Option<Arc<dyn WorthQueryErasedProvisionalGraphProvider>>,
-    pub(super) invariant_provider: Option<Arc<dyn WorthQueryErasedInvariantExecutionProvider>>,
     pub(super) convergence_provider:
         Option<Arc<dyn crate::domain_computation::WorthQueryConvergenceDomainProvider>>,
     pub(super) provider_identity: &'static str,
@@ -193,14 +182,6 @@ impl WorthQueryGraphProviderAnchor {
         self.session_lifecycle.is_some()
     }
 
-    pub(crate) fn retains_convergence_and_phase_seven_through_ten(&self) -> bool {
-        self.convergence_provider.is_some()
-            && self.session_lifecycle.is_some()
-            && self.decision_fact_provider.is_some()
-            && self.provisional_provider.is_some()
-            && self.invariant_provider.is_some()
-    }
-
     pub fn observe_decision_fact(
         &self,
         session: WorthQueryProviderSessionView<'_>,
@@ -227,60 +208,6 @@ impl WorthQueryGraphProviderAnchor {
             &self.decision_fact_provider,
             session,
             evidence,
-            admission,
-        )
-    }
-
-    pub(crate) fn stage_provisional_overlay(
-        &self,
-        session: WorthQueryProviderSessionView<'_>,
-        program: WorthQueryProvisionalEffectProgramView<'_>,
-        admission: WorthQueryProvisionalOverlayAdmission,
-    ) -> Result<WorthQueryProvisionalOverlayEvidence, WorthQueryProvisionalFailure> {
-        semantic_provider_ports::stage_provisional_overlay(
-            &self.provisional_provider,
-            session,
-            program,
-            admission,
-        )
-    }
-
-    pub(crate) fn discard_provisional_overlay(
-        &self,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-        evidence: WorthQueryProvisionalOverlayEvidenceView<'_>,
-    ) -> Result<(), WorthQueryProvisionalFailure> {
-        semantic_provider_ports::discard_provisional_overlay(
-            &self.provisional_provider,
-            execution,
-            evidence,
-        )
-    }
-
-    pub(crate) fn load_invariant_state(
-        &self,
-        session: WorthQueryProviderSessionView<'_>,
-        request: WorthQueryInvariantStateLoadRequestView<'_>,
-        admission: WorthQueryInvariantStateLoadAdmission,
-    ) -> Result<WorthQueryInvariantStateLoadEvidence, WorthQueryInvariantExecutionFailure> {
-        semantic_provider_ports::load_invariant_state(
-            &self.invariant_provider,
-            session,
-            request,
-            admission,
-        )
-    }
-
-    pub(crate) fn execute_invariant(
-        &self,
-        session: WorthQueryProviderSessionView<'_>,
-        execution: WorthQueryBoundInvariantExecutionView<'_>,
-        admission: WorthQueryInvariantVerdictAdmission,
-    ) -> Result<WorthQueryInvariantProviderVerdict, WorthQueryInvariantExecutionFailure> {
-        semantic_provider_ports::execute_invariant(
-            &self.invariant_provider,
-            session,
-            execution,
             admission,
         )
     }
@@ -360,5 +287,3 @@ impl GraphProviderAnchorInternalPort for WorthQueryGraphProviderAnchor {
         &self.session_grant_control
     }
 }
-
-mod court_doors_for_test;

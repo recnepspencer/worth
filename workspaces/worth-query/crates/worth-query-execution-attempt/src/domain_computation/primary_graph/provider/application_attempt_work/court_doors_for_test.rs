@@ -22,19 +22,9 @@ impl WorthQueryApplicationAttemptWorkSnapshot {
     }
 }
 
-impl WorthQueryApplicationAttemptWorkSnapshot {
-    #[doc(hidden)]
-    pub fn invariant_executions_for_test(&self) -> &u64 {
-        &self.invariant_executions
-    }
-}
+impl WorthQueryApplicationAttemptWorkSnapshot {}
 
-impl WorthQueryApplicationAttemptWorkSnapshot {
-    #[doc(hidden)]
-    pub fn invariant_state_loads_for_test(&self) -> &u64 {
-        &self.invariant_state_loads
-    }
-}
+impl WorthQueryApplicationAttemptWorkSnapshot {}
 
 impl WorthQueryApplicationAttemptWorkSnapshot {
     #[doc(hidden)]
@@ -50,12 +40,7 @@ impl WorthQueryApplicationAttemptWorkSnapshot {
     }
 }
 
-impl WorthQueryApplicationAttemptWorkSnapshot {
-    #[doc(hidden)]
-    pub fn overlay_stagings_for_test(&self) -> &u64 {
-        &self.overlay_stagings
-    }
-}
+impl WorthQueryApplicationAttemptWorkSnapshot {}
 
 impl WorthQueryApplicationAttemptWorkSnapshot {
     #[doc(hidden)]

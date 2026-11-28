@@ -386,9 +386,7 @@ fn require_planar_violation<Denial: std::fmt::Debug, Value: std::fmt::Debug>(
         denial.stage(),
         primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution
     );
-    let Some(primary_graph::WorthQueryCustomInvariantDenial::Violation { identity, .. }) =
-        denial.custom_invariant_denial()
-    else {
+    let Some(identity) = denial.custom_invariant_violation_identity() else {
         panic!("a domain violation, not an execution failure, must refuse the edit");
     };
     assert_eq!(identity.rule_id.as_str(), "PositivePlanarTurn");

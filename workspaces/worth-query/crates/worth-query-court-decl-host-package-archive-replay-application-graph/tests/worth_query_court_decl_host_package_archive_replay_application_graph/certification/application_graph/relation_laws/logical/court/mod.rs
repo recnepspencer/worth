@@ -2,49 +2,17 @@ pub(crate) use worth_query_testkit_certification_application_graph::facade::cert
 
 #[test]
 fn logical_rules_decisions_orbits_and_entity_root_count_share_actual_source_owners() {
-    use WorthQueryRuleReadableCollectionLifecycleForTest as State;
     let world = install::<Logical>(6, &[(0, 1), (1, 0), (2, 3), (3, 2), (4, 5), (5, 4)]);
     count(&world, 500);
-    assert_eq!(
-        world
-            .application
-            .runtime()
-            .rule_readable_collection_lifecycle_for_test(),
-        [State::Warm]
-    );
     let first = checked(&world, 501, 0);
     assert_pair(&world, 0, 1, &first);
     committed::assert_projection(&world, &first);
     outcome::committed(world.replace_edges(502, &[(0, 3), (2, 1)], &[(0, 1), (2, 3)]));
     // The complete physical permutation remains lawful, and count stays two
     // while the exact positive/empty dependency roster changes.
-    assert_eq!(
-        world
-            .application
-            .runtime()
-            .rule_readable_collection_lifecycle_for_test(),
-        [State::Dirty]
-    );
     count(&world, 503);
     let second = checked(&world, 504, 0);
     assert_pair(&world, 0, 3, &second);
-    world
-        .application
-        .runtime()
-        .discard_rule_readable_collections();
-    assert!(world
-        .application
-        .runtime()
-        .rule_readable_collection_lifecycle_for_test()
-        .is_empty());
-    count(&world, 505);
-    assert_eq!(
-        world
-            .application
-            .runtime()
-            .rule_readable_collection_lifecycle_for_test(),
-        [State::Warm]
-    );
     let mut successors = [3, 0, 1, 2, 5, 4];
     let mut seed = 0x9181_0062_u64;
     for step in 0..12_u64 {
@@ -63,40 +31,7 @@ fn logical_rules_decisions_orbits_and_entity_root_count_share_actual_source_owne
             .map(|(from, to)| (from as u64, *to))
             .collect::<BTreeSet<_>>();
         assert_eq!(read::committed(&world).edges, expected);
-        assert_eq!(
-            world
-                .application
-                .runtime()
-                .rule_readable_collection_lifecycle_for_test(),
-            [State::Dirty]
-        );
         count(&world, command + 1);
-        assert_eq!(
-            world
-                .application
-                .runtime()
-                .rule_readable_collection_lifecycle_for_test(),
-            [State::Warm]
-        );
-        if step % 3 == 0 {
-            world
-                .application
-                .runtime()
-                .discard_rule_readable_collections();
-            assert!(world
-                .application
-                .runtime()
-                .rule_readable_collection_lifecycle_for_test()
-                .is_empty());
-            count(&world, command + 2);
-            assert_eq!(
-                world
-                    .application
-                    .runtime()
-                    .rule_readable_collection_lifecycle_for_test(),
-                [State::Warm]
-            );
-        }
         let answer = checked(&world, command + 3, 0);
         assert_pair(&world, 0, successors[0], &answer);
     }

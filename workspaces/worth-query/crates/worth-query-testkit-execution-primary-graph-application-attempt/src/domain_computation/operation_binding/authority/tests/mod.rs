@@ -135,26 +135,6 @@ pub fn direct_authority_with_graph_effect_and_decision_facts(
     );
     authority
 }
-pub fn direct_authority_with_graph_effect_decision_facts_and_invariants(
-    runtime: &worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntime,
-    plan: &WorthQueryAdmittedExecutionResourcePlan,
-    graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-    families: Vec<worth_query_installation::facade::WorthQueryDecisionFactFamily>,
-    invariants: Vec<
-        worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement,
-    >,
-) -> WorthQueryExecutionBoundOperationAuthority {
-    let mut authority =
-        direct_authority_with_graph_effect_and_decision_facts(runtime, plan, graph, families);
-    (*authority.provider_plan_declarations_mut_for_test()) = Arc::new(
-        worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_effect_with_decision_facts_and_invariants_for_test(
-            graph.role(),
-            (*authority.provider_plan_declarations_for_test()).decision_fact_families_for_test().to_vec(),
-            invariants,
-        ),
-    );
-    authority
-}
 pub fn workflow_authority(
     runtime: &worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntime,
     plan: &worth_query_admission::facade::resource_admission::WorthQueryAdmittedWorkflowResourcePlan,

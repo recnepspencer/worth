@@ -83,5 +83,7 @@ fn actual_native_deferred_reason_keeps_its_deferred_posture() {
     let Stop::Deferred(deferred) = transaction_commit_stop(error) else {
         panic!("native deferral is not a preparation denial");
     };
-    assert_eq!(deferred.kind(), crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::PatchPositionReservationContended);
+    assert_eq!(deferred.kind(), crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::RelationalDeferred(
+        worth_relational::facade::mvcc::RelationalPublicationDeferred::PatchPositionReservationContended,
+    ));
 }

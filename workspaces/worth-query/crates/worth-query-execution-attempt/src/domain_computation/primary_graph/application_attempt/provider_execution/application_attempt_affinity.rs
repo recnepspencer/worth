@@ -365,13 +365,6 @@ impl WorthQueryApplicationAttemptAffinity {
     pub fn same_session(&self, binding: &WorthQueryProviderSessionTerminalBinding) -> bool {
         self.provider_session.same_session(binding)
     }
-
-    pub fn admits_cleanup(
-        &self,
-        cleanup: &crate::domain_computation::provider_session::WorthQueryProvisionalOverlayCleanupBinding,
-    ) -> bool {
-        self.provider_session.admits_cleanup_binding(cleanup)
-    }
 }
 
 #[cfg(test)]

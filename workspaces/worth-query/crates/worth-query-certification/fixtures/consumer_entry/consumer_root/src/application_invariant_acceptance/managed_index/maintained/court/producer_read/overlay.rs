@@ -83,8 +83,9 @@ fn producer_computation_reads_earlier_peer_edits_and_refusal_preserves_the_index
                 WorthQueryEditEnvelopeOutcome::Uncommitted(
                     WorthQueryApplicationUncommitted::Denied(denial),
                 ) if refuses => {
-                    let Some(WorthQueryCustomInvariantDenial::Violation { identity, .. }) =
-                        denial.custom_invariant_denial()
+                    let Some(InvariantViolationFields::CustomInvariantViolation {
+                        identity, ..
+                    }) = denial.custom_invariant_denial()
                     else {
                         panic!("expected the installed name invariant: {denial:?}");
                     };

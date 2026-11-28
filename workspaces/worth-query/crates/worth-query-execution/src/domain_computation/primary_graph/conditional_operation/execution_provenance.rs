@@ -235,16 +235,21 @@ fn cause(
 
 fn provider_commit_cause(kind: graph::WorthQueryApplicationCommitDeferredKind) -> Option<Cause> {
     use graph::WorthQueryApplicationCommitDeferredKind as Kind;
+    use worth_relational::facade::mvcc::RelationalPublicationDeferred as Deferred;
     match kind {
-        Kind::RelationalDeferred(deferred) => Some(Cause::RelationalDeferred(deferred)),
-        Kind::RetentionCapacityExhausted => Some(Cause::RetentionCapacityExhausted),
-        Kind::PatchPositionReservationContended => Some(Cause::PatchPositionReservationContended),
-        Kind::CandidateCapacityExhausted { maximum_candidates } => {
-            Some(Cause::CandidateCapacityExhausted { maximum_candidates })
-        }
-        Kind::PublishedSnapshotCapacityExhausted { maximum_handles } => {
-            Some(Cause::PublishedSnapshotCapacityExhausted { maximum_handles })
-        }
+        Kind::RelationalDeferred(deferred) => Some(match deferred {
+            Deferred::RetentionBackpressure => Cause::RetentionCapacityExhausted,
+            Deferred::PatchPositionReservationContended => Cause::PatchPositionReservationContended,
+            Deferred::CandidateCapacityExhausted { maximum_candidates } => {
+                Cause::CandidateCapacityExhausted { maximum_candidates }
+            }
+            Deferred::PublishedSnapshotCapacityExhausted { maximum_handles } => {
+                Cause::PublishedSnapshotCapacityExhausted { maximum_handles }
+            }
+            Deferred::CompanionRegistrationPending
+            | Deferred::CompanionRebindRequired
+            | Deferred::CompanionPreflight(_) => Cause::RelationalDeferred(deferred),
+        }),
         Kind::SourceCurrentnessRaced(stop) => Some(Cause::SourceCurrentnessRaced(stop)),
         Kind::RequiredPrerequisitePending(kind) => Some(Cause::RequiredPrerequisitePending(kind)),
     }

@@ -210,7 +210,6 @@ fn require_original_self_edge(outcome: super::MutationOutcome) {
         primary_graph::{
             WorthQueryApplicationCommitDenialKind as Kind,
             WorthQueryApplicationCommitDenialStage as Stage, WorthQueryApplicationUncommitted,
-            WorthQueryRelationLawDenial,
         },
     };
     let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
@@ -221,7 +220,7 @@ fn require_original_self_edge(outcome: super::MutationOutcome) {
     };
     assert_eq!(denial.kind(), Kind::ProviderRejected);
     assert_eq!(denial.stage(), Stage::InvariantExecution);
-    let Some(WorthQueryRelationLawDenial::SelfEdge {
+    let Some(InvariantViolationFields::RelationEndpointKindSelfEdge {
         contract_id,
         source,
         target,
@@ -231,7 +230,7 @@ fn require_original_self_edge(outcome: super::MutationOutcome) {
     else {
         panic!("the original endpoint cause must survive: {denial:?}");
     };
-    assert!(self_edge);
+    assert!(*self_edge);
     assert_eq!(contract_id.as_str(), "PlanarSuccessor:endpoints");
     assert_eq!(source, target);
     let EntityReference::Created(_) = source else {

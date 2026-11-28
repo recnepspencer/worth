@@ -204,7 +204,7 @@ fn run() {
         denial.stage(),
         WorthQueryApplicationCommitDenialStage::InvariantExecution
     );
-    let Some(WorthQueryCustomInvariantDenial::Violation { identity, .. }) =
+    let Some(InvariantViolationFields::CustomInvariantViolation { identity, .. }) =
         denial.custom_invariant_denial()
     else {
         panic!("Source/read/setup failure cannot counterfeit exact violation: {denial:?}")

@@ -31,7 +31,7 @@ pub use worth_query_execution_query::facade::domain_computation::primary_graph::
     WorthQueryOracleSignalMovementForTest, WorthQueryPerformedInboundCompletion,
     WorthQueryPrimaryGraphApplicationRuntimeFields, WorthQueryPrimaryGraphApplicationRuntimeInner,
     WorthQueryRecordedCompletionDenial,
-    WorthQueryRuleReadableCollectionLifecycleForTest, WorthQueryStorageRetentionDenial,
+    WorthQueryStorageRetentionDenial,
     WorthQueryStorageRetentionProgress, WorthQueryStorageRetentionStop,
     WorthQueryTerminalEffectRefusal, WorthQueryUnpublishedInboundCompletion,
 };

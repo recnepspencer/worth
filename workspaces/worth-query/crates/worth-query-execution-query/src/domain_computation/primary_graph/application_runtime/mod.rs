@@ -25,7 +25,6 @@ pub mod candidate_input_observation;
 pub mod certification_controls;
 pub mod certification_cost;
 pub mod certification_managed_index;
-pub mod derived_relation;
 pub mod durable_admission;
 pub mod equality_index_residency;
 pub mod execution_memory;
@@ -51,7 +50,6 @@ pub use certification_cost::{
     WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,
     WorthQueryCertificationWorldHistory, WorthQueryCertificationWorldRetention,
 };
-pub use derived_relation::WorthQueryRuleReadableCollectionLifecycleForTest;
 pub use execution_memory::WorthQueryExecutionLeaseDenial;
 pub use external_dispatch_attempt::{
     WorthQueryExternalDispatchAdmissionDenial, WorthQueryExternalDispatchAttemptOrdinal,

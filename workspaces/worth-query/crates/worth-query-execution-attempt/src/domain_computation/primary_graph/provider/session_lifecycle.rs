@@ -58,7 +58,7 @@ impl WorthQueryProviderSessionLifecycle
         } else {
             Err(super::session_commit::provider_failure(
                 WorthQueryProviderSessionProtocolStage::StagedPreparation,
-                "primary graph session has no exact staged overlay",
+                "primary graph session has no validated application candidate",
             ))
         }
     }

@@ -385,11 +385,9 @@ Decisions require the declared operation/marker and issued physical read scopes.
 owner into the existing managed collection machinery. A custom computation with
 the same descriptive association cannot substitute for that owner.
 
-The existing derived-view registry retains the disposable count, physical and
-empty-adjacency dependencies, invalidation and reconstruction state. Every read
-first acquires a genuine Native source; a warm cache does not remove that proof
-work or grant authority. `runtime.discard_rule_readable_collections()` disposes
-only those projections. Source laws, walks, orbits, components, logical member
+Counts read the authoritative Native recipe and retain its physical and empty
+adjacency dependencies as decision facts.
+Source laws, walks, orbits, components, logical member
 domains and CAD adoption remain separate Phase 6 completion gates. See the
 [graph obligation guide](domain-capabilities/canonical-graph-obligation-progression.md#derived-relation-meaning).
 

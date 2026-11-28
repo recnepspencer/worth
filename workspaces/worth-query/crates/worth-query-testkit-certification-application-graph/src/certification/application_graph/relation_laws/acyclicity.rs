@@ -8,7 +8,7 @@ pub fn closing_edge(
     graph: &read::Graph,
     candidates: &[(u64, u64)],
 ) {
-    let Some(WorthQueryRelationLawDenial::Acyclicity {
+    let Some(InvariantViolationFields::Acyclicity {
         contract_id,
         source: EntityReference::Existing(source),
         target: EntityReference::Existing(target),

@@ -17,6 +17,5 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             "replay reset requires zero live application attempts"
         );
         self.next_registration = 0;
-        self.next_overlay = 0;
     }
 }

@@ -54,7 +54,7 @@ pub(super) fn verify(
         );
         assert!(matches!(
             denial.custom_invariant_denial(),
-            Some(primary_graph::WorthQueryCustomInvariantDenial::Failure { .. })
+            Some(primary_graph::InvariantViolationFields::CustomInvariantFailure { .. })
         ));
         let events = std::mem::take(&mut *controls.events.lock().unwrap());
         assert!(

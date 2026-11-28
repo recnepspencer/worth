@@ -1,5 +1,3 @@
-#[path = "combined_provider_capability/mod.rs"]
-pub mod combined_provider_capability;
 #[path = "cost_bound/mod.rs"]
 pub mod cost_bound;
 #[path = "decision_read_set_admission/mod.rs"]
@@ -8,12 +6,6 @@ pub mod decision_read_set_admission;
 pub mod direct_lifecycle;
 #[path = "invariant_budget/mod.rs"]
 pub mod invariant_budget;
-#[path = "invariant_provider_failures/mod.rs"]
-pub mod invariant_provider_failures;
-#[path = "invariant_state_load/mod.rs"]
-pub mod invariant_state_load;
-#[path = "provider_compare_and_commit/mod.rs"]
-pub mod provider_compare_and_commit;
 #[path = "provider_contract_violation/mod.rs"]
 pub mod provider_contract_violation;
 #[path = "provider_session_abandonment/mod.rs"]

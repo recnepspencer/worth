@@ -216,7 +216,7 @@ fn invariant_content_format_refusal_cannot_be_swallowed_into_a_pass() {
         .expect("the invariant reader refused");
     assert!(matches!(
         cause,
-        WorthQueryCustomInvariantDenial::Failure { cause: Some(_), .. }
+        InvariantViolationFields::CustomInvariantFailure { cause: Some(_), .. }
     ));
     assert_eq!(
         world::pin(&host).selected_commit(),

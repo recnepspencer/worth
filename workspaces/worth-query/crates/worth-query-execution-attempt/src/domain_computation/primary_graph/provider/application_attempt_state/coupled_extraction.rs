@@ -44,10 +44,10 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
                 member.terminal.affinity_identity(),
             );
             let (identity, state) = self.take_registered(member_key);
-            let (attempt, contribution) = state.take_coupled_parts();
+            let (attempt, work) = state.take_coupled_parts();
             member.owned = Some(OwnedCoupledContribution {
                 attempt,
-                work: contribution.work,
+                work,
                 commit: None,
                 _completion: WorthQueryApplicationAttemptCompletion::new(
                     attempts.clone(),

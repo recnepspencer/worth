@@ -44,7 +44,7 @@ with the relation's endpoint, cardinality and deletion policies.
 
 For refusals, use `worth_query_host::facade::primary_graph`:
 `WorthQueryApplicationCommitDenial::relation_law()` returns an optional borrowed
-`WorthQueryRelationLawDenial`. Bootstrap publication refusals expose the same
+`InvariantViolationFields`. Bootstrap publication refusals expose the same
 view on `WorthQueryPrimaryGraphInstallationDenial`.
 
 ## Core Mental Model
@@ -202,7 +202,7 @@ exercises native refusals and atomic lawful mutations through the ordinary
 authenticated program.
 
 An orbit's cardinality refusal exposes
-`WorthQueryRelationLawDenial::Cardinality` with the original `member`,
+`InvariantViolationFields::RelationCardinalityEndpoint` with the original `entity_id`,
 `boundary`, `count`, `limit` and `contract_id` (`relation:orbit`).
 `RelationCardinalityBoundary` is available through the host's
 `application_invariants` facade. Another independent policy may refuse first
