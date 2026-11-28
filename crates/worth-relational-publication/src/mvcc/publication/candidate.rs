@@ -15,6 +15,7 @@ pub mod read_condition;
 pub mod required_outputs;
 pub use output_adoption::RelationalCurrentOutputAdoption;
 pub mod retained_selection;
+pub mod unique_field_claims;
 use std::cell::Cell;
 use std::marker::PhantomData;
 
@@ -47,6 +48,7 @@ pub struct PreparedRelationalCommitCandidate {
 }
 
 pub struct CandidatePayload {
+    unique_fields: worth_relational_mutation::internal_port::validation::unique_field_probes::UniqueFieldProbeBatch,
     coupled_read: Option<coupled_read::CoupledCandidateReadContext>,
     current_read: Option<AdmittedRelationalBranchBasis>,
     managed_source_reads: Option<super::companion::ManagedSourceReadConditions>,
@@ -108,6 +110,7 @@ impl PreparedRelationalCommitCandidate {
     ) -> Result<Self, PreparedRelationalCandidateAdmissionStop> {
         let reservation_count = execution.reservation_count();
         let payload = SharedCandidatePayload::new(CandidatePayload {
+            unique_fields: Default::default(),
             coupled_read: None,
             current_read: None,
             companion_read: None,

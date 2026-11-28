@@ -21,6 +21,7 @@ fn pinned_population_keeps_nonempty_predecessor_and_admits_empty_successor() {
                 field_locator: locator.clone(),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = |commit| {

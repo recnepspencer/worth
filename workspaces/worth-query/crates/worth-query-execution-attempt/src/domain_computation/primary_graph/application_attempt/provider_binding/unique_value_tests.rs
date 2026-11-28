@@ -1,7 +1,4 @@
-//! The unique-value lowering law over sealed facts: a write of a unique field
-//! lowers only beside the field's observed indexed selection of that value,
-//! and only when that selection holds no live entity but the one written.
-
+//! Query retains authored field observations while Native admits unique writes.
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::{
@@ -9,242 +6,54 @@ use worth_foundational::facade::{
     CanonicalFieldPath, FieldKey, InternedString, LocatorAuthority, PortableAspectContractBasis,
 };
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
-use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
 
 use super::{prepare_provider_attempt, WorthQueryApplicationRealizedEffect as Effect};
 use crate::domain_computation::primary_graph::application_attempt::effect_program::{
     WorthQueryApplicationCreationPartition as Partition, WorthQueryApplicationOptionalFieldWrite,
 };
 use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind as Kind,
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitDenialStage, WorthQueryApplicationObservedFact as Fact,
+    CompletedFactRoutes, CompletedReadScopes, WorthQueryApplicationAttemptDenial,
+    WorthQueryApplicationAttemptDenialKind as Kind, WorthQueryApplicationObservedFact as Fact,
 };
-use crate::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFieldFixture;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use crate::domain_computation::primary_graph::StorageControl;
 
 const KIND: KindId = KindId(7);
-const INDEX: DerivedIndexId = DerivedIndexId(8);
-
 #[test]
-fn a_create_of_a_free_value_lowers_in_both_partitions() {
+fn creates_reach_native_validation_without_an_implicit_key_read() {
     for partition in [Partition::Issued, Partition::Context(PartitionId(5))] {
-        let facts = vec![selection("ada", vec![])];
-        assert_eq!(
-            lower(Some(INDEX), facts, vec![create("a", "ada", partition)]),
-            Ok(())
-        );
+        assert_eq!(lower(vec![], vec![create("a", "ada", partition)]), Ok(()));
     }
 }
 
 #[test]
-fn a_create_of_a_taken_value_is_denied_in_both_partitions() {
-    for partition in [Partition::Issued, Partition::Context(PartitionId(5))] {
-        let facts = vec![selection("ada", vec![entity(1)])];
-        assert_eq!(
-            lower(Some(INDEX), facts, vec![create("a", "ada", partition)]),
-            Err(Kind::UniqueValueTaken)
-        );
-    }
+fn an_existing_write_keeps_its_original_field_observation() {
+    assert_eq!(lower(vec![held(1, "bob")], vec![update(1, "ada")]), Ok(()));
+    assert!(lower(vec![], vec![update(1, "ada")]).is_err());
 }
 
 #[test]
-fn a_unique_write_without_its_observed_selection_does_not_lower() {
-    assert_eq!(
-        lower(
-            Some(INDEX),
-            vec![],
-            vec![create("a", "ada", Partition::Issued)]
-        ),
-        Err(Kind::IncompleteEffectBasis)
-    );
-    assert_eq!(
-        lower(Some(INDEX), vec![held(1, "bob")], vec![update(1, "ada")]),
-        Err(Kind::IncompleteEffectBasis)
-    );
+fn clearing_a_unique_field_needs_no_selection_of_its_old_value() {
+    assert_eq!(lower(vec![held(1, "ada")], vec![patch(1, None)]), Ok(()));
 }
 
 #[test]
-fn one_program_writes_each_unique_value_at_most_once() {
-    let twice = vec![
-        create("a", "ada", Partition::Issued),
-        create("b", "ada", Partition::Issued),
-    ];
-    assert_eq!(
-        lower(Some(INDEX), vec![selection("ada", vec![])], twice),
-        Err(Kind::UniqueValueTaken)
-    );
-    let facts = vec![held(1, "bob"), selection("ada", vec![])];
-    let update_then_create = vec![update(1, "ada"), create("a", "ada", Partition::Issued)];
-    assert_eq!(
-        lower(Some(INDEX), facts, update_then_create),
-        Err(Kind::UniqueValueTaken)
-    );
-}
-
-#[test]
-fn an_update_or_patch_into_a_taken_value_is_denied() {
-    let facts = || vec![held(1, "bob"), selection("ada", vec![entity(2)])];
-    assert_eq!(
-        lower(Some(INDEX), facts(), vec![update(1, "ada")]),
-        Err(Kind::UniqueValueTaken)
-    );
-    assert_eq!(
-        lower(Some(INDEX), facts(), vec![patch(1, Some("ada"))]),
-        Err(Kind::UniqueValueTaken)
-    );
-}
-
-#[test]
-fn a_write_that_keeps_its_own_value_lowers() {
-    let facts = || vec![held(1, "ada"), selection("ada", vec![entity(1)])];
-    assert_eq!(lower(Some(INDEX), facts(), vec![update(1, "ada")]), Ok(()));
-    assert_eq!(
-        lower(Some(INDEX), facts(), vec![patch(1, Some("ada"))]),
-        Ok(())
-    );
-}
-
-#[test]
-fn clearing_a_unique_field_frees_its_value_without_a_lookup() {
-    assert_eq!(
-        lower(Some(INDEX), vec![held(1, "ada")], vec![patch(1, None)]),
-        Ok(())
-    );
-}
-
-#[test]
-fn deleting_the_exact_holder_frees_its_value_in_the_same_atomic_program() {
-    let facts = vec![
-        Fact::Entity {
-            entity_id: entity(1),
-            kind: KIND,
-        },
-        selection("ada", vec![entity(1)]),
-    ];
-    let effects = vec![
-        Effect::DeleteEntity {
-            entity_id: entity(1),
-        },
-        create("a", "ada", Partition::Issued),
-    ];
-    assert_eq!(lower(Some(INDEX), facts, effects), Ok(()));
-}
-
-#[test]
-fn deleting_another_record_never_releases_the_selected_unique_holder() {
-    let facts = vec![
-        Fact::Entity {
-            entity_id: entity(2),
-            kind: KIND,
-        },
-        selection("ada", vec![entity(1)]),
-    ];
-    let effects = vec![
-        Effect::DeleteEntity {
-            entity_id: entity(2),
-        },
-        create("new", "ada", Partition::Issued),
-    ];
-    assert_eq!(
-        lower(Some(INDEX), facts, effects),
-        Err(Kind::UniqueValueTaken)
-    );
-}
-#[test]
-fn retirement_does_not_allow_two_successors_to_claim_one_unique_value() {
-    let facts = vec![
-        Fact::Entity {
-            entity_id: entity(1),
-            kind: KIND,
-        },
-        selection("ada", vec![entity(1)]),
-    ];
-    let effects = vec![
-        Effect::DeleteEntity {
-            entity_id: entity(1),
-        },
-        create("first", "ada", Partition::Issued),
-        create("second", "ada", Partition::Issued),
-    ];
-    assert_eq!(
-        lower(Some(INDEX), facts, effects),
-        Err(Kind::UniqueValueTaken)
-    );
-}
-
-#[test]
-fn an_uninstalled_index_is_its_own_denial() {
-    let facts = vec![selection("ada", vec![])];
-    assert_eq!(
-        lower(None, facts, vec![create("a", "ada", Partition::Issued)]),
-        Err(Kind::UniqueIndexUnavailable)
-    );
-    assert_eq!(
-        lower(None, vec![held(1, "bob")], vec![update(1, "ada")]),
-        Err(Kind::UniqueIndexUnavailable)
-    );
-}
-
-#[test]
-fn restored_duplicates_deny_writes_of_their_value_only() {
-    let facts = || {
-        vec![
-            held(1, "ada"),
-            selection("ada", vec![entity(1), entity(2)]),
-            selection("bob", vec![]),
-        ]
-    };
-    assert_eq!(
-        lower(Some(INDEX), facts(), vec![update(1, "ada")]),
-        Err(Kind::UniqueValueTaken)
-    );
-    assert_eq!(lower(Some(INDEX), facts(), vec![update(1, "bob")]), Ok(()));
-    assert_eq!(
-        lower(
-            Some(INDEX),
-            facts(),
-            vec![create("b", "bob", Partition::Issued)]
-        ),
-        Ok(())
-    );
-}
-
-#[test]
-fn a_field_that_is_not_unique_needs_no_selection() {
+fn a_nonunique_field_lowers_without_a_key_observation() {
     let effect = Effect::CreateEntity {
         kind: KIND,
         key: "a".to_owned(),
         fields: BTreeMap::from([(field("other"), text("ada"))]),
         partition: Partition::Issued,
     };
-    assert_eq!(lower(Some(INDEX), vec![], vec![effect]), Ok(()));
+    assert_eq!(lower(vec![], vec![effect]), Ok(()));
 }
 
 #[test]
-fn unique_lowering_denials_keep_their_kind_at_the_commit_boundary() {
-    for (kind, expected) in [
-        (
-            Kind::UniqueValueTaken,
-            WorthQueryApplicationCommitDenialKind::UniqueValueTaken,
-        ),
-        (
-            Kind::UniqueIndexUnavailable,
-            WorthQueryApplicationCommitDenialKind::UniqueIndexUnavailable,
-        ),
-    ] {
-        let attempt = WorthQueryApplicationAttemptDenial::new(kind, "Key");
-        let denial = WorthQueryApplicationCommitDenial::effect_lowering_denied(&attempt);
-        assert_eq!(denial.kind(), expected);
-        assert_eq!(
-            denial.stage(),
-            WorthQueryApplicationCommitDenialStage::EffectLowering
-        );
-        assert_eq!(denial.detail(), Some("Key"));
-    }
-}
-
-#[test]
-fn other_lowering_denials_name_their_kind_and_subject_at_the_commit_boundary() {
+fn other_lowering_denials_keep_their_kind_and_subject_at_the_commit_boundary() {
+    use crate::domain_computation::primary_graph::{
+        WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
+        WorthQueryApplicationCommitDenialStage,
+    };
     let attempt = WorthQueryApplicationAttemptDenial::new(
         Kind::IncompleteEffectBasis,
         "provider progression",
@@ -264,29 +73,29 @@ fn other_lowering_denials_name_their_kind_and_subject_at_the_commit_boundary() {
     );
 }
 
-fn lower(
-    index: Option<DerivedIndexId>,
-    facts: Vec<Fact>,
-    effects: Vec<Effect>,
-) -> Result<(), Kind> {
-    let fixture = WorthQueryUniqueFieldFixture::new(KIND, field("key"), index);
+fn lower(facts: Vec<Fact>, effects: Vec<Effect>) -> Result<(), Kind> {
+    let policy = worth_execution::ExecutionAllocationPolicy::SystemAllocation;
+    let facts = super::super::read_set::admit_array(
+        facts.len(),
+        facts,
+        policy,
+        "unique fixture",
+        || Ok(()),
+    )
+    .unwrap();
+    let routes = CompletedFactRoutes::from_facts(
+        FactPayload::native(facts),
+        StorageControl::new(policy, None),
+    )
+    .unwrap();
     prepare_provider_attempt(
-        fixture.fields(),
         &|_, _| None,
         PartitionId::main(),
         effects.len(),
-        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
-            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(
-        super::super::read_set::admit_array(
-            facts.len(),
-            facts,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            "unique fixture",
-            || Ok(()),
-        )
-        .unwrap()
-        ), crate::domain_computation::primary_graph::StorageControl::new(
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
+        CompletedReadScopes::EmptyOwnerFixture,
+        routes,
+        None,
+        None,
         Vec::new(),
         effects,
         None,
@@ -299,27 +108,6 @@ fn lower(
     )
     .map(|_| ())
     .map_err(|denial| denial.kind())
-}
-
-fn selection(value: &str, candidates: Vec<EntityId>) -> Fact {
-    Fact::IndexedEntitySelection {
-        index_id: INDEX,
-        definition: worth_relational::facade::indexes::RetainedDerivedIndexDefinition::from_owned(
-            DerivedIndexDefinition {
-                index_id: INDEX,
-                name: "unique-key".to_owned(),
-                kind: DerivedIndexKind::EntityField {
-                    field_locator: field("key"),
-                },
-                branch_scoped: true,
-            },
-        ),
-        entity_kind: KIND,
-        locator: field("key"),
-        value: text(value),
-        candidate_limit: 2,
-        candidates,
-    }
 }
 
 fn held(slot: u64, value: &str) -> Fact {

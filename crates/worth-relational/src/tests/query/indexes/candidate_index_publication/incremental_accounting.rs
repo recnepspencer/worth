@@ -45,6 +45,7 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
                 KindId(1),
             )),
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity")
         .index_id;

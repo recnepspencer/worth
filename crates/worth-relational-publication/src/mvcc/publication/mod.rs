@@ -89,3 +89,5 @@ pub use worth_relational_branch::internal_port::branch::projection_view::public_
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub mod inline_type_budget;
+
+pub mod unique_field_admission;

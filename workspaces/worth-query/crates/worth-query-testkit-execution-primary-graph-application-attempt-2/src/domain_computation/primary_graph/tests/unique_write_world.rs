@@ -21,7 +21,6 @@ use worth_relational::facade::transactions::MutationIntent;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::IdentityWorld;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFieldFixture;
 use worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle;
 pub struct UniqueWriteWorld {
     pub _world: IdentityWorld,
@@ -56,10 +55,6 @@ impl UniqueWriteWorld {
             handle,
             _world: world,
         }
-    }
-
-    pub fn unique(&self, index: Option<DerivedIndexId>) -> WorthQueryUniqueFieldFixture {
-        WorthQueryUniqueFieldFixture::new_for_test(self.kind, self.label.clone(), index)
     }
 
     pub fn create(

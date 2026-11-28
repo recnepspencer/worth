@@ -173,6 +173,7 @@ fn missing_selected_predecessor_refuses_until_explicit_recovery() {
                         ),
                 },
                 branch_scoped: true,
+                unique_entity_kind: None,
             })
             .expect("index fixture has identity capacity");
         let committed = commit_empty(execution, runtime, "main");

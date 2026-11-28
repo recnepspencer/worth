@@ -8,7 +8,7 @@ impl InvariantRule {
             Self::EntityAspectExclusion
             | Self::LiveRecordRequiresSidecar(_)
             | Self::MaxMergedIntents(_) => 0,
-            Self::UniqueEntityAspectField { field_locator } => {
+            Self::UniqueEntityAspectField { field_locator, .. } => {
                 field_locator.owned_allocation_capacity_bytes() as u64
             }
             Self::EndpointKindContract(contract) => contract

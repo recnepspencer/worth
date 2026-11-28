@@ -22,6 +22,7 @@ fn changed_ordering_key_meaning_refuses_before_destination_restore() {
             index_id: worth_relational::facade::indexes::DerivedIndexId(99),
             name: "changed derived ordering".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: worth_relational::facade::indexes::DerivedIndexKind::RelatedEntityOrdering {
                 relation_kind: KindId(4),
                 parent_endpoint:

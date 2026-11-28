@@ -18,6 +18,7 @@ fn scoped_name_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity")
 }
@@ -329,6 +330,7 @@ pub(super) fn carried_index_producer(
                 index_id: DerivedIndexId(0),
                 name: name.into(),
                 branch_scoped: true,
+                unique_entity_kind: None,
                 kind: DerivedIndexKind::EntityField {
                     field_locator: aspect_field_locator(aspect_key(aspect), field_key(aspect)),
                 },

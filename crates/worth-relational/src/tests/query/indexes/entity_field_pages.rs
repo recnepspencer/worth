@@ -25,6 +25,7 @@ fn exact_posting_pages_resume_without_prefix_replay_and_reject_selector_or_gener
                 field_locator: locator.clone(),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = || {
@@ -103,6 +104,7 @@ fn exact_posting_pages_resume_without_prefix_replay_and_reject_selector_or_gener
                 field_locator: locator.clone(),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     assert!(foreign_runtime

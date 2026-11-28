@@ -104,6 +104,7 @@ impl WorthQueryPrimaryContinuationOrderingLayout {
                 ordering: self.ordering.clone(),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         }
     }
 

@@ -100,8 +100,14 @@ impl RegistrationIdentityBytes {
                 self.usize(*limit);
             }
             // Rule-body tags 3 and 4 stay retired; surviving meanings keep their tags.
-            InvariantRule::UniqueEntityAspectField { field_locator } => {
+            InvariantRule::UniqueEntityAspectField {
+                entity_kind_id,
+                backing_index_id,
+                field_locator,
+            } => {
                 self.tag(5);
+                self.u32(entity_kind_id.0);
+                self.u64(backing_index_id.0);
                 self.string(field_locator.aspect().aspect_key().as_str());
                 self.field_path(field_locator.field_path().fields());
             }

@@ -173,6 +173,7 @@ fn assert_unique_entity_field_conflict(error: TransactionCommitError, value: &st
             InvariantViolationFields::UniqueEntityField {
                 field_locator,
                 value: observed,
+                ..
             },
     } = class
     else {
@@ -181,7 +182,7 @@ fn assert_unique_entity_field_conflict(error: TransactionCommitError, value: &st
     assert_eq!(code, DiagnosticCode::InvariantViolation);
     assert_eq!(
         detail,
-        "entity aspect field 'summary:title' must be unique, duplicate String value"
+        "entity kind 1 aspect field 'summary:title' must be unique, duplicate String value"
     );
     assert_eq!(
         field_locator,
@@ -243,3 +244,5 @@ fn whole_summary_patch(
         value: ContractValidationInput::Struct(value),
     }])
 }
+
+mod serializable;

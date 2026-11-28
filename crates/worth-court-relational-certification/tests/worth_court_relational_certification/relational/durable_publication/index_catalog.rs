@@ -16,6 +16,7 @@ fn definition(name: &str) -> DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: name.into(),
         branch_scoped: true,
+        unique_entity_kind: None,
         kind: DerivedIndexKind::EntityField {
             field_locator: worth_relational::facade::transactions::planned_single_field_locator(
                 worth_foundational::facade::AspectKey::new("name").unwrap(),

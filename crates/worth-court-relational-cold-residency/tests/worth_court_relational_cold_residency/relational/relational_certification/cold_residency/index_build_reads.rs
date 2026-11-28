@@ -26,6 +26,7 @@ impl IndexBuildDoor {
             index_id: DerivedIndexId(1001),
             name: "residency-read-matrix-build".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },

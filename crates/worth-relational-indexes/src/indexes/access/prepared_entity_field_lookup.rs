@@ -236,6 +236,9 @@ impl PreparedEntityFieldLookup {
     ) -> Result<Self, BoundedEntityFieldLookupDenial> {
         let index = definition.index_id;
         Self::validate_definition(&definition, locator)?;
+        if definition.unique_entity_kind.is_some_and(|scope| scope != kind) {
+            return Err(denied(Denial::WrongIndexKind, index));
+        }
         let generation: SharedDerivedIndexGeneration = generation(&definition)
             .ok_or_else(|| denied(Denial::ExactGenerationUnavailable, index))?
             .into();

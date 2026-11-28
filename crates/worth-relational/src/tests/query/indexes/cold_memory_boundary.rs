@@ -46,6 +46,7 @@ fn reconstruct(n: usize, memory: u64, succeeds: bool) -> u64 {
             index_id: DerivedIndexId(0),
             name: "cold-memory.name".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },

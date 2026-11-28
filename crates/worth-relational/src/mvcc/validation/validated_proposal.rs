@@ -32,6 +32,7 @@ pub(crate) struct ValidatedProposalState {
     pub(crate) prepared: PreparedWorkingStateScope,
     pub(crate) proposed_mutation:
         crate::authority::commit::phases::applied_mutation::AppliedMutationDraft,
+    pub(crate) unique_fields: worth_relational_mutation::internal_port::validation::unique_field_probes::UniqueFieldProbeBatch,
     pub(crate) invariants: InvariantExecutionResult,
     pub(crate) evidence: RelationalMutationInvariantEvidence,
     pub(crate) proposal_identity: super::proposal_identity::RelationalMutationProposalIdentity,

@@ -64,6 +64,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
             index_id: DerivedIndexId(0),
             name: "routing.ordering".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::RelatedEntityOrdering {
                 relation_kind: KindId(2),
                 parent_endpoint: RelatedEntityEndpoint::SourceParent,
@@ -78,6 +79,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
             index_id: DerivedIndexId(0),
             name: "routing.join".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::RelationJoin(RelationJoinDefinition::new(
                 RelationJoinLeg::new(KindId(2), RelationJoinSharedEndpoint::Target, KindId(3)),
                 RelationJoinLeg::new(KindId(2), RelationJoinSharedEndpoint::Source, KindId(3)),

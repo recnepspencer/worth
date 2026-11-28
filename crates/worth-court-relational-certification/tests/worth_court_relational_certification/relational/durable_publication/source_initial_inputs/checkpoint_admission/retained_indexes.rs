@@ -19,6 +19,7 @@ fn checkpoint_image_retained_commit_reconstruction_uses_its_own_root_without_can
             index_id: DerivedIndexId(0),
             name: "image-retained-name".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: locator.clone(),
             },
@@ -171,6 +172,7 @@ fn sparse_retained_registry_refuses_unpaid_physical_scan_before_cold_reconstruct
             index_id: DerivedIndexId(0),
             name: "sparse-retained-name".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: locator,
             },

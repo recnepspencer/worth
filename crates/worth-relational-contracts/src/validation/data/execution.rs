@@ -107,6 +107,7 @@ pub enum InvariantWitnessBasis {
     StringOnly,
     Pass,
     UniqueEntityAspectField {
+        entity_kind_id: crate::identity::data::KindId,
         field_locator: worth_foundational::facade::AspectFieldLocator,
         value: worth_foundational::facade::AspectValue,
         field_locator_canonical_bytes: Vec<u8>,
@@ -130,6 +131,7 @@ impl InvariantWitnessKey {
                 value,
                 field_locator_canonical_bytes,
                 value_canonical_bytes,
+                ..
             } => (field_locator.owned_allocation_capacity_bytes() as u64)
                 .saturating_add(value.owned_allocation_capacity_bytes() as u64)
                 .saturating_add(field_locator_canonical_bytes.capacity() as u64)
@@ -154,6 +156,7 @@ impl InvariantWitnessKey {
 
     pub fn unique_entity_aspect_field(
         value: impl Into<String>,
+        entity_kind_id: crate::identity::data::KindId,
         field_locator: worth_foundational::facade::AspectFieldLocator,
         aspect_value: worth_foundational::facade::AspectValue,
         field_locator_canonical_bytes: Vec<u8>,
@@ -162,6 +165,7 @@ impl InvariantWitnessKey {
         Self {
             value: value.into(),
             basis: InvariantWitnessBasis::UniqueEntityAspectField {
+                entity_kind_id,
                 field_locator,
                 value: aspect_value,
                 field_locator_canonical_bytes,

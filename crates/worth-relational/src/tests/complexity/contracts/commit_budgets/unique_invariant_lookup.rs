@@ -1,15 +1,16 @@
 use super::*;
 
 #[test]
-fn complexity_budget_unique_entity_invariant_scans_the_selected_state() {
+fn complexity_budget_unique_entity_invariant_does_not_scan_the_selected_state() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema_and_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
-            InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
+            InvariantRule::unique_entity_aspect_field(crate::identity::data::KindId(1), crate::indexes::data::DerivedIndexId(1), aspect_key("name"), field_key("name")),
         )],
     });
+    install_name_uniqueness_index(&runtime);
     let target = create_entity(execution, &runtime, "target");
     let _other = create_entity(execution, &runtime, "other");
 
@@ -38,8 +39,8 @@ fn complexity_budget_unique_entity_invariant_scans_the_selected_state() {
             if conflict.code == DiagnosticCode::InvariantViolation
     ));
     assert_eq!(
-        counters.invariant_entity_slot_scans, 2,
-        "global uniqueness scans both selected entity slots before reducing the duplicate"
+        counters.invariant_entity_slot_scans, 0,
+        "the duplicate is found in the equality index"
     );
     assert_eq!(
         counters.invariant_authoritative_entity_records_materialized,
@@ -54,9 +55,10 @@ fn complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan(
 
     let runtime = runtime_with_declared_aspect_schema_and_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
-            InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
+            InvariantRule::unique_entity_aspect_field(crate::identity::data::KindId(1), crate::indexes::data::DerivedIndexId(1), aspect_key("name"), field_key("name")),
         )],
     });
+    install_name_uniqueness_index(&runtime);
     let target = create_entity(execution, &runtime, "target");
     let _other = create_entity(execution, &runtime, "other");
 
@@ -84,7 +86,7 @@ fn complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan(
         TransactionCommitError::Conflict { error: ref conflict, .. }
             if conflict.code == DiagnosticCode::InvariantViolation
     ));
-    assert_eq!(counters.invariant_entity_slot_scans, 2);
+    assert_eq!(counters.invariant_entity_slot_scans, 0);
     assert_eq!(
         counters.invariant_authoritative_entity_records_materialized,
         0
@@ -92,15 +94,16 @@ fn complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan(
 }
 
 #[test]
-fn complexity_budget_unique_entity_scan_grows_with_selected_unrelated_state() {
+fn complexity_budget_unique_entity_checks_do_not_scan_unrelated_records() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema_and_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
-            InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
+            InvariantRule::unique_entity_aspect_field(crate::identity::data::KindId(1), crate::indexes::data::DerivedIndexId(1), aspect_key("name"), field_key("name")),
         )],
     });
+    install_name_uniqueness_index(&runtime);
     let target = create_entity(execution, &runtime, "target");
     let _other_a = create_entity(execution, &runtime, "other-a");
     let _other_b = create_entity(execution, &runtime, "other-b");
@@ -111,8 +114,8 @@ fn complexity_budget_unique_entity_scan_grows_with_selected_unrelated_state() {
     let counters = runtime.performance_access().counters();
 
     assert_eq!(
-        counters.invariant_entity_slot_scans, 4,
-        "the selected-state scan must account for every selected entity slot"
+        counters.invariant_entity_slot_scans, 0,
+        "no entity slots are visited by the uniqueness evaluator"
     );
     assert_eq!(
         counters.invariant_authoritative_entity_records_materialized,

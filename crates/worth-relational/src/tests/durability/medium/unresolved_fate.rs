@@ -43,6 +43,7 @@ fn an_unresolved_publication_installs_nothing_and_refuses_every_later_commit_ali
             index_id: crate::indexes::data::DerivedIndexId(0),
             name: "uncertain-catalog".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: crate::indexes::data::DerivedIndexKind::EntityField {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },

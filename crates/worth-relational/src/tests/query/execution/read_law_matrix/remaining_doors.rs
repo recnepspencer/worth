@@ -125,6 +125,7 @@ fn runtime_read_law_remaining_relation_join() {
                 KindId(1),
             )),
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let built = world.runtime.index_authority().build_for_commit(

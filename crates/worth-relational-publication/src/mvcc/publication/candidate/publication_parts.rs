@@ -14,7 +14,8 @@ impl PreparedRelationalCommitCandidate {
             .take()
             .expect(/* Proof: only this consuming receiver, Drop of an unconsumed candidate and the abandoned-registration reaper empty the payload. This candidate is alive and unconsumed, and it holds the payload's only strong reference, so the reaper cannot see it as abandoned. */ "a live candidate retains its payload until consumed");
         self.consumed = true;
-        let (movement, completion) = payload.execution.split(payload.published_snapshot_slot);
+        let (mut movement, completion) = payload.execution.split(payload.published_snapshot_slot);
+        movement.unique_fields = payload.unique_fields;
         PreparedRelationalPublicationParts {
             companion_read: payload.companion_read,
             managed_source_reads: payload.managed_source_reads,

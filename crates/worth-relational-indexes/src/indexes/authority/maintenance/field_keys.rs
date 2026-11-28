@@ -17,6 +17,7 @@ pub(super) fn entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: Option<&IndexRootView>,
     id: EntityId,
+    kind_scope: Option<crate::contracts::identity::data::primitives::KindId>,
     locator: &AspectFieldLocator,
     work: &mut MaintenanceWork,
 ) -> Result<Option<(Key, EntityId)>, Denial> {
@@ -39,6 +40,9 @@ pub(super) fn entity(
     let Some(kind) = slot.kind_id() else {
         return Ok(None);
     };
+    if kind_scope.is_some_and(|scope| scope != kind) {
+        return Ok(None);
+    }
     let catalog = view.schema_authority().aspect_plans();
     work.lookup(catalog.entity_plans.len(), 1)?;
     let Some(plan) = catalog.entity_plans.get(&kind) else {

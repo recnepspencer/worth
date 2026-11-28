@@ -138,6 +138,7 @@ fn index_packet_result_checked(
                     execution,
                     projection,
                     field_locator,
+                    packet.definition.unique_entity_kind,
                     context,
                 )?,
                 context,
@@ -201,7 +202,9 @@ fn index_packet_result(
 > {
     let entries = match &packet.definition.kind {
         DerivedIndexKind::EntityField { field_locator } => DerivedIndexEntries::EntityField(
-            build_entity_aspect_field_index(lane, execution, projection, field_locator)?.into(),
+            build_entity_aspect_field_index(
+                lane, execution, projection, field_locator, packet.definition.unique_entity_kind,
+            )?.into(),
         ),
         DerivedIndexKind::RelationField { field_locator } => DerivedIndexEntries::RelationField(
             build_relation_aspect_field_index(lane, execution, projection, field_locator)?.into(),

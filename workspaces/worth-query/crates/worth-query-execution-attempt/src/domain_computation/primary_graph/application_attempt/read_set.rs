@@ -68,7 +68,6 @@ pub mod projected_extension;
 pub mod relation_observation;
 pub mod source_facts;
 pub mod structural_walk;
-pub mod unique_write_dependencies;
 
 pub use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
 pub use relation_observation::matching_relations;

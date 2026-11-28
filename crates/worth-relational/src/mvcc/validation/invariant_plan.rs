@@ -19,7 +19,9 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
         let (selected_state, merged_plan) = self.branch_bound_invariant_plan(execution, runtime)?;
         runtime
             .validation()
-            .commit_boundary_for_selected_branch_plan(execution, &selected_state, &merged_plan)
+            .commit_boundary_for_selected_branch_plan(
+                execution, self.basis.identity().branch_id(), &selected_state, &merged_plan,
+            )
     }
 
     /// Evaluate graph-composition planning against this transaction's exact
@@ -36,7 +38,9 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
         let (selected_state, merged_plan) = self.branch_bound_invariant_plan(execution, runtime)?;
         runtime
             .validation()
-            .graph_composition_for_selected_branch_plan(execution, &selected_state, &merged_plan)
+            .graph_composition_for_selected_branch_plan(
+                execution, self.basis.identity().branch_id(), &selected_state, &merged_plan,
+            )
     }
 
     fn branch_bound_invariant_plan(

@@ -16,6 +16,7 @@ fn lookup_snapshot_is_detached_from_subsequent_owner_registration() {
             field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
         },
         branch_scoped: false,
+        unique_entity_kind: None,
     };
     let installed = runtime
         .index_authority()

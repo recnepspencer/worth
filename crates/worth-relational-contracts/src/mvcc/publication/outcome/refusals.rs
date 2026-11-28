@@ -7,6 +7,11 @@ pub enum RelationalPublicationDenial {
     HomeProgramContractsRequired,
     HomeProgramIndexDefinitionsRequired,
     StaleIndexDefinitions,
+    UniqueFieldIndexUnavailable {
+        index_id: crate::indexes::data::definition::DerivedIndexId,
+        entity_kind_id: crate::identity::data::KindId,
+    },
+    UniqueFieldConflict(crate::transactions::data::outcomes::commit_conflict::CommitConflict),
     IndexDefinitionPublicationContended,
     CanonicalArtifactEncoding(
         crate::durability::canonical_commit_artifact::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial,

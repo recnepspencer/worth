@@ -25,6 +25,7 @@ pub struct RelationalPublicationPort {
 }
 
 struct PreparedBranchPublicationPreflight {
+    indexes: crate::runtime::IndexDefinitionReadBinding,
     current_read: Option<crate::branch::AdmittedRelationalBranchBasis>,
     companion: Option<super::PreparedPublicationCompanionEffect>,
     companion_binding: Option<super::CandidateCompanionBinding>,

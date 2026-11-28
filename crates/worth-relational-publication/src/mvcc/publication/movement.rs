@@ -26,6 +26,8 @@ pub(super) type PerformedBranchMovement = (
 );
 
 pub struct BranchMovementCutover<'a, 'cell> {
+    pub unique_fields: &'a worth_relational_mutation::internal_port::validation::unique_field_probes::UniqueFieldProbeBatch,
+    pub indexes: &'a worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::IndexDefinitionReadBinding,
     pub coordination: &'a PublicationReadCoordination<'cell>,
     pub publication_cell:
         &'a worth_relational_branch::internal_port::branch::reference_publication_cell::RelationalBranchPublicationCell,
@@ -43,6 +45,7 @@ pub struct BranchMovementCutover<'a, 'cell> {
 }
 
 pub struct PreparedCanonicalBranchMovement {
+    pub unique_fields: worth_relational_mutation::internal_port::validation::unique_field_probes::UniqueFieldProbeBatch,
     pub record_allocations: Option<storage::runtime::state::subsystems::record_identity::pending_allocations::PendingRecordAllocations>,
     pub symbol_meanings: Option<storage::runtime::state::subsystems::services::symbol_table::reservations::PreparedSymbolPublication>,
     next_cell: RelationalBranchReferenceCell,
@@ -60,6 +63,7 @@ impl PreparedCanonicalBranchMovement {
     ) -> Self {
         next_cell.install_root(Arc::clone(&root));
         Self {
+            unique_fields: Default::default(),
             record_allocations: Some(record_allocations),
             symbol_meanings: Some(symbol_meanings),
             next_cell,
@@ -127,6 +131,17 @@ impl BranchMovementCutover<'_, '_> {
                 )));
             }
         };
+        if self.unique_fields.definition_frontier().is_some_and(|frontier| {
+            self.indexes.capture_catalog().catalog.has_unique_fields_since(frontier)
+        }) {
+            return Err(Some(RelationalPublicationOutcome::denied(
+                RelationalPublicationDenial::StaleIndexDefinitions,
+            )));
+        }
+        super::unique_field_admission::admit(
+            execution, self.indexes, observed.branch_id(), &observed_root,
+            self.unique_fields.claims(),
+        ).map_err(|denial| Some(denial.into_outcome()))?;
         if observed != *self.expected {
             return Err(Some(RelationalPublicationOutcome::stale(
                 StaleRelationalBranchObservation::new(self.expected.clone(), observed),

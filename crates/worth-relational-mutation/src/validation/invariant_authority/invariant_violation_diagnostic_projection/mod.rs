@@ -38,6 +38,7 @@ pub enum InvariantViolationDiagnosticProjection<'a> {
         limit: usize,
     },
     UniqueEntityField {
+        entity_kind_id: KindId,
         aspect_field: AspectFieldDiagnosticProjection<'a>,
     },
     EntityAspectExclusion {

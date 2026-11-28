@@ -16,6 +16,7 @@ use worth_relational_branch::internal_port::indexes::data::DerivedIndexEntries;
 pub(super) enum PendingField {
     Entity {
         index_id: DerivedIndexId,
+        kind_scope: Option<crate::contracts::identity::data::primitives::KindId>,
         locator: AspectFieldLocator,
         entries: DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>,
         edits: BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<EntityId>>>,
@@ -216,6 +217,7 @@ fn refresh_entities(
         )? {
             let field = &mut pending[position];
             let PendingField::Entity {
+                kind_scope,
                 locator,
                 edits,
                 patch: lane,
@@ -236,7 +238,9 @@ fn refresh_entities(
                 after,
                 edits,
                 work,
-                super::field_keys::entity,
+                |execution, root, id, locator, work| {
+                    super::field_keys::entity(execution, root, id, *kind_scope, locator, work)
+                },
             )?;
         }
     }

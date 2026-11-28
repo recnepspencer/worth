@@ -6,7 +6,7 @@ use std::sync::Arc;
 use worth_relational::facade::transactions::{MutationIntent, WorkerIntentBatch};
 
 use super::effect_lowering::{
-    lower_provider_effect, CreatedEffectReferences, ObservedFactIndex, UniqueValueWrites,
+    lower_provider_effect, CreatedEffectReferences, ObservedFactIndex,
     WorthQueryLoweredProviderEffect,
 };
 use super::{
@@ -14,7 +14,6 @@ use super::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission;
-use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields;
 use crate::domain_computation::WorthQueryProvisionalEffectStep;
 
 pub mod commit_projections;
@@ -32,7 +31,6 @@ use expected_steps::WorthQueryExpectedEffectSteps;
 pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts: FactSequence + ?Sized>
 {
     facts: ObservedFactIndex<'facts, Facts>,
-    unique: UniqueValueWrites<'layout>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     created: CreatedEffectReferences,
     contracts: &'layout super::effect_lowering::AspectContracts<'layout>,
@@ -57,7 +55,6 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
 {
     pub fn new(
         facts: &'facts Facts,
-        unique_fields: WorthQueryUniqueFields<'layout>,
         contracts: &'layout super::effect_lowering::AspectContracts<'layout>,
         effects: &[WorthQueryApplicationRealizedEffect],
         mutation_partition: worth_relational::facade::identity::PartitionId,
@@ -76,7 +73,6 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
         Self {
             facts: ObservedFactIndex::completed(facts, routes),
             contracts,
-            unique: UniqueValueWrites::new(unique_fields, effects),
             mutation_partition,
             created: CreatedEffectReferences::new(effects, mutation_partition),
             lowered: Vec::with_capacity(effects.len()),
@@ -105,7 +101,6 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
         };
         let lowered = lower_provider_effect(
             &self.facts,
-            &mut self.unique,
             self.contracts,
             &self.created,
             self.mutation_partition,
@@ -337,7 +332,6 @@ mod tests {
         }];
         let accumulator = WorthQueryProviderEffectAccumulator::new(
             &[],
-            WorthQueryUniqueFields::none(),
             &|_, _| None,
             &effects,
             issued,

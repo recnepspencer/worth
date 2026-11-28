@@ -374,7 +374,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         identities,
                         decision,
                         &phase_request,
-                        allocation_control.policy(),
                         runtime.installed_schema().value_bindings(),
                     )
                 })();

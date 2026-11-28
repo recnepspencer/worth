@@ -10,7 +10,6 @@ use worth_foundational::facade::{
 
 pub(super) fn ordinary(
     facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
-    unique: &mut UniqueValueWrites<'_>,
     contracts: &AspectContracts<'_>,
     entity: &str,
     id: EntityId,
@@ -18,7 +17,6 @@ pub(super) fn ordinary(
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     lower(
         facts,
-        unique,
         contracts,
         entity,
         id,
@@ -30,7 +28,6 @@ pub(super) fn ordinary(
 
 pub(super) fn optional(
     facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
-    unique: &mut UniqueValueWrites<'_>,
     contracts: &AspectContracts<'_>,
     entity: &str,
     id: EntityId,
@@ -38,7 +35,6 @@ pub(super) fn optional(
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     lower(
         facts,
-        unique,
         contracts,
         entity,
         id,
@@ -58,7 +54,6 @@ struct Group<'a> {
 
 fn lower<'a>(
     facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
-    unique: &mut UniqueValueWrites<'_>,
     contracts: &AspectContracts<'a>,
     entity: &str,
     id: EntityId,
@@ -74,7 +69,6 @@ fn lower<'a>(
     let mut steps = Vec::new();
     for (locator, authored, value) in fields {
         let target = facts.field_identity(id, &locator)?;
-        let kind = facts.field_kind(id, &locator)?;
         let absent = facts.aspect_absent(id, &locator)?;
         let aspect = locator.aspect().aspect_key();
         let binding = contracts(entity, aspect).ok_or_else(progression_denial)?;
@@ -90,9 +84,6 @@ fn lower<'a>(
             && !matches!(&binding.binding, worth_foundational::facade::AspectBinding::EntityField { field: physical } if physical == field)
         {
             return Err(progression_denial());
-        }
-        if let Some(value) = &value {
-            unique.admit(facts, kind, Some(id), &locator, value)?;
         }
         steps.push(effect_step(if value.is_some() {
             WorthQueryProvisionalEffectAction::Replace {

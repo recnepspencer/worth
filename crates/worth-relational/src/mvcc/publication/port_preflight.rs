@@ -14,6 +14,7 @@ impl PreparedBranchPublicationPreflight {
     pub(super) fn preflight(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         parts: PreparedRelationalPublicationParts,
+        indexes: crate::runtime::IndexDefinitionReadBinding,
         retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
         companion_epoch: &super::super::CompanionRegistrationEpoch<'_>,
@@ -178,6 +179,7 @@ impl PreparedBranchPublicationPreflight {
             }
         };
         Ok(PreparedBranchPublicationPreflight {
+            indexes,
             current_read,
             companion,
             companion_binding,

@@ -332,6 +332,7 @@ pub(super) fn register_related_name_index(runtime: &RelationalRuntime) -> Derive
                 )],
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity")
 }

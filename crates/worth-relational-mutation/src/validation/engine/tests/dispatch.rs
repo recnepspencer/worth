@@ -15,7 +15,7 @@ fn engine_skips_rules_when_request_groups_do_not_intersect() {
     let mut config = RelationalRuntimeConfig::default();
     config.schema.invariant_catalog = InvariantCatalog {
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
-            InvariantRule::unique_entity_aspect_field(
+            InvariantRule::unique_entity_aspect_field(crate::contracts::identity::data::KindId(1), crate::contracts::indexes::data::definition::DerivedIndexId(1),
                 AspectKey::new("name").unwrap(),
                 FieldKey::new("name").unwrap(),
             ),

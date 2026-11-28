@@ -1,6 +1,9 @@
 //! Resolving one authorized compare-and-commit into a progression outcome.
 
 use crate::domain_computation::primary_graph::CommitAuthorityBindingExt;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 mod world_no_effect;
@@ -217,12 +220,23 @@ pub fn finish_authorized_compare(
             )
         }
         WorthQueryProviderCompareAndCommitOutcome::NoEffect(no_effect) => {
+            if let Some(denial) = no_effect.native_unique_field_denial() {
+                return world_no_effect::native_unique_field_refused(denial, context.provider.graph_ref().layout_ref());
+            }
             world_no_effect::classify(no_effect)
         }
         WorthQueryProviderCompareAndCommitOutcome::ProductStale(stale) => {
             WorthQueryProviderProgressionOutcome::ProductStale(stale)
         }
         WorthQueryProviderCompareAndCommitOutcome::Denied(denial) => {
+            if let crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::ProviderSession(failure) = &denial
+                && let Some(native) = failure.native_preparation_error()
+                && let Some(progression) = world_no_effect::unique_field_preparation_refused(
+                    native, context.provider.graph_ref().layout_ref(),
+                )
+            {
+                return progression;
+            }
             crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_compare_denied(denial)
         }
         WorthQueryProviderCompareAndCommitOutcome::Deferred(deferred) => {

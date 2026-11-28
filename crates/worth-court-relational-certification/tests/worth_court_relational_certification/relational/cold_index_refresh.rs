@@ -78,6 +78,7 @@ fn reopened(execution: &ExecutionRequest<'_, '_>) -> Reopened {
             index_id: DerivedIndexId(0),
             name: "matrix-name".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: planned_single_field_locator(
                     worth_foundational::facade::AspectKey::new("name").unwrap(),

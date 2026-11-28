@@ -54,16 +54,25 @@ pub fn runtime() -> RelationalRuntime {
             aspect_contract_declarations: KindAspectContractDeclarations::new(bindings),
         })
         .unwrap();
-    RelationalRuntimeApi::builder()
+    let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .invariant_catalog(InvariantCatalog {
             registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
-                InvariantRule::unique_entity_aspect_field(
+                InvariantRule::unique_entity_aspect_field(KIND, worth_relational::facade::indexes::DerivedIndexId(1),
                     AspectKey::new("Alias").unwrap(),
                     FieldKey::new("Unique").unwrap(),
                 ),
             )],
         })
         .build()
-        .unwrap()
+        .unwrap();
+    use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexKind, DerivedIndexId};
+    runtime.index_authority().register(DerivedIndexDefinition {
+        index_id: DerivedIndexId(0),
+        name: "native.effect-order.alias".into(),
+        kind: DerivedIndexKind::EntityField { field_locator: locator("Alias", "Unique") },
+        branch_scoped: false,
+        unique_entity_kind: Some(KIND),
+    }).unwrap();
+    runtime
 }

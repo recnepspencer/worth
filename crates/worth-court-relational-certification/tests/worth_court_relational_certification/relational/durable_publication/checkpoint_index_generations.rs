@@ -15,6 +15,7 @@ pub(super) fn name_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition 
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity")
 }
@@ -29,6 +30,7 @@ pub(super) fn scoped_name_index(runtime: &RelationalRuntime) -> DerivedIndexDefi
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity")
 }

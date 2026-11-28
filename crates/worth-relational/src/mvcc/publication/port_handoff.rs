@@ -269,6 +269,12 @@ impl RelationalPublicationPort {
             }
         }
         let definitions = candidate.home_index_definitions();
+        let _installed_definitions = if definitions.is_none() {
+            Some(self.index_definitions.hold_definition_catalog()
+                .map_err(RelationalPublicationOutcome::denied)?)
+        } else {
+            None
+        };
         if let Some(definitions) = &definitions
             && definitions.introduces_definitions()
             && !candidate
@@ -302,6 +308,7 @@ impl RelationalPublicationPort {
         let mut prepared = PreparedBranchPublicationPreflight::preflight(
             execution,
             parts,
+            self.index_definitions.clone(),
             retention_binding,
             self.branch_head_versions.clone(),
             &companion_epoch,

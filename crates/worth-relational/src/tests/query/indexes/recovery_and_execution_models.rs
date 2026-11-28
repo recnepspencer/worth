@@ -24,6 +24,7 @@ fn derived_index_contract_relation_field_equals_memory_recovery_preserves_parity
                 field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
@@ -139,6 +140,7 @@ fn derived_index_contract_memory_recovery_preserves_entity_field_equals_parity()
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
@@ -258,6 +260,7 @@ fn derived_index_contract_entity_field_equals_is_stable_with_leased_index_build(
                     field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
                 },
                 branch_scoped: false,
+                unique_entity_kind: None,
             })
             .expect("index fixture has identity capacity");
         let request = DerivedIndexBuildRequest {

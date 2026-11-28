@@ -25,6 +25,7 @@ fn complete_equality_selection_preserves_the_callers_cardinality_above_sixty_fou
                 field_locator: locator.clone(),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(

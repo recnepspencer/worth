@@ -92,6 +92,7 @@ fn failure_projection_emits_aspect_field_diagnostic_fields() {
         code: DiagnosticCode::InvariantViolation,
         detail: "duplicate email".to_string(),
         fields: InvariantViolationFields::UniqueEntityField {
+            entity_kind_id: crate::identity::data::KindId(1),
             field_locator: field_locator.clone(),
             value: AspectValue::String(InternedString::Raw("dupe@example.test".to_string())),
         },

@@ -24,6 +24,7 @@ fn entity_field_certification_rejects_a_missing_candidate() {
                 field_locator: field_locator.clone(),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     build_entity_field_generation(execution, &runtime, index.index_id);
@@ -96,6 +97,7 @@ fn bounded_lookup_caps_ordinary_work_and_certifies_storage_parity() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let source_commit_id = runtime.history().latest_commit().unwrap().commit_id;
@@ -171,6 +173,7 @@ fn corrupt_bucket_rejects_a_large_unrelated_field_before_encoding_it() {
                 field_locator: locator.clone(),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     build_entity_field_generation(execution, &runtime, index.index_id);
@@ -229,6 +232,7 @@ fn bounded_lookup_rejects_empty_budgets_and_nonexact_generations() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     runtime.index_authority().build_for_commit(
@@ -305,6 +309,7 @@ fn bounded_lookup_rebuilds_exact_historical_generation_after_truth_advances() {
                 field_locator: field_locator.clone(),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
 

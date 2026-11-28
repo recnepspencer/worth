@@ -212,6 +212,7 @@ fn register_related_ordering_index(runtime: &RelationalRuntime) -> DerivedIndexD
                 )],
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity")
 }

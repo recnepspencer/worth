@@ -22,6 +22,9 @@ pub(super) fn compile<'a>(
         match &definition.kind {
             DerivedIndexKind::EntityField { field_locator } => {
                 for plan in plans.entity_plans.values() {
+                    if definition.unique_entity_kind.is_some_and(|kind| kind != plan.kind_id) {
+                        continue;
+                    }
                     allocate::scope(plan, field_locator, pay)?;
                     if crate::indexes::projected_field_values::field_projection_scope::entity_index_projection_scope(
                         plan,

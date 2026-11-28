@@ -20,7 +20,6 @@ pub fn build_handler_candidate<Schema, Binding>(
     identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
     decision: Binding::Decision,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     value_bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
 ) -> Result<
     HandlerResult<WorthQueryCompletedMutationCandidate<Schema, Binding>, Binding::Denial>,
@@ -41,9 +40,6 @@ where
     };
     match built {
         HandlerResult::Completed(result) => {
-            candidate
-                .observe_unique_write_dependencies(execution, allocation)
-                .map_err(MutationHandlerExecutionDenial::Attempt)?;
             candidate
                 .finish()
                 .and_then(|program| {

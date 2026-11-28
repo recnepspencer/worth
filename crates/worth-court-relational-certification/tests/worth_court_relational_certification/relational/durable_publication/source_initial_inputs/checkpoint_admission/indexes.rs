@@ -18,6 +18,7 @@ fn checkpoint_image_roots_build_cold_and_incremental_indexes_without_canonical_b
                 index_id: DerivedIndexId(0),
                 name: "image-owned-name".into(),
                 branch_scoped: true,
+                unique_entity_kind: None,
                 kind: DerivedIndexKind::EntityField {
                     field_locator: locator.clone(),
                 },

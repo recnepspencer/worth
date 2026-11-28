@@ -42,6 +42,7 @@ impl OrderingFixture {
                     )],
                 },
                 branch_scoped: true,
+                unique_entity_kind: None,
             })
             .expect("index fixture has identity capacity");
         let mut expected = vec![alpha_one, alpha_two];
@@ -158,6 +159,7 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let mut unrelated_request = fixture.request(&current);

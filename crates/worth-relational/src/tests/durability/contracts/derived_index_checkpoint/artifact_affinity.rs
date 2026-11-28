@@ -28,6 +28,7 @@ fn digest_valid_join_checkpoint_requires_complete_rows_and_leg_state() {
                 index_id: DerivedIndexId(0),
                 name: "checkpoint-join".into(),
                 branch_scoped: true,
+                unique_entity_kind: None,
                 kind: DerivedIndexKind::RelationJoin(RelationJoinDefinition::new(
                     RelationJoinLeg::new(KindId(2), RelationJoinSharedEndpoint::Target, KindId(1)),
                     RelationJoinLeg::new(KindId(2), RelationJoinSharedEndpoint::Source, KindId(1)),

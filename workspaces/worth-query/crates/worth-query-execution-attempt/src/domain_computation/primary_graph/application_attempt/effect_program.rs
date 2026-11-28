@@ -207,14 +207,6 @@ impl<Schema, Operation, Input, Scope>
     }
 
     /// Intrinsic uniqueness is a native write obligation, not supplier read authority.
-    pub(crate) fn observe_unique_write_dependencies(
-        &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        self.read_set
-            .observe_unique_write_values(execution, &self.effects, allocation)
-    }
 
     pub(crate) fn validate_target<Entity>(
         &self,

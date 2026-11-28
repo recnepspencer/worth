@@ -54,6 +54,7 @@ pub(crate) fn assert_request_cause(
                     ),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let lease = authority()

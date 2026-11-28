@@ -29,6 +29,7 @@ fn recovered_index_binding_stays_exact_as_unrelated_definition_inventory_grows()
                         field_locator: unrelated_locator.clone(),
                     },
                     branch_scoped: false,
+                    unique_entity_kind: None,
                 })
                 .expect("index fixture has identity capacity");
         }
@@ -104,6 +105,7 @@ fn recovered_index_name_without_matching_kind_cannot_bind() {
                 .clone(),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
 

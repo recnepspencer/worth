@@ -38,11 +38,13 @@ impl WorkflowReadIndexes {
                     .collect(),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })?;
         let transitions = install(DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
             name: "worth-query-workflow.instance-transitions".to_owned(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::RelatedEntityOrdering {
                 relation_kind: layout.instance_transition_relation,
                 parent_endpoint: RelatedEntityEndpoint::SourceParent,

@@ -25,7 +25,9 @@ pub(crate) fn evaluate_main_commit_boundary_plan(
     let selected = selected_main_branch_state(runtime);
     runtime
         .validation()
-        .commit_boundary_for_selected_branch_plan(execution, &selected, plan)
+        .commit_boundary_for_selected_branch_plan(
+            execution, runtime.main_branch_identity().branch_id(), &selected, plan,
+        )
         .expect("plan fixture request")
 }
 
@@ -38,7 +40,9 @@ pub(crate) fn evaluate_main_graph_composition_plan(
     let selected = selected_main_branch_state(runtime);
     runtime
         .validation()
-        .graph_composition_for_selected_branch_plan(execution, &selected, plan)
+        .graph_composition_for_selected_branch_plan(
+            execution, runtime.main_branch_identity().branch_id(), &selected, plan,
+        )
         .expect("plan fixture request")
 }
 

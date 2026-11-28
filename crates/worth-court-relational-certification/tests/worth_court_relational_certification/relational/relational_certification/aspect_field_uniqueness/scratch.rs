@@ -58,7 +58,7 @@ fn uniqueness_ignores_large_sibling_and_unrelated_kind_payloads() {
 }
 
 #[test]
-fn uniqueness_refuses_large_matching_field_before_cloning_it() {
+fn uniqueness_audit_does_not_clone_large_single_holder_keys() {
     let host = serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let runtime = fixture();
@@ -71,28 +71,9 @@ fn uniqueness_refuses_large_matching_field_before_cloning_it() {
     )
     .unwrap();
     let before = runtime_marker(&runtime);
-    // The request refuses the matching field's clone at its charge, before
-    // the clone exists: the refused increment is at least the field itself.
-    let Err(TransactionCommitError::Execution {
-        denial:
-            CommitExecutionDenial {
-                kind:
-                    CommitExecutionDenialKind::Cause(
-                        RelationalExecutionDenialCause::PolicyMemoryExhausted {
-                            requested,
-                            admitted,
-                            ..
-                        },
-                    ),
-                partition_identity: Some(0),
-            },
-        ..
-    }) = evaluate(&runtime)
-    else {
-        panic!("the request's memory policy refuses the large matching field");
-    };
-    assert!(requested >= LARGE_TEXT as u64, "refused charge {requested}");
-    assert!(admitted <= REQUEST_MEMORY, "admitted {admitted}");
+    let result = evaluate(&runtime).expect("a singleton posting does not decode a large key");
+    assert_eq!(result.results().len(), 1);
+    assert!(!result.summary().has_blocking_violation());
     assert_runtime_marker_unchanged(&runtime, before);
 }
 
@@ -116,16 +97,18 @@ fn fixture() -> RelationalRuntime {
     })
     .unwrap();
     let mut registration = InvariantRegistration::commit_boundary_blocking(
-        InvariantRule::unique_entity_aspect_field(aspect_key("summary"), field_key("title")),
+        InvariantRule::unique_entity_aspect_field(worth_relational::facade::identity::KindId(1), worth_relational::facade::indexes::DerivedIndexId(1), aspect_key("summary"), field_key("title")),
     );
     registration.execution_point = InvariantExecutionPoint::MutationSensitive;
-    RelationalRuntimeApi::builder()
+    let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .invariant_catalog(InvariantCatalog {
             registrations: vec![registration],
         })
         .build()
-        .expect("valid native runtime configuration")
+        .expect("valid native runtime configuration");
+    register_summary_title_index(&runtime, KindId(1));
+    runtime
 }
 
 fn evaluate(

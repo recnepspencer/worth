@@ -1,10 +1,7 @@
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 
-use worth_foundational::facade::{
-    prepare_aspect_value_identity_basis, AspectFieldLocator, AspectKey, AspectValue,
-};
-use worth_relational::facade::identity::{EntityId, KindId, RelationId};
-use worth_relational::facade::indexes::DerivedIndexId;
+use worth_foundational::facade::{AspectFieldLocator, AspectKey};
+use worth_relational::facade::identity::{EntityId, RelationId};
 
 use super::super::{
     progression_denial, WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
@@ -54,28 +51,6 @@ impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
             .ok_or_else(progression_denial)
     }
 
-    /// The entity kind the sealed fact for this field records.
-    pub(super) fn field_kind(
-        &self,
-        entity_id: EntityId,
-        locator: &AspectFieldLocator,
-    ) -> Result<KindId, WorthQueryApplicationAttemptDenial> {
-        match self
-            .routes
-            .field(entity_id, locator)
-            .map(|position| self.facts.get(position).expect("indexed observed fact"))
-        {
-            Some(
-                WorthQueryApplicationObservedFact::Field { kind, .. }
-                | WorthQueryApplicationObservedFact::AbsentField { kind, .. }
-                | WorthQueryApplicationObservedFact::OptionalAspectAbsent { kind, .. },
-            ) => Ok(*kind),
-            _ => Err(WorthQueryApplicationAttemptDenial::unobserved_field_write(
-                entity_id, locator,
-            )),
-        }
-    }
-
     pub(super) fn aspect_absent(
         &self,
         entity: EntityId,
@@ -94,33 +69,6 @@ impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
             _ => Err(WorthQueryApplicationAttemptDenial::unobserved_field_write(
                 entity, locator,
             )),
-        }
-    }
-
-    /// Every live entity the sealed selection found holding `value`. A sealed
-    /// selection did not overflow, so the list is exact whatever its limit.
-    pub(super) fn selection_candidates(
-        &self,
-        index_id: DerivedIndexId,
-        kind: KindId,
-        locator: &AspectFieldLocator,
-        value: &AspectValue,
-    ) -> Result<&'facts [EntityId], WorthQueryApplicationAttemptDenial> {
-        let key = (
-            index_id,
-            kind,
-            locator.clone(),
-            prepare_aspect_value_identity_basis(value),
-        );
-        match self
-            .routes
-            .selection(&key)
-            .map(|position| self.facts.get(position).expect("indexed observed fact"))
-        {
-            Some(WorthQueryApplicationObservedFact::IndexedEntitySelection {
-                candidates, ..
-            }) => Ok(candidates),
-            _ => Err(progression_denial()),
         }
     }
 
@@ -176,6 +124,7 @@ impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use worth_foundational::facade::AspectValue;
     use worth_foundational::facade::{AspectKey, FieldKey};
     use worth_relational::facade::identity::{KindId, PartitionId};
     use worth_relational::facade::transactions::planned_single_field_locator;
@@ -218,8 +167,6 @@ mod tests {
         );
         let (_, routes) = completed.into_parts();
         assert_eq!(routes.field(entity, &locator), Some(0));
-        let index = ObservedFactIndex::completed(&body, routes);
-        assert_eq!(index.field_kind(entity, &locator).unwrap(), KindId(7));
     }
 
     #[test]

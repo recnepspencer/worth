@@ -348,3 +348,5 @@ impl crate::authority::commit::pipeline::publication_validation::DraftValidation
         }
     }
 }
+
+mod unique_field_proposals;

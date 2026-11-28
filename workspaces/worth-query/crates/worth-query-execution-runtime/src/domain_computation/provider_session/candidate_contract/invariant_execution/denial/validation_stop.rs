@@ -31,8 +31,33 @@ impl Failure {
             posture,
             detail: error.detail().into(),
             native: Some(native),
+            keyed_entity: None,
             affected_records: None,
         }
+    }
+
+    pub fn with_declared_unique_key(
+        mut self,
+        layout: &worth_query_execution_layout::facade::schema_layout::WorthQueryPrimaryGraphLayout,
+    ) -> Self {
+        use worth_relational::facade::transactions::InvariantViolationFields::UniqueEntityField;
+        let Some(UniqueEntityField { entity_kind_id, field_locator, value }) =
+            self.relational_commit_error().and_then(relational_invariant_fields)
+        else {
+            return self;
+        };
+        if let Some((entity, _, field)) = layout.unique_field_name(*entity_kind_id, field_locator) {
+            self.keyed_entity = Some(Arc::new(
+                worth_query_execution_contracts::facade::WorthQueryKeyedEntityRefusal::already_exists(
+                    entity, field, Some(value.clone()),
+                ),
+            ));
+        }
+        self
+    }
+
+    pub fn keyed_entity(&self) -> Option<&worth_query_execution_contracts::facade::WorthQueryKeyedEntityRefusal> {
+        self.keyed_entity.as_deref()
     }
 
     pub fn relational_execution(denial: CommitExecutionDenial) -> Self {

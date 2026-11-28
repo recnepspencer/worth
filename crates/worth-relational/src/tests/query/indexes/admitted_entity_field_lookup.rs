@@ -20,6 +20,7 @@ fn exact_selected_lookup_preserves_production_and_certification_results() {
                 field_locator: locator.clone(),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(

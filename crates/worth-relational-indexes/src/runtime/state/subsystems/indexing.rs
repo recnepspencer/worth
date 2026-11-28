@@ -347,3 +347,5 @@ impl IndexingSubsystem {
         state.restore_generation(generation.as_ref().clone());
     }
 }
+
+mod unique_field_probe;

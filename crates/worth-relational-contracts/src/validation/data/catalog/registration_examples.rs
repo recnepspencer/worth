@@ -16,6 +16,8 @@ impl InvariantRule {
             Self::LiveRecordRequiresSidecar(super::RecordKindTag::Relation),
             Self::MaxMergedIntents(1),
             Self::unique_entity_aspect_field(
+                crate::identity::data::KindId(1),
+                crate::indexes::data::definition::DerivedIndexId(1),
                 AspectKey::new("__registration_probe__")
                     .expect("valid registration probe aspect key"),
                 FieldKey::new("__registration_probe__").expect("valid registration probe field"),

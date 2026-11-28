@@ -204,7 +204,9 @@ impl WorthQueryPrimaryGraphProvider {
                     }))
             }
         };
-        let candidate = candidate?.map_err(|failure| map_failed_candidate(failure, &control))?;
+        let candidate = candidate?.map_err(|failure| {
+            map_failed_candidate(failure, &control).with_declared_unique_key(self.graph.layout_ref())
+        })?;
         let candidate = match restoration {
             Some(publication) => candidate
                 .bind_required_output_publication(

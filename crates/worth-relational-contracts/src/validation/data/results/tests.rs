@@ -26,6 +26,7 @@ fn unique_entity_field_violation_uses_foundational_field_and_value_carriers() {
         code: DiagnosticCode::InvariantViolation,
         detail: "unique field duplicate".to_string(),
         fields: InvariantViolationFields::UniqueEntityField {
+            entity_kind_id: crate::identity::data::KindId(1),
             field_locator: field_locator.clone(),
             value: value.clone(),
         },
@@ -35,6 +36,7 @@ fn unique_entity_field_violation_uses_foundational_field_and_value_carriers() {
         InvariantViolationFields::UniqueEntityField {
             field_locator: observed_field_locator,
             value: observed_value,
+            ..
         } => {
             assert_eq!(observed_field_locator, &field_locator);
             assert_eq!(observed_value, &value);
@@ -43,9 +45,10 @@ fn unique_entity_field_violation_uses_foundational_field_and_value_carriers() {
     }
     let witness = violation.witness_key();
     let witness_parts = witness.as_str().split(':').collect::<Vec<_>>();
-    assert_eq!(witness_parts.len(), 4);
+    assert_eq!(witness_parts.len(), 5);
     assert_eq!(witness_parts[0], "unique_entity_aspect_field");
     assert_eq!(witness_parts[1], "InvariantViolation");
+    assert_eq!(witness_parts[2], "1");
     assert!(!witness.as_str().contains("profile.email"));
     assert!(!witness.as_str().contains(":email:"));
     assert!(!violation
@@ -54,11 +57,13 @@ fn unique_entity_field_violation_uses_foundational_field_and_value_carriers() {
         .contains("duplicate@example.test"));
     match witness.basis() {
         InvariantWitnessBasis::UniqueEntityAspectField {
+            entity_kind_id,
             field_locator: witness_field_locator,
             value: witness_value,
             field_locator_canonical_bytes,
             value_canonical_bytes,
         } => {
+            assert_eq!(*entity_kind_id, crate::identity::data::KindId(1));
             assert_eq!(witness_field_locator, &field_locator);
             assert_eq!(witness_value, &value);
             assert!(!field_locator_canonical_bytes.is_empty());

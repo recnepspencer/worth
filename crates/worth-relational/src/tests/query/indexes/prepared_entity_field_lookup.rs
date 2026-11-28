@@ -25,6 +25,7 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
                 field_locator: locator.clone(),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
@@ -187,6 +188,7 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
                 field_locator: locator.clone(),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(

@@ -16,6 +16,7 @@ fn derived_index_contract_index_counters_track_attempts_paths_and_rejections() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(

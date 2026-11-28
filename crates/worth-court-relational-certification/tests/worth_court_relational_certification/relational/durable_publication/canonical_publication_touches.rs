@@ -97,6 +97,7 @@ fn installed_field_index_commit_touch_carries_native_old_and_new_keys() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: false,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let committed = create_entity_outcome(execution, &runtime, "indexed-value");

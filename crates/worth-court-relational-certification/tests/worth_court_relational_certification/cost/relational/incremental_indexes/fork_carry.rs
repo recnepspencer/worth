@@ -26,6 +26,7 @@ fn first_fork_write_carries_generations_after_parent_history_and_retirement() {
             index_id: DerivedIndexId(0),
             name: "fork.name".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
@@ -38,6 +39,7 @@ fn first_fork_write_carries_generations_after_parent_history_and_retirement() {
             index_id: DerivedIndexId(0),
             name: "fork.unreached".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::RelationField {
                 field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
             },

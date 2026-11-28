@@ -22,7 +22,6 @@ use worth_query_installation::facade::{
 use crate::domain_computation::primary_graph::application_attempt::effect_program::{
     core::selection::EffectSelection, output_correspondence::OutputRoleUse,
     WorthQueryApplicationCreatedRelation, WorthQueryApplicationEffectEntity,
-    WorthQueryApplicationEffectProgramBuilder,
 };
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection;
@@ -43,11 +42,6 @@ pub trait EffectProgramBuilderAuthoringInternalPort<Schema, Operation, Input, Sc
         value: Cow<'_, AspectValue>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>;
 
-    fn observe_unique_write_dependencies(
-        &mut self,
-        execution: &ExecutionRequest<'_, '_>,
-        allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<(), WorthQueryApplicationAttemptDenial>;
 
     fn field_locator(
         &self,

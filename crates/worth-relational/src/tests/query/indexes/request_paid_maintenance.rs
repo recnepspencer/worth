@@ -25,6 +25,7 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
             index_id: DerivedIndexId(0),
             name: "paid.name".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
@@ -115,6 +116,7 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
             index_id: DerivedIndexId(0),
             name: "retry.name".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },

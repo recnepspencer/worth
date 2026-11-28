@@ -19,6 +19,7 @@ fn exact_entity_field_lookup_uses_one_branch_root_after_both_heads_diverge() {
                 field_locator: field_locator.clone(),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     build_entity_field_generation(execution, &runtime, index.index_id);

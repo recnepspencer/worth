@@ -9,6 +9,15 @@ pub struct IndexDefinitionPublication<'owner> {
 }
 
 impl IndexDefinitionReadBinding {
+    /// Hold installed definition meaning through an ordinary publication.
+    pub fn hold_definition_catalog(
+        &self,
+    ) -> Result<std::sync::RwLockReadGuard<'_, ()>, RelationalPublicationDenial> {
+        self.definition_publication
+            .try_read()
+            .ok_or(RelationalPublicationDenial::IndexDefinitionPublicationContended)
+    }
+
     pub fn prepare_definition_publication(
         &self,
         prepared: Arc<PreparedRelationalIndexDefinitions>,
@@ -46,7 +55,7 @@ impl IndexingSubsystem {
     > {
         let _definitions = self
             .definition_publication
-            .try_read()
+            .try_write()
             .ok_or(crate::contracts::indexes::data::registration_denial::DerivedIndexRegistrationDenial::PublicationInProgress)?;
         let mut state = self.state.write();
         definition.index_id = DerivedIndexId(state.next_index_id);

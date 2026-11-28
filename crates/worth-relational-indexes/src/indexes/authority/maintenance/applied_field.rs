@@ -102,6 +102,7 @@ impl AppliedFieldImage {
         execution: &ExecutionRequest<'_, '_>,
         key: Key,
         locator: &AspectFieldLocator,
+        kind_scope: Option<crate::contracts::identity::data::primitives::KindId>,
         seed: &Arc<DerivedIndexGeneration>,
     ) -> Result<Arc<AppliedFieldEntries>, DerivedIndexMaintenanceDenial> {
         let budget = DerivedIndexMaintenanceBudget {
@@ -157,6 +158,7 @@ impl AppliedFieldImage {
                     &before,
                     &after,
                     &image.changed,
+                    kind_scope,
                     work,
                 )?;
             }

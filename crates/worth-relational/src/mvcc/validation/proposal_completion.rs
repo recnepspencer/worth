@@ -27,6 +27,7 @@ pub(super) fn complete(
         mutation: proposed_mutation,
         identity: proposal_identity,
         validation_input,
+        unique_fields,
         invariants,
     } = round.into_inner();
     let branch = basis.identity().branch_id().clone();
@@ -76,6 +77,7 @@ pub(super) fn complete(
             validation_input,
             prepared,
             proposed_mutation,
+            unique_fields,
             invariants,
             evidence: assemble_mutation_invariant_evidence(MutationInvariantEvidenceParts {
                 branch,

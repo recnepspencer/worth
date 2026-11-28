@@ -24,7 +24,7 @@ mod graph_composition_selection;
 fn commit_boundary_short_circuits_when_plan_contract_cannot_touch_profile_groups() {
     let runtime = runtime_with_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
-            InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
+            InvariantRule::unique_entity_aspect_field(crate::identity::data::KindId(1), crate::indexes::data::DerivedIndexId(1), aspect_key("name"), field_key("name")),
         )],
     });
     let plan = MergedCommitPlan {
@@ -45,7 +45,7 @@ fn commit_boundary_short_circuits_when_plan_contract_cannot_touch_profile_groups
 fn engine_marks_unrelated_commit_boundary_rules_not_applicable() {
     let runtime = runtime_with_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
-            InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
+            InvariantRule::unique_entity_aspect_field(crate::identity::data::KindId(1), crate::indexes::data::DerivedIndexId(1), aspect_key("name"), field_key("name")),
         )],
     });
     let plan = MergedCommitPlan {
@@ -91,7 +91,7 @@ fn independent_commit_boundary_evaluations_match_canonical_results() {
     let invariant_catalog = InvariantCatalog {
         registrations: vec![
             InvariantRegistration::commit_boundary_blocking(
-                InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
+                InvariantRule::unique_entity_aspect_field(crate::identity::data::KindId(1), crate::indexes::data::DerivedIndexId(1), aspect_key("name"), field_key("name")),
             ),
             InvariantRegistration::commit_boundary_blocking(InvariantRule::MaxMergedIntents(0)),
         ],

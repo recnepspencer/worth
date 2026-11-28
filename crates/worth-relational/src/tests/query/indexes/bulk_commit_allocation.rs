@@ -49,6 +49,7 @@ fn bulk_commit(rows_per_key: usize) {
             index_id: DerivedIndexId(0),
             name: "bulk-index.name".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::EntityField {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },

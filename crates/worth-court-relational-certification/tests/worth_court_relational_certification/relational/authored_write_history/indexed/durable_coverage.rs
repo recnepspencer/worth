@@ -40,6 +40,7 @@ fn register(runtime: &RelationalRuntime, name: &str) -> DerivedIndexDefinition {
                 field_locator: name_locator(),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .unwrap()
 }

@@ -37,3 +37,53 @@ pub fn classify(terminal: NoEffectCompositePublication) -> Outcome {
     };
     Outcome::NoEffect(WorthQueryApplicationNoEffect::from_world(terminal, cause))
 }
+
+
+pub(super) fn native_unique_field_refused(
+    denial: &worth_relational::facade::mvcc::RelationalPublicationDenial,
+    layout: &worth_query_execution_layout::facade::schema_layout::WorthQueryPrimaryGraphLayout,
+) -> Outcome {
+    use crate::domain_computation::primary_graph::{
+        WorthQueryApplicationCommitDenial as Commit, WorthQueryApplicationCommitDenialStage as Stage,
+    };
+    use worth_relational::facade::mvcc::{RelationalPublicationDenial as Native, TransactionCommitError};
+    let failure = match denial {
+        Native::UniqueFieldConflict(conflict) => {
+            crate::domain_computation::WorthQueryInvariantExecutionFailure::relational_validation(
+                TransactionCommitError::from(conflict.clone()),
+            ).with_declared_unique_key(layout)
+        }
+        Native::UniqueFieldIndexUnavailable { .. } => {
+            return Outcome::Denied(Commit::unique_field_index_unavailable(Stage::ProviderCommit));
+        }
+        _ => unreachable!("World retains only unique-field denials in this channel"),
+    };
+    Outcome::Denied(Commit::invariant_execution_denied(Stage::ProviderCommit, failure))
+}
+
+
+pub(super) fn unique_field_preparation_refused(
+    error: &worth_relational::facade::mvcc::TransactionCommitError,
+    layout: &worth_query_execution_layout::facade::schema_layout::WorthQueryPrimaryGraphLayout,
+) -> Option<Outcome> {
+    use crate::domain_computation::primary_graph::{
+        WorthQueryApplicationCommitDenial as Commit, WorthQueryApplicationCommitDenialStage as Stage,
+    };
+    use worth_relational::facade::{
+        mvcc::{RelationalPublicationDenial, TransactionCommitError},
+        transactions::InvariantViolationFields,
+    };
+    if let TransactionCommitError::PublicationDenied {
+        denial: RelationalPublicationDenial::UniqueFieldIndexUnavailable { .. }, ..
+    } = error {
+        return Some(Outcome::Denied(Commit::unique_field_index_unavailable(Stage::ProviderCommit)));
+    }
+    if !matches!(worth_query_execution_contracts::facade::relational_invariant_fields(error),
+        Some(InvariantViolationFields::UniqueEntityField { .. })) {
+        return None;
+    }
+    let failure = crate::domain_computation::WorthQueryInvariantExecutionFailure::relational_validation(
+        error.clone(),
+    ).with_declared_unique_key(layout);
+    Some(Outcome::Denied(Commit::invariant_execution_denied(Stage::ProviderCommit, failure)))
+}

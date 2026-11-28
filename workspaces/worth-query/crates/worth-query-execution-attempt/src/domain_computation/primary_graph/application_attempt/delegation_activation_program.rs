@@ -24,14 +24,14 @@ impl<Schema, Operation, Input, Scope>
     >
 {
     pub fn materialize_capability_delegation_program(
-        mut self,
+        self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        _allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryDelegationActivationProgram<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
-        let phase_request = phase
+        phase
             .request_for_source(self.lease.handle().relational_runtime_instance_id())
             .map_err(|_| {
                 denial(
@@ -39,14 +39,11 @@ impl<Schema, Operation, Input, Scope>
                     "delegation-activation-phase",
                 )
             })?;
-        let execution = &phase_request;
-
         let binding = self
             .admission
             .delegation_activation_binding()
             .ok_or_else(|| transition_required(self.admission.operation()))?;
         let effects = activation_effects(binding, self.admission.allowed_graph_contract())?;
-        self.observe_unique_write_values(execution, &effects, allocation_policy)?;
         let program = WorthQueryApplicationEffectProgram {
             synchronous_outputs: Vec::new(),
             authored_stages: Vec::new(),

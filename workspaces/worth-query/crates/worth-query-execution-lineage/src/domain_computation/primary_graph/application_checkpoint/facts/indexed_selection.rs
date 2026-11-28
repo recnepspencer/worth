@@ -97,6 +97,7 @@ pub fn decode(cursor: &mut CheckpointCursor<'_>) -> Result<Fact, String> {
                 field_locator: locator.clone(),
             },
             branch_scoped,
+            unique_entity_kind: None,
         },
     );
     Ok(Fact::IndexedEntitySelection {
@@ -135,6 +136,7 @@ mod tests {
                             field_locator: locator.clone(),
                         },
                         branch_scoped: false,
+                        unique_entity_kind: None,
                     },
                 ),
             entity_kind: KindId(2),

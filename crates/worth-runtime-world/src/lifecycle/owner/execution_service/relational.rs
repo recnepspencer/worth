@@ -8,6 +8,7 @@ use worth_relational::facade::mvcc::{RelationalPublicationDeferred, RelationalPu
 pub(super) struct RelationalExecutionFailure {
     pub(super) cause: ProductUnpublishedCause,
     pub(super) no_effect: NoEffectCause,
+    pub(super) native_unique_field_denial: Option<std::sync::Arc<worth_relational::facade::mvcc::RelationalPublicationDenial>>,
     pub(super) partial: RelationalAttemptProgress,
 }
 
@@ -115,6 +116,8 @@ where
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::RecoveredCodecTransitionRequired
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramContractsRequired
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramIndexDefinitionsRequired
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::UniqueFieldConflict(_)
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::UniqueFieldIndexUnavailable { .. }
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::StaleIndexDefinitions
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::IndexDefinitionPublicationContended
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramTransition(_)
@@ -126,7 +129,14 @@ where
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::Deleting
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::DurablePublicationRefused(_) => NoEffectCause::OwnerDeniedBeforeEffect,
                 };
-                Err(pre_effect_failure(cause))
+                let mut failure = pre_effect_failure(cause);
+                if matches!(denial,
+                    worth_relational::facade::mvcc::RelationalPublicationDenial::UniqueFieldConflict(_)
+                        | worth_relational::facade::mvcc::RelationalPublicationDenial::UniqueFieldIndexUnavailable { .. }
+                ) {
+                    failure.native_unique_field_denial = Some(std::sync::Arc::new(denial));
+                }
+                Err(failure)
             }
             RelationalPublicationOutcome::Deferred(deferred) => {
                 Err(pre_effect_failure(deferred_no_effect(deferred)))
@@ -146,6 +156,7 @@ fn pre_effect_failure(no_effect: NoEffectCause) -> RelationalExecutionFailure {
     RelationalExecutionFailure {
         cause: ProductUnpublishedCause::SiblingOwnerDenied,
         no_effect,
+        native_unique_field_denial: None,
         partial: RelationalAttemptProgress::untouched(),
     }
 }
@@ -159,6 +170,7 @@ fn durability_unresolved(
     RelationalExecutionFailure {
         cause: ProductUnpublishedCause::RelationalDurabilityUnresolved,
         no_effect: NoEffectCause::PreEffectFailure,
+        native_unique_field_denial: None,
         partial: RelationalAttemptProgress::durability_unresolved(unresolved),
     }
 }

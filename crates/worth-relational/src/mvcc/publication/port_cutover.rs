@@ -49,6 +49,8 @@ impl PreparedBranchPublicationPreflight {
         let (positioned_commit, head_retirement) =
             match (super::super::movement::BranchMovementCutover {
                 coordination: &_critical_section,
+                indexes: &self.indexes,
+                unique_fields: &self.movement.unique_fields,
                 publication_cell: &self.publication_cell,
                 expected: &self.expected,
                 next_state: &mut self.next_state,

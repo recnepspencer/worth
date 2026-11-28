@@ -70,7 +70,7 @@ fn every_commit_family_evaluates_once_and_publication_reuses_the_result() {
     catalog
         .registrations
         .push(InvariantRegistration::commit_boundary_blocking(
-            InvariantRule::unique_entity_aspect_field(
+            InvariantRule::unique_entity_aspect_field(worth_relational::facade::identity::KindId(9), worth_relational::facade::indexes::DerivedIndexId(1),
                 worth_foundational::facade::AspectKey::new("name").unwrap(),
                 worth_foundational::facade::FieldKey::new("value").unwrap(),
             ),

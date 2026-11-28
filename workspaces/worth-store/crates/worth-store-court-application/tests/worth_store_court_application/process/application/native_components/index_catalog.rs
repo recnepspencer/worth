@@ -54,6 +54,7 @@ fn definitions() -> Vec<DerivedIndexDefinition> {
             },
             kind,
             branch_scoped: offset != 1,
+            unique_entity_kind: None,
         })
         .collect()
 }

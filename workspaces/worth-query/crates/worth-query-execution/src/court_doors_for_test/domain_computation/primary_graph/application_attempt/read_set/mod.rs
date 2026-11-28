@@ -17,6 +17,4 @@ pub mod scope_bindings;
 pub mod source_facts;
 #[path = "structural_walk/mod.rs"]
 pub mod structural_walk;
-#[path = "unique_write_dependencies/mod.rs"]
-pub mod unique_write_dependencies;
 pub use crate::domain_computation::primary_graph::application_attempt::read_set::denial;

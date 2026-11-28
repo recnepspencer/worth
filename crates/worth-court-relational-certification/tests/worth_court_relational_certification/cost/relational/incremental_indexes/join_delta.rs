@@ -40,6 +40,7 @@ fn exercise(degree: usize) -> fixture::Work {
             index_id: DerivedIndexId(0),
             name: "asymmetric-join".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: DerivedIndexKind::RelationJoin(RelationJoinDefinition::new(
                 RelationJoinLeg::new(KindId(2), RelationJoinSharedEndpoint::Target, KindId(1)),
                 RelationJoinLeg::new(KindId(2), RelationJoinSharedEndpoint::Source, KindId(1)),

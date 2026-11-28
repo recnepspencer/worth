@@ -24,7 +24,17 @@ impl WorthQueryApplicationCommitDenial {
         stage: WorthQueryApplicationCommitDenialStage,
         failure: WorthQueryInvariantExecutionFailure,
     ) -> Self {
-        let kind = if failure.custom_invariant_denial().is_some() {
+        let kind = if failure.keyed_entity().is_some() {
+            CommitKind::UniqueValueTaken
+        } else if matches!(
+            failure.relational_commit_error(),
+            Some(worth_relational::facade::mvcc::TransactionCommitError::PublicationDenied {
+                denial: worth_relational::facade::mvcc::RelationalPublicationDenial::UniqueFieldIndexUnavailable { .. },
+                ..
+            })
+        ) {
+            CommitKind::UniqueIndexUnavailable
+        } else if failure.custom_invariant_denial().is_some() {
             CommitKind::CustomInvariantDenied
         } else {
             match failure.kind() {

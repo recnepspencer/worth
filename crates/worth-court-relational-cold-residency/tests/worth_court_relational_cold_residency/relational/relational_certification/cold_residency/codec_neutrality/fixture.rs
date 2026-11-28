@@ -95,6 +95,7 @@ pub(super) fn world_with_installation(
                 field_locator: locator("derived"),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     assert_eq!(

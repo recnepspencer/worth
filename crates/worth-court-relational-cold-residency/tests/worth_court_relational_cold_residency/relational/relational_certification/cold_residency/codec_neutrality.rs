@@ -305,6 +305,7 @@ fn unsupported_ordering_index_refuses_codec_restore_without_replacing_the_target
             index_id: facade::indexes::DerivedIndexId(18),
             name: "unsupported derived ordering".into(),
             branch_scoped: true,
+            unique_entity_kind: None,
             kind: facade::indexes::DerivedIndexKind::RelatedEntityOrdering {
                 relation_kind: facade::identity::KindId(99),
                 parent_endpoint: facade::indexes::RelatedEntityEndpoint::SourceParent,

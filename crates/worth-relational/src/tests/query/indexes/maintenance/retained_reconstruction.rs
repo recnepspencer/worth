@@ -18,6 +18,7 @@ fn retained_commit_reconstruction_uses_its_own_root_and_finite_cold_budget() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let request = DerivedIndexBuildRequest {

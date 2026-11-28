@@ -19,6 +19,7 @@ fn bounded_generation_selection_does_not_enumerate_retained_builds() {
                 field_locator: field.clone(),
             },
             branch_scoped: true,
+            unique_entity_kind: None,
         })
         .expect("index fixture has identity capacity");
     let receipt = runtime

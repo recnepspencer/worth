@@ -1,13 +1,12 @@
-//! A delegation whose application never reads its child id still decides on
-//! that id naming no grant: Query appends the absence of every unique value
-//! the activation creates, so a second grant with the same id never commits.
+//! Native uniqueness protects a child grant ID even when the delegation
+//! decides without reading it.
 
 use super::prepared_currentness::grants_named;
 use super::*;
 use crate::estate_progression::delegation::command_courts::CommandCourtOutcome;
 
 #[test]
-fn a_delegation_that_does_not_read_its_child_id_stales_then_is_denied() {
+fn concurrent_delegations_that_do_not_read_their_child_id_conflict() {
     let fixture = delegation_world("delegation-unread-child-identity");
     let specialist = fixture.authenticate();
     let action = delegated_action();
@@ -19,11 +18,7 @@ fn a_delegation_that_does_not_read_its_child_id_stales_then_is_denied() {
         matches!(committed, WorthQueryApplicationCommitOutcome::Committed(_)),
         "the first delegation commits: {committed:?}"
     );
-    let lost = commit(&fixture, second, 173);
-    let WorthQueryApplicationCommitOutcome::Stale(stale) = lost else {
-        panic!("the appended absence stales the second delegation: {lost:?}");
-    };
-    assert!(stale.stale_fact_count() > 0);
+    assert_unique_value_taken(commit(&fixture, second, 173));
     assert_eq!(grants_named(&fixture, &specialist, CHILD), 1);
 
     // A request prepared after the commit observes the grant and is denied
@@ -129,6 +124,13 @@ fn assert_unique_value_taken(outcome: WorthQueryApplicationCommitOutcome) {
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationCommitDenialKind::UniqueValueTaken
+    );
+    let keyed = denial.keyed_entity().expect("the declared key remains available");
+    assert_eq!(keyed.entity(), "CapabilityGrant");
+    assert_eq!(keyed.field(), "CapabilityGrantIdentityField");
+    assert_eq!(
+        keyed.key(),
+        Some(&worth_foundational::facade::AspectValue::UInt64(CHILD.get())),
     );
 }
 

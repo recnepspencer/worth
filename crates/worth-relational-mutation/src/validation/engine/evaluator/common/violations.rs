@@ -35,10 +35,7 @@ impl StorageInconsistencyContext {
         self
     }
 
-    pub(crate) fn with_field(mut self, field: FieldKey) -> Self {
-        self.field = Some(field);
-        self
-    }
+
 
     pub(crate) fn with_scan(mut self, scan: StorageInconsistencyScan) -> Self {
         self.scan = Some(scan);

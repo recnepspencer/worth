@@ -13,6 +13,8 @@ use Disposition::*;
 
 pub(super) fn admission_disposition(denial: &Admission) -> (DenialClass, Disposition) {
     match denial {
+        Admission::UniqueFieldConflict(_) => (Conflict, CorrectInput),
+        Admission::UniqueFieldIndexUnavailable { .. } => (Unavailable, Escalate),
         Admission::CutoverDeadlineElapsed => (DeadlineElapsed, Final),
         Admission::StaleIndexDefinitions
         | Admission::StaleConfigurationEpoch

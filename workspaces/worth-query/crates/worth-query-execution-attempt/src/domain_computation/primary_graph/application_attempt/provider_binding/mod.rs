@@ -136,9 +136,6 @@ pub fn installed_preimage_demand(
 }
 
 pub fn prepare_provider_attempt<'layout>(
-    unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
-        'layout,
-    >,
     contracts: &'layout effect_lowering::AspectContracts<'layout>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     application_effect_count: usize,
@@ -172,7 +169,6 @@ pub fn prepare_provider_attempt<'layout>(
     let (facts, effect_routes) = completed_facts.into_parts();
     let mut accumulator = WorthQueryProviderEffectAccumulator::new(
         &facts,
-        unique_fields,
         contracts,
         &effects,
         mutation_partition,
@@ -203,9 +199,6 @@ pub fn prepare_provider_attempt<'layout>(
 }
 
 pub fn prepare_program_migration_batch<'layout>(
-    unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
-        'layout,
-    >,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     completed_facts: super::CompletedFactRoutes,
     contracts: &'layout effect_lowering::AspectContracts<'layout>,
@@ -217,7 +210,6 @@ pub fn prepare_program_migration_batch<'layout>(
     let (facts, routes) = completed_facts.into_parts();
     let mut accumulator = WorthQueryProviderEffectAccumulator::new(
         &facts,
-        unique_fields,
         contracts,
         &effects,
         mutation_partition,

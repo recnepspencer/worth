@@ -213,7 +213,6 @@ where
         .ok_or(WorthQueryProgramMigrationPreparationDenial::MutationPartitionUnavailable)?;
     let effect_count = effects.len();
     let batch = prepare_program_migration_batch(
-        read_set.lease.layout.unique_fields(),
         mutation_partition,
         read_set.effect_routes,
         &|entity, aspect| read_set.lease.layout.aspect_binding(entity, aspect),

@@ -15,6 +15,7 @@ pub fn register_indexes(
             field_locator: layout.lineage.identity.clone(),
         },
         branch_scoped: true,
+        unique_entity_kind: None,
     })?;
     layout.lineage.identity_index_id = installed.index_id;
     let installed = install(DerivedIndexDefinition {
@@ -24,6 +25,7 @@ pub fn register_indexes(
             field_locator: layout.definition.content_identity.clone(),
         },
         branch_scoped: true,
+        unique_entity_kind: None,
     })?;
     layout.definition.content_identity_index_id = installed.index_id;
     let installed = install(DerivedIndexDefinition {
@@ -33,6 +35,7 @@ pub fn register_indexes(
             field_locator: layout.instance.identity.clone(),
         },
         branch_scoped: true,
+        unique_entity_kind: None,
     })?;
     layout.instance.identity_index_id = installed.index_id;
     let installed = install(DerivedIndexDefinition {
@@ -42,6 +45,7 @@ pub fn register_indexes(
             field_locator: layout.proposal.identity.clone(),
         },
         branch_scoped: true,
+        unique_entity_kind: None,
     })?;
     layout.proposal.identity_index_id = installed.index_id;
     let installed = install(DerivedIndexDefinition {
@@ -51,6 +55,7 @@ pub fn register_indexes(
             field_locator: layout.captured_input.identity.clone(),
         },
         branch_scoped: true,
+        unique_entity_kind: None,
     })?;
     layout.captured_input.identity_index_id = installed.index_id;
     let installed = install(DerivedIndexDefinition {
@@ -60,6 +65,7 @@ pub fn register_indexes(
             field_locator: layout.transition.identity.clone(),
         },
         branch_scoped: true,
+        unique_entity_kind: None,
     })?;
     layout.transition.identity_index_id = installed.index_id;
     Ok(())

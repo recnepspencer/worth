@@ -24,6 +24,7 @@ fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
                     field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
                 },
                 branch_scoped: false,
+                unique_entity_kind: None,
             })
             .expect("index fixture has identity capacity");
         let built = runtime.index_authority().build_for_commit(
