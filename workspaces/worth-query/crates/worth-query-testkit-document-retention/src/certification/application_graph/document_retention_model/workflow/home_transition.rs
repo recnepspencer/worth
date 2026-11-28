@@ -21,7 +21,7 @@ use worth_query_host::facade::{
     primary_graph::WorthQueryPrimaryGraphInstallationDenial,
     WorthQueryApplicationHomeLocation as Location, WorthQueryApplicationHomeRequest,
     WorthQueryHomeProgramTransitionPlan as Plan, WorthQueryHomeProgramTransitionStep as Step,
-    WorthQueryWorkflowApplicationHome,
+    WorthQueryApplicationHome,
 };
 #[path = "home_transition/reviewed.rs"]
 mod reviewed;
@@ -29,7 +29,7 @@ pub use reviewed::reviewed;
 
 /// A Home serving workflows under one of the programs below.
 pub type WorkflowHome<Program> =
-    WorthQueryWorkflowApplicationHome<Schema, GovernedDocumentWorkflow, Program>;
+    WorthQueryApplicationHome<Schema, Program>;
 /// The guarded operation node a proposal captures its target input for.
 pub type TargetNode = ApplicationWorkflowNodeRef<ApplicationWorkflowOperationNode>;
 
@@ -165,7 +165,7 @@ pub fn publish_with<Program: ApplicationProgramDefinition<Schema>>(
         .runtime()
         .with_host_advancement(|phase| {
             application
-                .vocabulary()
+                .workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap()
                 .workflow_spec_on(&phase, runtime.current_world())
                 .unwrap()
         })
@@ -206,7 +206,7 @@ pub fn start<Program: ApplicationProgramDefinition<Schema>>(
         })
         .without_source()
         .idempotency(&idempotency)
-        .prepare_workflow_instance_start(application.vocabulary(), definition)
+        .prepare_workflow_instance_start(application.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), definition)
         .unwrap();
     let original = prepared.discovery_intent();
     match prepared.execute() {
@@ -246,7 +246,7 @@ pub fn propose<Program: ApplicationProgramDefinition<Schema>>(
         .mutate(authoring_intent())
         .without_source()
         .idempotency(&idempotency)
-        .prepare_workflow_proposal_with_inputs(application.vocabulary(), instance, &inputs)
+        .prepare_workflow_proposal_with_inputs(application.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), instance, &inputs)
         .unwrap()
         .execute();
     assert!(

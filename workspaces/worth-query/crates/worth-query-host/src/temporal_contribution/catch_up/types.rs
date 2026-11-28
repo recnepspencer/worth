@@ -99,7 +99,6 @@ pub enum WorthQueryTemporalCatchUpStatus {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryTemporalCatchUpDenial {
     InvalidMaxSteps { requested: usize, maximum: usize },
-    TemporalBindingNotInstalled,
     ForeignClockHandle,
     ClockAdvance(WorthQueryDesktopClockAdvanceDenial),
     Advancement(WorthQueryAdvancementDenial),

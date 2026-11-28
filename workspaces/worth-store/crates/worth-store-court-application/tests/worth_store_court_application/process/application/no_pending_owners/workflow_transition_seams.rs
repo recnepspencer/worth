@@ -21,7 +21,6 @@ use worth_query_host::facade::{
     },
     primary_graph::WorthQueryWorkflowDispositions as Choices,
     WorthQueryApplicationHome, WorthQueryApplicationHomeLocation as Location,
-    WorthQueryWorkflowApplicationHome,
 };
 use worth_query_testkit_document_retention::facade::document_retention_model::{
     operator_identity::{authenticate_operator, authenticate_reviewer, request_scope},
@@ -80,7 +79,7 @@ impl Seam {
 fn retain_workflow<P: ApplicationProgramDefinition<Schema>>(
     home: WorthQueryApplicationHome<Schema, P>,
 ) -> (
-    WorthQueryWorkflowApplicationHome<Schema, GovernedDocumentWorkflow, P>,
+    WorthQueryApplicationHome<Schema, P>,
     CertificationAuthenticationOwner,
 ) {
     let workflow = install_workflow_spec_for::<P, GovernedDocumentWorkflow>(
@@ -140,7 +139,7 @@ fn check_dispositions_and_close(
             .request(&reviewer, &scope)
             .at(&basis)
             .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-                home.vocabulary(), original, input(), input(),
+                home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), original, input(), input(),
             )
             .unwrap()
         {
@@ -159,7 +158,7 @@ fn check_dispositions_and_close(
         .request(&operator, &scope)
         .at(&basis)
         .discover_workflow_definition::<GovernedDocumentWorkflow, MetadataRead>(
-            home.vocabulary(), &target, input(),
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), &target, input(),
         )
         .unwrap();
     assert!(

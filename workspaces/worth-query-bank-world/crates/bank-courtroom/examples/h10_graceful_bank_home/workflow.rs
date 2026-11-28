@@ -24,7 +24,8 @@ pub(super) fn start_wait(
         approver: SPECIALIST,
     };
     let contract = home
-        .workflow_spec()
+        .retained_workflow_spec::<bank_domain::schema::ApprovedBusinessPaymentWorkflow>()
+        .expect("Bank payment workflow registered")
         .bind_definition(bank_server::approved_business_payment_definition().unwrap())
         .unwrap();
     let publication = request
@@ -48,7 +49,11 @@ pub(super) fn start_wait(
         })
         .without_source()
         .idempotency(&key("h10-instance"))
-        .prepare_workflow_instance_start(home.vocabulary(), definition)
+        .prepare_workflow_instance_start(
+            home.workflow_vocabulary::<bank_domain::schema::ApprovedBusinessPaymentWorkflow>()
+                .expect("Bank payment workflow registered"),
+            definition,
+        )
         .unwrap();
     let original = prepared.discovery_intent();
     let instance = match prepared.execute() {
@@ -59,7 +64,11 @@ pub(super) fn start_wait(
         .mutate(ApprovedBusinessPaymentAuthoringIntent { input: authority })
         .without_source()
         .idempotency(&key("h10-proposal"))
-        .prepare_workflow_proposal(home.vocabulary(), instance.clone())
+        .prepare_workflow_proposal(
+            home.workflow_vocabulary::<bank_domain::schema::ApprovedBusinessPaymentWorkflow>()
+                .expect("Bank payment workflow registered"),
+            instance.clone(),
+        )
         .unwrap()
         .execute();
     assert!(matches!(proposed, WorkflowProposalOutcome::Published(_)));
@@ -94,7 +103,11 @@ pub(super) fn wait(
         })
         .without_source()
         .idempotency(&key(command))
-        .prepare_workflow_advance(home.vocabulary(), instance)
+        .prepare_workflow_advance(
+            home.workflow_vocabulary::<bank_domain::schema::ApprovedBusinessPaymentWorkflow>()
+                .expect("Bank payment workflow registered"),
+            instance,
+        )
         .unwrap()
         .execute();
     match progress {
@@ -119,7 +132,7 @@ pub(super) fn resume_wait(
         approver: SPECIALIST,
     };
     let recovered = request.at(&basis).read_original_workflow::<ApprovedBusinessPaymentWorkflow,
-        ApprovedBusinessPaymentRead, ApprovedBusinessPaymentRead>(home.vocabulary(), original,
+        ApprovedBusinessPaymentRead, ApprovedBusinessPaymentRead>(home.workflow_vocabulary::<bank_domain::schema::ApprovedBusinessPaymentWorkflow>().expect("Bank payment workflow registered"), original,
         input.clone(), input).expect("fresh authenticated manager reads original waiting instance");
     let WorthQueryWorkflowInstanceRead::Live {
         instance,

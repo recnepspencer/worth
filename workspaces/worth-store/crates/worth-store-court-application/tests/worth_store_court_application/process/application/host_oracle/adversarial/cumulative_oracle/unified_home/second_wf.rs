@@ -74,7 +74,7 @@ fn run_assess(wf: &WorkflowHome, inst: PublishedWorkflowInstanceRef, k_run: u64,
             .mutate(adv.clone())
             .without_source()
             .idempotency(&k_run)
-            .prepare_workflow_advance(wf.vocabulary(), inst.clone())
+            .prepare_workflow_advance(wf.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), inst.clone())
             .unwrap()
             .into_assessment_demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
             .unwrap()
@@ -99,7 +99,7 @@ fn run_assess(wf: &WorkflowHome, inst: PublishedWorkflowInstanceRef, k_run: u64,
             .mutate(adv)
             .without_source()
             .idempotency(&k_acc)
-            .prepare_workflow_advance(wf.vocabulary(), inst)
+            .prepare_workflow_advance(wf.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), inst)
             .unwrap()
             .accept_assessment(&settled)
             .unwrap(),
@@ -123,7 +123,7 @@ pub(super) fn run_second_wf_to_historical(
         .request(&op, &sc)
         .at(&basis)
         .discover_workflow_definition::<GovernedDocumentWorkflow, MetadataRead>(
-            wf.vocabulary(),
+            wf.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(),
             &target,
             wf_input(),
         )
@@ -143,7 +143,7 @@ pub(super) fn run_second_wf_to_historical(
         })
         .without_source()
         .idempotency(&K2_START)
-        .prepare_workflow_instance_start(wf.vocabulary(), def)
+        .prepare_workflow_instance_start(wf.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), def)
         .unwrap();
     let orig2 = prep_start.discovery_intent();
     let WorkflowInstanceStartOutcome::Started(started) = prep_start.execute() else {
@@ -157,7 +157,7 @@ pub(super) fn run_second_wf_to_historical(
         .mutate(authoring_intent())
         .without_source()
         .idempotency(&K2_PROPOSE)
-        .prepare_workflow_proposal(wf.vocabulary(), inst.clone())
+        .prepare_workflow_proposal(wf.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), inst.clone())
         .unwrap()
         .execute()
     else {
@@ -185,7 +185,7 @@ pub(super) fn run_second_wf_to_historical(
         .without_source()
         .idempotency(&K2_APPROVE)
         .prepare_workflow_approval(
-            wf.vocabulary(),
+            wf.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(),
             inst.clone(),
             &req_app,
             proposed.proposal(),
@@ -215,7 +215,7 @@ pub(super) fn run_second_wf_to_historical(
         })
         .without_source()
         .idempotency(&K2_APPLY)
-        .for_workflow_operation(wf.vocabulary(), &req_op)
+        .for_workflow_operation(wf.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), &req_op)
         .unwrap()
         .advanced()
         .execute_in_program(wf.runtime(), ExecutionAllocationPolicy::SystemAllocation)
@@ -231,7 +231,7 @@ pub(super) fn run_second_wf_to_historical(
         .request(&rev, &sc)
         .at(&b2)
         .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-            wf.vocabulary(),
+            wf.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(),
             &orig2,
             wf_input(),
             wf_input(),

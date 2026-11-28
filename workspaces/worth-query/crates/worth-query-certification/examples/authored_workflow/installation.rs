@@ -62,7 +62,7 @@ pub fn close(home: Home) {
     let lease = funding();
     home.workflow
         .close(&worth_execution::ExecutionRequest::leased(&lease))
-        .unwrap_or_else(|refused| panic!("authored Home close: {:?}", refused.reason()))
+        .unwrap_or_else(|refused| panic!("authored Home close: {refused:?}"))
         .reclaim();
 }
 

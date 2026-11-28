@@ -16,20 +16,32 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
         let runtime = std::sync::Arc::get_mut(&mut self.backing)
             .ok_or(WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained)?
             .runtime_mut();
-        let revision = *workflow.program_revision();
-        signing::validate(runtime, &revision, authentication)
-            .map_err(WorthQueryWorkflowRuntimeBindingDenial::SigningOwner)?;
-        let inner = &mut *runtime.inner;
-        let signing =
-            AdmittedSigningOwner::admit(&inner.signing_owners, revision, authentication.clone())
-                .map_err(WorthQueryWorkflowRuntimeBindingDenial::SigningOwner)?;
-        let coverage = inner
-            .runtime
-            .workflow_coverage_mut()
-            .admit(workflow.adoption_coverage())
-            .map_err(|_| WorthQueryWorkflowRuntimeBindingDenial::ConflictingVocabularyCoverage)?;
-        signing.install();
-        coverage.install();
-        Ok(())
+        install_workflow_registration(runtime, workflow, authentication)
     }
+}
+
+pub(super) fn install_workflow_registration<Schema, Spec>(
+    runtime: &mut crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    workflow: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+    authentication: &WorthQueryAuthenticationEventSigningOwner<Schema>,
+) -> Result<(), WorthQueryWorkflowRuntimeBindingDenial>
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+{
+    let revision = *workflow.program_revision();
+    signing::validate(runtime, &revision, authentication)
+        .map_err(WorthQueryWorkflowRuntimeBindingDenial::SigningOwner)?;
+    let inner = &mut *runtime.inner;
+    let signing =
+        AdmittedSigningOwner::admit(&inner.signing_owners, revision, authentication.clone())
+            .map_err(WorthQueryWorkflowRuntimeBindingDenial::SigningOwner)?;
+    let coverage = inner
+        .runtime
+        .workflow_coverage_mut()
+        .admit(workflow.adoption_coverage())
+        .map_err(|_| WorthQueryWorkflowRuntimeBindingDenial::ConflictingVocabularyCoverage)?;
+    signing.install();
+    coverage.install();
+    Ok(())
 }

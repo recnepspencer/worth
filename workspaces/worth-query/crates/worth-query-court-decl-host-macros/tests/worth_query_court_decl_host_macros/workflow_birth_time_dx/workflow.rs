@@ -9,7 +9,7 @@ use worth_query_host::facade::domain::{
     WorthQueryInstalledApplicationWorkflowSpec,
 };
 use worth_query_host::facade::primary_graph::WorthQueryFixedRuntimeTimeSource;
-use worth_query_host::facade::WorthQueryWorkflowApplicationHome;
+use worth_query_host::facade::WorthQueryApplicationHome;
 
 use super::control::{Author, AuthorOp, CompanyControl};
 use super::creator::{CreatedRequest, OpenRequestBinding};
@@ -42,8 +42,7 @@ impl ApplicationWorkflowSpec for RequestWorkflow {
     }
 }
 
-pub type WorkflowHome =
-    WorthQueryWorkflowApplicationHome<BirthSchema, RequestWorkflow, BirthProgram>;
+pub type WorkflowHome = WorthQueryApplicationHome<BirthSchema, BirthProgram>;
 
 /// A Home bound to the request vocabulary, with its published definition.
 pub struct World {
@@ -124,7 +123,8 @@ pub fn publish(
     let installed = home
         .runtime()
         .with_host_advancement(|phase| {
-            home.vocabulary()
+            home.workflow_vocabulary::<RequestWorkflow>()
+                .unwrap()
                 .workflow_spec_on(&phase, runtime.current_world())
                 .unwrap()
         })

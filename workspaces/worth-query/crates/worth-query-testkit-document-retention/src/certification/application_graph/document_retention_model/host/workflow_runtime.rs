@@ -9,7 +9,7 @@ pub use worth_query_host::facade::application_installation::{
 };
 pub use worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition;
 pub use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-pub use worth_query_host::facade::WorthQueryWorkflowApplicationHome;
+pub use worth_query_host::facade::WorthQueryApplicationHome;
 
 pub use super::super::{
     programs::RetentionProgramP0,
@@ -112,56 +112,62 @@ where
 
 /// The same vocabulary bound to the Home that owns the runtime. A Directory
 /// Home keeps its runtime, so the vocabulary is bound through the Home itself.
-pub struct DocumentWorkflowHome<Program = RetentionProgramP0, Spec = ReviewedDocumentWorkflow>
-where
-    Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema>,
-{
-    pub workflow: WorthQueryWorkflowApplicationHome<DocumentRetentionSchema, Spec, Program>,
+pub struct DocumentWorkflowHome<Program = RetentionProgramP0> {
+    pub workflow: WorthQueryApplicationHome<DocumentRetentionSchema, Program>,
     pub authentication: CertificationAuthenticationOwner,
     pub authentication_clock: CertificationAuthenticationClockSource,
 }
 
-impl<Program, Spec> DocumentWorkflowApplication for DocumentWorkflowHome<Program, Spec>
+impl<Program> DocumentWorkflowApplication for DocumentWorkflowHome<Program>
 where
     Program: ApplicationProgramDefinition<DocumentRetentionSchema>,
-    Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema>,
 {
     type Program = Program;
-    type Spec = Spec;
+    type Spec = ReviewedDocumentWorkflow;
     fn program_runtime(
         &self,
     ) -> &WorthQueryProgramApplicationRuntime<DocumentRetentionSchema, Program> {
         self.workflow.runtime()
     }
-    fn vocabulary(&self) -> WorthQueryWorkflowVocabulary<'_, DocumentRetentionSchema, Spec> {
-        self.workflow.vocabulary()
+    fn vocabulary(
+        &self,
+    ) -> WorthQueryWorkflowVocabulary<'_, DocumentRetentionSchema, ReviewedDocumentWorkflow> {
+        self.workflow
+            .workflow_vocabulary()
+            .expect("workflow registered")
     }
     fn authentication(&self) -> &CertificationAuthenticationOwner {
         &self.authentication
     }
 }
 
-impl<'application, Program, Spec> From<&'application DocumentWorkflowHome<Program, Spec>>
-    for WorthQueryWorkflowVocabulary<'application, DocumentRetentionSchema, Spec>
-where
-    Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema>,
+impl<'application, Program> From<&'application DocumentWorkflowHome<Program>>
+    for WorthQueryWorkflowVocabulary<
+        'application,
+        DocumentRetentionSchema,
+        ReviewedDocumentWorkflow,
+    >
 {
-    fn from(application: &'application DocumentWorkflowHome<Program, Spec>) -> Self {
-        application.workflow.vocabulary()
+    fn from(application: &'application DocumentWorkflowHome<Program>) -> Self {
+        application
+            .workflow
+            .workflow_vocabulary()
+            .expect("workflow registered")
     }
 }
 
-/// RAII Directory Home wrapper owning a `WorthQueryWorkflowApplicationHome` and
+/// RAII Directory Home wrapper owning a `WorthQueryApplicationHome` and
 /// its temporary directory on disk so certification tests close and reopen cleanly.
 pub struct DocumentWorkflowDirectoryHome<
     Program: 'static = RetentionProgramP0,
     Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema> = ReviewedDocumentWorkflow,
 > {
-    workflow: Option<WorthQueryWorkflowApplicationHome<DocumentRetentionSchema, Spec, Program>>,
+    workflow: Option<WorthQueryApplicationHome<DocumentRetentionSchema, Program>>,
     pub authentication: CertificationAuthenticationOwner,
     pub authentication_clock: CertificationAuthenticationClockSource,
     directory: std::path::PathBuf,
     cleanup_dir: bool,
+    spec: std::marker::PhantomData<fn() -> Spec>,
 }
 
 impl<Program: 'static, Spec> DocumentWorkflowDirectoryHome<Program, Spec>
@@ -169,7 +175,7 @@ where
     Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema>,
 {
     pub fn wrap(
-        workflow: WorthQueryWorkflowApplicationHome<DocumentRetentionSchema, Spec, Program>,
+        workflow: WorthQueryApplicationHome<DocumentRetentionSchema, Program>,
         authentication: CertificationAuthenticationOwner,
         authentication_clock: CertificationAuthenticationClockSource,
         directory: std::path::PathBuf,
@@ -180,17 +186,20 @@ where
             authentication_clock,
             directory,
             cleanup_dir: true,
+            spec: std::marker::PhantomData,
         }
     }
 
-    pub fn home(&self) -> &WorthQueryWorkflowApplicationHome<DocumentRetentionSchema, Spec, Program> {
-        self.workflow.as_ref().expect("workflow directory Home is open")
+    pub fn home(&self) -> &WorthQueryApplicationHome<DocumentRetentionSchema, Program> {
+        self.workflow
+            .as_ref()
+            .expect("workflow directory Home is open")
     }
 
-    pub fn home_mut(
-        &mut self,
-    ) -> &mut WorthQueryWorkflowApplicationHome<DocumentRetentionSchema, Spec, Program> {
-        self.workflow.as_mut().expect("workflow directory Home is open")
+    pub fn home_mut(&mut self) -> &mut WorthQueryApplicationHome<DocumentRetentionSchema, Program> {
+        self.workflow
+            .as_mut()
+            .expect("workflow directory Home is open")
     }
 
     pub fn directory(&self) -> &std::path::Path {
@@ -203,13 +212,19 @@ where
         DocumentRetentionSchema,
         Spec,
     > {
-        self.home().workflow_spec()
+        self.home()
+            .retained_workflow_spec()
+            .expect("workflow registered")
     }
 
     pub fn close_for_reopen(mut self) -> std::path::PathBuf {
         self.cleanup_dir = false;
-        let workflow = self.workflow.take().expect("workflow directory Home is open");
-        let lease = worth_query_testkit_document_retention::facade::directory_home::directory_lease();
+        let workflow = self
+            .workflow
+            .take()
+            .expect("workflow directory Home is open");
+        let lease =
+            worth_query_testkit_document_retention::facade::directory_home::directory_lease();
         workflow
             .close(&worth_execution::ExecutionRequest::leased(&lease))
             .unwrap_or_else(|refused| panic!("workflow directory Home close refused: {refused:?}"))
@@ -231,7 +246,9 @@ where
         self.home().runtime()
     }
     fn vocabulary(&self) -> WorthQueryWorkflowVocabulary<'_, DocumentRetentionSchema, Spec> {
-        self.home().vocabulary()
+        self.home()
+            .workflow_vocabulary()
+            .expect("workflow registered")
     }
     fn authentication(&self) -> &CertificationAuthenticationOwner {
         &self.authentication
@@ -245,7 +262,10 @@ where
     Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema>,
 {
     fn from(application: &'application DocumentWorkflowDirectoryHome<Program, Spec>) -> Self {
-        application.home().vocabulary()
+        application
+            .home()
+            .workflow_vocabulary()
+            .expect("workflow registered")
     }
 }
 
@@ -255,7 +275,8 @@ where
 {
     fn drop(&mut self) {
         if let Some(workflow) = self.workflow.take() {
-            let lease = worth_query_testkit_document_retention::facade::directory_home::directory_lease();
+            let lease =
+                worth_query_testkit_document_retention::facade::directory_home::directory_lease();
             if let Ok(closed) = workflow.close(&worth_execution::ExecutionRequest::leased(&lease)) {
                 closed.reclaim();
             }

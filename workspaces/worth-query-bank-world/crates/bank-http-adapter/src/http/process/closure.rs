@@ -34,9 +34,8 @@ pub enum BankHttpProcessCloseRefused {
     IdentityInUse(Arc<AuthentikBankIdentity>),
     Memory(bank_server::BankIdentityRuntime),
     Home(
-        worth_query_host::facade::WorthQueryWorkflowHomeCloseRefused<
+        worth_query_host::facade::WorthQueryApplicationHomeCloseRefused<
             bank_domain::schema::BankSchema,
-            bank_domain::schema::ApprovedBusinessPaymentWorkflow,
             bank_server::BankApplication,
         >,
     ),

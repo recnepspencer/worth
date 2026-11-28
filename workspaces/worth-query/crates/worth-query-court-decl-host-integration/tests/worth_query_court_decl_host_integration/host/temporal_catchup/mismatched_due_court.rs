@@ -1,5 +1,7 @@
 //! Negative court proving a mismatched due-field binding fails closed before commit (Blocker 3).
 
+use crate::host::temporal_catchup::pump::*;
+
 use worth_query_host::facade::{
     domain::WorthQueryClockCoordinate,
     temporal_contribution::{WorthQueryTemporalCatchUpPolicy, WorthQueryTemporalCatchUpStatus},
@@ -7,10 +9,7 @@ use worth_query_host::facade::{
 
 use super::{
     adapters::{AuthControl, ReminderFireLog},
-    program::{
-        mutate_reminder, open_memory_home_with_mismatched_due_field, read_reminders,
-        DesktopReminderConditional,
-    },
+    program::{mutate_reminder, open_memory_home_with_mismatched_due_field, read_reminders},
     schema::MutateReminderInput,
     with_leased_request,
 };
@@ -35,13 +34,13 @@ fn desktop_temporal_mismatched_due_field_binding_fails_closed_before_commit() {
             },
             1,
         );
-        let report = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(15),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-            )
-            .unwrap();
+        let report = catch_up(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(15),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+        )
+        .unwrap();
         assert_eq!(
             report.status(),
             &WorthQueryTemporalCatchUpStatus::OperationRefused,

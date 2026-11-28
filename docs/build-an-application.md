@@ -8213,12 +8213,8 @@ command cleanup, workflow operation cleanup and history subscription release.
 
 ### 6.9 Run a workflow Home from a desktop app
 
-`WorthQueryWorkflowApplicationHome` carries the desktop surface of the ordinary
-Home with the same signatures: `session`, `local_session`, `on_commit`,
-`committed_basis_version`, `active_branch`, `open_disposition`, `home_identity`,
-`close_clean` and `close_with_policy`. Code moves between the two Homes
-unchanged. Open the Home through `WorthQueryHomeConfig` as in §4, including a
-held trusted clock for tests or a sandbox, then bind the vocabulary once:
+Open a `WorthQueryApplicationHome` through `WorthQueryHomeConfig` as in §4,
+then register its installed workflow before issuing owned sessions.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -8249,14 +8245,14 @@ local.request(&scope).mutate(authoring_intent).without_source().idempotency(&key
 let snapshot = reviewer.snapshot()?;
 let read = snapshot.with_request(|at| {
     at.read_original_workflow::<Spec, SubjectRead, AuditRead>(
-        home.vocabulary(), &original, subject_input, audit_input)
+        home.workflow_vocabulary::<Spec>().expect("workflow registered"), &original, subject_input, audit_input)
 })?;
 
-// Off the UI thread: an owned workflow session lends a vocabulary bound to the
-// runtime its call worker reads.
-let owned = home.owned_session(reviewer.clone()).map_err(|_| ForeignSession)?;
+// Off the UI thread, borrow the vocabulary from the session's runtime.
+let owned = reviewer.clone().into_owned();
 let pending = owned
-    .spawn_with_workflow(move |session, vocabulary| {
+    .spawn_with_session(move |session| {
+        let vocabulary = session.workflow_vocabulary::<Spec>().expect("workflow registered");
         let snapshot = session.snapshot()?;
         snapshot.with_request(|at| at.read_workflow_history::<Spec, SubjectRead, AuditRead>(
             vocabulary, &target, subject_input, audit_input, 16,
@@ -8268,16 +8264,15 @@ let pending = owned
 
 | Call | Contract |
 |---|---|
-| `home.session(&p)`, `home.local_session(local, &clock)` | The ordinary session (§5). Its `request(&scope)` accepts `home.vocabulary()` for publication, start, proposal, advance, approval and every other §6.6 call |
+| `home.session(&p)`, `home.local_session(local, &clock)` | The ordinary session (§5). Its `request(&scope)` accepts `home.workflow_vocabulary::<Spec>().expect("workflow registered")` for publication, start, proposal, advance, approval and every other §6.6 call |
 | `session.snapshot()?.with_request(\|at\| ..)` | A retained request at the pinned commit under the session's current proof and a fresh scope. Definition discovery, instance and history pages and original-start reads observe `snapshot.selected_commit()` and write nothing. Once newer commits land, an instance read at the pin reports `Historical { posture: RetainedBasis, .. }`: the same observation, but no command locator |
 | `home.on_commit(..)`, `home.committed_basis_version()` | Reports publication, start, proposal, assessment, approval and advance commits like any other commit (§4.3) |
-| `home.owned_session(session)` | A `'static` `WorthQueryOwnedWorkflowSession` holding the Home's runtime and installed configuration; it dereferences to `WorthQueryOwnedSession` (`spawn_query`, `spawn_run`, `on_commit`, ...). A session of another Home is returned unchanged |
-| `owned.with_workflow(\|session, vocabulary\| ..)`, `owned.spawn_with_workflow(..)` | Lend the session and a vocabulary bound to that call's runtime; the spawned form runs on the session's call worker and completes a `WorthQueryPending` (`with_waker`, `try_take`, `wait`) |
-| `home.close_clean()` | Retires the Home and its workflow configuration and releases every owned workflow session: later calls refuse `HomeClosed`, queued calls complete `WorthQueryBackgroundDenial::HomeClosed` |
-| `home.fork_preview(..)`, `home.adopt_preview(..)`, `home.discard_preview(..)`, `home.catch_up_temporal::<B>(..)` | The plain Home's what-if preview and temporal catch-up calls, forwarded with the same signatures and refusals |
+| `session.into_owned()` | A `WorthQueryOwnedSession` holding the Home runtime, including its registered workflow configuration |
+| `owned.with_session(\|session\| ..)`, `owned.spawn_with_session(..)` | Borrow `session.workflow_vocabulary::<Spec>()` inside the call. The spawned call completes a `WorthQueryPending` |
+| `home.close_clean()` | Retires the Home and its workflow configuration and releases every owned session: later calls refuse `HomeClosed`, queued calls complete `WorthQueryBackgroundDenial::HomeClosed` |
 | `session.snapshot_at_commit(&receipt, work)`, `snapshot.record_history::<History>(..)`, `snapshot.workflow_audit::<Spec, Subject, Audit>(..)`, `snapshot.causal_timeline::<..>(..)` | Audit time-travel: a snapshot pinned at an earlier commit, the record's governed change log and the instance's transition audit trail (advancer, executor, proposer, approver) at that commit. See [Causal audit reads](../workspaces/worth-query/docs/capabilities/causal-audit-reads.md) |
 
-While an owned workflow session is attached, `support_workflow_spec` refuses
+While an owned session is attached, `support_workflow_spec` refuses
 `RuntimeKeepaliveRetained`; support every program vocabulary before handing out
 owned sessions. A reopened Directory Home, including one reopened under an
 advanced trusted clock, serves the same definitions, instances and history.
@@ -9993,21 +9988,12 @@ envelopes, named-clock plumbing, and reconstruction bindings separately. Use
    in the binding spec so Query observes, verifies against the projected due
    coordinate, and writes `revision`, `lifecycle`, and `due` atomically in the
    same commit as `apply`.
-   For the common recurring rule (an entity with `rule_id`, `revision`,
-   `due_ns`, `interval_ns`, `max_fires`, `fired_count`, `lifecycle` and `gate`
-   fields under one hub row), `worth_query_recurring_rule!` declares the whole
-   binding (node, clock, projector, invoker, fresh owner admission, fire
-   operation and schedule upsert handler) in one block; install it with
-   `conditionals: Config { recurrence: Rule }` in `worth_query_application_program!`
-   and seed its hub with `Rule::seed_hub(bootstrap)`.
-5. **Pump missed occurrences on reopen in one Home call** via
-   `session.catch_up_temporal::<MyTemporalBinding>(now, WorthQueryTemporalCatchUpPolicy::bounded(64)?)?`
-   (funded by the session's execution policy) or
-   `home.catch_up_temporal::<MyTemporalBinding>(now, execution, WorthQueryTemporalCatchUpPolicy::bounded(64)?)?`
-   (or `home.catch_up_temporal_observing::<MyTemporalBinding>(now, execution, policy, |batch| ..)`,
-   `home.pump_temporal::<MyTemporalBinding>(execution, policy)`, or
-   `home.pump_temporal_observing::<MyTemporalBinding>(execution, policy, |batch| ..)`,
-   bounded by `1..=MAX_TEMPORAL_CATCH_UP_STEPS`). Every step runs under the
+5. **Pump missed occurrences on reopen** by resolving the installed conditional
+   with `home.runtime().conditional::<Binding>()` and passing it, its clock,
+   and the selected branch to `pump_temporal_catch_up_until`. Use
+   `pump_temporal_catch_up` to pump at the current coordinate. Both have
+   `_observing` forms and accept a policy bounded by
+   `1..=MAX_TEMPORAL_CATCH_UP_STEPS`. Every step runs under the
    caller's original leased or lease-free `ExecutionRequest::serial` budget,
    deadline, and cancellation end-to-end, retains owed granular invalidation
    batches on the returned `WorthQueryTemporalCatchUpReport`

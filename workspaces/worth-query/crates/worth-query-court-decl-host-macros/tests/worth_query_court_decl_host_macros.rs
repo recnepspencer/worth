@@ -18,8 +18,6 @@ mod multi_operation_dx;
 mod rebac_dx;
 #[path = "worth_query_court_decl_host_macros/rebac_eligibility_dx/mod.rs"]
 mod rebac_eligibility_dx;
-#[path = "worth_query_court_decl_host_macros/recurring_rule_dx/mod.rs"]
-mod recurring_rule_dx;
 #[path = "worth_query_court_decl_host_macros/scope_access_dx/mod.rs"]
 mod scope_access_dx;
 #[path = "worth_query_court_decl_host_macros/sparse_index_dx/mod.rs"]

@@ -1,4 +1,4 @@
-//! Workflow Home preview and audit forwarding.
+//! Preview and audit use the same Home that registered the workflow.
 use super::*;
 use document::schema::Document;
 use worth_query_host::facade::{
@@ -7,7 +7,7 @@ use worth_query_host::facade::{
 };
 
 #[test]
-fn workflow_home_forwards_what_if_previews() {
+fn registered_workflow_home_keeps_what_if_previews_available() {
     let trusted = trusted_now();
     let location = Location::Directory(super::super::super::super::fixture::location());
     let (home, authentication) = open(&location, &trusted);
@@ -19,7 +19,7 @@ fn workflow_home_forwards_what_if_previews() {
     let scratch = home.session(&operator).on_branch(discarded.branch());
     set_retention(&home, &scratch, 8, 4502);
     drop(scratch);
-    home.discard_preview(discarded).unwrap();
+    discarded.discard(&home).unwrap();
     assert_eq!(home.active_branch(), original_branch);
     assert_eq!(
         retention_at(&home.session(&operator).snapshot().unwrap()),

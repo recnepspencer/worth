@@ -1102,46 +1102,22 @@ alone does not establish bounded destruction of arbitrary installed payloads.
 
 ## Workflow configuration and Home custody
 
-After open, compile the workflow Spec from the Home's actual installed schema
-and program. Before cloning runtime handles, call
-`home.retain_workflow_spec(installed_spec, signing_owner)`. The returned
-`WorthQueryWorkflowApplicationHome` owns the original Home and its installed
-configuration. This uses the same atomic signing/coverage installation as the
-Memory workflow runtime. Refusal returns the original Home, Spec and signing
-owner; none is reconstructed from identifiers.
+Install the workflow spec against the Home's actual installed schema and
+program. Call `home.retain_workflow_spec(installed_spec, signing_owner)` before
+cloning runtime handles. Registration uses the runtime's signing and coverage
+admission. A refusal returns the original Home, spec and signing owner.
 
-Use `vocabulary()` for a request and `support_workflow_spec` for another genuinely
-rostered program. The shared configuration binds the actual Query authority and
-World owner/incarnation. A supplied foreign receiver refuses `ForeignRuntime`;
-a different incarnation of the same Home refuses `StaleIncarnation` before
-projection or registration. These identities retain no runtime backing.
+Use `home.workflow_vocabulary::<Spec>()` for foreground workflow requests.
+For off-thread calls, take an ordinary owned session with
+`session.into_owned()`. Inside `with_session` or `spawn_with_session`, borrow
+`session.workflow_vocabulary::<Spec>()` from the same runtime as the request.
+Register other rostered programs with `home.support_workflow_spec(..)` before
+retaining runtime handles. The ordinary Home close protocol preserves the
+configuration on refusal and releases owned sessions on close.
 
-`close` preserves configuration through the original Home's close protocol.
-A refusal retains it through `resume` and `try_close`. A closed workflow Home
-reclaims it with the original closed Home at `reclaim`, outside budgeted close.
-A vocabulary borrows the Home and cannot remain usable after it is consumed.
-Memory Homes still have their existing close-lifecycle refusal; resume returns
-the same configured owner. This is not a filesystem-close claim.
-
-The workflow Home carries the ordinary Home's desktop surface with the same
-signatures: `session`, `local_session`, `on_commit`, `committed_basis_version`,
-`primary_graph`, `active_branch`, `open_disposition`, `home_identity`,
-`home_incarnation`, `close_with_policy`, `close_clean` and
-`close_clean_with_policy`. It also forwards `fork_preview`, `adopt_preview`,
-`continue_preview_recovery`, `close_branch`, `catch_up_temporal` and `pump_temporal` (with
-`_observing`) unchanged; `discard_preview(preview)` stands in for
-`preview.discard(&home)`. A session's `request(&scope)` and a snapshot's
-`with_request(..)` accept `vocabulary()` for every workflow lifecycle call and
-governed read; snapshot reads observe exactly the pinned commit and write
-nothing. `owned_session(session)` turns a session of this Home into a
-`WorthQueryOwnedWorkflowSession` that also holds the installed configuration;
-`with_workflow` and `spawn_with_workflow` lend a vocabulary bound to the runtime
-that call reads, so workflow reads and commands run on the call worker and
-complete through `with_waker`. Closing the Home releases both holds (later calls
-refuse `HomeClosed`); while one is attached, `support_workflow_spec` refuses
-`RuntimeKeepaliveRetained`. Open with `WorthQueryApplicationHome::open_directory`
-or `open_memory` and a `WorthQueryHomeConfig` (including
-`with_authorization_time_source`), then `retain_workflow_spec`.
+The existing Relational-only preview methods remain on the ordinary Home for
+the branch custody and recovery courts. Phase 4/6 owns their cutover to
+`home.branches()`.
 
 A Directory workflow Home can close between completed steps and reopen with
 its graph records, approvals and original logical keys preserved. Reinstall

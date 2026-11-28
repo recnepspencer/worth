@@ -76,11 +76,11 @@ The returned `host::WorthQueryApplicationHome` owns the Home and its Store
 mutation lease. `runtime()` returns the
 `host::application_installation::WorthQueryProgramApplicationRuntime` you serve
 requests from; `is_directory()` reports the location kind. For
-workflows, consume the Home with
-`home.retain_workflow_spec(installed_spec, signing_owner)`. It returns a
-`host::WorthQueryWorkflowApplicationHome` with the same lifecycle, or a
-`host::WorthQueryWorkflowHomeBindingRefused` that gives back the Home, the
-installed spec and the signing owner.
+workflows, call `home.retain_workflow_spec(installed_spec, signing_owner)`
+before retaining runtime handles. It returns the same Home with its workflow
+registered. A `host::WorthQueryWorkflowHomeBindingRefused` gives back the
+Home, installed spec and signing owner.
+
 
 ## Initialize once, reopen many times
 
@@ -444,12 +444,11 @@ the Home's durable derived checkpoint (`home.checkpoint` and its anchored
 members) so reopen reconstructs strictly from authoritative journals and
 recomputes derived state only on demand.
 
-A program installs a recurring rule declared with `worth_query_recurring_rule!`
-through `conditionals: Config { field: Rule }` in `worth_query_application_program!`
-and catches up with `session.catch_up_temporal::<Rule>(now, policy)`, which funds
-the run from the session's execution policy and fires on the session's branch.
-The rule row's lifecycle and gate are typed (`WorthQueryRecurringLifecycle`,
-`WorthQueryRecurringGate`), never strings.
+Install a caller-pumped clock with `install_desktop_temporal_clock_operation`.
+Resolve the installed binding with `home.runtime().conditional::<Binding>()`
+and use `host::temporal_contribution::pump_temporal_catch_up_until` to advance
+the clock and fire due occurrences on the selected branch under your
+execution request and catch-up policy.
 
 The default execution policy's work ceiling (`DEFAULT_HOST_EXECUTION_WORK_CEILING`)
 covers reopening a Directory Home: reopen rebuilds its admission image from

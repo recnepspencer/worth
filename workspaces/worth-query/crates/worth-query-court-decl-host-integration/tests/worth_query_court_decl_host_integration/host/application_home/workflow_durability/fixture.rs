@@ -3,11 +3,10 @@ use super::*;
 use document::programs::WorkflowOwnerProgram as InitialProgram;
 use document::schema::DocumentRetentionSchema;
 use worth_query_host::facade::{
-    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
-    WorthQueryWorkflowApplicationHome,
+    WorthQueryApplicationHome, WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
 pub(super) type Home<Program = InitialProgram> =
-    WorthQueryWorkflowApplicationHome<DocumentRetentionSchema, GovernedDocumentWorkflow, Program>;
+    WorthQueryApplicationHome<DocumentRetentionSchema, Program>;
 pub(super) fn request(
     location: &WorthQueryApplicationHomeLocation,
 ) -> WorthQueryApplicationHomeRequest<'static, DocumentRetentionSchema, InitialProgram> {

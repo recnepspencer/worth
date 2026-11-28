@@ -1,71 +1,28 @@
-//! Installed workflow meaning remains paired with the original concrete Home.
-use super::{
-    WorthQueryApplicationHome, WorthQueryApplicationHomeCloseRefused,
-    WorthQueryApplicationHomeClosed,
-};
+//! Installs workflow registration into the ordinary Home's program runtime.
+use super::WorthQueryApplicationHome;
 use worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner;
 use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec, application_schema::ApplicationSchema,
 };
 use worth_query_execution::facade::application_installation::{
-    WorthQueryProgramApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
-    WorthQueryWorkflowRuntimeConfiguration, WorthQueryWorkflowVocabulary,
+    WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowVocabulary,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
-mod close;
-mod desktop;
-mod preview;
-mod temporal;
-pub use close::{WorthQueryWorkflowHomeCloseRefused, WorthQueryWorkflowHomeClosed};
 
-/// Workflow configuration and Home custody are consumed together at close.
-/// The request vocabulary borrows this owner; it cannot remain usable after close.
-/// ```compile_fail,E0505
-/// use worth_query_host::facade::{WorthQueryWorkflowApplicationHome,
-///     declaration::{application_schema::ApplicationSchema, application_program::ApplicationWorkflowSpec}};
-/// fn close_with_live_view<S, Spec, P: 'static>(home: WorthQueryWorkflowApplicationHome<S, Spec, P>,
-///     request: &worth_execution::ExecutionRequest<'_, '_>)
-/// where S: ApplicationSchema, Spec: ApplicationWorkflowSpec<Schema = S> {
-///     let vocabulary = home.vocabulary();
-///     let _closed = home.close(request);
-///     let _ = vocabulary.authentication_owner();
-/// }
-/// ```
-pub struct WorthQueryWorkflowApplicationHome<Schema, Spec, Program>
-where
-    Schema: ApplicationSchema,
-    Spec: ApplicationWorkflowSpec<Schema = Schema>,
-{
-    /// Shared only with this Home's owned workflow sessions, which the Home
-    /// releases when it closes.
-    pub(crate) configuration: std::sync::Arc<WorthQueryWorkflowRuntimeConfiguration<Schema, Spec>>,
-    pub(crate) home: WorthQueryApplicationHome<Schema, Program>,
-}
-
-impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHome<Schema, Program> {
-    /// Bind installed vocabulary before cloning runtime handles or retaining work.
-    /// Refusal returns this original Home, vocabulary and signing owner.
+impl<Schema: ApplicationSchema + 'static, Program> WorthQueryApplicationHome<Schema, Program> {
+    /// Register installed workflow meaning before issuing owned sessions.
+    /// Refusal preserves the original Home, installed spec and signing owner.
     pub fn retain_workflow_spec<Spec: ApplicationWorkflowSpec<Schema = Schema>>(
-        self,
+        mut self,
         workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         authentication: WorthQueryAuthenticationEventSigningOwner<Schema>,
-    ) -> Result<
-        WorthQueryWorkflowApplicationHome<Schema, Spec, Program>,
-        WorthQueryWorkflowHomeBindingRefused<Schema, Spec, Program>,
-    > {
+    ) -> Result<Self, WorthQueryWorkflowHomeBindingRefused<Schema, Spec, Program>> {
         worth_execution::run_with_execution_stack(move || {
-            let mut home = self;
-            match home
-                .query
-                .install_workflow_configuration(workflow, authentication)
-            {
-                Ok(configuration) => Ok(WorthQueryWorkflowApplicationHome {
-                    configuration: std::sync::Arc::new(configuration),
-                    home,
-                }),
+            match self.query.register_home_workflow(workflow, authentication) {
+                Ok(()) => Ok(self),
                 Err((workflow, authentication, denial)) => {
                     Err(WorthQueryWorkflowHomeBindingRefused {
-                        home,
+                        home: self,
                         workflow,
                         authentication,
                         denial,
@@ -74,48 +31,22 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHome<Schema, Progr
             }
         })
     }
-}
 
-impl<Schema, Spec, Program> WorthQueryWorkflowApplicationHome<Schema, Spec, Program>
-where
-    Schema: ApplicationSchema,
-    Spec: ApplicationWorkflowSpec<Schema = Schema>,
-{
-    pub fn runtime(&self) -> &WorthQueryProgramApplicationRuntime<Schema, Program> {
-        self.home.runtime()
-    }
-    pub fn is_directory(&self) -> bool {
-        self.home.is_directory()
-    }
-    pub fn checkpoint(
+    /// Look up this Home's installed vocabulary by its declared workflow type.
+    pub fn workflow_vocabulary<Spec: ApplicationWorkflowSpec<Schema = Schema>>(
         &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<
-        worth_store_application::ApplicationHomeCheckpoint,
-        super::WorthQueryApplicationHomeCheckpointDenial,
-    > {
-        self.home.checkpoint(request)
+    ) -> Option<WorthQueryWorkflowVocabulary<'_, Schema, Spec>> {
+        self.query.workflow_vocabulary()
     }
-    pub fn inspect_checkpoint(
+
+    pub fn retained_workflow_spec<Spec: ApplicationWorkflowSpec<Schema = Schema>>(
         &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<
-        worth_store_application::ApplicationHomeCheckpointInspection,
-        super::WorthQueryApplicationHomeCheckpointDenial,
-    > {
-        self.home.inspect_checkpoint(request)
+    ) -> Option<&WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>> {
+        self.query.retained_workflow_spec()
     }
-    pub fn workflow_spec(&self) -> &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec> {
-        self.configuration.workflow_spec()
-    }
-    pub fn vocabulary(&self) -> WorthQueryWorkflowVocabulary<'_, Schema, Spec> {
-        self.configuration
-            .vocabulary_for(self.home.runtime())
-            .expect("privately paired Home configuration keeps its original receiver")
-    }
-    /// Install the same Spec for another rostered program. Refuses
-    /// `RuntimeKeepaliveRetained` while an owned session of this Home is attached.
-    pub fn support_workflow_spec(
+
+    /// Support the same workflow spec on another rostered program.
+    pub fn support_workflow_spec<Spec: ApplicationWorkflowSpec<Schema = Schema>>(
         &mut self,
         workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
     ) -> Result<
@@ -125,13 +56,7 @@ where
             WorthQueryWorkflowRuntimeBindingDenial,
         ),
     > {
-        let Some(configuration) = std::sync::Arc::get_mut(&mut self.configuration) else {
-            return Err((
-                workflow,
-                WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained,
-            ));
-        };
-        configuration.support_workflow_spec(&mut self.home.query, workflow)
+        self.query.support_home_workflow(workflow)
     }
 }
 

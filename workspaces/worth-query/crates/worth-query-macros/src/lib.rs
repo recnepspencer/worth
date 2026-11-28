@@ -68,7 +68,9 @@ pub fn derive_worth_binary_value(input: TokenStream) -> TokenStream {
 }
 
 /// Declares a unit struct's `ApplicationManagedIndexBinding<Schema>` with
-/// checked binary-source-tree defaults and optional stock/custom provider wiring.
+/// checked binary-source-tree defaults and optional stock or custom provider wiring.
+/// With automatic provider wiring, `refinement = Some(..)` requires a custom
+/// provider that implements the refinement trait.
 #[proc_macro_derive(WorthManagedIndex, attributes(worth_index, worth_query))]
 pub fn derive_worth_managed_index(input: TokenStream) -> TokenStream {
     expand(input, managed_index::expand)

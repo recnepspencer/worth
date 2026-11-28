@@ -10,7 +10,7 @@ use worth_query_host::facade::{
     application_installation::WorthQueryWorkflowRuntimeBindingDenial,
     primary_graph::WorthQueryFixedRuntimeTimeSource, WorthQueryApplicationHomeLocation as Location,
     WorthQueryBackgroundDenial, WorthQueryHomeOpenDisposition, WorthQueryHostSession,
-    WorthQueryOwnedSessionDenial, WorthQueryOwnedWorkflowSession,
+    WorthQueryOwnedSession, WorthQueryOwnedSessionDenial,
 };
 mod audit;
 mod opening;
@@ -21,11 +21,7 @@ use passive_reads::{frontier_at, spawn_frontier, woken, CommitReports, Frontier,
 use session_requests::Original;
 
 type Session<'home> = WorthQueryHostSession<'home, DocumentRetentionSchema, WorkflowOwnerProgram>;
-type Owned = WorthQueryOwnedWorkflowSession<
-    DocumentRetentionSchema,
-    GovernedDocumentWorkflow,
-    WorkflowOwnerProgram,
->;
+type Owned = WorthQueryOwnedSession<DocumentRetentionSchema, WorkflowOwnerProgram>;
 /// What two Homes running the same journey must agree on.
 type Projection = (WorthQueryWorkflowObservedState, Vec<String>, usize);
 
@@ -34,18 +30,6 @@ fn directory_workflow_home_sessions_survive_reopen_under_advanced_trusted_time()
     let reference = journey(&Location::MemoryOnly);
     let actual = journey(&Location::Directory(super::super::fixture::location()));
     assert_eq!(actual, reference);
-}
-
-#[test]
-fn a_workflow_home_owns_only_sessions_of_its_own_home() {
-    let trusted = trusted_now();
-    let (home, _authentication) = open(&Location::MemoryOnly, &trusted);
-    let (other, _other_authentication) = open(&Location::MemoryOnly, &trusted);
-    let (operator, _) = principals(&other);
-    let Err(returned) = home.owned_session(other.session(&operator)) else {
-        panic!("a session of another Home is refused");
-    };
-    assert_eq!(returned.branch(), other.active_branch());
 }
 
 fn journey(location: &Location) -> Projection {
@@ -89,7 +73,7 @@ fn publish_start_propose_and_assess(home: &Home) -> (Original, Frontier) {
     assert!(local.renews_principal());
     let operator = home.session(&operator);
     let reviewer = home.session(&reviewer);
-    let owned = own(home, &reviewer);
+    let owned = reviewer.clone().into_owned();
     let commits = CommitReports::watch(home, &owned);
     let (definition, target) = session_requests::publish(home, &local, 3001);
     commits.expect_reported(home, "the definition publication");
@@ -107,7 +91,12 @@ fn publish_start_propose_and_assess(home: &Home) -> (Original, Frontier) {
     assert_eq!(proposed.state, WorthQueryWorkflowObservedState::Ready);
     let held = reviewer.snapshot().unwrap();
     let quiet = home.committed_basis_version();
-    let at_held = frontier_at(&held, home.vocabulary(), &original);
+    let at_held = frontier_at(
+        &held,
+        home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+            .unwrap(),
+        &original,
+    );
     assert_eq!(
         at_held, proposed,
         "a foreground read of the same basis agrees"
@@ -124,13 +113,23 @@ fn publish_start_propose_and_assess(home: &Home) -> (Original, Frontier) {
         "{accepted:?}"
     );
     commits.expect_reported(home, "the structural assessment transition");
-    let moved = frontier_at(&reviewer.snapshot().unwrap(), home.vocabulary(), &original);
+    let moved = frontier_at(
+        &reviewer.snapshot().unwrap(),
+        home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+            .unwrap(),
+        &original,
+    );
     assert_ne!(moved.commit, at_held.commit);
     assert!(
         moved.history > at_held.history,
         "{moved:?} after {at_held:?}"
     );
-    let still = frontier_at(&held, home.vocabulary(), &original);
+    let still = frontier_at(
+        &held,
+        home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+            .unwrap(),
+        &original,
+    );
     assert_eq!(
         still.observed(),
         at_held.observed(),
@@ -155,7 +154,7 @@ fn reopen(
     reached: &Frontier,
 ) -> (Home, CertificationAuthenticationOwner) {
     let (operator, _) = principals(&home);
-    let owned = own(&home, &home.session(&operator));
+    let owned = home.session(&operator).into_owned();
     let again = install(
         home.runtime().installed_schema(),
         home.runtime().installed_program(),
@@ -170,7 +169,7 @@ fn reopen(
     drop(authentication);
     home.close_clean().unwrap();
     assert!(matches!(
-        owned.with_workflow(|_, _| ()),
+        owned.with_session(|_| ()),
         Err(WorthQueryOwnedSessionDenial::HomeClosed)
     ));
     assert!(matches!(
@@ -185,7 +184,7 @@ fn reopen(
         WorthQueryHomeOpenDisposition::Opened
     );
     let (_, reviewer) = principals(&home);
-    let owned = own(&home, &home.session(&reviewer));
+    let owned = home.session(&reviewer).into_owned();
     let (pinned, recovered) = woken(spawn_frontier(&owned, original.clone()));
     assert_eq!(recovered.commit, pinned);
     let (before, after) = (reached.instance(), recovered.instance());
@@ -213,7 +212,7 @@ fn approve_and_observe(
     let (operator, reviewer) = principals(home);
     let operator = home.session(&operator);
     let reviewer = home.session(&reviewer);
-    let owned = own(home, &reviewer);
+    let owned = reviewer.clone().into_owned();
     let commits = CommitReports::watch(home, &owned);
     let (_, current) = woken(spawn_frontier(&owned, original.clone()));
     let instance = current.instance();
@@ -256,11 +255,6 @@ fn approve_and_observe(
         "{finished:?}"
     );
     project(&finished)
-}
-
-fn own(home: &Home, session: &Session<'_>) -> Owned {
-    home.owned_session(session.clone())
-        .unwrap_or_else(|_| panic!("a session of this Home becomes owned"))
 }
 
 fn project(frontier: &Frontier) -> Projection {

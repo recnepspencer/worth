@@ -113,7 +113,7 @@ fn an_as_of_snapshot_refuses_a_commit_outside_the_session_branch() {
         .is_ok());
     // The receipt retains the preview's World history until dropped.
     drop((on_preview, elsewhere));
-    home.discard_preview(preview).unwrap();
+    preview.discard(&home).unwrap();
 }
 
 #[test]

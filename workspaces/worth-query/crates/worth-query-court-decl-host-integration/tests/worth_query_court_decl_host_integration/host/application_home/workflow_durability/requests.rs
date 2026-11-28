@@ -23,7 +23,12 @@ pub(super) fn advance(
         })
         .without_source()
         .idempotency(&idempotency)
-        .prepare_workflow_advance(application.vocabulary(), instance)
+        .prepare_workflow_advance(
+            application
+                .workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
+            instance,
+        )
         .unwrap()
         .execute()
 }
@@ -53,7 +58,9 @@ pub(super) fn approve(
         .without_source()
         .idempotency(&idempotency)
         .prepare_workflow_approval(
-            application.vocabulary(),
+            application
+                .workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
             instance,
             required,
             proposal,

@@ -6,6 +6,8 @@ use syn::meta::ParseNestedMeta;
 use syn::spanned::Spanned;
 use syn::{DeriveInput, Expr, Ident, LitInt, LitStr, Type};
 
+mod refinement;
+
 const STRUCT_KEYS: &[&str] = &[
     "schema",
     "entity",
@@ -40,6 +42,7 @@ pub(super) struct ManagedIndexDeclaration {
     pub(super) membership: Option<Expr>,
     pub(super) maintenance: Option<Expr>,
     pub(super) refinement: Option<Expr>,
+    pub(super) register_refinement: bool,
 }
 
 pub(super) enum ProbeSpec {
@@ -212,6 +215,12 @@ impl ManagedIndexDeclaration {
                 name.span(),
             ),
         };
+        let kind = keys.kind.optional();
+        let refinement = keys.refinement.optional();
+        let register_refinement = match (&kind, &refinement) {
+            (Some(kind), Some(expr)) => refinement::provider_refinement(kind, expr)?,
+            _ => false,
+        };
         Ok(Self {
             schema: keys.schema.required(missing, DERIVE)?,
             entity,
@@ -220,12 +229,13 @@ impl ManagedIndexDeclaration {
             name,
             provider,
             provider_version,
-            kind: keys.kind.optional(),
+            kind,
             source_scope: keys.source_scope.optional(),
             structure: keys.structure.optional(),
             membership: keys.membership.optional(),
             maintenance: keys.maintenance.optional(),
-            refinement: keys.refinement.optional(),
+            refinement,
+            register_refinement,
         })
     }
 }

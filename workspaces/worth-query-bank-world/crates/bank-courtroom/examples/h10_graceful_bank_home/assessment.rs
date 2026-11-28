@@ -48,7 +48,11 @@ pub(super) fn retain(
         })
         .without_source()
         .idempotency(&BankIdempotencyKey::new("h10-observe-original").unwrap())
-        .prepare_workflow_advance(home.vocabulary(), instance)
+        .prepare_workflow_advance(
+            home.workflow_vocabulary::<bank_domain::schema::ApprovedBusinessPaymentWorkflow>()
+                .expect("Bank payment workflow registered"),
+            instance,
+        )
         .unwrap()
         .into_assessment_demand_for(required, ApprovedPaymentAssessmentDemand::new(payment))
         .unwrap()
@@ -85,7 +89,11 @@ pub(super) fn recover_and_advance(
         })
         .without_source()
         .idempotency(&BankIdempotencyKey::new("h10-refuse-different-demand").unwrap())
-        .prepare_workflow_advance(home.vocabulary(), instance.clone())
+        .prepare_workflow_advance(
+            home.workflow_vocabulary::<bank_domain::schema::ApprovedBusinessPaymentWorkflow>()
+                .expect("Bank payment workflow registered"),
+            instance.clone(),
+        )
         .unwrap()
         .into_assessment_demand_for(
             required,
@@ -109,7 +117,11 @@ pub(super) fn recover_and_advance(
         })
         .without_source()
         .idempotency(&BankIdempotencyKey::new("h10-recover-observer").unwrap())
-        .prepare_workflow_advance(home.vocabulary(), instance)
+        .prepare_workflow_advance(
+            home.workflow_vocabulary::<bank_domain::schema::ApprovedBusinessPaymentWorkflow>()
+                .expect("Bank payment workflow registered"),
+            instance,
+        )
         .unwrap()
         .into_assessment_demand_for(required, ApprovedPaymentAssessmentDemand::new(payment))
         .unwrap()

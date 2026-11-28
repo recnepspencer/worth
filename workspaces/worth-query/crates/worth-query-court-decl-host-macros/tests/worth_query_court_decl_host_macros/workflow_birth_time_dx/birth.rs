@@ -27,7 +27,7 @@ pub fn birth(world: &World, request: u64) -> PublishedWorkflowInstanceRef {
         .without_source()
         .idempotency(&key)
         .prepare_workflow_birth::<RequestWorkflow, CreatedRequest>(
-            world.home.vocabulary(),
+            world.home.workflow_vocabulary::<RequestWorkflow>().unwrap(),
             world.definition.clone(),
         )
         .unwrap_or_else(|denial| panic!("birth prepares: {denial:?}"));
@@ -38,7 +38,10 @@ pub fn birth(world: &World, request: u64) -> PublishedWorkflowInstanceRef {
         panic!("the original creator captures its input");
     };
     let operation = original
-        .for_workflow_birth::<RequestWorkflow, CreatedRequest>(world.home.vocabulary(), &required)
+        .for_workflow_birth::<RequestWorkflow, CreatedRequest>(
+            world.home.workflow_vocabulary::<RequestWorkflow>().unwrap(),
+            &required,
+        )
         .unwrap_or_else(|(_, denial)| panic!("birth binds: {denial:?}"))
         .retain_operation::<BirthProgram, OpenRequestAction>(world.home.runtime())
         .unwrap_or_else(|(_, denial)| panic!("birth retains: {denial:?}"));
@@ -81,7 +84,7 @@ pub fn birth_in(
         .without_source()
         .idempotency(&request)
         .prepare_workflow_birth::<RequestWorkflow, CreatedRequest>(
-            home.vocabulary(),
+            home.workflow_vocabulary::<RequestWorkflow>().unwrap(),
             definition.clone(),
         )
         .unwrap_or_else(|denial| panic!("birth prepares: {denial:?}"));
@@ -89,7 +92,10 @@ pub fn birth_in(
         .mutate(open)
         .without_source()
         .idempotency(&request)
-        .for_workflow_birth::<RequestWorkflow, CreatedRequest>(home.vocabulary(), &required)
+        .for_workflow_birth::<RequestWorkflow, CreatedRequest>(
+            home.workflow_vocabulary::<RequestWorkflow>().unwrap(),
+            &required,
+        )
         .unwrap_or_else(|denial| panic!("birth binds: {denial:?}"))
         .execute_capability_in_program(home.runtime(), ExecutionAllocationPolicy::SystemAllocation)
         .unwrap_or_else(|denial| panic!("birth executes: {denial:?}"));

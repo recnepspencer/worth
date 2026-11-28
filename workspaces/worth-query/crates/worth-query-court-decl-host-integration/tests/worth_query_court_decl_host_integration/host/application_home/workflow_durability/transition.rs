@@ -1,7 +1,7 @@
 //! Home transitions reuse live adoption's workflow inventory, legality and staging.
-use document::workflow::home_transition::{self, TargetProgram};
 use super::*;
 use document::schema::DocumentRetentionSchema;
+use document::workflow::home_transition::{self, TargetProgram};
 use worth_query_host::facade::home_program_transition::QueryHomeWorkflowDispositionDenial;
 use worth_query_host::facade::primary_graph::WorthQueryWorkflowDispositions as Choices;
 use worth_query_host::facade::{
@@ -122,7 +122,8 @@ fn check_cancelled(
         let found = request
             .at(&basis)
             .discover_workflow_definition::<GovernedDocumentWorkflow, MetadataRead>(
-                home.vocabulary(),
+                home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                    .unwrap(),
                 &target,
                 observation::input(),
             )

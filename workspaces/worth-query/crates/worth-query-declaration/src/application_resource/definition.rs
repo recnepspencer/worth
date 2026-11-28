@@ -1,4 +1,5 @@
 use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
+use core::time::Duration;
 use std::marker::PhantomData;
 
 use crate::application_query::{
@@ -8,8 +9,9 @@ use crate::application_schema::ApplicationSchema;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::{
-    ApplicationResourceAuthorization, ApplicationResourceBinding, ApplicationResourceLimits,
-    ApplicationResourceRequestResponseProfile, ApplicationResourceValueBindingReference,
+    ApplicationResourceAuthorization, ApplicationResourceBinding,
+    ApplicationResourceFixedDelayRetry, ApplicationResourceLimits,
+    ApplicationResourceValueBindingReference,
 };
 
 mod validation;
@@ -23,7 +25,8 @@ pub struct WorthQueryPortableApplicationResourceParts {
     pub input: ApplicationResourceValueBindingReference,
     pub result: ApplicationResourceValueBindingReference,
     pub failure: ApplicationResourceValueBindingReference,
-    pub profile: ApplicationResourceRequestResponseProfile,
+    pub retry: ApplicationResourceFixedDelayRetry,
+    pub attempt_timeout: Duration,
     pub limits: ApplicationResourceLimits,
     pub authorization: ApplicationResourceAuthorization,
     pub disclosure: ApplicationQueryDisclosureContract,
@@ -57,7 +60,7 @@ pub enum ApplicationResourceDefinitionDenial {
     InvalidIdentity,
     InvalidAccess,
     UnsupportedValueProfile,
-    InvalidRequestResponseProfile,
+    InvalidTemporalPolicy,
     InvalidLimits,
     InvalidAuthorization,
     InvalidDisclosure,
@@ -72,7 +75,8 @@ impl<Schema: ApplicationSchema, Binding: ApplicationResourceBinding<Schema>>
     ApplicationResourceDefinition<Schema, Binding>
 {
     pub fn request_response(
-        profile: ApplicationResourceRequestResponseProfile,
+        retry: ApplicationResourceFixedDelayRetry,
+        attempt_timeout: Duration,
         limits: ApplicationResourceLimits,
         authorization: ApplicationResourceAuthorization,
         disclosure: ApplicationQueryDisclosureContract,
@@ -88,7 +92,8 @@ impl<Schema: ApplicationSchema, Binding: ApplicationResourceBinding<Schema>>
                 input: ApplicationResourceValueBindingReference::of::<Binding::InputBinding>(),
                 result: ApplicationResourceValueBindingReference::of::<Binding::ResultBinding>(),
                 failure: ApplicationResourceValueBindingReference::of::<Binding::FailureBinding>(),
-                profile,
+                retry,
+                attempt_timeout,
                 limits,
                 authorization,
                 disclosure,

@@ -8,11 +8,12 @@ use crate::denial::{
 };
 use crate::record::{application_query, decode_budget::RecordDecodeAttempt};
 use crate::{binary_encoding::BinaryEncodingSink, binary_input::BinaryInput};
+use core::{num::NonZeroU32, time::Duration};
 use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_resource::{
-    ApplicationResourceAction, ApplicationResourceAuthorization, ApplicationResourceLimits,
-    ApplicationResourceRequestResponseProfile, ErasedApplicationResourceDefinition,
-    WorthQueryPortableApplicationResourceParts,
+    ApplicationResourceAction, ApplicationResourceAuthorization,
+    ApplicationResourceFixedDelayRetry, ApplicationResourceLimits,
+    ErasedApplicationResourceDefinition, WorthQueryPortableApplicationResourceParts,
 };
 
 pub(super) fn require_encoding_contract(
@@ -35,9 +36,9 @@ pub(super) fn write(
     for value in [&parts.input, &parts.result, &parts.failure] {
         resource_value::write(output, value)?;
     }
-    output.u32(parts.profile.retry_max_attempts)?;
-    output.u64(parts.profile.retry_delay_milliseconds)?;
-    output.u64(parts.profile.timeout_milliseconds)?;
+    output.u32(parts.retry.maximum_attempts.get())?;
+    output.u64(parts.retry.delay.as_millis() as u64)?;
+    output.u64(parts.attempt_timeout.as_millis() as u64)?;
     output.u32(parts.limits.maximum_live)?;
     output.u32(parts.limits.maximum_retained_results)?;
     output.u32(parts.limits.ingress_slots_per_request)?;
@@ -63,11 +64,12 @@ pub(super) fn decode(
     let input_binding = resource_value::decode(input)?;
     let result = resource_value::decode(input)?;
     let failure = resource_value::decode(input)?;
-    let profile = ApplicationResourceRequestResponseProfile {
-        retry_max_attempts: input.u32()?,
-        retry_delay_milliseconds: input.u64()?,
-        timeout_milliseconds: input.u64()?,
+    let retry = ApplicationResourceFixedDelayRetry {
+        maximum_attempts: NonZeroU32::new(input.u32()?)
+            .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?,
+        delay: Duration::from_millis(input.u64()?),
     };
+    let attempt_timeout = Duration::from_millis(input.u64()?);
     let limits = ApplicationResourceLimits {
         maximum_live: input.u32()?,
         maximum_retained_results: input.u32()?,
@@ -95,7 +97,8 @@ pub(super) fn decode(
             input: input_binding,
             result,
             failure,
-            profile,
+            retry,
+            attempt_timeout,
             limits,
             authorization,
             disclosure,

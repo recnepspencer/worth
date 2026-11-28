@@ -86,7 +86,7 @@ Record history records no actor. Actor attribution is a workflow fact.
 ```rust,ignore
 // Illustrative: not compiled.
 let trail = snapshot.workflow_audit::<Spec, SubjectRead, AuditRead>(
-    home.vocabulary(),
+    home.workflow_vocabulary::<Spec>().expect("workflow registered"),
     WorthQueryWorkflowAuditRequest { target, subject, audit, page_width: 32,
         indexes: WorthQueryWorkflowIndexRead::PublishedOnly, maximum_pages },
 )?;
@@ -208,10 +208,7 @@ no incoming link) renders `Internal`; a withheld disclosure renders
 
 ## Workflow Homes
 
-`WorthQueryWorkflowApplicationHome` forwards the plain Home's
-`fork_preview(_with_scope)`, `continue_preview_recovery`,
-`adopt_preview`, `close_branch`, `catch_up_temporal(_observing)` and
-`pump_temporal(_observing)` with the same signatures. `discard_preview(preview)`
-replaces `preview.discard(&home)`, because a workflow Home does not lend its
-plain Home. Every session call above works on its sessions and, through
-`with_workflow`, on an owned workflow session's call worker.
+Register an installed workflow on the ordinary Application Home with
+`retain_workflow_spec`. Pass `home.workflow_vocabulary::<Spec>()` to workflow
+requests. An owned session's call worker can borrow the same vocabulary with
+`session.workflow_vocabulary::<Spec>()` inside `spawn_with_session`.

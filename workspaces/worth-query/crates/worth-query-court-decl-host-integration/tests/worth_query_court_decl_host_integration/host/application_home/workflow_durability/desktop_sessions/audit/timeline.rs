@@ -78,7 +78,12 @@ fn causal_timeline_reads_both_streams_at_one_pinned_commit() {
     let timeline = causal_timeline(&home, &operator, &original).unwrap();
     let pinned = custody.last().unwrap();
     assert_eq!(timeline.commit(), pinned.selected_commit());
-    let independent = frontier_at(pinned, home.vocabulary(), &original);
+    let independent = frontier_at(
+        pinned,
+        home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+            .unwrap(),
+        &original,
+    );
     assert_eq!(
         timeline.workflow().transitions().count(),
         independent.history,
@@ -113,7 +118,8 @@ fn audit_trail(
         let observation = observed(at, home, original);
         snapshot
             .workflow_audit::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-                home.vocabulary(),
+                home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                    .unwrap(),
                 WorthQueryWorkflowAuditRequest {
                     target: observation.target(),
                     subject: read_input(),
@@ -137,7 +143,8 @@ fn causal_timeline(
         let observation = observed(at, home, original);
         snapshot.causal_timeline::<GovernedChanges, _, SubjectRead, AuditRead>(
             change_log(),
-            home.vocabulary(),
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
             WorthQueryWorkflowAuditRequest {
                 target: observation.target(),
                 subject: read_input(),
@@ -162,7 +169,8 @@ fn observed(
 ) -> WorthQueryWorkflowObservation {
     match at
         .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-            home.vocabulary(),
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>()
+                .unwrap(),
             original,
             read_input(),
             read_input(),

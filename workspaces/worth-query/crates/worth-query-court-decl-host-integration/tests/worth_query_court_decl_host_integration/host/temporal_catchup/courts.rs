@@ -1,5 +1,7 @@
 //! Focused Directory Home & MemoryOnly integration courts for desktop temporal catch-up.
 
+use crate::host::temporal_catchup::pump::*;
+
 use worth_query_host::facade::{
     domain::WorthQueryClockCoordinate,
     temporal_contribution::{WorthQueryTemporalCatchUpPolicy, WorthQueryTemporalCatchUpStatus},
@@ -33,13 +35,13 @@ fn desktop_temporal_reopen_catch_up_fires_missed_recurrences_and_completes_idemp
             },
             1,
         );
-        let early = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(5),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-            )
-            .unwrap();
+        let early = catch_up(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(5),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+        )
+        .unwrap();
         assert_eq!(early.status(), &WorthQueryTemporalCatchUpStatus::CaughtUp);
         assert_eq!(early.fired(), 0);
         assert_eq!(early.skipped(), 0);
@@ -52,13 +54,13 @@ fn desktop_temporal_reopen_catch_up_fires_missed_recurrences_and_completes_idemp
             .reclaim();
 
         let home = open_directory_home(dir.clone(), fire_log.clone(), auth.clone(), execution);
-        let caught_up = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(35),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(8).unwrap(),
-            )
-            .unwrap();
+        let caught_up = catch_up(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(35),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(8).unwrap(),
+        )
+        .unwrap();
         assert_eq!(
             caught_up.status(),
             &WorthQueryTemporalCatchUpStatus::CaughtUp
@@ -94,13 +96,13 @@ fn desktop_temporal_reopen_catch_up_fires_missed_recurrences_and_completes_idemp
         assert_eq!(rows["i1"].revision, 4);
         assert_eq!(rows["i1"].fired_count, 3);
 
-        let repump = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(50),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-            )
-            .unwrap();
+        let repump = catch_up(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(50),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+        )
+        .unwrap();
         assert_eq!(repump.status(), &WorthQueryTemporalCatchUpStatus::CaughtUp);
         assert_eq!(repump.fired(), 0);
         assert_eq!(fire_log.snapshot().len(), 3);
@@ -108,13 +110,13 @@ fn desktop_temporal_reopen_catch_up_fires_missed_recurrences_and_completes_idemp
         home.close(execution).unwrap().reclaim();
 
         let home = open_directory_home(dir.clone(), fire_log.clone(), auth.clone(), execution);
-        let second = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(100),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-            )
-            .unwrap();
+        let second = catch_up(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(100),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+        )
+        .unwrap();
         assert_eq!(second.status(), &WorthQueryTemporalCatchUpStatus::CaughtUp);
         assert_eq!(second.fired(), 0);
         assert_eq!(fire_log.snapshot().len(), 3);
@@ -147,13 +149,13 @@ fn desktop_temporal_catch_up_handles_step_limit_cancellation_and_budget_exhausti
         home.close(execution).unwrap().reclaim();
 
         let home = open_directory_home(dir.clone(), fire_log.clone(), auth.clone(), execution);
-        let partial = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(50),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
-            )
-            .unwrap();
+        let partial = catch_up(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(50),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
+        )
+        .unwrap();
         assert_eq!(
             partial.status(),
             &WorthQueryTemporalCatchUpStatus::StepLimitReached,
@@ -166,12 +168,12 @@ fn desktop_temporal_catch_up_handles_step_limit_cancellation_and_budget_exhausti
         assert_eq!(read_reminders(&home)["i1"].fired_count, 2);
 
         with_cancelled_request(|cancelled_exec| {
-            let cancelled = home
-                .pump_temporal::<DesktopReminderConditional>(
-                    cancelled_exec,
-                    WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-                )
-                .unwrap();
+            let cancelled = pump(
+                &home,
+                cancelled_exec,
+                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+            )
+            .unwrap();
             assert_eq!(
                 cancelled.status(),
                 &WorthQueryTemporalCatchUpStatus::Cancelled
@@ -181,12 +183,12 @@ fn desktop_temporal_catch_up_handles_step_limit_cancellation_and_budget_exhausti
         assert_eq!(fire_log.snapshot().len(), 2);
 
         with_leased_request(128 * 1024 * 1024, Some(1), |tiny_exec| {
-            let exhausted = home
-                .pump_temporal::<DesktopReminderConditional>(
-                    tiny_exec,
-                    WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-                )
-                .unwrap();
+            let exhausted = pump(
+                &home,
+                tiny_exec,
+                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+            )
+            .unwrap();
             assert_eq!(
                 exhausted.status(),
                 &WorthQueryTemporalCatchUpStatus::BudgetExhausted
@@ -198,13 +200,13 @@ fn desktop_temporal_catch_up_handles_step_limit_cancellation_and_budget_exhausti
 
         home.close(execution).unwrap().reclaim();
         let home = open_directory_home(dir.clone(), fire_log.clone(), auth.clone(), execution);
-        let resumed = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(50),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(8).unwrap(),
-            )
-            .unwrap();
+        let resumed = catch_up(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(50),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(8).unwrap(),
+        )
+        .unwrap();
         assert_eq!(resumed.status(), &WorthQueryTemporalCatchUpStatus::CaughtUp);
         assert_eq!(resumed.fired(), 2);
         assert_eq!(
@@ -241,13 +243,13 @@ fn desktop_temporal_catch_up_refuses_expired_principal_and_resumes_after_refresh
             1,
         );
         auth.set_valid(false);
-        let refused = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(25),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-            )
-            .unwrap();
+        let refused = catch_up(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(25),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+        )
+        .unwrap();
         assert_eq!(
             refused.status(),
             &WorthQueryTemporalCatchUpStatus::AuthorizationRefused
@@ -257,12 +259,12 @@ fn desktop_temporal_catch_up_refuses_expired_principal_and_resumes_after_refresh
         assert_eq!(read_reminders(&home)["i1"].lifecycle, "active");
 
         auth.set_valid(true);
-        let resumed = home
-            .pump_temporal::<DesktopReminderConditional>(
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(6).unwrap(),
-            )
-            .unwrap();
+        let resumed = pump(
+            &home,
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(6).unwrap(),
+        )
+        .unwrap();
         assert_eq!(resumed.status(), &WorthQueryTemporalCatchUpStatus::CaughtUp);
         assert_eq!(resumed.fired(), 2);
         assert_eq!(fire_log.snapshot().len(), 2);
@@ -306,13 +308,13 @@ fn desktop_temporal_cancelled_intent_never_fires_across_directory_reopen() {
         home.close(execution).unwrap().reclaim();
 
         let home = open_directory_home(dir.clone(), fire_log.clone(), auth.clone(), execution);
-        let report = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(50),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-            )
-            .unwrap();
+        let report = catch_up(
+            &home,
+            WorthQueryClockCoordinate::from_nanoseconds(50),
+            execution,
+            WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
+        )
+        .unwrap();
         assert_eq!(report.status(), &WorthQueryTemporalCatchUpStatus::CaughtUp);
         assert_eq!(report.fired(), 0);
         assert!(fire_log.snapshot().is_empty());

@@ -47,7 +47,7 @@ pub(super) fn managed_index(input: &DeriveInput, spec: &ManagedIndexDeclaration)
     );
     let (outer_install_helper, inner_registration_impl) = spec.kind.as_ref().map_or_else(
         || (TokenStream::new(), TokenStream::new()),
-        |kind| emit_provider_registration(kind, &names),
+        |kind| emit_provider_registration(kind, spec.register_refinement, &names),
     );
 
     quote! {
@@ -91,6 +91,7 @@ pub(super) fn managed_index(input: &DeriveInput, spec: &ManagedIndexDeclaration)
 
 fn emit_provider_registration(
     kind: &IndexProviderKind,
+    with_refinement: bool,
     names: &HygienicNames,
 ) -> (TokenStream, TokenStream) {
     let host_facade = host();
@@ -150,19 +151,14 @@ fn emit_provider_registration(
         }
         IndexProviderKind::Custom { provider, watches } => (quote!(#provider), *watches),
     };
-    let install_call = if with_watches {
-        quote! {
-            #setup_param
-                .managed_index_provider::<#index_alias, _>(#provider_expr)
-                .with_predicate_routing()
-                .install()
-        }
-    } else {
-        quote! {
-            #setup_param
-                .managed_index_provider::<#index_alias, _>(#provider_expr)
-                .install()
-        }
+    let routing = with_watches.then(|| quote!(.with_predicate_routing()));
+    let refinement = with_refinement.then(|| quote!(.with_refinement()));
+    let install_call = quote! {
+        #setup_param
+            .managed_index_provider::<#index_alias, _>(#provider_expr)
+            #routing
+            #refinement
+            .install()
     };
     let outer_helper = quote! {
         #[allow(dead_code, non_snake_case)]

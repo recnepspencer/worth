@@ -182,7 +182,7 @@ fn is_workflow_historical(
         .request(&reviewer, &scope)
         .at(&basis)
         .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-            home.vocabulary(), original, wf_input(), wf_input(),
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), original, wf_input(), wf_input(),
         )
         .unwrap();
     match read {
@@ -313,7 +313,7 @@ fn verify_workflow_reaches_historical(
         .request(&reviewer, &scope)
         .at(&basis)
         .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-            home.vocabulary(), original, wf_input(), wf_input(),
+            home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), original, wf_input(), wf_input(),
         )
         .unwrap();
     drop(basis);
@@ -330,7 +330,7 @@ fn verify_workflow_reaches_historical(
                 .request(&reviewer, &scope)
                 .at(&basis)
                 .read_original_workflow::<GovernedDocumentWorkflow, SubjectRead, AuditRead>(
-                    home.vocabulary(), original, wf_input(), wf_input(),
+                    home.workflow_vocabulary::<GovernedDocumentWorkflow>().unwrap(), original, wf_input(), wf_input(),
                 )
                 .unwrap();
             assert!(

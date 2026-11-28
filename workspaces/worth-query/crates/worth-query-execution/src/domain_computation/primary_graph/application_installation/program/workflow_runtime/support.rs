@@ -36,41 +36,48 @@ where
             WorthQueryWorkflowRuntimeBindingDenial,
         ),
     > {
-        let binding = (|| {
-            self.admit_receiver(runtime)?;
-            if workflow.schema_binding() != &runtime.installed_schema().binding_identity() {
-                return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);
-            }
-            let revision = workflow.program_revision();
-            if revision == runtime.installed_program().revision()
-                || self
-                    .supported
-                    .iter()
-                    .any(|supported| supported.program_revision() == revision)
-            {
-                return Err(WorthQueryWorkflowRuntimeBindingDenial::AlreadySupported);
-            }
-            let rostered = runtime
-                .backing
-                .supported
-                .iter()
-                .any(|rostered| rostered.revision() == revision);
-            let present = runtime
-                .backing
-                .runtime()
-                .installed_program_support()
-                .and_then(|support| support.present(revision))
-                .is_some();
-            if !(rostered && present) {
-                return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
-            }
-            runtime.install_workflow_registration(&workflow, &self.authentication)?;
-            Ok(())
-        })();
-        if let Err(denial) = binding {
+        if let Err(denial) = self
+            .admit_support(runtime, &workflow)
+            .and_then(|()| runtime.install_workflow_registration(&workflow, &self.authentication))
+        {
             return Err((workflow, denial));
         }
         self.supported.push(workflow);
+        Ok(())
+    }
+
+    pub(super) fn admit_support<Program>(
+        &self,
+        runtime: &super::WorthQueryProgramApplicationRuntime<Schema, Program>,
+        workflow: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+    ) -> Result<(), WorthQueryWorkflowRuntimeBindingDenial> {
+        self.admit_receiver(runtime)?;
+        if workflow.schema_binding() != &runtime.installed_schema().binding_identity() {
+            return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);
+        }
+        let revision = workflow.program_revision();
+        if revision == runtime.installed_program().revision()
+            || self
+                .supported
+                .iter()
+                .any(|supported| supported.program_revision() == revision)
+        {
+            return Err(WorthQueryWorkflowRuntimeBindingDenial::AlreadySupported);
+        }
+        let rostered = runtime
+            .backing
+            .supported
+            .iter()
+            .any(|rostered| rostered.revision() == revision);
+        let present = runtime
+            .backing
+            .runtime()
+            .installed_program_support()
+            .and_then(|support| support.present(revision))
+            .is_some();
+        if !(rostered && present) {
+            return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
+        }
         Ok(())
     }
 }

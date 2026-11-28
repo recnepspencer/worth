@@ -1,4 +1,4 @@
-//! Finite installed capacity and the existing request-response temporal family.
+//! Finite capacity of an installed application resource.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationResourceLimits {
     pub maximum_live: u32,
@@ -23,21 +23,5 @@ impl ApplicationResourceLimits {
                 .checked_mul(u64::from(self.ingress_slots_per_request))
                 .and_then(|slots| slots.checked_mul(self.maximum_frame_bytes))
                 .is_some()
-    }
-}
-
-/// These durations lower to the existing native fixed-delay/per-attempt family.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct ApplicationResourceRequestResponseProfile {
-    pub retry_max_attempts: u32,
-    pub retry_delay_milliseconds: u64,
-    pub timeout_milliseconds: u64,
-}
-
-impl ApplicationResourceRequestResponseProfile {
-    pub const fn is_valid(self) -> bool {
-        self.retry_max_attempts > 0
-            && self.retry_delay_milliseconds > 0
-            && self.timeout_milliseconds > 0
     }
 }

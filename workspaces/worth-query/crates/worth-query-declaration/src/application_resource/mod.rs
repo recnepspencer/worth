@@ -3,8 +3,9 @@ mod authorization;
 mod binding;
 mod definition;
 mod disclosure;
-mod profile;
+mod limits;
 mod reference;
+mod retry;
 mod value_binding;
 
 pub use authorization::{ApplicationResourceAction, ApplicationResourceAuthorization};
@@ -19,8 +20,9 @@ pub use disclosure::{
     ApplicationResourceDisclosureFacet, ApplicationResourceDisclosureMeaning,
     ApplicationResourceDisclosureRef,
 };
-pub use profile::{ApplicationResourceLimits, ApplicationResourceRequestResponseProfile};
+pub use limits::ApplicationResourceLimits;
 pub use reference::ApplicationResourceRef;
+pub use retry::ApplicationResourceFixedDelayRetry;
 pub use value_binding::{
     ApplicationResourceValueBindingParts, ApplicationResourceValueBindingReference,
 };

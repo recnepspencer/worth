@@ -5,7 +5,7 @@ use worth_query_host::facade::application_entry::{
 };
 
 pub(super) fn publish(
-    home: &memory_home::WorkflowHome,
+    home: &memory_home::MemoryHome,
     key: u64,
 ) -> WorkflowDefinitionPublicationOutcome {
     let runtime = home.runtime().runtime();
@@ -15,7 +15,8 @@ pub(super) fn publish(
     let installed = home
         .runtime()
         .with_host_advancement(|phase| {
-            home.vocabulary()
+            home.workflow_vocabulary::<document::workflow::ReviewedDocumentWorkflow>()
+                .unwrap()
                 .workflow_spec_on(&phase, runtime.current_world())
                 .unwrap()
         })
