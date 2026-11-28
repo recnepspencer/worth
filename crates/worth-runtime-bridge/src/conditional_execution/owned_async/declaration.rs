@@ -205,3 +205,7 @@ fn duration(ticks: u64) -> Result<TemporalDuration, BridgeAsyncSourceDeclaration
 #[cfg(test)]
 #[path = "declaration_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+#[path = "declaration_tests.rs"]
+mod tests;

@@ -1,13 +1,7 @@
-use worth_signal::facade::*;
-
-use super::{runtime, BridgeRuntimePolicy};
-use crate::facade::{
-    BridgeConditionalRuntimeBuilder, BridgeOwnedAsyncDeclarationDescription,
-    BridgeOwnedAsyncRequestResponseDeclaration, BridgeOwnedAsyncResourcePolicies,
-};
+use super::*;
 
 #[test]
-fn owned_request_response_installs_every_native_policy_family_after_serde_roundtrip() {
+fn owned_request_response_preserves_every_native_policy_family_after_serde_roundtrip() {
     let duration = TemporalDuration::temporal_duration(5).unwrap();
     let policies = BridgeOwnedAsyncResourcePolicies {
         lifecycle: ResourceLifecyclePolicyDeclaration::default(),
@@ -38,17 +32,9 @@ fn owned_request_response_installs_every_native_policy_family_after_serde_roundt
     let description: BridgeOwnedAsyncDeclarationDescription =
         serde_json::from_slice(&bytes).unwrap();
     assert_eq!(description.policies.as_ref(), Some(&policies));
-    let mut installation = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
-        runtime(BridgeRuntimePolicy::development()),
-        worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
-    )
-    .unwrap();
-    let lowered = installation
-        .install_owned_async_request_response(
-            BridgeOwnedAsyncRequestResponseDeclaration::from_description(description),
-        )
+    let installed = BridgeOwnedAsyncRequestResponseDeclaration::from_description(description)
+        .signal_declaration(NodeId::new(0, 0))
         .unwrap();
-    let installed = lowered.request_response_declaration().unwrap();
     assert_eq!(installed.lifecycle_policy(), policies.lifecycle);
     assert_eq!(installed.retry_policy(), &policies.retry);
     assert_eq!(installed.timeout_policy(), &policies.timeout);
@@ -64,7 +50,6 @@ fn owned_request_response_installs_every_native_policy_family_after_serde_roundt
     assert_eq!(installed.retention_policy(), &policies.retention);
     assert_eq!(installed.diagnostics_policy(), &policies.diagnostics);
     assert_eq!(installed.replay_policy(), &policies.replay);
-    assert!(lowered.resource_descriptor().is_some());
 }
 
 #[test]

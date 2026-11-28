@@ -13,8 +13,8 @@ use worth_signal::facade::{
     EvaluationContext, ResourceCancellationReason, ScopePath, SignalError, VersionComparatorPolicy,
 };
 
-use super::{runtime, BridgeRuntimePolicy};
-use crate::facade::BridgeTemporalCondition;
+use super::super::original_lowering::source;
+use worth_runtime_bridge::facade::BridgeTemporalCondition;
 
 const ASPECT: Aspect = Aspect::new(0);
 
@@ -36,8 +36,8 @@ fn evaluate(_: &mut EvaluationContext<'_, ()>) -> Result<AspectVersion, SignalEr
 
 #[test]
 fn keyed_recipe_publishes_observations_and_reads_previous_value_from_a_live_wake() {
-    let bridge = runtime(BridgeRuntimePolicy::development());
-    let serial = crate::policy::BridgeExecutionPolicyBaseline::operational()
+    let bridge = source::runtime();
+    let serial = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial);
     let recipe = bridge
@@ -111,7 +111,7 @@ fn keyed_recipe_publishes_observations_and_reads_previous_value_from_a_live_wake
 
 #[test]
 fn keyed_and_interior_capabilities_use_the_same_signal_cancellation_hierarchy() {
-    let bridge = runtime(BridgeRuntimePolicy::development());
+    let bridge = source::runtime();
     let recipe = bridge
         .register_signal_recipe(Recipe::new("price", (), evaluate))
         .unwrap();
@@ -157,16 +157,11 @@ fn keyed_and_interior_capabilities_use_the_same_signal_cancellation_hierarchy() 
 fn recipe_comparator_override_controls_dependency_early_cutoff() {
     use std::sync::atomic::AtomicU64;
 
-    let registration = super::support::native_profile_mapping_registration()
+    let registration = source::mapping()
         .with_version_comparator(VersionComparatorPolicy::Tolerance { epsilon: 2 });
     let mapping = registration.mapping_id().clone();
-    let bridge = crate::facade::RuntimeBridge::builder()
-        .with_truth_source(super::StaticSource)
-        .with_compute_sink(super::StaticSink)
-        .register_mapping(registration)
-        .build()
-        .unwrap();
-    let serial = crate::policy::BridgeExecutionPolicyBaseline::operational()
+    let bridge = source::runtime_with_mapping(registration);
+    let serial = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial);
     let value = AtomicU64::new(7);

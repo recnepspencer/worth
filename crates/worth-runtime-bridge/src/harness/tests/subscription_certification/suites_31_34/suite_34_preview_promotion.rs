@@ -15,6 +15,24 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime(BridgeRuntimePolicy::development());
+    let capture_zero_residue =
+        |preview: &crate::facade::BridgePreviewActiveSubscription,
+         trace: &crate::facade::BridgeSubscriptionPreviewWorkTrace| {
+            runtime
+                .capture_preview_lifecycle_residue_envelope(
+                    preview,
+                    trace,
+                    BridgeSubscriptionPreviewLifecycleResidueKind::all()
+                        .into_iter()
+                        .map(|kind| {
+                            BridgeSubscriptionPreviewLifecycleResidueInput::from_preview_work_trace(
+                                kind, 0, trace,
+                            )
+                        })
+                        .collect(),
+                )
+                .expect("preview work should bind the zero residue envelope")
+        };
     let detail = detail_subscription(&runtime);
     let collection = collection_subscription(&runtime);
 
@@ -94,7 +112,7 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
             work_trace.records()[0].evidence().preview_scope_identity(),
             &preview_scope_identity
         );
-        let residue = capture_zero_residue(&runtime, &preview_active, &work_trace);
+        let residue = capture_zero_residue(&preview_active, &work_trace);
         let discard = runtime
             .admit_preview_lifecycle_discard(preview_active, residue)
             .expect("zero preview residue should discard");
@@ -265,7 +283,7 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
         .admitted()
         .admitted_subscription_identity()
         .clone();
-    let residue = capture_zero_residue(&runtime, &preview_active, &promotion_work_trace);
+    let residue = capture_zero_residue(&preview_active, &promotion_work_trace);
     let promotion = runtime
         .admit_preview_lifecycle_promotion(
             &preview_active,
@@ -299,25 +317,4 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
         readmission.authoritative_admitted_subscription_identity(),
         &promoted_identity
     );
-}
-
-fn capture_zero_residue(
-    runtime: &crate::facade::RuntimeBridge,
-    preview: &crate::facade::BridgePreviewActiveSubscription,
-    trace: &crate::facade::BridgeSubscriptionPreviewWorkTrace,
-) -> crate::facade::BridgeSubscriptionPreviewLifecycleResidueEnvelope {
-    runtime
-        .capture_preview_lifecycle_residue_envelope(
-            preview,
-            trace,
-            BridgeSubscriptionPreviewLifecycleResidueKind::all()
-                .into_iter()
-                .map(|kind| {
-                    BridgeSubscriptionPreviewLifecycleResidueInput::from_preview_work_trace(
-                        kind, 0, trace,
-                    )
-                })
-                .collect(),
-        )
-        .expect("preview work should bind the zero residue envelope")
 }

@@ -5,12 +5,12 @@ use worth_signal::facade::{
     MissedTickPolicy, TemporalCondition,
 };
 
-use super::{runtime, BridgeRuntimePolicy};
-use crate::facade::BridgeTemporalCondition;
+use super::super::original_lowering::source;
+use worth_runtime_bridge::facade::BridgeTemporalCondition;
 
 #[test]
 fn all_six_conditions_schedule_on_the_signal_clock_and_interval_regenerates() {
-    let bridge = runtime(BridgeRuntimePolicy::development());
+    let bridge = source::runtime();
     let interval = IntervalCondition::try_new(4)
         .unwrap()
         .with_anchor(IntervalAnchor::ExplicitTick(ClockTick::new(7)))
