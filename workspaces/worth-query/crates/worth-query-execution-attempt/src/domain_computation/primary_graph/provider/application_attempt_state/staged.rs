@@ -1,4 +1,4 @@
-use super::{WorthQueryProposedFact, WorthQueryStagedApplicationAttempt};
+use super::WorthQueryStagedApplicationAttempt;
 
 impl WorthQueryStagedApplicationAttempt<'_> {
     pub fn appendix_attempt(&self) -> &super::WorthQueryPrimaryGraphApplicationAttempt {
@@ -63,14 +63,6 @@ impl WorthQueryStagedApplicationAttempt<'_> {
         crate::domain_computation::runtime_time::WorthQueryRuntimeTimeDenial,
     > {
         self.attempt.affinity().admitted_at()
-    }
-
-    pub fn overlay_identity(&self) -> &str {
-        self.overlay.identity()
-    }
-
-    pub fn overlay_facts(&self) -> &[WorthQueryProposedFact] {
-        self.overlay.facts()
     }
 
     pub fn expected_step_count(&self) -> usize {

@@ -1,4 +1,4 @@
-//! A registered writer materializes its own real effect overlay.
+//! A registered writer stages its own application effects.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -27,11 +27,11 @@ struct CoupledWriterCustody {
 }
 pub struct InspectedCoupledWriter<'run> {
     custody: CoupledWriterCustody,
-    inspection: crate::domain_computation::WorthQueryProposedStateInspection<'run>,
+    inspection: crate::domain_computation::WorthQueryStagedProviderCandidate<'run>,
 }
 pub struct ApprovedCoupledWriter<'run> {
     custody: CoupledWriterCustody,
-    candidate: crate::domain_computation::WorthQueryInvariantApprovedProposedState<'run>,
+    candidate: crate::domain_computation::WorthQueryValidatedProviderCandidate<'run>,
 }
 
 pub fn inspect_coupled_application<'run, S, B>(
@@ -143,7 +143,11 @@ impl<'run> InspectedCoupledWriter<'run> {
             custody,
             inspection,
         } = self;
-        match super::super::invariant::complete_coupled_invariants(inspection, &custody.request) {
+        match super::super::invariant::bind_validated_candidate(
+            &application.runtime.primary_provider,
+            inspection,
+            &custody.request,
+        ) {
             Ok(candidate) => Ok(ApprovedCoupledWriter { custody, candidate }),
             Err(outcome) => Err(custody.finish(execution, phase, application, outcome)),
         }

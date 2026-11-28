@@ -44,6 +44,7 @@ pub use crate::projection_denial::*;
 pub use crate::provider_session_denial_kind::*;
 pub use crate::publication_access::*;
 pub use crate::read_observation::*;
+pub use crate::relational_commit_denial::*;
 pub use crate::relational_execution_denial::relational_execution_kind;
 pub use crate::source_facts_allocation::*;
 pub mod structural_walk_memory {

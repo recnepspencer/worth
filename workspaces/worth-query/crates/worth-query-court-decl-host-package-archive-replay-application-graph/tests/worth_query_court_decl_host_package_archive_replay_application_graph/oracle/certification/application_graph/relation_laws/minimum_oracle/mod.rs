@@ -46,7 +46,7 @@ fn seeded_edits_follow_an_independent_distinct_reachability_model() {
             accepted += 1;
         } else {
             let refusal = denied(actual);
-            let Some(WorthQueryRelationLawDenial::ConnectivityMinimum {
+            let Some(InvariantViolationFields::ConnectivityMinimum {
                 source,
                 reachable_target_count,
                 minimum_reachable_targets,
@@ -64,8 +64,8 @@ fn seeded_edits_follow_an_independent_distinct_reachability_model() {
                 .unwrap();
             let expected = reachable(&proposed, source_key);
             assert!(expected < 2);
-            assert_eq!(reachable_target_count, expected);
-            assert_eq!(minimum_reachable_targets, 2);
+            assert_eq!(*reachable_target_count, expected);
+            assert_eq!(*minimum_reachable_targets, 2);
             refused += 1;
         }
         assert_eq!(

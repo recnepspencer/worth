@@ -42,7 +42,6 @@ pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::direct_authority_with_graph_and_decision_facts;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::direct_authority_with_graph_effect;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::direct_authority_with_graph_effect_and_decision_facts;
-pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::direct_authority_with_graph_effect_decision_facts_and_invariants;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::workflow_authority;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::workflow_authority_with_output_artifact;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::workflow_authority_with_stage_graph;
@@ -74,8 +73,6 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryWorkflowRun
 pub mod provider_execution_admission;
 #[path = "provider_memory_cleanup/mod.rs"]
 pub mod provider_memory_cleanup;
-#[path = "provisional_attempt/mod.rs"]
-pub mod provisional_attempt;
 #[path = "readmission_direct_association/mod.rs"]
 pub mod readmission_direct_association;
 #[path = "readmission_parity/mod.rs"]

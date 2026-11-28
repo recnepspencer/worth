@@ -17,7 +17,7 @@ pub trait RegisteredProviderAttemptRuntimeExt<'run>: Sized {
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         (
-            crate::domain_computation::WorthQueryProposedStateInspection<'run>,
+            crate::domain_computation::WorthQueryStagedProviderCandidate<'run>,
             Option<
                 crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
             >,
@@ -57,7 +57,7 @@ impl<'run> RegisteredProviderAttemptRuntimeExt<'run> for WorthQueryRegisteredPro
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         (
-            crate::domain_computation::WorthQueryProposedStateInspection<'run>,
+            crate::domain_computation::WorthQueryStagedProviderCandidate<'run>,
             Option<
                 crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
             >,
@@ -93,7 +93,7 @@ impl<'run> RegisteredProviderAttemptRuntimeExt<'run> for WorthQueryRegisteredPro
                 );
             }
         };
-        super::invariant::begin_invariant_inspection(staged, fresh, steps)
+        super::invariant::stage_commit_candidate(provider, staged, fresh, steps)
             .map(|inspection| (inspection, dispatch_outbox))
     }
 

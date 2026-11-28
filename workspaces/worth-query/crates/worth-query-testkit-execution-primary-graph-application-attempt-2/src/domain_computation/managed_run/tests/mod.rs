@@ -15,7 +15,6 @@ use worth_query_testkit_execution_primary_graph_application_attempt::domain_comp
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::direct_authority_with_graph_and_decision_facts;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::direct_authority_with_graph_effect;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::direct_authority_with_graph_effect_and_decision_facts;
-use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::direct_authority_with_graph_effect_decision_facts_and_invariants;
 use crate::domain_computation::provider_session::tests::admitted_plan_with_graph_support;
 use worth_query_execution::facade::domain_computation::WorthQueryArtifactProviderResource;
 use worth_query_execution::facade::domain_computation::WorthQueryCooperativeGraphProviderExecution;
@@ -296,8 +295,6 @@ where
     (running, graph)
 }
 
-#[path = "combined_provider_capability/mod.rs"]
-pub mod combined_provider_capability;
 #[path = "cost_bound/mod.rs"]
 pub mod cost_bound;
 #[path = "decision_read_set/mod.rs"]
@@ -306,18 +303,10 @@ pub mod decision_read_set;
 pub mod decision_read_set_fixture;
 #[path = "graph_material/mod.rs"]
 pub mod graph_material;
-#[path = "invariant_execution/mod.rs"]
-pub mod invariant_execution;
-#[path = "invariant_execution_fixture/mod.rs"]
-pub mod invariant_execution_fixture;
 #[path = "provider_session_protocol/mod.rs"]
 pub mod provider_session_protocol;
 #[path = "provider_work/mod.rs"]
 pub mod provider_work;
-#[path = "provisional_attempt/mod.rs"]
-pub mod provisional_attempt;
-#[path = "provisional_attempt_fixture/mod.rs"]
-pub mod provisional_attempt_fixture;
 #[path = "readmission_custody/mod.rs"]
 pub mod readmission_custody;
 #[path = "readmission_direct/mod.rs"]

@@ -63,12 +63,6 @@ impl Denial {
                 | Invariant::CoupledConsumptionCycle
                 | Invariant::CoupledReadSupportUnavailable { .. }
                 | Invariant::ManagedPredicatePreparationUnavailable
-                | Invariant::InvariantNotInstalled
-                | Invariant::ExecutorRoleMismatch
-                | Invariant::UndeclaredStateLoadFamily
-                | Invariant::StateLoadBudgetExceeded
-                | Invariant::ExecutionBudgetExceeded
-                | Invariant::ProviderUnsupported
                 | Invariant::ProviderRejected
                 | Invariant::RelationalDeferred(..)
                 | Invariant::CustomInvariantDenied
@@ -85,9 +79,7 @@ impl Denial {
                 | Invariant::ProposalIdentityExhausted
                 | Invariant::ProviderPanicked
                 | Invariant::EvidenceSubstitution
-                | Invariant::EmptyStateLoad
                 | Invariant::StateLoadClosureMismatch
-                | Invariant::VerdictPostureMismatch
                 | Invariant::ProducerRequirementNotAdmitted(..) => {
                     allocation_control(failure.allocation_denial())
                 }

@@ -30,14 +30,6 @@ impl WorthQueryGraphProviderAnchor {
                 .decision_fact_provider
                 .as_ref()
                 .is_some_and(|p| provider_matches(p.as_ref(), expected))
-            && self
-                .provisional_provider
-                .as_ref()
-                .is_some_and(|p| provider_matches(p.as_ref(), expected))
-            && self
-                .invariant_provider
-                .as_ref()
-                .is_some_and(|p| provider_matches(p.as_ref(), expected))
             && self.convergence_provider.is_none();
         if matches {
             Ok(())
@@ -64,8 +56,6 @@ impl WorthQueryGraphProviderAnchor {
             provider,
             session_lifecycle,
             decision_fact_provider,
-            provisional_provider,
-            invariant_provider,
             convergence_provider,
             provider_identity,
             provider_generation,
@@ -78,8 +68,6 @@ impl WorthQueryGraphProviderAnchor {
             provider,
             session_lifecycle,
             decision_fact_provider,
-            provisional_provider,
-            invariant_provider,
             convergence_provider,
         ));
         Ok(RetiredPrimaryProviderAnchor {

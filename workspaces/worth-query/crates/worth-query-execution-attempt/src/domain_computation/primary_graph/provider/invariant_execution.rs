@@ -12,94 +12,19 @@ pub use receipt_closure::ClosedCoupledInvariantReceipts;
 pub mod relational_validation;
 pub mod validation_control;
 pub use authored_coupling::CoupledProducerAssembly;
-use material::{ApplicationInvariantCandidateMaterial, ApplicationInvariantSemanticMaterial};
+use material::ApplicationInvariantCandidateMaterial;
 
 use super::invariant_execution_failure::{
     map_transaction_admission_failure, map_transaction_staging_failure, map_validation_failure,
 };
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::{
-    WorthQueryBoundInvariantExecutionView, WorthQueryInvariantExecutionDenialKind,
-    WorthQueryInvariantExecutionFailure, WorthQueryInvariantExecutionProvider,
-    WorthQueryInvariantProviderVerdict, WorthQueryInvariantStateLoadAdmission,
-    WorthQueryInvariantStateLoadEvidence, WorthQueryInvariantStateLoadRequestView,
-    WorthQueryInvariantStructuralCounters, WorthQueryInvariantVerdictAdmission,
-    WorthQueryInvariantVerdictEvidence, WorthQueryProviderSessionView,
+    WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
+    WorthQueryProviderSessionView,
 };
 
 pub(super) struct WorthQueryInvariantWorkMint {
     _private: (),
-}
-
-impl WorthQueryInvariantExecutionProvider
-    for crate::domain_computation::runtime_ports::PrimaryGraphProviderArc
-{
-    fn load_invariant_state(
-        &self,
-        session: WorthQueryProviderSessionView<'_>,
-        request: WorthQueryInvariantStateLoadRequestView<'_>,
-        admission: WorthQueryInvariantStateLoadAdmission,
-    ) -> Result<WorthQueryInvariantStateLoadEvidence, WorthQueryInvariantExecutionFailure> {
-        self.application_attempt_work.observe_invariant_state_load();
-        let attempts = self
-            .attempts
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if attempts.approved_invariant_evidence(session).is_none() {
-            return Err(missing_candidate_failure());
-        }
-        let staged = attempts
-            .staged_attempt(session)
-            .ok_or_else(|| closure_failure("provider session has no staged application attempt"))?;
-        let expected = ApplicationInvariantSemanticMaterial::from_staged(&staged)?.expected;
-        if staged.expected_step_count() != staged.overlay_facts().len()
-            || request.locators() != expected.as_slice()
-        {
-            return Err(closure_failure(
-                "invariant state-load plan does not close over the proposed effects",
-            ));
-        }
-        admission.admit(
-            format!("primary-invariant-load:{}", staged.overlay_identity()),
-            expected.clone(),
-            WorthQueryInvariantStructuralCounters::new(
-                expected.len(),
-                expected.len() as u64,
-                staged.overlay_facts().len() as u64,
-            ),
-        )
-    }
-
-    fn execute_invariant(
-        &self,
-        session: WorthQueryProviderSessionView<'_>,
-        execution: WorthQueryBoundInvariantExecutionView<'_>,
-        admission: WorthQueryInvariantVerdictAdmission,
-    ) -> Result<WorthQueryInvariantProviderVerdict, WorthQueryInvariantExecutionFailure> {
-        self.application_attempt_work.observe_invariant_execution();
-        let material = self.semantic_invariant_material(session)?;
-        let load_evidence = execution.state_load_evidence();
-        material.validate_load(&execution, load_evidence)?;
-        let attempts = self
-            .attempts
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let evidence = attempts
-            .approved_invariant_evidence(session)
-            .ok_or_else(missing_candidate_failure)?;
-        let semantic_work = receipt_closure::requirement_work(
-            evidence,
-            execution.requirement(),
-            load_evidence.loaded_fact_locators().len(),
-        )?;
-        let evidence = WorthQueryInvariantVerdictEvidence::new(
-            execution.requirement().slot(),
-            "relational-installed-invariant-authority",
-            load_evidence.identity(),
-            semantic_work,
-        )?;
-        admission.passed(evidence)
-    }
 }
 
 impl WorthQueryPrimaryGraphProvider {
@@ -156,35 +81,11 @@ impl WorthQueryPrimaryGraphProvider {
         let staged = attempts
             .staged_attempt(session)
             .ok_or_else(|| closure_failure("invariant execution lost its staged attempt"))?;
-        if staged.expected_step_count() != staged.overlay_facts().len() {
-            return Err(closure_failure(
-                "invariant execution lost proposed-effect closure",
-            ));
-        }
         ApplicationInvariantCandidateMaterial::from_staged(
             &staged,
             self.graph.layout_ref(),
             appendix_policy,
         )
-    }
-
-    fn semantic_invariant_material(
-        &self,
-        session: WorthQueryProviderSessionView<'_>,
-    ) -> Result<ApplicationInvariantSemanticMaterial, WorthQueryInvariantExecutionFailure> {
-        let attempts = self
-            .attempts
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let staged = attempts
-            .staged_attempt(session)
-            .ok_or_else(|| closure_failure("invariant execution lost its staged attempt"))?;
-        if staged.expected_step_count() != staged.overlay_facts().len() {
-            return Err(closure_failure(
-                "invariant execution lost proposed-effect closure",
-            ));
-        }
-        ApplicationInvariantSemanticMaterial::from_staged(&staged)
     }
 
     fn validate_and_retain_candidate(

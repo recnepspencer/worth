@@ -75,18 +75,6 @@ impl WorthQueryProviderSessionTerminalBinding {
     pub fn same_session(&self, other: &Self) -> bool {
         self == other
     }
-
-    pub fn admits_cleanup_binding(
-        &self,
-        cleanup: &crate::domain_computation::provider_session::WorthQueryProvisionalOverlayCleanupBinding,
-    ) -> bool {
-        self.inner.affinity == cleanup.affinity_identity()
-            && self.inner.session.token_identity() == cleanup.token_identity()
-            && self.inner.session.token_generation() == cleanup.token_generation()
-            && self.inner.session.provider_identity() == cleanup.provider_identity()
-            && self.inner.session.provider_generation() == cleanup.provider_generation()
-            && self.inner.plan.identity() == cleanup.plan_identity()
-    }
 }
 
 impl PartialEq for WorthQueryProviderSessionTerminalBinding {

@@ -25,18 +25,7 @@ pub(super) fn snapshot_capacity_failure(detail: &'static str) -> WorthQueryProvi
 pub(super) fn basis_retention_failure(
     denial: worth_relational::facade::branch::RelationalBranchBasisDenial,
 ) -> WorthQueryProviderSessionFailure {
-    let kind = match denial {
-        worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted => {
-            WorthQueryProviderSessionDenialKind::RetentionCapacityExhausted
-        }
-        worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted => {
-            WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
-        }
-        worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
-            WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted
-        }
-        _ => WorthQueryProviderSessionDenialKind::ProviderRejected,
-    };
+    let kind = worth_query_execution_contracts::facade::relational_branch_basis_kind(&denial);
     WorthQueryProviderSessionFailure::new(
         kind,
         WorthQueryProviderSessionProtocolStage::Commit,
@@ -49,18 +38,7 @@ pub(super) fn basis_retention_failure(
 pub(super) fn bridge_head_failure(
     denial: worth_relational::facade::branch::RelationalBranchBasisDenial,
 ) -> WorthQueryProviderSessionFailure {
-    let kind = match denial {
-        worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted => {
-            WorthQueryProviderSessionDenialKind::RetentionCapacityExhausted
-        }
-        worth_relational::facade::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted => {
-            WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
-        }
-        worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
-            WorthQueryProviderSessionDenialKind::SnapshotIdentityExhausted
-        }
-        _ => WorthQueryProviderSessionDenialKind::ProviderRejected,
-    };
+    let kind = worth_query_execution_contracts::facade::relational_branch_basis_kind(&denial);
     WorthQueryProviderSessionFailure::new(
         kind,
         WorthQueryProviderSessionProtocolStage::Commit,

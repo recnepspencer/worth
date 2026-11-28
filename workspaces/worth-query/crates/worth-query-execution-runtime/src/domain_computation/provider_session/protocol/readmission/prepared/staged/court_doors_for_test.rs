@@ -25,12 +25,7 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
     }
 }
 
-impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
-    #[doc(hidden)]
-    pub fn provisional_provider_for_test(&self) -> &WorthQueryGraphProviderAnchor {
-        Self::provisional_provider(self)
-    }
-}
+impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {}
 
 impl WorthQuerySessionReadAuthority<'_> {
     #[doc(hidden)]

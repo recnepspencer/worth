@@ -1,8 +1,8 @@
 //! Bank-owned terminal classification of one Query application commit.
 
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationUncommitted, WorthQueryCustomInvariantDenial,
+    InvariantViolationFields, WorthQueryApplicationCommitDeferred,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationUncommitted,
     WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
 };
 use worth_query_host::facade::product::WorthQueryApplicationNoEffectCause;
@@ -42,7 +42,7 @@ pub enum BankMutationCommitOutcome {
         stage: BankCommitDenialStage,
     },
     CustomInvariantDenied {
-        denial: WorthQueryCustomInvariantDenial,
+        denial: InvariantViolationFields,
         stage: BankCommitDenialStage,
     },
     Aborted,

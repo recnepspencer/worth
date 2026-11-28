@@ -2,7 +2,7 @@
 pub use super::{installation::*, outcome::*, read};
 pub use std::collections::{BTreeMap, BTreeSet};
 pub use worth_query_host::facade::{
-    application_invariants::EntityReference, primary_graph::WorthQueryRelationLawDenial,
+    application_invariants::EntityReference, primary_graph::InvariantViolationFields,
 };
 pub type Bag = BTreeMap<(u64, u64), usize>;
 pub fn reachable(graph: &Bag, source: u64) -> usize {

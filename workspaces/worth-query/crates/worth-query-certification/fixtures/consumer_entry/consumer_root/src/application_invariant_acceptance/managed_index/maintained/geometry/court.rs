@@ -319,7 +319,7 @@ fn require_violation<D: std::fmt::Debug, R: std::fmt::Debug>(
         denial.kind(),
         WorthQueryApplicationCommitDenialKind::CustomInvariantDenied
     );
-    let Some(WorthQueryCustomInvariantDenial::Violation { identity, .. }) =
+    let Some(InvariantViolationFields::CustomInvariantViolation { identity, .. }) =
         denial.custom_invariant_denial()
     else {
         panic!("Source or setup failure cannot counterfeit the geometry domain rule: {denial:?}")

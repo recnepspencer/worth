@@ -42,10 +42,8 @@ impl<'run> WorthQueryFreshProviderAttempt<'run> {
             &dyn crate::domain_computation::primary_graph::provider::CoupledProducerAssembly,
         >,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<
-        crate::domain_computation::WorthQueryInvariantApprovedProposedState<'run>,
-        Progression,
-    > {
+    ) -> Result<crate::domain_computation::WorthQueryValidatedProviderCandidate<'run>, Progression>
+    {
         super::invariant::progress_invariant_candidate(
             execution,
             self.staged,

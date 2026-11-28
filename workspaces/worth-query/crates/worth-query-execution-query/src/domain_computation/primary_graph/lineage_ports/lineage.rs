@@ -65,30 +65,6 @@ impl ManagedDerivedViewPort for ManagedDerivedViewRegistry {
         self.reserve_source_image(context)
     }
 
-    fn retain_native_count(
-        self: Arc<Self>,
-        runtime: u64,
-        binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
-        definition: &worth_relational::facade::schema::DerivedRelationHandle,
-        association: &worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation,
-        root: worth_relational::facade::identity::EntityId,
-        product: &crate::basis::WorthQueryProductBranchLease,
-        data: &worth_relational::facade::runtime::DerivedRelationData,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Option<u64> {
-        ManagedDerivedViewRegistry::retain_native_count(
-            &self,
-            runtime,
-            binding,
-            definition,
-            association,
-            root,
-            product,
-            data,
-            execution,
-        )
-    }
-
     fn as_any(&self) -> &(dyn Any + Send + Sync) {
         self
     }

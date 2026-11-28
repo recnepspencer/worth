@@ -2,25 +2,25 @@
 use super::*;
 use rule::{Refusal, RefusalBinding};
 
-fn from_installation(
-    denial: &WorthQueryApplicationPreparationDenial,
-) -> WorthQueryCustomInvariantDenial {
+fn assert_installation_cause(denial: &WorthQueryApplicationPreparationDenial, expected: &Refusal) {
     let WorthQueryApplicationPreparationDenial::Publication(denial) = denial else {
         panic!("wrong seed publication phase: {denial:?}")
     };
-    denial
-        .custom_invariant_denial()
-        .expect("original installed invariant cause")
-        .clone()
+    assert_cause(
+        denial.custom_invariant_denial().expect("original installed invariant cause"),
+        expected,
+    );
+    assert_eq!(denial.decode_invariant_refusal::<RefusalBinding>().unwrap(), *expected);
 }
-fn assert_cause(denial: &WorthQueryCustomInvariantDenial, expected: &Refusal) {
+
+fn assert_cause(denial: &InvariantViolationFields, expected: &Refusal) {
     match (denial, expected) {
         (
-            WorthQueryCustomInvariantDenial::Violation { identity, .. },
+            InvariantViolationFields::CustomInvariantViolation { identity, .. },
             Refusal::Membership { .. },
         ) => assert_eq!(identity.rule_id.as_str(), rule::OneOf::IDENTIFIER),
         (
-            WorthQueryCustomInvariantDenial::Failure {
+            InvariantViolationFields::CustomInvariantFailure {
                 identity,
                 phase,
                 failure,
@@ -37,15 +37,7 @@ fn assert_cause(denial: &WorthQueryCustomInvariantDenial, expected: &Refusal) {
         }
         _ => panic!("wrong typed outcome: {denial:?}"),
     }
-    assert_eq!(
-        denial.decode_refusal::<RefusalBinding>().unwrap(),
-        *expected
-    );
-    // A second decode uses the original retained canonical bytes, without a rule rerun.
-    assert_eq!(
-        denial.decode_refusal::<RefusalBinding>().unwrap(),
-        *expected
-    );
+
 }
 #[test]
 fn installation_refuses_missing_required_case_and_preserves_custom_capacity_cause() {
@@ -77,7 +69,7 @@ fn installation_refuses_missing_required_case_and_preserves_custom_capacity_caus
         Err(denial) => denial,
         Ok(_) => panic!("custom capacity rule must refuse the seed"),
     };
-    assert_cause(&from_installation(&denial), &capacity_refusal());
+    assert_installation_cause(&denial, &capacity_refusal());
     let host = world::try_install_seed(None, Some(255)).unwrap();
     assert_eq!(world::read(&host).first, Some(255));
 }

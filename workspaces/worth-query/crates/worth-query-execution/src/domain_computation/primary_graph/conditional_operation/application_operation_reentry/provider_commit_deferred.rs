@@ -18,20 +18,15 @@ pub(super) fn apply_provider_commit_deferred(
     counts: &mut WorthQueryTemporalReentryCounts,
 ) {
     let kind = deferred.kind();
-    match kind {
-        Kind::RetentionCapacityExhausted => {
-            counts.retention_capacity_backpressure = true;
-            backpressured(wake, evidence, kind);
-        }
-        Kind::PatchPositionReservationContended
-        | Kind::SourceCurrentnessRaced(_)
-        | Kind::RequiredPrerequisitePending(_)
-        | Kind::RelationalDeferred(_)
-        | Kind::CandidateCapacityExhausted { .. }
-        | Kind::PublishedSnapshotCapacityExhausted { .. } => {
-            backpressured(wake, evidence, kind);
-        }
+    if matches!(
+        kind,
+        Kind::RelationalDeferred(
+            worth_relational::facade::mvcc::RelationalPublicationDeferred::RetentionBackpressure
+        )
+    ) {
+        counts.retention_capacity_backpressure = true;
     }
+    backpressured(wake, evidence, kind);
 }
 
 fn backpressured(

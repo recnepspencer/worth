@@ -15,14 +15,6 @@ pub struct WorthQueryProviderSessionCommitDeferred {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryProviderSessionCommitDeferredKind {
     RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred),
-    RetentionCapacityExhausted,
-    PatchPositionReservationContended,
-    CandidateCapacityExhausted {
-        maximum_candidates: usize,
-    },
-    PublishedSnapshotCapacityExhausted {
-        maximum_handles: usize,
-    },
     SourceCurrentnessRaced(worth_relational::facade::mvcc::CompanionCellEditStop),
     RequiredPrerequisitePending(crate::ports::OpaquePrerequisiteDenialKind),
 }

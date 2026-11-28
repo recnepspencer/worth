@@ -21,19 +21,14 @@ pub struct WorthQueryDerivedRelationCountOwner<
     To,
 > {
     relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
-    association:worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation,
     marker: PhantomData<fn() -> (Feature, Collection, Operation)>,
 }
 impl<Schema, Feature, Collection, Operation, Relation, From, To>
     WorthQueryDerivedRelationCountOwner<Schema, Feature, Collection, Operation, Relation, From, To>
 {
-    pub(crate) fn new(
-        relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
-        association:worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation,
-    ) -> Self {
+    pub(crate) fn new(relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>) -> Self {
         Self {
             relation,
-            association,
             marker: PhantomData,
         }
     }
@@ -42,10 +37,7 @@ impl<Schema, Feature, Collection, Operation, Relation, From, To>
 /// Crate-boundary internal port for `WorthQueryDerivedRelationCountOwner`.
 /// Never exported on `worth-query-execution::facade` or Host.
 pub trait DerivedRelationCountOwnerInternalPort<Schema, Relation, From, To>: Sized {
-    fn from_relation(
-        relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
-        association: worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation,
-    ) -> Self;
+    fn from_relation(relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>) -> Self;
 }
 
 impl<Schema, Feature, Collection, Operation, Relation, From, To>
@@ -60,11 +52,8 @@ impl<Schema, Feature, Collection, Operation, Relation, From, To>
         To,
     >
 {
-    fn from_relation(
-        relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
-        association: worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation,
-    ) -> Self {
-        Self::new(relation, association)
+    fn from_relation(relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>) -> Self {
+        Self::new(relation)
     }
 }
 
@@ -138,7 +127,7 @@ where
             Self::Item,
         >,
     ) -> Result<u64, WorthQueryComputationInputDenial<Self::Stopped>> {
-        Ok(reader.derived_relation_count(self.relation, root, &self.association)?)
+        Ok(reader.derived_relation_count(self.relation, root)?)
     }
     fn compute_partition(
         &self,

@@ -1,12 +1,19 @@
 //! Owned native diagnostics without recursively printing a potentially large commit log.
-use worth_relational::facade::mvcc::TransactionCommitError;
+use worth_relational::facade::transactions::{CommitExecutionDenial, TransactionCommitError};
 
 #[derive(Eq, PartialEq)]
-pub(super) struct NativePreparationFailure(pub(super) TransactionCommitError);
+pub(super) enum NativePreparationFailure {
+    Commit(TransactionCommitError),
+    Execution(CommitExecutionDenial),
+}
 
 impl std::fmt::Debug for NativePreparationFailure {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let category = match &self.0 {
+        let error = match self {
+            Self::Commit(error) => error,
+            Self::Execution(denial) => return denial.fmt(formatter),
+        };
+        let category = match error {
             TransactionCommitError::Conflict { .. } => "Conflict",
             TransactionCommitError::Publication { .. } => "Publication",
             TransactionCommitError::Preparation { .. } => "Preparation",
@@ -17,11 +24,11 @@ impl std::fmt::Debug for NativePreparationFailure {
             TransactionCommitError::PublicationFailed { .. } => "PublicationFailed",
             TransactionCommitError::DurabilityUnresolved { .. } => "DurabilityUnresolved",
         };
-        let execution = match &self.0 {
+        let execution = match error {
             TransactionCommitError::Execution { denial, .. } => Some(denial),
             _ => None,
         };
-        let context = self.0.context();
+        let context = error.context();
         formatter
             .debug_struct("NativePreparationFailure")
             .field("category", &category)
@@ -31,7 +38,7 @@ impl std::fmt::Debug for NativePreparationFailure {
             .field("affected_record_count", &context.affected_records.len())
             .field(
                 "commit_log_event_count",
-                &self.0.commit_log().events().len(),
+                &error.commit_log().events().len(),
             )
             .finish()
     }

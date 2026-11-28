@@ -98,32 +98,6 @@ fn close(
         })
 }
 
-pub(super) fn requirement_work(
-    evidence: &RelationalMutationInvariantEvidence,
-    requirement: &WorthQueryInstalledInvariantExecutionRequirement,
-    semantic_work: usize,
-) -> Result<u64, WorthQueryInvariantExecutionFailure> {
-    match requirement.application_invariant() {
-        Some(descriptor) => matched_receipt_work(evidence, descriptor),
-        None => u64::try_from(semantic_work).map_err(|_| super::owner_failure()),
-    }
-}
-
-fn matched_receipt_work(
-    evidence: &RelationalMutationInvariantEvidence,
-    descriptor: &WorthQueryInstalledApplicationInvariantDescriptor,
-) -> Result<u64, WorthQueryInvariantExecutionFailure> {
-    let receipts = evidence.custom_invariant_execution_receipts();
-    let key = requirement_key(descriptor);
-    let index = receipts
-        .binary_search_by(|receipt| receipt_key(receipt).cmp(&key))
-        .map_err(|_| super::closure_failure("required custom invariant receipt is absent"))?;
-    validate_required_receipt(
-        receipt_fact(&receipts[index], evidence),
-        requirement_fact(descriptor),
-    )
-}
-
 fn validate_required_receipt(
     receipt: ReceiptFact<'_>,
     required: RequirementFact<'_>,

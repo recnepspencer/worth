@@ -84,7 +84,7 @@ fn declared_unreachable_kinds_do_not_count_and_bootstrap_preserves_original_publ
             panic!("unreachable principal cannot satisfy minimum2")
         }
     };
-    let Some(WorthQueryRelationLawDenial::ConnectivityMinimum {
+    let Some(InvariantViolationFields::ConnectivityMinimum {
         contract_id,
         reachable_target_count,
         minimum_reachable_targets,
@@ -94,8 +94,8 @@ fn declared_unreachable_kinds_do_not_count_and_bootstrap_preserves_original_publ
         panic!("{refusal:?}")
     };
     assert_eq!(contract_id.as_str(), "Feeds:reaches_at_least");
-    assert_eq!(reachable_target_count, 1);
-    assert_eq!(minimum_reachable_targets, 2);
+    assert_eq!(*reachable_target_count, 1);
+    assert_eq!(*minimum_reachable_targets, 2);
     let twin = install_with_feeds::<LeafAndPrincipalMinimumTwo>(1, &[], 2, &[(0, 0), (0, 1)]);
     assert_eq!(read::feeds::committed(&twin).edges.len(), 2);
     twin.close();

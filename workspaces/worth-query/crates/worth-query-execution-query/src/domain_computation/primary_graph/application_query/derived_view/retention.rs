@@ -22,9 +22,6 @@ mod publication;
 mod reconcile;
 mod reconstruction_observation;
 mod refresh;
-mod source;
-pub use source::ManagedDerivedSource;
-pub use source::WorthQueryRuleReadableCollectionLifecycleForTest;
 pub mod storage_quote;
 use storage_quote::image_quote;
 pub use storage_quote::ManagedStoragePolicy;
@@ -67,7 +64,7 @@ struct RetainedView<Key, Value> {
 pub struct ManagedDerivedViewState<Key, Value> {
     pub runtime_authority: u64,
     pub binding: ApplicationSchemaBindingIdentity,
-    pub source: ManagedDerivedSource,
+    pub query: WorthQueryInstalledApplicationQueryIdentity,
     pub entry_query: Option<WorthQueryInstalledApplicationQueryIdentity>,
     pub secondary_entry_query: Option<WorthQueryInstalledApplicationQueryIdentity>,
     pub branch: BranchId,
@@ -97,7 +94,7 @@ where
         Self {
             runtime_authority,
             binding,
-            source: ManagedDerivedSource::Query(query),
+            query,
             entry_query,
             secondary_entry_query,
             branch,

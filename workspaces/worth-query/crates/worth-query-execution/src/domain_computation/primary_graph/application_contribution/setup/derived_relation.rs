@@ -78,7 +78,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'_, Schem
                 Relation,
                 From,
                 To,
-            >::from_relation(relation, expected),
+            >::from_relation(relation),
         )?;
         self.handlers
             .bind_rule_readable_count::<Feature, Collection>(relation.name());

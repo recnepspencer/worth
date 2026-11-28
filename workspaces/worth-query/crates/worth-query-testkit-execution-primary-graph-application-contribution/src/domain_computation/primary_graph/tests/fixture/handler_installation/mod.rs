@@ -1,6 +1,7 @@
 //! The mutation handlers every fixture world installs before it publishes.
 
 use crate::domain_computation::primary_graph::tests::fixture::capability_touch_binding::CapabilityTouchHandler;
+use crate::domain_computation::primary_graph::tests::fixture::label_edit::{LabelBinding, LabelHandler};
 use crate::domain_computation::primary_graph::tests::fixture::optional_output_binding::OptionalOutputHandler;
 use crate::domain_computation::primary_graph::tests::fixture::program_required_binding::ProgramRequiredHandler;
 use crate::domain_computation::primary_graph::tests::fixture::*;
@@ -10,6 +11,8 @@ pub fn install_fixture_handlers(
     schema: &WorthQueryInstalledApplicationSchema<IdentityExecutionSchema>,
     bootstrap: &mut WorthQueryPrimaryGraphBootstrap<IdentityExecutionSchema>,
 ) {
+    let label = schema.installed_mutation_binding::<LabelBinding>().unwrap();
+    bootstrap.install_handler(&label, LabelHandler).unwrap();
     let program_required = schema
         .installed_mutation_binding::<ProgramRequiredMutationBinding>()
         .unwrap();

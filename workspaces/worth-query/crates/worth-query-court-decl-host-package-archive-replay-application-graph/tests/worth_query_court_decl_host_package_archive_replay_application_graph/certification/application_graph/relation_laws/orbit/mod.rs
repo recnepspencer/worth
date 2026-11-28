@@ -22,7 +22,7 @@ fn bootstrap_requires_a_complete_permutation_before_publication() {
             panic!("an isolated member cannot bootstrap an orbit")
         }
     };
-    let Some(WorthQueryRelationLawDenial::Cardinality {
+    let Some(InvariantViolationFields::RelationCardinalityEndpoint {
         contract_id,
         count,
         limit,
@@ -32,7 +32,7 @@ fn bootstrap_requires_a_complete_permutation_before_publication() {
         panic!("original bootstrap cardinality cause required: {refusal:?}")
     };
     assert_eq!(contract_id.as_str(), "Precedes:orbit");
-    assert_eq!((count, limit), (0, 1));
+    assert_eq!((*count, *limit), (0, 1));
     let twin = install::<Orbit>(1, &[(0, 0)]);
     assert_eq!(read::committed(&twin).edges, [(0, 0)].into());
     twin.close();
@@ -62,9 +62,9 @@ fn open_chains_and_excess_physical_edges_name_the_original_member() {
         (4, vec![(2, 1)], vec![(0, 1)], 2, vec![(2, Side::Source)]),
     ] {
         let refusal = denied(world.replace_edges(serial, &additions, &removals));
-        let Some(WorthQueryRelationLawDenial::Cardinality {
+        let Some(InvariantViolationFields::RelationCardinalityEndpoint {
             contract_id,
-            member: EntityReference::Existing(member),
+            entity_id: EntityReference::Existing(member),
             boundary,
             count: actual,
             limit,
@@ -74,10 +74,10 @@ fn open_chains_and_excess_physical_edges_name_the_original_member() {
             panic!("original native cardinality member required: {refusal:?}")
         };
         assert_eq!(contract_id.as_str(), "Precedes:orbit");
-        assert_eq!((actual, limit), (count, 1));
+        assert_eq!((*actual, *limit), (count, 1));
         assert!(expected
             .iter()
-            .any(|&(key, side)| { *member == before.identities[&key] && boundary == side }));
+            .any(|&(key, side)| { *member == before.identities[&key] && *boundary == side }));
         assert_eq!(read::committed(&world).multiplicity, before.multiplicity);
     }
     // The lawful twin replaces both successors in one candidate, splitting the cycle.
@@ -97,9 +97,9 @@ fn every_created_member_requires_edges_and_a_self_cycle_is_a_lawful_creation() {
     let mut world = install::<Orbit>(1, &[(0, 0)]);
     let before = read::committed(&world);
     let refusal = denied(world.create_node(0, true, false));
-    let Some(WorthQueryRelationLawDenial::Cardinality {
+    let Some(InvariantViolationFields::RelationCardinalityEndpoint {
         contract_id,
-        member: EntityReference::Created(_),
+        entity_id: EntityReference::Created(_),
         count,
         limit,
         ..
@@ -110,7 +110,7 @@ fn every_created_member_requires_edges_and_a_self_cycle_is_a_lawful_creation() {
     assert_eq!(contract_id.as_str(), "Precedes:orbit");
     // This proposal creates exactly one member. The original typed reference
     // may carry a normalized key; its display is not a raw-key recovery API.
-    assert_eq!((count, limit), (0, 1));
+    assert_eq!((*count, *limit), (0, 1));
     assert_eq!(read::identity(&world, 1), None);
     assert_eq!(read::committed(&world).multiplicity, before.multiplicity);
     committed(world.create_with(CreateNodeInput {
@@ -131,7 +131,7 @@ fn orbit_preserves_a_stricter_independent_self_edge_policy() {
     let world = install::<NoSelfOrbit>(3, CYCLE);
     let before = read::committed(&world);
     let refusal = denied(world.replace_edges(1, &[(0, 0), (2, 1)], &[(0, 1), (2, 0)]));
-    let Some(WorthQueryRelationLawDenial::SelfEdge {
+    let Some(InvariantViolationFields::RelationEndpointKindSelfEdge {
         contract_id,
         source: EntityReference::Existing(source),
         target: EntityReference::Existing(target),
@@ -146,7 +146,7 @@ fn orbit_preserves_a_stricter_independent_self_edge_policy() {
         (*source, *target),
         (before.identities[&0], before.identities[&0])
     );
-    assert!(self_edge);
+    assert!(*self_edge);
     assert_eq!(read::committed(&world).multiplicity, before.multiplicity);
     committed(world.replace_edges(2, &[(0, 2), (2, 1), (1, 0)], CYCLE));
     assert_eq!(

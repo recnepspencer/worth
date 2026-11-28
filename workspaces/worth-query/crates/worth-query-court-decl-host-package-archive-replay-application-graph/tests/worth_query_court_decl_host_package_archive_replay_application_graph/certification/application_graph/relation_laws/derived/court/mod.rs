@@ -22,22 +22,8 @@ fn descriptive_collection_association_cannot_install_a_custom_computation_as_sou
 }
 
 #[test]
-fn proposed_derived_violation_and_managed_count_share_the_real_recipe_without_cached_authority() {
-    use WorthQueryRuleReadableCollectionLifecycleForTest as State;
+fn proposed_derived_violation_and_count_use_the_authoritative_recipe() {
     let world = install::<Derived>(6, &[(0, 1)]);
-    assert!(world
-        .application
-        .runtime()
-        .rule_readable_collection_lifecycle_for_test()
-        .is_empty());
-    value(&world, 100, 0);
-    assert_eq!(
-        world
-            .application
-            .runtime()
-            .rule_readable_collection_lifecycle_for_test(),
-        [State::Warm]
-    );
     let before = read::committed(&world);
     assert_eq!(before.edges, std::collections::BTreeSet::from([(0, 1)]));
     let violation = outcome::denied(world.edit(101, &[(1, 2)]));
@@ -46,52 +32,13 @@ fn proposed_derived_violation_and_managed_count_share_the_real_recipe_without_ca
     assert_eq!(read::committed(&world).edges, before.edges);
     // The lawful twin changes the same physical adjacency to another target.
     outcome::committed(world.edit(102, &[(1, 3)]));
-    assert_eq!(
-        world
-            .application
-            .runtime()
-            .rule_readable_collection_lifecycle_for_test(),
-        [State::Dirty],
-        "the formerly empty second-leg adjacency must invalidate the actual registered entry"
-    );
     value(&world, 103, 1);
-    assert_eq!(
-        world
-            .application
-            .runtime()
-            .rule_readable_collection_lifecycle_for_test(),
-        [State::Warm]
-    );
     // Physical support changes while the deduplicated endpoint set remains {3}.
     outcome::committed(world.replace_edges(104, &[(0, 4), (4, 3)], &[(1, 3)]));
-    assert_eq!(
-        world
-            .application
-            .runtime()
-            .rule_readable_collection_lifecycle_for_test(),
-        [State::Dirty]
-    );
     value(&world, 105, 1);
     assert_eq!(
         read::committed(&world).edges,
         std::collections::BTreeSet::from([(0, 1), (0, 4), (4, 3)])
-    );
-    world
-        .application
-        .runtime()
-        .discard_rule_readable_collections();
-    assert!(world
-        .application
-        .runtime()
-        .rule_readable_collection_lifecycle_for_test()
-        .is_empty());
-    value(&world, 106, 1);
-    assert_eq!(
-        world
-            .application
-            .runtime()
-            .rule_readable_collection_lifecycle_for_test(),
-        [State::Warm]
     );
     let before_failed_read = read::committed(&world).edges;
     let refused = count(&world.application, 107, true).unwrap_err();

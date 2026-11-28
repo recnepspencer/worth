@@ -130,17 +130,13 @@ the same declared recipe and actual collection traits. Its computation declares
 key, and `DeterministicPartitioned` execution. The closed framework owner feeds
 the existing partitioned computation and collection completion.
 Installation refuses a custom owner that only repeats the descriptive collection
-association. The existing derived-view registry retains the disposable count and
-its reverse dependency index under the actual Product branch/incarnation/commit.
-Physical changes invalidate it even when the derived endpoint set stays equal.
-Every count first acquires its Native source, so warm retention is not a promise
-of avoiding physical proof work. `discard_rule_readable_collections()` removes
-these projections; later reads can reconstruct them without changing truth or
-ordinary Query views.
+association. Counts read the authoritative Native recipe and retain its physical and empty
+adjacency dependencies as decision facts.
+
 
 The [facade journey](../../crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/derived/court/mod.rs)
 uses an authenticated action, real proposed-state rule, negative-adjacency edit,
-physical rewire and discard/rebuild. The [Native audience court](../../crates/worth-query-court-execution-convergence-epoch-fixture/tests/worth_query_court_execution_convergence_epoch_fixture/domain_computation/primary_graph/application_invariant/typed_view/derived_relation/native_audience/mod.rs)
+physical rewire and count after reopening. The [Native audience court](../../crates/worth-query-court-execution-convergence-epoch-fixture/tests/worth_query_court_execution_convergence_epoch_fixture/domain_computation/primary_graph/application_invariant/typed_view/derived_relation/native_audience/mod.rs)
 checks that a broad proof cannot lend its physical source access to a narrower
 reader on the same observation. The [logical composition journey](../../crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/logical/court/mod.rs)
 uses the same source owners for laws, walks, orbits and components. The

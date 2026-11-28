@@ -27,7 +27,7 @@ pub use crate::domain_computation::{
     WorthQueryInvariantExecutionFailurePosture, WorthQueryPreparedProviderSession,
     WorthQueryProductUnpublishedRecoveryFailure, WorthQueryProductUnpublishedRecoveryReleaseDenial,
     WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryProviderSessionFailure,
-    WorthQueryRecoveredProductReleaseDenial, WorthQueryRelationLawDenial,
+    WorthQueryRecoveredProductReleaseDenial,
 };
 pub use managed_index::*;
 pub use mutation_handler::*;
@@ -186,20 +186,19 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryCorrectionSelectionDenial, WorthQueryCorrelatedInboundOccurrence,
     WorthQueryCurrentBodyRequirementAssessment, WorthQueryCurrentOutputDenial,
     WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputSelection,
-    WorthQueryCustomInvariantDenial, WorthQueryDelegationActivationProgram,
-    WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans,
-    WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
-    WorthQueryDurableDispatchRecordDenial, WorthQueryElevationApprovalAuthorizationDenial,
-    WorthQueryElevationApprovalOutcome, WorthQueryElevationApprovalProgram,
-    WorthQueryElevationCloseAuthorizationDenial, WorthQueryElevationCloseOutcome,
-    WorthQueryElevationCloseProgram, WorthQueryElevationClosureKind,
-    WorthQueryElevationRequestOutcome, WorthQueryElevationRequestProgram,
-    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
-    WorthQueryEntityResolutionRefusalKind, WorthQueryExecutionLeaseDenial,
-    WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
-    WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
-    WorthQueryFulfilledRequiredRoot, WorthQueryGeneratedEntity,
-    WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    WorthQueryDelegationActivationProgram, WorthQueryDependentPairReadContext,
+    WorthQueryDerivedPairReadPlans, WorthQueryDiscoveredRetentionControlDenial,
+    WorthQueryDiscoveredRetentionReservationForTest, WorthQueryDurableDispatchRecordDenial,
+    WorthQueryElevationApprovalAuthorizationDenial, WorthQueryElevationApprovalOutcome,
+    WorthQueryElevationApprovalProgram, WorthQueryElevationCloseAuthorizationDenial,
+    WorthQueryElevationCloseOutcome, WorthQueryElevationCloseProgram,
+    WorthQueryElevationClosureKind, WorthQueryElevationRequestOutcome,
+    WorthQueryElevationRequestProgram, WorthQueryEntityResolutionDenial,
+    WorthQueryEntityResolutionDenialKind, WorthQueryEntityResolutionRefusalKind,
+    WorthQueryExecutionLeaseDenial, WorthQueryExternalDispatchAttemptDenial,
+    WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
+    WorthQueryExternalTransportInstallationDenial, WorthQueryFulfilledRequiredRoot,
+    WorthQueryGeneratedEntity, WorthQueryGeneratedOutputInvariantAdmissionDenial,
     WorthQueryGeneratedOutputPublicationNoEffect,
     WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputReconstruction,
     WorthQueryGeneratedOutputReconstructionDenial, WorthQueryGeneratedOutputReconstructionFailure,
@@ -286,8 +285,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryRequiredOutputConnectionDenial, WorthQueryRequiredOutputSourcePreparationFailure,
     WorthQueryReservedRecord, WorthQueryRestoredGeneratedOutput,
     WorthQueryRetainedBatchQueryAdmissionDenial, WorthQueryRetainedGeneratedOutputEntity,
-    WorthQueryRetainedSnapshotRead, WorthQueryReviewedElevation,
-    WorthQueryRuleReadableCollectionLifecycleForTest, WorthQueryScopeFreshnessCheck,
+    WorthQueryRetainedSnapshotRead, WorthQueryReviewedElevation, WorthQueryScopeFreshnessCheck,
     WorthQueryScopeFreshnessDiagnostic, WorthQuerySelectedApplicationProducer,
     WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
     WorthQuerySelectedProductOperation, WorthQuerySelectedProgramInspection,
@@ -397,3 +395,5 @@ pub use crate::domain_computation::application_aftermath::dispatch_journal::{Que
 mod inbound_completion;
 pub use crate::domain_computation::primary_graph::WorthQueryOutputDiscoveryRecipe;
 pub use inbound_completion::*;
+
+pub use worth_relational::facade::transactions::InvariantViolationFields;

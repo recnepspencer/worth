@@ -1,7 +1,4 @@
-use crate::domain_computation::{
-    WorthQueryBoundInvariantExecutionView, WorthQueryInvariantExecutionFailure,
-    WorthQueryInvariantStateLocator,
-};
+use crate::domain_computation::WorthQueryInvariantExecutionFailure;
 
 use super::super::application_attempt_state::WorthQueryStagedApplicationAttempt;
 
@@ -9,7 +6,7 @@ pub(super) struct ApplicationInvariantCandidateMaterial {
     pub(super) publication_appendix: Option<super::publication_appendix::PublicationAppendixPreparation>,
     pub(super) request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     pub(super) admitted_at: Option<worth_foundational::facade::CanonicalTimestamp>,
-    pub(super) semantic: ApplicationInvariantSemanticMaterial,
+    pub(super) effect_count: usize,
     pub(super) requirements: Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
     pub(super) producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
@@ -34,11 +31,6 @@ pub(super) struct ApplicationInvariantCandidateMaterial {
         worth_query_installation::facade::WorthQueryOperationTouchContract,
     pub(super) application_read_touch_overlap:
         worth_query_installation::facade::WorthQueryOperationReadTouchOverlapIndex,
-}
-
-pub(super) struct ApplicationInvariantSemanticMaterial {
-    pub(super) expected: Vec<WorthQueryInvariantStateLocator>,
-    load_evidence: String,
 }
 
 impl ApplicationInvariantCandidateMaterial {
@@ -66,7 +58,7 @@ impl ApplicationInvariantCandidateMaterial {
             publication_appendix,
             request: staged.validation_request().clone(),
             admitted_at: staged.admitted_at().ok(),
-            semantic: ApplicationInvariantSemanticMaterial::from_staged(staged)?,
+            effect_count: staged.expected_step_count(),
             requirements: staged.invariant_requirements().to_vec(),
             producer_required_invariants: staged.producer_required_invariants(),
             batch: staged.batch().clone(),
@@ -97,51 +89,4 @@ impl ApplicationInvariantCandidateMaterial {
                 .ok_or_else(super::touch_failure)?,
         })
     }
-}
-
-impl ApplicationInvariantSemanticMaterial {
-    pub(super) fn from_staged(
-        staged: &WorthQueryStagedApplicationAttempt<'_>,
-    ) -> Result<Self, WorthQueryInvariantExecutionFailure> {
-        Ok(Self {
-            expected: expected_locators(staged.overlay_facts())?,
-            load_evidence: format!("primary-invariant-load:{}", staged.overlay_identity()),
-        })
-    }
-
-    pub(super) fn validate_load(
-        &self,
-        execution: &WorthQueryBoundInvariantExecutionView<'_>,
-        evidence: crate::domain_computation::WorthQueryInvariantStateLoadEvidenceView<'_>,
-    ) -> Result<(), WorthQueryInvariantExecutionFailure> {
-        (execution.state_load_plan().locators() == self.expected.as_slice()
-            && evidence.loaded_fact_locators() == self.expected.as_slice()
-            && evidence.physical_load_evidence() == self.load_evidence)
-            .then_some(())
-            .ok_or_else(|| {
-                super::closure_failure(
-                    "invariant execution evidence differs from the exact proposed state",
-                )
-            })
-    }
-}
-
-fn expected_locators(
-    facts: &[crate::domain_computation::WorthQueryProposedFact],
-) -> Result<Vec<WorthQueryInvariantStateLocator>, WorthQueryInvariantExecutionFailure> {
-    let mut expected = facts
-        .iter()
-        .map(|fact| {
-            WorthQueryInvariantStateLocator::new("application-proposed-state", fact.identity())
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    expected.sort();
-    let original_len = expected.len();
-    expected.dedup();
-    if expected.len() != original_len {
-        return Err(super::closure_failure(
-            "proposed effects contain duplicate invariant fact identities",
-        ));
-    }
-    Ok(expected)
 }

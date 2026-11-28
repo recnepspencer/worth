@@ -56,23 +56,19 @@ pub(super) fn catalog(cause: &Catalog) -> Summary {
 }
 
 pub(super) fn native(cause: &Native) -> Summary {
-    match cause {
-        Native::Cancelled => CANCELLED,
-        Native::DeadlineElapsed => TIMED_OUT,
-        Native::StorageUnavailable { .. }
-        | Native::ContentInconsistency
-        | Native::Content { .. } => STORAGE,
-        Native::HistoricalVisibility { .. } => BUSY,
-        Native::WorkerFailed
-        | Native::NestedStopped
-        | Native::AccountingUnavailable
-        | Native::UnrelatedNestedLease
-        | Native::NoActiveExecutionScope
-        | Native::EquivalenceContractUnavailable
-        | Native::UncheckedCustomKernel
-        | Native::ExpectedIdentitiesNotCanonical
-        | Native::ProjectionContract { .. } => INTERNAL,
-        _ => CAPACITY,
+    use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
+    use worth_query_execution::facade::primary_graph::relational_execution_kind;
+    let stop = relational_execution_kind(*cause, None);
+    match stop {
+        Ok(Session::ExecutionResource {
+            denial:
+                Resource::AccountingUnavailable
+                | Resource::NestedLeaseMisuse
+                | Resource::NoActiveExecutionScope
+                | Resource::EquivalenceContractUnavailable,
+            ..
+        }) => INTERNAL,
+        _ => stopped(&stop),
     }
 }
 

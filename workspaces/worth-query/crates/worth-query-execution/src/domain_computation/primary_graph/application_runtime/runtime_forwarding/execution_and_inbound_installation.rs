@@ -16,18 +16,6 @@ mod domain_computation_primary_graph_application_runtime_candidate_input_observa
 }
 
 #[allow(unused_imports, dead_code)]
-mod domain_computation_primary_graph_application_runtime_derived_relation {
-    use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
-    use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
-    use worth_query_installation::facade::ApplicationSchema;
-    impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        pub fn discard_rule_readable_collections(&self) {
-            self.inner.discard_rule_readable_collections()
-        }
-    }
-}
-
-#[allow(unused_imports, dead_code)]
 mod domain_computation_primary_graph_application_runtime_execution_memory {
     use worth_execution::ExecutionResourceLease;
     use worth_execution::LeaseRequest;

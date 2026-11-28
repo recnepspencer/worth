@@ -1,5 +1,4 @@
 use std::marker::PhantomData;
-use std::sync::Arc;
 
 use super::super::super::{
     WorthQueryClosedProviderSessionDisposition, WorthQueryGraphProviderAnchor,
@@ -97,14 +96,6 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
 
     pub fn provisional_binding_identity(&self) -> &str {
         self.affinity.binding().canonical_identity()
-    }
-
-    pub fn provisional_provider(&self) -> &WorthQueryGraphProviderAnchor {
-        self.affinity.provider()
-    }
-
-    pub fn provisional_provider_arc(&self) -> Arc<WorthQueryGraphProviderAnchor> {
-        self.affinity.provider_arc()
     }
 
     pub fn execution_request(&self) -> worth_execution::ExecutionRequest<'run, 'run> {

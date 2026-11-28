@@ -6,14 +6,10 @@ use super::provider_anchor::{
     WorthQueryErasedProviderSessionLifecycle, WorthQueryGraphProviderAnchor,
     WorthQueryTypedGraphParticipationProvider,
 };
-use super::semantic_provider_ports::{
-    WorthQueryErasedDecisionFactProvider, WorthQueryErasedInvariantExecutionProvider,
-    WorthQueryErasedProvisionalGraphProvider,
-};
+use super::semantic_provider_ports::WorthQueryErasedDecisionFactProvider;
 use crate::domain_computation::{
     WorthQueryDecisionFactProvider, WorthQueryGraphParticipationProvider,
-    WorthQueryInvariantExecutionProvider, WorthQueryProviderSessionLifecycle,
-    WorthQueryProvisionalGraphProvider,
+    WorthQueryProviderSessionLifecycle,
 };
 
 static NEXT_GRAPH_PROVIDER_GENERATION: AtomicU64 = AtomicU64::new(1);
@@ -35,8 +31,6 @@ impl WorthQueryGraphProviderAnchor {
             }),
             session_lifecycle: None,
             decision_fact_provider: None,
-            provisional_provider: None,
-            invariant_provider: None,
             convergence_provider: None,
             provider_identity: std::any::type_name::<P>(),
             provider_generation: next_generation(),
@@ -66,8 +60,6 @@ impl WorthQueryGraphProviderAnchor {
             provider: typed_provider::<G, P>(provider),
             session_lifecycle: None,
             decision_fact_provider: None,
-            provisional_provider: None,
-            invariant_provider: None,
             convergence_provider: Some(convergence_provider),
             provider_identity: std::any::type_name::<P>(),
             provider_generation: next_generation(),
@@ -94,8 +86,6 @@ impl WorthQueryGraphProviderAnchor {
             provider: typed_provider::<G, P>(provider),
             session_lifecycle: Some(session_lifecycle),
             decision_fact_provider: None,
-            provisional_provider: None,
-            invariant_provider: None,
             convergence_provider: None,
             provider_identity: std::any::type_name::<P>(),
             provider_generation: next_generation(),
@@ -126,8 +116,6 @@ impl WorthQueryGraphProviderAnchor {
             provider: typed_provider::<G, P>(provider),
             session_lifecycle: Some(session_lifecycle),
             decision_fact_provider: Some(decision_fact_provider),
-            provisional_provider: None,
-            invariant_provider: None,
             convergence_provider: None,
             provider_identity: std::any::type_name::<P>(),
             provider_generation: next_generation(),
@@ -140,86 +128,11 @@ impl WorthQueryGraphProviderAnchor {
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
-    pub fn install_provisional_capable<
+    pub fn install_convergent_decision_capable<
         G: 'static,
         P: WorthQueryGraphParticipationProvider<G>
             + WorthQueryProviderSessionLifecycle
             + WorthQueryDecisionFactProvider
-            + WorthQueryProvisionalGraphProvider,
-    >(
-        provider: P,
-    ) -> Self {
-        let provider = Arc::new(provider);
-        let resource_support = provider.execution_resource_support();
-        let session_lifecycle: Arc<dyn WorthQueryErasedProviderSessionLifecycle> = provider.clone();
-        let decision_fact_provider: Arc<dyn WorthQueryErasedDecisionFactProvider> =
-            provider.clone();
-        let provisional_provider: Arc<dyn WorthQueryErasedProvisionalGraphProvider> =
-            provider.clone();
-        Self {
-            session_grant_control: Default::default(),
-            provider: typed_provider::<G, P>(provider),
-            session_lifecycle: Some(session_lifecycle),
-            decision_fact_provider: Some(decision_fact_provider),
-            provisional_provider: Some(provisional_provider),
-            invariant_provider: None,
-            convergence_provider: None,
-            provider_identity: std::any::type_name::<P>(),
-            provider_generation: next_generation(),
-            resource_support,
-        }
-    }
-
-    #[doc(hidden)]
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-    )]
-    pub fn install_invariant_capable<
-        G: 'static,
-        P: WorthQueryGraphParticipationProvider<G>
-            + WorthQueryProviderSessionLifecycle
-            + WorthQueryDecisionFactProvider
-            + WorthQueryProvisionalGraphProvider
-            + WorthQueryInvariantExecutionProvider,
-    >(
-        provider: P,
-    ) -> Self {
-        let provider = Arc::new(provider);
-        let resource_support = provider.execution_resource_support();
-        let session_lifecycle: Arc<dyn WorthQueryErasedProviderSessionLifecycle> = provider.clone();
-        let decision_fact_provider: Arc<dyn WorthQueryErasedDecisionFactProvider> =
-            provider.clone();
-        let provisional_provider: Arc<dyn WorthQueryErasedProvisionalGraphProvider> =
-            provider.clone();
-        let invariant_provider: Arc<dyn WorthQueryErasedInvariantExecutionProvider> =
-            provider.clone();
-        Self {
-            session_grant_control: Default::default(),
-            provider: typed_provider::<G, P>(provider),
-            session_lifecycle: Some(session_lifecycle),
-            decision_fact_provider: Some(decision_fact_provider),
-            provisional_provider: Some(provisional_provider),
-            invariant_provider: Some(invariant_provider),
-            convergence_provider: None,
-            provider_identity: std::any::type_name::<P>(),
-            provider_generation: next_generation(),
-            resource_support,
-        }
-    }
-
-    #[doc(hidden)]
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
-    )]
-    pub fn install_convergent_invariant_capable<
-        G: 'static,
-        P: WorthQueryGraphParticipationProvider<G>
-            + WorthQueryProviderSessionLifecycle
-            + WorthQueryDecisionFactProvider
-            + WorthQueryProvisionalGraphProvider
-            + WorthQueryInvariantExecutionProvider
             + crate::domain_computation::WorthQueryConvergenceDomainProvider,
     >(
         provider: P,
@@ -229,10 +142,6 @@ impl WorthQueryGraphProviderAnchor {
         let session_lifecycle: Arc<dyn WorthQueryErasedProviderSessionLifecycle> = provider.clone();
         let decision_fact_provider: Arc<dyn WorthQueryErasedDecisionFactProvider> =
             provider.clone();
-        let provisional_provider: Arc<dyn WorthQueryErasedProvisionalGraphProvider> =
-            provider.clone();
-        let invariant_provider: Arc<dyn WorthQueryErasedInvariantExecutionProvider> =
-            provider.clone();
         let convergence_provider: Arc<
             dyn crate::domain_computation::WorthQueryConvergenceDomainProvider,
         > = provider.clone();
@@ -241,8 +150,6 @@ impl WorthQueryGraphProviderAnchor {
             provider: typed_provider::<G, P>(provider),
             session_lifecycle: Some(session_lifecycle),
             decision_fact_provider: Some(decision_fact_provider),
-            provisional_provider: Some(provisional_provider),
-            invariant_provider: Some(invariant_provider),
             convergence_provider: Some(convergence_provider),
             provider_identity: std::any::type_name::<P>(),
             provider_generation: next_generation(),

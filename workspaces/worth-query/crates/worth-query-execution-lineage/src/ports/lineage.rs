@@ -109,19 +109,6 @@ pub trait ManagedDerivedViewPort: Any + Send + Sync {
         worth_relational::facade::mvcc::CompanionPreflightStop,
     >;
 
-    #[allow(clippy::too_many_arguments)]
-    fn retain_native_count(
-        self: Arc<Self>,
-        runtime: u64,
-        binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
-        definition: &worth_relational::facade::schema::DerivedRelationHandle,
-        association: &worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation,
-        root: worth_relational::facade::identity::EntityId,
-        product: &crate::basis::WorthQueryProductBranchLease,
-        data: &worth_relational::facade::runtime::DerivedRelationData,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Option<u64>;
-
     fn as_any(&self) -> &(dyn Any + Send + Sync);
 
     fn into_any_arc(self: Arc<Self>) -> Arc<dyn Any + Send + Sync>;
@@ -163,20 +150,6 @@ impl ManagedDerivedViewPort for EmptyManagedDerivedViewPort {
         worth_relational::facade::mvcc::CompanionPreflightStop,
     > {
         Ok(None)
-    }
-
-    fn retain_native_count(
-        self: Arc<Self>,
-        _runtime: u64,
-        _binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
-        _definition: &worth_relational::facade::schema::DerivedRelationHandle,
-        _association: &worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation,
-        _root: worth_relational::facade::identity::EntityId,
-        _product: &crate::basis::WorthQueryProductBranchLease,
-        _data: &worth_relational::facade::runtime::DerivedRelationData,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Option<u64> {
-        None
     }
 
     fn as_any(&self) -> &(dyn Any + Send + Sync) {

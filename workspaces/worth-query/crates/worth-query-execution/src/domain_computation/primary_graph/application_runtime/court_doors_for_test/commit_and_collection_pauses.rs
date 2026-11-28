@@ -1,22 +1,6 @@
 //! Thin forwarding shims for `court_doors_for_test` methods onto `worth-query-execution-query`.
 
 #[allow(unused_imports, dead_code)]
-mod domain_computation_primary_graph_application_runtime_derived_relation_doors {
-    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::derived_view::WorthQueryRuleReadableCollectionLifecycleForTest;
-    use worth_query_installation::facade::ApplicationSchema;
-    use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
-    use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
-    impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        #[doc(hidden)]
-        pub fn rule_readable_collection_lifecycle_for_test(
-            &self,
-        ) -> Vec<WorthQueryRuleReadableCollectionLifecycleForTest> {
-            self.inner.rule_readable_collection_lifecycle_for_test()
-        }
-    }
-}
-
-#[allow(unused_imports, dead_code)]
 mod domain_computation_primary_graph_application_runtime_operation_control_doors {
     use worth_query_execution_query::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::WorthQueryApplicationAttemptRegistrationPauseForTest;
     use worth_query_execution_query::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::WorthQueryApplicationCandidatePreparationPauseForTest;

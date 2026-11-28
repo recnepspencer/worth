@@ -31,7 +31,7 @@ impl WorthQueryPrimaryGraphProvider {
         super::super::mutation_work::WorthQueryPrimaryMutationWorkCounters,
         WorthQueryInvariantExecutionFailure,
     > {
-        let semantic_work = u64::try_from(material.semantic.expected.len()).map_err(|_| {
+        let semantic_work = u64::try_from(material.effect_count).map_err(|_| {
             closure_failure("candidate semantic cardinality exceeds work representation")
         })?;
         let candidate = judgment.candidate();
@@ -65,8 +65,8 @@ impl WorthQueryPrimaryGraphProvider {
             super::super::mutation_work::WorthQueryPrimaryMutationWorkCounters::new(
                 WorthQueryInvariantWorkMint { _private: () },
                 material.decision_facts,
-                material.semantic.expected.len(),
-                material.semantic.expected.len(),
+                material.effect_count,
+                material.effect_count,
                 owner_work,
                 if owns_native_judgment {
                     summary.execution_count
@@ -158,11 +158,7 @@ impl WorthQueryPrimaryGraphProvider {
         self.attempts
             .lock()
             .unwrap_or_else(|p| p.into_inner())
-            .retain_coupled_invariant_approved(
-                session,
-                candidate.invariant_evidence().clone(),
-                work,
-            )
+            .retain_coupled_invariant_approved(session, work)
             .map_err(closure_failure)
     }
 }

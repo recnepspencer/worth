@@ -64,9 +64,6 @@ pub fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
     assert_eq!((*control.provider_session_readmissions_for_test()), 1);
     assert_eq!((*control.provider_session_preparations_for_test()), 1);
     assert_eq!((*control.attempt_registrations_for_test()), 1);
-    assert_eq!((*control.overlay_stagings_for_test()), 1);
-    assert_eq!((*control.invariant_state_loads_for_test()), 1);
-    assert_eq!((*control.invariant_executions_for_test()), 1);
     assert_eq!((*control.staged_session_preparations_for_test()), 1);
     assert_eq!((*control.prepared_commits_for_test()), 1);
     assert_eq!((*control.attempt_aborts_for_test()), 0);
@@ -86,9 +83,6 @@ pub fn assert_no_managed_attempt_work(
     assert_eq!((*work.provider_session_preparations_for_test()), 0);
     assert_eq!((*work.staged_session_preparations_for_test()), 0);
     assert_eq!((*work.attempt_registrations_for_test()), 0);
-    assert_eq!((*work.overlay_stagings_for_test()), 0);
-    assert_eq!((*work.invariant_state_loads_for_test()), 0);
-    assert_eq!((*work.invariant_executions_for_test()), 0);
     assert_eq!((*work.prepared_commits_for_test()), 0);
     assert_eq!((*work.attempt_aborts_for_test()), 0);
     assert_eq!((*work.managed_cleanups_for_test()), 0);

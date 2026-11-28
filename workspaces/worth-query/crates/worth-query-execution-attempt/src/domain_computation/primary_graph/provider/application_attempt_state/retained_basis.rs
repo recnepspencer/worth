@@ -1,7 +1,6 @@
 //! Narrow attempt-owned products used outside the store lock.
 
 use super::super::WorthQueryPrimaryGraphApplicationDecisionFact;
-use crate::domain_computation::WorthQueryProposedFact;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 pub struct WorthQueryObservedApplicationFactBasis
@@ -56,26 +55,5 @@ impl WorthQueryApplicationIdempotencyBasis {
         super::super::WorthQueryProviderIdempotencyResolutionDenial,
     > {
         provider.resolve_idempotency_binding_at_product(execution, self.binding, &self.product)
-    }
-}
-
-pub struct WorthQueryAdmittedApplicationOverlay {
-    identity: String,
-    facts: Vec<WorthQueryProposedFact>,
-}
-
-impl WorthQueryAdmittedApplicationOverlay {
-    pub const fn new(identity: String, facts: Vec<WorthQueryProposedFact>) -> Self {
-        Self { identity, facts }
-    }
-
-    pub fn admit(
-        self,
-        admission: crate::domain_computation::WorthQueryProvisionalOverlayAdmission,
-    ) -> Result<
-        crate::domain_computation::WorthQueryProvisionalOverlayEvidence,
-        crate::domain_computation::WorthQueryProvisionalFailure,
-    > {
-        admission.admit(self.identity, self.facts)
     }
 }

@@ -72,7 +72,7 @@ pub enum WorthQueryTemporalControlStop {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryTemporalTerminalFailure {
-    CustomInvariant(crate::domain_computation::WorthQueryCustomInvariantDenial),
+    CustomInvariant(crate::domain_computation::InvariantViolationFields),
     ApplicationCommit(
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
     ),

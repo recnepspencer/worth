@@ -213,35 +213,22 @@ fn primary_graph_denial_is_budget_stop(kind: WorthQueryPrimaryGraphInstallationD
 pub(crate) fn relational_execution_denial_is_budget_stop(
     cause: RelationalExecutionDenialCause,
 ) -> bool {
-    match cause {
-        RelationalExecutionDenialCause::WorkerLimitExceedsParent
-        | RelationalExecutionDenialCause::MemoryLimitExceedsParent
-        | RelationalExecutionDenialCause::WorkLimitExceedsParent
-        | RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
-        | RelationalExecutionDenialCause::ProcessMemoryExhausted { .. }
-        | RelationalExecutionDenialCause::DeclaredMemoryExhausted { .. }
-        | RelationalExecutionDenialCause::ChargedBytesOverflow
-        | RelationalExecutionDenialCause::Cancelled
-        | RelationalExecutionDenialCause::DeadlineElapsed
-        | RelationalExecutionDenialCause::WorkCounterOverflow
-        | RelationalExecutionDenialCause::WorkExhausted
-        | RelationalExecutionDenialCause::NestedStopped
-        | RelationalExecutionDenialCause::ResultCapacityExceeded
-        | RelationalExecutionDenialCause::AllocationFailed
-        | RelationalExecutionDenialCause::ScratchCapacityExceeded
-        | RelationalExecutionDenialCause::MemoryOverflow => true,
-        RelationalExecutionDenialCause::HistoricalVisibility(_)
-        | RelationalExecutionDenialCause::ProjectionContract(_)
-        | RelationalExecutionDenialCause::StorageUnavailable(_)
-        | RelationalExecutionDenialCause::UnrelatedNestedLease
-        | RelationalExecutionDenialCause::NoActiveExecutionScope
-        | RelationalExecutionDenialCause::EquivalenceContractUnavailable
-        | RelationalExecutionDenialCause::AccountingUnavailable
-        | RelationalExecutionDenialCause::WorkerFailed
-        | RelationalExecutionDenialCause::UncheckedCustomKernel
-        | RelationalExecutionDenialCause::ExpectedIdentitiesNotCanonical
-        | RelationalExecutionDenialCause::ContentInconsistency
-        | RelationalExecutionDenialCause::Content(_) => false,
+    use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
+    use worth_query_execution::facade::primary_graph::relational_execution_kind;
+    match relational_execution_kind(cause, None) {
+        Err(_)
+        | Ok(
+            WorthQueryProviderSessionDenialKind::AllocationDenied
+            | WorthQueryProviderSessionDenialKind::ExecutionNestedPatternStopped { .. },
+        ) => true,
+        Ok(WorthQueryProviderSessionDenialKind::ExecutionResource { denial, .. }) => !matches!(
+            denial,
+            Resource::NestedLeaseMisuse
+                | Resource::NoActiveExecutionScope
+                | Resource::EquivalenceContractUnavailable
+                | Resource::AccountingUnavailable
+        ),
+        Ok(_) => false,
     }
 }
 

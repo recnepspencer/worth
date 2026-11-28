@@ -10,9 +10,6 @@ pub(super) struct WorthQueryApplicationAttemptWorkLedger {
     provider_session_preparations: AtomicU64,
     staged_session_preparations: AtomicU64,
     attempt_registrations: AtomicU64,
-    overlay_stagings: AtomicU64,
-    invariant_state_loads: AtomicU64,
-    invariant_executions: AtomicU64,
     prepared_commits: AtomicU64,
     attempt_aborts: AtomicU64,
     managed_cleanups: AtomicU64,
@@ -27,9 +24,6 @@ pub struct WorthQueryApplicationAttemptWorkSnapshot {
     pub provider_session_preparations: u64,
     pub staged_session_preparations: u64,
     pub attempt_registrations: u64,
-    pub overlay_stagings: u64,
-    pub invariant_state_loads: u64,
-    pub invariant_executions: u64,
     pub prepared_commits: u64,
     pub attempt_aborts: u64,
     pub managed_cleanups: u64,
@@ -60,9 +54,6 @@ impl WorthQueryApplicationAttemptWorkLedger {
         staged_session_preparations
     );
     observation!(observe_attempt_registration, attempt_registrations);
-    observation!(observe_overlay_staging, overlay_stagings);
-    observation!(observe_invariant_state_load, invariant_state_loads);
-    observation!(observe_invariant_execution, invariant_executions);
     observation!(observe_prepared_commit, prepared_commits);
     observation!(observe_attempt_abort, attempt_aborts);
     observation!(observe_managed_cleanup, managed_cleanups);
@@ -79,9 +70,6 @@ impl WorthQueryApplicationAttemptWorkLedger {
             provider_session_preparations: load(&self.provider_session_preparations),
             staged_session_preparations: load(&self.staged_session_preparations),
             attempt_registrations: load(&self.attempt_registrations),
-            overlay_stagings: load(&self.overlay_stagings),
-            invariant_state_loads: load(&self.invariant_state_loads),
-            invariant_executions: load(&self.invariant_executions),
             prepared_commits: load(&self.prepared_commits),
             attempt_aborts: load(&self.attempt_aborts),
             managed_cleanups: load(&self.managed_cleanups),
@@ -111,15 +99,6 @@ impl WorthQueryApplicationAttemptWorkSnapshot {
             attempt_registrations: self
                 .attempt_registrations
                 .saturating_sub(earlier.attempt_registrations),
-            overlay_stagings: self
-                .overlay_stagings
-                .saturating_sub(earlier.overlay_stagings),
-            invariant_state_loads: self
-                .invariant_state_loads
-                .saturating_sub(earlier.invariant_state_loads),
-            invariant_executions: self
-                .invariant_executions
-                .saturating_sub(earlier.invariant_executions),
             prepared_commits: self
                 .prepared_commits
                 .saturating_sub(earlier.prepared_commits),

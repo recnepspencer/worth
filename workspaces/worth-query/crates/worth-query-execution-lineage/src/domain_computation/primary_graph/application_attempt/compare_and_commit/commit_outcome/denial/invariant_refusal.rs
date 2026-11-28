@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::application_invariant::{
 use crate::domain_computation::primary_graph::{
     WorthQueryDomainRefusal, WorthQueryDomainRefusalBinding,
 };
-use crate::domain_computation::WorthQueryCustomInvariantDenial;
+use crate::domain_computation::provider_session::invariant_refusal_payload;
 use worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding;
 use worth_relational::facade::runtime::CustomInvariantRefusal;
 
@@ -39,7 +39,7 @@ impl WorthQueryApplicationCommitDenial {
         &self,
     ) -> Result<&CustomInvariantRefusal, WorthQueryInvariantRefusalDecodeDenial> {
         self.custom_invariant_denial()
-            .and_then(WorthQueryCustomInvariantDenial::refusal_payload)
+            .and_then(invariant_refusal_payload)
             .ok_or(WorthQueryInvariantRefusalDecodeDenial::NoDomainRefusal)
     }
 }

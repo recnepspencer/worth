@@ -1,5 +1,6 @@
 pub mod preflight;
 pub use preflight::preflight_execution_cause;
+use worth_query_execution_contracts::facade::commit_execution_kind;
 pub use worth_query_execution_contracts::facade::relational_execution_kind;
 
 /// Preparation executes before publication; a refusal never asks for recovery.
@@ -13,12 +14,14 @@ pub fn relational_execution_stop(
     };
     let detail = format!("Relational execution stopped: {cause:?} at {partition_identity:?}");
     match relational_execution_kind(cause, partition_identity) {
-        Ok(kind) => Stop::PreEffectDenied(WorthQueryProviderSessionFailure::new(
-            kind,
-            WorthQueryProviderSessionProtocolStage::Commit,
-            detail,
-            Default::default(),
-        )),
+        Ok(kind) => Stop::PreEffectDenied(
+            WorthQueryProviderSessionFailure::new(
+                kind, WorthQueryProviderSessionProtocolStage::Commit, detail, Default::default(),
+            ).with_native_execution_denial(worth_relational::facade::transactions::CommitExecutionDenial {
+                kind: worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause),
+                partition_identity,
+            }),
+        ),
         Err(kind) => Stop::ControlStopped(
             WorthQueryProviderSessionCommitControlStopped::execution_preparation(kind, detail),
         ),
@@ -35,15 +38,12 @@ pub fn native_preparation_kind(
     if let Some(stop) = failure.checked_read_stop() {
         return stop.map(Some);
     }
-    use worth_relational::facade::transactions::{
-        CommitExecutionDenialKind, TransactionCommitError,
-    };
+    use worth_relational::facade::transactions::TransactionCommitError;
     let Some(TransactionCommitError::Execution { denial, .. }) = failure.native_preparation_error()
     else {
         return Ok(None);
     };
-    let CommitExecutionDenialKind::Cause(cause) = denial.kind;
-    relational_execution_kind(cause, denial.partition_identity).map(Some)
+    commit_execution_kind(*denial).map(Some)
 }
 
 /// Query reads retain native resource and control causes through this same conversion.
@@ -56,9 +56,7 @@ pub fn query_read_execution_kind(
     let Some(denial) = stop.execution_denial() else {
         return Ok(None);
     };
-    let worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) =
-        denial.kind;
-    relational_execution_kind(cause, denial.partition_identity).map(Some)
+    commit_execution_kind(denial).map(Some)
 }
 
 #[cfg(test)]

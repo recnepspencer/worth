@@ -42,7 +42,6 @@ pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::direct_authority_with_graph_and_decision_facts;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::direct_authority_with_graph_effect;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::direct_authority_with_graph_effect_and_decision_facts;
-pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::direct_authority_with_graph_effect_decision_facts_and_invariants;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::workflow_authority;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::workflow_authority_with_output_artifact;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::workflow_authority_with_stage_graph;
@@ -88,8 +87,6 @@ pub mod provider_session_protocol_workflow;
 pub mod provider_session_substitution;
 #[path = "readmission_workflow/mod.rs"]
 pub mod readmission_workflow;
-#[path = "request_control/mod.rs"]
-pub mod request_control;
 #[path = "step_interruption/mod.rs"]
 pub mod step_interruption;
 #[path = "step_output/mod.rs"]

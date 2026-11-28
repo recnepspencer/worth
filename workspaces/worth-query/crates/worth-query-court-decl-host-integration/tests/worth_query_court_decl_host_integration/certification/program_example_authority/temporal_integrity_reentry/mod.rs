@@ -43,7 +43,9 @@ fn temporal_reentry_decodes_the_example_integrity_refusal() {
         panic!("the integrity refusal must be the wake's cause: {wake:?}")
     };
     assert_eq!(
-        denial.decode_refusal::<TemporalIntegrityRefusalBinding>(),
+        worth_query_host::facade::application_invariants::decode_invariant_fields::<
+            TemporalIntegrityRefusalBinding,
+        >(&denial),
         Ok(TemporalIntegrityRefusal::InvalidState {
             revision: Some(2),
             lifecycle: Some("archived".to_owned()),

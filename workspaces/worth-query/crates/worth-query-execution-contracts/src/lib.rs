@@ -33,6 +33,7 @@ mod projection_denial;
 mod provider_session_denial_kind;
 mod publication_access;
 mod read_observation;
+mod relational_commit_denial;
 mod relational_execution_denial;
 mod runtime_time;
 mod source_facts_allocation;

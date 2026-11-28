@@ -165,7 +165,7 @@ fn journey() {
     assert!(
         matches!(
             denial.custom_invariant_denial(),
-            Some(WorthQueryCustomInvariantDenial::Violation { .. })
+            Some(InvariantViolationFields::CustomInvariantViolation { .. })
         ),
         "{denial:?}"
     );

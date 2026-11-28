@@ -81,7 +81,7 @@ Executable journeys:
 - [Installed Computation Artifact Contracts](./domain-capabilities/installed-computation-artifact-contracts.md): one portable, validated meaning for domain-produced working data.
 - [Managed Artifact Ownership And Native Access](./domain-capabilities/managed-artifact-ownership-and-native-access.md): carry large or provider-native data through an installed computation.
 - [Provider Sessions And Decision Read-Sets](./domain-capabilities/provider-sessions-and-decision-read-sets.md): sealed provider execution contexts and the facts that influenced a decision.
-- [Provisional State And Invariant Execution](./domain-capabilities/provisional-state-and-invariant-execution.md): stage changes in an overlay and check invariants before they become authoritative.
+- [Provisional State And Invariant Execution](./domain-capabilities/provisional-state-and-invariant-execution.md): validate the proposed graph and retain exact invariant evidence before publication.
 
 ### Certification
 

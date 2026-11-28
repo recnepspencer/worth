@@ -48,37 +48,16 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
         &mut self,
         relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
         root: &WorthQueryInvariantEntityIdentity<Schema, From>,
-        association:&worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation,
     ) -> Result<u64, Denial> {
         let result = self.read_derived(relation, root).and_then(|native| {
             let count = u64::try_from(native.data().endpoints().len()).map_err(|_| {
-                self.reader
-                    .walk_stop(Cause::WorkCounterOverflow, relation.name())
+                self.reader.walk_stop(Cause::WorkCounterOverflow, relation.name())
             })?;
-            let product = self
-                .selected_product
-                .ok_or_else(|| Denial::new(Kind::UndeclaredDecisionTarget, relation.name()))?;
-            let definition = &self
-                .reader
-                .layout
-                .derived_relation(relation.name())
-                .expect("read admitted this installed definition")
-                .handle;
-            let observed = std::sync::Arc::clone(&self.reader.managed_views).retain_native_count(
-                self.runtime_authority.as_u64(),
-                self.binding_identity,
-                definition,
-                association,
-                root.entity_id,
-                product,
-                native.data(),
-                self.reader.execution,
-            );
             self.reader
                 .execution
                 .check_live()
                 .map_err(|cause| self.reader.walk_stop(cause.into(), relation.name()))?;
-            Ok(observed.unwrap_or(count))
+            Ok(count)
         });
         if result.is_err() {
             self.fail_derived(root, relation.from());
