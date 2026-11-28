@@ -208,7 +208,7 @@ fn require_original_self_edge(outcome: super::MutationOutcome) {
     use worth_query_host::facade::{
         application_invariants::EntityReference,
         primary_graph::{
-            WorthQueryApplicationCommitDenialKind as Kind,
+            InvariantViolationFields, WorthQueryApplicationCommitDenialKind as Kind,
             WorthQueryApplicationCommitDenialStage as Stage, WorthQueryApplicationUncommitted,
         },
     };
