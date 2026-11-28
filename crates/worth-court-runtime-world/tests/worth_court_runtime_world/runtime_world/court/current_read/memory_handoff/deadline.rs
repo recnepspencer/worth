@@ -5,7 +5,10 @@ use std::time::{Duration, Instant};
 fn narrowing_cutoff_survives_world_handoff_and_the_actual_native_transition_wait() {
     let request = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&request);
-    let court = CompositeSupplyChainCourt::compile();
+    let time = std::sync::Arc::new(worth_execution::time::ControlledTime::at_unix_secs(0));
+    let clock =
+        RuntimeWorldClock::from_source(worth_execution::time::TimeSampler::new(time.clone()));
+    let court = CompositeSupplyChainCourt::compile_with_clock(clock.clone());
     let current = court.bootstrap();
     let target = fork(&court, &execution, &current);
     let prepared = prepare(&court, &execution, &target, &current);
@@ -36,7 +39,7 @@ fn narrowing_cutoff_survives_world_handoff_and_the_actual_native_transition_wait
                     )
                 }));
                 let arrived = issued.recv_timeout(Duration::from_secs(5));
-                let expires = Instant::now() + Duration::from_millis(500);
+                let expires = clock.now().checked_add(Duration::from_millis(500)).unwrap();
                 let sent = send.send(expires);
                 let backstop = Instant::now() + Duration::from_secs(5);
                 while runtime.waiting_patch_position_publishers_for_test() == 0
@@ -50,9 +53,7 @@ fn narrowing_cutoff_survives_world_handoff_and_the_actual_native_transition_wait
                     .observation_port()
                     .product_branch_writers_are_locked_out_for_test(&current)
                     .unwrap();
-                std::thread::sleep(
-                    expires.saturating_duration_since(Instant::now()) + Duration::from_millis(1),
-                );
+                time.advance(Duration::from_millis(500));
                 (arrived, sent, queued, locked)
             })
             .unwrap();
@@ -90,7 +91,9 @@ fn narrowing_cutoff_survives_world_handoff_and_the_actual_native_transition_wait
             execution,
             prepare(&court, &execution, &target, &current),
             &RuntimeWorldCancellationSource::new().token(),
-            |cutover| cutover.perform_before(Instant::now() + Duration::from_secs(30)),
+            |cutover| {
+                cutover.perform_before(clock.now().checked_add(Duration::from_secs(30)).unwrap())
+            },
         );
     let RuntimeWorldPublicationOutcome::Performed(done) = outcome else {
         panic!("same write and live cutoff performs")
@@ -163,7 +166,11 @@ fn world_cancellation_and_deadline_during_native_transition_wait_stop_before_nat
     let policy = worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
         worth_foundational::DeterminismContract::CanonicalBitwise,
-        worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(8_000_000)),
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            None,
+            Some(8_000_000),
+        ),
     );
     for trigger_cancel in [true, false] {
         let clock = AtomicWorldClock::new(0);

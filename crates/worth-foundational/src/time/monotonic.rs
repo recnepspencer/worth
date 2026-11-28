@@ -45,6 +45,11 @@ impl MonotonicInstant {
         Self { ticks, boot }
     }
 
+    pub fn checked_add(self, duration: Duration) -> Option<Self> {
+        let nanos = u64::try_from(duration.as_nanos()).ok()?;
+        Some(Self::new(self.ticks.checked_add(nanos)?, self.boot))
+    }
+
     pub fn cmp_same_epoch(self, other: Self) -> Result<Ordering, BootEpochMismatch> {
         self.check_epoch(other)?;
         Ok(self.ticks.cmp(&other.ticks))

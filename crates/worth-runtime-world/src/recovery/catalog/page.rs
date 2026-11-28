@@ -86,8 +86,9 @@ impl ProductUnpublishedRecoveryCatalog {
                 state: posture,
                 recovered,
                 admitted_at: time.map(|(t, _)| t),
-                age_ticks: time.and_then(|(t, _)| now.ticks().checked_sub(t.ticks())),
-                deadline_expired: time.map(|(_, deadline)| deadline.is_some_and(|d| now >= d)),
+                age_ticks: time.and_then(|(t, _)| now.elapsed_ticks_since(t)),
+                deadline_expired: time
+                    .map(|(_, deadline)| deadline.is_some_and(|d| now.deadline_elapsed(d))),
             });
         }
         let next_after = (end < state.slots.span()).then_some(RuntimeWorldRecoveryCursor {

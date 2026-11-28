@@ -9,6 +9,7 @@ pub struct WorthQueryProductWorldPorts {
     branch: RuntimeWorldBranchPort,
     observation: RuntimeWorldObservationPort,
     inspection: RuntimeWorldInspectionPort,
+    history_custody: RuntimeWorldHistoryCustodyPort,
     recovery: RuntimeWorldRecoveryPort,
     execution_authority: Option<Arc<worth_execution::ExecutionAuthority>>,
     // Passive memory custody is cloned with every product runtime. Directory
@@ -28,6 +29,7 @@ impl WorthQueryProductWorldPorts {
             branch: owner.branch_port(),
             observation: owner.observation_port(),
             inspection: owner.inspection_port(),
+            history_custody: owner.history_custody_port(),
             recovery: owner.recovery_port(),
             execution_authority,
             _memory_world_keepalive: Some(Arc::new(owner)),
@@ -42,6 +44,7 @@ impl WorthQueryProductWorldPorts {
         inspection: RuntimeWorldInspectionPort,
         recovery: RuntimeWorldRecoveryPort,
     ) -> Result<Self, RuntimeWorldOwnerUnavailable> {
+        let history_custody = publication.history_custody_port()?;
         let execution_authority = publication.execution_authority_handle()?;
         Ok(Self {
             identity,
@@ -49,6 +52,7 @@ impl WorthQueryProductWorldPorts {
             branch,
             observation,
             inspection,
+            history_custody,
             recovery,
             execution_authority,
             _memory_world_keepalive: None,
@@ -69,6 +73,9 @@ impl WorthQueryProductWorldPorts {
     }
     pub fn inspection_port(&self) -> RuntimeWorldInspectionPort {
         self.inspection.clone()
+    }
+    pub fn history_custody_port(&self) -> RuntimeWorldHistoryCustodyPort {
+        self.history_custody.clone()
     }
     pub fn recovery_port(&self) -> RuntimeWorldRecoveryPort {
         self.recovery.clone()

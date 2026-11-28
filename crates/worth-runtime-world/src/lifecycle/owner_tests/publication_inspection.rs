@@ -110,11 +110,8 @@ fn performed_publication_lease_blocks_explicit_reclamation_after_branch_retireme
         other => panic!("publication performs: {other:?}"),
     };
     let identity = performed.commit().identity().clone();
-    let lease = owner
-        .state
-        .history
-        .protect_performed_publication(&identity)
-        .unwrap();
+    let custody = crate::lifecycle::RuntimeWorldHistoryCustodyPort::from_service(owner.clone());
+    let lease = custody.protect_performed_publication(&identity).unwrap();
     assert_eq!(lease.commit_identity(), &identity);
     let mut consumed = performed.consume();
     let observation = consumed

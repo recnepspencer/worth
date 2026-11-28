@@ -124,7 +124,9 @@ fresh Native publication with a current-read requirement. Native preparation
 finishes before the callback starts. The callback receives a borrowed,
 single-use `PreparedWorldRelationalCutover`; consume it with `perform()` or
 `perform_before(deadline)`. The latter adds a narrowing cutoff to the original
-Native operation, checked after reservation waits before position assignment.
+Native operation. Supply a `RuntimeWorldInstant` from the installed World
+clock. World checks it again after Native reservation waits and before position
+assignment.
 
 The callback starts before World acquires the current control cell guard. Only
 the token's perform operation holds that guard; Signal, settlement, activation

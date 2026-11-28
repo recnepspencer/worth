@@ -197,7 +197,10 @@ fn cancellation_has_a_named_pre_effect_source_and_token() {
 #[test]
 fn clock_is_explicit_and_only_reports_deadline_time() {
     let clock = worth_runtime_world::facade::RuntimeWorldClock::from_source(FixedClock);
-    assert_eq!(clock.now().ticks(), 42);
+    assert_eq!(
+        clock.now(),
+        worth_runtime_world::facade::RuntimeWorldInstant::from_ticks(42),
+    );
 }
 #[path = "basis_history/mod.rs"]
 pub(crate) mod basis_history;

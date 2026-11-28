@@ -252,6 +252,10 @@ where
         RuntimeWorldLifecyclePort::new(Arc::downgrade(&service))
     }
 
+    pub fn history_custody_port(&self) -> super::RuntimeWorldHistoryCustodyPort {
+        super::RuntimeWorldHistoryCustodyPort::from_service(self.root.to_arc())
+    }
+
     pub fn inspection_port(&self) -> super::RuntimeWorldInspectionPort {
         let service: Arc<dyn crate::inspection::RuntimeWorldInspectionService + Send + Sync> =
             self.root.to_arc();

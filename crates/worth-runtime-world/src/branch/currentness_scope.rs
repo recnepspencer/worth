@@ -125,30 +125,20 @@ impl<'selected> ProductBranchCurrentnessScope<'selected> {
     pub(crate) fn perform_memory_publication(
         self,
         cutover: worth_relational::facade::mvcc::PreparedMemoryRelationalCutover<'_, '_, '_>,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<crate::lifecycle::RuntimeWorldInstant>,
         cutoff: &crate::publication::ProductMovementCutoff,
     ) -> Result<(), crate::publication::NoEffectCause> {
-        let map_denial = |denial| match denial {
-            crate::publication::ProductMovementCutoffDenial::Cancelled => {
-                crate::publication::NoEffectCause::CancelledBeforeEffect
-            }
-            crate::publication::ProductMovementCutoffDenial::Deadline => {
-                crate::publication::NoEffectCause::DeadlineBeforeEffect
-            }
-        };
         match self.while_locked(cutover, |cutover| {
-            if let Err(denial) = cutoff.check() {
-                return Err(map_denial(denial));
-            }
+            cutoff.check_memory_cutover(deadline)?;
             let mut native_cutoff_stop = None;
-            let mut allow_effect = || match cutoff.check() {
+            let mut allow_effect = || match cutoff.check_memory_cutover(deadline) {
                 Ok(()) => true,
                 Err(denial) => {
-                    native_cutoff_stop = Some(map_denial(denial));
+                    native_cutoff_stop = Some(denial);
                     false
                 }
             };
-            cutover.perform_with_cutoff(deadline, &mut allow_effect);
+            cutover.perform_with_cutoff(None, &mut allow_effect);
             match native_cutoff_stop {
                 Some(cause) => Err(cause),
                 None => Ok(()),

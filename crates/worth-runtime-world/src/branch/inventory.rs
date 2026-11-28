@@ -63,3 +63,57 @@ impl ObservedProductBranches {
         &self.branches
     }
 }
+
+impl std::fmt::Display for ProductBranchInventoryDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use worth_execution::report::Reportable as _;
+        formatter.write_str(self.diagnostic_summary())
+    }
+}
+
+impl std::error::Error for ProductBranchInventoryDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Branch(cause) => Some(cause),
+            Self::Request(cause) => Some(cause),
+            Self::AllocationRefused => None,
+        }
+    }
+}
+
+impl worth_execution::report::Reportable for ProductBranchInventoryDenial {
+    fn denial_class(&self) -> worth_execution::report::DenialClass {
+        match self {
+            Self::Branch(cause) => cause.denial_class(),
+            Self::Request(cause) => cause.denial_class(),
+            Self::AllocationRefused => worth_execution::report::DenialClass::Exhausted,
+        }
+    }
+
+    fn disposition(&self) -> worth_execution::report::Disposition {
+        match self {
+            Self::Branch(cause) => cause.disposition(),
+            Self::Request(cause) => cause.disposition(),
+            Self::AllocationRefused => worth_execution::report::Disposition::Final,
+        }
+    }
+
+    fn report_code(&self) -> worth_execution::report::ReportCode {
+        match self {
+            Self::Branch(cause) => cause.report_code(),
+            Self::Request(cause) => cause.report_code(),
+            Self::AllocationRefused => worth_execution::report::ReportCode::new(
+                "world.branch_inventory.allocation_refused",
+            )
+            .expect("static report code"),
+        }
+    }
+
+    fn diagnostic_summary(&self) -> &'static str {
+        match self {
+            Self::Branch(_) => "A branch could not be admitted for inventory.",
+            Self::Request(_) => "The execution request did not complete branch inventory.",
+            Self::AllocationRefused => "The World could not allocate branch inventory.",
+        }
+    }
+}

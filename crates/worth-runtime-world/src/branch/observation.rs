@@ -364,3 +364,5 @@ impl std::fmt::Debug for ProductBranchObservationAdmissionFailure {
             .finish()
     }
 }
+
+mod denial_report;

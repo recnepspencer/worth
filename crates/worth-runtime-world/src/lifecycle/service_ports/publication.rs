@@ -80,6 +80,14 @@ where
         }
         Ok(service)
     }
+    /// Lend dedicated history custody from this publication authority.
+    pub fn history_custody_port(
+        &self,
+    ) -> Result<crate::lifecycle::RuntimeWorldHistoryCustodyPort, RuntimeWorldOwnerUnavailable>
+    {
+        Ok(crate::lifecycle::RuntimeWorldHistoryCustodyPort::from_service(self.service()?))
+    }
+
     pub fn prepare_without_signal(
         &self,
         expected: ProductBranchObservation,

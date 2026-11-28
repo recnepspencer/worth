@@ -140,6 +140,6 @@ where
     }
 
     pub(crate) fn deadline_expired(&self, deadline: Option<RuntimeWorldInstant>) -> bool {
-        deadline.is_some_and(|deadline| self.state.clock.now() >= deadline)
+        deadline.is_some_and(|deadline| self.state.clock.now().deadline_elapsed(deadline))
     }
 }

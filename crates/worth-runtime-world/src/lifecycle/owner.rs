@@ -27,6 +27,7 @@ mod current_read_publication;
 pub use current_read_publication::PreparedWorldRelationalCutover;
 pub(crate) use current_read_publication::RelationalCutoverHandoff;
 mod execution_service;
+mod history_custody_service;
 mod inspection_service;
 mod operation;
 mod owned_async_product;

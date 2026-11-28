@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::SyncSender;
 use std::sync::{Arc, Condvar, Mutex, OnceLock};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use crate::identity::{ProductUnpublishedOwnerEffectsIdentity, RuntimeWorldOwnerIdentity};
 use crate::lifecycle::RuntimeWorldOwnerRoot;
@@ -146,24 +146,13 @@ impl ForkedFinalizationRehearsal {
         if self.reached.send(identity).is_err() {
             return;
         }
-        let deadline = Instant::now() + FORKED_FINALIZATION_PAUSE_TIMEOUT;
         let (opened, signal) = &self.release;
-        let mut opened = opened.lock().unwrap_or_else(|error| error.into_inner());
-        while !*opened {
-            let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
-                self.note_timeout();
-                return;
-            };
-            let (next, result) = signal
-                .wait_timeout(opened, remaining)
-                .unwrap_or_else(|error| error.into_inner());
-            opened = next;
-            // A release that lands in the same instant the wait expires is a
-            // release, not a timeout: the loop condition decides.
-            if result.timed_out() && !*opened {
-                self.note_timeout();
-                return;
-            }
+        let opened = opened.lock().unwrap_or_else(|error| error.into_inner());
+        let (opened, _) = signal
+            .wait_timeout_while(opened, FORKED_FINALIZATION_PAUSE_TIMEOUT, |opened| !*opened)
+            .unwrap_or_else(|error| error.into_inner());
+        if !*opened {
+            self.note_timeout();
         }
     }
 

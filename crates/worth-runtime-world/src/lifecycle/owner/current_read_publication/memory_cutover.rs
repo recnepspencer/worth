@@ -1,6 +1,6 @@
 //! Borrow one original component cutover before acquiring its World guard.
 use crate::branch::ProductBranchObservation;
-use std::time::Instant;
+use crate::lifecycle::RuntimeWorldInstant;
 use worth_relational::facade::mvcc::PreparedMemoryRelationalCutover;
 
 /// One-use World receiver for Native's prepared memory publication. The
@@ -12,7 +12,7 @@ pub struct PreparedWorldRelationalCutover<'action, 'native, 'policy, 'request> {
     target: &'action ProductBranchObservation,
     perform: &'action mut dyn FnMut(
         PreparedMemoryRelationalCutover<'native, 'policy, 'request>,
-        Option<Instant>,
+        Option<RuntimeWorldInstant>,
     ),
 }
 
@@ -25,7 +25,7 @@ impl<'action, 'native, 'policy, 'request>
         target: &'action ProductBranchObservation,
         perform: &'action mut dyn FnMut(
             PreparedMemoryRelationalCutover<'native, 'policy, 'request>,
-            Option<Instant>,
+            Option<RuntimeWorldInstant>,
         ),
     ) -> Self {
         Self {
@@ -48,9 +48,10 @@ impl<'action, 'native, 'policy, 'request>
         (self.perform)(self.native, None);
     }
 
-    /// Add a narrowing cutoff to the original Native request and candidate.
-    /// Native checks it after reservation waits before assigning a position.
-    pub fn perform_before(self, deadline: Instant) {
+    /// Narrow the original request with a deadline from the installed World
+    /// clock. World checks it again after Native's reservation waits, before
+    /// Native assigns a position.
+    pub fn perform_before(self, deadline: RuntimeWorldInstant) {
         (self.perform)(self.native, Some(deadline));
     }
 }

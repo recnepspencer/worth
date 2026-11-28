@@ -187,7 +187,7 @@ where
             return Some(NoEffectCause::CancelledBeforeEffect);
         }
         deadline
-            .filter(|deadline| self.state.clock.now() >= *deadline)
+            .filter(|deadline| self.state.clock.now().deadline_elapsed(*deadline))
             .map(|_| NoEffectCause::DeadlineBeforeEffect)
     }
 

@@ -33,16 +33,6 @@ where
         crate::durability::WorldCheckpointPort::new(binding)
             .observe_program_activation_history(request)
     }
-    fn bootstrap_is_complete(&self) -> bool {
-        matches!(
-            *self
-                .state
-                .bootstrap
-                .lock()
-                .unwrap_or_else(|error| error.into_inner()),
-            super::RuntimeWorldBootstrapState::Performed
-        )
-    }
     fn history_snapshot(&self) -> RuntimeWorldHistorySnapshot {
         self.state.history.snapshot()
     }
@@ -65,16 +55,6 @@ where
         self.state
             .history
             .performed_publication_page(after, maximum)
-    }
-
-    fn protect_performed_publication(
-        &self,
-        identity: &CompositeCommitIdentity,
-    ) -> Result<
-        crate::history::RuntimeWorldPerformedPublicationProtection,
-        CompositeHistoryCatalogDenial,
-    > {
-        self.state.history.protect_performed_publication(identity)
     }
 
     fn publication_frontier_is_current(
