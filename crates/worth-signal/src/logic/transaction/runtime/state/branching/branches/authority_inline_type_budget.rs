@@ -21,20 +21,10 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<Vec<usize>>("hot_page_identities");
     }
     {
-        let mut owner = census.owner::<LatestMergeReference>("crates/worth-signal/src/logic/transaction/runtime/state/branching/branches/authority.rs", "LatestMergeReference", 128 * 1024);
-        owner.field::<SignalBranchId>("source_branch_id");
-        owner.field::<Option<SignalSnapshotId>>("source_snapshot_id");
-        owner.field::<Option<SignalSnapshotId>>("target_snapshot_id_before");
-        owner.field::<Option<SignalSnapshotId>>("target_snapshot_id_after");
-        owner.field::<BranchMergeKind>("merge_kind");
-        owner.field::<BranchMergeStrategy>("merge_strategy");
-    }
-    {
         let mut owner = census.owner::<BranchAncestryState>("crates/worth-signal/src/logic/transaction/runtime/state/branching/branches/authority.rs", "BranchAncestryState", 128 * 1024);
         owner.field::<SignalBranchId>("branch_id");
         owner.field::<Option<SignalBranchId>>("parent_branch_id");
         owner.field::<Option<SignalSnapshotId>>("forked_from_snapshot_id");
-        owner.field::<Option<LatestMergeReference>>("latest_merge_reference");
     }
     {
         let mut owner = census.owner::<BranchState<(), (), ()>>("crates/worth-signal/src/logic/transaction/runtime/state/branching/branches/authority.rs", "BranchState", 128 * 1024);

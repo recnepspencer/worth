@@ -1,17 +1,12 @@
 pub(crate) use super::ancestry_walk::CommitAncestryInspection;
 use std::collections::BTreeSet;
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
-#[cfg(test)]
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
+use super::HistoryAccess;
 use crate::branch::AdmittedRelationalBranchBasis;
 #[cfg(test)]
 use crate::history::data::BranchId;
 use crate::history::data::CommitId;
-#[cfg(test)]
-use crate::history::data::{MergeConflictRecord, MergeInspection};
-
-use super::HistoryAccess;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CommitAncestryPosture {
@@ -105,70 +100,6 @@ impl<'runtime> HistoryAccess<'runtime> {
             .map(|identity| identity.commit_id())
     }
 
-    #[cfg(test)]
-    pub(crate) fn can_merge_branch_into(
-        &self,
-        source_branch: &BranchId,
-        target_branch: &BranchId,
-    ) -> bool {
-        let Some(source_head) = self.branch_head(source_branch) else {
-            return false;
-        };
-        let Some(target_head) = self.branch_head(target_branch) else {
-            return false;
-        };
-        self.max_commit_id_common_ancestor(target_head.commit_id, source_head.commit_id)
-            .is_some()
-    }
-
-    #[cfg(test)]
-    pub(crate) fn inspect_merge(
-        &self,
-        source_branch: &BranchId,
-        target_branch: &BranchId,
-    ) -> MergeInspection {
-        // This remains a history substrate helper. New merge-semantic planning
-        // should land in `crate::merge`, not grow richer semantics here.
-        let source_head = self.branch_head(source_branch);
-        let target_head = self.branch_head(target_branch);
-        let merge_base =
-            source_head
-                .as_ref()
-                .zip(target_head.as_ref())
-                .and_then(|(source, target)| {
-                    self.max_commit_id_common_ancestor(source.commit_id, target.commit_id)
-                });
-
-        let source_only_commits = source_head
-            .as_ref()
-            .map(|head| {
-                self.branch_unique_commit_closure_by_commit_id_order(head.commit_id, merge_base)
-            })
-            .unwrap_or_default();
-        let target_only_commits = target_head
-            .as_ref()
-            .map(|head| {
-                self.branch_unique_commit_closure_by_commit_id_order(head.commit_id, merge_base)
-            })
-            .unwrap_or_default();
-        let conflicting_records = self.merge_conflicts_between(
-            source_only_commits.as_slice(),
-            target_only_commits.as_slice(),
-        );
-
-        MergeInspection {
-            source_branch: source_branch.clone(),
-            target_branch: target_branch.clone(),
-            source_head,
-            target_head,
-            merge_base,
-            source_only_commits,
-            target_only_commits,
-            can_merge: merge_base.is_some() && conflicting_records.is_empty(),
-            conflicting_records,
-        }
-    }
-
     /// Returns the common ancestor selected by the runtime's current history
     /// rule: intersect both ancestor sets, then choose the maximum `CommitId`.
     ///
@@ -190,50 +121,5 @@ impl<'runtime> HistoryAccess<'runtime> {
             .performance_access()
             .count_merge_history_ancestry_traversal(closure.total_work());
         closure.reachable_commits
-    }
-
-    /// Returns the branch-local ancestor closure for `head` after removing the
-    /// merge-base ancestor closure, ordered by ascending `CommitId`.
-    #[cfg(test)]
-    fn branch_unique_commit_closure_by_commit_id_order(
-        &self,
-        head: CommitId,
-        merge_base: Option<CommitId>,
-    ) -> Vec<CommitId> {
-        let mut commits = self.ancestor_set(head).into_iter().collect::<Vec<_>>();
-        if let Some(merge_base) = merge_base {
-            let base_ancestors = self.ancestor_set(merge_base);
-            commits.retain(|commit_id| !base_ancestors.contains(commit_id));
-        }
-        debug_assert!(commits.windows(2).all(|window| window[0] <= window[1]));
-        commits
-    }
-
-    #[cfg(test)]
-    fn merge_conflicts_between(
-        &self,
-        left_commits: &[CommitId],
-        right_commits: &[CommitId],
-    ) -> Vec<MergeConflictRecord> {
-        let left_records = self.commit_record_set(left_commits);
-        let right_records = self.commit_record_set(right_commits);
-        left_records.intersection(&right_records).cloned().collect()
-    }
-
-    #[cfg(test)]
-    fn commit_record_set(&self, commits: &[CommitId]) -> BTreeSet<MergeConflictRecord> {
-        commits
-            .iter()
-            .filter_map(|commit_id| self.runtime.history.canonical_envelope(*commit_id))
-            .flat_map(|envelope| envelope.touched_record_refs().into_iter())
-            .map(|record_ref| match record_ref {
-                crate::transactions::data::RecordRef::Entity(entity_id) => {
-                    MergeConflictRecord::Entity(entity_id)
-                }
-                crate::transactions::data::RecordRef::Relation(relation_id) => {
-                    MergeConflictRecord::Relation(relation_id)
-                }
-            })
-            .collect()
     }
 }

@@ -62,13 +62,6 @@ pub(super) fn prepare_commit_execution<V: DraftValidationInput>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     instrumentation: &worth_relational_branch::internal_port::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     descriptor_semantics: contracts::schema::data::continuity::descriptor_versions::DescriptorSemanticsVersion,
-    merge_draft: impl FnOnce(
-        &worth_execution::ExecutionRequest<'_, '_>,
-        &AdmittedCommitState<V>,
-    ) -> Result<
-        super::merge_draft::AcceptedMergeDraft,
-        contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
-    >,
     admitted: AdmittedCommitExecution<V>,
 ) -> Result<
     CommitPhaseBacking<PreparedCommitExecution>,
@@ -85,13 +78,7 @@ pub(super) fn prepare_commit_execution<V: DraftValidationInput>(
             mutation_proposal: (proposal_identity, mutation),
             phase_timing: prepared_timing,
             ..
-        } = match prepared_scope {
-            Some(scope) => scope,
-            None => {
-                let draft = merge_draft(execution, &admitted)?;
-                admitted.accept_merge_draft(draft)
-            }
-        };
+        } = prepared_scope;
         admitted.phase_timing_mut().draft_structural_summary_micros =
             prepared_timing.draft_structural_summary_micros;
         admitted.phase_timing_mut().draft_working_state_clone_micros =

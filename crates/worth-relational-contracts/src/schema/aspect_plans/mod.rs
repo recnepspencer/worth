@@ -118,8 +118,8 @@ fn lower_kind_plan(
 fn derive_kind_plan_revision(
     kind_id: crate::identity::data::KindId,
     aspects: &[crate::schema::data::DeclaredAspectContractBinding],
-    identity_declarations: &[crate::merge::data::identity::IdentityBasisDeclaration],
-    merge_policy_declarations: &[crate::merge::data::policy::AspectMergePolicyDeclaration],
+    identity_declarations: &[crate::schema::data::identity_declarations::IdentityBasisDeclaration],
+    merge_policy_declarations: &[crate::schema::data::aspect_merge_policy::AspectMergePolicyDeclaration],
 ) -> Result<crate::schema::data::AspectContractPlanRevision, SchemaRegistryError> {
     derive_plan_revision(
         kind_id,

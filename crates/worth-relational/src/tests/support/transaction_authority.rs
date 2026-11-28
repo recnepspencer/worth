@@ -44,40 +44,6 @@ pub(crate) fn test_owner_begin_transaction_for_branch(
         .expect("branch basis belongs to its issuing runtime")
 }
 
-/// Begin an owner-issued transaction with exact owner-issued merge parents.
-pub(crate) fn test_owner_begin_merge_transaction(
-    runtime: &RelationalRuntime,
-    target_branch: BranchId,
-    parent_branches: impl IntoIterator<Item = BranchId>,
-) -> BranchBoundRelationalTransaction {
-    let target_identity = runtime
-        .branch_identity(&target_branch)
-        .unwrap_or_else(|error| panic!("merge target must be owner-registered: {error:?}"));
-    let (_, target_basis) = runtime
-        .observe_branch(&target_identity)
-        .expect("merge target remains owner-admissible");
-    let parent_bases = parent_branches
-        .into_iter()
-        .map(|branch_id| {
-            let identity = runtime
-                .branch_identity(&branch_id)
-                .unwrap_or_else(|error| panic!("merge parent must be owner-registered: {error:?}"));
-            runtime
-                .observe_branch(&identity)
-                .map(|(_, basis)| basis)
-                .expect("merge parent remains owner-admissible")
-        })
-        .collect();
-    let mut transaction = runtime
-        .begin_branch_transaction(
-            &target_basis,
-            crate::mvcc::RelationalTransactionIntent::ordinary(),
-        )
-        .expect("merge target basis belongs to its issuing runtime");
-    transaction.merge_parent_bases = parent_bases;
-    transaction
-}
-
 /// Obtain an owner-issued strategy target and the mutable strategy authority
 /// without overlapping the immutable binding lookup with the authority borrow.
 pub(crate) fn test_owner_strategy_authority(

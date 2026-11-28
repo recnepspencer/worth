@@ -31,8 +31,7 @@ const schema = localTruthSchema<Entity>({
 | `equivalence` | `{ kind: "exact" }` or `{ kind: "numberEpsilon", epsilon }` |
 | `costClass` | `"constant"` or `"linearInValue"` |
 
-Each aspect ID and field must be unambiguous. The current merge surface models
-declared top-level fields on plain objects.
+Each aspect ID and field must be unambiguous. Aspects map to declared top-level fields on plain objects.
 
 ## Create An Authority
 
@@ -102,33 +101,6 @@ Returns a child branch beginning at the exact parent head.
 
 There is currently no public delete operation for ordinary branches.
 
-## Merge
-
-### `previewMerge(request)`
-
-Requires source and target branch IDs and their current bases. Optional scope
-selects entity/aspect IDs. Optional overlap policy is `review`, `preferSource`,
-or `preferTarget`.
-
-Returns a successful review or `reviewRequired`. A preview never publishes.
-
-### `resolveMerge(submission)`
-
-Requires a new `requestId`, the runtime-issued `reviewId`, and one selection
-for every unresolved conflict. A conflict-free or policy-resolved review uses
-`selections: []`. Success publishes one target-branch merge commit.
-
-### `createResolutionBranch(request)`
-
-Creates a constrained branch for one review conflict. It admits exactly one
-custom commit at that conflict's entity/aspect locus.
-
-### `resolutionAlternative(request)`
-
-Seals the custom resolution branch value as a runtime-issued alternative that
-can be passed to `resolveMerge`. Successful merge retires all resolution
-branches associated with the review.
-
 ## Projection Lifecycle
 
 ### `derivation(branchId?)`
@@ -181,7 +153,6 @@ authority and do not constitute durable audit evidence.
 - unknown or retired branch;
 - unknown entity/aspect or invalid value type;
 - request ID reused with different content;
-- source/target head changed after merge preview;
 - selection or alternative from another review/conflict;
 - custom resolution touching the wrong locus or committing twice;
 - historical commit outside the branch ancestry;

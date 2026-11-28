@@ -22,7 +22,6 @@ use super::history::{
     BridgeCanonicalHistoricalEvaluationRecord, BridgeHistoricalEvaluationExplanation,
     BridgeHistoricalEvaluationFailureRecord,
 };
-use super::merge::{BridgeCanonicalMergeRecord, BridgeMergeExplanation};
 use super::records::{BridgeFailureClass, BridgeFailureRecord, BridgeRouteRecord};
 use super::replay::{BridgeCanonicalRouteRecord, BridgeReplayRecord};
 use super::sink::DiagnosticSink;

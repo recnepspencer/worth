@@ -271,26 +271,3 @@ fn owner_retirement_planning_preserves_distinct_retention_and_holder_denials() {
     ));
     drop(shared);
 }
-
-#[test]
-fn owner_retirement_planning_preserves_reachable_merge_participant_denial() {
-    let (mut runtime, selected, target, basis) = populated_runtime_with_two_branches();
-    let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        runtime.inject_merge_participation_unwind_for_owner_contract(selected.id, target.id);
-    }));
-    assert!(unwind.is_err(), "the controlled merge boundary unwinds");
-    let (port, _, _) = runtime
-        .owner_port_slots()
-        .expect("the actual interrupted merge metadata transfers to the owner");
-    let owner = port.upgrade_owner().expect("the merge owner upgrades");
-    let admission = owner.admit().expect("merge-posture planning admits");
-    assert!(matches!(
-        owner.plan_retirement_exact(
-            &admission,
-            basis,
-            SignalBranchRetirementReason::Rejected,
-        ),
-        TransitionOutcome::Denied(SignalBranchRetirementDenial::MergeParticipant { branch_id })
-            if branch_id == target.id
-    ));
-}

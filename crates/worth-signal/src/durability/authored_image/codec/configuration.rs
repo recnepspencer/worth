@@ -1,10 +1,5 @@
 use super::{Denial, Read, Write};
 use crate::data::node::NodeEvaluationConfig;
-use crate::logic::transaction::{
-    AspectMergePolicyBinding, AspectMergePolicyName, ConflictIsolationPolicyName,
-    ConflictPolicyName, DeletionPolicyName, IdentityMatcherName, MergeStrategyName,
-    SourceOnlyPolicyName,
-};
 use crate::schema::data::{
     SignalSchemaBinding, SignalSchemaId, SignalSchemaName, SignalSchemaVersion,
 };
@@ -12,13 +7,6 @@ use crate::schema::data::{
 pub(super) fn write(out: &mut Write<'_>, value: &NodeEvaluationConfig) -> Result<(), Denial> {
     let NodeEvaluationConfig {
         schema_binding,
-        merge_strategy_name,
-        conflict_policy_name,
-        identity_matcher_name,
-        source_only_policy_name,
-        deletion_policy_name,
-        conflict_isolation_policy_name,
-        aspect_merge_policy_bindings,
         contract,
         condition,
         comparator,
@@ -33,21 +21,12 @@ pub(super) fn write(out: &mut Write<'_>, value: &NodeEvaluationConfig) -> Result
         out.small_number(binding.version().minor as u32)?;
         out.text(binding.descriptor_digest())?;
     }
-    out.optional_text(merge_strategy_name.as_ref().map(|v| v.as_str()))?;
-    out.optional_text(conflict_policy_name.as_ref().map(|v| v.as_str()))?;
-    out.optional_text(identity_matcher_name.as_ref().map(|v| v.as_str()))?;
-    out.optional_text(source_only_policy_name.as_ref().map(|v| v.as_str()))?;
-    out.optional_text(deletion_policy_name.as_ref().map(|v| v.as_str()))?;
-    out.optional_text(conflict_isolation_policy_name.as_ref().map(|v| v.as_str()))?;
-    out.count(aspect_merge_policy_bindings.len())?;
-    for binding in aspect_merge_policy_bindings {
-        let AspectMergePolicyBinding {
-            aspect,
-            policy_name,
-        } = binding;
-        out.byte(aspect.index() as u8)?;
-        out.text(policy_name.as_str())?;
+    // The six retired optional policy names and the empty binding list
+    // preserve the ordinary authored-image wire layout.
+    for _ in 0..6 {
+        out.boolean(false)?;
     }
+    out.count(0)?;
     super::contracts::write(out, contract)?;
     super::policies::write_condition(out, condition)?;
     out.boolean(comparator.is_some())?;
@@ -76,19 +55,14 @@ pub(super) fn read(read: &mut Read<'_>) -> Result<NodeEvaluationConfig, Denial> 
     } else {
         None
     };
-    let merge_strategy_name = read.optional_text()?.map(MergeStrategyName::new);
-    let conflict_policy_name = read.optional_text()?.map(ConflictPolicyName::new);
-    let identity_matcher_name = read.optional_text()?.map(IdentityMatcherName::new);
-    let source_only_policy_name = read.optional_text()?.map(SourceOnlyPolicyName::new);
-    let deletion_policy_name = read.optional_text()?.map(DeletionPolicyName::new);
-    let conflict_isolation_policy_name =
-        read.optional_text()?.map(ConflictIsolationPolicyName::new);
-    let aspect_merge_policy_bindings = read.list(|read| {
-        Ok(AspectMergePolicyBinding::new(
-            read.aspect()?,
-            AspectMergePolicyName::new(read.text()?),
-        ))
-    })?;
+    for _ in 0..6 {
+        if read.boolean()? {
+            return Err(Denial::LegacyMergeArtifactRetired);
+        }
+    }
+    if read.count()? != 0 {
+        return Err(Denial::LegacyMergeArtifactRetired);
+    }
     let contract = super::contracts::read(read)?;
     let condition = super::policies::read_condition(read)?;
     let comparator = if read.boolean()? {
@@ -100,13 +74,6 @@ pub(super) fn read(read: &mut Read<'_>) -> Result<NodeEvaluationConfig, Denial> 
     let partitioned_output = read.boolean()?;
     Ok(NodeEvaluationConfig {
         schema_binding,
-        merge_strategy_name,
-        conflict_policy_name,
-        identity_matcher_name,
-        source_only_policy_name,
-        deletion_policy_name,
-        conflict_isolation_policy_name,
-        aspect_merge_policy_bindings,
         contract,
         condition,
         comparator,

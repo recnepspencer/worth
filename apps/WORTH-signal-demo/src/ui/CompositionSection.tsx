@@ -1,13 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { FC } from "react";
 
-import {
-  createGearScenario,
-  type GearConflictSelection,
-} from "../local-truth-gear/gear_scenario";
+import { createGearScenario } from "../local-truth-gear/gear_scenario";
 import type {
   GearBranchRole,
-  GearConflictChoice,
   GearHistoryNode,
   GearScenarioView,
   GearSignalProjectionView,
@@ -20,7 +16,6 @@ import { DemoSixGear } from "./demos/DemoSixGear";
 import { GearAspectExplainer } from "./demos/GearAspectExplainer";
 import { GearHistoryGraph } from "./demos/GearHistoryGraph";
 import "./compositionSection.css";
-import "./gearConflictReview.css";
 
 interface CompositionSectionProps {
   onNavigate: (path: string) => void;
@@ -31,7 +26,6 @@ type GearScenario = Awaited<ReturnType<typeof createGearScenario>>;
 export const CompositionSection: FC<CompositionSectionProps> = () => {
   const [scenario, setScenario] = useState<GearScenario | null>(null);
   const [view, setView] = useState<GearScenarioView | null>(null);
-  const [conflictChoices, setConflictChoices] = useState<Record<string, GearConflictChoice>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const actionTail = useRef<Promise<void>>(Promise.resolve());
@@ -84,29 +78,9 @@ export const CompositionSection: FC<CompositionSectionProps> = () => {
 
   const forkBranches = () => {
     if (!scenario || view?.historySelection) return;
-    setConflictChoices({});
     enqueue(() => scenario.forkDesignBranch());
   };
 
-  const runMergeAction = () => {
-    if (!scenario || !view?.activeDesignBranchId) return;
-    if (view.phase === "review") {
-      const selections: GearConflictSelection[] = view.conflicts.map(({ id }) => ({
-        conflictId: id,
-        choice: conflictChoices[id],
-      }));
-      enqueue(async () => {
-        const nextView = await scenario.resolveMerge(selections);
-        setConflictChoices({});
-        return nextView;
-      });
-      return;
-    }
-    setConflictChoices({});
-    enqueue(() => scenario.mergeBranches());
-  };
-
-  const unresolvedConflictCount = view?.conflicts.filter(({ id }) => !conflictChoices[id]).length ?? 0;
   const canEditBranches = Boolean(view?.activeDesignBranchId)
     && view?.phase === "editing"
     && !view.historySelection;
@@ -120,11 +94,10 @@ export const CompositionSection: FC<CompositionSectionProps> = () => {
   return (
     <div className="xai-section-band accent-composition composition-section">
       <div className="xai-section-heading gear-section-heading">
-        <span className="xai-section-eyebrow">06 / Aspect composition</span>
-        <h2>Merge aspects, not objects.</h2>
+        <span className="xai-section-eyebrow">06 / Branch history</span>
+        <h2>Explore two gear designs.</h2>
         <p>
-          Fork the gear and move both branches. Worth compares every aspect to the basis you
-          forked from — only a true collision needs you.
+          Fork the gear and edit either branch. Select a commit in the history to inspect that version.
         </p>
       </div>
 
@@ -148,7 +121,7 @@ export const CompositionSection: FC<CompositionSectionProps> = () => {
                 tone="main"
                 values={view.main}
               />
-              {view.activeDesignBranchId || view.phase === "merged" ? (
+              {view.activeDesignBranchId ? (
                 <GearBranchEditor
                   disabled={!canEditBranches || busy}
                   label={designBranchName}
@@ -170,35 +143,6 @@ export const CompositionSection: FC<CompositionSectionProps> = () => {
 
             <SignalProjectionStrip projection={view.signalProjection} />
 
-            {view.phase === "review" ? (
-              <div className="gear-conflict-review">
-                {view.conflicts.map((conflict) => (
-                  <div className="gear-conflict-row" key={conflict.id}>
-                    <div>
-                      <span>Conflicting aspect</span>
-                      <code>{conflict.aspectId}</code>
-                    </div>
-                    <button
-                      className={conflictChoices[conflict.id] === "main" ? "selected" : ""}
-                      onClick={() => setConflictChoices((current) => ({ ...current, [conflict.id]: "main" }))}
-                      type="button"
-                    >
-                      <span>Keep Main</span>
-                      <strong>{formatConflictValue(conflict.mainValue)}</strong>
-                    </button>
-                    <button
-                      className={conflictChoices[conflict.id] === "design" ? "selected" : ""}
-                      onClick={() => setConflictChoices((current) => ({ ...current, [conflict.id]: "design" }))}
-                      type="button"
-                    >
-                      <span>Use Design</span>
-                      <strong>{formatConflictValue(conflict.designValue)}</strong>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
             <div className="gear-workspace-actions">
               {!view.activeDesignBranchId ? (
                 <button
@@ -209,18 +153,9 @@ export const CompositionSection: FC<CompositionSectionProps> = () => {
                 >
                   {view.historySelection
                     ? "Select a live head to resume"
-                    : view.phase === "merged" ? "Fork again from Main" : "Fork the design branch"}
+                    : "Fork the design branch"}
                 </button>
-              ) : (
-                <button
-                  className="gear-merge-button"
-                  disabled={busy || Boolean(view.historySelection) || (view.phase === "review" && unresolvedConflictCount > 0)}
-                  onClick={runMergeAction}
-                  type="button"
-                >
-                  {mergeButtonLabel(view, busy, unresolvedConflictCount)}
-                </button>
-              )}
+              ) : null}
             </div>
           </section>
 
@@ -350,20 +285,10 @@ function SignalProjectionStrip({
   );
 }
 
-function mergeButtonLabel(view: GearScenarioView, busy: boolean, unresolvedCount: number) {
-  if (busy) return "Committing…";
-  if (view.historySelection) return "Select a live head to resume";
-  if (view.phase !== "review") return "Merge branches";
-  if (unresolvedCount > 0) return `Choose ${unresolvedCount} conflicting aspect${unresolvedCount === 1 ? "" : "s"}`;
-  return "Commit the merge";
-}
-
 function workspacePhaseLabel(view: GearScenarioView) {
   if (view.historySelection) return "Sealed snapshot";
   if (view.phase === "ready") return "One branch";
-  if (view.phase === "editing") return "Two live branches";
-  if (view.phase === "review") return "Aspect review";
-  return "Merged";
+  return "Two live branches";
 }
 
 function branchRoleDescription(
@@ -372,12 +297,7 @@ function branchRoleDescription(
 ) {
   if (view.historySelection?.lane === role) return "Historical snapshot";
   if (view.historySelection) return "Live head";
-  if (view.phase === "merged") return role === "main" ? "Merged result" : "Reviewed source";
-  return role === "main" ? "Merge target" : "Merge source";
-}
-
-function formatConflictValue(value: unknown) {
-  return typeof value === "number" ? Number(value.toFixed(2)).toString() : String(value);
+  return "Live head";
 }
 
 function errorMessage(cause: unknown) {

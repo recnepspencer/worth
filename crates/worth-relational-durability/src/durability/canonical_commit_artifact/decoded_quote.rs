@@ -22,7 +22,6 @@ pub mod historical_selection;
 pub mod identities;
 pub mod indexes;
 pub mod lineage;
-pub mod merge;
 #[cfg(test)]
 pub mod nonmerge_tests;
 pub mod owned_graph_selection;

@@ -11,14 +11,6 @@ import type {
   LocalTruthSignalProjectionReceipt,
 } from "./core.js";
 import type {
-  CommittedLocalTruthMerge,
-  LocalTruthConflictAlternative,
-  LocalTruthMergePreviewOutcome,
-  LocalTruthMergeRequest,
-  LocalTruthResolutionBranchReceipt,
-  LocalTruthResolutionSubmission,
-} from "./merge.js";
-import type {
   DeclaredLocalTruthSchema,
   LocalTruthSchemaDeclaration,
 } from "./schema.js";
@@ -35,18 +27,6 @@ export interface LocalTruthAuthority<T extends object> {
     readonly expectedParentBasis: LocalTruthBranchReceipt["basis"];
     readonly name: string;
   }): Promise<LocalTruthOutcome<LocalTruthBranchReceipt>>;
-  previewMerge(request: LocalTruthMergeRequest): Promise<LocalTruthMergePreviewOutcome>;
-  createResolutionBranch(request: {
-    readonly reviewId: string;
-    readonly conflictId: string;
-    readonly name?: string;
-  }): Promise<LocalTruthOutcome<LocalTruthResolutionBranchReceipt>>;
-  resolutionAlternative(request: {
-    readonly reviewId: string;
-    readonly conflictId: string;
-    readonly resolutionBranchId: string;
-  }): Promise<LocalTruthOutcome<LocalTruthConflictAlternative>>;
-  resolveMerge(request: LocalTruthResolutionSubmission): Promise<LocalTruthOutcome<CommittedLocalTruthMerge>>;
   derivation(branchId?: string): Promise<LocalTruthSignalProjectionReceipt>;
   destroyDerivation(branchId: string): Promise<LocalTruthSignalProjectionReceipt>;
   rebuildDerivation(branchId: string): Promise<LocalTruthSignalProjectionReceipt | LocalTruthOutcome<never>>;

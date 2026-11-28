@@ -256,14 +256,8 @@ fn hostile_commit_replay_equivalence_test() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let _transition_outcome = transition_txn.commit(execution, &runtime).unwrap();
+    let transition_outcome = transition_txn.commit(execution, &runtime).unwrap();
 
-    let merge = merge_commit_from_branches(
-        execution,
-        &runtime,
-        BranchId("main".to_string()),
-        vec![BranchId("feature".to_string())],
-    );
     runtime
         .durability_authority()
         .checkpoint(execution)
@@ -287,18 +281,18 @@ fn hostile_commit_replay_equivalence_test() {
         &runtime,
         &BranchId("main".to_string()),
         anchor,
-        merge.commit.version_id,
+        transition_outcome.commit.version_id,
     );
     let original_envelope = runtime
         .replay()
-        .canonical_commit_envelope(execution, merge.commit.commit_id)
+        .canonical_commit_envelope(execution, transition_outcome.commit.commit_id)
         .unwrap()
         .unwrap();
     let replay = runtime
         .replay_authority()
         .replay_commit(
             RelationalReplayRequest {
-                commit_id: merge.commit.commit_id,
+                commit_id: transition_outcome.commit.commit_id,
                 branch_id: BranchId("main".to_string()),
                 execution_mode: ReplayExecutionMode::SerialDeterministic,
                 verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
@@ -347,18 +341,18 @@ fn hostile_commit_replay_equivalence_test() {
         &recovered,
         &BranchId("main".to_string()),
         anchor,
-        merge.commit.version_id,
+        transition_outcome.commit.version_id,
     );
     let recovered_envelope = recovered
         .replay()
-        .canonical_commit_envelope(execution, merge.commit.commit_id)
+        .canonical_commit_envelope(execution, transition_outcome.commit.commit_id)
         .unwrap()
         .unwrap();
     let recovered_replay = recovered
         .replay_authority()
         .replay_commit(
             RelationalReplayRequest {
-                commit_id: merge.commit.commit_id,
+                commit_id: transition_outcome.commit.commit_id,
                 branch_id: BranchId("main".to_string()),
                 execution_mode: ReplayExecutionMode::SerialDeterministic,
                 verification_mode: ReplayVerificationMode::NormalRecoveryVerification,

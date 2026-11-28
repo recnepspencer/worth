@@ -1,6 +1,6 @@
 use worth_foundational::AspectKey;
 
-use crate::facade::merge::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
+use crate::facade::schema::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
 use crate::facade::schema::{
     EntityKindRegistration, KindAspectContractDeclarations, RelationalSchemaRegistry, SchemaId,
     SchemaRegistryErrorClass, SchemaVersionId,
@@ -15,7 +15,7 @@ fn schema_accepts_runtime_owned_record_field_merge_policies_and_rejects_unsuppor
         (
             name_key.clone(),
             entity_field_aspect(name_key.clone(), crate::tests::support::field_key("name")),
-            AspectMergePolicyKind::LastWriterWins,
+            AspectMergePolicyKind::RetiredWriterOrder,
         ),
         (
             counter_key.clone(),
@@ -54,7 +54,7 @@ fn schema_accepts_runtime_owned_record_field_merge_policies_and_rejects_unsuppor
 
     for rejected_policy in [
         AspectMergePolicyKind::AdditiveSet,
-        AspectMergePolicyKind::Custom(crate::facade::merge::CustomMergePolicyIdentity {
+        AspectMergePolicyKind::Custom(crate::facade::schema::CustomMergePolicyIdentity {
             name: "custom.merge".into(),
             semantic_version: 1,
         }),
@@ -117,11 +117,11 @@ fn schema_rejects_monotonic_counter_on_non_integer_foundational_contract() {
 fn schema_rejects_runtime_owned_merge_policies_on_non_record_field_aspects() {
     let lifecycle_key = AspectKey::new("lifecycle").unwrap();
     for policy in [
-        AspectMergePolicyKind::Custom(crate::facade::merge::CustomMergePolicyIdentity {
+        AspectMergePolicyKind::Custom(crate::facade::schema::CustomMergePolicyIdentity {
             name: "custom.merge".into(),
             semantic_version: 1,
         }),
-        AspectMergePolicyKind::LastWriterWins,
+        AspectMergePolicyKind::RetiredWriterOrder,
         AspectMergePolicyKind::MonotonicCounter,
         AspectMergePolicyKind::AdditiveSet,
     ] {

@@ -6,6 +6,7 @@ use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
 use crate::publication::patch::data::PatchStreamPosition;
 use sha2::{Digest as _, Sha256};
+use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 
 pub mod writer;
@@ -13,6 +14,14 @@ pub mod writer;
 pub fn digest_envelope(
     position: PatchStreamPosition,
     envelope: &CanonicalCommitEnvelope,
+) -> Result<[u8; 32], rmp_serde::encode::Error> {
+    digest_envelope_for_format(position, envelope, envelope.artifact_format())
+}
+
+fn digest_envelope_for_format(
+    position: PatchStreamPosition,
+    envelope: &CanonicalCommitEnvelope,
+    format: CanonicalCommitArtifactFormat,
 ) -> Result<[u8; 32], rmp_serde::encode::Error> {
     struct HashWriter(Sha256);
     impl std::io::Write for HashWriter {
@@ -29,7 +38,7 @@ pub fn digest_envelope(
     let mut envelope_writer = HashWriter(Sha256::new());
     rmp_serde::encode::write_named(
         &mut envelope_writer,
-        &crate::history::data::AuthoritativeArtifactEnvelopeRef::new(envelope),
+        &crate::history::data::AuthoritativeArtifactEnvelopeRef::for_format(envelope, format),
     )?;
     let mut input_writer = HashWriter(Sha256::new());
     rmp_serde::encode::write_named(&mut input_writer, &envelope.recorded_original_inputs())?;
@@ -50,8 +59,11 @@ pub fn matches_positioned_payload(
     if std::sync::Arc::ptr_eq(original.canonical_arc(), candidate) {
         return Ok(true);
     }
-    Ok(digest_envelope(original.position(), original.envelope())?
-        == digest_envelope(original.position(), candidate)?)
+    let format = original.envelope().artifact_format();
+    Ok(
+        digest_envelope_for_format(original.position(), original.envelope(), format)?
+            == digest_envelope_for_format(original.position(), candidate, format)?,
+    )
 }
 
 pub fn digest_envelope_for_request(
@@ -69,13 +81,23 @@ pub fn digest_envelope_in_context(
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<[u8; 32], Stop> {
+    digest_envelope_in_context_for_format(position, envelope, envelope.artifact_format(), context)
+}
+
+pub fn digest_envelope_in_context_for_format(
+    position: PatchStreamPosition,
+    envelope: &CanonicalCommitEnvelope,
+    format: CanonicalCommitArtifactFormat,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<[u8; 32], Stop> {
     use writer::CommitmentWriter;
     let mut position_writer = CommitmentWriter::new(Sha256::new(), context);
     position_writer.value(&position)?;
     let position_leaf = position_writer.hash.finalize().into();
     let mut envelope_writer = CommitmentWriter::new(Sha256::new(), context);
-    envelope_writer
-        .value(&crate::history::data::AuthoritativeArtifactEnvelopeRef::new(envelope))?;
+    envelope_writer.value(
+        &crate::history::data::AuthoritativeArtifactEnvelopeRef::for_format(envelope, format),
+    )?;
     let envelope_leaf = envelope_writer.hash.finalize().into();
     let mut input_writer = CommitmentWriter::new(Sha256::new(), context);
     input_writer.value(&envelope.recorded_original_inputs())?;

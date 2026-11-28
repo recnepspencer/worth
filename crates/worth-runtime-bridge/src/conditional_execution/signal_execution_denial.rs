@@ -76,7 +76,6 @@ pub(super) fn kind(error: &SignalError) -> Kind {
         | SignalError::EventFlushFailed { .. }
         | SignalError::IncompatibleSnapshot { .. }
         | SignalError::UnknownBranch { .. }
-        | SignalError::BranchMergeFailed { .. }
         | SignalError::ManagedQueueBranchTransferDenied { .. }
         | SignalError::MissingBoundedInputsAtEpochAdmission { .. }
         | SignalError::MissingBoundedInputsAtEvaluation { .. }

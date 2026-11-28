@@ -14,7 +14,6 @@ export function readFormDiagnostics(state, summary, diagnosticsHistory, verifica
     availability: state.availability,
     admission: state.admission,
     resourceSource: state.resourceSource,
-    resourceMerge: state.resourceMerge,
     resourceDrift: state.resourceDrift,
     attachmentTransfers: state.attachmentTransfers,
     host: state.host,

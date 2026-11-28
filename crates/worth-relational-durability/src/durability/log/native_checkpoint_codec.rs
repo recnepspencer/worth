@@ -6,16 +6,29 @@ use worth_relational_contracts::internal_port::durability::data::recovery_errors
     DurabilityError, RecoveryFailureClass,
 };
 
-// CHK24 is the single clean cutover from CHK23: the eager record-identity
-// tables are stored as content-addressed paged members. No earlier grammar is
-// an input format.
-pub const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK24\n";
-pub const CHECKPOINT_VERSION: u16 = 24;
+pub const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK25\n";
+pub const CHECKPOINT_VERSION: u16 = 25;
+const LEGACY_CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK24\n";
+
+#[derive(Clone, Copy)]
+enum CheckpointFormat {
+    Ordinary,
+    LegacyMergeCapable,
+}
 const CHECKPOINT_FAMILY: &[u8] = b"WORTH-REL-CHK";
 
-fn checkpoint_payload(bytes: &[u8]) -> Result<&[u8], DurabilityError> {
+pub(crate) fn checkpoint_payload(bytes: &[u8]) -> Result<&[u8], DurabilityError> {
+    checkpoint_payload_with_format(bytes).map(|(payload, _)| payload)
+}
+
+fn checkpoint_payload_with_format(
+    bytes: &[u8],
+) -> Result<(&[u8], CheckpointFormat), DurabilityError> {
     if let Some(payload) = bytes.strip_prefix(CHECKPOINT_MAGIC) {
-        return Ok(payload);
+        return Ok((payload, CheckpointFormat::Ordinary));
+    }
+    if let Some(payload) = bytes.strip_prefix(LEGACY_CHECKPOINT_MAGIC) {
+        return Ok((payload, CheckpointFormat::LegacyMergeCapable));
     }
     Err(match framed_checkpoint_version(bytes) {
         Some(found) => DurabilityError::new(
@@ -107,7 +120,7 @@ mod tests {
         for (frame, expected) in [
             (b"WORTH-REL-CHK23\n".as_slice(), 23),
             (b"WORTH-REL-CHK23.1\n".as_slice(), 23),
-            (b"WORTH-REL-CHK25\n".as_slice(), 25),
+            (b"WORTH-REL-CHK26\n".as_slice(), 26),
         ] {
             let err = checkpoint_payload(frame).unwrap_err();
             assert_eq!(
@@ -119,7 +132,7 @@ mod tests {
             );
         }
         for malformed in [
-            b"WORTH-REL-CHK24.1\n".as_slice(),
+            b"WORTH-REL-CHK25.1\n".as_slice(),
             b"WORTH-REL-CHK024\n".as_slice(),
             b"WORTH-REL-CHK0\n".as_slice(),
             b"WORTH-REL-CHK23.foo\n".as_slice(),

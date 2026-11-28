@@ -34,7 +34,6 @@ export function readFormReadiness({
   rawInputs,
   sourceCompatibilityBlockers,
   resourceSourceReadinessBlockers,
-  resourceMergeReadinessBlockers,
   attachmentTransferReadinessBlockers,
   validationReadinessBlockers,
   availabilityReadinessBlockers,
@@ -54,7 +53,6 @@ export function readFormReadiness({
   const blockers = rawInputBlockers(rawInputs);
   blockers.push(...sourceCompatibilityBlockers(form.sourceCompatibility()));
   blockers.push(...resourceSourceReadinessBlockers(form.resourceSource()));
-  blockers.push(...resourceMergeReadinessBlockers(form.resourceMerge()));
   blockers.push(...attachmentTransferReadinessBlockers(form.attachmentTransfers()));
   blockers.push(...validationReadinessBlockers(form.validation()));
   blockers.push(...availabilityReadinessBlockers(form.availability()));

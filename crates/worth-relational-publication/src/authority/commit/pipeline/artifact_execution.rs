@@ -26,7 +26,6 @@ pub(super) struct AssembledCommitExecution {
     mutation_identities:
         worth_relational_mutation::internal_port::authority::mutation::pending_identities::PendingMutationIdentities,
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
-    merge_parent_branches: Vec<contracts::history::data::coordinates::BranchId>,
     publication: CommitPhaseBacking<PublicationPreparation>,
     publication_snapshot: worth_relational_branch::internal_port::snapshots::data::SnapshotHandle,
     aspect_evaluation_traces: Vec<contracts::transactions::data::aspect_traces::AspectEvaluationTrace>,
@@ -48,7 +47,6 @@ impl AssembledCommitExecution {
         contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
         worth_relational_mutation::internal_port::authority::mutation::pending_identities::PendingMutationIdentities,
         crate::authority::commit::phases::history::ResolvedCommitHistory,
-        Vec<contracts::history::data::coordinates::BranchId>,
         CommitPhaseBacking<PublicationPreparation>,
         worth_relational_branch::internal_port::snapshots::data::SnapshotHandle,
         Vec<contracts::transactions::data::aspect_traces::AspectEvaluationTrace>,
@@ -67,7 +65,6 @@ impl AssembledCommitExecution {
             self.created_relations,
             self.mutation_identities,
             self.history,
-            self.merge_parent_branches,
             self.publication,
             self.publication_snapshot,
             self.aspect_evaluation_traces,
@@ -106,15 +103,12 @@ pub(super) fn assemble_commit_artifacts(
             created_relations,
             mutation_identities,
             history,
-            merge_parent_branches,
-            additional_diagnostics_entries,
-            merge_execution_authority,
             schema_continuity,
             deferred_diagnostic_artifacts,
             source_interpretation,
         ) = validated.into_parts();
         let strategy_artifacts = admitted.strategy_artifacts().cloned();
-        let (_, validation_input, merged_plan, _, commit_log, phase_timing) =
+        let (_, validation_input, merged_plan, commit_log, phase_timing) =
             admitted.phase_view().into_parts();
         let naming_plan = validation_input.naming_plan();
         let publication = assemble_authoritative_publication_phase(
@@ -131,17 +125,13 @@ pub(super) fn assemble_commit_artifacts(
                 commit_reference: &history.commit_reference,
                 branch_id: &history.branch_id,
                 version_id,
-                merge_parent_branches: &merge_parent_branches,
-                merge_base_commits: &history.merge_base_commits,
                 merged_plan,
                 created_entities: &created_entities,
                 created_relations: &created_relations,
                 naming_plan,
                 record_allocations: &mutation_identities.records,
                 strategy_commit_artifacts: strategy_artifacts,
-                merge_execution_authority,
                 schema_continuity: &schema_continuity,
-                additional_diagnostics_entries,
                 deferred_diagnostic_artifacts,
             },
             execution,
@@ -162,7 +152,6 @@ pub(super) fn assemble_commit_artifacts(
             created_relations,
             mutation_identities,
             history,
-            merge_parent_branches,
             publication,
             publication_snapshot,
             aspect_evaluation_traces,

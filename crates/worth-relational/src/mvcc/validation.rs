@@ -58,7 +58,6 @@ pub(crate) struct RelationalTransactionValidationInput {
     content: crate::content::RelationalContentAttachments,
     basis: AdmittedRelationalBranchBasis,
     intent: crate::mvcc::RelationalTransactionIntent,
-    merge_parent_bases: Vec<AdmittedRelationalBranchBasis>,
     recovered_codec_publication_custody:
         Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>>,
     schema_authority_input: Option<crate::schema::SchemaContinuityAuthorityInput>,
@@ -84,7 +83,6 @@ impl PartialEq for RelationalTransactionValidationInput {
             && self.content.same_staging(&other.content)
             && self.basis == other.basis
             && self.intent == other.intent
-            && self.merge_parent_bases == other.merge_parent_bases
             && self.schema_authority_input == other.schema_authority_input
             && match (&self.home_target, &other.home_target) {
                 (Some(left), Some(right)) => std::sync::Arc::ptr_eq(left, right),
@@ -123,7 +121,6 @@ impl RelationalTransactionValidationInput {
             content: transaction.content.clone(),
             basis: transaction.basis.clone(),
             intent: transaction.intent.clone(),
-            merge_parent_bases: transaction.merge_parent_bases.clone(),
             schema_authority_input: transaction.schema_authority_input.clone(),
             home_target: transaction.home_target.clone(),
             home_step: transaction.home_step.clone(),
@@ -147,7 +144,6 @@ impl RelationalTransactionValidationInput {
             content: Default::default(),
             basis: basis.clone(),
             intent: crate::mvcc::RelationalTransactionIntent::ordinary(),
-            merge_parent_bases: Vec::new(),
             schema_authority_input: None,
             home_target: None,
             home_step: None,
@@ -197,25 +193,6 @@ impl RelationalTransactionValidationInput {
 
     pub(crate) fn target_branch(&self) -> &BranchId {
         self.basis.identity().branch_id()
-    }
-
-    pub(crate) fn merge_parent_bases(&self) -> &[AdmittedRelationalBranchBasis] {
-        &self.merge_parent_bases
-    }
-
-    pub(crate) fn merge_parent_branch_ids(&self) -> Vec<BranchId> {
-        self.merge_parent_bases
-            .iter()
-            .map(|basis| basis.identity().branch_id().clone())
-            .collect()
-    }
-
-    pub(crate) fn with_merge_parent_bases(
-        mut self,
-        bases: Vec<AdmittedRelationalBranchBasis>,
-    ) -> Self {
-        self.merge_parent_bases = bases;
-        self
     }
 
     pub(crate) fn with_materialization_mode(
@@ -328,7 +305,6 @@ impl RelationalTransactionValidationInput {
         );
         transaction.appendix_adoption = self.appendix_adoption;
         transaction.content = self.content;
-        transaction.merge_parent_bases = self.merge_parent_bases;
         transaction.schema_authority_input = self.schema_authority_input;
         transaction.home_target = self.home_target;
         transaction.home_step = self.home_step;
@@ -357,10 +333,6 @@ impl crate::authority::commit::pipeline::publication_validation::DraftValidation
         self.basis()
     }
 
-    fn merge_parent_bases(&self) -> &[AdmittedRelationalBranchBasis] {
-        self.merge_parent_bases()
-    }
-
     fn control(&self) -> &crate::runtime::operation_control::RelationalOperationControl {
         self.control()
     }
@@ -377,7 +349,6 @@ impl crate::authority::commit::pipeline::publication_validation::DraftValidation
         let (transition, reconciliation) = self.intent.into_schema_change();
         CommitPublicationValidationInput {
             basis: self.basis,
-            merge_parent_bases: self.merge_parent_bases,
             schema_authority: self.schema_authority,
             schema_authority_input: self.schema_authority_input,
             transition,

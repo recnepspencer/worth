@@ -2,14 +2,11 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use worth_signal::facade::adapters::{
-    branch_state_proof_report, merge_plan_proof_report, merge_result_proof_report,
-    replay_artifact_proof_report, replay_parity_proof_report, runtime_proof_report,
-    BranchStateDenseGridProofBasis, BranchStateProofBasis, BranchStateProofReport,
-    MergePlanProofReport, MergeResultProofReport, ReplayArtifactProofInput,
-    ReplayArtifactProofReport, ReplayParityProofReport, RuntimeProofReport,
-    BRANCH_STATE_PROOF_BASIS_VERSION,
+    branch_state_proof_report, replay_artifact_proof_report, replay_parity_proof_report,
+    runtime_proof_report, BranchStateDenseGridProofBasis, BranchStateProofBasis,
+    BranchStateProofReport, ReplayArtifactProofInput, ReplayArtifactProofReport,
+    ReplayParityProofReport, RuntimeProofReport, BRANCH_STATE_PROOF_BASIS_VERSION,
 };
-use worth_signal::facade::adapters::{BranchMergePlan, BranchMergeResult};
 use worth_signal::facade::history::RuntimeBranchId;
 
 use crate::boundary::errors::WorthSignalJsError;
@@ -230,21 +227,7 @@ impl RuntimeCore {
     }
 
     pub fn runtime_proof_report(&self) -> RuntimeProofReport {
-        runtime_proof_report(
-            self.runtime.schema_registry().registry_digest(),
-            self.runtime.merge_strategy_registry().registry_digest(),
-            self.runtime
-                .merge_base_strategy_registry()
-                .registry_digest(),
-            self.runtime
-                .aspect_merge_policy_registry()
-                .registry_digest(),
-            self.runtime.conflict_isolation_registry().registry_digest(),
-            self.runtime.conflict_policy_registry().registry_digest(),
-            self.runtime.identity_matcher_registry().registry_digest(),
-            self.runtime.source_only_policy_registry().registry_digest(),
-            self.runtime.deletion_policy_registry().registry_digest(),
-        )
+        runtime_proof_report(self.runtime.schema_registry().registry_digest())
     }
 
     pub fn branch_state_proof(
@@ -296,35 +279,11 @@ impl RuntimeCore {
         Ok(replay_artifact_proof_report(
             expected,
             ReplayArtifactProofInput {
-                proof_schema_version: runtime_proof.proof_schema_version.clone(),
+                proof_schema_version: runtime_proof.proof_schema_version,
                 registry_bundle_digest: Some(runtime_proof.registry_bundle_digest),
-                lowered_strategy_bundle_digest: None,
-                merge_plan_digest: None,
-                merge_result_digest: None,
-                lineage_digest: None,
-                strategy_witness: None,
-                compatibility_witness: None,
-                scoped_merge_proof: None,
                 branch_state_digest: replayed_state.state_digest,
             },
         ))
-    }
-
-    pub(super) fn merge_plan_proof_report(
-        &self,
-        plan: &BranchMergePlan,
-    ) -> Result<MergePlanProofReport, WorthSignalJsError> {
-        Ok(merge_plan_proof_report(
-            plan,
-            &self.runtime_proof_report().registry_bundle_digest,
-        ))
-    }
-
-    pub(super) fn merge_result_proof_report(
-        &self,
-        result: &BranchMergeResult,
-    ) -> Result<MergeResultProofReport, WorthSignalJsError> {
-        Ok(merge_result_proof_report(result))
     }
 }
 

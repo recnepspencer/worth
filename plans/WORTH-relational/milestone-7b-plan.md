@@ -1,5 +1,7 @@
 # Milestone 7B Engineering Spec: Merge Artifact Ontology and Reconciliation Semantics
 
+> Historical specification. Semantic Git Phase 0B superseded the merge taxonomy and execution sections below.
+
 ## Summary
 
 Milestone 7B is not a merge-execution milestone.

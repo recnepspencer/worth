@@ -1,5 +1,4 @@
 use worth_relational_contracts::internal_port::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativePatchEnvelopeOwnerPort as _;
-use crate::capabilities::PatchStreamSource;
 use crate::publication::patch::data::{
     PatchStreamBatch, PatchStreamReadError, PatchStreamReadErrorClass, PatchStreamRequest,
     PublishedAuthoritativePatchEnvelope,

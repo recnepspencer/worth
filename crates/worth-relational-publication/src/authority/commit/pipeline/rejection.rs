@@ -7,12 +7,6 @@ use contracts::transactions::data::outcomes::transaction_commit_error::Transacti
 use std::time::Instant;
 use worth_relational_contracts::internal_port as contracts;
 
-pub(super) fn invalid_merge_context(detail: &str) -> TransactionCommitError {
-    TransactionCommitError::conflict(CommitConflict::new(ConflictClass::InvalidMergeParent {
-        detail: detail.to_string(),
-    }))
-}
-
 pub(super) fn stale_strategy_validation_basis(detail: &str) -> TransactionCommitError {
     TransactionCommitError::conflict(CommitConflict::new(ConflictClass::StaleValidationBasis {
         detail: detail.to_string(),

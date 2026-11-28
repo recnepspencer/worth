@@ -35,11 +35,6 @@ impl PricingWorkloadCertificationBundle {
                 "result": "typed_fail_closed",
             },
             {
-                "attack": "merge_topology_denial",
-                "classification": format!("{:?}", self.trust_attacks.merge_denial_class),
-                "result": "typed_fail_closed",
-            },
-            {
                 "attack": "simulation_damaging_material_ranked",
                 "classification": self
                     .simulation
@@ -98,7 +93,6 @@ impl PricingWorkloadCertificationBundle {
             "policy": entrypoints.policy,
             "source": entrypoints.source,
             "preview": entrypoints.preview,
-            "merge": entrypoints.merge,
             "writeback": entrypoints.writeback,
             "residue": entrypoints.residue,
             "historical_provenance": entrypoints.historical_provenance,
@@ -118,7 +112,6 @@ impl PricingWorkloadCertificationBundle {
             "has_policy_artifact": completeness.has_policy_artifact,
             "has_source_artifact": completeness.has_source_artifact,
             "has_preview_artifact": completeness.has_preview_artifact,
-            "has_merge_artifact": completeness.has_merge_artifact,
             "has_writeback_artifact": completeness.has_writeback_artifact,
             "has_residue_artifact": completeness.has_residue_artifact,
             "has_historical_provenance_artifact": completeness.has_historical_provenance_artifact,
@@ -137,8 +130,6 @@ impl PricingWorkloadCertificationBundle {
         json!({
             "main_vs_speculative_snapshot_distinct": comparison.main_vs_speculative_snapshot_distinct,
             "main_vs_speculative_rubber_cost_distinct": comparison.main_vs_speculative_rubber_cost_distinct,
-            "merged_vs_premerge_rubber_cost_distinct": comparison.merged_vs_premerge_rubber_cost_distinct,
-            "merged_vs_speculative_rubber_cost_equal": comparison.merged_vs_speculative_rubber_cost_equal,
             "discard_vs_promotion_classification_distinct": comparison.discard_vs_promotion_classification_distinct,
             "hostile_failure_vs_restart_failure_distinct": comparison.hostile_failure_vs_restart_failure_distinct,
             "historical_provenance_commit_matches_shock": comparison.historical_provenance_commit_matches_shock,

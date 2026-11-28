@@ -159,23 +159,6 @@ pub use crate::mapping::{
     SliceWideningPolicy, SubscriptionSliceKind, TruthDeltaSurfaceKind, TruthPatchScope,
     TruthPatchTargetSelector,
 };
-pub use crate::merge::{
-    AdmittedMergeHistoryContract, AdmittedMergeRegistry,
-    BridgeMergeAuthoritativeLineageDisposition, BridgeMergeAuthorityBasis,
-    BridgeMergeAuthorityBasisIdentity, BridgeMergeAuthorityBasisKind,
-    BridgeMergeCausalFrontierDisposition, BridgeMergeConsumptionClass, BridgeMergeCounters,
-    BridgeMergeDenialClass, BridgeMergeOntologyLoweringKind, BridgeMergeOntologyMappingEntry,
-    BridgeMergeOntologyMappingSurface, BridgeMergeOntologyMappingSurfaceIdentity,
-    BridgeMergeParentOrderDigestBasis, BridgeMergeParentOrderProof,
-    BridgeMergeParentOrderProofIdentity, BridgeMergePrecedenceStage,
-    BridgeMergeRoutingOutcomeClass, BridgeMergeSchemaPolicyDisposition,
-    BridgeMergeStageDecisionClass, BridgeMergeStructuralAdvisoryDisposition,
-    CanonicalRelationalMergeClass, LoweredMergeHistoryPacketSet, MergeDecisionLogEntry,
-    MergeHistoryDeclaration, MergeHistoryDeclarationIdentity, MergePrecedenceStageOutput,
-    MergeReplayCertificationBundle, PublishedMergeContinuityArtifact,
-    PublishedMergeExplanationArtifact, PublishedMergeRemapArtifact, ReducedMergeRoutingArtifact,
-    ValidatedMergeHistoryDeclaration,
-};
 pub use crate::policy::{
     AdmittedBridgePolicyContract, BridgeArtifactPolicyBaseline, BridgeDiagnosticsPolicyBaseline,
     BridgeDiagnosticsRetentionBudget, BridgeDiagnosticsTier, BridgeExecutionPolicyBaseline,

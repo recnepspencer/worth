@@ -1,4 +1,3 @@
-use crate::diagnostics::merge::BridgeMergeRecordIdentity;
 use crate::diagnostics::structural::{
     BridgeStructuralBranchComparisonRecordIdentity, BridgeStructuralRemapRecordIdentity,
 };
@@ -216,30 +215,6 @@ pub(crate) fn continuity_record_digest(
                     retained_mapping_bridge_identity_part(
                         record.remapped_subscription_slice_identity(),
                     ),
-                ],
-            )
-        })
-        .transpose()
-}
-
-pub(crate) fn merge_record_digest(
-    facade: &BridgeDiagnosticsFacade,
-    reference_identity: &BridgeIdentityEvidence,
-) -> Result<
-    Option<BridgeIdentityEvidence>,
-    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
-> {
-    facade
-        .merge_record_for_identity(&BridgeMergeRecordIdentity::from_reference_evidence(
-            reference_identity.revalidate_bridge_retained_reference(),
-        ))
-        .map(|record| {
-            compose_retained_causal_mapping_evidence_identity(
-                RetainedCausalMappingDigestArtifact::MergeRecord,
-                &[
-                    retained_mapping_bridge_identity_part(record.record_identity()),
-                    retained_mapping_shape_part(record.schema_version()),
-                    retained_mapping_bridge_identity_part(record.contract().contract_identity()),
                 ],
             )
         })

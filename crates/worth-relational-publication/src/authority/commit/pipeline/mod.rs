@@ -11,7 +11,6 @@ pub mod execution_admission;
 pub mod history_binding;
 pub mod history_preparation;
 pub mod history_resolution_phase;
-pub mod merge_draft;
 pub mod mutation_execution;
 pub mod performed_outcome;
 pub mod phase_backing;

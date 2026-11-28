@@ -1,9 +1,11 @@
 use worth_foundational::facade::{AspectKey, FieldKey};
 
-use crate::merge::data::identity::{
+use crate::schema::data::aspect_merge_policy::{
+    AspectMergePolicyDeclaration, AspectMergePolicyKind,
+};
+use crate::schema::data::identity_declarations::{
     IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
 };
-use crate::merge::data::policy::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
 use crate::schema::data::{AspectBinding, DeclaredAspectContractBinding};
 
 const FNV_OFFSET: u128 = 0x6c62272e07bb014262b821756295c58d;
@@ -152,12 +154,12 @@ pub(super) fn mix_merge_policy_declaration_terms(
     revision.mix_aspect_key(&declaration.aspect_key);
     match &declaration.policy {
         AspectMergePolicyKind::FailOnConflict => revision.mix_text("merge_policy_fail"),
-        AspectMergePolicyKind::LastWriterWins => revision.mix_text("merge_policy_lww"),
+        AspectMergePolicyKind::RetiredWriterOrder => revision.mix_text("merge_policy_lww"),
         AspectMergePolicyKind::MonotonicCounter => {
             revision.mix_text("merge_policy_monotonic_counter")
         }
         AspectMergePolicyKind::AdditiveSet => revision.mix_text("merge_policy_additive_set"),
-        AspectMergePolicyKind::PreferRicher => revision.mix_text("merge_policy_prefer_richer"),
+        AspectMergePolicyKind::RetiredValueShape => revision.mix_text("merge_policy_prefer_richer"),
         AspectMergePolicyKind::Custom(custom) => {
             revision.mix_text("merge_policy_custom");
             revision.mix_text(&custom.name);

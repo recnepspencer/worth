@@ -2,7 +2,7 @@
 use super::*;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::schema_carrier::allocation::DurableSchemaDeclarationMemory;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::readmission_memory::CodecDeclarationsReadmissionMemory;
-use worth_relational_contracts::internal_port::merge::data::readmission_memory::{MergeIdentityMemory, MergeLeafMemory};
+use worth_relational_contracts::internal_port::schema::data::declaration_readmission::{SchemaIdentityDeclarationMemory, SchemaDeclarationLeafMemory};
 
 pub(in super::super::super) fn prepare_canonical_readmission(
     canonical: BorrowedPayload<'_>,
@@ -56,8 +56,8 @@ pub(in super::super) fn prepare_declaration(
             Ok(())
         },
     )?;
-    let bytes = layout::<MergeIdentityMemory>(identity_count)?
-        .checked_add(layout::<Option<MergeLeafMemory>>(policy_count)?)
+    let bytes = layout::<SchemaIdentityDeclarationMemory>(identity_count)?
+        .checked_add(layout::<Option<SchemaDeclarationLeafMemory>>(policy_count)?)
         .ok_or_else(malformed)?;
     let memory = request
         .reserve_retained_memory(bytes)
@@ -141,8 +141,8 @@ pub(in super::super) fn declaration_leaf_bytes(
 fn identity(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
-) -> Result<MergeIdentityMemory, Refusal> {
-    let mut memory = MergeIdentityMemory::default();
+) -> Result<SchemaIdentityDeclarationMemory, Refusal> {
+    let mut memory = SchemaIdentityDeclarationMemory::default();
     if value.is_map() {
         let bytes = identities::basis(value, request)?.retained;
         value.fields(request, |variant, raw| {
@@ -167,7 +167,7 @@ fn identity(
 fn policy(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
-) -> Result<Option<MergeLeafMemory>, Refusal> {
+) -> Result<Option<SchemaDeclarationLeafMemory>, Refusal> {
     let mut memory = None;
     if value.is_map() {
         value.fields(request, |variant, raw| {
@@ -187,11 +187,11 @@ fn leaf(
     count: usize,
     bytes: u64,
     request: &ExecutionRequest<'_, '_>,
-) -> Result<MergeLeafMemory, Refusal> {
+) -> Result<SchemaDeclarationLeafMemory, Refusal> {
     let memory = request
         .reserve_retained_memory(bytes)
         .map_err(|cause| Refusal::Request(cause.into()))?;
-    Ok(MergeLeafMemory::new(count, bytes, memory))
+    Ok(SchemaDeclarationLeafMemory::new(count, bytes, memory))
 }
 fn layout<T>(count: usize) -> Result<u64, Refusal> {
     u64::try_from(

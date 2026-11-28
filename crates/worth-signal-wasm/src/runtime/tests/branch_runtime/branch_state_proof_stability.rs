@@ -24,7 +24,7 @@ fn branch_state_proof_is_versioned_and_stable_for_unchanged_branch_state() {
 
     assert!(left
         .proof_schema_version
-        .starts_with(worth_signal::facade::adapters::MERGE_PROOF_SCHEMA_VERSION));
+        .starts_with(worth_signal::facade::adapters::BRANCH_STATE_PROOF_SCHEMA_VERSION));
     assert_eq!(left.proof_schema_version, right.proof_schema_version);
     assert_eq!(left.branch_id, right.branch_id);
     assert_eq!(left.state_digest, right.state_digest);

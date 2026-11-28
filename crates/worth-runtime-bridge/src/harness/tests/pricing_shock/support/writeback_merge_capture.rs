@@ -135,118 +135,6 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_writeback_bundle
     }
 }
 
-pub(in crate::harness::tests::pricing_shock) fn capture_pricing_merge_bundle_from_source(
-    source: InMemoryRelationalBridgeSource,
-    policy: BridgeRuntimePolicy,
-    execution: worth_execution::ExecutionRequest<'_, '_>,
-) -> PricingMergeBundle {
-    let runtime =
-        build_pricing_runtime_with_merge(source, RecordingSignalBridgeSink::default(), policy);
-    let contract = runtime
-        .admit_merge_history(pricing_merge_declaration())
-        .expect("pricing merge declaration should admit");
-    let bundle = runtime
-        .replay_merge_history(&contract)
-        .expect("pricing merge bundle should replay");
-    let canonical_record = runtime.canonicalize_merge_record(&bundle);
-    let replayed = runtime
-        .replay_canonical_merge_record(&canonical_record)
-        .expect("pricing merge canonical replay should succeed");
-    runtime
-        .route(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit:pricing-merged-aspect"),
-            execution,
-        )
-        .expect("pricing merged aspect route should succeed");
-    let merged_source_commit = runtime
-        .diagnostics()
-        .last_route_record()
-        .expect("pricing merged aspect route should retain latest route record")
-        .source_commit()
-        .clone();
-    let merged_route_record = runtime
-        .diagnostics()
-        .route_record_for_source_commit(&merged_source_commit)
-        .expect("pricing merged aspect route should retain a route record");
-    let merged_explanation = runtime
-        .diagnostics()
-        .explain_route(merged_route_record.route_identity())
-        .expect("pricing merged aspect route should be explainable");
-    let merged_entry = &merged_explanation.route_entries()[0];
-
-    let main_premerge_eval = runtime
-        .evaluate(
-            BridgeTruthViewEvaluationRequest::for_historical_commit(
-                crate::truth_identity_fixtures::truth_branch_fixture("main"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-main"),
-            )
-            .with_read_packet(pricing_component_read_packet("rubber")),
-            execution,
-        )
-        .expect("main premerge evaluation should succeed");
-    let speculative_eval = runtime
-        .evaluate(
-            BridgeTruthViewEvaluationRequest::for_historical_commit(
-                crate::truth_identity_fixtures::truth_branch_fixture("pricing-shock"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
-            )
-            .with_read_packet(pricing_component_read_packet("rubber")),
-            execution,
-        )
-        .expect("speculative evaluation should succeed");
-    let merged_eval = runtime
-        .evaluate(
-            BridgeTruthViewEvaluationRequest::for_historical_commit(
-                crate::truth_identity_fixtures::truth_branch_fixture("main"),
-                crate::truth_identity_fixtures::truth_commit_fixture("commit:pricing-merged"),
-            )
-            .with_read_packet(pricing_component_read_packet("rubber")),
-            execution,
-        )
-        .expect("merged historical evaluation should succeed");
-
-    PricingMergeBundle {
-        bridge_class: contract
-            .validated_declaration()
-            .declaration()
-            .bridge_class(),
-        outcome_class: bundle.reduced_routing_artifact().outcome_class(),
-        blocked_stage: bundle.lowered_packet_set().blocked_stage(),
-        denial_class: bundle.lowered_packet_set().denial_class(),
-        continuity_published: bundle.continuity_artifact().is_some(),
-        remap_published: bundle.remap_artifact().is_some(),
-        parent_order_digest: bundle
-            .lowered_packet_set()
-            .parent_order_digest_basis()
-            .digest()
-            .to_owned(),
-        bundle_digest: bundle.digest().to_owned(),
-        canonical_replay_digest: replayed.digest().to_owned(),
-        replay_request_count: replayed
-            .reduced_routing_artifact()
-            .counters()
-            .merge_replay_request_count(),
-        main_premerge_snapshot: main_premerge_eval.snapshot_identity().clone(),
-        main_premerge_rubber_cost_cents: read_single_money_cents(&main_premerge_eval),
-        speculative_snapshot: speculative_eval.snapshot_identity().clone(),
-        speculative_rubber_cost_cents: read_single_money_cents(&speculative_eval),
-        merged_snapshot: merged_eval.snapshot_identity().clone(),
-        merged_rubber_cost_cents: read_single_money_cents(&merged_eval),
-        merged_aspect_registration_id: merged_entry
-            .aspect_registration_id()
-            .expect("merged pricing route should retain aspect registration id")
-            .clone(),
-        merged_fine_grained_match_status: merged_entry.fine_grained_match_status(),
-    }
-}
-
-pub(in crate::harness::tests::pricing_shock) fn capture_pricing_merge_bundle(
-    policy: BridgeRuntimePolicy,
-    resource_request: worth_execution::ExecutionRequest<'_, '_>,
-) -> PricingMergeBundle {
-    capture_pricing_merge_bundle_from_source(pricing_merge_source(), policy, resource_request)
-}
-
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_workload_certification_bundle(
     policy: BridgeRuntimePolicy,
     preview_session_identity: BridgePreviewSessionIdentity,
@@ -281,7 +169,6 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_workload_certifi
         restart_replay: capture_pricing_restart_replay_bundle(policy, resource_request),
         restart_failure: capture_pricing_restart_failure_bundle(resource_request),
         writeback: capture_pricing_writeback_bundle(policy),
-        merge: capture_pricing_merge_bundle(policy, resource_request),
         provenance: capture_pricing_historical_provenance_bundle(policy, resource_request),
         portfolio: capture_pricing_portfolio_blast_radius_bundle(),
         crisis: capture_pricing_crisis_bundle(),

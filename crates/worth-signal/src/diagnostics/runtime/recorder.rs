@@ -22,9 +22,6 @@ pub(crate) use artifacts::{
     derive_lineage_transition, record_invalidation_lineage,
     stamp_trace_summary_and_record_lineage_transition_from_image,
 };
-pub(crate) use branching::{
-    record_branch_fork_lineage, record_branch_merge_failure, record_branch_merge_summary,
-    record_branch_switch_lineage,
-};
+pub(crate) use branching::{record_branch_fork_lineage, record_branch_switch_lineage};
 pub(crate) use events::{record_snapshot_event, record_transaction_semantic_event};
 pub(crate) use snapshots::record_snapshot_restore_lineage;

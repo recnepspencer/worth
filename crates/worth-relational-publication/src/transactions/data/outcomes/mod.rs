@@ -39,11 +39,7 @@ pub use contracts::transactions::data::outcomes::conflict_class::record_aspect_p
 pub use contracts::transactions::data::outcomes::conflict_class::record_aspect_patch_denial::RecordAspectPatchTarget;
 pub use contracts::transactions::data::outcomes::conflict_class::ConflictClass;
 pub use contracts::transactions::data::outcomes::plan_artifacts::AuthoritativeApplyPlan;
-pub use contracts::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlan;
-pub use contracts::transactions::data::outcomes::plan_artifacts::MergeExecutionStructuralSummary;
-pub use contracts::transactions::data::outcomes::plan_artifacts::MergeExecutionSummary;
 pub use contracts::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
-pub use contracts::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 pub use contracts::transactions::data::outcomes::plan_artifacts::UndoRecord;
 pub use contracts::transactions::data::outcomes::rollback::RollbackEffect;
 pub use contracts::transactions::data::outcomes::rollback::RollbackOutcome;
@@ -52,6 +48,3 @@ pub use contracts::transactions::data::outcomes::transaction_commit_error::Commi
 pub use contracts::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
 pub use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 pub use mutation::transactions::data::outcomes::live_commit_validation::CommitValidation;
-
-pub mod merge_execution_outcome;
-pub use merge_execution_outcome::MergeExecutionOutcome;

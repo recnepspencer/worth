@@ -70,25 +70,12 @@ pub(super) fn compare_replay_surfaces(
         surface_basis_for_history(envelope),
         surface_basis_for_history(replayed_envelope),
         "authoritative ordered parent history differed",
-        || {
-            envelope.commit.ordered_parents() == replayed_envelope.commit.ordered_parents()
-                && envelope.merge_parent_branches == replayed_envelope.merge_parent_branches
-                && envelope.merge_base_commits == replayed_envelope.merge_base_commits
-        },
+        || envelope.commit.ordered_parents() == replayed_envelope.commit.ordered_parents(),
+        || format!("{:?}", envelope.commit.ordered_parents().as_slice()),
         || {
             format!(
-                "{:?}|{:?}|{:?}",
-                envelope.commit.ordered_parents().as_slice(),
-                envelope.merge_parent_branches,
-                envelope.merge_base_commits
-            )
-        },
-        || {
-            format!(
-                "{:?}|{:?}|{:?}",
-                replayed_envelope.commit.ordered_parents().as_slice(),
-                replayed_envelope.merge_parent_branches,
-                replayed_envelope.merge_base_commits
+                "{:?}",
+                replayed_envelope.commit.ordered_parents().as_slice()
             )
         },
     );

@@ -56,10 +56,9 @@ function commitNode(
 ): GearHistoryNode {
   const lane: GearHistoryLane = commit.branchId === designBranch?.id ? "design" : "main";
   const branch = lane === "design" && designBranch ? designBranch : mainBranch;
-  const parentIds = [...new Set(
-    [commit.parentCommitId, commit.sourceHeadCommitId]
-      .filter((id): id is string => Boolean(id && commits.has(id))),
-  )];
+  const parentIds = commit.parentCommitId && commits.has(commit.parentCommitId)
+    ? [commit.parentCommitId]
+    : [];
   const headLabels = [
     mainBranch.headCommitId === commit.id ? mainBranch.name : null,
     designBranch?.headCommitId === commit.id ? designBranch.name : null,
@@ -123,7 +122,6 @@ function topologicalOrder(
 
 function commitTitle(commit: LocalTruthCommit) {
   if (commit.kind === "genesis") return "Initial gear";
-  if (commit.kind === "merge") return `Merge · ${commit.operations.length} aspect changes`;
   return commit.operations.map((operation) => {
     const value = operation.after ?? operation.value;
     return `${operation.aspectId} → ${formatValue(value)}`;

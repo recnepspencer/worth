@@ -3,11 +3,6 @@ use wasm_bindgen::JsValue;
 use worth_signal::facade::adapters::BranchStateProofReport;
 use worth_signal::facade::history::{RuntimeBranch, RuntimeSnapshot};
 
-use crate::runtime::adapters::{
-    MergePlanArtifactSummary, MergePlanProofEnvelope, MergeResultArtifactSummary,
-    MergeResultProofEnvelope,
-};
-use crate::runtime::core::MergePolicyPreviewRequest;
 use crate::runtime::summaries::{ReplaySummary, RuntimeSnapshotEnvelope};
 use crate::runtime::worker_host::{
     WorkerApplyTransactionToBranchReceipt, WorkerApplyTransactionToBranchRequest,
@@ -171,90 +166,6 @@ impl SignalWorkerRuntime {
         self.shell
             .borrow()
             .branch_state_proof(branch_id)
-            .map_err(JsValue::from)
-    }
-
-    pub(crate) fn plan_merge_branches_for_test(
-        &self,
-        source_branch_id: u64,
-        target_branch_id: u64,
-    ) -> Result<MergePlanArtifactSummary, JsValue> {
-        self.shell
-            .borrow_mut()
-            .plan_merge_branches(source_branch_id, target_branch_id)
-            .map_err(JsValue::from)
-    }
-
-    pub(crate) fn plan_merge_branches_with_proof_for_test(
-        &self,
-        source_branch_id: u64,
-        target_branch_id: u64,
-    ) -> Result<MergePlanProofEnvelope, JsValue> {
-        self.shell
-            .borrow_mut()
-            .plan_merge_branches_with_proof(source_branch_id, target_branch_id)
-            .map_err(JsValue::from)
-    }
-
-    pub(crate) fn merge_branches_for_test(
-        &self,
-        source_branch_id: u64,
-        target_branch_id: u64,
-    ) -> Result<MergeResultArtifactSummary, JsValue> {
-        self.shell
-            .borrow_mut()
-            .merge_branches(source_branch_id, target_branch_id)
-            .map_err(JsValue::from)
-    }
-
-    pub(crate) fn merge_branches_with_proof_for_test(
-        &self,
-        source_branch_id: u64,
-        target_branch_id: u64,
-    ) -> Result<MergeResultProofEnvelope, JsValue> {
-        self.shell
-            .borrow_mut()
-            .merge_branches_with_proof(source_branch_id, target_branch_id)
-            .map_err(JsValue::from)
-    }
-
-    pub(crate) fn plan_merge_policy_preview_for_test(
-        &self,
-        request: MergePolicyPreviewRequest,
-    ) -> Result<MergePlanArtifactSummary, JsValue> {
-        self.shell
-            .borrow_mut()
-            .plan_merge_policy_preview(request)
-            .map_err(JsValue::from)
-    }
-
-    pub(crate) fn plan_merge_policy_preview_with_proof_for_test(
-        &self,
-        request: MergePolicyPreviewRequest,
-    ) -> Result<MergePlanProofEnvelope, JsValue> {
-        self.shell
-            .borrow_mut()
-            .plan_merge_policy_preview_with_proof(request)
-            .map_err(JsValue::from)
-    }
-
-    pub(crate) fn merge_branches_policy_preview_for_test(
-        &self,
-        request: MergePolicyPreviewRequest,
-    ) -> Result<MergeResultArtifactSummary, JsValue> {
-        self.shell
-            .borrow_mut()
-            .merge_branches_policy_preview(request)
-            .map_err(JsValue::from)
-    }
-
-    pub(crate) fn merge_branches_policy_preview_with_proof_for_test(
-        &self,
-        request: MergePolicyPreviewRequest,
-    ) -> Result<MergeResultProofEnvelope, JsValue> {
-        self.shell
-            .borrow_mut()
-            .merge_branches_policy_preview_with_proof(request)
             .map_err(JsValue::from)
     }
 }

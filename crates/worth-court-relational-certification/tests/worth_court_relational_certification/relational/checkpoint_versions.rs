@@ -19,7 +19,7 @@ fn current_checkpoint_preserves_meaning_and_retired_or_unknown_versions_refuse()
     // Protocol versions are interoperability data, not a measured cost golden.
     let body = current
         .bytes()
-        .strip_prefix(b"WORTH-REL-CHK24\n")
+        .strip_prefix(b"WORTH-REL-CHK25\n")
         .expect("only the current combined checkpoint grammar is emitted");
     let now = RelationalNativeCheckpoint::inspect_bytes_with_source(
         &execution,

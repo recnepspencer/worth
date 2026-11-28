@@ -14,7 +14,6 @@ use crate::mapping::{
     BridgeAspectRegistration, BridgeMappingRegistration, FrozenAspectMappingRegistry,
     FrozenMappingRegistry,
 };
-use crate::merge::{AdmittedMergeRegistry, MergeHistoryDeclaration};
 use crate::policy::BridgeRuntimePolicy;
 use crate::source::{AdmittedSourceRegistry, SourceDeclaration};
 use crate::structural::{AdmittedStructuralRegistry, StructuralIdentityDeclaration};

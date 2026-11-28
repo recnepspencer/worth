@@ -1,6 +1,5 @@
 use super::BridgeHarnessTargetId;
 use crate::facade::{TruthBranchIdentity, TruthCommitIdentity};
-use crate::merge::MergeHistoryDeclarationIdentity;
 use crate::source::SourceDeclarationIdentity;
 use crate::structural::StructuralIdentityDeclarationIdentity;
 
@@ -55,18 +54,6 @@ impl BridgeHarnessTargetId {
 
     pub fn source_reject_snapshot_drift(declaration_identity: SourceDeclarationIdentity) -> Self {
         Self::SourceRejectSnapshotDrift {
-            declaration_identity,
-        }
-    }
-
-    pub fn merge_execute(declaration_identity: MergeHistoryDeclarationIdentity) -> Self {
-        Self::MergeExecute {
-            declaration_identity,
-        }
-    }
-
-    pub fn merge_replay(declaration_identity: MergeHistoryDeclarationIdentity) -> Self {
-        Self::MergeReplay {
             declaration_identity,
         }
     }

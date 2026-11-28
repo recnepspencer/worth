@@ -46,14 +46,6 @@ pub fn prepare_replay_context(
         .history
         .require_recovered_branch(&envelope.branch_context)
         .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail))?;
-    for branch in &envelope.merge_parent_branches {
-        inputs
-            .history
-            .require_recovered_branch(branch)
-            .map_err(|detail| {
-                DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
-            })?;
-    }
     validate_expected_recovery_parent_shape(inputs.history, envelope)?;
     inputs
         .history

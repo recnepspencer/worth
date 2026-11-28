@@ -5,8 +5,6 @@ use worth_relational_contracts::internal_port as contracts;
 pub mod admitted_version;
 #[path = "history_preparation_binding/candidate_root.rs"]
 pub mod candidate_root;
-#[path = "history_preparation_binding/merge_inspection.rs"]
-pub mod merge_inspection;
 
 use std::sync::atomic::AtomicU64;
 #[cfg(test)]

@@ -9,14 +9,12 @@ pub use authoritative_publication::ArtifactAuthority;
 use authoritative_publication::{
     prepare_authoritative_publication, PreparedPublicationAuthority, PublicationAuthorityInput,
 };
-use contracts::diagnostics::data::artifacts::RelationalDiagnosticsEntry;
 use contracts::history::data::commit_receipt::RelationalCommitReceipt;
 use contracts::publication::patch::data::authoritative_patch_envelope::CanonicalAuthoritativePatch;
 use contracts::transactions::data::aspect_traces::AspectEvaluationTrace;
 use contracts::transactions::data::commit_log::CommitAspectSummary;
 use contracts::transactions::data::commit_log::CommitChangeSummary;
 use contracts::transactions::data::commit_log::CommitPublicationSummary;
-use contracts::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use contracts::transactions::data::primitives::RecordRef;
 use worth_relational_mutation::internal_port::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
@@ -60,8 +58,6 @@ pub(super) struct PublicationPreparationInput<'a> {
     pub(super) commit_reference: &'a RelationalCommitReceipt,
     pub(super) branch_id: &'a contracts::history::data::coordinates::BranchId,
     pub(super) version_id: contracts::identity::data::primitives::VersionId,
-    pub(super) merge_parent_branches: &'a [contracts::history::data::coordinates::BranchId],
-    pub(super) merge_base_commits: &'a [contracts::history::data::coordinates::CommitId],
     pub(super) merged_plan: RelationalSemanticPlan<'a>,
     pub(super) created_entities: &'a contracts::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     pub(super) created_relations: &'a contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
@@ -69,10 +65,8 @@ pub(super) struct PublicationPreparationInput<'a> {
     pub(super) record_allocations: &'a worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::pending_allocations::PendingRecordAllocations,
     pub(super) strategy_artifacts:
         Option<contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle>,
-    pub(super) merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
     pub(super) schema_continuity: &'a SchemaContinuityPlan,
     pub(super) effect: worth_relational_mutation::internal_port::authority::mutation::effect::MutationEffect,
-    pub(super) additional_diagnostics_entries: Vec<RelationalDiagnosticsEntry>,
     pub(super) deferred_diagnostic_artifacts:
         Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
 }
@@ -98,18 +92,14 @@ pub(super) fn prepare_publication_artifacts(
         commit_reference,
         branch_id,
         version_id,
-        merge_parent_branches,
-        merge_base_commits,
         merged_plan,
         created_entities,
         created_relations,
         naming_plan,
         record_allocations,
         strategy_artifacts,
-        merge_execution_authority,
         schema_continuity,
         effect,
-        additional_diagnostics_entries,
         deferred_diagnostic_artifacts,
     } = input;
     let worth_relational_mutation::internal_port::authority::mutation::effect::MutationEffect {
@@ -141,17 +131,12 @@ pub(super) fn prepare_publication_artifacts(
         .map_err(worth_relational_branch::internal_port::content::publication::commit_denial)?;
     let descriptive_touches = super::descriptive_touches::prepare(
         owners.work,
-        owners.authority.envelope.symbols,
         &catalog,
         selected_branch_state,
         working_state,
         &publication.canonical_deltas,
         &adjacency.deltas,
         if schema_continuity.schema_transition.is_some() {
-            super::descriptive_touches::TouchPreparationMode::Unavailable
-        } else if merge_execution_authority.is_some() {
-            super::descriptive_touches::TouchPreparationMode::NativeMerge
-        } else if !merge_parent_branches.is_empty() || !merge_base_commits.is_empty() {
             super::descriptive_touches::TouchPreparationMode::Unavailable
         } else {
             super::descriptive_touches::TouchPreparationMode::Ordinary
@@ -165,10 +150,7 @@ pub(super) fn prepare_publication_artifacts(
         working_state,
         merged_plan,
         record_allocations.canonical(),
-        schema_continuity.schema_transition.is_none()
-            && merge_execution_authority.is_none()
-            && merge_parent_branches.is_empty()
-            && merge_base_commits.is_empty(),
+        schema_continuity.schema_transition.is_none(),
         *execution,
     )?;
     let traces = capture_publication_traces(
@@ -183,7 +165,7 @@ pub(super) fn prepare_publication_artifacts(
             .diagnostics
             .profile
             .max_entries_per_artifact,
-        additional_diagnostics_entries,
+        Vec::new(),
         diagnostics.entries,
     );
     let authority = prepare_authoritative_publication(
@@ -198,15 +180,12 @@ pub(super) fn prepare_publication_artifacts(
             commit_reference,
             branch_id,
             version_id,
-            merge_parent_branches,
-            merge_base_commits,
             merged_plan,
             created_entities,
             created_relations,
             naming_plan,
             record_allocations,
             strategy_artifacts,
-            merge_execution_authority,
             schema_continuity,
             changed_records: &publication.changed_records,
             diagnostics_summary: &diagnostics_summary,

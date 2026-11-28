@@ -83,7 +83,6 @@ pub(super) fn prepare_commit_publication_execution<
             created_relations,
             mutation_identities,
             history,
-            merge_parent_branches,
             publication,
             publication_snapshot,
             aspect_evaluation_traces,
@@ -99,7 +98,7 @@ pub(super) fn prepare_commit_publication_execution<
                 .validation_input()
                 .recovered_codec_publication_custody()
                 .cloned();
-            let (_, validation_input, _, _, commit_log, _) = admitted.phase_view().into_parts();
+            let (_, validation_input, _, commit_log, _) = admitted.phase_view().into_parts();
             let naming_plan = validation_input.naming_plan();
             prepare_publication_phase(
                 execution,
@@ -127,8 +126,6 @@ pub(super) fn prepare_commit_publication_execution<
                     commit_reference: history.commit_reference.clone(),
                     branch_basis: history.branch_basis.clone(),
                     branch_id: history.branch_id.clone(),
-                    merge_base_commits: history.merge_base_commits.clone(),
-                    merge_parent_branches,
                 },
             )?
         };
@@ -145,7 +142,7 @@ pub(super) fn prepare_commit_publication_execution<
                 .map(|step| step.index_budget),
         )
         .map_err(|error| {
-            let (_, _, _, _, commit_log, _) = admitted.phase_view().into_parts();
+            let (_, _, _, commit_log, _) = admitted.phase_view().into_parts();
             error.with_commit_log(commit_log.clone())
         })?;
         PreparedCommitPublicationExecution {
@@ -192,7 +189,7 @@ pub fn publish_commit_execution(
         prepared_indexes,
     } = prepared;
     let finalized = {
-        let (_, _, _, _, commit_log, phase_timing) = admitted.value_mut().phase_view().into_parts();
+        let (_, _, _, commit_log, phase_timing) = admitted.value_mut().phase_view().into_parts();
         finalize_publication_phase(
             &inputs,
             commit_log,
@@ -230,12 +227,6 @@ pub fn publish_commit_execution(
         &aspect_evaluation_traces,
         &aspect_emission_traces,
     );
-    if let Some(accounting) = admitted.value_mut().take_merge_accounting() {
-        inputs.instrumentation.count_merge_execution_request(
-            accounting.admitted_records,
-            accounting.emitted_mutation_intents,
-        );
-    }
     PublishedCommitExecution {
         admitted,
         public_structural_summary,

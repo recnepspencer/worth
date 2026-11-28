@@ -242,7 +242,6 @@ fn bridge_family_for(family: CausalEvidenceFamily) -> Option<BridgeCausalEvidenc
             BridgeCausalEvidenceFamily::BridgeSourceFailure
         }
         CausalEvidenceFamily::BridgeContinuity => BridgeCausalEvidenceFamily::BridgeContinuity,
-        CausalEvidenceFamily::BridgeMerge => BridgeCausalEvidenceFamily::BridgeMerge,
         CausalEvidenceFamily::BridgeStructural => BridgeCausalEvidenceFamily::BridgeStructuralRemap,
         CausalEvidenceFamily::BridgeStream | CausalEvidenceFamily::BridgeReplay => {
             BridgeCausalEvidenceFamily::BridgeStreamReplay

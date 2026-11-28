@@ -7,8 +7,6 @@ mod bounded_commit_patches;
 mod branch_envelope_reads;
 mod commit_surfaces;
 mod envelope_reads;
-pub(crate) use worth_relational_branch::internal_port::history::access::merge_basis_resolution;
-mod merge_branch_basis;
 mod patch_stream_commit;
 pub(crate) mod relevant_writes;
 pub use relevant_writes::live_cursor::RelationalAuthoredWriteCursor;
@@ -52,5 +50,3 @@ impl<'runtime> HistoryAccess<'runtime> {
         Self { runtime }
     }
 }
-#[cfg(test)]
-pub(crate) use worth_relational_branch::internal_port::history::access::merge_branch_basis_foundational;

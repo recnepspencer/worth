@@ -1,7 +1,7 @@
 use worth_proof::TransitionOutcome;
 
 use crate::facade::branch::{
-    AdmittedSignalBranchBasis, SignalBranchMergeDenial, SignalBranchSnapshotCaptureDenial,
+    AdmittedSignalBranchBasis, SignalBranchSnapshotCaptureDenial,
     SignalBranchSnapshotReconstructionDenial,
 };
 use crate::facade::*;
@@ -128,34 +128,5 @@ fn pristine_reconstruction_denies_zero_budget_without_movement() {
     assert_eq!(
         observed_after_denial.observation(),
         pristine_basis.observation()
-    );
-}
-
-#[test]
-fn repeated_merge_denies_at_snapshot_budget_without_target_movement() {
-    let mut runtime = runtime_with_budget(1);
-    let canonical = runtime.current_branch();
-    let source = fork(&mut runtime, "merge-source", canonical.id);
-    let target = fork(&mut runtime, "merge-target", canonical.id);
-    let source_basis = observe(&runtime, source.clone());
-    let initial_target_basis = observe(&runtime, target.clone());
-
-    let first_target_basis = runtime
-        .merge_branch(&source_basis, &initial_target_basis)
-        .expect("first merge should fill the snapshot budget")
-        .into_basis();
-    drop(initial_target_basis);
-
-    let fresh_source_basis = observe(&runtime, source);
-    assert!(matches!(
-        runtime.merge_branch(&fresh_source_basis, &first_target_basis),
-        Err(SignalBranchMergeDenial::SnapshotCapacityExhausted {
-            maximum_stored_snapshots: 1,
-        })
-    ));
-    let observed_after_denial = observe(&runtime, target);
-    assert_eq!(
-        observed_after_denial.observation(),
-        first_target_basis.observation()
     );
 }

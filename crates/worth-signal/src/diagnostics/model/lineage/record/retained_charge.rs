@@ -43,37 +43,6 @@ impl RetainedStorageMeasurement for LineageRecordKind {
             } => from_branch_display_name
                 .retained_heap_charge(work)?
                 .checked_add(to_branch_display_name.retained_heap_charge(work)?),
-            Self::BranchMerge {
-                source_branch_id: _,
-                target_branch_id: _,
-                merge_kind: _,
-                divergence: _,
-                merge_strategy: _,
-                reconciliation_policy: _,
-                resolution_plan,
-                merged_snapshot_id: _,
-                source_branch_display_name,
-                target_branch_display_name,
-            } => source_branch_display_name
-                .retained_heap_charge(work)?
-                .checked_add(target_branch_display_name.retained_heap_charge(work)?)?
-                .checked_add(resolution_plan.retained_heap_charge(work)?),
-            Self::ArtifactMerge {
-                source_node: _,
-                target_node: _,
-                source_branch_id: _,
-                target_branch_id: _,
-                source_artifact_id: _,
-                target_artifact_id_before: _,
-                target_artifact_id_after: _,
-                merge_action: _,
-                decision_basis: _,
-                merge_kind: _,
-                divergence: _,
-                merge_strategy: _,
-                reconciliation_policy: _,
-                resolved_conflict_kinds,
-            } => resolved_conflict_kinds.retained_heap_charge(work),
             Self::SnapshotRestore {
                 snapshot_id: _,
                 node: _,
@@ -89,5 +58,5 @@ impl RetainedStorageMeasurement for LineageRecordKind {
     }
 }
 #[cfg(test)]
-#[path = "retained_charge_tests.rs"]
+#[path = "retained_variant_tests.rs"]
 mod tests;

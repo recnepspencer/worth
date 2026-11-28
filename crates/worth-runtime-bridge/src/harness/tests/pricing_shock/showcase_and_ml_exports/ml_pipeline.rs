@@ -69,7 +69,6 @@ fn pricing_shock_ml_pipeline_export_contains_full_traceable_simulation_artifacts
         .promotion_session_identity
         .as_str()
         .is_empty());
-    assert!(!bundle.merge.bundle_digest.is_empty());
     assert!(bundle.provenance.shock_delta_microunits > 0);
     assert!(!bundle.hostile_failure.source_commit.as_str().is_empty());
     assert_eq!(
@@ -97,11 +96,6 @@ fn pricing_shock_ml_pipeline_export_contains_full_traceable_simulation_artifacts
         .any(|edge| edge.kind == "commit_to_snapshot"
             && edge.from == bundle.provenance.shock_commit.as_str()
             && edge.to == bundle.provenance.shock_snapshot.as_str()));
-    assert!(typed_edges
-        .iter()
-        .any(|edge| edge.kind == "speculative_to_merged_snapshot"
-            && edge.from == bundle.merge.speculative_snapshot.as_str()
-            && edge.to == bundle.merge.merged_snapshot.as_str()));
     assert!(typed_edges
         .iter()
         .any(|edge| edge.kind == "bundle_to_causality_digest" && edge.from == bundle.digest()));
@@ -165,11 +159,6 @@ fn pricing_shock_ml_pipeline_export_lineage_graph_is_well_formed() {
         bundle.restart_replay.route_identity.as_str().to_owned(),
         format!("{:?}", bundle.writeback.family_kind),
         bundle.writeback.commit_replay_semantic_digest.clone(),
-        bundle.merge.main_premerge_snapshot.as_str().to_owned(),
-        bundle.merge.speculative_snapshot.as_str().to_owned(),
-        bundle.merge.merged_snapshot.as_str().to_owned(),
-        bundle.merge.bundle_digest.clone(),
-        bundle.merge.canonical_replay_digest.clone(),
         bundle.hostile_failure.source_commit.as_str().to_owned(),
         bundle.hostile_failure.source_snapshot.as_str().to_owned(),
         bundle.digest(),
@@ -210,7 +199,6 @@ fn pricing_shock_ml_pipeline_export_lineage_graph_is_well_formed() {
         "commit_to_route",
         "route_to_invalidation",
         "aspect_to_target",
-        "speculative_to_merged_snapshot",
         "bundle_to_causality_digest",
     ] {
         assert!(seen_edge_kinds.contains(required_kind));

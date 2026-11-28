@@ -8,6 +8,7 @@ use serde::ser::SerializeStruct;
 pub enum EnvelopeProjection {
     Full,
     Authoritative,
+    LegacyAuthoritative,
     Checkpoint,
 }
 pub(super) fn serialize<S: serde::Serializer>(
@@ -33,9 +34,6 @@ pub(super) fn serialize<S: serde::Serializer>(
         branch_cell_checkpoint,
         authority_kind,
         strategy_artifacts,
-        merge_execution_authority,
-        merge_parent_branches,
-        merge_base_commits,
         schema_version,
         schema_authority,
         merged_plan,
@@ -60,7 +58,9 @@ pub(super) fn serialize<S: serde::Serializer>(
         entries: Vec::new(),
     };
     let omitted_indexes = DerivedIndexArtifacts::default();
-    let field_count = 32
+    let legacy = matches!(projection, EnvelopeProjection::LegacyAuthoritative);
+    let field_count = 29
+        + 3 * usize::from(legacy)
         + usize::from(!authored_index_writes.is_unavailable())
         + usize::from(producer_cascade_retirement.is_some())
         + usize::from(coupled_authored_publication.is_some())
@@ -99,9 +99,11 @@ pub(super) fn serialize<S: serde::Serializer>(
     fields.serialize_field("branch_cell_checkpoint", branch_cell_checkpoint)?;
     fields.serialize_field("authority_kind", authority_kind)?;
     fields.serialize_field("strategy_artifacts", strategy_artifacts)?;
-    fields.serialize_field("merge_execution_authority", merge_execution_authority)?;
-    fields.serialize_field("merge_parent_branches", merge_parent_branches)?;
-    fields.serialize_field("merge_base_commits", merge_base_commits)?;
+    if legacy {
+        fields.serialize_field("merge_execution_authority", &Option::<()>::None)?;
+        fields.serialize_field("merge_parent_branches", &[(); 0])?;
+        fields.serialize_field("merge_base_commits", &[(); 0])?;
+    }
     fields.serialize_field("schema_version", schema_version)?;
     fields.serialize_field("schema_authority", schema_authority)?;
     fields.serialize_field("merged_plan", merged_plan)?;
@@ -115,7 +117,10 @@ pub(super) fn serialize<S: serde::Serializer>(
     fields.serialize_field("descriptive_touches", descriptive_touches)?;
     fields.serialize_field(
         "diagnostics_summary",
-        if matches!(projection, EnvelopeProjection::Authoritative) {
+        if matches!(
+            projection,
+            EnvelopeProjection::Authoritative | EnvelopeProjection::LegacyAuthoritative
+        ) {
             &omitted_diagnostics
         } else {
             diagnostics_summary

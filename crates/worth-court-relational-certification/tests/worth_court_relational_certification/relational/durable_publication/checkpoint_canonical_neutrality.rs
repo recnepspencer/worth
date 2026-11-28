@@ -3,15 +3,12 @@ use super::branch_history_publications::fork;
 use super::branch_history_publications::update_entity_on_branch;
 use super::checkpoint_source_capture::capture_durably;
 use worth_relational::facade::history::BranchId;
-use worth_relational::facade::merge::MergeExecutionRequest;
-use worth_relational::facade::merge::MergeIntent;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_testkit_relational::durable_medium::TestDurableMedium;
 use worth_testkit_relational::durable_publication::create_entity_outcome;
 use worth_testkit_relational::durable_publication::durable_runtime;
 use worth_testkit_relational::durable_publication::memory_runtime;
 
-const MAIN: &str = "main";
 const FEATURE: &str = "feature";
 
 fn branch(name: &str) -> BranchId {
@@ -46,27 +43,12 @@ fn script_opening(
     entity
 }
 
-/// An executed merge, a commit on the fork and a schema transition.
+/// A commit on the fork followed by a schema transition on main.
 fn script_close(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     entity: worth_relational::facade::identity::EntityId,
 ) {
-    let prepared = runtime
-        .prepare_merge_execution(
-            execution,
-            runtime
-                .bind_merge_execution_request(MergeExecutionRequest::new(
-                    branch(MAIN),
-                    branch(FEATURE),
-                    MergeIntent::ReconcileIntoTarget,
-                ))
-                .unwrap(),
-        )
-        .expect("the merge prepares");
-    runtime
-        .execute_prepared_merge(execution, prepared)
-        .expect("the merge executes");
     update_entity_on_branch(execution, runtime, entity, "feature-b", branch(FEATURE));
     transition_main_to_v2(execution, runtime);
 }

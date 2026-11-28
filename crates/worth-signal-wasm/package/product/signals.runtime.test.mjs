@@ -1,13 +1,10 @@
 import "./signals_runtime/authoring/readable_signal_runtime_snapshot.test.mjs";
 import "./signals_runtime/authoring/linked_writable_derived_state.test.mjs";
 import "./signals_runtime/local_truth/local_truth_schema_and_commit.test.mjs";
-import "./signals_runtime/local_truth/local_truth_merge_semantics.test.mjs";
 import "./signals_runtime/local_truth/local_truth_history_recovery.test.mjs";
-import "./signals_runtime/local_truth/local_truth_conflict_scale.test.mjs";
 import "./signals_runtime/local_truth/local_truth_projection_boundary.test.mjs";
 import "./signals_runtime/local_truth/local_truth_projection_active_branch.test.mjs";
 import "./signals_runtime/local_truth/local_truth_protocol_admission.test.mjs";
-import "./signals_runtime/local_truth/local_truth_generated_parity.test.mjs";
 import "./signals_runtime/local_truth/local_truth_boundedness_certification.test.mjs";
 import "./signals_runtime/local_truth/local_truth_closeout_certification.test.mjs";
 import "./signals_runtime/authoring/portable_lane_explicit_naming.test.mjs";
@@ -125,7 +122,6 @@ import "./signals_runtime/forms/resource_source/state/form_resource_settlement_r
 import "./signals_runtime/forms/resource_source/state/form_resource_mutation_response_readback.test.mjs";
 import "./signals_runtime/forms/resource_source/actions/form_resource_execution_recovery.test.mjs";
 import "./signals_runtime/forms/resource_source/actions/form_resource_lifecycle_recovery.test.mjs";
-import "./signals_runtime/forms/resource_source/state/form_resource_merge_projection.test.mjs";
 import "./signals_runtime/forms/resource_source/state/form_resource_replay_restore.test.mjs";
 import "./signals_runtime/forms/resource_source/state/form_resource_reset.test.mjs";
 import "./signals_runtime/forms/resource_source/state/form_resource_source_readback.test.mjs";

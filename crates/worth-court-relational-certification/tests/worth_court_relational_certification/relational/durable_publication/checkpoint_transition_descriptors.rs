@@ -1,5 +1,5 @@
-use super::merge_execution_observation::diagnostic_field;
-use super::merge_execution_observation::diagnostic_field_optional;
+use super::checkpoint_truth_observation::diagnostic_field;
+use super::checkpoint_truth_observation::diagnostic_field_optional;
 use worth_relational::facade::config::CascadeDeletePolicy;
 use worth_relational::facade::config::RelationalRuntimeProfile;
 use worth_relational::facade::diagnostics::DiagnosticCode;

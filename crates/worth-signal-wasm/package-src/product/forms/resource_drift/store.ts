@@ -40,7 +40,6 @@ export function createResourceDriftStore() {
         draftDigest: artifact.draftDigest,
         effectiveDigest: artifact.effectiveDigest,
         sourceCompatibilityPosture: artifact.sourceCompatibilityPosture,
-        resourceMergeStatus: artifact.resourceMergeStatus,
         visibleSelectionKind: artifact.visibleSelectionKind,
         blockers: artifact.blockers,
         messages: artifact.messages,

@@ -27,7 +27,6 @@ export interface FormResourceDriftArtifact {
     | "compatible"
     | "migrated"
     | "unavailable";
-  readonly resourceMergeStatus: "ready" | "conflict" | "unavailable" | null;
   readonly visibleSelectionKind: FormResourceVisibleSelectionKind;
   readonly blockers: ReadonlyArray<FormReadinessBlocker>;
   readonly messages: ReadonlyArray<FormMessageArtifact>;

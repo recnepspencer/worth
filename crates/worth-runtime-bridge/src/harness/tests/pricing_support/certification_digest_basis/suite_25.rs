@@ -21,7 +21,6 @@ impl PricingWorkloadCertificationBundle {
                 "promotion_session_identity",
                 &self.promotion.promotion_session_identity,
             ),
-            PricingCertificationBasisEntry::new("merge_bundle_digest", &self.merge.bundle_digest),
             PricingCertificationBasisEntry::new(
                 "writeback_commit_replay_semantic_digest",
                 &self.writeback.commit_replay_semantic_digest,
@@ -68,14 +67,6 @@ impl PricingWorkloadCertificationBundle {
                 "evaluation_selector_identity",
                 &self.matrix.reference.evaluation_selector_identity,
             ),
-            PricingCertificationBasisEntry::new(
-                "merged_aspect_registration_id",
-                &self.merge.merged_aspect_registration_id,
-            ),
-            PricingCertificationBasisEntry::debug(
-                "merged_fine_grained_match_status",
-                self.merge.merged_fine_grained_match_status,
-            ),
             PricingCertificationBasisEntry::new("shock_commit", &self.provenance.shock_commit),
             PricingCertificationBasisEntry::new("shock_regime", &self.provenance.shock_regime),
             PricingCertificationBasisEntry::new(
@@ -105,10 +96,6 @@ impl PricingWorkloadCertificationBundle {
                 "restart_invalidation_identity",
                 &self.restart_replay.invalidation_identity,
             ),
-            PricingCertificationBasisEntry::new(
-                "merge_replay_digest",
-                &self.merge.canonical_replay_digest,
-            ),
         ]
     }
 
@@ -124,7 +111,6 @@ impl PricingWorkloadCertificationBundle {
             self.suite_25_promotion_basis_entries(),
             self.suite_25_fanout_basis_entries(),
             self.suite_25_writeback_basis_entries(),
-            self.suite_25_merge_basis_entries(),
             self.suite_25_historical_provenance_basis_entries(),
             self.reference_workload_summary_basis_entries(),
         ]
@@ -227,25 +213,6 @@ impl PricingWorkloadCertificationBundle {
         ]
     }
 
-    pub(in crate::harness::tests) fn suite_25_merge_basis_entries(
-        &self,
-    ) -> Vec<PricingCertificationBasisEntry> {
-        vec![
-            PricingCertificationBasisEntry::debug("bridge_class", self.merge.bridge_class),
-            PricingCertificationBasisEntry::debug("outcome_class", self.merge.outcome_class),
-            PricingCertificationBasisEntry::new(
-                "parent_order_digest",
-                &self.merge.parent_order_digest,
-            ),
-            PricingCertificationBasisEntry::new("bundle_digest", &self.merge.bundle_digest),
-            PricingCertificationBasisEntry::new(
-                "canonical_replay_digest",
-                &self.merge.canonical_replay_digest,
-            ),
-            PricingCertificationBasisEntry::new("merged_snapshot", &self.merge.merged_snapshot),
-        ]
-    }
-
     pub(in crate::harness::tests) fn suite_25_historical_provenance_basis_entries(
         &self,
     ) -> Vec<PricingCertificationBasisEntry> {
@@ -292,7 +259,6 @@ impl PricingWorkloadCertificationBundle {
                 "writeback_commit",
                 self.writeback.commit_outcome_class,
             ),
-            PricingCertificationBasisEntry::debug("merge_outcome", self.merge.outcome_class),
             PricingCertificationBasisEntry::new(
                 "portfolio_product_count",
                 self.portfolio.product_count,

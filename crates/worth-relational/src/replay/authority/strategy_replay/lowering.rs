@@ -20,7 +20,6 @@ pub(super) fn lower_strategy_replay(
     let options = match basis_admission::replay_transaction_context(
         basis_runtime,
         &envelope.branch_context,
-        &envelope.merge_parent_branches,
     ) {
         Ok(context) => context,
         Err(denial) => {

@@ -151,8 +151,7 @@ impl VerifiedCanonicalCommitFrame {
             execution,
             |context, _| {
                 answer = Some(super::body_read::readmit_canonical_body(
-                    self.header.position,
-                    self.header.commit_id,
+                    &self.header,
                     &self.as_bytes()
                         [contracts::durability::canonical_commit_artifact::frame::HEADER_LEN..],
                     execution,

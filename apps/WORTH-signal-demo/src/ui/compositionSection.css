@@ -154,8 +154,7 @@
   text-align: right;
 }
 
-.gear-branch-button,
-.gear-merge-button {
+.gear-branch-button {
   width: 100%;
   min-height: 56px;
   border-radius: 15px;
@@ -164,30 +163,18 @@
   font-weight: 850;
   cursor: pointer;
   transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
-}
-
-.gear-branch-button {
   border: 1px solid rgba(255, 255, 255, 0.22);
   color: #fff;
   background: rgba(255, 255, 255, 0.075);
 }
 
-.gear-merge-button {
-  border: 1px solid #f1c76f;
-  color: #171106;
-  background: linear-gradient(135deg, #ffe7a3, #d9a841);
-  box-shadow: 0 12px 32px rgba(217, 168, 65, 0.18);
-}
-
-.gear-branch-button:not(:disabled):hover,
-.gear-merge-button:not(:disabled):hover {
+.gear-branch-button:not(:disabled):hover {
   transform: translateY(-2px);
 }
 
-.gear-branch-button:disabled,
-.gear-merge-button:disabled {
+.gear-branch-button:disabled {
   cursor: default;
-  opacity: 0.38;
+  opacity: 0.46;
 }
 
 .gear-branch-controls {

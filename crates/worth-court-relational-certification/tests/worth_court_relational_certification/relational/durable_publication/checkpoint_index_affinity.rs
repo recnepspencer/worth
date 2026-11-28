@@ -1,7 +1,7 @@
 use super::checkpoint_index_generations::{fork_branch, scoped_name_index};
 use super::checkpoint_recovery_observation::snapshot_for_branch;
 use super::checkpoint_source_capture::capture_durably;
-use super::merge_execution_observation::entity_field_display;
+use super::checkpoint_truth_observation::entity_field_display;
 use std::sync::Arc;
 use worth_relational::facade::{
     durability::{RecoveryPlan, RecoveryVerificationMode},

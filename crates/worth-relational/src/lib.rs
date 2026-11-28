@@ -69,7 +69,6 @@ mod identity_authority {
 mod indexes;
 mod inspection;
 mod lineage;
-mod merge;
 mod mvcc;
 mod performance;
 mod presentation;

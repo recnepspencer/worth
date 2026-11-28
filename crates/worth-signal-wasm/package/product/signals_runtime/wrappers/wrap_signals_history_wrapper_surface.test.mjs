@@ -4,7 +4,7 @@ import test from "node:test";
 import { loadSignalsModule } from "../module_loading/load_signals_module.mjs";
 import { createRawReadableHandle } from "../runtime_fixture/raw_readable_handle.mjs";
 
-test("wrapSignals history wrapper accepts numeric branch ids and normalizes preview requests", async () => {
+test("wrapSignals history wrapper accepts numeric branch IDs for snapshots and proofs", async () => {
   const { wrapSignals, cleanup } = await loadSignalsModule();
   try {
     const calls = [];
@@ -121,28 +121,6 @@ test("wrapSignals history wrapper accepts numeric branch ids and normalizes prev
         ]);
         return { parity: true, mismatch_classes: [] };
       },
-      plan_merge_policy_preview(request) {
-        calls.push(["plan_merge_policy_preview", request]);
-        return { source_branch_id: request.source_branch_id };
-      },
-      plan_merge_policy_preview_with_proof(request) {
-        calls.push(["plan_merge_policy_preview_with_proof", request]);
-        return {
-          plan: { source_branch_id: request.source_branch_id },
-          proof: { planDigest: "plan" },
-        };
-      },
-      merge_branches_policy_preview(request) {
-        calls.push(["merge_branches_policy_preview", request]);
-        return { target_branch: request.target_branch_id };
-      },
-      merge_branches_policy_preview_with_proof(request) {
-        calls.push(["merge_branches_policy_preview_with_proof", request]);
-        return {
-          result: { target_branch: request.target_branch_id },
-          proof: { resultDigest: "result" },
-        };
-      },
       free() {},
     };
 
@@ -256,29 +234,6 @@ test("wrapSignals history wrapper accepts numeric branch ids and normalizes prev
       { branchStateDigest: proof.stateDigest },
       currentBranch.id,
     );
-    const previewPlan = history.plan_merge_policy_preview({
-      source_branch_id: currentBranch.id,
-      target_branch_id: currentBranch.id,
-    });
-    const previewPlanProof = history.plan_merge_policy_preview_with_proof({
-      source_branch_id: currentBranch.id,
-      target_branch_id: currentBranch.id,
-    });
-    const previewResult = history.merge_branches_policy_preview({
-      source_branch_id: currentBranch.id,
-      target_branch_id: currentBranch.id,
-    });
-    const previewResultProof = history.merge_branches_policy_preview_with_proof(
-      {
-        source_branch_id: currentBranch.id,
-        target_branch_id: currentBranch.id,
-      },
-    );
-
-    assert.equal(previewPlan.source_branch_id, 7);
-    assert.equal(previewPlanProof.proof.planDigest, "plan");
-    assert.equal(previewResult.target_branch, 7);
-    assert.equal(previewResultProof.proof.resultDigest, "result");
     assert.equal(parity.parity, true);
     assert.equal(artifact.parity, true);
     assert.equal(typeof snapshot.snapshotRestoreToken, "string");
@@ -300,31 +255,11 @@ test("wrapSignals history wrapper accepts numeric branch ids and normalizes prev
       ["branch_state_proof", "bigint", 7n],
       ["replay_parity_proof", "bigint", 7n, 7n],
       ["replay_artifact_proof", "digest", "bigint", 7n],
-      [
-        "plan_merge_policy_preview",
-        { source_branch_id: 7, target_branch_id: 7 },
-      ],
-      [
-        "plan_merge_policy_preview_with_proof",
-        { source_branch_id: 7, target_branch_id: 7 },
-      ],
-      [
-        "merge_branches_policy_preview",
-        { source_branch_id: 7, target_branch_id: 7 },
-      ],
-      [
-        "merge_branches_policy_preview_with_proof",
-        { source_branch_id: 7, target_branch_id: 7 },
-      ],
     ]);
 
     assert.throws(
       () => history.switch_branch(-1),
       /history\.switch_branch expects a non-negative safe integer branch id/,
-    );
-    assert.throws(
-      () => history.plan_merge_policy_preview("bad"),
-      /history\.plan_merge_policy_preview expects a merge preview request object/,
     );
     assert.throws(
       () =>
@@ -333,14 +268,6 @@ test("wrapSignals history wrapper accepts numeric branch ids and normalizes prev
           state: { sources: [], recipes: [] },
         }),
       /history\.restore_exact_snapshot expects an artifact returned by history\.snapshot\(\) or history\.branch_snapshot_envelope\(\)/,
-    );
-    assert.throws(
-      () =>
-        history.plan_merge_policy_preview({
-          source_branch_id: 9007199254740992n,
-          target_branch_id: currentBranch.id,
-        }),
-      /exceeds the safe integer range supported by merge preview requests/,
     );
   } finally {
     await cleanup();

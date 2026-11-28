@@ -68,14 +68,14 @@ test("remove response plans carry lifecycle proof and digest parity for collecti
 
     assert.equal(plan.lifecycleProof.count, 2);
     assert.equal(plan.lifecycleProof.entries[0].entryKind, "reconciliation");
-    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "nativeMergePlan");
+    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "unavailable");
     assert.equal(plan.lifecycleProof.entries[0].mergeRebase.granularity, "item:t1");
     assert.equal(plan.lifecycleProof.entries[0].mergeRebase.locusKind, "membership");
-    assert.equal(plan.lifecycleProof.entries[1].mergeRebase.kind, "nativeMergePlan");
+    assert.equal(plan.lifecycleProof.entries[1].mergeRebase.kind, "unavailable");
     assert.equal(plan.lifecycleProof.entries[1].mergeRebase.granularity, "summary:total");
     assert.match(plan.lifecycleProof.rollbackDigest, /notApplicable/);
-    assert.match(plan.lifecycleProof.mergeRebaseDigest, /nativeMergePlan:item:t1/);
-    assert.match(plan.lifecycleProof.mergeRebaseDigest, /nativeMergePlan:summary:total/);
+    assert.match(plan.lifecycleProof.mergeRebaseDigest, /unavailable:item:t1/);
+    assert.match(plan.lifecycleProof.mergeRebaseDigest, /unavailable:summary:total/);
     assert.equal(
       removeLine.summary().diagnostics.latest.mutationResponseRollbackDigest,
       plan.lifecycleProof.rollbackDigest,
@@ -146,9 +146,9 @@ test("remove tombstone reconciliation remains exact-restorable and preserves dis
 
     assert.equal(plan.executionArtifacts[0].kind, "exactCollectionTombstone");
     assert.equal(plan.lifecycleProof.count, 1);
-    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "nativeMergePlan");
+    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "unavailable");
     assert.equal(plan.lifecycleProof.entries[0].mergeRebase.granularity, "item:t1");
-    assert.match(plan.lifecycleProof.mergeRebaseDigest, /nativeMergePlan:item:t1/);
+    assert.match(plan.lifecycleProof.mergeRebaseDigest, /unavailable:item:t1/);
     assert.equal(restoreAvailability.kind, "available");
     assert.equal(restoreAvailability.mode, "SameRuntimeBranchExact");
     assert.equal(restoreResult.kind, "restored");
@@ -199,7 +199,7 @@ test("remove detail invalidation remains exact-restorable and keeps lifecycle pr
 
     assert.equal(plan.executionArtifacts[0].kind, "exactDetailInvalidation");
     assert.equal(plan.lifecycleProof.count, 1);
-    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "nativeMergePlan");
+    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "unavailable");
     assert.equal(plan.lifecycleProof.entries[0].mergeRebase.granularity, "invalidation");
     assert.equal(plan.lifecycleProof.entries[0].mergeRebase.locusKind, "invalidation");
     assert.equal(restoreAvailability.kind, "available");
@@ -254,7 +254,7 @@ test("remove detail replacement keeps exact restore and line-level merge proof a
     assert.equal(plan.executionArtifacts[0].kind, "exactDetail");
     assert.equal(plan.lifecycleProof.count, 1);
     assert.equal(plan.lifecycleProof.entries[0].rollback.kind, "notApplicable");
-    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "nativeMergePlan");
+    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "unavailable");
     assert.equal(plan.lifecycleProof.entries[0].mergeRebase.granularity, "detailResponse");
     assert.equal(plan.lifecycleProof.entries[0].mergeRebase.locusKind, "detailResponse");
     assert.equal(restoreAvailability.kind, "available");

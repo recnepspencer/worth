@@ -135,30 +135,15 @@ fn retained_lineage_publication_never_repairs_unprepared_ordinary_history() {
 #[test]
 fn heap_bearing_lineage_publication_uses_one_exact_work_allowance() {
     use crate::diagnostics::lineage::LineageRecordKind;
-    use crate::logic::transaction::{
-        ArtifactMergeAction, BranchMergeConflictKind, BranchMergeDivergence, BranchMergeKind,
-        BranchMergeReconciliationPolicy, BranchMergeStrategy, MergeDecisionBasis,
-    };
-    let mut graph = SignalGraph::new();
-    let node = graph.create_node();
+
     let record = LineageRecord {
         sequence: 0,
         emitted_on_branch_id: SignalBranchId(0),
-        kind: LineageRecordKind::ArtifactMerge {
-            source_node: node,
-            target_node: Some(node),
-            source_branch_id: SignalBranchId(1),
-            target_branch_id: SignalBranchId(0),
-            source_artifact_id: None,
-            target_artifact_id_before: None,
-            target_artifact_id_after: Some(LineageArtifactId(0)),
-            merge_action: ArtifactMergeAction::Adopted,
-            decision_basis: MergeDecisionBasis::SourceAuthorityAdopted,
-            merge_kind: BranchMergeKind::Applied,
-            divergence: BranchMergeDivergence::None,
-            merge_strategy: BranchMergeStrategy::AdoptSourceHead,
-            reconciliation_policy: BranchMergeReconciliationPolicy::built_in_default(),
-            resolved_conflict_kinds: vec![BranchMergeConflictKind::RuntimeArtifactMismatch; 4096],
+        kind: LineageRecordKind::BranchFork {
+            created_branch_id: SignalBranchId(1),
+            parent_branch_id: SignalBranchId(0),
+            created_branch_display_name: "f".repeat(4096),
+            parent_branch_display_name: "main".to_owned(),
         },
     };
     let mut sample = DiagnosticsState::default();

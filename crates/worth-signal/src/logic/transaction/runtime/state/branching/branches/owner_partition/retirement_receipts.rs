@@ -64,10 +64,6 @@ where
                 child_branch_ids: children,
             });
         }
-        if self.is_merge_participant(branch_id) {
-            self.retirement_reservations.remove(&branch_id);
-            return Err(SignalBranchRetirementDenial::MergeParticipant { branch_id });
-        }
         if self.retirement_receipts.contains_key(&branch_id) {
             self.retirement_reservations.remove(&branch_id);
             return Err(SignalBranchRetirementDenial::RetiredBranch { branch_id });
@@ -133,7 +129,6 @@ where
                 self.children_by_parent.remove(&parent_branch_id);
             }
         }
-        self.active_merge_participants.remove(&branch_id);
         let removed = self.retirement_reservations.remove(&branch_id);
         debug_assert!(removed);
         self.reserved_retirement_receipt_count = self

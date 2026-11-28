@@ -1,8 +1,8 @@
 use super::super::support::{
     capture_pricing_workload_certification_bundle, generated_pricing_scenario,
     BridgeAspectRegistrationId, BridgeDeliveryErrorKind, BridgeFailureClass,
-    BridgeMergeConsumptionClass, BridgePreviewLifecycleStateKind, BridgePreviewSessionIdentity,
-    BridgeReplayErrorKind, BridgeRuntimePolicy, BridgeWritebackErrorKind, FineGrainedMatchStatus,
+    BridgePreviewLifecycleStateKind, BridgePreviewSessionIdentity, BridgeReplayErrorKind,
+    BridgeRuntimePolicy, BridgeWritebackErrorKind, FineGrainedMatchStatus,
 };
 use super::EXPECTED_COST_USD_TARGET_BASIS;
 
@@ -31,7 +31,6 @@ fn pricing_shock_workload_certification_bundle_is_profile_invariant_for_semantic
     assert_eq!(baseline.restart_replay, forensic.restart_replay);
     assert_eq!(baseline.restart_failure, forensic.restart_failure);
     assert_eq!(baseline.writeback, forensic.writeback);
-    assert_eq!(baseline.merge, forensic.merge);
     assert_eq!(baseline.provenance, forensic.provenance);
     assert_eq!(baseline.hostile_failure, forensic.hostile_failure);
     assert_eq!(baseline.digest(), forensic.digest());
@@ -46,7 +45,6 @@ fn pricing_shock_workload_certification_bundle_is_profile_invariant_for_semantic
     assert!(comparison.restart_replay_equal);
     assert!(comparison.restart_failure_equal);
     assert!(comparison.writeback_equal);
-    assert!(comparison.merge_equal);
     assert!(comparison.provenance_equal);
     assert!(comparison.portfolio_equal);
     assert!(comparison.crisis_equal);
@@ -153,38 +151,6 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
         BridgeWritebackErrorKind::MergeAuthorityRejected
     );
     assert_eq!(
-        bundle.merge.bridge_class,
-        BridgeMergeConsumptionClass::AspectReconciliationMerge
-    );
-    assert_eq!(
-        bundle.merge.outcome_class,
-        crate::facade::BridgeMergeRoutingOutcomeClass::ContinuityCandidate
-    );
-    assert_eq!(
-        bundle.merge.main_premerge_rubber_cost_cents,
-        scenario.main_rubber_cost
-    );
-    assert_eq!(
-        bundle.merge.speculative_rubber_cost_cents,
-        scenario.speculative_rubber_cost
-    );
-    assert_eq!(
-        bundle.merge.merged_rubber_cost_cents,
-        scenario.speculative_rubber_cost
-    );
-    assert_ne!(
-        bundle.merge.main_premerge_rubber_cost_cents,
-        bundle.merge.merged_rubber_cost_cents
-    );
-    assert_eq!(
-        bundle.merge.speculative_rubber_cost_cents,
-        bundle.merge.merged_rubber_cost_cents
-    );
-    assert_eq!(
-        bundle.merge.merged_aspect_registration_id,
-        BridgeAspectRegistrationId::admit_bridge_owned("pricing-rubber-usd-field")
-    );
-    assert_eq!(
         bundle.provenance.main_commit,
         crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-main")
     );
@@ -209,10 +175,6 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
         bundle.aspect.target_canonical_basis,
         EXPECTED_COST_USD_TARGET_BASIS
     );
-    assert_eq!(
-        bundle.merge.merged_fine_grained_match_status,
-        FineGrainedMatchStatus::Matched
-    );
     assert_eq!(bundle.portfolio.product_count, 100);
     assert_eq!(
         bundle.crisis.crisis_name,
@@ -235,14 +197,6 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
         bundle.trust_attacks.route_policy_error_kind,
         crate::facade::BridgeRouteErrorKind::RoutePolicyMismatch
     );
-    assert_eq!(
-        bundle.trust_attacks.merge_denial_blocked_stage,
-        crate::facade::BridgeMergePrecedenceStage::DeletionTopologyGate
-    );
-    assert_eq!(
-        bundle.trust_attacks.merge_denial_class,
-        crate::facade::BridgeMergeDenialClass::TopologyRewireGate
-    );
     assert_eq!(counters.causality_bundle_count, 1);
     assert_eq!(counters.causality_bundle_replay_match_count, 3);
     assert_eq!(counters.causality_bundle_replay_mismatch_count, 1);
@@ -254,7 +208,7 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
     );
     assert_eq!(counters.showcase_entrypoint_request_count, 1);
     assert_eq!(counters.simulation_trace_bundle_count, 1);
-    assert_eq!(counters.trust_attack_classification_count, 8);
+    assert_eq!(counters.trust_attack_classification_count, 7);
     assert_eq!(counters.diagnostics_entrypoint_reconstruction_count, 1);
     assert_eq!(counters.speculative_branch_bundle_count, 1);
     assert_eq!(counters.speculative_discard_residue_check_count, 1);
@@ -288,7 +242,6 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
     assert_eq!(completeness.insufficiency_count, 0);
     assert!(diagnostics_entrypoints.all_entrypoints_available());
     assert!(diagnostics_entrypoints.routing);
-    assert!(diagnostics_entrypoints.merge);
     assert!(diagnostics_entrypoints.historical_provenance);
     assert!(diagnostics_entrypoints.portfolio);
     assert!(diagnostics_entrypoints.crisis);
@@ -296,8 +249,6 @@ fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
     assert!(diagnostics_entrypoints.simulation);
     assert!(diagnostics_entrypoints.trust_attacks);
     assert!(reference_comparison.main_vs_speculative_snapshot_distinct);
-    assert!(reference_comparison.merged_vs_speculative_rubber_cost_equal);
-    assert!(reference_comparison.merged_vs_premerge_rubber_cost_distinct);
     assert!(reference_comparison.historical_provenance_commit_matches_shock);
     assert!(reference_comparison.portfolio_reports_positive_blast_radius);
     assert!(reference_comparison.crisis_affects_portfolio_breadth);

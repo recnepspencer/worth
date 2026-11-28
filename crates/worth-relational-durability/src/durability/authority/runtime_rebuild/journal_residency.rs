@@ -29,9 +29,14 @@ pub fn install(
         let positioned = cell
             .positioned_if_resident()
             .ok_or_else(|| corrupt("recovered journal entry has no sealed positioned body"))?;
-        let observed = RelationalCanonicalCommitArtifact::positioned_payload_digest(&positioned)
-            .map_err(|error| corrupt(format!("recovered journal payload digest: {error}")))?;
-        if positioned.position() != readmitted.position() || digest != observed {
+        let original = readmitted.positioned();
+        if positioned.position() != original.position()
+            || !RelationalCanonicalCommitArtifact::matches_positioned_payload_for_request(
+                original,
+                positioned.canonical_arc(),
+                execution,
+            )?
+        {
             return Err(RelationalStorageUnavailable {
                 subject: RelationalStorageSubject::Envelope(readmitted.position()),
                 cause: RelationalStorageUnavailableCause::IntegrityMismatch,
@@ -39,7 +44,7 @@ pub fn install(
             .into());
         }
         let entry = worth_relational_branch::internal_port::history::commit::retained_index::RetainedCanonicalIndex::from_publication(
-            &positioned,
+            original,
             artifact.roots(),
             digest,
             execution,
@@ -51,7 +56,7 @@ pub fn install(
             )
         })?;
         contracts::execution::request_custody::check_request(execution)?;
-        cell.bind_performed(&positioned, Some((entry, source)), None);
+        cell.bind_performed(original, Some((entry, source)), None);
         cell.settle();
     }
     Ok(())

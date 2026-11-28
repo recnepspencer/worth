@@ -114,15 +114,3 @@ pub(crate) fn assert_observability_surfaces_agree(world: &FintechWorld) {
         .iter()
         .any(|artifact| artifact == &bundle.diagnostics_summary));
 }
-
-pub(crate) fn assert_merge_metadata_preserved(
-    merge_parent_branches: &[BranchId],
-    merge_base_count: usize,
-    parent_count: usize,
-    merge_branch: &BranchId,
-    expected_parents: usize,
-) {
-    assert_eq!(merge_parent_branches, std::slice::from_ref(merge_branch));
-    assert_eq!(merge_base_count, 1);
-    assert_eq!(parent_count, expected_parents);
-}

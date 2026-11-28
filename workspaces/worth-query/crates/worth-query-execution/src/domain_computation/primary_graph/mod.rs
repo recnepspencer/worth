@@ -15,8 +15,8 @@ pub(crate) use worth_query_execution_lineage::facade::primary_graph::{
     aggregate_identity, aggregate_observation, component_selection, content, denial,
     derived_source, entity_key, entity_resolution_denial, fact_verification_observation,
     fragment_view, freshness, home_original_progression, index_currency, index_refresh,
-    initial_schema_denial, merge_unique_values, observations, output_lineage, resolution_denial,
-    root, source_facts, structural_walk,
+    initial_schema_denial, observations, output_lineage, resolution_denial, root, source_facts,
+    structural_walk,
 };
 pub(crate) use worth_query_execution_query::facade::domain_computation::primary_graph::application_output_demand;
 pub(crate) use worth_query_execution_query::facade::domain_computation::primary_graph::{

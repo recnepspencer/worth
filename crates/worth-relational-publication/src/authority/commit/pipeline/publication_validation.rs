@@ -19,7 +19,6 @@ use std::sync::Arc;
 
 pub trait DraftValidationInput {
     fn basis(&self) -> &AdmittedRelationalBranchBasis;
-    fn merge_parent_bases(&self) -> &[AdmittedRelationalBranchBasis];
     fn control(&self) -> &RelationalOperationControl;
     fn coupled_proposal(&self) -> Option<&RelationalMutationProposalIdentity>;
     fn into_publication(self) -> CommitPublicationValidationInput;
@@ -27,19 +26,11 @@ pub trait DraftValidationInput {
     fn target_branch(&self) -> &BranchId {
         self.basis().identity().branch_id()
     }
-
-    fn merge_parent_branch_ids(&self) -> Vec<BranchId> {
-        self.merge_parent_bases()
-            .iter()
-            .map(|basis| basis.identity().branch_id().clone())
-            .collect()
-    }
 }
 
 #[derive(Debug)]
 pub struct CommitPublicationValidationInput {
     pub basis: AdmittedRelationalBranchBasis,
-    pub merge_parent_bases: Vec<AdmittedRelationalBranchBasis>,
     pub schema_authority: Arc<RelationalBranchRootSchemaAuthority>,
     pub schema_authority_input: Option<SchemaContinuityAuthorityInput>,
     pub transition: Option<ProposedSchemaTransition>,
@@ -55,17 +46,6 @@ pub struct CommitPublicationValidationInput {
 impl CommitPublicationValidationInput {
     pub(super) fn basis(&self) -> &AdmittedRelationalBranchBasis {
         &self.basis
-    }
-
-    pub(super) fn merge_parent_bases(&self) -> &[AdmittedRelationalBranchBasis] {
-        &self.merge_parent_bases
-    }
-
-    pub(super) fn merge_parent_branch_ids(&self) -> Vec<BranchId> {
-        self.merge_parent_bases
-            .iter()
-            .map(|basis| basis.identity().branch_id().clone())
-            .collect()
     }
 
     pub(super) fn appendix_adoption(&self) -> Option<&CanonicalRequiredOutputOrigin> {

@@ -15,7 +15,6 @@ mod handle_writeback;
 mod writeback_retention;
 pub use writeback_retention::BridgeWritebackDiagnosticReference;
 mod history;
-mod merge;
 mod policy;
 mod records;
 mod replay;
@@ -65,10 +64,6 @@ pub use history::{
     BridgeHistoricalEvaluationFailureRecord, BridgeHistoricalEvaluationRecord,
     BridgeHistoricalEvaluationRecordIdentity, BridgeHistoricalEvaluationReplaySummary,
     BridgeHistoricalMaterializationPath, BRIDGE_CANONICAL_HISTORICAL_EVALUATION_RECORD_SCHEMA_V1,
-};
-pub use merge::{
-    BridgeCanonicalMergeRecord, BridgeMergeExplanation, BridgeMergeRecord,
-    BridgeMergeRecordIdentity, BridgeMergeReplaySummary, BRIDGE_CANONICAL_MERGE_RECORD_SCHEMA_V1,
 };
 pub use policy::{
     BridgePolicyExplanation, BridgePolicyExplanationRow, BridgePolicyRejectionExplanation,

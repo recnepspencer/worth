@@ -16,7 +16,7 @@ mod fork;
 mod identity;
 mod lifecycle;
 mod managed_reference;
-mod merge;
+
 pub(crate) mod owner_services;
 mod readmission;
 mod recorded_initial_root;
@@ -58,7 +58,7 @@ pub use lifecycle::{
 pub use managed_reference::{
     ManagedSignalBranchReference, ManagedSignalBranchReferenceAdmissionDenial,
 };
-pub use merge::{SignalBranchMergeDenial, SignalBranchMergeOutcome};
+
 #[allow(
     unused_imports,
     reason = "Phase 4 port signatures consume the Phase 3 cancellation vocabulary"

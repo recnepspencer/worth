@@ -40,10 +40,6 @@ pub(in crate::internal_port::authority::commit::pipeline::publication_execution)
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) commit_reference:
         RelationalCommitReceipt,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) branch_id: BranchId,
-    pub(in crate::internal_port::authority::commit::pipeline::publication_execution) merge_base_commits:
-        Vec<CommitId>,
-    pub(in crate::internal_port::authority::commit::pipeline::publication_execution) merge_parent_branches:
-        Vec<BranchId>,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) deferred_diagnostic_artifacts:
         Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) canonical_publication_route:
@@ -75,10 +71,6 @@ pub(in crate::internal_port::authority::commit::pipeline::publication_execution)
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) commit_reference:
         RelationalCommitReceipt,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) branch_id: BranchId,
-    pub(in crate::internal_port::authority::commit::pipeline::publication_execution) merge_base_commits:
-        Vec<CommitId>,
-    pub(in crate::internal_port::authority::commit::pipeline::publication_execution) merge_parent_branches:
-        Vec<BranchId>,
     pub(in crate::internal_port::authority::commit::pipeline::publication_execution) deferred_diagnostic_artifacts:
         Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
 }
@@ -152,8 +144,6 @@ impl PreparedPublicationPhase {
             commit_id: self.commit_id,
             commit_reference: self.commit_reference,
             branch_id: self.branch_id,
-            merge_base_commits: self.merge_base_commits,
-            merge_parent_branches: self.merge_parent_branches,
             deferred_diagnostic_artifacts: self.deferred_diagnostic_artifacts,
         };
         (movement, completion)

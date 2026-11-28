@@ -54,9 +54,6 @@ import { materializePresentationDeclaration } from "./presentation/declarations.
 import { createPresentationRuntimeBindings } from "./presentation/runtime_bindings.js";
 import { createDeclaredPresentationScopeRegistry } from "./presentation/scope_registry.js";
 import { createPresentationStore } from "./presentation/store.js";
-import { createResourceMergeProjectionRegistry } from "./resource_merge/projection.js";
-import { resourceMergeReadinessBlockers } from "./resource_merge/report.js";
-import { createResourceMergeStore } from "./resource_merge/store.js";
 import { createRecoveryBindings } from "./recovery/controller_bindings.js";
 import { createFormReplayRestoreStore } from "./replay_restore/store.js";
 import { dedupeReadinessBlockers } from "./readiness_artifacts.js";
@@ -147,7 +144,6 @@ export function createFormController(signalNamespace, declaration, options = {})
     diagnosticsHistory,
     currentMeasurementSemanticContext,
   });
-  const resourceMerges = createResourceMergeStore();
   const resourceDrifts = createResourceDriftStore();
   const resets = createFormResetStore();
   const replayRestores = createFormReplayRestoreStore();
@@ -157,11 +153,6 @@ export function createFormController(signalNamespace, declaration, options = {})
     fieldDeclarations,
     stepDeclarations,
     actionDeclarations,
-    availabilityDeclarations,
-  );
-  const resourceMergeRegistry = createResourceMergeProjectionRegistry(
-    fieldDeclarations,
-    stepDeclarations,
     availabilityDeclarations,
   );
   const interactionBindings = createInteractionBindings(interactions, fieldDeclarations);
@@ -240,8 +231,6 @@ export function createFormController(signalNamespace, declaration, options = {})
     latestCanonicalSourceDigest: () => canonicalizations.history().at(-1)?.sourceBasisDigest ?? null,
     draft: () => cloneFormValue(draft),
     effective: () => mergeDraft(authoritativeSource(), draft),
-    resourceMerges,
-    resourceMergeRegistry,
     resourceDrifts,
   });
   const stateHistoryBindings = createStateHistoryControllerBindings({
@@ -340,7 +329,6 @@ export function createFormController(signalNamespace, declaration, options = {})
         rawInputs,
         sourceCompatibilityBlockers,
         resourceSourceReadinessBlockers,
-        resourceMergeReadinessBlockers,
         attachmentTransferReadinessBlockers,
         validationReadinessBlockers,
         availabilityReadinessBlockers,

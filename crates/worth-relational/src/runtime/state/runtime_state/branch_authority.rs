@@ -64,78 +64,9 @@ impl RelationalRuntime {
         self.admitted_branch_basis_for_identity(identity)
     }
 
-    pub(crate) fn admitted_branch_basis_for_merge_branch(
-        &self,
-        branch_id: &BranchId,
-    ) -> Result<
-        AdmittedRelationalBranchBasis,
-        crate::merge::data::RelationalMergeRequestBindingDenial,
-    > {
-        let identity = self
-            .branch_identity(branch_id)
-            .map_err(|denial| map_basis_denial(identity_to_basis_denial(denial)))?;
-        self.admitted_branch_basis_for_identity(&identity)
-            .map_err(map_basis_denial)
-    }
-
     /// The id of this runtime instance, unique within the process. Every
     /// runtime-affine value this runtime issues carries it.
     pub fn runtime_instance_id(&self) -> u64 {
         self.services.runtime_instance_id()
-    }
-}
-
-fn identity_to_basis_denial(
-    denial: crate::branch::RelationalBranchIdentityDenial,
-) -> RelationalBranchBasisDenial {
-    match denial {
-        crate::branch::RelationalBranchIdentityDenial::ForeignRuntime {
-            expected_runtime_instance_id,
-            actual_runtime_instance_id,
-        } => RelationalBranchBasisDenial::ForeignRuntime {
-            expected_runtime_instance_id,
-            actual_runtime_instance_id,
-        },
-        crate::branch::RelationalBranchIdentityDenial::UnknownBranch(branch) => {
-            RelationalBranchBasisDenial::UnknownBranch(branch)
-        }
-        crate::branch::RelationalBranchIdentityDenial::IdentityMismatch => {
-            RelationalBranchBasisDenial::MixedAxis(
-                crate::branch::RelationalBranchBasisMismatchAxis::Branch,
-            )
-        }
-    }
-}
-
-fn map_basis_denial(
-    denial: RelationalBranchBasisDenial,
-) -> crate::merge::data::RelationalMergeRequestBindingDenial {
-    match denial {
-        RelationalBranchBasisDenial::ForeignRuntime {
-            expected_runtime_instance_id,
-            actual_runtime_instance_id,
-        } => crate::merge::data::RelationalMergeRequestBindingDenial::ForeignRuntime {
-            expected_runtime_instance_id,
-            actual_runtime_instance_id,
-        },
-        RelationalBranchBasisDenial::UnknownBranch(branch) => {
-            crate::merge::data::RelationalMergeRequestBindingDenial::UnknownBranch(branch)
-        }
-        RelationalBranchBasisDenial::ArchivedBranch(branch) => {
-            crate::merge::data::RelationalMergeRequestBindingDenial::ArchivedBranch(branch)
-        }
-        RelationalBranchBasisDenial::DeletingBranch(branch) => {
-            crate::merge::data::RelationalMergeRequestBindingDenial::DeletingBranch(branch)
-        }
-        RelationalBranchBasisDenial::RetentionCapacityExhausted => {
-            crate::merge::data::RelationalMergeRequestBindingDenial::RetentionCapacityExhausted
-        }
-        RelationalBranchBasisDenial::RetentionIdentityExhausted => {
-            crate::merge::data::RelationalMergeRequestBindingDenial::RetentionIdentityExhausted
-        }
-        RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
-            crate::merge::data::RelationalMergeRequestBindingDenial::SnapshotIdentityExhausted
-        }
-        _ => crate::merge::data::RelationalMergeRequestBindingDenial::IdentityMismatch,
     }
 }

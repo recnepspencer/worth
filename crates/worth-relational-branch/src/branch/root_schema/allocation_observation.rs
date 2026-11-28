@@ -84,7 +84,7 @@ fn declaration_allocation_bytes(
                 .identity_declarations
                 .capacity()
                 .saturating_mul(std::mem::size_of::<
-                    crate::merge::data::identity::IdentityBasisDeclaration,
+                    crate::schema::data::identity_declarations::IdentityBasisDeclaration,
                 >()),
         )
         .saturating_add(
@@ -92,7 +92,7 @@ fn declaration_allocation_bytes(
                 .merge_policy_declarations
                 .capacity()
                 .saturating_mul(std::mem::size_of::<
-                    crate::merge::data::policy::AspectMergePolicyDeclaration,
+                    crate::schema::data::aspect_merge_policy::AspectMergePolicyDeclaration,
                 >()),
         )
 }

@@ -63,16 +63,11 @@ impl PricingWorkloadCertificationBundle {
                     "restart_route_identity": self.restart_replay.route_identity.as_str(),
                     "restart_invalidation_identity": self.restart_replay.invalidation_identity.as_str(),
                 },
-                "writeback_and_merge_lineage": {
+                "writeback_lineage": {
                     "writeback_family_kind": format!("{:?}", self.writeback.family_kind),
                     "writeback_strategy_class": format!("{:?}", self.writeback.strategy_class),
                     "writeback_commit_outcome_class": format!("{:?}", self.writeback.commit_outcome_class),
                     "writeback_commit_replay_semantic_digest": self.writeback.commit_replay_semantic_digest,
-                    "merge_bridge_class": format!("{:?}", self.merge.bridge_class),
-                    "merge_outcome_class": format!("{:?}", self.merge.outcome_class),
-                    "merge_bundle_digest": self.merge.bundle_digest,
-                    "merge_canonical_replay_digest": self.merge.canonical_replay_digest,
-                    "merge_merged_snapshot": self.merge.merged_snapshot.as_str(),
                 },
                 "historical_provenance": {
                     "main_commit": self.provenance.main_commit.as_str(),
@@ -92,7 +87,6 @@ impl PricingWorkloadCertificationBundle {
                     "hostile_source_snapshot": self.hostile_failure.source_snapshot.as_str(),
                     "replay_policy_error_kind": format!("{:?}", self.trust_attacks.replay_policy_error_kind),
                     "route_policy_error_kind": format!("{:?}", self.trust_attacks.route_policy_error_kind),
-                    "merge_denial_class": format!("{:?}", self.trust_attacks.merge_denial_class),
                 },
                 "causality": self.ml_pipeline_causality_digest_json(),
             },
@@ -153,7 +147,6 @@ impl PricingWorkloadCertificationBundle {
             "suite_25_promotion_digest": suite_25.promotion_digest,
             "suite_25_fanout_digest": suite_25.fanout_digest,
             "suite_25_writeback_digest": suite_25.writeback_digest,
-            "suite_25_merge_digest": suite_25.merge_digest,
             "suite_25_historical_provenance_digest": suite_25.historical_provenance_digest,
             "bundle_digest": self.digest(),
         })

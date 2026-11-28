@@ -28,7 +28,6 @@ done < <(find \
   crates/worth-relational-indexes/src \
   crates/worth-relational-lineage/src \
   crates/worth-relational-commit-admission/src \
-  crates/worth-relational-merge/src \
   crates/worth-relational-mutation/src \
   crates/worth-relational-durability/src \
   crates/worth-relational-publication/src \

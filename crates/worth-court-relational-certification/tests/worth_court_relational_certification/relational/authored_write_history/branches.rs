@@ -6,7 +6,6 @@ use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     branch::{RelationalBranchBasisDenial, RelationalForkDenial},
     history::{BranchId, RelationalAuthoredWriteDenial},
-    merge::{MergeExecutionRequest, MergeIntent},
     mvcc::{RelationalBranchTransactionAdmissionDenial, RelationalTransactionIntent},
 };
 use worth_testkit_relational::{
@@ -16,7 +15,7 @@ use worth_testkit_relational::{
 };
 
 #[test]
-fn selected_prefix_excludes_siblings_foreign_sources_and_unproven_merges() {
+fn selected_prefix_excludes_siblings_and_foreign_sources() {
     let host = serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
@@ -74,36 +73,7 @@ fn selected_prefix_excludes_siblings_foreign_sources_and_unproven_merges() {
         ),
         Err(RelationalAuthoredWriteDenial::ForeignOwner)
     ));
-    fork(&execution, &runtime, "authored-merge");
-    let disjoint = create_entity_outcome_on_branch(
-        &execution,
-        &runtime,
-        "merge-only-entity",
-        BranchId("authored-merge".into()),
-    );
-    let merge = runtime
-        .bind_merge_execution_request(MergeExecutionRequest::new(
-            BranchId("main".into()),
-            BranchId("authored-merge".into()),
-            MergeIntent::ReconcileIntoTarget,
-        ))
-        .unwrap();
-    let merge = runtime.prepare_merge_execution(&execution, merge).unwrap();
-    let merged = runtime
-        .execute_prepared_merge(&execution, merge)
-        .expect("genuine explicit-parent merge is admitted")
-        .commit;
-    let target = admit_main(&runtime).unwrap();
-    assert!(matches!(
-        runtime.authored_write_history_cursor(
-            execution,
-            &original,
-            selected(&runtime, &target),
-            &keys(entity)
-        ),
-        Err(RelationalAuthoredWriteDenial::UnsupportedMergeInterval)
-    ));
-    for outcome in [&created, &main, &sibling, &disjoint, &merged] {
+    for outcome in [&created, &main, &sibling] {
         release_test_commit_snapshot(&runtime, outcome);
     }
 }

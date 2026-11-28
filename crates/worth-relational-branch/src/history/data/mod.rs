@@ -31,8 +31,6 @@ pub use codec_retirement_closure::{
 pub use codec_retirement_preservation::validate_retired_codec_closure;
 pub use worth_relational_contracts::internal_port::history::data::canonical_record_allocation;
 pub mod committed_version;
-pub use worth_relational_contracts::internal_port::history::data::merge_branch_basis;
-mod merge_branch_basis_foundational;
 pub mod positioned_canonical_commit;
 pub mod publication_relations;
 pub mod required_output_positions;
@@ -79,14 +77,6 @@ pub use canonical_record_allocation::{
     CancelledRecordAllocation, CanonicalRecordAllocation, RecordAllocationOrigin,
 };
 pub use committed_version::CommittedVersionSummary;
-pub use merge_branch_basis::{
-    MergeBaseSelectionRule, MergeBasisAncestors, RelationalMergeBranchBasis,
-    RelationalMergeBranchBasisDenial, ResolvedMergeBase,
-};
-pub use merge_branch_basis_foundational::{
-    RelationalFoundationalCurrentMergeBranchBasisArtifact,
-    RelationalMergeBranchBasisFoundationalLoweringDenial,
-};
 pub use positioned_canonical_commit::PositionedCanonicalCommit;
 
 pub use coordinates::{BranchId, CommitId, HistoryRetentionClass, VersionGraphPolicy};
@@ -100,31 +90,6 @@ pub use worth_relational_contracts::internal_port::history::data::history_policy
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VersionNode {
     pub commit: RelationalCommitReceipt,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub enum MergeConflictRecord {
-    Entity(EntityId),
-    Relation(RelationId),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MergeInspection {
-    pub source_branch: BranchId,
-    pub target_branch: BranchId,
-    pub source_head: Option<RelationalCommitReceipt>,
-    pub target_head: Option<RelationalCommitReceipt>,
-    /// Current merge-base result under the runtime's common-ancestor selection
-    /// rule.
-    pub merge_base: Option<CommitId>,
-    /// Branch-local ancestor closure for the source head after removing the
-    /// merge-base ancestor closure, ordered by ascending `CommitId`.
-    pub source_only_commits: Vec<CommitId>,
-    /// Branch-local ancestor closure for the target head after removing the
-    /// merge-base ancestor closure, ordered by ascending `CommitId`.
-    pub target_only_commits: Vec<CommitId>,
-    pub conflicting_records: Vec<MergeConflictRecord>,
-    pub can_merge: bool,
 }
 
 pub use canonical_commit_envelope::{CanonicalEnvelopeSeed, CanonicalEnvelopeWire};

@@ -112,6 +112,3 @@ pub(crate) use transaction::normalized_plan as plan_copy_admission;
 
 #[cfg(test)]
 pub(crate) use transaction::normalized_plan::OwnedNormalizedPlan;
-
-#[cfg(test)]
-pub(crate) use transaction::OwnedMergePlan;

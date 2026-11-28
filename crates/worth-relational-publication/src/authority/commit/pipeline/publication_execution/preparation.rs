@@ -72,8 +72,6 @@ pub(super) fn prepare_publication_phase<
             commit_reference,
             branch_basis,
             branch_id,
-            merge_base_commits,
-            merge_parent_branches,
         } = input;
         let (
             mut artifacts,
@@ -91,8 +89,6 @@ pub(super) fn prepare_publication_phase<
             &adjacency_deltas,
             &canonical_commit_envelope,
             &mutation_identities.symbols,
-            &merge_base_commits,
-            &merge_parent_branches,
         )?;
         let current_ownership = current_ownership::select(
             execution,
@@ -385,8 +381,6 @@ pub(super) fn prepare_publication_phase<
             commit_id,
             commit_reference,
             branch_id,
-            merge_base_commits,
-            merge_parent_branches,
             deferred_diagnostic_artifacts,
             canonical_publication_route,
         }

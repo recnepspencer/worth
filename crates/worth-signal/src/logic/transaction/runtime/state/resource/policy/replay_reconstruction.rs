@@ -12,7 +12,7 @@ use super::replay::{
 };
 use crate::data::resource::*;
 use crate::data::telemetry::ResourceTelemetry;
-use crate::logic::transaction::runtime::state::merge::canonical_digest;
+use crate::logic::transaction::runtime::state::canonical_digest;
 
 struct ReplayReconstructionBasis {
     descriptors: Vec<LoweredResourceDescriptor>,

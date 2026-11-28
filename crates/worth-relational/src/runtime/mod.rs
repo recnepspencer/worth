@@ -43,7 +43,6 @@ mod managed_source_history;
 pub(crate) use worth_relational_contracts::internal_port::runtime::operation_control;
 mod ownership_certification;
 mod predecessor_publication;
-pub(crate) mod prepared_merge_execution;
 mod publication_authority;
 mod publication_body;
 mod publication_capture;
@@ -79,15 +78,14 @@ pub use crate::validation::InvariantAccess;
 pub use crate::visibility::materialization::read_records::{
     AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, EntityProjectionRecord,
     EntityRecordProjection, HomeReadmissionMetadataReadDenial, HomeReadmissionMetadataView,
-    PinnedStructuralWalk, PinnedStructuralWalkDenial,
-    PinnedStructuralWalkDenialKind, PinnedStructuralWalkReads, PinnedStructuralWalkScope,
-    PinnedStructuralWalkVisit, PositionedRelationalSnapshot, QueryLeasedReadOutcome,
-    QueryReadExecutionStop, QueryReadPacketDenial, RelationProjectionRecord,
-    RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencySupportDenial,
-    RelationalAdjacencyVisit, RelationalAppliedCandidateReadIdentity,
-    RelationalAppliedCandidateReadQualification, RelationalAspectPresenceSupportDenial,
-    RelationalBorrowedRecordReadDenial, RelationalEntityMetadata,
-    RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
+    PinnedStructuralWalk, PinnedStructuralWalkDenial, PinnedStructuralWalkDenialKind,
+    PinnedStructuralWalkReads, PinnedStructuralWalkScope, PinnedStructuralWalkVisit,
+    PositionedRelationalSnapshot, QueryLeasedReadOutcome, QueryReadExecutionStop,
+    QueryReadPacketDenial, RelationProjectionRecord, RelationRecordProjection,
+    RelationalAdjacencyDirection, RelationalAdjacencySupportDenial, RelationalAdjacencyVisit,
+    RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
+    RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
+    RelationalEntityMetadata, RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
     RelationalFieldSupportComparisonDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
     RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
     RelationalRelationMetadata, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
@@ -181,13 +179,9 @@ mod required_output_reads;
 mod retirement_history_inputs;
 
 mod cold_ownership_probe;
-mod merge_ownership_probe;
 mod metadata_guard_probe;
 
 pub use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
-
-#[cfg(test)]
-mod merge_history_tests;
 
 #[cfg(test)]
 mod managed_fork_cleanup;

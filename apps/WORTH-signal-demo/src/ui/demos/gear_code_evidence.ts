@@ -28,25 +28,13 @@ export function buildGearCodeEvidence(sources: GearCodeSources) {
       file: "gear_scenario.ts",
       source: sources.gearScenario,
       start: "  async function commitOperations(",
-      end: "\n\n  async function buildScenarioView()",
+      end: "\n\n  /** Commit projections",
     }),
     excerpt({
       file: "gear_scenario.ts",
       source: sources.gearScenario,
-      start: "    async resolveMerge(",
+      start: "    async selectHistoryCommit(",
       end: "\n    async terminate()",
-    }),
-    excerpt({
-      file: "gear_scenario.ts",
-      source: sources.gearScenario,
-      start: "  async function previewDesignBranchMerge(",
-      end: "\n\n  async function commitActiveReview(",
-    }),
-    excerpt({
-      file: "gear_scenario.ts",
-      source: sources.gearScenario,
-      start: "  async function commitActiveReview(",
-      end: "\n    activeDesignBranchId = null;",
     }),
   ].join("\n\n");
 }

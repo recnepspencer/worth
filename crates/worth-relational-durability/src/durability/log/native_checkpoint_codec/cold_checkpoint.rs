@@ -1,10 +1,13 @@
-//! Readmit only the directory and the envelopes of its distinct heads.
+//! Readmit the selected directory and branch heads. Legacy checkpoints also
+//! require one complete scan of retained envelopes for retired merge authority.
 use contracts::symbols::data::string_interner::StringInternerOwnerPort as _;
 use std::sync::Arc;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port as contracts;
 
-use super::{manifest_capture::corrupt, manifest_validation::ManifestDirectoryFacts};
+use super::{
+    manifest_capture::corrupt, manifest_validation::ManifestDirectoryFacts, CheckpointFormat,
+};
 use crate::durability::data::*;
 use worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource;
 
@@ -14,6 +17,7 @@ pub(super) fn readmit(
     source: Arc<dyn RelationalDurableColdSource>,
     facts: ManifestDirectoryFacts,
     image: Option<crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact>,
+    format: CheckpointFormat,
 ) -> Result<DurableCheckpoint, RelationalRecoveryStop> {
     if let Some(image) = &image {
         image
@@ -28,6 +32,9 @@ pub(super) fn readmit(
     .readmit(execution)?;
     directory.admission_image = image;
     let directory = Arc::new(directory);
+    if matches!(format, CheckpointFormat::LegacyMergeCapable) {
+        admit_legacy_ordinary_history(&directory, execution)?;
+    }
     let heads = facts.heads;
     let mut envelopes = Vec::new();
     let mut symbols = contracts::symbols::data::string_interner::StringInterner::default();
@@ -60,7 +67,7 @@ pub(super) fn readmit(
         branch_cells, branch_lifecycle,
         retired_branch_names,
         branch_roots: Vec::new(), branch_root_schema_images: manifest.schemas.ordinary_owned_copy(),
-        // CHK24 reopen faults the paged tables through the directory edge.
+        // Cold reopen faults the paged tables through the directory edge.
         record_identity: Default::default(),
         record_generation_high_water: Vec::new(), reusable_record_slots: Vec::new(), record_slot_frontiers: Vec::new(),
         envelopes, partition_images: Vec::new(), aspect_contracts: manifest.aspect_contracts,
@@ -74,4 +81,18 @@ pub(super) fn readmit(
         runtime_name,
     };
     Ok(checkpoint)
+}
+
+/// A legacy checkpoint has no history-wide ordinary-only declaration.
+/// Scan its retained artifacts before installing any selected branch state.
+fn admit_legacy_ordinary_history(
+    directory: &RelationalCheckpointDirectory,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), RelationalRecoveryStop> {
+    directory.for_each_commit(|entry| {
+        worth_relational_branch::internal_port::history::commit::envelope_residency::RelationalCommitEnvelopeResidency::readmit_selected(
+            entry, directory, execution, 1 << 30,
+        )?;
+        Ok(())
+    })
 }

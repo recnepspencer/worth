@@ -12,10 +12,8 @@ pub(super) struct FinalizationInput<'a> {
     pub(super) commit_id: contracts::history::data::coordinates::CommitId,
     pub(super) commit_reference: &'a contracts::history::data::commit_receipt::RelationalCommitReceipt,
     pub(super) branch_id: &'a contracts::history::data::coordinates::BranchId,
-    pub(super) merge_base_commits: &'a [contracts::history::data::coordinates::CommitId],
     pub(super) artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
     pub(super) patch_position: contracts::publication::patch::data::patch_position::PatchStreamPosition,
-    pub(super) merge_parent_branches: &'a [contracts::history::data::coordinates::BranchId],
     pub(super) phase_timing:
         &'a mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
     pub(super) published_snapshot_basis: branch::history::retention::selected_snapshot::VisibilitySnapshotBasis,
@@ -36,10 +34,8 @@ pub(super) fn finalize_published_commit(
         commit_id,
         commit_reference,
         branch_id,
-        merge_base_commits,
         artifacts,
         patch_position,
-        merge_parent_branches,
         phase_timing,
         published_snapshot_basis,
         published_snapshot_slot,
@@ -85,8 +81,6 @@ pub(super) fn finalize_published_commit(
             snapshot_id,
             branch_id,
             commit_reference,
-            merge_parent_branches,
-            merge_base_commits,
         },
         phase_timing,
     );
@@ -171,8 +165,6 @@ struct PostCommitArtifactInput<'a> {
     snapshot_id: contracts::snapshots::data::coordinates::SnapshotId,
     branch_id: &'a contracts::history::data::coordinates::BranchId,
     commit_reference: &'a contracts::history::data::commit_receipt::RelationalCommitReceipt,
-    merge_parent_branches: &'a [contracts::history::data::coordinates::BranchId],
-    merge_base_commits: &'a [contracts::history::data::coordinates::CommitId],
 }
 
 fn consume_post_commit_artifacts(
@@ -186,8 +178,6 @@ fn consume_post_commit_artifacts(
         input.snapshot_id,
         input.branch_id.clone(),
         &input.commit_reference.parents,
-        input.merge_parent_branches,
-        input.merge_base_commits,
     );
     timing.post_commit_consumer_micros = started.elapsed().as_micros() as u64;
 }

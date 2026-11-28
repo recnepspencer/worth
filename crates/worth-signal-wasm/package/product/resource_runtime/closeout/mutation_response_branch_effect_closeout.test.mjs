@@ -5,11 +5,11 @@ import { createBranchHead } from "../runtime_fixture/real_resource_signals.mjs";
 import { createRealRequestRuntime } from "../runtime_fixture/real_request_runtime.mjs";
 import { normalizeForProof } from "./resource_verification_package_helpers.mjs";
 
-test("mutation response exact reconciliation keeps rollback and merge/rebase posture honest", async () => {
+test("mutation response exact reconciliation keeps rollback posture honest", async () => {
   const runtime = await createRealRequestRuntime();
   try {
     const { signals } = runtime;
-    const branch = createBranchHead(signals, "mutation-response-branch-effect-closeout");
+    createBranchHead(signals, "mutation-response-branch-effect-closeout");
     const taskDetail = signals.api({
       effects: signals.resource.effects.branchNative(),
     }).url("/tasks/:taskId").detail({
@@ -36,18 +36,6 @@ test("mutation response exact reconciliation keeps rollback and merge/rebase pos
     });
     const plan = saveLine.mutationResponse();
     const effect = residentLine.diagnostics().lastEffect;
-    const mergeRequest = {
-      source_branch_id: branch.id,
-      target_branch_id: 0,
-    };
-    const mergePlan = signals.resource.branch.planEffectMerge({
-      merge: mergeRequest,
-      effect,
-    });
-    const mergeExecution = signals.resource.branch.mergeEffect({
-      merge: mergeRequest,
-      effect,
-    });
     const rollbackResult = await residentLine.history().rollbackLastEffect();
     const residentVerification = residentLine.history().verificationPackage();
     const writeVerification = saveLine.history().verificationPackage();
@@ -55,19 +43,7 @@ test("mutation response exact reconciliation keeps rollback and merge/rebase pos
     assert.equal(plan.executionArtifacts[0].effectId, effect.effectId);
     assert.match(plan.lifecycleProof.replayExactDigest, /available:SameRuntimeSignalExact/);
     assert.match(plan.lifecycleProof.restoreExactDigest, /available:SameRuntimeBranchExact/);
-    assert.match(plan.lifecycleProof.mergeRebaseDigest, /nativeMergePlan:line/);
-    assert.deepEqual(mergePlan, {
-      kind: "denied",
-      reason: "resourceEffectMergeUnavailable",
-      detail:
-        "resource branch effect merge planning requires optimistic branch evidence",
-    });
-    assert.deepEqual(mergeExecution, {
-      kind: "denied",
-      reason: "resourceEffectMergeUnavailable",
-      detail:
-        "resource branch effect merge execution requires optimistic branch evidence",
-    });
+    assert.match(plan.lifecycleProof.mergeRebaseDigest, /unavailable:line/);
     assert.deepEqual(rollbackResult, {
       kind: "unavailable",
       reason: "noOpenEffect",

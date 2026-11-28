@@ -5,7 +5,6 @@ use super::branch_history_publications::transaction;
 use super::branch_history_publications::update_entity;
 use super::checkpoint_inspection_observation::capture_inspection_truth_bundle;
 use super::checkpoint_source_capture::capture_durably;
-use super::merge_execution_authoring::single_string_aspect_field_patch;
 use worth_relational::facade::durability::RecoveryVerificationMode as RecoveryMode;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::transactions::EntityMutationIntent;
@@ -87,11 +86,7 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
             WorkerIntentBatch::new("feature-update").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                     entity_id: entity,
-                    fields: single_string_aspect_field_patch(
-                        aspect_key("name"),
-                        field_key("name"),
-                        "feature",
-                    ),
+                    fields: string_field_patch(aspect_key("name"), field_key("name"), "feature"),
                 }),
             )),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -130,4 +125,17 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
     );
 
     assert_eq!(expected, actual);
+}
+
+fn string_field_patch(
+    aspect: worth_foundational::facade::AspectKey,
+    field: worth_foundational::facade::FieldKey,
+    value: &str,
+) -> worth_relational::facade::transactions::AspectFieldPatch {
+    use worth_relational::facade::transactions::{planned_single_field_locator, AspectFieldPatch};
+    use worth_testkit_relational::aspect_storage::publications::string_aspect_value;
+    AspectFieldPatch::from(std::collections::BTreeMap::from([(
+        planned_single_field_locator(aspect, field),
+        string_aspect_value(value),
+    )]))
 }

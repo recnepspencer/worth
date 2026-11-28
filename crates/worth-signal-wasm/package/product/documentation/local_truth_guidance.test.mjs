@@ -29,11 +29,10 @@ test("Local Truth docs preserve the process-local and platform authority boundar
   assert.match(history, /derived Signal state/u);
 });
 
-test("Local Truth docs cover the executable lifecycle without hiding manual merge", async () => {
-  const [start, branches, merge, history, reference] = await Promise.all([
+test("Local Truth docs cover the executable lifecycle for branching and historical readback", async () => {
+  const [start, branches, history, reference] = await Promise.all([
     readDoc("getting-started.md"),
     readDoc("branches-and-snapshots.md"),
-    readDoc("branch-merge.md"),
     readDoc("history-and-rebuild.md"),
     readDoc("api-reference.md"),
   ]);
@@ -42,16 +41,12 @@ test("Local Truth docs cover the executable lifecycle without hiding manual merg
   assert.match(start, /signals\.localTruth/u);
   assert.match(branches, /forkBranch/u);
   assert.match(branches, /historicalSnapshot/u);
-  assert.match(merge, /Preview never mutates either branch/u);
-  assert.match(merge, /createResolutionBranch/u);
-  assert.match(merge, /resolutionAlternative/u);
-  assert.match(merge, /resolveMerge/u);
   assert.match(history, /rebuildDerivation/u);
   assert.match(reference, /LocalTruthOutcome/u);
   assert.match(reference, /There is currently no public delete operation/u);
 });
 
-test("documented public Local Truth branch and merge path executes", async () => {
+test("documented public Local Truth branch edits stay independent", async () => {
   const { createSignals, importProductModule, cleanup } = await loadSignalsModule({
     rawSurface: "real",
   });
@@ -107,26 +102,11 @@ test("documented public Local Truth branch and merge path executes", async () =>
       operations: [{ entityId: "gear", aspectId: "thickness", value: 0.62 }],
     }));
 
-    const reviewOutcome = await truth.previewMerge({
-      sourceBranchId: source.id,
-      targetBranchId: target.id,
-      expectedSourceBasis: admitted(await truth.branch(source.id)).basis,
-      expectedTargetBasis: admitted(await truth.branch(target.id)).basis,
-    });
-    const review = reviewOutcome.posture === "reviewRequired"
-      ? reviewOutcome.review
-      : admitted(reviewOutcome);
-    const merged = admitted(await truth.resolveMerge({
-      requestId: "documentation-merge",
-      reviewId: review.id,
-      selections: [],
-    }));
-
-    assert.equal(merged.commit.kind, "merge");
     assert.deepEqual((await truth.inspect()).values[target.id].gear, {
-      teeth: 20,
+      teeth: 18,
       thickness: 0.62,
     });
+    assert.equal((await truth.inspect()).values[source.id].gear.teeth, 20);
   } finally {
     await truth.terminate();
     signals.free();

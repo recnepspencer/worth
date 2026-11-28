@@ -120,9 +120,6 @@ fn replacement_helper_preserves_complete_cell_truth_with_a_new_incarnation() {
                 .state_mut()
                 .graph_mut()
                 .populate_replacement_clone_contract(dependent);
-            state
-                .state_mut()
-                .populate_replacement_ancestry_contract(crate::state::SignalBranchId(8_271));
         })
         .expect("replacement fixture populates canonical cell truth");
     let before = original
@@ -173,12 +170,7 @@ fn replacement_helper_preserves_complete_cell_truth_with_a_new_incarnation() {
     assert!(after.1.ancestry_matches(&before.1));
     assert_eq!(after.1.mutation_ledger, before.1.mutation_ledger);
     assert!(
-        !before
-            .1
-            .mutation_ledger
-            .structural_merge_journal()
-            .records
-            .is_empty(),
+        !before.1.mutation_ledger.pending.is_empty(),
         "the retained mutation-ledger oracle is adversarially nonempty"
     );
     assert!(before.1.graph_clone_local.aspect_lowering_owner_present);

@@ -1,7 +1,7 @@
 use super::branch_history_publications::create_entity;
 use super::branch_history_publications::delete_entity;
 use super::checkpoint_source_capture::capture_durably;
-use super::merge_execution_observation::entity_field_display;
+use super::checkpoint_truth_observation::entity_field_display;
 use worth_relational::facade::durability::RecoveryVerificationMode as RecoveryMode;
 use worth_relational::facade::runtime::RelationalRuntimeApi;
 use worth_testkit_relational::aspect_storage::definition::aspect_key;

@@ -11,7 +11,6 @@ pub mod overlay;
 pub mod overlay_indexing;
 pub mod overlay_normalization;
 pub mod read_projection;
-pub mod reconstructed_merge_plan;
 pub mod relation_value;
 pub mod staged_mutations;
 pub mod staged_plan_normalization;

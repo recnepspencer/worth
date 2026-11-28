@@ -61,18 +61,12 @@ impl Artifact {
         context: &mut MapKernelContext<'_, '_>,
         input: Option<ExecutionImmutableBytes>,
     ) -> Result<ReadmittedCanonicalCommit, Refusal> {
-        super::body_read::readmit_canonical_body(
-            header.position,
-            header.commit_id,
-            payload,
-            execution,
-            context,
-            input,
+        super::body_read::readmit_canonical_body(header, payload, execution, context, input).map(
+            |body| {
+                ReadmittedCanonicalCommit::exact(body)
+                    .with_verified_journal_payload(*header.digest.as_bytes())
+            },
         )
-        .map(|body| {
-            ReadmittedCanonicalCommit::exact(body)
-                .with_verified_journal_payload(*header.digest.as_bytes())
-        })
     }
 }
 

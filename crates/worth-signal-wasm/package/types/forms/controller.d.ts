@@ -20,7 +20,6 @@ import type { FormRouteAuthorityArtifact, FormRouteAuthorityReport } from "./rou
 import type { FormInputCapabilitiesReport } from "./input_capabilities.js";
 import type { FormResourceSourceReport } from "./resource_source.js";
 import type { FormResourceDriftReport } from "./resource_drift.js";
-import type { FormResourceMergeArtifact, FormResourceMergeReport } from "./resource_merge.js";
 import type { FormAttachmentsReport } from "./attachments.js";
 import type { FormAttachmentTransfersReport } from "./attachment_transfers.js";
 import type { FormMediaReport } from "./media.js";
@@ -80,7 +79,6 @@ import type {
 import type { FormStateHistoryArtifact } from "./state_history.js";
 import type { FormPresentationHistoryArtifact } from "./presentation.js";
 import type { FormVerificationPackage } from "./verification.js";
-import type { MergePolicyPreviewRequest } from "../diagnostics.js";
 import type { FormControllerActionBindings } from "./controller_actions.js";
 import type { FormControllerPresentationBindings } from "./controller_presentation.js";
 import type { RouteFormsAuthorityArtifact } from "../router_admission_surface.js";
@@ -176,10 +174,7 @@ export interface FormController<
   sourceAdmission(): FormSourceBootstrapArtifact | null;
   draftRestore(): FormSourceBootstrapArtifact | null;
   resourceSource(): FormResourceSourceReport | null;
-  resourceMerge(): FormResourceMergeReport;
   resourceDrift(): FormResourceDriftReport;
-  previewResourceMerge(request: MergePolicyPreviewRequest): FormResourceMergeArtifact;
-  clearResourceMerge(reason?: string): FormResourceMergeArtifact;
   host(): FormHostReport;
   inputCapabilities(): FormInputCapabilitiesReport;
   inputCapability(fieldId: string): import("./input_capabilities.js").FormInputCapabilityArtifact | null;
@@ -327,7 +322,6 @@ export interface FormController<
     readonly availability: FormAvailabilityReport;
     readonly admission: FormAdmissionReport;
     readonly resourceSource: FormResourceSourceReport | null;
-    readonly resourceMerge: FormResourceMergeReport;
     readonly resourceDrift: FormResourceDriftReport;
     readonly host: FormHostReport;
     readonly inputCapabilities: FormInputCapabilitiesReport;

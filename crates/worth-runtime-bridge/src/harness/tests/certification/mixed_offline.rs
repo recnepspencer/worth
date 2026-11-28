@@ -1,14 +1,13 @@
 use worth_harness::facade::ExecutionProfile;
 
 use crate::harness::adapter::BridgeHarnessTargetId;
-use crate::merge::MergeHistoryDeclarationIdentity;
 use crate::source::SourceDeclarationIdentity;
 use crate::structural::StructuralIdentityDeclarationIdentity;
 
 use super::execution_harness::execute_harness_run;
 use super::mixed_family_fixtures::{
-    mixed_merge_fixture, mixed_policy_fixture, mixed_source_fixture, mixed_speculation_fixture,
-    mixed_stream_fixture, mixed_structural_fixture, mixed_writeback_fixture,
+    mixed_policy_fixture, mixed_source_fixture, mixed_speculation_fixture, mixed_stream_fixture,
+    mixed_structural_fixture, mixed_writeback_fixture,
 };
 
 #[test]
@@ -81,30 +80,6 @@ fn bridge_m13_mixed_offline_certification_exports_every_family_without_json_proo
             StructuralIdentityDeclarationIdentity::admit_bridge_owned("structural:analysis-remap"),
         ),
     );
-    let merge_control = execute_harness_run(
-        mixed_merge_fixture("bridge-m13-mixed-merge"),
-        baseline.clone(),
-        "mixed-merge-control",
-        BridgeHarnessTargetId::merge_execute(MergeHistoryDeclarationIdentity::admit_bridge_owned(
-            "merge:m13-mixed",
-        )),
-    );
-    let merge_replay = execute_harness_run(
-        mixed_merge_fixture("bridge-m13-mixed-merge"),
-        baseline.clone(),
-        "mixed-merge-replay",
-        BridgeHarnessTargetId::merge_replay(MergeHistoryDeclarationIdentity::admit_bridge_owned(
-            "merge:m13-mixed",
-        )),
-    );
-    let merge_hostile = execute_harness_run(
-        mixed_merge_fixture("bridge-m13-mixed-merge"),
-        baseline.clone(),
-        "mixed-merge-hostile",
-        BridgeHarnessTargetId::merge_execute(MergeHistoryDeclarationIdentity::admit_bridge_owned(
-            "merge:m13-topology-denial",
-        )),
-    );
     let preview_control = execute_harness_run(
         mixed_speculation_fixture("bridge-m13-mixed-preview"),
         baseline.clone(),
@@ -155,8 +130,6 @@ fn bridge_m13_mixed_offline_certification_exports_every_family_without_json_proo
     assert!(source_replay.summary.is_object());
     assert!(structural_control.summary.is_object());
     assert!(structural_replay.summary.is_object());
-    assert!(merge_control.summary.is_object());
-    assert!(merge_replay.summary.is_object());
     assert_eq!(policy_control.summary, policy_replay.summary);
 
     assert!(stream_control
@@ -168,7 +141,6 @@ fn bridge_m13_mixed_offline_certification_exports_every_family_without_json_proo
     assert!(structural_hostile
         .extensions
         .contains_key("bridge_structural_certification_bundle"));
-    assert!(merge_hostile.summary.is_object());
     assert!(preview_control
         .extensions
         .contains_key("bridge_speculation_certification_bundle"));

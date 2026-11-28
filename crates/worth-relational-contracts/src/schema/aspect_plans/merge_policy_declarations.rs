@@ -2,7 +2,9 @@ use std::collections::BTreeSet;
 
 use worth_foundational::{AspectShape, ScalarAspectType};
 
-use crate::merge::data::policy::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
+use crate::schema::data::aspect_merge_policy::{
+    AspectMergePolicyDeclaration, AspectMergePolicyKind,
+};
 use crate::schema::data::{AspectBinding, DeclaredAspectContractBinding, SchemaRegistryError};
 
 pub(super) fn canonicalize_merge_policy_declarations(
@@ -68,29 +70,15 @@ fn validate_policy_contract(
         .find(|aspect| aspect.aspect_key() == declaration.aspect_key)
         .expect(/* Proof: Schema admission resolves each merge-policy declaration against its declared aspect list before constructing this plan; that list is immutable here. */ "merge policy declaration references existing declared aspect");
     match declaration.policy {
-        AspectMergePolicyKind::FailOnConflict | AspectMergePolicyKind::PreferRicher => Ok(()),
-        AspectMergePolicyKind::LastWriterWins => {
-            validate_last_writer_wins_contract(kind_id, aspect)
-        }
+        AspectMergePolicyKind::FailOnConflict
+        | AspectMergePolicyKind::RetiredValueShape
+        | AspectMergePolicyKind::RetiredWriterOrder => Ok(()),
         AspectMergePolicyKind::MonotonicCounter => {
             validate_monotonic_counter_contract(kind_id, aspect)
         }
         AspectMergePolicyKind::AdditiveSet => reject_additive_set_without_native_contract(kind_id),
         AspectMergePolicyKind::Custom(_) => reject_custom_policy(kind_id),
     }
-}
-
-fn validate_last_writer_wins_contract(
-    kind_id: crate::identity::data::KindId,
-    aspect: &DeclaredAspectContractBinding,
-) -> Result<(), SchemaRegistryError> {
-    if is_scalar_record_field_aspect(aspect) {
-        return Ok(());
-    }
-    Err(SchemaRegistryError::invalid_aspect_declaration(
-        kind_id,
-        "LastWriterWins merge policy requires a scalar record-field foundational contract",
-    ))
 }
 
 fn validate_monotonic_counter_contract(
@@ -120,16 +108,6 @@ fn reject_custom_policy(kind_id: crate::identity::data::KindId) -> Result<(), Sc
         kind_id,
         "merge planning does not yet support custom merge policy declarations",
     ))
-}
-
-fn is_scalar_record_field_aspect(aspect: &DeclaredAspectContractBinding) -> bool {
-    matches!(
-        (&aspect.binding, aspect.contract.shape()),
-        (
-            AspectBinding::EntityField { .. } | AspectBinding::RelationField { .. },
-            AspectShape::Scalar(_)
-        )
-    )
 }
 
 fn is_integer_record_field_aspect(aspect: &DeclaredAspectContractBinding) -> bool {

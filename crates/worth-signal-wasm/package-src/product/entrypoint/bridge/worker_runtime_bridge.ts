@@ -166,14 +166,6 @@ class WorkerRuntimeBridge {
   retireBranches(request) { return this.#history.retireBranches(request); }
   closeoutEffectBranch(request) { return this.#history.closeoutEffectBranch(request); }
   switchBranch(branchId) { return this.#history.switchBranch(branchId); }
-  planMergeBranches(source, target) { return this.#history.planMergeBranches(source, target); }
-  planMergeBranchesWithProof(source, target) { return this.#history.planMergeBranchesWithProof(source, target); }
-  mergeBranches(source, target) { return this.#history.mergeBranches(source, target); }
-  mergeBranchesWithProof(source, target) { return this.#history.mergeBranchesWithProof(source, target); }
-  planMergePolicyPreview(request) { return this.#history.planMergePolicyPreview(request); }
-  planMergePolicyPreviewWithProof(request) { return this.#history.planMergePolicyPreviewWithProof(request); }
-  mergeBranchesPolicyPreview(request) { return this.#history.mergeBranchesPolicyPreview(request); }
-  mergeBranchesPolicyPreviewWithProof(request) { return this.#history.mergeBranchesPolicyPreviewWithProof(request); }
   replayForBranch(branchId) { return this.#history.replayForBranch(branchId); }
   branchSnapshotId(branchId) { return this.#history.branchSnapshotId(branchId); }
   branchSnapshotEnvelope(branchId) { return this.#history.branchSnapshotEnvelope(branchId); }

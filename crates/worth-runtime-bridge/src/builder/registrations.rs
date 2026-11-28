@@ -18,11 +18,6 @@ impl<PatchState, SnapshotState, SignalState, BranchHeadState, MappingState>
         self
     }
 
-    pub fn register_merge(mut self, declaration: MergeHistoryDeclaration) -> Self {
-        self.merge_declarations.push(declaration);
-        self
-    }
-
     pub fn register_semantic_correspondence(
         mut self,
         registration: BridgeSemanticCorrespondenceRegistration,
@@ -63,7 +58,6 @@ impl<PatchState, SnapshotState, SignalState, BranchHeadState>
             source_adapter_registrations: self.source_adapter_registrations,
             source_declarations: self.source_declarations,
             structural_declarations: self.structural_declarations,
-            merge_declarations: self.merge_declarations,
             diagnostic_sink: self.diagnostic_sink,
             mapping_registrations: PresentMappingRegistrations(vec![registration]),
             aspect_registrations: self.aspect_registrations,

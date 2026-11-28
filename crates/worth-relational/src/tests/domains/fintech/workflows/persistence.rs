@@ -93,7 +93,7 @@ fn fintech_checkpoint_tail_reconstruction_keeps_queryable_portfolio_state() {
 }
 
 #[test]
-fn fintech_branch_divergence_merge_and_savepoint_verbs_stay_case_local() {
+fn fintech_branch_divergence_and_savepoint_verbs_stay_case_local() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -105,51 +105,31 @@ fn fintech_branch_divergence_merge_and_savepoint_verbs_stay_case_local() {
     assert!(rollback.has_effects());
     assert!(rollback.summary().has_restored_entity());
 
-    let _saved = commit_case_trade_after_savepoint(execution, &mut world, analysis.clone());
-    let _diverged = diverge_case_trade_on_branch(
+    let saved = commit_case_trade_after_savepoint(execution, &mut world, analysis.clone());
+    let diverged = diverge_case_trade_on_branch(
         execution,
         &mut world,
         audit.clone(),
         FintechCaseRole::LateTradeCorrection,
         1_610_000,
     );
-    let merged = merge_branch_into_main(execution, &mut world, audit.clone());
-    let (merge_parent_branches, merge_base_count, parent_count) = {
-        let replay = world.runtime.replay();
-        let envelope = replay
-            .canonical_commit_envelope(execution, merged.commit.commit_id)
+    assert_eq!(
+        world
+            .runtime
+            .history()
+            .branch_head(&analysis)
             .unwrap()
-            .expect("merged commit should have canonical envelope");
-        (
-            envelope.merge_parent_branches.clone(),
-            envelope.merge_base_commits.len(),
-            envelope.commit.parents.len(),
-        )
-    };
-
-    assert_eq!(merged.commit.branch_id, BranchId("main".to_string()));
+            .commit_id,
+        saved.commit.commit_id
+    );
     assert_eq!(
         world
             .runtime
             .history()
             .branch_head(&audit)
-            .map(|commit| commit.commit_id),
-        Some(merged.commit.parents[1])
-    );
-    assert_ne!(
-        world
-            .runtime
-            .history()
-            .branch_head(&BranchId("analysis".to_string()))
-            .map(|commit| commit.commit_id),
-        Some(merged.commit.commit_id)
-    );
-    assert_merge_metadata_preserved(
-        &merge_parent_branches,
-        merge_base_count,
-        parent_count,
-        &audit,
-        2,
+            .unwrap()
+            .commit_id,
+        diverged.commit.commit_id
     );
 }
 

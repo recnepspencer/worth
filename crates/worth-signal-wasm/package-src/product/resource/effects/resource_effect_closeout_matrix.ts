@@ -2,7 +2,6 @@ const CLOSEOUT_PROOF_LANES = Object.freeze([
   "runtime",
   "typeSurface",
   "diagnosticsHistory",
-  "branchMerge",
   "performance",
 ]);
 
@@ -14,7 +13,6 @@ const CLOSEOUT_ROW_EVIDENCE = Object.freeze({
     ],
     typeSurface: ["resource_effect_envelope_usage.ts"],
     diagnosticsHistory: ["phase5_history_closeout.test.mjs"],
-    branchMerge: ["resource_branch_capability_summary.test.mjs"],
     performance: ["json_item_aspect/cost_proof.test.mjs"],
   }),
   deliveryPatch: freezeCloseoutEvidence({
@@ -24,7 +22,6 @@ const CLOSEOUT_ROW_EVIDENCE = Object.freeze({
     ],
     typeSurface: ["resource_effect_envelope_usage.ts"],
     diagnosticsHistory: ["delivery_basis_history_closeout.test.mjs"],
-    branchMerge: ["live_delivery_branch_convergence.test.mjs"],
     performance: ["delivery_basis_history_closeout.test.mjs"],
   }),
   optimisticWrite: freezeCloseoutEvidence({
@@ -34,21 +31,18 @@ const CLOSEOUT_ROW_EVIDENCE = Object.freeze({
     ],
     typeSurface: ["resource_api_effect_profiles_usage.ts"],
     diagnosticsHistory: ["resource_effect_visible_selection.test.mjs"],
-    branchMerge: ["resource_branch_capability_summary.test.mjs"],
     performance: ["resource_effect_branch_posture.test.mjs"],
   }),
   confirmation: freezeCloseoutEvidence({
     runtimeTests: ["resource_effect_server_confirmation.test.mjs"],
     typeSurface: ["resource_api_effect_profiles_usage.ts"],
     diagnosticsHistory: ["resource_effect_server_confirmation.test.mjs"],
-    branchMerge: ["resource_branch_effect_merge_execution.test.mjs"],
     performance: ["full_resource_hostile_convergence.test.mjs"],
   }),
   failureRollback: freezeCloseoutEvidence({
     runtimeTests: ["resource_effect_rollback_execution.test.mjs"],
     typeSurface: ["resource_api_effect_profiles_usage.ts"],
     diagnosticsHistory: ["resource_effect_rollback_execution.test.mjs"],
-    branchMerge: ["resource_branch_merge_rebase_closeout.test.mjs"],
     performance: ["resource_effect_rollback_execution.test.mjs"],
   }),
   branchRestore: freezeCloseoutEvidence({
@@ -58,24 +52,7 @@ const CLOSEOUT_ROW_EVIDENCE = Object.freeze({
     ],
     typeSurface: ["resource_effect_envelope_usage.ts"],
     diagnosticsHistory: ["branch_restore_action_surface.test.mjs"],
-    branchMerge: ["resource_branch_merge_rebase_closeout.test.mjs"],
     performance: ["full_resource_hostile_convergence.test.mjs"],
-  }),
-  mergeRebase: freezeCloseoutEvidence({
-    runtimeTests: [
-      "resource_branch_merge_rebase_closeout.test.mjs",
-      "resource_branch_mapping_unavailable.test.mjs",
-    ],
-    typeSurface: [
-      "resource_api_effect_profiles_usage.ts",
-      "resource_api_effect_profiles_denials.ts",
-    ],
-    diagnosticsHistory: ["resource_branch_merge_rebase_closeout.test.mjs"],
-    branchMerge: [
-      "resource_branch_capability_summary.test.mjs",
-      "resource_branch_effect_merge_execution.test.mjs",
-    ],
-    performance: ["resource_branch_host_region_isolation.test.mjs"],
   }),
   broadReplacement: freezeCloseoutEvidence({
     runtimeTests: [
@@ -84,7 +61,6 @@ const CLOSEOUT_ROW_EVIDENCE = Object.freeze({
     ],
     typeSurface: ["resource_api_response_contract_usage.ts"],
     diagnosticsHistory: ["phase5_history_closeout.test.mjs"],
-    branchMerge: ["resource_branch_capability_summary.test.mjs"],
     performance: ["resource_response_topology_costs.ts"],
   }),
   diagnosticsHistory: freezeCloseoutEvidence({
@@ -94,7 +70,6 @@ const CLOSEOUT_ROW_EVIDENCE = Object.freeze({
     ],
     typeSurface: ["resource_effect_envelope_usage.ts"],
     diagnosticsHistory: ["full_resource_hostile_convergence.test.mjs"],
-    branchMerge: ["resource_branch_merge_rebase_closeout.test.mjs"],
     performance: ["resource_verification_package_helpers.mjs"],
   }),
 });
@@ -116,7 +91,6 @@ function createResourceEffectCloseoutMatrix(profile) {
         "branchRestore",
         profile.rollback === "unavailable" ? "unsupported" : profile.rollback,
       ),
-      createCloseoutRow("mergeRebase", profile.rebase),
       createCloseoutRow("broadReplacement", "admitted"),
       createCloseoutRow("diagnosticsHistory", "admitted"),
     ]),
@@ -130,7 +104,6 @@ function createCloseoutRow(effectFamily, capability) {
     runtimeProof: true,
     typeSurfaceProof: true,
     diagnosticsHistoryProof: true,
-    branchMergeProof: true,
     performanceProof: true,
     evidence: CLOSEOUT_ROW_EVIDENCE[effectFamily],
   });
@@ -141,7 +114,6 @@ function freezeCloseoutEvidence(evidence) {
     runtimeTests: Object.freeze([...evidence.runtimeTests]),
     typeSurface: Object.freeze([...evidence.typeSurface]),
     diagnosticsHistory: Object.freeze([...evidence.diagnosticsHistory]),
-    branchMerge: Object.freeze([...evidence.branchMerge]),
     performance: Object.freeze([...evidence.performance]),
   });
 }

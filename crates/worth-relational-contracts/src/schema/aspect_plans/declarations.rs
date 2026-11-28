@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use crate::merge::data::identity::{
+use crate::schema::data::identity_declarations::{
     IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
 };
 use worth_foundational::{AspectShape, ReferenceAspectType, ScalarAspectType};

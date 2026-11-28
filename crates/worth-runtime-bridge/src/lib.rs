@@ -95,7 +95,6 @@ mod identity;
 mod identity_authority;
 mod input;
 mod mapping;
-mod merge;
 mod policy;
 mod relational_grouped_truth;
 mod relational_source;

@@ -60,7 +60,7 @@ test("create response plans carry lifecycle proof for exact placement plus exact
 
     assert.equal(plan.lifecycleProof.count, 2);
     assert.equal(plan.lifecycleProof.entries[0].entryKind, "reconciliation");
-    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "nativeMergePlan");
+    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "unavailable");
     assert.equal(plan.lifecycleProof.entries[0].mergeRebase.granularity, "item:task:tmp-lifecycle-create-1");
     assert.equal(plan.lifecycleProof.entries[1].entryKind, "identityMigration");
     assert.equal(plan.lifecycleProof.entries[1].rollback.kind, "identityMigrationUnavailable");
@@ -68,7 +68,7 @@ test("create response plans carry lifecycle proof for exact placement plus exact
     assert.equal(plan.counters.lifecycleProofBreadth, 2);
     assert.equal(plan.identityMigration.counters.lifecycleProofBreadth, 1);
     assert.match(plan.lifecycleProof.rollbackDigest, /identityMigrationUnavailable/);
-    assert.match(plan.lifecycleProof.mergeRebaseDigest, /nativeMergePlan:item:task:tmp-lifecycle-create-1/);
+    assert.match(plan.lifecycleProof.mergeRebaseDigest, /unavailable:item:task:tmp-lifecycle-create-1/);
   } finally {
     await runtime.cleanup();
   }
@@ -132,7 +132,7 @@ test("create response lifecycle proof keeps exact placement and typed identity f
 
     assert.equal(plan.lifecycleProof.count, 2);
     assert.equal(plan.lifecycleProof.entries[0].entryKind, "reconciliation");
-    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "nativeMergePlan");
+    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "unavailable");
     assert.equal(plan.lifecycleProof.entries[1].entryKind, "identityMigration");
     assert.equal(plan.lifecycleProof.entries[1].rollback.kind, "fallbackUnavailable");
     assert.equal(plan.lifecycleProof.entries[1].mergeRebase.kind, "fallbackUnavailable");
@@ -208,10 +208,10 @@ test("create response lifecycle proof carries effect-backed detail-child migrati
     assert.equal(plan.lifecycleProof.entries[0].entryKind, "identityMigration");
     assert.equal(plan.lifecycleProof.entries[0].effectId, plan.identityMigration.targets[0].execution.effectId);
     assert.equal(plan.lifecycleProof.entries[0].rollback.kind, "notApplicable");
-    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "nativeMergePlan");
+    assert.equal(plan.lifecycleProof.entries[0].mergeRebase.kind, "unavailable");
     assert.equal(plan.lifecycleProof.entries[0].mergeRebase.locusKind, "detailRegion");
     assert.equal(plan.lifecycleProof.entries[0].mergeRebase.granularity, "region:children:child-list");
-    assert.match(plan.lifecycleProof.mergeRebaseDigest, /nativeMergePlan:region:children:child-list:detailRegion/);
+    assert.match(plan.lifecycleProof.mergeRebaseDigest, /unavailable:region:children:child-list:detailRegion/);
   } finally {
     await runtime.cleanup();
   }

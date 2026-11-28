@@ -30,8 +30,6 @@ pub(crate) fn collect(census: &mut contracts::inline_type_sizes::census::Census)
                 "mutation_identities",
             );
         owner.field::<crate::authority::commit::phases::history::ResolvedCommitHistory>("history");
-        owner
-            .field::<Vec<contracts::history::data::coordinates::BranchId>>("merge_parent_branches");
         owner.field::<CommitPhaseBacking<PublicationPreparation>>("publication");
         owner.field::<worth_relational_branch::internal_port::snapshots::data::SnapshotHandle>(
             "publication_snapshot",

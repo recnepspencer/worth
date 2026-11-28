@@ -133,54 +133,23 @@ test("default worker-first root materializes native and compatibility resource f
     const compatibilityBranch = compatibilitySignals.history().create_branch("feature/resource-branch");
     await workerSignals.history().switch_branch(workerBranch.id);
     compatibilitySignals.history().switch_branch(compatibilityBranch.id);
-    const workerBranchPlan = await workerSignals.resource.branch.planMerge({
-      source_branch_id: workerBranch.id,
-      target_branch_id: 0,
-    });
-    const compatibilityBranchPlan = compatibilitySignals.resource.branch.planMerge({
-      source_branch_id: compatibilityBranch.id,
-      target_branch_id: 0,
-    });
-    assert.deepEqual(
-      comparableResourceBranchPlan(workerBranchPlan),
-      comparableResourceBranchPlan(compatibilityBranchPlan),
-    );
-
-    const workerTasks = createBranchMergeTasks(workerSignals);
-    const compatibilityTasks = createBranchMergeTasks(compatibilitySignals);
+    const workerTasks = createBranchTasks(workerSignals);
+    const compatibilityTasks = createBranchTasks(compatibilitySignals);
     const workerLine = workerTasks.line({});
     const compatibilityLine = compatibilityTasks.line({});
     await settleWorkerResourceLine();
     await workerLine.patch(workerTasks.patch.itemAspect({
       itemId: "task:1",
       aspect: "title",
-      value: "Merged Through Worker-First Resource Effect",
+      value: "Worker-First Resource Edit",
     }));
     await compatibilityLine.patch(compatibilityTasks.patch.itemAspect({
       itemId: "task:1",
       aspect: "title",
-      value: "Merged Through Worker-First Resource Effect",
+      value: "Worker-First Resource Edit",
     }));
     const workerEffect = workerLine.diagnostics().lastEffect;
     const compatibilityEffect = compatibilityLine.diagnostics().lastEffect;
-    const workerEffectPlan = await workerSignals.resource.branch.planEffectMerge({
-      merge: {
-        source_branch_id: workerEffect.optimistic.branchId,
-        target_branch_id: 0,
-      },
-      effect: workerEffect,
-    });
-    const compatibilityEffectPlan = compatibilitySignals.resource.branch.planEffectMerge({
-      merge: {
-        source_branch_id: compatibilityEffect.optimistic.branchId,
-        target_branch_id: 0,
-      },
-      effect: compatibilityEffect,
-    });
-    assert.deepEqual(
-      comparableResourceEffectPlan(workerEffectPlan),
-      comparableResourceEffectPlan(compatibilityEffectPlan),
-    );
     await workerLine.effects().reject(workerEffect.effectId, {
       responseId: "worker-resource-plan-closeout",
     });
@@ -203,7 +172,7 @@ test("default worker-first root materializes native and compatibility resource f
   }
 });
 
-function createBranchMergeTasks(signals) {
+function createBranchTasks(signals) {
   const response = signals.resource.response.array({
     itemId: (task) => task.id,
     aspects: signals.resource.response.objectAspects()({
@@ -216,78 +185,6 @@ function createBranchMergeTasks(signals) {
     .list({
       load: () => [{ id: "task:1", title: "Loaded" }],
     });
-}
-
-function comparableResourceBranchPlan(result) {
-  if (result.kind === "denied") {
-    return {
-      kind: result.kind,
-      reason: result.reason,
-      detail: result.detail ?? null,
-    };
-  }
-  return {
-    kind: result.kind,
-    sourceBranchId: result.sourceBranchId,
-    targetBranchId: result.targetBranchId,
-    mergeKind: result.mergeKind,
-    selectedSemantics: result.selectedSemantics,
-    conflicts: result.conflicts,
-    proof: {
-      proofSchemaVersion: result.proof.proofSchemaVersion,
-      semanticsDigest: result.proof.semanticsDigest,
-      selectedStrategyDigest: result.proof.selectedStrategyDigest,
-      selectedMergeBaseDigest: result.proof.selectedMergeBaseDigest,
-      selectedConflictPolicyDigest: result.proof.selectedConflictPolicyDigest,
-      selectedConflictIsolationDigest: result.proof.selectedConflictIsolationDigest,
-      selectedIdentityMatcherDigest: result.proof.selectedIdentityMatcherDigest,
-      selectedSourceOnlyPolicyDigest: result.proof.selectedSourceOnlyPolicyDigest,
-      selectedDeletionPolicyDigest: result.proof.selectedDeletionPolicyDigest,
-    },
-  };
-}
-
-function comparableResourceEffectPlan(result) {
-  if (result.kind === "denied") {
-    return {
-      kind: result.kind,
-      reason: result.reason,
-      detail: result.detail ?? null,
-    };
-  }
-  return {
-    kind: result.kind,
-    sourceBranchId: result.sourceBranchId,
-    targetBranchId: result.targetBranchId,
-    mergeKind: result.mergeKind,
-    selectedSemantics: result.selectedSemantics,
-    conflicts: result.conflicts,
-    proof: {
-      proofSchemaVersion: result.proof.proofSchemaVersion,
-      semanticsDigest: result.proof.semanticsDigest,
-      selectedStrategyDigest: result.proof.selectedStrategyDigest,
-      selectedMergeBaseDigest: result.proof.selectedMergeBaseDigest,
-      selectedConflictPolicyDigest: result.proof.selectedConflictPolicyDigest,
-      selectedConflictIsolationDigest: result.proof.selectedConflictIsolationDigest,
-      selectedIdentityMatcherDigest: result.proof.selectedIdentityMatcherDigest,
-      selectedSourceOnlyPolicyDigest: result.proof.selectedSourceOnlyPolicyDigest,
-      selectedDeletionPolicyDigest: result.proof.selectedDeletionPolicyDigest,
-    },
-    resourceEffect: {
-      topology: result.resourceEffect.topology,
-      effectLocus: result.resourceEffect.effectLocus,
-      locus: result.resourceEffect.locus,
-      conflictIsolation: result.resourceEffect.conflictIsolation,
-      rebase: result.resourceEffect.rebase,
-      policyBinding: result.resourceEffect.policyBinding,
-      proof: {
-        semanticsDigest: result.resourceEffect.proof.semanticsDigest,
-        effectLocusDigest: result.resourceEffect.proof.effectLocusDigest,
-        compiledLensDigest: result.resourceEffect.proof.compiledLensDigest,
-      },
-      rebaseArtifact: comparableResourceEffectArtifact(result.resourceEffect.rebaseArtifact),
-    },
-  };
 }
 
 function comparableResourceEffectArtifact(artifact) {

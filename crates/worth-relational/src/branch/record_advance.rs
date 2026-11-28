@@ -199,9 +199,6 @@ impl RelationalRuntime {
                 || envelope.schema_transition.is_some()
                 || envelope.schema_continuation_descriptor.is_some()
                 || envelope.schema_reconciliation_descriptor.is_some()
-                || envelope.merge_execution_authority.is_some()
-                || !envelope.merge_parent_branches.is_empty()
-                || !envelope.merge_base_commits.is_empty()
             {
                 return Err(Denial::UnsupportedTransition);
             }

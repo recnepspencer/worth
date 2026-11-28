@@ -12,7 +12,6 @@ RELATIONAL_SOURCES=(
   "$RELATIONAL_ROOT" "$CONTRACTS_ROOT" "$STORAGE_ROOT" "$BRANCH_ROOT"
   "$ROOT_DIR/crates/worth-relational-indexes/src"
   "$ROOT_DIR/crates/worth-relational-lineage/src"
-  "$ROOT_DIR/crates/worth-relational-merge/src"
   "$MUTATION_ROOT"
   "$ROOT_DIR/crates/worth-relational-durability/src"
   "$PUBLICATION_ROOT"

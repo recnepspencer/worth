@@ -63,16 +63,3 @@ pub(crate) fn diverge_case_trade_on_branch(
     .expect("test staging stays within configured resource budgets");
     txn.commit(execution, &world.runtime).unwrap()
 }
-
-pub(crate) fn merge_branch_into_main(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    world: &mut FintechWorld,
-    merge_parent_branch: BranchId,
-) -> CommitResult {
-    let txn = crate::tests::support::test_owner_begin_merge_transaction(
-        &world.runtime,
-        BranchId("main".to_string()),
-        vec![merge_parent_branch],
-    );
-    txn.commit(execution, &world.runtime).unwrap()
-}

@@ -18,7 +18,8 @@ pub(super) fn quote(
     memory.array::<IdentityBasisDeclaration>(declarations.identity_declarations.len())?;
     for declaration in &declarations.identity_declarations {
         memory.poll()?;
-        if let crate::merge::data::identity::IdentityBasisScope::AspectKey(key) = &declaration.scope
+        if let crate::schema::data::identity_declarations::IdentityBasisScope::AspectKey(key) =
+            &declaration.scope
         {
             memory.text(key.as_str())?;
         }

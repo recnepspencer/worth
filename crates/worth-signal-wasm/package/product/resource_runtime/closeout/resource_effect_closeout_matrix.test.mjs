@@ -16,7 +16,6 @@ test("resource effect closeout matrices certify profile capability rows", async 
       "runtime",
       "typeSurface",
       "diagnosticsHistory",
-      "branchMerge",
       "performance",
     ]);
     assert.ok(Object.isFrozen(branchNative));
@@ -29,7 +28,6 @@ test("resource effect closeout matrices certify profile capability rows", async 
       confirmation: "serverCanonical",
       failureRollback: "branchRestoreOrInverse",
       branchRestore: "branchRestoreOrInverse",
-      mergeRebase: "nativeMergePlan",
       broadReplacement: "admitted",
       diagnosticsHistory: "admitted",
     });
@@ -40,7 +38,6 @@ test("resource effect closeout matrices certify profile capability rows", async 
       confirmation: "serverCanonical",
       failureRollback: "unavailable",
       branchRestore: "unsupported",
-      mergeRebase: "unavailable",
       broadReplacement: "admitted",
       diagnosticsHistory: "admitted",
     });
@@ -50,26 +47,9 @@ test("resource effect closeout matrices certify profile capability rows", async 
         runtimeProof: true,
         typeSurfaceProof: true,
         diagnosticsHistoryProof: true,
-        branchMergeProof: true,
         performanceProof: true,
       })),
     );
-    assert.deepEqual(projectEvidenceFor(branchNative, "mergeRebase"), {
-      runtimeTests: [
-        "resource_branch_merge_rebase_closeout.test.mjs",
-        "resource_branch_mapping_unavailable.test.mjs",
-      ],
-      typeSurface: [
-        "resource_api_effect_profiles_usage.ts",
-        "resource_api_effect_profiles_denials.ts",
-      ],
-      diagnosticsHistory: ["resource_branch_merge_rebase_closeout.test.mjs"],
-      branchMerge: [
-        "resource_branch_capability_summary.test.mjs",
-        "resource_branch_effect_merge_execution.test.mjs",
-      ],
-      performance: ["resource_branch_host_region_isolation.test.mjs"],
-    });
     assert.equal(
       branchNative.rows.every((row) =>
         Object.values(row.evidence).every((references) => references.length > 0)
@@ -87,7 +67,7 @@ test("resource effect closeout matrices certify profile capability rows", async 
           optimism: "branchSpeculative",
           confirmation: "serverCanonical",
           rollback: "branchRestoreOrInverse",
-          rebase: "nativeMergePlan",
+          rebase: "unavailable",
           preimage: "compactInverse",
         }),
       /requires a profile created with resource\.effects\.\*\(\)/,
@@ -108,7 +88,6 @@ function projectProofColumns(row) {
     runtimeProof: row.runtimeProof,
     typeSurfaceProof: row.typeSurfaceProof,
     diagnosticsHistoryProof: row.diagnosticsHistoryProof,
-    branchMergeProof: row.branchMergeProof,
     performanceProof: row.performanceProof,
   };
 }

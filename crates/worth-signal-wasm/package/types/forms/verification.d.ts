@@ -20,7 +20,6 @@ import type { FormLayoutMeasurementReport } from "./measurement.js";
 import type { FormPresentationReport } from "./presentation.js";
 import type { FormInputCapabilitiesReport } from "./input_capabilities.js";
 import type { FormResourceDriftReport } from "./resource_drift.js";
-import type { FormResourceMergeReport } from "./resource_merge.js";
 import type { FormResourceSourceReport } from "./resource_source.js";
 import type { FormSourceAuthorityDiagnostics } from "./sources.js";
 
@@ -32,7 +31,6 @@ export interface FormVerificationPackage {
     readonly sourceAdmissionDigest: string;
     readonly draftRestoreDigest: string;
     readonly resourceSourceDigest: string | null;
-    readonly resourceMergeDigest: string;
     readonly resourceDriftDigest: string;
     readonly resourceShapeDigest: string | null;
     readonly resourceLifecycleDigest: string | null;
@@ -99,7 +97,6 @@ export interface FormVerificationPackage {
     readonly resetHistoryDigest: string;
     readonly replayRestoreHistoryDigest: string;
     readonly stateHistoryDigest: string;
-    readonly resourceMergeHistoryDigest: string;
     readonly resourceDriftHistoryDigest: string;
     readonly mutationResponseReconciliationDigest: string;
     readonly sourceCompatibilityHistoryDigest: string;
@@ -198,7 +195,6 @@ export interface FormVerificationPackage {
     readonly navigationOperations: number;
     readonly sourceCompatibilityOperations: number;
     readonly resourceSource: FormResourceSourceReport["counters"] | null;
-    readonly resourceMerge: FormResourceMergeReport["counters"];
     readonly resourceDrift: FormResourceDriftReport["counters"];
     readonly hostFacts: FormHostReport["counters"];
     readonly inputCapabilities: FormInputCapabilitiesReport["counters"];

@@ -53,7 +53,6 @@ import type {
   ResourceValueSummaries,
 } from "./resource_reconciliation.js";
 import type { ResourceResponseFactory } from "./resource_response.js";
-import type { ResourceBranchNamespace } from "./resource_branch.js";
 import type { ResourceEffects } from "./resource_effect_profiles.js";
 import type { ResourceMutationResponses } from "./resource_mutation_response_closeout_matrix.js";
 
@@ -103,7 +102,6 @@ export interface ResourceCompatibilityNamespace {
 }
 
 export interface ResourceNamespace {
-  readonly branch: ResourceBranchNamespace;
   readonly compatibility: ResourceCompatibilityNamespace;
   /**
    * Marks every materialized line of every family in this namespace stale

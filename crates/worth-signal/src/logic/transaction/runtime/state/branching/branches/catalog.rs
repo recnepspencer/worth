@@ -6,7 +6,7 @@ use crate::logic::checkpoint::CheckpointRuntime;
 use crate::logic::transaction::runtime::config::SignalRuntimeConfig;
 use crate::state::{SignalBranchHandle, SignalBranchId, SignalSnapshotId};
 
-use super::super::super::merge::BranchMutationLedger;
+use super::super::super::branching::branch_mutation_journal::BranchMutationLedger;
 use super::super::super::reconstructability::{AuthorityState, DerivedState};
 use super::super::super::temporal::TemporalRuntimeState;
 use crate::branch::SignalBranchRetirementReceipt;
@@ -39,7 +39,6 @@ where
     pub(super) maximum_stored_snapshots: usize,
     pub(super) children_by_parent: BTreeMap<SignalBranchId, BTreeSet<SignalBranchId>>,
     pub(super) retirement_receipts: BTreeMap<SignalBranchId, SignalBranchRetirementReceipt>,
-    pub(super) active_merge_participants: BTreeSet<SignalBranchId>,
     pub(super) branch_head_generations: BTreeMap<SignalBranchId, u64>,
     pub(super) branch_restore_snapshot_ids: BTreeMap<SignalBranchId, Option<SignalSnapshotId>>,
     pub(super) retention: Option<SignalBranchRetentionRegistry>,
@@ -66,7 +65,6 @@ where
             maximum_stored_snapshots: DEFAULT_MAXIMUM_STORED_SIGNAL_BRANCH_SNAPSHOTS,
             children_by_parent: BTreeMap::new(),
             retirement_receipts: BTreeMap::new(),
-            active_merge_participants: BTreeSet::new(),
             branch_head_generations: BTreeMap::new(),
             branch_restore_snapshot_ids: BTreeMap::new(),
             retention: Some(SignalBranchRetentionRegistry::new(0)),
@@ -83,7 +81,6 @@ where
         self.snapshot_reconstruction_runtime_is_pristine(root)
             && self.next_branch_id == 1
             && self.retirement_receipts.is_empty()
-            && self.active_merge_participants.is_empty()
             && self.branch_head_generation(root) == 0
             && self.branch_head_snapshot_id(root).is_none()
     }

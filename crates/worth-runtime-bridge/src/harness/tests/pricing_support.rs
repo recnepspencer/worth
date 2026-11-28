@@ -1,14 +1,12 @@
 use crate::diagnostics::BridgeHistoricalEvaluationRecordIdentity;
 use crate::error::BridgeDeliveryErrorKind;
 use crate::facade::{
-    BridgeAspectRegistrationId, BridgeFailureClass, BridgeMergeConsumptionClass,
-    BridgeMergeDenialClass, BridgeMergePrecedenceStage, BridgeMergeRoutingOutcomeClass,
-    BridgePolicyFieldKind, BridgePolicyRejectionKind, BridgePreviewLifecycleStateKind,
-    BridgeReplayErrorKind, BridgeRouteErrorKind, BridgeSignalBranchIdentity,
-    BridgeWritebackErrorKind, BridgeWritebackFailureClass, BridgeWritebackFamilyKind,
-    BridgeWritebackOutcomeClass, BridgeWritebackStrategyClass, FineGrainedMatchStatus,
-    SubscriptionSliceKind, TruthBranchIdentity, TruthCommitIdentity, TruthDeltaSurfaceKind,
-    TruthSnapshotIdentity,
+    BridgeAspectRegistrationId, BridgeFailureClass, BridgePolicyFieldKind,
+    BridgePolicyRejectionKind, BridgePreviewLifecycleStateKind, BridgeReplayErrorKind,
+    BridgeRouteErrorKind, BridgeSignalBranchIdentity, BridgeWritebackErrorKind,
+    BridgeWritebackFailureClass, BridgeWritebackFamilyKind, BridgeWritebackOutcomeClass,
+    BridgeWritebackStrategyClass, FineGrainedMatchStatus, SubscriptionSliceKind,
+    TruthBranchIdentity, TruthCommitIdentity, TruthDeltaSurfaceKind, TruthSnapshotIdentity,
 };
 use crate::identity::BridgeIdentity;
 use crate::routing::{BridgeInvalidationIdentity, BridgeRouteIdentity};
@@ -157,28 +155,6 @@ pub(super) struct PricingWritebackBundle {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct PricingMergeBundle {
-    pub(super) bridge_class: BridgeMergeConsumptionClass,
-    pub(super) outcome_class: BridgeMergeRoutingOutcomeClass,
-    pub(super) blocked_stage: Option<BridgeMergePrecedenceStage>,
-    pub(super) denial_class: Option<BridgeMergeDenialClass>,
-    pub(super) continuity_published: bool,
-    pub(super) remap_published: bool,
-    pub(super) parent_order_digest: String,
-    pub(super) bundle_digest: String,
-    pub(super) canonical_replay_digest: String,
-    pub(super) replay_request_count: usize,
-    pub(super) main_premerge_snapshot: TruthSnapshotIdentity,
-    pub(super) main_premerge_rubber_cost_cents: i64,
-    pub(super) speculative_snapshot: TruthSnapshotIdentity,
-    pub(super) speculative_rubber_cost_cents: i64,
-    pub(super) merged_snapshot: TruthSnapshotIdentity,
-    pub(super) merged_rubber_cost_cents: i64,
-    pub(super) merged_aspect_registration_id: BridgeAspectRegistrationId,
-    pub(super) merged_fine_grained_match_status: FineGrainedMatchStatus,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct PricingHistoricalProvenanceBundle {
     pub(super) main_commit: TruthCommitIdentity,
     pub(super) main_snapshot: TruthSnapshotIdentity,
@@ -254,8 +230,6 @@ pub(super) struct PricingTrustAttackBundle {
     pub(super) replay_policy_error_kind: BridgePolicyRejectionKind,
     pub(super) replay_policy_failure_class: BridgePolicyFieldKind,
     pub(super) route_policy_error_kind: BridgeRouteErrorKind,
-    pub(super) merge_denial_blocked_stage: BridgeMergePrecedenceStage,
-    pub(super) merge_denial_class: BridgeMergeDenialClass,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -268,7 +242,6 @@ pub(super) struct PricingWorkloadCertificationBundle {
     pub(super) restart_replay: PricingRestartReplayBundle,
     pub(super) restart_failure: PricingRestartFailureBundle,
     pub(super) writeback: PricingWritebackBundle,
-    pub(super) merge: PricingMergeBundle,
     pub(super) provenance: PricingHistoricalProvenanceBundle,
     pub(super) portfolio: PricingPortfolioBlastRadiusBundle,
     pub(super) crisis: PricingCrisisBundle,
@@ -333,7 +306,6 @@ pub(in crate::harness::tests) enum PricingCertificationDigestArtifact {
     Suite25Promotion,
     Suite25Fanout,
     Suite25Writeback,
-    Suite25Merge,
     Suite25HistoricalProvenance,
     Suite25ReferenceWorkload,
     RetainedWorkloadCertificationBundle,
@@ -355,7 +327,6 @@ impl PricingCertificationDigestArtifact {
             Self::Suite25Promotion => "pricing-suite-25-promotion",
             Self::Suite25Fanout => "pricing-suite-25-fanout",
             Self::Suite25Writeback => "pricing-suite-25-writeback",
-            Self::Suite25Merge => "pricing-suite-25-merge",
             Self::Suite25HistoricalProvenance => "pricing-suite-25-historical-provenance",
             Self::Suite25ReferenceWorkload => "pricing-suite-25-reference",
             Self::RetainedWorkloadCertificationBundle => "pricing-workload-certification-bundle",

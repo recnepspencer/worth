@@ -16,9 +16,7 @@ use worth_relational::facade::mvcc::{
 };
 use worth_testkit_relational::aspect_storage::AspectSchemaFixture;
 mod birth_serde;
-mod branches;
 mod checkpoint;
-mod correspondence;
 mod epochs;
 mod refusals;
 

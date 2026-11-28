@@ -44,25 +44,6 @@ test("32 branches, 128 entities, and 64 aspects remain sparse and checkpoint-bou
     await commit(truth, branches[index], `seed-${index}`, `entity${index}`, `aspect${index}`, index);
   }
 
-  const full = await preview(truth, branches[2], branches[1]);
-  assert.equal(full.posture, "success");
-  assert.equal(full.value.counters.entitiesVisited, 128);
-  assert.equal(full.value.counters.aspectsVisited, 128 * 64);
-
-  for (let index = 2; index < branches.length; index += 1) {
-    const scoped = await preview(truth, branches[index], branches[1], {
-      entityIds: [`entity${index}`],
-      aspectIds: [`aspect${index}`],
-    });
-    assert.equal(scoped.value.counters.entitiesVisited, 1);
-    assert.equal(scoped.value.counters.aspectsVisited, 1);
-    assert.equal(required(await truth.resolveMerge({
-      requestId: `merge-${index}`,
-      reviewId: scoped.value.id,
-      selections: [],
-    })).commit.kind, "merge");
-  }
-
   for (const branch of (await truth.inspect()).branches.filter((entry) => !entry.retired)) {
     assert.equal((await truth.checkpoint(branch.id)).posture, "success");
   }
@@ -84,16 +65,6 @@ async function commit(truth, branch, requestId, entityId, aspectId, value) {
     expectedBasis: current.basis,
     operations: [{ entityId, aspectId, value }],
   }));
-}
-
-async function preview(truth, source, target, scope = undefined) {
-  return truth.previewMerge({
-    sourceBranchId: source.id,
-    targetBranchId: target.id,
-    expectedSourceBasis: required(await truth.branch(source.id)).basis,
-    expectedTargetBasis: required(await truth.branch(target.id)).basis,
-    scope,
-  });
 }
 
 function required(outcome) {

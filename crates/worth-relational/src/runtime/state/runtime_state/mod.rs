@@ -16,7 +16,6 @@ pub use source_close::{
     RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
 };
 pub(crate) mod indexing;
-mod merge_authority;
 mod owner_lifecycle;
 mod partition_edition_access;
 mod preparation_home_contracts;

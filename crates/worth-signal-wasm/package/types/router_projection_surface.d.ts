@@ -36,10 +36,6 @@ import type {
   ProjectedRouteResourceCapability,
 } from "./router_resource_surface.js";
 import type {
-  SpeculativeRouteBranchOptions,
-  SpeculativeRouteBranchPlan,
-} from "./router_speculation_surface.js";
-import type {
   ProjectedRoutePrefetchArtifact,
   RoutePrefetchTrigger,
 } from "./router_transition_surface.js";
@@ -210,9 +206,6 @@ export interface ProjectedRouteCandidate<
   outlets(): ReadonlyArray<ProjectedOutletContract>;
   warmup(trigger?: RoutePrefetchTrigger): ProjectedRoutePrefetchArtifact;
   prefetch(trigger?: RoutePrefetchTrigger): ProjectedRoutePrefetchArtifact;
-  speculate(
-    options?: SpeculativeRouteBranchOptions,
-  ): SpeculativeRouteBranchPlan<ProjectedRouteCandidate<TRouteCapability, TLayoutPlacement>>;
   admission(facts?: RouteAdmissionFacts): RouteAdmissionPlan<ProjectedRouteCandidate<TRouteCapability, TLayoutPlacement>>;
   verification(): ProjectedRouteCandidateVerificationPackage;
   readonly [WorthSignalProjectedRouteCandidateBrand]: "projectedRouteCandidate";

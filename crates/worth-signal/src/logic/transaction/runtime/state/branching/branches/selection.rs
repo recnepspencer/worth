@@ -56,10 +56,6 @@ where
             .unwrap_or_default()
     }
 
-    pub fn is_merge_participant(&self, branch_id: SignalBranchId) -> bool {
-        self.active_merge_participants.contains(&branch_id)
-    }
-
     pub fn branch_head_generation(&self, branch_id: SignalBranchId) -> u64 {
         self.branch_head_generations
             .get(&branch_id)
@@ -104,24 +100,6 @@ where
             .get(&branch_id)
             .copied()
             .flatten()
-    }
-
-    pub fn mark_merge_participants(
-        &mut self,
-        source_branch_id: SignalBranchId,
-        target_branch_id: SignalBranchId,
-    ) {
-        self.active_merge_participants.insert(source_branch_id);
-        self.active_merge_participants.insert(target_branch_id);
-    }
-
-    pub fn clear_merge_participants(
-        &mut self,
-        source_branch_id: SignalBranchId,
-        target_branch_id: SignalBranchId,
-    ) {
-        self.active_merge_participants.remove(&source_branch_id);
-        self.active_merge_participants.remove(&target_branch_id);
     }
 
     pub fn branch_state(&self, branch_id: SignalBranchId) -> Option<&BranchState<D, I, T>> {

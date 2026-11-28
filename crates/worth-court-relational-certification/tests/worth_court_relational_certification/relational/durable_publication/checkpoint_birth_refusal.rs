@@ -146,7 +146,7 @@ fn complete_empty_archive_and_initial_installation_preserve_unused_original_sche
     let decoded: Captured = rmp_serde::from_slice(
         checkpoint
             .bytes()
-            .strip_prefix(b"WORTH-REL-CHK24\n")
+            .strip_prefix(b"WORTH-REL-CHK25\n")
             .unwrap(),
     )
     .unwrap();

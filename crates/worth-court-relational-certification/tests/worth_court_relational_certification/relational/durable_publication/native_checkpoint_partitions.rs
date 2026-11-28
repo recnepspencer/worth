@@ -67,7 +67,7 @@ pub(super) fn partition_image(
     let wire: Wire = rmp_serde::from_slice(
         checkpoint
             .bytes()
-            .strip_prefix(b"WORTH-REL-CHK24\n")
+            .strip_prefix(b"WORTH-REL-CHK25\n")
             .unwrap(),
     )
     .unwrap();

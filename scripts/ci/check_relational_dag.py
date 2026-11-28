@@ -21,7 +21,7 @@ PROJECTIONS = ('production_explicit', 'production_resolved', 'inherent_impl', 'c
 TESTKIT = 'testkit'
 TEST_PATHS = {('tests',), ('presentation', 'harness'), ('test_execution_policy',)}
 EXTRACTED = {
-    'contracts', 'storage', 'branch', 'lineage', 'mutation', 'commit_admission', 'merge',
+    'contracts', 'storage', 'branch', 'lineage', 'mutation', 'commit_admission',
     'indexes', 'durability', 'publication',
 }
 

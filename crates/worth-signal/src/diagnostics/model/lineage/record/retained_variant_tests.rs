@@ -1,13 +1,13 @@
 use super::*;
+use crate::data::handle::NodeId;
 use crate::diagnostics::lineage::{
     ArtifactTransitionKind, InvalidationCause, LineageArtifactId, SnapshotRestoreKind,
 };
-use crate::logic::transaction::{ArtifactMergeAction, BranchMergeConflictKind, MergeDecisionBasis};
-use crate::state::SignalSnapshotId;
+use crate::state::{SignalBranchId, SignalSnapshotId};
 
 #[test]
 fn remaining_lineage_variants_charge_their_actual_retained_payloads() {
-    let (_, node) = emitted_lineage();
+    let node = NodeId::new(0, 1);
     for switch in [false, true] {
         let mut first = String::with_capacity(1024);
         first.push_str("first");
@@ -36,32 +36,6 @@ fn remaining_lineage_variants_charge_their_actual_retained_payloads() {
             expected as u64
         );
     }
-    let mut resolved_conflict_kinds = Vec::with_capacity(128);
-    resolved_conflict_kinds.push(BranchMergeConflictKind::RuntimeArtifactMismatch);
-    let expected =
-        resolved_conflict_kinds.capacity() * std::mem::size_of::<BranchMergeConflictKind>();
-    let kind = LineageRecordKind::ArtifactMerge {
-        source_node: node,
-        target_node: Some(node),
-        source_branch_id: SignalBranchId(1),
-        target_branch_id: SignalBranchId(0),
-        source_artifact_id: None,
-        target_artifact_id_before: None,
-        target_artifact_id_after: None,
-        merge_action: ArtifactMergeAction::Adopted,
-        decision_basis: MergeDecisionBasis::SourceAuthorityAdopted,
-        merge_kind: BranchMergeKind::Applied,
-        divergence: BranchMergeDivergence::None,
-        merge_strategy: BranchMergeStrategy::AdoptSourceHead,
-        reconciliation_policy: BranchMergeReconciliationPolicy::built_in_default(),
-        resolved_conflict_kinds,
-    };
-    assert_eq!(
-        kind.retained_heap_charge(&mut Work::new(Some(100)))
-            .unwrap()
-            .bytes(),
-        expected as u64
-    );
     for kind in [
         LineageRecordKind::SnapshotRestore {
             snapshot_id: SignalSnapshotId(1),

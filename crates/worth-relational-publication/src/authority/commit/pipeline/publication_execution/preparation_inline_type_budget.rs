@@ -41,8 +41,6 @@ pub(crate) fn collect(census: &mut contracts::inline_type_sizes::census::Census)
         owner.field::<CommitId>("commit_id");
         owner.field::<RelationalCommitReceipt>("commit_reference");
         owner.field::<BranchId>("branch_id");
-        owner.field::<Vec<CommitId>>("merge_base_commits");
-        owner.field::<Vec<BranchId>>("merge_parent_branches");
         owner.field::<Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>>(
             "deferred_diagnostic_artifacts",
         );
@@ -69,8 +67,6 @@ pub(crate) fn collect(census: &mut contracts::inline_type_sizes::census::Census)
         owner.field::<CommitId>("commit_id");
         owner.field::<RelationalCommitReceipt>("commit_reference");
         owner.field::<BranchId>("branch_id");
-        owner.field::<Vec<CommitId>>("merge_base_commits");
-        owner.field::<Vec<BranchId>>("merge_parent_branches");
         owner.field::<Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>>(
             "deferred_diagnostic_artifacts",
         );
@@ -117,7 +113,5 @@ pub(crate) fn collect(census: &mut contracts::inline_type_sizes::census::Census)
         owner.field::<RelationalCommitReceipt>("commit_reference");
         owner.field::<worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasis>("branch_basis");
         owner.field::<BranchId>("branch_id");
-        owner.field::<Vec<CommitId>>("merge_base_commits");
-        owner.field::<Vec<BranchId>>("merge_parent_branches");
     }
 }

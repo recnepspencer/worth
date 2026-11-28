@@ -292,9 +292,6 @@ pub use super::provider::{
     WorthQueryRecoveredDispatchOutbox, WorthQueryReleasedApplicationEffect,
 };
 mod decision_read;
-pub use super::merge_unique_values::{
-    WorthQueryMergeUniqueValueDenial, WorthQueryMergeUniqueValueDenialKind,
-};
 pub use super::ordinary_read::{
     WorthQueryOrdinaryReadBatch, WorthQueryOrdinaryReadMetadata, WorthQueryOrdinaryReadProjection,
     WorthQueryOrdinaryReadVersion,

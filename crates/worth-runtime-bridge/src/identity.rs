@@ -173,8 +173,8 @@ bridge_identity_tags! {
     SourceDeclarationIdentityTag, SourceContractIdentityTag, SourceMaterializationRecordIdentityTag,
     SourceFailureRecordIdentityTag, StructuralSchemaIdentityTag, StructuralEquivalenceContractIdentityTag,
     StructuralDeclarationIdentityTag, StructuralContractIdentityTag, StructuralTruthViewBasisIdentityTag,
-    MergeDeclarationIdentityTag, MergeContractIdentityTag, MergeAuthorityBasisIdentityTag,
-    MergeOntologyMappingIdentityTag, MergeParentOrderIdentityTag, MergeRecordIdentityTag,
+
+
     StructuralCandidateIdentityTag, StructuralFingerprintIdentityTag, StructuralRemapRecordIdentityTag,
     StructuralBranchComparisonRecordIdentityTag, SpeculativeSignalBranchIdentityTag,
     PreviewBranchBindingIdentityTag, PreviewSessionDeclarationIdentityTag, PreviewSessionIdentityTag,

@@ -69,34 +69,6 @@ export interface CallableSignalHistory {
     branchId: CallableBranchId,
     snapshotId: number | bigint,
   ): void | Promise<void>;
-  merge_branches(
-    sourceBranchId: CallableBranchId,
-    targetBranchId: CallableBranchId,
-  ): MergeResultArtifact | Promise<MergeResultArtifact>;
-  merge_branches_with_proof(
-    sourceBranchId: CallableBranchId,
-    targetBranchId: CallableBranchId,
-  ): MergeResultProofEnvelope | Promise<MergeResultProofEnvelope>;
-  plan_merge_branches(
-    sourceBranchId: CallableBranchId,
-    targetBranchId: CallableBranchId,
-  ): MergePlanArtifact | Promise<MergePlanArtifact>;
-  plan_merge_branches_with_proof(
-    sourceBranchId: CallableBranchId,
-    targetBranchId: CallableBranchId,
-  ): MergePlanProofEnvelope | Promise<MergePlanProofEnvelope>;
-  plan_merge_policy_preview(
-    request: MergePolicyPreviewRequest,
-  ): MergePlanArtifact | Promise<MergePlanArtifact>;
-  plan_merge_policy_preview_with_proof(
-    request: MergePolicyPreviewRequest,
-  ): MergePlanProofEnvelope | Promise<MergePlanProofEnvelope>;
-  merge_branches_policy_preview(
-    request: MergePolicyPreviewRequest,
-  ): MergeResultArtifact | Promise<MergeResultArtifact>;
-  merge_branches_policy_preview_with_proof(
-    request: MergePolicyPreviewRequest,
-  ): MergeResultProofEnvelope | Promise<MergeResultProofEnvelope>;
   branch_state_proof(branchId: CallableBranchId): BranchStateProofReport;
   replay_parity_proof(
     expectedBranchId: CallableBranchId,

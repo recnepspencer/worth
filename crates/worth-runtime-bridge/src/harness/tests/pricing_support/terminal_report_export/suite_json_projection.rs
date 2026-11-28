@@ -13,7 +13,6 @@ impl PricingWorkloadCertificationBundle {
             "promotion_digest": digests.promotion_digest,
             "fanout_digest": digests.fanout_digest,
             "writeback_digest": digests.writeback_digest,
-            "merge_digest": digests.merge_digest,
             "historical_provenance_digest": digests.historical_provenance_digest,
             "reference_workload_bundle_digest": digests.reference_workload_bundle_digest,
             "terminal_export_basis": self.suite_25_terminal_export_basis_json(),
@@ -42,7 +41,6 @@ impl PricingWorkloadCertificationBundle {
                 "main_snapshot": self.matrix.reference.main_snapshot.as_str(),
                 "speculative_snapshot": self.matrix.reference.speculative_snapshot.as_str(),
                 "promotion_session_identity": self.promotion.promotion_session_identity.as_str(),
-                "merge_bundle_digest": self.merge.bundle_digest,
                 "writeback_commit_replay_semantic_digest": self.writeback.commit_replay_semantic_digest,
             },
             "routing": {
@@ -55,8 +53,6 @@ impl PricingWorkloadCertificationBundle {
             "explanation": {
                 "evaluation_record_identity": self.matrix.reference.evaluation_record_identity.as_str(),
                 "evaluation_selector_identity": self.matrix.reference.evaluation_selector_identity.as_str(),
-                "merged_aspect_registration_id": self.merge.merged_aspect_registration_id.as_str(),
-                "merged_fine_grained_match_status": format!("{:?}", self.merge.merged_fine_grained_match_status),
                 "shock_commit": self.provenance.shock_commit.as_str(),
                 "shock_regime": self.provenance.shock_regime,
                 "shock_multiplier_per_mille": self.provenance.shock_multiplier_per_mille,
@@ -66,7 +62,6 @@ impl PricingWorkloadCertificationBundle {
                 "replay_invalidation_identity": self.matrix.replay.invalidation_identity.as_str(),
                 "restart_route_identity": self.restart_replay.route_identity.as_str(),
                 "restart_invalidation_identity": self.restart_replay.invalidation_identity.as_str(),
-                "merge_replay_digest": self.merge.canonical_replay_digest,
             },
             "reference_workload": self.reference_workload_terminal_export_basis_json(),
         })
@@ -187,7 +182,6 @@ impl PricingWorkloadCertificationBundle {
                 "replay_mismatch_count": self.restart_failure.replay_mismatch_count,
             },
             "writeback_failure_kind": format!("{:?}", self.writeback.rejection_error_kind),
-            "merge_denial_class": self.merge.denial_class.map(|value| format!("{value:?}")),
         })
     }
 }

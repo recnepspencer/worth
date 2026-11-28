@@ -290,20 +290,6 @@ pub(crate) fn release_test_commit_snapshot(runtime: &RelationalRuntime, outcome:
         .expect("test helper releases the published snapshot it does not return");
 }
 
-pub(crate) fn merge_commit_from_branches(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    target_branch: BranchId,
-    merge_parent_branches: Vec<BranchId>,
-) -> CommitResult {
-    let txn = crate::tests::support::test_owner_begin_merge_transaction(
-        runtime,
-        target_branch,
-        merge_parent_branches,
-    );
-    txn.commit(execution, runtime).unwrap()
-}
-
 #[path = "records/relations.rs"]
 mod relations;
 pub(crate) use relations::{

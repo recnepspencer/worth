@@ -31,22 +31,9 @@ impl RetainedStorageMeasurement for super::ReplayEventDetail {
         match self {
             Self::TaskOutcome(_) => Ok(Charge::ZERO),
             Self::Message(message) => message.retained_heap_charge(work),
-            Self::BranchMergeSummary {
-                message,
-                strategy_witness,
-                compatibility_witness,
-                scoped_merge_proof,
-            } => message
-                .retained_heap_charge(work)?
-                .checked_add(strategy_witness.retained_heap_charge(work)?)?
-                .checked_add(compatibility_witness.retained_heap_charge(work)?)?
-                .checked_add(scoped_merge_proof.retained_heap_charge(work)?),
         }
     }
 }
-
-#[cfg(test)]
-mod tests;
 
 impl RetainedStorageMeasurement for super::ReplayCursor {
     fn retained_heap_charge(&self, work: &mut Work) -> Result<Charge, Denial> {

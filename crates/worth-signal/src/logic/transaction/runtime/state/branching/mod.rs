@@ -16,7 +16,7 @@ mod fork_contract;
 mod fork_snapshot;
 mod fork_validation;
 mod lifecycle;
-mod merge_runtime;
+
 mod retention;
 mod retirement;
 mod retirement_batch;
@@ -67,3 +67,7 @@ pub use transaction_head::SignalBranchTransactionHead;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+pub(crate) mod branch_mutation_journal;
+pub(super) mod replay_artifact_proof;
+pub(super) mod state_proof;

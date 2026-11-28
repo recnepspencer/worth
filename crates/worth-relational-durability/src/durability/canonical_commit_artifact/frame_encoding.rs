@@ -56,6 +56,7 @@ fn encode(
         });
     }
     let header = CanonicalCommitArtifactHeader {
+        format: commit.envelope().artifact_format(),
         position: commit.position(),
         commit_id: commit.commit.commit_id,
         digest: Digest::unsealed(),

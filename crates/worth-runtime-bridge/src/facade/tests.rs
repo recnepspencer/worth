@@ -26,7 +26,6 @@ pub(in crate::facade::tests) use support::*;
 mod causal_envelope;
 mod diagnostics;
 mod execution_basis;
-mod merge;
 mod policy_and_materialization;
 mod policy_phase2;
 mod replay;

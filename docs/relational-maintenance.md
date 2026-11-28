@@ -16,7 +16,7 @@ owners. Every dependency points to a lower layer.
 | 2 | `branch` | Contracts, Storage |
 | 3 | `lineage` | Contracts, Storage, Branch |
 | 3 | `mutation` | Contracts, Storage, Branch |
-| 3 | `merge` | Contracts, Storage, Branch |
+| 3 | `commit-admission` | Contracts, Storage, Branch |
 | 3 | `indexes` | Contracts, Storage, Branch |
 | 4 | `durability` | All Layer 0–3 packages |
 | 5 | `publication` | All Layer 0–4 packages |

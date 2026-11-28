@@ -34,6 +34,7 @@ impl Artifact {
         let payload_len = count.length;
         let frame_len = bounded_frame_len(payload_len)?;
         let header = CanonicalCommitArtifactHeader {
+            format: envelope.artifact_format(),
             position,
             commit_id: envelope.commit.commit_id,
             digest: prepared.at_position(position),

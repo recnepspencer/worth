@@ -25,7 +25,7 @@ mod burned_symbol_frontier;
 mod shared_members;
 mod unknown_fields;
 
-const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK24\n";
+const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK25\n";
 
 fn capture_external(
     execution: &ExecutionRequest<'_, '_>,

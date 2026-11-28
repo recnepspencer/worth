@@ -7,8 +7,6 @@ pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::inte
 pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::normalized_plan;
 pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::overlay;
 pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::read_projection;
-#[cfg(test)]
-pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::reconstructed_merge_plan;
 pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::staged_mutations;
 pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::staged_plan_normalization;
 pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::staging_storage;
@@ -19,8 +17,6 @@ pub(crate) mod commit_plan;
 mod coupled_batch;
 mod inspection;
 pub(crate) use normalized_plan::OwnedNormalizedPlan;
-#[cfg(test)]
-pub(crate) use reconstructed_merge_plan::OwnedMergePlan;
 pub(crate) use worth_relational_publication::internal_port::mvcc::transaction::{
     prepared_change_summary, staged_plan,
 };

@@ -2,8 +2,8 @@ pub mod foundational_contract_basis;
 pub mod schema_plan_terms;
 
 use crate::identity::data::KindId;
-use crate::merge::data::identity::IdentityBasisDeclaration;
-use crate::merge::data::policy::AspectMergePolicyDeclaration;
+use crate::schema::data::aspect_merge_policy::AspectMergePolicyDeclaration;
+use crate::schema::data::identity_declarations::IdentityBasisDeclaration;
 use crate::schema::data::{
     AspectContractPlanRevision, DeclaredAspectContractBinding, SchemaRegistryError,
 };

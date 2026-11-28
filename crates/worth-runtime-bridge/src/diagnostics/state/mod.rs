@@ -15,7 +15,6 @@ use super::history::{
     BridgeHistoricalEvaluationFailureIdentity, BridgeHistoricalEvaluationFailureRecord,
     BridgeHistoricalEvaluationRecordIdentity,
 };
-use super::merge::{BridgeCanonicalMergeRecord, BridgeMergeRecordIdentity};
 use super::records::{BridgeFailureRecord, BridgeRouteRecord};
 use super::structural::{
     BridgeCanonicalStructuralBranchComparisonRecord, BridgeCanonicalStructuralRemapRecord,
@@ -52,7 +51,6 @@ pub(crate) struct BridgeDiagnosticsState {
     route_records: VecDeque<Arc<BridgeRouteRecord>>,
     bulk_records: VecDeque<Arc<BridgeCanonicalBulkPlanRecord>>,
     continuity_records: VecDeque<Arc<BridgeCanonicalContinuityRecord>>,
-    merge_records: VecDeque<Arc<BridgeCanonicalMergeRecord>>,
     historical_records: VecDeque<Arc<BridgeCanonicalHistoricalEvaluationRecord>>,
     historical_failures: VecDeque<Arc<BridgeHistoricalEvaluationFailureRecord>>,
     source_materialization_records: VecDeque<Arc<SourceMaterializationRecord>>,
@@ -77,7 +75,6 @@ pub(crate) struct BridgeDiagnosticsState {
     latest_bulk_by_workload_identity: BTreeMap<String, Arc<BridgeCanonicalBulkPlanRecord>>,
     latest_continuity_by_route_identity:
         BTreeMap<BridgeRouteIdentity, Arc<BridgeCanonicalContinuityRecord>>,
-    latest_merge_by_record_identity: BTreeMap<String, Arc<BridgeCanonicalMergeRecord>>,
     latest_historical_by_record_identity:
         BTreeMap<String, Arc<BridgeCanonicalHistoricalEvaluationRecord>>,
     latest_historical_by_decision_log_identity:

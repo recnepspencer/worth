@@ -4,7 +4,7 @@ use super::super::super::retention_omission::RetentionOmission;
 use super::super::ResourceRuntimeState;
 use super::registry::resource_policy_resolution_signal_error;
 use crate::data::resource::*;
-use crate::logic::transaction::runtime::state::merge::canonical_digest;
+use crate::logic::transaction::runtime::state::canonical_digest;
 
 pub(super) const RESOURCE_REPLAY_RECONSTRUCTION_SCHEMA_VERSION: &str =
     "worth.resource.replay-reconstruction.v2";

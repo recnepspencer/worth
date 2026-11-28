@@ -4,7 +4,6 @@ use serde_json::json;
 
 use super::super::execution::HarnessExecution;
 use super::super::{
-    merge::terminal_report_export as merge_terminal_report_export,
     policy::terminal_report_export as policy_terminal_report_export,
     source::terminal_report_export as source_terminal_report_export,
     speculation::terminal_report_export as speculation_terminal_report_export,
@@ -58,7 +57,6 @@ pub(in crate::harness::adapter::adapter_impl) fn execution_summary_json(
         HarnessExecution::Source(execution) => {
             source_terminal_report_export::summary_json(execution)
         }
-        HarnessExecution::Merge(execution) => merge_terminal_report_export::summary_json(execution),
         HarnessExecution::Policy(execution) => {
             policy_terminal_report_export::execution_summary_json(execution)
         }
@@ -127,9 +125,6 @@ pub(in crate::harness::adapter::adapter_impl) fn execution_extensions_json(
         }
         HarnessExecution::Source(execution) => {
             source_terminal_report_export::extensions_json(execution, runtime_bridge)
-        }
-        HarnessExecution::Merge(execution) => {
-            merge_terminal_report_export::extensions_json(execution)
         }
         HarnessExecution::Policy(execution) => {
             policy_terminal_report_export::execution_extensions_json(execution, runtime_bridge)

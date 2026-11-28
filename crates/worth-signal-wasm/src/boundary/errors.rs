@@ -114,11 +114,6 @@ impl From<SignalError> for WorthSignalJsError {
                 message: value.to_string(),
                 context: None,
             },
-            SignalError::BranchMergeFailed { message, .. } => Self {
-                code: "branchMergeFailed".to_owned(),
-                message,
-                context: None,
-            },
             SignalError::Internal { message, context } => Self {
                 code: "internal".to_owned(),
                 message,

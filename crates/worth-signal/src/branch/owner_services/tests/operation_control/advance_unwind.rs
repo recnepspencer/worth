@@ -84,12 +84,7 @@ fn advance_outcome_construction_fault_preserves_performed_truth_and_releases_out
             state.state().graph().dependency_sources_of(dependent),
             Ok(vec![replacement])
         );
-        assert!(!state
-            .state()
-            .mutation_ledger()
-            .structural_merge_journal()
-            .records
-            .is_empty());
+        assert!(!state.state().mutation_ledger().pending.is_empty());
     })
     .expect("performed advance truth is exact");
     let mut released = ledger_before.clone();

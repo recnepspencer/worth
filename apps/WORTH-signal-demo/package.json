@@ -11,7 +11,7 @@
     "test:demo-docs": "node --test tests/demo_documentation_contract.test.mjs",
     "test:landing": "node --experimental-strip-types --test tests/landing_mobile_carousel.test.mjs",
     "test:demo5": "node --test tests/demo_five_concurrency.test.mjs",
-    "test:demo6": "node --experimental-wasm-modules --test tests/demo_six_aspect_merge.test.mjs tests/demo_six_code_evidence.test.mjs tests/worker_bundle_integrity.test.mjs",
+    "test:demo6": "node --experimental-wasm-modules --test tests/demo_six_branch_history.test.mjs tests/demo_six_code_evidence.test.mjs tests/worker_bundle_integrity.test.mjs",
     "test:packed-wasm": "node ../../scripts/wasm/verify-worth-signals-demo-packed.mjs",
     "lint": "eslint .",
     "preview": "vite preview"

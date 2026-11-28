@@ -35,7 +35,6 @@ pub enum BridgeCausalEvidenceFamily {
     BridgeStreamReplay,
     BridgeStreamCheckpoint,
     BridgeContinuity,
-    BridgeMerge,
     BridgeWritebackAdmission,
     BridgeWritebackMapperEnvelope,
     BridgeWritebackMappedFamilyInput,
@@ -70,7 +69,6 @@ impl BridgeCausalEvidenceFamily {
             Self::BridgeStreamReplay => "bridge_stream_replay",
             Self::BridgeStreamCheckpoint => "bridge_stream_checkpoint",
             Self::BridgeContinuity => "bridge_continuity",
-            Self::BridgeMerge => "bridge_merge",
             Self::BridgeWritebackAdmission => "bridge_writeback_admission",
             Self::BridgeWritebackMapperEnvelope => "bridge_writeback_mapper_envelope",
             Self::BridgeWritebackMappedFamilyInput => "bridge_writeback_mapped_family_input",
@@ -105,7 +103,6 @@ impl BridgeCausalEvidenceFamily {
             | Self::BridgeStreamReplay
             | Self::BridgeStreamCheckpoint
             | Self::BridgeContinuity
-            | Self::BridgeMerge
             | Self::BridgeWritebackAdmission
             | Self::BridgeWritebackMapperEnvelope
             | Self::BridgeWritebackMappedFamilyInput

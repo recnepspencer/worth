@@ -10,10 +10,10 @@ pub use worth_query_execution_lineage::facade::primary_graph::{
     application_program, component_selection, conditional_operation, content, denial,
     derived_source, entity_key, entity_resolution, entity_resolution_denial,
     fact_verification_observation, fragment_view, freshness, handler, home_original_progression,
-    index_currency, index_refresh, initial_schema_denial, invariant_projection,
-    merge_unique_values, observations, ordinary_read, output_lineage, output_reuse,
-    read_observation, resolution, resolution_denial, root, root_path_selection, source_facts,
-    source_read_equivalence, source_read_verification, structural_walk,
+    index_currency, index_refresh, initial_schema_denial, invariant_projection, observations,
+    ordinary_read, output_lineage, output_reuse, read_observation, resolution, resolution_denial,
+    root, root_path_selection, source_facts, source_read_equivalence, source_read_verification,
+    structural_walk,
 };
 pub mod source_disclosure;
 pub use worth_query_execution_lineage::facade::primary_graph::{

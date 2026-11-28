@@ -127,61 +127,6 @@ test("signals.form reports blocked remote resource drift when source schema comp
   });
 });
 
-test("signals.form reports conflicted remote resource drift when admitted merge evidence projects a conflict", async () => {
-  const runtime = await createRealRequestRuntime();
-  let restoreResource = null;
-  try {
-    const { signals } = runtime;
-    const line = createDetailPatchLineFixture({
-      effectProfile: signals.resource.effects.branchNative(),
-      initialValue: { title: "Loaded" },
-    });
-    const form = signals.form({
-      source: signals.form.source.resourceLine(line, { id: "resource-drift-conflict" }),
-      fields: ({ field }) => ({
-        title: field("title"),
-      }),
-    });
-
-    form.resourceDrift();
-    form.fields.title.set("Local draft");
-    line.patch({
-      kind: "field",
-      field: "title",
-      value: "Remote conflicting value",
-    });
-    const originalResource = signals.resource;
-    restoreResource = () => {
-      signals.resource = originalResource;
-    };
-    signals.resource = Object.freeze({
-      ...originalResource,
-      branch: Object.freeze({
-        ...originalResource.branch,
-        planEffectMerge(request) {
-          return createConflictMergePreview(request.merge);
-        },
-      }),
-    });
-
-    form.previewResourceMerge({
-      source_branch_id: 7,
-      target_branch_id: 0,
-    });
-    const report = form.resourceDrift();
-
-    assert.equal(report.summary.status, "conflict");
-    assert.equal(report.current?.messages[0]?.code, "resource.merge.conflict");
-    assert.equal(
-      form.readiness().blockers.some((blocker) => blocker.kind === "resource:mergeConflict"),
-      true,
-    );
-  } finally {
-    restoreResource?.();
-    await runtime.cleanup();
-  }
-});
-
 function createMutableRemoteResourceLineFixture({ initialValue, effectProfile = null }) {
   let value = { ...initialValue };
   let version = 1;
@@ -298,27 +243,4 @@ function createSummary({ currentStatus, freshness, version, visibleSelection, re
     },
     explainability: { available: false, reason: "not requested" },
   };
-}
-
-function createConflictMergePreview(request) {
-  return Object.freeze({
-    kind: "planned",
-    sourceBranchId: request.source_branch_id,
-    targetBranchId: request.target_branch_id,
-    resourceEffect: {
-      rebaseArtifact: Object.freeze({
-        kind: "conflict",
-        detail: "remote resource changes conflict with the local draft",
-        conflictCount: 1,
-        conflicts: Object.freeze([Object.freeze({
-          resource: Object.freeze({
-            locus: Object.freeze({ kind: "detailField", field: "title" }),
-          }),
-        })]),
-        proof: Object.freeze({
-          nativeMergePlanDigest: "resource-merge-proof:title-conflict",
-        }),
-      }),
-    },
-  });
 }

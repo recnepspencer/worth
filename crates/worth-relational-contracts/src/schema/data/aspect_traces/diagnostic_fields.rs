@@ -2,10 +2,12 @@ use crate::diagnostics::data::{
     aspect_shape_diagnostic_value, RelationalDiagnosticFields, RelationalDiagnosticValue,
 };
 use crate::identity::data::KindId;
-use crate::merge::data::identity::{
+use crate::schema::data::aspect_merge_policy::{
+    AspectMergePolicyDeclaration, AspectMergePolicyKind,
+};
+use crate::schema::data::identity_declarations::{
     IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
 };
-use crate::merge::data::policy::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
 
 use super::{
     AspectBinding, AspectContractPlanRevision, AspectDeclarationTrace, AspectDeclarationTraceRow,
@@ -275,7 +277,7 @@ fn aspect_merge_policy_kind_value(policy: &AspectMergePolicyKind) -> RelationalD
             "policy_kind",
             RelationalDiagnosticValue::string("fail_on_conflict"),
         )]),
-        AspectMergePolicyKind::LastWriterWins => RelationalDiagnosticValue::object([(
+        AspectMergePolicyKind::RetiredWriterOrder => RelationalDiagnosticValue::object([(
             "policy_kind",
             RelationalDiagnosticValue::string("last_writer_wins"),
         )]),
@@ -287,7 +289,7 @@ fn aspect_merge_policy_kind_value(policy: &AspectMergePolicyKind) -> RelationalD
             "policy_kind",
             RelationalDiagnosticValue::string("additive_set"),
         )]),
-        AspectMergePolicyKind::PreferRicher => RelationalDiagnosticValue::object([(
+        AspectMergePolicyKind::RetiredValueShape => RelationalDiagnosticValue::object([(
             "policy_kind",
             RelationalDiagnosticValue::string("prefer_richer"),
         )]),

@@ -25,7 +25,6 @@ export function planActions(actionDeclarations, form, fieldDeclarations, sourceD
   const readiness = form.readiness();
   const host = form.host();
   const resourceSource = form.resourceSource();
-  const resourceMerge = form.resourceMerge();
   const steps = form.steps();
   const routeAuthority = form.routeAuthority();
   const navigation = form.navigation();
@@ -39,7 +38,6 @@ export function planActions(actionDeclarations, form, fieldDeclarations, sourceD
       readiness,
       host,
       resourceSource,
-      resourceMerge,
       sourceDeclaration,
       fieldDeclarations,
       steps,

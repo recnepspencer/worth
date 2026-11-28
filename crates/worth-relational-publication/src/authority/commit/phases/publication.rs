@@ -7,13 +7,11 @@ use contracts::diagnostics::data::fields::RelationalDiagnosticFields;
 use contracts::diagnostics::data::fields::RelationalDiagnosticValue;
 use contracts::history::data::commit_receipt::RelationalCommitReceipt;
 use contracts::history::data::coordinates::BranchId;
-use contracts::history::data::coordinates::CommitId;
 use contracts::lineage::data::artifacts::finalization_artifact::LineageFinalizationArtifact;
 use contracts::publication::bundle::publication_status::PublicationStage;
 use contracts::publication::data::publication_error::PublicationError;
 use contracts::publication::patch::data::authoritative_patch_envelope::CanonicalAuthoritativePatch;
 use contracts::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
-use contracts::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use contracts::transactions::data::primitives::RecordRef;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::{
@@ -64,9 +62,6 @@ pub(crate) fn canonical_commit_envelope<'a>(
     branch_id: &BranchId,
     authority_kind: CanonicalCommitAuthorityKind,
     strategy_artifacts: Option<contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle>,
-    merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
-    merge_parent_branches: &[BranchId],
-    merge_base_commits: &[CommitId],
     merged_plan: &MergedCommitPlan,
     patch: CanonicalAuthoritativePatch,
     descriptive_touches: worth_relational_branch::internal_port::history::data::canonical_commit_envelope::descriptive_touches::RelationalDescriptiveTouchGraph,
@@ -101,9 +96,6 @@ pub(crate) fn canonical_commit_envelope<'a>(
         published_lineage.branch_id().clone(),
         authority_kind,
         strategy_artifacts,
-        merge_execution_authority,
-        merge_parent_branches.to_vec(),
-        merge_base_commits.to_vec(),
         schema_continuity.target_schema_version(),
         schema_continuity.target_schema_authority().clone(),
         merged_plan.clone(),

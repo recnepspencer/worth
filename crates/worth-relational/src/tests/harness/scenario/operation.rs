@@ -34,9 +34,6 @@ pub(crate) enum ScenarioOperation {
         branch_name: String,
         from_branch_slot: usize,
     },
-    MergeBranchIntoMain {
-        branch_slot: usize,
-    },
     CaptureSnapshot,
     ReleaseSnapshot {
         snapshot_slot: usize,

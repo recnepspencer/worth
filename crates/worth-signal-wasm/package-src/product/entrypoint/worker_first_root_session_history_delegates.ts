@@ -38,18 +38,6 @@ export function createWorkerFirstRootSessionHistoryDelegates({
     restoreHistoryBranchSnapshotById(branchId, snapshotId) {
       return historyLifecycle.restoreBranchSnapshotById(branchId, snapshotId);
     },
-    mergeHistoryBranches(sourceBranchId, targetBranchId) {
-      return historyLifecycle.mergeBranches(sourceBranchId, targetBranchId);
-    },
-    mergeHistoryBranchesWithProof(sourceBranchId, targetBranchId) {
-      return historyLifecycle.mergeBranchesWithProof(sourceBranchId, targetBranchId);
-    },
-    mergeHistoryBranchesPolicyPreview(request) {
-      return historyLifecycle.mergeBranchesPolicyPreview(request);
-    },
-    mergeHistoryBranchesPolicyPreviewWithProof(request) {
-      return historyLifecycle.mergeBranchesPolicyPreviewWithProof(request);
-    },
     workerBranchBasis(branchId) {
       return resourceBranches.basis(branchId);
     },

@@ -10,11 +10,9 @@ impl LineageRecord {
         match &self.kind {
             LineageRecordKind::ArtifactTransition { node, .. }
             | LineageRecordKind::Invalidation { node, .. } => Some(*node),
-            LineageRecordKind::ArtifactMerge { target_node, .. } => *target_node,
+
             LineageRecordKind::SnapshotRestore { node, .. } => *node,
-            LineageRecordKind::BranchFork { .. }
-            | LineageRecordKind::BranchSwitch { .. }
-            | LineageRecordKind::BranchMerge { .. } => None,
+            LineageRecordKind::BranchFork { .. } | LineageRecordKind::BranchSwitch { .. } => None,
         }
     }
 
@@ -26,14 +24,8 @@ impl LineageRecord {
         match &self.kind {
             LineageRecordKind::ArtifactTransition { artifact_id, .. }
             | LineageRecordKind::Invalidation { artifact_id, .. } => Some(*artifact_id),
-            LineageRecordKind::ArtifactMerge {
-                target_artifact_id_after,
-                ..
-            } => *target_artifact_id_after,
             LineageRecordKind::SnapshotRestore { artifact_id, .. } => *artifact_id,
-            LineageRecordKind::BranchFork { .. }
-            | LineageRecordKind::BranchSwitch { .. }
-            | LineageRecordKind::BranchMerge { .. } => None,
+            LineageRecordKind::BranchFork { .. } | LineageRecordKind::BranchSwitch { .. } => None,
         }
     }
 
@@ -42,12 +34,10 @@ impl LineageRecord {
             LineageRecordKind::ArtifactTransition {
                 parent_artifact_id, ..
             } => *parent_artifact_id,
-            LineageRecordKind::ArtifactMerge { .. }
-            | LineageRecordKind::SnapshotRestore { .. }
+            LineageRecordKind::SnapshotRestore { .. }
             | LineageRecordKind::Invalidation { .. }
             | LineageRecordKind::BranchFork { .. }
-            | LineageRecordKind::BranchSwitch { .. }
-            | LineageRecordKind::BranchMerge { .. } => None,
+            | LineageRecordKind::BranchSwitch { .. } => None,
         }
     }
 
@@ -61,10 +51,6 @@ impl LineageRecord {
     pub fn invalidated_artifact_id(&self) -> Option<LineageArtifactId> {
         match &self.kind {
             LineageRecordKind::Invalidation { artifact_id, .. } => Some(*artifact_id),
-            LineageRecordKind::ArtifactMerge {
-                target_artifact_id_after,
-                ..
-            } => *target_artifact_id_after,
             _ => None,
         }
     }
@@ -135,8 +121,6 @@ impl LineageRecord {
             } => "PartialArtifactSplice",
             LineageRecordKind::BranchFork { .. } => "BranchedFrom",
             LineageRecordKind::BranchSwitch { .. } => "BranchSwitched",
-            LineageRecordKind::BranchMerge { .. } => "MergedFrom",
-            LineageRecordKind::ArtifactMerge { .. } => "MergedArtifact",
             LineageRecordKind::SnapshotRestore { .. } => "Restored",
             LineageRecordKind::Invalidation { .. } => "InvalidatedWithoutReplacement",
         }

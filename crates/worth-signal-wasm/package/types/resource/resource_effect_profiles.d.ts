@@ -18,7 +18,7 @@ export type ResourceEffectRollback =
   | "branchRestore"
   | "branchRestoreOrInverse"
   | "unavailable";
-export type ResourceEffectRebase = "nativeMergePlan" | "unavailable";
+export type ResourceEffectRebase = "unavailable";
 export type ResourceEffectPreimage =
   | "none"
   | "compactInverse"
@@ -31,14 +31,12 @@ export type ResourceEffectCloseoutFamily =
   | "confirmation"
   | "failureRollback"
   | "branchRestore"
-  | "mergeRebase"
   | "broadReplacement"
   | "diagnosticsHistory";
 export type ResourceEffectCloseoutProofLane =
   | "runtime"
   | "typeSurface"
   | "diagnosticsHistory"
-  | "branchMerge"
   | "performance";
 export type ResourceEffectCloseoutCapability =
   | "admitted"
@@ -72,7 +70,6 @@ export interface ResourceEffectCloseoutMatrixRow {
   readonly runtimeProof: true;
   readonly typeSurfaceProof: true;
   readonly diagnosticsHistoryProof: true;
-  readonly branchMergeProof: true;
   readonly performanceProof: true;
   readonly evidence: ResourceEffectCloseoutEvidence;
 }
@@ -81,7 +78,6 @@ export interface ResourceEffectCloseoutEvidence {
   readonly runtimeTests: readonly string[];
   readonly typeSurface: readonly string[];
   readonly diagnosticsHistory: readonly string[];
-  readonly branchMerge: readonly string[];
   readonly performance: readonly string[];
 }
 

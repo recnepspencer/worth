@@ -12,10 +12,6 @@ pub mod handler_registry_authority;
 pub mod hostile_resolution;
 #[path = "index_maintenance_interruptions/mod.rs"]
 pub mod index_maintenance_interruptions;
-#[path = "merge_unique_updates/mod.rs"]
-pub mod merge_unique_updates;
-#[path = "merge_unique_values/mod.rs"]
-pub mod merge_unique_values;
 #[path = "product_branch_creation_recovery/mod.rs"]
 pub mod product_branch_creation_recovery;
 #[path = "product_managed_admission_affinity/mod.rs"]

@@ -1,3 +1,6 @@
+pub mod aspect_merge_policy;
+pub mod declaration_readmission;
+pub mod identity_declarations;
 use crate::internal_port::schema::data::current_publication_storage::CurrentPublicationStorageOwnerPort as _;
 pub mod authority_projection;
 pub mod current_publication_storage;
@@ -17,8 +20,8 @@ use std::collections::BTreeMap;
 
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 use crate::identity::data::KindId;
-use crate::merge::data::identity::IdentityBasisDeclaration;
-use crate::merge::data::policy::AspectMergePolicyDeclaration;
+use crate::schema::data::aspect_merge_policy::AspectMergePolicyDeclaration;
+use crate::schema::data::identity_declarations::IdentityBasisDeclaration;
 use serde::{Deserialize, Serialize};
 
 pub use aspect_contracts::{

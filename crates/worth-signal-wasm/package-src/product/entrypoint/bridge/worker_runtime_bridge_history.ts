@@ -1,6 +1,5 @@
 import {
   normalizeWorkerBranchId,
-  normalizeWorkerMergePreviewRequest,
 } from "./worker_runtime_bridge_support.js";
 
 function createWorkerRuntimeBridgeHistory(request) {
@@ -8,15 +7,6 @@ function createWorkerRuntimeBridgeHistory(request) {
     normalizeWorkerBranchId(value, operation);
   const branchRequest = (method, value, operation) =>
     request(method, branchId(value, operation));
-  const mergeRequest = (method, source, target) => request(
-    method,
-    branchId(source, `${method}.sourceBranchId`),
-    branchId(target, `${method}.targetBranchId`),
-  );
-  const previewRequest = (method, value) => request(
-    method,
-    normalizeWorkerMergePreviewRequest(value, method),
-  );
 
   return Object.freeze({
     currentBranch: () => request("currentBranch"),
@@ -64,22 +54,6 @@ function createWorkerRuntimeBridgeHistory(request) {
       return request("closeoutEffectBranch", normalizeCloseoutRequest(value, branchId));
     },
     switchBranch: (id) => branchRequest("switchBranch", id, "switchBranch"),
-    planMergeBranches: (source, target) =>
-      mergeRequest("planMergeBranches", source, target),
-    planMergeBranchesWithProof: (source, target) =>
-      mergeRequest("planMergeBranchesWithProof", source, target),
-    mergeBranches: (source, target) =>
-      mergeRequest("mergeBranches", source, target),
-    mergeBranchesWithProof: (source, target) =>
-      mergeRequest("mergeBranchesWithProof", source, target),
-    planMergePolicyPreview: (value) =>
-      previewRequest("planMergePolicyPreview", value),
-    planMergePolicyPreviewWithProof: (value) =>
-      previewRequest("planMergePolicyPreviewWithProof", value),
-    mergeBranchesPolicyPreview: (value) =>
-      previewRequest("mergeBranchesPolicyPreview", value),
-    mergeBranchesPolicyPreviewWithProof: (value) =>
-      previewRequest("mergeBranchesPolicyPreviewWithProof", value),
     replayForBranch: (id) =>
       branchRequest("replayForBranch", id, "replayForBranch"),
     branchSnapshotId: (id) =>

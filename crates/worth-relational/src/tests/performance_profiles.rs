@@ -24,7 +24,6 @@ use crate::facade::lineage::{
     HistoricalResolutionBoundednessBasis, HistoricalResolutionRequest, LineageDivergenceRequest,
     LineageDivergenceTraversalBasis,
 };
-use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
 use crate::facade::query::{
     DeterministicQueryPlanKey, IndexParityMode, PlannedQueryPacket, QueryAccessContract,
     QueryExecutionShape, QueryLocalityClass, QueryOrderingContract, QueryScope,

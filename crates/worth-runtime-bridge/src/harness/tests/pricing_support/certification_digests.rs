@@ -10,7 +10,6 @@ pub(in crate::harness::tests) struct PricingSuite25DigestEvidence {
     pub(in crate::harness::tests) promotion_digest: String,
     pub(in crate::harness::tests) fanout_digest: String,
     pub(in crate::harness::tests) writeback_digest: String,
-    pub(in crate::harness::tests) merge_digest: String,
     pub(in crate::harness::tests) historical_provenance_digest: String,
     pub(in crate::harness::tests) reference_workload_bundle_digest: String,
 }
@@ -65,10 +64,6 @@ impl PricingWorkloadCertificationBundle {
             writeback_digest: super::derive_pricing_certification_digest_from_basis_entries(
                 PricingCertificationDigestArtifact::Suite25Writeback,
                 self.suite_25_writeback_basis_entries(),
-            ),
-            merge_digest: super::derive_pricing_certification_digest_from_basis_entries(
-                PricingCertificationDigestArtifact::Suite25Merge,
-                self.suite_25_merge_basis_entries(),
             ),
             historical_provenance_digest:
                 super::derive_pricing_certification_digest_from_basis_entries(

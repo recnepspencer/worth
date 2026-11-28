@@ -12,7 +12,6 @@ where
             && self.children_by_parent.is_empty()
             && self.retirement_reservations.is_empty()
             && self.retirement_receipts.is_empty()
-            && self.active_merge_participants.is_empty()
             && self.reserved_retirement_receipt_count == 0
     }
 }

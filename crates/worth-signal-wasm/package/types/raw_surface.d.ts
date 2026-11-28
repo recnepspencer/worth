@@ -209,14 +209,6 @@ export class SignalHistory {
   restore_branch_snapshot_wire(branchId: bigint, snapshot: string): void;
   restore_branch_snapshot_portable_wire(branchId: bigint, snapshot: string): void;
   restore_branch_snapshot_by_id(branchId: bigint, snapshotId: bigint): void;
-  merge_branches(sourceBranchId: bigint, targetBranchId: bigint): MergeResultArtifact;
-  merge_branches_with_proof(sourceBranchId: bigint, targetBranchId: bigint): MergeResultProofEnvelope;
-  plan_merge_branches(sourceBranchId: bigint, targetBranchId: bigint): MergePlanArtifact;
-  plan_merge_branches_with_proof(sourceBranchId: bigint, targetBranchId: bigint): MergePlanProofEnvelope;
-  plan_merge_policy_preview(request: MergePolicyPreviewRequest): MergePlanArtifact;
-  plan_merge_policy_preview_with_proof(request: MergePolicyPreviewRequest): MergePlanProofEnvelope;
-  merge_branches_policy_preview(request: MergePolicyPreviewRequest): MergeResultArtifact;
-  merge_branches_policy_preview_with_proof(request: MergePolicyPreviewRequest): MergeResultProofEnvelope;
   branch_state_proof(branchId: bigint): BranchStateProofReport;
   replay_parity_proof(expectedBranchId: bigint, replayedBranchId: bigint): ReplayParityProofReport;
   replay_artifact_proof(expected: ReplayArtifactProofInput, replayedBranchId: bigint): ReplayArtifactProofReport;

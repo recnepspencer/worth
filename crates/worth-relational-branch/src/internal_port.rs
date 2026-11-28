@@ -30,5 +30,4 @@ pub mod validation;
 pub mod visibility;
 pub(crate) use worth_relational_contracts::internal_port::derived_relation;
 pub(crate) use worth_relational_contracts::internal_port::lineage;
-pub(crate) use worth_relational_contracts::internal_port::merge;
 pub(crate) use worth_relational_contracts::internal_port::performance;

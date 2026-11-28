@@ -101,24 +101,6 @@ impl PricingWorkloadCertificationBundle {
                 surface: "writeback",
             },
             PricingLineageProvenanceEdge {
-                from: self.merge.main_premerge_snapshot.as_str().to_owned(),
-                to: self.merge.merged_snapshot.as_str().to_owned(),
-                kind: "premerge_to_merged_snapshot",
-                surface: "merge",
-            },
-            PricingLineageProvenanceEdge {
-                from: self.merge.speculative_snapshot.as_str().to_owned(),
-                to: self.merge.merged_snapshot.as_str().to_owned(),
-                kind: "speculative_to_merged_snapshot",
-                surface: "merge",
-            },
-            PricingLineageProvenanceEdge {
-                from: self.merge.bundle_digest.clone(),
-                to: self.merge.canonical_replay_digest.clone(),
-                kind: "merge_bundle_to_replay_digest",
-                surface: "merge",
-            },
-            PricingLineageProvenanceEdge {
                 from: self.hostile_failure.source_commit.as_str().to_owned(),
                 to: self.hostile_failure.source_snapshot.as_str().to_owned(),
                 kind: "hostile_commit_to_snapshot",

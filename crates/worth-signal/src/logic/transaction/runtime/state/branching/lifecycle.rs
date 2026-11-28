@@ -132,28 +132,6 @@ where
             .map(|graph| graph.replay_for_branch(branch_id))
             .unwrap_or_default()
     }
-
-    #[cfg(test)]
-    pub(crate) fn clear_branch_merge_boundary_for_test(
-        &mut self,
-        branch_id: SignalBranchId,
-    ) -> Result<(), SignalError> {
-        if self.graph.current_branch().id == branch_id {
-            let mut state = self.capture_heavy_branch_state()?;
-            state.clear_merge_boundary_proof();
-            self.branches.observe_active_branch_state(&state);
-            return Ok(());
-        }
-        let Some(()) = self
-            .branches
-            .with_stored_branch_state_mut(branch_id, |state| {
-                state.clear_merge_boundary_proof();
-            })
-        else {
-            return Err(SignalError::unknown_branch(Some(branch_id), "test-branch"));
-        };
-        Ok(())
-    }
 }
 
 impl<D, I, E, Ctx, T> SignalRuntime<D, I, E, Ctx, T>

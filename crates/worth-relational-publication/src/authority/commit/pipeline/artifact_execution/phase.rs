@@ -9,15 +9,12 @@ use crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan;
 use crate::authority::commit::publication::assemble_patch;
 use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
 use contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle;
-use contracts::diagnostics::data::artifacts::RelationalDiagnosticsEntry;
 use contracts::history::data::commit_receipt::RelationalCommitReceipt;
 use contracts::history::data::coordinates::BranchId;
-use contracts::history::data::coordinates::CommitId;
 use contracts::identity::data::primitives::VersionId;
 use contracts::transactions::data::commit_log::CommitLog;
 use contracts::transactions::data::commit_log::CommitPatchBudgetSummary;
 use contracts::transactions::data::commit_log::CommitPhase;
-use contracts::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_mutation::internal_port::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
@@ -32,17 +29,13 @@ pub(super) struct ArtifactAssemblyInput<'a> {
     pub(super) commit_reference: &'a RelationalCommitReceipt,
     pub(super) branch_id: &'a BranchId,
     pub(super) version_id: VersionId,
-    pub(super) merge_parent_branches: &'a [BranchId],
-    pub(super) merge_base_commits: &'a [CommitId],
     pub(super) merged_plan: RelationalSemanticPlan<'a>,
     pub(super) created_entities: &'a contracts::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     pub(super) created_relations: &'a contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     pub(super) naming_plan: Option<&'a contracts::lineage::data::postures::CommitNamingPlan>,
     pub(super) record_allocations: &'a worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::pending_allocations::PendingRecordAllocations,
     pub(super) strategy_commit_artifacts: Option<StrategyCommitArtifactBundle>,
-    pub(super) merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
     pub(super) schema_continuity: &'a SchemaContinuityPlan,
-    pub(super) additional_diagnostics_entries: Vec<RelationalDiagnosticsEntry>,
     pub(super) deferred_diagnostic_artifacts:
         Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
 }
@@ -88,18 +81,14 @@ pub(super) fn assemble_authoritative_publication_phase(
             commit_reference: input.commit_reference,
             branch_id: input.branch_id,
             version_id: input.version_id,
-            merge_parent_branches: input.merge_parent_branches,
-            merge_base_commits: input.merge_base_commits,
             merged_plan: input.merged_plan,
             created_entities: input.created_entities,
             created_relations: input.created_relations,
             naming_plan: input.naming_plan,
             record_allocations: input.record_allocations,
             strategy_artifacts: input.strategy_commit_artifacts,
-            merge_execution_authority: input.merge_execution_authority,
             schema_continuity: input.schema_continuity,
             effect,
-            additional_diagnostics_entries: input.additional_diagnostics_entries,
             deferred_diagnostic_artifacts: input.deferred_diagnostic_artifacts,
         },
         execution,

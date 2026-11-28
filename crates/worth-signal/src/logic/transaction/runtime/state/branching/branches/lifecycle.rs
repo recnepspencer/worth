@@ -42,7 +42,6 @@ where
                 self.children_by_parent.remove(&parent_branch_id);
             }
         }
-        self.active_merge_participants.remove(&branch_id);
         self.branch_head_generations.remove(&branch_id);
         self.branch_restore_snapshot_ids.remove(&branch_id);
         self.live_branch_catalog.remove(&branch_id);

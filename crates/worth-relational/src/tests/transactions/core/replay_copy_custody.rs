@@ -1,5 +1,5 @@
 //! Original-request custody of independent replay/normalized plan copies.
-use crate::mvcc::{OwnedMergePlan, RelationalTransactionIntent};
+use crate::mvcc::RelationalTransactionIntent;
 use crate::tests::support::*;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
@@ -178,79 +178,6 @@ fn interrupted_copy_round_restores_original_transaction() {
         "abandoned candidate data dies before refund"
     );
     assert_eq!(runtime.observe_branch(&identity).unwrap().0, before);
-}
-
-#[test]
-fn merge_copy_funds_headers_without_rebilling_shared_leaves() {
-    let runtime = runtime_with_test_schema();
-    let source_serial = crate::test_execution_policy::serial_request();
-    let source_request = ExecutionRequest::serial(&source_serial);
-    create_entity(&source_request, &runtime, "main-anchor");
-    create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(
-        &source_request,
-        &runtime,
-        "feature-only",
-        BranchId("feature".into()),
-    );
-    let prepared = runtime
-        .prepare_merge_execution(
-            &source_request,
-            crate::merge::data::MergeExecutionRequest::new(
-                BranchId("main".into()),
-                BranchId("feature".into()),
-                crate::merge::data::MergeIntent::ReconcileIntoTarget,
-            ),
-        )
-        .unwrap();
-    let outcome = runtime
-        .execute_prepared_merge(&source_request, prepared)
-        .unwrap();
-    let original = runtime
-        .replay()
-        .canonical_commit_envelope(&source_request, outcome.commit.commit.commit_id)
-        .unwrap()
-        .unwrap();
-    let budget = SerialMemoryBudget::new(Some(1_000_000));
-    let serial =
-        SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let request = ExecutionRequest::serial(&serial);
-    let source =
-        crate::mvcc::transaction::reconstructed_merge_plan::RecordedMergePlanSource::from_envelope(
-            &original,
-        )
-        .expect("actual governed merge authority");
-    let copied = OwnedMergePlan::copy_recovered(source, &request).unwrap();
-    let source = &original
-        .merge_execution_authority
-        .as_ref()
-        .unwrap()
-        .execution_summary;
-    let copy = &copied.plan().merge_execution_summary;
-    assert!(!source.correspondence_witness.rows().is_empty());
-    assert_eq!(copy, source);
-    assert_eq!(
-        copy.correspondence_witness.rows().as_ptr(),
-        source.correspondence_witness.rows().as_ptr(),
-        "same intrinsic row owner, no second data bill"
-    );
-    assert_eq!(
-        copy.branch_basis
-            .merge_base()
-            .supporting_left_ancestors()
-            .as_ptr(),
-        source
-            .branch_basis
-            .merge_base()
-            .supporting_left_ancestors()
-            .as_ptr()
-    );
-    assert!(
-        budget.charged_memory_bytes() > 0,
-        "new independent header/intents are funded"
-    );
-    drop(copied);
-    assert_eq!(budget.charged_memory_bytes(), 0);
 }
 
 fn normalized_commands(

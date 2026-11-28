@@ -31,19 +31,6 @@ pub fn validate_replay_path(
     Ok(())
 }
 
-pub fn is_metadata_only_merge_commit(envelope: &CanonicalCommitEnvelope) -> bool {
-    envelope.authority_kind() == CanonicalCommitAuthorityKind::VersionedTransaction
-        && !envelope.merge_parent_branches.is_empty()
-        && envelope.merged_plan.merged_intents.is_empty()
-}
-
-pub fn governed_merge_authority_was_published(envelope: &CanonicalCommitEnvelope) -> bool {
-    envelope.merge_execution_authority.is_some()
-        || envelope.diagnostics_summary.entries.iter().any(|entry| {
-            entry.code == contracts::diagnostics::data::artifacts::DiagnosticCode::MergeExecutionPublished
-        })
-}
-
 pub fn materialization_mode(
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<Option<RelationalMaterializationTransactionMode>, DurabilityError> {

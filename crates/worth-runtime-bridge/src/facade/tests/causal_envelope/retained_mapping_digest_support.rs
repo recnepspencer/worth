@@ -9,7 +9,6 @@ use crate::identity::BridgeIdentityEvidence;
 pub(super) enum ExpectedRetainedCausalDigestArtifact {
     ContinuityRecord,
     HistoricalEvaluationRecord,
-    MergeRecord,
     PreviewDiscardRecord,
     PreviewExecutionRecord,
     PreviewPromotionRecord,
@@ -27,7 +26,6 @@ impl From<ExpectedRetainedCausalDigestArtifact> for RetainedCausalMappingDigestA
             ExpectedRetainedCausalDigestArtifact::HistoricalEvaluationRecord => {
                 Self::HistoricalEvaluationRecord
             }
-            ExpectedRetainedCausalDigestArtifact::MergeRecord => Self::MergeRecord,
             ExpectedRetainedCausalDigestArtifact::PreviewDiscardRecord => {
                 Self::PreviewDiscardRecord
             }
@@ -98,7 +96,6 @@ fn expected_bridge_identity_index(
         ExpectedRetainedCausalDigestArtifact::HistoricalEvaluationRecord => {
             matches!(index, 0..=2)
         }
-        ExpectedRetainedCausalDigestArtifact::MergeRecord => matches!(index, 0 | 2),
         ExpectedRetainedCausalDigestArtifact::PreviewDiscardRecord => matches!(index, 0 | 1),
         ExpectedRetainedCausalDigestArtifact::PreviewExecutionRecord => index == 0,
         ExpectedRetainedCausalDigestArtifact::PreviewPromotionRecord => matches!(index, 0 | 1),
@@ -113,7 +110,6 @@ fn expected_bridge_identity_index(
 fn expected_shape_index(artifact: ExpectedRetainedCausalDigestArtifact, index: usize) -> bool {
     match artifact {
         ExpectedRetainedCausalDigestArtifact::ContinuityRecord
-        | ExpectedRetainedCausalDigestArtifact::MergeRecord
         | ExpectedRetainedCausalDigestArtifact::StructuralBranchComparisonRecord
         | ExpectedRetainedCausalDigestArtifact::StructuralRemapRecord => index == 1,
         ExpectedRetainedCausalDigestArtifact::StreamReplayRecord => index == 3,

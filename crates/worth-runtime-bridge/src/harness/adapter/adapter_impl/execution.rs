@@ -6,7 +6,6 @@ pub(super) enum HarnessTarget {
     },
     Stream(super::stream::StreamHarnessTarget),
     Source(super::source::SourceHarnessTarget),
-    Merge(super::merge::MergeHarnessTarget),
     Policy(super::policy::PolicyHarnessTarget),
     Speculation(super::speculation::SpeculationHarnessTarget),
     Structural(super::structural::StructuralHarnessTarget),
@@ -35,7 +34,6 @@ pub(super) enum HarnessExecution {
     },
     Stream(super::stream::StreamHarnessExecution),
     Source(super::source::SourceHarnessExecution),
-    Merge(super::merge::MergeHarnessExecution),
     Policy(super::policy::PolicyHarnessExecution),
     Speculation(super::speculation::SpeculationHarnessExecution),
     Structural(super::structural::StructuralHarnessExecution),
@@ -128,20 +126,6 @@ pub(super) fn harness_target_from_id(
             declaration_identity,
         } => Ok(HarnessTarget::Source(
             super::source::SourceHarnessTarget::RejectSnapshotDrift {
-                declaration_identity: declaration_identity.clone(),
-            },
-        )),
-        BridgeHarnessTargetId::MergeExecute {
-            declaration_identity,
-        } => Ok(HarnessTarget::Merge(
-            super::merge::MergeHarnessTarget::Execute {
-                declaration_identity: declaration_identity.clone(),
-            },
-        )),
-        BridgeHarnessTargetId::MergeReplay {
-            declaration_identity,
-        } => Ok(HarnessTarget::Merge(
-            super::merge::MergeHarnessTarget::Replay {
                 declaration_identity: declaration_identity.clone(),
             },
         )),

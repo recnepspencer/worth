@@ -34,8 +34,8 @@ pub use worth_query_execution_lineage::facade::primary_graph::{
     aggregate_identity, aggregate_observation, aggregate_projection, application_checkpoint,
     component_selection, content, denial, derived_source, entity_key, entity_resolution_denial,
     fact_verification_observation, fragment_view, freshness, home_original_progression,
-    index_currency, index_refresh, initial_schema_denial, merge_unique_values, observations,
-    output_lineage, read_observation, resolution_denial, root, root_path_selection, source_facts,
+    index_currency, index_refresh, initial_schema_denial, observations, output_lineage,
+    read_observation, resolution_denial, root, root_path_selection, source_facts,
     source_read_equivalence, source_read_verification, structural_walk,
 };
 pub mod access_strategy;

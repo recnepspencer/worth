@@ -62,9 +62,6 @@ fn validate_selection(
         return Err(Denial::SchemaAgreement);
     }
     if envelope.strategy_artifacts.is_some()
-        || envelope.merge_execution_authority.is_some()
-        || !envelope.merge_parent_branches.is_empty()
-        || !envelope.merge_base_commits.is_empty()
         || envelope.schema_transition.is_some()
         || envelope.schema_continuation_descriptor.is_some()
         || envelope.schema_reconciliation_descriptor.is_some()

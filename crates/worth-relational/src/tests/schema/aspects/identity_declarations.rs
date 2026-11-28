@@ -1,8 +1,8 @@
-use crate::facade::merge::{IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope};
 use crate::facade::schema::{
     EntityKindRegistration, KindAspectContractDeclarations, RelationKindRegistration,
     RelationalSchemaRegistry, SchemaId, SchemaRegistryErrorClass, SchemaVersionId,
 };
+use crate::facade::schema::{IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope};
 use crate::tests::support::*;
 
 #[test]
@@ -88,7 +88,7 @@ fn relation_schema_rejects_lineage_identity_declarations() {
 fn schema_rejects_unsupported_structural_fingerprint_identity_declarations() {
     for basis in [
         IdentityBasisKind::StructuralFingerprint,
-        IdentityBasisKind::Custom(crate::facade::merge::CustomIdentityBasisIdentity {
+        IdentityBasisKind::Custom(crate::facade::schema::CustomIdentityBasisIdentity {
             name: "custom.identity".into(),
             semantic_version: 1,
         }),

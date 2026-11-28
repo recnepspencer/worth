@@ -14,17 +14,12 @@ function readMutationResponseRollbackProof(effect) {
 }
 
 function readMutationResponseMergeRebaseProof(effect) {
-  const profileRebase = effect.profile?.rebase ?? "unavailable";
   return Object.freeze({
-    kind: profileRebase === "nativeMergePlan"
-      ? "nativeMergePlan"
-      : "unavailable",
+    kind: "unavailable",
     granularity: readMergeRebaseGranularity(effect),
     locusKind: effect.locus.kind,
     locusProofDigest: effect.locusProof?.effectLocusDigest ?? null,
-    detail: profileRebase === "nativeMergePlan"
-      ? "mutation response target inherits native merge/rebase planning from the resource effect locus"
-      : "mutation response target has no native merge/rebase profile",
+    detail: "mutation response target has no native merge/rebase profile",
   });
 }
 

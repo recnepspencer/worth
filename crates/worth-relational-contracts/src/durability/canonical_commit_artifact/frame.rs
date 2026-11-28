@@ -11,7 +11,24 @@ use crate::internal_port::durability::canonical_commit_artifact::payload_digest:
 use crate::publication::patch::data::PatchStreamPosition;
 
 pub(super) const MAGIC: [u8; 8] = *b"WRTHRCCA";
-pub const FORMAT_VERSION: u16 = 10;
+pub const FORMAT_VERSION: u16 = 11;
+const LEGACY_FORMAT_VERSION: u16 = 10;
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum CanonicalCommitArtifactFormat {
+    LegacyMergeCapable,
+    #[default]
+    Ordinary,
+}
+
+impl CanonicalCommitArtifactFormat {
+    fn version(self) -> u16 {
+        match self {
+            Self::LegacyMergeCapable => LEGACY_FORMAT_VERSION,
+            Self::Ordinary => FORMAT_VERSION,
+        }
+    }
+}
 
 const VERSION_OFFSET: usize = MAGIC.len();
 const POSITION_OFFSET: usize = VERSION_OFFSET + 2;
@@ -22,6 +39,7 @@ pub const HEADER_LEN: usize = LENGTH_OFFSET + 8;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CanonicalCommitArtifactHeader {
+    pub format: CanonicalCommitArtifactFormat,
     pub position: PatchStreamPosition,
     pub commit_id: CommitId,
     pub digest: Digest,
@@ -34,7 +52,8 @@ impl CanonicalCommitArtifactHeader {
     pub fn emit(&self, payload_len: u64) -> [u8; HEADER_LEN] {
         let mut header = [0_u8; HEADER_LEN];
         header[..VERSION_OFFSET].copy_from_slice(&MAGIC);
-        header[VERSION_OFFSET..POSITION_OFFSET].copy_from_slice(&FORMAT_VERSION.to_le_bytes());
+        header[VERSION_OFFSET..POSITION_OFFSET]
+            .copy_from_slice(&self.format.version().to_le_bytes());
         header[POSITION_OFFSET..COMMIT_OFFSET].copy_from_slice(&self.position.0.to_le_bytes());
         header[COMMIT_OFFSET..DIGEST_OFFSET].copy_from_slice(&self.commit_id.0.to_le_bytes());
         header[DIGEST_OFFSET..LENGTH_OFFSET].copy_from_slice(self.digest.as_bytes());
@@ -64,8 +83,8 @@ impl CanonicalCommitArtifactHeader {
     }
 
     pub fn inspect(frame: &[u8]) -> Result<(Self, &[u8]), Refusal> {
-        validate_frame_version(frame)?;
         let header = Self {
+            format: read_frame_format(frame)?,
             position: PatchStreamPosition(u64::from_le_bytes(fixed(frame, POSITION_OFFSET)?)),
             commit_id: CommitId(u64::from_le_bytes(fixed(frame, COMMIT_OFFSET)?)),
             digest: Digest::recorded(fixed(frame, DIGEST_OFFSET)?),
@@ -115,6 +134,10 @@ fn declared_payload(frame: &[u8], declared: u64) -> Result<&[u8], Refusal> {
 }
 
 pub fn validate_frame_version(frame: &[u8]) -> Result<(), Refusal> {
+    read_frame_format(frame).map(|_| ())
+}
+
+fn read_frame_format(frame: &[u8]) -> Result<CanonicalCommitArtifactFormat, Refusal> {
     let magic = frame
         .get(..VERSION_OFFSET)
         .ok_or(Refusal::TruncatedHeader {
@@ -128,16 +151,21 @@ pub fn validate_frame_version(frame: &[u8]) -> Result<(), Refusal> {
         .map_err(|_| Refusal::InvalidVersion)?;
     let supported = worth_foundational::facade::BoundaryProtocolVersion::new(FORMAT_VERSION as u32);
     worth_foundational::facade::BoundaryProtocolCompatibilityWindow::inclusive(
-        supported, supported,
+        worth_foundational::facade::BoundaryProtocolVersion::new(LEGACY_FORMAT_VERSION as u32),
+        supported,
     )
     .admit(version)
     .map_err(Refusal::UnsupportedVersion)?;
-    Ok(())
+    Ok(match version.get() as u16 {
+        LEGACY_FORMAT_VERSION => CanonicalCommitArtifactFormat::LegacyMergeCapable,
+        _ => CanonicalCommitArtifactFormat::Ordinary,
+    })
 }
 
 #[test]
 fn content_artifact_ceiling_includes_header_and_refuses_before_payload_or_digest() {
     let mut header = CanonicalCommitArtifactHeader {
+        format: CanonicalCommitArtifactFormat::Ordinary,
         position: PatchStreamPosition(1),
         commit_id: CommitId(1),
         digest: Digest::unsealed(),
@@ -160,7 +188,7 @@ fn content_artifact_ceiling_includes_header_and_refuses_before_payload_or_digest
 
 #[test]
 fn only_current_artifact_version_is_admitted_before_payload_checks() {
-    for version in [FORMAT_VERSION - 1, FORMAT_VERSION + 1] {
+    for version in [LEGACY_FORMAT_VERSION - 1, FORMAT_VERSION + 1] {
         let mut frame = MAGIC.to_vec();
         frame.extend(version.to_le_bytes());
         assert!(matches!(

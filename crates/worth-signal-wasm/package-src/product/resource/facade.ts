@@ -1,6 +1,5 @@
 import { createCollectionFamily } from "./families/collection_family.js";
 import { createResourceCompatibilityNamespace } from "./compatibility/resource_compatibility_namespace.js";
-import { createResourceBranchNamespace } from "./branch/resource_branch_capabilities.js";
 import { createDetailFamily } from "./families/detail_family.js";
 import { resourceDelivery } from "./delivery/resource_delivery.js";
 import { nextResourceFamilyId } from "./families/family_id_sequence.js";
@@ -49,7 +48,6 @@ function createResourceNamespace(signalNamespace, rawSignals) {
       resourceLineEpoch,
       effectProjectionCoordinator,
     ),
-    branch: createResourceBranchNamespace(rawSignals),
     detail(declaration) {
       return createDetailFamily(
         signalNamespace,

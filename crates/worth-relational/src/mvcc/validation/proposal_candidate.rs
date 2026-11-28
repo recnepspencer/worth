@@ -207,9 +207,7 @@ pub(super) fn validate(
                 &runtime,
                 selected,
                 &identity,
-                (validation_input.merge_parent_bases().is_empty()
-                    && !prepared.plan.view().has_selection())
-                .then_some(prepared.plan.view().commands()),
+                (!prepared.plan.view().has_selection()).then_some(prepared.plan.view().commands()),
             )
         },
     );

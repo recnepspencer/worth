@@ -16,7 +16,6 @@ use crate::schema::data::{
 };
 use crate::transactions::data::intents::mutation_intent::MutationIntent;
 use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
-use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 use crate::transactions::data::primitives::ExistingRecordTarget;
 use crate::transactions::data::primitives::RecordRef;
 
@@ -87,6 +86,8 @@ pub use wire_projection::EnvelopeProjection;
 #[cfg_attr(not(doctest), doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/docs/facade_examples/canonical_envelope.md")))]
 #[derive(Debug)]
 pub struct CanonicalCommitEnvelope {
+    /// Physical format of the admitted authoritative artifact. It has no effect on commit meaning.
+    artifact_format: worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat,
     original_inputs: std::sync::OnceLock<Option<recorded_inputs::RecordedCanonicalInputs>>,
     /// Live exact-envelope acceleration; deep Clone and all codecs omit it.
     pub(crate) live_managed_source_history: LiveManagedSourceHistory,
@@ -130,6 +131,10 @@ impl Serialize for CanonicalCommitEnvelope {
 }
 
 impl CanonicalCommitEnvelope {
+    pub fn artifact_format(&self) -> worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame::CanonicalCommitArtifactFormat{
+        self.artifact_format
+    }
+
     /// Index definitions this commit's canonical catalog delta adds.
     pub fn index_definition_additions(&self) -> &[crate::indexes::data::DerivedIndexDefinition] {
         self.index_definition_delta.definitions()
@@ -184,9 +189,6 @@ pub struct CanonicalCommitEnvelopeBody {
         Option<crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint>,
     pub authority_kind: CanonicalCommitAuthorityKind,
     pub strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
-    pub merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
-    pub merge_parent_branches: Vec<BranchId>,
-    pub merge_base_commits: Vec<CommitId>,
     pub schema_version: SchemaVersionId,
     pub schema_authority: SchemaAuthoritySnapshot,
     pub merged_plan: MergedCommitPlan,

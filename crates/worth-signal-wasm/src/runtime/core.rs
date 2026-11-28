@@ -24,9 +24,6 @@ mod envelopes;
 mod evaluation;
 mod keyed_families;
 mod keyed_runtime;
-mod merge;
-mod merge_caller_restoration;
-mod merge_state;
 mod observation_listeners;
 mod runtime_async_lifecycle_certification;
 mod signals;
@@ -55,7 +52,7 @@ use self::state::{
     DenseGridFamily, RuntimeStore, SharedCallbackDiagnostics, StoredRecipeDefinition, WasmRuntime,
     WebRuntimeMetrics,
 };
-pub use self::state::{MergePolicyPreviewRequest, SharedCore, WebSignalKind};
+pub use self::state::{SharedCore, WebSignalKind};
 pub use self::worker_branch_command_model::{
     WorkerApplyTransactionToBranchReceipt, WorkerApplyTransactionToBranchRequest,
     WorkerBranchBasisReceipt, WorkerBranchRetirementReason, WorkerCloseoutEffectBranchReceipt,

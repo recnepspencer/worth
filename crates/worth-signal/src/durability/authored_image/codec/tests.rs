@@ -20,16 +20,7 @@ fn declaration_codec_preserves_nondefault_contracts_schema_policies_and_scopes()
             SignalSchemaVersion::new(2, 3),
             "schema-meaning",
         )),
-        merge_strategy_name: Some(MergeStrategyName::new("merge")),
-        conflict_policy_name: Some(ConflictPolicyName::new("conflict")),
-        identity_matcher_name: Some(IdentityMatcherName::new("identity")),
-        source_only_policy_name: Some(SourceOnlyPolicyName::new("source")),
-        deletion_policy_name: Some(DeletionPolicyName::new("deletion")),
-        conflict_isolation_policy_name: Some(ConflictIsolationPolicyName::new("isolation")),
-        aspect_merge_policy_bindings: vec![AspectMergePolicyBinding::new(
-            Aspect::new(2),
-            AspectMergePolicyName::new("aspect"),
-        )],
+
         comparator: Some(VersionComparatorPolicy::Custom {
             key: "compare".into(),
         }),

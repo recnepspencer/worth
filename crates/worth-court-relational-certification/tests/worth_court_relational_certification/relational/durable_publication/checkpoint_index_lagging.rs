@@ -2,7 +2,7 @@ use super::checkpoint_index_generations::{
     build_on_branch, fork_branch, scoped_name_index, update_entity_on_branch,
 };
 use super::checkpoint_source_capture::capture_durably;
-use super::merge_execution_observation::entity_field_display;
+use super::checkpoint_truth_observation::entity_field_display;
 use worth_relational::facade::{
     durability::{RecoveryPlan, RecoveryVerificationMode},
     history::{BranchId, RelationalCommitReceipt},

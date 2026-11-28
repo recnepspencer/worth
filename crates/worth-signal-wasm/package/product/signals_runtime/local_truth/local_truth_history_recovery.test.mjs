@@ -11,9 +11,6 @@ async function modules() {
     "local_truth/commit/mutation_pipeline.js",
     "local_truth/history/branch_history.js",
     "local_truth/history/index_recovery.js",
-    "local_truth/merge/merge_basis.js",
-    "local_truth/merge/merge_review.js",
-    "local_truth/merge/merge_execution.js",
   ];
   return Object.assign({}, ...await Promise.all(paths.map((path) => loaded.importProductModule(path))));
 }
@@ -53,15 +50,6 @@ async function historyFixture() {
   state = mutate(api, state, schema, source.id, "source-before-checkpoint", [
     { entityId: "gear", aspectId: "teeth", value: 20 },
   ]);
-  const firstReview = api.previewLocalTruthMerge(state, schema, mergeRequest(state, source.id, target.id));
-  state = firstReview.state;
-  const firstMerge = api.resolveAndCommitLocalTruthMerge(state, schema, {
-    requestId: "first-merge",
-    reviewId: firstReview.outcome.value.id,
-    selections: [],
-  });
-  assert.equal(firstMerge.outcome.posture, "success");
-  state = firstMerge.state;
   for (const branchId of [main.id, source.id, target.id]) {
     const checkpoint = api.createLocalTruthCheckpoint(state, branchId);
     assert.equal(checkpoint.outcome.posture, "success");
@@ -76,9 +64,6 @@ async function historyFixture() {
 
 test("derived lineage and locus indexes rebuild exactly from checkpoints and bounded commits", async () => {
   const fixture = await historyFixture();
-  const request = mergeRequest(fixture.state, fixture.sourceId, fixture.targetId);
-  const expected = fixture.api.resolveLocalTruthMergeBasis(fixture.state, fixture.schema, request);
-  assert.equal(expected.posture, "success");
   const withoutIndexes = {
     ...fixture.state,
     lineageByBranch: new Map(),
@@ -86,10 +71,8 @@ test("derived lineage and locus indexes rebuild exactly from checkpoints and bou
   };
   const recovered = fixture.api.rebuildLocalTruthDerivedIndexes(withoutIndexes, fixture.schema);
   assert.equal(recovered.posture, "success");
-  const actual = fixture.api.resolveLocalTruthMergeBasis(recovered.value, fixture.schema, request);
-  assert.equal(actual.posture, "success");
-  assert.equal(actual.value.identityDigest, expected.value.identityDigest);
-  assert.deepEqual(actual.value.deltas, expected.value.deltas);
+  assert.deepEqual(recovered.value.lineageByBranch, fixture.state.lineageByBranch);
+  assert.deepEqual(recovered.value.locusHeadByBranch, fixture.state.locusHeadByBranch);
 });
 
 test("recovery denies corrupt checkpoints, segments, ancestry, and foreign branch heads", async () => {
@@ -122,15 +105,6 @@ function mutate(api, state, schema, branchId, requestId, operations) {
   });
   assert.equal(result.outcome.posture, "success");
   return result.state;
-}
-
-function mergeRequest(state, sourceBranchId, targetBranchId) {
-  return {
-    sourceBranchId,
-    targetBranchId,
-    expectedSourceBasis: state.branches.get(sourceBranchId).basis,
-    expectedTargetBasis: state.branches.get(targetBranchId).basis,
-  };
 }
 
 function corruptCheckpoint(state, branchId) {

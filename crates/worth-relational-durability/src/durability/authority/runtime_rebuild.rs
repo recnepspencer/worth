@@ -4,7 +4,6 @@ pub mod envelope_replay;
 pub mod history_parity;
 pub mod index_catalog;
 pub mod journal_residency;
-pub mod merge_plan;
 pub mod original_inputs;
 pub mod original_schemas;
 pub mod recorded_result_schema;

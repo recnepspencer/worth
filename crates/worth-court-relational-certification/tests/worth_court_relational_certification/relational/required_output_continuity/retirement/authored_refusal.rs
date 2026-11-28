@@ -2,7 +2,6 @@
 use super::*;
 use crate::relational::durable_publication::branch_history_publications::create_entity_outcome_on_branch;
 use worth_relational::facade::{
-    merge::{MergeExecutionRequest, MergeIntent},
     mvcc::RelationalTransactionIntent,
     transactions::{
         CommitConflict, CommitExecutionDenial, CommitExecutionDenialKind, ConflictClass,
@@ -119,34 +118,6 @@ fn authored_retirement_refuses_partial_missing_and_foreign_members_before_public
             .descriptor(),
         basis.descriptor()
     );
-    let side = BranchId("unowned-retirement-merge".into());
-    let (_, fork_source) = runtime
-        .observe_fork_source(&BranchId("main".into()))
-        .unwrap();
-    runtime
-        .fork_branch(execution, side.clone(), fork_source)
-        .unwrap();
-    let disjoint =
-        create_entity_outcome_on_branch(execution, &runtime, "unrelated-merged-row", side.clone());
-    release_test_commit_snapshot(&runtime, &disjoint);
-    let merge = runtime
-        .bind_merge_execution_request(MergeExecutionRequest::new(
-            BranchId("main".into()),
-            side,
-            MergeIntent::ReconcileIntoTarget,
-        ))
-        .unwrap();
-    let merge = runtime.prepare_merge_execution(execution, merge).unwrap();
-    let merged = runtime
-        .execute_prepared_merge(execution, merge)
-        .unwrap()
-        .commit;
-    release_test_commit_snapshot(&runtime, &merged);
-    let merged_basis = runtime
-        .admit_branch_basis(&runtime.main_branch_identity())
-        .unwrap();
-    assert!(runtime.readmit_authored_output_retirement(execution, &installed, &merged_basis, &ordinary_roles).unwrap().is_none(),
-        "unrelated merged ancestry cannot turn a proven unowned ordinary Retire into producer ownership");
 }
 
 #[test]

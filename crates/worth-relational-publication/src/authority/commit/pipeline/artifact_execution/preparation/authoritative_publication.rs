@@ -8,7 +8,6 @@ use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBod
 use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use contracts::history::data::commit_receipt::RelationalCommitReceipt;
 use contracts::publication::patch::data::authoritative_patch_envelope::CanonicalAuthoritativePatch;
-use contracts::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use contracts::transactions::data::primitives::RecordRef;
@@ -31,8 +30,6 @@ pub(super) struct PublicationAuthorityInput<'a> {
     pub(super) commit_reference: &'a RelationalCommitReceipt,
     pub(super) branch_id: &'a contracts::history::data::coordinates::BranchId,
     pub(super) version_id: contracts::identity::data::primitives::VersionId,
-    pub(super) merge_parent_branches: &'a [contracts::history::data::coordinates::BranchId],
-    pub(super) merge_base_commits: &'a [contracts::history::data::coordinates::CommitId],
     pub(super) merged_plan: RelationalSemanticPlan<'a>,
     pub(super) created_entities: &'a contracts::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     pub(super) created_relations: &'a contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
@@ -40,7 +37,6 @@ pub(super) struct PublicationAuthorityInput<'a> {
     pub(super) record_allocations: &'a worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::pending_allocations::PendingRecordAllocations,
     pub(super) strategy_artifacts:
         Option<contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle>,
-    pub(super) merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
     pub(super) schema_continuity: &'a SchemaContinuityPlan,
     pub(super) changed_records: &'a [RecordRef],
     pub(super) diagnostics_summary: &'a contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact,
@@ -116,9 +112,6 @@ pub(super) fn prepare_authoritative_publication(
             input.branch_id,
             input.merged_plan.canonical_authority_kind(),
             input.strategy_artifacts,
-            input.merge_execution_authority,
-            input.merge_parent_branches,
-            input.merge_base_commits,
             input.merged_plan.commands(),
             input.patch.clone(),
             input.descriptive_touches,

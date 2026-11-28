@@ -33,10 +33,6 @@ fn pricing_shock_showcase_artifact_explains_retained_commit_without_hidden_memor
         bundle.matrix.reference.main_snapshot,
         bundle.matrix.reference.speculative_snapshot
     );
-    assert_eq!(
-        bundle.merge.merged_rubber_cost_cents,
-        bundle.merge.speculative_rubber_cost_cents
-    );
     assert_eq!(bundle.provenance.representative_sku, "scooter-001");
     assert_eq!(bundle.portfolio.product_count, 100);
     assert!(bundle.portfolio.positive_retail_delta_count > 0);
@@ -61,14 +57,14 @@ fn pricing_shock_showcase_artifact_explains_retained_commit_without_hidden_memor
         bundle
             .certification_counter_evidence()
             .trust_attack_classification_count,
-        8
+        7
     );
     assert!(completeness.offline_sufficient);
     assert!(artifact["trust_proof"]["suite_27"].is_object());
     let trust_attacks = artifact["trust_attack_matrix"]
         .as_array()
         .expect("trust attack matrix should be an array");
-    assert_eq!(trust_attacks.len(), 8);
+    assert_eq!(trust_attacks.len(), 7);
     assert_eq!(
         artifact["demo_flow"][3]
             .as_str()
@@ -86,12 +82,6 @@ fn pricing_shock_showcase_artifact_explains_retained_commit_without_hidden_memor
             .as_str()
             .expect("timeline commit should be exported as string"),
         "commit:rubber-shock"
-    );
-    assert_eq!(
-        artifact["timeline"][4]["snapshot"]
-            .as_str()
-            .expect("timeline snapshot should be exported as string"),
-        bundle.merge.merged_snapshot.as_str()
     );
     assert_eq!(
         shock_commit["snapshot"]
@@ -141,8 +131,8 @@ fn pricing_shock_showcase_timeline_is_lineage_coherent() {
 
     assert_eq!(
         timeline.len(),
-        5,
-        "showcase timeline should keep the five canonical phases"
+        4,
+        "showcase timeline should keep the four canonical phases"
     );
 
     let has_edge =
@@ -150,7 +140,6 @@ fn pricing_shock_showcase_timeline_is_lineage_coherent() {
 
     let main_basis = &timeline[0];
     let speculative_shock = &timeline[2];
-    let merged_authority = &timeline[4];
 
     assert_eq!(
         main_basis["commit"]
@@ -176,12 +165,6 @@ fn pricing_shock_showcase_timeline_is_lineage_coherent() {
             .expect("timeline snapshot should export as a string"),
         bundle.provenance.shock_snapshot.as_str()
     );
-    assert_eq!(
-        merged_authority["snapshot"]
-            .as_str()
-            .expect("timeline snapshot should export as a string"),
-        bundle.merge.merged_snapshot.as_str()
-    );
 
     assert!(has_edge(
         bundle.matrix.reference.source_commit.as_str(),
@@ -190,14 +173,6 @@ fn pricing_shock_showcase_timeline_is_lineage_coherent() {
     assert!(has_edge(
         bundle.provenance.shock_commit.as_str(),
         bundle.provenance.shock_snapshot.as_str()
-    ));
-    assert!(has_edge(
-        bundle.merge.speculative_snapshot.as_str(),
-        bundle.merge.merged_snapshot.as_str()
-    ));
-    assert!(has_edge(
-        bundle.merge.main_premerge_snapshot.as_str(),
-        bundle.merge.merged_snapshot.as_str()
     ));
 }
 
@@ -252,10 +227,6 @@ fn pricing_shock_showcase_trust_attack_matrix_is_bundle_derived() {
     assert_eq!(
         bundle.trust_attacks.route_policy_error_kind,
         crate::facade::BridgeRouteErrorKind::RoutePolicyMismatch
-    );
-    assert_eq!(
-        bundle.trust_attacks.merge_denial_class,
-        crate::facade::BridgeMergeDenialClass::TopologyRewireGate
     );
     assert!(!bundle.simulation.ranked_materials_by_damage.is_empty());
 }
