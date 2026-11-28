@@ -63,13 +63,12 @@ pub(crate) fn current_graph_request(
     relation_kind_scope: Option<Vec<KindId>>,
     summary_only: bool,
 ) -> crate::facade::inspection::GraphInspectionRequest {
-    crate::facade::inspection::GraphInspectionRequest {
-        scope: crate::facade::inspection::InspectionScope::Current,
+    snapshot_graph_request(
+        crate::facade::inspection::InspectionScope::Current,
         partition_scope,
         relation_kind_scope,
         summary_only,
-        budget: default_graph_budget(),
-    }
+    )
 }
 
 pub(crate) fn version_graph_request(
@@ -78,13 +77,12 @@ pub(crate) fn version_graph_request(
     relation_kind_scope: Option<Vec<KindId>>,
     summary_only: bool,
 ) -> crate::facade::inspection::GraphInspectionRequest {
-    crate::facade::inspection::GraphInspectionRequest {
-        scope: crate::facade::inspection::InspectionScope::Version(version_id),
+    snapshot_graph_request(
+        crate::facade::inspection::InspectionScope::Version(version_id),
         partition_scope,
         relation_kind_scope,
         summary_only,
-        budget: default_graph_budget(),
-    }
+    )
 }
 
 pub(crate) fn snapshot_graph_request(
@@ -171,4 +169,94 @@ pub(crate) fn recent_commit_window(
             },
         )
         .unwrap()
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct InspectionTruthBundle {
+    pub graph_summary: crate::facade::inspection::GraphInspectionSummary,
+    pub kind_summary: crate::facade::inspection::KindInspectionSummary,
+    pub connectivity_summary: crate::facade::inspection::ConnectivityInspectionSummary,
+    pub historical_record: crate::facade::inspection::HistoricalRecordInspection,
+    pub retention_summary: crate::facade::inspection::RetentionInspectionSummary,
+    pub record_retention: crate::facade::inspection::RecordRetentionInspection,
+    pub branch_head: Option<crate::facade::inspection::CommitInspection>,
+    pub latest_commit: crate::facade::inspection::CommitInspection,
+    pub recent_commits: crate::facade::inspection::RecentCommitInspectionWindow,
+}
+
+pub(crate) fn capture_inspection_truth_bundle(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch_id: &BranchId,
+    entity_id: crate::facade::identity::EntityId,
+    historical_version: crate::facade::identity::VersionId,
+) -> InspectionTruthBundle {
+    let inspection = runtime.inspect_what_happened();
+    let latest_commit_id = runtime
+        .history()
+        .latest_commit()
+        .map(|commit| commit.commit_id)
+        .expect("latest commit");
+    InspectionTruthBundle {
+        graph_summary: inspection
+            .graph_summary(
+                execution,
+                &current_graph_request(None, None, true),
+            )
+            .expect("read request remains live"),
+        kind_summary: inspection
+            .kind_summary(
+                execution,
+                &crate::facade::inspection::KindInspectionRequest {
+                    scope: crate::facade::inspection::InspectionScope::Current,
+                    partition_scope: None,
+                    kind_id: KindId(1),
+                    record_class: crate::facade::inspection::InspectionRecordClass::Entity,
+                },
+            )
+            .expect("read request remains live"),
+        connectivity_summary: inspection
+            .connectivity_summary(
+                execution,
+                &connectivity_request(
+                    crate::facade::inspection::InspectionScope::Current, None, None, false,
+                ),
+            )
+            .expect("read request remains live"),
+        historical_record: inspection
+            .inspect_historical_record(
+                execution,
+                branch_id,
+                historical_version,
+                RecordRef::Entity(entity_id),
+                crate::facade::inspection::HistoricalInspectionMode::AllowCanonicalReconstruction,
+            )
+            .expect("read request remains live"),
+        retention_summary: inspection
+            .retention_summary(
+                execution,
+                &crate::tests::support::inspection::default_retention_request(),
+            )
+            .unwrap(),
+        record_retention: inspection
+            .inspect_record_retention(execution, RecordRef::Entity(entity_id))
+            .unwrap()
+            .expect("record retention"),
+        branch_head: inspection
+            .inspect_branch_head(execution, branch_id)
+            .unwrap(),
+        latest_commit: inspection
+            .inspect_commit(execution, latest_commit_id)
+            .unwrap()
+            .expect("latest commit inspection"),
+        recent_commits: inspection
+            .inspect_recent_commits(
+                execution,
+                &crate::facade::inspection::RecentCommitInspectionRequest {
+                    branch_id: Some(branch_id.clone()),
+                    limit: 8,
+                },
+            )
+            .unwrap(),
+    }
 }

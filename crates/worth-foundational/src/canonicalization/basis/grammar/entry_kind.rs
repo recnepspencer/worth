@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum CanonicalBasisEntryKind {
     Header,
     Shape,
@@ -23,5 +25,6 @@ pub enum CanonicalBasisEntryKind {
     DiagnosticGap,
     CompatibilityOrigin,
     Cost,
-    Future(&'static str),
+    #[serde(skip)]
+    Future(#[serde(skip)] &'static str),
 }

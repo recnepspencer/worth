@@ -27,7 +27,7 @@ pub(super) fn entity(
         if !seen.insert(*id) {
             continue;
         }
-        entity_keys(
+        refresh_keys(
             execution,
             *id,
             locator,
@@ -35,6 +35,7 @@ pub(super) fn entity(
             after,
             &mut edits,
             work,
+            super::field_keys::entity,
         )?;
     }
     grouped(
@@ -47,17 +48,24 @@ pub(super) fn entity(
     )
 }
 
-pub(super) fn entity_keys(
+pub(super) fn refresh_keys<Id: Ord + Copy>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    id: EntityId,
+    id: Id,
     locator: &AspectFieldLocator,
     before: Option<&IndexRootView>,
     after: &IndexRootView,
-    edits: &mut BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<EntityId>>>,
+    edits: &mut BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<Id>>>,
     work: &mut MaintenanceWork,
+    key: impl Fn(
+        &worth_execution::ExecutionRequest<'_, '_>,
+        Option<&IndexRootView>,
+        Id,
+        &AspectFieldLocator,
+        &mut MaintenanceWork,
+    ) -> Result<Option<(AuthoritativeFieldComparisonKey, Id)>, Denial>,
 ) -> Result<(), Denial> {
-    let old = super::field_keys::entity(execution, before, id, locator, work)?;
-    let new = super::field_keys::entity(execution, Some(after), id, locator, work)?;
+    let old = key(execution, before, id, locator, work)?;
+    let new = key(execution, Some(after), id, locator, work)?;
     super::field_keys::prepare_key_comparison(
         old.as_ref().map(|(key, _)| key),
         new.as_ref().map(|(key, _)| key),

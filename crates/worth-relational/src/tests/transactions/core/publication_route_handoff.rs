@@ -181,8 +181,7 @@ fn observe_canonical_consumers(
     );
     assert_eq!(
         runtime
-            .replay()
-            .canonical_commit_envelope(execution, commit_id)
+            .replay_commit_envelope(execution, commit_id)
             .unwrap()
             .as_deref(),
         Some(envelope)

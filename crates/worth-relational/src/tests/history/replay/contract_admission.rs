@@ -20,7 +20,7 @@ fn replay_contract_success_reproduces_canonical_surfaces() {
         )
         .unwrap();
 
-    assert!(runtime.replay().compare_outcome(&replay));
+    assert!(replay.matches_recorded_truth());
     assert_eq!(
         replay.reconstructed_commit_closure,
         vec![outcome.commit.commit_id]
@@ -78,7 +78,7 @@ fn replay_uses_canonical_root_parent_when_catalog_accelerator_is_missing() {
         )
         .unwrap();
 
-    assert!(runtime.replay().compare_outcome(&replay));
+    assert!(replay.matches_recorded_truth());
     assert_eq!(
         replay.reconstructed_commit_closure,
         vec![parent.commit.commit_id, child.commit.commit_id]

@@ -1,234 +1,45 @@
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::draft::CanonicalCommitEnvelopeDraftFixturePort as _;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::descriptive_touches::RelationalDescriptiveTouchGraphOwnerPort as _;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
-use std::collections::{BTreeMap, BTreeSet};
-use std::sync::Arc;
-
-use super::{CommitEnvelopeSource, HistorySource, PatchStreamCommitRef, PatchStreamSource};
-use crate::diagnostics::data::{
-    DeterminismExpectation, DiagnosticsArtifactKind, DiagnosticsScope, RelationalDiagnosticArtifact,
-};
-use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
-use crate::history::data::{
-    CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalDescriptiveTouchGraph,
-};
-use crate::indexes::data::DerivedIndexArtifacts;
-use crate::lineage::data::{
-    FinalizedLineageEventBatch, LineageDecisionLog, LineageFinalizationArtifact,
-};
-use crate::publication::patch::data::{
-    CanonicalAuthoritativePatch, PatchDetail, PatchOrdering, PatchPublicationMode,
-    PatchStreamPosition, PublishedAuthoritativeRecordPatch, RecordStructuralChange,
-};
-use crate::schema::data::{DescriptorSemanticsVersion, RelationalSchemaRegistry, SchemaVersionId};
-use crate::transactions::data::{MergedCommitPlan, RecordRef, TransactionId};
-
-struct FakeHistorySource {
-    envelopes: BTreeMap<CommitId, Arc<CanonicalCommitEnvelope>>,
-    patch_stream_index: BTreeMap<PatchStreamPosition, CommitId>,
-}
-
-impl CommitEnvelopeSource for FakeHistorySource {
-    fn resident_commit_envelope(
-        &self,
-        commit_id: CommitId,
-    ) -> Option<Arc<CanonicalCommitEnvelope>> {
-        self.envelopes.get(&commit_id).cloned()
-    }
-}
-
-impl PatchStreamSource for FakeHistorySource {
-    fn latest_patch_stream_position(&self) -> Option<PatchStreamPosition> {
-        self.patch_stream_index
-            .last_key_value()
-            .map(|(position, _)| *position)
-    }
-
-    fn commit_id_at_patch_stream_position(
-        &self,
-        position: PatchStreamPosition,
-    ) -> Option<CommitId> {
-        self.patch_stream_index.get(&position).copied()
-    }
-
-    fn patch_stream_commits_after(
-        &self,
-        after_position: Option<PatchStreamPosition>,
-        max_commits: usize,
-    ) -> Vec<PatchStreamCommitRef> {
-        let start = after_position
-            .map(std::ops::Bound::Excluded)
-            .unwrap_or(std::ops::Bound::Unbounded);
-        self.patch_stream_index
-            .range((start, std::ops::Bound::Unbounded))
-            .map(|(position, commit_id)| PatchStreamCommitRef {
-                position: *position,
-                commit_id: *commit_id,
-            })
-            .take(max_commits)
-            .collect()
-    }
-}
-
-impl HistorySource for FakeHistorySource {
-    fn branch_head_ref(&self, _branch_id: &BranchId) -> Option<RelationalCommitReceipt> {
-        None
-    }
-
-    fn has_committed_version_at_or_before_outside_closure(
-        &self,
-        version_id: crate::identity::data::VersionId,
-        closure: &std::collections::BTreeSet<CommitId>,
-    ) -> bool {
-        self.envelopes.values().any(|envelope| {
-            envelope.commit.version_id <= version_id
-                && !closure.contains(&envelope.commit.commit_id)
-        })
-    }
-}
-
-fn commit_envelope(commit_id: u64, version_id: u64) -> CanonicalCommitEnvelope {
-    let draft = crate::history::data::CanonicalCommitEnvelopeDraft::new(
-        Default::default(),
-        crate::history::data::CanonicalIndexDefinitionDelta::prepared(1, 1, Vec::new(), None),
-        RelationalCommitReceipt {
-            commit_id: CommitId(commit_id),
-            version_id: crate::identity::data::VersionId(version_id),
-            branch_id: BranchId("main".to_string()),
-            parents: vec![],
-        },
-        BranchId("main".to_string()),
-        CanonicalCommitAuthorityKind::VersionedTransaction,
-        SchemaVersionId(1),
-        RelationalSchemaRegistry::new().authority_snapshot(),
-        MergedCommitPlan {
-            transaction_id: TransactionId(commit_id),
-            merged_intents: vec![],
-        },
-        CanonicalAuthoritativePatch {
-            ordering: PatchOrdering::CanonicalCommitOrder,
-            publication_mode: PatchPublicationMode::CommitNative,
-            authoritative_record_patches: vec![PublishedAuthoritativeRecordPatch {
-                target: RecordRef::Entity(crate::identity::data::EntityId::new(
-                    crate::identity::data::PartitionId::main(),
-                    commit_id,
-                    0,
-                )),
-                structural_change: RecordStructuralChange::Updated,
-                relation_birth: None,
-                authoritative_patch:
-                    crate::publication::patch::data::PublishedAuthoritativePatch::empty(),
-                semantic_changes: Vec::new(),
-                contains_opaque_aspect: false,
-                detail: PatchDetail::DenseBitset(vec![]),
-            }],
-        },
-        RelationalDescriptiveTouchGraph::exact(vec![]),
-        RelationalDiagnosticArtifact::new(
-            DiagnosticsScope::Replay,
-            DiagnosticsArtifactKind::MinimalSummary,
-            DeterminismExpectation::Required,
-            vec![],
-        ),
-        LineageFinalizationArtifact::new(
-            BranchId("main".to_string()),
-            FinalizedLineageEventBatch::new(vec![]),
-            LineageDecisionLog::new(vec![]),
-        )
-        .publish(),
-        DerivedIndexArtifacts::default(),
-        None,
-        None,
-        None,
-        DescriptorSemanticsVersion(1),
-    );
-    // Pure predicate/inspection input: keep an actual original semantic image,
-    // then edit only this test body. No publication or readmission is claimed.
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let runtime = crate::tests::support::runtime_with_test_schema();
-    let produced = crate::tests::support::create_entity_outcome(
-        execution,
-        &runtime,
-        "predicate-semantic-source",
-    );
-    let envelope = produced.publication().envelope.clone().into_arc();
-    crate::tests::support::release_test_commit_snapshot(&runtime, &produced);
-    drop(produced);
-    drop(runtime);
-    let mut envelope = std::sync::Arc::try_unwrap(envelope)
-        .expect("source owner and result released their actual envelope shares");
-    *envelope.body_mut_for_test() = draft.into_body_for_test();
-    envelope
-}
+use crate::publication::patch::data::stream_commit_ref::PatchStreamCommitRef;
+use crate::tests::support::{create_entity_outcome, runtime_with_test_schema};
+use std::collections::BTreeSet;
+use worth_execution::ExecutionRequest;
 
 #[test]
-fn committed_version_outside_closure_ignores_closure_members_and_detects_external_predecessor() {
-    let history = FakeHistorySource {
-        envelopes: BTreeMap::from([
-            (CommitId(1), Arc::new(commit_envelope(1, 1))),
-            (CommitId(2), Arc::new(commit_envelope(2, 2))),
-        ]),
-        patch_stream_index: BTreeMap::from([
-            (PatchStreamPosition(1), CommitId(1)),
-            (PatchStreamPosition(2), CommitId(2)),
-        ]),
-    };
+fn history_routes_committed_envelopes_and_excludes_closure_members() {
+    let runtime = runtime_with_test_schema();
+    let serial = crate::test_execution_policy::serial_request();
+    let execution = ExecutionRequest::serial(&serial);
+    let first = create_entity_outcome(&execution, &runtime, "first-history-member");
+    let second = create_entity_outcome(&execution, &runtime, "second-history-member");
+    let first = first.publication().envelope.commit.clone();
+    let second = second.publication().envelope.commit.clone();
+    let last_position = runtime
+        .latest_patch_stream_position()
+        .expect("second route");
+    let envelope = runtime
+        .commit_envelope_at_patch_stream_position(last_position)
+        .expect("resident second envelope");
+    assert_eq!(envelope.commit.commit_id, second.commit_id);
 
-    assert!(history.has_committed_version_at_or_before_outside_closure(
-        crate::identity::data::VersionId(2),
-        &BTreeSet::from([CommitId(2)]),
+    assert!(runtime.has_committed_version_at_or_before_outside_closure(
+        second.version_id,
+        &BTreeSet::from([second.commit_id]),
     ));
-    assert!(!history.has_committed_version_at_or_before_outside_closure(
-        crate::identity::data::VersionId(2),
-        &BTreeSet::from([CommitId(1), CommitId(2)]),
+    assert!(!runtime.has_committed_version_at_or_before_outside_closure(
+        second.version_id,
+        &BTreeSet::from([first.commit_id, second.commit_id]),
     ));
-}
 
-#[test]
-fn patch_stream_source_resolves_commit_envelopes_from_positions() {
-    let history = FakeHistorySource {
-        envelopes: BTreeMap::from([
-            (CommitId(1), Arc::new(commit_envelope(1, 1))),
-            (CommitId(2), Arc::new(commit_envelope(2, 2))),
-        ]),
-        patch_stream_index: BTreeMap::from([
-            (PatchStreamPosition(1), CommitId(1)),
-            (PatchStreamPosition(2), CommitId(2)),
-        ]),
-    };
-
-    let envelope = history
-        .commit_envelope_at_patch_stream_position(PatchStreamPosition(2))
-        .expect("patch stream envelope");
-
+    let first_position = runtime
+        .patch_stream_commits_after(None, 1)
+        .first()
+        .expect("first route")
+        .position;
+    assert!(runtime.contains_patch_stream_position(first_position));
     assert_eq!(
-        history.latest_patch_stream_position(),
-        Some(PatchStreamPosition(2))
-    );
-    assert_eq!(envelope.commit.commit_id, CommitId(2));
-    assert!(history.contains_patch_stream_position(PatchStreamPosition(1)));
-}
-
-#[test]
-fn patch_stream_source_exposes_exact_position_windows() {
-    let history = FakeHistorySource {
-        envelopes: BTreeMap::from([
-            (CommitId(1), Arc::new(commit_envelope(1, 1))),
-            (CommitId(2), Arc::new(commit_envelope(2, 2))),
-        ]),
-        patch_stream_index: BTreeMap::from([
-            (PatchStreamPosition(1), CommitId(1)),
-            (PatchStreamPosition(2), CommitId(2)),
-        ]),
-    };
-
-    assert_eq!(
-        history.patch_stream_commits_after(Some(PatchStreamPosition(1)), 8),
+        runtime.patch_stream_commits_after(Some(first_position), 8),
         vec![PatchStreamCommitRef {
-            position: PatchStreamPosition(2),
-            commit_id: CommitId(2),
+            position: last_position,
+            commit_id: second.commit_id,
         }],
     );
 }

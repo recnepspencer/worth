@@ -37,7 +37,7 @@ pub struct CanonicalEnvelopeInputs<'a> {
     pub history: &'a RelationalPreparationHistory,
     pub diagnostics: PreparationDiagnostics<'a>,
     pub symbols: &'a RuntimeSymbolTable,
-    pub symbol_references: &'a std::collections::BTreeSet<contracts::symbols::data::symbol::Symbol>,
+    pub symbol_references: &'a std::collections::BTreeSet<contracts::symbols::data::Symbol>,
 }
 
 pub(crate) fn canonical_commit_envelope<'a>(

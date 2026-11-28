@@ -1,16 +1,12 @@
 //! Intrinsic custody of the actual RelationalCheckpointPage directory backing.
 use super::checkpoint_page::RelationalCheckpointPage;
 use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+use crate::storage::substrate::storage_allocation::StorageAllocation;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::{alloc::Layout, sync::Arc};
+use std::alloc::Layout;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
-#[derive(Debug)]
-struct Backing {
-    rows: Vec<RelationalCheckpointPage>,
-    _memory: Option<ExecutionMemoryReservation>,
-}
 #[derive(Debug, Clone, Default)]
-pub struct CheckpointPages(Option<Arc<Backing>>);
+pub struct CheckpointPages(Option<StorageAllocation<Vec<RelationalCheckpointPage>>>);
 pub struct CheckpointPagesBuilder {
     rows: Vec<RelationalCheckpointPage>,
     _memory: Option<ExecutionMemoryReservation>,
@@ -18,7 +14,7 @@ pub struct CheckpointPagesBuilder {
 impl CheckpointPages {
     pub fn shares_backing(&self, other: &Self) -> bool {
         match (&self.0, &other.0) {
-            (Some(left), Some(right)) => Arc::ptr_eq(left, right),
+            (Some(left), Some(right)) => left.shares_backing(right),
             (None, None) => true,
             (Some(_), None) | (None, Some(_)) => false,
         }
@@ -28,10 +24,7 @@ impl CheckpointPages {
         if rows.is_empty() {
             Self::default()
         } else {
-            Self(Some(Arc::new(Backing {
-                rows,
-                _memory: None,
-            })))
+            Self(Some(StorageAllocation::new(rows)))
         }
     }
     pub fn ordinary_owned_copy(&self) -> Vec<RelationalCheckpointPage> {
@@ -48,11 +41,8 @@ impl CheckpointPages {
                 _memory: None,
             });
         }
-        let control = Layout::new::<[usize; 2]>()
-            .extend(Layout::new::<Backing>())
+        let control = StorageAllocation::<Vec<RelationalCheckpointPage>>::layout()
             .map_err(|_| Cause::ChargedBytesOverflow)?
-            .0
-            .pad_to_align()
             .size();
         let rows = Layout::array::<RelationalCheckpointPage>(capacity)
             .map_err(|_| Cause::ChargedBytesOverflow)?
@@ -70,7 +60,7 @@ impl CheckpointPages {
         })
     }
     fn rows(&self) -> &[RelationalCheckpointPage] {
-        self.0.as_ref().map_or(&[], |b| b.rows.as_slice())
+        self.0.as_ref().map_or(&[], |b| b.as_slice())
     }
 }
 impl CheckpointPagesBuilder {
@@ -85,10 +75,10 @@ impl CheckpointPagesBuilder {
         if self.rows.is_empty() {
             return CheckpointPages::default();
         }
-        CheckpointPages(Some(Arc::new(Backing {
-            rows: self.rows,
-            _memory: self._memory,
-        })))
+        CheckpointPages(Some(StorageAllocation::from_reserved(
+            self.rows,
+            self._memory,
+        )))
     }
 }
 impl std::ops::Deref for CheckpointPages {

@@ -1,5 +1,5 @@
 use crate::internal_port::symbols::data::client_key::ClientKeyOwnerPort as _;
-use crate::internal_port::transactions::data::aspect_field_patch::AspectFieldPatchOwnerPort as _;
+
 use serde::{Deserialize, Serialize};
 
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};

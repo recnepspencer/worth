@@ -1,7 +1,7 @@
 use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
-use crate::capabilities::{DurabilityRead, RuntimeConfigSource};
+use crate::capabilities::RuntimeConfigSource;
 use crate::durability::data::{RecoveryPlan, RecoveryVerificationMode};
 use crate::runtime::durability_access::{
     authority_continuity_for_envelopes, descriptor_semantics_version_for_envelopes,
@@ -24,7 +24,7 @@ pub(super) fn retained_recovery_plan(
     );
     let branch_transitions = crate::durability::data::RecoveryBranchTransitions::Contiguous(
         runtime
-            .durability_access()
+            .durability()
             .reconstruct_branch_transition_history(execution, covered)?,
     );
     let descriptor_semantics_version = descriptor_semantics_version_for_envelopes(

@@ -1,5 +1,5 @@
 use std::any::Any;
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::{BTreeSet, VecDeque};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex, MutexGuard};
 
@@ -98,9 +98,6 @@ pub(super) struct OwnedMediumContents {
     pub(super) forbidden_members: BTreeSet<[u8; 32]>,
     pub(super) commit_index_page_digests: BTreeSet<[u8; 32]>,
     pub(super) member_reads: Vec<[u8; 32]>,
-    pub(super) canonical_member_positions: BTreeMap<[u8; 32], PatchStreamPosition>,
-    pub(super) commit_read_failures: BTreeMap<PatchStreamPosition, StorageCause>,
-    pub(super) commit_reads: Vec<PatchStreamPosition>,
 }
 
 /// Explicitly owned in-crate durable medium reusing `worth-testkit-relational`'s
@@ -110,8 +107,6 @@ pub(crate) struct OwnedTestDurableMedium {
     contents: Mutex<OwnedMediumContents>,
     pub(super) observe_member_reads: AtomicBool,
     pub(super) has_forbidden_members: AtomicBool,
-    pub(super) observe_commit_reads: AtomicBool,
-    pub(super) has_commit_read_failures: AtomicBool,
 }
 
 #[derive(Debug)]

@@ -59,18 +59,9 @@ impl RelationalInterruptionEvent {
     }
 }
 
-/// Operations used by the Relational owners.
-pub trait RelationalInterruptionEventOwnerPort: Sized {
+impl RelationalInterruptionEvent {
     #[cfg(test)]
-    fn observe_request(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        boundary: RelationalInterruptionBoundary,
-    ) -> Option<Self>;
-}
-
-impl RelationalInterruptionEventOwnerPort for RelationalInterruptionEvent {
-    #[cfg(test)]
-    fn observe_request(
+    pub(crate) fn observe_request(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         boundary: RelationalInterruptionBoundary,
     ) -> Option<Self> {

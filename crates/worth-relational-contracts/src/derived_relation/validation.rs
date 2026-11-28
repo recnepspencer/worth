@@ -1,5 +1,5 @@
 //! One finite grammar validator for registration and recovered snapshots.
-use crate::internal_port::derived_relation::laws::meaning::DerivedRelationGraphLawsOwnerPort as _;
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::derived_relation::definition::{

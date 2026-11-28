@@ -208,10 +208,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
                 )));
             }
         };
-        let Some(envelope) = runtime
-            .replay()
-            .canonical_commit_envelope(execution, request.commit_id)?
-        else {
+        let Some(envelope) = runtime.replay_commit_envelope(execution, request.commit_id)? else {
             return Ok(ControlFlow::Break(self.fail_and_record(
                 request.clone(),
                 Some(&admission.envelope),

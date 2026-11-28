@@ -1,6 +1,5 @@
 //! Direct owned allocations adopted with an accepted declaration inventory.
 use super::RelationIntegrityDeclarations;
-use crate::internal_port::schema::data::relation_integrity::contract_id::ContractIdOwnerPort as _;
 
 impl RelationIntegrityDeclarations {
     pub fn retained_allocation_bytes(

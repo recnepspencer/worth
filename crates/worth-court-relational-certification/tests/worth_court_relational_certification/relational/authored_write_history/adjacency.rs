@@ -207,7 +207,7 @@ fn relation_fields_are_disjoint_but_cascade_retirement_is_an_occurrence() {
         )
         .unwrap();
     let edited = transaction.commit(&execution, &runtime).unwrap();
-    assert!(runtime.replay().canonical_commit_envelope(&execution, edited.commit.commit_id).unwrap().unwrap()
+    assert!(runtime.replay_commit_envelope(&execution, edited.commit.commit_id).unwrap().unwrap()
         .descriptive_touches().exact_touches().unwrap().iter().any(|touch|
             matches!(touch, RelationalDescriptiveTouch::RelationMembership { relation: actual, .. } if *actual == relation)),
         "the actual field edit emits the descriptive membership effect that must not become an authored endpoint write");

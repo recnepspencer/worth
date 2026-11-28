@@ -38,7 +38,7 @@ impl EnvelopeDoor {
  worth_proof::TransitionOutcome::Failed(cause)=>panic!("original ancestor failed: {cause:?}"),
                 })
             }
-            Self::ReplayEnvelope => runtime.replay().canonical_commit_envelope(execution, receipt.commit_id)
+            Self::ReplayEnvelope => runtime.replay_commit_envelope(execution, receipt.commit_id)
                 .map(|body| {
                     let body=body.expect("selected envelope exists");
                     assert_eq!(body.commit.commit_id,receipt.commit_id);

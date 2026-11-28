@@ -91,8 +91,7 @@ fn pending_selected_data_keeps_the_unaccepted_catalog_in_the_next_publication() 
     let later =
         crate::workload::commit(runtime, &execution, &branch, crate::batches::create(3)).unwrap();
     let canonical = runtime
-        .replay()
-        .canonical_commit_envelope(&execution, later.commit.commit_id)
+        .replay_commit_envelope(&execution, later.commit.commit_id)
         .unwrap()
         .unwrap();
     let wire: serde_json::Value =

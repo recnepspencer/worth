@@ -12,12 +12,8 @@ impl RuntimeConfigSource for RelationalRuntime {
     }
 }
 
-pub(crate) trait RuntimeIdentitySource {
-    fn runtime_name(&self) -> &str;
-}
-
-impl RuntimeIdentitySource for RelationalRuntime {
-    fn runtime_name(&self) -> &str {
+impl RelationalRuntime {
+    pub(crate) fn runtime_name(&self) -> &str {
         &self.config.execution.runtime_name
     }
 }

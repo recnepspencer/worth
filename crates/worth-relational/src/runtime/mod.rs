@@ -12,7 +12,6 @@ pub use construction_denial::RelationalRuntimeConstructionDenial;
 pub(crate) mod durability_access;
 mod durability_authority;
 mod field_text;
-mod guided;
 pub(crate) mod home_program_transition;
 mod initial_schema_installation;
 pub use home_program_transition::{

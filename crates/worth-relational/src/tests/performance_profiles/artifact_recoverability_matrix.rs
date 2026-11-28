@@ -73,8 +73,7 @@ fn perf_artifact_recoverability_matrix() {
                 .unwrap()
         });
         let recovered_envelope = recovered
-            .replay()
-            .canonical_commit_envelope(execution, hot_commit.commit.commit_id)
+            .replay_commit_envelope(execution, hot_commit.commit.commit_id)
             .unwrap()
             .expect("recovered canonical geometry envelope");
         let authoritative_hot_summary = crate::diagnostics::data::RelationalDiagnosticArtifact {

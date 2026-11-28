@@ -1,5 +1,4 @@
 use crate::branch::root::capture::reconstruction_fixture::PartitionContentOracle as _;
-use crate::capabilities::DurabilityRead;
 #[cfg(test)]
 use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::tests::support::*;

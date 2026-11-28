@@ -16,28 +16,9 @@ impl IndexingState {
         retained: &crate::branch::history::retention::reclamation::RetainedIndexRoots,
     ) -> Vec<crate::contracts::indexes::data::basis_checkpoint::IndexBasisCheckpoint> {
         let mut bases = std::collections::BTreeMap::new();
-        for (branch, version, schema) in retained.live.iter().chain(&retained.retired) {
-            if let Some(basis) = self
-                .bases
-                .get(Some(branch), *version)
-                .filter(|basis| basis.schema == *schema)
-            {
-                bases.insert((basis.branch.clone(), basis.version), basis);
-            }
-        }
-        for (version, schema) in &retained.historical_versions {
-            // Historical custody is version-wide. Keep the concrete branch
-            // selections too; the global view intentionally owns no scoped rows.
-            if let Some(selected) = self.bases.versions.get(version) {
-                for basis in selected
-                    .branches
-                    .values()
-                    .filter(|basis| basis.schema == *schema)
-                {
-                    bases.insert((basis.branch.clone(), basis.version), basis);
-                }
-            }
-        }
+        self.bases.visit_retained(retained, |basis| {
+            bases.insert((basis.branch.clone(), basis.version), basis);
+        });
         bases
             .into_values()
             .map(
@@ -46,10 +27,11 @@ impl IndexingState {
                     commit: basis.commit,
                     version: basis.version,
                     schema: basis.schema,
-                    empty: basis.state.empty.iter().copied().collect(),
+                    empty: basis.state.exact.empty.iter().copied().collect(),
                     bindings: basis
                         .state
-                        .entries
+                        .exact
+                        .generations
                         .iter()
                         .map(|(index, generation)| (*index, generation.generation_id))
                         .collect(),
@@ -64,30 +46,11 @@ impl IndexingState {
         retained: &crate::branch::history::retention::reclamation::RetainedIndexRoots,
         mut visit: impl FnMut(crate::contracts::indexes::data::definition::DerivedIndexGenerationId),
     ) {
-        for (branch, version, schema) in retained.live.iter().chain(&retained.retired) {
-            if let Some(basis) = self
-                .bases
-                .get(Some(branch), *version)
-                .filter(|basis| basis.schema == *schema)
-            {
-                for generation in basis.state.entries.values() {
-                    visit(generation.generation_id);
-                }
+        self.bases.visit_retained(retained, |basis| {
+            for generation in basis.state.exact.generations.values() {
+                visit(generation.generation_id);
             }
-        }
-        for (version, schema) in &retained.historical_versions {
-            if let Some(selected) = self.bases.versions.get(version) {
-                for basis in selected
-                    .branches
-                    .values()
-                    .filter(|basis| basis.schema == *schema)
-                {
-                    for generation in basis.state.entries.values() {
-                        visit(generation.generation_id);
-                    }
-                }
-            }
-        }
+        });
     }
     pub fn restore_basis_selection(
         &mut self,
@@ -135,14 +98,46 @@ impl IndexingState {
             version: basis.version,
             schema: basis.schema,
             state: std::sync::Arc::new(super::super::IndexSelectionState {
-                entries,
-                empty,
-                global,
-                global_empty,
+                exact: super::super::selection_state::BasisBindings {
+                    generations: entries,
+                    empty,
+                },
+                global: super::super::selection_state::BasisBindings {
+                    generations: global,
+                    empty: global_empty,
+                },
             }),
             globals: self.catalog.globals.clone(),
         };
         self.bases.install(restored);
         Ok(())
+    }
+}
+
+impl super::BasisSelections {
+    fn visit_retained<'basis>(
+        &'basis self,
+        retained: &crate::branch::history::retention::reclamation::RetainedIndexRoots,
+        mut visit: impl FnMut(&'basis PreparedIndexBasisSelection),
+    ) {
+        for (branch, version, schema) in retained.live.iter().chain(&retained.retired) {
+            if let Some(basis) = self
+                .get(Some(branch), *version)
+                .filter(|basis| basis.schema == *schema)
+            {
+                visit(basis);
+            }
+        }
+        for (version, schema) in &retained.historical_versions {
+            if let Some(selected) = self.versions.get(version) {
+                for basis in selected
+                    .branches
+                    .values()
+                    .filter(|basis| basis.schema == *schema)
+                {
+                    visit(basis);
+                }
+            }
+        }
     }
 }

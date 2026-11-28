@@ -112,46 +112,14 @@ fn aspect_field_patch_locator_bytes_are_canonical_planned_field_locator_bytes() 
 }
 
 #[test]
-fn native_aspect_field_patch_codec_wraps_canonical_field_patch_bytes() {
-    let patch = patch_from_samples(&canonical_aspect_value_samples());
-    let patch_bytes = patch.to_canonical_bytes().unwrap();
-    let mut expected_native_bytes = Vec::new();
-    encode_u32(&mut expected_native_bytes, patch_bytes.len() as u32);
-    expected_native_bytes.extend_from_slice(&patch_bytes);
-
-    let mut native_bytes = Vec::new();
-    encode_native_aspect_field_patch(&mut native_bytes, &patch).unwrap();
-
-    assert_eq!(native_bytes, expected_native_bytes);
-
-    let mut reader = NativeCodecReader::new(&native_bytes);
-    assert_eq!(
-        decode_native_aspect_field_patch(&mut reader).unwrap(),
-        patch
-    );
-    reader.finish().unwrap();
-}
-
-#[test]
-fn native_aspect_value_decode_returns_error_for_malformed_canonical_body() {
-    let native_bytes = [1, 0, 0, 0, 255];
-    let mut reader = NativeCodecReader::new(&native_bytes);
-
-    let error = decode_native_aspect_value(&mut reader).unwrap_err();
-
-    assert!(error
+fn canonical_value_and_patch_reject_malformed_bodies() {
+    let value = decode_aspect_value(&[255]).unwrap_err();
+    assert!(value
         .detail()
         .contains("unknown canonical aspect value tag 255"));
-}
 
-#[test]
-fn native_field_patch_decode_returns_error_for_malformed_canonical_patch() {
-    let native_bytes = [1, 0, 0, 0, 0];
-    let mut reader = NativeCodecReader::new(&native_bytes);
-
-    let error = decode_native_aspect_field_patch(&mut reader).unwrap_err();
-
-    assert!(error.detail().contains("input ended early"));
+    let patch = AspectFieldPatch::from_canonical_bytes(&[0]).unwrap_err();
+    assert!(patch.detail().contains("input ended early"));
 }
 
 #[test]

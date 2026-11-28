@@ -1,5 +1,5 @@
 //! Sorted owned normalization meanings; replacement is one linear merge.
-use worth_relational_contracts::internal_port::symbols::data::symbol::Symbol;
+use worth_relational_contracts::internal_port::symbols::data::Symbol;
 
 #[cfg(test)]
 pub mod tests;

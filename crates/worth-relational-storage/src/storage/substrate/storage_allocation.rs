@@ -76,12 +76,17 @@ impl<T> StorageAllocation<T> {
     /// The owner payload and reference-count header, including alignment but
     /// excluding allocator-private bookkeeping and T's separately owned storage.
     pub fn layout_bytes() -> u64 {
+        Self::layout().expect("storage layout fits").size() as u64
+    }
+
+    pub(crate) fn layout() -> Result<std::alloc::Layout, std::alloc::LayoutError> {
         std::alloc::Layout::new::<[usize; 2]>()
             .extend(std::alloc::Layout::new::<AllocationBacking<T>>())
-            .expect(/* Proof: StorageAllocation is crate-private. Its closed native monomorphizations are column/map/digest nodes and fixed owner metadata; their dynamic values are behind Vec/Arc/map headers, never input-sized inline arrays. These concrete layouts plus two usize headers are below isize::MAX on supported targets, including the preallocation callers that have not yet allocated T. */ "storage layout fits")
-            .0
-            .pad_to_align()
-            .size() as u64
+            .map(|(layout, _)| layout.pad_to_align())
+    }
+
+    pub(crate) fn shares_backing(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
     }
 }
 

@@ -33,8 +33,8 @@ fn selected(value: u8, id: u64) -> PreparedIndexBasisSelection {
         })),
         2 => {
             let state = Arc::make_mut(&mut basis.state);
-            state.empty.insert(index);
-            state.global_empty.insert(index);
+            state.exact.empty.insert(index);
+            state.global.empty.insert(index);
         }
         _ => panic!("three bookkeeping states"),
     }
@@ -70,24 +70,33 @@ fn deferred_basis_merge_preserves_live_entries_empty_bindings_and_retained_pins(
                 }
                 let state = &basis.unwrap().state;
                 assert_eq!(
-                    state.entries.get(&index).map(|g| g.generation_id),
+                    state.exact.generations.get(&index).map(|g| g.generation_id),
                     (expected == 1).then_some(DerivedIndexGenerationId(id))
                 );
-                assert_eq!(state.empty.contains(&index), expected == 2);
+                assert_eq!(state.exact.empty.contains(&index), expected == 2);
                 assert_eq!(
-                    state.global.get(&index).map(|g| g.generation_id),
-                    state.entries.get(&index).map(|g| g.generation_id)
+                    state
+                        .global
+                        .generations
+                        .get(&index)
+                        .map(|g| g.generation_id),
+                    state.exact.generations.get(&index).map(|g| g.generation_id)
                 );
                 assert_eq!(
-                    state.global_empty.contains(&index),
-                    state.empty.contains(&index)
+                    state.global.empty.contains(&index),
+                    state.exact.empty.contains(&index)
                 );
             }
             assert_eq!(
-                retained.state.entries.get(&index).map(|g| g.generation_id),
+                retained
+                    .state
+                    .exact
+                    .generations
+                    .get(&index)
+                    .map(|g| g.generation_id),
                 (live_state == 1).then_some(DerivedIndexGenerationId(9))
             );
-            assert_eq!(retained.state.empty.contains(&index), live_state == 2);
+            assert_eq!(retained.state.exact.empty.contains(&index), live_state == 2);
         }
     }
 }

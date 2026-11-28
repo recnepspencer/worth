@@ -57,13 +57,11 @@ fn checkpoint_source_recovers_each_original_lineage_node_and_create_event() {
     let mut event_count = 0;
     for receipt in [&first.commit, &second.commit] {
         let source = runtime
-            .replay()
-            .canonical_commit_envelope(execution, receipt.commit_id)
+            .replay_commit_envelope(execution, receipt.commit_id)
             .unwrap()
             .unwrap();
         let restored = recovered
-            .replay()
-            .canonical_commit_envelope(execution, receipt.commit_id)
+            .replay_commit_envelope(execution, receipt.commit_id)
             .unwrap()
             .unwrap();
         assert_eq!(restored.lineage_events(), source.lineage_events());

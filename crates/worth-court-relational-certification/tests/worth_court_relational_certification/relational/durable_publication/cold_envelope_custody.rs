@@ -45,11 +45,7 @@ fn recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read() {
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let request = &ExecutionRequest::serial(&host);
     assert_eq!(budget.charged_memory_bytes(), 0);
-    let read = || {
-        runtime
-            .replay()
-            .canonical_commit_envelope(request, receipt.commit_id)
-    };
+    let read = || runtime.replay_commit_envelope(request, receipt.commit_id);
     let first = read().unwrap().unwrap();
     assert_eq!(first.commit, receipt);
     let reads = source.commit_reads.lock().unwrap().len();

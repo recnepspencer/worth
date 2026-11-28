@@ -1,9 +1,8 @@
 //! Head discovery discards every provisional result before loading its misses.
-use super::discovery_policy::{discover, MissFootprint, ReadMiss};
+use super::probe::{probe_sources, ReadRound};
 use super::RelationalRegionHeadView;
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::CurrentPartitionAccess;
-use std::sync::Mutex;
 
 pub enum PartitionHeadProbe<'view> {
     Absent,
@@ -11,11 +10,8 @@ pub enum PartitionHeadProbe<'view> {
     Resident(RelationalRegionHeadView<'view>),
 }
 
-struct HeadReadRound<'source, 'round> {
-    source: &'source dyn CurrentPartitionAccess,
-    source_index: usize,
-    misses: &'round Mutex<MissFootprint>,
-}
+type HeadReadRound<'source, 'round> =
+    ReadRound<'source, 'round, dyn CurrentPartitionAccess + 'source>;
 
 impl<'source> HeadReadRound<'source, '_> {
     fn read_partition(
@@ -28,14 +24,7 @@ impl<'source> HeadReadRound<'source, '_> {
             PartitionHeadProbe::Resident(partition) => Some(partition),
             PartitionHeadProbe::Absent => None,
             PartitionHeadProbe::Cold => {
-                self.misses
-                    .lock()
-                    .unwrap_or_else(|error| error.into_inner())
-                    .record(ReadMiss {
-                        source_index: self.source_index,
-                        base,
-                        partition: id,
-                    });
+                self.record_miss(id, base);
                 None
             }
         }
@@ -53,11 +42,7 @@ impl CurrentPartitionAccess for HeadReadRound<'_, '_> {
         self.read_partition(self.source.base_current_source()?, id, true)
     }
     fn has_read_misses(&self) -> bool {
-        self.misses
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .first()
-            .is_some()
+        self.has_misses()
     }
 
     fn touched_partition_ids(&self) -> Option<Vec<PartitionId>> {
@@ -123,33 +108,18 @@ pub fn probe_head_sources<const N: usize, T>(
     sources: [&dyn CurrentPartitionAccess; N],
     mut read: impl FnMut([&dyn CurrentPartitionAccess; N]) -> T,
 ) -> Result<T, super::RelationalResidencyDemandFailure> {
-    discover(
+    probe_sources(
         execution,
-        |misses| {
-            let views: [_; N] = std::array::from_fn(|source_index| HeadReadRound {
-                source: sources[source_index],
-                source_index,
-                misses,
-            });
-            read(std::array::from_fn(|index| {
-                &views[index] as &dyn CurrentPartitionAccess
-            }))
+        sources,
+        |views| {
+            read(
+                views
+                    .each_ref()
+                    .map(|view| view as &dyn CurrentPartitionAccess),
+            )
         },
-        |miss| {
-            let source = sources[miss.source_index];
-            let source = if miss.base {
-                source
-                    .base_current_source()
-                    .ok_or(crate::storage::data::RelationalStorageUnavailable {
-                    subject: crate::storage::data::RelationalStorageSubject::Region(miss.partition),
-                    cause:
-                        crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
-                })?
-            } else {
-                source
-            };
-            source.demand_head_partition(execution, miss.partition)
-        },
+        |source| source.base_current_source(),
+        |source, id| source.demand_head_partition(execution, id),
     )
 }
 

@@ -1,3 +1,5 @@
+use super::CanonicalAspectOutput;
+
 pub mod borrowed_allocation;
 pub mod error;
 #[cfg(test)]
@@ -15,12 +17,11 @@ pub use writing::{
 };
 
 pub fn encode_string(bytes: &mut Vec<u8>, value: &str) {
-    encode_u32(bytes, value.len() as u32);
-    bytes.extend_from_slice(value.as_bytes());
+    super::CollectCanonicalAspect(bytes).text(value).unwrap();
 }
 
 pub fn encode_u32(bytes: &mut Vec<u8>, value: u32) {
-    bytes.extend_from_slice(&value.to_le_bytes());
+    super::CollectCanonicalAspect(bytes).u32_le(value).unwrap();
 }
 
 pub use borrowed_allocation::{

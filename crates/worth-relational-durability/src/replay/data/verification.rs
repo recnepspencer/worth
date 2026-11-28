@@ -95,6 +95,10 @@ pub struct ReplaySnapshotSurface {
 }
 
 impl RelationalReplayOutcome {
+    pub fn matches_recorded_truth(&self) -> bool {
+        self.failure.is_none() && self.mismatches.is_empty()
+    }
+
     pub(crate) fn fail(
         requested: RelationalReplayRequest,
         envelope: Option<&CanonicalCommitEnvelope>,

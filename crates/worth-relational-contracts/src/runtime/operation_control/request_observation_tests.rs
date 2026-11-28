@@ -1,6 +1,6 @@
 //! Borrowed request control is observed without creating request authority.
 use super::*;
-use crate::internal_port::runtime::operation_control::interruption_event::RelationalInterruptionEventOwnerPort as _;
+
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 #[test]
 fn request_observation_retains_both_control_stops_at_its_boundary() {

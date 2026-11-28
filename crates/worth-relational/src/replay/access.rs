@@ -1,19 +1,10 @@
 use crate::history::data::CommitId;
 use crate::history::data::SharedCanonicalCommitEnvelope;
-use crate::replay::data::RelationalReplayOutcome;
 use crate::runtime::RelationalRuntime;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
 
-pub struct ReplayAccess<'runtime> {
-    runtime: &'runtime RelationalRuntime,
-}
-
-impl<'runtime> ReplayAccess<'runtime> {
-    pub(crate) fn new(runtime: &'runtime RelationalRuntime) -> Self {
-        Self { runtime }
-    }
-
-    pub fn canonical_commit_envelope(
+impl RelationalRuntime {
+    pub fn replay_commit_envelope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: CommitId,
@@ -21,19 +12,8 @@ impl<'runtime> ReplayAccess<'runtime> {
         Option<SharedCanonicalCommitEnvelope>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        self.runtime
-            .history()
+        self.history()
             .demand_commit_envelope(execution, commit_id)
             .map(|envelope| envelope.map(SharedCanonicalCommitEnvelope::from_arc))
-    }
-
-    pub fn compare_outcome(&self, outcome: &RelationalReplayOutcome) -> bool {
-        outcome.failure.is_none() && outcome.mismatches.is_empty()
-    }
-}
-
-impl RelationalRuntime {
-    pub(crate) fn replay_access(&self) -> ReplayAccess<'_> {
-        ReplayAccess::new(self)
     }
 }

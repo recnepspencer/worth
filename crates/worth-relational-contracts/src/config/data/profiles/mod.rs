@@ -1,38 +1,16 @@
-pub mod override_application;
-pub mod presets;
-
-use std::collections::BTreeMap;
+mod presets;
 
 use crate::config::data::*;
 
-use override_application::apply_config_overrides;
-use presets::default_profile_config;
-
 impl RelationalRuntimeConfig {
-    pub fn resolved(
-        profile: RelationalRuntimeProfile,
-        overrides: RelationalConfigOverride,
-    ) -> Self {
-        let mut config = default_profile_config(profile);
-        let mut provenance_entries = BTreeMap::new();
-
-        apply_config_overrides(&mut config, &overrides, &mut provenance_entries);
-
-        config.overrides = overrides;
-        config.provenance = ConfigProvenance {
-            profile,
-            entries: provenance_entries,
-        };
-        config
+    pub fn for_profile(profile: RelationalRuntimeProfile) -> Self {
+        presets::default_profile_config(profile)
     }
 }
 
 impl Default for RelationalRuntimeConfig {
     fn default() -> Self {
-        Self::resolved(
-            RelationalRuntimeProfile::CertificationCore,
-            RelationalConfigOverride::default(),
-        )
+        Self::for_profile(RelationalRuntimeProfile::CertificationCore)
     }
 }
 
@@ -80,8 +58,7 @@ mod tests {
             RelationalRuntimeProfile::ChipSimulation,
             RelationalRuntimeProfile::AiWorkflow,
         ] {
-            let config =
-                RelationalRuntimeConfig::resolved(profile, RelationalConfigOverride::default());
+            let config = RelationalRuntimeConfig::for_profile(profile);
             assert!(
                 config.profile_boundary_matches_defaults(),
                 "profile {:?} drifted from its boundary defaults",
@@ -92,12 +69,9 @@ mod tests {
 
     #[test]
     fn overriding_diagnostics_profile_breaks_boundary_default_match() {
-        let mut overrides = RelationalConfigOverride::default();
-        overrides.diagnostics.profile =
-            Some(RelationalDiagnosticsProfile::chip_rich_certification());
-
-        let config =
-            RelationalRuntimeConfig::resolved(RelationalRuntimeProfile::ChipSimulation, overrides);
+        let mut config =
+            RelationalRuntimeConfig::for_profile(RelationalRuntimeProfile::ChipSimulation);
+        config.diagnostics.profile = RelationalDiagnosticsProfile::chip_rich_certification();
 
         assert!(!config.profile_boundary_matches_defaults());
     }

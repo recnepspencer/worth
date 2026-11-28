@@ -1,25 +1,27 @@
 //! Opaque shared PartitionId observations keep their original decode admission.
+use crate::admitted_shared::AdmittedShared;
 use crate::identity::data::PartitionId;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::sync::{Arc, OnceLock};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use worth_execution::ExecutionMemoryReservation;
 
-pub struct InvariantPartitionIds(Arc<Backing>);
-struct Backing {
-    values: Arc<[PartitionId]>,
-    memory: OnceLock<Option<ExecutionMemoryReservation>>,
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct InvariantPartitionIds(AdmittedShared<[PartitionId]>);
+
+impl std::fmt::Debug for InvariantPartitionIds {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(&self.0, formatter)
+    }
 }
 impl InvariantPartitionIds {
     pub fn as_slice(&self) -> &[PartitionId] {
-        &self.0.values
+        &self.0
     }
 }
 impl From<Arc<[PartitionId]>> for InvariantPartitionIds {
     fn from(values: Arc<[PartitionId]>) -> Self {
-        Self(Arc::new(Backing {
-            values,
-            memory: OnceLock::new(),
-        }))
+        Self(AdmittedShared::new(values))
     }
 }
 impl From<Vec<PartitionId>> for InvariantPartitionIds {
@@ -30,11 +32,6 @@ impl From<Vec<PartitionId>> for InvariantPartitionIds {
 impl<const N: usize> From<[PartitionId; N]> for InvariantPartitionIds {
     fn from(values: [PartitionId; N]) -> Self {
         Self::from(Arc::<[PartitionId]>::from(values))
-    }
-}
-impl Clone for InvariantPartitionIds {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
     }
 }
 impl Default for InvariantPartitionIds {
@@ -60,27 +57,6 @@ impl<'a> IntoIterator for &'a InvariantPartitionIds {
         self.as_slice().iter()
     }
 }
-impl std::fmt::Debug for InvariantPartitionIds {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.values.fmt(f)
-    }
-}
-impl PartialEq for InvariantPartitionIds {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.values == other.0.values
-    }
-}
-impl Eq for InvariantPartitionIds {}
-impl Serialize for InvariantPartitionIds {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.0.values.serialize(serializer)
-    }
-}
-impl<'de> Deserialize<'de> for InvariantPartitionIds {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Arc::<[PartitionId]>::deserialize(deserializer).map(Self::from)
-    }
-}
 
 /// Operations used by the Relational owners.
 pub trait InvariantPartitionIdsOwnerPort: Sized {
@@ -96,15 +72,10 @@ impl InvariantPartitionIdsOwnerPort for InvariantPartitionIds {
         &self,
         memory: Option<ExecutionMemoryReservation>,
     ) -> Result<(), Option<ExecutionMemoryReservation>> {
-        self.0.memory.set(memory)
+        self.0.retain_decoded_memory(memory)
     }
 
     fn control_bytes() -> Option<u64> {
-        let layout = std::alloc::Layout::new::<(usize, usize)>()
-            .extend(std::alloc::Layout::new::<Backing>())
-            .ok()?
-            .0
-            .pad_to_align();
-        u64::try_from(layout.size()).ok()
+        AdmittedShared::<[PartitionId]>::control_bytes()
     }
 }

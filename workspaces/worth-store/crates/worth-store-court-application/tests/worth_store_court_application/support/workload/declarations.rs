@@ -98,12 +98,8 @@ pub(crate) const RUNTIME_NAME: &str = "relational-home-oracle";
 /// The oracle runtime, declaring the schema registry at `schema`.
 pub(crate) fn runtime_builder(schema: SchemaVersionId) -> RelationalRuntimeBuilder {
     worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .runtime_setup(|runtime| {
-            runtime.runtime_name(RUNTIME_NAME);
-        })
-        .schema_setup(move |setup| {
-            setup.schema_registry(crate::schema_transition::registry(schema));
-        })
+        .runtime_name(RUNTIME_NAME)
+        .schema_registry(crate::schema_transition::registry(schema))
 }
 
 pub(crate) fn serial_request() -> SerialRequest {

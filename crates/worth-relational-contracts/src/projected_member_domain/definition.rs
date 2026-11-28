@@ -99,17 +99,8 @@ impl ProjectedMemberDomainIdentityOwnerPort for ProjectedMemberDomainIdentity {
     }
 }
 
-/// Operations used by the Relational owners.
-pub trait ProjectedMemberDomainPartsOwnerPort: Sized {
-    fn clone_allocation_bytes(
-        &self,
-        control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
-    ) -> Result<usize, crate::execution::denial_cause::RelationalExecutionDenialCause>;
-    fn owned_bytes(&self) -> usize;
-}
-
-impl ProjectedMemberDomainPartsOwnerPort for ProjectedMemberDomainParts {
-    fn clone_allocation_bytes(
+impl ProjectedMemberDomainParts {
+    pub(crate) fn clone_allocation_bytes(
         &self,
         control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
     ) -> Result<usize, crate::execution::denial_cause::RelationalExecutionDenialCause> {
@@ -125,7 +116,7 @@ impl ProjectedMemberDomainPartsOwnerPort for ProjectedMemberDomainParts {
         Ok(bytes)
     }
 
-    fn owned_bytes(&self) -> usize {
+    pub(crate) fn owned_bytes(&self) -> usize {
         self.identity
             .owned_bytes()
             .saturating_add(self.cases.capacity().saturating_mul(size_of::<String>()))

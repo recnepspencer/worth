@@ -48,7 +48,6 @@ mod owned_medium_tamper;
 pub(crate) use canonical_commit_frame::reseal_canonical_commit_frame;
 pub(crate) use captured_members::{
     captured_members_source, captured_members_source_with_fallback, empty_cold_source,
-    encode_checkpoint_with_source, CapturedMembersColdSource,
 };
 pub(crate) use external_capture::capture_checkpoint_with_source;
 use owned_medium::{bounded_bytes, downcast_snapshot, map_owned_denial, OwnedMediumAttachment};
@@ -181,8 +180,6 @@ impl ColdSource for OwnedTestDurableMedium {
         position: PatchStreamPosition,
         limit: u64,
     ) -> Result<ImmBytes, ReadRefusal> {
-        self.check_and_record_commit_read(position)
-            .map_err(ReadRefusal::Storage)?;
         downcast_snapshot(original)?
             .canonical(request, position.0, limit)
             .map_err(map_owned_denial)
@@ -254,7 +251,6 @@ impl ColdSource for OwnedTestDurableMedium {
         position: PatchStreamPosition,
         limit: u64,
     ) -> Result<Vec<u8>, StorageCause> {
-        self.check_and_record_commit_read(position)?;
         bounded_bytes(
             self.lock()
                 .commits

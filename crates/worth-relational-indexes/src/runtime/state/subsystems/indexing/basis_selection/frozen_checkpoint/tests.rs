@@ -43,7 +43,7 @@ fn live(
     }
     let state = Arc::make_mut(&mut basis.state);
     for index in empty {
-        state.empty.insert(DerivedIndexId(*index));
+        state.exact.empty.insert(DerivedIndexId(*index));
     }
     basis
 }

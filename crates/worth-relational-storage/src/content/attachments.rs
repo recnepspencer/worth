@@ -3,20 +3,20 @@ use super::{
     RelationalContentDenial as Denial, RelationalContentFrame, RelationalContentRecord,
     MAXIMUM_STAGED_CONTENT_BYTES,
 };
+use crate::storage::substrate::storage_allocation::StorageAllocation;
 use serde::{ser::SerializeSeq, Deserialize, Deserializer, Serialize, Serializer};
 use std::sync::Arc;
-use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionRequest};
+use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 
 #[derive(Clone, Debug, Default)]
 pub struct RelationalContentAttachments {
-    live: Option<Arc<Staged>>,
+    live: Option<StorageAllocation<Staged>>,
     transport: Option<Arc<Vec<RelationalContentRecord>>>,
 }
 #[derive(Debug)]
 struct Staged {
     records: ExecutionOrderedMap<u64, RelationalContentRecord>,
     bytes: usize,
-    _memory: Option<ExecutionMemoryReservation>,
 }
 impl PartialEq for RelationalContentAttachments {
     fn eq(&self, other: &Self) -> bool {
@@ -101,7 +101,7 @@ impl RelationalContentAttachments {
             });
         }
         let memory = execution
-            .reserve_retained_memory((size_of::<Staged>() + 2 * size_of::<usize>()) as u64)
+            .reserve_retained_memory(StorageAllocation::<Staged>::layout_bytes())
             .map_err(|cause| Denial::Execution(cause.into()))?;
         let mut records = match &self.live {
             Some(stage) => stage.records.clone(),
@@ -117,11 +117,10 @@ impl RelationalContentAttachments {
         records
             .insert_cloned_native_for_request(&index, record, *execution)
             .map_err(super::directory::map_denial)?;
-        self.live = Some(Arc::new(Staged {
-            records,
-            bytes,
-            _memory: memory,
-        }));
+        self.live = Some(StorageAllocation::from_reserved(
+            Staged { records, bytes },
+            memory,
+        ));
         Ok(())
     }
 }
@@ -192,7 +191,7 @@ pub trait RelationalContentAttachmentsOwnerPort: Sized {
 impl RelationalContentAttachmentsOwnerPort for RelationalContentAttachments {
     fn same_staging(&self, other: &Self) -> bool {
         match (&self.live, &other.live) {
-            (Some(left), Some(right)) => Arc::ptr_eq(left, right),
+            (Some(left), Some(right)) => left.shares_backing(right),
             (None, None) => self.is_empty() && other.is_empty(),
             _ => false,
         }

@@ -1199,7 +1199,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 
 
-"performance/data/complexity_contract_inventory" = "contracts"
 
 "mvcc/publication/companion/cell/managed_source/cache_retirement.rs" = "runtime"
 

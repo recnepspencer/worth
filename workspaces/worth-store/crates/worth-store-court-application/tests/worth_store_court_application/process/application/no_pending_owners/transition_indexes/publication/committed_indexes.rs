@@ -53,8 +53,7 @@ pub(super) fn observe(
     );
     let receipt = native.history().historical_latest_commit().unwrap();
     let envelope = native
-        .replay()
-        .canonical_commit_envelope(execution, receipt.commit_id)
+        .replay_commit_envelope(execution, receipt.commit_id)
         .unwrap()
         .unwrap();
     let wire: serde_json::Value =

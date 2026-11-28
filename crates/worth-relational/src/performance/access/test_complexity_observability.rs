@@ -1,7 +1,6 @@
 use super::PerformanceAccess;
-use crate::performance::data::{
-    ComplexityContract, RuntimeComplexityCounters, COMPLEXITY_CONTRACTS,
-};
+use crate::performance::data::{ComplexityContract, RuntimeComplexityCounters};
+use crate::tests::complexity::complexity_contract_inventory::COMPLEXITY_CONTRACTS;
 
 impl PerformanceAccess<'_> {
     pub fn contracts(&self) -> &'static [ComplexityContract] {

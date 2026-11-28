@@ -1,25 +1,27 @@
 //! Opaque shared EntityId observations keep their original decode admission.
+use crate::admitted_shared::AdmittedShared;
 use crate::identity::data::EntityId;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::sync::{Arc, OnceLock};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use worth_execution::ExecutionMemoryReservation;
 
-pub struct InvariantEntityIds(Arc<Backing>);
-struct Backing {
-    values: Arc<[EntityId]>,
-    memory: OnceLock<Option<ExecutionMemoryReservation>>,
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct InvariantEntityIds(AdmittedShared<[EntityId]>);
+
+impl std::fmt::Debug for InvariantEntityIds {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(&self.0, formatter)
+    }
 }
 impl InvariantEntityIds {
     pub fn as_slice(&self) -> &[EntityId] {
-        &self.0.values
+        &self.0
     }
 }
 impl From<Arc<[EntityId]>> for InvariantEntityIds {
     fn from(values: Arc<[EntityId]>) -> Self {
-        Self(Arc::new(Backing {
-            values,
-            memory: OnceLock::new(),
-        }))
+        Self(AdmittedShared::new(values))
     }
 }
 impl From<Vec<EntityId>> for InvariantEntityIds {
@@ -30,11 +32,6 @@ impl From<Vec<EntityId>> for InvariantEntityIds {
 impl<const N: usize> From<[EntityId; N]> for InvariantEntityIds {
     fn from(values: [EntityId; N]) -> Self {
         Self::from(Arc::<[EntityId]>::from(values))
-    }
-}
-impl Clone for InvariantEntityIds {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
     }
 }
 impl Default for InvariantEntityIds {
@@ -60,27 +57,6 @@ impl<'a> IntoIterator for &'a InvariantEntityIds {
         self.as_slice().iter()
     }
 }
-impl std::fmt::Debug for InvariantEntityIds {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.values.fmt(f)
-    }
-}
-impl PartialEq for InvariantEntityIds {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.values == other.0.values
-    }
-}
-impl Eq for InvariantEntityIds {}
-impl Serialize for InvariantEntityIds {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.0.values.serialize(serializer)
-    }
-}
-impl<'de> Deserialize<'de> for InvariantEntityIds {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Arc::<[EntityId]>::deserialize(deserializer).map(Self::from)
-    }
-}
 
 /// Operations used by the Relational owners.
 pub trait InvariantEntityIdsOwnerPort: Sized {
@@ -96,15 +72,10 @@ impl InvariantEntityIdsOwnerPort for InvariantEntityIds {
         &self,
         memory: Option<ExecutionMemoryReservation>,
     ) -> Result<(), Option<ExecutionMemoryReservation>> {
-        self.0.memory.set(memory)
+        self.0.retain_decoded_memory(memory)
     }
 
     fn control_bytes() -> Option<u64> {
-        let layout = std::alloc::Layout::new::<(usize, usize)>()
-            .extend(std::alloc::Layout::new::<Backing>())
-            .ok()?
-            .0
-            .pad_to_align();
-        u64::try_from(layout.size()).ok()
+        AdmittedShared::<[EntityId]>::control_bytes()
     }
 }

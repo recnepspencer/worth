@@ -54,13 +54,11 @@ impl BasisSelections {
     pub(super) fn install(&mut self, basis: PreparedIndexBasisSelection) {
         let version = basis.version;
         let branch = basis.branch.clone();
-        if !basis.state.global.is_empty() || !basis.state.global_empty.is_empty() {
+        if !basis.state.global.is_empty() {
             let mut global = basis.clone();
             global.state = Arc::new(super::IndexSelectionState {
-                entries: basis.state.global.clone(),
-                empty: basis.state.global_empty.clone(),
+                exact: basis.state.global.clone(),
                 global: basis.state.global.clone(),
-                global_empty: basis.state.global_empty.clone(),
             });
             self.replace_lookup((None, version), Some(Arc::new(global)));
         }
@@ -95,18 +93,13 @@ impl BasisSelections {
         let changed: Vec<_> = self
             .entries
             .iter()
-            .filter(|(_, basis)| {
-                basis.state.entries.contains_key(&index) || basis.state.empty.contains(&index)
-            })
+            .filter(|(_, basis)| basis.state.exact.contains(&index))
             .map(|(key, basis)| (key.clone(), basis.as_ref().clone()))
             .collect();
         for (key, mut basis) in changed {
             let state = Arc::make_mut(&mut basis.state);
-            state.entries.remove(&index);
-            state.empty.remove(&index);
-            state.global.remove(&index);
-            state.global_empty.remove(&index);
-            if basis.state.entries.is_empty() && basis.state.empty.is_empty() {
+            state.remove(&index);
+            if state.exact.is_empty() {
                 self.replace_lookup(key, None);
             } else {
                 self.replace_lookup(key, Some(Arc::new(basis)));
@@ -221,11 +214,11 @@ impl PreparedIndexBasisSelection {
     }
 
     pub(crate) fn generation_is_empty(&self, index: DerivedIndexId) -> bool {
-        self.state.empty.contains(&index)
+        self.state.exact.empty.contains(&index)
     }
 
     pub(crate) fn generation(&self, index: DerivedIndexId) -> Option<Arc<DerivedIndexGeneration>> {
-        self.state.entries.get(&index).map(Arc::clone)
+        self.state.exact.generations.get(&index).map(Arc::clone)
     }
     pub(super) fn contains_generation(
         &self,
@@ -233,7 +226,8 @@ impl PreparedIndexBasisSelection {
         generation: crate::contracts::indexes::data::definition::DerivedIndexGenerationId,
     ) -> bool {
         self.state
-            .entries
+            .exact
+            .generations
             .get(&index)
             .is_some_and(|entry| entry.generation_id == generation)
     }
@@ -242,27 +236,9 @@ impl PreparedIndexBasisSelection {
         index: DerivedIndexId,
         prepare: &mut dyn FnMut(u64, u64) -> Result<(), Denial>,
     ) -> Result<(), Denial> {
-        let (units, bytes) = payment::inner(
-            self.state
-                .entries
-                .len()
-                .saturating_add(self.state.empty.len()),
-        )
-        .ok_or(Denial::WorkBudgetExceeded)?;
-        let state_bytes = if Arc::strong_count(&self.state) > 1 {
-            std::mem::size_of::<super::IndexSelectionState>() + 2 * std::mem::size_of::<usize>()
-        } else {
-            0
-        };
-        prepare(units + 1, bytes + state_bytes as u64)?;
+        self.admit_binding_edit(0, prepare)?;
         let state = Arc::make_mut(&mut self.state);
-        if state.entries.contains_key(&index) {
-            state.entries.remove(&index);
-        } else {
-            state.empty.remove(&index);
-        }
-        state.global.remove(&index);
-        state.global_empty.remove(&index);
+        state.remove(&index);
         Ok(())
     }
     pub(crate) fn replace_admitted(
@@ -270,35 +246,14 @@ impl PreparedIndexBasisSelection {
         generation: Arc<DerivedIndexGeneration>,
         prepare: &mut dyn FnMut(u64, u64) -> Result<(), Denial>,
     ) -> Result<(), Denial> {
-        let (units, bytes) = payment::inner(
-            self.state
-                .entries
-                .len()
-                .saturating_add(self.state.empty.len())
-                .saturating_add(1),
-        )
-        .ok_or(Denial::WorkBudgetExceeded)?;
-        let state_bytes = if Arc::strong_count(&self.state) > 1 {
-            std::mem::size_of::<super::IndexSelectionState>() + 2 * std::mem::size_of::<usize>()
-        } else {
-            0
-        };
-        prepare(units + 1, bytes + state_bytes as u64)?;
+        self.admit_binding_edit(1, prepare)?;
         self.replace(generation);
         Ok(())
     }
     pub(crate) fn replace(&mut self, generation: Arc<DerivedIndexGeneration>) {
         let state = Arc::make_mut(&mut self.state);
-        if state.empty.contains(&generation.index_id) {
-            state.empty.remove(&generation.index_id);
-        }
-        if self.globals.contains(&generation.index_id) {
-            state.global_empty.remove(&generation.index_id);
-            state
-                .global
-                .insert(generation.index_id, Arc::clone(&generation));
-        }
-        state.entries.insert(generation.index_id, generation);
+        let global = self.globals.contains(&generation.index_id);
+        state.replace(generation, global);
     }
 }
 impl IndexingState {

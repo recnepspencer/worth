@@ -35,9 +35,7 @@ pub(super) fn seeded(
         .unwrap();
     let fixture = super::coupled_home::open(
         location,
-        RelationalRuntimeApi::builder().schema_setup(move |schema| {
-            schema.schema_registry(registry);
-        }),
+        RelationalRuntimeApi::builder().schema_registry(registry),
         true,
         execution,
     );

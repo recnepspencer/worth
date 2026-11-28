@@ -116,9 +116,7 @@ fn replay_relation_history_isolates_sibling_branches_on_same_relation_id() {
         })
         .unwrap();
     let rt = RelationalRuntimeApi::builder()
-        .schema_setup(|s| {
-            s.schema_registry(reg);
-        })
+        .schema_registry(reg)
         .build()
         .unwrap();
     let serial = SerialRequest::from_memory(

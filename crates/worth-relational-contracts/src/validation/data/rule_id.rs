@@ -1,5 +1,6 @@
+use crate::admitted_shared::AdmittedShared;
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 pub mod custom_rule_name;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -28,7 +29,8 @@ pub enum NativeInvariantRuleId {
 
 /// Shared rule text has an intrinsic cold-read admission through every clone.
 /// Ordinary construction retains the existing explicitly unbudgeted contract.
-pub struct CustomInvariantRuleId(Arc<custom_rule_name::Backing>);
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CustomInvariantRuleId(AdmittedShared<str>);
 
 // Public meaning is immutable shared text. The private one-shot grant slot
 // retains lifetime bookkeeping and exposes no mutable identifier semantics.
@@ -37,10 +39,10 @@ impl std::panic::UnwindSafe for CustomInvariantRuleId {}
 
 impl CustomInvariantRuleId {
     pub fn new(id: impl Into<Arc<str>>) -> Self {
-        Self(Arc::new(custom_rule_name::Backing::new(id.into())))
+        Self(AdmittedShared::new(id.into()))
     }
     pub fn as_str(&self) -> &str {
-        self.0.text()
+        &self.0
     }
 }
 
@@ -80,6 +82,6 @@ impl CustomInvariantRuleIdOwnerPort for CustomInvariantRuleId {
     }
 
     fn control_bytes() -> Option<u64> {
-        custom_rule_name::Backing::control_bytes()
+        AdmittedShared::<str>::control_bytes()
     }
 }

@@ -65,10 +65,10 @@ pub(super) fn expand(
             &*source,
             page.member,
             RelationalStorageSubject::Symbols {
-                first: worth_relational_contracts::internal_port::symbols::data::symbol::Symbol(
+                first: worth_relational_contracts::internal_port::symbols::data::Symbol(
                     page.first as u32,
                 ),
-                last: worth_relational_contracts::internal_port::symbols::data::symbol::Symbol(
+                last: worth_relational_contracts::internal_port::symbols::data::Symbol(
                     page.last as u32,
                 ),
             },

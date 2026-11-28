@@ -1,6 +1,6 @@
 //! An immutable projection retains its digest and original backing together.
 use super::SchemaAuthoritySnapshotParts;
-use crate::internal_port::schema::data::authority_snapshot::SchemaAuthoritySnapshotPartsOwnerPort as _;
+
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};

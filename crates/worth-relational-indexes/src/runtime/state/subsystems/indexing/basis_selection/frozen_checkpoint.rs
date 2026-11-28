@@ -156,7 +156,8 @@ impl<'a> Iterator for Paired<'a> {
 fn bound(
     live: &[Arc<PreparedIndexBasisSelection>],
 ) -> impl Iterator<Item = &Arc<DerivedIndexGeneration>> {
-    live.iter().flat_map(|basis| basis.state.entries.values())
+    live.iter()
+        .flat_map(|basis| basis.state.exact.generations.values())
 }
 fn rostered(
     live: &[Arc<PreparedIndexBasisSelection>],
@@ -181,7 +182,10 @@ fn capacities(
     image: Option<&IndexBasisCheckpoint>,
 ) -> Result<(usize, usize), Denial> {
     let (entries, selected_empty) = live.map_or((0, 0), |live| {
-        (live.state.entries.len(), live.state.empty.len())
+        (
+            live.state.exact.generations.len(),
+            live.state.exact.empty.len(),
+        )
     });
     Ok((
         entries
@@ -225,18 +229,15 @@ fn portable(
     let mut bindings = Vec::with_capacity(binding_capacity);
     let mut empty = Vec::with_capacity(empty_capacity);
     if let Some(live) = live {
-        for (index, generation) in &live.state.entries {
+        for (index, generation) in &live.state.exact.generations {
             require_rostered(roster, *index, generation.generation_id)?;
             bindings.push((*index, generation.generation_id));
         }
-        empty.extend(live.state.empty.iter().copied());
+        empty.extend(live.state.exact.empty.iter().copied());
     }
     if let Some(image) = image {
-        let selected = |index: &DerivedIndexId| {
-            live.is_some_and(|live| {
-                live.state.entries.contains_key(index) || live.state.empty.contains(index)
-            })
-        };
+        let selected =
+            |index: &DerivedIndexId| live.is_some_and(|live| live.state.exact.contains(index));
         for (index, generation) in image.bindings.iter().filter(|(index, _)| !selected(index)) {
             require_rostered(roster, *index, *generation)?;
             bindings.push((*index, *generation));

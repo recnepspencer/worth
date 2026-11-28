@@ -5,7 +5,7 @@ use worth_relational_branch::internal_port::history::data::canonical_commit_enve
 use contracts::history::data::canonical_record_allocation::{
     CancelledRecordAllocation, CanonicalRecordAllocation,
 };
-use contracts::symbols::data::symbol::Symbol;
+use contracts::symbols::data::Symbol;
 
 pub(in super::super) fn quote(
     payload: &[u8],

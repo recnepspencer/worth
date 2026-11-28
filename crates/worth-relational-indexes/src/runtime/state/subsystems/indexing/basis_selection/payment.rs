@@ -75,3 +75,21 @@ pub(super) fn inner(mut entries: usize) -> Option<(u64, u64)> {
         nodes.checked_mul(bytes)?.checked_mul(2)?,
     ))
 }
+
+impl PreparedIndexBasisSelection {
+    /// Fund both persistent paths before changing an exact-root binding.
+    pub(super) fn admit_binding_edit(
+        &self,
+        additional: usize,
+        prepare: &mut dyn FnMut(u64, u64) -> Result<(), super::Denial>,
+    ) -> Result<(), super::Denial> {
+        let (units, bytes) = inner(self.state.exact.len().saturating_add(additional))
+            .ok_or(super::Denial::WorkBudgetExceeded)?;
+        let state_bytes = if Arc::strong_count(&self.state) > 1 {
+            std::mem::size_of::<super::super::IndexSelectionState>() + 2 * std::mem::size_of::<usize>()
+        } else {
+            0
+        };
+        prepare(units + 1, bytes + state_bytes as u64)
+    }
+}

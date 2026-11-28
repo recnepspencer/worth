@@ -190,8 +190,7 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
     );
     assert_eq!(
         runtime
-            .replay()
-            .canonical_commit_envelope(execution, performed.canonical_commit().commit.commit_id)
+            .replay_commit_envelope(execution, performed.canonical_commit().commit.commit_id)
             .unwrap()
             .as_deref(),
         Some(performed.canonical_commit()),
@@ -199,8 +198,7 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
     );
     assert_eq!(
         runtime
-            .replay()
-            .canonical_commit_envelope(execution, performed.canonical_commit().commit.commit_id)
+            .replay_commit_envelope(execution, performed.canonical_commit().commit.commit_id)
             .unwrap()
             .as_deref(),
         Some(performed.canonical_commit()),

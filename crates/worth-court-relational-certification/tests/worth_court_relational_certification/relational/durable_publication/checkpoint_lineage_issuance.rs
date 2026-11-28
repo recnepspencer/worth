@@ -25,8 +25,7 @@ fn discard_after_anchor(
 ) -> (u64, u64) {
     let committed = create_entity_outcome(execution, runtime, "published-lineage-anchor");
     let envelope = runtime
-        .replay()
-        .canonical_commit_envelope(execution, committed.commit.commit_id)
+        .replay_commit_envelope(execution, committed.commit.commit_id)
         .unwrap()
         .unwrap();
     let floor = published_floor(&envelope);
@@ -114,8 +113,7 @@ fn published_lineage_identities_stay_spent_after_image_embedded_and_cold_recover
             .unwrap();
         let created = create_entity_outcome(execution, &receiver, "after-lineage-reopen");
         let envelope = receiver
-            .replay()
-            .canonical_commit_envelope(execution, created.commit.commit_id)
+            .replay_commit_envelope(execution, created.commit.commit_id)
             .unwrap()
             .unwrap();
         assert!(!envelope.lineage_events().is_empty());
@@ -176,8 +174,7 @@ fn inflight_lineage_tail_recovery_keeps_every_published_identity_spent() {
     let committed = producer.settle_performed_publication(performed).unwrap();
     release_test_commit_snapshot(&producer, &committed);
     let envelope = producer
-        .replay()
-        .canonical_commit_envelope(execution, committed.commit.commit_id)
+        .replay_commit_envelope(execution, committed.commit.commit_id)
         .unwrap()
         .unwrap();
     let (node_floor, event_floor) = published_floor(&envelope);
@@ -200,8 +197,7 @@ fn inflight_lineage_tail_recovery_keeps_every_published_identity_spent() {
     );
     let created = create_entity_outcome(execution, &receiver, "lineage-after-inflight-replay");
     let envelope = receiver
-        .replay()
-        .canonical_commit_envelope(execution, created.commit.commit_id)
+        .replay_commit_envelope(execution, created.commit.commit_id)
         .unwrap()
         .unwrap();
     assert!(envelope

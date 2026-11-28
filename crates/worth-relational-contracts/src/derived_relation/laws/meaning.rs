@@ -25,15 +25,8 @@ pub struct DerivedRelationGraphLaws {
     pub reaches_at_least: Option<DerivedRelationMinimumReachability>,
 }
 
-/// Operations used by the Relational owners.
-pub trait DerivedRelationGraphLawsOwnerPort: Sized {
-    fn valid(&self, from: &NativeMemberDomain, to: &NativeMemberDomain) -> bool;
-    fn clone_allocation_bytes(&self, checkpoint: &mut dyn FnMut() -> Option<()>) -> Option<usize>;
-    fn owned_bytes(&self) -> usize;
-}
-
-impl DerivedRelationGraphLawsOwnerPort for DerivedRelationGraphLaws {
-    fn valid(&self, from: &NativeMemberDomain, to: &NativeMemberDomain) -> bool {
+impl DerivedRelationGraphLaws {
+    pub(crate) fn valid(&self, from: &NativeMemberDomain, to: &NativeMemberDomain) -> bool {
         self.cardinality.is_valid()
             && (!self.orbit || from == to)
             && self.reaches_at_least.as_ref().is_none_or(|minimum| {
@@ -46,7 +39,10 @@ impl DerivedRelationGraphLawsOwnerPort for DerivedRelationGraphLaws {
             })
     }
 
-    fn clone_allocation_bytes(&self, checkpoint: &mut dyn FnMut() -> Option<()>) -> Option<usize> {
+    pub(crate) fn clone_allocation_bytes(
+        &self,
+        checkpoint: &mut dyn FnMut() -> Option<()>,
+    ) -> Option<usize> {
         let Some(minimum) = &self.reaches_at_least else {
             return Some(0);
         };
@@ -62,7 +58,7 @@ impl DerivedRelationGraphLawsOwnerPort for DerivedRelationGraphLaws {
         )
     }
 
-    fn owned_bytes(&self) -> usize {
+    pub(crate) fn owned_bytes(&self) -> usize {
         self.reaches_at_least.as_ref().map_or(0, |minimum| {
             minimum
                 .target_domains

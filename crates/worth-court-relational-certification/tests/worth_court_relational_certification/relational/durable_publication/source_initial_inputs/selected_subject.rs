@@ -229,8 +229,7 @@ fn complete_preserves_partial_update_without_demanding_untouched_aspect_referenc
     let untouched_symbol = symbol("lifecycle").expect("creation published real lifecycle meaning");
     let changed_symbol = symbol("name").unwrap();
     let envelope = runtime
-        .replay()
-        .canonical_commit_envelope(&execution, updated.commit.commit_id)
+        .replay_commit_envelope(&execution, updated.commit.commit_id)
         .unwrap()
         .unwrap();
     #[derive(serde::Deserialize)]

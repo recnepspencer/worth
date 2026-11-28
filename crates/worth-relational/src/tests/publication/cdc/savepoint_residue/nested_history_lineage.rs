@@ -199,9 +199,8 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
     assert!(entity_names.contains(&"surviving-final-anchor".into()));
     assert!(!entity_names.iter().any(|name| name.contains("abandoned")));
     assert_eq!(read.relations().len(), 1);
-    let replay = runtime.replay();
-    let envelope = replay
-        .canonical_commit_envelope(execution, outcome.commit.commit_id)
+    let envelope = runtime
+        .replay_commit_envelope(execution, outcome.commit.commit_id)
         .unwrap()
         .unwrap();
     assert!(!envelope

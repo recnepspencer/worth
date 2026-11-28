@@ -217,8 +217,7 @@ fn complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_
     assert!(recovered_counters.replay_digest_parity_checks >= 1);
     assert_eq!(recovered_counters.replay_deep_artifact_parity_checks, 0);
     assert!(recovered
-        .replay()
-        .canonical_commit_envelope(execution, transitioned.commit.commit_id)
+        .replay_commit_envelope(execution, transitioned.commit.commit_id)
         .unwrap()
         .is_some());
 }

@@ -1,7 +1,6 @@
-//! Actual native DTO staging plus Foundational's owned ready-sequence data.
+//! Quote the owned basis roster and the memory needed to certify its sequence.
 use super::*;
 use worth_foundational::facade::CanonicalBasisEntry;
-use worth_relational_contracts::internal_port::diagnostics::data::fields::RelationalDiagnosticFields;
 
 pub(super) fn quote(
     value: BorrowedPayload<'_>,
@@ -29,20 +28,13 @@ pub(super) fn quote(
                         )
                     })
                 })?;
-                let native = RelationalDiagnosticFields::native_basis_roster_storage_bytes(
-                    vector_capacity(count)?,
-                )
-                .and_then(|n| u64::try_from(n).ok())
-                .ok_or_else(malformed)?;
                 let final_roster = vector_storage::<CanonicalBasisEntry>(count)?;
-                // Native DTO -> ready entries conversion and the ready owner's
-                // stable sort overlap only owned contiguous rosters. A duplicate
-                // denial can clone one locus; summing actual nested payloads
-                // covers that clone without a private-node or wire-length guess.
+                // The direct entry decode moves its roster into readiness checking.
+                // Allow a full roster during collection and another for stable sort
+                // scratch. A duplicate denial can clone one locus.
                 nested.transient = nested
                     .transient
                     .checked_add(nested.retained)
-                    .and_then(|n| n.checked_add(native.checked_mul(2)?))
                     .and_then(|n| n.checked_add(final_roster.checked_mul(2)?))
                     .ok_or_else(malformed)?;
                 add(&mut nested, final_roster)?;

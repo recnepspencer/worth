@@ -1,4 +1,4 @@
-use sha2::{Digest, Sha256};
+use crate::aspect_wire::encoding_sink::{CanonicalAspectOutput, CanonicalHasher};
 
 use crate::schema::data::{SchemaBoundaryFingerprint, SchemaDiffAtom};
 
@@ -9,39 +9,42 @@ use super::normalized_transition::{
 
 pub fn fingerprint_transition(diff_atoms: &[SchemaDiffAtom]) -> SchemaBoundaryFingerprint {
     let normalized_transition = normalize_transition(diff_atoms);
-    let mut hasher = Sha256::new();
+    let mut hasher = CanonicalHasher::default();
     for atom in &normalized_transition.canonical_atoms {
         write_atom_to_hasher(&mut hasher, atom);
     }
 
-    let digest: [u8; 32] = hasher.finalize().into();
-    SchemaBoundaryFingerprint::new(digest)
+    SchemaBoundaryFingerprint::new(hasher.finish())
 }
 
-fn write_atom_to_hasher(hasher: &mut Sha256, atom: &CanonicalSchemaDiffAtom<'_>) {
+fn write_atom_to_hasher(hasher: &mut CanonicalHasher, atom: &CanonicalSchemaDiffAtom<'_>) {
     update_tagged_bytes(hasher, atom.atom.element.schema_id.0.as_bytes());
-    hasher.update(atom.atom.element.schema_version_id.0.to_le_bytes());
-    hasher.update([atom.atom.element.kind as u8]);
+    hasher
+        .u32_le(atom.atom.element.schema_version_id.0)
+        .unwrap();
+    hasher.byte(atom.atom.element.kind as u8).unwrap();
     match atom.atom.element.kind_id {
         Some(kind_id) => {
-            hasher.update([1]);
-            hasher.update(kind_id.0.to_le_bytes());
+            hasher.byte(1).unwrap();
+            hasher.u32_le(kind_id.0).unwrap();
         }
-        None => hasher.update([0]),
+        None => hasher.byte(0).unwrap(),
     }
     update_tagged_bytes(hasher, atom.atom.element.element_name.as_bytes());
-    hasher.update((atom.normalized_strata.len() as u64).to_le_bytes());
+    hasher.u64_le(atom.normalized_strata.len() as u64).unwrap();
     for stratum in &atom.normalized_strata {
-        hasher.update([*stratum as u8]);
+        hasher.byte(*stratum as u8).unwrap();
     }
-    hasher.update([atom.atom.publication_impact as u8]);
-    hasher.update([atom.atom.subscriber_impact as u8]);
-    hasher.update([atom.atom.historical_interpretation as u8]);
+    hasher.byte(atom.atom.publication_impact as u8).unwrap();
+    hasher.byte(atom.atom.subscriber_impact as u8).unwrap();
+    hasher
+        .byte(atom.atom.historical_interpretation as u8)
+        .unwrap();
     write_detail_to_hasher(hasher, &atom.normalized_detail);
 }
 
-fn write_detail_to_hasher(hasher: &mut Sha256, detail: &CanonicalSchemaDiffDetail<'_>) {
-    hasher.update([detail_sort_key(detail)]);
+fn write_detail_to_hasher(hasher: &mut CanonicalHasher, detail: &CanonicalSchemaDiffDetail<'_>) {
+    hasher.byte(detail_sort_key(detail)).unwrap();
     match detail {
         CanonicalSchemaDiffDetail::AddedField {
             field,
@@ -49,13 +52,13 @@ fn write_detail_to_hasher(hasher: &mut Sha256, detail: &CanonicalSchemaDiffDetai
             default_expression,
         } => {
             update_tagged_bytes(hasher, field.as_str().as_bytes());
-            hasher.update([u8::from(*required)]);
+            hasher.byte(u8::from(*required)).unwrap();
             match default_expression {
                 Some(expr) => {
-                    hasher.update([1]);
+                    hasher.byte(1).unwrap();
                     update_tagged_bytes(hasher, expr.as_bytes());
                 }
-                None => hasher.update([0]),
+                None => hasher.byte(0).unwrap(),
             }
         }
         CanonicalSchemaDiffDetail::RemovedField { field } => {
@@ -75,7 +78,7 @@ fn write_detail_to_hasher(hasher: &mut Sha256, detail: &CanonicalSchemaDiffDetai
             added_variants,
         } => {
             update_tagged_bytes(hasher, field.as_str().as_bytes());
-            hasher.update((added_variants.len() as u64).to_le_bytes());
+            hasher.u64_le(added_variants.len() as u64).unwrap();
             for variant in added_variants {
                 update_tagged_bytes(hasher, variant.as_bytes());
             }
@@ -92,12 +95,11 @@ fn write_detail_to_hasher(hasher: &mut Sha256, detail: &CanonicalSchemaDiffDetai
             declared_intent,
         } => {
             update_tagged_bytes(hasher, detail.as_bytes());
-            hasher.update([*declared_intent as u8]);
+            hasher.byte(*declared_intent as u8).unwrap();
         }
     }
 }
 
-fn update_tagged_bytes(hasher: &mut Sha256, bytes: &[u8]) {
-    hasher.update((bytes.len() as u64).to_le_bytes());
-    hasher.update(bytes);
+fn update_tagged_bytes(hasher: &mut CanonicalHasher, bytes: &[u8]) {
+    hasher.bytes_with_u64_length(bytes).unwrap();
 }

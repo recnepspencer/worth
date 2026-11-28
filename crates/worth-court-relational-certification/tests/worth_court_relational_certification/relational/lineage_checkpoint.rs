@@ -76,13 +76,11 @@ fn assert_original_lineage(
     committed: &CommitResult,
 ) {
     let original = runtime
-        .replay()
-        .canonical_commit_envelope(execution, committed.commit.commit_id)
+        .replay_commit_envelope(execution, committed.commit.commit_id)
         .unwrap()
         .expect("published original envelope");
     let restored = recovered
-        .replay()
-        .canonical_commit_envelope(execution, committed.commit.commit_id)
+        .replay_commit_envelope(execution, committed.commit.commit_id)
         .unwrap()
         .expect("restored original envelope");
     assert_eq!(original.lineage_events(), restored.lineage_events());

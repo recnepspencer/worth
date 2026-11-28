@@ -1,4 +1,4 @@
-use crate::capabilities::{RuntimeConfigSource, RuntimeIdentitySource};
+use crate::capabilities::RuntimeConfigSource;
 use crate::durability::data::{
     DurableCheckpoint, RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity, RecoveryPlan,
     RecoveryVerificationMode, RecoveryVerificationOutcome,

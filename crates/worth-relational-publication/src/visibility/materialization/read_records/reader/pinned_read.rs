@@ -112,7 +112,7 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
     pub fn with_symbol_text<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbol: contracts::symbols::data::symbol::Symbol,
+        symbol: contracts::symbols::data::Symbol,
         inspect: impl FnOnce(Option<&contracts::symbols::data::stored_text::StoredSymbolText>) -> T,
     ) -> Result<T, contracts::execution::denial_cause::RelationalExecutionDenialCause> {
         contracts::execution::request_custody::check_request(execution)?;

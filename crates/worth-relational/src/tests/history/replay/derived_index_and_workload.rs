@@ -134,7 +134,7 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
         )
         .unwrap();
     assert!(
-        runtime.replay().compare_outcome(&replay),
+        replay.matches_recorded_truth(),
         "hostile replay mismatch: {replay:#?}"
     );
     assert_eq!(replay.requested.verification_mode, ReplayVerificationMode::NormalRecoveryVerification);
@@ -176,7 +176,7 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
         &[relation],
         &[start_lineage],
     );
-    assert!(recovered.replay().compare_outcome(&recovered_replay_check));
+    assert!(recovered_replay_check.matches_recorded_truth());
     let recovered_bundle = capture_aspect_truth_bundle(
         execution,
         &recovered,
@@ -275,8 +275,7 @@ fn hostile_commit_replay_equivalence_test() {
         transition_outcome.commit.version_id,
     );
     let original_envelope = runtime
-        .replay()
-        .canonical_commit_envelope(execution, transition_outcome.commit.commit_id)
+        .replay_commit_envelope(execution, transition_outcome.commit.commit_id)
         .unwrap()
         .unwrap();
     let replay = runtime
@@ -292,7 +291,7 @@ fn hostile_commit_replay_equivalence_test() {
         )
         .unwrap();
     assert!(
-        runtime.replay().compare_outcome(&replay),
+        replay.matches_recorded_truth(),
         "hostile replay mismatch: {replay:#?}"
     );
 
@@ -335,8 +334,7 @@ fn hostile_commit_replay_equivalence_test() {
         transition_outcome.commit.version_id,
     );
     let recovered_envelope = recovered
-        .replay()
-        .canonical_commit_envelope(execution, transition_outcome.commit.commit_id)
+        .replay_commit_envelope(execution, transition_outcome.commit.commit_id)
         .unwrap()
         .unwrap();
     let recovered_replay = recovered

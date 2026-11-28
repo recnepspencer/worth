@@ -103,6 +103,30 @@ impl std::hash::Hash for InternedString {
 }
 
 impl InternedString {
+    pub fn raw(value: impl Into<String>) -> Self {
+        Self::Raw(value.into())
+    }
+
+    pub fn raw_equals(&self, expected: &str) -> bool {
+        self.raw_text() == Some(expected)
+    }
+
+    pub fn resolve_text<'a>(
+        &'a self,
+        resolve_symbol: impl FnOnce(Symbol) -> Option<&'a str>,
+    ) -> Option<&'a str> {
+        self.raw_text()
+            .or_else(|| self.as_symbol().and_then(resolve_symbol))
+    }
+
+    pub fn canonical_text(&self) -> std::borrow::Cow<'_, str> {
+        match self {
+            Self::Raw(raw) => std::borrow::Cow::Borrowed(raw.as_str()),
+            Self::Stored(raw) => std::borrow::Cow::Borrowed(raw.as_str()),
+            Self::Symbol(symbol) => std::borrow::Cow::Owned(format!("symbol:{}", symbol.0)),
+        }
+    }
+
     pub fn into_raw_text(self) -> Option<String> {
         match self {
             Self::Raw(text) => Some(text),

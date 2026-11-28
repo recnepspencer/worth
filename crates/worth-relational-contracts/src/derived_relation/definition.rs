@@ -1,5 +1,5 @@
 //! Descriptive recipes and the separate registry-issued executable handle.
-use crate::internal_port::derived_relation::laws::meaning::DerivedRelationGraphLawsOwnerPort as _;
+
 use crate::internal_port::graph_member::domain::NativeMemberDomainOwnerPort as _;
 use crate::internal_port::projected_member_domain::definition::ProjectedMemberDomainIdentityOwnerPort as _;
 use std::sync::Arc;
@@ -178,17 +178,8 @@ pub enum DerivedRelationDenial {
     SourceProgramIdentityExhausted,
 }
 
-/// Operations used by the Relational owners.
-pub trait DerivedRelationDefinitionPartsOwnerPort: Sized {
-    fn clone_allocation_bytes(
-        &self,
-        control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
-    ) -> Result<Option<usize>, crate::execution::denial_cause::RelationalExecutionDenialCause>;
-    fn owned_capacity_bytes(&self) -> usize;
-}
-
-impl DerivedRelationDefinitionPartsOwnerPort for DerivedRelationDefinitionParts {
-    fn clone_allocation_bytes(
+impl DerivedRelationDefinitionParts {
+    pub(crate) fn clone_allocation_bytes(
         &self,
         control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
     ) -> Result<Option<usize>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
@@ -206,7 +197,7 @@ impl DerivedRelationDefinitionPartsOwnerPort for DerivedRelationDefinitionParts 
         }
     }
 
-    fn owned_capacity_bytes(&self) -> usize {
+    pub(crate) fn owned_capacity_bytes(&self) -> usize {
         self.laws.as_ref().map_or(
             0,
             crate::derived_relation::laws::meaning::DerivedRelationGraphLaws::owned_bytes,

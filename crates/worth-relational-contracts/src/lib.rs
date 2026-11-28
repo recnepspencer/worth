@@ -7,6 +7,8 @@
 #[path = "internal_port.rs"]
 pub mod internal_port;
 
+mod admitted_shared;
+
 use internal_port::*;
 
 #[cfg(test)]

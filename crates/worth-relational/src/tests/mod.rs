@@ -1,6 +1,6 @@
 mod branch;
 mod change_source;
-mod complexity;
+pub(crate) mod complexity;
 mod domains;
 mod durability;
 mod harness;

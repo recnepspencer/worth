@@ -26,9 +26,8 @@ fn main() {
         Some(BranchId("feature".to_string())),
     );
 
-    let replay = runtime.replay();
-    let envelope = replay
-        .canonical_commit_envelope(execution, feature_commit.commit.commit_id)
+    let envelope = runtime
+        .replay_commit_envelope(execution, feature_commit.commit.commit_id)
         .expect("replay envelope storage remains available")
         .expect("the performed commit has its replay envelope");
 

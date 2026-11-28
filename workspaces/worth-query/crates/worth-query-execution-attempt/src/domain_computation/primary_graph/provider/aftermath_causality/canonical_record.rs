@@ -90,8 +90,7 @@ fn restores_companion(
         return Ok(false);
     };
     let envelope = runtime
-        .replay()
-        .canonical_commit_envelope(execution, commit.commit_id)
+        .replay_commit_envelope(execution, commit.commit_id)
         .map_err(|cause| aftermath_read_stop(cause.into()))?;
     Ok(matches!(
         envelope.map(|envelope| envelope.authority_kind()),

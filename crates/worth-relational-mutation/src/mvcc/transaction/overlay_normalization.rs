@@ -12,7 +12,7 @@ use crate::contracts::mvcc::transaction::staging::{
 };
 use crate::contracts::symbols::data::client_key_symbol_policy::ClientKeySymbolPolicy;
 use crate::contracts::symbols::data::string_interner::StringInterner;
-use crate::contracts::symbols::data::symbol::Symbol;
+use crate::contracts::symbols::data::Symbol;
 use std::collections::BTreeSet;
 
 impl DetachedRelationalTransactionOverlay {

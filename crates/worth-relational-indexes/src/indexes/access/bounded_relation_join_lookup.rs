@@ -57,16 +57,15 @@ pub fn lookup(
         overflowed,
         parity_mode,
     );
-    if parity_mode == BoundedIndexParityMode::Certification {
+    super::selected_index::certify_parity(parity_mode, read.instrumentation, || {
         certify_storage_parity(
             execution,
             &source,
             &prepared.verification,
             &request,
             &outcome,
-        )?;
-        read.instrumentation.count_query_index_parity_verification();
-    }
+        )
+    })?;
     read.instrumentation.count_query_index_path();
     Ok(outcome)
 }
@@ -102,16 +101,13 @@ fn prepare_relation_join_lookup(
         )
     })?;
     let verification = RelationJoinVerification::new(&selected.definition, request)?;
-    let generation = selected
-        .generation
-        .as_ref()
-        .map(|generation| generation.to_arc())
-        .ok_or_else(|| {
-            denial(
-                BoundedRelationJoinLookupDenialKind::ExactGenerationUnavailable,
-                request,
-            )
-        })?;
+    let generation = super::selected_index::admit_pinned_generation(Some(selected), || {
+        denial(
+            BoundedRelationJoinLookupDenialKind::ExactGenerationUnavailable,
+            request,
+        )
+    })?
+    .to_arc();
     if !matches!(generation.entries, DerivedIndexEntries::RelationJoin(_)) {
         return Err(denial(
             BoundedRelationJoinLookupDenialKind::WrongIndexKind,

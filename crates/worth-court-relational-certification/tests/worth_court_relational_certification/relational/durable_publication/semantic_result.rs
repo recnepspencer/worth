@@ -43,8 +43,7 @@ fn semantic_result_preserves_original_create_bindings_and_validation_meaning() {
         panic!("real candidate performs")
     };
     let envelope = runtime
-        .replay()
-        .canonical_commit_envelope(execution, performed.canonical_commit().commit.commit_id)
+        .replay_commit_envelope(execution, performed.canonical_commit().commit.commit_id)
         .unwrap()
         .expect("actual performed canonical owner");
     assert!(std::ptr::eq(performed.canonical_commit(), &*envelope));

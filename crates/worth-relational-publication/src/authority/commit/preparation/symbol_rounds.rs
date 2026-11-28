@@ -121,8 +121,8 @@ pub fn probe_symbol_rounds<'a, R: 'a, T>(
                         basis,
                         RelationalStorageUnavailable {
                             subject: RelationalStorageSubject::Symbols {
-                                first: contracts::symbols::data::symbol::Symbol(0),
-                                last: contracts::symbols::data::symbol::Symbol(u32::MAX - 1),
+                                first: contracts::symbols::data::Symbol(0),
+                                last: contracts::symbols::data::Symbol(u32::MAX - 1),
                             },
                             cause: RelationalStorageUnavailableCause::Damaged,
                         }

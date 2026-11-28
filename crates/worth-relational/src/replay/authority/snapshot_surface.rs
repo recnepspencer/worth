@@ -1,10 +1,9 @@
 use std::collections::BTreeSet;
 
-use crate::capabilities::HistorySource;
 use crate::history::data::{BranchId, CanonicalCommitEnvelope, CommitId};
 
 pub(super) fn snapshot_surface_is_authoritative(
-    history: &impl HistorySource,
+    history: &crate::runtime::RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
     closure: &[CommitId],
 ) -> bool {

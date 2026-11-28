@@ -1,9 +1,10 @@
+use contracts::aspect_wire::encoding_sink::{CanonicalAspectOutput, CanonicalHasher};
+
 use contracts::publication::patch::data::published_authoritative_patch::{
     PublishedAuthoritativeFieldSet, PublishedAuthoritativePatch,
     PublishedAuthoritativePatchOperation, PublishedAuthoritativePatchOwnerPort as _,
     PublishedAuthoritativePatchValue,
 };
-use sha2::{Digest, Sha256};
 use worth_relational_contracts::internal_port as contracts;
 
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, StructAspectValue};
@@ -27,36 +28,38 @@ use contracts::transactions::data::primitives::RecordRef;
 pub mod diagnostic_value_terms;
 
 pub(super) struct ReplayDigestBuilder {
-    bytes: Vec<u8>,
+    hasher: CanonicalHasher,
 }
 
 impl ReplayDigestBuilder {
     pub(super) fn new(domain: &'static str) -> Self {
-        Self { bytes: Vec::new() }.string(domain)
+        Self {
+            hasher: CanonicalHasher::default(),
+        }
+        .string(domain)
     }
 
     pub(super) fn tag(mut self, tag: u8) -> Self {
-        self.bytes.push(tag);
+        self.hasher.byte(tag).unwrap();
         self
     }
 
-    pub(super) fn bool(mut self, value: bool) -> Self {
-        self.bytes.push(u8::from(value));
-        self
+    pub(super) fn bool(self, value: bool) -> Self {
+        self.tag(u8::from(value))
     }
 
     pub(super) fn u32(mut self, value: u32) -> Self {
-        self.bytes.extend_from_slice(&value.to_le_bytes());
+        self.hasher.u32_le(value).unwrap();
         self
     }
 
     pub(super) fn u64(mut self, value: u64) -> Self {
-        self.bytes.extend_from_slice(&value.to_le_bytes());
+        self.hasher.u64_le(value).unwrap();
         self
     }
 
     pub(super) fn i64(mut self, value: i64) -> Self {
-        self.bytes.extend_from_slice(&value.to_le_bytes());
+        self.hasher.i64_le(value).unwrap();
         self
     }
 
@@ -64,15 +67,12 @@ impl ReplayDigestBuilder {
         self.u64(value as u64)
     }
 
-    pub(super) fn string(mut self, value: &str) -> Self {
-        self.bytes
-            .extend_from_slice(&(value.len() as u64).to_le_bytes());
-        self.bytes.extend_from_slice(value.as_bytes());
-        self
+    pub(super) fn string(self, value: &str) -> Self {
+        self.byte_vec(value.as_bytes())
     }
 
     pub(super) fn digest_bytes(mut self, value: &[u8; 32]) -> Self {
-        self.bytes.extend_from_slice(value);
+        self.hasher.bytes(value).unwrap();
         self
     }
 
@@ -105,7 +105,7 @@ impl ReplayDigestBuilder {
     }
 
     pub(super) fn boundary_fingerprint(self, value: SchemaBoundaryFingerprint) -> Self {
-        self.digest_bytes(&value.0)
+        self.digest_bytes(value.bytes())
     }
 
     pub(super) fn aspect_key(self, value: &AspectKey) -> Self {
@@ -309,9 +309,7 @@ impl ReplayDigestBuilder {
     }
 
     pub(super) fn byte_vec(mut self, bytes: &[u8]) -> Self {
-        self.bytes
-            .extend_from_slice(&(bytes.len() as u64).to_le_bytes());
-        self.bytes.extend_from_slice(bytes);
+        self.hasher.bytes_with_u64_length(bytes).unwrap();
         self
     }
 
@@ -320,6 +318,6 @@ impl ReplayDigestBuilder {
     }
 
     pub(super) fn finish(self) -> [u8; 32] {
-        Sha256::digest(self.bytes).into()
+        self.hasher.finish()
     }
 }

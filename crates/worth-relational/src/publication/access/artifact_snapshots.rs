@@ -1,7 +1,4 @@
-use crate::capabilities::PublicationDiagnosticsSource;
-use crate::publication::data::{
-    PublicationDiagnosticsSnapshot, PublicationObservationSnapshot,
-};
+use crate::publication::data::{PublicationDiagnosticsSnapshot, PublicationObservationSnapshot};
 
 use super::{PublicationArtifactsAccess, PublicationDiagnosticsAccess};
 
@@ -31,7 +28,7 @@ impl<'runtime> PublicationArtifactsAccess<'runtime> {
 impl<'runtime> PublicationDiagnosticsAccess<'runtime> {
     pub fn snapshot(&self) -> PublicationDiagnosticsSnapshot {
         PublicationDiagnosticsSnapshot {
-            observation: self.runtime.publication_access().artifacts().observation(),
+            observation: self.runtime.publication().artifacts().observation(),
             diagnostics: self.artifacts().to_vec(),
         }
     }

@@ -6,8 +6,8 @@ use super::source::OriginalCanonicalCommit;
 use contracts::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial as Denial;
 use contracts::symbols::data::stored_text::StoredSymbolText;
 use contracts::symbols::data::string_interner::StringInterner;
-use contracts::symbols::data::symbol::Symbol;
 use contracts::symbols::data::symbol_text_lookup::SymbolTextLookup;
+use contracts::symbols::data::Symbol;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 
 pub(super) struct OriginalSymbolDictionary<'a> {

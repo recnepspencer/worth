@@ -41,7 +41,7 @@ pub(crate) fn rebind_home_receiver_plan(
 use crate::runtime::RelationalRuntime;
 
 impl RelationalRuntime {
-    pub(crate) fn durability_access(&self) -> DurabilityAccess<'_> {
+    pub fn durability(&self) -> DurabilityAccess<'_> {
         DurabilityAccess::new(self)
     }
 }

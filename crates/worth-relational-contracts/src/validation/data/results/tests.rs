@@ -4,7 +4,7 @@ use super::{
     StorageInconsistencyFailure, StorageInconsistencyLookup, StorageInconsistencyScan,
 };
 use crate::diagnostics::data::DiagnosticCode;
-use crate::identity::data::{KindId, PartitionId, VersionId};
+use crate::identity::data::{KindId, PartitionId};
 use crate::transactions::data::primitives::{CreatedEntityRef, EntityReference};
 use crate::validation::data::execution::InvariantClass;
 use crate::validation::data::execution::InvariantWitnessBasis;

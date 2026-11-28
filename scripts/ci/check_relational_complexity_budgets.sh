@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
-registry="crates/worth-relational-contracts/src/performance/data/complexity_contract_inventory.rs"
+registry="crates/worth-relational/src/tests/complexity/complexity_contract_inventory.rs"
 runner="$ROOT_DIR/scripts/ci/run_relational_named_test_selection.sh"
 
 echo "[relational-complexity] checking declared complexity contracts and proof registrations"

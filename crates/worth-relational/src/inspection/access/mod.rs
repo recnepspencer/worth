@@ -15,7 +15,7 @@ pub struct InspectionAccess<'runtime> {
 }
 
 impl RelationalRuntime {
-    pub(crate) fn inspection_access(&self) -> InspectionAccess<'_> {
+    pub fn inspect_what_happened(&self) -> InspectionAccess<'_> {
         InspectionAccess::new(self)
     }
 }

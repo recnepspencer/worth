@@ -65,6 +65,7 @@ mod inspection;
 mod lineage;
 mod mvcc;
 mod performance;
+#[cfg(test)]
 mod presentation;
 mod projected_member_domain;
 mod publication;

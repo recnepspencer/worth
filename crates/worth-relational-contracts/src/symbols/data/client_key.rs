@@ -1,28 +1,42 @@
-use crate::internal_port::symbols::data::interned_string::InternedStringOwnerPort as _;
 use std::borrow::Cow;
 
 use serde::{Deserialize, Serialize};
 
-use super::{ClientKeySymbolPolicy, InternedString, StringInterner, Symbol};
+use super::{ClientKeySymbolPolicy, StringInterner, Symbol};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct ClientKey(InternedString);
+pub struct ClientKey(ClientKeyText);
+
+// A request key carries only owned text or a symbol ID. Its admitted decode
+// pays for that string alone, and its ordered-map meaning has no mutable seal.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename = "InternedString")]
+enum ClientKeyText {
+    Raw(String),
+    Symbol(Symbol),
+}
 
 impl ClientKey {
     pub fn raw(value: impl Into<String>) -> Self {
-        Self(InternedString::raw(value))
+        Self(ClientKeyText::Raw(value.into()))
     }
 
     pub const fn symbol(value: Symbol) -> Self {
-        Self(InternedString::Symbol(value))
+        Self(ClientKeyText::Symbol(value))
     }
 
     pub fn as_raw_str(&self) -> Option<&str> {
-        self.0.as_raw_str()
+        match &self.0 {
+            ClientKeyText::Raw(text) => Some(text),
+            ClientKeyText::Symbol(_) => None,
+        }
     }
 
     pub fn as_symbol(&self) -> Option<Symbol> {
-        self.0.as_symbol()
+        match self.0 {
+            ClientKeyText::Raw(_) => None,
+            ClientKeyText::Symbol(symbol) => Some(symbol),
+        }
     }
 
     pub fn normalize_with(
@@ -31,7 +45,7 @@ impl ClientKey {
         policy: ClientKeySymbolPolicy,
     ) -> Result<Self, super::RelationalSymbolExhausted> {
         if policy.interns_requested_strings() {
-            interner.normalize(self.0).map(Self)
+            self.intern_with(interner).map(Self::symbol)
         } else {
             Ok(self)
         }
@@ -41,15 +55,22 @@ impl ClientKey {
         &self,
         interner: &mut StringInterner,
     ) -> Result<Symbol, super::RelationalSymbolExhausted> {
-        self.0.intern_with(interner)
+        match &self.0 {
+            ClientKeyText::Raw(text) => interner.intern(text),
+            ClientKeyText::Symbol(symbol) => Ok(*symbol),
+        }
     }
 
     pub fn resolve_with_interner<'a>(&'a self, interner: &'a StringInterner) -> Option<&'a str> {
-        self.0.resolve_with_interner(interner)
+        self.as_raw_str()
+            .or_else(|| self.as_symbol().and_then(|symbol| interner.resolve(symbol)))
     }
 
     pub fn canonical_text(&self) -> Cow<'_, str> {
-        self.0.canonical_text()
+        match &self.0 {
+            ClientKeyText::Raw(text) => Cow::Borrowed(text),
+            ClientKeyText::Symbol(symbol) => Cow::Owned(format!("symbol:{}", symbol.0)),
+        }
     }
 }
 
@@ -72,7 +93,10 @@ pub trait ClientKeyOwnerPort: Sized {
 
 impl ClientKeyOwnerPort for ClientKey {
     fn owned_allocation_capacity_bytes(&self) -> u64 {
-        self.0.owned_allocation_capacity_bytes()
+        match &self.0 {
+            ClientKeyText::Raw(text) => text.capacity() as u64,
+            ClientKeyText::Symbol(_) => 0,
+        }
     }
 }
 
@@ -101,6 +125,15 @@ mod tests {
 
         assert_eq!(normalized.as_symbol(), Some(Symbol(1)));
         assert_eq!(normalized.resolve_with_interner(&interner), Some("edge-a"));
+    }
+
+    #[test]
+    fn client_key_readmission_retains_only_the_quoted_raw_string() {
+        let original = ClientKey::raw("allocated text");
+        let encoded = rmp_serde::to_vec_named(&original).unwrap();
+        let decoded: ClientKey = rmp_serde::from_slice(&encoded).unwrap();
+        assert_eq!(decoded, original);
+        assert!(matches!(decoded.0, super::ClientKeyText::Raw(_)));
     }
 
     #[test]

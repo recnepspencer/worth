@@ -7,12 +7,8 @@ fn main() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = RelationalRuntimeApi::builder()
-        .runtime_setup(|runtime| {
-            runtime.runtime_name("basic-runtime");
-        })
-        .schema_setup(|schema| {
-            schema.schema_registry(support::demo_schema_registry());
-        })
+        .runtime_name("basic-runtime")
+        .schema_registry(support::demo_schema_registry())
         .build()
         .expect("valid native runtime configuration");
 

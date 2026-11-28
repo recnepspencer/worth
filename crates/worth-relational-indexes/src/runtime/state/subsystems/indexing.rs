@@ -36,6 +36,8 @@ use generation_publication_gate::GenerationPublicationGate;
 pub(crate) use prepared_publication::PreparedGenerationBatch;
 pub mod discard;
 pub mod generation_catalog;
+mod catalog_lifecycle;
+
 pub mod publication_retirement;
 #[doc(hidden)]
 pub mod query_generation_routing;
@@ -72,29 +74,8 @@ impl IndexingState {
         lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
         retained: &crate::branch::history::retention::reclamation::RetainedIndexRoots,
     ) -> Vec<Arc<DerivedIndexGeneration>> {
-        let global_indexes = self
-            .catalog
-            .definitions
-            .values()
-            .filter(|definition| !definition.branch_scoped)
-            .map(|definition| definition.index_id)
-            .collect();
-        let mut selected: BTreeMap<_, _> = self
-            .generations
-            .retained(retained, &global_indexes)
-            .into_iter()
-            .map(|generation| (generation.generation_id, generation))
-            .collect();
-        for (_, id) in self
-            .basis_checkpoint(lane, retained)
-            .into_iter()
-            .flat_map(|basis| basis.bindings)
-        {
-            if let Some(generation) = self.generations.generation(id) {
-                selected.insert(id, generation);
-            }
-        }
-        selected.into_values().collect()
+        let _ = lane;
+        self.retained_catalog_generations(retained)
     }
 
     fn empty() -> Self {
@@ -211,22 +192,7 @@ impl IndexingSubsystem {
         &self,
         retained: &crate::branch::history::retention::reclamation::RetainedIndexRoots,
     ) -> usize {
-        let mut state = self.state.write();
-        let global_indexes = state
-            .catalog
-            .definitions
-            .values()
-            .filter(|definition| !definition.branch_scoped)
-            .map(|definition| definition.index_id)
-            .collect();
-        state.bases.reclaim(retained);
-        let mut carried = std::collections::BTreeSet::new();
-        state.visit_retained_bindings(retained, |id| {
-            carried.insert(id);
-        });
-        state
-            .generations
-            .reclaim_except_versions(retained, &global_indexes, &carried)
+        self.state.write().reclaim_catalog_generations(retained)
     }
 
     pub fn snapshot(&self) -> IndexingState {

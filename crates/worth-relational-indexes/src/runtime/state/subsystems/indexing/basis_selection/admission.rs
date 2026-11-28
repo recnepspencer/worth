@@ -39,13 +39,7 @@ impl BasisSelections {
                     Some(&generation.source_branch_id),
                     generation.applicability.version_id,
                 )
-                .map_or(0, |basis| {
-                    basis
-                        .state
-                        .entries
-                        .len()
-                        .saturating_add(basis.state.empty.len())
-                });
+                .map_or(0, |basis| basis.state.exact.len());
             add(
                 &mut quote,
                 super::payment::inner(previous.checked_add(generations.len())?)?,
@@ -88,14 +82,8 @@ impl super::PreparedIndexBasisSelection {
         prepare: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<(), worth_relational_contracts::internal_port::indexes::data::maintenance::SelectedIndexGenerationAdmissionStop<Stop>>{
         use worth_relational_contracts::internal_port::indexes::data::maintenance::SelectedIndexGenerationAdmissionStop as Refusal;
-        let (units, bytes) = super::payment::inner(
-            self.state
-                .entries
-                .len()
-                .saturating_add(self.state.empty.len())
-                .saturating_add(changes),
-        )
-        .ok_or(Refusal::AccountingOverflow)?;
+        let (units, bytes) = super::payment::inner(self.state.exact.len().saturating_add(changes))
+            .ok_or(Refusal::AccountingOverflow)?;
         for _ in 0..changes {
             prepare(units, bytes).map_err(Refusal::Admission)?;
         }

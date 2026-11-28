@@ -1,8 +1,10 @@
+use serde::{Deserialize, Serialize};
+
 use crate::canonicalization::basis::{
     CanonicalBasisDomain, CanonicalBasisEntryKind, CanonicalBasisLocus, CanonicalBasisValue,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct CanonicalBasisEntry {
     domain: CanonicalBasisDomain,
     locus: CanonicalBasisLocus,

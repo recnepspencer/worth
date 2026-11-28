@@ -4,13 +4,10 @@ use std::any::Any;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
 
+use worth_execution::ExecutionImmutableBytes;
 use worth_execution::{ExecutionRequest as Req, ExecutionRequestArrayBuilder as ReqArrayBuilder};
-use worth_execution::{ExecutionAllocationPolicy, ExecutionImmutableBytes};
 
-use crate::durability::data::{
-    DurableCheckpoint, RelationalCheckpointMember, RelationalNativeCheckpoint,
-    RelationalNativeCheckpointCaptureDenial,
-};
+use crate::durability::data::{RelationalCheckpointMember, RelationalNativeCheckpoint};
 use crate::durability::medium::{
     RelationalDurableColdSource, RelationalDurableMemberCustody, RelationalDurableMemberLocator,
     RelationalDurableMemberRetirementObservation, RelationalDurableMemberRetirementRefusal,
@@ -20,7 +17,7 @@ use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::RelationalStorageUnavailableCause as StorageCause;
 
 #[derive(Debug, Default)]
-pub(crate) struct CapturedMembersColdSource {
+struct CapturedMembersColdSource {
     pub(crate) members: BTreeMap<RelationalDurableMemberLocator, ExecutionImmutableBytes>,
     pub(crate) fallback: Option<Arc<dyn RelationalDurableColdSource>>,
 }
@@ -54,42 +51,6 @@ pub(crate) fn captured_members_source_with_fallback(
 
 pub(crate) fn empty_cold_source() -> Arc<dyn RelationalDurableColdSource> {
     Arc::new(CapturedMembersColdSource::default())
-}
-
-pub(crate) fn members_from_captured(
-    members: &[RelationalCheckpointMember],
-) -> Arc<dyn RelationalDurableColdSource> {
-    let map = members
-        .iter()
-        .map(|member| match member {
-            RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
-            RelationalCheckpointMember::Carried { .. } => {
-                panic!("captured checkpoint members must be New for standalone source")
-            }
-        })
-        .collect();
-    Arc::new(CapturedMembersColdSource {
-        members: map,
-        fallback: None,
-    })
-}
-
-pub(crate) fn encode_checkpoint_with_source(
-    execution: &Req<'_, '_>,
-    checkpoint: &DurableCheckpoint,
-    policy: ExecutionAllocationPolicy<'_, '_>,
-) -> Result<
-    (
-        RelationalNativeCheckpoint,
-        Arc<dyn RelationalDurableColdSource>,
-    ),
-    RelationalNativeCheckpointCaptureDenial,
-> {
-    let native = crate::durability::log::native_checkpoint_codec::encode_checkpoint_members(
-        execution, checkpoint, policy,
-    )?;
-    let source = members_from_captured(native.members());
-    Ok((native, source))
 }
 
 impl RelationalDurableColdSource for CapturedMembersColdSource {

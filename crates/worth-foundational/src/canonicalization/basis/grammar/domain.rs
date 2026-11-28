@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum CanonicalBasisDomain {
     Value,
     AspectContract,
@@ -13,5 +15,6 @@ pub enum CanonicalBasisDomain {
     Transition,
     Diagnostic,
     CompatibilityLowering,
-    Future(&'static str),
+    #[serde(skip)]
+    Future(#[serde(skip)] &'static str),
 }

@@ -10,41 +10,8 @@ use crate::durability::medium::RelationalDurableMemberLocator;
 use crate::history::data::canonical_record_allocation::RecordAllocationOrigin;
 use crate::identity::data::PartitionId;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use crate::storage::residency::chunked::cold_member_port::ConfinedMemberSource;
 use crate::storage::residency::chunked::member_frame::{self, ChunkMemberKind};
-use crate::storage::residency::chunked::member_io::ChunkMemberSource;
-
-/// Confines every cold page read to the manifest's validated, pinned `pages`
-/// roster so no branch page can reference an unlisted/unpinned locator.
-pub(super) struct ConfinedMemberSource {
-    inner: Arc<dyn ChunkMemberSource + Send + Sync>,
-    allowed: Vec<RelationalDurableMemberLocator>,
-}
-
-impl ConfinedMemberSource {
-    pub(super) fn new(
-        inner: Arc<dyn ChunkMemberSource + Send + Sync>,
-        pages: &[RelationalDurableMemberLocator],
-    ) -> Self {
-        let mut allowed = pages.to_vec();
-        allowed.sort_unstable();
-        allowed.dedup();
-        Self { inner, allowed }
-    }
-}
-
-impl ChunkMemberSource for ConfinedMemberSource {
-    fn read_range(
-        &self,
-        member: RelationalDurableMemberLocator,
-        offset: u64,
-        target: &mut [u8],
-    ) -> Result<usize, Cause> {
-        if self.allowed.binary_search(&member).is_err() {
-            return Err(Cause::Damaged);
-        }
-        self.inner.read_range(member, offset, target)
-    }
-}
 
 /// Bounds and verifies one table scan against its manifest `entry_count`.
 pub(super) struct RowCount {
@@ -93,7 +60,7 @@ impl super::PagedIdentityBase {
                 member_limit,
             ),
         );
-        let confined = Arc::new(ConfinedMemberSource::new(cold.clone(), &paged.pages));
+        let confined = Arc::new(ConfinedMemberSource::new(cold.clone(), paged.pages.clone()));
         Self {
             directories: crate::storage::data::record_identity_pages::IdentityDirectories::open(
                 &paged.roots,

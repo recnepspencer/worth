@@ -31,7 +31,7 @@ impl CapturedCheckpointBasis {
                     .manifest
                     .symbols
                     .iter()
-                    .map(|page| contracts::symbols::data::symbol::Symbol(page.first as u32)),
+                    .map(|page| contracts::symbols::data::Symbol(page.first as u32)),
             )?;
             for page in &directory.manifest.lineage {
                 lineage.demand_node(

@@ -74,22 +74,7 @@ pub(crate) fn create_entity_in_partition_on_branch(
     partition_id: PartitionId,
     branch_id: BranchId,
 ) -> crate::facade::identity::EntityId {
-    let fields = entity_fields_for_runtime(runtime, name);
-    let mut txn =
-        crate::tests::support::test_owner_begin_transaction_for_branch(runtime, branch_id);
-    txn.push_batch(
-        WorkerIntentBatch::new(format!("batch-{name}")).push(MutationIntent::Create(
-            CreateIntent::Entity(crate::transactions::data::EntitySpec {
-                partition_id,
-                kind_id: KindId(1),
-                client_key: crate::symbols::data::ClientKey::raw(name),
-                fields,
-            }),
-        )),
-        Allocation::SystemAllocation,
-    )
-    .unwrap();
-    let outcome = txn.commit(execution, runtime).unwrap();
+    let outcome = commit_entity(execution, runtime, name, partition_id, branch_id);
     let entity = changed_entities(&outcome)[0];
     release_test_commit_snapshot(runtime, &outcome);
     entity
@@ -109,22 +94,26 @@ pub(crate) fn create_entity_outcome_on_branch(
     name: &str,
     branch_id: BranchId,
 ) -> CommitResult {
+    commit_entity(execution, runtime, name, PartitionId::main(), branch_id)
+}
+
+fn commit_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    name: &str,
+    partition_id: PartitionId,
+    branch_id: BranchId,
+) -> CommitResult {
     let fields = entity_fields_for_runtime(runtime, name);
-    let mut txn =
-        crate::tests::support::test_owner_begin_transaction_for_branch(runtime, branch_id);
-    let mut batch = WorkerIntentBatch::new(format!("batch-{name}"));
-    batch
-        .intents
-        .push(MutationIntent::Create(CreateIntent::Entity(
-            crate::transactions::data::EntitySpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(1),
-                client_key: crate::symbols::data::ClientKey::raw(name),
-                fields,
-            },
-        )));
-    txn.push_batch(batch, Allocation::SystemAllocation).unwrap();
-    txn.commit(execution, runtime).unwrap()
+    let batch = WorkerIntentBatch::new(format!("batch-{name}")).push(MutationIntent::Create(
+        CreateIntent::Entity(crate::transactions::data::EntitySpec {
+            partition_id,
+            kind_id: KindId(1),
+            client_key: crate::symbols::data::ClientKey::raw(name),
+            fields,
+        }),
+    ));
+    commit_batches(execution, runtime, branch_id, [batch]).unwrap()
 }
 
 pub(super) fn entity_fields_for_runtime(
@@ -161,16 +150,10 @@ pub(crate) fn delete_entity_on_branch(
     entity_id: crate::facade::identity::EntityId,
     branch_id: BranchId,
 ) -> CommitResult {
-    let mut txn =
-        crate::tests::support::test_owner_begin_transaction_for_branch(runtime, branch_id);
-    txn.push_batch(
-        WorkerIntentBatch::new("delete").push(MutationIntent::Entity(
-            EntityMutationIntent::Delete(DeleteEntityIntent { entity_id }),
-        )),
-        Allocation::SystemAllocation,
-    )
-    .unwrap();
-    txn.commit(execution, runtime).unwrap()
+    let batch = WorkerIntentBatch::new("delete").push(MutationIntent::Entity(
+        EntityMutationIntent::Delete(DeleteEntityIntent { entity_id }),
+    ));
+    commit_batches(execution, runtime, branch_id, [batch]).unwrap()
 }
 
 pub(crate) fn delete_relation_on_branch(
@@ -179,16 +162,10 @@ pub(crate) fn delete_relation_on_branch(
     relation_id: RelationId,
     branch_id: BranchId,
 ) -> CommitResult {
-    let mut txn =
-        crate::tests::support::test_owner_begin_transaction_for_branch(runtime, branch_id);
-    txn.push_batch(
-        WorkerIntentBatch::new("delete-relation").push(MutationIntent::Relation(
-            RelationMutationIntent::Delete(DeleteRelationIntent { relation_id }),
-        )),
-        Allocation::SystemAllocation,
-    )
-    .unwrap();
-    txn.commit(execution, runtime).unwrap()
+    let batch = WorkerIntentBatch::new("delete-relation").push(MutationIntent::Relation(
+        RelationMutationIntent::Delete(DeleteRelationIntent { relation_id }),
+    ));
+    commit_batches(execution, runtime, branch_id, [batch]).unwrap()
 }
 
 pub(crate) fn update_entity(
@@ -234,18 +211,12 @@ pub(crate) fn try_update_entity_on_branch(
     branch_id: BranchId,
 ) -> Result<CommitResult, crate::transactions::data::TransactionCommitError> {
     let fields = entity_fields_for_runtime(runtime, name);
-    let mut txn =
-        crate::tests::support::test_owner_begin_transaction_for_branch(runtime, branch_id);
-    if !fields.is_empty() {
-        txn.push_batch(
-            WorkerIntentBatch::new("update").push(MutationIntent::Entity(
-                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent { entity_id, fields }),
-            )),
-            Allocation::SystemAllocation,
-        )
-        .unwrap();
-    }
-    txn.commit(execution, runtime)
+    let batch = (!fields.is_empty()).then(|| {
+        WorkerIntentBatch::new("update").push(MutationIntent::Entity(
+            EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent { entity_id, fields }),
+        ))
+    });
+    commit_batches(execution, runtime, branch_id, batch)
 }
 
 pub(crate) fn changed_entities(outcome: &CommitResult) -> Vec<crate::facade::identity::EntityId> {
@@ -275,12 +246,22 @@ pub(crate) fn apply_batches(
     batches: Vec<WorkerIntentBatch>,
 ) -> RelationalRuntime {
     let runtime = runtime_with_test_schema();
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+    let main = runtime.config().history.main_branch.clone();
+    commit_batches(execution, &runtime, main, batches).unwrap();
+    runtime
+}
+
+fn commit_batches(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch_id: BranchId,
+    batches: impl IntoIterator<Item = WorkerIntentBatch>,
+) -> Result<CommitResult, TransactionCommitError> {
+    let mut txn = test_owner_begin_transaction_for_branch(runtime, branch_id);
     for batch in batches {
         txn.push_batch(batch, Allocation::SystemAllocation).unwrap();
     }
-    txn.commit(execution, &runtime).unwrap();
-    runtime
+    txn.commit(execution, runtime)
 }
 
 pub(crate) fn release_test_commit_snapshot(runtime: &RelationalRuntime, outcome: &CommitResult) {

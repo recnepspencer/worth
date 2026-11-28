@@ -48,3 +48,26 @@ impl PinnedIndexLookup<'_> {
         self.resident.basis()
     }
 }
+
+/// Access a committed payload already carried by the selected pin.
+pub(super) fn admit_pinned_generation<E>(
+    selected: Option<&PinnedIndex>,
+    unavailable: impl FnOnce() -> E,
+) -> Result<&SharedDerivedIndexGeneration, E> {
+    selected
+        .and_then(|index| index.generation.as_ref())
+        .ok_or_else(unavailable)
+}
+
+pub(super) fn certify_parity<E>(
+    mode: crate::branch::indexes::data::bounded_entity_field_lookup::BoundedIndexParityMode,
+    instrumentation: &RuntimeInstrumentation,
+    certify: impl FnOnce() -> Result<(), E>,
+) -> Result<(), E> {
+    use crate::branch::indexes::data::bounded_entity_field_lookup::BoundedIndexParityMode;
+    if mode == BoundedIndexParityMode::Certification {
+        certify()?;
+        instrumentation.count_query_index_parity_verification();
+    }
+    Ok(())
+}

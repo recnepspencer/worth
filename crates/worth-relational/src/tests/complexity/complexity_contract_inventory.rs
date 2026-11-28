@@ -1,4 +1,4 @@
-use super::complexity_contract::{ComplexityContract, ComplexityStatus};
+use crate::performance::data::{ComplexityContract, ComplexityStatus};
 
 mod history_capture;
 mod index_access;

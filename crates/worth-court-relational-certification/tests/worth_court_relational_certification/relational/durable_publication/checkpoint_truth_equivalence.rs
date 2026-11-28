@@ -53,13 +53,11 @@ pub(super) fn assert_recovered_commit_truth(
         );
     }
     let before = original
-        .replay()
-        .canonical_commit_envelope(execution, commit_id)
+        .replay_commit_envelope(execution, commit_id)
         .unwrap()
         .unwrap();
     let after = recovered
-        .replay()
-        .canonical_commit_envelope(execution, commit_id)
+        .replay_commit_envelope(execution, commit_id)
         .unwrap()
         .unwrap();
     assert_eq!(

@@ -62,8 +62,7 @@ fn perf_recoverability_policy_matrix() {
                 .unwrap()
         });
         let recovered_envelope = recovered
-            .replay()
-            .canonical_commit_envelope(execution, hot_commit.commit.commit_id)
+            .replay_commit_envelope(execution, hot_commit.commit.commit_id)
             .unwrap()
             .expect("policy recovered geometry envelope");
         let authoritative_hot_summary = crate::diagnostics::data::RelationalDiagnosticArtifact {

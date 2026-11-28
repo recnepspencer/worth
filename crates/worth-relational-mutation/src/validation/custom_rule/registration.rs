@@ -15,7 +15,7 @@ use super::execution_context::CustomInvariantExecutionContext;
 use super::scope_planner::CustomInvariantScopePlanner;
 use crate::contracts::validation::data::custom_rule::errors::{
     CustomInvariantExecutionError, CustomInvariantFailure, CustomInvariantFailureKind,
-    CustomInvariantPreparationError, CustomInvariantRuntimePhase, CustomInvariantVerdict,
+    CustomInvariantFailurePhase, CustomInvariantPreparationError, CustomInvariantVerdict,
     PreparedCustomInvariantExecutionOutcome,
 };
 use crate::contracts::validation::data::descriptor::CustomInvariantDescriptor;
@@ -141,7 +141,7 @@ impl<R: CustomInvariantRule> PreparedCustomInvariantExecution
             .count_custom_invariant_execution();
         match run_custom_rule_safely(
             self.identity.clone(),
-            CustomInvariantRuntimePhase::Execution,
+            CustomInvariantFailurePhase::Execution,
             || self.rule.evaluate(context, &self.scope),
         ) {
             Ok(Ok(verdict)) => PreparedCustomInvariantExecutionOutcome::Verdict(verdict),
@@ -162,7 +162,7 @@ impl<R: CustomInvariantRule> PreparedCustomInvariantExecution
         }
         let result = run_custom_rule_safely(
             self.identity.clone(),
-            CustomInvariantRuntimePhase::Execution,
+            CustomInvariantFailurePhase::Execution,
             || self.rule.evaluate_checked(context, &self.scope, budget),
         );
         match result {
@@ -233,7 +233,7 @@ impl<R: CustomInvariantRule> ErasedCustomInvariantRule for CustomInvariantAdapte
             .count_custom_invariant_preparation();
         match run_custom_rule_safely(
             identity.clone(),
-            CustomInvariantRuntimePhase::Preparation,
+            CustomInvariantFailurePhase::Preparation,
             || self.rule.prepare_scope(planner),
         ) {
             Ok(Ok(scope)) => Arc::new(PreparedCustomInvariantAdapter {
@@ -279,7 +279,7 @@ impl<R: CustomInvariantRule> ErasedCustomInvariantRule for CustomInvariantAdapte
             .count_custom_invariant_preparation();
         match run_custom_rule_safely(
             identity.clone(),
-            CustomInvariantRuntimePhase::Preparation,
+            CustomInvariantFailurePhase::Preparation,
             || self.rule.prepare_scope_checked(planner, budget),
         ) {
             Ok(Some(Ok(scope))) => Some(Arc::new(PreparedCustomInvariantAdapter {
@@ -303,7 +303,7 @@ impl<R: CustomInvariantRule> ErasedCustomInvariantRule for CustomInvariantAdapte
 
 fn run_custom_rule_safely<T>(
     identity: CustomInvariantSemanticIdentity,
-    phase: CustomInvariantRuntimePhase,
+    phase: CustomInvariantFailurePhase,
     run: impl FnOnce() -> T,
 ) -> Result<T, CustomInvariantFailure> {
     catch_unwind(AssertUnwindSafe(run)).map_err(|panic_value| {

@@ -70,8 +70,7 @@ fn audit_lifecycle_coverage_survives_unrelated_history_discard_and_durable_recov
         "retained audit links do not obstruct exact live Source equality"
     );
     let canonical = runtime
-        .replay()
-        .canonical_commit_envelope(&execution, retired.commit.commit_id)
+        .replay_commit_envelope(&execution, retired.commit.commit_id)
         .unwrap()
         .unwrap();
     let touches = canonical.descriptive_touches().exact_touches().unwrap();
@@ -197,8 +196,7 @@ fn audit_lifecycle_coverage_survives_unrelated_history_discard_and_durable_recov
     )
     .is_empty());
     let cold = recovered
-        .replay()
-        .canonical_commit_envelope(&execution, retired.commit.commit_id)
+        .replay_commit_envelope(&execution, retired.commit.commit_id)
         .unwrap()
         .unwrap();
     assert_eq!(cold.descriptive_touches(), canonical.descriptive_touches());

@@ -1,4 +1,3 @@
-use crate::capabilities::PatchStreamSource;
 use crate::history::data::PositionedCanonicalCommit;
 use crate::publication::cdc::data::{
     SubscriberCheckpoint, SubscriberStreamFailure, SubscriberStreamFailureClass,

@@ -56,8 +56,7 @@ fn readmit_original(
     let semantic = frame.envelope().semantic_result();
     assert_eq!(effect.semantic_result(), semantic);
     let selected = runtime
-        .replay()
-        .canonical_commit_envelope(request, subject.receipt().commit_id)
+        .replay_commit_envelope(request, subject.receipt().commit_id)
         .unwrap()
         .unwrap();
     assert_eq!(effect.semantic_result(), selected.semantic_result());

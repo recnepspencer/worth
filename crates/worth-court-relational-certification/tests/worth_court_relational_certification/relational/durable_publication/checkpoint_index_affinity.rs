@@ -105,8 +105,7 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
     let identity = restored.branch_identity(&branch).unwrap();
     let (_, basis) = restored.observe_branch(&identity).unwrap();
     let envelope = restored
-        .replay()
-        .canonical_commit_envelope(execution, basis.observation().commit_id().unwrap())
+        .replay_commit_envelope(execution, basis.observation().commit_id().unwrap())
         .unwrap()
         .unwrap();
     assert_ne!(&envelope.commit.branch_id, &branch);

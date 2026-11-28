@@ -1,16 +1,14 @@
 //! Intrinsic custody of the actual RelationalCheckpointSymbolBucket directory backing.
 use super::symbol_page_roster::RelationalCheckpointSymbolBucket;
 use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+use crate::storage::substrate::storage_allocation::StorageAllocation;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::{alloc::Layout, sync::Arc};
+use std::alloc::Layout;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
-#[derive(Debug)]
-struct Backing {
-    rows: Vec<RelationalCheckpointSymbolBucket>,
-    _memory: Option<ExecutionMemoryReservation>,
-}
 #[derive(Debug, Clone, Default)]
-pub struct CheckpointSymbolBuckets(Option<Arc<Backing>>);
+pub struct CheckpointSymbolBuckets(
+    Option<StorageAllocation<Vec<RelationalCheckpointSymbolBucket>>>,
+);
 pub struct CheckpointSymbolBucketsBuilder {
     rows: Vec<RelationalCheckpointSymbolBucket>,
     bytes: u64,
@@ -19,7 +17,7 @@ pub struct CheckpointSymbolBucketsBuilder {
 impl CheckpointSymbolBuckets {
     pub fn shares_backing(&self, other: &Self) -> bool {
         match (&self.0, &other.0) {
-            (Some(left), Some(right)) => Arc::ptr_eq(left, right),
+            (Some(left), Some(right)) => left.shares_backing(right),
             (None, None) => true,
             (Some(_), None) | (None, Some(_)) => false,
         }
@@ -29,10 +27,7 @@ impl CheckpointSymbolBuckets {
         if rows.is_empty() {
             Self::default()
         } else {
-            Self(Some(Arc::new(Backing {
-                rows,
-                _memory: None,
-            })))
+            Self(Some(StorageAllocation::new(rows)))
         }
     }
     pub fn ordinary_owned_copy(&self) -> Vec<RelationalCheckpointSymbolBucket> {
@@ -50,11 +45,8 @@ impl CheckpointSymbolBuckets {
                 _memory: None,
             });
         }
-        let control = Layout::new::<[usize; 2]>()
-            .extend(Layout::new::<Backing>())
+        let control = StorageAllocation::<Vec<RelationalCheckpointSymbolBucket>>::layout()
             .map_err(|_| Cause::ChargedBytesOverflow)?
-            .0
-            .pad_to_align()
             .size();
         let rows = Layout::array::<RelationalCheckpointSymbolBucket>(capacity)
             .map_err(|_| Cause::ChargedBytesOverflow)?
@@ -73,7 +65,7 @@ impl CheckpointSymbolBuckets {
         })
     }
     fn rows(&self) -> &[RelationalCheckpointSymbolBucket] {
-        self.0.as_ref().map_or(&[], |b| b.rows.as_slice())
+        self.0.as_ref().map_or(&[], |b| b.as_slice())
     }
 }
 impl CheckpointSymbolBucketsBuilder {
@@ -112,10 +104,10 @@ impl CheckpointSymbolBucketsBuilder {
         if self.rows.is_empty() {
             return CheckpointSymbolBuckets::default();
         }
-        CheckpointSymbolBuckets(Some(Arc::new(Backing {
-            rows: self.rows,
-            _memory: self._memory,
-        })))
+        CheckpointSymbolBuckets(Some(StorageAllocation::from_reserved(
+            self.rows,
+            self._memory,
+        )))
     }
 }
 impl std::ops::Deref for CheckpointSymbolBuckets {

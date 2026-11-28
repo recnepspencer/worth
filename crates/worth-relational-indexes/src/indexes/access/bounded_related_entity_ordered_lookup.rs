@@ -41,10 +41,9 @@ pub fn lookup(
     )?;
     verify_entries(execution, &source, &prepared.contract, &page.rows)?;
     let outcome = outcome_from_page(prepared.generation_id, page, parity_mode);
-    if parity_mode == BoundedIndexParityMode::Certification {
-        certify_storage_parity(execution, &source, &prepared.contract, &outcome)?;
-        read.instrumentation.count_query_index_parity_verification();
-    }
+    super::selected_index::certify_parity(parity_mode, read.instrumentation, || {
+        certify_storage_parity(execution, &source, &prepared.contract, &outcome)
+    })?;
     read.instrumentation.count_query_index_path();
     Ok(outcome)
 }
@@ -97,19 +96,13 @@ pub(super) fn prepare_related_lookup<'request>(
     request: &'request BoundedRelatedEntityOrderedLookupRequest,
 ) -> Result<PreparedRelatedLookup<'request>, BoundedRelatedEntityOrderedLookupDenial> {
     let contract = resolve_related_lookup_contract(selected, request)?;
-    let generation = selected
-        .and_then(|index| {
-            index
-                .generation
-                .as_ref()
-                .map(|generation| generation.to_arc())
-        })
-        .ok_or_else(|| {
-            denial(
-                BoundedRelatedEntityOrderedLookupDenialKind::ExactGenerationUnavailable,
-                request,
-            )
-        })?;
+    let generation = super::selected_index::admit_pinned_generation(selected, || {
+        denial(
+            BoundedRelatedEntityOrderedLookupDenialKind::ExactGenerationUnavailable,
+            request,
+        )
+    })?
+    .to_arc();
     if request
         .expected_generation()
         .is_some_and(|expected| expected != generation.generation_id)
