@@ -218,7 +218,10 @@ fn continues_exactly_its_original_forks(native: bool, signal: bool) {
         .unwrap();
     assert_eq!(child.branch_identity().name().as_str(), "forked");
     assert_eq!(child.lifecycle_incarnation().ordinal(), killed.incarnation);
-    assert_eq!(child.reference_generation().get(), 0);
+    assert_eq!(
+        child.reference_generation().get(),
+        parent.reference_generation().get() + 1
+    );
     let native_branch = child.basis().relational_basis().descriptor().branch_id();
     assert_eq!(native_branch.0 == "forked-native", native);
     assert_eq!(

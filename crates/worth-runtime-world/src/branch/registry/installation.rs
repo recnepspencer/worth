@@ -1,7 +1,10 @@
 use std::sync::{Arc, OnceLock};
 
 use crate::branch::ProductBranchReferenceSnapshot;
-use crate::identity::{CompositeCommitIdentity, ProductBranchIdentity, ProductBranchIncarnation};
+use crate::identity::{
+    CompositeCommitIdentity, ProductBranchIdentity, ProductBranchIncarnation,
+    ProductBranchReferenceGeneration,
+};
 
 /// Exact, monotonic evidence of the registry insertion of one creation.
 /// The reservation issues it before forks; only registry insertion fills it.
@@ -10,6 +13,7 @@ use crate::identity::{CompositeCommitIdentity, ProductBranchIdentity, ProductBra
 pub(crate) struct ProductBranchInstallationWitness {
     branch: ProductBranchIdentity,
     incarnation: ProductBranchIncarnation,
+    generation: ProductBranchReferenceGeneration,
     installed_commit: OnceLock<CompositeCommitIdentity>,
 }
 
@@ -17,16 +21,22 @@ impl ProductBranchInstallationWitness {
     pub(super) fn reserve(
         branch: ProductBranchIdentity,
         incarnation: ProductBranchIncarnation,
+        generation: ProductBranchReferenceGeneration,
     ) -> Arc<Self> {
         Arc::new(Self {
             branch,
             incarnation,
+            generation,
             installed_commit: OnceLock::new(),
         })
     }
 
     pub(crate) fn destination(&self) -> (&ProductBranchIdentity, ProductBranchIncarnation) {
         (&self.branch, self.incarnation)
+    }
+
+    pub(crate) const fn generation(&self) -> ProductBranchReferenceGeneration {
+        self.generation
     }
 
     pub(crate) fn installed_commit(&self) -> Option<&CompositeCommitIdentity> {
@@ -37,8 +47,7 @@ impl ProductBranchInstallationWitness {
         self.installed_commit.get().is_none()
             && snapshot.branch_identity() == &self.branch
             && snapshot.lifecycle_incarnation() == self.incarnation
-            && snapshot.reference_generation()
-                == crate::identity::ProductBranchReferenceGeneration::initial()
+            && snapshot.reference_generation() == self.generation
     }
 
     pub(super) fn record_installation(&self, commit: CompositeCommitIdentity) {

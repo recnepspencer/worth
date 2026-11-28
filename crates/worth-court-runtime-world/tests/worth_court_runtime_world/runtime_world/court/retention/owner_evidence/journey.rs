@@ -126,7 +126,7 @@ impl Journey {
         payload[0] = 4;
         payload.extend_from_slice(&owners);
         payload.extend_from_slice(&1u64.to_le_bytes());
-        self.expected = frame(b"WWRLDART", 5, &payload);
+        self.expected = frame(b"WWRLDART", 6, &payload);
         drop(subjects);
         drop(performed.consume());
         drop(root);

@@ -109,6 +109,7 @@ impl ProductBranchRegistryReservation {
         &mut self,
         branch: ProductBranchIdentity,
         incarnation: ProductBranchIncarnation,
+        generation: crate::identity::ProductBranchReferenceGeneration,
     ) -> Result<Arc<ProductBranchInstallationWitness>, ProductBranchRegistryDenial> {
         if self.root
             || !self.armed
@@ -119,7 +120,7 @@ impl ProductBranchRegistryReservation {
         {
             return Err(ProductBranchRegistryDenial::IdentityMismatch);
         }
-        let witness = ProductBranchInstallationWitness::reserve(branch, incarnation);
+        let witness = ProductBranchInstallationWitness::reserve(branch, incarnation, generation);
         self.installation = Some(Arc::clone(&witness));
         Ok(witness)
     }

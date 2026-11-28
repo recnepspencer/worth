@@ -4,6 +4,7 @@
 use super::super::artifact_source::Fixture;
 use super::*;
 use proptest::{prelude::*, test_runner::FileFailurePersistence};
+mod expected_reclaim;
 mod mixed;
 mod mixed_refusals;
 mod model;

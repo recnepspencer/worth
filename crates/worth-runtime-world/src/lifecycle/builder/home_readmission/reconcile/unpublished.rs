@@ -1,6 +1,6 @@
 //! Original unfinished operations bind to their exact recovered branch reference.
 use super::*;
-use crate::durability::RecoveredCustodyDisposition;
+use crate::durability::{ExpectedReclaim, RecoveredCustodyDisposition};
 use crate::identity::readmission::{readmit_attempt, readmit_commit, readmit_custody};
 use crate::recovery::RecoveredWorldPublicationInputs;
 use worth_relational::facade::{
@@ -30,34 +30,26 @@ where
 {
     let owner = root.owner_identity();
     for open in image.opens.values() {
-        if image
-            .history
-            .get(&open.commit)
-            .is_some_and(|head| head.represents_open(open.open()))
-        {
-            continue;
-        }
+        let expected_head = match image.reclaim_expected(open) {
+            ExpectedReclaim::Published => continue,
+            ExpectedReclaim::Released(disposition) => {
+                root.state
+                    .recovery
+                    .readmit_released_original(
+                        execution,
+                        owner,
+                        disposition,
+                        effects.take(&open.association.attempt()),
+                    )
+                    .map_err(Denial::Medium)?;
+                continue;
+            }
+            ExpectedReclaim::Pending(head) => head,
+        };
         let disposition = image.dispositions.get(&open.association.attempt());
-        if let Some(disposition) = disposition
-            && let RecoveredCustodyDisposition::Released(_) = disposition.disposition()
-        {
-            // Released originals reconstruct terminal Track H custody directly
-            // from authenticated recorded coordinates so disposing their
-            // predecessor never blocks cold reopen.
-            root.state
-                .recovery
-                .readmit_released_original(
-                    execution,
-                    owner,
-                    disposition,
-                    effects.take(&open.association.attempt()),
-                )
-                .map_err(Denial::Medium)?;
-            continue;
-        }
-        let expected = find(observations, &open.expected)?;
+        let expected = find(observations, expected_head)?;
         let before = descriptors
-            .get(&open.expected.commit)
+            .get(&expected_head.commit)
             .ok_or(Denial::MissingPredecessor)?;
         let admitted = match effects.take(&open.association.attempt()) {
             Some(effect) => {
@@ -113,6 +105,20 @@ where
             .map_err(|_| Denial::RecoveryCapacity)?;
         let slot_index = custody.slots.len();
         custody.slots.push(Some(slot));
+        // Separate original observations let close retire either row even
+        // when multiple opens name the same predecessor.
+        let capacity = root
+            .state
+            .retention
+            .reserve_observation()
+            .map_err(|_| Denial::RecoveryCapacity)?;
+        let expected = root
+            .issue_reused_observation(
+                expected.snapshot().clone(),
+                expected.snapshot().shared_commit(),
+                capacity,
+            )
+            .map_err(|_| Denial::RecoveryCapacity)?;
         custody.slots[slot_index]
             .take()
             .expect("same reserved slot")
@@ -122,7 +128,7 @@ where
                 commit,
                 continued: disposition.cloned(),
                 open: open.clone(),
-                expected: expected.clone(),
+                expected,
                 binding: binding.clone(),
                 native_identity,
                 native: custody.publications[index].take(),

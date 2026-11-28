@@ -1,6 +1,42 @@
 //! Recovered opens keep their exact decoded allocation through custody escape.
-use crate::durability::{DecodedWorldRecord, WorldOpenAttemptRecord, WorldRecord};
+use super::{AdmittedWorldDisposition, RecoveredCustodyDisposition, WorldCheckpointImage};
+use crate::durability::{
+    DecodedWorldRecord, DurableWorldHead, WorldOpenAttemptRecord, WorldRecord,
+};
 use std::sync::Arc;
+
+/// Reclaim custody for one persisted open, interpreted against its durable outcomes.
+pub(crate) enum ExpectedReclaim<'a> {
+    Published,
+    Released(&'a AdmittedWorldDisposition),
+    Pending(&'a DurableWorldHead),
+}
+
+impl WorldCheckpointImage {
+    pub(crate) fn reclaim_expected<'a>(
+        &'a self,
+        open: &'a AdmittedWorldOpenAttempt,
+    ) -> ExpectedReclaim<'a> {
+        if self
+            .history
+            .get(&open.commit)
+            .is_some_and(|entry| entry.represents_open(open.open()))
+        {
+            return ExpectedReclaim::Published;
+        }
+        match self.dispositions.get(&open.association.attempt()) {
+            Some(release)
+                if matches!(
+                    release.disposition(),
+                    RecoveredCustodyDisposition::Released(_)
+                ) =>
+            {
+                ExpectedReclaim::Released(release)
+            }
+            _ => ExpectedReclaim::Pending(&open.expected),
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub(crate) struct AdmittedWorldOpenAttempt {

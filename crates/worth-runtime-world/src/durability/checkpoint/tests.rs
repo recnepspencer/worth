@@ -205,3 +205,57 @@ fn uncovered_tail_requires_the_next_position_and_its_actual_wire_digest() {
         .validate_image_coordinates(&image.coverage, &request)
         .unwrap();
 }
+
+#[test]
+fn selected_checkpoint_rebuilds_expected_reclaim_only_for_unsettled_opens() {
+    use crate::durability::ExpectedReclaim;
+    let funding = crate::test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&funding);
+    let (mut image, head) = records::origin(&request);
+    let open = records::open(&head, 2);
+    records::admit(
+        &mut image,
+        &WorldRecord::OpenAttempt(open.clone()),
+        1,
+        &request,
+    )
+    .unwrap();
+
+    let mut image = records::selected(image, &request);
+    let attempt = open.association.attempt();
+    assert!(matches!(
+        image.reclaim_expected(&image.opens[&attempt]),
+        ExpectedReclaim::Pending(expected) if *expected == head
+    ));
+    let release = WorldRecord::Released {
+        association: open.association,
+        custody: open.custody,
+        relational: None,
+    };
+    records::admit(&mut image, &release, 2, &request).unwrap();
+    let mut image = records::selected(image, &request);
+    assert!(matches!(
+        image.reclaim_expected(&image.opens[&attempt]),
+        ExpectedReclaim::Released(_)
+    ));
+    assert!(matches!(
+        records::admit(&mut image, &release, 3, &request),
+        Err(Denial::ConflictingDisposition)
+    ));
+}
+
+#[test]
+fn world_artifact_rejects_the_reset_to_zero_format() {
+    use crate::durability::{WorldDurableFrameDenial as Frame, WorldDurableMediumDenial as Medium};
+    let funding = crate::test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&funding);
+    let (_, head) = records::origin(&request);
+    let (bytes, _) = records::wire(&WorldRecord::OpenAttempt(records::open(&head, 2)), &request);
+    let mut bytes = bytes.as_ref().to_vec();
+    assert_eq!(&bytes[8..12], &6u32.to_le_bytes());
+    bytes[8..12].copy_from_slice(&5u32.to_le_bytes());
+    assert!(matches!(
+        crate::durability::codec::decode(&bytes, head.branch.owner().home(), &request),
+        Err(Medium::Frame(Frame::UnsupportedVersion(_)))
+    ));
+}

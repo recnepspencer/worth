@@ -12,6 +12,9 @@ use crate::branch::reference_test_fixture as fixture;
 use crate::history::CompositeHistoryCatalog;
 use crate::identity::ProductBranchReferenceGeneration;
 
+#[path = "reference_cell_tests/first_parent.rs"]
+mod first_parent;
+
 fn product_cell(
     snapshot: ProductBranchReferenceSnapshot,
     catalog: &CompositeHistoryCatalog,

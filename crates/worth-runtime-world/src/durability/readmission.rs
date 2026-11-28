@@ -25,7 +25,7 @@ pub(crate) use retirement::{AdmittedWorldBranchRetirement, AdmittedWorldHistoryR
 mod open;
 mod planned_leg;
 pub(crate) use occurrence::{AdmittedWorldOccurrence, AdmittedWorldOccurrenceLocation};
-pub(crate) use open::AdmittedWorldOpenAttempt;
+pub(crate) use open::{AdmittedWorldOpenAttempt, ExpectedReclaim};
 pub(crate) use planned_leg::AdmittedWorldPlannedSignalLeg;
 
 #[derive(Debug)]

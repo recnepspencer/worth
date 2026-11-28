@@ -121,7 +121,10 @@ fn reuse_selects_the_exact_commit_with_fresh_branch_and_lifecycle_identities() {
 
     assert_ne!(child.branch_identity(), root.branch_identity());
     assert_ne!(child.lifecycle_incarnation(), root.lifecycle_incarnation());
-    assert_eq!(child.reference_generation().get(), 0);
+    assert_eq!(
+        child.reference_generation().get(),
+        root.reference_generation().get() + 1
+    );
     assert_eq!(child.selected_commit(), root.selected_commit());
     assert_eq!(child.basis(), root.basis());
     assert_eq!(owner.state.history.len(), 1);

@@ -17,6 +17,7 @@ use super::ForkedBranchInstallation;
 pub(super) struct ForkedBranchFinalization {
     pub(super) branch: ProductBranchIdentity,
     lifecycle: ProductBranchIncarnation,
+    generation: ProductBranchReferenceGeneration,
     pub(super) reservation: ProductBranchRegistryReservation,
     pub(super) custody: ActiveAttemptCustody,
     commit: Arc<CompositeRuntimeWorldCommit>,
@@ -33,6 +34,7 @@ impl ForkedBranchFinalization {
         let ForkedBranchInstallation {
             branch,
             lifecycle,
+            generation,
             reservation,
             attempt,
             progress,
@@ -51,6 +53,7 @@ impl ForkedBranchFinalization {
         Self {
             branch,
             lifecycle,
+            generation,
             reservation,
             custody,
             commit,
@@ -99,7 +102,7 @@ impl PublicationBoundForkedBranch {
             state.branch.owner_identity(),
             state.branch.clone(),
             state.lifecycle,
-            ProductBranchReferenceGeneration::initial(),
+            state.generation,
             Arc::clone(&state.commit),
         )
         .expect("the admitted destination forms its initial snapshot");

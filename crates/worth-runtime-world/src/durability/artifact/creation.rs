@@ -82,7 +82,8 @@ impl WorldCreationIntentRecord {
             || intent.destination.commit.owner() != owner
             || intent.source.branch == intent.destination.branch
             || intent.destination.incarnation.ordinal() <= intent.source.incarnation.ordinal()
-            || intent.destination.generation.get() != 0
+            || intent.source.generation.get().checked_add(1)
+                != Some(intent.destination.generation.get())
             || ((native_forks || signal_forks)
                 == (intent.destination.commit == intent.source.commit))
         {

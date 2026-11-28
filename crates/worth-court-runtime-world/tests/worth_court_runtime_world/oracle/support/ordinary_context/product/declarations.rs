@@ -68,7 +68,7 @@ impl ProductModel {
             Branch {
                 incarnation: self.next_incarnation,
                 head,
-                generation: 0,
+                generation: self.branches["main"].generation + 1,
             },
         );
         self.next_incarnation += 1;

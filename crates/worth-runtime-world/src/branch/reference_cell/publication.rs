@@ -4,26 +4,25 @@ impl ProductBranchReferenceCell {
     pub(crate) fn publish_recorded<A>(
         &self,
         expected: &ProductBranchObservation,
+        candidate: &ProductBranchReferenceSnapshot,
         argument: &mut A,
         materialize: impl FnOnce(&mut A) -> &mut Option<ProductBranchHeadProtection>,
         publication: crate::history::PreparedPublicationRecord,
     ) -> Result<ProductBranchReferenceMovement, ProductBranchReferenceLoss> {
-        self.replace_expected(expected, argument, materialize, Some(publication))
-    }
-
-    pub(super) fn replace_expected<A>(
-        &self,
-        expected: &ProductBranchObservation,
-        argument: &mut A,
-        materialize: impl FnOnce(&mut A) -> &mut Option<ProductBranchHeadProtection>,
-        publication: Option<crate::history::PreparedPublicationRecord>,
-    ) -> Result<ProductBranchReferenceMovement, ProductBranchReferenceLoss> {
-        self.replace_expected_permitted(expected, argument, materialize, publication, None)
+        self.replace_expected_permitted(
+            expected,
+            candidate,
+            argument,
+            materialize,
+            Some(publication),
+            None,
+        )
     }
 
     pub(super) fn replace_expected_permitted<A>(
         &self,
         expected: &ProductBranchObservation,
+        candidate: &ProductBranchReferenceSnapshot,
         argument: &mut A,
         materialize: impl FnOnce(&mut A) -> &mut Option<ProductBranchHeadProtection>,
         publication: Option<crate::history::PreparedPublicationRecord>,
@@ -73,6 +72,14 @@ impl ProductBranchReferenceCell {
                 observed_head: current.snapshot.clone(),
             });
         }
+        if let Err(denial) =
+            super::successor_validation::validate_successor_snapshot(&current.snapshot, candidate)
+        {
+            return Err(ProductBranchReferenceLoss {
+                denial,
+                observed_head: current.snapshot.clone(),
+            });
+        }
         // Only an exactly current attempt may populate its reserved history
         // storage and transfer already bound World pin claims. The callback
         // must not allocate, contact a component owner, or touch this cell.
@@ -82,6 +89,12 @@ impl ProductBranchReferenceCell {
         let successor = successor_slot
             .as_ref()
             .expect("materialization retains complete custody");
+        if successor.snapshot() != candidate {
+            return Err(ProductBranchReferenceLoss {
+                denial: ProductBranchReferenceCellDenial::SuccessorProtectionMismatch,
+                observed_head: current.snapshot.clone(),
+            });
+        }
         let successor_admission = match permit {
             Some(permit) => permit.validate_occurrence_successor(&current.snapshot, successor),
             None => validate_successor(&current.snapshot, successor),
@@ -144,5 +157,26 @@ impl ProductBranchReferenceCell {
         publication_unwind::after_committed();
         drop(old_image);
         Ok(movement)
+    }
+
+    /// Replace only if the complete expected observation is still selected.
+    /// Expected-currentness, successor validation, and pair replacement use
+    /// one short branch-local lock; no owner call occurs while it is held.
+    #[cfg(test)]
+    pub(crate) fn compare_and_publish(
+        &self,
+        expected: &ProductBranchObservation,
+        successor: ProductBranchHeadProtection,
+    ) -> Result<ProductBranchReferenceMovement, ProductBranchReferencePublishFailure> {
+        let candidate = successor.snapshot().clone();
+        let mut held = Some(successor);
+        self.replace_expected_permitted(expected, &candidate, &mut held, |held| held, None, None)
+            .map_err(|loss| ProductBranchReferencePublishFailure {
+                denial: loss.denial,
+                observed_head: loss.observed_head,
+                successor_protection: held
+                    .take()
+                    .expect("a losing test CAS retains its successor"),
+            })
     }
 }

@@ -32,8 +32,13 @@ pub(super) struct HorizonContext {
         DurableCompositeCommitIdentity,
         (worth_relational::facade::history::BranchId, u64),
     >,
-    pub(super) creation_boundaries:
-        BTreeMap<DurableProductBranchIncarnation, DurableCompositeCommitIdentity>,
+    pub(super) creation_heads: BTreeMap<
+        DurableProductBranchIncarnation,
+        (
+            DurableCompositeCommitIdentity,
+            worth_foundational::facade::DurableProductReferenceGeneration,
+        ),
+    >,
     /// Maps each commit (surviving or disposed) to its nearest surviving
     /// ancestor observation and the number of original generations between them.
     pub(super) ancestors:
@@ -43,6 +48,20 @@ pub(super) struct HorizonContext {
 }
 
 impl HorizonContext {
+    pub(super) fn note_creation_head(
+        &mut self,
+        incarnation: DurableProductBranchIncarnation,
+        created: &crate::durability::WorldBranchCreatedRecord,
+    ) {
+        self.creation_heads.insert(
+            incarnation,
+            (
+                created.intent.source.commit,
+                created.intent.destination.generation,
+            ),
+        );
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(super) fn note_disposed<D, I, E, Ctx, T>(
         &mut self,
@@ -88,8 +107,7 @@ impl HorizonContext {
                         .branch_id()
                         .clone(),
                 );
-                self.creation_boundaries
-                    .insert(key.0, created.intent.source.commit);
+                self.note_creation_head(key.0, created);
                 if created.intent.destination.commit != created.intent.source.commit
                     && let Some((ancestor, dist)) =
                         self.ancestors.get(&created.intent.source.commit).cloned()
@@ -308,6 +326,11 @@ impl HorizonContext {
             .ancestors
             .get(&open.expected.commit)
             .map(|(obs, dist)| (obs.selected_commit().clone(), dist.saturating_add(1)));
+        let (retirement_boundary, initial_generation) = match self.creation_heads.get(&key.0) {
+            Some(&(source, generation)) => (Some(source), generation.get()),
+            None if self.root_incarnation == Some(key.0) => (None, 0),
+            None => return Err(Denial::MissingPredecessor),
+        };
         let (observed, origin) = root.install_readmitted_horizon_commit(
             ReadmittedHorizonInstall {
                 branch_name: open.expected.branch.name(),
@@ -315,7 +338,10 @@ impl HorizonContext {
                 generation: key.1,
                 commit: open.commit,
                 is_root_branch: self.root_incarnation == Some(key.0),
-                retirement_boundary: self.creation_boundaries.get(&key.0).copied(),
+                initial_generation: crate::identity::ProductBranchReferenceGeneration::readmitted(
+                    initial_generation,
+                ),
+                retirement_boundary,
                 branch_previous: self.branch_heads.get(&key.0).map(|o| o.snapshot()),
                 spliced_parent,
                 commit_spec: ReadmittedHorizonCommitSpec::Publication {

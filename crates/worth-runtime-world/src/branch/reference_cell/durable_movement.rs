@@ -129,11 +129,17 @@ impl WorldProductMovementPermit {
         *committed = Some(witness);
     }
 
-    pub(crate) fn validate_successor(
+    pub(crate) fn admit_candidate(
         &self,
-        successor: &ProductBranchHeadProtection,
-    ) -> Result<(), ProductBranchReferenceCellDenial> {
-        self.validate_occurrence_successor(&self.cell.state.read().snapshot, successor)
+        candidate: &ProductBranchReferenceSnapshot,
+    ) -> Result<(), ProductBranchReferenceLoss> {
+        let current = self.cell.state.read();
+        super::successor_validation::validate_successor_snapshot(&current.snapshot, candidate)
+            .and_then(|()| self.validate_occurrence_commit(candidate.selected_commit()))
+            .map_err(|denial| ProductBranchReferenceLoss {
+                denial,
+                observed_head: current.snapshot.clone(),
+            })
     }
 
     pub(super) fn validate_occurrence_successor(
@@ -142,10 +148,16 @@ impl WorldProductMovementPermit {
         successor: &ProductBranchHeadProtection,
     ) -> Result<(), ProductBranchReferenceCellDenial> {
         validate_successor(current, successor)?;
+        self.validate_occurrence_commit(successor.snapshot().selected_commit())
+    }
+
+    fn validate_occurrence_commit(
+        &self,
+        commit: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<(), ProductBranchReferenceCellDenial> {
         let crate::durability::WorldRecord::Occurrence { open, .. } = self.subject.record() else {
             return Err(ProductBranchReferenceCellDenial::DurableSubjectMismatch);
         };
-        let commit = successor.snapshot().selected_commit();
         if commit.owner_identity().durable() != Some(open.commit.owner())
             || commit.ordinal() != open.commit.ordinal()
         {
@@ -176,11 +188,13 @@ impl WorldProductMovementPermit {
     pub(crate) fn publish_recorded(
         mut self,
         expected: &ProductBranchObservation,
+        candidate: &ProductBranchReferenceSnapshot,
         successor: &mut Option<ProductBranchHeadProtection>,
         publication: crate::history::PreparedPublicationRecord,
     ) -> Result<ProductBranchReferenceMovement, ProductBranchReferenceLoss> {
         let result = self.cell.replace_expected_permitted(
             expected,
+            candidate,
             successor,
             |successor| successor,
             Some(publication),
@@ -208,6 +222,7 @@ impl WorldProductMovementPermit {
         let _actual_location = record.location();
         let result = self.cell.replace_expected_permitted(
             expected,
+            &record.after,
             successor,
             |slot| slot,
             None,

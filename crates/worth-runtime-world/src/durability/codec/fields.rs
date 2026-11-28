@@ -46,6 +46,8 @@ pub(in crate::durability) fn open(
     association(out, &value.association)?;
     number(out, value.commit.ordinal())?;
     number(out, value.custody.ordinal())?;
+    // The original predecessor supplies both CAS coordinates and the basis
+    // recovery must retain until this open has a durable outcome.
     head(out, &value.expected)?;
     out(&value.program_revision)?;
     match value.component_intent {

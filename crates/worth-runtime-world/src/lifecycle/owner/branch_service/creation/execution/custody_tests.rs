@@ -30,7 +30,11 @@ fn unwind_after_first_actual_creation_fork_retains_exact_effect_without_signal_c
         .issue_branch_identities(intent.name().clone())
         .unwrap();
     let witness = reservation
-        .bind_creation_destination(branch.clone(), incarnation)
+        .bind_creation_destination(
+            branch.clone(),
+            incarnation,
+            source.reference_generation().advance().unwrap(),
+        )
         .unwrap();
     let destination = CreationDestination {
         witness,

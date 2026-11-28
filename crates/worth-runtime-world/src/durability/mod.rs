@@ -34,8 +34,8 @@ mod readmission;
 mod readmission_custody;
 pub(crate) use readmission::{
     AdmittedWorldDisposition, AdmittedWorldOccurrence, AdmittedWorldOccurrenceLocation,
-    AdmittedWorldOpenAttempt, AdmittedWorldPlannedSignalLeg, PreparedWorldReleasedDisposition,
-    RecoveredCustodyDisposition,
+    AdmittedWorldOpenAttempt, AdmittedWorldPlannedSignalLeg, ExpectedReclaim,
+    PreparedWorldReleasedDisposition, RecoveredCustodyDisposition,
 };
 pub use readmission_custody::WorldNativeReadmissionCustody;
 mod release_evidence;

@@ -17,11 +17,16 @@ where
         use RuntimeWorldBranchAdmissionDenial as Denial;
         let reuse = matches!(body.plan.relational(), Native::ReuseExact)
             && matches!(body.plan.signal(), Signal::ReuseExact);
+        let generation = body.witness.generation();
         if !custody.creation_prepared() {
             if reuse {
                 let commit = body.source.snapshot().shared_commit();
-                let (cell, snapshot) =
-                    self.issue_reused_head(body.branch.clone(), body.incarnation, commit.clone())?;
+                let (cell, snapshot) = self.issue_reused_head(
+                    body.branch.clone(),
+                    body.incarnation,
+                    generation,
+                    commit.clone(),
+                )?;
                 custody
                     .issue_creation_observation(
                         &self.state.retention,
@@ -54,7 +59,7 @@ where
                     self.owner_identity(),
                     body.branch.clone(),
                     body.incarnation,
-                    ProductBranchReferenceGeneration::initial(),
+                    generation,
                     commit,
                 )
                 .map_err(|_| Denial::OwnerUnavailable)?;

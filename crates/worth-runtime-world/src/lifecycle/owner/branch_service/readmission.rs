@@ -122,6 +122,7 @@ where
             let branch = ProductBranchIdentity::issued(owner, name);
             let incarnation =
                 readmit_incarnation(owner, head.incarnation).ok_or(Denial::ForeignOwner)?;
+            let generation = ProductBranchReferenceGeneration::readmitted(head.generation.get());
             let observation_capacity = self
                 .state
                 .retention
@@ -160,7 +161,7 @@ where
                 })?
             };
             let (cell, snapshot) = if native.is_none() && signal.is_none() {
-                self.issue_reused_head(branch.clone(), incarnation, commit.clone())
+                self.issue_reused_head(branch.clone(), incarnation, generation, commit.clone())
                     .map_err(|_| Denial::RecoveryCapacity)?
             } else {
                 let mut capacity = self
@@ -183,7 +184,7 @@ where
                     owner,
                     branch.clone(),
                     incarnation,
-                    ProductBranchReferenceGeneration::initial(),
+                    generation,
                     commit.clone(),
                 )
                 .map_err(|_| Denial::BranchLineage)?;

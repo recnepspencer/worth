@@ -32,7 +32,11 @@ fn settled_creation(
         .issue_branch_identities(intent.name().clone())
         .unwrap();
     let witness = reservation
-        .bind_creation_destination(branch.clone(), lifecycle)
+        .bind_creation_destination(
+            branch.clone(),
+            lifecycle,
+            source.reference_generation().advance().unwrap(),
+        )
         .unwrap();
     let cancellation = RuntimeWorldCancellationSource::new();
     let attempt: ReservedBranchCreationAttempt = owner
@@ -59,6 +63,7 @@ fn settled_creation(
         } => ForkedBranchInstallation {
             branch,
             lifecycle,
+            generation: source.reference_generation().advance().unwrap(),
             reservation,
             attempt,
             progress,

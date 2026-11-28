@@ -27,7 +27,7 @@ use worth_foundational::facade::{
 };
 pub const WORLD_ARTIFACT_PROTOCOL: BoundaryProtocolIdentity =
     BoundaryProtocolIdentity::new("worth.world.artifact");
-pub const WORLD_ARTIFACT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(5);
+pub const WORLD_ARTIFACT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(6);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct DurableWorldHead {
@@ -42,6 +42,8 @@ pub(crate) struct WorldOpenAttemptRecord {
     pub(crate) association: CompositeAttemptAssociation,
     pub(crate) commit: DurableCompositeCommitIdentity,
     pub(crate) custody: DurableProductUnpublishedOwnerEffectsIdentity,
+    /// Exact predecessor retained by this original while its recovery is pending.
+    /// The occurrence or release record settles the original's claim.
     pub(crate) expected: DurableWorldHead,
     pub(crate) program_revision: [u8; 32],
 }

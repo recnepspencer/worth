@@ -138,8 +138,11 @@ fn selected_creation_refuses_a_missing_exact_source_reference() {
     let child = create(&f, &request, &parent, "child", false, false);
     let denial = refusal(&f, &request, |rows| {
         for row in rows.iter_mut().filter(|row| matches!(tag(&row.2), 7 | 8)) {
-            let at = fields(&row.2).source_generation;
-            row.2[at..at + 8].copy_from_slice(&7u64.to_le_bytes());
+            let fields = fields(&row.2);
+            let source = fields.source_generation;
+            let destination = fields.destination_generation;
+            row.2[source..source + 8].copy_from_slice(&7u64.to_le_bytes());
+            row.2[destination..destination + 8].copy_from_slice(&8u64.to_le_bytes());
             repair(&mut row.2);
         }
     });
@@ -202,7 +205,7 @@ fn creation_artifact_refuses_the_retired_wire_version() {
     let child = create(&f, &request, &parent, "child", false, false);
     let denial = refusal(&f, &request, |rows| {
         let row = rows.iter_mut().find(|row| tag(&row.2) == 7).unwrap();
-        row.2[8..12].copy_from_slice(&4u32.to_le_bytes());
+        row.2[8..12].copy_from_slice(&5u32.to_le_bytes());
     });
     assert!(matches!(
         denial,

@@ -139,6 +139,9 @@ impl HorizonContext {
                 generation: head.generation,
                 commit: head.commit,
                 is_root_branch: false,
+                initial_generation: crate::identity::ProductBranchReferenceGeneration::readmitted(
+                    head.generation.get(),
+                ),
                 retirement_boundary: Some(created.intent.source.commit),
                 branch_previous: None,
                 spliced_parent,

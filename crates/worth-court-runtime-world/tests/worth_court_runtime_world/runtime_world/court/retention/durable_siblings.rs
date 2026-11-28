@@ -100,7 +100,10 @@ fn durable_sibling_owner_matrix_reopens_exact_components_without_moving_the_pare
         let RuntimeWorldBranchCreationOutcome::Performed(child) = outcome else {
             panic!("sibling: {outcome:?}")
         };
-        assert_eq!(child.reference_generation().get(), 0);
+        assert_eq!(
+            child.reference_generation().get(),
+            parent.reference_generation().get() + 1
+        );
         assert_eq!(
             child.selected_commit() == parent.selected_commit(),
             !native && !signal
@@ -146,6 +149,8 @@ fn family_reopen(native: bool, signal: bool) {
         RuntimeWorldBranchCreationOutcome::Performed(actual) => actual,
         other => panic!("nested actual sibling: {other:?}"),
     };
+    assert_eq!(first.reference_generation().get(), 1);
+    assert_eq!(second.reference_generation().get(), 2);
     let before = descriptions(&f, &request);
     assert_eq!(before.len(), 3);
     drop((parent, first, second));
@@ -266,10 +271,14 @@ fn a_native_fork_without_its_creation_intent_refuses_before_serving() {
         panic!("expected performed native fork")
     };
     drop((child, parent));
-    f.recorder
-        .rewrite_latest(worth_foundational::facade::WorldDurableJournal::Branches, |_| None);
-    f.recorder
-        .rewrite_latest(worth_foundational::facade::WorldDurableJournal::Custody, |_| None);
+    f.recorder.rewrite_latest(
+        worth_foundational::facade::WorldDurableJournal::Branches,
+        |_| None,
+    );
+    f.recorder.rewrite_latest(
+        worth_foundational::facade::WorldDurableJournal::Custody,
+        |_| None,
+    );
     let denial = match f.try_reopen(&request) {
         Ok(_) => panic!("an orphan Native fork cannot reach service"),
         Err(denial) => denial,

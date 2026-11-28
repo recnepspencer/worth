@@ -34,6 +34,7 @@ fn settled_creation_counters(
     let (branch, incarnation) = owner
         .issue_branch_identities(intent.name().clone())
         .expect("the destination identities are issued before any owner effect");
+    let generation = source.reference_generation().advance().unwrap();
     let attempt = RuntimeWorldPreparationService::prepare_creation(
         &owner,
         source,
@@ -49,7 +50,7 @@ fn settled_creation_counters(
     );
     let destination = CreationDestination {
         witness: reservation
-            .bind_creation_destination(branch.clone(), incarnation)
+            .bind_creation_destination(branch.clone(), incarnation, generation)
             .expect("the reserved destination binds its exact witness"),
         branch,
         incarnation,
