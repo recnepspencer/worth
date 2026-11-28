@@ -123,11 +123,13 @@ report!(AggregateGroupNamingDenial, cause => {
     use AggregateGroupNamingDenial as Cause;
     let class = match cause {
         Cause::LiveNameCollision { .. } | Cause::DuplicatePriorIdentity { .. } => Conflict,
-        Cause::UnknownGroup { .. } | Cause::MemberNotLive { .. } => NotFound,
+        Cause::UnknownGroup { .. } | Cause::MemberNotLive { .. } | Cause::UnnamedMember { .. } => NotFound,
         Cause::PriorIdentityMismatch { .. } | Cause::RetiredIdentityLive { .. }
-        | Cause::ContinuityRuleChanged | Cause::OverlappingMember { .. } => Invariant,
+        | Cause::ContinuityRuleChanged | Cause::OverlappingMember { .. }
+        | Cause::MissingPriorMember { .. } => Invariant,
         Cause::InvalidSchemeId { .. } | Cause::EmptyGroup | Cause::DuplicateMemberName { .. }
-        | Cause::DuplicateCarrier { .. } | Cause::MissingAnchorMember { .. } | Cause::SelectionClaim => InvalidInput,
+        | Cause::DuplicateCarrier { .. } | Cause::MissingAnchorMember { .. } | Cause::SelectionClaim
+        | Cause::MemberCoordinateMismatch { .. } | Cause::AutomaticGroupClaim => InvalidInput,
     };
     (class, CorrectInput, "relational.aggregate.name_denied", "Aggregate group naming was refused.")
 });
