@@ -30,6 +30,15 @@ impl ObservationListener<(), (), (), (), ()> for Listener {
     }
 }
 
+fn serial_request() -> worth_execution::SerialRequest {
+    let policy = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational();
+    worth_execution::SerialRequest::from_policy(
+        &policy.request_policy(),
+        worth_execution::CancellationToken::new(),
+        None,
+    )
+}
+
 fn evaluate(_: &mut EvaluationContext<'_, ()>) -> Result<AspectVersion, SignalError> {
     Ok(AspectVersion::from_updates([(ASPECT, 7)]))
 }
@@ -37,8 +46,7 @@ fn evaluate(_: &mut EvaluationContext<'_, ()>) -> Result<AspectVersion, SignalEr
 #[test]
 fn keyed_recipe_publishes_observations_and_reads_previous_value_from_a_live_wake() {
     let bridge = source::runtime();
-    let serial = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let serial = serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&serial);
     let recipe = bridge
         .register_signal_recipe(Recipe::new("price", (), evaluate))
@@ -161,8 +169,7 @@ fn recipe_comparator_override_controls_dependency_early_cutoff() {
         .with_version_comparator(VersionComparatorPolicy::Tolerance { epsilon: 2 });
     let mapping = registration.mapping_id().clone();
     let bridge = source::runtime_with_mapping(registration);
-    let serial = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
+    let serial = serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&serial);
     let value = AtomicU64::new(7);
     let source = bridge
