@@ -18,8 +18,7 @@ use super::tables::{
     GROUP_LOG, MAX_INLINE_VALUE_BYTES, VALUE_CHUNK, VALUE_INLINE_TAG,
 };
 use super::{
-    NamingPageRef, NAMING_KEY_BYTES, NAMING_LOGICAL_KEY_BYTES, NAMING_PAGE_BYTES,
-    NAMING_PAGE_ENTRIES,
+    logical_key_limit, physical_key_fits, NamingPageRef, NAMING_PAGE_BYTES, NAMING_PAGE_ENTRIES,
 };
 
 /// Frame and array headers of one encoded page.
@@ -49,10 +48,11 @@ fn expand_changes(
 ) -> Result<Vec<(Vec<u8>, Option<Vec<u8>>)>, Cause> {
     let mut expanded = Vec::with_capacity(changes.len());
     for (key, value) in changes {
-        if key.is_empty() || key.len() > NAMING_LOGICAL_KEY_BYTES {
+        let limit = logical_key_limit(key.first().copied());
+        if key.is_empty() || key.len() > limit {
             return Err(Cause::LimitExceeded {
                 length: key.len() as u64,
-                limit: NAMING_LOGICAL_KEY_BYTES as u64,
+                limit: limit as u64,
             });
         }
         let old_chunks = prior_chunk_count(prior, &key)?;
@@ -122,10 +122,7 @@ struct PageWriter<'s> {
 impl PageWriter<'_> {
     fn push(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Cause> {
         let size = row_bytes(&key, &value);
-        if key.is_empty()
-            || key.len() > NAMING_KEY_BYTES
-            || size + PAGE_OVERHEAD > NAMING_PAGE_BYTES
-        {
+        if !physical_key_fits(&key) || size + PAGE_OVERHEAD > NAMING_PAGE_BYTES {
             return Err(Cause::LimitExceeded {
                 length: size as u64,
                 limit: NAMING_PAGE_BYTES as u64,

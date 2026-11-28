@@ -104,6 +104,7 @@ pub(crate) fn compact_entry(entry: &NameEntry, floor: CommitId) -> Option<NameEn
         born: entry.born,
         timeline,
         forward_edges,
+        group_events: entry.group_events.clone(),
         lineage_commits: entry.lineage_commits.clone(),
     })
 }
@@ -284,6 +285,11 @@ impl PersistentNameBranchIndex {
                     born: entry.born,
                     timeline,
                     forward_edges,
+                    group_events: entry
+                        .group_events
+                        .range(..=cutoff)
+                        .map(|(&commit, events)| (commit, events.clone()))
+                        .collect(),
                     lineage_commits,
                 },
             );

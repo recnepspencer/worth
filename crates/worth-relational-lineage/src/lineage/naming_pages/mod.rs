@@ -27,10 +27,29 @@ pub(crate) mod tests;
 /// Row and byte budgets of one naming page member.
 pub const NAMING_PAGE_ENTRIES: u32 = 256;
 pub const NAMING_PAGE_BYTES: usize = 64 * 1024;
-/// Bound on one physical table key (including continuation chunk keys).
+/// Upper bound on ordinary physical keys, including their continuation keys.
 pub const NAMING_KEY_BYTES: usize = 256;
 /// Bound on one logical (non-chunk) row key.
 pub const NAMING_LOGICAL_KEY_BYTES: usize = 192;
+/// Qualified projected member rows fit alongside a maximum inline value (or
+/// chunk) under the page writer's two-byte-per-input-byte bound.
+const GROUP_MEMBER_LOGICAL_KEY_BYTES: usize = NAMING_PAGE_BYTES / 8 - 128;
+
+pub(super) fn logical_key_limit(table: Option<u8>) -> usize {
+    match table {
+        Some(tables::GROUP_MEMBERS | tables::GROUP_MEMBER_OWNER) => GROUP_MEMBER_LOGICAL_KEY_BYTES,
+        _ => NAMING_LOGICAL_KEY_BYTES,
+    }
+}
+
+fn physical_key_fits(key: &[u8]) -> bool {
+    match key.first().copied() {
+        None => false,
+        Some(tables::VALUE_CHUNK) => tables::parse_chunk_key(key)
+            .is_some_and(|(base, _)| base.len() <= logical_key_limit(base.first().copied())),
+        Some(table) => key.len() <= logical_key_limit(Some(table)),
+    }
+}
 /// Bound on one installed group scheme id in a branch header.
 pub const SCHEME_ID_BYTES: usize = 128;
 
@@ -185,11 +204,10 @@ pub fn validate_pages(pages: &[NamingPageRef]) -> Result<(), &'static str> {
     let (mut prior, mut expected_chunks, mut actual_chunks): (Option<&NamingPageRef>, u64, u64) =
         (None, 0, 0);
     for page in pages {
-        let key_ok = |key: &[u8]| !key.is_empty() && key.len() <= NAMING_KEY_BYTES;
         if page.entries == 0
             || page.entries > NAMING_PAGE_ENTRIES
-            || !key_ok(&page.first)
-            || !key_ok(&page.last)
+            || !physical_key_fits(&page.first)
+            || !physical_key_fits(&page.last)
             || page.first > page.last
             || (page.entries == 1) != (page.first == page.last)
             || tables::table_domain(page.first[0]).is_none()

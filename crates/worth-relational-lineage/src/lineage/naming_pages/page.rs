@@ -7,7 +7,7 @@ use worth_relational_storage::internal_port::storage::residency::chunked::member
 };
 use worth_relational_storage::internal_port::storage::residency::chunked::page_cache::ResidentPage;
 
-use super::{NamingPageRef, NAMING_KEY_BYTES, NAMING_PAGE_ENTRIES};
+use super::{physical_key_fits, NamingPageRef, NAMING_PAGE_ENTRIES};
 
 /// The encoded page: strictly ascending `(row key, value)` rows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -29,10 +29,7 @@ impl NamingPage {
     fn is_canonical(&self) -> bool {
         !self.rows.is_empty()
             && self.rows.len() <= NAMING_PAGE_ENTRIES as usize
-            && self
-                .rows
-                .iter()
-                .all(|(key, _)| !key.is_empty() && key.len() <= NAMING_KEY_BYTES)
+            && self.rows.iter().all(|(key, _)| physical_key_fits(key))
             && self.rows.windows(2).all(|pair| pair[0].0 < pair[1].0)
     }
 }

@@ -51,7 +51,7 @@ impl Run {
         let next = self.world.run(rule, &self.prior, &self.retired, &groups)?;
         let mut held = BTreeSet::new();
         for group in &next.assignments {
-            let anchor = group.anchor.as_bytes()[0];
+            let anchor = group.anchor.carrier_name().as_bytes()[0];
             let minted = match group.sources.as_slice() {
                 [] => id(rule, anchor),
                 sources => tid(rule, anchor, sources),

@@ -9,6 +9,7 @@
 
 use std::sync::Arc;
 
+use crate::contracts::aggregate_identity::group_lineage::AggregateGroupLineageEvent;
 use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::lineage::data::name_resolution::{PersistentNameKey, PersistentNameTarget};
@@ -120,6 +121,7 @@ pub struct NameEntry {
     pub(super) timeline: im::OrdMap<CommitId, NameState>,
     /// Strictly ascending commits; successors sorted, deduplicated, and
     /// `Arc`-shared so fork writes never deep-copy historical wide splits.
+    pub(crate) group_events: im::OrdMap<CommitId, Arc<Vec<AggregateGroupLineageEvent>>>,
     pub(super) forward_edges: im::OrdMap<CommitId, Arc<Vec<PersistentNameKey>>>,
     /// Earliest commit at which each `LineageId` held this name; maintained on
     /// every live write and preserved across retention compaction so
@@ -139,6 +141,7 @@ impl NameEntry {
             origin,
             born: born_at,
             timeline,
+            group_events: im::OrdMap::new(),
             forward_edges: im::OrdMap::new(),
             lineage_commits,
         }
@@ -280,6 +283,7 @@ impl NameEntry {
             origin: self.origin.clone(),
             born: self.born,
             timeline: self.timeline.clone(),
+            group_events: self.group_events.clone(),
             forward_edges: self.forward_edges.clone(),
             lineage_commits: self.lineage_commits.clone(),
         }
@@ -292,6 +296,7 @@ impl NameEntry {
     pub(super) fn rollback_commit(&mut self, commit: CommitId) {
         self.timeline.remove(&commit);
         self.forward_edges.remove(&commit);
+        self.group_events.remove(&commit);
     }
 
     /// Appends `successor` to `commit`'s forward edges. Inspects `commit`

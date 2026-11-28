@@ -49,7 +49,7 @@ pub use transition::group::{
     AggregateGroupNamingDenial, AggregateGroupOrigin, AggregateGroupPartitionAssignment,
     AggregateGroupPartitionTransition, AggregateGroupRoleCounts, AggregateGroupScheme,
     AggregateGroupSchemeId, AggregateGroupScope, AggregateGroupStateView, AggregateGroupTransition,
-    AggregateMemberRole, AggregatePriorGroup,
+    AggregateMemberRole, AggregatePriorGroup, CanonicalGroupMemberIdentity,
 };
 pub(crate) use transition::{
     transition, AggregateAssignment, AggregateLineageEvent, AggregateLineageKind,

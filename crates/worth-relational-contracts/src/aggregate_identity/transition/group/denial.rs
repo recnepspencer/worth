@@ -1,8 +1,8 @@
 //! Typed refusals of the allocation-independent group naming authority.
 use worth_foundational::facade::AggregateIdentity;
 
+use super::model::CanonicalGroupMemberIdentity;
 use super::model::{AggregateContinuityRule, AggregateGroupClaimant};
-use crate::lineage::data::PersistentNameIdentity;
 
 /// Why a group naming transition was refused. Every refusal has zero effects.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -12,11 +12,13 @@ pub enum AggregateGroupNamingDenial {
     /// A prior or proposed group has no members.
     EmptyGroup,
     /// One member name was supplied twice for one group.
-    DuplicateMemberName { name: PersistentNameIdentity },
+    DuplicateMemberName { name: CanonicalGroupMemberIdentity },
+    /// The member coordinate disagrees with its canonical identity.
+    MemberCoordinateMismatch { name: CanonicalGroupMemberIdentity },
     /// Two distinct member names claim one native carrier.
-    DuplicateCarrier { name: PersistentNameIdentity },
+    DuplicateCarrier { name: CanonicalGroupMemberIdentity },
     /// One member name belongs to two groups of the same state.
-    OverlappingMember { name: PersistentNameIdentity },
+    OverlappingMember { name: CanonicalGroupMemberIdentity },
     /// Two prior live groups carry one identity.
     DuplicatePriorIdentity { identity: AggregateIdentity },
     /// A prior identity is not the v2 name of its recorded birth anchor.
@@ -26,10 +28,20 @@ pub enum AggregateGroupNamingDenial {
     /// The continuity rule requires a role member the group does not have.
     MissingAnchorMember {
         rule: AggregateContinuityRule,
-        least_member: PersistentNameIdentity,
+        least_member: CanonicalGroupMemberIdentity,
     },
     /// A member is not a live entity name after the commit.
-    MemberNotLive { name: PersistentNameIdentity },
+    MemberNotLive {
+        name: crate::lineage::data::PersistentNameIdentity,
+    },
+    /// A touched graph member's carrier has no live name after the commit.
+    UnnamedMember {
+        member: crate::graph_member::NativeMemberKey,
+    },
+    /// A touched member disagrees with the prior published partition.
+    MissingPriorMember { name: CanonicalGroupMemberIdentity },
+    /// Automatic graph partitions can only be admitted from mutation facts.
+    AutomaticGroupClaim,
     /// A dissolved group is not live in its scheme at the commit basis.
     UnknownGroup { identity: AggregateIdentity },
     /// One scheme was named under two continuity rules.

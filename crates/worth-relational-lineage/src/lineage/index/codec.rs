@@ -175,14 +175,24 @@ impl NamingCodec for NameEntry {
         self.timeline.write(out);
         self.forward_edges.write(out);
         self.lineage_commits.write(out);
+        if matches!(self.origin, NameOrigin::Group { .. }) {
+            self.group_events.write(out);
+        }
     }
     fn read(input: &mut Reader<'_>) -> Result<Self, Cause> {
+        let origin = NameOrigin::read(input)?;
+        let group = matches!(origin, NameOrigin::Group { .. });
         let entry = Self {
-            origin: NamingCodec::read(input)?,
+            origin,
             born: NamingCodec::read(input)?,
             timeline: NamingCodec::read(input)?,
             forward_edges: NamingCodec::read(input)?,
             lineage_commits: NamingCodec::read(input)?,
+            group_events: if group {
+                NamingCodec::read(input)?
+            } else {
+                Default::default()
+            },
         };
         if entry
             .timeline

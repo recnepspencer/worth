@@ -49,12 +49,12 @@ pub fn member_delta(
     let mut delta = AggregateGroupMemberDelta::new();
     for (name, _) in prior.iter() {
         if next.get(name).is_none() {
-            delta.remove(*name)?;
+            delta.remove(name.clone())?;
         }
     }
     for (name, member) in next.iter() {
         if prior.get(name) != Some(member) {
-            delta.upsert(*name, member.carrier.clone(), member.role)?;
+            delta.upsert(name.clone(), member.carrier.clone(), member.role)?;
         }
     }
     Ok(delta)

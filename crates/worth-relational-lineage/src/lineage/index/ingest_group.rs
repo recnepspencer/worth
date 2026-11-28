@@ -10,6 +10,7 @@
 //! kept its name.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use worth_foundational::facade::AggregateIdentity;
 
@@ -54,7 +55,39 @@ impl PersistentNameBranchIndex {
         }
         self.ingest_group_births(batch.commit, events, &batch.group_schemes, journal)?;
         let retired = self.ingest_group_retirements(batch.commit, events, &live_before, journal)?;
-        self.ingest_group_edges(batch.commit, events, &live_before, &retired, journal)
+        self.ingest_group_edges(batch.commit, events, &live_before, &retired, journal)?;
+        self.index_automatic_group_events(batch.commit, events, journal)
+    }
+
+    fn index_automatic_group_events(
+        &mut self,
+        commit: CommitId,
+        events: &BTreeSet<Event>,
+        journal: &mut IngestionJournal,
+    ) -> Result<(), PersistentNameIndexDenial> {
+        use crate::contracts::aggregate_identity::transition::group::model::AggregateGroupSchemeId;
+
+        let mut incident = std::collections::BTreeMap::<_, Vec<_>>::new();
+        for &event in events {
+            for group in event_groups(event) {
+                incident.entry(group).or_default().push(event);
+            }
+        }
+        for (group, events) in incident {
+            let key = PersistentNameKey::Group(group);
+            let entry = self.names.get(&key)?;
+            let automatic = entry
+                .as_deref()
+                .and_then(NameEntry::scheme_id)
+                .is_some_and(AggregateGroupSchemeId::is_automatic_id);
+            drop(entry);
+            if automatic {
+                self.entry_mut(key, commit, journal)?
+                    .group_events
+                    .insert(commit, Arc::new(events));
+            }
+        }
+        Ok(())
     }
 
     fn group_is_live(&self, group: AggregateIdentity) -> Result<bool, PersistentNameIndexDenial> {

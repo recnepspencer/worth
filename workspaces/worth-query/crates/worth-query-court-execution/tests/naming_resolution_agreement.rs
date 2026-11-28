@@ -116,7 +116,9 @@ enum LiftedDenial {
     UnknownName,
 }
 
-fn lift(outcome: PersistentNameResolutionOutcome) -> Result<ResolvedName<PersistentNameTarget>, LiftedDenial> {
+fn lift(
+    outcome: PersistentNameResolutionOutcome,
+) -> Result<ResolvedName<PersistentNameTarget>, LiftedDenial> {
     match outcome.result {
         Ok(PersistentNameResolution::Exact(target)) => Ok(ResolvedName::Exact(target)),
         Ok(PersistentNameResolution::Plural(targets)) => Ok(ResolvedName::Plural(targets)),
@@ -181,7 +183,7 @@ impl Groups {
             .iter()
             .map(|a| AggregatePriorGroup {
                 identity: a.identity,
-                anchor: a.anchor,
+                anchor: a.anchor.clone(),
                 sources: a.sources.clone(),
                 members: a.members.clone(),
             })
@@ -296,7 +298,8 @@ fn declaration_resolution_vocabulary_agrees_with_relational_name_index() {
     groups.step(&[&sorted[2..4]]); // 3: one fragment retires
     groups.step(&[]); // 4: the last fragment retires
     let index = groups.index(None);
-    let at = |basis: u64| lift(index.resolve(held, CommitId(basis), &PersistentNameSelection::Exact));
+    let at =
+        |basis: u64| lift(index.resolve(held, CommitId(basis), &PersistentNameSelection::Exact));
     assert_eq!(
         at(3),
         Ok(ResolvedName::Exact(PersistentNameTarget::Group {

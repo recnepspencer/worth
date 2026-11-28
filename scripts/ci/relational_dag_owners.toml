@@ -56,7 +56,8 @@ layer = 3
 # order, name-index ingestion and resolution), which read crate-private state.
 # +200 for the fork_children and CowMap fork conformance traces, which call
 # the private `forks_inheriting` and read private `CowMap` nodes.
-cap = 24500
+# +300 for projected group keys, ordered page encoding, and incident group history.
+cap = 24800
 floor = 7100
 depends = ["contracts", "storage", "branch"]
 

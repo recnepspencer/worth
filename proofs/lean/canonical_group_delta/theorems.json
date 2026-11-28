@@ -33,11 +33,11 @@
     },
     {
       "name": "CanonicalGroupDelta.encode_length",
-      "type": "∀ {α : Type} (name : Nat → List Nat) (member : Nat × α → List Nat) (w : Nat), (∀ x, (name x).length = 32) → (∀ p, (member p).length = w) → ∀ (d : CanonicalGroupDelta.Delta α), (CanonicalGroupDelta.encode name member d).length = 8 + 32 * d.removed.length + w * d.upserted.length"
+      "type": "∀ {α : Type} (name : Nat → List Nat) (member : Nat × α → List Nat) (d : CanonicalGroupDelta.Delta α), (CanonicalGroupDelta.encode name member d).length = 8 + (d.removed.flatMap name).length + (d.upserted.flatMap member).length"
     },
     {
       "name": "CanonicalGroupDelta.encode_diff_le_touched",
-      "type": "∀ {α : Type} [inst : DecidableEq α] (name : Nat → List Nat) (member : Nat × α → List Nat) (w : Nat), (∀ x, (name x).length = 32) → (∀ p, (member p).length = w) → ∀ (prior next : CanonicalGroupDelta.Members α) (support : List Nat), (CanonicalGroupDelta.encode name member (CanonicalGroupDelta.diff prior next support)).length ≤ 8 + (32 + w) * (CanonicalGroupDelta.touched prior next support).length"
+      "type": "∀ {α : Type} [DecidableEq α] (name : Nat → List Nat) (member : Nat × α → List Nat) (w : Nat), (∀ x, (name x).length ≤ w) → (∀ p, (member p).length ≤ w) → ∀ (prior next : CanonicalGroupDelta.Members α) (support : List Nat), (CanonicalGroupDelta.encode name member (CanonicalGroupDelta.diff prior next support)).length ≤ 8 + w * (CanonicalGroupDelta.touched prior next support).length"
     },
     {
       "name": "CanonicalGroupDelta.seek_val",

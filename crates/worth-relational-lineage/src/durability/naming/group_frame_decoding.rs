@@ -16,15 +16,14 @@ use crate::contracts::aggregate_identity::transition::group::delta::{
 };
 use crate::contracts::aggregate_identity::transition::group::model::{
     AggregateContinuityRule, AggregateGroupMembers, AggregateGroupScheme, AggregateGroupSchemeId,
-    AggregateMemberRole,
+    AggregateMemberRole, CanonicalGroupMemberIdentity,
 };
 use crate::contracts::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
-use crate::contracts::graph_member::NativeMemberKey;
+use crate::contracts::graph_member::key::{NativeMemberKey, ProjectedMemberCoordinate};
 use crate::contracts::identity::data::{primitives::PartitionId, record_ids::EntityId};
-use crate::contracts::lineage::data::naming::{
-    PersistentNameIdentity, PersistentNameIdentityOwnerPort as _,
-};
 use crate::lineage::groups::{CommittedGroupTransition, GroupTransitionKind};
+use crate::lineage::naming_pages::codec::NamingCodec;
+use std::sync::Arc;
 
 use super::format::{group_event_arity, group_event_from_parts};
 use super::group_frame_encoding::{GROUP_FRAME_MAGIC, GROUP_FRAME_VERSION};
@@ -104,15 +103,17 @@ fn read_group(reader: &mut WireReader<'_>) -> Result<AggregateIdentity, Refusal>
 
 fn decode_assignment(reader: &mut WireReader<'_>) -> Result<AggregateGroupAssignment, Refusal> {
     let identity = read_group(reader)?;
-    let anchor = PersistentNameIdentity::from_minted_digest(reader.digest()?);
+    let anchor = read_name(reader)?;
     let sources = read_strictly_ascending(reader, "group sources", read_group, |source| *source)?;
     let non_canonical = |field| Refusal::NonCanonical { field };
     let change = match reader.u8()? {
         1 => {
             let removed =
-                read_strictly_ascending(reader, "removed group members", read_name, |n| *n)?;
+                read_strictly_ascending(reader, "removed group members", read_name, |n| n.clone())?;
             let upserted =
-                read_strictly_ascending(reader, "upserted group members", decode_member, |m| m.0)?;
+                read_strictly_ascending(reader, "upserted group members", decode_member, |m| {
+                    m.0.clone()
+                })?;
             let mut delta = AggregateGroupMemberDelta::new();
             for name in removed {
                 delta
@@ -127,7 +128,8 @@ fn decode_assignment(reader: &mut WireReader<'_>) -> Result<AggregateGroupAssign
             AggregateGroupChange::Kept(delta)
         }
         tag @ (2 | 3) => {
-            let members = read_strictly_ascending(reader, "group members", decode_member, |m| m.0)?;
+            let members =
+                read_strictly_ascending(reader, "group members", decode_member, |m| m.0.clone())?;
             let mut set = AggregateGroupMembers::new();
             for (name, carrier, role) in members {
                 set.insert(name, carrier, role)
@@ -154,24 +156,37 @@ fn decode_assignment(reader: &mut WireReader<'_>) -> Result<AggregateGroupAssign
     })
 }
 
-fn read_name(reader: &mut WireReader<'_>) -> Result<PersistentNameIdentity, Refusal> {
-    Ok(PersistentNameIdentity::from_minted_digest(reader.digest()?))
+fn read_name(reader: &mut WireReader<'_>) -> Result<CanonicalGroupMemberIdentity, Refusal> {
+    let length = reader.count()?;
+    CanonicalGroupMemberIdentity::from_bytes(reader.take(length)?).map_err(|_| {
+        Refusal::NonCanonical {
+            field: "group member identity",
+        }
+    })
 }
 
-type DecodedMember = (PersistentNameIdentity, NativeMemberKey, AggregateMemberRole);
+type DecodedMember = (
+    CanonicalGroupMemberIdentity,
+    NativeMemberKey,
+    AggregateMemberRole,
+);
 
 fn decode_member(reader: &mut WireReader<'_>) -> Result<DecodedMember, Refusal> {
-    let name = PersistentNameIdentity::from_minted_digest(reader.digest()?);
-    match reader.u8()? {
-        1 => {}
-        tag => {
-            return Err(Refusal::InvalidTag {
-                field: "group member carrier",
-                tag,
-            })
+    let name = read_name(reader)?;
+    let entity = decode_entity(reader)?;
+    let carrier = match &name {
+        CanonicalGroupMemberIdentity::Entity(_) => NativeMemberKey::Entity(entity),
+        CanonicalGroupMemberIdentity::ProjectedCase { domain, case, .. } => {
+            NativeMemberKey::Projected(
+                Arc::new(ProjectedMemberCoordinate {
+                    domain: domain.clone(),
+                    carrier: entity,
+                    case: case.clone(),
+                })
+                .into(),
+            )
         }
-    }
-    let carrier = NativeMemberKey::Entity(decode_entity(reader)?);
+    };
     let role = match reader.u8()? {
         1 => AggregateMemberRole::Ordinary,
         2 => AggregateMemberRole::Anchor,

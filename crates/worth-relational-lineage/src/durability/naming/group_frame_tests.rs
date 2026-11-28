@@ -49,7 +49,7 @@ fn transition(scheme: &str, groups: &[u8]) -> CommittedGroupTransition {
             }
             AggregateGroupAssignment {
                 identity: group(*byte),
-                anchor: PersistentNameIdentity::from_minted_digest([*byte; 32]),
+                anchor: PersistentNameIdentity::from_minted_digest([*byte; 32]).into(),
                 sources: vec![group(200), group(201)],
                 change: AggregateGroupChange::Born(members),
             }
@@ -183,12 +183,12 @@ fn kept(removed: &[u8]) -> CommittedGroupTransition {
 fn kept_groups_encode_their_member_delta_alone() {
     let committed = vec![kept(&[3, 7])];
     let bytes = encode_group_lineage_frame(&committed).unwrap();
-    assert_eq!(bytes[4], 2, "WPGL v2 records kept groups by delta");
+    assert_eq!(bytes[4], 3, "WPGL v3 records kept groups by delta");
     assert_eq!(decode_group_lineage_frame(&bytes).unwrap(), committed);
-    // One more removed member costs exactly one name digest: the frame
+    // One more removed member costs exactly one entity member key: the frame
     // never repeats a kept group's untouched members.
     let wider = encode_group_lineage_frame(&[kept(&[3, 7, 8])]).unwrap();
-    assert_eq!(wider.len(), bytes.len() + 32);
+    assert_eq!(wider.len(), bytes.len() + 37);
 }
 
 #[test]
@@ -200,7 +200,7 @@ fn version_one_and_non_canonical_deltas_refuse_typed() {
         decode_group_lineage_frame(&legacy),
         Err(Refusal::UnsupportedFormatVersion {
             found: 1,
-            supported: 2
+            supported: 3
         })
     ));
     // Swap the two removed names: a descending delta is not canonical.
@@ -210,7 +210,7 @@ fn version_one_and_non_canonical_deltas_refuse_typed() {
         .unwrap();
     let mut swapped = bytes.clone();
     swapped[first..first + 32].copy_from_slice(&[7; 32]);
-    swapped[first + 32..first + 64].copy_from_slice(&[3; 32]);
+    swapped[first + 37..first + 69].copy_from_slice(&[3; 32]);
     assert!(matches!(
         decode_group_lineage_frame(&swapped),
         Err(Refusal::NonCanonical { .. })

@@ -52,11 +52,11 @@ pub fn recovered_group_lineage<'envelope>(
                 // A source-free group carries its pure `(scheme, anchor, rule)`
                 // name; a split or merge successor also hashes its sources.
                 let minted = if assignment.sources.is_empty() {
-                    AggregateIdentity::from_group_name(scheme, assignment.anchor, rule)
+                    AggregateIdentity::from_group_name(scheme, assignment.anchor.clone(), rule)
                 } else {
                     AggregateIdentity::from_group_transition(
                         scheme,
-                        assignment.anchor,
+                        assignment.anchor.clone(),
                         rule,
                         &assignment.sources,
                     )

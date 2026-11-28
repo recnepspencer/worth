@@ -13,7 +13,7 @@ use crate::contracts::aggregate_identity::transition::group::delta::{
     AggregateGroupChange, AggregateGroupMemberDelta,
 };
 use crate::contracts::aggregate_identity::transition::group::model::AggregateGroupOrigin;
-use crate::contracts::lineage::data::naming::PersistentNameIdentity;
+use crate::contracts::aggregate_identity::transition::group::model::CanonicalGroupMemberIdentity;
 
 use super::branch_state::{GroupStateDenial, SchemeGroups};
 use super::group_rows::GroupMemberKey;
@@ -42,6 +42,11 @@ pub(super) fn verify(
     let mut touched = transition.retired.clone();
     for assignment in &transition.assignments {
         let identity = assignment.identity;
+        for name in assignment.touched_members() {
+            if matches!(name, CanonicalGroupMemberIdentity::ProjectedCase { .. }) {
+                check.projected_key(identity, name)?;
+            }
+        }
         let key = groups.key(identity);
         let header = groups.live.get(&key)?;
         let retired = groups.retired.contains_key(&key)?;
@@ -69,7 +74,7 @@ pub(super) fn verify(
                 }
                 for (name, _) in members.iter() {
                     moves
-                        .enter(*name, identity)
+                        .enter(name.clone(), identity)
                         .map_err(|name| check.overlap(name))?;
                 }
             }
@@ -77,11 +82,11 @@ pub(super) fn verify(
     }
     // An entering member must leave its current group in this transition.
     for member in moves.entering.keys() {
-        if let Some(owner) = groups.member_owner.get(&groups.key(*member))?
+        if let Some(owner) = groups.member_owner.get(&groups.key(member.clone()))?
             && !transition.retired.contains(&owner.group)
-            && !moves.released.contains(&(owner.group, *member))
+            && !moves.released.contains(&(owner.group, member.clone()))
         {
-            return Err(check.overlap(*member));
+            return Err(check.overlap(member.clone()));
         }
     }
     verify_events(groups, committed)
@@ -91,18 +96,18 @@ pub(super) fn verify(
 /// entering a group.
 #[derive(Default)]
 struct Moves {
-    released: BTreeSet<(AggregateIdentity, PersistentNameIdentity)>,
-    entering: BTreeMap<PersistentNameIdentity, AggregateIdentity>,
+    released: BTreeSet<(AggregateIdentity, CanonicalGroupMemberIdentity)>,
+    entering: BTreeMap<CanonicalGroupMemberIdentity, AggregateIdentity>,
 }
 
 impl Moves {
     /// Records `name` entering `group`; refuses a member entering twice.
     fn enter(
         &mut self,
-        name: PersistentNameIdentity,
+        name: CanonicalGroupMemberIdentity,
         group: AggregateIdentity,
-    ) -> Result<(), PersistentNameIdentity> {
-        match self.entering.insert(name, group) {
+    ) -> Result<(), CanonicalGroupMemberIdentity> {
+        match self.entering.insert(name.clone(), group) {
             Some(_) => Err(name),
             None => Ok(()),
         }
@@ -124,7 +129,32 @@ impl Check<'_> {
         }
     }
 
-    fn overlap(&self, member: PersistentNameIdentity) -> GroupStateDenial {
+    fn projected_key(
+        &self,
+        group: AggregateIdentity,
+        name: &CanonicalGroupMemberIdentity,
+    ) -> Result<(), GroupStateDenial> {
+        use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause;
+        use crate::lineage::naming_pages::{logical_key_limit, tables};
+
+        let representative = self.groups.key(GroupMemberKey {
+            group,
+            role: crate::contracts::aggregate_identity::transition::group::model::AggregateMemberRole::Ordinary,
+            name: name.clone(),
+        });
+        let length = self.groups.members.row_key(&representative).len();
+        let limit = logical_key_limit(Some(tables::GROUP_MEMBERS));
+        if length > limit {
+            return Err(RelationalStorageUnavailableCause::LimitExceeded {
+                length: length as u64,
+                limit: limit as u64,
+            }
+            .into());
+        }
+        Ok(())
+    }
+
+    fn overlap(&self, member: CanonicalGroupMemberIdentity) -> GroupStateDenial {
         GroupStateDenial::MemberOverlap {
             scheme_id: self.scheme_id.to_owned(),
             member,
@@ -164,21 +194,29 @@ impl Check<'_> {
     ) -> Result<(), GroupStateDenial> {
         let groups = self.groups;
         for name in delta.removed() {
-            match groups.member_owner.get(&groups.key(*name))?.as_deref() {
+            match groups
+                .member_owner
+                .get(&groups.key(name.clone()))?
+                .as_deref()
+            {
                 Some(owner) if owner.group == identity => {
-                    moves.released.insert((identity, *name));
+                    moves.released.insert((identity, name.clone()));
                     size = size.saturating_sub(1);
                 }
                 _ => return Err(self.posture(identity, "a kept group removes a non-member")),
             }
         }
         for (name, member) in delta.upserted() {
-            match groups.member_owner.get(&groups.key(*name))?.as_deref() {
+            match groups
+                .member_owner
+                .get(&groups.key(name.clone()))?
+                .as_deref()
+            {
                 Some(owner) if owner.group == identity => {
                     let held = GroupMemberKey {
                         group: identity,
                         role: owner.role,
-                        name: *name,
+                        name: name.clone(),
                     };
                     let carrier = groups.members.get(&groups.key(held))?;
                     if owner.role == member.role && carrier.as_deref() == Some(&member.carrier) {
@@ -190,7 +228,7 @@ impl Check<'_> {
                 _ => {
                     size += 1;
                     moves
-                        .enter(*name, identity)
+                        .enter(name.clone(), identity)
                         .map_err(|name| self.overlap(name))?;
                 }
             }

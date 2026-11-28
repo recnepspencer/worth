@@ -18,6 +18,7 @@ use worth_relational_contracts::internal_port as contracts;
 use worth_relational_lineage::internal_port::lineage::authority::commit_finalization::resolve_commit_naming_plan;
 use worth_relational_lineage::internal_port::lineage::authority::posture_finalization::prepare_posture_finalization;
 use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::NamingBasisUnavailable;
+use worth_relational_mutation::internal_port::aggregate_identity::preparation::TouchedAggregatePartitions;
 use worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState;
 
 use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::naming_basis_binding::LineageNamingBasisBinding;
@@ -42,6 +43,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         created_entities: &CommitCreatedEntityBindings,
         created_relations: &CommitCreatedRelationBindings,
         naming_plan: Option<&CommitNamingPlan>,
+        aggregate_partitions: &TouchedAggregatePartitions,
         graph_selection: Option<&branch::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelection>,
     ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
         let postures = match naming_plan {
@@ -57,6 +59,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
             merged_plan,
             changed_records,
             (&postures, groups),
+            aggregate_partitions,
             graph_selection,
         )
     }
@@ -73,6 +76,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         merged_plan: &[MutationIntent],
         changed_records: &[RecordRef],
         (postures, groups): (&[LineagePostureClaim], &[GroupPartitionClaim]),
+        aggregate_partitions: &TouchedAggregatePartitions,
         graph_selection: Option<&branch::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelection>,
     ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
         let schema = self.schema;
@@ -96,6 +100,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         let groups_result = super::group_finalization::finalize_commit_groups(
             commit,
             groups,
+            aggregate_partitions,
             graph_selection,
             &basis,
             &mut prepared,

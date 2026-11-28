@@ -10,6 +10,7 @@ use worth_foundational::facade::AggregateIdentity;
 use super::denial::AggregateGroupNamingDenial;
 use crate::graph_member::NativeMemberKey;
 use crate::lineage::data::PersistentNameIdentity;
+use crate::projected_member_domain::ProjectedMemberDomainIdentity;
 
 /// Closed consumer-driven continuity rule for group split/merge keeper selection.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
@@ -59,6 +60,27 @@ impl AggregateGroupSchemeId {
         Ok(Self(id))
     }
 
+    const AUTOMATIC_PREFIX: &'static str = "worth.aggregate.";
+
+    pub(crate) fn automatic(
+        definition: worth_foundational::facade::AggregateDefinitionIdentity,
+    ) -> Self {
+        use std::fmt::Write as _;
+        let mut id = String::from(Self::AUTOMATIC_PREFIX);
+        for byte in definition.bytes() {
+            write!(id, "{byte:02x}").expect("writing into a String is infallible");
+        }
+        Self(id)
+    }
+
+    pub fn is_automatic(&self) -> bool {
+        Self::is_automatic_id(&self.0)
+    }
+
+    pub fn is_automatic_id(id: &str) -> bool {
+        id.starts_with(Self::AUTOMATIC_PREFIX)
+    }
+
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -85,6 +107,59 @@ impl AggregateGroupScheme {
     }
 }
 
+/// Allocation-independent identity of a member within an aggregate scheme.
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
+pub enum CanonicalGroupMemberIdentity {
+    Entity(PersistentNameIdentity),
+    ProjectedCase {
+        carrier: PersistentNameIdentity,
+        domain: ProjectedMemberDomainIdentity,
+        case: String,
+    },
+}
+
+impl CanonicalGroupMemberIdentity {
+    pub fn for_member(carrier: PersistentNameIdentity, member: &NativeMemberKey) -> Self {
+        match member {
+            NativeMemberKey::Entity(_) => Self::Entity(carrier),
+            NativeMemberKey::Projected(member) => Self::ProjectedCase {
+                carrier,
+                domain: member.domain.clone(),
+                case: member.case.clone(),
+            },
+        }
+    }
+
+    pub fn matches_member(&self, member: &NativeMemberKey) -> bool {
+        match (self, member) {
+            (Self::Entity(_), NativeMemberKey::Entity(_)) => true,
+            (Self::ProjectedCase { domain, case, .. }, NativeMemberKey::Projected(member)) => {
+                *domain == member.domain && *case == member.case
+            }
+            _ => false,
+        }
+    }
+
+    pub const fn carrier_name(&self) -> PersistentNameIdentity {
+        match self {
+            Self::Entity(name) | Self::ProjectedCase { carrier: name, .. } => *name,
+        }
+    }
+
+    pub const fn entity_name(&self) -> Option<&PersistentNameIdentity> {
+        match self {
+            Self::Entity(name) => Some(name),
+            Self::ProjectedCase { .. } => None,
+        }
+    }
+}
+
+impl From<PersistentNameIdentity> for CanonicalGroupMemberIdentity {
+    fn from(name: PersistentNameIdentity) -> Self {
+        Self::Entity(name)
+    }
+}
+
 /// One named member: its storage carrier and its continuity role.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct AggregateGroupMember {
@@ -94,7 +169,7 @@ pub struct AggregateGroupMember {
 
 /// A nonempty-checked member set keyed solely by persistent name.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
-pub struct AggregateGroupMembers(BTreeMap<PersistentNameIdentity, AggregateGroupMember>);
+pub struct AggregateGroupMembers(BTreeMap<CanonicalGroupMemberIdentity, AggregateGroupMember>);
 
 impl AggregateGroupMembers {
     pub fn new() -> Self {
@@ -104,13 +179,19 @@ impl AggregateGroupMembers {
     /// Adds one member; a repeated name is refused rather than overwritten.
     pub fn insert(
         &mut self,
-        name: PersistentNameIdentity,
+        name: impl Into<CanonicalGroupMemberIdentity>,
         carrier: NativeMemberKey,
         role: AggregateMemberRole,
     ) -> Result<(), AggregateGroupNamingDenial> {
+        let name = name.into();
+        if !name.matches_member(&carrier) {
+            return Err(AggregateGroupNamingDenial::MemberCoordinateMismatch { name });
+        }
         match self.0.entry(name) {
-            btree_map::Entry::Occupied(_) => {
-                Err(AggregateGroupNamingDenial::DuplicateMemberName { name })
+            btree_map::Entry::Occupied(slot) => {
+                Err(AggregateGroupNamingDenial::DuplicateMemberName {
+                    name: slot.key().clone(),
+                })
             }
             btree_map::Entry::Vacant(slot) => {
                 slot.insert(AggregateGroupMember { carrier, role });
@@ -119,12 +200,12 @@ impl AggregateGroupMembers {
         }
     }
 
-    pub fn get(&self, name: &PersistentNameIdentity) -> Option<&AggregateGroupMember> {
+    pub fn get(&self, name: &CanonicalGroupMemberIdentity) -> Option<&AggregateGroupMember> {
         self.0.get(name)
     }
 
     /// Removes `name`, returning its member.
-    pub fn remove(&mut self, name: &PersistentNameIdentity) -> Option<AggregateGroupMember> {
+    pub fn remove(&mut self, name: &CanonicalGroupMemberIdentity) -> Option<AggregateGroupMember> {
         self.0.remove(name)
     }
 
@@ -137,7 +218,9 @@ impl AggregateGroupMembers {
     }
 
     /// Members in persistent-name order, never native allocation order.
-    pub fn iter(&self) -> impl Iterator<Item = (&PersistentNameIdentity, &AggregateGroupMember)> {
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (&CanonicalGroupMemberIdentity, &AggregateGroupMember)> {
         self.0.iter()
     }
 }
@@ -148,7 +231,7 @@ impl AggregateGroupMembers {
 #[derive(Debug, Eq, PartialEq)]
 pub struct AggregatePriorGroup {
     pub identity: AggregateIdentity,
-    pub anchor: PersistentNameIdentity,
+    pub anchor: CanonicalGroupMemberIdentity,
     /// Strictly ascending prior sources of a split/merge successor name;
     /// empty for a pure `(scheme, anchor, rule)` group name.
     pub sources: Vec<AggregateIdentity>,
@@ -174,7 +257,7 @@ pub enum AggregateGroupOrigin {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AggregateGroupPartitionAssignment {
     pub identity: AggregateIdentity,
-    pub anchor: PersistentNameIdentity,
+    pub anchor: CanonicalGroupMemberIdentity,
     /// The prior sources hashed into this name (empty for a pure group name).
     pub sources: Vec<AggregateIdentity>,
     pub members: AggregateGroupMembers,
@@ -182,12 +265,12 @@ pub struct AggregateGroupPartitionAssignment {
 }
 
 /// One live group named by a collision refusal.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct AggregateGroupClaimant {
     /// The anchor whose name this group claims.
-    pub anchor: PersistentNameIdentity,
+    pub anchor: CanonicalGroupMemberIdentity,
     /// The group's least member name, which names the group itself.
-    pub least_member: PersistentNameIdentity,
+    pub least_member: CanonicalGroupMemberIdentity,
     /// The prior live identity this claimant holds: the group it keeps, or
     /// itself when the claimant is a prior group retiring in this commit.
     pub live_prior: Option<AggregateIdentity>,
@@ -195,19 +278,19 @@ pub struct AggregateGroupClaimant {
 
 /// Operations used by the Relational owners.
 pub trait AggregateGroupMembersOwnerPort: Sized {
-    fn least_name(&self) -> Option<PersistentNameIdentity>;
-    fn least_with(&self, role: AggregateMemberRole) -> Option<PersistentNameIdentity>;
+    fn least_name(&self) -> Option<CanonicalGroupMemberIdentity>;
+    fn least_with(&self, role: AggregateMemberRole) -> Option<CanonicalGroupMemberIdentity>;
 }
 
 impl AggregateGroupMembersOwnerPort for AggregateGroupMembers {
-    fn least_name(&self) -> Option<PersistentNameIdentity> {
-        self.0.keys().next().copied()
+    fn least_name(&self) -> Option<CanonicalGroupMemberIdentity> {
+        self.0.keys().next().cloned()
     }
 
-    fn least_with(&self, role: AggregateMemberRole) -> Option<PersistentNameIdentity> {
+    fn least_with(&self, role: AggregateMemberRole) -> Option<CanonicalGroupMemberIdentity> {
         self.0
             .iter()
             .find(|(_, member)| member.role == role)
-            .map(|(name, _)| *name)
+            .map(|(name, _)| name.clone())
     }
 }

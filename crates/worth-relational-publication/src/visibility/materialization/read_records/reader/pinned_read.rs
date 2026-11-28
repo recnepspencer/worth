@@ -16,6 +16,7 @@ use worth_relational_contracts::internal_port as contracts;
 use worth_relational_indexes::internal_port::indexes::access::selected_index::PinnedIndex;
 
 pub mod aggregate_reads;
+use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::naming_basis_binding::LineageNamingBasisBinding;
 pub mod candidate;
 pub mod derived_source;
 pub mod frontier_reads;
@@ -33,6 +34,7 @@ pub use contracts::indexes::data::applied_candidate_qualification::RelationalApp
 /// only snapshot-backed pins expose snapshot/plan doors, by type.
 #[derive(Clone, Debug)]
 pub struct RelationalPinnedRead<Snapshot = SnapshotHandle> {
+    pub(super) aggregate_naming: Option<LineageNamingBasisBinding>,
     pub(super) applied_changes: Option<candidate::changes::SharedAppliedReadChanges>,
     pub(super) current_version: contracts::identity::data::primitives::VersionId,
     pub(super) instrumentation:
@@ -63,6 +65,7 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
     /// snapshot handle or snapshot query-plan execution door.
     pub fn into_projection_read(self) -> RelationalPinnedRead<()> {
         let Self {
+            aggregate_naming,
             applied_changes,
             current_version,
             instrumentation,
@@ -72,6 +75,7 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
             indexes,
         } = self;
         RelationalPinnedRead {
+            aggregate_naming,
             applied_changes,
             current_version,
             instrumentation,
@@ -298,6 +302,7 @@ pub trait RelationalPinnedReadOwnerPort<Snapshot>: Sized {
         basis: ResidentVisibilitySnapshotBasis,
         context: QueryPlanContextId,
         indexes: BTreeMap<DerivedIndexId, PinnedIndex>,
+        aggregate_naming: Option<LineageNamingBasisBinding>,
     ) -> Self;
 
     fn resident_basis(&self) -> &ResidentVisibilitySnapshotBasis;
@@ -311,6 +316,7 @@ impl<Snapshot> RelationalPinnedReadOwnerPort<Snapshot> for RelationalPinnedRead<
         basis: ResidentVisibilitySnapshotBasis,
         context: QueryPlanContextId,
         indexes: BTreeMap<DerivedIndexId, PinnedIndex>,
+        aggregate_naming: Option<LineageNamingBasisBinding>,
     ) -> Self {
         Self {
             current_version,
@@ -319,6 +325,7 @@ impl<Snapshot> RelationalPinnedReadOwnerPort<Snapshot> for RelationalPinnedRead<
             basis,
             context,
             indexes,
+            aggregate_naming,
             applied_changes: None,
         }
     }

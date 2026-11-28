@@ -188,3 +188,29 @@ def dependencyOrder (n : Nat) (deps : Nat → List Nat) : Option (List Nat) :=
     fun s => s.order ++ (List.range n).filter (s.waits · ≠ 0)
 
 end PersistentNaming.MintOrder
+
+
+-- proof-mirror: crates/worth-relational-contracts/src/aggregate_identity/transition/group/model.rs:112-119 sha256:f0f55fa2ef01db9109f8f6b799fef37902abd429674c9ade24aa10f6802f9d0e
+namespace PersistentNaming.GroupMember
+
+/-- Canonical identity terms, before hashing and independent of Native allocation. -/
+inductive Key where
+  | entity (name : Nat)
+  | projectedCase (carrier : Nat) (domain : String × Nat × String) (caseName : String)
+  deriving DecidableEq
+
+/-- The entity namespace is disjoint from every case of the same carrier. -/
+theorem entity_ne_projected (name : Nat) (domain : String × Nat × String) (caseName : String) :
+    Key.entity name ≠ Key.projectedCase name domain caseName := by
+  intro h
+  cases h
+
+/-- Equal carrier names cannot collapse different cases or domains. -/
+theorem projected_case_injective {carrier carrier' : Nat} {domain domain' : String × Nat × String}
+    {caseName caseName' : String}
+    (h : Key.projectedCase carrier domain caseName = Key.projectedCase carrier' domain' caseName') :
+    carrier = carrier' ∧ domain = domain' ∧ caseName = caseName' := by
+  cases h
+  exact ⟨rfl, rfl, rfl⟩
+
+end PersistentNaming.GroupMember

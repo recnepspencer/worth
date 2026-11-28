@@ -24,7 +24,14 @@ EXTENDS Integers, Sequences, FiniteSets, TLC
       meaning reached two or more live groups refuses `Ambiguous`.
 *)
 
+\* Members are canonical keys. Model checking uses one entity and both
+\* projected cases of that same carrier; trace refinement supplies its own
+\* representationally opaque member keys.
 CONSTANTS Members, GroupNames, MaxCommits
+
+CanonicalMemberFixture ==
+    {"Entity:face", "ProjectedCase:face:FaceSide:Negative",
+     "ProjectedCase:face:FaceSide:Positive"}
 
 None == "none"
 Status == {"unborn", "live", "retired"}

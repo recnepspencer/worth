@@ -12,7 +12,7 @@ use crate::contracts::aggregate_identity::transition::group::delta::{
 };
 use crate::contracts::aggregate_identity::transition::group::model::{
     AggregateContinuityRule, AggregateGroupMembers, AggregateGroupScheme, AggregateGroupSchemeId,
-    AggregateMemberRole as Role,
+    AggregateMemberRole as Role, CanonicalGroupMemberIdentity,
 };
 use crate::contracts::aggregate_identity::transition::group::state_view::AggregateGroupStateView;
 use crate::contracts::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
@@ -27,8 +27,8 @@ use crate::lineage::tiered::NamingReadScope;
 
 use super::{BranchGroupState, CommittedGroupTransition, GroupStateDenial, GroupTransitionKind};
 
-pub(super) fn name(n: u8) -> Name {
-    Name::from_minted_digest([n; 32])
+pub(super) fn name(n: u8) -> CanonicalGroupMemberIdentity {
+    Name::from_minted_digest([n; 32]).into()
 }
 
 pub(super) fn group(n: u8) -> AggregateIdentity {
@@ -117,7 +117,7 @@ fn kept_deltas_install_exactly_the_touched_members() {
     let members = AggregateGroupStateView::members(&groups, &group(10));
     let held: Vec<(u8, Role)> = members
         .iter()
-        .map(|(n, m)| (n.as_bytes()[0], m.role))
+        .map(|(n, m)| (n.carrier_name().as_bytes()[0], m.role))
         .collect();
     let expected = [2, 3, 4, 5, 9].map(|n| {
         (

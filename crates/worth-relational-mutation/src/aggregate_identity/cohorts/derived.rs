@@ -16,7 +16,7 @@ pub(in crate::internal_port::aggregate_identity::cohorts) fn collect(
     after: &InvariantStateView<'_>,
     effect: &AggregateChanges,
     work: &mut AggregateWork<'_, '_, '_, '_>,
-) -> BuildResult<Option<CollectedCohorts>> {
+) -> BuildResult<Option<Cohorts>> {
     let handle = handle(registry, contract, work)?;
     let components = matches!(
         contract.source,
@@ -65,31 +65,15 @@ pub(in crate::internal_port::aggregate_identity::cohorts) fn collect(
     } else {
         proposed.groups
     };
-    let mut collected = CollectedCohorts {
-        prior: Vec::new(),
-        proposed: proposed_groups,
-        rows: BTreeMap::new(),
-        memberships: BTreeMap::new(),
-    };
-    for members in prior.groups {
-        let stored = read_stored_group(
-            before,
-            &members,
-            contract,
-            registry,
-            &mut collected.memberships,
-            work,
-        )?;
-        if collected.rows.contains_key(&stored.record.identity) {
-            return work.invalid(PlanDenial::InvalidStoredIdentity);
-        }
-        collected.prior.push(PriorAggregate {
-            identity: stored.record.identity,
-            members,
-        });
-        collected.rows.insert(stored.record.identity, stored);
-    }
-    Ok(Some(collected))
+    finish(
+        contract,
+        registry,
+        before,
+        prior.groups,
+        proposed_groups,
+        work,
+    )
+    .map(Some)
 }
 
 pub(in crate::internal_port::aggregate_identity) fn groups(

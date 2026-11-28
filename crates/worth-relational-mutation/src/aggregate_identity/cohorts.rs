@@ -38,6 +38,43 @@ pub(super) struct CollectedCohorts {
     pub(super) memberships: BTreeMap<Member, (RelationId, AggregateIdentity)>,
 }
 
+pub(super) enum Cohorts {
+    Named(TouchedAggregatePartitionFact),
+    Unnamed(CollectedCohorts),
+}
+
+/// A graph partition change, ready for publication to resolve its member names.
+#[derive(Debug)]
+pub struct TouchedAggregatePartitionFact {
+    scheme: super::AggregateGroupScheme,
+    prior: Vec<BTreeSet<Member>>,
+    proposed: Vec<BTreeSet<Member>>,
+}
+
+impl TouchedAggregatePartitionFact {
+    pub fn scheme(&self) -> &super::AggregateGroupScheme {
+        &self.scheme
+    }
+
+    pub fn prior(&self) -> &[BTreeSet<Member>] {
+        &self.prior
+    }
+
+    pub fn proposed(&self) -> &[BTreeSet<Member>] {
+        &self.proposed
+    }
+
+    pub(super) fn retained_bytes(&self) -> u64 {
+        let groups = self.prior.iter().chain(&self.proposed);
+        self.scheme.id().as_str().len() as u64
+            + (self.prior.capacity() + self.proposed.capacity()) as u64
+                * extent::vector_entry::<BTreeSet<Member>>()
+            + groups
+                .map(|group| group.len() as u64 * extent::tree_entry::<Member, ()>())
+                .sum::<u64>()
+    }
+}
+
 pub(super) fn collect(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     contract: &AggregateIdentityContractDeclaration,
@@ -46,7 +83,7 @@ pub(super) fn collect(
     after: &InvariantStateView<'_>,
     effect: &AggregateChanges,
     work: &mut AggregateWork<'_, '_, '_, '_>,
-) -> BuildResult<Option<CollectedCohorts>> {
+) -> BuildResult<Option<Cohorts>> {
     if contract.source.derived_relation().is_some() {
         return derived::collect(execution, contract, registry, before, after, effect, work);
     }
@@ -126,14 +163,35 @@ pub(super) fn collect(
         .into_iter()
         .map(|group| tagged_group(group, work))
         .collect::<BuildResult<Vec<_>>>()?;
+    let prior = prior_groups
+        .into_iter()
+        .map(|group| tagged_group(group, work))
+        .collect::<BuildResult<Vec<_>>>()?;
+    finish(contract, registry, before, prior, proposed, work).map(Some)
+}
+
+fn finish(
+    contract: &AggregateIdentityContractDeclaration,
+    registry: &RelationalSchemaRegistry,
+    before: &InvariantStateView<'_>,
+    prior: Vec<BTreeSet<Member>>,
+    proposed: Vec<BTreeSet<Member>>,
+    work: &mut AggregateWork<'_, '_, '_, '_>,
+) -> BuildResult<Cohorts> {
+    if let Some(scheme) = contract.group_scheme(registry) {
+        return Ok(Cohorts::Named(TouchedAggregatePartitionFact {
+            scheme,
+            prior,
+            proposed,
+        }));
+    }
     let mut collected = CollectedCohorts {
         prior: Vec::new(),
         proposed,
         rows: BTreeMap::new(),
         memberships: BTreeMap::new(),
     };
-    for members in prior_groups {
-        let members = tagged_group(members, work)?;
+    for members in prior {
         let stored = read_stored_group(
             before,
             &members,
@@ -151,7 +209,7 @@ pub(super) fn collect(
         });
         collected.rows.insert(stored.record.identity, stored);
     }
-    Ok(Some(collected))
+    Ok(Cohorts::Unnamed(collected))
 }
 
 /// Physical discovery keeps its fixed-width source path. Only the common

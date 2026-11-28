@@ -162,6 +162,7 @@ pub(super) fn complete_deferred_lineage(
     created_entities: &contracts::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     created_relations: &contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     naming_plan: Option<&contracts::lineage::data::postures::CommitNamingPlan>,
+    aggregate_partitions: &worth_relational_mutation::internal_port::aggregate_identity::preparation::TouchedAggregatePartitions,
 ) -> Result<
     (
         Vec<contracts::lineage::data::graph::LineageNode>,
@@ -187,6 +188,7 @@ pub(super) fn complete_deferred_lineage(
         created_entities,
         created_relations,
         naming_plan,
+        aggregate_partitions,
         graph_selection.as_deref(),
     )?;
     let (lineage, nodes, relations) = prepared.into_parts();

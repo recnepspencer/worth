@@ -1,11 +1,11 @@
 import CanonicalGroupDelta.TimeM
 
 -- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
--- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/group_install.rs:56-115 sha256:5aabe6e947e31cb375df580d67dad724583139f2ad0b1f0602445d914249cf82
--- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/group_install.rs:117-135 sha256:bf89330e2529e06eef917c15388ce3cc3a7c537afec578e4caa389f73277ba6b
--- proof-mirror: crates/worth-relational-contracts/src/aggregate_identity/transition/group/transition_result.rs:42-61 sha256:c6f10de59f81f0203d633fbb6991008c0687d71362b16aa19be112217e05d0f3
--- proof-mirror: crates/worth-relational-lineage/src/durability/naming/group_frame_encoding.rs:125-161 sha256:ae148932a87d1d1a47fade75fb7ab73d829fa8024ca8566d0101dd3beb8eb831
--- proof-mirror: crates/worth-relational-lineage/src/durability/naming/group_frame_encoding.rs:163-178 sha256:3569bf941924a055d8c1e85f6987c8160dd08b72a81dcca5b427c45c0b46b18c
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/group_install.rs:56-115 sha256:44dcb51820530c0cfcde87abc31a2d5fd06ceb47953301fd794cde2eaeac02fc
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/group_install.rs:117-135 sha256:1d8123ac59be59a1e134018fc780ed3bace40dee781ea25e72fef4e0957d3d5a
+-- proof-mirror: crates/worth-relational-contracts/src/aggregate_identity/transition/group/transition_result.rs:42-61 sha256:b6973663b03b62cb2d0b2093215c8b134f46c53fb06fee1a1551059e456fb0d2
+-- proof-mirror: crates/worth-relational-lineage/src/durability/naming/group_frame_encoding.rs:125-161 sha256:76b3e36beb1a37b483fdd5ac3b7f1834bab670221e0d223cb77d744288f7a1af
+-- proof-mirror: crates/worth-relational-lineage/src/durability/naming/group_frame_encoding.rs:163-184 sha256:d962d9cfcc9c6162b1fa9afd27251ee997faad1ea5f977efcc3a6fae57841a28
 -- proof-mirror: crates/worth-relational-lineage/src/lineage/groups/branch_state.rs:314-342 sha256:1299b2237583a255b1c946e481ef7a88843c4f028fc3135154e06ddf10244441
 
 /-!
@@ -13,11 +13,11 @@ import CanonicalGroupDelta.TimeM
 
 The model of `crates/worth-relational-lineage/src/lineage/groups/
 group_install.rs` (`SchemeGroups::install` on `AggregateGroupChange::Kept`),
-`transition_result.rs::member_delta` and the WPGL v2 kept body of
+`transition_result.rs::member_delta` and the WPGL v3 kept body of
 `durability/naming/group_frame_encoding.rs`.
 
-A kept group's membership is a function from member name to its carrier and
-role (`Members α`); the group may hold any number `M` of members. Its
+A kept group's membership is a function from canonical member key to its carrier and
+role (`Members α`, with keys represented by distinct natural numbers); the group may hold any number `M` of members. Its
 canonical delta lists the members that left and those that joined or changed.
 
 * `applyDelta_steps`: installing a delta takes `|removed| + |upserted| + 1`
@@ -233,7 +233,7 @@ omit [DecidableEq α] in
 def u32 (n : Nat) : List Nat := [n / 2 ^ 24 % 256, n / 2 ^ 16 % 256, n / 2 ^ 8 % 256, n % 256]
 
 omit [DecidableEq α] in
-/-- WPGL v2 kept body: removed names, then upserted members. -/
+/-- WPGL v3 kept body: removed names, then upserted members. -/
 def encode (name : Nat → List Nat) (member : Nat × α → List Nat) (d : Delta α) : List Nat :=
   u32 d.removed.length ++ d.removed.flatMap name ++ u32 d.upserted.length ++
     d.upserted.flatMap member
@@ -247,30 +247,31 @@ theorem flatMap_length_const {β : Type} (f : β → List Nat) (w : Nat)
     simp [Nat.mul_succ]; omega
 
 omit [DecidableEq α] in
-/-- A kept body's bytes: eight count bytes, 32 per removed name and `w`
-per upserted member. -/
-theorem encode_length (name : Nat → List Nat) (member : Nat × α → List Nat) (w : Nat)
-    (hn : ∀ x, (name x).length = 32) (hm : ∀ p, (member p).length = w) (d : Delta α) :
-    (encode name member d).length = 8 + 32 * d.removed.length + w * d.upserted.length := by
-  simp only [encode, List.length_append, u32, List.length_cons, List.length_nil,
-    flatMap_length_const name 32 hn, flatMap_length_const member w hm]
+/-- Exact bytes of a kept body, including variable-width projected keys. -/
+theorem encode_length (name : Nat → List Nat) (member : Nat × α → List Nat) (d : Delta α) :
+    (encode name member d).length =
+      8 + (d.removed.flatMap name).length + (d.upserted.flatMap member).length := by
+  simp only [encode, List.length_append, u32, List.length_cons, List.length_nil]
   omega
 
-/-- The canonical delta's bytes are bounded by the changed members alone:
-whatever the group's size `M`, a one-member edit encodes `8 + (32 + w)`
-bytes at most. -/
+omit [DecidableEq α] in
+theorem flatMap_length_le {β : Type} (f : β → List Nat) (w : Nat)
+    (hf : ∀ b, (f b).length ≤ w) : ∀ (l : List β), (l.flatMap f).length ≤ w * l.length
+  | [] => by simp
+  | b :: bs => by
+    rw [List.flatMap_cons, List.length_append]
+    simpa [Nat.mul_succ, Nat.add_comm] using Nat.add_le_add (hf b) (flatMap_length_le f w hf bs)
+
+/-- The canonical delta's bytes are bounded by key and carrier widths and the
+changed-member count, independently of the complete membership size. -/
 theorem encode_diff_le_touched (name : Nat → List Nat) (member : Nat × α → List Nat) (w : Nat)
-    (hn : ∀ x, (name x).length = 32) (hm : ∀ p, (member p).length = w)
+    (hn : ∀ x, (name x).length ≤ w) (hm : ∀ p, (member p).length ≤ w)
     (prior next : Members α) (support : List Nat) :
     (encode name member (diff prior next support)).length ≤
-      8 + (32 + w) * (touched prior next support).length := by
-  rw [encode_length name member w hn hm, ← diff_size prior next support, Nat.add_mul]
-  have h1 : w * (diff prior next support).upserted.length ≤
-      w * (diff prior next support).upserted.length + 32 * 0 := by omega
-  have := Nat.mul_le_mul_left 32 (Nat.le_add_right (diff prior next support).removed.length
-    (diff prior next support).upserted.length)
-  have := Nat.mul_le_mul_left w (Nat.le_add_left (diff prior next support).upserted.length
-    (diff prior next support).removed.length)
+      8 + w * (touched prior next support).length := by
+  rw [encode_length, ← diff_size prior next support, Nat.mul_add]
+  have hr := flatMap_length_le name w hn (diff prior next support).removed
+  have hu := flatMap_length_le member w hm (diff prior next support).upserted
   omega
 
 end CanonicalGroupDelta

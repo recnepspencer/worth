@@ -7,7 +7,9 @@
 //! name to its group and role. No row repeats a group's membership.
 use worth_foundational::facade::AggregateIdentity;
 
-use crate::contracts::aggregate_identity::transition::group::model::AggregateMemberRole as Role;
+use crate::contracts::aggregate_identity::transition::group::model::{
+    AggregateMemberRole as Role, CanonicalGroupMemberIdentity as MemberName,
+};
 use crate::contracts::aggregate_identity::transition::group::state_view::{
     AggregateGroupHeader, AggregateGroupRoleCounts,
 };
@@ -19,14 +21,14 @@ use crate::contracts::storage::data::storage_unavailable::RelationalStorageUnava
 use crate::lineage::naming_pages::codec::{read_serde, write_serde, NamingCodec, Reader, Writer};
 
 /// The `GROUP_LIVE` header row's format: name parts and role counts only.
-const GROUP_HEADER_FORMAT: u8 = 2;
+const GROUP_HEADER_FORMAT: u8 = 3;
 
 /// One member of one live group, ordered by group, then role, then name.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(crate) struct GroupMemberKey {
     pub(crate) group: AggregateIdentity,
     pub(crate) role: Role,
-    pub(crate) name: Name,
+    pub(crate) name: MemberName,
 }
 
 impl GroupMemberKey {
@@ -35,7 +37,7 @@ impl GroupMemberKey {
         Self {
             group,
             role,
-            name: Name::from_minted_digest([0; 32]),
+            name: MemberName::Entity(Name::from_minted_digest([0; 32])),
         }
     }
 }
@@ -63,6 +65,76 @@ fn read_role(input: &mut Reader<'_>) -> Result<Role, Cause> {
         1 => Ok(Role::Anchor),
         2 => Ok(Role::Boundary),
         _ => Err(Cause::Damaged),
+    }
+}
+
+impl NamingCodec for MemberName {
+    fn write(&self, out: &mut Writer) {
+        match self {
+            Self::Entity(name) => {
+                out.u8(0);
+                name.write(out);
+            }
+            Self::ProjectedCase {
+                carrier,
+                domain,
+                case,
+            } => {
+                out.u8(1);
+                carrier.write(out);
+                write_ordered_text(&domain.schema.0, out);
+                out.u32(domain.version.0);
+                write_ordered_text(&domain.name, out);
+                write_ordered_text(case, out);
+            }
+        }
+    }
+
+    fn read(input: &mut Reader<'_>) -> Result<Self, Cause> {
+        use crate::contracts::projected_member_domain::ProjectedMemberDomainIdentity;
+        use crate::contracts::schema::data::{SchemaId, SchemaVersionId};
+
+        match input.u8()? {
+            0 => Ok(Self::Entity(Name::read(input)?)),
+            1 => Ok(Self::ProjectedCase {
+                carrier: Name::read(input)?,
+                domain: ProjectedMemberDomainIdentity {
+                    schema: SchemaId(read_ordered_text(input)?),
+                    version: SchemaVersionId(input.u32()?),
+                    name: read_ordered_text(input)?,
+                },
+                case: read_ordered_text(input)?,
+            }),
+            _ => Err(Cause::Damaged),
+        }
+    }
+}
+
+// Escaped NUL sorts before every non-NUL byte, and the terminator sorts
+// before any continuation. This preserves Rust's string order in page seeks.
+fn write_ordered_text(text: &str, out: &mut Writer) {
+    for byte in text.bytes() {
+        out.u8(byte);
+        if byte == 0 {
+            out.u8(1);
+        }
+    }
+    out.u8(0);
+    out.u8(0);
+}
+
+fn read_ordered_text(input: &mut Reader<'_>) -> Result<String, Cause> {
+    let mut text = Vec::new();
+    loop {
+        let byte = input.u8()?;
+        if byte == 0 {
+            match input.u8()? {
+                0 => return String::from_utf8(text).map_err(|_| Cause::Damaged),
+                1 => {}
+                _ => return Err(Cause::Damaged),
+            }
+        }
+        text.push(byte);
     }
 }
 
@@ -134,5 +206,30 @@ impl NamingCodec for AggregateGroupHeader {
             sources,
             counts,
         })
+    }
+}
+
+impl NamingCodec
+    for crate::contracts::aggregate_identity::group_lineage::AggregateGroupLineageEvent
+{
+    fn write(&self, out: &mut Writer) {
+        use crate::durability::naming::format::group_event_parts;
+        let (tag, first, second) = group_event_parts(*self);
+        out.u8(tag);
+        first.write(out);
+        if let Some(second) = second {
+            second.write(out);
+        }
+    }
+
+    fn read(input: &mut Reader<'_>) -> Result<Self, Cause> {
+        use crate::durability::naming::format::{group_event_arity, group_event_from_parts};
+        let tag = input.u8()?;
+        let arity = group_event_arity(tag).map_err(|_| Cause::Damaged)?;
+        let first = AggregateIdentity::read(input)?;
+        let second = (arity == 2)
+            .then(|| AggregateIdentity::read(input))
+            .transpose()?;
+        group_event_from_parts(tag, first, second).map_err(|_| Cause::Damaged)
     }
 }

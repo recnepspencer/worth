@@ -3,7 +3,7 @@
 //!
 //! One group is created, attached to, detached from (one and two members),
 //! re-carried, re-roled, retired and revived, then attached to again. Every
-//! step's transition is encoded and decoded through the WPGL v2 frame and
+//! step's transition is encoded and decoded through the WPGL v3 frame and
 //! applied by `BranchGroupState::apply` (verification and installation); a
 //! second state replays every decoded frame from empty, as `GROUP_LOG`
 //! replay does. Each step records the group's prior membership, the
@@ -20,13 +20,13 @@ use crate::contracts::aggregate_identity::transition::group::delta::{
 };
 use crate::contracts::aggregate_identity::transition::group::model::{
     AggregateGroupMember, AggregateGroupMembers, AggregateMemberRole as Role,
+    CanonicalGroupMemberIdentity as Name,
 };
 use crate::contracts::aggregate_identity::transition::group::state_view::AggregateGroupStateView;
-use crate::contracts::graph_member::NativeMemberKey;
+use crate::contracts::graph_member::key::{NativeMemberKey, ProjectedMemberCoordinate};
 use crate::contracts::history::data::coordinates::CommitId;
-use crate::contracts::lineage::data::naming::{
-    PersistentNameIdentity as Name, PersistentNameIdentityOwnerPort as _,
-};
+use crate::contracts::projected_member_domain::ProjectedMemberDomainIdentity;
+use crate::contracts::schema::data::{SchemaId, SchemaVersionId};
 use crate::durability::naming::{decode_group_lineage_frame, encode_group_lineage_frame};
 use crate::lineage::tiered::NamingReadScope;
 
@@ -43,10 +43,34 @@ enum Step {
     Revived(Vec<(u8, u32, Role)>),
 }
 
+fn member_coordinate(n: u8, generation: u32) -> (Name, NativeMemberKey) {
+    let Some(case) = (match n {
+        200 => Some("Negative"),
+        201 => Some("Positive"),
+        _ => None,
+    }) else {
+        return (name(n), carrier(n, generation));
+    };
+    let native = NativeMemberKey::Projected(
+        std::sync::Arc::new(ProjectedMemberCoordinate {
+            domain: ProjectedMemberDomainIdentity {
+                schema: SchemaId("test".into()),
+                version: SchemaVersionId(1),
+                name: "FaceSide".into(),
+            },
+            carrier: carrier(200, generation).carrier(),
+            case: case.into(),
+        })
+        .into(),
+    );
+    (Name::for_member(name(200).carrier_name(), &native), native)
+}
+
 fn members(entries: &[(u8, u32, Role)]) -> AggregateGroupMembers {
     let mut set = AggregateGroupMembers::new();
     for &(n, generation, role) in entries {
-        set.insert(name(n), carrier(n, generation), role).unwrap();
+        let (name, carrier) = member_coordinate(n, generation);
+        set.insert(name, carrier, role).unwrap();
     }
     set
 }
@@ -74,10 +98,11 @@ fn transition(step: &Step) -> CommittedGroupTransition {
         Step::Kept(removed, upserted) => {
             let mut delta = AggregateGroupMemberDelta::new();
             for n in removed {
-                delta.remove(name(*n)).unwrap();
+                delta.remove(member_coordinate(*n, 1).0).unwrap();
             }
             for &(n, generation, role) in upserted {
-                delta.upsert(name(n), carrier(n, generation), role).unwrap();
+                let (name, carrier) = member_coordinate(n, generation);
+                delta.upsert(name, carrier, role).unwrap();
             }
             committed(
                 vec![assign(AggregateGroupChange::Kept(delta))],
@@ -122,13 +147,17 @@ fn group_members(state: &BranchGroupState) -> AggregateGroupMembers {
 fn json_members<'m>(entries: impl Iterator<Item = (&'m Name, &'m AggregateGroupMember)>) -> String {
     let mut out = String::from("[");
     for (at, (n, member)) in entries.enumerate() {
-        let NativeMemberKey::Entity(entity) = &member.carrier else {
-            panic!("entity carriers only");
+        let entity = member.carrier.carrier();
+        let number = match n {
+            Name::Entity(name) => name.as_bytes()[0],
+            Name::ProjectedCase { case, .. } if case == "Negative" => 200,
+            Name::ProjectedCase { case, .. } if case == "Positive" => 201,
+            _ => panic!("unexpected case in trace"),
         };
         let carried = entity.local_slot_value() * 1_000 + u64::from(entity.generation_value());
         let role = member.role as u8;
         let sep = if at == 0 { "" } else { "," };
-        let _ = write!(out, "{sep}[{},{carried},{role}]", n.as_bytes()[0]);
+        let _ = write!(out, "{sep}[{number},{carried},{role}]");
     }
     out.push(']');
     out
@@ -139,8 +168,8 @@ fn steps() -> Vec<Step> {
     let o = |n| (n, 1, Ordinary);
     vec![
         Step::Born(vec![(1, 1, Anchor), o(2), o(3), o(4), o(5)]),
-        Step::Kept(Vec::new(), vec![o(6)]),
-        Step::Kept(vec![3], Vec::new()),
+        Step::Kept(Vec::new(), vec![o(6), o(200), o(201)]),
+        Step::Kept(vec![3, 200], Vec::new()),
         Step::Kept(Vec::new(), vec![(2, 2, Ordinary)]),
         Step::Kept(Vec::new(), vec![(4, 1, Boundary)]),
         Step::Kept(vec![5, 6], vec![o(7)]),
@@ -161,7 +190,7 @@ fn kept_delta_transitions_replay_and_trace_against_the_proved_model() {
         let committed = transition(step);
         let frame = encode_group_lineage_frame(std::slice::from_ref(&committed)).unwrap();
         let decoded = decode_group_lineage_frame(&frame).unwrap();
-        assert_eq!(decoded, vec![committed.clone()], "WPGL v2 round-trips");
+        assert_eq!(decoded, vec![committed.clone()], "WPGL v3 round-trips");
         warm.apply(commit, &decoded).unwrap();
         frames.push((commit, frame.clone()));
         let mut replayed = BranchGroupState::default();

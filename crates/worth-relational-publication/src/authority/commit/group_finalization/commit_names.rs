@@ -23,6 +23,7 @@ pub(super) struct CommitNameOutcome<'basis, 'guard> {
     /// Names this commit bound: to an entity, or to a relation (`None`).
     bound: BTreeMap<PersistentNameIdentity, Option<EntityId>>,
     ended: BTreeSet<LineageId>,
+    bound_entities: BTreeMap<EntityId, PersistentNameIdentity>,
 }
 
 impl<'basis, 'guard> CommitNameOutcome<'basis, 'guard> {
@@ -62,8 +63,13 @@ impl<'basis, 'guard> CommitNameOutcome<'basis, 'guard> {
                 ended.extend(leaving.copied());
             }
         }
+        let bound_entities = bound
+            .iter()
+            .filter_map(|(&name, entity)| entity.map(|entity| (entity, name)))
+            .collect();
         Self {
             basis,
+            bound_entities,
             bound,
             ended,
         }
@@ -83,6 +89,19 @@ impl<'basis, 'guard> CommitNameOutcome<'basis, 'guard> {
         };
         let lineage = self.basis.live_lineage(holder)?;
         (!self.ended.contains(&lineage)).then_some(*entity)
+    }
+
+    pub(super) fn name_before(&self, entity: EntityId) -> Option<PersistentNameIdentity> {
+        let holder = PersistentNameHolder::Entity(entity);
+        let name = self.basis.holder_name(&holder)?;
+        (self.basis.live_holder(&name) == Some(&holder)).then_some(name)
+    }
+
+    pub(super) fn name_after(&self, entity: EntityId) -> Option<PersistentNameIdentity> {
+        self.bound_entities.get(&entity).copied().or_else(|| {
+            let name = self.name_before(entity)?;
+            (self.member_after(&name) == Some(entity)).then_some(name)
+        })
     }
 
     /// Names this commit binds, with the entity each now designates (`None`

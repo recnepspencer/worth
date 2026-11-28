@@ -96,7 +96,10 @@ impl PersistentNameBranchIndex {
                 let _ = self
                     .names
                     .get_in(&PersistentNameKey::Group(assignment.identity), scope);
-                for member in assignment.touched_members() {
+                for member in assignment
+                    .touched_members()
+                    .filter_map(|name| name.entity_name())
+                {
                     let _ = self.member_groups.get_in(member, scope);
                 }
             }

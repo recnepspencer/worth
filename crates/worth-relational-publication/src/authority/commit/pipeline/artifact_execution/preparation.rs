@@ -1,6 +1,7 @@
 use super::super::phase_backing::CommitPhaseBacking;
 use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 use worth_relational_contracts::internal_port as contracts;
+use worth_relational_mutation::internal_port::aggregate_identity::preparation::TouchedAggregatePartitions;
 pub mod authoritative_publication;
 use crate::authority::commit::phases::publication::canonicalize_changed_records;
 use crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan;
@@ -35,6 +36,7 @@ pub(in crate::internal_port::authority::commit::pipeline) struct PublicationPrep
 }
 
 pub(in crate::internal_port::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
+    aggregate_partitions: TouchedAggregatePartitions,
     artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
     changed_records: Vec<RecordRef>,
     canonical_commit_envelope: worth_relational_branch::internal_port::history::data::canonical_commit_envelope::draft::CanonicalCommitEnvelopeDraft,
@@ -175,6 +177,7 @@ pub(super) fn prepare_publication_artifacts(
             content,
             index_definition_delta,
             defer_lineage,
+            aggregate_partitions: &publication.aggregate_partitions,
             working_state,
             patch: &patch,
             commit_reference,
@@ -195,6 +198,7 @@ pub(super) fn prepare_publication_artifacts(
     )?;
     finish_publication_preparation(
         PublicationCompletionInput {
+            aggregate_partitions: publication.aggregate_partitions,
             patch,
             commit_reference,
             changed_records: publication.changed_records,
@@ -210,6 +214,7 @@ pub(super) fn prepare_publication_artifacts(
 }
 
 struct PublicationCompletionInput<'a> {
+    aggregate_partitions: TouchedAggregatePartitions,
     patch: CanonicalAuthoritativePatch,
     commit_reference: &'a RelationalCommitReceipt,
     changed_records: Vec<RecordRef>,
@@ -228,6 +233,7 @@ fn finish_publication_preparation(
 ) -> Result<CommitPhaseBacking<PublicationPreparation>, TransactionCommitError> {
     let result = {
         let PublicationCompletionInput {
+            aggregate_partitions,
             patch,
             commit_reference,
             changed_records,
@@ -262,6 +268,7 @@ fn finish_publication_preparation(
             aspect_emission_traces: traces.aspect_emission_traces,
             summary,
             finalize: PublicationFinalizeArtifacts {
+                aggregate_partitions,
                 artifacts: authority.artifacts,
                 changed_records,
                 canonical_commit_envelope: authority.canonical_commit_envelope,
@@ -312,6 +319,7 @@ impl PublicationFinalizeArtifacts {
     pub(in crate::internal_port::authority::commit::pipeline) fn into_parts(
         self,
     ) -> (
+        TouchedAggregatePartitions,
         crate::publication::authority::artifacts::PublicationArtifacts,
         Vec<RecordRef>,
         worth_relational_branch::internal_port::history::data::canonical_commit_envelope::draft::CanonicalCommitEnvelopeDraft,
@@ -325,6 +333,7 @@ impl PublicationFinalizeArtifacts {
         Option<worth_relational_branch::internal_port::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>,
     ){
         (
+            self.aggregate_partitions,
             self.artifacts,
             self.changed_records,
             self.canonical_commit_envelope,

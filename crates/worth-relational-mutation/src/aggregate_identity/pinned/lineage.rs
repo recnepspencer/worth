@@ -10,7 +10,7 @@ use worth_relational_contracts::internal_port::history::data::coordinates::Commi
 /// Selection values only. The exact pin and original request remain authority.
 pub struct PinnedAggregateLineageScope<'input> {
     selection: AggregateSelection,
-    identity: AggregateIdentity,
+    pub(super) identity: AggregateIdentity,
     limits: coordination::Limits<'input>,
 }
 impl<'input> PinnedAggregateLineageScope<'input> {
@@ -44,13 +44,13 @@ impl<'input> PinnedAggregateLineageScope<'input> {
     }
 }
 
-struct Value {
-    definition: AggregateDefinitionIdentity,
-    identity: AggregateIdentity,
-    retired: Option<CommitId>,
-    incident: BTreeSet<AggregateLineageEvent>,
-    steps: Vec<AggregateLineageEvent>,
-    latest: Option<AggregateIdentity>,
+pub(super) struct Value {
+    pub(super) definition: AggregateDefinitionIdentity,
+    pub(super) identity: AggregateIdentity,
+    pub(super) retired: Option<CommitId>,
+    pub(super) incident: BTreeSet<AggregateLineageEvent>,
+    pub(super) steps: Vec<AggregateLineageEvent>,
+    pub(super) latest: Option<AggregateIdentity>,
 }
 struct Data {
     value: Value,
@@ -126,6 +126,13 @@ pub fn read_aggregate_lineage(
     basis: &VisibilitySnapshotBasis,
     execution: &ExecutionRequest<'_, '_>,
     scope: PinnedAggregateLineageScope<'_>,
+    named_read: impl Fn(
+        &super::super::AggregateGroupScheme,
+        AggregateIdentity,
+    ) -> Result<
+        Option<crate::contracts::aggregate_identity::group_lineage::AggregateGroupHistory>,
+        Cause,
+    >,
 ) -> Result<PinnedAggregateLineageRead, PinnedAggregateReadDenial> {
     coordination::read(
         basis,
@@ -133,6 +140,14 @@ pub fn read_aggregate_lineage(
         scope.limits,
         |root, view, work| {
             let contract = contract::resolve(root, scope.selection, work)?;
+            if let Some(scheme) = contract.group_scheme(root.schema_authority().registry()) {
+                return named::lineage(
+                    contract.definition,
+                    scope.identity,
+                    |identity| named_read(&scheme, identity),
+                    work,
+                );
+            }
             let selected = lookup::find(root, view, contract, scope.identity, work)?;
             let resolved = resolution::resolve(
                 view,

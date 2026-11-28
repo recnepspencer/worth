@@ -3,6 +3,7 @@
 //! Unlike the stored edge grammar read by `stored_lineage`, these records carry
 //! no `CommitId` and no native coordinate: the commit envelope supplies the
 //! occurrence when they attach to the canonical lineage authority.
+use crate::history::data::coordinates::CommitId;
 use worth_foundational::facade::{AggregateIdentity, AggregateLineageKind};
 
 /// One group birth, revival, split, merge, or retirement.
@@ -35,4 +36,10 @@ impl AggregateGroupLineageEvent {
             Self::Born { .. } | Self::Revived { .. } | Self::Retired { .. } => None,
         }
     }
+}
+
+/// One group name's retained lifecycle at a selected commit.
+pub struct AggregateGroupHistory {
+    pub retired: Option<CommitId>,
+    pub events: Vec<(CommitId, AggregateGroupLineageEvent)>,
 }

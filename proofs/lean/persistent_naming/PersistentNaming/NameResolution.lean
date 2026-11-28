@@ -3,8 +3,8 @@ import PersistentNaming.TimelineSearch
 -- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
 -- proof-mirror: crates/worth-relational-lineage/src/lineage/access/name_resolution.rs:78-116 sha256:d7241adf91ce06d3c63f73baeeef05d3d016140a83ec9dede597d4689afba548
 -- proof-mirror: crates/worth-relational-lineage/src/lineage/access/name_resolution.rs:120-165 sha256:2aa502990ecefa66c1848ad56235a85244bc7e8fb9cc8f570f1b3dcea565465c
--- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:226-232 sha256:d6ce72d8ffd051b70ec27689d2df303d803c9676074109a5ecc95f5224543183
--- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:246-250 sha256:0b03fce4cf71b68c38d5e5e61e62cb04c652ccc5faea34a5cdf22b592666abb8
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:229-235 sha256:d6ce72d8ffd051b70ec27689d2df303d803c9676074109a5ecc95f5224543183
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:249-253 sha256:0b03fce4cf71b68c38d5e5e61e62cb04c652ccc5faea34a5cdf22b592666abb8
 
 /-!
 # Held-name resolution step bound (Phase 7B-2, RULES §4 layer 1)

@@ -53,7 +53,7 @@ pub(super) fn choose_keepers(
         .map(|claim| match rule {
             Rule::Anchor | Rule::ProducerRole => claim
                 .into_iter()
-                .min_by_key(|(old, _)| anchors[*old])
+                .min_by_key(|(old, _)| &anchors[*old])
                 .map(|(old, _)| old),
             Rule::Boundary => unique_max(claim.into_iter()).map(|(old, _)| old),
         })
@@ -82,7 +82,9 @@ pub(super) fn unique_max(entries: impl Iterator<Item = (usize, usize)>) -> Optio
 pub(super) fn birth_anchor(rule: Rule, members: &AggregateGroupMembers) -> Result<Name, Denial> {
     let least_member = members.least_name().ok_or(Denial::EmptyGroup)?;
     let anchor = match rule {
-        Rule::Anchor => members.least_with(Role::Anchor).or(Some(least_member)),
+        Rule::Anchor => members
+            .least_with(Role::Anchor)
+            .or(Some(least_member.clone())),
         Rule::ProducerRole => members.least_with(Role::Anchor),
         Rule::Boundary => members.least_with(Role::Boundary),
     };

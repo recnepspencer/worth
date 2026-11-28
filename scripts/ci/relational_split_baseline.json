@@ -33,6 +33,7 @@
     "facade::aggregate_identity::AggregateIdentity",
     "facade::aggregate_identity::AggregateMemberRole",
     "facade::aggregate_identity::AggregatePriorGroup",
+    "facade::aggregate_identity::CanonicalGroupMemberIdentity",
     "facade::aggregate_identity::GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG",
     "facade::aggregate_identity::GROUP_AGGREGATE_TRANSITION_DOMAIN_TAG",
     "facade::authorization",

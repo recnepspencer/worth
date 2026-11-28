@@ -1,6 +1,6 @@
 -- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
--- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:21-26 sha256:6cb1fef575318ae82ebd44dd64ba876716871427ee86ba96b2702df971681a40
--- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:181-183 sha256:4be772cacbea0fddd6908bdf1ad8c2db322e08006e4b1ed78f1f0371ec1bc1eb
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:22-27 sha256:6cb1fef575318ae82ebd44dd64ba876716871427ee86ba96b2702df971681a40
+-- proof-mirror: crates/worth-relational-lineage/src/lineage/index/entry.rs:184-186 sha256:4be772cacbea0fddd6908bdf1ad8c2db322e08006e4b1ed78f1f0371ec1bc1eb
 
 /-!
 # Timeline binary search: step bound and correctness (Phase 7B-2, RULES §4)
