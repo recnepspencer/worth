@@ -3,7 +3,7 @@ use super::*;
 use crate::{CancellationSource, CancellationToken, ExecutionResourceLease, LeaseRequest};
 use std::{
     num::NonZeroUsize,
-    time::{Duration, Instant},
+    time::Duration,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,

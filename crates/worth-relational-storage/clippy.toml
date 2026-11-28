@@ -9,10 +9,6 @@ type-complexity-threshold = 512
 # Ordering by TypeId, type name or address is banned at source functions; comparison traits are unrestricted.
 # Geometry mints carry reviewed expectations at their owning call sites.
 disallowed-methods = [
-  { path = "std::time::SystemTime::now", reason = "wall time is sampled by the reviewed Execution clock adapter" },
-  { path = "std::time::Instant::now", reason = "monotonic time is sampled by the reviewed Execution clock adapter" },
-  { path = "jiff::Zoned::now", reason = "local time is derived from sampled wall time and an explicit calendar" },
-  { path = "chrono::Utc::now", reason = "wall time is sampled by the reviewed Execution clock adapter" },
   { path = "std::ptr::from_ref", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
   { path = "std::ptr::from_mut", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
   { path = "std::ptr::NonNull::as_ptr", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },

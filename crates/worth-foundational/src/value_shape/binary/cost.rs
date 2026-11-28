@@ -24,10 +24,6 @@ impl BinaryValueDelegate for Payload {
 }
 
 #[test]
-#[expect(
-    clippy::disallowed_methods,
-    reason = "This codec cost test reports physical execution time"
-)]
 fn megabyte_atoms_keep_exact_linear_work_and_one_decoded_allocation() {
     let mut observations = Vec::new();
     for length in [1024 * 1024, 2 * 1024 * 1024] {

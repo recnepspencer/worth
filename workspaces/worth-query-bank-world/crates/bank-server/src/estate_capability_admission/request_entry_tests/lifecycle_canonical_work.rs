@@ -9,7 +9,7 @@
 //! principal 7, 88 for principals 13 and 15, whose ids have two digits) plus
 //! the client key text. Blocks are ceil((hashed + 9) / 64) per derivation.
 
-use super::super::fixture::{emergency_request_world_at, AuthorizationTimeController};
+use super::super::fixture::emergency_request_world_at;
 use super::*;
 use crate::{
     BankCommitCanonicalWorkEvidence, BankEstateElevationApprovalOutcome,

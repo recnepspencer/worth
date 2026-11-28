@@ -1,6 +1,6 @@
 //! The production Directory Home, actual original operation and current selected admission.
 use super::*;
-use worth_query_host::facade::runtime::time::ControlledTime;
+use worth_query_host::facade::runtime::time::{ControlledTime, system_time_sampler};
 
 type Admission =
     WorthQueryAdmittedApplicationOperation<DispatchHomeSchema, RecoverableNotice, u64, Account>;
@@ -16,10 +16,7 @@ impl Owners {
             location: dispatch::location(),
             handlers: Arc::new(AtomicUsize::new(0)),
             now: Arc::new(ControlledTime::at_unix_secs(
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs(),
+                system_time_sampler().wall().unwrap().unix_nanos() / 1_000_000_000,
             )),
         }
     }

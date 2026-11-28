@@ -1,6 +1,6 @@
 use super::*;
 use crate::estate_capability_admission::fixture::{
-    delegation_world_with_parent_spec_at, AuthorizationTimeController, GrantSpec,
+    delegation_world_with_parent_spec_at, GrantSpec,
 };
 
 #[test]

@@ -1,6 +1,6 @@
 use std::{
     sync::{Condvar, Mutex},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 /// Reusable overlap gate with a failure watchdog for missing admission.

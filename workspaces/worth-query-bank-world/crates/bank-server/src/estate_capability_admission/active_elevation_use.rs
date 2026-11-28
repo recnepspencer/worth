@@ -14,7 +14,7 @@ use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDen
 use super::{
     fixture::{
         emergency_request_world, emergency_request_world_at,
-        emergency_request_world_with_alternate_bound, request_scope, AuthorizationTimeController,
+        emergency_request_world_with_alternate_bound, request_scope,
         GrantSpec, ACCOUNT, ALTERNATE_EMERGENCY_BOUND_GRANT, APPROVER, ESTATE, GRANT,
         OTHER_ACCOUNT,
     },

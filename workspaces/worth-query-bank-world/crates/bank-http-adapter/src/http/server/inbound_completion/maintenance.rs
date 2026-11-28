@@ -2,7 +2,7 @@
 
 use std::io;
 use std::sync::Arc;
-use std::time::{Duration, Instant, UNIX_EPOCH};
+use std::time::{Duration, UNIX_EPOCH};
 
 use tokio::sync::{watch, Notify};
 use tokio::task::JoinHandle;

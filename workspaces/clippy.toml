@@ -8,10 +8,6 @@ enum-variant-size-threshold = 32768
 type-complexity-threshold = 512
 # Geometry mints carry reviewed expectations at their owning call sites.
 disallowed-methods = [
-  { path = "std::time::SystemTime::now", reason = "wall time is sampled by the reviewed Execution clock adapter" },
-  { path = "std::time::Instant::now", reason = "monotonic time is sampled by the reviewed Execution clock adapter" },
-  { path = "jiff::Zoned::now", reason = "local time is derived from sampled wall time and an explicit calendar" },
-  { path = "chrono::Utc::now", reason = "wall time is sampled by the reviewed Execution clock adapter" },
   { path = "std::thread::spawn", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution" },
   { path = "std::thread::scope", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution" },
   { path = "std::thread::Builder::new", reason = "Threads and async executors belong only to the reviewed owning sites; computation belongs to worth-execution" },

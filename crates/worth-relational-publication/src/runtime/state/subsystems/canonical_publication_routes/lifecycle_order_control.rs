@@ -1,7 +1,7 @@
 //! Owner-scoped rendezvous for publication/exclusive-snapshot lock-order races.
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{mpsc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 #[derive(Default)]
 pub(super) struct LifecycleOrderControl {

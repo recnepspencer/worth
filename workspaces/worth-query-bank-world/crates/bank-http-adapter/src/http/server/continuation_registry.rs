@@ -6,7 +6,7 @@ use rand::{
 use std::{
     collections::HashMap,
     sync::Arc,
-    time::{Duration, Instant},
+    time::Duration,
 };
 use tokio::sync::Mutex;
 mod activity;

@@ -1,7 +1,7 @@
 use std::{
     cell::Cell,
     sync::atomic::{AtomicUsize, Ordering},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use super::{authority, map, request, ChargedBytes, MapKernelStop, MapStop, TEST_LOCK};

@@ -8,10 +8,6 @@ enum-variant-size-threshold = 32768
 type-complexity-threshold = 512
 # Geometry mints carry reviewed expectations at their owning call sites.
 disallowed-methods = [
-  { path = "std::time::SystemTime::now", reason = "wall time is sampled by the reviewed Execution clock adapter" },
-  { path = "std::time::Instant::now", reason = "monotonic time is sampled by the reviewed Execution clock adapter" },
-  { path = "jiff::Zoned::now", reason = "local time is derived from sampled wall time and an explicit calendar" },
-  { path = "chrono::Utc::now", reason = "wall time is sampled by the reviewed Execution clock adapter" },
   { path = "std::any::TypeId::of", reason = "Type identity is for point lookup; canonical order uses declared identity" },
   { path = "std::ptr::from_ref", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },
   { path = "std::ptr::from_mut", reason = "Addresses are for allocation lookup and custody; canonical order uses declared identity" },

@@ -7,7 +7,8 @@
 use crate::time::controlled_at;
 use std::path::PathBuf;
 use std::sync::mpsc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
+use worth_query_host::facade::runtime::time::system_time_sampler;
 
 use worth_query_decl::facade::application_program::{
     ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowDefinitionReadTarget,
@@ -154,10 +155,7 @@ fn complete(home: &WorkflowHome, caller: &Caller, instance: PublishedWorkflowIns
 }
 
 fn scratch_directory() -> PathBuf {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
+    let nanos = system_time_sampler().wall().unwrap().unix_nanos();
     let process = std::process::id();
     std::env::temp_dir().join(format!("worth-birth-subject-{process}-{nanos}"))
 }

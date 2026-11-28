@@ -7,7 +7,7 @@ use std::{
         Arc,
     },
     task::{Context, Wake, Waker},
-    time::{Duration, Instant},
+    time::Duration,
 };
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationToken;
 

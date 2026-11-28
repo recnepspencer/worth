@@ -1,8 +1,8 @@
 //! Anti-backdating, the Mountain day boundary, single-stamp consistency and
 //! the system-clock default, each through a real Home commit.
 use crate::time::controlled_at;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use worth_query_host::facade::runtime::time::ControlledTime;
+use std::time::Duration;
+use worth_query_host::facade::runtime::time::{ControlledTime, system_time_sampler};
 
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitDenialKind as Kind, WorthQueryApplicationUncommitted,
@@ -93,9 +93,8 @@ fn the_handler_and_the_invariant_observe_one_instant_that_moves_only_with_the_cl
     assert_eq!(lot(&home).stamped_at, at(2026, 11, 27, 2, 30));
 }
 
-fn micros(instant: SystemTime) -> i64 {
-    let elapsed = instant.duration_since(UNIX_EPOCH).expect("after the epoch");
-    i64::try_from(elapsed.as_micros()).expect("representable")
+fn sampled_wall_micros() -> i64 {
+    (system_time_sampler().wall().unwrap().unix_nanos() / 1_000) as i64
 }
 
 #[test]
@@ -105,7 +104,7 @@ fn a_default_home_admits_with_the_live_system_clock() {
     let zone = mountain();
     // A run straddling Mountain midnight retries once with the new day.
     let committed = (0..2).find_map(|_| {
-        let before = micros(SystemTime::now());
+        let before = sampled_wall_micros();
         let today = zone.today().expect("today in Mountain time");
         let stamp = StampLot {
             lot: 1,
@@ -113,7 +112,7 @@ fn a_default_home_admits_with_the_live_system_clock() {
             expires_on: date(2999, 12, 31),
         };
         let outcome = session.run(stamp);
-        let after = micros(SystemTime::now());
+        let after = sampled_wall_micros();
         outcome.ok().map(|_| (before, after))
     });
     let (before, after) = committed.expect("a default Home stamps live time");

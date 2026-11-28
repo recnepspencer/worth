@@ -1,4 +1,4 @@
-use super::super::fixture::{emergency_request_world_at, AuthorizationTimeController};
+use super::super::fixture::emergency_request_world_at;
 use super::*;
 use crate::{
     BankAuthorizationDenialKind, BankEstateElevationApprovalOutcome,

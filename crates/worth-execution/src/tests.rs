@@ -5,7 +5,7 @@ use std::{
         Mutex, OnceLock,
     },
     thread,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use worth_foundational::{

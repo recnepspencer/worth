@@ -7,7 +7,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryInboundOccurrenceClaims, WorthQueryInboundOccurrenceVerifier,
     WorthQueryInboundVerificationDenial, WorthQueryInboundVerifierHandle,
 };
-use worth_query_host::facade::runtime::time::{ControlledTime, RawClockAdapter};
+use worth_query_host::facade::runtime::time::{ControlledTime, RawClockAdapter, system_time_sampler};
 
 pub(super) struct Owners {
     pub location: std::path::PathBuf,
@@ -21,10 +21,7 @@ impl Owners {
             location: dispatch::location(),
             handlers: Arc::new(AtomicUsize::new(0)),
             now: Arc::new(ControlledTime::at_unix_secs(
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs(),
+                system_time_sampler().wall().unwrap().unix_nanos() / 1_000_000_000,
             )),
         }
     }

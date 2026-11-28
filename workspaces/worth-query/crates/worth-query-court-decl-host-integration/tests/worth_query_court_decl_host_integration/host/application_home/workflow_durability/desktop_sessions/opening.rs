@@ -1,11 +1,9 @@
 //! A workflow Home opened through `WorthQueryHomeConfig` under a held trusted
 //! clock, and the principals its sessions act under.
-use worth_query_host::facade::runtime::time::ControlledTime;
+use worth_query_host::facade::runtime::time::{ControlledTime, system_time_sampler};
 use super::*;
 use document::programs::WorkflowOwnerProgram;
 use document::schema::DocumentRetentionSchema;
-use std::time::{SystemTime, UNIX_EPOCH};
-use worth_foundational::facade::CanonicalTimestamp;
 use worth_query_host::facade::{
     admission::authenticated_principal::{
         WorthQueryAdmissionClock, WorthQueryAuthenticatedExternalPrincipal,
@@ -22,16 +20,8 @@ worth_query_decl::facade::worth_query_authentication_method!(CertificationMethod
 /// Trusted time held at the current instant, so the fixture's real proofs
 /// (valid for an hour from now) stay inside every admission window.
 pub(super) fn trusted_now() -> std::sync::Arc<ControlledTime> {
-    let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-    std::sync::Arc::new(ControlledTime::at_unix_nanos(
-        (CanonicalTimestamp {
-            micros_since_unix_epoch: i64::try_from(since_epoch.as_micros()).unwrap(),
-        })
-        .micros_since_unix_epoch
-        .try_into()
-        .map(|micros: u64| micros * 1_000)
-        .unwrap(),
-    ))
+    let nanos = system_time_sampler().wall().unwrap().unix_nanos();
+    std::sync::Arc::new(ControlledTime::at_unix_nanos(nanos))
 }
 
 /// Opens (or reopens) the Home at `location` through the desktop
