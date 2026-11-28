@@ -68,7 +68,9 @@ fn reconcile_intents<Clock, Input>(
             binding: clock,
             identity,
             revision: candidate.revision(),
-            due_coordinate: candidate.due().nanoseconds(),
+            condition: worth_runtime_bridge::facade::BridgeTemporalCondition::at_or_after(
+                candidate.due().nanoseconds(),
+            ),
             idempotency_identity: Arc::from(candidate.idempotency().as_str()),
             source_record_identity: reconstructed.source_record(),
             lifecycle,

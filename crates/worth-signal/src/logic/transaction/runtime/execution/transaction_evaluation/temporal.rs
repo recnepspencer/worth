@@ -80,36 +80,10 @@ where
         condition: &TemporalCondition,
     ) -> Result<Option<ClockTick>, SignalError> {
         let current = self.temporal.clock_basis().current_tick();
-        let due = match condition {
-            TemporalCondition::AtOrAfter(condition) => {
-                if current >= condition.tick() {
-                    return Ok(None);
-                }
-                condition.tick()
-            }
-            TemporalCondition::After(condition) => {
-                ClockTick::new(current.get().saturating_add(condition.delay_ms()))
-            }
-            TemporalCondition::Debounce(condition) => {
-                ClockTick::new(current.get().saturating_add(condition.quiet_period_ms()))
-            }
-            TemporalCondition::Throttle(condition) => {
-                ClockTick::new(current.get().saturating_add(condition.window_ms()))
-            }
-            TemporalCondition::StaleAfter(condition) => {
-                ClockTick::new(current.get().saturating_add(condition.stale_after_ms()))
-            }
-            TemporalCondition::Interval(interval) => match interval.anchor() {
-                crate::data::temporal::IntervalAnchor::ExplicitTick(tick) if *tick > current => {
-                    *tick
-                }
-                crate::data::temporal::IntervalAnchor::ExplicitTick(_)
-                | crate::data::temporal::IntervalAnchor::Registration
-                | crate::data::temporal::IntervalAnchor::FirstEvaluation => {
-                    ClockTick::new(current.get().saturating_add(interval.period_ms()))
-                }
-            },
-        };
+        let due = condition.first_due_tick(current);
+        if matches!(condition, TemporalCondition::AtOrAfter(_)) && due <= current {
+            return Ok(None);
+        }
         Ok(Some(due))
     }
 

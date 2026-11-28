@@ -12,17 +12,34 @@ use crate::speculation::{
 };
 
 fn preview_declaration() -> BridgePreviewSessionDeclaration {
+    preview_declaration_with_posture(
+        crate::facade::BranchForkPosture {
+            relational: crate::facade::RelationalForkAxis::Forked,
+            signal: crate::facade::SignalForkAxis::Forked,
+        },
+        "truth:analysis",
+    )
+}
+
+fn preview_declaration_with_posture(
+    posture: crate::facade::BranchForkPosture,
+    branch: &str,
+) -> BridgePreviewSessionDeclaration {
     BridgePreviewSessionDeclaration::new(
         BridgePreviewSessionDeclarationIdentity::admit_bridge_owned("preview:analysis"),
         BridgeRequestKind::Preview,
-        BridgeSpeculativeBranchBinding::new(
+        BridgeSpeculativeBranchBinding::with_fork_posture(
             BridgeSpeculativeBranchBindingIdentity::admit_bridge_owned("binding:analysis"),
-            crate::truth_identity_fixtures::truth_branch_fixture("truth:analysis"),
-            BridgeSignalBranchIdentity::admit_bridge_owned("signal:analysis"),
+            crate::truth_identity_fixtures::truth_branch_fixture(branch),
+            BridgeSignalBranchIdentity::admit_bridge_owned(match posture.signal {
+                crate::facade::SignalForkAxis::SharedMain => "signal:main",
+                crate::facade::SignalForkAxis::Forked => "signal:analysis",
+            }),
+            posture,
         ),
         BridgePreviewSessionBasis::new(
             BridgeTruthViewSelector::branch_snapshot(
-                crate::truth_identity_fixtures::truth_branch_fixture("truth:analysis"),
+                crate::truth_identity_fixtures::truth_branch_fixture(branch),
                 crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
             ),
             crate::facade::BridgeSourceCapabilitySet::new(vec![
@@ -36,8 +53,13 @@ fn preview_declaration() -> BridgePreviewSessionDeclaration {
 
 #[test]
 fn standard_builder_aliases_build_runtime() {
+    let retention = crate::facade::BridgeConditionalRetentionBudget {
+        maximum_managed_clocks: Some(2),
+        ..crate::facade::BridgeConditionalRetentionBudget::development()
+    };
     let runtime = RuntimeBridge::builder()
         .with_policy(BridgeRuntimePolicy::default())
+        .with_conditional_retention_budget(retention)
         .with_truth_source(StaticSource)
         .with_source_adapter(StaticSourceAdapter)
         .with_truth_branch_head_source(StaticSource)
@@ -73,7 +95,7 @@ fn standard_builder_aliases_build_runtime() {
         .build()
         .expect("builder aliases should produce a valid runtime");
 
-    assert_eq!(runtime.policy(), &BridgeRuntimePolicy::default());
+    assert_eq!(runtime.policy().conditional_retention(), retention);
 }
 
 #[test]
@@ -299,4 +321,57 @@ fn preview_liveness_observer_tracks_handle_disposal_without_retaining_session() 
     assert!(abandoned_observer.admit_active_session().is_none());
     assert_eq!(runtime.diagnostics().preview_discard_records().len(), 1);
     assert!(runtime.diagnostics().preview_promotion_records().is_empty());
+}
+
+#[test]
+fn compares_main_and_preview_for_each_independent_fork_axis() {
+    use crate::facade::{
+        BranchForkPosture, RelationalForkAxis, SignalForkAxis, SnapshotReadPacket,
+    };
+    use crate::truth_identity_fixtures::truth_branch_fixture;
+
+    let serial = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial);
+    let mut digests = std::collections::BTreeSet::new();
+    for relational in [RelationalForkAxis::SharedMain, RelationalForkAxis::Forked] {
+        for signal in [SignalForkAxis::SharedMain, SignalForkAxis::Forked] {
+            let runtime = runtime(BridgeRuntimePolicy::development());
+            let posture = BranchForkPosture { relational, signal };
+            let main = match relational {
+                RelationalForkAxis::SharedMain => "analysis",
+                RelationalForkAxis::Forked => "main",
+            };
+            let declaration = preview_declaration_with_posture(posture, "analysis");
+            assert!(digests.insert(declaration.branch_binding().digest().to_owned()));
+            let request = BridgeSpeculativeSessionRequest::new(
+                BridgePreviewSessionIdentity::admit_bridge_owned("preview:fork-matrix"),
+                declaration,
+                1,
+                1,
+                0,
+            );
+            assert_eq!(request.fork_posture(), posture);
+            let session = runtime.speculate(request).unwrap();
+            assert_eq!(session.compare_to_main().fork_posture(), posture);
+            let branches = session
+                .evaluate_against_main(
+                    truth_branch_fixture(main),
+                    SnapshotReadPacket::new(vec![]),
+                    execution,
+                    |main, preview| {
+                        (
+                            main.record().decision_log().branch_identity().clone(),
+                            preview.record().decision_log().branch_identity().clone(),
+                        )
+                    },
+                )
+                .unwrap();
+            assert_eq!(
+                branches,
+                (truth_branch_fixture(main), truth_branch_fixture("analysis"))
+            );
+            session.discard().unwrap();
+        }
+    }
 }

@@ -26,7 +26,7 @@ pub(in crate::conditional_execution) fn reconcile_intent_in_lane(
         BridgeManagedTemporalIntentLifecycle::Active => lane.reconcile_active_intent(
             parts.identity,
             parts.revision,
-            parts.due_coordinate,
+            parts.condition,
             parts.idempotency_identity,
             parts.source_record_identity,
         ),

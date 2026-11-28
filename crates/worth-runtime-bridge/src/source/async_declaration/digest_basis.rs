@@ -1,6 +1,5 @@
 use worth_signal::facade::{
-    AsyncNodeCapabilityDeclaration, ResourceNodeDeclaration, ResourceObservationPolicyDeclaration,
-    ResourceRetryBudgetScope,
+    AsyncNodeCapabilityDeclaration, ResourceNodeDeclaration, ResourceRetryBudgetScope,
 };
 
 pub(super) fn request_response_basis(
@@ -75,21 +74,6 @@ pub(super) fn subscription_backed_basis(
         declaration.payload_contract().id().get(),
         optional_display(declaration.payload_contract().max_payload_bytes()),
     )
-}
-
-pub(super) fn observation_policy_is_request_response_compatible(
-    observation_policy: &ResourceObservationPolicyDeclaration,
-) -> bool {
-    matches!(
-        observation_policy,
-        ResourceObservationPolicyDeclaration::LifecycleOnly
-    )
-}
-
-pub(super) fn observation_policy_is_subscription_backed_compatible(
-    observation_policy: &ResourceObservationPolicyDeclaration,
-) -> bool {
-    !observation_policy_is_request_response_compatible(observation_policy)
 }
 
 fn optional_debug<T: std::fmt::Debug>(value: Option<T>) -> String {

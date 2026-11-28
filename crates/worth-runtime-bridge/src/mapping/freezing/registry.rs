@@ -42,6 +42,10 @@ impl FrozenBridgeMappingRegistration {
         self.registration.routing_mode()
     }
 
+    pub fn version_comparator(&self) -> Option<&worth_signal::facade::VersionComparatorPolicy> {
+        self.registration.version_comparator()
+    }
+
     pub fn widening_class(&self) -> Option<BridgeMappingWideningClass> {
         self.registration.truth_scope().widening_class()
     }
@@ -57,14 +61,19 @@ fn frozen_registration_identity(
 }
 
 fn frozen_registration_identity_basis(registration: &BridgeMappingRegistration) -> String {
-    format!(
+    let mut basis = format!(
         "frozen-mapping-registration|mapping={}|truth-scope={}|snapshot-read-contract={}|signal-scope={}|routing-mode={}",
         registration.mapping_id().as_str(),
         truth_scope_canonical_basis(registration.truth_scope()),
         registration.snapshot_read_contract().canonical_basis(),
         registration.signal_scope().as_str(),
         routing_mode_label(registration.routing_mode())
-    )
+    );
+    if let Some(policy) = registration.version_comparator() {
+        use std::fmt::Write;
+        write!(basis, "|version-comparator={policy:?}").expect("a string accepts formatting");
+    }
+    basis
 }
 
 fn truth_scope_canonical_basis(scope: &TruthPatchScope) -> String {

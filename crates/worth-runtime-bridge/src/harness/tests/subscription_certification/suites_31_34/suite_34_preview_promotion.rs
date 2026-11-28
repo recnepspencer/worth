@@ -1,8 +1,9 @@
 use super::super::support::*;
 use crate::facade::{
     BridgePreviewSessionDeclarationIdentity, BridgeRuntimePolicy, BridgeSignalBranchIdentity,
-    BridgeSpeculativeBranchBindingIdentity, BridgeSubscriptionDeliveryDensityPosture,
-    BridgeSubscriptionPreviewPromotionOutcomeClass, BridgeSubscriptionPreviewWorkInput,
+    BridgeSpeculativeBranchBindingIdentity, BridgeSubscriptionAuthoritativePreviewReadmissionClass,
+    BridgeSubscriptionDeliveryDensityPosture, BridgeSubscriptionPreviewLifecycleResidueInput,
+    BridgeSubscriptionPreviewLifecycleResidueKind, BridgeSubscriptionPreviewWorkInput,
     BridgeSubscriptionPreviewWorkKind, BridgeSubscriptionPreviewWorkTraceRejectionKind,
 };
 use crate::speculation::BridgePreviewSessionIdentity;
@@ -93,39 +94,18 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
             work_trace.records()[0].evidence().preview_scope_identity(),
             &preview_scope_identity
         );
-        let residue_index = runtime.build_subscription_preview_residue_scope_index(
-            &preview_active,
-            work_trace.zero_residue_inputs(),
-        );
+        let residue = capture_zero_residue(&runtime, &preview_active, &work_trace);
         let discard = runtime
-            .prove_preview_scope_discard_residue(preview_active, residue_index)
+            .admit_preview_lifecycle_discard(preview_active, residue)
             .expect("zero preview residue should discard");
 
         assert_eq!(discard.total_residue_count(), 0);
-        assert_eq!(discard.artifact_records().len(), 7);
+        assert_eq!(discard.residue_records().len(), 4);
+        assert_eq!(
+            discard.preview_active_subscription_identity(),
+            &preview_identity
+        );
         assert_eq!(discard.counters().subscription_preview_discard_count(), 1);
-        assert_eq!(
-            discard
-                .counters()
-                .subscription_preview_residue_nonzero_count(),
-            0
-        );
-        assert_eq!(
-            discard
-                .counters()
-                .subscription_preview_non_scope_registry_scan_count(),
-            0
-        );
-        assert_eq!(
-            discard.artifact_records()[2].evidence_digest(),
-            format!(
-                "preview-work-zero-residue|trace={}|scope={}|record={}|category={}",
-                work_trace.digest(),
-                work_trace.preview_residue_scope_identity().as_str(),
-                work_trace.record_digest_for(BridgeSubscriptionPreviewWorkKind::Delivery),
-                discard.artifact_records()[2].category().as_str(),
-            )
-        );
     }
 
     let malformed_preview = preview_active_subscription_for(
@@ -285,47 +265,59 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
         .admitted()
         .admitted_subscription_identity()
         .clone();
+    let residue = capture_zero_residue(&runtime, &preview_active, &promotion_work_trace);
     let promotion = runtime
-        .record_preview_authoritative_boundary(
-            preview_active,
+        .admit_preview_lifecycle_promotion(
+            &preview_active,
             &promotion_work_trace,
+            &residue,
             &speculation_promotion,
-            &promoted_ready,
         )
-        .expect("subscription promotion boundary should admit");
-    let explanation = runtime.inspect_subscription_preview_promotion_record(&promotion);
+        .expect("subscription lifecycle promotion should admit");
 
     assert_eq!(
-        promotion.outcome_class(),
-        BridgeSubscriptionPreviewPromotionOutcomeClass::PromotedAuthoritativeBoundary
-    );
-    assert_eq!(
-        promotion.preview_active_subscription_identity(),
-        &preview_identity
-    );
-    assert_eq!(
-        promotion.promoted_admitted_subscription_identity(),
-        &promoted_identity
+        promotion.promotion_record_digest(),
+        speculation_promotion.digest()
     );
     assert_eq!(
         promotion.preview_work_trace_identity(),
         promotion_work_trace.preview_work_trace_identity()
     );
+
+    let readmission = runtime
+        .prepare_authoritative_preview_readmission(promotion, &promoted_ready)
+        .expect("authoritative readmission should admit");
     assert_eq!(
-        explanation.preview_work_trace_digest(),
-        promotion_work_trace.digest()
-    );
-    assert_ne!(
-        promotion.preview_active_subscription_identity().as_str(),
-        promotion.promoted_admitted_subscription_identity().as_str()
-    );
-    assert_eq!(
-        explanation.promotion_record_identity(),
-        promotion.promotion_record_identity()
+        readmission.readmission_class(),
+        BridgeSubscriptionAuthoritativePreviewReadmissionClass::ReAdmittedAuthoritativeBoundary
     );
     assert_eq!(
-        explanation.speculation_promotion_record_digest(),
-        speculation_promotion.digest()
+        readmission.preview_active_subscription_identity(),
+        preview_identity.as_str()
     );
-    assert_eq!(explanation.counters().diagnostics_bundle_count(), 1);
+    assert_eq!(
+        readmission.authoritative_admitted_subscription_identity(),
+        &promoted_identity
+    );
+}
+
+fn capture_zero_residue(
+    runtime: &crate::facade::RuntimeBridge,
+    preview: &crate::facade::BridgePreviewActiveSubscription,
+    trace: &crate::facade::BridgeSubscriptionPreviewWorkTrace,
+) -> crate::facade::BridgeSubscriptionPreviewLifecycleResidueEnvelope {
+    runtime
+        .capture_preview_lifecycle_residue_envelope(
+            preview,
+            trace,
+            BridgeSubscriptionPreviewLifecycleResidueKind::all()
+                .into_iter()
+                .map(|kind| {
+                    BridgeSubscriptionPreviewLifecycleResidueInput::from_preview_work_trace(
+                        kind, 0, trace,
+                    )
+                })
+                .collect(),
+        )
+        .expect("preview work should bind the zero residue envelope")
 }

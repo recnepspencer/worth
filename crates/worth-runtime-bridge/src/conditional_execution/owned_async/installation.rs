@@ -38,18 +38,17 @@ impl BridgeOwnedSignalRuntime {
         }
         let description = declaration.description();
         let node = self.signal_runtime_mut().graph_mut().node().build();
-        let resource = declaration.signal_declaration(node)?;
-        let draft = BridgeAsyncSourceDeclarationDraft::request_response(
-            crate::facade::BridgeAsyncSourceDeclarationIdentity::admit_bridge_owned(
-                declaration.identity.clone(),
-            ),
-            crate::facade::BridgeAsyncSourceLegacyDeclarationIdentity::admit_bridge_owned(format!(
-                "owned-async-internal:{}",
-                declaration.identity
-            )),
-            resource.clone(),
-        );
         let install = (|| {
+            let resource = declaration.signal_declaration(node)?;
+            let draft = BridgeAsyncSourceDeclarationDraft::request_response(
+                crate::facade::BridgeAsyncSourceDeclarationIdentity::admit_bridge_owned(
+                    declaration.identity.clone(),
+                ),
+                crate::facade::BridgeAsyncSourceLegacyDeclarationIdentity::admit_bridge_owned(
+                    format!("owned-async-internal:{}", declaration.identity),
+                ),
+                resource.clone(),
+            );
             let validated = self.bridge.validate_async_source_declaration(draft)?;
             self.signal_runtime_mut()
                 .declare_resource_node(resource.clone())

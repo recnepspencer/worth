@@ -20,7 +20,7 @@ mod wake_observation_for_test;
 pub use completion_commit::BridgeOwnedAsyncCommittedCompletion;
 pub use declaration::{
     BridgeOwnedAsyncDeclarationDescription, BridgeOwnedAsyncRequestResponseDeclaration,
-    BridgeOwnedAsyncRetention,
+    BridgeOwnedAsyncResourcePolicies, BridgeOwnedAsyncRetention,
 };
 pub(super) use installation::BridgeInstalledOwnedAsyncDeclaration;
 pub use managed_request::{BridgeOwnedAsyncManagedDenial, BridgeOwnedAsyncManagedRequestAdmission};

@@ -1,6 +1,7 @@
 use crate::data::temporal::{
-    ClockAdvanceRequest, ClockTick, RetiredTemporalWake, ScheduledTemporalWake, TemporalCondition,
-    TemporalWakeId, TemporalWakeReschedule, TemporalWakeRetirementReason, TemporalWakeSummary,
+    ClockAdvanceRequest, ClockTick, IntervalWakeRegeneration, RetiredTemporalWake,
+    ScheduledTemporalWake, TemporalCondition, TemporalRetiredWakeCompactionReport, TemporalWakeId,
+    TemporalWakeReschedule, TemporalWakeRetirementReason, TemporalWakeSummary,
     ValidatedClockAdvance,
 };
 
@@ -75,6 +76,35 @@ where
                 .map_err(Denial::TemporalOperation)?;
             state.temporal.forget_retired_wake(wake_id);
             Ok(retired)
+        })
+    }
+
+    pub fn regenerate_interval_wake(
+        &self,
+        wake_id: TemporalWakeId,
+    ) -> Result<IntervalWakeRegeneration, Denial> {
+        self.with_admitted_partition(|state| {
+            state.admit_wake_identity_capacity(1, 2)?;
+            let report = state
+                .temporal
+                .regenerate_interval_wake(wake_id, None)
+                .map_err(Denial::TemporalOperation)?;
+            state.temporal.forget_retired_wake(wake_id);
+            Ok(report)
+        })
+    }
+
+    /// Managed partitions expire retirement receipts immediately, so the report
+    /// normally has an empty retired tail.
+    pub fn compact_retired_temporal_wake_tail(
+        &self,
+        retained_limit: u32,
+        max_expired: u32,
+    ) -> Result<TemporalRetiredWakeCompactionReport, Denial> {
+        self.with_admitted_partition(|state| {
+            Ok(state
+                .temporal
+                .compact_retired_wake_tail(retained_limit, max_expired))
         })
     }
 

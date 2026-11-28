@@ -104,19 +104,6 @@ pub(crate) fn preview_work_trace(
         .expect("preview work trace should bind all preview work categories")
 }
 
-pub(crate) fn preview_active_collection_subscription(
-    suffix: &str,
-    resource_request: worth_execution::ExecutionRequest<'_, '_>,
-) -> (
-    crate::facade::RuntimeBridge,
-    crate::facade::BridgePreviewActiveSubscription,
-) {
-    preview_active_subscription_from_ready(
-        activation_ready_collection_subscription(resource_request),
-        suffix,
-    )
-}
-
 pub(crate) fn preview_active_subscription_from_ready(
     (runtime, ready): (
         crate::facade::RuntimeBridge,
@@ -200,35 +187,4 @@ pub(crate) fn subscription_preview_declaration_for_truth(
             crate::facade::BridgePreviewRetainedArtifactSchema::PreviewLifecycleArtifactsV1,
         ),
     )
-}
-
-pub(crate) fn zero_preview_residue_inputs(
-    runtime: &crate::facade::RuntimeBridge,
-    preview_active: &crate::facade::BridgePreviewActiveSubscription,
-) -> Vec<crate::facade::BridgeSubscriptionPreviewResidueArtifactInput> {
-    preview_work_trace(runtime, preview_active, "preview-residue").zero_residue_inputs()
-}
-
-pub(crate) fn preview_residue_inputs_with_count(
-    runtime: &crate::facade::RuntimeBridge,
-    preview_active: &crate::facade::BridgePreviewActiveSubscription,
-    nonzero_category: crate::facade::BridgeSubscriptionPreviewResidueCategory,
-    residue_count: usize,
-) -> Vec<crate::facade::BridgeSubscriptionPreviewResidueArtifactInput> {
-    let work_trace = preview_work_trace(runtime, preview_active, "preview-residue");
-    work_trace
-        .zero_residue_inputs()
-        .into_iter()
-        .map(|input| {
-            if input.category() == nonzero_category {
-                crate::facade::BridgeSubscriptionPreviewResidueArtifactInput::from_preview_work_trace(
-                    nonzero_category,
-                    residue_count,
-                    &work_trace,
-                )
-            } else {
-                input
-            }
-        })
-        .collect()
 }

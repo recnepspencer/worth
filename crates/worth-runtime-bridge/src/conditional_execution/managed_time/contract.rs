@@ -5,7 +5,7 @@ use std::sync::{
     Arc,
 };
 
-use worth_signal::facade::{TemporalWakeId, WakeOrdinal};
+use worth_signal::facade::{ClockTick, TemporalCondition, TemporalWakeId, WakeOrdinal};
 
 #[derive(Debug)]
 pub(super) struct BridgeManagedClockLease {
@@ -93,11 +93,35 @@ pub enum BridgeManagedTemporalIntentLifecycle {
     Completed,
 }
 
+/// A Signal condition for a Bridge-managed clock.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct BridgeTemporalCondition(TemporalCondition);
+
+impl BridgeTemporalCondition {
+    pub fn new(condition: TemporalCondition) -> Self {
+        Self(condition)
+    }
+
+    pub fn at_or_after(due_coordinate: u64) -> Self {
+        Self::new(TemporalCondition::at_or_after(ClockTick::new(
+            due_coordinate,
+        )))
+    }
+
+    pub fn condition(&self) -> &TemporalCondition {
+        &self.0
+    }
+
+    pub fn into_condition(self) -> TemporalCondition {
+        self.0
+    }
+}
+
 pub struct BridgeManagedTemporalIntentReconciliationParts<'a> {
     pub binding: &'a BridgeManagedClockBinding,
     pub identity: BridgeManagedTemporalIntentIdentity,
     pub revision: u64,
-    pub due_coordinate: u64,
+    pub condition: BridgeTemporalCondition,
     pub idempotency_identity: Arc<str>,
     pub source_record_identity:
         crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,

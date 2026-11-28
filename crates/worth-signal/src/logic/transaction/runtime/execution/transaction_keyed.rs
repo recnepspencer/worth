@@ -221,6 +221,12 @@ where
             self.with_telemetry(|telemetry| telemetry.evaluation.memoization_misses += 1);
         }
 
+        let memo_requested = memo_key_id.is_some();
+        let memo_decision = if memo_requested {
+            PreparedMemoDecision::Miss
+        } else {
+            PreparedMemoDecision::None
+        };
         let last_result = Mutex::new(None);
         let execution_start = self.graph.time_sampler().monotonic();
         let result = match execute_targets_with_prepared_runtime_config_detailed(
@@ -236,9 +242,9 @@ where
                     let prepared = ctx
                         .into_prepared(output)
                         .with_origin(reuse_request.compute_origin())
-                        .with_memo_decision(PreparedMemoDecision::Miss)
+                        .with_memo_decision(memo_decision)
                         .with_keyed(base_keyed_context.clone());
-                    if current == node {
+                    if memo_requested && current == node {
                         let mut guard = last_result
                             .lock()
                             .map_err(|_| SignalError::internal("memo capture mutex poisoned"))?;

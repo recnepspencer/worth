@@ -170,6 +170,10 @@ impl BridgeSpeculativeSessionRequest {
         &self.declaration
     }
 
+    pub fn fork_posture(&self) -> BranchForkPosture {
+        self.declaration.branch_binding().fork_posture()
+    }
+
     pub(crate) fn preview_artifact_count(&self) -> usize {
         self.preview_artifact_count
     }
@@ -190,6 +194,7 @@ pub struct BridgeSpeculativeComparison {
     signal_branch_identity: BridgeSignalBranchIdentity,
     truth_view_selector: BridgeTruthViewSelector,
     truth_view_basis_digest: std::sync::Arc<str>,
+    fork_posture: BranchForkPosture,
 }
 
 impl BridgeSpeculativeComparison {
@@ -202,6 +207,7 @@ impl BridgeSpeculativeComparison {
             signal_branch_identity: binding.signal_branch_identity().clone(),
             truth_view_selector: declaration.session_basis().truth_view_selector().clone(),
             truth_view_basis_digest: declaration.truth_view_basis_digest().into(),
+            fork_posture: binding.fork_posture(),
         }
     }
 
@@ -223,6 +229,10 @@ impl BridgeSpeculativeComparison {
     /// Returns the shared truth-view basis digest for the comparison.
     pub fn truth_view_basis_digest(&self) -> &str {
         self.truth_view_basis_digest.as_ref()
+    }
+
+    pub fn fork_posture(&self) -> BranchForkPosture {
+        self.fork_posture
     }
 
     /// Builds the truth-view request for the speculative side.

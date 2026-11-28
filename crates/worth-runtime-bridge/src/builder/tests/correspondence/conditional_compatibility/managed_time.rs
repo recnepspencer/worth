@@ -42,7 +42,7 @@ fn active<'a>(
         binding,
         identity: BridgeManagedTemporalIntentIdentity::declare(Arc::from(identity)).unwrap(),
         revision,
-        due_coordinate,
+        condition: crate::facade::BridgeTemporalCondition::at_or_after(due_coordinate),
         idempotency_identity: Arc::from(format!("idempotency:{identity}")),
         source_record_identity: crate::facade::RelationalBridgeRecordIdentityParts::entity(0, 1, 1),
         lifecycle: BridgeManagedTemporalIntentLifecycle::Active,
@@ -299,3 +299,57 @@ fn managed_due_wake_executes_only_its_exact_conditional_lowering() {
 }
 
 mod resource_bounds;
+
+#[test]
+fn interval_regeneration_replaces_the_exact_managed_due_wake() {
+    use crate::facade::BridgeTemporalCondition;
+    use worth_signal::facade::{
+        ClockTick, IntervalAnchor, IntervalCondition, MissedTickPolicy, TemporalCondition,
+    };
+
+    let (owner, binding, _) = installed_clock(1, 1);
+    let condition = TemporalCondition::interval(
+        IntervalCondition::try_new(4)
+            .unwrap()
+            .with_anchor(IntervalAnchor::ExplicitTick(ClockTick::new(3)))
+            .with_missed_tick_policy(MissedTickPolicy::SkipToLatest),
+    );
+    let mut intent = active(&binding, "intent:interval", 1, 0);
+    intent.condition = BridgeTemporalCondition::new(condition.clone());
+    owner.reconcile_managed_temporal_intent(intent).unwrap();
+    let observe = |sequence, observed_coordinate| {
+        let outcome = owner
+            .observe_managed_clock(BridgeManagedClockObservationParts {
+                binding: &binding,
+                source_identity: "host:clock:billing",
+                timeline_identity: "timeline:billing:v1",
+                sequence,
+                observed_coordinate,
+            })
+            .unwrap();
+        let BridgeManagedClockObservationOutcome::Accepted(observation) = outcome else {
+            panic!("fresh observation must be accepted");
+        };
+        observation.into_due().into_wakes().pop().unwrap()
+    };
+    let wake = observe(1, 12);
+    assert_eq!(wake.due_coordinate(), 3);
+    let report = owner
+        .regenerate_managed_interval_wake(&binding, &wake)
+        .unwrap();
+    assert_eq!(report.scheduled().condition(), &condition);
+    assert_eq!(report.suppressed_interval_count(), 1);
+    assert!(owner
+        .regenerate_managed_interval_wake(&binding, &wake)
+        .is_err());
+    let replacement = observe(2, 13);
+    assert_eq!(replacement.intent_identity(), wake.intent_identity());
+    assert_eq!(replacement.due_coordinate(), 11);
+    assert_eq!(
+        owner
+            .compact_managed_retired_wakes(&binding, 0, 1)
+            .unwrap()
+            .retained_width(),
+        0
+    );
+}

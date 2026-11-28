@@ -239,3 +239,81 @@ fn loop_prevention_evidence_is_stable_across_equivalent_runtimes() {
         staged_b.loop_prevention().disposition()
     );
 }
+
+#[test]
+fn standard_writeback_never_calls_authority_for_a_superseded_completion() {
+    use super::support::denied_request_response_completion_with_displacing_identity;
+    use crate::adapter::{
+        TruthWritebackAuthority, TruthWritebackAuthorityError, TruthWritebackReceipt,
+        TruthWritebackRequest,
+    };
+    use crate::facade::tests::runtime_with_custom_writeback_authority;
+    use crate::facade::{
+        BridgeAsyncCompletionSupersessionClassificationRequest, BridgeAsyncWritebackOutcome,
+        BridgeAsyncWritebackSubmission, BridgeRuntimePolicy, BridgeWritebackOutcomeClass,
+    };
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
+
+    struct CountingAuthority(Arc<AtomicUsize>);
+    impl TruthWritebackAuthority for CountingAuthority {
+        fn execute_writeback(
+            &self,
+            request: TruthWritebackRequest,
+        ) -> Result<TruthWritebackReceipt, TruthWritebackAuthorityError> {
+            self.0.fetch_add(1, Ordering::Relaxed);
+            Ok(TruthWritebackReceipt::new(
+                BridgeWritebackOutcomeClass::AuthoritativeCommit,
+                &request,
+            ))
+        }
+    }
+
+    let writes = Arc::new(AtomicUsize::new(0));
+    let runtime = runtime_with_custom_writeback_authority(
+        BridgeRuntimePolicy::development(),
+        CountingAuthority(Arc::clone(&writes)),
+    );
+    let basis = BridgeAsyncRequestTruthViewBasis::authoritative(
+        crate::truth_identity_fixtures::truth_branch_fixture("main"),
+        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
+    );
+    let (denied, replacement) = denied_request_response_completion_with_displacing_identity(
+        &runtime,
+        NodeId::new(526, 0),
+        basis.clone(),
+        basis.clone(),
+    );
+    let classification = runtime
+        .classify_async_completion_supersession(
+            BridgeAsyncCompletionSupersessionClassificationRequest::request_response(
+                &denied, basis,
+            )
+            .with_displacing_request_identity(&replacement),
+        )
+        .unwrap();
+    let outcome = runtime
+        .writeback_async_completion(BridgeAsyncWritebackSubmission::Superseded(&classification))
+        .unwrap();
+    assert!(
+        matches!(outcome, BridgeAsyncWritebackOutcome::Superseded(evidence)
+        if &evidence == classification.evidence())
+    );
+    assert_eq!(writes.load(Ordering::Relaxed), 0);
+
+    let completion =
+        admitted_authoritative_request_response_completion(&runtime, NodeId::new(527, 0), "a");
+    let outcome = runtime
+        .writeback_async_completion(BridgeAsyncWritebackSubmission::Admitted(
+            authoritative_writeback_request(&completion, "commit-a"),
+        ))
+        .unwrap();
+    assert!(
+        matches!(outcome, BridgeAsyncWritebackOutcome::Evaluated(report)
+        if report.committed().is_some())
+    );
+    assert_eq!(writes.load(Ordering::Relaxed), 1);
+}

@@ -131,7 +131,7 @@ fn policy_scoped_route_round_trips_through_canonical_replay() {
             BridgeRequestKind::Preview,
             BridgeExecutionPolicyClass::Optimized,
             BridgeDiagnosticsTier::Standard,
-            false,
+            true,
             true,
         ),
     );
@@ -223,4 +223,58 @@ fn policy_scoped_route_without_route_artifacts_does_not_retain_canonical_record(
         .diagnostics()
         .last_canonical_route_record()
         .is_none());
+}
+
+#[test]
+fn standard_route_and_envelope_honor_the_admitted_policy() {
+    let host = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let commit = crate::truth_identity_fixtures::truth_commit_fixture("commit-a");
+    let operational = runtime(BridgeRuntimePolicy::operational());
+    let forensic = runtime(BridgeRuntimePolicy::forensic());
+    assert!(!operational.policy().record_route_artifacts());
+    assert!(!operational.policy().allow_replay_artifacts());
+    assert!(forensic.policy().record_route_artifacts());
+    assert!(forensic.policy().allow_replay_artifacts());
+    let ordinary = operational.route(commit.clone(), execution).unwrap();
+    assert!(ordinary
+        .target()
+        .planned_route()
+        .route_record_entries()
+        .is_empty());
+    forensic.route(commit.clone(), execution).unwrap();
+    assert!(operational.diagnostics().route_records().is_empty());
+    assert_eq!(forensic.diagnostics().route_records().len(), 1);
+
+    let (_, lowered, _, _) = admitted_bundle(
+        &forensic,
+        BridgePolicyDeclaration::new(
+            BridgePolicyDeclarationIdentity::admit_bridge_owned("policy:standard"),
+            BridgeRequestKind::Authoritative,
+            BridgeExecutionPolicyClass::DeterministicCanonical,
+            BridgeDiagnosticsTier::Minimal,
+            false,
+            false,
+        ),
+    );
+    let policy = forensic.project_route_planning_policy(&lowered).unwrap();
+    let envelope = forensic
+        .ingest_committed_patch(commit.clone().into(), execution)
+        .unwrap();
+    let plan = forensic
+        .plan_envelope_with_route_policy(envelope, &policy)
+        .unwrap();
+    let route = forensic
+        .route_with_policy(commit, &policy, execution)
+        .unwrap();
+    assert_eq!(plan.route_planning_policy_digest(), Some(policy.digest()));
+    assert_eq!(
+        route
+            .result()
+            .result_summary()
+            .route_planning_policy_digest(),
+        Some(policy.digest())
+    );
+    assert_eq!(forensic.diagnostics().route_records().len(), 1);
 }

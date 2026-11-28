@@ -29,10 +29,9 @@ use crate::identity::{
     SubscriptionPreviewDiscardResidueProofIdentityTag, SubscriptionPreviewLifecycleIdentityTag,
     SubscriptionPreviewLifecyclePromotionIdentityTag,
     SubscriptionPreviewLifecycleResidueEnvelopeIdentityTag,
-    SubscriptionPreviewParentBasisIdentityTag, SubscriptionPreviewPromotionRecordIdentityTag,
-    SubscriptionPreviewResidueArtifactIdentityTag, SubscriptionPreviewResidueScopeIdentityTag,
-    SubscriptionPreviewResidueScopeIndexIdentityTag, SubscriptionPreviewScopeIdentityTag,
-    SubscriptionPreviewTemporalActivationReadyIdentityTag,
+    SubscriptionPreviewParentBasisIdentityTag, SubscriptionPreviewResidueArtifactIdentityTag,
+    SubscriptionPreviewResidueScopeIdentityTag, SubscriptionPreviewResidueScopeIndexIdentityTag,
+    SubscriptionPreviewScopeIdentityTag, SubscriptionPreviewTemporalActivationReadyIdentityTag,
     SubscriptionPreviewTemporalAdmissionIdentityTag, SubscriptionPreviewWorkRecordIdentityTag,
     SubscriptionPreviewWorkTraceIdentityTag, SubscriptionReplayIdentityTag,
     SubscriptionReplayReadinessIdentityTag, SubscriptionResumeAdmissionIdentityTag,
@@ -175,8 +174,6 @@ pub type BridgeSubscriptionPreviewLifecycleResidueEnvelopeIdentity =
     BridgeIdentity<SubscriptionPreviewLifecycleResidueEnvelopeIdentityTag>;
 pub type BridgeSubscriptionPreviewDiscardResidueProofIdentity =
     BridgeIdentity<SubscriptionPreviewDiscardResidueProofIdentityTag>;
-pub type BridgeSubscriptionPreviewPromotionRecordIdentity =
-    BridgeIdentity<SubscriptionPreviewPromotionRecordIdentityTag>;
 pub type BridgeSubscriptionPreviewLifecyclePromotionIdentity =
     BridgeIdentity<SubscriptionPreviewLifecyclePromotionIdentityTag>;
 pub type BridgeSubscriptionPreviewAuthoritativeReadmissionIdentity =

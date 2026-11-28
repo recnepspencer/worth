@@ -2,17 +2,6 @@ use std::sync::Arc;
 
 use sha2::{Digest, Sha256};
 
-mod proof;
-mod rejection;
-
-pub use proof::BridgeSubscriptionPreviewDiscardResidueProof;
-pub use rejection::{
-    BridgeSubscriptionPreviewDiscardResidueRejection,
-    BridgeSubscriptionPreviewDiscardResidueRejectionContext,
-    BridgeSubscriptionPreviewDiscardResidueRejectionKind,
-    BridgeSubscriptionPreviewResidueCategoryCount,
-};
-
 use super::{
     BridgePreviewActiveSubscription, BridgePreviewActiveSubscriptionIdentity,
     BridgeSubscriptionCounters, BridgeSubscriptionPreviewResidueArtifactIdentity,
@@ -43,18 +32,6 @@ impl BridgeSubscriptionPreviewResidueCategory {
             Self::CheckpointReplay => "checkpoint_replay",
             Self::SignalVisible => "signal_visible",
         }
-    }
-
-    pub(super) const fn all() -> [Self; 7] {
-        [
-            Self::AuthoritativeTruthSubscription,
-            Self::BridgeSubscriptionRegistry,
-            Self::ActiveDelivery,
-            Self::FanoutConsumerContract,
-            Self::Continuation,
-            Self::CheckpointReplay,
-            Self::SignalVisible,
-        ]
     }
 }
 

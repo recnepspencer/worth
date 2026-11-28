@@ -1,17 +1,17 @@
 use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
 
-use worth_signal::facade::{
-    ClockTick, TemporalCondition, TemporalWakeId, TemporalWakeRetirementReason,
-};
+use worth_signal::facade::{ClockTick, TemporalWakeId, TemporalWakeRetirementReason};
 
 use super::contract::{
     BridgeManagedClockLease, BridgeManagedDueWake, BridgeManagedTemporalDenial,
     BridgeManagedTemporalDenialKind, BridgeManagedTemporalIntentIdentity,
     BridgeManagedTemporalIntentLifecycle, BridgeManagedTemporalIntentReconciliation,
+    BridgeTemporalCondition,
 };
 
 pub(super) struct BridgeManagedTemporalIntentRecord {
     pub(super) revision: u64,
+    pub(super) schedule: BridgeTemporalCondition,
     pub(super) due_coordinate: u64,
     pub(super) idempotency_identity: Arc<str>,
     pub(super) source_record_identity:
@@ -72,9 +72,10 @@ impl BridgeManagedClockLane {
         lowering: &Arc<super::super::BridgeInstalledConditionalLowering>,
         wake: &BridgeManagedDueWake,
     ) -> bool {
-        if !Arc::ptr_eq(&self.lowering, lowering) {
-            return false;
-        }
+        Arc::ptr_eq(&self.lowering, lowering) && self.retains_own_due_wake(wake)
+    }
+
+    pub(super) fn retains_own_due_wake(&self, wake: &BridgeManagedDueWake) -> bool {
         let Some(identity) = self.wake_to_intent.get(&wake.signal_wake_id) else {
             return false;
         };
@@ -83,6 +84,7 @@ impl BridgeManagedClockLane {
         };
         identity == &wake.intent_identity
             && intent.wake_id == wake.signal_wake_id
+            && Arc::ptr_eq(&intent.observation_baselines, &wake.observation_baselines)
             && intent.revision == wake.revision
             && intent.due_coordinate == wake.due_coordinate
             && intent.idempotency_identity == wake.idempotency_identity
@@ -101,7 +103,7 @@ impl BridgeManagedClockLane {
         &mut self,
         identity: BridgeManagedTemporalIntentIdentity,
         revision: u64,
-        due_coordinate: u64,
+        schedule: BridgeTemporalCondition,
         idempotency_identity: Arc<str>,
         source_record_identity: crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
     ) -> Result<BridgeManagedTemporalIntentReconciliation, BridgeManagedTemporalDenial> {
@@ -109,7 +111,7 @@ impl BridgeManagedClockLane {
             return self.install_new_intent(
                 identity,
                 revision,
-                due_coordinate,
+                schedule,
                 idempotency_identity,
                 source_record_identity,
             );
@@ -118,7 +120,7 @@ impl BridgeManagedClockLane {
             return Ok(BridgeManagedTemporalIntentReconciliation::Stale);
         }
         if revision == existing.revision {
-            return if existing.due_coordinate == due_coordinate
+            return if existing.schedule == schedule
                 && existing.idempotency_identity == idempotency_identity
                 && existing.source_record_identity == source_record_identity
             {
@@ -140,12 +142,11 @@ impl BridgeManagedClockLane {
                 )
             })?;
         let old_wake = existing.wake_id;
+        let due = self.first_due(&schedule);
         self.begin_effect()?;
-        let replacement = self.signal.supersede_temporal_wake(
-            old_wake,
-            TemporalCondition::at_or_after(ClockTick::new(due_coordinate)),
-            ClockTick::new(due_coordinate),
-        );
+        let replacement =
+            self.signal
+                .supersede_temporal_wake(old_wake, schedule.condition().clone(), due);
         let replacement = self.admit_signal_result(replacement)?;
         self.after_signal_before_publication()?;
         self.wake_to_intent.remove(&old_wake);
@@ -155,7 +156,8 @@ impl BridgeManagedClockLane {
             identity,
             BridgeManagedTemporalIntentRecord {
                 revision,
-                due_coordinate,
+                due_coordinate: due.get(),
+                schedule,
                 idempotency_identity,
                 source_record_identity,
                 wake_id: replacement.scheduled().id(),
@@ -170,7 +172,7 @@ impl BridgeManagedClockLane {
         &mut self,
         identity: BridgeManagedTemporalIntentIdentity,
         revision: u64,
-        due_coordinate: u64,
+        schedule: BridgeTemporalCondition,
         idempotency_identity: Arc<str>,
         source_record_identity: crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
     ) -> Result<BridgeManagedTemporalIntentReconciliation, BridgeManagedTemporalDenial> {
@@ -188,11 +190,11 @@ impl BridgeManagedClockLane {
                     denial.detail(),
                 )
             })?;
+        let due = self.first_due(&schedule);
         self.begin_effect()?;
-        let wake = self.signal.schedule_temporal_wake(
-            TemporalCondition::at_or_after(ClockTick::new(due_coordinate)),
-            ClockTick::new(due_coordinate),
-        );
+        let wake = self
+            .signal
+            .schedule_temporal_wake(schedule.condition().clone(), due);
         let wake = self.admit_signal_result(wake)?;
         self.after_signal_before_publication()?;
         self.wake_to_intent.insert(wake.id(), identity.clone());
@@ -200,7 +202,8 @@ impl BridgeManagedClockLane {
             identity,
             BridgeManagedTemporalIntentRecord {
                 revision,
-                due_coordinate,
+                due_coordinate: due.get(),
+                schedule,
                 idempotency_identity,
                 source_record_identity,
                 wake_id: wake.id(),
@@ -209,6 +212,15 @@ impl BridgeManagedClockLane {
         );
         self.finish_effect();
         Ok(BridgeManagedTemporalIntentReconciliation::Installed)
+    }
+
+    fn first_due(&self, schedule: &BridgeTemporalCondition) -> ClockTick {
+        let observed = self
+            .last_observation
+            .map_or(0, |(_, coordinate)| coordinate);
+        schedule
+            .condition()
+            .first_due_tick(ClockTick::new(observed))
     }
 
     pub(super) fn reconcile_terminal_intent(

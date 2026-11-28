@@ -1,13 +1,13 @@
 use worth_runtime_bridge::facade::{
-    BridgeActiveSubscription, BridgeSubscriptionPreviewResidueScopeIndex, RuntimeBridge,
+    BridgeActiveSubscription, BridgeSubscriptionPreviewLifecycleResidueEnvelope, RuntimeBridge,
 };
 
 fn discard_authoritative_active(
     runtime: &RuntimeBridge,
     active: BridgeActiveSubscription,
-    residue_index: BridgeSubscriptionPreviewResidueScopeIndex,
+    residue_index: BridgeSubscriptionPreviewLifecycleResidueEnvelope,
 ) {
-    let _ = runtime.prove_preview_scope_discard_residue(active, residue_index);
+    let _ = runtime.admit_preview_lifecycle_discard(active, residue_index);
 }
 
 fn main() {}

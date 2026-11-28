@@ -21,7 +21,6 @@ mod mixed_cause;
 mod preview;
 mod preview_lifecycle;
 mod preview_work;
-mod promotion;
 mod rejection;
 mod replay;
 mod residue;
@@ -197,8 +196,7 @@ pub use declaration_identity::{
     BridgeSubscriptionPreviewLifecycleIdentity,
     BridgeSubscriptionPreviewLifecyclePromotionIdentity,
     BridgeSubscriptionPreviewLifecycleResidueEnvelopeIdentity,
-    BridgeSubscriptionPreviewParentBasisIdentity, BridgeSubscriptionPreviewPromotionRecordIdentity,
-    BridgeSubscriptionPreviewResidueArtifactIdentity,
+    BridgeSubscriptionPreviewParentBasisIdentity, BridgeSubscriptionPreviewResidueArtifactIdentity,
     BridgeSubscriptionPreviewResidueScopeIdentity,
     BridgeSubscriptionPreviewResidueScopeIndexIdentity, BridgeSubscriptionPreviewScopeIdentity,
     BridgeSubscriptionPreviewTemporalActivationReadyIdentity,
@@ -233,9 +231,7 @@ pub use delivery_record::{
     BridgeSubscriptionDeliveryDiagnosticsReference, BridgeSubscriptionDeliveryMemberClass,
     BridgeSubscriptionDeliveryMemberInput, BridgeSubscriptionDeliveryMemberRecord,
 };
-pub use diagnostics::{
-    BridgeSubscriptionExplanation, BridgeSubscriptionPreviewPromotionExplanation,
-};
+pub use diagnostics::BridgeSubscriptionExplanation;
 #[cfg(test)]
 pub(crate) use family_registry::phase_one_subscription_families;
 pub(crate) use family_registry::{
@@ -296,10 +292,6 @@ pub use preview_work::{
     BridgeSubscriptionPreviewWorkTrace, BridgeSubscriptionPreviewWorkTraceRejection,
     BridgeSubscriptionPreviewWorkTraceRejectionKind,
 };
-pub use promotion::{
-    BridgeSubscriptionPreviewPromotionOutcomeClass, BridgeSubscriptionPreviewPromotionRecord,
-    BridgeSubscriptionPreviewPromotionRejection, BridgeSubscriptionPreviewPromotionRejectionKind,
-};
 pub use rejection::{
     BridgeSubscriptionDeclarationRejection, BridgeSubscriptionDeclarationRejectionKind,
 };
@@ -308,12 +300,8 @@ pub use replay::{
     BridgeSubscriptionReplayMismatchKind, BridgeSubscriptionReplaySummary,
 };
 pub use residue::{
-    BridgeSubscriptionPreviewDiscardResidueProof, BridgeSubscriptionPreviewDiscardResidueRejection,
-    BridgeSubscriptionPreviewDiscardResidueRejectionContext,
-    BridgeSubscriptionPreviewDiscardResidueRejectionKind,
     BridgeSubscriptionPreviewResidueArtifactInput, BridgeSubscriptionPreviewResidueArtifactRecord,
-    BridgeSubscriptionPreviewResidueCategory, BridgeSubscriptionPreviewResidueCategoryCount,
-    BridgeSubscriptionPreviewResidueScopeIndex,
+    BridgeSubscriptionPreviewResidueCategory, BridgeSubscriptionPreviewResidueScopeIndex,
 };
 pub use resume::{
     BridgeSubscriptionResumeAdmission, BridgeSubscriptionResumeAdmissionRejection,

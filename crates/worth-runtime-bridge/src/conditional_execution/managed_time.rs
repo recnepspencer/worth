@@ -16,6 +16,7 @@ pub(super) mod quarantine_tests;
 mod retention;
 mod sampled_clock;
 mod wake_delivery;
+mod wake_maintenance;
 
 pub(in crate::conditional_execution) use intent_reconciliation::reconcile_intent_in_lane;
 pub(in crate::conditional_execution) use quarantine::lock_lane;
@@ -28,5 +29,6 @@ pub use contract::{
     BridgeManagedTemporalDenial, BridgeManagedTemporalDenialKind,
     BridgeManagedTemporalIntentIdentity, BridgeManagedTemporalIntentLifecycle,
     BridgeManagedTemporalIntentReconciliation, BridgeManagedTemporalIntentReconciliationParts,
+    BridgeTemporalCondition,
 };
 pub(in crate::conditional_execution) use declaration::BridgeManagedClockDeclaration;

@@ -38,7 +38,14 @@ pub(crate) fn with_signal_runtime<T>(
     drain_retired_runtimes();
     bind_runtime_to_current_thread(runtime_key)?;
     SIGNAL_RUNTIMES.with(|runtimes| {
-        let mut runtimes = runtimes.borrow_mut();
+        let mut runtimes =
+            runtimes
+                .try_borrow_mut()
+                .map_err(|_| SignalRuntimeThreadAffinityError {
+                    runtime_key,
+                    owner: std::thread::current().id(),
+                    current: std::thread::current().id(),
+                })?;
         let runtime = runtimes
             .entry(runtime_key)
             .or_insert_with(new_signal_runtime);

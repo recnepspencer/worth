@@ -2412,3 +2412,32 @@ fields/content/relations and descriptive basis version; neither lends mutation
 targets or promotes old data to Current. Original C values do not become D-current
 expectations. Actual Initial/no-prior output may omit an old own image; Preserve
 requires genuine old data. The producer's WRITE permission does not grant READ.
+
+### Compose directly with the Bridge runtime facade
+
+Platform composition can pass an admitted `BridgeRoutePlanningPolicy` to
+`RuntimeBridge::route_with_policy` or `plan_envelope_with_route_policy`.
+Operational policy disables route record retention and replay by default.
+`RuntimeBridgeBuilder::with_conditional_retention_budget` sets the limits that
+the conditional owner uses at installation.
+
+Declare a preview's Relational and Signal branch usage independently with
+`BridgeSpeculativeBranchBinding::with_fork_posture`. A live preview handle's
+`evaluate_against_main` materializes the supplied main head and the preview's
+recorded truth view with the same read packet. Phase 14 subscription discard and
+readmission use a captured lifecycle residue envelope.
+
+For the Bridge-owned Signal source runtime, `register_signal_recipe` and
+`bind_signal_recipe` retain the recipe family and key. Set the mapping's
+comparator with `BridgeMappingRegistration::with_version_comparator` and
+install its recipe with `register_mapped_signal_recipe`. Observe a bound recipe with a Signal `ObservationPolicy`, invalidate native
+`ChangedRegion` values, or capture prior Signal value evidence as part of an
+ordinary evaluation transaction with a live, ready wake. The same source
+runtime admits keyed and interior async capabilities and reports hierarchy
+cancellation.
+
+Managed clocks accept a `BridgeTemporalCondition` and use Signal's initial
+schedule and interval regeneration. Owned request-response declarations can
+carry all twelve Signal resource policy families. The standard async writeback
+entry accepts admitted completions and classified supersessions. It returns
+the supersession evidence before staging any mutation.
