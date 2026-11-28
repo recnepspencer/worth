@@ -1,6 +1,6 @@
 //! External Dispatch Custody (`NotifyAccountBalance`) child phases verifying
 //! recovered prefixes & original-key typed fates BEFORE any settlement/repair,
-//! full `ReceiptId` parity, D14 discard (`covered == 0`), and `MemoryOnly` parity.
+//! full `ReceiptId` parity, and D14 discard (`covered == 0`).
 use super::super::super::super::graceful::signal::derived_discard::host::checkpoint_and_discard_signal;
 use super::super::super::super::opening;
 use super::super::super::dimensions_matrix::assert_cadence_discarded;

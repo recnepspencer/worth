@@ -2,11 +2,11 @@
 //! - Shared `DocumentRetentionSchema` Home (Governed Workflow -> D14 -> Historical
 //!   -> Branch Program Adoption P0->P1 -> D14 on ONE cumulative durable Home),
 //! - External Dispatch Custody (`NotifyAccountBalance` with exact receipt & <=1/1 dispatch).
-mod corr_disp;
+mod dispatch;
 pub(super) mod ops;
 pub(super) mod wf_adopt;
 
-use self::corr_disp::run_dispatch_phase;
+use self::dispatch::run_dispatch_phase;
 use self::ops::{adopt_p1, notify_dispatch, open_dispatch};
 use self::wf_adopt::{bind_wf_home, open_raw_wf_home, run_wf_adopt_phase};
 use super::super::super::opening;
