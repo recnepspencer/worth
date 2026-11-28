@@ -1,5 +1,9 @@
 # Execution workers and retained custody
 
+Platform boundaries use `worth_execution::report` for typed denials and
+operator diagnostics. See the [boundary denial report guide](../../docs/coding-guidelines/diagnostic_reports.md)
+for implementing `Reportable`, selecting disclosure, and emitting reports.
+
 Use `ExecutionAuthorityConfig::for_workers(width)` to construct the process's
 execution service, and `ExecutionRequestPolicy::for_workers(posture, determinism,
 width)` to choose request placement. Construct the service at process startup

@@ -25,7 +25,7 @@ mod oracle;
 mod partition;
 mod pattern;
 mod reduction;
-mod report;
+pub mod report;
 mod storage;
 pub use storage::{
     build_ordered_tree, build_sorted_ordered_tree, insert_ordered_tree, remove_ordered_tree,
@@ -79,7 +79,11 @@ pub use reduction::{
     ReductionInsertMemoryBoundError, ReductionMetrics, ReductionPlan, ReductionRunFailure,
     ReductionRunStop, ReductionShapeCostDenial, ReductionTree,
 };
-pub use report::ChargedBytes;
+pub use report::{
+    DenialClass, DiagnosticDetail, DiagnosticSink, Disposition, OperatorReport, ReportCode,
+    ReportProjection, Reportable, RetryHint,
+};
+pub use worth_foundational::ChargedBytes;
 
 pub use authority::consult_observation::{
     with_request_consult_observer_for_test, RequestConsultObservationForTest,
