@@ -8,8 +8,6 @@ license.workspace = true
 publish = false
 
 [dev-dependencies]
-trybuild = "1"
-worth-query-decl = { workspace = true }
 worth-query-testkit-decl = { path = "../worth-query-testkit-decl" }
 
 [[test]]

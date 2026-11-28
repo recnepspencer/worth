@@ -1,6 +1,21 @@
 //! Compile-time and runtime contract doctests for `#[derive(WorthBinaryValue)]`,
 //! `#[derive(WorthManagedIndex)]`, and `#[derive(WorthQuery)]` managed-index wiring.
 //!
+//! Refinement requires a custom provider that implements the refinement trait.
+//! Stock adapters such as `interval_1d` reject `refinement = Some(...)` at the declaration.
+//!
+//! ```compile_fail
+//! use worth_query_decl::facade::{application_query::ApplicationManagedIndexRefinement, WorthManagedIndex};
+//!
+//! #[derive(WorthManagedIndex)]
+//! #[worth_index(
+//!     schema = Schema, entity = Record, source = Source, probe = u64,
+//!     kind = interval_1d(Record::start(), Record::end()),
+//!     refinement = Some(ApplicationManagedIndexRefinement::row_local("example.exact", 1)),
+//! )]
+//! struct StockIndex;
+//! ```
+//!
 //! `#[derive(WorthBinaryValue)]` round-trips named, tuple, and unit structs over
 //! sealed fixed-width canonical fields, version bytes, admission metering, and
 //! domain validators:

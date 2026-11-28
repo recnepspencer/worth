@@ -65,6 +65,12 @@ fn malformed_managed_indexes_are_refused() {
              struct BadKindArity;",
             "unsupported `kind = text_prefix(..)` or wrong argument count",
         ),
+        (
+            "#[worth_index(schema = S, record = E, source = Src, probe = P, \
+             kind = interval_1d(start(), end()), refinement = Some(refinement()))] \
+             struct StockIndexWithRefinement;",
+            "stock managed index kinds do not support refinement; use `kind = custom(provider)` with a refinement-capable provider",
+        ),
     ];
     for (source, expected) in cases {
         let message = refusal(source);
