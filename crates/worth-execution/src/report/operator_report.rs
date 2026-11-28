@@ -1,4 +1,5 @@
 use core::error::Error;
+use std::collections::BTreeSet;
 
 use super::{DenialClass, Disposition, ReportCode};
 
@@ -25,19 +26,69 @@ pub enum ReportDetail {
 /// One source of a boundary error, in immediate-cause to root-cause order.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ReportFrame {
-    pub detail: ReportDetail,
+    detail: ReportDetail,
+}
+
+impl ReportFrame {
+    pub fn detail(&self) -> &ReportDetail {
+        &self.detail
+    }
+}
+
+/// Whether every source was visited or the chain repeated a source.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ReportChainEnd {
+    Complete,
+    Cycle,
 }
 
 /// A diagnostic snapshot with value equality and no live custody or trace metadata.
+///
+/// ```compile_fail,E0616
+/// use worth_execution::report::OperatorReport;
+/// fn erase_sources(report: &mut OperatorReport) {
+///     report.chain.clear();
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[non_exhaustive]
 pub struct OperatorReport {
-    pub denial_class: DenialClass,
-    pub disposition: Disposition,
-    pub report_code: ReportCode,
-    pub summary: &'static str,
-    pub detail: ReportDetail,
-    pub chain: Vec<ReportFrame>,
+    denial_class: DenialClass,
+    disposition: Disposition,
+    report_code: ReportCode,
+    summary: &'static str,
+    detail: ReportDetail,
+    chain: Vec<ReportFrame>,
+    chain_end: ReportChainEnd,
+}
+
+impl OperatorReport {
+    pub fn denial_class(&self) -> DenialClass {
+        self.denial_class
+    }
+
+    pub fn disposition(&self) -> Disposition {
+        self.disposition
+    }
+
+    pub fn report_code(&self) -> ReportCode {
+        self.report_code
+    }
+
+    pub fn summary(&self) -> &'static str {
+        self.summary
+    }
+
+    pub fn detail(&self) -> &ReportDetail {
+        &self.detail
+    }
+
+    pub fn chain(&self) -> &[ReportFrame] {
+        &self.chain
+    }
+
+    pub fn chain_end(&self) -> ReportChainEnd {
+        self.chain_end
+    }
 }
 
 /// A boundary error with an owned classification and explicit diagnostic projection.
@@ -73,7 +124,7 @@ pub struct OperatorReport {
 /// sink.emit(&report);
 /// assert_eq!(sink.take_reports(), vec![report]);
 /// ```
-pub trait Reportable: Error + Send + Sync + 'static {
+pub trait Reportable: Error + Send + Sync + ReportProjection + 'static {
     fn denial_class(&self) -> DenialClass;
     fn disposition(&self) -> Disposition;
     fn report_code(&self) -> ReportCode;
@@ -94,33 +145,87 @@ pub trait Reportable: Error + Send + Sync + 'static {
     fn forensic_source_detail(&self, _source: &(dyn Error + 'static)) -> Option<String> {
         None
     }
+}
 
-    /// Projects the denial and each member of its finite [`Error::source`] chain.
-    /// Select `detail` using the receiving audience's disclosure policy. The
-    /// default projection only calls forensic hooks at `Forensic` detail.
+/// The canonical projection that every [`Reportable`] inherits.
+///
+/// Import this trait to project a concrete denial. A `&dyn Reportable` already
+/// exposes this method. Every reportable type has the same projection, with
+/// classification and audience-safe wording supplied by its owner's hooks.
+///
+/// ```compile_fail,E0119
+/// use std::{error::Error, fmt};
+/// use worth_execution::report::{
+///     DenialClass, DiagnosticDetail, Disposition, OperatorReport, ReportCode,
+///     ReportProjection, Reportable,
+/// };
+/// #[derive(Debug)]
+/// struct CustomProjection;
+/// impl fmt::Display for CustomProjection {
+///     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+///         formatter.write_str("Denied.")
+///     }
+/// }
+/// impl Error for CustomProjection {}
+/// impl Reportable for CustomProjection {
+///     fn denial_class(&self) -> DenialClass { DenialClass::Defect }
+///     fn disposition(&self) -> Disposition { Disposition::Escalate }
+///     fn report_code(&self) -> ReportCode { ReportCode::new("example.defect").unwrap() }
+/// }
+/// impl ReportProjection for CustomProjection {
+///     fn to_operator_report(&self, _: DiagnosticDetail) -> OperatorReport {
+///         unreachable!()
+///     }
+/// }
+/// ```
+pub trait ReportProjection {
+    /// Select `detail` using the receiving audience's disclosure policy.
+    /// Cyclic source chains report the unique prefix and a typed omission.
+    fn to_operator_report(&self, detail: DiagnosticDetail) -> OperatorReport;
+}
+
+impl<T: Reportable> ReportProjection for T {
     fn to_operator_report(&self, detail: DiagnosticDetail) -> OperatorReport {
-        let summary = match detail {
-            DiagnosticDetail::Redacted => "Operation denied.",
-            DiagnosticDetail::Standard | DiagnosticDetail::Forensic => self.diagnostic_summary(),
-        };
-        let mut chain = Vec::new();
-        let mut cause = self.source();
-        while let Some(source) = cause {
-            chain.push(ReportFrame {
-                detail: disclose(detail, || self.forensic_source_detail(source)),
-            });
-            cause = source.source();
-        }
-
-        OperatorReport {
-            denial_class: self.denial_class(),
-            disposition: self.disposition(),
-            report_code: self.report_code(),
-            summary,
-            detail: disclose(detail, || self.forensic_detail()),
-            chain,
-        }
+        project(self, detail)
     }
+}
+
+fn project(error: &dyn Reportable, detail: DiagnosticDetail) -> OperatorReport {
+    let summary = match detail {
+        DiagnosticDetail::Redacted => "Operation denied.",
+        DiagnosticDetail::Standard | DiagnosticDetail::Forensic => error.diagnostic_summary(),
+    };
+    let (chain, chain_end) = project_chain(error, detail);
+
+    OperatorReport {
+        denial_class: error.denial_class(),
+        disposition: error.disposition(),
+        report_code: error.report_code(),
+        summary,
+        detail: disclose(detail, || error.forensic_detail()),
+        chain,
+        chain_end,
+    }
+}
+
+fn project_chain(
+    error: &dyn Reportable,
+    detail: DiagnosticDetail,
+) -> (Vec<ReportFrame>, ReportChainEnd) {
+    let root: &dyn Error = error;
+    let mut seen = BTreeSet::new();
+    let mut chain = Vec::new();
+    let mut cause = error.source();
+    while let Some(source) = cause {
+        if core::ptr::eq(source, root) || !seen.insert(core::ptr::from_ref(source)) {
+            return (chain, ReportChainEnd::Cycle);
+        }
+        chain.push(ReportFrame {
+            detail: disclose(detail, || error.forensic_source_detail(source)),
+        });
+        cause = source.source();
+    }
+    (chain, ReportChainEnd::Complete)
 }
 
 fn disclose(level: DiagnosticDetail, detail: impl FnOnce() -> Option<String>) -> ReportDetail {

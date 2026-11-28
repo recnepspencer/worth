@@ -13,7 +13,8 @@ pub(crate) use crate::ChargedBytes;
 pub use code::{InvalidReportCode, ReportCode};
 pub use disposition::{DenialClass, Disposition, RetryHint};
 pub use operator_report::{
-    DiagnosticDetail, OperatorReport, ReportDetail, ReportFrame, Reportable,
+    DiagnosticDetail, OperatorReport, ReportChainEnd, ReportDetail, ReportFrame, ReportProjection,
+    Reportable,
 };
 pub use sink::{DiagnosticSink, NoopDiagnosticSink, RecordingDiagnosticSink};
 

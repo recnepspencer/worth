@@ -81,7 +81,7 @@ pub use reduction::{
 };
 pub use report::{
     DenialClass, DiagnosticDetail, DiagnosticSink, Disposition, OperatorReport, ReportCode,
-    Reportable, RetryHint,
+    ReportProjection, Reportable, RetryHint,
 };
 pub use worth_foundational::ChargedBytes;
 

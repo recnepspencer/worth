@@ -7,11 +7,13 @@ machine identifier. Set a `RetryHint` when the caller has a specific retry
 condition. The caller still obtains any required authority and checks the
 underlying operation's retry contract.
 
-Preserve causal errors with `Error::source()`. Use the default
-`to_operator_report` projection to create an owned `OperatorReport` with a
-frame per source, ordered from immediate cause to root cause. Equality and
-`to_canonical_json()` describe the disclosed snapshot. Keep correlation IDs,
-timestamps, and sequence counters in the sink's surrounding event metadata.
+Preserve causal errors with `Error::source()`. Call `to_operator_report` on a
+`&dyn Reportable`, or import `ReportProjection` to call it on a concrete error.
+The projection creates a read-only `OperatorReport` with frames ordered from
+immediate cause to root cause. A cyclic source chain keeps its unique prefix
+and records the cycle as a typed omission. Equality and `to_canonical_json()`
+describe the disclosed snapshot. Keep correlation IDs, timestamps, and
+sequence counters in the sink's surrounding event metadata.
 
 Select `DiagnosticDetail` at the receiving audience boundary under
 [Architecture 20](arch_laws.md#the-numbered-laws). `Redacted` includes a fixed

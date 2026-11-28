@@ -1,31 +1,34 @@
 use core::fmt::Write;
 
-use super::{DenialClass, Disposition, OperatorReport, ReportDetail, RetryHint};
+use super::{DenialClass, Disposition, OperatorReport, ReportChainEnd, ReportDetail, RetryHint};
 
 impl OperatorReport {
     /// Encodes the disclosed snapshot as compact UTF-8 JSON in fixed field order.
     /// The `worth.operator_report.v1` schema uses snake_case enum tags.
     pub fn to_canonical_json(&self) -> String {
         let mut json = String::from(r#"{"schema":"worth.operator_report.v1","denial_class":"#);
-        push_string(&mut json, denial_tag(self.denial_class));
+        push_string(&mut json, denial_tag(self.denial_class()));
         json.push_str(r#","disposition":"#);
-        push_disposition(&mut json, self.disposition);
+        push_disposition(&mut json, self.disposition());
         json.push_str(r#","report_code":"#);
-        push_string(&mut json, self.report_code.as_str());
+        push_string(&mut json, self.report_code().as_str());
         json.push_str(r#","summary":"#);
-        push_string(&mut json, self.summary);
+        push_string(&mut json, self.summary());
         json.push_str(r#","detail":"#);
-        push_detail(&mut json, &self.detail);
+        push_detail(&mut json, self.detail());
         json.push_str(r#","chain":["#);
-        for (index, frame) in self.chain.iter().enumerate() {
+        for (index, frame) in self.chain().iter().enumerate() {
             if index != 0 {
                 json.push(',');
             }
             json.push_str(r#"{"detail":"#);
-            push_detail(&mut json, &frame.detail);
+            push_detail(&mut json, frame.detail());
             json.push('}');
         }
-        json.push_str("]}");
+        json.push_str(match self.chain_end() {
+            ReportChainEnd::Complete => r#"],"chain_end":"complete"}"#,
+            ReportChainEnd::Cycle => r#"],"chain_end":"cycle"}"#,
+        });
         json
     }
 }

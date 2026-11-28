@@ -1,5 +1,11 @@
 use core::{error::Error, fmt};
-use std::{sync::Barrier, thread};
+use std::{
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Barrier,
+    },
+    thread,
+};
 
 use super::*;
 
@@ -13,15 +19,24 @@ const FORENSIC_DETAIL: &str = "Sensitive diagnostic: \"private/β\"\\\n\r\t\u{08
 struct Denial {
     trace_id: usize,
     cause: Option<Box<Denial>>,
+    cycle_visits: Option<AtomicUsize>,
 }
 
 impl Denial {
     fn with_depth(depth: usize, trace_id: usize) -> Self {
         let mut cause = None;
         for _ in 0..depth {
-            cause = Some(Box::new(Self { trace_id, cause }));
+            cause = Some(Box::new(Self {
+                trace_id,
+                cause,
+                cycle_visits: None,
+            }));
         }
-        Self { trace_id, cause }
+        Self {
+            trace_id,
+            cause,
+            cycle_visits: None,
+        }
     }
 }
 
@@ -33,6 +48,13 @@ impl fmt::Display for Denial {
 
 impl Error for Denial {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
+        if let Some(visits) = &self.cycle_visits {
+            assert!(
+                visits.fetch_add(1, Ordering::Relaxed) < 2,
+                "cyclic source revisited"
+            );
+            return Some(self);
+        }
         self.cause.as_deref().map(|cause| cause as &dyn Error)
     }
 }
@@ -87,34 +109,34 @@ fn disclosure_projects_only_approved_text_and_preserves_omissions() {
     let denial = Denial::with_depth(2, 41);
     let reportable: &dyn Reportable = &denial;
     let redacted = reportable.to_operator_report(DiagnosticDetail::default());
-    assert_eq!(redacted.summary, "Operation denied.");
-    assert_eq!(redacted.detail, ReportDetail::Withheld);
-    assert_eq!(redacted.chain.len(), 2);
+    assert_eq!(redacted.summary(), "Operation denied.");
+    assert_eq!(redacted.detail(), &ReportDetail::Withheld);
+    assert_eq!(redacted.chain().len(), 2);
     assert!(redacted
-        .chain
+        .chain()
         .iter()
-        .all(|frame| frame.detail == ReportDetail::Withheld));
+        .all(|frame| frame.detail() == &ReportDetail::Withheld));
     for rendering in [redacted.to_canonical_json(), format!("{redacted:?}")] {
         assert!(!rendering.contains("Sensitive diagnostic"));
         assert!(!rendering.contains("trace 41"));
     }
 
     let standard = reportable.to_operator_report(DiagnosticDetail::Standard);
-    assert_eq!(standard.summary, "Write conflicted.");
-    assert_eq!(standard.detail, ReportDetail::Withheld);
-    assert_eq!(standard.chain, redacted.chain);
+    assert_eq!(standard.summary(), "Write conflicted.");
+    assert_eq!(standard.detail(), &ReportDetail::Withheld);
+    assert_eq!(standard.chain(), redacted.chain());
 
     let forensic = reportable.to_operator_report(DiagnosticDetail::Forensic);
-    assert_eq!(forensic.summary, standard.summary);
+    assert_eq!(forensic.summary(), standard.summary());
     assert_eq!(
-        forensic.detail,
-        ReportDetail::Disclosed(FORENSIC_DETAIL.to_owned())
+        forensic.detail(),
+        &ReportDetail::Disclosed(FORENSIC_DETAIL.to_owned())
     );
     assert_eq!(
-        forensic.chain[0].detail,
-        ReportDetail::Disclosed("A prior write conflicted.".to_owned())
+        forensic.chain()[0].detail(),
+        &ReportDetail::Disclosed("A prior write conflicted.".to_owned())
     );
-    assert_eq!(forensic.chain[1].detail, ReportDetail::Unavailable);
+    assert_eq!(forensic.chain()[1].detail(), &ReportDetail::Unavailable);
     let json = forensic.to_canonical_json();
     assert!(!json.contains("trace 41"));
     let wire: serde_json::Value = serde_json::from_str(&json).unwrap();
@@ -146,7 +168,8 @@ fn independent_threads_produce_equal_reports_and_canonical_bytes_at_each_depth()
                                 current = source;
                             }
                             assert_eq!(source_depth, depth);
-                            assert_eq!(report.chain.len(), source_depth);
+                            assert_eq!(report.chain().len(), source_depth);
+                            assert_eq!(report.chain_end(), ReportChainEnd::Complete);
                             let json = report.to_canonical_json();
                             (report, json)
                         })
@@ -171,9 +194,28 @@ fn independent_threads_produce_equal_reports_and_canonical_bytes_at_each_depth()
         concat!(
             r#"{"schema":"worth.operator_report.v1","denial_class":"conflict","disposition":{"kind":"retry","hint":"after_basis_advance"},"#,
             r#""report_code":"fixture.write_conflict","summary":"Write conflicted.","detail":{"kind":"disclosed","#,
-            r#""message":"Sensitive diagnostic: \"private/β\"\\\n\r\t\b\f\u0000\u001f"},"chain":[{"detail":{"kind":"unavailable"}}]}"#,
+            r#""message":"Sensitive diagnostic: \"private/β\"\\\n\r\t\b\f\u0000\u001f"},"chain":[{"detail":{"kind":"unavailable"}}],"chain_end":"complete"}"#,
         ),
     );
+}
+
+#[test]
+fn cyclic_chain_preserves_unique_sources_and_records_the_omission() {
+    let mut denial = Denial::with_depth(2, 41);
+    denial
+        .cause
+        .as_mut()
+        .unwrap()
+        .cause
+        .as_mut()
+        .unwrap()
+        .cycle_visits = Some(AtomicUsize::new(0));
+
+    let report = denial.to_operator_report(DiagnosticDetail::Redacted);
+    assert_eq!(report.chain().len(), 2);
+    assert_eq!(report.chain_end(), ReportChainEnd::Cycle);
+    let wire: serde_json::Value = serde_json::from_str(&report.to_canonical_json()).unwrap();
+    assert_eq!(wire["chain_end"], "cycle");
 }
 
 #[test]
@@ -192,7 +234,7 @@ fn concurrent_sink_emissions_are_retained_exactly_once() {
         }
     });
     let mut captured = recorder.take_reports();
-    captured.sort_by_key(|report| report.chain.len());
+    captured.sort_by_key(|report| report.chain().len());
     assert_eq!(captured, reports);
     assert!(recorder.take_reports().is_empty());
     NoopDiagnosticSink.emit(&reports[0]);
