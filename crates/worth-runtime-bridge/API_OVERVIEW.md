@@ -67,7 +67,7 @@ Typical reasons to drop deeper into the explicit-control part of the facade:
 
 - explicit truth-view selection beyond the common default
 - bulk planning or delivery-oriented orchestration
-- structural comparison or merge-aware flows
+- structural comparison and lineage continuity
 - stream control and multi-consumer behavior
 - policy-shaped runtime refinement
 
@@ -81,7 +81,7 @@ The main advanced domains are:
 - truth-view materialization and source contracts
 - bulk routing and planning
 - stream delivery, replay, and resume
-- structural comparison and merge-aware flows
+- structural comparison and lineage continuity
 - explicit writeback authority integration
 
 For Query-installed conditional operations, start with

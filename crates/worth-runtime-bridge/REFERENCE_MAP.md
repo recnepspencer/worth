@@ -42,7 +42,7 @@ Main domains:
 - truth-view declarations and materialization
 - bulk planning and delivery
 - stream delivery, replay, and resume
-- structural comparison and merge-aware work
+- structural comparison and lineage continuity
 - explicit writeback authority integration
 
 Primary guides:
@@ -56,7 +56,6 @@ Primary guides:
 - [`RUNTIME_POLICY.md`](./RUNTIME_POLICY.md)
 - [`CHANGE_STREAMS_AND_SOURCES.md`](./CHANGE_STREAMS_AND_SOURCES.md)
 - [`MAPPING_CONTINUITY_AND_REMAP.md`](./MAPPING_CONTINUITY_AND_REMAP.md)
-- [`MERGE_AND_STRUCTURAL_COMPARISON.md`](./MERGE_AND_STRUCTURAL_COMPARISON.md)
 
 Representative advanced types:
 
@@ -70,7 +69,6 @@ Representative advanced types:
 - `BridgeBulkWorkloadPlan`
 - `ChangeStreamDeclaration`
 - `StructuralIdentityDeclaration`
-- `MergeHistoryDeclaration`
 
 ## Replay And Certification
 

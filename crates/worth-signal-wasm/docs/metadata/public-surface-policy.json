@@ -126,7 +126,7 @@
       "status": "stable",
       "guideStatus": "current",
       "referenceStatus": "incomplete",
-      "canonicalDocs": ["router/index", "router/projection/route_schema_authoring", "router/projection/projected_candidates", "router/admission/admit", "router/transitions/transition_artifacts", "router/history/browser_history_story", "router/recovery/stale_deep_link_recovery", "router/breadcrumbs/breadcrumb_declarations", "router/resources/route_resource_declarations", "router/speculation/speculative_sessions", "router/forms/route_authority_handoff", "router/runtime_placement/worker_first_default", "router/diagnostics/diagnostics_surfaces"],
+      "canonicalDocs": ["router/index", "router/projection/route_schema_authoring", "router/projection/projected_candidates", "router/admission/admit", "router/transitions/transition_artifacts", "router/history/browser_history_story", "router/recovery/stale_deep_link_recovery", "router/breadcrumbs/breadcrumb_declarations", "router/resources/route_resource_declarations", "router/forms/route_authority_handoff", "router/runtime_placement/worker_first_default", "router/diagnostics/diagnostics_surfaces"],
       "truthOwners": ["package-src/product/router"],
       "evidence": ["package/product/signals_runtime/authoring/router/phase11/callable_router_phase11_sequence_simulation.test.mjs"],
       "baseline": { "declarationCount": 208, "directMemberCount": 1005, "signatureDigest": "45aae6353471b93f4e5ef83400a83a34f5a21310493fc436c0c3f65738d15794", "declarationFileCount": 20, "declarationFileDigest": "a3b8da4bb615a38aba9e9d484761ebb61531a72ea8d8bc1c533aa868a6c62332" }
@@ -140,7 +140,7 @@
       "status": "stable",
       "guideStatus": "current",
       "referenceStatus": "complete",
-      "canonicalDocs": ["local-truth/README", "local-truth/getting-started", "local-truth/branches-and-snapshots", "local-truth/branch-merge", "local-truth/history-and-rebuild", "local-truth/authority-boundaries", "local-truth/api-reference"],
+      "canonicalDocs": ["local-truth/README", "local-truth/getting-started", "local-truth/branches-and-snapshots", "local-truth/history-and-rebuild", "local-truth/authority-boundaries", "local-truth/api-reference"],
       "truthOwners": ["package-src/product/local_truth"],
       "evidence": ["package/product/signals_runtime/local_truth/local_truth_closeout_certification.test.mjs"],
       "baseline": { "declarationCount": 39, "directMemberCount": 198, "signatureDigest": "558fc2848f513e770c0cfaf9fda200d5a627bba67f3c5386830a804da12bfe40", "declarationFileCount": 7, "declarationFileDigest": "e8e9324c0bdcf9a76550749c84a9c44a12eab267360beefbc07f5502c43df8f7" }

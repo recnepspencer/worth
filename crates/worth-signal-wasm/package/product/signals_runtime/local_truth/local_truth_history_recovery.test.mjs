@@ -62,16 +62,14 @@ async function historyFixture() {
   return { api, schema, state, sourceId: source.id, targetId: target.id };
 }
 
-test("derived lineage and locus indexes rebuild exactly from checkpoints and bounded commits", async () => {
+test("derived locus indexes rebuild exactly from checkpoints and bounded commits", async () => {
   const fixture = await historyFixture();
   const withoutIndexes = {
     ...fixture.state,
-    lineageByBranch: new Map(),
     locusHeadByBranch: new Map(),
   };
   const recovered = fixture.api.rebuildLocalTruthDerivedIndexes(withoutIndexes, fixture.schema);
   assert.equal(recovered.posture, "success");
-  assert.deepEqual(recovered.value.lineageByBranch, fixture.state.lineageByBranch);
   assert.deepEqual(recovered.value.locusHeadByBranch, fixture.state.locusHeadByBranch);
 });
 
@@ -88,7 +86,6 @@ test("recovery denies corrupt checkpoints, segments, ancestry, and foreign branc
   for (const state of cases) {
     const outcome = fixture.api.rebuildLocalTruthDerivedIndexes({
       ...state,
-      lineageByBranch: new Map(),
       locusHeadByBranch: new Map(),
     }, fixture.schema);
     assert.equal(outcome.posture, "unavailable");

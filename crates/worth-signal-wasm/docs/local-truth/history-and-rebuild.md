@@ -122,8 +122,7 @@ When debugging a browser-local workflow, record:
 - `inspection.supportPosture` (`"inMemoryProcessLocal"`);
 - the Local Truth branch head and digest;
 - the derivation posture and reason;
-- the retained history boundary and checkpoint digest;
-- the merge review and decision IDs, if applicable.
+- the retained history boundary and checkpoint digest.
 
 Do not substitute a Signal value, UI cache, or DOM state for the Local Truth
 basis. Those are consumers of authority, not sources of it.
@@ -131,6 +130,5 @@ basis. Those are consumers of authority, not sources of it.
 ## Related Docs
 
 - [Branches And Snapshots](./branches-and-snapshots.md)
-- [Branch Merge And Manual Resolution](./branch-merge.md)
 - [Authority Boundaries](./authority-boundaries.md)
 - [Local Truth API Reference](./api-reference.md)

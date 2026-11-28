@@ -247,7 +247,7 @@ impl PricingWorkloadCertificationBundle {
                 .simulation
                 .ranked_materials_by_damage
                 .is_empty(),
-            trust_attack_matrix_is_typed: self.trust_attack_classification_count() == 7,
+            trust_attack_matrix_is_typed: self.trust_attack_classification_count() == 6,
         }
     }
 
@@ -260,7 +260,7 @@ impl PricingWorkloadCertificationBundle {
             causality_bundle_count: 1,
             causality_bundle_replay_match_count: 3,
             causality_bundle_replay_mismatch_count: 1,
-            failure_taxonomy_classification_count: 3,
+            failure_taxonomy_classification_count: 2,
             failure_taxonomy_unclassified_count: 0,
             diagnostics_entrypoint_request_count: entrypoints.entrypoint_count(),
             showcase_entrypoint_request_count: usize::from(
@@ -289,9 +289,7 @@ impl PricingWorkloadCertificationBundle {
         [
             !self.hostile_failure.source_commit.as_str().is_empty(),
             self.restart_failure.replay_mismatch_count > 0,
-            !format!("{:?}", self.writeback.rejection_error_kind).is_empty(),
             !format!("{:?}", self.restart_failure.error_kind).is_empty(),
-            true,
             true,
             true,
             !self.simulation.ranked_materials_by_damage.is_empty(),

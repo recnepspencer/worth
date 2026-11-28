@@ -23,11 +23,6 @@ import type {
   RuntimeSnapshotArtifact,
   RuntimeSnapshotEnvelope,
   RuntimePolicySpec,
-  MergePlanArtifact,
-  MergePlanProofEnvelope,
-  MergePolicyPreviewRequest,
-  MergeResultArtifact,
-  MergeResultProofEnvelope,
   WebPerformanceSummary,
   WhySummary,
 } from "./diagnostics.js";

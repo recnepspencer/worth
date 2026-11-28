@@ -57,14 +57,14 @@ fn pricing_shock_showcase_artifact_explains_retained_commit_without_hidden_memor
         bundle
             .certification_counter_evidence()
             .trust_attack_classification_count,
-        7
+        6
     );
     assert!(completeness.offline_sufficient);
     assert!(artifact["trust_proof"]["suite_27"].is_object());
     let trust_attacks = artifact["trust_attack_matrix"]
         .as_array()
         .expect("trust attack matrix should be an array");
-    assert_eq!(trust_attacks.len(), 7);
+    assert_eq!(trust_attacks.len(), 6);
     assert_eq!(
         artifact["demo_flow"][3]
             .as_str()
@@ -215,10 +215,6 @@ fn pricing_shock_showcase_trust_attack_matrix_is_bundle_derived() {
     assert_eq!(
         bundle.restart_failure.error_kind,
         BridgeReplayErrorKind::RouteMismatch
-    );
-    assert_eq!(
-        bundle.writeback.rejection_error_kind,
-        BridgeWritebackErrorKind::MergeAuthorityRejected
     );
     assert_eq!(
         bundle.trust_attacks.replay_policy_error_kind,

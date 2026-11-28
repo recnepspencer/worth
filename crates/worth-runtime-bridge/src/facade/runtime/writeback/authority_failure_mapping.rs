@@ -27,9 +27,6 @@ pub(super) fn map_writeback_failure_class(
         BridgeWritebackFailureClass::InvariantRejected => {
             BridgeWritebackErrorKind::InvariantRejected
         }
-        BridgeWritebackFailureClass::MergeAuthorityRejected => {
-            BridgeWritebackErrorKind::MergeAuthorityRejected
-        }
         BridgeWritebackFailureClass::StrategyFailed => BridgeWritebackErrorKind::StrategyFailed,
         BridgeWritebackFailureClass::StrategyPanicked => BridgeWritebackErrorKind::StrategyPanicked,
         BridgeWritebackFailureClass::ReplayMismatch => BridgeWritebackErrorKind::ReplayMismatch,
@@ -76,9 +73,6 @@ pub(super) fn map_writeback_error_kind_to_failure_class(
         BridgeWritebackErrorKind::StaleTruthBasis => BridgeWritebackFailureClass::StaleTruthBasis,
         BridgeWritebackErrorKind::InvariantRejected => {
             BridgeWritebackFailureClass::InvariantRejected
-        }
-        BridgeWritebackErrorKind::MergeAuthorityRejected => {
-            BridgeWritebackFailureClass::MergeAuthorityRejected
         }
         BridgeWritebackErrorKind::StrategyFailed => BridgeWritebackFailureClass::StrategyFailed,
         BridgeWritebackErrorKind::StrategyPanicked => BridgeWritebackFailureClass::StrategyPanicked,

@@ -291,7 +291,6 @@ fn writeback_failure_class_label(value: BridgeWritebackFailureClass) -> &'static
         BridgeWritebackFailureClass::CausalityEffectMismatch => "causality-effect-mismatch",
         BridgeWritebackFailureClass::StaleTruthBasis => "stale-truth-basis",
         BridgeWritebackFailureClass::InvariantRejected => "invariant-rejected",
-        BridgeWritebackFailureClass::MergeAuthorityRejected => "merge-authority-rejected",
         BridgeWritebackFailureClass::StrategyFailed => "strategy-failed",
         BridgeWritebackFailureClass::StrategyPanicked => "strategy-panicked",
         BridgeWritebackFailureClass::ReplayMismatch => "replay-mismatch",

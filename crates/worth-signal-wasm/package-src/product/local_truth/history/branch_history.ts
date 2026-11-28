@@ -10,15 +10,6 @@ import { denied, success } from "../support/outcomes.js";
 export function forkLocalTruthBranch(state, request) {
   try {
     const { branch: parent } = readBranchSnapshot(state, request?.parentBranchId);
-    if (parent.kind === "resolution") {
-      return {
-        state,
-        outcome: denied(
-          "resolutionBranchCannotBeParent",
-          "a review-scoped resolution branch cannot own structural descendants",
-        ),
-      };
-    }
     const basisCheck = requireCurrentBasis(state, parent, request?.expectedParentBasis);
     if (!basisCheck.ok) {
       return { state, outcome: denied(basisCheck.code, "local truth fork basis is stale or foreign") };
@@ -44,7 +35,7 @@ export function forkLocalTruthBranch(state, request) {
       artifactFamily: "LocalTruthBranchReceipt",
       id: branchId,
       name,
-      kind: request.kind === "resolution" ? "resolution" : "ordinary",
+      kind: "ordinary",
       parentBranchId: parent.id,
       forkCommitId: parent.headCommitId,
       forkSnapshotId: parent.snapshotId,
@@ -57,7 +48,6 @@ export function forkLocalTruthBranch(state, request) {
     const next = cloneAuthorityState(state);
     next.nextBranchSequence += 1;
     next.branches.set(branch.id, branch);
-    next.lineageByBranch.set(branch.id, new Map(state.lineageByBranch.get(parent.id)));
     next.locusHeadByBranch.set(branch.id, new Map(state.locusHeadByBranch.get(parent.id)));
     next.counters.branches += 1;
     return { state: next, outcome: success(branch) };
@@ -72,8 +62,7 @@ export function forkLocalTruthBranch(state, request) {
 export function createLocalTruthCheckpoint(state, branchId) {
   const { branch, snapshot } = readBranchSnapshot(state, branchId);
   const priorCheckpoint = state.checkpoints.get(branch.id) ?? null;
-  const lineage = [...state.lineageByBranch.get(branch.id)]
-    .sort(([left], [right]) => left.localeCompare(right));
+  const lineage = [];
   const locusHeads = [...state.locusHeadByBranch.get(branch.id)]
     .sort(([left], [right]) => left.localeCompare(right));
   const compactedCommitDigests = collectCommitSegment(
@@ -197,19 +186,8 @@ function compactIfFullyCheckpointed(state) {
   next.checkpoints = new Map([...state.checkpoints].filter(([id]) => activeBranchIds.has(id)));
   next.commits = retainedCommits;
   next.snapshots = retainedSnapshots;
-  next.lineageByBranch = new Map(
-    [...next.lineageByBranch].filter(([id]) => activeBranchIds.has(id)),
-  );
   next.locusHeadByBranch = new Map(
     [...next.locusHeadByBranch].filter(([id]) => activeBranchIds.has(id)),
-  );
-  next.resolutionAdmissions = new Map(
-    [...next.resolutionAdmissions].filter(([id]) => activeBranchIds.has(id)),
-  );
-  next.customAlternatives = new Map(
-    [...next.customAlternatives].filter(([, alternative]) => (
-      activeBranchIds.has(alternative.resolutionBranchId)
-    )),
   );
   const activeHeadIds = new Set(activeBranches.map((branch) => branch.headCommitId));
   next.requestLog = new Map(

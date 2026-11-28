@@ -57,12 +57,7 @@ impl RetainedStorageMeasurement for RuntimeArtifactWarm {
             reuse_origin: _,
             reuse_boundary_authority,
             lineage_artifact_id: _,
-            merge_authority,
         } = self;
-        let super::super::authority::ArtifactMergeAuthority {
-            authority_class: _,
-            adoptability: _,
-        } = merge_authority;
         output_identity
             .retained_heap_charge(work)?
             .checked_add(continuity_token.retained_heap_charge(work)?)?

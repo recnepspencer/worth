@@ -2,7 +2,7 @@
 mod correspondence;
 use crate::{
     adapter::InvalidationSink,
-    diagnostics::{BridgeDiagnosticsFacade, DiagnosticSink},
+    diagnostics::BridgeDiagnosticsFacade,
     facade::RuntimeBridge,
     mapping::{FrozenAspectMappingRegistry, FrozenMappingRegistry},
     policy::BridgeRuntimePolicy,
@@ -54,7 +54,6 @@ enum HomeBridgeSource {
 struct RetiredBridgeConfiguration {
     _policy: BridgeRuntimePolicy,
     _diagnostics: BridgeDiagnosticsFacade,
-    _diagnostic_sink: Arc<dyn DiagnosticSink>,
     _profile: Option<crate::input::envelope::BridgeAuthoritativeSourceProfile>,
     _sink: Arc<dyn InvalidationSink>,
     _sources: AdmittedSourceRegistry,
@@ -109,7 +108,6 @@ impl RuntimeBridge {
         let Self {
             policy,
             diagnostics,
-            diagnostic_sink,
             committed_patch_source,
             authoritative_source_profile,
             snapshot_read_source,
@@ -152,7 +150,6 @@ impl RuntimeBridge {
             _allocation: RetiredBridgeConfiguration {
                 _policy: policy,
                 _diagnostics: diagnostics,
-                _diagnostic_sink: diagnostic_sink,
                 _profile: authoritative_source_profile,
                 _sink: signal_sink,
                 _sources: source_registry,

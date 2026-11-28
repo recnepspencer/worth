@@ -12,7 +12,7 @@ Use it when you need to inspect:
 - what one effect actually did
 - what proof the runtime retained
 - what a profile claims to support across local patch, confirmation, rollback,
-  merge, and diagnostics history
+  and diagnostics history
 
 ## Stable Entry Points
 
@@ -76,8 +76,6 @@ inspection digest.
 
 - Use [Branch-Native Effects](./branch-native-effects.md) for the common
   optimistic lane.
-- Use [Merge And Rebase](./merge-and-rebase.md) when an effect must map to a
-  native merge preview.
 - Use [What Happens After A Write](../updating/what-happens-after-a-write.md)
   when you need the broader post-write read path.
 

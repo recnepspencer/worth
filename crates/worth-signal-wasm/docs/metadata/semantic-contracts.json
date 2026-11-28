@@ -128,7 +128,7 @@
       "coverageGroups": ["local-truth"],
       "status": "stable",
       "requiredDocTerms": ["process-local", "do not call process-local history durable"],
-      "guarantee": "Local Truth owns process-local application values and aspect-aware branch merge decisions.",
+      "guarantee": "Local Truth owns process-local application values along with their aspect-aware branch commits.",
       "nonGuarantees": ["Local Truth is not durable.", "Local Truth is not shared across processes.", "Signals do not become the primary application truth store."],
       "canonicalDoc": "local-truth/authority-boundaries",
       "truthOwner": "package-src/product/local_truth",

@@ -112,11 +112,7 @@ where
         state
     }
 
-    /// The packet a snapshot stores carries the merge ledger *as of the
-    /// snapshot*: cleared, with the snapshot as its baseline, so restoring
-    /// the snapshot reinstates that boundary. Capturing a snapshot is an
-    /// observation of the live branch, so the live ledger itself keeps its
-    /// pending records for the branch's next merge.
+    /// Start the restored mutation ledger at this snapshot boundary.
     pub fn with_snapshot_ledger_boundary(mut self, snapshot_id: SignalSnapshotId) -> Self {
         self.mutation_ledger.clear_all(Some(snapshot_id));
         self

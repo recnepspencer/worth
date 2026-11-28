@@ -58,7 +58,6 @@ impl<PatchState, SnapshotState, SignalState, BranchHeadState>
             source_adapter_registrations: self.source_adapter_registrations,
             source_declarations: self.source_declarations,
             structural_declarations: self.structural_declarations,
-            diagnostic_sink: self.diagnostic_sink,
             mapping_registrations: PresentMappingRegistrations(vec![registration]),
             aspect_registrations: self.aspect_registrations,
             semantic_dependency_registrations: self.semantic_dependency_registrations,

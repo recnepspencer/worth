@@ -62,57 +62,6 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_writeback_bundle
     let noop_replay_bundle =
         runtime.replay_writeback_bundle(&contract, &effect, &idempotence, &noop_outcome);
 
-    let rejecting_runtime = build_pricing_runtime_with_policy_and_writeback_authority(
-        pricing_reference_source(),
-        RecordingSignalBridgeSink::default(),
-        policy,
-        RejectingPricingWritebackAuthority {
-            failure_class: BridgeWritebackFailureClass::MergeAuthorityRejected,
-        },
-    );
-    let rejecting_lowered_policy = pricing_lowered_policy(&rejecting_runtime);
-    let rejecting_contract = rejecting_runtime
-        .admit_writeback_declaration(
-            pricing_writeback_declaration(
-                "writeback:pricing-rejection",
-                BridgeRequestKind::Authoritative,
-                BridgeWritebackRequestMode::WritebackCapable,
-                "pricing-rejection",
-            ),
-            &rejecting_lowered_policy,
-        )
-        .expect("pricing rejection declaration should admit");
-    let rejecting_effect = rejecting_runtime.lower_writeback_effect(
-        &rejecting_contract,
-        &pricing_writeback_causality_basis(
-            "causality:pricing-rejection",
-            "truth-trigger:pricing-rubber-shock",
-        ),
-        BridgeWritebackEffectIdentity::admit_bridge_owned("effect:pricing-rejection"),
-        writeback_effect_intent(
-            BridgeWritebackEffectClass::ProjectedStateDiff,
-            "pricing-rejection",
-        ),
-    );
-    let rejecting_idempotence = rejecting_runtime.classify_writeback_idempotence(
-        &rejecting_effect,
-        &rejecting_lowered_policy,
-        &crate::facade::BridgeWritebackAuthoritativeStateBasis::from_effect(&rejecting_effect),
-        BridgeWritebackIdempotenceIdentity::admit_bridge_owned("idempotence:pricing-rejection"),
-        BridgeWritebackIdempotenceClass::RequireSemanticNoopSuppression,
-    );
-    let rejection_error = rejecting_runtime
-        .execute_writeback_authority(
-            &rejecting_contract,
-            &rejecting_effect,
-            &rejecting_idempotence,
-        )
-        .expect_err("pricing writeback rejection should stay typed");
-    let rejection_record = rejecting_runtime
-        .diagnostics()
-        .last_writeback_execution_record()
-        .expect("pricing writeback rejection should retain an execution record");
-
     PricingWritebackBundle {
         family_kind: effect.family_kind(),
         strategy_class: effect.strategy_class(),
@@ -126,12 +75,6 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_writeback_bundle
         execution_request_count: noop_record.counters().writeback_request_count(),
         execution_commit_count: commit_record.counters().writeback_commit_count(),
         execution_noop_count: noop_record.counters().writeback_noop_count(),
-        rejection_error_kind: rejection_error.kind(),
-        rejection_failure_class: rejection_record
-            .failure_class()
-            .expect("pricing writeback rejection should carry a failure class"),
-        rejection_request_emitted: rejection_record.request_digest().is_some(),
-        rejection_receipt_emitted: rejection_record.receipt_digest().is_some(),
     }
 }
 

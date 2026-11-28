@@ -26,7 +26,7 @@ candidate contains canonical route input and structural composition:
 ## Preview Is Not Permission
 
 It is safe to use a candidate to build an admission plan, prefetch native
-resources, warm a route, or open a speculative branch. It is not safe to treat
+resources or warm a route. It is not safe to treat
 it as the visible, authorized route.
 
 ```ts

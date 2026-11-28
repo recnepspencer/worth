@@ -64,7 +64,6 @@ pub use crate::error::BridgeExecutionDenial;
 use std::sync::Arc;
 pub use worth_execution::{ExecutionRequest, ExecutionResourceLease};
 
-use crate::diagnostics::DiagnosticSink;
 use crate::mapping::{FrozenAspectMappingRegistry, FrozenMappingRegistry};
 use crate::subscription::FrozenSubscriptionFamilyRegistry;
 use preview_session_liveness::BridgePreviewSessionLivenessOwner;

@@ -50,8 +50,7 @@ if (fork.posture !== "success") throw new Error(fork.message);
 ```
 
 The child starts at the parent's exact fork commit and snapshot. Later parent
-and child commits do not overwrite one another. Sibling and parent/child
-merges both use structural ancestry rather than branch names or creation time.
+and child commits do not overwrite one another.
 
 ## Commit One Semantic Change
 
@@ -116,7 +115,6 @@ the projection from the Local Truth snapshot instead.
 
 ## Next
 
-- [Branch Merge And Manual Resolution](./branch-merge.md)
 - [History, Compaction, And Rebuild](./history-and-rebuild.md)
 - [Authority Boundaries](./authority-boundaries.md)
 - [Local Truth API Reference](./api-reference.md)

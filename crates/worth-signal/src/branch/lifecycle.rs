@@ -14,7 +14,6 @@ pub enum SignalBranchBasisLifecyclePosture {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SignalBranchRetirementReason {
     Rejected,
-    Merged,
     Superseded,
     DependencyCancellation,
     ProjectionRebuild,

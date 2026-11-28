@@ -65,8 +65,8 @@ console.log(report.verification.packageDigest);
 
 - Use [Reflect Resource Settlement In A Form](./reflect-resource-settlement-in-a-form.md)
   for pending/confirmed/failed posture.
-- Use [Handle Resource Drift And Merge](./handle-resource-drift-and-merge.md)
-  for remote changes and merge previews.
+- Read [Resource Drift](../../forms/resource-backed/resource-drift.md) to
+  inspect how remote changes affect a local draft.
 - Use the form-side [Resource Line Source](../../forms/resource-backed/resource-line-source.md)
   page when you want the same topic from the forms doc tree.
 

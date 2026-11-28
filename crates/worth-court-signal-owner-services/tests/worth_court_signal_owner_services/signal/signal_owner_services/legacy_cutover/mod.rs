@@ -325,7 +325,7 @@ fn sealed_legacy_batch_fences_child_before_parent_and_retains_receipts() {
             (
                 child.clone(),
                 child_basis,
-                worth_signal::facade::SignalBranchRetirementReason::Merged,
+                worth_signal::facade::SignalBranchRetirementReason::Superseded,
             ),
             (
                 parent.clone(),

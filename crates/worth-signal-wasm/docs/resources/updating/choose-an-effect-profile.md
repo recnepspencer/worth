@@ -9,7 +9,6 @@ They answer questions like:
 - is the write optimistic
 - what kind of confirmation is expected
 - what rollback posture exists
-- whether merge / rebase is available
 
 ## Why You Use It
 
@@ -37,7 +36,7 @@ choosing an effect profile.
 ## How It Executes
 
 The chosen profile becomes part of the admitted request posture and later shows
-up through diagnostics, lifecycle, rollback, and merge behavior.
+up through diagnostics, lifecycle and rollback behavior.
 
 ## Small Example
 
@@ -85,7 +84,7 @@ to support?"
 ## Current Limits
 
 - this page chooses the profile
-- the deeper effect proof, rollback, and merge lanes still live in the older
+- the deeper effect proof and rollback lanes still live in the older
   effect docs for now
 
 ## Related Docs

@@ -19,11 +19,6 @@ use super::SignalGraph;
 /// number of entries changed along the way. A node evaluated on every frame of
 /// a long-lived runtime would otherwise grow its record, and the copy each
 /// later publication makes of it, without bound.
-///
-/// That changed-entry total is the one facet that still depends on the path:
-/// two branches reaching the same snapshot through different evaluations
-/// record different totals, and merge reports them as a snapshot mismatch.
-/// The report is conservative, never a missed conflict.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub(crate) struct BranchMutationRecord {
     pub introduced: bool,
@@ -44,13 +39,6 @@ pub(crate) struct BranchMutationNodeImage {
 }
 
 impl BranchMutationRecord {
-    pub(crate) fn merge_relevant(&self) -> bool {
-        self.introduced
-            || self.state_changed
-            || self.dependencies_changed
-            || self.dependency_snapshot_changed
-    }
-
     fn mark_introduced(&mut self) {
         self.introduced = true;
         self.state_changed = true;

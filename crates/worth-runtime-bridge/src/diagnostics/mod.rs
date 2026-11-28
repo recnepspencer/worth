@@ -18,7 +18,6 @@ mod history;
 mod policy;
 mod records;
 mod replay;
-mod sink;
 mod source;
 mod speculation;
 mod state;
@@ -105,7 +104,6 @@ pub use writeback::{
 };
 
 pub(crate) use failure_source::BridgeFailureSource;
-pub(crate) use sink::DiagnosticSink;
 pub(crate) use structural::{
     validate_structural_replay_contract, validate_structural_replay_outcome,
 };

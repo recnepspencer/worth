@@ -93,7 +93,7 @@ export async function refreshWorkerFirstAuthoredCallbackReadables(deps) {
     // the branch layer: it re-journals the backing input's dependents on the
     // active branch, which makes a freshly forked branch look "advanced" and
     // downgrades otherwise fast-forward merges. Skipping the equal-value write
-    // keeps worker-first branch/merge parity with mainThreadCompatibility.
+    // keeps worker-first branch parity with mainThreadCompatibility.
     const committedBackingValue = authoredInputs.get(authoredCallback.hiddenInputId)?.currentValue;
     if (workerFirstAuthoredValueUnchanged(committedBackingValue, nextValue)) {
       continue;

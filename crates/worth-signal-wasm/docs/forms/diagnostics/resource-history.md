@@ -6,14 +6,12 @@ This page covers the retained history families around resource-backed forms:
 
 - replay and restore
 - reset
-- resource merge
 - resource drift
 
 ## Why You Use It
 
 - inspect how a resource-backed form reconciled local and server truth
 - debug exact replay or restore operations
-- tell merge and drift history apart from ordinary state writes
 
 ## Stable Entry Points
 
@@ -21,7 +19,6 @@ This page covers the retained history families around resource-backed forms:
 - `form.resetHistory()`
 - `form.diagnostics().replayRestoreHistory`
 - `form.diagnostics().resetHistory`
-- `form.resourceMerge()`
 - `form.resourceDrift()`
 
 ## Core Mental Model
@@ -47,7 +44,6 @@ console.log(form.resetHistory());
 ```ts
 await form.restoreExactResourceSource({ reason: "return to server truth" });
 
-console.log(form.resourceMerge().history);
 console.log(form.resourceDrift().history);
 console.log(form.replayRestoreHistory());
 console.log(form.resetHistory());
@@ -64,8 +60,7 @@ console.log(form.resetHistory());
 
 - use replay/restore history for exact replay and restore events
 - use reset history for local reset and rollback behavior
-- use resource merge and drift reports for current merge/drift state plus their
-  own retained histories
+- use resource drift reports for the current drift and its retained history
 
 ## Anti-Patterns
 

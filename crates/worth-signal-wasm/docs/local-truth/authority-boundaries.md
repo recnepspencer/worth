@@ -16,8 +16,7 @@ Full platform:  Query -> Relational -> Bridge -> Signal
 ```
 
 The happy browser-local path is small and can grow into branches, snapshots,
-aspect merges, manual resolution, and bounded inspection. That growth does not
-turn it into durable platform truth.
+and bounded inspection within the running process.
 
 ## What Each Layer Owns
 
@@ -28,7 +27,7 @@ Within one running JavaScript process, Local Truth owns:
 - declared plain-object entity values;
 - aspect validation and equivalence;
 - runtime-issued bases, branch heads, snapshots, and commits;
-- merge reviews, choices, and bounded retained history;
+- bounded retained history;
 - rebuilding its disposable Signal projections.
 
 Its public kind is `"typescriptInMemoryLocalTruth"`; inspection reports
@@ -65,7 +64,7 @@ fed it.
 - one tab or worker process is the whole collaboration boundary;
 - restart loss is acceptable or the host independently recreates the initial
   state;
-- local branch editing and aspect-level merge improve the interaction;
+- local branch editing improves the interaction;
 - inspection is for the running workflow, not a durability promise.
 
 Examples include a local configurator, an ephemeral modeling workspace, an
@@ -121,6 +120,5 @@ define the explicit command that proposes them to the platform authority.
 
 - [Your First Local Truth Store](./getting-started.md)
 - [Branches And Snapshots](./branches-and-snapshots.md)
-- [Branch Merge And Manual Resolution](./branch-merge.md)
 - [History, Compaction, And Rebuild](./history-and-rebuild.md)
 - [Local Truth API Reference](./api-reference.md)

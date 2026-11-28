@@ -1527,3 +1527,8 @@ guidance = "Semantic Git Phase 0 retires the merge execution and inspection surf
 root = "workspaces"
 forbidden_identifiers = ["MergeAccess", "PreparedMergeExecution", "RelationalMergeProofPacket", "BranchMergePlan", "BranchMergeResult", "plan_merge_branches", "merge_branches_with_proof", "worth_relational_merge"]
 guidance = "Semantic Git Phase 0 retires the merge execution and inspection surfaces"
+
+[[source_identifier_denials]]
+root = "crates"
+forbidden_identifiers = ["BridgeMergeError", "ArtifactMergeAuthority", "MergeSupportRebuildProof", "MergeAuthorityRejected"]
+guidance = "Signal and Bridge legacy branch merge are retired; use the current branch lifecycle and lineage surfaces"

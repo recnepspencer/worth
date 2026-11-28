@@ -506,7 +506,6 @@ const diagnosticGraph = runtimeEnvelope.snapshot.snapshot.diagnostic_graph;
 const history = signals.history();
 const specialist = signals.specialist();
 const currentBranch = await Promise.resolve(history.current_branch());
-const previewBranch = await Promise.resolve(history.create_branch("preview"));
 const branchReplay = await Promise.resolve(history.replay_for_branch(currentBranch.id));
 const branchSnapshot = await Promise.resolve(history.branch_snapshot(currentBranch.id));
 const branchEnvelope = await Promise.resolve(history.branch_snapshot_envelope(currentBranch.id));
@@ -519,28 +518,8 @@ const parityProof = await Promise.resolve(history.replay_parity_proof(currentBra
 const artifactProof = await Promise.resolve(history.replay_artifact_proof({
   proofSchemaVersion: runtimeProof.proofSchemaVersion,
   registryBundleDigest: runtimeProof.registryBundleDigest,
-  loweredStrategyBundleDigest: null,
-  mergePlanDigest: null,
-  mergeResultDigest: null,
-  lineageDigest: null,
   branchStateDigest: branchProof.stateDigest,
 }, currentBranch.id));
-const previewPlan = await Promise.resolve(history.plan_merge_policy_preview({
-  source_branch_id: previewBranch.id,
-  target_branch_id: currentBranch.id,
-}));
-const previewPlanProof = await Promise.resolve(history.plan_merge_policy_preview_with_proof({
-  source_branch_id: previewBranch.id,
-  target_branch_id: currentBranch.id,
-}));
-const previewResult = await Promise.resolve(history.merge_branches_policy_preview({
-  source_branch_id: previewBranch.id,
-  target_branch_id: currentBranch.id,
-}));
-const previewResultProof = await Promise.resolve(history.merge_branches_policy_preview_with_proof({
-  source_branch_id: previewBranch.id,
-  target_branch_id: currentBranch.id,
-}));
 const diagnostics = signals.diagnostics();
 const latestObservation = diagnostics.latestObservation();
 const latestFlow = diagnostics.latestFlow();
@@ -588,18 +567,6 @@ const replayHasCallback = branchReplay.frames.some((frame) => frame.callback?.id
 const specialistGraphProfile = specialistGraphSummary.profile;
 const specialistTouchedNodes = specialistEvaluateDirty.touchedNodes;
 const artifactParity = artifactProof.parity;
-const previewPlanSource = previewPlan.source_branch_id;
-const previewPlanStrategy = previewPlan.selected_semantics.strategy_name;
-const previewPlanResolution = previewPlan.resolution_plan?.divergence ?? null;
-const previewPlanNodeMapEntry = previewPlan.node_map[0]?.source_node ?? null;
-const previewPlanDecision = previewPlan.node_plan[0]?.decision ?? null;
-const previewPlanAdoptionSource = previewPlan.adoption_core[0]?.source_node ?? null;
-const previewPlanCarryPolicy = previewPlan.adoption_policy[0]?.runtime_artifact ?? null;
-const previewPlanDigest = previewPlanProof.proof.planDigest;
-const previewResultTarget = previewResult.target_branch;
-const previewResultRecordNode = previewResult.records[0]?.source_node ?? null;
-const previewResultCounter = previewResult.counters.replay_event_count;
-const previewResultDigest = previewResultProof.proof.resultDigest;
 const panelValue = signals.read(panel);
 const panelView = useOutputValue<{ count: number; doubled: number }>(panel, store);
 const itemDetailGraphRead = itemDetailGraph.read();
@@ -818,7 +785,6 @@ void snapshotReplayHead;
 void history;
 void specialist;
 void currentBranch;
-void previewBranch;
 void branchReplay;
 void branchSnapshot;
 void branchEnvelope;
@@ -829,22 +795,6 @@ void replayHasCallback;
 void specialistGraphProfile;
 void specialistTouchedNodes;
 void artifactParity;
-void previewPlan;
-void previewPlanProof;
-void previewResult;
-void previewResultProof;
-void previewPlanSource;
-void previewPlanStrategy;
-void previewPlanResolution;
-void previewPlanNodeMapEntry;
-void previewPlanDecision;
-void previewPlanAdoptionSource;
-void previewPlanCarryPolicy;
-void previewPlanDigest;
-void previewResultTarget;
-void previewResultRecordNode;
-void previewResultCounter;
-void previewResultDigest;
 void panelValue;
 void panelView;
 void itemDetailGraphRead;

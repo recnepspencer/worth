@@ -25,7 +25,6 @@ mod writeback;
 pub struct RuntimeBridge {
     pub(crate) policy: BridgeRuntimePolicy,
     pub(crate) diagnostics: BridgeDiagnosticsFacade,
-    pub(crate) diagnostic_sink: Arc<dyn DiagnosticSink>,
     pub(crate) committed_patch_source: Arc<dyn CommittedPatchSource>,
     pub(crate) authoritative_source_profile:
         Option<crate::input::envelope::BridgeAuthoritativeSourceProfile>,

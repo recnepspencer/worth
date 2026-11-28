@@ -137,10 +137,6 @@ impl PricingWorkloadCertificationBundle {
                 "positive_retail_delta_count": self.portfolio.positive_retail_delta_count,
                 "max_retail_delta_sku": self.portfolio.max_retail_delta_sku,
             },
-            "writeback_failure": {
-                "error_kind": format!("{:?}", self.writeback.rejection_error_kind),
-                "failure_class": format!("{:?}", self.writeback.rejection_failure_class),
-            },
             "residue_surface": {
                 "discard_record_count": self.discard.discard_record_count,
                 "promotion_record_count": self.discard.promotion_record_count,
@@ -161,7 +157,6 @@ impl PricingWorkloadCertificationBundle {
                 "source_commit": self.hostile_failure.source_commit.as_str(),
                 "source_snapshot": self.hostile_failure.source_snapshot.as_str(),
             },
-            "writeback_failure_kind": format!("{:?}", self.writeback.rejection_error_kind),
             "restart_failure": {
                 "error_kind": format!("{:?}", self.restart_failure.error_kind),
                 "replay_mismatch_count": self.restart_failure.replay_mismatch_count,
@@ -181,7 +176,6 @@ impl PricingWorkloadCertificationBundle {
                 "error_kind": format!("{:?}", self.restart_failure.error_kind),
                 "replay_mismatch_count": self.restart_failure.replay_mismatch_count,
             },
-            "writeback_failure_kind": format!("{:?}", self.writeback.rejection_error_kind),
         })
     }
 }

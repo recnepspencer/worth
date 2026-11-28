@@ -79,9 +79,6 @@ where
                     });
                 }
             }
-            crate::logic::transaction::RequiredDerivedRebuildSet::MergeSupport(_) => {
-                graph.clear_branch_mutation_nodes();
-            }
             crate::logic::transaction::RequiredDerivedRebuildSet::TemporalState(_) => {}
         }
     }

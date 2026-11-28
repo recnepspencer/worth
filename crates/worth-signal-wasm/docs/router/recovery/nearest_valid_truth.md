@@ -73,8 +73,6 @@ the nearest valid route, not the stale attempted one.
 - nearest valid truth comes from [Stale Deep Link Recovery](./stale_deep_link_recovery.md)
 - it still flows through ordinary [History](../history/README.md) if admitted
   from browser ingress
-- it is separate from speculative fallback or redirect handling in
-  [Speculative Navigation](../speculation/README.md)
 
 ## Inspection And Debugging
 

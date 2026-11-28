@@ -15,11 +15,6 @@ impl PricingWorkloadCertificationBundle {
                 "result": "typed_fail_closed",
             },
             {
-                "attack": "writeback_authority_denial",
-                "classification": format!("{:?}", self.writeback.rejection_error_kind),
-                "result": "typed_fail_closed",
-            },
-            {
                 "attack": "stale_historical_basis",
                 "classification": format!("{:?}", self.restart_failure.error_kind),
                 "result": "typed_fail_closed",

@@ -101,15 +101,13 @@ Use these surfaces to choose and explain concurrent work. A recent
 `diagnostics().lastEffect` entry is a breadcrumb, not authority for deciding
 which request to confirm or reject.
 
-## Recovery And Merge
+## Recovery
 
 - `reject(effectId)` closes one failed request without changing canonical
   server truth.
 - `line.history().rollbackEffect(effectId)` uses the recovery supported by the
   selected profile and retained proof.
 - Exact restore and replay can be unavailable when exact history is absent.
-- Merge and rebase operate on declared resource loci and branch proof. They are
-  not arbitrary deep merge and do not invent domain resolution.
 
 ## Common Mistakes
 
@@ -126,4 +124,3 @@ which request to confirm or reject.
 - [Concurrent Optimistic Effects](./concurrency-and-dependencies.md)
 - [Effect Envelopes And Settlement](./effect-envelopes-and-closeout.md)
 - [Rollback And Recovery](./rollback-and-recovery.md)
-- [Merge And Rebase](./merge-and-rebase.md)

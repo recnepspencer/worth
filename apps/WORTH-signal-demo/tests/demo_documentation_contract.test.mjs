@@ -25,7 +25,7 @@ const expectedGuides = new Map([
   [3, "forms/collaboration/README"],
   [4, "router/admission/admit"],
   [5, "resources/effects/README"],
-  [6, "local-truth/branch-merge"],
+  [6, "local-truth/branches-and-snapshots"],
 ]);
 const sharedSamples = new Map([
   [1, DEMO_ONE_CODE],

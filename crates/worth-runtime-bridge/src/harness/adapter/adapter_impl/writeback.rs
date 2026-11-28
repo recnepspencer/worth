@@ -1,5 +1,3 @@
-use std::sync::{Arc, RwLock};
-
 use crate::harness::fixtures::BridgeHarnessFixture;
 use crate::routing::canonicalization::digest_string;
 use crate::writeback::{BridgeWritebackEffectClass, BridgeWritebackEffectIntent};
@@ -24,7 +22,6 @@ mod effect_intent;
 mod family_certification;
 mod feedback_loop_certification;
 mod feedback_patch;
-mod rejecting_authority;
 mod replay_mismatch_certification;
 mod runtime_building;
 pub(in crate::harness::adapter::adapter_impl) mod terminal_report_export;
@@ -35,7 +32,6 @@ use counter_snapshot::{
     aggregate_runtime_writeback_counters, snapshot_from_counters, WritebackCounterSnapshot,
 };
 use effect_intent::writeback_effect_intent;
-use rejecting_authority::RejectingTruthWritebackAuthority;
 
 pub(super) enum WritebackHarnessTarget {
     DuplicateCertification,
@@ -289,7 +285,6 @@ fn route_identity_for_commit(
 #[derive(Clone, Copy)]
 enum WritebackHarnessErrorDigestDomain {
     AuthorityDenial,
-    MergeAuthorityDenial,
     UnsafeFeedbackDenial,
     ContradictoryFeedbackDenial,
 }
@@ -298,7 +293,6 @@ impl WritebackHarnessErrorDigestDomain {
     fn digest_domain(self) -> &'static str {
         match self {
             Self::AuthorityDenial => "bridge-writeback-harness-authority-denial-failure",
-            Self::MergeAuthorityDenial => "bridge-writeback-harness-merge-authority-denial-failure",
             Self::UnsafeFeedbackDenial => "bridge-writeback-harness-unsafe-feedback-denial-failure",
             Self::ContradictoryFeedbackDenial => {
                 "bridge-writeback-harness-contradictory-feedback-denial-failure"

@@ -122,27 +122,26 @@ pub use self::runtime::{
 #[allow(deprecated)]
 pub use self::runtime::{
     mark_dirty_batch, BatchChange, BatchChangeResult, BatchChangeSession, ChangeBatch,
-    ChangeBatchAdmission, ChangeBatchCommit, History, IntervalWakeRegeneration,
-    PlannedSignalBranchRetirement, PlannedSignalBranchRetirementBatch, PreviousValueRevision,
-    ReadyTemporalWake, RecipeInstance, RetiredTemporalWake, RunSummary, RuntimeConfig,
-    RuntimePolicy, ScheduledTemporalWake, SignalBranchRetirementBatchReceipt,
-    SignalBranchRetirementReason, SignalBranchRetirementReceipt, SignalObservationAdmissionDenial,
-    SignalObservationCompletion, SignalObservationRequest, SignalObservationSession,
-    SignalObservationSurface, SignalRuntime, SignalTransaction, TemporalFrontierSnapshot,
-    TemporalPreviousValueAccess, TemporalPreviousValueReference,
-    TemporalRetiredWakeCompactionReport, TemporalWakeId, TemporalWakeReschedule,
-    TemporalWakeRetirementReason, TemporalWakeReuse, TemporalWakeSummary, TransactionOutcome,
-    TransactionResult, TransactionTiming, WakeOrdinal,
+    ChangeBatchAdmission, History, IntervalWakeRegeneration, PlannedSignalBranchRetirement,
+    PlannedSignalBranchRetirementBatch, PreviousValueRevision, ReadyTemporalWake, RecipeInstance,
+    RetiredTemporalWake, RunSummary, RuntimeConfig, RuntimePolicy, ScheduledTemporalWake,
+    SignalBranchRetirementBatchReceipt, SignalBranchRetirementReason,
+    SignalBranchRetirementReceipt, SignalObservationAdmissionDenial, SignalObservationCompletion,
+    SignalObservationRequest, SignalObservationSession, SignalObservationSurface, SignalRuntime,
+    SignalTransaction, TemporalFrontierSnapshot, TemporalPreviousValueAccess,
+    TemporalPreviousValueReference, TemporalRetiredWakeCompactionReport, TemporalWakeId,
+    TemporalWakeReschedule, TemporalWakeRetirementReason, TemporalWakeReuse, TemporalWakeSummary,
+    TransactionOutcome, TransactionResult, TransactionTiming, WakeOrdinal,
 };
 #[cfg(test)]
 #[allow(deprecated)]
 pub use self::runtime::{
-    ChangeBatch as DirtyBatch, ChangeBatchCommit as SemanticBatchCommit, History as RuntimeHistory,
-    KeyedRecipe as KeyedComputation, KeyedRecipeInstance as DefinedKeyedComputation,
-    RecipeFamily as ComputationFamily, RecipeInstance as DefinedComputation,
-    RunSummary as EvaluationSummary, RuntimeCheckpointPolicy as CheckpointPolicy,
-    RuntimeConfig as SignalRuntimeConfig, RuntimeRunRequest as RuntimeExecutionRequest,
-    RuntimeTierPolicy as TierPolicy, TransactionRunRequest as TransactionExecutionRequest,
+    ChangeBatch as DirtyBatch, History as RuntimeHistory, KeyedRecipe as KeyedComputation,
+    KeyedRecipeInstance as DefinedKeyedComputation, RecipeFamily as ComputationFamily,
+    RecipeInstance as DefinedComputation, RunSummary as EvaluationSummary,
+    RuntimeCheckpointPolicy as CheckpointPolicy, RuntimeConfig as SignalRuntimeConfig,
+    RuntimeRunRequest as RuntimeExecutionRequest, RuntimeTierPolicy as TierPolicy,
+    SemanticBatchCommit, TransactionRunRequest as TransactionExecutionRequest,
 };
 #[cfg(test)]
 pub use self::specialist::{
@@ -322,10 +321,7 @@ pub use crate::data::resource::{
 };
 
 #[cfg(test)]
-pub use crate::data::trace::{
-    ArtifactAuthorityClass, ArtifactMergeAuthority, CausalityMetadata, MergeAdoptability,
-    RetainedDiagnosticArtifact,
-};
+pub use crate::data::trace::{CausalityMetadata, RetainedDiagnosticArtifact};
 #[cfg(test)]
 pub use crate::logic::evaluation::IntoEvaluationOutput;
 #[cfg(test)]

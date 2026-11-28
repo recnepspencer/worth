@@ -22,7 +22,6 @@ server data plus the still-open branches.
 - `line.patch(...)`
 - `line.effects()`
 - `line.history().rollbackEffect(effectId)`
-- `signals.resource.branch.planEffectMerge(...)`
 
 Other profiles such as `pessimistic()`, `serverCanonical()`, and
 `nonReversible()` deliberately make different optimism or recovery promises.
@@ -106,7 +105,6 @@ value or apply an inverse patch.
 - [Concurrent Optimistic Effects](./concurrency-and-dependencies.md) covers
   siblings and dependency DAGs.
 - [Rollback And Recovery](./rollback-and-recovery.md) covers targeted rejection.
-- [Merge And Rebase](./merge-and-rebase.md) covers explicit branch merge plans.
 
 ## Inspection And Debugging
 

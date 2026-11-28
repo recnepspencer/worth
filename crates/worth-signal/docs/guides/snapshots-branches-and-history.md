@@ -16,7 +16,6 @@ read-only replay, branch, and lineage inspection.
 - `runtime.capture_signal_branch_snapshot(...)`
 - `runtime.restore_signal_branch(...)`
 - `runtime.fork_signal_branch(...)`
-- `runtime.merge()` and `runtime.merge_branch(...)`
 - `runtime.history().branches()`
 - `runtime.history().replay_for_branch(...)`
 - `runtime.history().replay_for_node(...)`
@@ -26,7 +25,7 @@ read-only replay, branch, and lineage inspection.
 
 Branch state changes require an owner-issued `AdmittedSignalBranchBasis`.
 Observe the exact live branch first, then pass that basis to capture, restore,
-fork, merge, retirement, or advancement. `runtime.history()` is read-only
+fork, retirement, or advancement. `runtime.history()` is read-only
 inspection; it does not issue snapshot or mutation authority.
 
 ## Capture And Inspect
@@ -62,29 +61,3 @@ If you are starting from a runtime question, begin with `runtime.history()`.
 The runtime keeps the sequence of changes, not just the latest answer. Branch
 divergence and admitted restoration therefore remain inspectable after the
 fact.
-
-## Merge
-
-Merge planning and execution consume exact source and target bases. Successful
-execution returns both the merge result and the newly admitted target basis.
-
-```rust
-# use worth_signal::facade::*;
-# let mut runtime = SignalRuntime::build_for::<()>(SignalGraph::new());
-let target = runtime
-    .observe_signal_branch_basis(runtime.current_branch())
-    .expect("target basis");
-let (_, source) = runtime
-    .fork_signal_branch("feature", &target)
-    .expect("source fork")
-    .into_parts();
-let planned = runtime.merge().from(&source).into(&target).plan()?;
-let outcome = planned.execute()?;
-let next_target = outcome.target_basis();
-
-# let _ = next_target;
-# Ok::<(), SignalError>(())
-```
-
-Do not keep using the old target basis after a successful merge. Its reference
-generation is stale, and a later governed operation will reject it.

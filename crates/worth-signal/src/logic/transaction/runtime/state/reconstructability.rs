@@ -20,8 +20,7 @@ pub use certification_summary::{
 };
 pub use checkpoint_journal::{
     BoundedJournalSegment, CheckpointBoundary, CheckpointRecord, DependencyIndexRebuildProof,
-    JournalSegment, MergeSupportRebuildProof, ReplaySuffixRebuildProof, RequiredDerivedRebuildSet,
-    TemporalStateRebuildProof,
+    JournalSegment, ReplaySuffixRebuildProof, RequiredDerivedRebuildSet, TemporalStateRebuildProof,
 };
 pub use proof::{ReconstructabilityProof, ReconstructabilityRecord};
 pub use temporal_evidence::{

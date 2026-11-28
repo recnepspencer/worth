@@ -49,7 +49,7 @@ That plan records:
 - which targets reconciled exactly
 - which targets stayed in a fallback result
 - whether identity migrated
-- what rollback, merge/rebase, and diagnostics evidence was emitted
+- what rollback and diagnostics evidence was emitted
 
 If a declared target cannot reconcile exactly, the result must stay explicit as
 `refetchRequired`, `deliveryAwaited`, `partialReconciliation`,
@@ -158,8 +158,7 @@ Use `detail: { kind: "replace" }` when the response proves the whole detail
 value exactly.
 
 Use `detail: { kind: "field", field: "..." }`, `region`, or `path` when the
-response proves only one part of the detail value and you want rollback and
-merge behavior to stay scoped to that smaller area.
+response proves only one part of the detail value and you want rollback to stay scoped to that smaller area.
 
 This is the difference between:
 

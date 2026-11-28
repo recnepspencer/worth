@@ -1,5 +1,4 @@
 use crate::{
-    adapter::{TruthWritebackReceipt, TruthWritebackRequest},
     facade::{
         AdmittedBridgeWritebackContract, BridgeWritebackError, BridgeWritebackErrorKind,
         BridgeWritebackIdempotenceBasis, BridgeWritebackStrategyBasis,
@@ -11,7 +10,6 @@ use crate::{
 pub(in crate::harness::adapter::adapter_impl) struct AuthorityDenialBoundaryEvidence<'a> {
     pub validation_error: &'a BridgeWritebackError,
     pub unbound_authority: AuthorityDenialBoundaryFailureEvidence<'a>,
-    pub merge_authority: AuthorityDenialBoundaryFailureEvidence<'a>,
     pub unsafe_feedback: AuthorityDenialBoundaryFailureEvidence<'a>,
     pub contradictory_feedback: AuthorityDenialBoundaryFailureEvidence<'a>,
 }
@@ -20,8 +18,6 @@ pub(in crate::harness::adapter::adapter_impl) struct AuthorityDenialBoundaryFail
     pub contract: Option<&'a AdmittedBridgeWritebackContract>,
     pub strategy_basis: Option<&'a BridgeWritebackStrategyBasis>,
     pub strategy_coherence: Option<&'a BridgeWritebackStrategyCoherenceReport>,
-    pub authority_request: Option<&'a TruthWritebackRequest>,
-    pub authority_receipt: Option<&'a TruthWritebackReceipt>,
     pub denial_class: AuthorityDenialBoundaryClass,
     pub failure_kind: BridgeWritebackErrorKind,
     pub failure_digest: Option<&'a str>,
@@ -34,7 +30,6 @@ pub(in crate::harness::adapter::adapter_impl) struct AuthorityDenialBoundaryFail
 pub(in crate::harness::adapter::adapter_impl) enum AuthorityDenialBoundaryClass {
     PreviewValidationDenied,
     UnboundAuthority,
-    MergeAuthorityRejection,
     UnsafeFeedbackPreauthority,
     ContradictoryFeedbackPreauthority,
 }
@@ -42,7 +37,6 @@ pub(in crate::harness::adapter::adapter_impl) enum AuthorityDenialBoundaryClass 
 pub(in crate::harness::adapter::adapter_impl) struct AuthorityDenialBoundaryMatrix {
     preview_validation_failure: AuthorityDenialBoundaryFailure,
     unbound_authority_failure: AuthorityDenialBoundaryFailure,
-    merge_authority_failure: AuthorityDenialBoundaryFailure,
     unsafe_feedback_failure: AuthorityDenialBoundaryFailure,
     contradictory_feedback_failure: AuthorityDenialBoundaryFailure,
 }
@@ -51,8 +45,6 @@ pub(in crate::harness::adapter::adapter_impl) struct AuthorityDenialBoundaryFail
     contract: Option<AdmittedBridgeWritebackContract>,
     strategy_basis: Option<BridgeWritebackStrategyBasis>,
     strategy_coherence: Option<BridgeWritebackStrategyCoherenceReport>,
-    authority_request: Option<TruthWritebackRequest>,
-    authority_receipt: Option<TruthWritebackReceipt>,
     denial_class: AuthorityDenialBoundaryClass,
     failure_kind: BridgeWritebackErrorKind,
     failure_digest: Option<String>,
@@ -69,9 +61,6 @@ impl AuthorityDenialBoundaryMatrix {
             ),
             unbound_authority_failure: AuthorityDenialBoundaryFailure::from_evidence(
                 evidence.unbound_authority,
-            ),
-            merge_authority_failure: AuthorityDenialBoundaryFailure::from_evidence(
-                evidence.merge_authority,
             ),
             unsafe_feedback_failure: AuthorityDenialBoundaryFailure::from_evidence(
                 evidence.unsafe_feedback,
@@ -94,12 +83,6 @@ impl AuthorityDenialBoundaryMatrix {
         &self.unbound_authority_failure
     }
 
-    pub(in crate::harness::adapter::adapter_impl) fn merge_authority_failure(
-        &self,
-    ) -> &AuthorityDenialBoundaryFailure {
-        &self.merge_authority_failure
-    }
-
     pub(in crate::harness::adapter::adapter_impl) fn unsafe_feedback_failure(
         &self,
     ) -> &AuthorityDenialBoundaryFailure {
@@ -119,8 +102,6 @@ impl AuthorityDenialBoundaryFailure {
             contract: None,
             strategy_basis: None,
             strategy_coherence: None,
-            authority_request: None,
-            authority_receipt: None,
             denial_class: AuthorityDenialBoundaryClass::PreviewValidationDenied,
             failure_kind: error.kind(),
             failure_digest: None,
@@ -135,8 +116,6 @@ impl AuthorityDenialBoundaryFailure {
             contract: evidence.contract.cloned(),
             strategy_basis: evidence.strategy_basis.cloned(),
             strategy_coherence: evidence.strategy_coherence.cloned(),
-            authority_request: evidence.authority_request.cloned(),
-            authority_receipt: evidence.authority_receipt.cloned(),
             denial_class: evidence.denial_class,
             failure_kind: evidence.failure_kind,
             failure_digest: evidence.failure_digest.map(ToOwned::to_owned),
@@ -146,34 +125,16 @@ impl AuthorityDenialBoundaryFailure {
         }
     }
 
-    pub(in crate::harness::adapter::adapter_impl) fn contract(
-        &self,
-    ) -> Option<&AdmittedBridgeWritebackContract> {
-        self.contract.as_ref()
-    }
-
     pub(in crate::harness::adapter::adapter_impl) fn contract_digest(&self) -> Option<&str> {
         self.contract
             .as_ref()
             .map(AdmittedBridgeWritebackContract::digest)
     }
 
-    pub(in crate::harness::adapter::adapter_impl) fn strategy_basis(
-        &self,
-    ) -> Option<&BridgeWritebackStrategyBasis> {
-        self.strategy_basis.as_ref()
-    }
-
     pub(in crate::harness::adapter::adapter_impl) fn strategy_basis_digest(&self) -> Option<&str> {
         self.strategy_basis
             .as_ref()
             .map(BridgeWritebackStrategyBasis::digest)
-    }
-
-    pub(in crate::harness::adapter::adapter_impl) fn strategy_coherence(
-        &self,
-    ) -> Option<&BridgeWritebackStrategyCoherenceReport> {
-        self.strategy_coherence.as_ref()
     }
 
     pub(in crate::harness::adapter::adapter_impl) fn strategy_coherence_digest(
@@ -190,34 +151,6 @@ impl AuthorityDenialBoundaryFailure {
         self.strategy_coherence
             .as_ref()
             .map(BridgeWritebackStrategyCoherenceReport::disposition)
-    }
-
-    pub(in crate::harness::adapter::adapter_impl) fn authority_request_digest(
-        &self,
-    ) -> Option<&str> {
-        self.authority_request
-            .as_ref()
-            .map(TruthWritebackRequest::digest)
-    }
-
-    pub(in crate::harness::adapter::adapter_impl) fn authority_receipt_digest(
-        &self,
-    ) -> Option<&str> {
-        self.authority_receipt
-            .as_ref()
-            .map(TruthWritebackReceipt::digest)
-    }
-
-    pub(in crate::harness::adapter::adapter_impl) fn authority_request(
-        &self,
-    ) -> Option<&TruthWritebackRequest> {
-        self.authority_request.as_ref()
-    }
-
-    pub(in crate::harness::adapter::adapter_impl) fn authority_receipt(
-        &self,
-    ) -> Option<&TruthWritebackReceipt> {
-        self.authority_receipt.as_ref()
     }
 
     pub(in crate::harness::adapter::adapter_impl) fn denial_class(
@@ -262,12 +195,6 @@ impl AuthorityDenialBoundaryFailure {
         self.effect.as_ref()
     }
 
-    pub(in crate::harness::adapter::adapter_impl) fn idempotence(
-        &self,
-    ) -> Option<&BridgeWritebackIdempotenceBasis> {
-        self.idempotence.as_ref()
-    }
-
     pub(in crate::harness::adapter::adapter_impl) fn idempotence_digest(&self) -> Option<&str> {
         self.idempotence
             .as_ref()
@@ -302,7 +229,6 @@ impl AuthorityDenialBoundaryClass {
         match self {
             Self::PreviewValidationDenied => "preview-validation-denied",
             Self::UnboundAuthority => "unbound-authority",
-            Self::MergeAuthorityRejection => "merge-authority-rejection",
             Self::UnsafeFeedbackPreauthority => "unsafe-feedback-preauthority",
             Self::ContradictoryFeedbackPreauthority => "contradictory-feedback-preauthority",
         }

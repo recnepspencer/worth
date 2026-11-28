@@ -90,75 +90,6 @@ pub(super) fn execute_authority_denial_certification(
         authority_error.kind(),
         &authority_error,
     );
-    let merge_rejecting_authority = RejectingTruthWritebackAuthority::new(
-        crate::facade::BridgeWritebackFailureClass::MergeAuthorityRejected,
-    );
-    let merge_rejecting_runtime = build_writeback_runtime_with_custom_authority(
-        runtime,
-        fixture,
-        merge_rejecting_authority.clone(),
-    )?;
-    let merge_lowered_policy = lowered_policy(&merge_rejecting_runtime)?;
-    let merge_declaration = crate::facade::BridgeWritebackDeclaration::writeback_capable(
-        crate::facade::BridgeWritebackDeclarationIdentity::admit_bridge_owned(
-            "harness:writeback-authority-denial:merge-rejected",
-        ),
-        crate::facade::BridgeRequestKind::Authoritative,
-        crate::facade::BridgeWritebackFamilyKind::ProjectedStateDiff,
-        crate::facade::BridgeWritebackEffectClass::ProjectedStateDiff,
-        crate::facade::BridgeWritebackStrategyClass::ProjectedStateDiffReconciliation,
-        crate::facade::BridgeWritebackIdempotenceClass::RequireSemanticNoopSuppression,
-    );
-    let merge_contract = merge_rejecting_runtime
-        .admit_writeback_declaration(merge_declaration, &merge_lowered_policy)
-        .map_err(|error| {
-            BridgeHarnessError::new(format!(
-                "writeback authority-denial certification failed to admit merge-rejected contract: {error}"
-            ))
-        })?;
-    let merge_causality = authority_denial_causality(
-        &merge_rejecting_runtime,
-        fixture,
-        "harness:writeback-authority-denial:merge-rejected:causality",
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        "merge-rejected",
-        resource_request,
-    )?;
-    let merge_effect = merge_rejecting_runtime.lower_writeback_effect(
-        &merge_contract,
-        &merge_causality,
-        crate::facade::BridgeWritebackEffectIdentity::admit_bridge_owned(
-            "harness:writeback-authority-denial:merge-rejected:effect",
-        ),
-        writeback_effect_intent(
-            BridgeWritebackEffectClass::ProjectedStateDiff,
-            merge_contract.digest().to_owned(),
-        ),
-    );
-    let merge_idempotence = merge_rejecting_runtime.classify_writeback_idempotence(
-        &merge_effect,
-        &merge_lowered_policy,
-        &crate::facade::BridgeWritebackAuthoritativeStateBasis::from_effect(&merge_effect),
-        crate::facade::BridgeWritebackIdempotenceIdentity::admit_bridge_owned(
-            "harness:writeback-authority-denial:merge-rejected:idempotence",
-        ),
-        crate::facade::BridgeWritebackIdempotenceClass::RequireSemanticNoopSuppression,
-    );
-    let merge_strategy_coherence = merge_rejecting_runtime.classify_writeback_strategy_coherence(
-        &merge_contract,
-        &merge_effect,
-        &merge_idempotence,
-    );
-    let merge_error = merge_rejecting_runtime
-        .execute_writeback_authority(&merge_contract, &merge_effect, &merge_idempotence)
-        .expect_err("merge-authority rejection must fail closed");
-    let merge_failure_digest = writeback_harness_error_digest(
-        WritebackHarnessErrorDigestDomain::MergeAuthorityDenial,
-        merge_error.kind(),
-        &merge_error,
-    );
-    let merge_authority_request = merge_rejecting_authority.last_request();
-    let merge_authority_receipt = merge_rejecting_authority.last_receipt();
     let unsafe_feedback_runtime = build_writeback_runtime(runtime, fixture, true)?;
     let unsafe_feedback_policy = lowered_policy(&unsafe_feedback_runtime)?;
     let unsafe_feedback_declaration = crate::facade::BridgeWritebackDeclaration::writeback_capable(
@@ -289,11 +220,8 @@ pub(super) fn execute_authority_denial_certification(
         &contradictory_feedback_error,
     );
 
-    let counters = aggregate_runtime_writeback_counters(&[
-        &unbound_runtime,
-        &merge_rejecting_runtime,
-        &unsafe_feedback_runtime,
-    ]);
+    let counters =
+        aggregate_runtime_writeback_counters(&[&unbound_runtime, &unsafe_feedback_runtime]);
     let counter_snapshot = snapshot_from_counters(&counters);
 
     Ok(WritebackHarnessExecution::AuthorityDenialCertification {
@@ -309,26 +237,11 @@ pub(super) fn execute_authority_denial_certification(
                     contract: Some(&authority_contract),
                     strategy_basis: authority_contract.validated_declaration().strategy_basis(),
                     strategy_coherence: Some(&authority_strategy_coherence),
-                    authority_request: None,
-                    authority_receipt: None,
                     denial_class: AuthorityDenialBoundaryClass::UnboundAuthority,
                     failure_kind: authority_error.kind(),
                     failure_digest: Some(&authority_failure_digest),
                     effect: Some(&authority_effect),
                     idempotence: Some(&authority_idempotence),
-                    incoming_feedback_context: None,
-                },
-                merge_authority: AuthorityDenialBoundaryFailureEvidence {
-                    contract: Some(&merge_contract),
-                    strategy_basis: merge_contract.validated_declaration().strategy_basis(),
-                    strategy_coherence: Some(&merge_strategy_coherence),
-                    authority_request: merge_authority_request.as_ref(),
-                    authority_receipt: merge_authority_receipt.as_ref(),
-                    denial_class: AuthorityDenialBoundaryClass::MergeAuthorityRejection,
-                    failure_kind: merge_error.kind(),
-                    failure_digest: Some(&merge_failure_digest),
-                    effect: Some(&merge_effect),
-                    idempotence: Some(&merge_idempotence),
                     incoming_feedback_context: None,
                 },
                 unsafe_feedback: AuthorityDenialBoundaryFailureEvidence {
@@ -337,8 +250,6 @@ pub(super) fn execute_authority_denial_certification(
                         .validated_declaration()
                         .strategy_basis(),
                     strategy_coherence: Some(&unsafe_feedback_strategy_coherence),
-                    authority_request: None,
-                    authority_receipt: None,
                     denial_class: AuthorityDenialBoundaryClass::UnsafeFeedbackPreauthority,
                     failure_kind: unsafe_feedback_error.kind(),
                     failure_digest: Some(&unsafe_feedback_failure_digest),
@@ -352,8 +263,6 @@ pub(super) fn execute_authority_denial_certification(
                         .validated_declaration()
                         .strategy_basis(),
                     strategy_coherence: Some(&unsafe_feedback_strategy_coherence),
-                    authority_request: None,
-                    authority_receipt: None,
                     denial_class: AuthorityDenialBoundaryClass::ContradictoryFeedbackPreauthority,
                     failure_kind: contradictory_feedback_error.kind(),
                     failure_digest: Some(&contradictory_feedback_failure_digest),

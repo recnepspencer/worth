@@ -1,6 +1,5 @@
 import type {
-  BranchStateProofReport, LineageSummary, MergePlanArtifact, MergePlanProofEnvelope,
-  MergePolicyPreviewRequest, MergeResultArtifact, MergeResultProofEnvelope,
+  BranchStateProofReport, LineageSummary,
   ReplayArtifactProofInput, ReplayArtifactProofReport, ReplayParityProofReport, ReplaySummary,
   RuntimeBranchHandle, RuntimeDefinitionEnvelope, RuntimeEnvelope, HostCapabilityTransportReport,
   RuntimeProofReport, RuntimeSnapshotArtifact, RuntimeSnapshotEnvelope,

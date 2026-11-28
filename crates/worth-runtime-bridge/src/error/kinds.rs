@@ -14,10 +14,6 @@ pub enum BridgeBuildErrorKind {
     AmbiguousSourceDeclaration,
     DuplicateStructuralDeclaration,
     AmbiguousStructuralDeclaration,
-    DuplicateMergeDeclaration,
-    AmbiguousMergeDeclaration,
-    MergeOntologyLoweringMismatch,
-    MergeAuthorityBasisMismatch,
     StructuralComparisonModeMismatch,
     SourceCapabilityMismatch,
     BuilderConfigurationConflict,
@@ -125,19 +121,6 @@ pub enum BridgeContinuityErrorKind {
 pub type BridgeContinuityError = BridgeTypedError<BridgeContinuityErrorKind>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BridgeMergeErrorKind {
-    MergeContractMismatch,
-    MergeContinuityDenied,
-    MergeStructuralContradiction,
-    MergeCausalFrontierTruncated,
-    MergePolicyRejected,
-    MergeDeletionDenied,
-    MergeTopologyRewireDenied,
-}
-
-pub type BridgeMergeError = BridgeTypedError<BridgeMergeErrorKind>;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeSpeculationErrorKind {
     PreviewRequestKindMismatch,
     PreviewSessionIdentityConflict,
@@ -161,7 +144,6 @@ pub enum BridgeWritebackErrorKind {
     CausalityEffectMismatch,
     StaleTruthBasis,
     InvariantRejected,
-    MergeAuthorityRejected,
     StrategyFailed,
     StrategyPanicked,
     ReplayMismatch,

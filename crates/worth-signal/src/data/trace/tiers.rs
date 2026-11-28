@@ -11,8 +11,8 @@ use crate::data::reuse::{ReuseBasis, ReuseBoundaryAuthority, ReuseOrigin};
 use crate::diagnostics::lineage::LineageArtifactId;
 
 use super::authority::{
-    ArtifactMergeAuthority, ArtifactTransitionKey, CompactChangedScopeProof,
-    ContinuityAuthorityToken, ReuseOperationalBasis,
+    ArtifactTransitionKey, CompactChangedScopeProof, ContinuityAuthorityToken,
+    ReuseOperationalBasis,
 };
 
 /// Compact hot operational artifact truth retained directly on the node.
@@ -68,9 +68,6 @@ pub struct RuntimeArtifactWarm {
     /// Current signal-lineage artifact id for this node's evaluated artifact.
     #[serde(default)]
     pub lineage_artifact_id: ArtifactTransitionKey,
-    /// Typed authority/adoptability truth used by branch merge semantics.
-    #[serde(default)]
-    pub merge_authority: ArtifactMergeAuthority,
 }
 
 /// Runtime artifact state split into hot operational truth and warm companion
@@ -189,10 +186,6 @@ impl RuntimeArtifactState {
 
     pub fn lineage_artifact_id(&self) -> ArtifactTransitionKey {
         self.warm.lineage_artifact_id
-    }
-
-    pub fn merge_authority(&self) -> &ArtifactMergeAuthority {
-        &self.warm.merge_authority
     }
 
     pub fn set_lineage_artifact_id(&mut self, artifact_id: Option<LineageArtifactId>) {

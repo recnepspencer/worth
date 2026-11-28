@@ -12,7 +12,7 @@ Use it when you need to know:
 - where a narrow response effect landed
 - whether the runtime proved `entityStore`, `mapCollection`, `groupedCollection`,
   `tree`, `detailResponse`, or another topology
-- how that topology feeds effect envelopes and merge planning
+- how that topology feeds effect envelopes and settlement
 
 ## Stable Entry Points
 
@@ -64,8 +64,6 @@ console.log(effect.locusProof.cost.lookup);
 
 - Use [Partial Updates And Derived Views](../partial-updates/README.md) for the
   user-facing explanation of narrow updates.
-- Use [Merge And Rebase](../effects/merge-and-rebase.md) when topology proof
-  must bind to a native merge preview.
 
 ## Inspection And Debugging
 

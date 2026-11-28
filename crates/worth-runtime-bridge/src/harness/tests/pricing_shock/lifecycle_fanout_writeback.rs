@@ -147,14 +147,4 @@ fn pricing_shock_writeback_lane_preserves_authority_boundary_and_noop_classifica
     assert_eq!(writeback.execution_request_count, 1);
     assert_eq!(writeback.execution_commit_count, 1);
     assert_eq!(writeback.execution_noop_count, 1);
-    assert_eq!(
-        writeback.rejection_error_kind,
-        BridgeWritebackErrorKind::MergeAuthorityRejected
-    );
-    assert_eq!(
-        writeback.rejection_failure_class,
-        BridgeWritebackFailureClass::MergeAuthorityRejected
-    );
-    assert!(writeback.rejection_request_emitted);
-    assert!(writeback.rejection_receipt_emitted);
 }

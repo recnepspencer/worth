@@ -57,8 +57,6 @@ console.log(redirect.diagnostics().visibleChangeSource);
 
 ## How It Relates To Other Features
 
-- speculation has a separate visible-truth contract in
-  [Visible Projection](../speculation/visible_projection.md)
 - browser-history explanation happens later in [Navigation Auditability](../history/navigation_auditability.md)
 
 ## Inspection And Debugging
@@ -70,7 +68,6 @@ console.log(redirect.diagnostics().visibleChangeSource);
 ## Anti-Patterns
 
 - equating target route outcome with visible route truth during every transition
-- merging ordinary transition visibility with speculative visibility rules
 
 ## Current Limits
 

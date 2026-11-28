@@ -29,87 +29,6 @@ fn authority_denial_certification_retains_typed_zero_residue_proof() {
     assert_eq!(
         authority_denial
             .authority_boundary()
-            .merge_authority_failure()
-            .failure_kind(),
-        crate::facade::BridgeWritebackErrorKind::MergeAuthorityRejected
-    );
-    let merge_authority_failure = authority_denial
-        .authority_boundary()
-        .merge_authority_failure();
-    let merge_effect = merge_authority_failure
-        .effect()
-        .expect("merge denial must retain typed lowered effect");
-    let merge_request = merge_authority_failure
-        .authority_request()
-        .expect("merge denial must retain typed authority request");
-    let merge_receipt = merge_authority_failure
-        .authority_receipt()
-        .expect("merge denial must retain typed authority receipt");
-    let merge_contract = merge_authority_failure
-        .contract()
-        .expect("merge denial must retain typed admitted contract");
-    let merge_strategy_basis = merge_authority_failure
-        .strategy_basis()
-        .expect("merge denial must retain typed strategy basis");
-    let merge_strategy_coherence = merge_authority_failure
-        .strategy_coherence()
-        .expect("merge denial must retain typed strategy coherence");
-    let merge_idempotence = merge_authority_failure
-        .idempotence()
-        .expect("merge denial must retain typed idempotence basis");
-    assert_eq!(
-        merge_authority_failure.contract_digest(),
-        Some(merge_contract.digest())
-    );
-    assert_eq!(
-        merge_authority_failure.strategy_basis_digest(),
-        Some(merge_strategy_basis.digest())
-    );
-    assert_eq!(
-        merge_authority_failure.strategy_coherence_digest(),
-        Some(merge_strategy_coherence.digest())
-    );
-    assert_eq!(
-        merge_authority_failure.strategy_coherence_disposition(),
-        Some(merge_strategy_coherence.disposition())
-    );
-    assert_eq!(
-        merge_authority_failure.idempotence_digest(),
-        Some(merge_idempotence.digest())
-    );
-    assert_eq!(
-        merge_effect.effect_intent_digest(),
-        merge_request.effect_intent_digest()
-    );
-    assert_eq!(merge_effect.effect_intent(), merge_request.effect_intent());
-    assert_eq!(merge_request.effect_intent(), merge_receipt.effect_intent());
-    assert_eq!(
-        merge_authority_failure.authority_request_digest(),
-        Some(merge_request.digest())
-    );
-    assert_eq!(
-        merge_authority_failure.authority_receipt_digest(),
-        Some(merge_receipt.digest())
-    );
-    assert_eq!(
-        merge_authority_failure.effect_intent_digest(),
-        Some(merge_effect.effect_intent_digest())
-    );
-    assert_eq!(
-        merge_authority_failure.causality_digest(),
-        Some(merge_effect.causality_digest())
-    );
-    assert_eq!(
-        merge_contract.digest(),
-        merge_strategy_coherence.contract_digest()
-    );
-    assert_eq!(
-        merge_idempotence.digest(),
-        merge_strategy_coherence.idempotence_digest()
-    );
-    assert_eq!(
-        authority_denial
-            .authority_boundary()
             .unbound_authority_failure()
             .effect()
             .expect("unbound authority denial must retain typed lowered effect")
@@ -120,11 +39,6 @@ fn authority_denial_certification_retains_typed_zero_residue_proof() {
             .effect_intent_digest()
             .expect("unbound authority projection must derive from retained effect")
     );
-    assert!(authority_denial
-        .authority_boundary()
-        .unsafe_feedback_failure()
-        .authority_request()
-        .is_none());
     assert!(authority_denial
         .authority_boundary()
         .unsafe_feedback_failure()
@@ -174,7 +88,7 @@ fn authority_denial_certification_retains_typed_zero_residue_proof() {
     );
     assert_eq!(zero_residue_report.authoritative_commit_count(), 0);
     assert_eq!(zero_residue_report.authoritative_artifact_count(), 0);
-    assert_eq!(counter_snapshot.writeback_failure_count, 4);
+    assert_eq!(counter_snapshot.writeback_failure_count, 3);
     assert_eq!(counter_snapshot.writeback_validation_rejection_count, 2);
 }
 

@@ -136,7 +136,6 @@ impl NodeEntry {
                             lineage_artifact_id: crate::data::trace::ArtifactTransitionKey::new(
                                 summary.lineage_artifact_id,
                             ),
-                            merge_authority: crate::data::trace::ArtifactMergeAuthority::default(),
                         },
                     )));
                 self.set_execution_trace_stamp(Some(ExecutionTraceStamp {

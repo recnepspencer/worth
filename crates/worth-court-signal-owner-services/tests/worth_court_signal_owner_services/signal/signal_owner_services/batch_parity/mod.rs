@@ -22,7 +22,7 @@ fn duplicate_batch_denial_is_identical_before_and_after_sealing() {
             (
                 child.clone(),
                 child_basis.clone(),
-                worth_signal::facade::SignalBranchRetirementReason::Merged,
+                worth_signal::facade::SignalBranchRetirementReason::Superseded,
             ),
         ]),
         worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementBatchDenial::DuplicateBranch {
@@ -41,7 +41,7 @@ fn duplicate_batch_denial_is_identical_before_and_after_sealing() {
                 child.clone(),
                 child_basis.clone(),
                 Vec::new(),
-                worth_signal::facade::SignalBranchRetirementReason::Merged,
+                worth_signal::facade::SignalBranchRetirementReason::Superseded,
             ),
         ]),
         worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementBatchDenial::DuplicateBranch {
@@ -63,7 +63,7 @@ fn duplicate_batch_denial_is_identical_before_and_after_sealing() {
             (
                 child.clone(),
                 child_basis.clone(),
-                worth_signal::facade::SignalBranchRetirementReason::Merged,
+                worth_signal::facade::SignalBranchRetirementReason::Superseded,
             ),
         ]),
         worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementBatchDenial::DuplicateBranch {
@@ -82,7 +82,7 @@ fn duplicate_batch_denial_is_identical_before_and_after_sealing() {
                 child.clone(),
                 child_basis.clone(),
                 Vec::new(),
-                worth_signal::facade::SignalBranchRetirementReason::Merged,
+                worth_signal::facade::SignalBranchRetirementReason::Superseded,
             ),
         ]),
         worth_proof::TransitionOutcome::Denied(worth_signal::facade::branch::SignalBranchRetirementBatchDenial::DuplicateBranch {

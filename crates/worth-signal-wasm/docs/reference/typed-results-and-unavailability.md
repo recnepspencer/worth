@@ -64,7 +64,7 @@ Resource lines use typed results for:
 
 - settlement: fulfilled, partial, timed out, rejected, or otherwise failed;
 - optimistic patch admission and duplicate effect IDs;
-- effect confirmation, rejection, cancellation, merge, and rebase;
+- effect confirmation, rejection, and cancellation;
 - server delivery applied, duplicate-ignored, basis-rejected, or
   basis-refreshed;
 - exact replay, restore, and rollback unavailable when history or proof is
@@ -98,7 +98,7 @@ Forms keep readiness, admission, execution, and presentation separate:
   plan digest used for execution;
 - reset and replay/restore report no-op or unavailable instead of pretending a
   rollback happened;
-- resource drift and merge expose conflict and stale posture;
+- resource drift exposes stale posture;
 - route authority can freeze, discard, defer, or clear draft continuity.
 
 Do not collapse these reads into one `isValid` boolean. A form can be valid but
@@ -116,10 +116,8 @@ guess route authority from `window.location`.
 
 ## Local Truth Results
 
-Local Truth mutation and merge outcomes distinguish committed state from
-conflicts and unavailable resolution. Manual resolution must name the conflict
-it resolves and the chosen value. A runtime branch merge does not substitute
-for application-value resolution.
+Local Truth mutation outcomes distinguish committed state from denied or
+unavailable operations.
 
 ## Retain Evidence, Not A Second Truth Store
 

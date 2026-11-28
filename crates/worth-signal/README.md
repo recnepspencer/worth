@@ -93,9 +93,8 @@ See the [governing owner contract](../../plans/database-foundation/milestone-3-h
 `mark_changed` records source recompute intent. It says which producer-local
 aspect may need to be recomputed; it does **not** assert that the producer has
 already emitted a semantic change. The returned `ChangeBatchAdmission` proves
-that Signal admitted that root work. Older `ChangeBatchCommit` and
-`SemanticBatchCommit` names are deprecated aliases for the same admission and
-must not be interpreted as output-commit evidence.
+that Signal admitted that root work. Output-commit evidence comes from the
+producer’s semantic result.
 
 After evaluation, Signal compares the candidate output with the producer's
 last committed output. Only a meaningful committed difference creates a
@@ -213,7 +212,7 @@ while its Relational sibling advances independently.
 The attached-Home Relational-only lane records `RecordedSignalInitialEmptyRoot`.
 Only the real partition-to-owner transfer can establish its private initial
 witness: one untouched original root, no authored nodes, installed definition,
-fork, snapshot, retirement, restore or merge history. Allocation irreversibly
+fork, snapshot, retirement or restore history. Allocation irreversibly
 invalidates graph-origin eligibility; clone and reconstruction never inherit it.
 The recipe carries the actual full schema commitment and versioned Empty
 visibility/definition meaning. `SignalBranchBasisPort` exports it from the exact

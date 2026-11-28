@@ -87,7 +87,6 @@ fn optional_snapshot_json(value: Option<SignalSnapshotId>) -> String {
 fn reason_name(reason: SignalBranchRetirementReason) -> &'static str {
     match reason {
         SignalBranchRetirementReason::Rejected => "Rejected",
-        SignalBranchRetirementReason::Merged => "Merged",
         SignalBranchRetirementReason::Superseded => "Superseded",
         SignalBranchRetirementReason::DependencyCancellation => "DependencyCancellation",
         SignalBranchRetirementReason::ProjectionRebuild => "ProjectionRebuild",

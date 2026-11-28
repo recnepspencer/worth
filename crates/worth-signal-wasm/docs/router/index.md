@@ -238,7 +238,6 @@ they are miserable application control flow.
 - the host still owns actual browser history, external navigation, and
   cross-tab delivery
 - exact restore requires a real runtime snapshot boundary
-- speculative navigation requires a compatible branch-history surface
 - worker-first is the default runtime direction, but the public router facade
   does not imply that browser APIs or every JavaScript callback run in a worker
 

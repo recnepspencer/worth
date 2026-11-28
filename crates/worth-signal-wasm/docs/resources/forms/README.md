@@ -1,7 +1,7 @@
 # Using Resources In Forms
 
 Use this section when a resource line is the source of a form or when a form
-needs to explain resource-backed merge, drift, settlement, or mutation-response
+needs to explain resource-backed drift, settlement, or mutation-response
 truth.
 
 This is the resource-side guide. The form-side deeper docs still live in
@@ -13,8 +13,8 @@ This is the resource-side guide. The form-side deeper docs still live in
   The stable entry points and what `form.resourceSource()` really gives you.
 - [Reflect Resource Settlement In A Form](./reflect-resource-settlement-in-a-form.md)
   Pending, confirmed, failed, retry, and visible-selection posture.
-- [Handle Resource Drift And Merge](./handle-resource-drift-and-merge.md)
-  Resource-backed remote drift plus merge preview projection.
+- [Resource Drift](../../forms/resource-backed/resource-drift.md)
+  Inspect how remote changes affect a local draft.
 - [Read Mutation Responses In Forms](./read-mutation-responses-in-forms.md)
   The form-side digest of resource mutation-response completion.
 - [Replay, Restore, And Reset Resource-Backed Forms](./replay-restore-and-reset-resource-backed-forms.md)

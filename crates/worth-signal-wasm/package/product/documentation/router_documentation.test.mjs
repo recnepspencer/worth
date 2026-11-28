@@ -20,7 +20,6 @@ const canonicalDocuments = [
   "recovery/stale_deep_link_recovery.md",
   "breadcrumbs/breadcrumb_declarations.md",
   "resources/route_resource_declarations.md",
-  "speculation/speculative_sessions.md",
   "forms/route_authority_handoff.md",
   "runtime_placement/worker_first_default.md",
   "diagnostics/diagnostics_surfaces.md",

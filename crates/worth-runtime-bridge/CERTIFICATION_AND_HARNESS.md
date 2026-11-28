@@ -43,8 +43,8 @@ scenario-local assertions. The bundle is expected to collect:
 - restart replay artifacts
 - restart drift-rejection artifacts
 - writeback authority artifacts covering commit, noop, and typed rejection
-- merge/history artifacts covering aspect-aware reconciliation and revisitable
-  pre-merge, speculative, and merged truth states
+- lineage and history artifacts for revisiting authoritative and speculative
+  truth states
 - historical provenance artifacts carrying retained shock criteria for
   bridge-readable commit lineage
 

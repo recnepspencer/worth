@@ -34,7 +34,7 @@ change. Worth supports these families of loci when their structure is declared:
 - `replace` — the whole resource value.
 
 An aspect is a named semantic slice, such as a task's title or an invoice's due
-date. It lets invalidation, effects, and merge reasoning stay focused on the
+date. It lets invalidation and effects stay focused on the
 meaning that changed rather than treating the entire object as one blob.
 
 ## Patch One Item Aspect
@@ -77,8 +77,8 @@ happened to arrive.
 
 Per-item views and collection summaries can update from the same narrow change.
 Use the built-in object-field lane when it expresses the real meaning. Declare a
-named aspect when the semantic view is not just a property lookup or when merge
-and inspection need that name.
+named aspect when a computed view needs its own invalidation or inspection
+identity.
 
 Large deep collections are not magically constant-time. Some aggregate,
 equality, and reporting reads are explicitly non-incremental and may perform
@@ -90,7 +90,6 @@ structural scans. The inspection counters exist so cost remains visible.
 - Sending `replace` because declaring the actual narrow locus feels verbose.
 - Hand-writing an object path that the family never admitted.
 - Assuming a derived view owns canonical resource truth.
-- Promising narrow merge behavior without declared aspects or branch proof.
 
 ## Go Deeper
 

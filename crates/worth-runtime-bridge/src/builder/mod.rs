@@ -7,7 +7,6 @@ use crate::adapter::{
 use crate::correspondence::{
     AdmittedSemanticDependencyRegistry, BridgeSemanticCorrespondenceRegistration,
 };
-use crate::diagnostics::DiagnosticSink;
 use crate::error::{BridgeBuildError, BridgeBuildErrorKind};
 use crate::facade::RuntimeBridge;
 use crate::mapping::{

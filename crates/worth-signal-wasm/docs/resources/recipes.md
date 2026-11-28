@@ -55,15 +55,15 @@ This is the task-first companion for the rewritten resource docs.
   [Inspecting And Debugging Resources](./debugging/README.md),
   [Inspect A Resource Line](./debugging/inspect-a-resource-line.md), and
   [Restore, Replay, And Recover](./debugging/restore-replay-and-recover.md)
-- optimistic effects, merge previews, or rollback posture:
+- optimistic effects or rollback posture:
   [Effects And Recovery](./effects/README.md),
   [Branch-Native Effects](./effects/branch-native-effects.md),
   [Concurrent Optimistic Effects](./effects/concurrency-and-dependencies.md), and
   [Rollback And Recovery](./effects/rollback-and-recovery.md)
-- resource-backed forms, settlement, drift, or merge readback:
+- resource-backed forms, settlement or drift readback:
   [Using Resources In Forms](./forms/README.md),
   [Use A Resource As Form Source](./forms/use-a-resource-as-form-source.md), and
-  [Handle Resource Drift And Merge](./forms/handle-resource-drift-and-merge.md)
+  [Resource Drift](../forms/resource-backed/resource-drift.md)
 - route-bound resources, prefetch, or warmup:
   [Using Resources In Routes](./router/README.md),
   [Declare Route Resources](./router/declare-route-resources.md), and

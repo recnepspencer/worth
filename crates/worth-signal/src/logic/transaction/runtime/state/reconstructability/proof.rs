@@ -90,14 +90,6 @@ impl ReconstructabilityRecord {
                 replay_event_count: self.journal.replay_event_count,
             },
         ));
-        if self.journal.replay_event_count > 0 {
-            rebuild.push(RequiredDerivedRebuildSet::MergeSupport(
-                super::MergeSupportRebuildProof {
-                    authority_branch_id: self.authority_branch_id,
-                    replay_event_count: self.journal.replay_event_count,
-                },
-            ));
-        }
         rebuild.push(RequiredDerivedRebuildSet::TemporalState(
             TemporalStateRebuildProof {
                 authority_branch_id: self.authority_branch_id,
