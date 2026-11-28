@@ -110,8 +110,6 @@ fn detached_construction_state_surfaces_panic_before_access_and_leave_owner_heal
         let _ = runtime.validate_schema_bindings();
     });
     assert_panics(|| {
-    });
-    assert_panics(|| {
         let _ = runtime.derive_evaluation_strategy();
     });
     assert_panics(|| runtime.clear_live_branch_mutation_residue());
