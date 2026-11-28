@@ -67,7 +67,8 @@ impl SignalGraph {
             dependency_snapshot_batch: self.capture_checkpoint_dependency_snapshot_batch(),
             graph_telemetry: *self.telemetry(),
         };
-        let graph = Self::restore_from_checkpoint_image(&checkpoint)?;
+        let mut graph = Self::restore_from_checkpoint_image(&checkpoint)?;
+        graph.telemetry_clock = self.telemetry_clock.clone();
         let report = SignalGraphReconstitutionReport {
             previous_graph_instance_id,
             restored_graph_instance_id: graph.installed_graph_capability().graph_instance_id(),

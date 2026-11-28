@@ -70,7 +70,9 @@ where
             .graph
             .installed_runtime_policy()
             .conditional_temporal_budget();
-        let bindings = SignalGraphInstallationBindings::consume(std::mem::take(&mut self.graph));
+        let program_graph = std::mem::take(&mut self.graph);
+        self.graph.telemetry_clock = program_graph.telemetry_clock.clone();
+        let bindings = SignalGraphInstallationBindings::consume(program_graph);
         // Every body participates in identity resumption, including a body that
         // an original advance never selected. No derived bytes are read.
         for location in &source.definitions {

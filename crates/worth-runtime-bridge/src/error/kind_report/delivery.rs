@@ -145,6 +145,7 @@ impl BridgeErrorKind for crate::adapter::RelationalBridgeSourceErrorTag {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::ExecutionDenied(error) => Some(error),
+            Self::PublicationDenied(error) => Some(error),
             _ => None,
         }
     }

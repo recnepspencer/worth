@@ -18,10 +18,12 @@ where
         handle: &SignalBranchHandle,
         checkpoint_policy: CheckpointPolicy<D>,
     ) -> Box<Self> {
+        let mut checkpoint = CheckpointRuntime::new(checkpoint_policy);
+        checkpoint.bind_telemetry_clock(&graph.telemetry_clock);
         Box::new(Self {
             authority: AuthorityState { graph, config },
             derived: Box::new(DerivedState {
-                checkpoint: CheckpointRuntime::new(checkpoint_policy),
+                checkpoint,
                 resource: Default::default(),
                 temporal: Default::default(),
                 telemetry: Default::default(),

@@ -12,6 +12,7 @@ use worth_execution::ExecutionRequest;
 /// share belongs to the original consuming owner and is dropped at owner close.
 pub(crate) struct SignalGraphInstallationBindings {
     instance_id: u64,
+    telemetry_clock: crate::clock::SignalTelemetryClock,
     lifecycle_token: Arc<()>,
     schema_registry: Arc<SignalSchemaRegistry>,
     lowering_owner: Option<SignalAspectLoweringOwner>,
@@ -25,6 +26,7 @@ impl SignalGraphInstallationBindings {
     pub(crate) fn capture(graph: &SignalGraph) -> Self {
         Self {
             instance_id: graph.instance_id,
+            telemetry_clock: graph.telemetry_clock.clone(),
             lifecycle_token: Arc::clone(&graph.lifecycle_token),
             schema_registry: Arc::clone(&graph.schema_registry),
             lowering_owner: graph.aspect_lowering_owner.clone(),
@@ -39,6 +41,7 @@ impl SignalGraphInstallationBindings {
     ) -> Result<SignalAuthoredGraphReadmission, SignalAuthoredImageDenial> {
         let mut graph = Box::new(SignalGraph::new());
         graph.instance_id = self.instance_id;
+        graph.telemetry_clock = self.telemetry_clock.clone();
         graph.lifecycle_token = Arc::clone(&self.lifecycle_token);
         graph.schema_registry = Arc::clone(&self.schema_registry);
         graph.aspect_lowering_owner = self.lowering_owner.clone();
